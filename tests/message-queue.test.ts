@@ -9,6 +9,7 @@ test('a missing target is retained as a failed inbound message, then dismisses',
   process.env.RONIN_MESSAGE_QUEUE_DIR = root;
   const queue = await import(`../src/message-queue.ts?test=${Date.now()}`);
   const item = await queue.enqueueMessage('definitely_missing_session', 'hello', 'tell');
+  assert.equal(item.from, 'Agent');
   assert.equal((await queue.listQueuedMessages()).length, 1);
   const failed = await queue.attemptMessage(item.id, 'safe');
   assert.equal(failed?.state, 'failed');

@@ -1,6 +1,6 @@
 /* Inbound session messages that have not yet delivered. */
 import { t } from './lexicon.js';
-import { toast } from './ui.js';
+import { attention, toast } from './ui.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -9,18 +9,54 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-const ageOf = (createdAt) => {
-  const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(createdAt)) / 1_000));
+const ageOf = (at) => {
+  const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(at)) / 1_000));
   if (!Number.isFinite(seconds) || seconds < 5) return t('messages.age_now', 'just now');
-  if (seconds < 60) return t('messages.age_seconds', '{count} seconds', { count: seconds });
+  if (seconds < 60) return t('messages.age_short_seconds', '{seconds}s', { seconds });
   const minutes = Math.floor(seconds / 60);
-  if (minutes === 1) return t('messages.age_minute', '1 minute');
-  if (minutes < 60) return t('messages.age_minutes', '{count} minutes', { count: minutes });
+  if (minutes < 60) return t('messages.age_short_minutes', '{minutes}m {seconds}s', { minutes, seconds: seconds % 60 });
   const hours = Math.floor(minutes / 60);
-  if (hours === 1) return t('messages.age_hour', '1 hour');
-  if (hours < 48) return t('messages.age_hours', '{count} hours', { count: hours });
-  return t('messages.age_days', '{count} days', { count: Math.floor(hours / 24) });
+  if (hours < 48) return t('messages.age_short_hours', '{hours}h {minutes}m', { hours, minutes: minutes % 60 });
+  return t('messages.age_short_days', '{days}d {hours}h', { days: Math.floor(hours / 24), hours: hours % 24 });
 };
+
+function typeOf(source) {
+  return ({
+    tell: t('messages.type_tell', 'Agent tell'),
+    wipeboard_notice: t('messages.type_wipeboard', 'Wipeboard notification'),
+    owner: t('messages.type_owner', 'Owner message'),
+    house: t('messages.type_house', 'House message'),
+  })[source] || source;
+}
+
+function reasonOf(reason) {
+  return reason === 'prompt contents changed while submitting'
+    ? t('messages.reason_prompt_changed', 'The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.')
+    : reason;
+}
+
+const attentionSeen = new Set();
+
+/** Watch independently of the queue tab; flash once when each retained problem appears. */
+export function watchMessageQueueAttention() {
+  const poll = async () => {
+    try {
+      const response = await fetch('/api/messages');
+      const body = await response.json();
+      const ids = new Set((Array.isArray(body.messages) ? body.messages : [])
+        .filter((message) => message.state === 'stuck' || message.state === 'failed')
+        .map((message) => message.id));
+      if ([...ids].some((id) => !attentionSeen.has(id))) {
+        attention(t('messages.attention', 'Check Team Commons → Agent Message Queue'));
+      }
+      for (const id of [...attentionSeen]) if (!ids.has(id)) attentionSeen.delete(id);
+      for (const id of ids) attentionSeen.add(id);
+    } catch { /* the queue card itself will show a reachable API failure when opened */ }
+  };
+  void poll();
+  const timer = setInterval(() => void poll(), 2_000);
+  return () => clearInterval(timer);
+}
 
 export function buildMessageQueue(host, onCount = () => {}) {
   const note = el('p', 'mq-note', t('messages.note', 'Sometimes Agent-to-Agent messages get stuck and need your help. Try Again is gentle; Force gives it one determined shove. 😉'));
@@ -61,11 +97,18 @@ export function buildMessageQueue(host, onCount = () => {}) {
     for (const message of messages) {
       const card = el('article', `mq-card mq-${message.state}`);
       const head = el('div', 'mq-head');
-      const state = message.state === 'stuck' && message.attempts === 0 ? t('messages.waiting', 'waiting') : message.state;
-      head.append(el('strong', '', t('messages.to', 'To {target}', { target: message.target })), el('span', 'mq-state', state));
-      const meta = el('div', 'mq-meta', t('messages.meta', '{source} · {attempts} attempts · waiting {age}', { source: message.source, attempts: message.attempts, age: ageOf(message.created_at) }));
+      const waiting = message.state === 'stuck' && message.attempts === 0;
+      const state = waiting ? t('messages.waiting', 'Waiting') : message.state === 'failed' ? t('messages.failed', 'Failed') : t('messages.pending', 'Pending');
+      const since = message.state === 'failed' ? message.updated_at : message.created_at;
+      head.append(el('strong', '', typeOf(message.source)), el('span', 'mq-state', t('messages.state_age', '{state} · {age}', { state, age: ageOf(since) })));
+      const route = el('dl', 'mq-route');
+      route.append(
+        el('dt', '', t('messages.from', 'From')), el('dd', '', message.from || typeOf(message.source)),
+        el('dt', '', t('messages.to_label', 'To')), el('dd', '', message.target),
+        el('dt', '', t('messages.attempts', 'Attempts')), el('dd', '', String(message.attempts)),
+      );
       const text = el('pre', 'mq-text', message.text);
-      const reason = el('p', 'mq-reason', message.reason);
+      const reason = el('p', 'mq-reason', reasonOf(message.reason));
       const actions = el('div', 'mq-actions');
       const retry = el('button', 'cc-btn', t('messages.retry', 'Try Again'));
       const force = el('button', 'cc-btn mq-force', t('messages.force', 'Force'));
@@ -75,7 +118,7 @@ export function buildMessageQueue(host, onCount = () => {}) {
       force.addEventListener('click', () => void act(message, '/force', force, t('messages.forcing', 'Forcing…')));
       dismiss.addEventListener('click', () => void act(message, '', dismiss, t('messages.dismissing', 'Dismissing…'), 'DELETE'));
       actions.append(retry, force, dismiss);
-      card.append(head, meta, text, reason, actions);
+      card.append(head, route, text, reason, actions);
       board.append(card);
     }
   };

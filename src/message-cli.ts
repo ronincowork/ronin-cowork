@@ -1,5 +1,7 @@
 import { attemptMessage, enqueueMessage, type MessageSource } from './message-queue.js';
 import { isValidName } from './tmux.js';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 const args = process.argv.slice(2);
 const sources = new Set<MessageSource>(['tell', 'wipeboard_notice', 'owner', 'house']);
@@ -10,7 +12,11 @@ if (!isValidName(target) || !text) {
   console.error('usage: message-cli [tell|wipeboard_notice|house] <session> <message...>');
   process.exit(2);
 }
-const item = await enqueueMessage(target, text, source);
+const from = source === 'tell' && process.env.TMUX_PANE
+  ? await promisify(execFile)('tmux', ['display-message', '-p', '-t', process.env.TMUX_PANE, '#S'])
+      .then(({ stdout }) => stdout.trim() || 'Agent').catch(() => 'Agent')
+  : undefined;
+const item = await enqueueMessage(target, text, source, from);
 const retained = await attemptMessage(item.id, 'safe');
 console.log(retained
   ? `QUEUED for '${target}': ${retained.reason} (message ${retained.id})`

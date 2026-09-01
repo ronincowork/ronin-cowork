@@ -121,7 +121,7 @@ Vocabulary is strict:
 - **pane** means only the tmux object inside the tmux server.
 - A terminal renders into a **Tile**.
 - A larger coworkspace region is a **Surface**.
-- Docs, Wipeboard, Agent message queue, and Team Configuration are **Channel services**, never panes or panels.
+- Docs, Wipeboard, Agent Message Queue, and Team Configuration are **Channel services**, never panes or panels.
 
 If a defect affects several destinations—Surface padding, control reset, common layout proportions—bring one foundation decision to `view_mgr`; do not hide it under `.cz-*` and make Customize diverge.
 

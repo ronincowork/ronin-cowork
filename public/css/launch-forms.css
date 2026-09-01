@@ -3,33 +3,60 @@
    new-team.html and new-agent-condensed.html, the condensed density the owner preferred:
    label-left steps, one rectangle for every clickable thing, collapse-on-pick. */
 @layer app {
-  /* THE SURFACE SETS ITS OWN SIZE, or the controls are the only thing that never got
-     one. Every label, heading and note here is sized explicitly; a `.wk-field-control`
-     is `font: inherit`, so with no size above it the control inherited the browser's
-     16px and stood a third taller than its own label. On the surface rather than the
-     form because the action bar and its template-name box sit outside the form.
-     `--text-3` is what the settled cards use (`.tw-config-field`,
-     `.league-team-edit-content`). */
-  .na-surface, .ntf-surface { font-size: var(--text-3); }
+  /* THE FORM SETS THE SIZE, NOT THE SURFACE. Every label, heading and note here is sized
+     explicitly; a `.wk-field-control` is `font: inherit`, so with no size above it the
+     control inherited the browser's 16px and stood a third taller than its own label.
+     I first put the size on the surface root — which the Workspace Kit HEADER also
+     inherits, so "New Team" and "New Agent" rendered at 12px while the selector's own
+     "Launch" sat at 16px. The owner spotted the mismatch. The size belongs to the
+     things that hold controls, and the header is the Kit's business, not this file's. */
+  .ntf-form, .ntf-foot { font-size: var(--text-3); }
   .ntf-form { display: flex; flex-direction: column; margin-bottom: var(--space-7); }
 
+  /* ── the team's own agents: a short row, opened when you want the rest ── */
+  .ntf-agent { border-top: var(--edge) solid var(--line); padding: var(--space-3) 0; }
+  .ntf-agent:first-child { border-top: 0; }
+  .ntf-agent-head { display: flex; align-items: center; gap: var(--space-3); }
+  .ntf-agent-name { width: calc(var(--space-12) * 3); }
+  .ntf-agent-what { flex: 1; min-width: 0; }
+  .ntf-agent-name, .ntf-agent-what {
+    border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs);
+    background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit;
+  }
+  .ntf-agent-lead, .ntf-agent-more, .ntf-agent-drop {
+    flex: none; border: var(--edge) solid transparent; border-radius: var(--radius-xs);
+    background: transparent; color: var(--muted-3); padding: var(--space-2) var(--space-4);
+    cursor: pointer; font: inherit;
+  }
+  .ntf-agent-lead:hover, .ntf-agent-more:hover, .ntf-agent-drop:hover { color: var(--fg-strong); }
+  /* The 人 mark is the only thing that distinguishes a lead now, so it has to read as ON. */
+  .ntf-agent-lead[aria-pressed='true'] { border-color: var(--kaki); color: var(--kaki); }
+  .ntf-agent-detail { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5) 0 var(--space-3) calc(var(--space-12) * 1); }
+
   /* ── the band that says everything under it is a default ── */
+  /* A BAND, NOT A WHISPER. It said the right sentence and read as a right-aligned aside,
+     which is why the owner asked for the message again on the Shared toolkit. It carries
+     the workbench's own header tint so it reads as the divider it is: everything under it
+     belongs to the Agents this Team will launch, not to the Team itself. */
   .ntf-band {
     display: flex;
-    align-items: baseline;
+    align-items: center;
+    justify-content: flex-start;
     gap: var(--space-4);
     width: 100%;
-    border: 0;
-    border-top: var(--edge) solid var(--line);
-    background: transparent;
-    color: var(--muted);
-    padding: var(--space-6) 0 var(--space-4);
+    margin: var(--space-6) 0 var(--space-5);
+    border: var(--edge) solid var(--line);
+    border-radius: var(--radius-xs);
+    background: var(--cowork-head-bg);
+    color: var(--muted-2);
+    padding: var(--space-4) var(--space-5);
     cursor: pointer;
     font: inherit;
     font-size: var(--text-2);
     text-align: left;
   }
-  .ntf-band:hover { color: var(--fg-strong); }
+  .ntf-band-chev { flex: none; }
+  .ntf-band:hover { border-color: var(--kaki); color: var(--fg-strong); }
 
   /* ── the help workspace: prose beside the step you are on ── */
   .lh-surface { font-size: var(--text-3); }
@@ -44,7 +71,7 @@
   .lh-section p { margin: 0; color: var(--muted-2); line-height: 1.6; }
   .ntf-form textarea { resize: vertical; }
   .ntf-foot { margin-top: var(--space-6); }
-  .ntf-tmplname { width: calc(var(--space-12) * 5); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
+  .ntf-tmplname { font-size: var(--text-3); width: calc(var(--space-12) * 5); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
 
   /* ── the two doors ── */
   .fs-seg { display: flex; align-self: flex-start; margin-bottom: var(--space-5); border: var(--edge) solid var(--line-2); }

@@ -242,6 +242,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.option_ideas:** Ideas
 - **campaign_view.option_code:** Code
 - **campaign_view.option_artifact:** An artifact
+- **campaign_view.option_no_code:** No code
 - **campaign_view.option_team:** The Team
 - **campaign_view.option_user:** You only
 - **campaign_view.option_read:** Read
@@ -299,19 +300,34 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.new_agent:** New Agent
 - **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 - **forms.launch:** Launch
+- **forms.payload_band:** New launch payload — what this raise will send
+- **forms.payload_band_agent:** New launch payload — what this launch will send
 - **launch_mode.head:** launch mode
 - **launch_mode.configured:** Model provider configuration
 - **launch_mode.configured_sub:** Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.
 - **launch_mode.live:** Dangerously
 - **launch_mode.live_sub:** Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.
+- **gbrain_mode.head:** gbrain connection
+- **gbrain_mode.connected:** Connected
+- **gbrain_mode.connected_sub:** Ronin adds nothing. The provider’s loaded MCP configuration stands.
+- **gbrain_mode.disconnected:** Disconnected
+- **gbrain_mode.disconnected_sub:** Ronin appends the provider’s gbrain-disconnect command. On Anthropic, this disables ALL MCP for that launch, not only gbrain.
 - **help.title:** Help
 - **help.card_summary:** What each step means, beside the step you are on.
+- **help.top_body:** The name is the only thing you must give, and it is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for, and it narrows the templates below to the ones that suit it.
+- **help.template_body:** A template fills part of the form in and stops. Its answers become yours the moment they land — nothing stays linked, and you can change any of it. An Agent template is a loadout for one session; a Team template is a cast, and picking one lands its Agents as rows you can edit. Make your own fills nothing in, and going back to it empties what a template wrote.
+- **help.mandate_body:** How far this Agent goes before it checks in, whether it may build out a team, and what it hands back. Output takes as many answers as you mean — a plan AND the team AND no code — and nothing argues with a combination. Open leads every dial and means no requirement. None of it is enforced: the mandate is carried in the Agent’s letter and read by it, not imposed on it.
+- **help.loadout_body:** Three different things live here. LAUNCH MODE decides what Ronin appends to the command that starts this Agent. ROUTINES are the machinery it is born with — see below. BEHAVIOURS are the documents it is handed at birth.
+- **help.agents:** Agents
+- **help.agents_body:** The Agents this Team is raised with. A row is short on purpose — a name and what that Agent does — and opens for its mandate when you want it. 人 marks the lead; this form offers one, though a running Team may gain more. Raising creates the Team and then births every named row, the lead last. A Team with no rows is ordinary and raises fine.
+- **help.routines:** What a Routine is
+- **help.routines_body:** A Routine is machinery, not advice: a bundle of tools, reading and coordination an Agent is BORN with, switched on or off for the whole session. Ronin Base gives it the ordinary macros, work record and messaging. Ronin Worktrees gives it a private branch and the hand-in path, so several Agents can work one repository without treading on each other. Ronin Services adds the durable recording, Koshi and voice. Ronin Host lets it look after the box itself. gbrain connects it to the shared memory. The Cowork floor is always on and cannot be turned off — it is what makes an Agent a Cowork Agent at all. On a Team you switch them; on an Agent they are shown with where each answer came from, because the Campaign and the Team have already settled them.
+- **help.behaviours:** What a Behaviour is
+- **help.behaviours_body:** A Behaviour is a DOCUMENT, and that is the whole of it — handed to the Agent at birth and read like any other instruction. Nothing is enforced by it. Two shelves: THE HOUSE is how this house goes about a domain — github, deploy, secrets, tmux_server and the rest — fetched when a situation calls for it. WAYS OF WORKING is how an Agent should approach the job: cut_code builds from an approved plan, chase_bug traces a fault to its cause before changing anything, check_work judges and reports without touching what it examines, draft_plan thinks it through and writes it down, quarter_back coordinates other sessions instead of doing the work. Hover any book for its own one-line description. Take as many as the job wants, or none.
 - **help.type:** New session
 - **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born into Ronin and gets the floor, its routines, its reading and its team. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a pane with no agent in it at all. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
 - **help.top:** Name & kind
-- **help.top_body:** The name is the only thing you must give. It is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for, and it narrows the templates below to the ones that suit it.
 - **help.template:** Template
-- **help.template_body:** A template fills part of the form in and stops. Its answers become yours the moment they land — nothing stays linked, and you can change any of it. Make your own fills nothing in, and going back to it empties what a template wrote.
 - **help.objective:** Common instructions
 - **help.objective_body:** What everyone born onto this Team is told. The objective reaches them: it is written into the brief every new Agent reads at birth, in the Team’s own words.
 - **help.instructions:** Instructions
@@ -321,16 +337,20 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **help.where:** Who and where
 - **help.where_body:** The provider and model that open, and the folder they open in. The folder is where work starts, not a fence: an Agent reaches whatever it is asked to reach. A Team’s branch is the line its Agents hand work in to, and the lead promotes from it; blank means the Team’s own line.
 - **help.mandate:** Mandate
-- **help.mandate_body:** How far this Agent goes before it checks in, whether it may build out a team, and what it hands back. Open leads every one and means no requirement — it is not a gap.
 - **help.loadout:** Tools and skills
-- **help.loadout_body:** Launch mode decides what Ronin appends to the command that starts this Agent. Routines are resolved above and shown here with where each answer came from. Behaviours are documents you hand it at birth: the house’s own procedures, and the ways of working it can take.
 - **help.kit:** Shared toolkit
 - **help.kit_body:** What every Agent raised on this Team starts with. All of it lands in the next Agent form as an ordinary editable value — none of it is a constraint, and changing it here never touches a session already running.
-- **help.lead:** Team lead
-- **help.lead_body:** A lead is an offer, not a seat: a brief and a mandate that become a launch. Membership is never stored — a Team’s members are the live sessions carrying its tag.
 - **new_team.common:** Common instructions
 - **new_team.who_where:** Who and where
 - **new_team.defaults_band:** Everything below this is the default for Agents launched within this team.
+- **new_team.agents:** Agents
+- **new_team.agents_meta:** {n} agents
+- **new_team.agent_name:** name
+- **new_team.agent_assignment:** what this Agent does
+- **new_team.mark_team_lead:** Mark as team lead
+- **new_team.agent_more:** Its mandate
+- **new_team.agent_drop:** Remove this Agent
+- **new_team.agent_add:** ＋ Add an Agent
 - **new_team.where:** Where
 - **new_team.readable:** Title
 - **launch.mode_team:** Team
@@ -425,26 +445,15 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.floor:** Cowork floor
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
-- **new_team.kit_none:** nothing yet — a template lays it, or open the kit
-- **new_team.kit_door:** Open the Team Kit  ▸
-- **new_team.kit_door_why:** A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.
 - **new_team.kit_meta:** {routines} routines · {books} books
-- **new_team.lead:** Team lead
 - **new_team.lead_include:** Include a team lead
 - **new_team.lead_include_sub:** Raised with the team and briefed.
 - **new_team.lead_empty:** Open it empty
 - **new_team.lead_empty_sub:** Ordinary. Add one whenever you like.
-- **new_team.lead_brief:** brief
-- **new_team.lead_brief_placeholder:** what the lead is for
-- **new_team.lead_brief_default:** Hold the objective, dispatch, unblock, keep the gaps closed.
-- **new_team.lead_included:** included
-- **new_team.lead_none:** none
-- **new_team.lead_raised:** included, briefed at raise
 - **new_team.members:** members
 - **new_team.members_note:** derived from live tags — never stored here
 - **new_team.inherits:** an agent born here inherits
 - **new_team.raising:** Raising the team…
-- **new_team.raised_no_lead:** Raised {team} — the lead was not born: {reason}
 - **new_team.save_name_placeholder:** template name
 - **new_team.save_as_new:** Save as new template
 - **new_team.saved_template:** Saved template {name}
@@ -540,7 +549,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Team commons
-- **team.commons_summary:** See Docs / Wipeboard / Agent message queue / Configuration
+- **team.commons_summary:** See Docs / Wipeboard / Agent Message Queue / Team Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
 - **team.new_session:** New session
@@ -1147,16 +1156,23 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
 - **messages.note:** Sometimes Agent-to-Agent messages get stuck and need your help. Try Again is gentle; Force gives it one determined shove. 😉
-- **messages.to:** To {target}
-- **messages.meta:** {source} · {attempts} attempts · waiting {age}
-- **messages.waiting:** waiting
+- **messages.from:** From
+- **messages.to_label:** To
+- **messages.attempts:** Attempts
+- **messages.waiting:** Waiting
+- **messages.failed:** Failed
+- **messages.pending:** Pending
+- **messages.state_age:** {state} · {age}
 - **messages.age_now:** just now
-- **messages.age_seconds:** {count} seconds
-- **messages.age_minute:** 1 minute
-- **messages.age_minutes:** {count} minutes
-- **messages.age_hour:** 1 hour
-- **messages.age_hours:** {count} hours
-- **messages.age_days:** {count} days
+- **messages.age_short_seconds:** {seconds}s
+- **messages.age_short_minutes:** {minutes}m {seconds}s
+- **messages.age_short_hours:** {hours}h {minutes}m
+- **messages.age_short_days:** {days}d {hours}h
+- **messages.type_tell:** Agent tell
+- **messages.type_wipeboard:** Wipeboard notification
+- **messages.type_owner:** Owner message
+- **messages.type_house:** House message
+- **messages.reason_prompt_changed:** The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.
 - **messages.retry:** Try Again
 - **messages.force:** Force
 - **messages.dismiss:** Dismiss
@@ -1167,6 +1183,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.dismissed:** Message dismissed.
 - **messages.retained:** Still waiting — {reason}
 - **messages.action_failed:** Message action failed — {reason}
+- **messages.attention:** Check Team Commons → Agent Message Queue
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update
@@ -1364,7 +1381,24 @@ The catalog entry goes. {dir} is not touched.
 - **me.note:** Note
 - **me.control:** Control
 - **me.kill:** Kill session
+- **me.output:** Output
 - **me.title:** This session — status, work record, macros, groups, docs, note, control
+
+## keys — keysrow.js (the composer's keys row)
+- **keys.backspace:** Backspace
+- **keys.clear_line_title:** Ctrl-U — clear the input line
+
+## composer — the ✕ clear
+- **composer.clear_title:** Clear this box
+
+## phone — phone.js (the phone shell: Coworks, a Cowork's Agents, one Agent's tile)
+- **phone.coworks:** Coworks
+- **phone.no_coworks:** No Coworks yet.
+- **phone.agents_one:** 1 Agent
+- **phone.agents_many:** {n} Agents
+- **phone.no_agents:** No Agents on this Cowork yet.
+- **phone.back:** Back
+- **phone.me_title:** This Agent — status, work record, note, control, kill
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 
@@ -1496,8 +1530,7 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_wipeboard:** Wipeboard
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
-- **workspace.channel_agent_message_queue:** Agent message queue
-- **workspace.channel_agent_message_queue_count:** Agent message queue ({count})
+- **workspace.channel_agent_message_queue:** Agent Message Queue
 - **team_config.no_roster:** This Cowork has no saved roster.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Cowork ID
@@ -1595,6 +1628,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.pad:** Pad
 - **glossary.control:** Control
 - **glossary.launch_mode:** Model provider configuration · Dangerously
+- **glossary.gbrain_mode:** Connected · Disconnected
 - **glossary.team:** Cowork
 - **glossary.note:** Note
 - **glossary.work_record:** work record

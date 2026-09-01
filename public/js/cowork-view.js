@@ -8,7 +8,7 @@ import { createAddAgentView } from './add-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
-import { buildMessageQueue } from './message-queue.js';
+import { buildMessageQueue, watchMessageQueueAttention } from './message-queue.js';
 import { buildDocs } from './docs.js';
 import { buildArchives } from './archives.js';
 import { homeData, refreshHome, statusLabel } from './home.js';
@@ -98,6 +98,7 @@ export function createCoworkView(options = {}) {
   const root = el('main', 'tw-view');
   root.dataset.coworkKind = campaign ? 'campaign' : 'team';
   let ctx = null;
+  let stopMessageAttention = null;
   let team = '';
   let loaded = ''; // the team whose roster reading is currently drawn
   let unsubscribe = null;
@@ -163,15 +164,18 @@ export function createCoworkView(options = {}) {
     };
     const config = el('div', 'tw-config');
     const messages = el('div', 'tw-messages');
-    const messageLabel = t('workspace.channel_agent_message_queue', 'Agent message queue');
+    const messageLabel = t('workspace.channel_agent_message_queue', 'Agent Message Queue');
     let messageTab = null;
     let retainedCount = 0;
+    let chooseQueueOnOpen = false;
     const paintMessageAttention = () => {
       if (!messageTab) return;
       messageTab.dataset.attention = String(retainedCount > 0);
-      messageTab.textContent = retainedCount
-        ? t('workspace.channel_agent_message_queue_count', 'Agent message queue ({count})', { count: retainedCount })
-        : messageLabel;
+      messageTab.textContent = messageLabel;
+      if (chooseQueueOnOpen) {
+        if (retainedCount > 0) channels.select('agent-message-queue');
+        chooseQueueOnOpen = false;
+      }
     };
     const messageQueue = buildMessageQueue(messages, (count) => { retainedCount = count; paintMessageAttention(); });
     const channels = createChannelSurface({
@@ -186,9 +190,16 @@ export function createCoworkView(options = {}) {
       services: { wipeboard, docs: docsService, 'agent-message-queue': { el: messages, mount: () => {}, enter: messageQueue.enter, leave: messageQueue.leave, destroy: messageQueue.destroy }, 'team-configuration': service(config) },
     });
     messageTab = channels.tabs.querySelector('[data-service="agent-message-queue"]');
+    channels.tabs.addEventListener('click', () => { chooseQueueOnOpen = false; });
     paintMessageAttention();
     channels.el.dataset.workbenchSurface = COMMONS;
-    return { el: channels.el, channels, wipeboard, docs, config, messageQueue };
+    return {
+      el: channels.el, channels, wipeboard, docs, config, messageQueue,
+      attendQueueOnOpen: () => {
+        chooseQueueOnOpen = true;
+        if (retainedCount > 0) paintMessageAttention();
+      },
+    };
   };
   const teamCommons = Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamCommons()]));
   const extras = new Set();
@@ -235,7 +246,7 @@ export function createCoworkView(options = {}) {
     return [id, { el: surface.el, room }];
   })) : {};
   const environment = {
-    teamCommons: (id) => ({ el: teamCommons[id].el, show: (detail = {}) => { const item = teamCommons[id]; item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
+    teamCommons: (id) => ({ el: teamCommons[id].el, show: (detail = {}) => { const item = teamCommons[id]; if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => putSession(detail.key, id) }),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
     newTeamForm: (id) => ({ el: newTeamFormBySeat[id].el, show: () => void newTeamFormBySeat[id].enter() }),
@@ -621,6 +632,8 @@ export function createCoworkView(options = {}) {
     enter: (context) => {
       ctx = context;
       entered = true;
+      stopMessageAttention?.();
+      stopMessageAttention = watchMessageQueueAttention();
       if (campaign) void campaignIdentity.load();
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = campaign ? '' : context.param || context.state?.team || '';
@@ -656,6 +669,8 @@ export function createCoworkView(options = {}) {
       // Leaving the destination closes every Team transport; the seats remember what
       // they held and get it back on re-entry.
       entered = false;
+      stopMessageAttention?.();
+      stopMessageAttention = null;
       disarmPrewarm();
       window.clearInterval(homeTimer);
       window.clearInterval(reportTimer);
@@ -669,6 +684,8 @@ export function createCoworkView(options = {}) {
     },
     destroy: () => {
       entered = false;
+      stopMessageAttention?.();
+      stopMessageAttention = null;
       campaignIdentity.destroy();
       unsubscribe?.();
       unsubscribe = null;

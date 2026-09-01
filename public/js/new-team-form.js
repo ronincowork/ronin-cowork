@@ -20,26 +20,24 @@
  *
  * RAISE NEVER FAILS for the ordinary states — no objective, no root, `open` on every
  * dial. The lead is an OFFER (a brief and a mandate, never a roster row): raising with
- * one is § 7.5's two idempotent doors — the record first, then one § 7.4 launch born as
- * the 人 — and a lead that fails to be born still leaves a raised team, said out loud.
+ * one is § 7.5's two idempotent doors — the record first, then a launch for every Agent
+ * the Team is raised with, the marked one born as the 人 (`js/team-loader.js`).
  */
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
+import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
+import { launchTeamAgents } from './team-loader.js';
 import {
-  createStep, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createBand, createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
-const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'];
+// A LIST since 2026-09-01, and `no code` is said rather than implied by absence.
+const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 const DIALS = ['user', 'read', 'write'];
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
-
-const LEAD_DEFAULT = () => ({
-  brief: t('new_team.lead_brief_default', 'Hold the objective, dispatch, unblock, keep the gaps closed.'),
-  reach: 'execute', recruit: 'staff agents', output: 'open',
-});
 
 export function createNewTeamFormView(kit, { created = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
@@ -48,10 +46,11 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     template: '', templateName: '', title: '',
     name: '', kind: 'coding', objective: '',
     root: '', branch: '',
-    provider: '', model: '', reach: 'open', recruit: 'open', output: 'open',
+    provider: '', model: '', reach: 'open', recruit: 'open', output: ['open'],
     dial: 'write',
     routines: {}, books: [], launchMode: 'live_dangerously',
-    lead: null,
+    // The Agents this Team is raised with; the lead is a mark on one of them, not a seat.
+    agents: [],
     expanded: {},
   };
   let seed = null;          // the campaign's answers, once the door has spoken
@@ -90,7 +89,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   /** What a template authors, as one string — the dirty test compares against it. */
   const authored = () => JSON.stringify({
     objective: draft.objective, books: [...draft.books].sort(), routines: draft.routines,
-    mandate: [draft.reach, draft.recruit, draft.output], lead: draft.lead,
+    mandate: [draft.reach, draft.recruit, ...draft.output], agents: draft.agents,
   });
 
   function applyTemplate(name) {
@@ -107,8 +106,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       objectiveInput.value = '';
       draft.books = [];
       draft.routines = { ...seedRoutines };
-      draft.lead = null;
-      for (const key of ['reach', 'recruit', 'output']) draft[key] = seed?.seeds?.[key]?.value || 'open';
+      draft.agents = [];
+      for (const key of ['reach', 'recruit']) draft[key] = seed?.seeds?.[key]?.value || 'open';
+      draft.output = [seed?.seeds?.output?.value || 'open'].flat().filter(Boolean);
       snapshot = '';
       paint();
       return;
@@ -117,12 +117,23 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     if (row.behaviours.length) draft.books = [...row.behaviours];
     for (const on of row.routines_on) if (on in draft.routines) draft.routines[on] = true;
     for (const off of row.routines_off) if (off in draft.routines) draft.routines[off] = false;
-    if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = row.mandate.output; }
-    if (row.lead) {
-      draft.lead = { ...LEAD_DEFAULT() };
-      if (row.lead.brief) draft.lead.brief = row.lead.brief;
-      if (row.lead.mandate) { draft.lead.reach = row.lead.mandate.reach; draft.lead.recruit = row.lead.mandate.recruit; draft.lead.output = row.lead.mandate.output; }
-    }
+    if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); }
+    // THE CAST LANDS AS ROWS (@template_shelves' team shelf, 2026-09-01). A team template
+    // carries `agents[]` in exactly the ruled wire shape `agentPicks()` produces, so it
+    // reads straight into the editor — instructions becomes the row's assignment and
+    // team_lead its mark, which is the same translation `agentPicks` does on the way out.
+    // The old lead_brief/lead_mandate pair is gone: a lead is one marked row.
+    draft.agents = (Array.isArray(row.agents) ? row.agents : []).map((pick) => ({
+      ...agentRow(),
+      name: pick.name || '',
+      assignment: pick.instructions || '',
+      lead: pick.team_lead === true,
+      ...(pick.mandate ? {
+        reach: pick.mandate.reach,
+        recruit: pick.mandate.recruit,
+        output: [pick.mandate.output].flat().filter(Boolean),
+      } : {}),
+    }));
     snapshot = authored();
     paint();
   }
@@ -277,6 +288,11 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; paintLaunchMode(); paintFoot(); }),
     );
   };
+  /* gbrain connection is DERIVED from the gbrain ROUTINE, never a second switch (owner,
+     2026-09-01: "we shouldn't have two places to turn gbrain on and off"). Here the
+     routine is genuinely clickable, so "click it and it's on for the launch" is literally
+     what happens — this reads its answer rather than asking again. */
+  const gbrainMode = () => (routineOn('gbrain') ? 'connected' : 'disconnected');
   const routinesHead = el('p', 'fs-head', t('routines', 'Routines'));
   const routinesHost = el('div');
   function paintRoutines() {
@@ -329,44 +345,14 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   stepKit.body.append(modeHost, routinesHead, routinesHost, booksHost);
 
   /* ---- step 6 · Team lead ---- */
-  const stepLead = createStep({ n: 4, key: 'lead', title: t('new_team.lead', 'Team lead'), onToggle: () => toggle('lead') });
-  const leadHost = el('div');
-  function paintLead() {
-    leadHost.replaceChildren();
-    const ways = el('div', 'fs-pair');
-    const way = (on, title, sub) => {
-      const box = el('button', 'fs-way');
-      box.type = 'button';
-      box.setAttribute('aria-pressed', String(!!draft.lead === on));
-      box.append(el('b', null, title), el('small', null, sub));
-      box.addEventListener('click', () => {
-        draft.lead = on ? (draft.lead || { ...LEAD_DEFAULT() }) : null;
-        paintLead();
-        paintActions();
-        paintFoot();
-      });
-      return box;
-    };
-    ways.append(
-      way(true, t('new_team.lead_include', 'Include a team lead'), t('new_team.lead_include_sub', 'Raised with the team and briefed.')),
-      way(false, t('new_team.lead_empty', 'Open it empty'), t('new_team.lead_empty_sub', 'Ordinary. Add one whenever you like.')),
-    );
-    leadHost.append(ways);
-    if (!draft.lead) return;
-    const brief = el('input');
-    brief.type = 'text';
-    brief.value = draft.lead.brief;
-    brief.placeholder = t('new_team.lead_brief_placeholder', 'what the lead is for');
-    brief.addEventListener('input', () => { draft.lead.brief = brief.value; });
-    leadHost.append(createField({ label: t('new_team.lead_brief', 'brief'), control: brief }).el);
-    const dials = el('div', 'fs-pair');
-    const cell = (label, values, key) => createField({
-      label, control: mandateSelect(values, draft.lead[key], (value) => { draft.lead[key] = value; paintFoot(); }),
-    }).el;
-    dials.append(cell(t('reach', 'Reach'), REACH, 'reach'), cell(t('recruit', 'Recruit'), RECRUIT, 'recruit'), cell(t('output', 'Output'), OUTPUT, 'output'));
-    leadHost.append(dials);
-  }
-  stepLead.body.append(leadHost);
+  /* ---- step 4 · the team's own agents (js/team-agents.js) ---- */
+  const agents = createAgentRows({
+    n: 4, key: 'lead',
+    rows: () => draft.agents,
+    changed: () => paintFoot(),
+    onToggle: () => toggle('lead'),
+  });
+  const stepLead = agents.step;
 
   /* ---- the collapse rules: a template's answers fold; the header opens them ---- */
   const FOLDS = ['objective', 'where', 'kit', 'lead'];
@@ -391,7 +377,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     kit: () => t('new_team.kit_meta', '{routines} routines · {books} books', {
       routines: onNames().length + 1, books: draft.books.length,
     }),
-    lead: () => (draft.lead ? t('new_team.lead_included', 'included') : t('new_team.lead_none', 'none')),
+    lead: () => t('new_team.agents_meta', '{n} agents', { n: draft.agents.length }),
   };
   function paintFolds() {
     const folded = !!templateRow();
@@ -409,7 +395,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       [t('add_agent.team', 'team'), name],
       [t('team.objective', 'Objective'), draft.objective],
       [t('add_agent.place', 'place'), draft.root ? `${draft.root}${draft.branch ? ` @ ${draft.branch}` : ''}` : ''],
-      [t('new_team.lead', 'Team lead'), draft.lead ? t('new_team.lead_raised', 'included, briefed at raise') : ''],
+      [t('new_team.agents', 'Agents'), draft.agents.some((row) => row.name)
+        ? tagRow(draft.agents.filter((row) => row.name).map((row) => ({ text: row.lead ? `人 ${row.name}` : row.name, on: true })))
+        : ''],
       [t('new_team.members', 'members'), (() => { const em = el('em', null, t('new_team.members_note', 'derived from live tags — never stored here')); return em; })()],
     ]));
     foot.append(el('p', 'fs-head', t('new_team.inherits', 'an agent born here inherits')));
@@ -419,7 +407,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       [t('behaviours', 'Behaviours'), draft.books.length ? tagRow(draft.books.map((text) => ({ text, on: true }))) : ''],
       [t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')],
       [t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode],
-      [t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output}`],
+      [t('gbrain_mode.head', 'gbrain connection'), gbrainMode() === 'connected' ? t('gbrain_mode.connected', 'Connected') : t('gbrain_mode.disconnected', 'Disconnected')],
+      [t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`],
       [t('add_agent.still_asked', 'still asked'), tagRow([
         t('session_type', 'Session type'), t('add_agent.name', 'name'), t('add_agent.instruction', 'instruction'),
         ...(draft.provider ? [] : [t('forms.model', 'model')]),
@@ -472,7 +461,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     agent_defaults: {
       provider: draft.provider, model: draft.model,
       reach: draft.reach, recruit: draft.recruit, output: draft.output,
-      dial: draft.dial, launch_mode: draft.launchMode,
+      dial: draft.dial, launch_mode: draft.launchMode, gbrain_mode: gbrainMode(),
     },
   });
 
@@ -485,37 +474,29 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     busy = true;
     raise.setDisabled(true);
     notice.set('info', t('new_team.raising', 'Raising the team…'));
+    // THE LOADER OWNS THE CAST (@team_loader, agreed on the board): one call creates the
+    // record and, only if that succeeded, fires every picked row through the launch door —
+    // ordinary rows first, a marked lead last, none waited on. My serial loop was a
+    // placeholder for exactly this and is deleted rather than merged.
+    //
+    // `agentPicks` is where the screen's words become the route's: a row says assignment
+    // and lead, the wire says instructions and team_lead (lead's P0 ruling).
+    // THE CANONICAL ROSTER DOOR STAYS HERE and is the duplicate-submit gate: only the
+    // request that creates the Team reaches the staffing handoff, so pressing Raise twice
+    // cannot birth the cast twice (@team_loader's refinement, taken).
     const made = await request('/api/team-rosters', { method: 'POST', json: rosterBody(name) });
     if (!made.ok) {
       busy = false;
       raise.setDisabled(false);
-      notice.set('failed', made.message);
-      return;
+      return notice.set('failed', made.message);
     }
-    // THE SECOND DOOR (§ 7.5): the lead offer becomes one launch, born as the 人. A team
-    // with no lead is ordinary, and a lead that could not be born leaves a raised team —
-    // said out loud, never rolled back (one file deletion undoes the record; a launch is
-    // not a transaction with it).
-    let leadFailed = '';
-    if (draft.lead) {
-      const born = await request('/api/launch', {
-        method: 'POST',
-        json: {
-          session_type: 'cowork_agent',
-          team: name,
-          team_lead: true,
-          name: `${name}_lead`,
-          project_root: draft.root,
-          instructions: draft.lead.brief.trim(),
-          mandate: { reach: draft.lead.reach, recruit: draft.lead.recruit, output: draft.lead.output },
-        },
-      });
-      if (!born.ok) leadFailed = born.message;
-    }
+    // Then the cast, through the loader: rows fire independently, a marked lead last, none
+    // waited on. `agentPicks` is where the screen's words become the route's — a row says
+    // assignment and lead, the wire says instructions and team_lead.
+    launchTeamAgents(request, name, agentPicks(draft.agents));
     busy = false;
     raise.setDisabled(false);
-    if (leadFailed) notice.set('warning', t('new_team.raised_no_lead', 'Raised {team} — the lead was not born: {reason}', { team: name, reason: leadFailed }));
-    else notice.set('', '');
+    notice.set('', '');
     reset();
     await created?.(name);
   }
@@ -525,7 +506,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     if (!token) return;
     const routinesOn = routineRows.filter((row) => routineOn(row.name) && seedRoutines[row.name] !== true).map((row) => row.name);
     const routinesOff = routineRows.filter((row) => !routineOn(row.name) && seedRoutines[row.name] === true).map((row) => row.name);
-    const result = await request('/api/templates', {
+    // THE TEAM SHELF: a cast, not a loadout. Save-as-new only, per shelf.
+    const result = await request('/api/templates/teams', {
       method: 'POST',
       json: {
         name: token,
@@ -534,14 +516,12 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
         blurb: draft.objective.trim().slice(0, 120),
         kinds: draft.kind === 'open' ? KINDS : [draft.kind],
         objective: draft.objective.trim(),
-        mandate: `${draft.reach} · ${draft.recruit} · ${draft.output}`,
+        mandate: `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
         behaviours: draft.books,
         routines_on: routinesOn,
         routines_off: routinesOff,
-        ...(draft.lead ? {
-          lead_brief: draft.lead.brief.trim(),
-          lead_mandate: `${draft.lead.reach} · ${draft.lead.recruit} · ${draft.lead.output}`,
-        } : {}),
+        // The same rows the loader launches — one shape, produced in one place.
+        agents: agentPicks(draft.agents),
       },
     });
     if (!result.ok) return notice.set('failed', result.message);
@@ -559,13 +539,14 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.objective = '';
     draft.branch = '';
     draft.books = [];
-    draft.lead = null;
+    draft.agents = [];
     draft.expanded = {};
     snapshot = '';
     handRoutines = new Set();
     nameInput.value = '';
+    titleInput.value = '';
+    titleTouched = false;
     objectiveInput.value = '';
-    boardInput.value = '';
     branchInput.value = '';
     applySeed();
     paint();
@@ -579,9 +560,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.branch = value('branch') || '';
     draft.provider = value('provider') || '';
     draft.model = value('model') || '';
-    for (const key of ['reach', 'recruit', 'output', 'dial']) {
+    for (const key of ['reach', 'recruit', 'dial']) {
       if (value(key)) draft[key] = value(key);
     }
+    if (value('output')) draft.output = [value('output')].flat().filter(Boolean);
     // `permissions` LEAVES agent_defaults entirely (lead, 2026-09-01, carrying the owner):
     // § 7.2 is { provider, model, reach, recruit, output, dial, launch_mode }. Named on its
     // own because the seed's key is snake and the draft's is camel — folding it into the
@@ -595,18 +577,19 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   function paint() {
     plan().forEach((key, index) => steps[key].setNumber(index + 1));
-    bandChev.textContent = defaultsOpen ? '▾' : '▸';
-    defaultsBand.setAttribute('aria-expanded', String(defaultsOpen));
+    defaultsBand.setOpen(defaultsOpen);
     for (const key of ['where', 'kit']) steps[key].el.hidden = !defaultsOpen;
+    payloadBand.setOpen(payloadOpen);
+    foot.hidden = !payloadOpen;
     paintTray();
     paintKinds();
     paintName();
     paintRoots();
     pair.paint();
+    agents.paint();
     paintRoutines();
     paintLaunchMode();
     paintBooks();
-    paintLead();
     paintFolds();
     paintActions();
     paintFoot();
@@ -616,14 +599,22 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // ONE BAND OVER EVERYTHING THAT IS A DEFAULT, and it folds them all away together: a
   // Team can be raised without ever opening it, which is the point of saying so here
   // rather than repeating "this is a default, not a constraint" on each field below.
-  const defaultsBand = el('button', 'ntf-band');
-  defaultsBand.type = 'button';
   let defaultsOpen = true;
-  const bandChev = el('span', 'fs-chev', '▾');
-  defaultsBand.append(bandChev, el('span', null, t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.')));
-  defaultsBand.addEventListener('click', () => { defaultsOpen = !defaultsOpen; paint(); });
-  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepLead.el, defaultsBand, stepWhere.el, stepKit.el);
-  surface.content.append(form, notice.el, foot, saveRow.el);
+  const defaultsBand = createBand(
+    t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.'),
+    () => { defaultsOpen = !defaultsOpen; paint(); },
+  );
+  // THE PAYLOAD IS A SECTION, NOT A TAIL (owner, 2026-09-01): "it's just sort of stuck down
+  // there like a turd. It should be a proper section, new launch payload, and marked with
+  // an orange banner to hide or expand." It is what this press will actually send, so it
+  // gets a band of its own and folds like the defaults above it.
+  let payloadOpen = true;
+  const payloadBand = createBand(
+    t('forms.payload_band', 'New launch payload — what this raise will send'),
+    () => { payloadOpen = !payloadOpen; paint(); },
+  );
+  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepLead.el, defaultsBand.el, stepWhere.el, stepKit.el);
+  surface.content.append(form, notice.el, payloadBand.el, foot, saveRow.el);
 
   return {
     el: surface.el,
@@ -631,7 +622,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       paint();
       const [seeded, tray, catalog, rootRows, sopRows, wayRows] = await Promise.all([
         request('/api/launch-seed'),
-        request('/api/templates'),
+        request('/api/templates/teams'),
         request('/api/routines'),
         request('/api/project-roots'),
         request('/api/sops'),

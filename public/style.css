@@ -51,7 +51,14 @@
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
-  --cowork-head-bg: var(--bg-2);
+  /* THE WORKBENCH'S HEADER BAND, tinted (owner, 2026-09-01): "change the headers for the
+     workspace and the work selector… so that it's like a light orange shading so that it
+     stands out a little bit, because I get lost. I can't always see, especially in this
+     dark mode. It's got to be light enough that it doesn't obstruct the view of the
+     fonts." So: the ground carried a tenth of the way toward --kaki, one token, every
+     workbench header and the channel tab strip with it. Written as the resolved value
+     rather than a mix so a skin can replace it like any other token. */
+  --cowork-head-bg: #372425;
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -274,6 +281,7 @@
 :root[data-theme='light'] {
   --bg: #f4f2ec;
   --bg-2: #eae7df;
+  --cowork-head-bg: #e5d5ca;
   --panel: #ffffff;
   --raise: #f1efe8;
   --raise-2: #e6e2d8;
@@ -545,6 +553,28 @@ body {
 #toast.err {
   border-color: var(--bad);
 }
+
+/* Central owner-attention cue: kiiro means an action is waiting, not that it failed. */
+#attention-flash {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 41;
+  max-width: 88vw;
+  border: var(--edge) solid var(--warn);
+  border-radius: var(--radius-xs);
+  background: var(--warn);
+  color: var(--on-accent);
+  padding: var(--space-6) var(--space-8);
+  font-size: var(--text-5);
+  font-weight: 700;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-quick);
+}
+#attention-flash.show { opacity: 1; }
 
 /* ---- field / status — the labelled-control and async-outcome primitives (js/ui.js) ----
    .ui-field is display:contents ON PURPOSE: it exists to add a real accessible name
@@ -1884,10 +1914,6 @@ body {
    are GONE, rules and all. They were a second text entry: you typed in the tile's
    composer and spoke into the overlay's textarea, and the words never met. The mic
    is now .cmic, a button on the one box. */
-.ctrls,
-#keypad {
-  display: none;
-}
 @media (pointer: coarse) {
   .tile-head button {
     width: 34px;
@@ -1896,52 +1922,6 @@ body {
   }
   .tile-head .sess {
     max-width: 50%;
-  }
-  /* top-bar control keys */
-  .ctrls {
-    display: inline-flex;
-    gap: var(--space-3);
-  }
-  .ctrls button {
-    background: var(--panel);
-    color: var(--fg);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    height: 30px;
-    min-width: 34px;
-    padding: 0 var(--space-4);
-    font-size: var(--text-4);
-  }
-  #k-more.armed {
-    background: var(--accent);
-    color: var(--on-accent);
-    border-color: var(--accent);
-  }
-  /* expandable keypad: extra keys the iOS keyboard can't send (Tab/⇧Tab + arrows) */
-  #keypad {
-    flex: 0 0 auto;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    padding: var(--space-4) var(--space-6);
-    background: var(--bg-2);
-    border-bottom: var(--edge) solid var(--line);
-  }
-  #keypad.open {
-    display: flex;
-  }
-  #keypad button {
-    background: var(--panel);
-    color: var(--fg);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    height: 38px;
-    min-width: 46px;
-    padding: 0 var(--space-6);
-    font-size: var(--text-6);
-  }
-  #keypad button:active {
-    background: var(--accent);
-    color: var(--on-accent);
   }
 }
 
@@ -3244,7 +3224,7 @@ body {
   text-decoration: none;
   white-space: nowrap;
 }
-/* THE PILLS — three shelves, one pressed (owner, 2026-08-28) */
+/* THE SHELF TABS — three compact rectangles, one pressed (owner, 2026-08-28/09-01) */
 .dc-pills {
   display: flex;
   gap: var(--space-2);
@@ -3253,18 +3233,19 @@ body {
 }
 .dc-pill {
   border: var(--edge) solid var(--line);
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-xs);
   background: transparent;
   color: var(--muted);
   padding: var(--space-2) var(--space-5);
   font: inherit;
   font-size: var(--text-2);
+  font-weight: 650;
   cursor: pointer;
 }
 .dc-pill[aria-selected='true'] {
   background: var(--raise);
   color: var(--fg-strong);
-  border-color: var(--line-3);
+  border-color: var(--accent);
 }
 .dc-who.folded {
   opacity: 0.7;
@@ -4705,140 +4686,25 @@ button.wb-door:hover b {
   }
 }
 
-/* ---- touch: category keypads ---------------------------------------------
-   The phone top bar is brand + four category toggles; each opens ONE drawer of
-   related controls (open it, use it, close it, open another). The controls are
-   the same nodes as the desktop bar, moved here by buildDrawers() — which only
-   runs on touch, so every rule below is inside the coarse-pointer block and
-   desktop is untouched. */
-#drawers {
-  display: none;
-}
 @media (pointer: coarse) {
   #bar {
     gap: var(--space-3);
     padding-left: var(--space-4);
     padding-right: var(--space-4);
   }
-  /* 44px, not 32: Apple's HIG minimum tap target is 44x44pt and the bar is the most
-     mis-tapped thing on the phone. The floor we design to is the iPhone 16/17 Pro
-     (402 CSS px wide — the Pro Max is 440, so 402 binds); three toggles at this size
-     leave well over 100px of slack, so the height costs nothing. */
-  #bar button.cat {
-    background: transparent;
-    color: var(--muted);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    height: 44px;
-    padding: 0 var(--space-7);
-    font-size: var(--text-5);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  #bar button.cat.armed {
-    background: var(--panel);
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-  #drawers {
-    display: block;
-    flex: 0 0 auto;
-  }
-  #drawers .drawer {
-    display: none;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    padding: var(--space-4) var(--space-6);
-    background: var(--bg-2);
-    border-bottom: var(--edge) solid var(--line);
-  }
-  #drawers .drawer.open {
-    display: flex;
-  }
-  /* one touch target for everything in a drawer, whatever it looked like in the bar,
-     and 44x44 minimum like the toggles above — a keypad is for fast repeat taps */
-  #drawers .drawer button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 44px;
-    min-width: 44px;
-    padding: 0 var(--space-6);
-    background: var(--panel);
-    color: var(--fg);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    font-size: var(--text-6);
-    cursor: pointer;
-  }
-  #drawers .drawer button:active {
-    background: var(--accent);
-    color: var(--on-accent);
-  }
-  /* there is room in a drawer — beats the ≤680px icon-only rule on the bar verbs */
-  #drawers .drawer button .txt {
-    display: inline;
-  }
 
-  /* ---- touch: ONE header row ---------------------------------------------------
-     ⛩ ronin │ [ session ▾ ] │ ⋯ │ ☰ — and nothing else above the terminal. The
-     tile's own header is hoisted in here (js/tiledrop.js) and the emptied element
-     stays put, hidden: the ladder still inserts itself after it. */
+  /* ---- touch (iPad-class): the bar keeps the page's own controls -----------------
+     The hoisted one-row phone header is GONE — a phone never builds this bar at all
+     (the shell, js/phone.js) — so what is left here is the iPad's seat for the shape
+     button, and the anchor the tile-level sheets (.tmac, .tdocs) drop from. */
   #bar {
-    position: relative; /* the anchor both sheets drop from */
+    position: relative;
   }
-  .tile-head.hoisted {
-    display: none;
-  }
-  /* メ and ニ — the two openers, side by side at the end of the row.
-     They were ⋯ and ☰: grey marks in furniture-coloured boxes, in a bar with
-     nothing else coloured, and they could not be found. Kana carry stroke weight
-     that punctuation does not, and each takes a Kojin house colour so the pair
-     reads as two DIFFERENT things rather than two buttons — kaki for the session,
-     aiiro for Ronin. Filled, not outlined: an outline at this size is a hint. */
-  #bar .tdrop-btn {
-    flex: 0 0 auto;
-    height: 40px;
-    min-width: 44px;
-    border: var(--edge) solid transparent;
-    border-radius: var(--radius-md);
-    /* The kana want a face that actually draws them; the mono stack falls back to
-       something spindly on iOS. Sized up because a 2-stroke glyph at 18px is a smudge. */
-    font-size: var(--text-9);
-    font-weight: 600;
-    line-height: 1;
-    cursor: pointer;
-  }
-  #bar .tdrop-btn.me {
-    background: color-mix(in srgb, var(--kaki) 22%, transparent);
-    border-color: color-mix(in srgb, var(--kaki) 55%, transparent);
-    color: var(--kaki-lift);
-  }
-  #bar .tdrop-btn.ni {
-    background: color-mix(in srgb, var(--aiiro) 34%, transparent);
-    border-color: color-mix(in srgb, var(--aiiro-lift) 50%, transparent);
-    color: var(--aiiro-lift);
-  }
-  #bar .tdrop-btn.me:active {
-    background: var(--kaki);
-    border-color: var(--kaki);
-    color: var(--on-strong);
-  }
-  #bar .tdrop-btn.ni:active {
-    background: var(--aiiro-lift);
-    border-color: var(--aiiro-lift);
-    color: var(--bg);
-  }
-  /* THE SHAPE (2 ⇄ 4), sitting between メ and ニ — the grid count's old seat and look. Deliberately NOT a house colour: the
-     two kana are doors that open a sheet, this one changes the screen under them, and
-     three coloured boxes in a row would read as three of a kind. Furniture instead —
-     panel and line at the same 40px so the row stays even.
-     The face is a digit, so it takes the bar's own font rather than the kana size. */
+  /* THE SHAPE (2 ⇄ 4) at the end of the row — the grid count's old seat and look.
+     Deliberately NOT a house colour: it changes the screen under it, and furniture —
+     panel and line — keeps it from reading as a door. */
   #bar .shape-cycle {
     flex: 0 0 auto;
-    /* Holds the count and ニ against the right edge when there is no session name up here to
-       fill the row — i.e. at 2 or 4, where each tile wears its own header again. A
-       no-op at 1: the name is flex:1 and leaves no free space for a margin to take. */
     margin-left: auto;
     height: 40px;
     min-width: 44px;
@@ -4856,18 +4722,6 @@ button.wb-door:hover b {
     background: var(--accent);
     border-color: var(--accent);
     color: var(--on-accent);
-  }
-  /* The row is the session: its name takes every pixel the two openers do not. */
-  #bar .sess {
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: none;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    color: var(--fg-strong);
-    padding: 0 var(--space-3);
-    font-size: var(--text-5);
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
   #bar .brand {
@@ -5133,7 +4987,7 @@ button.wb-door:hover b {
 .tile .composer {
   display: none;
 }
-.tile.tape-on .composer.show {
+.tile:is(.tape-on, .keys-on) .composer.show {
   display: flex;
   position: absolute;
   left: 0;
@@ -5146,7 +5000,7 @@ button.wb-door:hover b {
   border-top: var(--edge) solid var(--term-panel-line);
   align-items: flex-end;
 }
-.tile.tape-on .composer textarea {
+.tile:is(.tape-on, .keys-on) .composer textarea {
   flex: 1;
   resize: none;
   min-height: 30px;
@@ -5160,17 +5014,17 @@ button.wb-door:hover b {
   outline: none;
 }
 /* Send refused because the socket is down: keep the text, say so, retry lands it. */
-.tile.tape-on .composer.noconn textarea {
+.tile:is(.tape-on, .keys-on) .composer.noconn textarea {
   border-color: var(--bad-deep);
 }
 /* Enter arrived while the clip was still transcribing: queued, sends on landing. */
-.tile.tape-on .composer.queued .csend {
+.tile:is(.tape-on, .keys-on) .composer.queued .csend {
   opacity: 0.4;
 }
-.tile.tape-on .composer textarea:focus {
+.tile:is(.tape-on, .keys-on) .composer textarea:focus {
   border-color: var(--action-2);
 }
-.tile.tape-on .composer .csend {
+.tile:is(.tape-on, .keys-on) .composer .csend {
   height: 30px;
   min-width: 38px;
   border: 0;
@@ -5184,7 +5038,7 @@ button.wb-door:hover b {
    the terminal that opened a SECOND textarea and dictated into that. It belongs on the
    one entry, beside the key that sends what it wrote. Quieter than ↵: dictating is a
    way of typing, not a second way of sending. */
-.tile.tape-on .composer .cmic {
+.tile:is(.tape-on, .keys-on) .composer .cmic {
   height: 30px;
   min-width: 34px;
   border: var(--edge) solid var(--line);
@@ -5195,7 +5049,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 /* Listening is the one state worth shouting: it means the microphone is live. */
-.tile.tape-on .composer .cmic.listening {
+.tile:is(.tape-on, .keys-on) .composer .cmic.listening {
   background: var(--rec);
   border-color: var(--rec);
   color: var(--on-strong);
@@ -5203,7 +5057,7 @@ button.wb-door:hover b {
 /* … while the clip is on its way to the host and back. Whisper gives nothing until the
    recording stops, so this wait is the whole cost of not sending your voice to Apple —
    it has to be visible rather than look like a dead button. */
-.tile.tape-on .composer .cmic.busy {
+.tile:is(.tape-on, .keys-on) .composer .cmic.busy {
   opacity: 0.6;
   cursor: default;
 }
@@ -5219,7 +5073,7 @@ button.wb-door:hover b {
 }
 @media (pointer: coarse) {
   /* 16px stops iOS Safari zooming the page when the field takes focus. */
-  .tile.tape-on .composer textarea { font-size: 16px; }
+  .tile:is(.tape-on, .keys-on) .composer textarea { font-size: 16px; }
 }
 
 /* The per-tile lock, in the tile head with the other per-tile controls. */
@@ -6530,9 +6384,10 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
 /* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
    at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line); padding: var(--space-3) var(--space-4); overflow-x: auto; }
-.wk-channel-service-tab { border: 0; border-radius: var(--radius-xs); background: transparent; color: var(--muted); padding: var(--space-3) var(--space-4); white-space: nowrap; }
-.wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); }
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line-2); overflow-x: auto; }
+.wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--fg-strong); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font-size: var(--text-3); font-weight: 700; white-space: nowrap; }
+.wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--muted-2); padding: var(--space-3) var(--space-6); font-size: var(--text-3); font-weight: 650; white-space: nowrap; }
+.wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); box-shadow: inset 0 calc(-1 * var(--space-1)) 0 var(--accent); }
 .wk-channel-service-tab[data-attention='true'] { color: var(--warn); font-weight: 700; }
 .wk-channel-surface > .wk-surface-content { display: flex; flex-direction: column; }
 .wk-channel-service { width: 100%; flex: 1 1 auto; min-height: 0; }
@@ -6563,14 +6418,253 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .sys-machine { margin-top: var(--space-5); }
 .sys-machine .mach-v { margin-left: auto; font: var(--text-2) var(--font-mono); color: var(--muted-2); }
 /* Messages — the live inbound queue; delivered cards disappear rather than archive. */
-.mq-note { margin: var(--space-4) var(--space-4) 0; color: var(--muted); }
-.mq-board { display: grid; gap: var(--space-3); padding: var(--space-4); overflow: auto; }
+.mq-note { margin: var(--space-5) var(--space-5) 0; color: var(--muted-2); font-size: var(--text-3); }
+.mq-board { display: grid; gap: var(--space-4); padding: var(--space-5); overflow: auto; }
 .mq-empty { color: var(--muted); margin: 0; }
-.mq-card { border: var(--edge) solid var(--line); border-left: var(--space-1) solid var(--warn); border-radius: var(--radius-sm); padding: var(--space-3); background: var(--panel); }
+.mq-card { border: var(--edge) solid var(--line-2); border-left: var(--space-1) solid var(--warn); border-radius: var(--radius-sm); padding: var(--space-5); background: var(--panel); }
 .mq-card.mq-failed { border-left-color: var(--bad); }
 .mq-head, .mq-actions { display: flex; align-items: center; gap: var(--space-2); }
 .mq-head { justify-content: space-between; }
-.mq-state, .mq-meta, .mq-reason { color: var(--muted); font-size: var(--text-2); }
+.mq-state, .mq-reason { color: var(--muted-2); font-size: var(--text-2); }
+.mq-route { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-4); margin: var(--space-4) 0; }
+.mq-route dt { color: var(--muted); font-size: var(--text-2); }
+.mq-route dd { min-width: 0; margin: 0; color: var(--fg-strong); overflow-wrap: anywhere; }
+.mq-reason { margin: var(--space-3) 0; border-left: var(--edge) solid var(--line-3); background: var(--well); padding: var(--space-3); }
 .mq-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: var(--space-3) 0; }
 .mq-actions { justify-content: flex-end; }
 .mq-force { border-color: var(--bad); }
+
+/* ── The keys row — Esc, ^C, Tab and the arrows, docked on the composer ────────────
+   Every coarse-pointer tile (phone shell and iPad workbench alike): the software
+   keyboard has none of these keys, so they ride the composer (js/keysrow.js) —
+   always visible with it, lifting over the keyboard with it, zero taps away. The
+   drawer they replace lived at the TOP of the page, two taps from a composer pinned
+   at the bottom. JS gates the row to coarse pointers, so no media query here. */
+.tile:is(.tape-on, .keys-on) .composer.show {
+  flex-wrap: wrap;
+}
+.tile:is(.tape-on, .keys-on) .composer .keysrow {
+  flex-basis: 100%;
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+}
+.tile:is(.tape-on, .keys-on) .composer .keysrow button {
+  flex: 1 0 auto;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 var(--space-3);
+  background: var(--panel);
+  color: var(--fg);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  font-size: var(--text-5);
+  cursor: pointer;
+}
+.tile:is(.tape-on, .keys-on) .composer .keysrow button:active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+/* Clearance for both rows, so the last line of the transcript stays visible. The
+   measurement rule from the composer's own clearance: this is that height plus the
+   keys row, not a space-ladder rung. */
+.tile.keys-on.tape-on .tape {
+  --tape-clearance: 104px;
+}
+/* The LOCKED mirror on a coarse tile (a box with no tape service): the composer and
+   keys row overlay the body exactly as on the tape, and the body's own padding hands
+   them that ground — the pty refits to the content box, so the CLI's input line is
+   never covered. Same measurement as the clearance above. */
+.tile.keys-on:not(.tape-on) .tile-body {
+  /* A measurement, not a rung: the composer's height plus the keys row, exactly as
+     the tape's own clearance names it. */
+  --composer-ground: 104px;
+
+  padding-bottom: var(--composer-ground);
+}
+
+/* ── #phone — the phone shell (js/phone.js) ────────────────────────────────────────
+   An iPhone-class screen never boots the workbench; main.js mounts this instead.
+   Three screens under one slim bar: the Coworks, a Cowork's Agents, one Agent's
+   tile. The workbench chrome (bar, keypad, viewhost) is hidden whole — none of it
+   is built on this path, but the static shell is still in index.html. */
+body[data-phone] #bar,
+body[data-phone] #viewhost {
+  display: none;
+}
+/* The three-door home stacks in a NARROW DESKTOP window — a phone lands on its own
+   shell and never meets this page. Here rather than campaign-home.css because the
+   feature files carry no raw measurements, and a media query cannot read a token. */
+@media (max-width: 680px) {
+  .ch-doors {
+    grid-template-columns: 1fr;
+  }
+}
+/* ✕ on the composer — clear OUR dialog. The composer is Ronin's own box, so one key
+   empties it whichever provider is in the pane (hardware Esc does the same); the keys
+   the AGENT's in-pane box needs are the keys row's. Visible only while the box holds
+   something — grow() keeps .hastext true exactly then. */
+.tile:is(.tape-on, .keys-on) .composer .cclear {
+  display: none;
+  height: 30px;
+  min-width: 34px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--muted-2);
+  font-size: var(--text-5);
+  cursor: pointer;
+}
+.tile:is(.tape-on, .keys-on) .composer.hastext .cclear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#phone {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+#phone .ph-bar {
+  position: relative; /* the anchor the メ sheet drops from */
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  padding-top: max(var(--space-3), env(safe-area-inset-top));
+  background: var(--bg-2);
+  border-bottom: var(--edge) solid var(--line);
+}
+#phone .ph-title {
+  flex: 1;
+  min-width: 0;
+  color: var(--fg-strong);
+  font-size: var(--text-6);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#phone .ph-back {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 40px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--fg);
+  font-size: var(--text-8);
+  line-height: 1;
+  text-decoration: none;
+}
+#phone .ph-back:active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+/* メ on the phone bar — the same kaki face it wears on the iPad bar (#bar rules are
+   scoped away from this shell, so the seat is restated here). */
+#phone .ph-bar .tdrop-btn {
+  flex: 0 0 auto;
+  height: 40px;
+  min-width: 44px;
+  border: var(--edge) solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--text-9);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--kaki) 22%, transparent);
+  border-color: color-mix(in srgb, var(--kaki) 55%, transparent);
+  color: var(--kaki-lift);
+}
+#phone .ph-bar .tdrop-btn:active {
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
+}
+#phone .ph-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+#phone .ph-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+#phone .ph-card {
+  display: block;
+  padding: var(--space-4) var(--space-5);
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--fg);
+  text-decoration: none;
+}
+#phone .ph-card:active {
+  background: var(--raise);
+}
+#phone .ph-card-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+#phone .ph-card-name {
+  min-width: 0;
+  color: var(--fg-strong);
+  font-size: var(--text-6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#phone .ph-card-note {
+  flex: 0 0 auto;
+  color: var(--muted-2);
+  font-size: var(--text-2);
+  white-space: nowrap;
+}
+#phone .ph-card-sub {
+  margin-top: var(--space-2);
+  color: var(--muted-2);
+  font-size: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#phone .ph-empty {
+  padding: var(--space-8) var(--space-5);
+  color: var(--muted);
+  text-align: center;
+}
+/* The stage. The workbench's kit stylesheet never loads on this path, so the host
+   sizing it would have provided is restated here, phone-scoped. */
+#phone .ph-term {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+body[data-phone] .wk-terminal-host {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+body[data-phone] .wk-terminal-host > .tile {
+  width: 100%;
+  height: 100%;
+}
+body[data-phone] .tile-head {
+  display: none; /* the ph-bar replaces it; its controls live in the メ sheet */
+}

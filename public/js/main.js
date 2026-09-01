@@ -9,7 +9,8 @@ import { activeProfile, loadDeskProfile } from './desk-profile.js';
 import { connectEvents } from './events.js';
 import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome } from './home.js';
 import { build } from './layout.js';
-import { S, tiles } from './state.js';
+import { IS_PHONE, S, tiles } from './state.js';
+import { buildPhone } from './phone.js';
 import { installTips } from './tips.js';
 import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
@@ -97,6 +98,14 @@ export async function init() {
     }
   }
 
+
+  // THE PHONE SHELL (MOBILE plan, 2026-09-01). An iPhone-class screen never boots the
+  // workbench: it gets the three-step drill-down — Cowork, Agent, tile-with-keys —
+  // and none of the chrome below. iPad (coarse but wide) and desktop continue as ever.
+  if (IS_PHONE) {
+    await buildPhone();
+    return;
+  }
 
   const viewhost = document.getElementById('viewhost');
   if (!viewhost) throw new Error('workspace ViewHost is missing');

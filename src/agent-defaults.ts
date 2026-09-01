@@ -4,6 +4,7 @@ export type Recruit = 'open' | 'nobody' | 'propose agents' | 'staff agents';
 export type Output = 'open' | 'a plan' | 'ideas' | 'code' | 'an artifact' | 'the team' | 'no code';
 export type AgentDial = 'user' | 'read' | 'write';
 export type LaunchMode = 'configured' | 'live_dangerously';
+export type GbrainMode = 'connected' | 'disconnected';
 export interface Mandate { reach: Reach; recruit: Recruit; output: Output[] }
 
 export interface AgentDefaults {
@@ -16,6 +17,7 @@ export interface AgentDefaults {
   behaviours: string[];
   dial: AgentDial;
   launch_mode: LaunchMode;
+  gbrain_mode: GbrainMode;
 }
 
 export type TeamAgentDefaults = Omit<AgentDefaults, 'routines' | 'behaviours'>;
@@ -62,6 +64,7 @@ export function agentDefaults(value: unknown): AgentDefaults {
     behaviours: books(input.behaviours),
     dial: oneOf(input.dial, ['user', 'read', 'write'], 'write'),
     launch_mode: oneOf(input.launch_mode, ['configured', 'live_dangerously'], 'live_dangerously'),
+    gbrain_mode: oneOf(input.gbrain_mode, ['connected', 'disconnected'], 'disconnected'),
   };
 }
 

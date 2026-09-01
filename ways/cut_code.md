@@ -1,4 +1,5 @@
 # Cut code
+- **kinds:** coding
 
 Use this way of working when there is an approved plan and you want it implemented. Its
 remit is to build from that plan, treating the plan as the contract for the change.

@@ -569,41 +569,37 @@ else printable, and sends it on Enter. The composer takes a native paste.
 
 ---
 
-## The phone
+## The phone and the touch keys
 
-Touch collapses the whole header into **one row** (`public/js/tiledrop.js`):
+**A phone never builds the workbench at all.** At an iPhone-class viewport (small AND
+coarse — `IS_PHONE` in `state.js`) `main.js` mounts the phone shell instead
+(`public/js/phone.js`, the MOBILE plan, owner 2026-09-01): pick the Cowork, pick the
+Agent, drive its tile. On the stage the tile's own head is hidden and the shell's slim
+bar replaces it — ‹ back, the Agent's title, and one メ sheet holding the head's own
+controls (Status, Work record, Output, Note, Control, Kill), **relocated, not cloned**,
+so every handler and live widget keeps its owner. The Status row is a reading, not a
+door.
 
-```
-⛩ ronin │ [ session ▾ ] │ メ │ 4 │ ニ
-```
+**The keys ride the composer on every coarse tile** — phone shell and iPad workbench
+alike (`public/js/keysrow.js`): Esc, ^C, ⌫, ^U, Tab, ⇧Tab, the arrows and ⤓, docked
+directly above the box they drive, lifting over the software keyboard with it. They act
+on that tile's own session, never "the active tile". The two clearing keys are there
+because the agents disagree about their own in-pane box — Esc empties Claude's, ^U
+(readline kill-line) empties a readline-shaped composer such as Codex's — and they are
+generic terminal keys on purpose: providers ship remappable keymaps, so a hardcoded
+per-provider key would be a guess with an expiry date. **Ronin's own box clears
+uniformly**: Esc from a hardware keyboard empties the composer (an already-empty box
+passes Esc through as a command key, the bare-Enter rule), and a ✕ appears on the box
+whenever it holds text. On a box with no tape service the composer
+(and the row) rides the locked mirror too on coarse tiles — it is the only input path a
+touch screen has — and the body's padding keeps the CLI's own input line clear of it.
 
-**メ is this session** — Status, Ladder, Macros, Groups, Docs, Note, Control, Kill.
-**ニ is Ronin** — Keys, Home, New, Board, Pad. Everything else is terminal.
+The one-row hoisted phone header, the keys drawer, the ニ sheet and the header's
+`.ctrls` keys are all retired with this; `tiledrop.js` keeps only `isCoarse` and
+`makeDrop`, the sheet primitives.
 
-(This block said ⛩ for a few hours on 2026-08-17, written from the middle of the pass that
-moved the torii; the code never did — `tiledrop.js` has always dropped this sheet off メ,
-and メ on the desktop header is the same glyph meaning the same thing.)
-
-The controls in those sheets are **the same nodes, relocated, not cloned**, so every handler
-already bound keeps working and the live widgets keep updating from their existing owners.
-There is no second copy to keep in sync. The Status row is the only one that is not a door:
-it is a reading, so it does not take a tap.
-
-**The number between them is the grid count** — one button wearing the layout it is on,
-tapped to cycle 1 → 2 → 4 → 1. Desktop has the same one button, in the same ring; it
-replaced a segmented `1|2|4`, whose 24px cells no finger could pick apart, which is why
-touch used to delete the control outright and have no way to change the grid at all.
-
-The merge needs exactly one tile to be honest — a tile header is per-tile and the app bar
-is per-page, and a per-page bar cannot say WHICH of two tiles it means. So it follows the
-count, not the device: `setLayout` calls `collapseTileHead` at one tile and
-`expandTileHead` at two or four, where every tile goes back to wearing its own header.
-`expandTileHead` restores the head from a snapshot taken at collapse, so the reversal is
-exact and the relocated nodes keep their handlers and their owners. A phone still *opens*
-on one terminal (`main.js`), but that is a starting point, not a pin — at ≤680px 2 and 4
-stack into a scroll column.
-
-Desktop never calls any of this — except the grid count, which is its button too.
+An iPad (coarse but wide) keeps the workbench; `trimBarForTouch` (`layout.js`) moves the
+shape button to the end of the bar and drops the desktop scaffolding.
 
 ---
 

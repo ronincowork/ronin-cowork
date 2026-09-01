@@ -71,6 +71,7 @@ export function mandateWord(value) {
     ideas: t('campaign_view.option_ideas', 'Ideas'),
     code: t('campaign_view.option_code', 'Code'),
     'an artifact': t('campaign_view.option_artifact', 'An artifact'),
+    'no code': t('campaign_view.option_no_code', 'No code'),
     'the team': t('campaign_view.option_team', 'The Team'),
     user: t('campaign_view.option_user', 'You only'),
     read: t('campaign_view.option_read', 'Read'),
@@ -100,6 +101,32 @@ export function dialRow(title, values, current, onPick) {
     box.setAttribute('aria-pressed', String(value === current));
     box.append(el('b', null, mandateWord(value)));
     box.addEventListener('click', () => onPick(value));
+    row.append(box);
+  }
+  dial.append(row);
+  return dial;
+}
+
+/**
+ * A mandate dial you can tick more than one of — the shape `output` took when the owner
+ * ruled it a list (2026-09-01): "No code is different than code not being included… if we
+ * send conflicting messages, that's on the user. We don't do too much control."
+ *
+ * So NOTHING here refuses a combination. `code` and `no code` together is a thing a person
+ * may say, and the form's job is to carry it, not to argue: giving the controls, not
+ * telling anyone how to drive.
+ */
+export function dialRowMulti(title, values, chosen, onToggle) {
+  const dial = el('div', 'fs-dial');
+  dial.append(el('h4', null, title));
+  const row = el('div', 'fs-dial-row');
+  for (const value of values) {
+    const on = chosen.includes(value);
+    const box = el('button', 'fs-dial-opt');
+    box.type = 'button';
+    box.setAttribute('aria-pressed', String(on));
+    box.append(el('b', null, mandateWord(value)));
+    box.addEventListener('click', () => onToggle(value, !on));
     row.append(box);
   }
   dial.append(row);
@@ -140,6 +167,29 @@ export function bookShelves(shelves, chosen, onToggle) {
     host.append(grid);
   }
   return host;
+}
+
+/**
+ * A BAND — a full-width divider that says what everything under it is, and folds it away.
+ *
+ * The owner asked for the first one over the Team's agent defaults, then for the same
+ * treatment over the launch payload: "it's just sort of stuck down there like a turd. It
+ * should be a proper section… and marked with an orange banner to hide or expand." Both
+ * mark the same kind of seam — the subject changes below this line — so both are this.
+ */
+export function createBand(label, onToggle) {
+  const band = el('button', 'ntf-band');
+  band.type = 'button';
+  const chev = el('span', 'ntf-band-chev', '▾');
+  band.append(chev, el('span', null, label));
+  band.addEventListener('click', () => onToggle());
+  return {
+    el: band,
+    setOpen: (on) => {
+      chev.textContent = on ? '▾' : '▸';
+      band.setAttribute('aria-expanded', String(on));
+    },
+  };
 }
 
 export function wayTiles(rows, current, onPick) {

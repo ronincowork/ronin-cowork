@@ -45,7 +45,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   // 'loading…' standing over a list that is legitimately empty.
   let sig = null;
 
-  /* ---------- the pills, then the list ---------- */
+  /* ---------- the rectangular shelf tabs, then the list ---------- */
   let shelf = 'tracked';
   const shelves = { plans: null, docs: null }; // fetched on demand, kept for the session
   const pills = document.createElement('div');

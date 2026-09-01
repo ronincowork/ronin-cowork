@@ -45,8 +45,13 @@ import path from 'node:path';
 import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './catalog.js';
 import { storeDir } from './stores.js';
 
-/** The definition directories — one file per token. */
-export type DefinitionKind = 'role_families' | 'session_roles' | 'desk_profiles' | 'lexicons' | 'routines' | 'templates';
+/** The definition directories — one file per token. The template catalog is TWO
+ *  directories (the shelf split, TEMPLATE_LIBRARY.md): a `templates/agents/` box is one
+ *  session's loadout, a `templates/teams/` box is a cast, and neither form is shown a
+ *  template written for the other. */
+export type DefinitionKind =
+  | 'role_families' | 'session_roles' | 'desk_profiles' | 'lexicons' | 'routines'
+  | 'templates/agents' | 'templates/teams';
 
 export interface Definition {
   /** The token — the filename without `.md`. Never the `#` heading. */
@@ -299,25 +304,50 @@ const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'n
 const TEMPLATE_KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
 
 export interface TemplateMandate { reach: string; recruit: string; output: string[] }
-export interface TemplateRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
+
+/** The half of a template box both shelves share — the tray face and the overlay
+ *  plumbing. The seeds differ by shelf and live on the two rows below. */
+export interface TemplateBox extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
   /** The tray face — an emoji or a glyph, the drawing's `art`. */
   art: string;
   /** Which kinds bring this box forward. `open` on the form shows every template. */
   kinds: string[];
-  /** The born Agent's instructions seed. */
-  brief: string;
-  /** The Team's objective seed. */
-  objective: string;
-  /** `reach · recruit · output`, each a ruled value — or null when the template is silent. */
-  mandate: TemplateMandate | null;
   /** `<shelf>:<name>` book addresses laid into the tray. */
   behaviours: string[];
   /** Routines this template turns on / off over the seeded map. Exactly the fields it
    *  carries — everything unnamed stays as the level above landed it (CASCADE § 1). */
   routines_on: string[];
   routines_off: string[];
-  /** The Team-lead offer this template suggests — a brief and a mandate, never a seat. */
-  lead: { brief: string; mandate: TemplateMandate | null } | null;
+}
+
+/** An agent template — a LOADOUT: what one session is handed, and nothing a Team
+ *  answers. The owner's distinction, verbatim in docs/templates.md. */
+export interface AgentTemplateRow extends TemplateBox {
+  /** The born Agent's instructions seed. */
+  brief: string;
+  /** `reach · recruit · output`, each a ruled value — or null when the template is silent. */
+  mandate: TemplateMandate | null;
+  /** The seeded team answer: `new` births the box into its own team (the Personal
+   *  Assistant ruling, 2026-09-01); '' states nothing. */
+  team_mode: string;
+}
+
+/** One row of a cast — the New Agent object, exactly the ruled wire row the New Team
+ *  form produces (`agentPicks()`) and the team loader launches. */
+export interface TemplateAgentRow {
+  name: string;
+  instructions: string;
+  mandate: TemplateMandate | null;
+  team_lead: boolean;
+}
+
+/** A team template — a CAST: the Team's own answers plus the agents it launches. The
+ *  lead is just one of the agents, marked — there is no lead_brief/lead_mandate pair. */
+export interface TeamTemplateRow extends TemplateBox {
+  /** The Team's objective seed. */
+  objective: string;
+  /** The embedded cast, in file order, `team_lead` marking at most one row. */
+  agents: TemplateAgentRow[];
 }
 
 /** `execute · staff agents · code` → the mandate fields, or null unless all are ruled
@@ -330,30 +360,72 @@ export function templateMandate(value: string): TemplateMandate | null {
   return { reach, recruit, output };
 }
 
-/** The template catalog — the tray both forms draw, derived and never stored as a menu. */
-export async function listTemplates(): Promise<TemplateRow[]> {
-  return (await readDefinitions('templates')).map((d) => {
-    const leadBrief = d.get('lead_brief');
-    const leadMandate = d.get('lead_mandate');
-    return {
-      name: d.name,
-      origin: d.origin,
-      shadowed: d.shadowed,
-      label: d.get('label') || d.name,
-      blurb: d.get('blurb'),
-      art: d.get('art'),
-      kinds: splitDefinitionList(d.get('kinds')).filter((kind) => TEMPLATE_KINDS.includes(kind)),
-      brief: d.get('brief'),
+const templateBox = (d: Definition): TemplateBox => ({
+  name: d.name,
+  origin: d.origin,
+  shadowed: d.shadowed,
+  label: d.get('label') || d.name,
+  blurb: d.get('blurb'),
+  art: d.get('art'),
+  kinds: splitDefinitionList(d.get('kinds')).filter((kind) => TEMPLATE_KINDS.includes(kind)),
+  behaviours: splitDefinitionList(d.get('behaviours')),
+  routines_on: splitDefinitionList(d.get('routines_on')),
+  routines_off: splitDefinitionList(d.get('routines_off')),
+});
+
+/** The agent-template shelf — the tray the New Agent form draws. */
+export async function listAgentTemplates(): Promise<AgentTemplateRow[]> {
+  return (await readDefinitions('templates/agents')).map((d) => ({
+    ...templateBox(d),
+    brief: d.get('brief'),
+    mandate: d.has('mandate') ? templateMandate(d.get('mandate')) : null,
+    team_mode: d.get('team_mode') === 'new' ? 'new' : '',
+  }));
+}
+
+/**
+ * The cast in a team template's file: a `## agents` heading, then one `### <name>`
+ * section per row carrying `- **instructions:**`, `- **mandate:**` and
+ * `- **team_lead:** yes` on the marked row (P0-confirmed 2026-09-01). Everything above
+ * `## agents` is the Team's own half, which is why the row keys never appear top-level.
+ */
+export function parseTemplateAgents(raw: string): TemplateAgentRow[] {
+  const at = raw.search(/^## agents\s*$/m);
+  if (at === -1) return [];
+  return raw
+    .slice(at)
+    .split(/^###\s+/m)
+    .slice(1)
+    .map((section) => {
+      const lines = section.split('\n');
+      const mandate = entryValue(lines, 'mandate');
+      return {
+        name: lines[0].trim(),
+        instructions: entryValue(lines, 'instructions'),
+        mandate: mandate ? templateMandate(mandate) : null,
+        team_lead: /^yes$/i.test(entryValue(lines, 'team_lead')),
+      };
+    })
+    .filter((row) => row.name);
+}
+
+/** The team-template shelf — the tray the New Team form draws, cast included. */
+export async function listTeamTemplates(): Promise<TeamTemplateRow[]> {
+  const rows: TeamTemplateRow[] = [];
+  for (const d of await readDefinitions('templates/teams')) {
+    let raw = '';
+    try {
+      raw = await readFile(d.file, 'utf8');
+    } catch {
+      continue; // vanished mid-read, exactly as readDir treats it
+    }
+    rows.push({
+      ...templateBox(d),
       objective: d.get('objective'),
-      mandate: d.has('mandate') ? templateMandate(d.get('mandate')) : null,
-      behaviours: splitDefinitionList(d.get('behaviours')),
-      routines_on: splitDefinitionList(d.get('routines_on')),
-      routines_off: splitDefinitionList(d.get('routines_off')),
-      lead: leadBrief || leadMandate
-        ? { brief: leadBrief, mandate: leadMandate ? templateMandate(leadMandate) : null }
-        : null,
-    };
-  });
+      agents: parseTemplateAgents(raw),
+    });
+  }
+  return rows;
 }
 
 /* ---------- the one write: a role's task family ---------- */

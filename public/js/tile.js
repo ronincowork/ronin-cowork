@@ -24,7 +24,7 @@ import { fetchSessions, setSessionTitle } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
-import { IS_TOUCH, S, saveState, serviceMissing, tiles } from './state.js';
+import { IS_TOUCH, S, saveState, serviceMissing, tiles, WHEEL_DOWN } from './state.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
@@ -34,6 +34,8 @@ import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
+import { buildKeysRow } from './keysrow.js';
+import { isCoarse } from './tiledrop.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
 import { desksOf, refreshDesks } from './desks.js';
 import { t } from './lexicon.js';
@@ -357,6 +359,23 @@ export class Tile {
     return this.wire.send(msg);
   }
 
+  /**
+   * Jump this tile's view to the live end, whatever feeds it — the same three-way rule
+   * the header's ⤓ applies to the active tile (layout.js), owned here so the composer
+   * and the keys row can ask their OWN tile for it.
+   */
+  jumpLatest() {
+    if (!this.locked) {
+      if (this.tapeMode) this.tape.scrollToBottom();
+      else this.term.scrollToBottom();
+      return;
+    }
+    // Mirror: {t:'bottom'} cancels tmux copy mode; the wheel burst drives an app's own
+    // scroll. A wheel-down at the live bottom is a no-op, so both is always safe.
+    this.send({ t: 'bottom' });
+    for (let i = 0; i < 150; i++) this.sendRaw(WHEEL_DOWN);
+  }
+
   /** The composer's box, for the ⚡ macro prefill — null until the composer exists. */
   get composerTa() {
     return this.composer ? this.composer.ta : null;
@@ -474,8 +493,18 @@ export class Tile {
         clearOverlays: () => this.clearOverlays(),
         connected: () => this.wire.connected(),
         send: (text) => this.sendRaw(text),
-        scrollToBottom: () => this.tape.scrollToBottom(),
+        scrollToBottom: () => this.jumpLatest(),
       });
+      // Coarse pointer: the software keyboard has no Esc, Ctrl, Tab or arrows, so the
+      // keys row rides the composer — always visible with it, lifting with it, and
+      // acting on THIS tile's session rather than "the active tile" (keysrow.js).
+      if (isCoarse()) {
+        this.composer.el.prepend(buildKeysRow({
+          sendRaw: (d) => this.sendRaw(d),
+          latest: () => this.jumpLatest(),
+        }).el);
+        this.el.classList.add('keys-on');
+      }
     }
     this.composer.show(on);
   }
@@ -533,7 +562,12 @@ export class Tile {
     this.tapeMode = !this.locked;
     this.tape.setMode(this.output);
     this.tape.reset(this.tapeMode);
-    this.setComposer(this.tapeMode);
+    // Coarse pointer: the composer (and its keys row) is the ONLY input path — a tap
+    // never focuses xterm on touch, so a locked mirror without it cannot be typed into
+    // at all. It rides both modes there: overlaying the tape as ever, in normal flow
+    // under the mirror (style.css .keys-on rules) so the CLI's own input line is never
+    // covered. Desktop keeps the old rule: tape mode only.
+    this.setComposer(this.tapeMode || isCoarse());
     this.el.classList.toggle('tape-on', this.tapeMode);
     this.setDot('wait');
     this.doFit();

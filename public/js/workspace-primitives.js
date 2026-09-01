@@ -137,6 +137,8 @@ function createChannelSurface(options = {}) {
   surface.el.classList.add('wk-channel-surface');
   const tabs = node('div', 'wk-channel-service-tabs');
   tabs.setAttribute('role', 'tablist');
+  const title = node('strong', 'wk-channel-service-title', options.label || t('workspace.channels', 'Team channels'));
+  tabs.append(title);
   const services = new Map();
   const buttons = new Map();
   // One literal key per team service, so the gate can see each of them.

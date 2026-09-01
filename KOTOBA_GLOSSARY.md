@@ -54,7 +54,7 @@ learn in order to use Ronin should cost them a second language first.
 | `workspace` | **workspace**<!--g:glossary.workspace--> | One slot of the cowork space — *workspace 1*, *workspace 2*. It holds one surface at a time; it is a place, not a surface. |
 | `workspace_surface` | **surface**<!--g:glossary.surface--> | What a workspace holds: a terminal tile, the team commons, or the cowork commons (more coming). One per workspace, one head each. Each workspace keeps its own copy, tabs and scroll; opening the same type elsewhere never moves or changes the first. |
 | `terminal_tile` | **terminal tile**<!--g:glossary.terminal_tile--> | A tile when it is the surface in a workspace — one session. Say *the tile* on the grid page; *the terminal tile* when you are contrasting it with a commons. Never "seat". |
-| `team_commons` | **team commons**<!--g:glossary.team_commons--> | The team's shared surface — Docs, Wipeboard, Agent message queue, and Team Configuration behind one tab strip. Say *the team commons*. |
+| `team_commons` | **team commons**<!--g:glossary.team_commons--> | The team's shared surface — Docs, Wipeboard, Agent Message Queue, and Team Configuration behind one tab strip. Say *the team commons*. |
 | `campaign_commons` | **the commons**<!--g:glossary.campaign_commons--> | The campaign's shared surface — Campaign, Project roots, Team roster and Templates. Bare *commons* means this; always say *team commons* for a team's surface. |
 | `cowork_commons` | **cowork commons**<!--g:glossary.cowork_commons--> | The install's shared surface — Machine health, Account, Desk profile, Project roots, Help desk, Keypad behind one tab strip. Say *the cowork commons*. It replaces *the desk* when it lands. |
 | `new_session` | **new session**<!--g:glossary.new_session--> | The launcher as a surface — put in a workspace by ＋ Add team member or か New; the session it starts lands in that workspace. |
@@ -89,6 +89,7 @@ learn in order to use Ronin should cost them a second language first.
 |---|---|---|
 | dial (`@ronin-control`) | **Control**<!--g:glossary.control--> | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
 | `launch_mode` | **Model provider configuration · Dangerously**<!--g:glossary.launch_mode--> | Per launch: preserve whatever configuration the provider CLI already loads, or append that provider's declared bypass flag. |
+| `gbrain_mode` | **Connected · Disconnected**<!--g:glossary.gbrain_mode--> | Per launch: preserve provider MCP configuration or append its declared gbrain-disconnect tokens. On Anthropic, **Disconnected disables ALL MCP for that launch**, not only gbrain. |
 | team (`@ronin-tags`) | **Cowork**<!--g:glossary.team--> | The user-facing word for a set of sessions working together. Internally this remains a Team backed by a `team_roster`; Cowork adds no second object. |
 | note (`@ronin_note`) | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
 | — | **Status · Work record · Macros · Detach · Kill session**<!--g:glossary.session_menu--> | The rest of the per-session menu. Already plain. |
@@ -182,7 +183,8 @@ translates one and creates a second vocabulary.
 faucet A / faucet B *(r_tape and r_scroll are RIREKI's two durable artifacts — there is no
 r_render; the tile's paint is ephemeral)*
 **Files and layout:** DAIKUSAN · system_scope · user_scope · session_scope · the upgrade
-test · shadowing · the session directory · build-out doc · handoff · `landed/`
+test · shadowing · the session directory · build-out doc · handoff · `landed/` ·
+`commit_train` *(spoken alias: the train)*
 **Plumbing:** shim · control-check · viewer session · scrape · compile · step tracker ·
 `session_macro` · `workspace_macro` · one-way flow
 **Ours only:** KOTOBA · KOSHI · SHINGO · BUNKAI · KYOKAI · KOKUGO · `ronin_repo` · dohyo

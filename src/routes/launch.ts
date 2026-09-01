@@ -79,13 +79,13 @@ async function deskNote(r: { assignment?: unknown; routines?: Array<{ name: stri
 
 const LAUNCH_KEYS = new Set([
   'session_type', 'session_role', 'team', 'team_lead', 'instructions', 'prompt', 'name',
-  'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'mcp', 'launch_mode',
+  'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'gbrain_mode', 'launch_mode',
   'tags', 'seed', 'inject', 'reference', 'desk',
   'kind', 'behaviours',
   'template',
 ]);
 const RETIRED_LAUNCH_KEYS = new Set([
-  'role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle', 'permissions',
+  'role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle', 'permissions', 'mcp',
 ]);
 const RETURNED_LAUNCH_KEYS = new Set([
   'assignment', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
@@ -119,7 +119,7 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
 
   if (body.dial !== undefined && body.dial !== 'user' && body.dial !== 'read' && body.dial !== 'write') drop('dial');
   if (body.desk !== undefined && body.desk !== 'own' && body.desk !== 'none') drop('desk');
-  if (body.mcp !== undefined && typeof body.mcp !== 'boolean') drop('mcp');
+  if (body.gbrain_mode !== undefined && body.gbrain_mode !== 'connected' && body.gbrain_mode !== 'disconnected') drop('gbrain_mode');
   if (body.launch_mode !== undefined && body.launch_mode !== 'configured' && body.launch_mode !== 'live_dangerously') drop('launch_mode');
   if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
   if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
@@ -130,7 +130,7 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.template !== undefined) body.template = String(body.template).trim();
 
   const inapplicable = sessionType === 'terminal'
-      ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'template', 'routines', 'sops', 'cmd', 'mcp', 'launch_mode', 'seed', 'inject', 'reference', 'session_role']
+      ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'template', 'routines', 'sops', 'cmd', 'gbrain_mode', 'launch_mode', 'seed', 'inject', 'reference', 'session_role']
     : sessionType === 'bare_metal_agent'
       ? ['kind', 'mandate', 'behaviours', 'template', 'routines', 'sops', 'seed', 'inject', 'reference', 'session_role', 'team_lead']
       : [];
@@ -239,7 +239,7 @@ export function registerLaunch(app: express.Express): void {
       // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
       // rather than meaning "on", so a caller with nothing to say cannot connect a
       // session by omission.
-      mcp: typeof req.body?.mcp === 'boolean' ? req.body.mcp : undefined,
+      gbrain_mode: req.body?.gbrain_mode === 'connected' || req.body?.gbrain_mode === 'disconnected' ? req.body.gbrain_mode : undefined,
       tags: Array.isArray(req.body?.tags) ? req.body.tags.map(String) : [],
       seed: Array.isArray(req.body?.seed) ? req.body.seed.map(String) : [],
       inject: String(req.body?.inject ?? '').trim() || undefined,
@@ -415,7 +415,7 @@ export function registerLaunch(app: express.Express): void {
         cmd: resolved.cmd,
         dial: resolved.dial,
         tags: resolved.tags,
-        mcp: resolved.mcp,
+        gbrain_mode: resolved.gbrain_mode,
         team_lead: !!form.team_lead && !!resolved.team,
         kind: resolved.kind,
         behaviours: resolved.behaviours,
