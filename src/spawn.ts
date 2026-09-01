@@ -17,7 +17,8 @@ import { resolveRoutines, type ResolvedRoutine } from './routines.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
-
+import { templateProvenance } from './template-provenance.js';
+import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
 /**
  * The mechanical executor: a filled form in, a briefed session out.
  *
@@ -37,6 +38,8 @@ import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js'
 export interface SpawnForm {
   /** The birth path. This is the route key; session_role is never used to infer it. */
   session_type?: 'cowork_agent' | 'bare_metal_agent' | 'terminal';
+  /** Server-owned house birth. Never accepted from the public launch body. */
+  house_seat?: HouseSeat;
   /**
    * WHAT the session is doing right now. Optional and mutable — the session rewrites it
    * with `write_tegami` and the owner rewrites it from the tile, and either write
@@ -87,7 +90,7 @@ export interface SpawnForm {
   /** Team-seeded launch classification; this launch may state a different answer. */
   kind?: string;
   /** Chosen birth books. Absent inherits the parent seed; an explicit [] chooses none. */
-  behaviours?: string[];
+  behaviours?: string[]; template?: string; // preset is validated provenance only, never reapplied
   /** Optional first instruction. Blank still launches a fully booted Agent. */
   prompt?: string;
   /** What the session is called. Blank is derived and de-duplicated. */
@@ -295,18 +298,6 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
 }
 
 /**
- * The profile's own working directory, if the cascade fixed one. `{install}` — the only
- * value a definition may carry, enforced in `src/launch-profile.ts` — is this Ronin's own
- * directory, resolved here at launch.
- *
- * A sentinel rather than a path, because a shipped definition naming a directory would be
- * a shipped file naming a machine (JUSHO).
- */
-function profileDir(profile: LaunchProfile): string {
-  return profile.dir === '{install}' ? REPO_ROOT : '';
-}
-
-/**
  * The birth reading list, plus THE TEAM-BUILDING SOP for a lead launch.
  *
  * A session_role that is some family's `default_lead_role` is the coordinating kind of
@@ -359,6 +350,7 @@ export async function resolveForm(
     listRoutines(),
     readDesksSection(),
   ]);
+  const preset = await templateProvenance(coworkAgent ? form : {});
   // A NAMED axis that does not resolve is a refusal, never a silent blank. Blank and
   // wrong are different launches, and only one of them is what the caller asked for.
   if (form.session_role && !taskDef) {
@@ -379,7 +371,7 @@ export async function resolveForm(
         : await readTeamRoster(form.team, campaignId) ?? await readTeamRoster(form.team, ''))
     : null;
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
-  const profile = resolveLaunchProfile(taskDef);
+  const profile = resolveHouseSeatProfile(form.house_seat, resolveLaunchProfile(taskDef));
   const parentSeed = coworkAgent && campaign
     ? resolveLaunchSeed({
         campaign,
@@ -651,7 +643,10 @@ export async function resolveForm(
     birth_reading: birthReading,
     behaviours: resolvedBehaviours.delivered,
     kind,
-    ignored: resolvedBehaviours.ignored,
+    ignored: [
+      ...resolvedBehaviours.ignored,
+      ...preset.ignored,
+    ],
     routines,
     stated_by: {
       name: form.name ? explicit : system,
@@ -661,13 +656,15 @@ export async function resolveForm(
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
       session_type: explicit,
       session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
-      mandate: form.mandate ? explicit : parentSeed?.seeds.reach.stated_by ?? (campaign
+      template: preset.source ?? system,
+      mandate: form.mandate ? (preset.mandate ? preset.source! : explicit) : parentSeed?.seeds.reach.stated_by ?? (campaign
         ? [{ layer: 'campaign', source: `#/campaign (${campaign.id}: agent_defaults)` }]
         : system),
       team: form.team ? explicit : system,
       project_root: rootSource,
       dial: form.dial !== undefined ? explicit : parentSeed?.seeds.dial.stated_by ?? profile.stated_by.dial,
-      brief: unique(explicit, profile.stated_by.opening, roster ? rosterSource : [], rootSource),
+      brief: unique(preset.brief ? preset.source! : explicit,
+        profile.stated_by.opening, roster ? rosterSource : [], rootSource),
       agent: profile.stated_by.agent,
       capExempt: profile.stated_by.capExempt,
       mcp: mcpSource,
@@ -684,7 +681,9 @@ export async function resolveForm(
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       birth_reading: unique(system, form.seed?.length ? explicit : []),
-      behaviours: form.behaviours !== undefined ? explicit : parentSeed?.seeds.behaviours.stated_by ?? system,
+      behaviours: form.behaviours !== undefined
+        ? (preset.behaviours ? preset.source! : explicit)
+        : parentSeed?.seeds.behaviours.stated_by ?? system,
       kind: form.kind !== undefined ? explicit : parentSeed?.seeds.kind.stated_by ?? system,
       routines: parentSeed?.routines.flatMap((routine) => routine.stated_by) ?? system,
     },

@@ -82,6 +82,7 @@ const LAUNCH_KEYS = new Set([
   'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'mcp',
   'tags', 'seed', 'inject', 'reference', 'desk',
   'kind', 'behaviours',
+  'template',
 ]);
 const RETIRED_LAUNCH_KEYS = new Set([
   'role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle',
@@ -124,16 +125,31 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
   if (body.kind !== undefined) body.kind = String(body.kind).trim();
   if (body.behaviours !== undefined && !Array.isArray(body.behaviours)) drop('behaviours');
+  if (body.template !== undefined && (typeof body.template !== 'string' || !/^[\w-]{1,64}$/.test(body.template.trim()))) drop('template');
+  if (body.template !== undefined) body.template = String(body.template).trim();
 
   const inapplicable = sessionType === 'terminal'
-    ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'routines', 'sops', 'cmd', 'mcp', 'seed', 'inject', 'reference', 'session_role']
+    ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'template', 'routines', 'sops', 'cmd', 'mcp', 'seed', 'inject', 'reference', 'session_role']
     : sessionType === 'bare_metal_agent'
-      ? ['kind', 'mandate', 'behaviours', 'routines', 'sops', 'seed', 'inject', 'reference', 'session_role', 'team_lead']
+      ? ['kind', 'mandate', 'behaviours', 'template', 'routines', 'sops', 'seed', 'inject', 'reference', 'session_role', 'team_lead']
       : [];
   for (const key of inapplicable) drop(key);
   if (sessionType === 'bare_metal_agent' && body.desk === 'own') drop('desk');
 
   return { body, ignored: [...ignored].sort() };
+}
+
+/** Mika's public door accepts words only; every house mechanic is fixed server-side. */
+export function mikaLaunchBody(input: unknown): Record<string, unknown> {
+  const source = input && typeof input === 'object' && !Array.isArray(input)
+    ? input as Record<string, unknown>
+    : {};
+  return {
+    session_type: 'cowork_agent',
+    name: 'mika',
+    tags: ['mika'],
+    prompt: typeof source.prompt === 'string' ? source.prompt : '',
+  };
 }
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
@@ -178,8 +194,8 @@ export function registerLaunch(app: express.Express): void {
   // launch_job — the catalog variant. NAMED, not inlined, since 2026-08-26: `/api/session`
   // below is a second DOOR onto this same body, never a second launch path (the parity
   // invariant, tests/launch-parity.test.ts).
-  const launchJob: express.RequestHandler = async (req, res) => {
-    const accepted = acceptedLaunchBody(req.body);
+  const launch = async (req: express.Request, res: express.Response, houseSeat?: 'mika'): Promise<unknown> => {
+    const accepted = acceptedLaunchBody(houseSeat === 'mika' ? mikaLaunchBody(req.body) : req.body);
     req.body = accepted.body;
     const sessionType = String(req.body.session_type);
     const name = String(req.body?.name ?? '').trim();
@@ -195,6 +211,7 @@ export function registerLaunch(app: express.Express): void {
     const team = String(req.body?.team ?? '').trim();
     const form: SpawnForm = {
       session_type: sessionType as SpawnForm['session_type'],
+      house_seat: houseSeat,
       session_role: sessionRole,
       team: team || undefined,
       team_lead: req.body?.team_lead === true,
@@ -213,6 +230,7 @@ export function registerLaunch(app: express.Express): void {
       campaign_id: String(req.body?.campaign_id ?? '').trim() || undefined,
       kind: typeof req.body?.kind === 'string' ? req.body.kind : undefined,
       behaviours: Array.isArray(req.body?.behaviours) ? req.body.behaviours.map(String) : undefined,
+      template: typeof req.body?.template === 'string' ? req.body.template : undefined,
       // Only an explicit boolean is an opinion. Absent hands the choice to the resolved
       // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
       // rather than meaning "on", so a caller with nothing to say cannot connect a
@@ -398,6 +416,7 @@ export function registerLaunch(app: express.Express): void {
         kind: resolved.kind,
         behaviours: resolved.behaviours,
         ignored: [...new Set([...accepted.ignored, ...resolved.ignored])].sort(),
+        stated_by: resolved.stated_by,
         ...(resolved.session_type === 'cowork_agent'
           ? { boot: { state: 'open', brief: launch.parked ? 'parked' : 'argv' } }
           : {}),
@@ -461,7 +480,9 @@ export function registerLaunch(app: express.Express): void {
       }
     })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
   };
+  const launchJob: express.RequestHandler = (req, res) => launch(req, res);
   app.post('/api/launch', launchJob);
+  app.post('/api/mika', (req, res) => launch(req, res, 'mika'));
 
   app.get('/api/sessions', async (_req, res) => {
     try {

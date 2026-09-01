@@ -1,6 +1,6 @@
-# MACHINE TEST PROTOCOLS — installed boxes and user stores
+# HOST TEST PROTOCOLS — installed boxes and user stores
 
-This reading belongs to the **Machine** Routine. It is the installed-box and user-store
+This reading belongs to the **Ronin Host** Routine. It is the installed-box and user-store
 half of `docs/test-protocols.md`. During the transition to effective-Routine startup
 reading, `all/TEST_PROTOCOLS.md` remains the compatibility copy.
 

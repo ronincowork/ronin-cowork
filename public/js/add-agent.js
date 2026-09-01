@@ -3,7 +3,7 @@
  * ADD AGENT TO TEAM — the in-Team quick launch, on the Workspace Kit.
  *
  * STAGED, NOT LIVE (owner, 2026-08-31). This is registered as its own Workbench surface
- * beside the existing New Agent card; nothing is removed. `js/launcher.js` still mounts
+ * beside the existing New Agent card. `js/launcher.js` has since been retired; it mounted
  * the `.ks-*` board on the same page, and the owner decides when one replaces the other.
  *
  * WHY IT IS NOT NEW AGENT. You are already in the Team, so the Team has answered most of
@@ -32,18 +32,17 @@ import { launchSpecData, projectData } from './home.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
-/** The tasks a Team of each kind is offered. Hardcoded HERE and nowhere else, because
- *  `session_role` is on its way to becoming a behaviour and this list is what the ways
- *  shelf will answer once it carries a `kinds:` field (NEW_AGENT.md § 4.5). */
+/** The work books a Team of each kind is offered. Hardcoded HERE and nowhere else until
+ *  the ways shelf carries the ruled `kinds:` field (NEW_AGENT.md § 4.5). */
 const TASKS_BY_KIND = Object.freeze({
-  coding: ['QuarterBack', 'RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork'],
-  work: ['RiffOnIt', 'DraftPlan', 'CheckWork', 'PersonalAssistant', 'OddJob'],
-  personal: ['PersonalAssistant', 'RiffOnIt', 'OddJob'],
-  household: ['PersonalAssistant', 'RiffOnIt', 'OddJob'],
+  coding: ['ways:quarter_back', 'ways:riff_on_it', 'ways:draft_plan', 'ways:cut_code', 'ways:chase_bug', 'ways:check_work'],
+  work: ['ways:riff_on_it', 'ways:draft_plan', 'ways:check_work', 'ways:personal_assistant', 'ways:odd_job'],
+  personal: ['ways:personal_assistant', 'ways:riff_on_it', 'ways:odd_job'],
+  household: ['ways:personal_assistant', 'ways:riff_on_it', 'ways:odd_job'],
 });
 const DEFAULT_TASKS = TASKS_BY_KIND.coding;
 
-const readable = (role) => role.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+const readable = (book) => book.replace(/^ways:/, '').replaceAll('_', ' ');
 
 /**
  * @param {object} kit  the Workspace Kit
@@ -244,8 +243,7 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     busy = true;
     start.setDisabled(true);
     notice.set('info', t('add_agent.starting', 'Starting…'));
-    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_type` is stated explicitly — the birth
-    // type is never inferred from session_role, team, or agent-shaped fields. A shell is
+    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_type` is stated explicitly. A shell is
     // a `terminal`: a pane, its name, its team and its place, and nothing an Agent would
     // take (the route refuses the rest by name). Nothing about routines is sent either
     // way: they are resolved server-side, and a caller that states one is guessing at
@@ -261,7 +259,7 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
         }
         : {
           session_type: 'cowork_agent',
-          session_role: draft.task,
+          behaviours: draft.task ? [draft.task] : [],
           team: teamName(),
           instructions: draft.instruction.trim(),
           name: draft.name.trim(),

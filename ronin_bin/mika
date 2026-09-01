@@ -79,10 +79,9 @@ if tmux has-session -t mika 2>/dev/null; then
   exec tejun-send mika "$msg"
 fi
 
-# Not up. Born through /api/launch like every other session — the session_role carries her
-# dial, her posture and her opening, and `cap: exempt` is why this works at a full box.
-out=$(api -X POST "$url/api/launch" -H 'content-type: application/json' \
-  -d "{\"session_role\":\"MikaAssist\",\"name\":\"mika\",\"tags\":[\"mika\"],\"prompt\":\"$(esc "$msg")\"}")
+# Not up. Her dedicated server door owns the house-only birth mechanics.
+out=$(api -X POST "$url/api/mika" -H 'content-type: application/json' \
+  -d "{\"prompt\":\"$(esc "$msg")\"}")
 
 case "$out" in
   '') echo "STUCK: could not reach Ronin at $url." >&2; exit 5 ;;
