@@ -19,13 +19,13 @@
  * the next team made. No inherit control, no reset-to-campaign, anywhere.
  *
  * RAISE NEVER FAILS for the ordinary states — no objective, no root, `open` on every
- * dial. The lead is an OFFER (a brief and a mandate, never a roster row): raising with
- * one is § 7.5's two idempotent doors — the record first, then one § 7.4 launch born as
- * the 人 — and a lead that fails to be born still leaves a raised team, said out loud.
+ * dial. The Team record is created first; its picked Agent rows then fire independently
+ * through the launch door. They remain live-session facts and never become roster members.
  */
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
+import { raiseTeam } from './team-loader.js';
 import {
   createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
@@ -52,6 +52,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     provider: '', model: '', reach: 'open', recruit: 'open', output: ['open'],
     dial: 'write',
     routines: {}, books: [], launchMode: 'live_dangerously',
+    agents: [],
     lead: null,
     expanded: {},
   };
@@ -495,37 +496,26 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     busy = true;
     raise.setDisabled(true);
     notice.set('info', t('new_team.raising', 'Raising the team…'));
-    const made = await request('/api/team-rosters', { method: 'POST', json: rosterBody(name) });
+    const rows = [...draft.agents];
+    if (draft.lead) rows.push({
+      name: `${name}_lead`,
+      assignment: draft.lead.brief.trim(),
+      mandate: { reach: draft.lead.reach, recruit: draft.lead.recruit, output: draft.lead.output },
+      lead: true,
+    });
+    const made = await raiseTeam(request, rosterBody(name), rows);
     if (!made.ok) {
       busy = false;
       raise.setDisabled(false);
       notice.set('failed', made.message);
       return;
     }
-    // THE SECOND DOOR (§ 7.5): the lead offer becomes one launch, born as the 人. A team
-    // with no lead is ordinary, and a lead that could not be born leaves a raised team —
-    // said out loud, never rolled back (one file deletion undoes the record; a launch is
-    // not a transaction with it).
-    let leadFailed = '';
-    if (draft.lead) {
-      const born = await request('/api/launch', {
-        method: 'POST',
-        json: {
-          session_type: 'cowork_agent',
-          team: name,
-          team_lead: true,
-          name: `${name}_lead`,
-          project_root: draft.root,
-          instructions: draft.lead.brief.trim(),
-          mandate: { reach: draft.lead.reach, recruit: draft.lead.recruit, output: draft.lead.output },
-        },
-      });
-      if (!born.ok) leadFailed = born.message;
-    }
+    // The Team record is the gate. Only a newly-created Team reaches this handoff, so a
+    // repeated submission cannot birth the cast twice. Every attached row then goes
+    // independently through the one launch door; the loader adds no monitoring layer.
     busy = false;
     raise.setDisabled(false);
-    if (leadFailed) notice.set('warning', t('new_team.raised_no_lead', 'Raised {team} — the lead was not born: {reason}', { team: name, reason: leadFailed }));
-    else notice.set('', '');
+    notice.set('', '');
     reset();
     await created?.(name);
   }
@@ -569,6 +559,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.objective = '';
     draft.branch = '';
     draft.books = [];
+    draft.agents = [];
     draft.lead = null;
     draft.expanded = {};
     snapshot = '';
