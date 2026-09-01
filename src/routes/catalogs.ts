@@ -42,13 +42,14 @@ import {
 } from '../catalog.js';
 import {
   findDefinition,
+  listAgentTemplates,
   listRoleFamilies,
   listRoutines,
   listSessionRoles,
-  listTemplates,
+  listTeamTemplates,
   writeRoleTasks,
 } from '../definitions.js';
-import { saveTemplate } from '../templates.js';
+import { saveAgentTemplate, saveTeamTemplate } from '../templates.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
 
 // fs errors carry absolute paths (`ENOENT: open '/home/…'`); the browser gets the
@@ -387,26 +388,44 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   /**
-   * THE TEMPLATE CATALOG (NEW_AGENT.md leg 6) — the tray both launch forms draw.
-   * `?kind=` narrows to the boxes whose `kinds` include it; absent or `open` is the
-   * whole shelf, because `open` means no requirement and screens nothing. The option
-   * space is derived here and never stored as a menu (§ 7.1).
+   * THE TEMPLATE CATALOG — two shelves, two trays (the shelf split). The New Agent
+   * form draws `/agents` (loadouts) and the New Team form draws `/teams` (casts);
+   * neither form is shown a template written for the other. `?kind=` narrows to the
+   * boxes whose `kinds` include it; absent or `open` is the whole shelf, because
+   * `open` means no requirement and screens nothing. The option space is derived here
+   * and never stored as a menu (§ 7.1).
    */
-  app.get('/api/templates', async (req, res) => {
+  const byKind = <T extends { kinds: string[] }>(rows: T[], raw: unknown): T[] => {
+    const kind = String(raw ?? '').trim();
+    return !kind || kind === 'open' ? rows : rows.filter((row) => row.kinds.includes(kind));
+  };
+  app.get('/api/templates/agents', async (req, res) => {
     try {
-      const kind = String(req.query?.kind ?? '').trim();
-      const rows = await listTemplates();
-      res.json(!kind || kind === 'open' ? rows : rows.filter((row) => row.kinds.includes(kind)));
+      res.json(byKind(await listAgentTemplates(), req.query?.kind));
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+  app.get('/api/templates/teams', async (req, res) => {
+    try {
+      res.json(byKind(await listTeamTemplates(), req.query?.kind));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
   });
 
-  // Save-as-new only — the forms' conditional save. A shipped template is edited on the
-  // campaign page, never written over from a launch form (src/templates.ts refuses).
-  app.post('/api/templates', async (req, res) => {
+  // Save-as-new only, per shelf — the forms' conditional save. A shipped template is
+  // edited on the campaign page, never written over from a launch form (refused).
+  app.post('/api/templates/agents', async (req, res) => {
     try {
-      res.json({ ok: true, template: await saveTemplate(req.body ?? {}) });
+      res.json({ ok: true, template: await saveAgentTemplate(req.body ?? {}) });
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
+    }
+  });
+  app.post('/api/templates/teams', async (req, res) => {
+    try {
+      res.json({ ok: true, template: await saveTeamTemplate(req.body ?? {}) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
