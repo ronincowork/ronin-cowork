@@ -110,12 +110,13 @@ const typeText = (name: string, text: string) =>
 const pressEnter = (name: string) => pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
 
 /** Automatic delivery and Try Again: an uncertain prompt is a retained message. */
-export async function deliverSafe(name: string, text: string): Promise<DeliveryResult> {
+export async function deliverSafe(name: string, text: string, onAttempt?: () => void): Promise<DeliveryResult> {
   const before = await readPrompt(name);
   if (!before.found) return { delivered: false, submitted: false, reason: 'busy or prompt not recognized' };
   if (before.menu) return { delivered: false, submitted: false, reason: 'dialog is open' };
   if (before.text) return { delivered: false, submitted: false, reason: 'unsubmitted text is already at the prompt' };
 
+  onAttempt?.();
   await typeText(name, text);
   await sleep(350);
   const typed = await readPrompt(name);

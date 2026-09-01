@@ -86,32 +86,43 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
     }
     let item: QueuedMessage;
     try { item = JSON.parse(await fs.readFile(file(id), 'utf8')) as QueuedMessage; } catch { return null; }
-    item.attempts += 1;
-    item.updated_at = new Date().toISOString();
+    let attempted = false;
+    const countAttempt = () => {
+      if (attempted) return;
+      attempted = true;
+      item.attempts += 1;
+    };
+    const retain = async (state: MessageState, reason: string): Promise<QueuedMessage> => {
+      // The worker checks eligibility frequently, but a busy check is not a delivery
+      // attempt. Do not churn the record—or its visible counter—when nothing changed.
+      if (!attempted && item.state === state && item.reason === reason) return item;
+      item.state = state;
+      item.reason = reason;
+      item.updated_at = new Date().toISOString();
+      await write(item);
+      return item;
+    };
     if (!(await sessionExists(item.target))) {
-      item.state = 'failed'; item.reason = 'target session does not exist'; await write(item); return item;
+      return retain('failed', 'target session does not exist');
     }
     if (mode === 'safe') {
       const control = await getControl(item.target);
       if (control !== 'write') {
-        item.state = 'stuck'; item.reason = `target dial is ${control}`; await write(item); return item;
+        return retain('stuck', `target dial is ${control}`);
       }
     }
     try {
+      if (mode === 'force') countAttempt();
       const result = mode === 'force'
         ? await deliverForce(item.target, item.text)
-        : await deliverSafe(item.target, item.text);
+        : await deliverSafe(item.target, item.text, countAttempt);
       if (result.delivered) { await dismissMessage(id); return null; }
       // Once text was submitted but confirmation became ambiguous, automatic retries
       // must stop: typing a second copy is worse than leaving one visible for the owner.
-      item.state = mode === 'force' || result.submitted ? 'failed' : 'stuck';
-      item.reason = result.reason;
+      return retain(mode === 'force' || result.submitted ? 'failed' : 'stuck', result.reason);
     } catch (e) {
-      item.state = mode === 'force' ? 'failed' : 'stuck';
-      item.reason = String((e as Error).message ?? e);
+      return retain(mode === 'force' ? 'failed' : 'stuck', String((e as Error).message ?? e));
     }
-    await write(item);
-    return item;
   } finally {
     await lock?.close().catch(() => {});
     if (lock) await fs.unlink(lockFile(id)).catch(() => {});

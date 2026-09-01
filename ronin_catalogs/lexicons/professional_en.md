@@ -1154,6 +1154,13 @@ The catalog entry goes. {dir} is not touched.
 - **messages.retry:** Try Again
 - **messages.force:** Force
 - **messages.dismiss:** Dismiss
+- **messages.trying:** Trying…
+- **messages.forcing:** Forcing…
+- **messages.dismissing:** Dismissing…
+- **messages.delivered:** Delivered and cleared.
+- **messages.dismissed:** Message dismissed.
+- **messages.retained:** Still waiting — {reason}
+- **messages.action_failed:** Message action failed — {reason}
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update

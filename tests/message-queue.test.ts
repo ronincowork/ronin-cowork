@@ -12,6 +12,7 @@ test('a missing target is retained as a failed inbound message, then dismisses',
   assert.equal((await queue.listQueuedMessages()).length, 1);
   const failed = await queue.attemptMessage(item.id, 'safe');
   assert.equal(failed?.state, 'failed');
+  assert.equal(failed?.attempts, 0, 'an eligibility failure is not a delivery attempt');
   assert.match(failed?.reason ?? '', /does not exist/);
   assert.equal(await queue.dismissMessage(item.id), true);
   assert.deepEqual(await queue.listQueuedMessages(), []);

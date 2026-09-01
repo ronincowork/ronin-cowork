@@ -19,6 +19,10 @@ at most ten seconds pressing Enter and checking whether it submitted. It may col
 whatever the Agent is doing. It never runs forever and never types a second copy. Success
 removes the card; failure leaves it for another decision.
 
+Every action answers immediately on its button (`Trying…`, `Forcing…`, or `Dismissing…`)
+and announces its outcome. A card that clears says **Delivered and cleared** before its
+absence becomes the only evidence; a retained message says why it is still waiting.
+
 The queue is working state in the `message_queue` data store. Each item records:
 `id`, `target`, `text`, `source`, `state`, `reason`, `attempts`, `created_at`, and
 `updated_at`. Its REST surface is `GET/POST /api/messages`,

@@ -1,5 +1,6 @@
 /* Inbound session messages that have not yet delivered. */
 import { t } from './lexicon.js';
+import { toast } from './ui.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -13,10 +14,27 @@ export function buildMessageQueue(host) {
   const empty = el('p', 'mq-empty', t('messages.empty', 'No messages are waiting.'));
   host.append(board);
 
-  const act = async (id, action, method = 'POST') => {
-    const response = await fetch(`/api/messages/${encodeURIComponent(id)}${action}`, { method });
-    if (!response.ok) throw new Error(await response.text());
-    await render();
+  const act = async (message, action, pressed, pending, method = 'POST') => {
+    const card = pressed.closest('.mq-card');
+    const buttons = [...card.querySelectorAll('button')];
+    const label = pressed.textContent;
+    for (const button of buttons) button.disabled = true;
+    pressed.textContent = pending;
+    pressed.setAttribute('aria-busy', 'true');
+    try {
+      const response = await fetch(`/api/messages/${encodeURIComponent(message.id)}${action}`, { method });
+      const body = await response.json();
+      if (!response.ok || body.ok === false) throw new Error(body.error || response.statusText);
+      if (method === 'DELETE') toast(t('messages.dismissed', 'Message dismissed.'));
+      else if (body.delivered) toast(t('messages.delivered', 'Delivered and cleared.'));
+      else toast(t('messages.retained', 'Still waiting — {reason}', { reason: body.message?.reason || message.reason }), false);
+      await render();
+    } catch (e) {
+      toast(t('messages.action_failed', 'Message action failed — {reason}', { reason: e.message }), false);
+      for (const button of buttons) button.disabled = false;
+      pressed.textContent = label;
+      pressed.removeAttribute('aria-busy');
+    }
   };
 
   const render = async () => {
@@ -37,9 +55,9 @@ export function buildMessageQueue(host) {
       const force = el('button', 'cc-btn mq-force', t('messages.force', 'Force'));
       const dismiss = el('button', 'cc-btn', t('messages.dismiss', 'Dismiss'));
       retry.type = force.type = dismiss.type = 'button';
-      retry.addEventListener('click', () => void act(message.id, '/retry'));
-      force.addEventListener('click', () => void act(message.id, '/force'));
-      dismiss.addEventListener('click', () => void act(message.id, '', 'DELETE'));
+      retry.addEventListener('click', () => void act(message, '/retry', retry, t('messages.trying', 'Trying…')));
+      force.addEventListener('click', () => void act(message, '/force', force, t('messages.forcing', 'Forcing…')));
+      dismiss.addEventListener('click', () => void act(message, '', dismiss, t('messages.dismissing', 'Dismissing…'), 'DELETE'));
       actions.append(retry, force, dismiss);
       card.append(head, meta, text, reason, actions);
       board.append(card);
