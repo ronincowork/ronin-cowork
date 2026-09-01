@@ -1147,7 +1147,15 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
 - **messages.to:** To {target}
-- **messages.meta:** {source} · {attempts} attempts
+- **messages.meta:** {source} · {attempts} attempts · waiting {age}
+- **messages.waiting:** waiting
+- **messages.age_now:** just now
+- **messages.age_seconds:** {count} seconds
+- **messages.age_minute:** 1 minute
+- **messages.age_minutes:** {count} minutes
+- **messages.age_hour:** 1 hour
+- **messages.age_hours:** {count} hours
+- **messages.age_days:** {count} days
 - **messages.retry:** Try Again
 - **messages.force:** Force
 - **messages.dismiss:** Dismiss
