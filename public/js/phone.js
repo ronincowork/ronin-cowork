@@ -66,6 +66,12 @@ export async function buildPhone() {
   root.append(bar, main);
   document.body.append(root);
 
+  // The house mark rides the shell's own bar on the front door (owner, 2026-09-01:
+  // "we should see the top header, the RoninCowork and the Torii"). RELOCATED from the
+  // hidden desktop bar, not cloned — captured once, because a later paint detaches it
+  // and getElementById would then find nothing. Tapping it is the way home (href="./").
+  const brand = document.getElementById('brandbtn');
+
   let route = routeFromHash();
   let rows = new Map(); // session name -> /api/home row (status, ctx, model, tegami)
   let host = null; // the one terminal host, alive only on the terminal screen
@@ -83,7 +89,7 @@ export async function buildPhone() {
 
   /* ---------- screen 1 · the Coworks ---------- */
   const paintTeams = () => {
-    bar.replaceChildren(el('span', 'ph-title', t('phone.coworks', 'Cowork: Teams')));
+    bar.replaceChildren(...(brand ? [brand] : []), el('span', 'ph-title', t('phone.coworks', 'Cowork: Teams')));
     const list = el('div', 'ph-list');
     const teams = teamsFromState().filter((team) => !team.holding || unassignedSessions().length);
     for (const team of teams) {
