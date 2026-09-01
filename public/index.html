@@ -17,10 +17,16 @@
          must not flash dark. Inline and tiny on purpose; js/theme.js owns the rest. -->
     <script>
       try {
+        /* A device pin, else the cached Campaign theme for THIS surface — touch reads
+           the mobile value, a pointer the desktop one (both written by js/theme.js when
+           the served desk is learned) — else the house light (owner, 2026-09-01). The
+           dark shell is the stylesheet's bare state, so only light sets the attribute. */
         var t = localStorage.getItem('tmuxgrid.theme');
-        /* Light is the house default (owner, 2026-09-01) — an unpinned install paints
-           light on every device; dark is the stored pin. */
-        if (t !== 'dark') document.documentElement.dataset.theme = 'light';
+        if (t !== 'light' && t !== 'dark') {
+          var coarse = matchMedia('(pointer: coarse)').matches;
+          t = localStorage.getItem(coarse ? 'tmuxgrid.theme.system.mobile' : 'tmuxgrid.theme.system') || 'light';
+        }
+        if (t === 'light') document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
     <!-- xterm.css rides inside style.css now (@import into the lowest cascade layer,

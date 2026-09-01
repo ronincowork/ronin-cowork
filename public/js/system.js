@@ -209,9 +209,11 @@ export function buildSystemPanel() {
   const idBlock = document.createElement('div');
   idBlock.className = 'sys-id';
 
-  // APPEARANCE LEFT THIS ROOM (CAMPAIGN_WORKBENCH, SETTEI audit, 2026-08-30): the skin and
-  // the light/dark choice are the Campaign's desk — components on the #/campaign Desk
-  // profile surface — and a choice has one home, not two. The desk profile picker
+  // APPEARANCE LEFT THIS ROOM (CAMPAIGN_WORKBENCH, SETTEI audit, 2026-08-30): the skin
+  // and the light/dark choices are the Campaign's desk — components on the #/campaign
+  // Desk profile surface — and a choice has one home, not two. "Dark on the Mac, light
+  // on the iPad" is the Campaign's word too since 2026-09-01: Theme and Theme (mobile)
+  // are two Machine Settings rows, one per surface kind. The desk profile picker
   // stays: it is the same leaf ⚙ always wrote.
   // ⚙ THE MACHINE — the detail behind the header gauge, drawn only when the machine
   // service is installed. Null when it is not: no empty box explaining its own absence.

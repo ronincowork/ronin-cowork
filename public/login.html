@@ -30,9 +30,15 @@
          spelled the same as js/ui.js and style.css or that day gets expensive. -->
     <script>
       try {
+        /* A device pin, else the cached Campaign theme for this surface (touch reads
+           the mobile value), else the house light — the same chain index.html reads
+           (owner, 2026-09-01). */
         var t = localStorage.getItem('tmuxgrid.theme');
-        /* Light is the house default (owner, 2026-09-01); dark is the stored pin. */
-        if (t !== 'dark') document.documentElement.dataset.theme = 'light';
+        if (t !== 'light' && t !== 'dark') {
+          var coarse = matchMedia('(pointer: coarse)').matches;
+          t = localStorage.getItem(coarse ? 'tmuxgrid.theme.system.mobile' : 'tmuxgrid.theme.system') || 'light';
+        }
+        if (t === 'light') document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
     <style>

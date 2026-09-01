@@ -32,18 +32,36 @@ import { tiles } from './state.js';
 
 export const LS_THEME = 'tmuxgrid.theme';
 
-/** The owner's CHOICE: 'auto' (the default — the house's light), or the dark pin. */
+/** The owner's CHOICE on THIS DEVICE: a light or dark pin, or 'auto' — follow the
+ *  Campaign's configured theme (the Machine Settings control), else the house light. */
 export const currentTheme = () => {
   const t = localStorage.getItem(LS_THEME);
   return t === 'light' || t === 'dark' ? t : 'auto';
 };
 
-/** What the choice RESOLVES to right now — the only two shells CSS knows.
- *  THE HOUSE DEFAULT IS LIGHT (owner, 2026-09-01: "that should definitely be the
- *  default"): an unpinned install paints light on every device, rather than following
- *  the device's own scheme. Dark remains one tap away in ⚙ appearance, as a pin. */
+/** The CAMPAIGN'S configured themes — the system's own settings (Machine Settings →
+ *  appearance), served with the desk profiles at boot and told to us again when the
+ *  owner saves them. TWO values, because the owner ruled the surfaces apart
+ *  (2026-09-01: "light on my iPad, dark on my Mac" belongs in the Campaign): `theme`
+ *  is the pointer surfaces' word, `theme_mobile` the touch surfaces'. '' / 'automatic'
+ *  on either means the house default — light — not inheritance between them. Cached
+ *  per device so the pre-boot inline scripts paint the right shell before this module
+ *  loads. */
+const clean = (value) => (value === 'light' || value === 'dark' ? value : '');
+let campaignThemes = { desktop: '', mobile: '' };
+const COARSE = window.matchMedia('(pointer: coarse)').matches;
+export function setCampaignTheme(desk) {
+  campaignThemes = { desktop: clean(desk?.theme), mobile: clean(desk?.theme_mobile) };
+  try {
+    localStorage.setItem('tmuxgrid.theme.system', campaignThemes.desktop);
+    localStorage.setItem('tmuxgrid.theme.system.mobile', campaignThemes.mobile);
+  } catch (_) { /* private mode */ }
+}
+
+/** What resolves onto the page: a device pin (legacy, no UI writes one today)
+ *  outranks the Campaign's setting for this surface, which outranks the house light. */
 export const resolvedTheme = (choice = currentTheme()) =>
-  choice === 'auto' ? 'light' : choice;
+  choice === 'auto' ? ((COARSE ? campaignThemes.mobile : campaignThemes.desktop) || 'light') : choice;
 
 /**
  * The xterm theme, read off the resolved tokens. Called per Terminal construction and
@@ -199,13 +217,13 @@ export function applyTheme(name) {
 }
 
 /**
- * The flip button's whole contract (⚙ System → appearance). One button, two moves:
- * light is the house default, so choosing it stores 'auto' — the unpinned state —
- * and choosing dark stores the one pin there is. (The default used to follow the
- * device's scheme, with a live prefers-color-scheme listener; retired 2026-09-01
- * with the owner's light-by-default ruling.)
+ * The device's own word (⚙ desk → theme). 'light' and 'dark' are pins that outrank
+ * the Campaign's setting on this device alone; anything else stores 'auto' — follow
+ * the system. (The default used to follow the device's color scheme, with a live
+ * prefers-color-scheme listener; retired 2026-09-01 — the Campaign's setting is the
+ * system's word now, and the house floor is light.)
  */
 export function setTheme(name) {
-  localStorage.setItem(LS_THEME, name === 'dark' ? 'dark' : 'auto');
+  localStorage.setItem(LS_THEME, name === 'light' || name === 'dark' ? name : 'auto');
   applyTheme();
 }
