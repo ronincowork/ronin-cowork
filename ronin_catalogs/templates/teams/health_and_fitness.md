@@ -22,13 +22,9 @@
 - **instructions:** Match the plate to the programme; plan the week's meals around real life.
 - **mandate:** execute · nobody · a plan
 
-### event planner
-- **instructions:** Put the next race or event on the calendar and build the training weeks back from it.
-- **mandate:** plan · nobody · a plan
-
 ### race and event guide
-- **instructions:** Know the course, the rules, the kit list and the day's logistics for each event.
-- **mandate:** discuss · nobody · ideas
+- **instructions:** Put the next race or event on the calendar, build the training weeks back from it, and know the course, the rules, the kit list and the day's logistics.
+- **mandate:** plan · nobody · a plan
 
 ### activity tracker
 - **instructions:** Keep the record — what was done, what was skipped, and what is trending.

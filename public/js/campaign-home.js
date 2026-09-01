@@ -14,7 +14,7 @@ function DOORS() {
   return [
     { key: 'campaign', route: 'campaign', glyph: '⛩', name: t('campaign_home.machine_settings', 'Machine Settings'), is: t('campaign_home.campaign_is', 'Admin Desk configuration') },
     { key: 'coworks', route: 'cowork', glyph: '人々', name: t('campaign.coworks', 'Coworks'), is: t('campaign_home.coworks_is', 'Coworking space for Agents') },
-    { key: 'launch', route: 'launch', glyph: '人', name: t('campaign_home.launch', 'Launch'), is: t('campaign_home.launch_is', 'Start a new Team or Agent') },
+    { key: 'launch', route: 'launch', glyph: '人', name: t('campaign_home.launch', 'New Project'), is: t('campaign_home.launch_is', 'Start a new Team or Agent') },
   ];
 }
 

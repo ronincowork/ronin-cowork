@@ -26,6 +26,13 @@
     border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs);
     background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit;
   }
+  .ntf-agent[data-open='true'] .ntf-agent-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: start;
+  }
+  .ntf-agent[data-open='true'] .ntf-agent-name { grid-column: 2; width: 100%; min-height: calc(var(--space-12) * 1.5); resize: vertical; }
+  .ntf-agent[data-open='true'] .ntf-agent-what { grid-column: 2 / -1; width: 100%; min-height: calc(var(--space-12) * 3); resize: vertical; }
   .ntf-agent-lead, .ntf-agent-more, .ntf-agent-drop {
     flex: none; border: var(--edge) solid transparent; border-radius: var(--radius-xs);
     background: transparent; color: var(--muted-3); padding: var(--space-2) var(--space-4);
@@ -161,6 +168,8 @@
   /* ── New Agent's own few shapes ── */
   .na-omitted { margin: 0; color: var(--dim); font-size: var(--text-1); }
   .na-omitted[hidden] { display: none; }
+  .na-team-choices { margin-bottom: var(--space-4); }
+  .na-surface textarea { min-height: calc(var(--space-12) * 3); resize: vertical; }
   .na-note { margin: var(--space-4) 0 0; color: var(--dim); font-size: var(--text-2); }
   .na-sopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-12) * 4), 1fr)); gap: var(--space-1); }
   .na-sop { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-2) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
