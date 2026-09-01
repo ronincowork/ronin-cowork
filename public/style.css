@@ -68,17 +68,22 @@
      the owner ("I still don't see the kiiro shading"), and theme-relative mixes read
      as different colours per theme ("not rouge or mauve or putrid orange") — the
      ruling is ONE opaque kiiro, the same in light and dark: "I want this similar
-     orange to go across whether it's light or dark modes." The first constant value
-     (#decb8f) drifted khaki — "some kind of weird yellow and not a shade of our
-     kiiro" — so the band is now a TINT OF THE KIIRO TOKEN itself: constant across
-     themes because both mix inputs are constants, light enough for its own dark ink
-     family below (the theme's --fg-strong/--muted-2/--warn are tuned for the theme's
-     ground, not for this band's). */
-  --cowork-head-bg: color-mix(in srgb, var(--kiiro) 62%, #ffffff);
-  --cowork-head-fg: #201a0e;
-  --cowork-head-muted: #5a4d28;
-  /* Attention ON the band: the band is already kiiro, so attention speaks kaki. */
-  --cowork-head-attention: #8a3413;
+     orange to go across whether it's light or dark modes." Value history, all owner
+     verdicts: #decb8f drifted khaki ("weird yellow"); a 62% white tint of the token
+     washed amber into cream, which on the dark shell still read yellow ("it
+     shouldn't be yellow. In dark mode or ever"). So the band IS the kiiro token at
+     full strength — opaque, no mixing — with its own dark ink family below (the
+     theme's --fg-strong/--muted-2/--warn are tuned for the theme's ground, not for
+     this band's). */
+  /* DARK wears the quiet band it always had (owner, 2026-09-01: the opaque kiiro
+     band "looks absolute shit" in dark — "it was fine before"); LIGHT keeps the
+     opaque kiiro band — its block below redefines these four. One family, one
+     place per theme. */
+  --cowork-head-bg: var(--bg-2);
+  --cowork-head-fg: var(--fg-strong);
+  --cowork-head-muted: var(--muted-2);
+  /* Attention on the dark band: the kiiro itself reads as the cue. */
+  --cowork-head-attention: var(--kiiro);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -310,6 +315,12 @@
    index.html applies the saved value inline before first paint. THE --term-* TOKENS ARE
    REMAPPED HERE TOO: light means light all the way into the pane, terminal included. */
 :root[data-theme='light'] {
+  /* LIGHT wears the opaque kiiro band (owner, 2026-09-01); dark keeps its quiet
+     bg-2 band — see the family's dark defaults above. */
+  --cowork-head-bg: var(--kiiro);
+  --cowork-head-fg: #201a0e;
+  --cowork-head-muted: #56341c;
+  --cowork-head-attention: #8a3413;
   --bg: #f4f2ec;
   --bg-2: #eae7df;
   --panel: #ffffff;
