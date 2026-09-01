@@ -192,7 +192,14 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   instructionsInput.autocapitalize = 'off';
   instructionsInput.spellcheck = false;
   instructionsInput.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
-  instructionsInput.addEventListener('input', () => { draft.instructions = instructionsInput.value; paintFoot(); });
+  instructionsInput.addEventListener('input', () => {
+    draft.instructions = instructionsInput.value;
+    paintFoot();
+    // The save offer appears when a template goes dirty, and an instructions-only edit IS
+    // dirt — it just never repainted the actions, so Save as template stayed hidden until
+    // you happened to type a name too. (@template_shelves measured it.)
+    paintActions();
+  });
   stepInstructions.body.append(createField({ label: t('new_agent.instructions', 'Instructions'), control: instructionsInput }).el);
 
   /* ---- 5 · Team ---- */
@@ -529,6 +536,17 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         mandate: `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
         team_mode: draft.teamMode === 'new' ? 'new' : '',
         behaviours: draft.books,
+        // THE SWITCHES A LOADOUT IS MEANT TO CARRY. `TemplateBoxSave` stores these
+        // (@template_shelves measured `boxTail` writing all three) and this form was
+        // sending only `behaviours`, so a saved Personal Assistant lost its gbrain.
+        //
+        // ONLY THE ONS, DELIBERATELY. A template "carries exactly the fields it carries;
+        // everything unnamed stays as the level above landed it" (CASCADE § 1). This form
+        // previews routines and never flips them (§ 5.1), so there is no OFF a person
+        // chose here — sending every unresolved routine as `routines_off` would make a
+        // saved loadout dictate the whole map instead of adding to it.
+        routines_on: (seed?.routines || []).filter((row) => row.on).map((row) => row.name),
+        routines_off: [],
       },
     });
     if (!result.ok) return notice.set('failed', result.message);
