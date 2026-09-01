@@ -228,9 +228,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.default_recruit:** Recruit
 - **campaign_view.default_output:** Output
 - **campaign_view.default_dial:** Control
-- **campaign_view.default_permissions:** Permissions
 - **campaign_view.default_behaviours:** Behaviours
-- **campaign_view.permissions_help:** Provider permission posture; default uses the provider’s normal setting.
 - **campaign_view.behaviours_help:** One shelf:name book per line.
 - **campaign_view.defaults_summary:** {model} · {reach} · {dial}
 - **campaign_view.option_open:** Open
@@ -1153,6 +1151,13 @@ The catalog entry goes. {dir} is not touched.
 - **messages.retry:** Try Again
 - **messages.force:** Force
 - **messages.dismiss:** Dismiss
+- **messages.trying:** Trying…
+- **messages.forcing:** Forcing…
+- **messages.dismissing:** Dismissing…
+- **messages.delivered:** Delivered and cleared.
+- **messages.dismissed:** Message dismissed.
+- **messages.retained:** Still waiting — {reason}
+- **messages.action_failed:** Message action failed — {reason}
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update
@@ -1483,6 +1488,7 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
 - **workspace.channel_agent_message_queue:** Agent message queue
+- **workspace.channel_agent_message_queue_count:** Agent message queue ({count})
 - **team_config.no_roster:** This Cowork has no saved roster.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Cowork ID
@@ -1514,7 +1520,6 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.recruit:** Recruit
 - **team_config.output:** Output
 - **team_config.dial:** Control
-- **team_config.permissions:** Permissions
 - **team_config.next_form:** These defaults land in the next Agent form that opens. Nothing live changes.
 - **team_config.saving:** Saving…
 - **team_config.saved:** Saved

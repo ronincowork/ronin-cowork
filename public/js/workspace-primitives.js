@@ -154,6 +154,7 @@ function createChannelSurface(options = {}) {
   for (const { id, label: tabLabel } of channels) {
     const button = node('button', 'wk-channel-service-tab', tabLabel);
     button.type = 'button';
+    button.dataset.service = id;
     button.setAttribute('role', 'tab');
     const service = node('div', 'wk-channel-service');
     service.setAttribute('role', 'tabpanel');
