@@ -15,8 +15,8 @@ import path from 'node:path';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-campaigns-test-'));
 process.env.RONIN_CAMPAIGNS_DIR = temp;
-const ROUTINES_OFF = {
-  ronin_base: false, ronin_worktrees: false, ronin_services: false, ronin_host: false, gbrain: false,
+const ROUTINES_STOCK = {
+  ronin_base: true, ronin_worktrees: false, ronin_services: false, ronin_host: false, gbrain: false,
 };
 
 const {
@@ -34,7 +34,7 @@ const {
 test('Atarashi writes a complete home_machine Campaign and consumes kind as a preset', async () => {
   const c = await populateHomeMachine({
     title: 'Home machine', description: 'The work on this box.', desk_profile: 'terminal',
-    provider: 'openai', model: 'gpt-5.6-terra', kind: 'coding', routine_bundle: 'control',
+    provider: 'openai', model: 'gpt-5.6-terra', kind: 'coding', routine_bundle: 'worktrees',
   });
   assert.equal(c.id, 'home_machine');
   assert.equal(c.title, 'Home machine');
@@ -54,6 +54,26 @@ test('Atarashi writes a complete home_machine Campaign and consumes kind as a pr
   await fs.unlink(path.join(temp, 'home_machine.json'));
 });
 
+test('the bundle ladder is catalog metadata: base is ronin_base only, services is everything, bogus falls back to base', async () => {
+  const before = new Set(await fs.readdir(temp));
+  const base = await populateHomeMachine({ routine_bundle: 'base' });
+  assert.deepEqual(base.config.agent_defaults.routines, {
+    ronin_base: true, ronin_worktrees: false, ronin_services: false, ronin_host: false, gbrain: false,
+  }, 'the stock campaign map is base + the always-on floor');
+  await fs.unlink(path.join(temp, 'home_machine.json')).catch(() => {});
+  const services = await populateHomeMachine({ routine_bundle: 'services' });
+  assert.deepEqual(Object.values(services.config.agent_defaults.routines), [true, true, true, true, true]);
+  await fs.unlink(path.join(temp, 'home_machine.json')).catch(() => {});
+  const bogus = await populateHomeMachine({ routine_bundle: 'control' });
+  assert.deepEqual(bogus.config.agent_defaults.routines, {
+    ronin_base: true, ronin_worktrees: false, ronin_services: false, ronin_host: false, gbrain: false,
+  }, 'a retired or unknown bundle name lands on the stock rung, not on worktrees');
+  // Leave the world exactly as found — later tests count records.
+  for (const f of await fs.readdir(temp)) {
+    if (!before.has(f)) await fs.unlink(path.join(temp, f));
+  }
+});
+
 test('create → read: the record round-trips, and every field lands as typed', async () => {
   const c = await createCampaign({
     title: 'Ronin',
@@ -69,7 +89,7 @@ test('create → read: the record round-trips, and every field lands as typed', 
   assert.deepEqual(c.config, {
     agent_defaults: {
       provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: ['open'],
-      routines: ROUTINES_OFF, behaviours: [], dial: 'write', launch_mode: 'live_dangerously', gbrain_mode: 'disconnected',
+      routines: ROUTINES_STOCK, behaviours: [], dial: 'write', launch_mode: 'live_dangerously', gbrain_mode: 'disconnected',
     },
     cowork_defaults: {}, template_defaults: {},
   });
@@ -124,7 +144,7 @@ test('config merges per sub-bucket, so a caller cannot drop a bucket it never he
   const c = (await readCampaign('ronin'))!;
   assert.deepEqual(c.config.agent_defaults, {
     provider: '', model: 'x', reach: 'plan', recruit: 'propose agents', output: ['open'],
-    routines: ROUTINES_OFF, behaviours: [], dial: 'write', launch_mode: 'live_dangerously', gbrain_mode: 'disconnected',
+    routines: ROUTINES_STOCK, behaviours: [], dial: 'write', launch_mode: 'live_dangerously', gbrain_mode: 'disconnected',
   }, 'the first bucket survived the second write as a complete typed record');
   assert.deepEqual(c.config.cowork_defaults, { branch: 'dev' });
   assert.deepEqual(c.config.template_defaults, {});
@@ -167,13 +187,16 @@ test('a pre-Atarashi Campaign receives the stock Routine map once', async () => 
     config: { agent_defaults: { provider: 'openai' } },
   }));
   const first = await readCampaign('pre_atarashi');
-  assert.deepEqual(first?.config.agent_defaults.routines, { ronin_base: true, ronin_worktrees: true });
+  assert.deepEqual(first?.config.agent_defaults.routines, {
+    ronin_base: true, ronin_worktrees: false, ronin_services: false, ronin_host: false, gbrain: false,
+  }, 'the seeded stock map is the catalog base rung — ronin_base and the floor');
   const stored = JSON.parse(await fs.readFile(file, 'utf8'));
   stored.config.agent_defaults.routines.future_routine = false;
   await fs.writeFile(file, JSON.stringify(stored));
   const second = await readCampaign('pre_atarashi');
   assert.deepEqual(second?.config.agent_defaults.routines, {
-    ronin_base: true, ronin_worktrees: true, future_routine: false,
+    ronin_base: true, ronin_worktrees: false, ronin_services: false, ronin_host: false, gbrain: false,
+    future_routine: false,
   }, 'an existing map is not recomputed or reached down into');
   await fs.unlink(file);
 });
@@ -254,7 +277,8 @@ test('a half-written record degrades to a readable Campaign instead of taking a 
   assert.deepEqual(thin.config, {
     agent_defaults: {
       provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: ['open'],
-      routines: { ronin_base: true, ronin_worktrees: true }, behaviours: [], dial: 'write', launch_mode: 'live_dangerously', gbrain_mode: 'disconnected',
+      routines: { ronin_base: true, ronin_worktrees: false, ronin_services: false, ronin_host: false, gbrain: false },
+      behaviours: [], dial: 'write', launch_mode: 'live_dangerously', gbrain_mode: 'disconnected',
     },
     cowork_defaults: {}, template_defaults: {},
   }, 'an array is not a bucket and receives the typed stock defaults');

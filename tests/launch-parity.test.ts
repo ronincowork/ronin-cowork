@@ -244,6 +244,20 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
   assert.equal(f2.cmd, c2.cmd, 'and both callers get the identical resolved command');
 });
 
+test("an agent template's routines_on gbrain delivers as gbrain_mode connected, explicit hand still winning", async () => {
+  const fromTemplate = await resolveForm(commonsForm({
+    provider: 'anthropic', model: 'opus', template: 'personal_assistant',
+  }), new Set());
+  assert.equal(fromTemplate.gbrain_mode, 'connected', "the template's gbrain reaches the launch");
+  assert.deepEqual(fromTemplate.stated_by.gbrain_mode, [{ layer: 'template', source: 'personal_assistant' }]);
+
+  const overruled = await resolveForm(commonsForm({
+    provider: 'anthropic', model: 'opus', template: 'personal_assistant', gbrain_mode: 'disconnected',
+  }), new Set());
+  assert.equal(overruled.gbrain_mode, 'disconnected', 'an explicit launch answer beats the template');
+  assert.deepEqual(overruled.stated_by.gbrain_mode, [{ layer: 'launch', source: 'launch request' }]);
+});
+
 test('launch_mode preserves provider configuration or appends the declared bypass flag', async () => {
   const configured = await resolveForm(commonsForm({
     provider: 'anthropic', model: 'opus', launch_mode: 'configured', gbrain_mode: 'connected',

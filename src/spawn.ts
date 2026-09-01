@@ -456,11 +456,17 @@ export async function resolveForm(
   const routineMcp = parentSeed?.resolved_routines
     .filter((routine) => routine.enabled)
     .flatMap((routine) => routine.mcp) ?? [];
+  // THE TEMPLATE'S gbrain DELIVERS THROUGH THE LANDED CONTROL (ruled 2026-09-01): a
+  // picked agent template carrying `routines_on: gbrain` resolves gbrain_mode to
+  // connected when the launch did not state one — the explicit hand still wins, and
+  // the receipt names the template as the source below.
+  const templateGbrain = preset.template?.routines_on.includes('gbrain') ? 'connected' as const : undefined;
+  const gbrainAnswer = form.gbrain_mode ?? templateGbrain ?? parentSeed?.seeds.gbrain_mode.value;
   const mcpWanted = profile.mcpAlways || routineMcp.length > 0
     ? true
-    : (form.gbrain_mode ?? parentSeed?.seeds.gbrain_mode.value) === 'connected'
+    : gbrainAnswer === 'connected'
       ? true
-      : (form.gbrain_mode ?? parentSeed?.seeds.gbrain_mode.value) === 'disconnected'
+      : gbrainAnswer === 'disconnected'
         ? false
         : profile.mcpDefault;
   // Somebody ASKED for off, as against off being merely what this kind defaults to. The
@@ -529,7 +535,9 @@ export async function resolveForm(
       ? system
       : form.gbrain_mode !== undefined
         ? explicit
-        : parentSeed?.seeds.gbrain_mode.stated_by ?? profile.stated_by.mcpDefault;
+        : templateGbrain !== undefined
+          ? preset.source ?? system
+          : parentSeed?.seeds.gbrain_mode.stated_by ?? profile.stated_by.mcpDefault;
   const unique = (...groups: StatedBy[][]): StatedBy[] => {
     const seen = new Set<string>();
     return groups.flat().filter((item) => {

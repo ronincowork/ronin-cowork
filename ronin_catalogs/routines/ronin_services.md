@@ -8,4 +8,5 @@
 - **tools:** tejun-rireki, mika
 - **mcp:** —
 - **requires:** ronin_base
+- **bundles:** services
 - **order:** 30

@@ -8,4 +8,5 @@
 - **tools:** tejun-recall, tejun-remember
 - **mcp:** gbrain
 - **requires:** ronin_base
+- **bundles:** services
 - **order:** 50
