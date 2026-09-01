@@ -201,10 +201,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.presets:** Presets
 - **campaign_view.presets_help:** A preset copies all of its components into this Campaign. Change any one of them afterwards; the preset is not consulted again.
 - **campaign_view.apply:** Apply
+- **campaign_view.revert:** Revert
 - **campaign_view.applied:** applied — every component below is now this Campaign’s own
 - **campaign_view.applied_tag:** applied
 - **campaign_view.skin:** Skin
-- **campaign_view.skin_help:** The look — colours, corners, faces. The page wears it now.
+- **campaign_view.skin_help:** The look — colours, corners, faces.
 - **campaign_view.theme:** Theme
 - **campaign_view.theme_help:** Light or dark for pointer surfaces; Automatic is the house default — light.
 - **campaign_view.theme_mobile:** Theme (mobile)

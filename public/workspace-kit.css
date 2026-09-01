@@ -7,6 +7,10 @@
   .wk-surface-header-actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
   .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
   .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
+  /* ACTION WAITING (owner, 2026-09-01): a header action over a dirty surface goes bright
+     kiiro so it is unmissable — the band's own ink carries the words on it. Clean
+     surfaces keep the resting look above. */
+  .wk-action[data-attention='true'] { border-color: var(--warn); background: var(--warn); color: var(--cowork-head-fg); font-weight: 700; }
   .wk-action[data-kind='danger'] { border-color: var(--bad); color: var(--bad-soft); }
   .wk-action[data-size='compact'] { min-height: var(--space-11); padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
   .wk-action[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki); }
