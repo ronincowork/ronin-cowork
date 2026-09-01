@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tejun-fork — launch one visible Ronin Agent. Every input is optional.
-# Usage: tejun-fork [instructions] [--name n] [--team t] [--behaviour ways:book]…
+# Usage: tejun-fork [instructions] --name n [--team t] [--behaviour ways:book]…
 #                   [--provider p] [--model m] [--dial user|read|write]
 set -u
 die() { printf 'REFUSED: %s\n' "$1" >&2; exit "${2:-4}"; }
@@ -38,6 +38,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 case "$DIAL" in ''|user|read|write) ;; *) die '--dial is user, read, or write' 2 ;; esac
+[ -n "$NAME" ] || die '--name is required' 2
 
 CALLER=$(me 2>/dev/null || true)
 BODY=$(PROMPT="$PROMPT" NAME="$NAME" TEAM="$TEAM" BEHAVIOURS="$BEHAVIOURS" PROVIDER="$PROVIDER" MODEL="$MODEL" DIAL="$DIAL" CALLER="$CALLER" python3 - <<'PY'

@@ -61,10 +61,11 @@ test('tejun-fork serializes repeatable behaviours and no role field', async () =
   assert.doesNotMatch(source, /session_role|session-role|\("session_role",/);
 });
 
-test('forkit makes every input optional and invents no behaviour', async () => {
+test('forkit requires only a name and invents no behaviour', async () => {
   const text = await forkit();
   assert.match(text, /repeatable `behaviour`/, 'birth books are optional parameters');
-  assert.match(text, /Every launch input is optional/);
+  assert.match(text, /`name` is required/);
+  assert.match(text, /Every other launch input is\s+optional/);
   assert.match(text, /No behaviour selection is valid/i);
   assert.match(text, /no mandatory behaviour decision/i);
   assert.match(text, /do not stop to ask for one/i);
