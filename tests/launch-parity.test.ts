@@ -461,18 +461,18 @@ test('kind and behaviours resolve at birth, with unusable books ignored rather t
 
 test('a selected template names unchanged preset values without reapplying edited ones', async () => {
   const preset = await resolveForm(commonsForm({
-    template: 'document_it',
-    prompt: 'Write what this is and how it works, for a reader who was not in the room.',
+    template: 'technical_writer',
+    prompt: 'Be my technical writer — write what things are and how they work, for a reader who was not in the room.',
     mandate: { reach: 'execute', recruit: 'nobody', output: 'an artifact' },
     behaviours: ['sops:github'],
   }), new Set());
-  assert.deepEqual(preset.stated_by.template, [{ layer: 'template', source: 'document_it' }]);
+  assert.deepEqual(preset.stated_by.template, [{ layer: 'template', source: 'technical_writer' }]);
   assert.equal(preset.stated_by.brief[0]?.layer, 'template');
-  assert.deepEqual(preset.stated_by.mandate, [{ layer: 'template', source: 'document_it' }]);
-  assert.deepEqual(preset.stated_by.behaviours, [{ layer: 'template', source: 'document_it' }]);
+  assert.deepEqual(preset.stated_by.mandate, [{ layer: 'template', source: 'technical_writer' }]);
+  assert.deepEqual(preset.stated_by.behaviours, [{ layer: 'template', source: 'technical_writer' }]);
 
   const edited = await resolveForm(commonsForm({
-    template: 'document_it',
+    template: 'technical_writer',
     prompt: 'Write only the API page.',
     mandate: { reach: 'plan', recruit: 'nobody', output: 'an artifact' },
     behaviours: [],

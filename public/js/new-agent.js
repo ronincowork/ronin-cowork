@@ -103,8 +103,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
   stepType.body.append(typeHost);
 
-  /* ---- 2 · name, model & kind (the step reshapes with the type and the door) ---- */
-  const stepTop = createStep({ n: 2, key: 'top', title: t('new_agent.name_model_kind', 'Name, model & kind') });
+  /* ---- 2 · name & kind ---- */
+  const stepTop = createStep({ n: 2, key: 'top', title: t('new_team.name_kind', 'Name & kind') });
   const nameInput = el('input');
   nameInput.type = 'text';
   nameInput.autocapitalize = 'off';
@@ -124,11 +124,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     paintActions(); // Start wakes on the first character of a name
   });
   const leanNote = el('p', 'na-omitted');
-  const pair = providerModelPair(
-    () => ({ provider: draft.provider, model: draft.model }),
-    (provider, model) => { draft.provider = provider; draft.model = model; touched.model = true; paintFoot(); },
-    (label, control) => createField({ label, control }).el,
-  );
   const kindHost = el('div');
   function paintKinds() {
     // THE KIND IS THE TRAY'S FILTER and only a Cowork Agent has one; Manual has no tray
@@ -151,11 +146,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
   const topLeft = el('div', 'aa-col');
   topLeft.append(createField({ label: t('add_agent.name', 'name'), control: nameInput }).el, leanNote);
-  const topRight = el('div', 'aa-col');
-  topRight.append(pair.el);
-  const topGrid = el('div', 'aa-top');
-  topGrid.append(topLeft, topRight);
-  stepTop.body.append(topGrid, kindHost);
+  stepTop.body.append(topLeft, kindHost);
 
   /* ---- 3 · Template ---- */
   const stepTemplate = createStep({ n: 3, key: 'template', title: t('template', 'Template') });
@@ -188,7 +179,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   /* ---- 4 · Instructions ---- */
   const stepInstructions = createStep({ n: 4, key: 'instructions', title: t('new_agent.instructions', 'Instructions'), onToggle: () => toggle('instructions') });
   const instructionsInput = el('textarea');
-  instructionsInput.rows = 3;
+  instructionsInput.rows = 6;
   instructionsInput.autocapitalize = 'off';
   instructionsInput.spellcheck = false;
   instructionsInput.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
@@ -200,14 +191,14 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     // you happened to type a name too. (@template_shelves measured it.)
     paintActions();
   });
-  stepInstructions.body.append(createField({ label: t('new_agent.instructions', 'Instructions'), control: instructionsInput }).el);
+  stepInstructions.body.append(instructionsInput);
 
   /* ---- 5 · Team ---- */
   const stepTeam = createStep({ n: 5, key: 'team', title: t('squad', 'Team'), onToggle: () => toggle('team') });
   const teamHost = el('div');
   function paintTeam() {
     teamHost.replaceChildren();
-    const ways3 = el('div', 'fs-pair');
+    const ways3 = el('div', 'fs-pair na-team-choices');
     const way = (key, label, sub) => {
       const box = el('button', 'fs-way');
       box.type = 'button';
@@ -220,6 +211,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         // has the last word. The seed door is re-asked for the team's resolution.
         void loadSeed();
         paintTeam();
+        paintBranch();
         paintFoot();
       });
       return box;
@@ -237,7 +229,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       const select = el('select');
       for (const team of teams) select.add(new Option(team.title || team.name, team.name));
       select.value = draft.team;
-      select.addEventListener('change', () => { draft.team = select.value; void loadSeed(); paintFoot(); });
+      select.addEventListener('change', () => { draft.team = select.value; paintBranch(); void loadSeed(); paintFoot(); });
       teamHost.append(createField({ label: t('squad', 'Team'), control: select }).el);
     }
     if (draft.teamMode === 'new') {
@@ -266,12 +258,29 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
   stepTeam.body.append(teamHost);
 
-  /* ---- 6 · Where ---- */
-  const stepWhere = createStep({ n: 6, key: 'where', title: t('new_team.where', 'Where'), onToggle: () => toggle('where') });
+  /* ---- 6 · Who and where ---- */
+  const stepWhere = createStep({ n: 6, key: 'where', title: t('new_team.who_where', 'Who and where'), onToggle: () => toggle('where') });
+  const pair = providerModelPair(
+    () => ({ provider: draft.provider, model: draft.model }),
+    (provider, model) => { draft.provider = provider; draft.model = model; touched.model = true; paintFoot(); },
+    (label, control) => createField({ label, control }).el,
+  );
   const rootSelect = el('select');
   rootSelect.addEventListener('change', () => { draft.root = rootSelect.value; touched.root = true; paintFoot(); });
-  const rootField = createField({ label: t('team.project_root', 'Project root'), control: rootSelect }).el;
-  stepWhere.body.append(rootField);
+  const branchInput = el('input');
+  branchInput.type = 'text';
+  branchInput.readOnly = true;
+  branchInput.placeholder = '—';
+  const wherePair = el('div', 'fs-pair');
+  wherePair.append(
+    createField({ label: t('team.project_root', 'Project root'), control: rootSelect }).el,
+    createField({ label: t('team.branch', 'Branch'), control: branchInput }).el,
+  );
+  stepWhere.body.append(pair.el, wherePair);
+  function paintBranch() {
+    const team = draft.teamMode === 'existing' ? teams.find((row) => row.name === draft.team) : null;
+    branchInput.value = team?.branch || '';
+  }
   function paintRoots() {
     rootSelect.replaceChildren();
     for (const root of roots) rootSelect.add(new Option(root.name, root.name));
@@ -380,8 +389,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     team: stepTeam, where: stepWhere, mandate: stepMandate, loadout: stepLoadout,
   };
   const plan = () => {
-    if (draft.type === 'terminal') return ['type', 'top', 'team'];
-    if (draft.type === 'bare_metal_agent') return ['type', 'top', 'instructions', 'team'];
+    if (draft.type === 'terminal') return ['type', 'top', 'team', 'where'];
+    if (draft.type === 'bare_metal_agent') return ['type', 'top', 'instructions', 'team', 'where'];
     return ['type', 'top', 'template', 'instructions', 'team', 'where', 'mandate', 'loadout'];
   };
   const FOLDS = ['instructions', 'team', 'where', 'mandate', 'loadout'];
@@ -579,6 +588,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     if (!draft.kindTouched && team && value('kind')) draft.kind = value('kind');
     pair.paint();
     paintRoots();
+    paintBranch();
     paintKinds();
     paintTray();
     paintMandate();
@@ -592,20 +602,17 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     const order = plan();
     for (const [key, step] of Object.entries(steps)) step.el.hidden = !order.includes(key);
     order.forEach((key, index) => steps[key].setNumber(index + 1));
-    stepTop.el.querySelector('h3').textContent = !isCowork()
-      ? (hasAgent() ? t('new_agent.name_where_model', 'Name, where & model') : t('new_agent.name_where', 'Name & where'))
-      : t('new_agent.name_model_kind', 'Name, model & kind');
-    // The lean types fold the where step into the top block — the drawing's one-block
-    // geometry: who it is, then where it runs. Moving the field keeps its typed state.
-    topRight.hidden = !hasAgent();
-    if (!isCowork()) topLeft.append(rootField);
-    else stepWhere.body.append(rootField);
+    stepTop.el.querySelector('h3').textContent = isCowork()
+      ? t('new_team.name_kind', 'Name & kind')
+      : t('add_agent.name', 'name');
+    pair.el.hidden = !hasAgent();
     paintTypes();
     paintLeanNote();
     paintKinds();
     paintTray();
     paintTeam();
     paintRoots();
+    paintBranch();
     pair.paint();
     paintMandate();
     paintRoutinePreview();

@@ -26,14 +26,12 @@ test('the shipped agent shelf surfaces loadouts, and no team answers', async () 
   assert.deepEqual(assistant?.mandate, { reach: 'execute', recruit: 'nobody', output: ['open'] });
   assert.equal(assistant?.team_mode, 'new', 'the assistant is born into its own team');
   assert.deepEqual(assistant?.routines_on, ['gbrain']);
-  const check = rows.find((row) => row.name === 'health_check');
+  const check = rows.find((row) => row.name === 'health_checker');
   assert.deepEqual(check?.mandate?.output, ['an artifact', 'no code']);
-  // Tray order is the stated order:, so the flagship staffing box leads the shelf.
-  assert.equal(rows[0]?.name, 'staff_my_codebase');
-  const staff = rows.find((row) => row.name === 'staff_my_codebase');
-  assert.deepEqual(staff?.mandate?.output, ['the team']);
-  assert.equal(staff?.team_mode, 'new');
-  assert.ok(staff?.behaviours.includes('sops:codebase_team'), 'the staffing SOP rides the loadout');
+  // Tray order is the stated order:, so the assistant leads the shelf — and every box
+  // is a PERSON (agents are people, teams are projects; the owner's rule).
+  assert.equal(rows[0]?.name, 'personal_assistant');
+  assert.ok(!rows.some((row) => row.name === 'staff_my_codebase'), 'the staffing project moved to the teams shelf');
 });
 
 test('the shipped team shelf surfaces casts with one marked lead each', async () => {
@@ -50,6 +48,11 @@ test('the shipped team shelf surfaces casts with one marked lead each', async ()
     assert.equal(cast.agents.filter((row) => row.team_lead).length, 1, `${cast.name} marks one lead`);
     assert.ok(cast.agents.length >= 2, `${cast.name} is a cast, not a loadout`);
   }
+  // The flagship project: the coordinator is born marked, the assessor staffs.
+  const staff = rows.find((row) => row.name === 'staff_my_codebase');
+  assert.ok(staff, 'staff_my_codebase is a TEAM template');
+  assert.equal(staff?.agents.find((row) => row.team_lead)?.name, 'code coordinator');
+  assert.deepEqual(staff?.agents.find((row) => row.name === 'codebase assessor')?.mandate?.output, ['the team']);
 });
 
 test('a cast parses from the section format, row keys never leaking top-level', () => {

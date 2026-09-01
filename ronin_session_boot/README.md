@@ -1,6 +1,6 @@
 # ronin_session_boot — what a NEW SESSION reads before anything else
 
-**test_protocols:** ordinary dev work does not run BYOIN — not at a commit, not at a hand-in; the one full repository BYOIN is the lead's team promotion at `team → dev` — `docs/test-protocols.md` is the contract.
+**test_protocols:** ordinary dev work does not run BYOIN — not at a commit, not at a hand-in; full repository BYOIN runs at the owner's two boundaries, team promotion `team → dev` and release `dev → master` — `docs/test-protocols.md` is the contract.
 
 Named for booting a **session**, never the application: nothing here runs when Ronin
 starts. It is read once, when a session is born.

@@ -18,11 +18,11 @@ The schedule (the WORKTREES build-out in ronin-lab, "What runs where"; mechanism
 |---|---|
 | save · commit | none — private to the desk |
 | hand-in → team line | mechanical admission only: the merge, conflict detection, near-instant invariants |
-| **team promotion → `dev`** | **the one full repository BYOIN** (`bin/ronin-byoin --repo`), on the exact candidate, run by `bin/ronin-promote` |
-| `dev → master` PR | CI consumes the promotion receipt for the PR head; a `--gates` rerun is assurance, not the first check |
+| **team promotion → `dev`** | **the first full repository BYOIN** (`bin/ronin-byoin --repo`), on the exact candidate, run by `bin/ronin-promote` |
+| **`dev → master` PR** | **the second full repository BYOIN** (`bin/ronin-byoin --repo`) on the exact PR head, after CI consumes its promotion receipt |
 | after `dev` moves | restart from the `dev` worktree, deployment health checks, automatic revert on failure |
 
-The full BYOIN therefore runs exactly once per promotion into `dev`, by the lead or
+The first full BYOIN runs exactly once per promotion into `dev`, by the lead or
 compiler, in `dev`'s candidate worktree — `current dev + the team line's tip` — and `dev`
 then carries a receipt for its exact SHA (`bin/ronin-store promotion_ledger`):
 
@@ -36,7 +36,7 @@ a candidate that changes after its run is a new candidate. Ordinary contributors
 run BYOIN around their commits or hand-ins; a rōnin's `solo/<session>` hands in straight
 to `dev`, so that hand-in *is* the promotion boundary and carries the full BYOIN.
 
-GitHub runs its workflow only for a pull request to `master` or an explicit
+GitHub runs the second full BYOIN only for a pull request to `master` or an explicit
 `workflow_dispatch`, and it begins by verifying the receipt attached to the PR body
 (`scripts/verify-promotion-receipt.mjs`) before any rerun. It does not run on pushes to
 `dev` or `master`. Local pushes have no BYOIN pre-push hook. CI is release-boundary

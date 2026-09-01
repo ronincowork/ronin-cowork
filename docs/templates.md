@@ -9,14 +9,21 @@ owner's own distinction:
 > template. If you have a kind of team-oriented requirement with multiple agents
 > coordinating to deliver on a task, that would be a team template."
 
-**An agent template is a loadout** — the reading, tools, mandate and starting brief for
-ONE session. A system administrator you spin up when Ronin is acting crazy; a health
-check for your own application; a personal assistant with the brain connected.
+The short rule (the owner's, 2026-09-01): **agents are people, teams are projects.**
 
-**A team template is a cast** — several agents with assignments and mandates,
-coordinating on one job. A Dinner Party is a host's right hand, a menu-and-shopping
-agent, a table-and-room agent and the entertainment; Ship an App is a lead, two
-builders, a reviewer and a docs writer. The lead is just one of the agents, marked.
+**An agent template is a person you'd assign** — one session's loadout: the reading,
+tools, mandate and starting brief. A system administrator you spin up when Ronin is
+acting crazy; a health checker for your own application; a front-end developer; a
+personal assistant with the brain connected. If the box's name is a job title, it
+belongs here.
+
+**A team template is a project — a cast that delivers a task.** Several agents with
+assignments and mandates, coordinating on one job, the lead just one of them, marked.
+A Dinner Party is a host's right hand, menu-and-shopping, table-and-room and the
+entertainment; Staff My Codebase is a code coordinator and an assessor who staffs the
+specialists; Health Checks is a check lead and a checker on a rhythm. If the box's
+name is a task — do health checks, redo the study, bake for the fair — it belongs
+here.
 
 ## Where they live
 
@@ -73,12 +80,14 @@ your agent, as above), not from a launch form.
 
 ## The shipped library
 
-Six casts — Ship an App 🏗, Raid My Codebase 🛠, Ship the Tour 🎸, Dinner Party 🕯,
-Health & Fitness 🏃, Put the Garden Right 🌿 — and fourteen loadouts, from the Personal
+Ten projects — Staff My Codebase 🎬, Ship an App 🏗, Raid My Codebase 🛠, Health
+Checks 📈, Ship the Tour 🎸, Dinner Party 🕯, Health & Fitness 🏃, Bake for the Fair
+🥧, Redo the Study 🪑, Put the Garden Right 🌿 — and eleven people, from the Personal
 Assistant 📇 (gbrain on, born into its own team) and the System Administrator 🔧 to
-Bake for the Fair 🥧. The first box to try is **Staff My Codebase** 🎬: one agent
-lands on your codebase, surveys the services, staffs a team member for each, raises a
-monitor for you to mark as team lead, and hands you a team you can talk to — its
-procedure is `ronin_sops/codebase_team.md`, and your own copy of that book changes how
-it staffs. The listing is the directory (`ls ronin_catalogs/templates/teams
-"$(bin/ronin-store catalogs)/templates/teams"`), never a page like this one.
+the Housekeeper 🔑. The first project to try is **Staff My Codebase** 🎬: a code
+coordinator born as the marked lead, and an assessor that surveys your codebase,
+staffs one specialist per service into the team, and hands you a crew you can talk
+to — its procedure is `ronin_sops/codebase_team.md`, and your own copy of that book
+changes how it staffs. The listing is the directory (`ls
+ronin_catalogs/templates/teams "$(bin/ronin-store catalogs)/templates/teams"`), never
+a page like this one.

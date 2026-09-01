@@ -1,4 +1,4 @@
-# Team promotion — the one full BYOIN, and the receipt that proves it
+# Team promotion — the first full BYOIN, and the receipt that proves it
 
 The lead's admission of a team line into `dev`. Semantic authority: the WORKTREES and
 RONIN_CONTROL_SURFACE build-outs in ronin-lab. This page is the mechanism and the interface:
@@ -10,8 +10,8 @@ what `bin/ronin-promote` does, what it writes, and what PR/CI reads from it.
 |---|---|---|
 | save · commit | none | private to the desk |
 | hand-in → team line | mechanical admission (merge, conflict, near-instant invariants) | shares work with the team; nothing has entered `dev` |
-| **team promotion → `dev`** | **the full repository BYOIN, once, on the exact candidate** | the closest shared-code boundary; the lead can attribute a failure |
-| `dev → master` PR | CI **consumes** the promotion receipt for the PR head, then may rerun `--gates` for assurance | `dev` already carries a receipt for that SHA |
+| **team promotion → `dev`** | **the first full repository BYOIN, once, on the exact candidate** | the closest shared-code boundary; the lead can attribute a failure |
+| **`dev → master` PR** | CI consumes the promotion receipt, then runs **the second full repository BYOIN** on that exact head | the owner's second boundary, ruled 2026-09-01 |
 | after `dev` moves | restart from the `dev` worktree; deployment health checks; automatic revert on failure | the one failure that surfaces after the ref moved |
 | installed-box maintenance | full installed-box BYOIN (`docs/test-protocols.md`) | tests the machine, not the repo |
 

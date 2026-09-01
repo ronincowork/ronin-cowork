@@ -16,7 +16,14 @@ import { envWithoutGitLocation } from '../tegami.js';
 const execFileP = promisify(execFile);
 
 /** Machine-authored commits must not depend on a user's or CI runner's global Git config. */
-export const AUTOMATION_IDENTITY = ['-c', 'user.name=Ronin', '-c', 'user.email=ronin@localhost'] as const;
+export const AUTOMATION_IDENTITY = ['-c', 'user.name=Ronin Promote', '-c', 'user.email=promote@ronin.local'] as const;
+
+/** A desk owns its identity. Worktree config prevents one session from relabelling another. */
+export async function stampDeskIdentity(repoDir: string, worktree: string, session: string): Promise<void> {
+  await git(repoDir, ['config', 'extensions.worktreeConfig', 'true']);
+  await git(worktree, ['config', '--worktree', 'user.name', `Ronin session ${session}`]);
+  await git(worktree, ['config', '--worktree', 'user.email', `${session.replace(/[^a-zA-Z0-9._-]/g, '_')}@sessions.ronin.local`]);
+}
 
 export class GitError extends Error {
   constructor(readonly args: string[], readonly stderr: string, readonly code: number | string | null, readonly stdout = '') {

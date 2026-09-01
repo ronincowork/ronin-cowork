@@ -248,6 +248,20 @@ test('dev is live: health failure after restart is reverted through the same doo
   assert.match(notices[0], new RegExp(`${r.repos[0].expected_old.slice(0, 7)}..${r.repos[0].candidate.slice(0, 7)}`), 'the range stays attributed');
 });
 
+test('manual revert is candidate-first: a failed BYOIN leaves dev at the promoted tip', async () => {
+  const cw = await fixture('cowork', 1);
+  const promoted = await P.promoteTeam({ team: 'revert-red', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(), restart: false, ...quiet });
+  assert.equal(promoted.ok, true);
+  const before = sh(cw.dir, 'rev-parse', 'dev');
+  const out = await P.revertPromotion({ receipt: promoted.receipt!, by: 'lead', effects: fakes({ byoin: async (c) => fail(c) }), ...quiet });
+  assert.equal(out.ok, false);
+  assert.equal(out.receipt?.state, 'failed');
+  assert.equal(out.receipt?.failure?.stage, 'proving');
+  assert.equal(sh(cw.dir, 'rev-parse', 'dev'), before, 'the target ref never moved before the revert candidate proved');
+  assert.ok(await fs.stat(path.join(cw.dir, 'hand-in-1.txt')), 'the promoted content remains live');
+  assert.equal(sh(cw.dir, 'branch', '--list', 'revert/*'), '', 'the throwaway branch is removed after failure');
+});
+
 test('bisect names the first hand-in whose candidate fails, and the files it touched', async () => {
   const cw = await fixture('cowork', 3);
   const fx = fakes({

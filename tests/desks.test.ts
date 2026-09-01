@@ -123,6 +123,8 @@ test('openDesk: cut from the team line, mounted, upstream set, recorded; the lin
   assert.ok(existsSync(path.join(deskWorktree('cowork', 'team/comp/dev'), 'README.md')), 'the line has a mounted worktree');
   assert.equal(st.ahead, 0);
   assert.equal(st.dirty, false);
+  assert.equal(sh(st.worktree, ['config', '--worktree', 'user.name']), 'Ronin session fable');
+  assert.equal(sh(st.worktree, ['config', '--worktree', 'user.email']), 'fable@sessions.ronin.local');
   const rec = await readDesk('cowork', 'team/comp/fable');
   assert.equal(rec?.session, 'fable');
   assert.equal(rec?.state, 'open');

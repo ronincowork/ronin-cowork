@@ -107,7 +107,8 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
   assert.match(services, /Selection is not installation/);
   assert.match(services, /none is a separate Routine or switch/i);
   assert.match(control, /team promotion/i);
-  assert.match(control, /one full repository BYOIN/i);
+  assert.match(control, /first full repository BYOIN/i);
+  assert.match(control, /second full repository BYOIN/i);
   assert.match(machine, /tejun-survey/);
   assert.match(machine, /bin\/ronin-store --all/);
   assert.match(machineProtocols, /installed third-party-box maintenance/);
@@ -117,7 +118,8 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
   assert.match(required, /tejun-wipeboard/);
   assert.match(required, /tejun-survey/);
   assert.match(protocols, /team promotion/i);
-  assert.match(protocols, /one full[\s\S]*repository BYOIN/i);
+  assert.match(protocols, /first full[\s\S]*repository BYOIN/i);
+  assert.match(protocols, /second full repository BYOIN/i);
   assert.match(protocols, /Installed-box maintenance/);
   assert.match(protocols, /user-store customization/);
 });

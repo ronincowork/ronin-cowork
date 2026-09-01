@@ -18,7 +18,7 @@ instructions say.
 |---|---|---|
 | **commit** | a checkpoint on your desk's private branch. Ordinary `git commit`. Yours; nothing propagates | a publication |
 | **hand-in** | you deliberately hand your committed range in to your team's line (`team/<team>/dev`). Mechanical admission only: merge, conflict check, near-instant invariants | `git push`; a full BYOIN |
-| **team promotion** | the lead admits the team's combined line to `dev`. The one full repository BYOIN runs there, once, on the candidate; `dev` is live and restarts | yours to run |
+| **team promotion** | the lead admits the team's combined line to `dev`. The first full repository BYOIN runs there, once, on the candidate; `dev` is live and restarts | yours to run |
 | **Git push** | Git's word and nothing else's: remote publication. Desk branches have no remote upstream and are never pushed | how work reaches the team |
 
 Never say bare *push* about your own work. Say **commit**, **hand-in**, or **team
@@ -55,8 +55,11 @@ leaves the desk until you hand in. No commit triggers a gate, a propagation, or 
   `tejun-desk hand-in --assignment` (every desk in the assignment, each admitted to its own
   repository's team line). A conflict is contained in a candidate worktree, the line is
   untouched, and you are told the two sides; the lead adjudicates.
-- **Never run full BYOIN at commit or hand-in.** The team promotion runs it once; that is
+- **Never run full BYOIN at commit or hand-in.** The team promotion runs the first one; that is
   the lead's or compiler's act, not yours (`docs/test-protocols.md`).
+- **The second full BYOIN is `dev → master`.** CI consumes the exact-tip promotion receipt
+  and checks that release candidate again. This owner ruling (2026-09-01) supersedes the
+  former “isolated assurance only” wording; it does not move BYOIN onto hand-in.
 - **Never `git push`.** Nothing of yours has a remote. Remote publication of `dev` and
   `master` belongs to team promotion and the release process.
 - **Adopt what your siblings handed in.** When the team line moves you are told —
