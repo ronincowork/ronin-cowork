@@ -1929,10 +1929,24 @@ body {
    composer and spoke into the overlay's textarea, and the words never met. The mic
    is now .cmic, a button on the one box. */
 @media (pointer: coarse) {
-  .tile-head button {
+  /* ONE BOX for every glyph control, and it is ⚡'s (owner, 2026-09-01: "make them all
+     exactly like the Macro button"). Without the longer selectors the base sheet's
+     torii/メ width (28px, higher specificity) beat this rule, and the @ picker is a
+     SELECT the button rule never reached — three sizes on one row. The worded
+     work-record keeps its own width (its rule outranks these). */
+  .tile-head button,
+  .tile-head button.torii,
+  .tile-head button.tmore-btn,
+  .tile-head select.tmention-btn {
     width: 34px;
     height: 32px;
+    padding: 0;
     font-size: var(--text-5);
+    border-radius: var(--radius-sm);
+  }
+  /* The select centers its glyph by line, not by flex. */
+  .tile-head select.tmention-btn {
+    line-height: 30px;
   }
   .tile-head .sess {
     max-width: 50%;
