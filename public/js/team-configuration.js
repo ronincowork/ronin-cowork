@@ -75,7 +75,15 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const recruit = select(form, t('team_config.recruit', 'Recruit'), 'recruit', optionRows(['open', 'nobody', 'propose agents', 'staff agents'], t), defaults.recruit || 'open');
     const output = select(form, t('team_config.output', 'Output'), 'output', optionRows(['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'], t), defaults.output || 'open');
     const dial = select(form, t('team_config.dial', 'Control'), 'dial', optionRows(['user', 'read', 'write'], t), defaults.dial || 'write');
-    const permissions = field(form, t('team_config.permissions', 'Permissions'), 'permissions', defaults.permissions || 'default');
+    // `permissions` is retired and `launch_mode` replaces it (owner + lead, 2026-09-01).
+    // Measured by @dangerous_mode before their record lands: this card built agent_defaults
+    // FRESH rather than spreading what it read, so a save here would have dropped a Team's
+    // configured launch mode back to stock without saying so. The ruled display words are
+    // the owner's own — "Model provider configuration" and "Dangerously".
+    const launchMode = select(form, t('launch_mode.head', 'launch mode'), 'launch_mode', [
+      { value: 'configured', label: t('launch_mode.configured', 'Model provider configuration') },
+      { value: 'live_dangerously', label: t('launch_mode.live', 'Dangerously') },
+    ], defaults.launch_mode || 'live_dangerously');
     form.append(el('p', 'tw-config-note tw-config-wide', t('team_config.next_form', 'These defaults land in the next Agent form that opens. Nothing live changes.')));
 
     const actions = el('div', 'tw-config-actions'); const status = el('span', 'tw-config-status');
@@ -85,7 +93,11 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
       const saved = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}`, { method: 'PUT', json: {
         title: title.value, kind: kind.value, objective: objective.value, project_root: projectRoot.value, branch: branch.value, wipeboard: wipeboard.value, references: lines(references.value),
         routines: Object.fromEntries([...routineInputs].map(([name, input]) => [name, input.checked])), behaviours: { books: lines(behaviours.value), required: required.checked },
-        agent_defaults: { provider: provider.value, model: model.value, reach: reach.value, recruit: recruit.value, output: output.value, dial: dial.value, permissions: permissions.value },
+        // Spread what was read so a key this card does not draw is carried rather than
+        // dropped — but NOT `permissions`, which is ruled out of agent_defaults entirely;
+        // spreading it would rewrite a retired field on every save. (Caught by capturing
+        // the PUT body while driving: the spread was faithfully carrying it forward.)
+        agent_defaults: { ...defaults, permissions: undefined, provider: provider.value, model: model.value, reach: reach.value, recruit: recruit.value, output: output.value, dial: dial.value, launch_mode: launchMode.value },
       } });
       status.textContent = saved.ok ? t('team_config.saved', 'Saved') : saved.message; if (saveAction) saveAction.setDisabled(false); else save.disabled = false; if (saved.ok) optionsArg.onSaved?.(saved.data.roster);
     });

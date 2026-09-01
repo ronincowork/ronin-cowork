@@ -80,7 +80,7 @@ await fs.writeFile(
   path.join(temp, 'team_rosters', 'scratchteam.md'),
   [
     '# scratchteam', '', '- **objective:** prove the parity', '- **project_root:** beta',
-    '- **agent_defaults:** {"provider":"","model":"","reach":"discuss","recruit":"nobody","output":"ideas","dial":"write","permissions":"default"}',
+    '- **agent_defaults:** {"provider":"","model":"","reach":"discuss","recruit":"nobody","output":"ideas","dial":"write","launch_mode":"live_dangerously"}',
     '- **state:** active', '',
   ].join('\n'),
 );
@@ -244,17 +244,37 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
   assert.equal(f2.cmd, c2.cmd, 'and both callers get the identical resolved command');
 });
 
+test('launch_mode preserves provider configuration or appends the declared bypass flag', async () => {
+  const configured = await resolveForm(commonsForm({
+    provider: 'anthropic', model: 'opus', launch_mode: 'configured', mcp: true,
+  }), new Set());
+  assert.equal(configured.cmd, 'claude --model opus');
+  assert.equal(configured.launch_mode, 'configured');
+  assert.deepEqual(configured.stated_by.launch_mode, [{ layer: 'launch', source: 'launch request' }]);
+
+  const dangerous = await resolveForm(commonsForm({
+    provider: 'anthropic', model: 'opus', launch_mode: 'live_dangerously', mcp: true,
+  }), new Set());
+  assert.equal(dangerous.cmd, 'claude --model opus --dangerously-skip-permissions');
+  assert.equal(dangerous.launch_mode, 'live_dangerously');
+
+  await assert.rejects(
+    () => resolveForm(commonsForm({ cmd: 'custom-agent', launch_mode: 'live_dangerously', mcp: true }), new Set()),
+    /declares no `live_dangerously:` flag/,
+  );
+});
+
 test('mandate defaults are complete, Team seeds them, and the explicit launch wins', async () => {
   const stock = await resolveForm(commonsForm(), new Set());
-  assert.deepEqual(stock.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
+  assert.deepEqual(stock.mandate, { reach: 'plan', recruit: 'propose agents', output: ['open'] });
 
   const seeded = await resolveForm(forkitForm(), new Set());
-  assert.deepEqual(seeded.mandate, { reach: 'discuss', recruit: 'nobody', output: 'ideas' });
+  assert.deepEqual(seeded.mandate, { reach: 'discuss', recruit: 'nobody', output: ['ideas'] });
 
   const explicit = await resolveForm(forkitForm({
     mandate: { reach: 'execute', recruit: 'staff agents', output: 'the team' },
   }), new Set());
-  assert.deepEqual(explicit.mandate, { reach: 'execute', recruit: 'staff agents', output: 'the team' });
+  assert.deepEqual(explicit.mandate, { reach: 'execute', recruit: 'staff agents', output: ['the team'] });
   assert.deepEqual(explicit.stated_by.mandate, [{ layer: 'launch', source: 'launch request' }]);
 });
 
@@ -294,7 +314,7 @@ test('stated_by carries the settled launch, Team, role, and Campaign layers', as
 
 test('server resolution returns profile and durable Team context without browser reconstruction', async () => {
   const resolved = await resolveForm(forkitForm(), new Set());
-  assert.equal(resolved.permissions, 'default');
+  assert.equal(resolved.launch_mode, 'live_dangerously');
   assert.equal(resolved.team_objective, 'prove the parity');
   assert.equal(resolved.team_branch, '');
   assert.equal(resolved.team_wipeboard, 'scratchteam');
@@ -396,7 +416,7 @@ test('a name alone resolves the ordinary Cowork Agent birth', async () => {
   assert.equal(born.session_type, 'cowork_agent');
   assert.equal(born.name, 'name_only');
   assert.equal(born.project_root, 'alpha', 'the existing top-active-root chain answers placement');
-  assert.deepEqual(born.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
+  assert.deepEqual(born.mandate, { reach: 'plan', recruit: 'propose agents', output: ['open'] });
   assert.equal(born.dial, 'write');
 });
 

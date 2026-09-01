@@ -163,18 +163,30 @@ export function createCoworkView(options = {}) {
     };
     const config = el('div', 'tw-config');
     const messages = el('div', 'tw-messages');
-    const messageQueue = buildMessageQueue(messages);
+    const messageLabel = t('workspace.channel_agent_message_queue', 'Agent message queue');
+    let messageTab = null;
+    let retainedCount = 0;
+    const paintMessageAttention = () => {
+      if (!messageTab) return;
+      messageTab.dataset.attention = String(retainedCount > 0);
+      messageTab.textContent = retainedCount
+        ? t('workspace.channel_agent_message_queue_count', 'Agent message queue ({count})', { count: retainedCount })
+        : messageLabel;
+    };
+    const messageQueue = buildMessageQueue(messages, (count) => { retainedCount = count; paintMessageAttention(); });
     const channels = createChannelSurface({
       label: t('team.commons', 'Team commons'),
       channels: [
         { id: 'docs', label: t('workspace.channel_docs', 'Docs') },
         { id: 'wipeboard', label: t('workspace.channel_wipeboard', 'Wipeboard') },
-        { id: 'agent-message-queue', label: t('workspace.channel_agent_message_queue', 'Agent message queue') },
+        { id: 'agent-message-queue', label: messageLabel },
         { id: 'team-configuration', label: t('workspace.channel_team_configuration', 'Team Configuration') },
       ],
       selected: 'docs',
-      services: { wipeboard, docs: docsService, 'agent-message-queue': { el: messages, mount: () => {}, enter: messageQueue.enter, leave: () => {}, destroy: messageQueue.destroy }, 'team-configuration': service(config) },
+      services: { wipeboard, docs: docsService, 'agent-message-queue': { el: messages, mount: () => {}, enter: messageQueue.enter, leave: messageQueue.leave, destroy: messageQueue.destroy }, 'team-configuration': service(config) },
     });
+    messageTab = channels.tabs.querySelector('[data-service="agent-message-queue"]');
+    paintMessageAttention();
     channels.el.dataset.workbenchSurface = COMMONS;
     return { el: channels.el, channels, wipeboard, docs, config, messageQueue };
   };

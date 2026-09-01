@@ -21,7 +21,7 @@ test('the shipped tray surfaces with parsed mandates, kinds and books', async ()
   const ship = rows.find((row) => row.name === 'ship_an_app');
   assert.ok(ship, 'ship_an_app is on the shelf');
   assert.equal(ship?.label, 'Ship an App');
-  assert.deepEqual(ship?.mandate, { reach: 'execute', recruit: 'staff agents', output: 'code' });
+  assert.deepEqual(ship?.mandate, { reach: 'execute', recruit: 'staff agents', output: ['code'] });
   assert.deepEqual(ship?.kinds, ['coding']);
   assert.ok(ship?.behaviours.includes('sops:github'));
   assert.deepEqual(ship?.routines_on, ['ronin_worktrees']);
@@ -31,7 +31,8 @@ test('the shipped tray surfaces with parsed mandates, kinds and books', async ()
 });
 
 test('the mandate grammar admits only the ruled values', () => {
-  assert.deepEqual(templateMandate('open · nobody · the team'), { reach: 'open', recruit: 'nobody', output: 'the team' });
+  assert.deepEqual(templateMandate('open · nobody · the team'), { reach: 'open', recruit: 'nobody', output: ['the team'] });
+  assert.deepEqual(templateMandate('execute · nobody · code, no code'), { reach: 'execute', recruit: 'nobody', output: ['code', 'no code'] });
   for (const bad of ['run · nobody · code', 'execute · staff · code', 'execute · staff agents', 'execute · staff agents · loot']) {
     assert.equal(templateMandate(bad), null, bad);
   }
@@ -46,7 +47,7 @@ test('save-as-new lands in the user store and reads back through the one reader'
   assert.equal(saved.origin, 'user');
   assert.equal(saved.shadowed, false);
   assert.deepEqual(saved.kinds, ['work'], 'an unknown kind is dropped, not stored');
-  assert.deepEqual(saved.mandate, { reach: 'execute', recruit: 'nobody', output: 'open' });
+  assert.deepEqual(saved.mandate, { reach: 'execute', recruit: 'nobody', output: ['open'] });
   const raw = await readFile(path.join(temp, 'templates', 'night_shift.md'), 'utf8');
   assert.match(raw, /- \*\*mandate:\*\* execute · nobody · open/);
 });

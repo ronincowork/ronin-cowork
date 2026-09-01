@@ -8,6 +8,13 @@ that separate notice is an inbound message and may wait here.
 Its visible home is **Team Commons → Agent message queue**, beside Docs, Wipeboard, and
 Team Configuration. It is a channel inside the existing Team Commons surface, not a
 separate Cowork card or machine-level tab.
+When retained messages exist, that channel button uses the theme's warning colour, bolds
+the full label, and shows their count; the attention state clears with the empty queue.
+Each retained card shows how long it has waited, as a live relative age in seconds,
+minutes, hours, or days. A busy eligibility check that never typed is shown as **waiting**
+with zero attempts rather than implying that delivery itself repeatedly failed.
+The channel opens with a short owner-facing note explaining that Agent-to-Agent messages
+occasionally need a nudge and that Try Again is gentler than Force.
 
 Every sender uses the same delivery engine. Automatic checks and **Try Again** use safe
 delivery: the target must exist, its dial must permit writing, and its Agent must show a
@@ -18,6 +25,10 @@ with the measured reason.
 at most ten seconds pressing Enter and checking whether it submitted. It may collide with
 whatever the Agent is doing. It never runs forever and never types a second copy. Success
 removes the card; failure leaves it for another decision.
+
+Every action answers immediately on its button (`Trying…`, `Forcing…`, or `Dismissing…`)
+and announces its outcome. A card that clears says **Delivered and cleared** before its
+absence becomes the only evidence; a retained message says why it is still waiting.
 
 The queue is working state in the `message_queue` data store. Each item records:
 `id`, `target`, `text`, `source`, `state`, `reason`, `attempts`, `created_at`, and

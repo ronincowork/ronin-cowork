@@ -18,7 +18,7 @@ export async function templateProvenance(form: TemplateProvenanceInput) {
     source: template ? [{ layer: 'template', source: template.name }] as StatedBy[] : undefined,
     brief: !!template?.brief && form.prompt === template.brief,
     mandate: !!template?.mandate
-      && JSON.stringify(mandate(form.mandate)) === JSON.stringify(template.mandate),
+      && JSON.stringify(mandate(form.mandate)) === JSON.stringify(mandate(template.mandate)),
     behaviours: !!template?.behaviours
       && JSON.stringify([...(form.behaviours ?? [])].sort()) === JSON.stringify([...template.behaviours].sort()),
     ignored: form.template && !template ? [`template[${form.template}]`] : [],

@@ -306,7 +306,7 @@ const openaiSpecs = launchSpecs.filter((s) => s.provider === 'openai');
 if (openaiSpecs.length < 2) fail('PROJECT_ROOTS.md: OpenAI must offer more than one real model choice');
 for (const spec of openaiSpecs) {
   if (spec.model === 'default') fail('PROJECT_ROOTS.md: OpenAI model heading "default" hides the model being launched');
-  const expected = `codex --model ${spec.model} --dangerously-bypass-approvals-and-sandbox`;
+  const expected = `codex --model ${spec.model}`;
   if (spec.cmd !== expected) {
     fail(`PROJECT_ROOTS.md: openai · ${spec.model} must launch "${expected}", got "${spec.cmd}"`);
   }

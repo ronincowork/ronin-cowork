@@ -120,7 +120,14 @@ test('write_tegami accepts and validates the complete mandate shape', async () =
     mandate: { reach: 'execute', recruit: 'nobody', output: 'code' },
   }, previous);
   assert.equal(accepted.code, 0, accepted.err);
-  assert.deepEqual(JSON.parse(accepted.out).mandate, { reach: 'execute', recruit: 'nobody', output: 'code' });
+  assert.deepEqual(JSON.parse(accepted.out).mandate, { reach: 'execute', recruit: 'nobody', output: ['code'] });
+
+  const contradictory = await validateBlock({
+    objective: 'x', session_role: 'CutCode', ladder: [],
+    mandate: { reach: 'execute', recruit: 'nobody', output: ['code', 'no code'] },
+  }, previous);
+  assert.equal(contradictory.code, 0, contradictory.err);
+  assert.deepEqual(JSON.parse(contradictory.out).mandate.output, ['code', 'no code']);
 
   const bad = await validateBlock({
     objective: 'x', session_role: 'CutCode', ladder: [],

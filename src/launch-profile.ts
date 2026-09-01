@@ -19,7 +19,7 @@
  *
  * FOUR CLASSES OF FIELD, and every field is exactly one of them:
  *
- *   CASCADING    dial · permissions · mcp · cap · agent · dir ·
+ *   CASCADING    dial · mcp · cap · agent · dir ·
  *                ack · opening. The last layer to state it wins.
  *
  *   ADDITIVE     the boot shelf's `role/<session_role>/` reading level
@@ -30,7 +30,7 @@
  *                `personalassistant` carries it: an assistant defined by its brain must
  *                not be launchable without the door to it.
  *
- *   INAPPLICABLE `agent: none` voids permissions, posture, opening and ack — there is
+ *   INAPPLICABLE `agent: none` voids posture, opening and ack — there is
  *                no CLI to hold a permission mode, nobody to brief, and nobody
  *                to acknowledge. Values inherited from a layer BELOW the one that
  *                declared it are dropped in silence, because that layer could not have
@@ -70,7 +70,6 @@ export interface StatedBy {
  */
 const SYSTEM: Record<string, string> = {
   dial: 'write',
-  permissions: 'default',
   ack: '',
   opening: '{prompt}',
   agent: '',
@@ -80,7 +79,7 @@ const SYSTEM: Record<string, string> = {
 };
 
 /** Fields that describe an AGENT, and therefore mean nothing without one. */
-const AGENT_ONLY = ['permissions', 'posture', 'opening', 'ack'] as const;
+const AGENT_ONLY = ['posture', 'opening', 'ack'] as const;
 
 /** The one legal value of `dir:`. A literal path would be a shipped file naming a machine. */
 const INSTALL_SENTINEL = '{install}';
@@ -91,7 +90,6 @@ export interface LaunchProfile {
   /** Is a CLI launched at all? False for `agent: none` — a plain terminal. */
   agent: boolean;
   dial: Dial;
-  permissions: string;
   /** Report understanding and wait, rather than starting work. */
   ack: boolean;
   /** First-message template; `{prompt}` is what the owner typed. */
@@ -199,7 +197,6 @@ export function resolveLaunchProfile(task: Definition | undefined): LaunchProfil
     session_role: task?.name ?? '',
     agent,
     dial: (dial === 'user' || dial === 'read' ? dial : 'write') as Dial,
-    permissions: agent ? pick(layers, 'permissions') || 'default' : '',
     ack: agent ? /^y/i.test(pick(layers, 'ack')) : false,
     opening: agent ? pick(layers, 'opening') : '',
     posture: agent ? posture : [],
@@ -216,7 +213,6 @@ export function resolveLaunchProfile(task: Definition | undefined): LaunchProfil
         : [{ layer: 'system', source: SYSTEM_SOURCE }],
       agent: sourceOf(layers, 'agent'),
       dial: sourceOf(layers, 'dial'),
-      permissions: sourceOf(layers, 'permissions'),
       ack: sourceOf(layers, 'ack'),
       opening: sourceOf(layers, 'opening'),
       posture: task?.has('posture')

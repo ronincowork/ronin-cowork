@@ -80,8 +80,9 @@ every terminal agent behaves like Claude.
 
 The heading and command must agree. For example, `openai · gpt-5.6-terra` resolves to a
 Codex command carrying `--model gpt-5.6-terra`; it must never resolve to bare `codex` and
-inherit an unseen local default. This install also puts Codex into unrestricted mode with
-`--dangerously-bypass-approvals-and-sandbox`: the ronin_machine is its external sandbox.
+inherit an unseen local default. A provider also declares its additive
+`live_dangerously` flag. The `configured` launch mode leaves the cell command unchanged;
+`live_dangerously` appends that flag for this launch and refuses when none is declared.
 
 The launch path does no provider interpretation, but it does adapt to the agent's terminal
 interface after starting the command:
@@ -90,8 +91,9 @@ interface after starting the command:
 PROJECT_ROOTS.md cell
   → GET /api/session-launch-specs
   → ＋ New session picker
-  → POST /api/launch { cmd }
-  → run that cmd verbatim in the new tile
+  → POST /api/launch { cmd, launch_mode }
+  → append the provider flag only for live_dangerously
+  → run the resolved cmd in the new tile
   → recognize dialog or ready prompt
   → type the built brief
   → submit it and verify that it left the prompt

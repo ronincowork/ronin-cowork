@@ -326,7 +326,7 @@ export function registerSessions(app: express.Express): void {
    * in this route is exactly how the owner's change and the agent's change would drift
    * into behaving differently.
    *
-   * What it still does NOT do is re-launch anything: the dial and permissions the launch
+   * What it still does NOT do is re-launch anything: the dial and launch mode the launch
    * fixed are untouched, and a session that is re-marked must not thereby acquire a
    * different dial.
    *

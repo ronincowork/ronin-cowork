@@ -98,6 +98,8 @@ export interface SessionLaunchSpec {
   provider: string;
   model: string;
   cmd: string;
+  /** The provider's per-launch bypass flag. Appended only for `live_dangerously`. */
+  liveDangerously?: string;
   /**
    * The provider's own "launch with no MCP servers" flags — appended to `cmd` when a
    * launch asks for MCP off (`- **mcp_off:** \`…\`` in the provider's section). DATA,
@@ -262,6 +264,7 @@ function parseLaunchTable(raw: string): SessionLaunchSpec[] {
     const specs: SessionLaunchSpec[] = [];
     // The provider's no-MCP flags, backticked like every cmd in this file.
     const mcpOff = /^-\s*\*\*mcp_off:\*\*\s*`(.+)`\s*$/m.exec(section)?.[1]?.trim();
+    const liveDangerously = /^-\s*\*\*live_dangerously:\*\*\s*`(.+)`\s*$/m.exec(section)?.[1]?.trim();
     for (const line of section.split('\n')) {
       if (!line.includes('|')) continue;
       const cells = cellsOf(line);
@@ -275,7 +278,11 @@ function parseLaunchTable(raw: string): SessionLaunchSpec[] {
       cells.slice(1).forEach((cell, i) => {
         const cmd = /^`(.+)`$/.exec(cell)?.[1];
         const model = models[i];
-        if (cmd && model) specs.push({ provider, model, cmd, ...(mcpOff ? { mcpOff } : {}) });
+        if (cmd && model) specs.push({
+          provider, model, cmd,
+          ...(mcpOff ? { mcpOff } : {}),
+          ...(liveDangerously ? { liveDangerously } : {}),
+        });
       });
     }
     out.push(...specs);

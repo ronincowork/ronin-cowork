@@ -79,13 +79,13 @@ async function deskNote(r: { assignment?: unknown; routines?: Array<{ name: stri
 
 const LAUNCH_KEYS = new Set([
   'session_type', 'session_role', 'team', 'team_lead', 'instructions', 'prompt', 'name',
-  'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'mcp',
+  'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'mcp', 'launch_mode',
   'tags', 'seed', 'inject', 'reference', 'desk',
   'kind', 'behaviours',
   'template',
 ]);
 const RETIRED_LAUNCH_KEYS = new Set([
-  'role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle',
+  'role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle', 'permissions',
 ]);
 const RETURNED_LAUNCH_KEYS = new Set([
   'assignment', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
@@ -120,6 +120,7 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.dial !== undefined && body.dial !== 'user' && body.dial !== 'read' && body.dial !== 'write') drop('dial');
   if (body.desk !== undefined && body.desk !== 'own' && body.desk !== 'none') drop('desk');
   if (body.mcp !== undefined && typeof body.mcp !== 'boolean') drop('mcp');
+  if (body.launch_mode !== undefined && body.launch_mode !== 'configured' && body.launch_mode !== 'live_dangerously') drop('launch_mode');
   if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
   if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
   if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
@@ -129,7 +130,7 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.template !== undefined) body.template = String(body.template).trim();
 
   const inapplicable = sessionType === 'terminal'
-    ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'template', 'routines', 'sops', 'cmd', 'mcp', 'seed', 'inject', 'reference', 'session_role']
+      ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'template', 'routines', 'sops', 'cmd', 'mcp', 'launch_mode', 'seed', 'inject', 'reference', 'session_role']
     : sessionType === 'bare_metal_agent'
       ? ['kind', 'mandate', 'behaviours', 'template', 'routines', 'sops', 'seed', 'inject', 'reference', 'session_role', 'team_lead']
       : [];
@@ -224,6 +225,9 @@ export function registerLaunch(app: express.Express): void {
       // Whose CLI, without naming a model — resolved through that provider's preferred
       // model in ⚙ Configuration (owner, 2026-08-29).
       provider: String(req.body?.provider ?? '').trim() || undefined,
+      launch_mode: req.body?.launch_mode === 'configured' || req.body?.launch_mode === 'live_dangerously'
+        ? req.body.launch_mode
+        : undefined,
       mandate: sessionType === 'cowork_agent' && req.body?.mandate !== undefined
         ? mandate(req.body.mandate)
         : undefined,

@@ -476,18 +476,22 @@ if st_ and st_ not in LADDER_STATES:
 mandate = d.get("mandate") or {}
 if not isinstance(mandate, dict):
     sys.exit("write_tegami: mandate must be an object with reach, recruit and output.")
-defaults = {"reach": "plan", "recruit": "propose agents", "output": "open"}
+defaults = {"reach": "plan", "recruit": "propose agents", "output": ["open"]}
 choices = {
     "reach": {"open", "discuss", "plan", "execute"},
     "recruit": {"open", "nobody", "propose agents", "staff agents"},
-    "output": {"open", "a plan", "ideas", "code", "an artifact", "the team"},
+    "output": {"open", "a plan", "ideas", "code", "an artifact", "the team", "no code"},
 }
 unknown = sorted(set(mandate) - set(defaults))
 if unknown:
     sys.exit("write_tegami: unknown mandate key(s): " + ", ".join(unknown))
 for key, fallback in defaults.items():
     value = mandate.get(key) or fallback
-    if value not in choices[key]:
+    if key == "output":
+        value = value if isinstance(value, list) else [value]
+        if not value or any(item not in choices[key] for item in value):
+            sys.exit("write_tegami: mandate.output has invalid value(s) %r." % value)
+    elif value not in choices[key]:
         sys.exit("write_tegami: mandate.%s has no value %r." % (key, value))
     mandate[key] = value
 d["mandate"] = mandate

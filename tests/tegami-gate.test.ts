@@ -90,7 +90,7 @@ test('a seeded letter carries a blank axis as an empty string, never as a missin
   assert.ok(file);
   const body = await bodyOf(file!);
   assert.equal(body.session_role, '');
-  assert.deepEqual(body.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
+  assert.deepEqual(body.mandate, { reach: 'plan', recruit: 'propose agents', output: ['open'] });
   assert.deepEqual(body.teams, [], 'a ronin: on no team, and the block says so');
 });
 

@@ -290,15 +290,15 @@ export async function listRoutines(): Promise<RoutineRow[]> {
   }));
 }
 
-/** The three mandate dials, each led by `open` (R36 as amended). One import would be a
+/** The mandate fields, led by `open` (R36 as amended). One import would be a
  *  cycle: agent-defaults imports nothing of ours, but keeping the template catalog free
  *  of the launch modules keeps `readDefinitions` the only machinery this file needs. */
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
-const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'];
+const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 const TEMPLATE_KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
 
-export interface TemplateMandate { reach: string; recruit: string; output: string }
+export interface TemplateMandate { reach: string; recruit: string; output: string[] }
 export interface TemplateRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
   /** The tray face — an emoji or a glyph, the drawing's `art`. */
   art: string;
@@ -320,12 +320,13 @@ export interface TemplateRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | 
   lead: { brief: string; mandate: TemplateMandate | null } | null;
 }
 
-/** `execute · staff agents · code` → the three dials, or null unless all three are ruled
+/** `execute · staff agents · code` → the mandate fields, or null unless all are ruled
  *  values. Stock files are held to this by check-catalogs; a user file that half-states a
  *  mandate seeds nothing rather than seeding a guess. */
 export function templateMandate(value: string): TemplateMandate | null {
-  const [reach, recruit, output] = value.split('·').map((part) => part.trim());
-  if (!REACH.includes(reach) || !RECRUIT.includes(recruit) || !OUTPUT.includes(output)) return null;
+  const [reach, recruit, outputText] = value.split('·').map((part) => part.trim());
+  const output = outputText?.split(',').map((part) => part.trim()).filter(Boolean) ?? [];
+  if (!REACH.includes(reach) || !RECRUIT.includes(recruit) || !output.length || output.some((part) => !OUTPUT.includes(part))) return null;
   return { reach, recruit, output };
 }
 

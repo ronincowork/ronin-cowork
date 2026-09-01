@@ -42,13 +42,13 @@ test('Atarashi writes a complete home_machine Campaign and consumes kind as a pr
   assert.equal(c.desk_profile, 'terminal');
   assert.deepEqual(c.config.agent_defaults, {
     provider: 'openai', model: 'gpt-5.6-terra',
-    reach: 'plan', recruit: 'propose agents', output: 'open',
+    reach: 'plan', recruit: 'propose agents', output: ['open'],
     routines: {
       ronin_base: true, ronin_worktrees: true, ronin_services: false,
       ronin_host: false, gbrain: false,
     },
     behaviours: ['sops:github', 'sops:ronin_methodology', 'sops:teams'],
-    dial: 'write', permissions: 'default',
+    dial: 'write', launch_mode: 'live_dangerously',
   });
   assert.equal('kind' in c, false, 'the setup intent is consumed and the Campaign stays kindless');
   await fs.unlink(path.join(temp, 'home_machine.json'));
@@ -68,8 +68,8 @@ test('create → read: the record round-trips, and every field lands as typed', 
   assert.ok(c.created_at, 'created_at is stamped at create');
   assert.deepEqual(c.config, {
     agent_defaults: {
-      provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: 'open',
-      routines: ROUTINES_OFF, behaviours: [], dial: 'write', permissions: 'default',
+      provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: ['open'],
+      routines: ROUTINES_OFF, behaviours: [], dial: 'write', launch_mode: 'live_dangerously',
     },
     cowork_defaults: {}, template_defaults: {},
   });
@@ -123,8 +123,8 @@ test('config merges per sub-bucket, so a caller cannot drop a bucket it never he
   await writeCampaign('ronin', { config: { cowork_defaults: { branch: 'dev' } } });
   const c = (await readCampaign('ronin'))!;
   assert.deepEqual(c.config.agent_defaults, {
-    provider: '', model: 'x', reach: 'plan', recruit: 'propose agents', output: 'open',
-    routines: ROUTINES_OFF, behaviours: [], dial: 'write', permissions: 'default',
+    provider: '', model: 'x', reach: 'plan', recruit: 'propose agents', output: ['open'],
+    routines: ROUTINES_OFF, behaviours: [], dial: 'write', launch_mode: 'live_dangerously',
   }, 'the first bucket survived the second write as a complete typed record');
   assert.deepEqual(c.config.cowork_defaults, { branch: 'dev' });
   assert.deepEqual(c.config.template_defaults, {});
@@ -253,8 +253,8 @@ test('a half-written record degrades to a readable Campaign instead of taking a 
   assert.equal(thin.state, 'active', 'an unknown state is not archived');
   assert.deepEqual(thin.config, {
     agent_defaults: {
-      provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: 'open',
-      routines: { ronin_base: true, ronin_worktrees: true }, behaviours: [], dial: 'write', permissions: 'default',
+      provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: ['open'],
+      routines: { ronin_base: true, ronin_worktrees: true }, behaviours: [], dial: 'write', launch_mode: 'live_dangerously',
     },
     cowork_defaults: {}, template_defaults: {},
   }, 'an array is not a bucket and receives the typed stock defaults');
