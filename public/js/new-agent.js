@@ -489,7 +489,10 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         notice.set('failed', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
         return;
       }
-      const made = await request('/api/team-rosters', { method: 'POST', json: { name: team, kind: draft.kind } });
+      const made = await request('/api/team-rosters', {
+        method: 'POST',
+        json: { name: team, kind: draft.kind, ...(draft.template ? { template: draft.template } : {}) },
+      });
       if (!made.ok) {
         busy = false;
         start.setDisabled(false);
