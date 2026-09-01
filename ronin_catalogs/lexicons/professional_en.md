@@ -64,7 +64,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **kind:** Kind
 - **template:** Template
 - **required_reading:** Required reading
-- **permissions:** Permissions
 - **reach:** Reach
 - **recruit:** Recruit
 - **output:** Output
@@ -1581,7 +1580,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.customization:** your own macros and jobs
 - **glossary.pad:** Pad
 - **glossary.control:** Control
-- **glossary.permissions:** Permissions
+- **glossary.launch_mode:** Model provider configuration · Dangerously
 - **glossary.team:** Cowork
 - **glossary.note:** Note
 - **glossary.work_record:** work record

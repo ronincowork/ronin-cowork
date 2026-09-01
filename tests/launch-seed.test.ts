@@ -14,14 +14,14 @@ const campaign = {
   id: 'home_machine',
   config: { agent_defaults: agentDefaults({
     provider: 'openai', model: 'gpt', reach: 'plan', recruit: 'propose agents', output: 'open',
-    routines: { ronin_base: true, gbrain: true }, behaviours: ['ways:plan'], dial: 'write', permissions: 'default',
+    routines: { ronin_base: true, gbrain: true }, behaviours: ['ways:plan'], dial: 'write', launch_mode: 'live_dangerously',
   }) },
 } as CampaignConfig;
 const team = {
   name: 'alpha', campaign_id: 'home_machine', kind: 'coding', project_root: 'work', branch: 'dev',
   routines: { ronin_base: false }, behaviours: { books: ['ways:cut'], required: false },
   agent_defaults: {
-    provider: 'anthropic', model: 'opus', reach: 'execute', recruit: 'nobody', output: 'code', dial: 'read', permissions: 'strict',
+    provider: 'anthropic', model: 'opus', reach: 'execute', recruit: 'nobody', output: 'code', dial: 'read', launch_mode: 'configured',
   },
 } as TeamRoster;
 const sources = (roster: TeamRoster | null) => ({
@@ -44,6 +44,8 @@ test('Team seed reads its complete map with no live Campaign inherit', () => {
   const seed = resolveLaunchSeed(sources(team));
   assert.equal(seed.seeds.dial.value, 'read');
   assert.equal(seed.seeds.dial.stated_by[0]?.layer, 'team');
+  assert.equal(seed.seeds.launch_mode.value, 'configured');
+  assert.equal(seed.seeds.launch_mode.stated_by[0]?.layer, 'team');
   assert.equal(seed.routines.find((r) => r.name === 'ronin_base')?.on, false);
   assert.equal(seed.routines.find((r) => r.name === 'gbrain')?.on, false);
 });

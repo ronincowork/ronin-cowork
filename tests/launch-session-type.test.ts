@@ -87,6 +87,20 @@ test('cowork kind and behaviours survive body acceptance while unusable shapes a
   assert.deepEqual(ignored.ignored, ['behaviours', 'kind']);
 });
 
+test('launch_mode accepts only the settled enum and permissions is retired', () => {
+  const accepted = acceptedLaunchBody({ name: 'proof', launch_mode: 'configured' });
+  assert.equal(accepted.body.launch_mode, 'configured');
+
+  const malformed = acceptedLaunchBody({ name: 'proof', launch_mode: 'safe', permissions: 'bypass' });
+  assert.equal(malformed.body.launch_mode, undefined);
+  assert.equal(malformed.body.permissions, undefined);
+  assert.deepEqual(malformed.ignored, ['launch_mode', 'permissions']);
+
+  const terminal = acceptedLaunchBody({ session_type: 'terminal', name: 'proof', launch_mode: 'live_dangerously' });
+  assert.equal(terminal.body.launch_mode, undefined);
+  assert.deepEqual(terminal.ignored, ['launch_mode']);
+});
+
 test('a template token is provenance input only on a cowork birth', () => {
   const accepted = acceptedLaunchBody({ name: 'proof', template: 'document_it' });
   assert.equal(accepted.body.template, 'document_it');

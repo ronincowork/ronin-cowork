@@ -189,11 +189,11 @@ export async function populateHomeMachine(input: {
     config: { agent_defaults: {
       provider: str(input.provider ?? providerModel.provider, 120),
       model: str(input.model ?? providerModel.model, 120),
-      reach: 'plan', recruit: 'propose agents', output: 'open',
+      reach: 'plan', recruit: 'propose agents', output: ['open'],
       routines,
       behaviours: KIND_BEHAVIOURS[kind],
       dial: 'write',
-      permissions: 'default',
+      launch_mode: 'live_dangerously',
     } },
   });
 }

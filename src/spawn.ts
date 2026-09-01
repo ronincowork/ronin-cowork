@@ -12,7 +12,7 @@ import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } fr
 import { readCampaign } from './campaign-config.js';
 import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { Assignment } from './desks/schema.js';
-import { mandate, type Mandate } from './agent-defaults.js';
+import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
 import { resolveRoutines, type ResolvedRoutine } from './routines.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
@@ -99,6 +99,7 @@ export interface SpawnForm {
   dial?: Dial;
   project_root?: string;
   cmd?: string;
+  launch_mode?: LaunchMode;
   /**
    * MCP on or off for THIS session — a mechanical pick like the cmd, present in both
    * modes. True: the CLI's own config applies, untouched. False appends the provider's
@@ -176,8 +177,7 @@ export interface Resolved {
    * process is called, and for Codex that is `node`.
    */
   launchAgent: string;
-  /** The complete server-resolved profile readings used to construct this birth. */
-  permissions: string;
+  launch_mode: LaunchMode;
   ack: boolean;
   opening: string;
   posture: string[];
@@ -455,6 +455,13 @@ export async function resolveForm(
   // provider too until 2026-08-17, for a roster column the owner then cut to the model
   // alone; the mcp_off flags are what is left, and they were always the load-bearing use.
   const spec = launchSpecs.find((b) => b.cmd === cmd);
+  const launchMode = agent ? (form.launch_mode ?? parentSeed?.seeds.launch_mode.value ?? 'live_dangerously') as LaunchMode : 'configured';
+  if (launchMode === 'live_dangerously') {
+    if (!spec?.liveDangerously) {
+      throw new Error('This launch command declares no `live_dangerously:` flag in the launch table, so it cannot launch Dangerously (see ronin_catalogs/PROJECT_ROOTS.md).');
+    }
+    cmd = `${cmd} ${spec.liveDangerously}`;
+  }
   // The launch's own say, and failing that the kind's default from the catalog. A kind
   // marked `mcp: always` is connected whatever anyone asked; the contradicting ask is
   // caught below rather than quietly overridden.
@@ -629,7 +636,7 @@ export async function resolveForm(
     // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
     // is written into the option RIREKI reads, so it has to arrive in RIREKI's spelling.
     launchAgent: agent ? path.basename(cmd.trim().split(/\s+/)[0] ?? '') : '',
-    permissions: String(parentSeed?.seeds.permissions.value ?? profile.permissions),
+    launch_mode: launchMode,
     ack: profile.ack,
     opening: profile.opening,
     posture: profile.posture,
@@ -669,7 +676,9 @@ export async function resolveForm(
       capExempt: profile.stated_by.capExempt,
       mcp: mcpSource,
       launchAgent: cmdSource,
-      permissions: parentSeed?.seeds.permissions.stated_by ?? profile.stated_by.permissions,
+      launch_mode: form.launch_mode !== undefined
+        ? explicit
+        : parentSeed?.seeds.launch_mode.stated_by ?? system,
       ack: profile.stated_by.ack,
       opening: profile.stated_by.opening,
       posture: profile.stated_by.posture,

@@ -36,7 +36,6 @@ test('absence inherits from the system, and a stated field wins', async () => {
   const task = def('CheckWork', { dial: 'read', opening: '{prompt}' });
   const p = resolveLaunchProfile(task);
   assert.equal(p.dial, 'read', 'the definition states dial, so it wins');
-  assert.equal(p.permissions, 'default', 'silence falls through to the system');
 });
 
 test('a definition has no model to state, and the resolver has none to report', () => {
@@ -53,7 +52,6 @@ test('the system answers when the session_role is blank, and blank is a legal la
   const p = resolveLaunchProfile(undefined);
   assert.equal(p.session_role, '');
   assert.equal(p.dial, 'write');
-  assert.equal(p.permissions, 'default');
   assert.equal(p.agent, true);
   assert.equal(p.ack, false);
   assert.equal(p.opening, '{prompt}');
@@ -85,7 +83,6 @@ test('`agent: none` refuses agent-only fields stated beside it', () => {
   const shell = def('OpenShell', { agent: 'none', dial: 'user' });
   const p = resolveLaunchProfile(shell);
   assert.equal(p.agent, false);
-  assert.equal(p.permissions, '');
   assert.equal(p.opening, '');
   assert.equal(p.ack, false);
   assert.deepEqual(p.posture, []);

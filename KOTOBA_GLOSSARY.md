@@ -88,7 +88,7 @@ learn in order to use Ronin should cost them a second language first.
 | House term | Plain English | One line |
 |---|---|---|
 | dial (`@ronin-control`) | **Control**<!--g:glossary.control--> | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
-| `permissions` | **Permissions**<!--g:glossary.permissions--> | The Agent/provider permission posture. Its default enters at Campaign and lands in the owner's launch form. |
+| `launch_mode` | **Model provider configuration · Dangerously**<!--g:glossary.launch_mode--> | Per launch: preserve whatever configuration the provider CLI already loads, or append that provider's declared bypass flag. |
 | team (`@ronin-tags`) | **Cowork**<!--g:glossary.team--> | The user-facing word for a set of sessions working together. Internally this remains a Team backed by a `team_roster`; Cowork adds no second object. |
 | note (`@ronin_note`) | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
 | — | **Status · Work record · Macros · Detach · Kill session**<!--g:glossary.session_menu--> | The rest of the per-session menu. Already plain. |

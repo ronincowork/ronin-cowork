@@ -8,7 +8,7 @@ import { teamRosterFile, type TeamRoster } from './team-rosters.js';
 
 export type SeedField =
   | 'kind' | 'project_root' | 'branch' | 'provider' | 'model'
-  | 'reach' | 'recruit' | 'output' | 'dial' | 'permissions' | 'desk' | 'behaviours';
+  | 'reach' | 'recruit' | 'output' | 'dial' | 'launch_mode' | 'desk' | 'behaviours';
 
 export interface SeedValue<T = unknown> { value: T; stated_by: StatedBy[] }
 export interface LaunchSeed {
@@ -60,7 +60,7 @@ export function resolveLaunchSeed(s: LaunchSeedSources): LaunchSeed & { resolved
     recruit: { value: a.recruit, stated_by: source('recruit') },
     output: { value: a.output, stated_by: source('output') },
     dial: { value: a.dial, stated_by: source('dial') },
-    permissions: { value: a.permissions, stated_by: source('permissions') },
+    launch_mode: { value: a.launch_mode, stated_by: source('launch_mode') },
     desk: { value: s.desk, stated_by: install('⚙ Configuration (desks.new_project)') },
     behaviours: {
       value: t ? t.behaviours.books : c.behaviours,

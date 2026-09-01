@@ -56,6 +56,7 @@ Anthropic model IDs are passed unchanged to Claude's `--model` option.
 | `anthropic` | `claude --model opus` | `claude --model fable` | `claude --model sonnet` | `claude --model haiku` |
 
 - **mcp_off:** `--strict-mcp-config`
+- **live_dangerously:** `--dangerously-skip-permissions`
 
 `mcp_off` is the provider's own "launch with no MCP servers" flags — appended to the
 cell's command when a launch turns MCP off (the ＋ New form's toggle). With no
@@ -71,21 +72,23 @@ family and IDs are recorded in the [official OpenAI model catalog](https://devel
 
 | provider | gpt-5.6-sol | gpt-5.6-terra | gpt-5.6-luna |
 |---|---|---|---|
-| `openai` | `codex --model gpt-5.6-sol --dangerously-bypass-approvals-and-sandbox` | `codex --model gpt-5.6-terra --dangerously-bypass-approvals-and-sandbox` | `codex --model gpt-5.6-luna --dangerously-bypass-approvals-and-sandbox` |
+| `openai` | `codex --model gpt-5.6-sol` | `codex --model gpt-5.6-terra` | `codex --model gpt-5.6-luna` |
 
 - **mcp_off:** `-c mcp_servers.gbrain.enabled=false`
+- **live_dangerously:** `--dangerously-bypass-approvals-and-sandbox`
 
 The first column, `gpt-5.6-sol`, is Ronin's OpenAI default. Every cell names the complete
 command, so selecting another column launches that exact model rather than inheriting
 Codex's local default. Availability belongs to the owner's OpenAI account: if an account
 cannot use a model, Codex reports that refusal in the new tile; Ronin never substitutes.
-This install runs Codex unrestricted because the ronin_machine is the external sandbox;
-the explicit `--dangerously-bypass-approvals-and-sandbox` flag is visible in every cell.
+`live_dangerously` is an additive per-launch override. `configured` leaves the cell command
+unchanged; `live_dangerously` appends the provider's declared flag. A provider declaring no
+flag refuses that requested mode rather than silently launching configured.
 
 Other providers (pi, perplexity, …) arrive the same way: a contributor PR adding a
 table block.
 
 **Other launch settings** a spawn may carry (not role-level; chosen per session):
-CLI permissions mode (`default` / `bypass`) and the `@ronin-control` dial the
+launch mode (`configured` / `live_dangerously`) and the `@ronin-control` dial the
 session is born with (`user` / `read` / `write` — see
 `docs/session-control-dials.md`).
