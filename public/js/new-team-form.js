@@ -118,21 +118,22 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     for (const on of row.routines_on) if (on in draft.routines) draft.routines[on] = true;
     for (const off of row.routines_off) if (off in draft.routines) draft.routines[off] = false;
     if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); }
-    if (row.lead) {
-      // A template's lead becomes ONE MARKED ROW. Team templates carrying a whole cast is
-      // @template_shelves' shelf; the row shape is agreed with them and @team_loader.
-      draft.agents = [{
-        ...agentRow(),
-        name: 'lead',
-        lead: true,
-        assignment: row.lead.brief || '',
-        ...(row.lead.mandate ? {
-          reach: row.lead.mandate.reach,
-          recruit: row.lead.mandate.recruit,
-          output: [row.lead.mandate.output].flat().filter(Boolean),
-        } : {}),
-      }];
-    }
+    // THE CAST LANDS AS ROWS (@template_shelves' team shelf, 2026-09-01). A team template
+    // carries `agents[]` in exactly the ruled wire shape `agentPicks()` produces, so it
+    // reads straight into the editor — instructions becomes the row's assignment and
+    // team_lead its mark, which is the same translation `agentPicks` does on the way out.
+    // The old lead_brief/lead_mandate pair is gone: a lead is one marked row.
+    draft.agents = (Array.isArray(row.agents) ? row.agents : []).map((pick) => ({
+      ...agentRow(),
+      name: pick.name || '',
+      assignment: pick.instructions || '',
+      lead: pick.team_lead === true,
+      ...(pick.mandate ? {
+        reach: pick.mandate.reach,
+        recruit: pick.mandate.recruit,
+        output: [pick.mandate.output].flat().filter(Boolean),
+      } : {}),
+    }));
     snapshot = authored();
     paint();
   }
@@ -505,7 +506,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     if (!token) return;
     const routinesOn = routineRows.filter((row) => routineOn(row.name) && seedRoutines[row.name] !== true).map((row) => row.name);
     const routinesOff = routineRows.filter((row) => !routineOn(row.name) && seedRoutines[row.name] === true).map((row) => row.name);
-    const result = await request('/api/templates', {
+    // THE TEAM SHELF: a cast, not a loadout. Save-as-new only, per shelf.
+    const result = await request('/api/templates/teams', {
       method: 'POST',
       json: {
         name: token,
@@ -518,10 +520,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
         behaviours: draft.books,
         routines_on: routinesOn,
         routines_off: routinesOff,
-        ...(() => {
-          const lead = draft.agents.find((row) => row.lead && row.assignment.trim());
-          return lead ? { lead_brief: lead.assignment.trim(), lead_mandate: `${lead.reach} · ${lead.recruit} · ${lead.output.join(', ')}` } : {};
-        })(),
+        // The same rows the loader launches — one shape, produced in one place.
+        agents: agentPicks(draft.agents),
       },
     });
     if (!result.ok) return notice.set('failed', result.message);
@@ -615,7 +615,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       paint();
       const [seeded, tray, catalog, rootRows, sopRows, wayRows] = await Promise.all([
         request('/api/launch-seed'),
-        request('/api/templates'),
+        request('/api/templates/teams'),
         request('/api/routines'),
         request('/api/project-roots'),
         request('/api/sops'),

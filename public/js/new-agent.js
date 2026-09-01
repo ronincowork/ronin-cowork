@@ -167,7 +167,11 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     if (row.brief) { draft.instructions = row.brief; instructionsInput.value = row.brief; }
     // A template's output may still be a single word — the record wraps a legacy scalar,
     // and so does the form, rather than handing a string to code that expects a list.
+    // The shelf hands back a parsed mandate — `{ reach, recruit, output[] }` or null when
+    // the template is silent — so a silent one seeds nothing rather than seeding a guess.
     if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); touched.mandate = true; }
+    // `team_mode: 'new'` births the box into its own team (the Personal Assistant ruling).
+    if (row.team_mode === 'new') { draft.teamMode = 'new'; }
     if (row.behaviours.length) { draft.books = [...row.behaviours]; touched.books = true; }
     snapshot = authored();
     paint();
@@ -510,7 +514,10 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   async function doSave() {
     const token = draft.templateName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
     if (!token) return;
-    const result = await request('/api/templates', {
+    // THE AGENT SHELF (@template_shelves' split, 2026-09-01): agent-shaped and team-shaped
+    // templates are two shelves with two doors. This form only ever reads or writes the
+    // agent one — a cast belongs to a Team and means nothing to a single launch.
+    const result = await request('/api/templates/agents', {
       method: 'POST',
       json: {
         name: token,
@@ -520,6 +527,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         kinds: draft.kind === 'open' ? ['coding', 'work', 'personal', 'household', 'social', 'school'] : [draft.kind],
         brief: draft.instructions.trim(),
         mandate: `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
+        team_mode: draft.teamMode === 'new' ? 'new' : '',
         behaviours: draft.books,
       },
     });
@@ -620,7 +628,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     enter: async (detail = {}) => {
       paint();
       const [tray, sopRows, wayRows, teamRows, rootRows] = await Promise.all([
-        request('/api/templates'),
+        request('/api/templates/agents'),
         request('/api/sops'),
         request('/api/ways'),
         request('/api/team-rosters'),
