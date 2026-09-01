@@ -1393,7 +1393,9 @@ The catalog entry goes. {dir} is not touched.
 - **composer.clear_title:** Clear this box
 
 ## phone — phone.js (the phone shell: Coworks, a Cowork's Agents, one Agent's tile)
-- **phone.coworks:** Coworks
+- **phone.coworks:** Cowork: Teams
+- **phone.launch_card:** Launch New Agent
+- **phone.launch_defaults:** Everything else launches on this Cowork's defaults.
 - **phone.no_coworks:** No Coworks yet.
 - **phone.agents_one:** 1 Agent
 - **phone.agents_many:** {n} Agents
