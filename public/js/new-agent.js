@@ -36,7 +36,7 @@ const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
 const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'];
 
-export function createNewAgentView(kit, { connect = null, born = true } = {}) {
+export function createNewAgentView(kit, { connect = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
@@ -58,7 +58,17 @@ export function createNewAgentView(kit, { connect = null, born = true } = {}) {
   let loaded = false;
   const touched = { mandate: false, model: false, root: false, books: false };
 
-  const surface = createSurface({ label: t('new_agent.title', 'New Agent'), className: 'na-surface' });
+  /* THE LAUNCH BUTTON LIVES IN THE TILE HEADER (owner, 2026-09-01), quiet and compact
+   * like Save as template rather than a slab at the bottom of a long scroll — and it is
+   * DISABLED until a name is typed, which is the form teaching its own rule: the name is
+   * the only required field (SETTLING § 1, RULE TWO) and everything under it is optional. */
+  const start = createAction({
+    label: t('add_agent.start', 'Start'),
+    size: 'compact',
+    disabled: true,
+    action: () => void doStart(),
+  });
+  const surface = createSurface({ label: t('new_agent.title', 'New Agent'), className: 'na-surface', actions: [start] });
   const notice = createNotice();
 
   const isCowork = () => draft.type === 'cowork_agent';
@@ -123,6 +133,7 @@ export function createNewAgentView(kit, { connect = null, born = true } = {}) {
     }
     draft.name = nameInput.value;
     paintFoot();
+    paintActions(); // Start wakes on the first character of a name
   });
   const leanNote = el('p', 'na-omitted');
   const pair = providerModelPair(
@@ -349,9 +360,6 @@ export function createNewAgentView(kit, { connect = null, born = true } = {}) {
     paintFolds();
   }
   const meta = {
-    type: () => TYPES().find((row) => row.key === draft.type)?.label || draft.type,
-    top: () => draft.name || '',
-    template: () => (draft.template ? templateRow()?.label || draft.template : ''),
     instructions: () => draft.instructions.slice(0, 40),
     team: () => (draft.teamMode === 'none' ? t('new_agent.a_ronin', 'a rōnin') : chosenTeam()),
     where: () => draft.root,
@@ -367,15 +375,8 @@ export function createNewAgentView(kit, { connect = null, born = true } = {}) {
     }
   }
 
-  /* ---- Will be born: the reading, wherever it is asked for ----
-   * The Launch workbench seats this in its own workspace (owner, 2026-08-31: "Workspace 2
-   * should be the output"), so the rows are built per host rather than owned by the form.
-   * On a bench with nowhere else to put it, `born: true` keeps it under the form. */
+  /* ---- Will be born ---- */
   const foot = el('div', 'ntf-foot');
-  const bornHosts = new Set(born ? [foot] : []);
-  const watchers = new Set();
-  /** Built fresh on every call: several row values ARE nodes (tag rows, an <em>), and a
-   *  node cannot sit in two hosts at once — the second would silently steal it. */
   function bornRows() {
     const typeRow = TYPES().find((type) => type.key === draft.type);
     const rows = [
@@ -398,15 +399,11 @@ export function createNewAgentView(kit, { connect = null, born = true } = {}) {
     return rows;
   }
   function paintFoot() {
-    for (const host of bornHosts) {
-      host.replaceChildren(readingRows(bornRows()));
-      host.append(el('p', 'na-note', t('new_agent.blank_note', 'A blank field is an answer, not a gap.')));
-    }
-    for (const watcher of watchers) watcher();
+    foot.replaceChildren(readingRows(bornRows()));
+    foot.append(el('p', 'na-note', t('new_agent.blank_note', 'A blank field is an answer, not a gap.')));
   }
 
-  /* ---- start, and the conditional save ---- */
-  const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void doStart() });
+  /* ---- the conditional save ---- */
   const saveName = el('input', 'ntf-tmplname');
   saveName.type = 'text';
   saveName.spellcheck = false;
@@ -417,11 +414,12 @@ export function createNewAgentView(kit, { connect = null, born = true } = {}) {
     save.setDisabled(!saveName.value.trim());
   });
   const save = createAction({ label: t('save_template', 'Save as template'), disabled: true, action: () => void doSave() });
-  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [start] });
+  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions') });
   actions.el.append(saveName, save.el);
   function paintActions() {
     // The button says what the press will DO: with the name blank there is no team to
     // create, so it must not promise one.
+    start.setDisabled(!draft.name.trim());
     start.el.textContent = draft.teamMode === 'new' && isCowork() && chosenTeam()
       ? t('new_agent.create_and_start', 'Create the team and start')
       : draft.type === 'terminal' ? t('new_agent.open_terminal', 'Open the terminal') : t('add_agent.start', 'Start');
@@ -589,21 +587,6 @@ export function createNewAgentView(kit, { connect = null, born = true } = {}) {
 
   return {
     el: surface.el,
-    /** THE SELECTOR IS THE FORM'S TABLE OF CONTENTS (owner, 2026-08-31). One row per step
-     *  that EXISTS for this session type, numbered as the form numbers it, carrying that
-     *  step's current answer — so the column that was one dead card becomes the walk. */
-    outline: () => plan().map((key, index) => ({
-      key, n: index + 1, label: steps[key].title(), meta: meta[key]?.() || '',
-    })),
-    focus: (key) => {
-      if (!steps[key]) return;
-      if (FOLDS.includes(key) && !draft.expanded[key]) { draft.expanded[key] = true; paintFolds(); }
-      steps[key].focus();
-    },
-    /** Paint the reading into a host of the caller's choosing, and keep it painted. */
-    attachBorn: (host) => { bornHosts.add(host); paintFoot(); return () => bornHosts.delete(host); },
-    /** Told after every repaint, so an outline elsewhere never shows a stale answer. */
-    watch: (fn) => { watchers.add(fn); return () => watchers.delete(fn); },
     enter: async (detail = {}) => {
       paint();
       const [tray, sopRows, wayRows, teamRows, rootRows] = await Promise.all([

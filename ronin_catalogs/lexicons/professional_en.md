@@ -303,8 +303,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 - **launch.mode_team:** Team
 - **launch.mode_agent:** Agent
-- **launch.born:** Will be born
-- **launch.born_summary:** What the answers above add up to.
 
 ## home — home.js (the status words and the launch receipt)
 - **home.status_ready:** ready
@@ -368,7 +366,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.role_placeholder:** development — or leave blank
 - **new_team.role_desc:** Optional. Blank is an unclassified Team, which is a valid state.
 - **team.objective:** Objective
-- **new_team.objective_desc:** Optional. Rides the brief of every session born onto this Team.
 - **team.repos:** Repositories
 - **team.branch:** Branch
 - **team.lines:** Team lines
@@ -376,7 +373,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.parked_desks:** Parked desks
 - **new_team.optional:** Optional.
 - **team.wipeboard:** Wipeboard
-- **new_team.wipeboard_desc:** Optional. Blank uses the Team’s own name.
 - **team.project_root:** Project root
 - **team.command:** Command
 - **team.control:** Control
@@ -397,20 +393,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.name_placeholder:** lowercase, digits, - _
 - **new_team.objective_placeholder:** what this team is for
 - **new_team.where:** Where
-- **new_team.root_note:** A default that seeds a launch — never a constraint. A rōnin that joins later keeps its own.
-- **new_team.agent_defaults:** agent defaults — seeded into every Agent raised here; none of it is a constraint
 - **new_team.floor:** Cowork floor
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
-- **new_team.required:** Required behaviours
-- **new_team.required_why:** Every Agent that joins gets the documents below, at birth or on joining.
-- **new_team.required_on:** enforced
-- **new_team.required_off:** offered
 - **new_team.kit_none:** nothing yet — a template lays it, or open the kit
 - **new_team.kit_door:** Open the Team Kit  ▸
 - **new_team.kit_door_why:** A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.
-- **new_team.kit_meta:** {routines} routines · {books} books{required}
-- **new_team.kit_meta_required:** (required)
+- **new_team.kit_meta:** {routines} routines · {books} books
 - **new_team.lead:** Team lead
 - **new_team.lead_include:** Include a team lead
 - **new_team.lead_include_sub:** Raised with the team and briefed.
@@ -425,7 +414,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.members:** members
 - **new_team.members_note:** derived from live tags — never stored here
 - **new_team.inherits:** an agent born here inherits
-- **new_team.wipeboard_own:** {team}  (its own)
 - **new_team.raise:** Raise the team
 - **new_team.raise_lead:** Raise the team and its lead
 - **new_team.raising:** Raising the team…
