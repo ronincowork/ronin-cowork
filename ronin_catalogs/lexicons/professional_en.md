@@ -552,6 +552,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.commons_summary:** See Docs / Wipeboard / Agent Message Queue / Team Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
+- **team.workspace_empty:** empty
 - **team.new_session:** New session
 - **cowork.tab_roster:** Roster
 - **cowork.tab_archives:** Archived

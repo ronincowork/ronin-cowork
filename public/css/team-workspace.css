@@ -22,7 +22,7 @@
   /* a seat with a card over it — the drop will land here */
   .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
   /* a blank workspace: the word, centred, and nothing else (owner, 2026-08-27) */
-  .tw-blank-word { margin: auto; font-size: var(--text-5); color: var(--muted); }
+  .tw-blank-word { margin: auto; font-size: var(--text-3); color: var(--muted); }
   /* the new-session surface: T on the left of its head, then the name; the launcher below */
   .tw-new-body { flex: 1; min-height: 0; overflow-y: auto; }
   /* the launcher's pane shows only inside `.home[data-pane='new']` by the commons' rule; in a
