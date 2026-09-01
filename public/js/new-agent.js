@@ -29,7 +29,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, dialRow, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray,
+  createStep, dialRow, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -43,7 +43,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     type: 'cowork_agent', template: '', templateName: '',
     name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
     teamMode: 'new', team: '', newTeam: '',
-    reach: 'open', recruit: 'open', output: 'open',
+    reach: 'open', recruit: 'open', output: 'open', launchMode: 'live_dangerously',
     books: [], root: '',
     expanded: {},
   };
@@ -298,6 +298,35 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       row(routine.name, routine.stated_by?.[0]?.layer || '', routine.on);
     }
   }
+  /* ---- launch mode: the enum that replaces `permissions` ----
+   * Owner, 2026-09-01, and an enum rather than the boolean he first named: Ronin offers
+   * two launch selections and NEITHER is "safe". CONFIGURED appends nothing and leaves
+   * whatever the provider CLI already loads — Ronin claims nothing about it, including
+   * that it will ask. LIVE DANGEROUSLY appends that provider's own declared bypass flag
+   * (`--dangerously-skip-permissions` for Anthropic, `--dangerously-bypass-approvals-and-
+   * sandbox` for OpenAI). Default is live_dangerously: it preserves what Codex already
+   * does on this box and CHANGES Claude, which asks today.
+   *
+   * @dangerous_mode is cutting the delivery — project-roots parses the per-provider flag,
+   * spawn appends it, and asking for it where a provider declares none is REFUSED rather
+   * than quietly downgraded. Until that lands the route notes the key as ignored. The
+   * difference from `permissions`, which this replaces, is that `permissions` was designed
+   * to be delivered nowhere; this has an owner and a landing. Spellings are that session's
+   * P0 proposal, pending @sea_2_sea.
+   */
+  const LAUNCH_MODES = () => [
+    { key: 'configured', label: t('launch_mode.configured', 'Model provider configuration'),
+      sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
+    { key: 'live_dangerously', label: t('launch_mode.live', 'Dangerously'),
+      sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
+  ];
+  const modeHost = el('div');
+  const paintLaunchMode = () => {
+    modeHost.replaceChildren(
+      el('p', 'fs-head', t('launch_mode.head', 'launch mode')),
+      wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; paintLaunchMode(); paintFoot(); }),
+    );
+  };
   const shelvesHost = el('div');
   function paintShelves() {
     shelvesHost.replaceChildren();
@@ -325,7 +354,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     shelf(t('new_agent.shelf_house', 'behaviours · the house'), sops, 'sops');
     shelf(t('new_agent.shelf_ways', 'behaviours · ways of working'), ways, 'ways');
   }
-  stepLoadout.body.append(routinesHead, routinesHost, shelvesHost);
+  stepLoadout.body.append(modeHost, routinesHead, routinesHost, shelvesHost);
 
   /* ---- the plan: which steps exist for this type and door ---- */
   const steps = {
@@ -378,6 +407,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         ? el('em', null, t('new_agent.routines_bare', 'no floor, no routines'))
         : tagRow([{ text: t('new_team.floor_tag', 'floor'), on: true }, ...(seed?.routines || []).filter((row) => row.on).map((row) => ({ text: row.name, on: true }))])]);
     if (isCowork() && draft.books.length) rows.push([t('behaviours', 'Behaviours'), tagRow(draft.books.map((text) => ({ text, on: true })))]);
+    rows.push([t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode]);
     rows.push([t('add_agent.place', 'place'), draft.root]);
     if (hasAgent()) rows.push([t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')]);
     return rows;
@@ -451,6 +481,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
           kind: draft.kind,
           mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output },
           behaviours: [...draft.books],
+          launch_mode: draft.launchMode,
           ...(draft.template ? { template: draft.template } : {}),
         };
     const result = await request('/api/launch', { method: 'POST', json: body });
@@ -540,6 +571,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     paintMandate();
     paintRoutinePreview();
     paintShelves();
+    paintLaunchMode();
     paintFolds();
     paintActions();
     paintFoot();

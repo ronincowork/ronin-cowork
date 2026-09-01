@@ -302,6 +302,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.new_agent:** New Agent
 - **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 - **forms.launch:** Launch
+- **launch_mode.head:** launch mode
+- **launch_mode.configured:** Model provider configuration
+- **launch_mode.configured_sub:** Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.
+- **launch_mode.live:** Dangerously
+- **launch_mode.live_sub:** Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.
 - **new_team.common:** Common instructions
 - **new_team.who_where:** Who and where
 - **new_team.where:** Where

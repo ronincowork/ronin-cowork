@@ -108,6 +108,24 @@ export function dialRow(title, values, current, onPick) {
 
 /** The six kinds and the not-applicable box below them — `open` is dotted and set apart,
  *  never a seventh peer (owner, 2026-08-31). Labels ride the reserved `kind.*` keys. */
+/**
+ * A row of pick-one tiles, each with its name and what it means. The Team step on New
+ * Agent drew these first; Launch mode uses the same shape because it is the same kind of
+ * question — a small closed set where the consequence of each answer needs saying.
+ */
+export function wayTiles(rows, current, onPick) {
+  const wrap = el('div', 'fs-pair');
+  for (const row of rows) {
+    const box = el('button', 'fs-way');
+    box.type = 'button';
+    box.setAttribute('aria-pressed', String(row.key === current));
+    box.append(el('b', null, row.label), el('small', null, row.sub));
+    box.addEventListener('click', () => onPick(row.key));
+    wrap.append(box);
+  }
+  return wrap;
+}
+
 export function kindTiles(current, onPick) {
   const KINDS = [
     { key: 'coding', icon: '⌨' }, { key: 'work', icon: '💼' }, { key: 'personal', icon: '🎩' },

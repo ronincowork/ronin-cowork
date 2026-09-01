@@ -27,7 +27,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray,
+  createStep, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -50,7 +50,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     root: '', branch: '',
     provider: '', model: '', reach: 'open', recruit: 'open', output: 'open',
     dial: 'write', permissions: 'default',
-    routines: {}, books: [],
+    routines: {}, books: [], launchMode: 'live_dangerously',
     lead: null,
     expanded: {},
   };
@@ -260,6 +260,21 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // already carries `--dangerously-bypass-approvals-and-sandbox` hardcoded, and nothing
   // in `src/spawn.ts` reads the field to change a command. It is stored and attributed
   // and delivered nowhere. Raised with the lead; the record keeps its default.
+  /* Launch mode is an agent default like the model: it lands in the next Agent form and
+     the hand has the last word. js/new-agent.js carries the whole argument. */
+  const LAUNCH_MODES = () => [
+    { key: 'configured', label: t('launch_mode.configured', 'Model provider configuration'),
+      sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
+    { key: 'live_dangerously', label: t('launch_mode.live', 'Dangerously'),
+      sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
+  ];
+  const modeHost = el('div');
+  const paintLaunchMode = () => {
+    modeHost.replaceChildren(
+      el('p', 'fs-head', t('launch_mode.head', 'launch mode')),
+      wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; paintLaunchMode(); paintFoot(); }),
+    );
+  };
   const routinesHead = el('p', 'fs-head', t('routines', 'Routines'));
   const routinesHost = el('div');
   function paintRoutines() {
@@ -311,7 +326,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     door.title = t('new_team.kit_door_why', 'A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.');
     booksHost.append(door);
   }
-  stepKit.body.append(routinesHead, routinesHost, booksHead, booksHost);
+  stepKit.body.append(modeHost, routinesHead, routinesHost, booksHead, booksHost);
 
   /* ---- step 6 · Team lead ---- */
   const stepLead = createStep({ n: 6, key: 'lead', title: t('new_team.lead', 'Team lead'), onToggle: () => toggle('lead') });
@@ -399,6 +414,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       [t('routines', 'Routines'), tagRow([{ text: t('new_team.floor_tag', 'floor'), on: true }, ...onNames().map((text) => ({ text, on: true }))])],
       [t('behaviours', 'Behaviours'), draft.books.length ? tagRow(draft.books.map((text) => ({ text, on: true }))) : ''],
       [t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')],
+      [t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode],
       [t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output}`],
       [t('add_agent.still_asked', 'still asked'), tagRow([
         t('session_type', 'Session type'), t('add_agent.name', 'name'), t('add_agent.instruction', 'instruction'),
@@ -451,7 +467,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     agent_defaults: {
       provider: draft.provider, model: draft.model,
       reach: draft.reach, recruit: draft.recruit, output: draft.output,
-      dial: draft.dial,
+      dial: draft.dial, launch_mode: draft.launchMode,
     },
   });
 
@@ -575,6 +591,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     paintRoots();
     pair.paint();
     paintRoutines();
+    paintLaunchMode();
     paintBooks();
     paintLead();
     paintFolds();
