@@ -13,6 +13,24 @@
   .na-surface, .ntf-surface { font-size: var(--text-3); }
   .ntf-form { display: flex; flex-direction: column; margin-bottom: var(--space-7); }
 
+  /* ── the band that says everything under it is a default ── */
+  .ntf-band {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    width: 100%;
+    border: 0;
+    border-top: var(--edge) solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    padding: var(--space-6) 0 var(--space-4);
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--text-2);
+    text-align: left;
+  }
+  .ntf-band:hover { color: var(--fg-strong); }
+
   /* ── the help workspace: prose beside the step you are on ── */
   .lh-surface { font-size: var(--text-3); }
   .lh-body { display: flex; flex-direction: column; gap: var(--space-7); }
