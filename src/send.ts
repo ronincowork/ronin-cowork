@@ -27,7 +27,7 @@ import { exactPane } from './tmux.js';
 import { classifyStatus } from './status.js';
 
 const pexec = promisify(execFile);
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export interface PromptRead {
   /** Did we find a prompt line at all? False = a CLI whose prompt we cannot read. */
@@ -105,56 +105,134 @@ export interface DeliveryResult {
   submitted: boolean;
 }
 
+// eslint-disable-next-line no-control-regex
+const SGR = /\x1b\[[0-9;]*m/g;
+/** Text with colour and every kind of whitespace removed — what survives a TUI reflowing a draft. */
+const squash = (s: string): string => s.replace(SGR, '').replace(/\s+/g, '');
+const FINGERPRINT = 48;
+/** The tail of a message, squashed: enough to recognise it, short enough to survive a wrap. */
+export const fingerprintOf = (text: string): string => squash(text).slice(-FINGERPRINT);
+
+/**
+ * IS THIS MESSAGE SITTING UNSUBMITTED AT THE PROMPT — the whole draft, however tall?
+ *
+ * `parsePrompt` answers "is there a prompt, and what is on its row". A long message
+ * wraps into a draft a dozen rows tall; the prompt row is then ABOVE the fifteen-row
+ * window and the read comes back "cannot tell". Measured 2026-09-02: a tell into a
+ * Codex tile typed the text, read "not visible", returned without Enter, and left the
+ * message stranded at the prompt — where every retry then refused it as "unsubmitted
+ * text" or "busy", forever, and held the messages behind it. The owner found the text
+ * sitting in the composer.
+ *
+ * So this looks for the draft itself: from the LAST prompt marker row in the pane
+ * (wherever it is) to the bottom, does the squashed text contain the message's
+ * fingerprint? Above that row is the transcript, where a submitted copy also lives, so
+ * the search never starts there. A numbered marker row is a dialog and never a draft.
+ */
+export function draftAtPrompt(raw: string, text: string): boolean {
+  const fp = fingerprintOf(text);
+  if (!fp) return false;
+  const lines = raw.split('\n');
+  let at = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const bare = lines[i].replace(SGR, '').replace(/ /g, ' ');
+    if (!/[❯›]/.test(bare)) continue;
+    if (/[❯›]\s*\d+\.\s/.test(bare)) return false;
+    at = i;
+    break;
+  }
+  if (at < 0) return false;
+  return squash(lines.slice(at).join('\n')).includes(fp);
+}
+
+/** The pane, as this file drives it; a test hands in a fake and the policy runs unchanged. */
+export interface PaneIO {
+  read(): Promise<string>;
+  type(text: string): Promise<void>;
+  enter(): Promise<void>;
+  wait(ms: number): Promise<void>;
+}
+
 const typeText = (name: string, text: string) =>
   pexec('tmux', ['send-keys', '-t', exactPane(name), '-l', '--', text]);
 const pressEnter = (name: string) => pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
+const paneIO = (name: string): PaneIO => ({
+  read: () => capturePane(name),
+  type: (text) => typeText(name, text).then(() => undefined),
+  enter: () => pressEnter(name).then(() => undefined),
+  wait: sleep,
+});
 
-/** Automatic delivery and Try Again: an uncertain prompt is a retained message. */
-export async function deliverSafe(name: string, text: string, onAttempt?: () => void): Promise<DeliveryResult> {
-  const before = await readPrompt(name);
-  if (!before.found) return { delivered: false, submitted: false, reason: 'busy or prompt not recognized' };
-  if (before.menu) return { delivered: false, submitted: false, reason: 'dialog is open' };
-  if (before.text) return { delivered: false, submitted: false, reason: 'unsubmitted text is already at the prompt' };
-
-  onAttempt?.();
-  await typeText(name, text);
-  await sleep(350);
-  const typed = await readPrompt(name);
-  if (!typed.found || typed.menu || !typed.text) {
-    return { delivered: false, submitted: false, reason: typed.menu ? 'dialog opened before submit' : 'text did not become visible at the prompt' };
+/**
+ * Automatic delivery and Try Again: an uncertain prompt is a retained message.
+ *
+ * Two cases are decided by the draft, not the prompt row. (1) After typing, a message
+ * the prompt read cannot see but the pane plainly holds at the prompt IS typed, and gets
+ * its Enter — returning here without one is how a message strands. (2) On entry, a draft
+ * at the prompt that is THIS message is an earlier attempt's stranded copy: it is not
+ * typed again (never a second copy) and not refused (never a permanent stall); it is
+ * submitted. Any other draft is somebody's unsubmitted words and is left alone.
+ */
+export async function deliverSafe(name: string, text: string, onAttempt?: () => void, io: PaneIO = paneIO(name)): Promise<DeliveryResult> {
+  let raw = await io.read();
+  const before = parsePrompt(raw);
+  let typedText: string | null;
+  if (draftAtPrompt(raw, text)) {
+    typedText = before.text;
+  } else {
+    if (!before.found) return { delivered: false, submitted: false, reason: 'busy or prompt not recognized' };
+    if (before.menu) return { delivered: false, submitted: false, reason: 'dialog is open' };
+    if (before.text) return { delivered: false, submitted: false, reason: 'unsubmitted text is already at the prompt' };
+    onAttempt?.();
+    await io.type(text);
+    await io.wait(350);
+    raw = await io.read();
+    const typed = parsePrompt(raw);
+    if (typed.menu) return { delivered: false, submitted: false, reason: 'dialog opened before submit' };
+    if (!typed.text && !draftAtPrompt(raw, text)) return { delivered: false, submitted: false, reason: 'text did not become visible at the prompt' };
+    typedText = typed.text;
   }
-  await pressEnter(name);
+  await io.enter();
   for (let i = 0; i < 3; i++) {
-    await sleep(700);
-    const now = await readPrompt(name);
-    if (!now.found || (!now.menu && now.text === null)) return { delivered: true, submitted: true, reason: 'delivered' };
+    await io.wait(700);
+    raw = await io.read();
+    const now = parsePrompt(raw);
     if (now.menu) return { delivered: false, submitted: true, reason: 'dialog opened while submitting' };
-    if (now.text !== typed.text) return { delivered: false, submitted: true, reason: 'The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.' };
-    await pressEnter(name);
+    const pending = draftAtPrompt(raw, text) || (typedText !== null && now.text === typedText);
+    if (!pending) {
+      if (!now.found || now.text === null) return { delivered: true, submitted: true, reason: 'delivered' };
+      return { delivered: false, submitted: true, reason: 'The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.' };
+    }
+    await io.enter();
   }
   return { delivered: false, submitted: true, reason: 'text remains at the prompt after Enter retries' };
 }
 
 /** Owner-only Force: type once, then submit/check for one bounded ten-second attempt. */
-export async function deliverForce(name: string, text: string, timeoutMs = 10_000): Promise<DeliveryResult> {
-  await typeText(name, text);
-  await sleep(300);
+export async function deliverForce(name: string, text: string, timeoutMs = 10_000, io: PaneIO = paneIO(name)): Promise<DeliveryResult> {
+  await io.type(text);
+  await io.wait(300);
   const deadline = Date.now() + timeoutMs;
   do {
-    await pressEnter(name);
-    await sleep(800);
-    const now = await readPrompt(name);
-    if (!now.found || (!now.menu && now.text === null)) return { delivered: true, submitted: true, reason: 'delivered by Force' };
+    await io.enter();
+    await io.wait(800);
+    const raw = await io.read();
+    const now = parsePrompt(raw);
+    if (!draftAtPrompt(raw, text) && (!now.found || (!now.menu && now.text === null))) return { delivered: true, submitted: true, reason: 'delivered by Force' };
   } while (Date.now() < deadline);
   return { delivered: false, submitted: true, reason: 'Force could not observe delivery within 10 seconds' };
 }
 
+async function capturePane(name: string): Promise<string> {
+  const { stdout } = await pexec('tmux', ['capture-pane', '-p', '-e', '-t', exactPane(name)], {
+    maxBuffer: 4 * 1024 * 1024,
+  });
+  return stdout;
+}
+
 export async function readPrompt(name: string): Promise<PromptRead> {
   try {
-    const { stdout } = await pexec('tmux', ['capture-pane', '-p', '-e', '-t', exactPane(name)], {
-      maxBuffer: 4 * 1024 * 1024,
-    });
-    return parsePrompt(stdout);
+    return parsePrompt(await capturePane(name));
   } catch {
     return { found: false, text: null, menu: false }; // pane gone mid-send; not this function's business why
   }
