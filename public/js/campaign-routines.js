@@ -49,7 +49,7 @@ export function createRoutinesSurface(campaign) {
       const line = el('div', 'cv-choice');
       const words = el('div', 'cv-choice-pick');
       words.append(el('span', 'cv-choice-name', routine.label || routine.name), el('p', 'cv-choice-why', routine.blurb || t('campaign_view.routine_no_description', 'No description supplied.')));
-      if (routine.name === 'ronin_worktrees') words.append(el('p', 'cv-choice-why', t('campaign_view.worktrees_routine_help', 'On: an Agent uses its own worktree only in Project Roots that allow Worktrees. Off: it works directly in each project checkout and its branches. Project Root permission is configured separately.')));
+      if (routine.name === 'ronin_worktrees') words.append(el('p', 'cv-choice-why', t('campaign_view.worktrees_routine_help', 'Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')));
       const controls = el('div', 'cv-routine-control');
       controls.append(el('span', available(routine) ? 'cv-state cv-state-ok' : 'cv-state', available(routine) ? t('campaign_view.available', 'Available') : t('campaign_view.unavailable', 'Unavailable')));
       const toggle = el('label', 'cv-switch');

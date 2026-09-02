@@ -94,7 +94,7 @@ for (const contract of ["pane('themes'", "'Desktop'", "'Mobile'", "save('theme')
 for (const contract of ['Worktrees for new project roots', 'Allow Ronin Worktrees', 'separate working folder and branch', 'without clobbering each other', 'Team lead to merge deliberately', 'change an existing repository on its Project Root card']) {
   if (!campaign.includes(contract)) problems.push(`Campaign Project Roots is missing the Worktrees seed teaching: ${contract}.`);
 }
-for (const contract of ['repo needs Worktrees on', 'Agent needs Worktrees on', "group_root', 'Project Root", "group_repository', 'Repository workflow", 'This is the repository permission', 'Repository: Worktrees allowed', 'Repository: use checkout']) {
+for (const contract of ['repo needs Worktrees on', 'Agent needs Worktrees on', "group_root', 'Project Root", "group_repository', 'Repository workflow", 'This controls the repo', 'Repository: Worktrees allowed', 'Repository: use checkout']) {
   if (!projectRoots.includes(contract)) problems.push(`Project Root UI is missing the Worktrees information hierarchy: ${contract}.`);
 }
 if (!read('public/style.css').includes('.pr-f[hidden]')) problems.push('Project Root direct publishing must actually hide the reviewed-only working branch field.');
@@ -102,10 +102,10 @@ for (const retired of ['New projects use desks?', "'Desks'", "'None'", 'desks bo
   if (campaign.includes(retired) || projectRoots.includes(retired)) problems.push(`Campaign/Project Root UI still exposes retired Worktrees wording: ${retired}.`);
 }
 for (const [surface, source] of [['Campaign', campaignRoutines], ['New Team', newTeam], ['Team configuration', teamConfiguration]]) {
-  if (!source.includes('Project Root') || !source.includes('Worktrees')) problems.push(`${surface} must keep Agent capability separate from Project Root permission.`);
+  if (!source.includes('working folder and branch') || !source.includes('repo have Worktrees on') || !source.includes('managed hand-in and Team-lead merge process')) problems.push(`${surface} must explain Worktrees isolation, the Agent/repo condition, and managed hand-in.`);
 }
-if (!newAgent.includes('routineOverrides') || !newAgent.includes("routines: { ...draft.routineOverrides }") || !newAgent.includes('Project Root is a separate gate')) problems.push('New Agent must expose and submit sparse Agent Routine overrides without changing its parents or Project Root.');
-if (!addAgent.includes('worktreesOverride') || !addAgent.includes('Overridden for this Agent only') || !addAgent.includes('Project Root are unchanged')) problems.push('Add Agent must allow an Agent-only Worktrees override and keep Team and Project Root unchanged.');
+if (!newAgent.includes('routineOverrides') || !newAgent.includes("routines: { ...draft.routineOverrides }") || !newAgent.includes('file changes do not collide') || !newAgent.includes('managed hand-in and Team-lead merge process')) problems.push('New Agent must submit sparse Worktrees overrides and explain isolation, both switches, and managed hand-in.');
+if (!addAgent.includes('worktreesOverride') || !addAgent.includes('file changes do not collide') || !addAgent.includes('both the Agent and repo have Worktrees on')) problems.push('Add Agent must allow the Worktrees choice and explain isolation plus the Agent/repo condition.');
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
 for (const file of ['cowork-view.js', 'new-team-form.js', 'new-agent.js', 'launch-view.js']) {
   const source = read(`public/js/${file}`);

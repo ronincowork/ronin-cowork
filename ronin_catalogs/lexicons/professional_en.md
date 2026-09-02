@@ -22,8 +22,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.worktrees_mode:** Agent work mode
 - **add_agent.worktrees_on:** Own worktree where the Project Root allows it
 - **add_agent.worktrees_off:** Use the project checkout and its branches
-- **add_agent.worktrees_inherited:** Inherited from this Team. Change it here for this Agent only; the Project Root remains a separate gate.
-- **add_agent.worktrees_overridden:** Overridden for this Agent only. The Team and Project Root are unchanged.
+- **add_agent.worktrees_help:** Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **add_agent.worktrees_choose_checkout:** Change to checkout mode
 - **add_agent.worktrees_choose_own:** Change to own-worktree mode
 - **add_agent.actions:** Launch actions
@@ -269,7 +268,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
 - **campaign_view.routines_help:** Choose what new Cowork Agents start with. This Campaign answer seeds new Teams; a Team may replace it, and New Agent shows the resolved answer. Nothing already running changes.
-- **campaign_view.worktrees_routine_help:** On: an Agent uses its own worktree only in Project Roots that allow Worktrees. Off: it works directly in each project checkout and its branches. Project Root permission is configured separately.
+- **campaign_view.worktrees_routine_help:** Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **campaign_view.routines_n:** {n} on
 - **campaign_view.routine_no_description:** No description supplied.
 - **campaign_view.available:** Available
@@ -458,7 +457,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.worktrees_mode:** Agent work mode
 - **new_team.worktrees_on:** Own worktree where the Project Root allows it
 - **new_team.worktrees_off:** Use the project checkout and its branches
-- **new_team.worktrees_help:** This Team answer is inherited by Agents born onto it and replaces the Campaign default. A Project Root must also allow Worktrees; otherwise that repository uses its checkout.
+- **new_team.worktrees_help:** Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **new_team.kit_meta:** {routines} routines · {books} books
 - **new_team.lead_include:** Include a team lead
 - **new_team.lead_include_sub:** Raised with the team and briefed.
@@ -527,7 +526,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.worktrees_mode:** Agent work mode
 - **new_agent.worktrees_on:** Own worktree where the Project Root allows it
 - **new_agent.worktrees_off:** Use the project checkout and its branches
-- **new_agent.worktrees_resolved:** Resolved from {source}. The selected Project Root is a separate gate: if it does not allow Worktrees, this Agent uses that checkout.
+- **new_agent.worktrees_help:** Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted
@@ -878,14 +877,14 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_stable:** stable
 - **roots.f_stable_hint:** The published branch. You choose its name.
 - **roots.f_worktrees:** Worktrees
-- **roots.f_worktrees_hint:** This repository allows or declines Ronin Worktrees. The Agent’s Routine is selected separately under Campaign or Team Routines.
+- **roots.f_worktrees_hint:** Worktrees keep each Agent’s file changes in a separate working folder and branch. Both the Agent and repo must have Worktrees on.
 - **roots.worktrees_enabled:** Use Ronin Worktrees
 - **roots.worktrees_disabled:** Use the checkout
 - **roots.flow_reviewed:** {working} → review → {stable}
 - **roots.flow_direct:** commits → {stable}
-- **roots.worktrees_two_gates:** This is the repository permission. It takes effect only when the Agent is also born with the Ronin Worktrees Routine, selected under Campaign or Team Routines.
-- **roots.flow_worktrees:** Agents with the Ronin Worktrees Routine use their own worktree and hand work in; other Agents use the checkout.
-- **roots.flow_checkout:** Every Agent uses this checkout, even when it carries the Ronin Worktrees Routine.
+- **roots.worktrees_two_gates:** This controls the repo. Worktrees use a managed hand-in and Team-lead merge process.
+- **roots.flow_worktrees:** Agents with Worktrees on use their own working folder and branch; other Agents use the checkout.
+- **roots.flow_checkout:** Every Agent uses this checkout, even when the Agent has Worktrees on.
 - **roots.flow_preview:** Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.
 - **roots.profile_confirm:** Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.
 - **docs.open_browser:** Open in browser ↗
@@ -1597,7 +1596,7 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.worktrees_mode:** Agent work mode
 - **team_config.worktrees_on:** Own worktree where the Project Root allows it
 - **team_config.worktrees_off:** Use the project checkout and its branches
-- **team_config.worktrees_help:** A Project Root must separately allow Worktrees. If it does not, Agents on this Team use that repository’s checkout.
+- **team_config.worktrees_help:** Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **team_config.kit_floor_alone:** the floor alone — no Routine is on
 - **team_config.no_description:** No description supplied.
 - **team_config.behaviours:** Behaviours

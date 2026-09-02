@@ -332,13 +332,11 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     const worktrees = (seed?.routines || []).find((routine) => routine.name === 'ronin_worktrees');
     const overridden = Object.prototype.hasOwnProperty.call(draft.routineOverrides, 'ronin_worktrees');
     const worktreesOn = overridden ? draft.routineOverrides.ronin_worktrees : worktrees?.on;
-    const inheritedBy = worktrees?.stated_by?.[0]?.layer || t('forms.campaign', 'campaign');
-    const source = overridden ? t('forms.agent', 'agent') : inheritedBy;
     worktreesMode.replaceChildren(
       el('b', null, t('new_agent.worktrees_mode', 'Agent work mode')),
       el('strong', null, worktreesOn ? t('new_agent.worktrees_on', 'Own worktree where the Project Root allows it')
         : t('new_agent.worktrees_off', 'Use the project checkout and its branches')),
-      el('small', null, t('new_agent.worktrees_resolved', 'Resolved from {source}. The selected Project Root is a separate gate: if it does not allow Worktrees, this Agent uses that checkout.', { source })),
+      el('small', null, t('new_agent.worktrees_help', 'Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')),
     );
   }
   /* ---- launch mode: the enum that replaces `permissions` ----
