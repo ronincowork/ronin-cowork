@@ -181,7 +181,7 @@ export function registerCatalogs(app: express.Express): void {
       const [roots, bySession] = await Promise.all([listProjectRoots(), projectRootsOfSessions()]);
       const facts = await Promise.all(roots.map((r) => repoFacts(r)));
       // THE ARRANGEMENT, apart from the branch that happens to be mounted at the root:
-      // reviewed or direct, managed desks or a shared checkout, read from the repo's
+      // reviewed or direct, Worktrees or the checkout, read from the repo's
       // checked-in RONIN_REPO (absent = today's behaviour, reported as such — never
       // guessed from the branch). docs/control-surface.md § 5, "Project-root Admin".
       const arrangements = await Promise.all(
@@ -281,7 +281,7 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   // THE REPOSITORY PROFILE on the editor: after one explicit before/after confirmation,
-  // rewrite RONIN_REPO directly. This is configuration, not a migration: no refs, desks,
+  // rewrite RONIN_REPO directly. This is configuration, not a migration: no refs, worktrees,
   // running Agents or recovery state are changed here.
   app.put('/api/project-roots/:name/repo-profile', async (req, res) => {
     const { name } = req.params;

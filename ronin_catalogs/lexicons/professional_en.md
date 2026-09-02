@@ -830,7 +830,7 @@ The catalog entry goes. {dir} is not touched.
 - **roots.chip_reviewed_title:** Reviewed: work moves through {working}, then review reaches {stable}. The branch mounted here is incidental.
 - **roots.chip_direct_title:** Direct: commits land on {stable} itself.
 - **roots.chip_shared:** shared checkout
-- **roots.chip_shared_title:** No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing.
+- **roots.chip_shared_title:** No RONIN_REPO record: sessions use this checkout. Add a repository profile to choose Worktrees or direct publishing.
 
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list

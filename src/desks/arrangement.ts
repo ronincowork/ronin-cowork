@@ -3,10 +3,10 @@
  *
  * The record is `RONIN_REPO` at the repo's root (Track 5's file, key=value like VERSION):
  *
- *   mode=reviewed|direct     reviewed: desks hand in to a team line, promotion moves dev
+ *   mode=reviewed|direct     reviewed: accepted work moves through a working branch
  *   working=dev              the local working line (reviewed only)
  *   stable=master            the published line
- *   desks=managed|none       whether managed desks apply
+ *   desks=managed|none       compatibility storage for Worktrees enabled|disabled
  *   publish=dev,master       which lines may reach the remote (optional; ruled 2026-08-20)
  *
  * An ABSENT file is today's behaviour — a shared checkout, the claim hook active — and is
@@ -23,6 +23,11 @@ import path from 'node:path';
 
 const run = promisify(execFile);
 import { listProjectRoots, type ProjectRootInfo } from '../project-roots.js';
+import type {
+  WorktreesManagedCandidate,
+  WorktreesRepositoryInput,
+  WorktreesSetting,
+} from '../worktrees-resolution.js';
 import type { RepoArrangement, RepoMode } from './schema.js';
 
 export const RONIN_REPO_FILE = 'RONIN_REPO';
@@ -33,9 +38,6 @@ export interface RepoProfile {
   stable: string;
   worktrees: WorktreesSetting;
 }
-
-/** The domain answer. `desks=` is compatibility storage and stops at this module. */
-export type WorktreesSetting = 'enabled' | 'disabled';
 
 export interface WorktreesProfileProvenance {
   source: RepoArrangement['source'];
@@ -79,6 +81,27 @@ export const arrangementWorktreesProfile = (a: RepoArrangement): WorktreesReposi
   },
 });
 
+/**
+ * Supply the pure resolver's repository input. Repository applicability and branches
+ * come only from RONIN_REPO; explicit managed coordinates come from assignment planning.
+ * This adapter normalizes facts and does not decide whether Worktrees applies.
+ */
+export function arrangementWorktreesInput(
+  arrangement: RepoArrangement,
+  managed?: WorktreesManagedCandidate,
+): WorktreesRepositoryInput {
+  const profile = arrangementWorktreesProfile(arrangement);
+  return {
+    repo: arrangement.repo,
+    project_root: arrangement.repo,
+    checkout: arrangement.dir,
+    worktrees: profile.worktrees,
+    applicability_source: profile.applicability_source,
+    branches: { ...profile.branches },
+    ...(managed ? { managed: { ...managed } } : {}),
+  };
+}
+
 
 /** Parse the record's text. Exported for the unit floor; unknown keys are ignored, bad values refused by name. */
 export function parseArrangement(repo: string, dir: string, text: string | null): RepoArrangement {
@@ -106,7 +129,7 @@ export function parseArrangement(repo: string, dir: string, text: string | null)
 
 /**
  * WRITE THE RECORD FOR A NEW PROJECT (owner, 2026-08-29): the one gate is this file, so
- * adding a project root writes it — from SETTEI's "new projects use desks?" default —
+ * adding a project root writes it — from SETTEI's "new project roots use Worktrees?" seed —
  * rather than leaving the project silently undeclared. Writes only when the directory is
  * a git repository and has no RONIN_REPO yet; never overwrites a declaration. `managed`
  * declares the house arrangement (reviewed, dev → master); `none` declares direct on the
@@ -126,7 +149,7 @@ export async function declareArrangement(dir: string, desks: 'managed' | 'none')
     : ['mode=direct', `stable=${branch}`, 'desks=none'];
   const text = [
     `# ${RONIN_REPO_FILE} — this repository's declared arrangement. Read by tools; not inferred.`,
-    '# Written when the project root was added, from ⚙ "New projects use desks?". Edit here to',
+    '# Written when the project root was added, from "New project roots use Worktrees?". Edit here to',
     '# change this one project; format and meaning: ronin-cowork/RONIN_REPO.',
     ...body,
     '',

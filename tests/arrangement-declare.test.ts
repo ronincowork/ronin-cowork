@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { arrangementProfile, declareArrangement, readArrangement, setArrangementProfile, validateArrangementProfile } from '../src/desks/arrangement.js';
+import { arrangementProfile, arrangementWorktreesInput, declareArrangement, readArrangement, setArrangementProfile, validateArrangementProfile } from '../src/desks/arrangement.js';
 
 async function repo(branch: string): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'ronin-arr-'));
@@ -85,4 +85,31 @@ test('repository profile accepts nonstandard Git branch names and refuses invali
       /working must be a branch name/,
     );
   }
+});
+
+test('compatibility storage normalizes to the pure resolver input without deciding policy', async () => {
+  const dir = await repo('main');
+  try {
+    await writeFile(path.join(dir, 'RONIN_REPO'), 'mode=reviewed\nworking=gather\nstable=ship\ndesks=managed\n');
+    const arrangement = await readArrangement('custom', dir);
+    assert.deepEqual(arrangementWorktreesInput(arrangement, {
+      worktree: '/worktrees/custom/session', branch: 'session/work', line: 'team/pbs/dev',
+    }), {
+      repo: 'custom',
+      project_root: 'custom',
+      checkout: dir,
+      worktrees: 'enabled',
+      applicability_source: 'RONIN_REPO',
+      branches: { working: 'gather', stable: 'ship' },
+      managed: { worktree: '/worktrees/custom/session', branch: 'session/work', line: 'team/pbs/dev' },
+    });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+
+  assert.deepEqual(arrangementWorktreesInput({
+    repo: 'plain', dir: '/checkout/plain', mode: 'direct', working: '', stable: '',
+    desks: 'none', publish: [], source: 'absent',
+  }), {
+    repo: 'plain', project_root: 'plain', checkout: '/checkout/plain', worktrees: 'disabled',
+    applicability_source: 'absent', branches: { working: '', stable: '' },
+  });
 });

@@ -269,7 +269,7 @@ export function buildProjectRoots(root, isShowing) {
             ? t('roots.chip_reviewed_title', 'Reviewed: work moves through {working}, then review reaches {stable}. The branch mounted here is incidental.', { working: a.working || 'dev', stable: a.stable || 'master' })
             : t('roots.chip_direct_title', 'Direct: commits land on {stable} itself.', { stable: a.stable || 'main' }));
       } else if (a) {
-        chip(t('roots.chip_shared', 'shared checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing.'));
+        chip(t('roots.chip_shared', 'shared checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Add a repository profile to choose Worktrees or direct publishing.'));
       }
     } else {
       // A project_root need not be a project_repo. `~/lab` is one; this is a
