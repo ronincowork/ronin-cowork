@@ -2,20 +2,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { launchTeamAgents } from '../public/js/team-loader.js';
 
-test('the Team loader launches ordinary rows together and the lead last', async () => {
+test('the Team loader finishes ordinary rows serially and the lead last', async () => {
   const calls = [];
+  let inFlight = 0;
   const request = async (url, options) => {
+    assert.equal(inFlight, 0, 'a second membership writer must wait for the first');
+    inFlight += 1;
     calls.push({ url, body: options.json });
+    await Promise.resolve();
+    inFlight -= 1;
     return { ok: true };
   };
 
-  launchTeamAgents(request, 'dinner', [
+  const outcomes = await launchTeamAgents(request, 'dinner', [
     { name: 'cook', instructions: 'cook', mandate: { reach: 'execute', recruit: 'open', output: ['an artifact'] }, team_lead: false },
     { name: 'host', instructions: 'host', mandate: { reach: 'execute', recruit: 'staff agents', output: ['the team'] }, team_lead: true },
     { name: 'music', instructions: 'music', mandate: { reach: 'execute', recruit: 'open', output: ['ideas'] }, team_lead: false },
   ]);
 
   assert.deepEqual(calls.map((call) => call.body.name), ['cook', 'music', 'host']);
+  assert.equal(outcomes.length, 3);
   assert.deepEqual(calls[2].body, {
     session_type: 'cowork_agent', team: 'dinner', team_lead: true,
     name: 'host', instructions: 'host',
@@ -29,9 +35,10 @@ test('one refused launch does not stop the other rows', async () => {
     names.push(options.json.name);
     return { ok: options.json.name !== 'refused' };
   };
-  launchTeamAgents(request, 'dinner', [
+  const outcomes = await launchTeamAgents(request, 'dinner', [
     { name: 'refused', instructions: 'one', mandate: {}, team_lead: false },
     { name: 'born', instructions: 'two', mandate: {}, team_lead: false },
   ]);
   assert.deepEqual(names, ['refused', 'born']);
+  assert.deepEqual(outcomes.map(({ result }) => result.ok), [false, true]);
 });
