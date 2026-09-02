@@ -46,6 +46,10 @@
      warn/bad = the two grades of wrong. --on-accent/--on-strong are the text colours
      that sit ON a filled accent/action surface. */
   --accent: #e0af68;
+  /* ONE focus ring for the whole shell (token audit ruling, 2026-09-02): the Kit and
+     the brand mark had drifted onto kaki rings while the shell rang accent — a
+     keyboard user's ring should never change color by neighborhood. */
+  --focus-ring: var(--accent);
   --accent-2: #81a2be;
   --accent-deep: #d8a13a;
   /* Soft selected-state washes — two of the seven names the 2026-09-01 token audit
@@ -307,7 +311,7 @@
   --bar-nav-bg: transparent;
   --bar-nav-fg: var(--fg-strong);
   --bar-nav-hover: var(--accent);
-  --bar-nav-focus: var(--accent);
+  --bar-nav-focus: var(--focus-ring);
   --bar-nav-size: var(--text-7);
   --bar-value-fg: var(--bar-nav-fg);
   --bar-value-size: var(--bar-nav-size);
@@ -481,7 +485,7 @@
    see it (:focus-visible), and a control wanting a tighter ring may add radius, not
    remove the outline. This used to exist for exactly one control (the brand). */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -833,7 +837,6 @@ body {
     color: var(--accent);
   }
 }
-#bar .brand-home:focus-visible { outline-color: var(--kaki); }
 #bar .bar-cowork-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bar .grow {
   flex: 1;
