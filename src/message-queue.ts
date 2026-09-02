@@ -157,7 +157,9 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
       // must stop: typing a second copy is worse than leaving one visible for the owner.
       return retain(mode === 'force' || result.submitted ? 'failed' : 'stuck', result.reason);
     } catch (e) {
-      return retain(mode === 'force' ? 'failed' : 'stuck', String((e as Error).message ?? e));
+      // Before typing, a transient read can be tried again. After typing, an exception
+      // makes delivery ambiguous; stop rather than risk a second copy.
+      return retain(mode === 'force' || attempted ? 'failed' : 'stuck', String((e as Error).message ?? e));
     }
   } finally {
     await lock?.close().catch(() => {});

@@ -1,5 +1,45 @@
 # Message queue
 
+## TL;DR
+
+Ronin accepts mail only for a session that exists now and binds it to that exact session
+birth, not to a reusable name. It tries immediately. Thinking or running a tool does
+**not** hold a message: Agent CLIs queue input while they work, so Ronin types and submits
+it. Automatic delivery waits only when it would cross a visible boundary—another draft is
+at the prompt, a dialog is open, or the target dial is not 🤖. Waiting mail is tried again
+every two seconds and when the owner presses **Try Again**.
+
+Once Ronin has typed a message, an uncertain result stops automatic retries rather than
+risking a duplicate. **Force** is the owner's explicit override for a retained card: it
+skips the dial and prompt-safety checks, types one copy, and spends at most ten seconds
+trying Enter. Force is never automatic and can collide with a draft, answer a dialog, or
+duplicate a message whose earlier delivery was ambiguous. A missing or reborn target can
+never be forced; its card offers **Dismiss** only. Every retained item expires after 48
+hours because this queue is transport, not history.
+
+### When mail is held
+
+- **Before typing:** the target dial is not 🤖, a dialog/menu is open, or somebody else's
+  unsubmitted draft is at the prompt. These stay **Waiting**, do not increment Attempts,
+  and remain eligible for automatic retry.
+- **After typing:** the text never appeared in the pane, a dialog opened during submission,
+  the prompt changed before delivery could be confirmed, the text remained after the
+  bounded Enter retries, or delivery threw an error. These become **Failed** and automatic
+  retries stop, because another copy could be worse than a visible decision for the owner.
+- **Target gone:** the original session ended or the name now belongs to another birth.
+  This becomes **Target missing**; only Dismiss is available.
+
+### Attempts and Force
+
+An automatic attempt runs once when mail is accepted, then every two seconds while its
+state remains retryable. **Try Again** invokes that same safe attempt immediately. The
+Attempts number increases only when safe delivery types a new copy, or when the owner
+presses Force. Finding this message already stranded at the prompt submits that existing
+copy without incrementing the number. Safe submission presses Enter once and may retry
+Enter three times; it never types a second copy. Force types one copy and repeatedly tries
+Enter for at most ten seconds. Use Force only when the owner has inspected the retained
+card and deliberately accepts its collision or duplicate risk.
+
 The message queue is the live flow of inbound messages waiting to enter sessions. It is
 not a transcript and not a wipeboard: delivered messages disappear immediately, and a
 wipeboard post never enters it. When a wipeboard post asks Ronin to interrupt a session,
