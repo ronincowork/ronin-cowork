@@ -192,9 +192,9 @@ export async function buildCoworkSetup(host, onDone) {
   for (const cap of caps) capField.select.add(new Option(cap === 0 ? t('setup.cap_none', 'No limit — allow any number') : cap === sessionEstimate ? t('setup.cap_estimate', '{n} — Ronin estimate for this {ram} GB machine', { n: cap, ram }) : t('setup.cap_n', '{n} agent sessions', { n: cap }), String(cap)));
   capField.select.value = String(savedCap); defaultFields.append(modelField.wrap, deskProfileField.wrap, mikaField.wrap, capField.wrap); defaults.append(defaultFields); form.append(defaults);
 
-  const servicesCard = card(8, t('settei.ronin_services', 'Ronin Services'), t('setup.services_lede', 'Extra capabilities for your coworkspace. Base RoninCoWork works fully without them.'));
+  const servicesCard = card(8, t('settei.ronin_services', 'Ronin Services'), t('setup.services_lede', 'Extra capabilities for your coworkspace, in beta today. Base RoninCoWork works fully without them.'));
   servicesCard.querySelector('h2').append(el('span', 'cs-optional', t('setup.optional', 'Optional')));
-  const intro = el('div', 'cs-service-intro'); intro.append(el('strong', null, t('setup.services_intro_strong', 'Keep the work on your machine, add the view around it.') + ' '), document.createTextNode(t('setup.services_intro', 'Services add live agent plans, readable transcripts, voice, usage history, and long-term memory.')));
+  const intro = el('div', 'cs-service-intro'); intro.append(el('strong', null, t('setup.services_intro_strong', 'Keep the work on your machine, add the view around it.') + ' '), document.createTextNode(t('setup.services_intro', 'Services add live agent plans, readable transcripts, voice, usage history, and long-term memory. It is early days for this side. Sharing your email is optional — it registers your interest, keeps you part of the Ronin community as it grows, and what is ready reaches you as it lands.')));
   servicesCard.append(intro); const features = el('div', 'cs-features');
   for (const [name] of record.schema?.services?.features ?? []) features.append(el('div', 'cs-feature', name === 'gbrain' ? t('setup.feature_gbrain', 'Long-term agent memory') : name));
   servicesCard.append(features);

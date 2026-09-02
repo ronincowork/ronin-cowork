@@ -59,7 +59,7 @@ function registerCampaignSurfaces() {
       t('campaign_view.new_project_worktrees', 'Worktrees for new project roots'),
       [{ value: 'managed', label: t('campaign_view.new_project_worktrees_yes', 'Allow Ronin Worktrees') }, { value: 'none', label: t('campaign_view.new_project_worktrees_no', 'Use the checkout') }],
       current,
-      t('campaign_view.new_project_worktrees_help', 'Default repository permission for roots added later. An Agent also needs the Ronin Worktrees Routine from its Campaign or Team. Change an existing repository on its Project Root card below.'),
+      t('campaign_view.new_project_worktrees_help', 'Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for roots added later; change an existing repository on its Project Root card below.'),
       async (v) => { const r = await request('/api/settei/desks', { method: 'PUT', json: { new_project: v } }); paintNewDesks(r.ok ? v : current); },
     ));
     const host = elem('div', 'desk-pane desk-proj show');

@@ -184,8 +184,9 @@ export const writeAssignment = async (a: Assignment): Promise<Assignment> => {
 
 /**
  * DERIVE candidate coordinates for an assignment — pure, opens nothing and decides no
- * applicability. The repository comes from the team's project_root default or, for a
- * rōnin, the launch's project_root. `resolveLaunchDesks` combines these candidates with
+ * applicability. The repositories come from the team roster's repos list, else its
+ * project_root default — the same "repos, else project_root" promise the promotion CLI
+ * keeps — or, for a rōnin, the launch's project_root. `resolveLaunchDesks` combines these candidates with
  * normalized repository profiles and Agent capability through the one Worktrees resolver.
  */
 export async function deriveAssignment(input: { session: string; team: string; project_root: string }): Promise<Assignment> {
@@ -193,7 +194,7 @@ export async function deriveAssignment(input: { session: string; team: string; p
   let repos = [project_root];
   if (team) {
     const roster = await readTeamRoster(team);
-    repos = [roster?.project_root || project_root].filter(Boolean);
+    repos = roster?.repos.length ? roster.repos : [roster?.project_root || project_root].filter(Boolean);
   }
   const desks: RepoDesk[] = [];
   const now = new Date().toISOString();

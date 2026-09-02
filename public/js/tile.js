@@ -207,7 +207,7 @@ export class Tile {
     if (this.session !== session) return;
     // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
     // a 404 — the chip simply never shows, same as a session with no letter.
-    if (!session || serviceMissing('michi')) {
+    if (!session) {
       this.closeLadder();
       syncTileHead(this);
       return;
@@ -477,6 +477,10 @@ export class Tile {
     const sel = this.outputEl?.el ?? this.outputEl;
     if (!sel || !sel.options) return;
     sel.value = this.output;
+    // Without Services there is nothing to choose — every unlocked source is RIREKI's,
+    // so a one-option dropdown is noise and the control disappears whole (owner,
+    // 2026-09-02). The state side is already clamped: setOutput forces 'locked'.
+    sel.hidden = !!S.streamOff;
     for (const option of [...sel.options])
       if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
     sel.title = S.streamOff

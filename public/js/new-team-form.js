@@ -295,9 +295,18 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
      what happens — this reads its answer rather than asking again. */
   const gbrainMode = () => (routineOn('gbrain') ? 'connected' : 'disconnected');
   const routinesHead = el('p', 'fs-head', t('routines', 'Routines'));
+  const worktreesMode = el('div', 'fs-worktrees-mode');
   const routinesHost = el('div');
   function paintRoutines() {
     routinesHost.replaceChildren();
+    const worktreesOn = routineOn('ronin_worktrees');
+    worktreesMode.replaceChildren(
+      el('b', null, t('new_team.worktrees_mode', 'Agent work mode')),
+      el('strong', null, worktreesOn
+        ? t('new_team.worktrees_on', 'Own worktree where the Project Root allows it')
+        : t('new_team.worktrees_off', 'Use the project checkout and its branches')),
+      el('small', null, t('new_team.worktrees_help', 'Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')),
+    );
     const row = (label, blurb, on, prov, act) => {
       const line = el(act ? 'button' : 'div', 'fs-routine');
       if (act) { line.type = 'button'; line.addEventListener('click', act); }
@@ -343,7 +352,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     }));
   }
   // No bare Behaviours heading: the two shelves head themselves.
-  stepKit.body.append(modeHost, routinesHead, routinesHost, booksHost);
+  stepKit.body.append(modeHost, routinesHead, worktreesMode, routinesHost, booksHost);
 
   /* ---- step 6 · Team lead ---- */
   /* ---- step 4 · the team's own agents (js/team-agents.js) ---- */

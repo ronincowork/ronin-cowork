@@ -12,6 +12,9 @@ const arrangement = read('public/js/workspace-arrangement.js');
 const campaign = read('public/js/campaign-view.js');
 const projectRoots = read('public/js/projectroots.js');
 const addAgent = read('public/js/add-agent.js');
+const newAgent = read('public/js/new-agent.js');
+const campaignRoutines = read('public/js/campaign-routines.js');
+const teamConfiguration = read('public/js/team-configuration.js');
 const coworkCommons = read('public/js/cowork-commons.js');
 const workbench = read('public/js/workbench.js');
 const terminal = read('public/js/terminal-tile-host.js');
@@ -88,17 +91,21 @@ for (const contract of ["pane('themes'", "'Desktop'", "'Mobile'", "save('theme')
 // WORKTREES HAS TWO VISIBLE, INDEPENDENT ANSWERS. Campaign seeds future repository
 // permission; Project Roots owns each repository answer; Add Agent reports the resolved
 // Routine capability. None may fall back to the retired desks/coordination vocabulary.
-for (const contract of ['Worktrees for new project roots', 'Allow Ronin Worktrees', 'Agent also needs the Ronin Worktrees Routine', 'Change an existing repository on its Project Root card']) {
+for (const contract of ['Worktrees for new project roots', 'Allow Ronin Worktrees', 'separate working folder and branch', 'without clobbering each other', 'Team lead to merge deliberately', 'change an existing repository on its Project Root card']) {
   if (!campaign.includes(contract)) problems.push(`Campaign Project Roots is missing the Worktrees seed teaching: ${contract}.`);
 }
-for (const contract of ['Two independent answers control Ronin Worktrees', "group_root', 'Project Root", "group_repository', 'Repository workflow", 'This is the repository permission', 'Repository: Worktrees allowed', 'Repository: use checkout']) {
+for (const contract of ['repo needs Worktrees on', 'Agent needs Worktrees on', "group_root', 'Project Root", "group_repository', 'Repository workflow", 'This controls the repo', 'Repository: Worktrees allowed', 'Repository: use checkout']) {
   if (!projectRoots.includes(contract)) problems.push(`Project Root UI is missing the Worktrees information hierarchy: ${contract}.`);
 }
 if (!read('public/style.css').includes('.pr-f[hidden]')) problems.push('Project Root direct publishing must actually hide the reviewed-only working branch field.');
 for (const retired of ['New projects use desks?', "'Desks'", "'None'", 'desks box', "'coordination'"]) {
   if (campaign.includes(retired) || projectRoots.includes(retired)) problems.push(`Campaign/Project Root UI still exposes retired Worktrees wording: ${retired}.`);
 }
-if (!addAgent.includes('Ronin Worktrees is on for this Team') || !addAgent.includes('Project Root that also allows Worktrees')) problems.push('Add Agent must explain the Agent-side Routine and repository-side Worktrees answer together.');
+for (const [surface, source] of [['Campaign', campaignRoutines], ['New Team', newTeam], ['Team configuration', teamConfiguration]]) {
+  if (!source.includes('working folder and branch') || !source.includes('repo have Worktrees on') || !source.includes('managed hand-in and Team-lead merge process')) problems.push(`${surface} must explain Worktrees isolation, the Agent/repo condition, and managed hand-in.`);
+}
+if (!newAgent.includes('routineOverrides') || !newAgent.includes("routines: { ...draft.routineOverrides }") || !newAgent.includes('file changes do not collide') || !newAgent.includes('managed hand-in and Team-lead merge process')) problems.push('New Agent must submit sparse Worktrees overrides and explain isolation, both switches, and managed hand-in.');
+if (!addAgent.includes('worktreesOverride') || !addAgent.includes('file changes do not collide') || !addAgent.includes('both the Agent and repo have Worktrees on')) problems.push('Add Agent must allow the Worktrees choice and explain isolation plus the Agent/repo condition.');
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
 for (const file of ['cowork-view.js', 'new-team-form.js', 'new-agent.js', 'launch-view.js']) {
   const source = read(`public/js/${file}`);

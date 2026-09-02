@@ -44,6 +44,7 @@ import { readCtxLine } from '../ctx.js';
 import { count } from '../counts.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { writeTeams } from '../tegami.js';
+import { readTegami } from '../tegami-read.js';
 import { teamsSopPath } from '../spawn.js';
 import { emitSessionEnd } from '../sockets.js';
 import { resumeAgentArgv } from '../agents.js';
@@ -152,6 +153,21 @@ export function registerSessions(app: express.Express): void {
     } catch (e) {
       const code = (e as NodeJS.ErrnoException)?.code;
       res.status(code === 'ENOENT' ? 404 : 500).json({ error: code === 'ENOENT' ? 'No such archive.' : String((e as Error)?.message ?? e) });
+    }
+  });
+
+  // The work record, read on demand — core's own file, parsed by core's own reader
+  // (src/tegami-read.ts). Registered AFTER mountServiceRoutes, so an installed michi's
+  // identical route answers first and keeps the live layer; this one is what makes
+  // View Work Record answer on a plain install (owner, 2026-09-02).
+  app.get('/api/sessions/:name/tegami', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
+    try {
+      res.json(await readTegami(name));
+    } catch (e) {
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });
 

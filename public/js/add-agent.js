@@ -77,6 +77,7 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
   nameInput.autocomplete = 'off';
   nameInput.spellcheck = false;
   nameInput.maxLength = 40;
+  nameInput.classList.add('aa-control', 'aa-short-control');
   nameInput.placeholder = t('add_agent.name_placeholder', 'name');
   // Character-for-character, so the caret never jumps — the same transform the server
   // applies (`sanitizeName`, src/spawn.ts). Length is preserved, so mid-string edits hold.
@@ -95,6 +96,7 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
   instruction.rows = 3;
   instruction.autocapitalize = 'off';
   instruction.spellcheck = false;
+  instruction.classList.add('aa-control');
   instruction.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
   instruction.addEventListener('input', () => { draft.instruction = instruction.value; });
   const instructionField = createField({ label: t('add_agent.instruction', 'instruction'), control: instruction });
@@ -116,6 +118,7 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
   /* Optional shortcut only. The full form owns browsing and saving templates; here one
      selected agent template simply overlays the Team defaults before the owner's hand. */
   const templateSelect = el('select');
+  templateSelect.classList.add('aa-control', 'aa-short-control');
   const templateField = createField({ label: t('add_agent.template', 'template'), control: templateSelect });
   function resetTemplateAnswers() {
     const value = (field) => seeded(field);
@@ -158,6 +161,8 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
   // pick FROM before that.
   const providerSelect = el('select');
   const modelSelect = el('select');
+  providerSelect.classList.add('aa-control', 'aa-short-control');
+  modelSelect.classList.add('aa-control', 'aa-short-control');
   const providerField = createField({ label: t('add_agent.provider', 'model provider'), control: providerSelect });
   const modelField = createField({ label: t('add_agent.model', 'model'), control: modelSelect });
   providerSelect.addEventListener('change', () => {
@@ -207,8 +212,12 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
      `desk: own | none` survives on the launch body as an unadvertised escape hatch; no
      form surfaces it, and this one no longer sends it. ---- */
   const deskLine = el('div', 'aa-deskline');
+  const deskMode = el('strong');
   const deskWhy = el('small');
-  deskLine.append(deskWhy);
+  let worktreesOverride = null;
+  const deskToggle = createAction({ label: '', size: 'compact', action: () => { worktreesOverride = !(worktreesOverride ?? controlled()); paintDesk(); } }).el;
+  deskToggle.classList.add('aa-worktrees-toggle');
+  deskLine.append(el('b', null, t('add_agent.worktrees_mode', 'Agent work mode')), deskMode, deskWhy, deskToggle);
   /** Is `ronin_worktrees` on for this birth? The resolved map's answer, never this
    *  form's — and null while the seed door is not there to ask. */
   const controlled = () => {
@@ -221,9 +230,14 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
     // Nothing is claimed before the resolved map has answered.
     deskLine.hidden = control === null;
     if (control === null) return;
-    deskWhy.textContent = control
-      ? t('add_agent.desk_line_control', 'Ronin Worktrees is on for this Team. In each Project Root that also allows Worktrees, this Agent gets a private branch and worktree and can hand work in; other roots use their checkout.')
-      : t('add_agent.desk_line_plain', 'Ronin Worktrees is off for this Team. This Agent uses each repository checkout even when that Project Root allows Worktrees.');
+    const effective = worktreesOverride ?? control;
+    deskMode.textContent = effective
+      ? t('add_agent.worktrees_on', 'Own worktree where the Project Root allows it')
+      : t('add_agent.worktrees_off', 'Use the project checkout and its branches');
+    deskWhy.textContent = t('add_agent.worktrees_help', 'Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.');
+    deskToggle.textContent = effective
+      ? t('add_agent.worktrees_choose_checkout', 'Change to checkout mode')
+      : t('add_agent.worktrees_choose_own', 'Change to own-worktree mode');
   }
 
   /* ---- what the Team fixed: at the FOOT, because none of it is changeable here ---- */
@@ -257,6 +271,7 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
     draft.teamLead = false;
     nameInput.value = '';
     leadInput.checked = false;
+    worktreesOverride = null;
     resetTemplateAnswers();
     paintTemplates();
     paintMandate();
@@ -285,6 +300,7 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
         kind: kindOf(),
         team_lead: draft.teamLead,
         mandate: { reach: draft.reach, recruit: draft.recruit, output: [...draft.output] },
+        ...(worktreesOverride === null ? {} : { routines: { ronin_worktrees: worktreesOverride } }),
         ...(draft.template ? { template: draft.template } : {}),
       },
     });
@@ -336,11 +352,11 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
   // NAME LEFT, MODELS RIGHT; this Team shortcut is always a Cowork Agent.
   const top = el('div', 'aa-top');
   const left = el('div', 'aa-col');
-  left.append(nameField.el, templateField.el, leadChoice);
+  left.append(nameField.el, templateField.el);
   const right = el('div', 'aa-col');
   right.append(providerField.el, modelField.el);
   top.append(left, right);
-  form.append(top, instructionField.el, mandateHead, mandateHost, deskLine);
+  form.append(top, leadChoice, instructionField.el, mandateHead, mandateHost, deskLine);
   paintMandate();
   surface.content.append(form, alternative, actions.el, notice.el, fixed);
 

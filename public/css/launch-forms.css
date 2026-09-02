@@ -55,7 +55,7 @@
     gap: var(--space-4);
     width: 100%;
     margin: var(--space-6) 0 var(--space-5);
-    border: var(--edge) solid var(--line);
+    border: var(--edge) solid var(--cowork-head-line);
     border-radius: var(--radius-xs);
     background: var(--cowork-head-bg);
     /* READABLE, NOT DECORATIVE (owner, 2026-09-01): "it's really hard to read when it's a
@@ -88,12 +88,6 @@
   .ntf-form textarea { resize: vertical; }
   .ntf-foot { margin-top: var(--space-6); }
   .ntf-tmplname { font-size: var(--text-3); width: calc(var(--space-12) * 5); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
-  .aa-lead-choice { display: flex; align-items: flex-start; gap: var(--space-3); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); cursor: pointer; }
-  .aa-lead-choice input { flex: none; margin-top: var(--space-1); accent-color: var(--kaki); }
-  .aa-lead-choice span { display: grid; gap: var(--space-1); }
-  .aa-lead-choice b { color: var(--fg-strong); font-size: var(--text-3); }
-  .aa-lead-choice small { color: var(--muted); font-size: var(--text-2); line-height: 1.4; }
-
   /* ── the two doors ── */
   .fs-seg { display: flex; align-self: flex-start; margin-bottom: var(--space-5); border: var(--edge) solid var(--line-2); }
   .fs-seg button { border: 0; background: transparent; color: var(--muted-2); padding: var(--space-2) var(--space-6); cursor: pointer; font: inherit; font-size: var(--text-2); }
@@ -150,6 +144,10 @@
   button.fs-routine:hover { border-color: var(--kaki); }
   .fs-routine b { display: block; color: var(--fg-strong); font-size: var(--text-3); font-weight: 400; }
   .fs-routine small { display: block; color: var(--muted); font-size: var(--text-2); }
+  .fs-worktrees-mode { display: flex; flex-direction: column; gap: var(--space-1); border-left: var(--edge-2) solid var(--kiiro); background: color-mix(in srgb, var(--panel) 90%, var(--kiiro)); padding: var(--space-3) var(--space-4); color: var(--fg); }
+  .fs-worktrees-mode b { font-size: var(--text-2); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .fs-worktrees-mode strong { color: var(--fg-strong); font-size: var(--text-3); }
+  .fs-worktrees-mode small { color: var(--muted); font-size: var(--text-2); line-height: 1.4; }
   .fs-mark { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; width: var(--space-6); height: var(--space-6); border: var(--edge) solid var(--line-3); background: var(--panel); color: var(--on-strong); font-size: var(--text-1); }
   .fs-routine[data-on='true'] .fs-mark { border-color: var(--kaki); background: var(--kaki); }
   .fs-prov { color: var(--muted); font-family: var(--font-mono); font-size: var(--text-1); white-space: nowrap; }

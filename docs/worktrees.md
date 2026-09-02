@@ -5,6 +5,15 @@ assignment. It gives an enabled coding Agent a private Git worktree, a private b
 the commit → hand-in → team-promotion workflow. Repositories outside that combination use
 their ordinary checkout and Git workflow.
 
+Three keys carry the whole idea:
+
+- **What it does:** isolated working folders and branches keep parallel Agents from
+  colliding in the same files.
+- **When it works:** both sides must say yes — the repository's Project Root enables
+  Worktrees, and the Agent carries the Worktrees Routine.
+- **The tradeoff:** work leaves the private worktree through the managed path — commit,
+  hand-in, and the Team lead's merge — rather than landing directly on the shared branch.
+
 ## Resolution model
 
 Two facts determine the result for each repository:
@@ -16,9 +25,12 @@ Two facts determine the result for each repository:
 | yes | no | Use the checkout; the Agent's capability does not override the repository. |
 | yes | yes | Use the Agent's managed branch and worktree. |
 
-The Agent capability comes from the resolved `ronin_worktrees` Routine at birth. Repository
-applicability comes from that Project Root's `RONIN_REPO`. Resolution is per repository, so
-one assignment may contain both managed worktrees and direct checkouts.
+The Agent capability is a cascade: the Campaign supplies the default, a saved Team owns a
+complete override, and the New Agent form may override individual Routine answers for that
+Agent. The resolved `ronin_worktrees` answer is fixed at birth. Repository applicability
+comes independently from each Project Root's `RONIN_REPO`; changing an Agent answer never
+changes a repository profile. Resolution is per repository, so one assignment may contain
+both managed worktrees and direct checkouts.
 
 `src/worktrees-resolution.ts` owns the pure 2×2 decision. Its input contains the resolved
 Agent capability, normalized repository applicability, checkout location, branch profile,

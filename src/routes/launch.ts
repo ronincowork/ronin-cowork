@@ -32,6 +32,7 @@ import { resolveForm, type SpawnForm } from '../spawn.js';
 import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
+import { routineChoices } from '../routines.js';
 import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
@@ -80,7 +81,7 @@ const LAUNCH_KEYS = new Set([
   'session_type', 'session_role', 'team', 'team_lead', 'instructions', 'prompt', 'name',
   'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'gbrain_mode', 'launch_mode',
   'tags', 'seed', 'inject', 'reference', 'desk',
-  'kind', 'behaviours',
+  'kind', 'behaviours', 'routines',
   'template',
 ]);
 const RETIRED_LAUNCH_KEYS = new Set([
@@ -125,6 +126,11 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
   if (body.kind !== undefined) body.kind = String(body.kind).trim();
   if (body.behaviours !== undefined && !Array.isArray(body.behaviours)) drop('behaviours');
+  if (body.routines !== undefined && (!body.routines || typeof body.routines !== 'object' || Array.isArray(body.routines))) drop('routines');
+  if (body.routines !== undefined) {
+    body.routines = Object.fromEntries(Object.entries(body.routines as Record<string, unknown>)
+      .filter(([name, value]) => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(name) && typeof value === 'boolean'));
+  }
   if (body.template !== undefined && (typeof body.template !== 'string' || !/^[\w-]{1,64}$/.test(body.template.trim()))) drop('template');
   if (body.template !== undefined) body.template = String(body.template).trim();
 
@@ -233,6 +239,9 @@ export function registerLaunch(app: express.Express): void {
       campaign_id: String(req.body?.campaign_id ?? '').trim() || undefined,
       kind: typeof req.body?.kind === 'string' ? req.body.kind : undefined,
       behaviours: Array.isArray(req.body?.behaviours) ? req.body.behaviours.map(String) : undefined,
+      routines: req.body?.routines && typeof req.body.routines === 'object' && !Array.isArray(req.body.routines)
+        ? routineChoices(req.body.routines)
+        : undefined,
       template: typeof req.body?.template === 'string' ? req.body.template : undefined,
       // Only an explicit boolean is an opinion. Absent hands the choice to the resolved
       // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
