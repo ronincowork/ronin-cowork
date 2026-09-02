@@ -130,7 +130,7 @@ connection reading, while the `gbrain` Routine selects its macros, tools and MCP
 
 | Fact | Answers |
 |---|---|
-| enabled | Did Campaign/Team configuration select the Routine? |
+| enabled | Did the resolved Campaign → Team → Agent cascade select the Routine? |
 | installed | Are its local/service parts present on this machine? |
 | connected | Was an MCP or other live connection delivered? |
 | applicable | Does the present repository/situation use this behaviour? |
@@ -143,9 +143,11 @@ Agent under Ronin Worktrees may hold none, and check one out when it needs one. 
 without the Routine may still be started in a worktree: that is isolation, which any agent
 can arrange off a branch, and it needs nothing declared in `RONIN_REPO`. What it does not
 get is the contract — no hand-in, nobody to hand to — so it reports to the owner instead.
-All four combinations are legitimate, and a launch names them separately: the **Routine**
-comes from the resolved Campaign/Team map, the **worktree** from the launch's own
-`desk` choice.
+All four combinations are legitimate. Campaign supplies the default Routine map, a saved
+Team replaces that complete map, and an Agent may override individual answers for its own
+birth without changing either parent. The resulting **Agent capability** is combined with
+the selected Project Root's independent **repository permission**. There is no second
+launch-time desk switch.
 
 These facts never stand in for one another. In particular, an enabled but unavailable
 Routine **never blocks Agent birth**. The Agent opens normally; the unavailable behaviour
@@ -156,7 +158,8 @@ does not work, and the receipt and surfaces say it was not delivered.
 Routine manifests live in `ronin_catalogs/routines/`, one Markdown definition per token.
 The owner's catalog store shadows a stock definition whole. A manifest names existing
 reading, SOPs, macros, actions, tools and MCP connections; Campaign and Team records hold
-only on/off choices. Nothing about Routine membership is copied into those records.
+on/off maps, while a launch may hold sparse Agent overrides. Nothing about Routine
+membership is copied into those records.
 
 The manifest is enablement rather than a security boundary. Off means Ronin does not
 teach, offer or place a tool in the Agent's normal command lookup. It does not claim that

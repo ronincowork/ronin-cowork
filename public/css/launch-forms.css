@@ -145,6 +145,10 @@
   button.fs-routine:hover { border-color: var(--kaki); }
   .fs-routine b { display: block; color: var(--fg-strong); font-size: var(--text-3); font-weight: 400; }
   .fs-routine small { display: block; color: var(--muted); font-size: var(--text-2); }
+  .fs-worktrees-mode { display: flex; flex-direction: column; gap: var(--space-1); border-left: var(--edge-2) solid var(--kiiro); background: color-mix(in srgb, var(--panel) 90%, var(--kiiro)); padding: var(--space-3) var(--space-4); color: var(--fg); }
+  .fs-worktrees-mode b { font-size: var(--text-2); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .fs-worktrees-mode strong { color: var(--fg-strong); font-size: var(--text-3); }
+  .fs-worktrees-mode small { color: var(--muted); font-size: var(--text-2); line-height: 1.4; }
   .fs-mark { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; width: var(--space-6); height: var(--space-6); border: var(--edge) solid var(--line-3); background: var(--panel); color: var(--on-strong); font-size: var(--text-1); }
   .fs-routine[data-on='true'] .fs-mark { border-color: var(--kaki); background: var(--kaki); }
   .fs-prov { color: var(--muted); font-family: var(--font-mono); font-size: var(--text-1); white-space: nowrap; }

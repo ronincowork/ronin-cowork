@@ -87,6 +87,19 @@ test('cowork kind and behaviours survive body acceptance while unusable shapes a
   assert.deepEqual(ignored.ignored, ['behaviours', 'kind']);
 });
 
+test('cowork accepts a partial Agent Routine override and filters malformed choices', () => {
+  const accepted = acceptedLaunchBody({
+    name: 'proof',
+    routines: { ronin_worktrees: false, gbrain: true, malformed: 'yes', '../bad': true },
+  });
+  assert.deepEqual(accepted.body.routines, { ronin_worktrees: false, gbrain: true });
+  assert.deepEqual(accepted.ignored, []);
+
+  const malformed = acceptedLaunchBody({ name: 'proof', routines: ['ronin_worktrees'] });
+  assert.equal(malformed.body.routines, undefined);
+  assert.deepEqual(malformed.ignored, ['routines']);
+});
+
 test('settled launch enums are accepted and their retired keys are receipt-only', () => {
   const accepted = acceptedLaunchBody({ name: 'proof', launch_mode: 'configured', gbrain_mode: 'connected' });
   assert.equal(accepted.body.launch_mode, 'configured');

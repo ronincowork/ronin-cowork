@@ -12,6 +12,9 @@ const arrangement = read('public/js/workspace-arrangement.js');
 const campaign = read('public/js/campaign-view.js');
 const projectRoots = read('public/js/projectroots.js');
 const addAgent = read('public/js/add-agent.js');
+const newAgent = read('public/js/new-agent.js');
+const campaignRoutines = read('public/js/campaign-routines.js');
+const teamConfiguration = read('public/js/team-configuration.js');
 const coworkCommons = read('public/js/cowork-commons.js');
 const workbench = read('public/js/workbench.js');
 const terminal = read('public/js/terminal-tile-host.js');
@@ -98,7 +101,11 @@ if (!read('public/style.css').includes('.pr-f[hidden]')) problems.push('Project 
 for (const retired of ['New projects use desks?', "'Desks'", "'None'", 'desks box', "'coordination'"]) {
   if (campaign.includes(retired) || projectRoots.includes(retired)) problems.push(`Campaign/Project Root UI still exposes retired Worktrees wording: ${retired}.`);
 }
-if (!addAgent.includes('Ronin Worktrees is on for this Team') || !addAgent.includes('Project Root that also allows Worktrees')) problems.push('Add Agent must explain the Agent-side Routine and repository-side Worktrees answer together.');
+for (const [surface, source] of [['Campaign', campaignRoutines], ['New Team', newTeam], ['Team configuration', teamConfiguration]]) {
+  if (!source.includes('Project Root') || !source.includes('Worktrees')) problems.push(`${surface} must keep Agent capability separate from Project Root permission.`);
+}
+if (!newAgent.includes('routineOverrides') || !newAgent.includes("routines: { ...draft.routineOverrides }") || !newAgent.includes('Project Root is a separate gate')) problems.push('New Agent must expose and submit sparse Agent Routine overrides without changing its parents or Project Root.');
+if (!addAgent.includes('worktreesOverride') || !addAgent.includes('Overridden for this Agent only') || !addAgent.includes('Project Root are unchanged')) problems.push('Add Agent must allow an Agent-only Worktrees override and keep Team and Project Root unchanged.');
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
 for (const file of ['cowork-view.js', 'new-team-form.js', 'new-agent.js', 'launch-view.js']) {
   const source = read(`public/js/${file}`);

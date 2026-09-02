@@ -24,7 +24,7 @@ import { fetchSessions, setSessionTitle } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
-import { IS_TOUCH, S, saveState, serviceMissing, tiles, WHEEL_DOWN } from './state.js';
+import { IS_TOUCH, S, saveState, serviceMissing, tiles } from './state.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
@@ -388,14 +388,12 @@ export class Tile {
     }
     // Mirror: every scrolled-back end gets its own jump, and only its own. xterm's
     // local viewport answers scrollToBottom; a pane in tmux copy mode (a raw-attach
-    // owner, a leftover) answers {t:'bottom'}'s cancel; an app scrolled inside ITSELF
-    // answers the wheel burst — but ONLY when it is listening for mouse. Sent blind,
-    // the burst reaches the app as typed input under viewer mouse off (2026-09-01: the
-    // owner watched untouched agents sit "scroll locked" on injected wheels — every
-    // composer send fired 150 of these).
+    // owner, a leftover) answers {t:'bottom'}'s cancel. There is no third end any more:
+    // the wheel never reaches the app (termview's wheel handler, 2026-09-02), so the
+    // app is never scrolled inside itself and the 150-wheel burst that used to chase
+    // it — and landed as typed input on agents nobody had touched — is gone.
     this.term.scrollToBottom();
     this.send({ t: 'bottom' });
-    if (this.term.mouseTracking()) for (let i = 0; i < 150; i++) this.sendRaw(WHEEL_DOWN);
   }
 
   /** The composer's box, for the ⚡ macro prefill — null until the composer exists. */
@@ -477,6 +475,10 @@ export class Tile {
     const sel = this.outputEl?.el ?? this.outputEl;
     if (!sel || !sel.options) return;
     sel.value = this.output;
+    // Without Services there is nothing to choose — every unlocked source is RIREKI's,
+    // so a one-option dropdown is noise and the control disappears whole (owner,
+    // 2026-09-02). The state side is already clamped: setOutput forces 'locked'.
+    sel.hidden = !!S.streamOff;
     for (const option of [...sel.options])
       if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
     sel.title = S.streamOff

@@ -51,6 +51,10 @@
   .tw-routines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); border: var(--edge) solid var(--line); border-radius: var(--radius-sm); padding: var(--space-4); }
   .tw-routines legend { color: var(--fg-strong); font-weight: 600; padding: 0 var(--space-2); }
   .tw-routines > .tw-config-note { grid-column: 1 / -1; }
+  .tw-worktrees-mode { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--space-1); border-left: var(--edge-2) solid var(--kiiro); background: color-mix(in srgb, var(--panel) 90%, var(--kiiro)); padding: var(--space-3) var(--space-4); }
+  .tw-worktrees-mode b { color: var(--muted); font-size: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
+  .tw-worktrees-mode strong { color: var(--fg-strong); font-size: var(--text-3); }
+  .tw-worktrees-mode small { color: var(--muted); font-size: var(--text-2); line-height: 1.4; }
   .tw-routine { display: flex; align-items: flex-start; gap: var(--space-3); }
   .tw-routine input { accent-color: var(--accent); margin-top: var(--space-1); }
   .tw-routine span { display: flex; flex-direction: column; gap: var(--space-1); }
@@ -106,8 +110,11 @@
   .aa-col { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
   .aa-col[hidden] { display: none; }
   .aa-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .07em; }
-  .aa-deskline { border-top: var(--edge) solid var(--line); padding-top: var(--space-4); color: var(--muted); }
-  .aa-deskline small { font-size: var(--text-2); }
+  .aa-deskline { border-left: var(--edge-2) solid var(--kiiro); background: color-mix(in srgb, var(--panel) 90%, var(--kiiro)); padding: var(--space-3) var(--space-4); color: var(--muted); display: flex; flex-direction: column; gap: var(--space-1); }
+  .aa-deskline b { color: var(--muted); font-size: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
+  .aa-deskline strong { color: var(--fg-strong); font-size: var(--text-3); }
+  .aa-deskline small { font-size: var(--text-2); line-height: 1.4; }
+  .aa-worktrees-toggle { align-self: flex-start; }
   .aa-deskline[hidden] { display: none; }
   .aa-alternative { margin: 0 0 var(--space-4); color: var(--muted); font-size: var(--text-2); }
   .aa-alternative a { color: var(--accent); }

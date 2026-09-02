@@ -1,6 +1,6 @@
 # Ronin Worktrees
 - **label:** Ronin Worktrees
-- **blurb:** Separate worktrees, hand-in, lead integration, receipts and Git safeguards help parallel Agents avoid file collisions.
+- **blurb:** Agent work mode: use a private branch and worktree in repositories that allow Ronin Worktrees; otherwise work directly in the project checkout and its branches.
 - **reading:** assignment/DESK_CONTRACT.md, routine/ronin_worktrees/REPOSITORY_BOOTSTRAP.md
 - **sops:** github
 - **macros:** cutcode, land

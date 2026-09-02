@@ -13,7 +13,7 @@ export type RoutineChoices = Record<string, boolean>;
 
 export interface ResolvedRoutine extends RoutineRow {
   enabled: boolean;
-  stated_by: 'campaign' | 'team' | 'dependency' | 'implicit_off';
+  stated_by: 'campaign' | 'team' | 'agent' | 'dependency' | 'implicit_off';
   /** Selected Routines which made this one additive, empty for a direct choice. */
   required_by: string[];
 }
@@ -40,12 +40,16 @@ export function resolveRoutines(
   catalog: RoutineRow[],
   campaign: RoutineChoices,
   team?: RoutineChoices,
+  agent?: RoutineChoices,
 ): ResolvedRoutine[] {
-  const choices = team ?? campaign;
-  const layer = team === undefined ? 'campaign' as const : 'team' as const;
+  const inherited = team ?? campaign;
+  const inheritedLayer = team === undefined ? 'campaign' as const : 'team' as const;
   const resolved: ResolvedRoutine[] = catalog.map((routine) => {
-    if (own(choices, routine.name)) {
-      return { ...routine, enabled: choices[routine.name], stated_by: layer, required_by: [] as string[] };
+    if (agent && own(agent, routine.name)) {
+      return { ...routine, enabled: agent[routine.name], stated_by: 'agent' as const, required_by: [] as string[] };
+    }
+    if (own(inherited, routine.name)) {
+      return { ...routine, enabled: inherited[routine.name], stated_by: inheritedLayer, required_by: [] as string[] };
     }
     return { ...routine, enabled: false, stated_by: 'implicit_off' as const, required_by: [] as string[] };
   });
@@ -69,4 +73,22 @@ export function resolveRoutines(
     }
   }
   return resolved;
+}
+
+/** Normalize the three persisted/input layers and resolve the map delivered at birth. */
+export function resolveAgentRoutines(
+  catalog: RoutineRow[],
+  campaign: unknown,
+  team: unknown,
+  agentOverrides: unknown,
+  hasAgent: boolean,
+): ResolvedRoutine[] {
+  return hasAgent
+    ? resolveRoutines(
+        catalog,
+        routineChoices(campaign),
+        team === undefined ? undefined : routineChoices(team),
+        agentOverrides === undefined ? undefined : routineChoices(agentOverrides),
+      )
+    : [];
 }
