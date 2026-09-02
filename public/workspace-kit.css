@@ -3,9 +3,11 @@
   /* The boot veil moved to index.html's own head (2026-09-01): this sheet is injected
      late by JS, so a veil here misses exactly the cold first paint it exists for. */
   .wk-action-bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
-  /* The band's blue perimeter (owner, 2026-09-02): the define-line ring that cleanly
-     sets the kaki band off the shell — the same blue as the selector's utility doors. */
-  .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--cowork-head-line); box-shadow: inset 0 0 0 var(--edge) var(--cowork-head-line); background: var(--cowork-head-bg); color: var(--cowork-head-fg); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+  /* The blue moved from a band RING to the card PERIMETER (owner, 2026-09-02, second
+     cut: the ring inside the card's own border read as a double outline). The band
+     keeps only its blue bottom edge — the one line that ties every header across the
+     bench — and the surface card wears the define-line, utility-door style. */
+  .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--cowork-head-line); background: var(--cowork-head-bg); color: var(--cowork-head-fg); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
   .wk-surface-header-title { min-width: 0; overflow: hidden; font-weight: var(--workbench-head-weight); text-overflow: ellipsis; white-space: nowrap; }
   .wk-surface-header-actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
   /* THE BAND'S HEIGHT IS THE BAND'S, never a tenant's (owner, 2026-09-01: the Desk

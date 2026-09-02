@@ -1539,7 +1539,10 @@ body {
   min-width: 0;
   min-height: 0;
   background: var(--panel);
-  border: var(--edge) solid var(--line);
+  /* The tile is a card like any workbench surface: its perimeter speaks the
+     define-line too, so the grid page and the bench read as one system. The armed
+     frame (.tile.active, accent) and the dropped mark still override. */
+  border: var(--edge) solid var(--define-line);
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
@@ -1577,7 +1580,6 @@ body {
      selector's band and the tile heads beside it can never split. */
   background: var(--cowork-head-bg);
   border-bottom: var(--edge) solid var(--cowork-head-line);
-  box-shadow: inset 0 0 0 var(--edge) var(--cowork-head-line);
   flex: 0 0 auto;
   font-family: var(--workbench-head-font);
   font-size: var(--workbench-head-size);
@@ -6539,7 +6541,9 @@ button.wb-door:hover b {
    2026-08-25: the thread stood 2221px tall inside an 853px page). */
 .wk-layout-surface { display: flex; flex-direction: column; }
 .wk-layout-surface > .wk-surface { flex: 1 1 auto; min-height: 0; }
-.wk-surface { position: relative; display: flex; flex-direction: column; border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
+/* The surface card's perimeter is the define-line (owner, 2026-09-02): one blue
+   outline per object, band as its cap — the utility-door treatment, bench-wide. */
+.wk-surface { position: relative; display: flex; flex-direction: column; border: var(--edge) solid var(--define-line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
 /* THE BANDS LINE UP (owner, 2026-09-01: "the central work selector is shifted up"):
    three band containers had three top edges — a headed layout slot (the work selector)
    wore no chrome so its band began at the wrapper's very top; a .wk-surface pushed its
@@ -6547,7 +6551,7 @@ button.wb-door:hover b {
    surface's for 2px. Measured live: tops 53/54/55. One chrome, one edge: a headed slot
    wears the surface's card, and a tile inside a surface sheds its duplicate (the
    surface already draws the card; the active inset shadow still shows). */
-.wk-layout-surface:has(> .wk-surface-header) { border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
+.wk-layout-surface:has(> .wk-surface-header) { border: var(--edge) solid var(--define-line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
 .wk-surface .wk-terminal-host > .tile { border: 0; border-radius: 0; }
 .wk-surface-content { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; }
 .wk-surface-controls { flex: 0 0 auto; }
@@ -6594,7 +6598,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
 /* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
    at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--cowork-head-line); box-shadow: inset 0 0 0 var(--edge) var(--cowork-head-line); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--cowork-head-line); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
 .wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--cowork-head-fg); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
 .wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--cowork-head-muted); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); box-shadow: inset 0 calc(-1 * var(--space-1)) 0 var(--accent); }
