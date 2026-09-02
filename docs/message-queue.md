@@ -29,6 +29,11 @@ Every sender uses the same delivery engine. Automatic checks and **Try Again** u
 delivery: the target must exist, its dial must permit writing, and its Agent must show a
 recognized empty prompt. Busy work, dialogs, drafts and unknown prompts retain the card
 with the measured reason.
+A message is recognised by its own text, not only by the prompt row. A long message
+wraps into a draft taller than the prompt window; safe delivery still sees it sitting at
+the prompt, presses Enter, and confirms. A copy an earlier attempt left stranded at the
+prompt is submitted on the next attempt, never typed again and never refused as somebody
+else's draft. Only text the pane never showed is retained without an Enter.
 If the prompt changes during submission, delivery is ambiguous rather than merely
 blocked: the message may have entered while another actor changed the prompt. Ronin marks
 it failed and stops automatic retries so it cannot silently send a duplicate.
