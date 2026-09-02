@@ -359,7 +359,7 @@ after that; send the owner's words unless he asks you to put it your own way).
 | # | Action | With |
 |---|---|---|
 | 1 | control-check | needs `write` **on the target, not on you**. Dialed `user` or `read`: report the lock and ask the owner to flip THAT tile's dial to 🤖, then wait — NEVER flip it yourself |
-| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial and either delivers safely or retains the message in the durable queue. Do not hand-roll pane writes |
+| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial and either delivers safely or retains the message in the durable queue. Do not hand-roll pane writes. If this sender already has an unresolved tell queued for that target, it refuses the new wording and names the visible message IDs |
 | 3 | report-outcome | the tool's verdict as it gave it, and what you actually said |
 
 **Say who it is from.** `tejun-send` puts no watermark on the message, so what lands at the
@@ -374,6 +374,13 @@ back through here makes this session a switchboard and hides which agent said wh
 A queued result is accepted, not an invitation to work around the queue. Dial locks,
 busy agents, dialogs, and drafts remain visible under Messages until safe delivery can
 proceed; the owner alone may choose Force.
+
+Before a coordinating follow-up, read that target's current tape and the visible Messages
+queue. Batch everything presently known into one authoritative instruction. Do not repeat
+an acknowledgement, GO, seam ruling, or status request merely because no reply has arrived;
+let the agent work. If a queued instruction has genuinely become obsolete, report its ID
+and have it dismissed before sending the explicit supersession, so both the change and its
+reason remain visible.
 
 ## read
 - **class:** session_macro.workflow
