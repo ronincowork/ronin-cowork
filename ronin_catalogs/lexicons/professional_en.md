@@ -1744,8 +1744,9 @@ The catalog entry goes. {dir} is not touched.
 - **feedback.kind_problem:** Something is not working
 - **feedback.kind_question:** A question
 - **feedback.other:** Something else
-- **feedback.reply_contact:** Reply contact (optional)
-- **feedback.reply_help:** Only if you would like a reply. It is never stored with this Ronin install’s identity.
+- **feedback.reply_email:** Reply email address (optional)
+- **feedback.reply_invalid:** Enter an email address or leave it blank.
+- **feedback.reply_help:** If you would like to hear from us, we may reply or invite you to the Ronin community. No spam. This address is never stored with this Ronin install’s identity.
 - **feedback.send:** Send
 - **feedback.sending:** Sending…
 - **feedback.sent:** Sent — thank you

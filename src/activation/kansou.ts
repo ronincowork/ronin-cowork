@@ -17,7 +17,7 @@ export interface KansouBody {
   about?: string[];
   using_ronin_for?: string[];
   feedback_kind?: string[];
-  reply_contact?: string;
+  reply_email?: string;
 }
 
 export interface KansouPacket {
@@ -47,12 +47,13 @@ export function buildKansou(packetId: unknown, value: unknown): KansouPacket {
   const about = selections(input.about, CHOICES.about);
   const using = selections(input.using_ronin_for, CHOICES.using_ronin_for);
   const kind = selections(input.feedback_kind, CHOICES.feedback_kind);
-  const contact = text(input.reply_contact, 320);
+  const email = text(input.reply_email, 320);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('reply email is invalid');
   if (message) body.message = message;
   if (about.length) body.about = about;
   if (using.length) body.using_ronin_for = using;
   if (kind.length) body.feedback_kind = kind;
-  if (contact) body.reply_contact = contact;
+  if (email) body.reply_email = email;
   if (!Object.keys(body).length) throw new Error('feedback is empty');
   return { envelope_version: 1, kind: 'kansou', body_schema_version: 1, packet_id: packetId, body };
 }

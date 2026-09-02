@@ -12,13 +12,17 @@ const ID = 'pkt_abcdefghjkmnpqrstvwxyz2345';
 test('kansou builder emits only the settled closed body and no install identity', () => {
   const packet = buildKansou(ID, {
     message: '  hello  ', about: ['developer', 'bogus'], using_ronin_for: ['coding'],
-    feedback_kind: ['idea'], reply_contact: ' person@example.com ', install_id: 'must not pass',
+    feedback_kind: ['idea'], reply_email: ' person@example.com ', install_id: 'must not pass',
   });
   assert.deepEqual(packet, {
     envelope_version: 1, kind: 'kansou', body_schema_version: 1, packet_id: ID,
-    body: { message: 'hello', about: ['developer'], using_ronin_for: ['coding'], feedback_kind: ['idea'], reply_contact: 'person@example.com' },
+    body: { message: 'hello', about: ['developer'], using_ronin_for: ['coding'], feedback_kind: ['idea'], reply_email: 'person@example.com' },
   });
   assert.equal(JSON.stringify(packet).includes('install'), false);
+});
+
+test('kansou builder refuses a phone number in the reply email field', () => {
+  assert.throws(() => buildKansou(ID, { message: 'hello', reply_email: '+1 555 0100' }), /email/);
 });
 
 test('the explicit sender keeps exact bytes, stores the receipt, and records egress', async () => {
