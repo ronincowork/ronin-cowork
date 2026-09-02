@@ -1020,10 +1020,10 @@ The catalog entry goes. {dir} is not touched.
 - **setup.cap_none:** No limit — allow any number
 - **setup.cap_estimate:** {n} — Ronin estimate for this {ram} GB machine
 - **setup.cap_n:** {n} agent sessions
-- **setup.services_lede:** Extra capabilities for your coworkspace. Base RoninCoWork works fully without them.
+- **setup.services_lede:** Extra capabilities for your coworkspace, in beta today. Base RoninCoWork works fully without them.
 - **setup.optional:** Optional
 - **setup.services_intro_strong:** Keep the work on your machine, add the view around it.
-- **setup.services_intro:** Services add live agent plans, readable transcripts, voice, usage history, and long-term memory.
+- **setup.services_intro:** Services add live agent plans, readable transcripts, voice, usage history, and long-term memory. It is early days for this side: sharing your email registers your interest, and what is ready reaches you as it lands.
 - **setup.feature_gbrain:** Long-term agent memory
 - **setup.services_start:** Start Ronin Services activation
 - **setup.services_start_copy:** Ronin will send your email address, this terms version, and an activation request.

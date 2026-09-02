@@ -26,44 +26,31 @@ set -u
 # a projected session-commands symlink (src/routine-tools.ts) — the floor projects this
 # shim to every Cowork Agent, and the unresolved $0 pointed ../.. at a store with no
 # scripts/, so the guard ENOENTed and the restart was refused on a phantom (2026-09-01,
-# same fault the tmux shim carried). SELF_DIR stays unresolved: PATH-stripping must
-# remove the dir the CALLER found this shim in.
+# same fault the tmux shim carried). The old SELF_DIR PATH-strip is gone: stripping one
+# dir is exactly what let the other copies keep resolving each other (see the lookup).
 SELF=$0
 while [ -L "$SELF" ]; do
   link=$(readlink "$SELF")
   case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
 done
 REAL_DIR=$(cd "$(dirname "$SELF")" && pwd)
-
-# A born session sees the projected alias first and may also retain the checkout's
-# bin/shim on PATH. Removing only the alias directory leaves the checkout spelling of
-# this exact file, so command -v selects us again and the two spellings recurse. Resolve
-# every candidate and skip every path which names this shim; the first different
-# executable is the host systemctl. The guard below still runs here before that exec.
-canonical_file() {
-  candidate=$1
-  while [ -L "$candidate" ]; do
-    link=$(readlink "$candidate")
-    case $link in /*) candidate=$link ;; *) candidate=$(dirname "$candidate")/$link ;; esac
-  done
-  candidate_dir=$(cd "$(dirname "$candidate")" 2>/dev/null && pwd) || return 1
-  printf '%s/%s\n' "$candidate_dir" "$(basename "$candidate")"
-}
-SELF_REAL=$(canonical_file "$0")
-REAL=
-old_ifs=$IFS
-IFS=:
-for search_dir in $PATH; do
-  [ -n "$search_dir" ] || search_dir=.
-  candidate=$search_dir/systemctl
-  [ -x "$candidate" ] || continue
-  candidate_real=$(canonical_file "$candidate") || continue
-  [ "$candidate_real" = "$SELF_REAL" ] && continue
-  REAL=$candidate_real
+# THE LOOKUP SKIPS EVERY COPY OF THIS SHIM, not one dir (2026-09-02, the promotion
+# blocker): a session's projected symlink and the repo copy each stripped only their
+# OWN dir, so each resolved the other and the shim recursed until serviceUnit timed
+# out — health then falsely read the unit as absent, and the protected revert died
+# the same way. `-ef` follows symlinks, so one comparison against the resolved shim
+# catches the repo copy and all fifty-five projections alike.
+REAL=""
+_ifs=$IFS; IFS=:
+for _d in $PATH; do
+  _cand="${_d:-.}/systemctl"
+  [ -x "$_cand" ] || continue
+  [ "$_cand" -ef "$SELF" ] && continue
+  REAL=$_cand
   break
 done
-IFS=$old_ifs
-[ -n "$REAL" ] || REAL=/usr/bin/systemctl
+IFS=$_ifs
+[ -n "${REAL:-}" ] || REAL=/usr/bin/systemctl
 
 # First non-flag argument is the verb; the rest are units.
 verb=""; units=""
@@ -97,8 +84,21 @@ if [ "$destructive" = 1 ] && [ "$hits_ronin" = 1 ]; then
 fi
 
 if [ "$destructive" = 1 ] && [ "$hits_server" = 1 ] && [ "${RONIN_KILL_TMUX:-}" != "1" ]; then
-  # Ask the REAL tmux — the shim beside us would only add dial checks we don't want here.
-  TMUX_BIN=/usr/bin/tmux
+  # Ask the REAL tmux — the shim beside us would only add dial checks we don't want
+  # here. Same skip-every-copy walk as the systemctl lookup above: the tmux shim also
+  # exists both in the repo and as projections, and a single-dir strip finds one of
+  # the other copies.
+  TMUX_BIN=""
+  _ifs=$IFS; IFS=:
+  for _d in $PATH; do
+    _cand="${_d:-.}/tmux"
+    [ -x "$_cand" ] || continue
+    [ "$_cand" -ef "$REAL_DIR/tmux" ] && continue
+    TMUX_BIN=$_cand
+    break
+  done
+  IFS=$_ifs
+  [ -n "${TMUX_BIN:-}" ] || TMUX_BIN=/usr/bin/tmux
   all=$("$TMUX_BIN" list-sessions -F '#{session_name}' 2>/dev/null || true)
   real=$(printf '%s\n' "$all" | grep -v '^$' | grep -cv '^grid_' || true)
   if [ "${real:-0}" -gt 0 ]; then
