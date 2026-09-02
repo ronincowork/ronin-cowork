@@ -1,6 +1,6 @@
 # Worktree Clean Up — strategic audit (worktree_audit, 2026-09-02)
 
-> expires: when the Worktree Clean Up buildout closes (`ronin-lab/wip/buildouts/WORKTREE_CLEAN_UP.md`).
+> expires: when the Worktree Clean Up buildout closes (WORKTREE_CLEAN_UP in ronin-lab, wip/buildouts).
 > Read-only audit: every claim below was measured on this box on 2026-09-02 at about 07:15 UTC.
 > Nothing was changed, handed in, or promoted by this session.
 
@@ -21,7 +21,7 @@ receipts, downward adoption to desks. It is sound, tested (`tests/desks.test.ts`
 ### 1. Three sources of truth on one ruling (no-park)
 
 - Owner ruled 2026-08-30: no parking; a desk is handed in or closed
-  (`docs/worktrees.md` § Hand in or close; lab `DESK_OWNERSHIP.md`).
+  (`docs/worktrees.md` § Hand in or close; the lab's DESK_OWNERSHIP build-out).
 - `src/desks/desk.ts` `closeDesk` still parks; `tejun-desk` usage still lists
   `park`, `parked`, `recover`.
 - `ronin_session_boot/assignment/DESK_CONTRACT.md`, handed to every desk session at birth,
@@ -33,15 +33,15 @@ code is "as it still is until DESK_OWNERSHIP lands"; the contract does not.
 
 ### 2. Two plans, same sessions
 
-- `WORKTREE_CLEAN_UP.md` (lab) assigns `worktrees_matrix` and `worktrees_roots` audit lanes
+- The lab's WORKTREE_CLEAN_UP build-out assigns `worktrees_matrix` and `worktrees_roots` audit lanes
   (state/operation matrix; roots and ownership trace).
 - `wip/buildouts/RONIN_WORKTREES_PACKET.md` (now on `team/pbs/dev`, 45fab28) assigns the
   same two sessions build legs A (single `resolveWorktrees` seam, 2×2 regression suite)
   and B (Project Root UX, Worktrees vocabulary), with a different vocabulary
   (Worktrees enabled/disabled vs desks=managed).
 - `worktrees_matrix`'s desk holds the packet's leg-A handoff uncommitted
-  (`wip/handoffs/WORKTREES_MATRIX_MECHANICS.md`); `worktrees_roots` committed the leg-B
-  handoff (110fc82).
+  (WORKTREES_MATRIX_MECHANICS in wip/handoffs on that desk); `worktrees_roots` committed
+  the leg-B handoff (110fc82).
 
 Whichever plan governs, the other will be executed by accident.
 
@@ -141,7 +141,7 @@ from the packet worth keeping as is (5, 6 alongside).
 `docs/worktrees.md`, `docs/desks.md`, `docs/team-promotion.md`, `RONIN_REPO`,
 `src/desks/*`, `src/desk-cli.ts`, `src/launch-desks.ts`, `src/routine-tools.ts`,
 `src/promotion/promote.ts`, `src/promotion/funnel-recovery.ts`, `libexec/ronin-git-guard`,
-lab `WORKTREE_CLEAN_UP.md`, `DESK_OWNERSHIP.md`, `WORKTREES.md`,
+the lab's WORKTREE_CLEAN_UP, DESK_OWNERSHIP and WORKTREES build-outs,
 `wip/buildouts/RONIN_WORKTREES_PACKET.md`, both sibling handoffs, the pbs wipeboard,
 the desks store (registry, assignments, receipts), the promotion ledger,
 `git worktree list`, `git branch -vv`.
