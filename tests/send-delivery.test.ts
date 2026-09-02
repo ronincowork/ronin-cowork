@@ -64,13 +64,38 @@ test('a stranded copy of this message is submitted, never typed again and never 
   assert.equal(io.enters, 1);
 });
 
-test('text the pane never showed is retained without an Enter', async () => {
+test('text the pane never showed anywhere is reported lost, not delivered', async () => {
   const io = fakePane([screen(null), screen(null)]);
   const r = await deliverSafe('tile', MESSAGE, undefined, io);
   assert.equal(r.delivered, false);
-  assert.equal(r.submitted, false);
-  assert.match(r.reason, /did not become visible/);
-  assert.equal(io.enters, 0);
+  assert.equal(r.submitted, true, 'no automatic second copy');
+  assert.match(r.reason, /never appeared/);
+  assert.equal(io.enters, 1, 'Enter at an empty prompt is harmless');
+});
+
+/* THE OWNER'S RULING, 2026-09-02: an Agent mid-thought still gets the message. The CLIs
+ * queue input typed while they work; the old "recognised empty prompt" precondition held
+ * fifteen messages at zero attempts. Only a dialog or somebody's draft holds a send. */
+test('a thinking Agent still receives the message', async () => {
+  const thinking = ['assistant is working', '✻ Cerebrating… (12s)'];
+  const io = fakePane([
+    screen(null, thinking),
+    screen(MESSAGE, thinking),
+    screen(null, [...thinking, '> ' + MESSAGE]),
+  ]);
+  assert.equal(parsePrompt(screen(null, thinking)).found, false, 'the prompt read calls this busy');
+  const r = await deliverSafe('tile', MESSAGE, undefined, io);
+  assert.equal(r.delivered, true, r.reason);
+  assert.deepEqual(io.typed, [MESSAGE]);
+  assert.equal(io.enters, 1);
+});
+
+test('a dialog still holds the message', async () => {
+  const io = fakePane(['❯ 1. Yes, I trust this folder\n  2. No']);
+  const r = await deliverSafe('tile', MESSAGE, undefined, io);
+  assert.equal(r.delivered, false);
+  assert.match(r.reason, /dialog is open/);
+  assert.deepEqual(io.typed, []);
 });
 
 test("somebody else's draft is left alone", async () => {
