@@ -60,15 +60,6 @@ export async function listQueuedMessages(): Promise<QueuedMessage[]> {
   return rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
-/** A sender gets one unresolved tell lane per target. New wording must wait until the
- * visible queued instruction is delivered or explicitly dismissed, otherwise a lead can
- * unknowingly stack contradictory calls behind a busy prompt. */
-export async function pendingTellsFrom(from: string, target: string): Promise<QueuedMessage[]> {
-  return (await listQueuedMessages()).filter((item) =>
-    item.source === 'tell' && item.from === from && item.target === target
-  );
-}
-
 const sourceFrom = (source: MessageSource): string => ({
   tell: 'Agent', wipeboard_notice: 'Wipeboard', owner: 'Owner', house: 'Ronin House',
 })[source];

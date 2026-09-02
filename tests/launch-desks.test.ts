@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { renderDeskBlock, resolveLaunchDesks } from '../src/launch-desks.js';
+import { renderDeskBlock, resolveLaunchDesks, wantsDesk } from '../src/launch-desks.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { bootFiles } from '../src/session-boot.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
@@ -31,16 +31,19 @@ const assignment: Assignment = {
 
 const profile = { session_role: 'CutCode', label: 'cut code', posture: [], opening: '{prompt}', ack: false, agent: true } as LaunchProfile;
 
+test('a Cowork Agent wants a desk when resolved Ronin Worktrees is on', () => {
+  assert.equal(wantsDesk({ agent: true, control: true }), true);
+  assert.equal(wantsDesk({ agent: true, control: false }), false);
+  // A plain terminal has no agent to brief.
+  assert.equal(wantsDesk({ agent: false, control: true, desk: 'own' }), false);
+  // The launch box's one control, either way.
+  assert.equal(wantsDesk({ agent: true, control: false, desk: 'own' }), true);
+  assert.equal(wantsDesk({ agent: true, control: true, desk: 'none' }), false);
+});
+
 test('a launch that wants no desk resolves null without touching any registry', async () => {
   const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, control: false });
   assert.equal(a, null);
-});
-
-test('the retired desk override is not a second Worktrees switch', async () => {
-  const forced = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, control: false, desk: 'own' });
-  const refused = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, control: true, desk: 'none' });
-  assert.equal(forced, null);
-  assert.equal(refused, null);
 });
 
 test('a coding launch on a repository with no RONIN_REPO resolves null — the file is the gate', async () => {

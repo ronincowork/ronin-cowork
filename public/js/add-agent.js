@@ -186,8 +186,8 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
   /* ---- THE DESK IS NOT AN ASKED QUESTION (owner, 2026-08-31, folding the earlier
      control): the routine selection IS the decision, so this row is a CONSEQUENCE LINE —
      it says which of the two states the resolved routines give, and offers no switch.
-     Allocation stays lazy either way: the Routine is the Agent-side capability, while
-     each Project Root independently allows Worktrees or requires the checkout.
+     Allocation stays lazy either way: managed file coordination is the contract, and a
+     worktree is cut when the work needs it (`docs/routines.md` § Four different facts).
      `desk: own | none` survives on the launch body as an unadvertised escape hatch; no
      form surfaces it, and this one no longer sends it. ---- */
   const deskLine = el('div', 'aa-deskline');
@@ -206,8 +206,8 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
     deskLine.hidden = control === null;
     if (control === null) return;
     deskWhy.textContent = control
-      ? t('add_agent.desk_line_control', 'Ronin Worktrees is on for this Team. In each Project Root that also allows Worktrees, this Agent gets a private branch and worktree and can hand work in; other roots use their checkout.')
-      : t('add_agent.desk_line_plain', 'Ronin Worktrees is off for this Team. This Agent uses each repository checkout even when that Project Root allows Worktrees.');
+      ? t('add_agent.desk_line_control', 'Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.')
+      : t('add_agent.desk_line_plain', 'Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.');
   }
 
   /* ---- what the Team fixed: at the FOOT, because none of it is changeable here ---- */

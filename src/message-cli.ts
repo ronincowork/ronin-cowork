@@ -1,4 +1,4 @@
-import { attemptMessage, enqueueMessage, MessageRefused, pendingTellsFrom, type MessageSource } from './message-queue.js';
+import { attemptMessage, enqueueMessage, MessageRefused, type MessageSource } from './message-queue.js';
 import { isValidName } from './tmux.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -17,14 +17,6 @@ const from = source === 'tell' && process.env.TMUX_PANE
       .then(({ stdout }) => stdout.trim() || 'Agent').catch(() => 'Agent')
   : undefined;
 try {
-  if (source === 'tell') {
-    const sender = from ?? 'Agent';
-    const pending = await pendingTellsFrom(sender, target);
-    if (pending.length) {
-      console.error(`REFUSED: ${pending.length} unresolved tell(s) from '${sender}' to '${target}' already visible in Messages (${pending.map((item) => item.id).join(', ')}). Let them deliver or dismiss them before sending new wording.`);
-      process.exit(3);
-    }
-  }
   const item = await enqueueMessage(target, text, source, from);
   const retained = await attemptMessage(item.id, 'safe');
   console.log(retained
