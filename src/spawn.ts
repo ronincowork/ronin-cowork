@@ -220,10 +220,10 @@ export function buildBrief(
   // objective comes from the roster — the durable half — and the wipeboard is the
   // team's own conversation surface. A rōnin launch has no line here at all.
   if (roster) {
-    const bits = [`You are born onto team "${roster.name}"`];
-    if (roster.objective) bits.push(`its objective: ${roster.objective}`);
-    bits.push(`its wipeboard is "${roster.wipeboard}" (tejun-wipeboard ${roster.wipeboard})`);
-    parts.push(bits.join('. ') + '.');
+    const lines = [`Team: ${roster.name}`];
+    if (roster.objective) lines.push(`Objective: ${roster.objective}`);
+    lines.push(`Wipeboard: ${roster.wipeboard} (tejun-wipeboard ${roster.wipeboard})`);
+    parts.push(lines.join('\n'));
   } else if (form.team) {
     parts.push(
       `You are born onto team "${form.team}" — a tag-only team: its members are the sessions carrying its tag ` +
@@ -243,7 +243,7 @@ export function buildBrief(
   if (reading.length) parts.push(`Read first: ${reading.join(', ')}.`);
   const prompt = form.prompt?.trim() ?? '';
   const opening = (profile.opening ?? '').replace(/\{prompt\}/g, prompt).trim();
-  if (opening) parts.push(opening);
+  if (opening) parts.push(`Your task:\n${opening}`);
   if (form.reference) {
     parts.push(
       // RIREKI's tape is the taught-normal catch-up (owner's ruling, 2026-08-20): it is
@@ -256,7 +256,9 @@ export function buildBrief(
   }
   if (form.inject?.trim()) parts.push(form.inject.trim());
   if (profile.ack) parts.push(ACK_RULE);
-  return parts.join(' ');
+  // ONE BLOCK PER FACT, a blank line between: a person glancing at the tile sees the team,
+  // the desks, the reading and the task as four things, not one run-on sentence.
+  return parts.join('\n\n');
 }
 
 /**

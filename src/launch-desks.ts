@@ -130,8 +130,8 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
 
 /**
  * The concrete block the brief carries — facts, not a Git lecture. Every desk, its path,
- * the line it hands in to, and the four words. The long reading is the Worktrees Routine's
- * own page (routine/ronin_worktrees/WORKTREES.md), delivered when that Routine is on.
+ * the line it hands in to, and one pointer. The contract itself is the Worktrees Routine's
+ * page (routine/ronin_worktrees/WORKTREES.md), compiled into the README the brief names.
  */
 export function renderDeskBlock(a: Assignment): string {
   const width = Math.max(...a.desks.map((d) => d.repo.length));
@@ -140,6 +140,6 @@ export function renderDeskBlock(a: Assignment): string {
   return [
     `Your assignment has ${n} desk${n === 1 ? '' : 's'}:`,
     ...rows,
-    'Save changes in a desk. Commit preserves only that desk. `tejun-desk hand-in` publishes committed work to its team line; it is not `git push` and it runs no full BYOIN. The lead\'s team promotion runs full BYOIN and promotes the accepted team state to dev.',
+    'Work only in a desk; the desk contract is in your README.',
   ].join('\n');
 }

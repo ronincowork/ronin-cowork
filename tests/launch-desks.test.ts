@@ -55,9 +55,8 @@ test('the brief carries every desk, the primary, the line, and the four words �
   assert.match(brief, /Your assignment has 2 desks:/);
   assert.match(brief, /cowork\s+\/w\/cowork\/team\/comp\/fable\s+→ team\/comp\/dev\s+\(you start here\)/);
   assert.match(brief, /services\s+\/w\/services\/team\/comp\/fable\s+→ team\/comp\/dev/);
-  assert.match(brief, /Commit preserves only that desk/);
-  assert.match(brief, /`tejun-desk hand-in` publishes committed work to its team line; it is not `git push` and it runs no full BYOIN/);
-  assert.match(brief, /team promotion runs full BYOIN/);
+  assert.match(brief, /Work only in a desk; the desk contract is in your README\./);
+  assert.doesNotMatch(brief, /BYOIN/, 'the brief states desks, not the Git contract the README already carries');
 
   const none = buildBrief(profile, undefined, form, undefined, [], null, null);
   assert.doesNotMatch(none, /desk/i, 'a launch with no assignment is told nothing about desks');
