@@ -230,14 +230,6 @@ async function capturePane(name: string): Promise<string> {
   return stdout;
 }
 
-export async function readPrompt(name: string): Promise<PromptRead> {
-  try {
-    return parsePrompt(await capturePane(name));
-  } catch {
-    return { found: false, text: null, menu: false }; // pane gone mid-send; not this function's business why
-  }
-}
-
 
 /** Legacy callers share automatic delivery's safe policy. Force exists only explicitly. */
 export async function sendText(
