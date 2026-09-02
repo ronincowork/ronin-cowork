@@ -21,9 +21,10 @@ test('every assisted session is handed the session macro routing guide', async (
     assert.ok(macroGuide, 'the universal boot shelf should contain SESSION_MACROS.md');
     assert.equal(macroGuide, path.join(temp, 'generated', 'SESSION_MACROS.md'));
     const guide = await readFile(macroGuide, 'utf8');
-    assert.match(guide, /fork it[\s\S]*new session[\s\S]*visible tmux session/i);
-    assert.match(guide, /spawn it[\s\S]*spawn an agent[\s\S]*native[\s\S]*sub-agent/i);
-    assert.match(guide, /neither vocabulary[\s\S]*without asking the owner/i);
+    // The guide teaches compile-first and carries the live roster; the fork/spawn routing
+    // rule is Ronin Base's teaching, asserted on BASE_ABILITIES below, and is not repeated here.
+    assert.match(guide, /compile it first — `tejun <name>`/);
+    assert.doesNotMatch(guide, /spawn an agent/i);
     const active = (await listMacros()).filter((macro) => macro.preview);
     assert.ok(active.length, 'the stock catalog should preview at least one session macro');
     for (const macro of active) assert.match(guide, new RegExp(`\\+${macro.name}:`));
@@ -83,6 +84,9 @@ test('Routine reading teaches only the selected capability; test policy stays wi
   ]);
 
   assert.match(base, /tejun forkit/);
+  assert.match(base, /fork it[\s\S]*new session[\s\S]*visible-session/i);
+  assert.match(base, /spawn it[\s\S]*spawn an agent[\s\S]*internal sub-agent/i);
+  assert.match(base, /neither vocabulary/i);
   assert.match(base, /read_tegami/);
   assert.match(base, /tejun-wipeboard/);
   assert.doesNotMatch(base, /tejun-rireki/);

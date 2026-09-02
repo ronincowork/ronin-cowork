@@ -50,15 +50,11 @@ is a name a user learns. Everything not listed here is ordinary English and need
 | team | **Cowork**<!--g:glossary.team--> | A set of sessions working together. |
 | `team_roster` | **Cowork record**<!--g:glossary.team_roster--> | The team's record: kind, objective, kit, launch defaults. Members are read live. |
 | `team_lead` | **team lead · 人**<!--g:glossary.team_lead--> | Set by hand, never inferred from what a session does. |
-| dial | **Control**<!--g:glossary.control--> | Per session: 👤 you-only · 👁 read · 🤖 read-and-write. Only the owner flips it. |
 | `session_type` | **session type**<!--g:glossary.session_type--> | **Cowork Agent**<!--g:glossary.cowork_agent--> born with Ronin's floor · **bare-metal Agent**<!--g:glossary.bare_metal_agent--> a CLI started without it · **terminal**<!--g:glossary.terminal--> a shell with no agent. |
 | `session_mandate` | **mandate**<!--g:glossary.mandate--> | **Reach**<!--g:glossary.reach--> how far an Agent goes · **Recruit**<!--g:glossary.recruit--> how it builds a Team · **Output**<!--g:glossary.output--> what it hands back. |
-| `behaviour` · `routine` | **behaviour**<!--g:glossary.behaviour--> · **routine**<!--g:glossary.routine--> | A behaviour is one book handed to an Agent at birth; a routine is a set of them with one switch. |
-| `ronin_base` · `ronin_worktrees` · `ronin_services` | **Ronin Base**<!--g:glossary.ronin_base--> · **worktrees**<!--g:glossary.ronin_worktrees--> · **Ronin Services**<!--g:glossary.ronin_services--> | The shipped routines: ordinary work · managed desks and hand-in · the paid record, Koshi and Voice set. |
 | `ronin_service` | **Services**<!--g:glossary.services--> | A rented capability on top of open-source Ronin. Never module, plug-in, extension or applet. |
 | `message_queue` | **message queue**<!--g:glossary.message_queue--> | Messages waiting to enter a live session. |
 | `project_root` | **project root**<!--g:glossary.project_root--> | A folder Ronin is allowed to work in. |
 | `desk_profile` | **desk profile**<!--g:glossary.desk_profile--> | The owner's standing defaults: skin, words, layout. |
-| forkit | **fork**<!--g:glossary.fork--> | "Fork it" and "new session" mean a visible Ronin session; "spawn an agent" means an internal sub-agent. |
 | harakiri | **harakiri**<!--g:glossary.harakiri--> | A session ends itself. |
 | `@ronin_note` | **Note**<!--g:glossary.note--> | The owner's one line about a session. |

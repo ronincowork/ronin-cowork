@@ -1664,7 +1664,6 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.configuration:** Configuration
 - **glossary.hotwords:** Hotwords
 - **glossary.project_root:** project root
-- **glossary.control:** Control
 - **glossary.team:** Cowork
 - **glossary.note:** Note
 - **glossary.work_record:** work record
@@ -1673,11 +1672,6 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.macros:** macros
 - **glossary.desk_profile:** desk profile
 - **glossary.session_type:** session type
-- **glossary.behaviour:** behaviour
-- **glossary.routine:** routine
-- **glossary.ronin_base:** Ronin Base
-- **glossary.ronin_worktrees:** worktrees
-- **glossary.ronin_services:** Ronin Services
 - **glossary.terminal:** terminal
 - **glossary.bare_metal_agent:** bare-metal Agent
 - **glossary.cowork_agent:** Cowork Agent
@@ -1685,7 +1679,6 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.reach:** Reach
 - **glossary.recruit:** Recruit
 - **glossary.output:** Output
-- **glossary.fork:** fork
 - **glossary.harakiri:** harakiri
 - **glossary.packet:** what gets sent
 - **glossary.egress_log:** where Ronin has connected

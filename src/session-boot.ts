@@ -352,7 +352,7 @@ export async function compileBirthReadmeAt(
       '',
       '## On your shelf',
       '',
-      'Selected for you, and read at the project rather than pasted here. Open each when you begin work.',
+      'Library cards, not reading: each names a document selected for you and what it holds. Open one when you need it, not before.',
       '',
       '| Document | Where |',
       '|---|---|',
