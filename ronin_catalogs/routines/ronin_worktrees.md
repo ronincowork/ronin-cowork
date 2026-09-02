@@ -2,6 +2,7 @@
 - **label:** Ronin Worktrees
 - **blurb:** Agent work mode: use a private branch and worktree in repositories that allow Ronin Worktrees; otherwise work directly in the project checkout and its branches.
 - **reading:** routine/ronin_worktrees/WORKTREES.md
+- **reading_off:** routine/ronin_worktrees/OFF.md
 - **sops:** github
 - **macros:** cutcode, land
 - **actions:** cut-code, open-pr, land-work, land-manifest, desk-open, desk-status, desk-sync, hand-in, desk-park, check-clean, repository-initialize

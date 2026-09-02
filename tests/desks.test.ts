@@ -139,6 +139,15 @@ test('openDesk: cut from the team line, mounted, upstream set, recorded; the lin
   assert.equal(again.worktree, st.worktree);
 });
 
+test('openDesk: an explicit managed repo need not already be on the team roster', async () => {
+  const st = await openDesk({ repo: 'services', session: 'extra', team: 'comp', assignment: 'extra@comp' });
+  assert.equal(st.branch, 'team/comp/extra');
+  assert.equal(st.line, 'team/comp/dev');
+  assert.equal(st.assignment, 'extra@comp');
+  assert.equal(st.mounted, true);
+  assert.equal(sh(services, ['rev-parse', '--abbrev-ref', 'team/comp/extra@{upstream}']), 'team/comp/dev');
+});
+
 test('openDesk refuses: a funnel point by name, a direct repo, an undeclared repo', async () => {
   await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'dev' }), /reviewed integration line/);
   await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'team/comp/dev' }), /reviewed integration line/);

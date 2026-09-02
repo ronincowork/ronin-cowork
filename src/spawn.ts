@@ -19,6 +19,8 @@ import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
 import { templateProvenance } from './template-provenance.js';
 import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
+export const routineReading = (routines: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[]): string[] =>
+  routines.flatMap((routine) => (routine.enabled ? routine.reading : routine.reading_off));
 /**
  * The mechanical executor: a filled form in, a briefed session out.
  *
@@ -290,7 +292,6 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
 
 /**
  * The birth reading list, plus THE TEAM-BUILDING SOP for a lead launch.
- *
  * A session_role that is some family's `default_lead_role` is the coordinating kind of
  * work, and its launch carries `ronin_sops/teams.md` — how to raise supporting sessions
  * and place them into a team. Route 1 of two: route 2 is the `team_lead` designation on
@@ -555,8 +556,7 @@ export async function resolveForm(
   };
   // THE NAME is settled before the desks, because a desk branch carries it.
   const name = wanted || slugName(profile.session_role || form.team || 'session', form.prompt ?? '', taken);
-  // THE DESKS, derived (never opened here — the route opens them, before the CLI starts).
-  // Null is an honest answer for most launches; see src/launch-desks.ts for the three.
+  // Desks are derived here and opened by the route; most launches honestly return null.
   const assignment = bareMetalAgent || sessionType === 'terminal' ? null : await resolveLaunchDesks({
     session: name,
     team: form.team ?? '',
@@ -565,7 +565,7 @@ export async function resolveForm(
     control: routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
     desk: form.desk,
   });
-  const enabledReading = routines.filter((routine) => routine.enabled).flatMap((routine) => routine.reading);
+  const enabledReading = routineReading(routines);
   const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
   const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   const selectedBehaviours = form.behaviours ?? (parentSeed?.seeds.behaviours.value as string[] | undefined) ?? [];
