@@ -12,10 +12,7 @@
      compact, whatever size its markup asked for, so no surface can outgrow the row. */
   .wk-surface-header .wk-action { min-height: 0; padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
   .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
-  /* The PRIMARY action wears the brand (token audit ruling, 2026-09-02): kiiro is the
-     primary; kaki keeps identity/heightened surfaces (the Services check stays kakiiro
-     by its own ruling) and the pressed/selected edge language. */
-  .wk-action[data-kind='primary'] { border-color: var(--kiiro); background: var(--kiiro); color: var(--on-kiiro); }
+  .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
   /* ACTION WAITING (owner, 2026-09-01): a header action over a dirty surface goes bright
      kiiro so it is unmissable. The fill is the kiiro PAIR (@tokens' ruling, same day):
      --warn is the theme-tuned warning INK and never a fill. Clean surfaces keep the
@@ -81,13 +78,13 @@
   .wk-view-name:empty { display: none; }
   .wk-tab-name { width: 12rem; max-width: 30vw; height: 1.75rem; padding: 0 var(--space-3); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg-strong); font: inherit; font-size: var(--text-3); }
   .wk-tab-name::placeholder { color: var(--muted); }
-  .wk-tab-name:focus-visible { outline: var(--edge) solid var(--focus-ring); outline-offset: 1px; }
+  .wk-tab-name:focus-visible { outline: var(--edge) solid var(--kaki); outline-offset: 1px; }
   .wk-channel-service-grow { flex: 1 1 auto; }
   .wk-layout-map { display: flex; align-items: stretch; gap: var(--space-1); height: 1.5rem; width: 4.5rem; padding: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); }
   .wk-layout-map-slot { flex: 1 1 auto; min-width: .5rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); padding: 0; cursor: pointer; touch-action: none; }
   .wk-layout-map-slot[aria-checked='true'] { background: var(--aiiro); border-color: var(--aiiro); }
   .wk-layout-map-slot[data-dragging='true'] { opacity: .6; }
-  .wk-layout-map-slot:focus-visible { outline: var(--edge) solid var(--focus-ring); outline-offset: 1px; }
+  .wk-layout-map-slot:focus-visible { outline: var(--edge) solid var(--kaki); outline-offset: 1px; }
   /* COMPACT — a slot narrower than its declared threshold (the frame writes data-width
      from measurement). Cards keep their heading and drop the rest: the owner's "when it's
      very thin it just becomes the session name". */

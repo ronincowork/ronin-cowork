@@ -42,32 +42,26 @@
       } catch (e) {}
     </script>
     <style>
-      /* This page stands alone (it cannot assume style.css served before auth), so
-         these are MIRRORS of the sheet's tokens, value for value — the 2026-09-02
-         token audit found four drifted (both --ok values, both --line/light --line
-         family) and no kiiro at all. If a value moves in style.css, it moves here. */
       :root {
         --bg: #0b0e14;
         --panel: #131826;
-        --line: #1f2738;
+        --line: #2a3247;
         --fg: #c5c8c6;
         --muted: #6b7488;
         --accent: #e0af68;
-        --kiiro: #e0af68;
-        --on-kiiro: #201a0e;
         --bad-soft: #e6a1a1;
-        --ok: #b5bd68;
+        --ok: #9ece6a;
         --well: #0d1220;
       }
       :root[data-theme='light'] {
         --bg: #f4f2ec;
         --panel: #ffffff;
-        --line: #d9d4c8;
+        --line: #c8c2b2;
         --fg: #2c2e36;
         --muted: #6d7284;
         --accent: #a06b1a;
         --bad-soft: #8f3a3a;
-        --ok: #5c7a1d;
+        --ok: #4a7a2a;
         --well: #f7f5ef;
       }
       * { box-sizing: border-box; }
@@ -114,7 +108,7 @@
       /* The passkey button is the RECOMMENDED door when it is offered at all, so it is
          the filled one. The password below it stays a peer, not a demotion — it is the
          fallback the owner may always take. */
-      button.primary { background: var(--kiiro); color: var(--on-kiiro); font-weight: 600; border-color: var(--kiiro); }
+      button.primary { background: var(--accent); color: var(--bg); font-weight: 600; }
       /* ---- the ui/status grammar, copied — see the head comment ---- */
       .ui-status { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
       .ui-status:empty { display: none; }

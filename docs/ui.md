@@ -111,9 +111,9 @@ The roles, defined in `public/style.css`:
   `--aiiro` (Ronin navigation and selection) — Kojin's fixed palette, borrowed. The kaki
   identity ruling is the open hexagonal **hito** mark; using the same colour for heightened
   action connects “this needs you” to the house without making every Ronin surface kaki.
-  Heightened surfaces read `--kaki`/`--kaki-lift` directly — the `--heighten-*` alias
-  family this page once described was defined but never read, and the 2026-09-02
-  token audit deleted it rather than leave a dead semantic layer to mislead.
+  `--heighten`, `--heighten-hover`, `--heighten-fg`, and
+  `--heighten-shape` are the semantic treatment: a kaki hexagon for an access or view
+  control whose ability to be found quickly is part of its function.
 - elevation: `--scrim`, `--shadow-menu`, `--shadow-sheet` — the whole vocabulary
 - terminal: the `--term-*` block — xterm's palette and the tape/composer surfaces,
   read back into JS by `termTheme()` (`public/js/theme.js`), never restated
