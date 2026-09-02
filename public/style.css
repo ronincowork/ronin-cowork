@@ -5006,7 +5006,7 @@ button.wb-door:hover b {
   color: var(--term-tape-fg);
   background: var(--term-jump-bg);
   border: var(--edge) solid var(--term-tape-line-2);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   padding: var(--space-3) var(--space-6);
   cursor: pointer;
 }
@@ -5030,7 +5030,7 @@ button.wb-door:hover b {
   color: var(--term-tape-fg);
   background: var(--term-jump-bg);
   border: var(--edge) solid var(--term-tape-line-2);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   padding: var(--space-3) var(--space-6);
   cursor: pointer;
 }
@@ -5960,7 +5960,7 @@ button.wb-door:hover b {
   padding: var(--space-3) var(--space-5);
   background: var(--raise);
   border: var(--edge) solid var(--line-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   color: var(--fg-strong);
   font: inherit;
   font-size: var(--text-3);
@@ -6340,7 +6340,10 @@ button.wb-door:hover b {
 .ramrpm { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: default; user-select: none; }
 .ramrpm[data-band='warn'] { color: var(--warn); border-color: var(--warn); }
 .ramrpm[data-band='red'] { color: var(--bad); border-color: var(--bad); }
-.services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
+/* A BUTTON is a masu, not a pill (audit mark 6, 2026-09-02): pill stays for
+   read-only badges (.ramrpm above keeps its), a pressable control wears the square
+   rung. */
+.services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
 .services-state.busy::before { content: '◌'; display: inline-block; margin-right: var(--space-3); animation: services-spin var(--motion-slow) linear infinite; }
 .services-pop { position: fixed; z-index: 50; width: min(360px, calc(100vw - var(--space-8))); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-menu); padding: var(--space-7); }
 .services-pop-message { margin: 0 0 var(--space-6); color: var(--muted-2); }
