@@ -31,6 +31,7 @@ import { launchSpecData, projectData } from './home.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { dialRow, dialRowMulti } from './form-steps.js';
+import { swapTeamLead } from './team-lead-swap.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -40,15 +41,16 @@ const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'n
  * @param {object} kit  the Workspace Kit
  * @param {object} options
  *   `team()` the Team this page shows · `roster()` its durable record or null ·
+ *   `members()` its live members for an exclusive leadership handoff ·
  *   `connect(name)` seats the born Agent in the workspace that made it.
  */
-export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = {}) {
+export function createAddAgentView(kit, { team, roster, members, connect, fullLaunch } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 
   const draft = {
     name: '', instruction: '', provider: '', model: '', template: '', behaviours: [],
-    reach: 'open', recruit: 'open', output: ['open'],
+    reach: 'open', recruit: 'open', output: ['open'], teamLead: false,
   };
   let busy = false;
   let templates = [];
@@ -68,13 +70,14 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
   const rootOf = () => seeded('project_root') || rosterRow()?.project_root || projectData?.[0]?.name || '';
   const kindOf = () => seeded('kind') || rosterRow()?.kind || '';
 
-  /* ---- the four fields ---- */
+  /* ---- this Agent's choices ---- */
   const nameInput = el('input');
   nameInput.type = 'text';
   nameInput.autocapitalize = 'off';
   nameInput.autocomplete = 'off';
   nameInput.spellcheck = false;
   nameInput.maxLength = 40;
+  nameInput.classList.add('aa-control', 'aa-short-control');
   nameInput.placeholder = t('add_agent.name_placeholder', 'name');
   // Character-for-character, so the caret never jumps — the same transform the server
   // applies (`sanitizeName`, src/spawn.ts). Length is preserved, so mid-string edits hold.
@@ -93,13 +96,29 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
   instruction.rows = 3;
   instruction.autocapitalize = 'off';
   instruction.spellcheck = false;
+  instruction.classList.add('aa-control');
   instruction.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
   instruction.addEventListener('input', () => { draft.instruction = instruction.value; });
   const instructionField = createField({ label: t('add_agent.instruction', 'instruction'), control: instruction });
 
+  // This shortcut offers an EXCLUSIVE handoff. The system still permits several leaders
+  // through Team configuration; here "Make Team Lead" means the newborn replaces whoever
+  // currently carries this Team's mark.
+  const leadChoice = el('label', 'aa-lead-choice');
+  const leadInput = el('input');
+  leadInput.type = 'checkbox';
+  leadInput.addEventListener('change', () => { draft.teamLead = leadInput.checked; });
+  const leadWords = el('span');
+  leadWords.append(
+    el('b', null, t('add_agent.make_team_lead', 'Make Team Lead')),
+    el('small', null, t('add_agent.make_team_lead_sub', 'Replace the current Team Lead when this Agent launches.')),
+  );
+  leadChoice.append(leadInput, leadWords);
+
   /* Optional shortcut only. The full form owns browsing and saving templates; here one
      selected agent template simply overlays the Team defaults before the owner's hand. */
   const templateSelect = el('select');
+  templateSelect.classList.add('aa-control', 'aa-short-control');
   const templateField = createField({ label: t('add_agent.template', 'template'), control: templateSelect });
   function resetTemplateAnswers() {
     const value = (field) => seeded(field);
@@ -142,6 +161,8 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
   // pick FROM before that.
   const providerSelect = el('select');
   const modelSelect = el('select');
+  providerSelect.classList.add('aa-control', 'aa-short-control');
+  modelSelect.classList.add('aa-control', 'aa-short-control');
   const providerField = createField({ label: t('add_agent.provider', 'model provider'), control: providerSelect });
   const modelField = createField({ label: t('add_agent.model', 'model'), control: modelSelect });
   providerSelect.addEventListener('change', () => {
@@ -247,7 +268,9 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
   const reset = () => {
     draft.name = '';
     draft.template = '';
+    draft.teamLead = false;
     nameInput.value = '';
+    leadInput.checked = false;
     worktreesOverride = null;
     resetTemplateAnswers();
     paintTemplates();
@@ -275,30 +298,41 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
         provider: draft.provider,
         model: draft.model,
         kind: kindOf(),
+        team_lead: draft.teamLead,
         mandate: { reach: draft.reach, recruit: draft.recruit, output: [...draft.output] },
         ...(worktreesOverride === null ? {} : { routines: { ronin_worktrees: worktreesOverride } }),
         ...(draft.template ? { template: draft.template } : {}),
       },
     });
-    busy = false;
-    start.setDisabled(false);
     if (!result.ok) {
+      busy = false;
+      start.setDisabled(false);
       notice.set('failed', result.message);
       return;
     }
     const born = result.data?.name || draft.name.trim();
+    const handoff = draft.teamLead
+      ? await swapTeamLead(request, teamName(), born, typeof members === 'function' ? members() : members || [])
+      : { ok: true, failed: [] };
+    busy = false;
+    start.setDisabled(false);
     // WHY A DESK REQUEST PRODUCED NOTHING, in the receipt's own line — rendered so the
     // worktree control cannot quietly do nothing ("off by absence" is never silent,
     // owner 2026-08-29). Empty means a desk was opened, or none was asked for.
     const deskNote = result.data?.receipt?.desk_note || '';
-    if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
+    const leadNote = handoff.ok ? '' : t('add_agent.lead_swap_failed', 'Started {name} as Team Lead, but could not clear Team Lead from: {names}.', {
+      name: born,
+      names: handoff.failed.join(', '),
+    });
+    if (leadNote) notice.set('warning', leadNote);
+    else if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
     else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
     reset();
     // THE LOOP: the Agent appears in the workspace that made it — EXCEPT when the
     // receipt carries a desk note. Connecting swaps this surface for the tile in the
     // same breath, which would take the one line explaining the missing desk with it;
     // so the note holds the surface, and the newborn is on the roster one click away.
-    if (born && !deskNote) connect?.(born);
+    if (born && !deskNote && !leadNote) connect?.(born);
   };
 
   const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void launch() });
@@ -322,7 +356,7 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
   const right = el('div', 'aa-col');
   right.append(providerField.el, modelField.el);
   top.append(left, right);
-  form.append(top, instructionField.el, mandateHead, mandateHost, deskLine);
+  form.append(top, leadChoice, instructionField.el, mandateHead, mandateHost, deskLine);
   paintMandate();
   surface.content.append(form, alternative, actions.el, notice.el, fixed);
 

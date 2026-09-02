@@ -16,6 +16,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.instruction_placeholder:** what this Agent should do
 - **add_agent.provider:** model provider
 - **add_agent.model:** model
+- **add_agent.make_team_lead:** Make Team Lead
+- **add_agent.make_team_lead_sub:** Replace the current Team Lead when this Agent launches.
+- **add_agent.lead_swap_failed:** Started {name} as Team Lead, but could not clear Team Lead from: {names}.
 - **add_agent.default:** default
 - **add_agent.template:** template
 - **add_agent.no_template:** No template
