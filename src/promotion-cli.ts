@@ -6,6 +6,7 @@ import { listProjectRoots } from './project-roots.js';
 import { readTeamRoster } from './team-rosters.js';
 import { readArrangement } from './desks/arrangement.js';
 import { teamLineBranch } from './desks/schema.js';
+import { acceptedLinesForTeam } from './desks/receipts.js';
 import { abandonPromotion, bisectLine, promoteTeam, resumePromotion, revertPromotion } from './promotion/promote.js';
 import { lastGoodPromotion, listReceipts, publicPromotionReceipt, readReceipt, summarize, toChangeSet } from './promotion/receipts.js';
 import { openPullRequest } from './promotion/pr.js';
@@ -26,8 +27,9 @@ import { storeDir } from './stores.js';
  *   ronin-promote receipts [team]
  *   ronin-promote show <receipt-id> [--pr-block | --shared]
  *
- * A team's repos come from its roster (`repos`, else its `project_root`), each resolved
- * to a project_root's dir; its line is the roster's `branch` or `team/<team>/dev`; the
+ * A team's repos are its birth defaults plus every repository with an accepted hand-in
+ * for that team. Each resolves to a project_root's dir; its line comes from the accepted
+ * ledger when present, otherwise the roster's `branch` or `team/<team>/dev`; the
  * target is each repo's declared working line (RONIN_REPO). A direct repo has no team
  * line and is refused here — desks are chosen by declared arrangement, never forced.
  */
@@ -45,8 +47,16 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
   const roster = await readTeamRoster(team);
   if (!roster) throw new Error(await missingRosterMessage(team));
   const roots = await listProjectRoots();
-  const names = roster.repos.length ? roster.repos : roster.project_root ? [roster.project_root] : [];
-  if (!names.length) throw new Error(`team '${team}' names no repos and no project_root`);
+  const defaults = roster.repos.length ? roster.repos : roster.project_root ? [roster.project_root] : [];
+  const accepted = await acceptedLinesForTeam(team);
+  const acceptedByRepo = new Map<string, string>();
+  for (const row of accepted) {
+    const prior = acceptedByRepo.get(row.repo);
+    if (prior && prior !== row.line) throw new Error(`team '${team}' has accepted hand-ins for ${row.repo} on more than one line (${prior}, ${row.line})`);
+    acceptedByRepo.set(row.repo, row.line);
+  }
+  const names = [...new Set([...defaults, ...accepted.map((row) => row.repo)])];
+  if (!names.length) throw new Error(`team '${team}' has no default repos and no accepted hand-ins`);
   const overrides = new Map(args.filter((a, i) => args[i - 1] === '--repo' && a.includes('=')).map((a) => a.split('=') as [string, string]));
   const specs: RepoSpec[] = [];
   for (const name of names) {
@@ -54,7 +64,7 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
     if (!dir) throw new Error(`repo '${name}' is not a project_root here — pass --repo ${name}=/path`);
     const arr = await readArrangement(name, dir);
     if (arr.mode === 'direct') throw new Error(`${name} is declared direct (${arr.source}) — a direct repository has no team line to promote`);
-    specs.push({ repo: name, dir, line: roster.branch || teamLineBranch(team), target: arr.working });
+    specs.push({ repo: name, dir, line: acceptedByRepo.get(name) || roster.branch || teamLineBranch(team), target: arr.working });
   }
   return specs;
 }
