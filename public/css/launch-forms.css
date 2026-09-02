@@ -55,7 +55,7 @@
     gap: var(--space-4);
     width: 100%;
     margin: var(--space-6) 0 var(--space-5);
-    border: var(--edge) solid var(--line);
+    border: var(--edge) solid var(--cowork-head-line);
     border-radius: var(--radius-xs);
     background: var(--cowork-head-bg);
     /* READABLE, NOT DECORATIVE (owner, 2026-09-01): "it's really hard to read when it's a

@@ -50,6 +50,12 @@
      changes color by neighborhood — the earlier accent/kaki drift, unified. */
   --focus-ring: var(--kaki);
   --accent-2: #81a2be;
+  /* DEFINE-LINE — the cool blue line that cleanly defines a warm surface against the
+     shell (owner, 2026-09-02: "I like that blue and how it works with the orange…
+     a blue light line around the headers… add this blue to our tokens"). Named as a
+     ROLE and aliased to --accent-2 so the hue stays single-sourced and theme-tuned;
+     wearers: the workbench band perimeter, the selector's utility doors. */
+  --define-line: var(--accent-2);
   --accent-deep: #d8a13a;
   /* Soft selected-state washes — two of the seven names the 2026-09-01 token audit
      found CONSUMED while defined nowhere, every read quietly dropped by the browser
@@ -96,6 +102,10 @@
   --cowork-head-fg: var(--on-strong);
   --cowork-head-muted: #d9b8ab;
   --cowork-head-attention: var(--kiiro);
+  /* The band's perimeter speaks the define-line (owner, 2026-09-02): the cool blue
+     ring that cleanly defines the kaki band, same blue as the selector's utility
+     doors. One token for every band; both themes follow --accent-2's tuning. */
+  --cowork-head-line: var(--define-line);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -1566,7 +1576,8 @@ body {
      on stock): a skin that moves the band's shade moves this head with it, so the
      selector's band and the tile heads beside it can never split. */
   background: var(--cowork-head-bg);
-  border-bottom: var(--edge) solid var(--line);
+  border-bottom: var(--edge) solid var(--cowork-head-line);
+  box-shadow: inset 0 0 0 var(--edge) var(--cowork-head-line);
   flex: 0 0 auto;
   font-family: var(--workbench-head-font);
   font-size: var(--workbench-head-size);
@@ -6583,7 +6594,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
 /* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
    at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line-2); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--cowork-head-line); box-shadow: inset 0 0 0 var(--edge) var(--cowork-head-line); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
 .wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--cowork-head-fg); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
 .wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--cowork-head-muted); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); box-shadow: inset 0 calc(-1 * var(--space-1)) 0 var(--accent); }
