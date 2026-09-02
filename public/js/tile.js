@@ -207,7 +207,7 @@ export class Tile {
     if (this.session !== session) return;
     // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
     // a 404 — the chip simply never shows, same as a session with no letter.
-    if (!session || serviceMissing('michi')) {
+    if (!session) {
       this.closeLadder();
       syncTileHead(this);
       return;
@@ -223,7 +223,7 @@ export class Tile {
     // `syncTileHead`, not `syncHeader` — the reading pass, without re-fetching the dial.
     syncTileHead(this);
     if (this.ladderOpen) this.drawLadder();
-    if (!this.tegami && !serviceMissing('michi')) this.closeLadder();
+    if (!this.tegami) this.closeLadder();
   }
 
   /*
@@ -282,14 +282,6 @@ export class Tile {
   drawLadder() {
     this.el.querySelector('.shingo-ladder')?.remove();
     const box = buildLadder(this.tegami, desksOf(this.session));
-    if (!this.tegami && serviceMissing('michi')) {
-      // The button must answer, not draw an empty strip: on a plain install the letter
-      // is real (agents keep it on disk) but nothing here can read it.
-      const note = document.createElement('div');
-      note.className = 'sl-section';
-      note.textContent = t('ladder.services_off', 'Live work records are part of Ronin Services (beta) — not installed here. Agents still keep their records on disk.');
-      box.appendChild(note);
-    }
     this.el.querySelector('.tile-head').after(box);
     this.workRecordBtn.classList.add('open');
     this.workRecordBtn.setAttribute('aria-expanded', 'true');

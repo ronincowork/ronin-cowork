@@ -1227,7 +1227,6 @@ The catalog entry goes. {dir} is not touched.
 ## ladder — shingo.js (the ladder chip and panel)
 - **ladder.task_at_hand:** Task at hand
 - **ladder.task_unstated:** No task stated in this work record.
-- **ladder.services_off:** Live work records are part of Ronin Services (beta) — not installed here. Agents still keep their records on disk.
 - **ladder.current_action:** Current action
 - **ladder.worktrees:** Worktrees
 - **ladder.branch:** Branch
