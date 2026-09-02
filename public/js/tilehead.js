@@ -20,12 +20,13 @@
  *   text     the glyph, for a plain button
  *   tag      for an element that is not a button (the session name)
  *   widget   for the four that are built by someone else and come back as {el, set}
- *   help     the hover text. A function when it has to be computed at build time.
+ *   help     the accessible description (visual hover help is disabled). A function when
+ *            it has to be computed at build time.
  *   on       the click. Given (tile, el) — the tile owns what any of it means.
  *   needs    what must be true for it to be live: 'session', or a service name. Absent
  *            means always live, which is a claim about the control, not an oversight.
  *   quiet    what to say while it is not. The reason, never the label repeated.
- *   holds    keep the help box open when this control is clicked. For the two INSTRUMENTS
+ *   holds    dormant help-box behaviour retained while the panel is disabled. For the two INSTRUMENTS
  *            whose value changes in place (the dial, the gauge): you turn the dial by
  *            clicking the thing you are hovering, so dismissing would destroy the reading
  *            at the moment it changed. Everything else OPENS something, and a help box

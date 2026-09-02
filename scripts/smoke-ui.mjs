@@ -32,7 +32,7 @@ import { execFileSync } from 'node:child_process';
 import { HOST_TOOLS, defaultUrl, loadPlaywright, loadAxeSource } from './lib/ui-host.mjs';
 
 // Host derivation and the playwright hunt both live in scripts/lib/ui-host.mjs — this
-// script and check-tips need the same two answers, and when each had its own copy they
+// this script and check-tips need the same two answers, and when each had its own copy they
 // disagreed about the host.
 const args = process.argv.slice(2);
 const URL_ = args.find((a) => !a.startsWith('--')) || defaultUrl(args.includes('--staging'));

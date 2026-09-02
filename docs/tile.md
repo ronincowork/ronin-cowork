@@ -148,12 +148,10 @@ inert rule at all**, because nobody had written them a line.
 that act on a session; a service name for the ones whose route ships with a service. A row
 with no `needs` is claiming to work always — a claim, not an oversight.
 
-Every control says what it is on hover — **including while it is greyed out, which is when
-you are most likely to be asking.** That is why the inert ones dim with a class rather than
-with `disabled`: a disabled element fires no hover events, so its help never appears
-(`setInert`, `public/js/widgets.js`). The refusal therefore lives in the handler, never in
-the stylesheet. The help itself is drawn by the house help box, not by the browser —
-`public/js/tips.js`, one panel, fixed size, docked to the control's own side of the header.
+The hover help panel is disabled system-wide. Control text is still seized into accessible
+labels by `public/js/tips.js`, including the reason an inert control is unavailable, but no
+custom or native tooltip is drawn. The refusal still lives in the handler, never in the
+stylesheet.
 
 ### ● The connection dot
 
@@ -271,11 +269,10 @@ can then go, 'Oh, I see.'"* Three consequences, and none of them is cosmetic:
   don't get educated."* **Display only: every macro still runs**, typed or from the keypad,
   and nothing is deleted.
 - **No `+name:` on the face.** The headline is the entry's `label:`, in plain words. The
-  invocation moved into the help box — still learnable, no longer the first thing read.
+  invocation remains in its accessible label while visual hover help is disabled.
 - **The body copy is always visible**, from the entry's `blurb:`, never clamped and never
   on hover. Confirmed directly by the owner, who also has a phone, where hover does not
-  exist. This is body copy inside the button and deliberately **not** `tips.js`, which is
-  the terse hover primitive and is width-gated by `check-tips`.
+  exist. This is body copy inside the button and deliberately independent of `tips.js`.
 
 **TWO AUDIENCES, AND NO FALLBACK BETWEEN THEM (owner's ruling, 2026-08-17).** *"We need to
 split out the description and the agent instruction into two different things because they
@@ -635,7 +632,7 @@ today; it would cost something the day the dot becomes a button.
 | the text entry | `public/js/composer.js` |
 | the parked-parcel rule | `public/js/dvr.js` |
 | dial, gauge, job menu, `setInert` | `public/js/widgets.js` |
-| the hover help box | `public/js/tips.js` |
+| tooltip suppression and accessible labels | `public/js/tips.js` |
 | chip, ladder, letter | `public/js/shingo.js` |
 | ⚡ | `public/js/tilemacros.js` |
 | メ — the desktop drop | `public/js/tilemore.js` |
