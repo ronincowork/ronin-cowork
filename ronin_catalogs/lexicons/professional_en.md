@@ -1347,7 +1347,6 @@ The catalog entry goes. {dir} is not touched.
 - **head.mention_help:** Mention another session — choose a name to add it to the message box
 - **head.mention_quiet:** Mentions — no session in this tile yet
 - **head.macros_quiet:** Macros — no session in this tile yet
-- **head.more_help:** This session's other controls — 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
 - **head.dial_quiet:** Control dial — no session in this tile yet
 - **head.docs_help:** This Agent's tracked docs — open one over this tile

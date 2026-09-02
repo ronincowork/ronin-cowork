@@ -140,8 +140,9 @@ const HEADER = () => {
   // NO `needs`. It is a container, not an act: it holds 🔒, which works with no session
   // at all, and dimming it would hide the six explanations of why its contents are dim.
   { key: 'moreBtn', hosts: true,
-    widget: () => buildTileMore(),
-    help: t('head.more_help', "This session's other controls — ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill") },
+    // No hover help: the fixed help box covered the drop this button exists to reveal.
+    // メ explains itself by opening; every control inside carries its own words.
+    widget: () => buildTileMore() },
 
   // Hidden until there is a reading — a plain shell pane has no context, and that is fine.
   //
