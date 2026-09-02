@@ -24,6 +24,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
 import { applyPageWords } from './pagewords.js';
+import { installFeedbackButton } from './feedback.js';
 
 export async function init() {
   const reveal = () => document.documentElement.classList.remove('boot-pending');
@@ -122,6 +123,7 @@ export async function init() {
   });
   workspace.kit = WorkspaceKit;
   S.workspace = workspace;
+  installFeedbackButton(workspace);
   refreshWorkspaceHeader = installWorkspaceHeader(workspace);
   S.refreshWorkspaceHeader = refreshWorkspaceHeader;
   // The Team destination. Registered beside the compatibility Sessions grid, not over it:

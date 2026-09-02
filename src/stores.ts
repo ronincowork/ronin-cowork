@@ -131,6 +131,14 @@ export const STORES: readonly Store[] = [
     when: 'first day file received',
   },
   {
+    id: 'ageru',
+    root: 'user',
+    rel: 'ageru',
+    what: 'feedback packets the owner sent, failed packets kept for retry, and HQ receipts',
+    createdBy: "AGERU's feedback sender",
+    when: 'the owner sends feedback',
+  },
+  {
     id: 'ledger',
     root: 'data',
     rel: 'ledger',

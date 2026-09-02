@@ -11,6 +11,7 @@ import { buildProjectRoots } from './projectroots.js';
 import { deskProfiles } from './desk-profile.js';
 import { request } from './request.js';
 import { coworkCommons } from './cowork-commons.js';
+import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
 
 const PROFILE = 'campaign';
 // No Ronin Desk here (owner, 2026-08-30): its tabs repeat what these surfaces are, and
@@ -45,6 +46,7 @@ const currently = {
 };
 
 function registerCampaignSurfaces() {
+  registerFeedbackSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: TYPES.identity, header: 'surface', label: () => t('campaign', 'Campaign'), summary: (_tenant, e) => currently.identity(e), create: ({ environment: e }) => { const surface = createCampaignIdentitySurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
@@ -84,7 +86,7 @@ function registerCampaignSurfaces() {
   // New Campaign is not offered — the surface stays in the library, off the profile.
   // Desk profile remains registered so a remembered workspace can still restore it, but
   // its beta card is hidden from discovery. Themes now have their stable home in Ronin Desk.
-  profiles.define(PROFILE, Object.values(TYPES).filter((type) => type !== TYPES.create && type !== TYPES.profile));
+  profiles.define(PROFILE, [...Object.values(TYPES).filter((type) => type !== TYPES.create && type !== TYPES.profile), FEEDBACK_TYPE]);
 }
 
 export function createCampaignView() {
@@ -104,6 +106,7 @@ export function createCampaignView() {
     setteiRead = r.ok ? r.data : null;
   };
   const environment = {
+    feedback: (workspace) => createFeedbackSurface(() => bench.place(TYPES.identity, workspace)),
     selected,
     entered: () => entered,
     ctx: () => ctx,
@@ -125,6 +128,7 @@ export function createCampaignView() {
   return {
     el: bench.host, glyph: '⛩', arrangement: bench.arrangement,
     title: () => selected()?.title || t('campaign', 'Campaign'),
+    placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {
       ctx = context; entered = true;
