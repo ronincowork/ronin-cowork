@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { arrangementProfile, declareArrangement, readArrangement, setArrangementProfile } from '../src/desks/arrangement.js';
+import { arrangementProfile, declareArrangement, readArrangement, setArrangementProfile, validateArrangementProfile } from '../src/desks/arrangement.js';
 
 async function repo(branch: string): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'ronin-arr-'));
@@ -53,8 +53,8 @@ test('repository profile editor keeps owner branch names and unrelated keys', as
   try {
     await writeFile(path.join(dir, 'RONIN_REPO'), '# owner note\nmode=reviewed\nworking=develop\nstable=release\ndesks=managed\npublish=release\n');
     const before = arrangementProfile(await readArrangement('x', dir));
-    const a = await setArrangementProfile(dir, { mode: 'reviewed', working: 'integration/next', stable: 'production/v2', desks: 'none' }, before);
-    assert.deepEqual(arrangementProfile(a), { mode: 'reviewed', working: 'integration/next', stable: 'production/v2', desks: 'none' });
+    const a = await setArrangementProfile(dir, { mode: 'reviewed', working: 'integration/next', stable: 'production/v2', worktrees: 'disabled' }, before);
+    assert.deepEqual(arrangementProfile(a), { mode: 'reviewed', working: 'integration/next', stable: 'production/v2', worktrees: 'disabled' });
     const text = await readFile(path.join(dir, 'RONIN_REPO'), 'utf8');
     assert.match(text, /^# owner note$/m); assert.match(text, /^publish=release$/m);
   } finally { await rm(dir, { recursive: true, force: true }); }
@@ -66,10 +66,23 @@ test('repository profile editor removes working in direct mode and refuses stale
     await writeFile(path.join(dir, 'RONIN_REPO'), 'mode=reviewed\nworking=develop\nstable=release\ndesks=managed\n');
     const stale = arrangementProfile(await readArrangement('x', dir));
     await writeFile(path.join(dir, 'RONIN_REPO'), 'mode=reviewed\nworking=other\nstable=release\ndesks=managed\n');
-    await assert.rejects(setArrangementProfile(dir, { mode: 'direct', working: '', stable: 'trunk', desks: 'none' }, stale), /changed after this form was opened/);
+    await assert.rejects(setArrangementProfile(dir, { mode: 'direct', working: '', stable: 'trunk', worktrees: 'disabled' }, stale), /changed after this form was opened/);
     const current = arrangementProfile(await readArrangement('x', dir));
-    const a = await setArrangementProfile(dir, { mode: 'direct', working: 'ignored', stable: 'trunk', desks: 'managed' }, current);
-    assert.deepEqual(arrangementProfile(a), { mode: 'direct', working: '', stable: 'trunk', desks: 'managed' });
+    const a = await setArrangementProfile(dir, { mode: 'direct', working: 'ignored', stable: 'trunk', worktrees: 'enabled' }, current);
+    assert.deepEqual(arrangementProfile(a), { mode: 'direct', working: '', stable: 'trunk', worktrees: 'enabled' });
     assert.doesNotMatch(await readFile(path.join(dir, 'RONIN_REPO'), 'utf8'), /^working=/m);
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('repository profile accepts nonstandard Git branch names and refuses invalid refs', () => {
+  assert.deepEqual(
+    validateArrangementProfile({ mode: 'reviewed', working: 'integration/next', stable: 'release/2026.09', worktrees: 'enabled' }),
+    { mode: 'reviewed', working: 'integration/next', stable: 'release/2026.09', worktrees: 'enabled' },
+  );
+  for (const bad of ['-option', 'bad..name', 'topic@{1}', 'space name', 'release.lock']) {
+    assert.throws(
+      () => validateArrangementProfile({ mode: 'reviewed', working: bad, stable: 'main', worktrees: 'enabled' }),
+      /working must be a branch name/,
+    );
+  }
 });

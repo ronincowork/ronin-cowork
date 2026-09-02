@@ -825,11 +825,10 @@ The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
 - **roots.empty:** No project roots yet — add one below.
 - **roots.loading:** loading…
-- **roots.chip_reviewed_desks:** reviewed · desks
-- **roots.chip_reviewed:** reviewed
-- **roots.chip_direct:** direct
-- **roots.chip_reviewed_title:** Reviewed: work happens at desks that hand in to a team line; team promotion moves {working}; {stable} moves by PR. The branch mounted here is incidental.
-- **roots.chip_direct_title:** Direct: commits land on {stable} itself. No desks, no team line.
+- **roots.chip_worktrees:** Worktrees
+- **roots.chip_checkout:** Use the checkout
+- **roots.chip_reviewed_title:** Reviewed: work moves through {working}, then review reaches {stable}. The branch mounted here is incidental.
+- **roots.chip_direct_title:** Direct: commits land on {stable} itself.
 - **roots.chip_shared:** shared checkout
 - **roots.chip_shared_title:** No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing.
 
@@ -853,10 +852,15 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_working_hint:** The integration branch for reviewed work. You choose its name.
 - **roots.f_stable:** stable
 - **roots.f_stable_hint:** The published branch. You choose its name.
-- **roots.f_coordination:** coordination
-- **roots.f_coordination_hint:** Managed supplies private desks and hand-in. None uses the repository checkout.
-- **roots.desks_managed:** managed
-- **roots.desks_none:** none
+- **roots.f_worktrees:** Worktrees
+- **roots.f_worktrees_hint:** Worktrees gives equipped Cowork Agents a private branch and worktree in this repository. Use the checkout leaves Git to your instructions and this repository’s own guidance.
+- **roots.worktrees_enabled:** Use Ronin Worktrees
+- **roots.worktrees_disabled:** Use the checkout
+- **roots.flow_reviewed:** {working} → review → {stable}
+- **roots.flow_direct:** commits → {stable}
+- **roots.flow_worktrees:** Equipped Cowork Agents use their own worktree and hand work in.
+- **roots.flow_checkout:** Agents use this checkout under your Git instructions.
+- **roots.flow_preview:** Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.
 - **roots.profile_confirm:** Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document

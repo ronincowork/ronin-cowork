@@ -21,10 +21,10 @@ test('new root creation can defer declaration and write the owner-proposed profi
 
   const before = arrangementProfile(await readArrangement('custom', repo));
   const written = await setArrangementProfile(repo, {
-    mode: 'reviewed', working: 'gather', stable: 'ship', desks: 'managed',
+    mode: 'reviewed', working: 'gather', stable: 'ship', worktrees: 'enabled',
   }, before);
   assert.deepEqual(arrangementProfile(written), {
-    mode: 'reviewed', working: 'gather', stable: 'ship', desks: 'managed',
+    mode: 'reviewed', working: 'gather', stable: 'ship', worktrees: 'enabled',
   });
   assert.equal(await readFile(path.join(repo, 'RONIN_REPO'), 'utf8'), 'mode=reviewed\nworking=gather\nstable=ship\ndesks=managed\n');
 });

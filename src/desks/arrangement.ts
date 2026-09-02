@@ -31,15 +31,54 @@ export interface RepoProfile {
   mode: RepoMode;
   working: string;
   stable: string;
-  desks: 'managed' | 'none';
+  worktrees: WorktreesSetting;
 }
+
+/** The domain answer. `desks=` is compatibility storage and stops at this module. */
+export type WorktreesSetting = 'enabled' | 'disabled';
+
+export interface WorktreesProfileProvenance {
+  source: RepoArrangement['source'];
+  /** The compatibility spelling read at the repository boundary. Never shown to a user. */
+  storage: 'desks=managed' | 'desks=none' | 'absent';
+}
+
+/** The repository-owned half of Worktrees resolution, normalized from RONIN_REPO. */
+export interface WorktreesRepositoryProfile {
+  worktrees: WorktreesSetting;
+  branches: {
+    working: string;
+    stable: string;
+  };
+  applicability_source: RepoArrangement['source'];
+  provenance: WorktreesProfileProvenance;
+}
+
 
 export const arrangementProfile = (a: RepoArrangement): RepoProfile => ({
   mode: a.mode,
   working: a.mode === 'reviewed' ? a.working : '',
   stable: a.stable,
-  desks: a.desks,
+  worktrees: a.desks === 'managed' ? 'enabled' : 'disabled',
 });
+
+/**
+ * Translate compatibility storage into the stable repository-domain input. This is the
+ * only exported adapter allowed to interpret `desks=managed|none`.
+ */
+export const arrangementWorktreesProfile = (a: RepoArrangement): WorktreesRepositoryProfile => ({
+  worktrees: a.desks === 'managed' ? 'enabled' : 'disabled',
+  branches: {
+    working: a.mode === 'reviewed' ? a.working : '',
+    stable: a.stable,
+  },
+  applicability_source: a.source,
+  provenance: {
+    source: a.source,
+    storage: a.source === 'absent' ? 'absent' : a.desks === 'managed' ? 'desks=managed' : 'desks=none',
+  },
+});
+
 
 /** Parse the record's text. Exported for the unit floor; unknown keys are ignored, bad values refused by name. */
 export function parseArrangement(repo: string, dir: string, text: string | null): RepoArrangement {
@@ -137,13 +176,20 @@ async function setDesks(dir: string, desks: 'managed' | 'none'): Promise<RepoArr
 export function validateArrangementProfile(value: unknown): RepoProfile {
   const p = (value && typeof value === 'object' ? value : {}) as Partial<RepoProfile>;
   if (p.mode !== 'reviewed' && p.mode !== 'direct') throw new Error('mode must be reviewed or direct.');
-  if (p.desks !== 'managed' && p.desks !== 'none') throw new Error('desks must be managed or none.');
+  if (p.worktrees !== 'enabled' && p.worktrees !== 'disabled') throw new Error('worktrees must be enabled or disabled.');
   const stable = typeof p.stable === 'string' ? p.stable.trim() : '';
   const working = typeof p.working === 'string' ? p.working.trim() : '';
-  const safe = (v: string) => !!v && !/[\r\n=]/.test(v);
+  // Git's ref grammar, kept pure so the API can validate before any repository write.
+  // This is the branch-name subset of `git check-ref-format --branch`: no revision
+  // operators, control/space/ref punctuation, dot components, lock suffixes or dashes.
+  const safe = (v: string) => {
+    if (!v || v === '@' || v.startsWith('-') || v.startsWith('.') || v.endsWith('.') || v.endsWith('/')) return false;
+    if (v.includes('..') || v.includes('@{') || v.includes('//') || /[\x00-\x20\x7f~^:?*[\\]/.test(v)) return false;
+    return v.split('/').every((part) => !!part && !part.startsWith('.') && !part.endsWith('.lock'));
+  };
   if (!safe(stable)) throw new Error('stable must be a branch name.');
   if (p.mode === 'reviewed' && !safe(working)) throw new Error('working must be a branch name for a reviewed repository.');
-  return { mode: p.mode, working: p.mode === 'reviewed' ? working : '', stable, desks: p.desks };
+  return { mode: p.mode, working: p.mode === 'reviewed' ? working : '', stable, worktrees: p.worktrees };
 }
 
 /** Read-only compare used before a multi-file caller starts its surrounding catalog edit. */
@@ -182,7 +228,7 @@ export async function setArrangementProfile(dir: string, proposed: unknown, expe
   set('mode', profile.mode);
   if (profile.mode === 'reviewed') set('working', profile.working); else drop('working');
   set('stable', profile.stable);
-  set('desks', profile.desks);
+  set('desks', profile.worktrees === 'enabled' ? 'managed' : 'none');
   const body = lines.join('\n').replace(/^\n+|\n*$/g, '') + '\n';
   const temp = path.join(dir, `.${RONIN_REPO_FILE}.${process.pid}.${Date.now()}.tmp`);
   try {
