@@ -109,6 +109,8 @@
   .aa-deskline { border-top: var(--edge) solid var(--line); padding-top: var(--space-4); color: var(--muted); }
   .aa-deskline small { font-size: var(--text-2); }
   .aa-deskline[hidden] { display: none; }
+  .aa-alternative { margin: 0 0 var(--space-4); color: var(--muted); font-size: var(--text-2); }
+  .aa-alternative a { color: var(--accent); }
   .aa-box { width: var(--space-7); height: var(--space-7); border: var(--edge) solid var(--line-3); background: var(--panel); }
   /* What the Team fixed, at the FOOT: none of it is changeable here, so it does not sit
      above the fields that are. */

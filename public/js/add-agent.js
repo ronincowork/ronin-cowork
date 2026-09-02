@@ -100,7 +100,7 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
   /* Optional shortcut only. The full form owns browsing and saving templates; here one
      selected agent template simply overlays the Team defaults before the owner's hand. */
   const templateSelect = el('select');
-  const templateField = createField({ label: t('template', 'Template'), control: templateSelect });
+  const templateField = createField({ label: t('add_agent.template', 'template'), control: templateSelect });
   function resetTemplateAnswers() {
     const value = (field) => seeded(field);
     draft.instruction = '';
@@ -292,19 +292,28 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
 
   const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void launch() });
   const cancel = createAction({ label: t('add_agent.cancel', 'Cancel'), action: () => { reset(); notice.set('', ''); } });
-  const full = createAction({ label: t('add_agent.full_launch', 'Full Agent launch'), action: () => fullLaunch?.() });
-  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [full, cancel, start] });
+  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [cancel, start] });
+  const alternative = el('p', 'aa-alternative');
+  alternative.append(`${t('add_agent.full_alternative', 'Alternative: for full new Agent controls, use the')} `);
+  const fullLink = el('a', '', t('add_agent.full_link', 'detailed launch page'));
+  fullLink.href = '#/launch';
+  fullLink.addEventListener('click', (event) => {
+    if (!fullLaunch) return;
+    event.preventDefault();
+    fullLaunch();
+  });
+  alternative.append(fullLink, '.');
 
   // NAME LEFT, MODELS RIGHT; this Team shortcut is always a Cowork Agent.
   const top = el('div', 'aa-top');
   const left = el('div', 'aa-col');
-  left.append(nameField.el);
+  left.append(nameField.el, templateField.el);
   const right = el('div', 'aa-col');
   right.append(providerField.el, modelField.el);
   top.append(left, right);
-  form.append(top, templateField.el, instructionField.el, mandateHead, mandateHost, deskLine);
+  form.append(top, instructionField.el, mandateHead, mandateHost, deskLine);
   paintMandate();
-  surface.content.append(form, actions.el, notice.el, fixed);
+  surface.content.append(form, alternative, actions.el, notice.el, fixed);
 
   return {
     el: surface.el,
