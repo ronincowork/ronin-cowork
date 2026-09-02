@@ -29,7 +29,6 @@
   --bg-2: #0f131c;
   --panel: #131826;
   --raise: #1a2233;
-  --raise-2: #263047;
   --well: #0d1220;
   /* ---- edges, three weights: hairline furniture, control edge, emphasized edge */
   --line: #1f2738;
@@ -46,6 +45,10 @@
      warn/bad = the two grades of wrong. --on-accent/--on-strong are the text colours
      that sit ON a filled accent/action surface. */
   --accent: #e0af68;
+  /* ONE focus ring for the whole shell (token audit ruling, 2026-09-02): the Kit and
+     the brand mark had drifted onto kaki rings while the shell rang accent — a
+     keyboard user's ring should never change color by neighborhood. */
+  --focus-ring: var(--accent);
   --accent-2: #81a2be;
   --accent-deep: #d8a13a;
   /* Soft selected-state washes — two of the seven names the 2026-09-01 token audit
@@ -136,19 +139,14 @@
      ground is a bruise, so -lift is that lift and the two hexes stay untouched as
      the record of what they are.
 
-     The semantic `--heighten-*` aliases pair kaki with the hexagon for access or view
-     controls whose discoverability is part of their function. The copy hint predates
-     that pair and uses kaki-lift for the same reason: its job is to not be missed. */
+     The copy hint uses kaki-lift for the same heightened reason: its job is to not
+     be missed. (The `--heighten-*` alias family was deleted by the 2026-09-02 token
+     audit — designed in docs/ui.md, defined here, and read by nothing ever; every
+     heightened surface reads kaki directly, and a dead semantic layer is where the
+     next agent's guess goes wrong.) */
   --kaki: #c46243;
   --kaki-lift: #e08163;
   --aiiro: #274a78;
-  --aiiro-lift: #6f95cc;
-  --heighten: var(--kaki);
-  --heighten-hover: var(--kaki-lift);
-  --heighten-fg: var(--on-strong);
-  --heighten-shape: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-  --heighten-inline-size: 22.5px;
-  --heighten-block-size: 21px;
 
   /* ---- THE TERMINAL PALETTE — the tokens js/theme.js reads back into xterm's theme
      object (`termTheme()`), plus the tape/composer surfaces that sit over the pane.
@@ -307,7 +305,7 @@
   --bar-nav-bg: transparent;
   --bar-nav-fg: var(--fg-strong);
   --bar-nav-hover: var(--accent);
-  --bar-nav-focus: var(--accent);
+  --bar-nav-focus: var(--focus-ring);
   --bar-nav-size: var(--text-7);
   --bar-value-fg: var(--bar-nav-fg);
   --bar-value-size: var(--bar-nav-size);
@@ -349,7 +347,6 @@
   --bg-2: #eae7df;
   --panel: #ffffff;
   --raise: #f1efe8;
-  --raise-2: #e6e2d8;
   --well: #f7f5ef;
   --line: #d9d4c8;
   --line-2: #c8c2b2;
@@ -383,7 +380,6 @@
   --shadow-menu: 0 8px 24px rgb(30 30 30 / 18%);
   --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
   --kaki-lift: #a34e2f;
-  --aiiro-lift: #3d6394;
 
   /* ---- THE TERMINAL, ON PAPER (2026-08-19, the owner's ask: "the terminal is still
      white on black … so that the terminal is not so intimidating to non-terminal users").
@@ -481,7 +477,7 @@
    see it (:focus-visible), and a control wanting a tighter ring may add radius, not
    remove the outline. This used to exist for exactly one control (the brand). */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -833,7 +829,6 @@ body {
     color: var(--accent);
   }
 }
-#bar .brand-home:focus-visible { outline-color: var(--kaki); }
 #bar .bar-cowork-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bar .grow {
   flex: 1;
@@ -1272,9 +1267,9 @@ body {
   cursor: pointer;
 }
 .pad-card .pad-bar button.armed {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
+  border-color: var(--kiiro);
 }
 .pad-card .pad-board {
   display: grid;
@@ -1341,12 +1336,12 @@ body {
   border-color: var(--fg);
 }
 .pad-card .pad-key.hit {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--kiiro);
+  border-color: var(--kiiro);
 }
 .pad-card .pad-key.hit b,
 .pad-card .pad-key.hit small {
-  color: var(--on-accent);
+  color: var(--on-kiiro);
 }
 .pad-card .pad-widget {
   aspect-ratio: 1;
@@ -1377,10 +1372,10 @@ body {
 }
 /* the encoder / joystick flash too, so you can see what a turn or flick emits */
 .pad-card .pad-widget.hit {
-  background: var(--accent);
+  background: var(--kiiro);
   border-style: solid;
-  border-color: var(--accent);
-  color: var(--on-accent);
+  border-color: var(--kiiro);
+  color: var(--on-kiiro);
 }
 .pad-card .pad-edit {
   display: none;
@@ -2202,12 +2197,12 @@ body {
    commit-buttons in the app (`.fr-go`, `.st-go`) rather than an outline that reads as
    secondary next to a red one. */
 .end-session-actions .primary {
-  background: var(--accent);
-  border-color: var(--accent-deep);
-  color: var(--on-accent);
+  background: var(--kiiro);
+  border-color: var(--kiiro-deep);
+  color: var(--on-kiiro);
 }
 .end-session-actions .primary:hover:not(:disabled) {
-  background: var(--accent-deep);
+  background: var(--kiiro-deep);
 }
 .end-session-actions .danger {
   color: var(--bad);
@@ -2929,8 +2924,8 @@ body {
   color: var(--fg-strong);
 }
 .gb-privacy > button:hover {
-  background: var(--accent);
-  color: var(--bg);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
 }
 .gb-card h3 {
   margin: 0 0 var(--space-3);
@@ -3347,16 +3342,18 @@ body {
 .dc-group[hidden] {
   display: none;
 }
-/* KIIRO — yellow when there is something to save; the ← wears it too so the way out is
-   as easy to find as the way to keep it (owner, 2026-08-28). */
-/* TOKEN? (audit mark, 2026-09-01): class says kiiro, token is --warn — deliberately,
-   because this is thin INK and invariant #e0af68 text fails on light paper. If the
-   dirty state should read brand-kiiro, it takes a FILL treatment like the Kit's
-   data-attention, not an ink swap. Owner rules; TOKENS_AUDIT.md § 3.5. */
-.dc-back.kiiro,
-.dc-save.kiiro {
-  border-color: var(--warn);
-  color: var(--warn);
+/* DIRTY = the attention FILL (audit mark 5 resolved, 2026-09-02): something to save
+   goes bright kiiro the same way the Kit's data-attention does — a fill with its own
+   ink, not thin amber text that fails on light paper (the reason the old ink read
+   --warn). The ← wears it too so the way out is as easy to find as the way to keep
+   it (owner, 2026-08-28). The class was named `kiiro` while reading --warn; it says
+   what it means now. */
+.dc-back.attention,
+.dc-save.attention {
+  border-color: var(--kiiro);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
+  font-weight: 700;
 }
 .dc-who {
   display: flex;
@@ -4813,9 +4810,9 @@ button.wb-door:hover b {
     cursor: pointer;
   }
   #bar .shape-cycle:active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--on-accent);
+    background: var(--kiiro);
+    border-color: var(--kiiro);
+    color: var(--on-kiiro);
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
   #bar .brand {
@@ -5001,7 +4998,7 @@ button.wb-door:hover b {
   color: var(--term-tape-fg);
   background: var(--term-jump-bg);
   border: var(--edge) solid var(--term-tape-line-2);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   padding: var(--space-3) var(--space-6);
   cursor: pointer;
 }
@@ -5025,7 +5022,7 @@ button.wb-door:hover b {
   color: var(--term-tape-fg);
   background: var(--term-jump-bg);
   border: var(--edge) solid var(--term-tape-line-2);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   padding: var(--space-3) var(--space-6);
   cursor: pointer;
 }
@@ -5955,7 +5952,7 @@ button.wb-door:hover b {
   padding: var(--space-3) var(--space-5);
   background: var(--raise);
   border: var(--edge) solid var(--line-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   color: var(--fg-strong);
   font: inherit;
   font-size: var(--text-3);
@@ -6335,7 +6332,10 @@ button.wb-door:hover b {
 .ramrpm { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: default; user-select: none; }
 .ramrpm[data-band='warn'] { color: var(--warn); border-color: var(--warn); }
 .ramrpm[data-band='red'] { color: var(--bad); border-color: var(--bad); }
-.services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
+/* A BUTTON is a masu, not a pill (audit mark 6, 2026-09-02): pill stays for
+   read-only badges (.ramrpm above keeps its), a pressable control wears the square
+   rung. */
+.services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
 .services-state.busy::before { content: '◌'; display: inline-block; margin-right: var(--space-3); animation: services-spin var(--motion-slow) linear infinite; }
 .services-pop { position: fixed; z-index: 50; width: min(360px, calc(100vw - var(--space-8))); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-menu); padding: var(--space-7); }
 .services-pop-message { margin: 0 0 var(--space-6); color: var(--muted-2); }
@@ -6440,8 +6440,8 @@ button.wb-door:hover b {
 .cs-review-key { display: block; color: var(--muted); font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; }
 .cs-review-value { display: block; margin-top: var(--space-1); color: var(--fg); font-size: var(--text-3); overflow-wrap: anywhere; }
 .cs-review-foot { padding: var(--space-6) var(--space-7) var(--space-7); }
-.cs-save { width: 100%; border: var(--edge) solid var(--kaki); border-radius: var(--radius-xs); background: var(--kaki); color: var(--on-strong); padding: var(--space-5); font: 600 var(--text-3)/1 var(--font-mono); cursor: pointer; }
-.cs-save:hover { background: transparent; color: var(--kaki); }
+.cs-save { width: 100%; border: var(--edge) solid var(--kiiro); border-radius: var(--radius-xs); background: var(--kiiro); color: var(--on-kiiro); padding: var(--space-5); font: 600 var(--text-3)/1 var(--font-mono); cursor: pointer; }
+.cs-save:hover { background: var(--kiiro-deep); color: var(--on-kiiro); }
 .cs-save:disabled { opacity: .6; cursor: default; }
 .cs-save-note { margin: var(--space-4) 0 0; text-align: center; color: var(--muted); font-size: var(--text-2); }
 .cs-status { margin-top: var(--space-4); }
@@ -6597,9 +6597,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   cursor: pointer;
 }
 .tile:is(.tape-on, .keys-on) .composer .keysrow button:active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--kiiro);
+  border-color: var(--kiiro);
+  color: var(--on-kiiro);
 }
 /* Clearance for both rows, so the last line of the transcript stays visible. The
    measurement rule from the composer's own clearance: this is that height plus the
@@ -6731,9 +6731,9 @@ body[data-phone] #viewhost {
   text-decoration: none;
 }
 #phone .ph-back:active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--kiiro);
+  border-color: var(--kiiro);
+  color: var(--on-kiiro);
 }
 /* メ on the phone bar — the same kaki face it wears on the iPad bar (#bar rules are
    scoped away from this shell, so the seat is restated here). */

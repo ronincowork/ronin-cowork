@@ -123,7 +123,16 @@ key_of() {
 # Where the session record lives on THIS machine. Asked, never spelled: this file used to
 # hardcode the path while the rest of Ronin resolved it, so moving the store sent the
 # letters one way and the tape the other. See docs/stores.md.
-STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
+# RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
+# session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,
+# and ../ from the link is a store with no src/ or bin/ — measured 2026-09-02 (desk audit):
+# every tool built this way failed from a born session. Same loop as bin/shim/git.
+SELF=${BASH_SOURCE[0]}
+while [ -L "$SELF" ]; do
+  link=$(readlink "$SELF")
+  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
+done
+STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session)"
 
@@ -503,13 +512,37 @@ if not isinstance(ladder, list):
 repos = d.get("repos", [])
 if not isinstance(repos, list):
     sys.exit("write_tegami: \"repos\" must be a list of { \"repo\": …, \"branch\": … } entries.")
+# A repos entry is the agent-owned { repo, branch } plus the two DESK FIELDS the letter is
+# seeded with at a managed birth — "worktree" (the desk mounted on the branch) and
+# "line" (the team line it hands in to; src/tegami.ts TegamiCheckout). The seed wrote
+# them and this tool refused them (measured 2026-09-02): a session could not save the
+# letter it was born with. They are accepted here, and carried through below when a
+# save names the same repo+branch without them — the same protection "at" and "docs"
+# have, because the desk row on the roster (src/desk-state.ts) reads them.
+REPO_KEYS = {"repo", "branch", "worktree", "line"}
+prev_repos = {}
+try:
+    _p = json.loads(open(sys.argv[1]).read()) if len(sys.argv) > 1 else {}
+    for _e in (_p.get("repos") or []):
+        if isinstance(_e, dict):
+            prev_repos[(str(_e.get("repo", "")).strip(), str(_e.get("branch", "")).strip())] = _e
+except Exception:
+    prev_repos = {}
 for i, checkout in enumerate(repos, 1):
-    if not isinstance(checkout, dict) or set(checkout) - {"repo", "branch"}:
-        sys.exit(f"write_tegami: repo {i} must contain only \"repo\" and \"branch\".")
-    if not isinstance(checkout.get("repo", ""), str) or not isinstance(checkout.get("branch", ""), str):
-        sys.exit(f"write_tegami: repo {i} needs string \"repo\" and \"branch\" values.")
+    if not isinstance(checkout, dict) or set(checkout) - REPO_KEYS:
+        sys.exit(f"write_tegami: repo {i} may hold only \"repo\", \"branch\", \"worktree\" and \"line\".")
+    for k in REPO_KEYS:
+        if k in checkout and not isinstance(checkout[k], str):
+            sys.exit(f"write_tegami: repo {i} needs a string \"{k}\" value.")
     if not checkout.get("repo", "").strip():
         sys.exit(f"write_tegami: repo {i} needs a repository name or URL.")
+    checkout.setdefault("branch", "")
+    was = prev_repos.get((checkout["repo"].strip(), checkout["branch"].strip()))
+    for k in ("worktree", "line"):
+        if not checkout.get(k, "").strip():
+            checkout.pop(k, None)
+            if was and isinstance(was.get(k), str) and was[k].strip():
+                checkout[k] = was[k].strip()
 
 active = 0
 for i, r in enumerate(ladder, 1):

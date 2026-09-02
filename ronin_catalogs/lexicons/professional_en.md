@@ -207,6 +207,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.skin:** Skin
 - **campaign_view.skin_help:** The look — colours, corners, faces.
 - **campaign_view.theme:** Theme
+- **campaign_view.theme_desktop:** Desktop
 - **campaign_view.theme_help:** Light or dark for pointer surfaces; Automatic is the house default — light.
 - **campaign_view.theme_mobile:** Theme (mobile)
 - **campaign_view.theme_mobile_help:** Light or dark for touch surfaces — iPad and phone; Automatic is the house default — light.
@@ -1152,6 +1153,7 @@ The catalog entry goes. {dir} is not touched.
 ## desk — desk.js (the desk's rows and tooltips)
 - **cowork.commons:** Ronin Desk
 - **cowork.tab_health:** Desk
+- **cowork.tab_themes:** Themes
 - **cowork.tab_account:** Account
 - **cowork.tab_profile:** Desk profile
 - **cowork.tab_roots:** Project roots

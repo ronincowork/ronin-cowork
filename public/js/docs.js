@@ -117,7 +117,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   // KIIRO WHEN THERE IS SOMETHING TO SAVE (owner, 2026-08-28): the Save button and the ←
   // both go yellow the moment the text differs, so the way out is as easy to find as the
   // way to keep it. Cleared on save, on open, on back.
-  const markDirty = (on) => { dirty = on; save.classList.toggle('kiiro', on); back.classList.toggle('kiiro', on); };
+  const markDirty = (on) => { dirty = on; save.classList.toggle('attention', on); back.classList.toggle('attention', on); };
 
   /* ---------- opening and saving ---------- */
 
