@@ -19,9 +19,9 @@ kiiro flash: **Check Team Commons → Agent Message Queue**. Polling does not re
 flash for the same retained message.
 Each retained card shows **From**, **To**, message type, status and attempts. Waiting age
 runs from creation; failed age runs from the failure event. Under an hour the compact
-clock includes seconds and visibly advances while the channel is open. A busy eligibility
-check that never typed is shown as **Waiting** with zero attempts rather than implying
-that delivery itself repeatedly failed.
+clock includes seconds and visibly advances while the channel is open. A dialog or foreign
+draft that correctly prevented typing is shown as **Waiting** with zero attempts rather
+than implying that delivery itself repeatedly failed.
 The channel opens with a short owner-facing note explaining that Agent-to-Agent messages
 occasionally need a nudge and that Try Again is gentler than Force.
 
@@ -37,7 +37,6 @@ wraps into a draft taller than the prompt window; safe delivery still sees it si
 the prompt, presses Enter, and confirms. A copy an earlier attempt left stranded at the
 prompt is submitted on the next attempt, never typed again and never refused as somebody
 else's draft. Only text the pane never showed is retained without an Enter.
-
 A message to a name that is not on the roster is **refused**, with directions to choose a
 live session from the roster or use the team's wipeboard. Accepted mail binds to the
 target's durable session key, not its reusable name. If that session ends, its retained

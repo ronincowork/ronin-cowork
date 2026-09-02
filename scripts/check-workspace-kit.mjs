@@ -10,6 +10,7 @@ const kit = read('public/js/workspace-kit.js') + read('public/js/workspace-adapt
 const layouts = read('public/js/workspace-layouts.js');
 const arrangement = read('public/js/workspace-arrangement.js');
 const campaign = read('public/js/campaign-view.js');
+const coworkCommons = read('public/js/cowork-commons.js');
 const workbench = read('public/js/workbench.js');
 const terminal = read('public/js/terminal-tile-host.js');
 const primitives = read('public/js/workspace-primitives.js');
@@ -73,6 +74,15 @@ for (const gone of ['public/js/new-team-launch.js', 'public/js/new-team-prefligh
   if (fs.existsSync(gone)) problems.push(`${gone} is a retired New Team seat path; the surface creates a Team and stops.`);
 }
 if (!read('public/js/cowork-view.js').includes('createNewTeamFormView(WorkspaceKit, {')) problems.push('The Cowork space must own where New Team lands after a create.');
+// CAMPAIGN MACHINE SETTINGS — Desk profile remains a restorable library type while its
+// beta card stays out of discovery. Ronin Desk takes that default seat; Themes leads its
+// tabs and Desk closes them.
+if (!campaign.includes('type !== TYPES.create && type !== TYPES.profile')) problems.push('Campaign discovery must hide the beta Desk profile card without removing its registered surface.');
+if (!campaign.includes('workspace1: TYPES.identity, workspace2: TYPES.machine, workspace3: TYPES.roots, workspace4: TYPES.defaults')) problems.push('Campaign first-open must include Ronin Desk among its four workspaces.');
+if (!campaign.includes("['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']")) problems.push('Ronin Desk tabs must put Themes first and Desk last.');
+for (const contract of ["pane('themes'", "'Desktop'", "'Mobile'", "save('theme')", "save('theme_mobile')"]) {
+  if (!coworkCommons.includes(contract)) problems.push(`Ronin Desk Themes is missing ${contract}.`);
+}
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
 for (const file of ['cowork-view.js', 'new-team-form.js', 'new-agent.js', 'launch-view.js']) {
   const source = read(`public/js/${file}`);
