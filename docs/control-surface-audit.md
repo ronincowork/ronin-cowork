@@ -31,7 +31,7 @@ Turn on only when all of these hold, in this order. Each row names its owner and
 | 11 | The first dogfood assignment spans Cowork **and** Services; Koe and Lab run direct alongside | lead | assignment on the roster; `ronin-repo-mode` in each says what it should |
 
 **It is on.** Rows 1–10 hold; desks follow each repository's `RONIN_REPO` and nothing else.
-A new project root writes its own `RONIN_REPO` from ⚙ *New projects use desks?* (default:
+A new project root writes its own `RONIN_REPO` from ⚙ *Worktrees for new project roots* (default:
 desks); `bin/ronin-doctor` lists every root's answer. Scaling back is per repository —
 `desks=none` in its file — never a partly activated architecture left behind.
 

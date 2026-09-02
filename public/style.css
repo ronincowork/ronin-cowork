@@ -45,10 +45,10 @@
      warn/bad = the two grades of wrong. --on-accent/--on-strong are the text colours
      that sit ON a filled accent/action surface. */
   --accent: #e0af68;
-  /* ONE focus ring for the whole shell (token audit ruling, 2026-09-02): the Kit and
-     the brand mark had drifted onto kaki rings while the shell rang accent — a
-     keyboard user's ring should never change color by neighborhood. */
-  --focus-ring: var(--accent);
+  /* ONE focus ring for the whole shell, and it rings the BRAND (owner, 2026-09-02:
+     "yes make the focus ring kaki too"). One token so a keyboard user's ring never
+     changes color by neighborhood — the earlier accent/kaki drift, unified. */
+  --focus-ring: var(--kaki);
   --accent-2: #81a2be;
   --accent-deep: #d8a13a;
   /* Soft selected-state washes — two of the seven names the 2026-09-01 token audit
@@ -60,12 +60,13 @@
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
-  /* KIIRO — the house's core yellow-orange, THEME-INVARIANT by ruling (owner,
-     2026-09-01: "make sure that the tokens between light and dark don't mean we lose
-     our core color, which is the kiiro"). Declared once, never re-declared by the
-     light block: a brand color that mutates per theme stops being the brand. Every
-     kiiro FILL reads this pair (the attention flash, the phone's Start; the band
-     reads the tint variant below with its own ink family);
+  /* KIIRO — the house's amber, THEME-INVARIANT. NOT THE BRAND: the owner ruled
+     2026-09-02 that "kiiro" in every earlier band/button ruling MEANT KAKI, the hito
+     mark's persimmon — "I mistakenly in the past called that kiiro." The BRAND is
+     --kaki below: every primary/attention FILL reads --kaki/--on-strong. Kiiro
+     remains the amber the band variants derive from (their owner-approved values
+     are unchanged) and the dark band's attention ink, where kaki cannot hold the
+     contrast floor;
      --warn stays separate as the theme-tuned warning ink, because thin text genuinely
      needs a darker value on paper — a shade of kiiro, not a replacement for it. */
   /* Value history: #f0c674 (gold) read as YELLOW on the band — "it's not anything to
@@ -73,41 +74,26 @@
      accent's own hue. This one line is the whole brand color: change it and the band,
      the attention flash and the phone's Start all follow. */
   --kiiro: #e0af68;
-  --on-kiiro: #201a0e;
-  /* KIIRO-TINT — the light opaque SHADING variant of the brand token: kiiro for
-     surfaces, not text. Derived FROM the token so a hue correction stays that one
-     --kiiro line; check-css resolves the mix and holds the band's ink floors on it.
-     First of the kiiro variant family (the token audit names a line variant next).
-     Value history: a plain 78% white-tint read as "no different" from the rejected
-     62% wash (owner, 2026-09-01 pm) — srgb white-tinting an amber desaturates it
-     toward the cream-yellow every verdict has rejected. So the tint warms the base
-     toward kaki FIRST (70/30, holding the orange), then lightens hard (45% over
-     white): distinctly lighter than the token, distinctly orange, never cream. */
-  --kiiro-tint: color-mix(in srgb, color-mix(in srgb, var(--kiiro) 70%, var(--kaki)) 45%, #ffffff);
-  /* KIIRO-DEEP — the pressed/hover depth of a kiiro fill, as --accent-deep is to
-     --accent. Invariant like its parent. */
-  --kiiro-deep: color-mix(in srgb, var(--kiiro) 82%, #000000);
-  /* KIIRO-HINT — the DARK shading variant: the shell's own band ground with a
-     visible kiiro cast. 22% because the tenth-toward-kaki cut proved 10% invisible
-     ("I still don't see the kiiro shading"). Theme-relative BY DESIGN here — the
-     whole point is staying the shell's darkness — unlike --kiiro-tint, which is the
-     committed light shade. */
-  --kiiro-hint: color-mix(in srgb, var(--kiiro) 22%, var(--bg-2));
-  /* THE WORKBENCH'S HEADER BAND — dark wears the HINT, light wears the TINT (owner,
-     2026-09-01 evening, the standing verdict): a light band on the dark shell "looks
-     awful… It should be dark mode with a bit of background hint to the orange
-     color", and the tint's hue direction was ruled right for light ("the color, I
-     guess, is better"). This SUPERSEDES the same-day one-shade-both-modes ruling.
-     The full run of prior verdicts, so no rejected value returns: tenth-toward-kaki
-     (invisible), #decb8f (khaki), opaque gold, the 62% cream wash, the 78% wash
-     ("doesn't look any different"), opaque kiiro in dark ("absolute shit"), and any
-     LIGHT band on the dark shell. Dark ink is the theme's own; light's ink family
-     rides its block below. Every workbench wears THIS band — wk-surface-header,
-     tile-head, wk-channel-service-tabs, ntf-band all read the family. */
-  --cowork-head-bg: var(--kiiro-hint);
-  --cowork-head-fg: var(--fg-strong);
-  --cowork-head-muted: var(--muted-2);
-  /* Attention on the dark band: kiiro itself is the cue. */
+  /* THE BAND SHADES — both are OPAQUE KAKI, one concept per the owner's 2026-09-02
+     ruling: "the dark and light themes should both be similar concepts where there
+     is an opaque [kaki] color. Obviously not the same, because one is dark and one
+     is light." Mixed with pure black/white so the persimmon HUE survives — the
+     prior dark hint mixed amber into the navy ground and went "some kind of weird
+     brown". Derived from --kaki, so the brand line moves both. Value history still
+     standing: tenth-toward-kaki (invisible), #decb8f (khaki-yellow), opaque gold,
+     the 62% cream wash, the 78% wash ("no different"), the amber-navy brown. */
+  /* Owner-selected from the chooser, 2026-09-02: dark 2 (45%) and light B (52%). */
+  --kaki-hint: color-mix(in srgb, var(--kaki) 45%, #000000);
+  --kaki-tint: color-mix(in srgb, var(--kaki) 52%, #ffffff);
+  /* THE WORKBENCH'S HEADER BAND — dark wears the kaki HINT with its own light ink
+     (the theme's text tokens are tuned for the navy ground, not a warm band); light
+     wears the kaki TINT with dark ink in its block below. Attention on the dark
+     band speaks kiiro — the amber pops on deep persimmon and holds the floor.
+     Every workbench wears THIS band — wk-surface-header, tile-head,
+     wk-channel-service-tabs, ntf-band all read the family. */
+  --cowork-head-bg: var(--kaki-hint);
+  --cowork-head-fg: var(--on-strong);
+  --cowork-head-muted: #d9b8ab;
   --cowork-head-attention: var(--kiiro);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
@@ -335,14 +321,15 @@
    index.html applies the saved value inline before first paint. THE --term-* TOKENS ARE
    REMAPPED HERE TOO: light means light all the way into the pane, terminal included. */
 :root[data-theme='light'] {
-  /* LIGHT wears the kiiro-tint band (the hue the owner ruled right for light);
-     DARK keeps its dark band with the orange hint — the family's root defaults.
-     The band's own dark ink here, because the light theme's text tokens are tuned
-     for paper, not for a kiiro surface. */
-  --cowork-head-bg: var(--kiiro-tint);
+  /* LIGHT wears the kaki TINT (the same opaque-kaki concept as dark's hint, resolved
+     light) with the band's own dark ink — the theme's text tokens are tuned for
+     paper, not a warm band. */
+  --cowork-head-bg: var(--kaki-tint);
   --cowork-head-fg: #201a0e;
-  --cowork-head-muted: #5a4d28;
-  --cowork-head-attention: #8a3413;
+  /* Inks darkened with the B tint: the stronger terracotta sits lower than the old
+     pale band, and the previous olive/kaki inks fell under the 4.5 floor on it. */
+  --cowork-head-muted: #4f2e1b;
+  --cowork-head-attention: #7a2f10;
   --bg: #f4f2ec;
   --bg-2: #eae7df;
   --panel: #ffffff;
@@ -625,10 +612,10 @@ body {
   max-width: 88vw;
   /* A kiiro FILL, so it reads the invariant brand pair — light mode's --warn is a
      text ink and would mustard this band (owner, 2026-09-01). */
-  border: var(--edge) solid var(--kiiro);
+  border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
   padding: var(--space-6) var(--space-8);
   font-size: var(--text-5);
   font-weight: 700;
@@ -1295,9 +1282,9 @@ body {
   cursor: pointer;
 }
 .pad-card .pad-bar button.armed {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
-  border-color: var(--kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
+  border-color: var(--kaki);
 }
 .pad-card .pad-board {
   display: grid;
@@ -1364,12 +1351,12 @@ body {
   border-color: var(--fg);
 }
 .pad-card .pad-key.hit {
-  background: var(--kiiro);
-  border-color: var(--kiiro);
+  background: var(--kaki);
+  border-color: var(--kaki);
 }
 .pad-card .pad-key.hit b,
 .pad-card .pad-key.hit small {
-  color: var(--on-kiiro);
+  color: var(--on-strong);
 }
 .pad-card .pad-widget {
   aspect-ratio: 1;
@@ -1400,10 +1387,10 @@ body {
 }
 /* the encoder / joystick flash too, so you can see what a turn or flick emits */
 .pad-card .pad-widget.hit {
-  background: var(--kiiro);
+  background: var(--kaki);
   border-style: solid;
-  border-color: var(--kiiro);
-  color: var(--on-kiiro);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 .pad-card .pad-edit {
   display: none;
@@ -2225,12 +2212,12 @@ body {
    commit-buttons in the app (`.fr-go`, `.st-go`) rather than an outline that reads as
    secondary next to a red one. */
 .end-session-actions .primary {
-  background: var(--kiiro);
-  border-color: var(--kiiro-deep);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 .end-session-actions .primary:hover:not(:disabled) {
-  background: var(--kiiro-deep);
+  background: var(--kaki-lift);
 }
 .end-session-actions .danger {
   color: var(--bad);
@@ -2952,8 +2939,8 @@ body {
   color: var(--fg-strong);
 }
 .gb-privacy > button:hover {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
 }
 .gb-card h3 {
   margin: 0 0 var(--space-3);
@@ -3155,6 +3142,15 @@ body {
   font-size: var(--text-3);
   flex: 1;
 }
+.pr-guide {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: var(--edge-2) solid var(--kiiro);
+  background: var(--panel);
+  color: var(--fg);
+  font-size: var(--text-3);
+  line-height: 1.45;
+}
 .pr-list {
   overflow-y: auto;
   min-height: 0;
@@ -3241,16 +3237,53 @@ body {
   flex-direction: column;
   gap: var(--space-3);
 }
-.pr-f {
+.pr-group {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-sm);
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-3);
 }
-.pr-f span {
-  width: 74px;
-  flex: none;
+.pr-group legend {
+  padding: 0 var(--space-2);
+  color: var(--fg-strong);
+  font-weight: 700;
+}
+.pr-group-help,
+.pr-worktrees-note,
+.pr-worktrees-state,
+.pr-flow {
+  margin: 0;
   color: var(--muted-2);
   font-size: var(--text-3);
+  line-height: 1.4;
+}
+.pr-worktrees-note {
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--panel) 90%, var(--kiiro));
+  border-left: var(--edge-2) solid var(--kiiro);
+  color: var(--fg);
+}
+.pr-worktrees-state {
+  margin-top: var(--space-3);
+}
+.pr-f {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+.pr-f[hidden] {
+  display: none;
+}
+.pr-f span {
+  width: auto;
+  color: var(--muted-2);
+  font-size: var(--text-3);
+  font-weight: 650;
 }
 .pr-f input,
 .pr-f select {
@@ -3378,9 +3411,9 @@ body {
    what it means now. */
 .dc-back.attention,
 .dc-save.attention {
-  border-color: var(--kiiro);
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  border-color: var(--kaki);
+  background: var(--kaki);
+  color: var(--on-strong);
   font-weight: 700;
 }
 .dc-who {
@@ -4840,9 +4873,9 @@ button.wb-door:hover b {
     cursor: pointer;
   }
   #bar .shape-cycle:active {
-    background: var(--kiiro);
-    border-color: var(--kiiro);
-    color: var(--on-kiiro);
+    background: var(--kaki);
+    border-color: var(--kaki);
+    color: var(--on-strong);
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
   #bar .brand {
@@ -5182,8 +5215,8 @@ button.wb-door:hover b {
   border-radius: var(--radius-md);
   /* Was the shell's one blue fill (--action, a role the palette comment itself
      disowns). A send is a primary action, so it wears the brand pair. */
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
   font-size: var(--text-6);
   cursor: pointer;
 }
@@ -6286,9 +6319,9 @@ button.wb-door:hover b {
   flex-wrap: wrap;
 }
 .fr-go {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
-  border: var(--edge) solid var(--kiiro-deep);
+  background: var(--kaki);
+  color: var(--on-strong);
+  border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6296,7 +6329,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .fr-go:hover {
-  background: var(--kiiro-deep);
+  background: var(--kaki-lift);
 }
 .fr-go:disabled {
   opacity: 0.6;
@@ -6335,9 +6368,9 @@ button.wb-door:hover b {
 /* the ⚙ offer — a real button in the room's own tokens: filled, hover-dark, cursor.
    It was wearing .st-inp (an input's clothes) and read as a dead field. */
 .st-go {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
-  border: var(--edge) solid var(--kiiro-deep);
+  background: var(--kaki);
+  color: var(--on-strong);
+  border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6346,7 +6379,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .st-go:hover {
-  background: var(--kiiro-deep);
+  background: var(--kaki-lift);
 }
 .st-go:disabled {
   opacity: 0.6;
@@ -6470,8 +6503,8 @@ button.wb-door:hover b {
 .cs-review-key { display: block; color: var(--muted); font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; }
 .cs-review-value { display: block; margin-top: var(--space-1); color: var(--fg); font-size: var(--text-3); overflow-wrap: anywhere; }
 .cs-review-foot { padding: var(--space-6) var(--space-7) var(--space-7); }
-.cs-save { width: 100%; border: var(--edge) solid var(--kiiro); border-radius: var(--radius-xs); background: var(--kiiro); color: var(--on-kiiro); padding: var(--space-5); font: 600 var(--text-3)/1 var(--font-mono); cursor: pointer; }
-.cs-save:hover { background: var(--kiiro-deep); color: var(--on-kiiro); }
+.cs-save { width: 100%; border: var(--edge) solid var(--kaki); border-radius: var(--radius-xs); background: var(--kaki); color: var(--on-strong); padding: var(--space-5); font: 600 var(--text-3)/1 var(--font-mono); cursor: pointer; }
+.cs-save:hover { background: var(--kaki-lift); color: var(--on-strong); }
 .cs-save:disabled { opacity: .6; cursor: default; }
 .cs-save-note { margin: var(--space-4) 0 0; text-align: center; color: var(--muted); font-size: var(--text-2); }
 .cs-status { margin-top: var(--space-4); }
@@ -6627,9 +6660,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   cursor: pointer;
 }
 .tile:is(.tape-on, .keys-on) .composer .keysrow button:active {
-  background: var(--kiiro);
-  border-color: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 /* Clearance for both rows, so the last line of the transcript stays visible. The
    measurement rule from the composer's own clearance: this is that height plus the
@@ -6761,9 +6794,9 @@ body[data-phone] #viewhost {
   text-decoration: none;
 }
 #phone .ph-back:active {
-  background: var(--kiiro);
-  border-color: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 /* メ on the phone bar — the same kaki face it wears on the iPad bar (#bar rules are
    scoped away from this shell, so the seat is restated here). */
@@ -6914,8 +6947,8 @@ body[data-phone] .tile-head {
   /* KIIRO, the house's core yellow — the invariant brand pair, not --action (blue,
      which belongs to nothing on this shell) and not --warn (a theme-tuned text ink
      that mustards in light mode). Owner, 2026-09-01. */
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
   font-size: var(--text-5);
   font-weight: 600;
   cursor: pointer;
