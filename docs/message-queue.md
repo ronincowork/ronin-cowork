@@ -6,8 +6,9 @@ Ronin accepts a message only for a live session and binds it to that session's b
 identity. It tries delivery immediately and continues while the message is safely
 retryable. An Agent thinking or running a tool still receives the message.
 
-Automatic delivery waits for a non-🤖 dial, an open dialog, or somebody else's draft. It
-stops after an uncertain submission to avoid sending a duplicate. **Force** is an
+Automatic delivery waits when the target's Control setting does not allow Agent writes,
+when a dialog is open, or when somebody else's draft is present. It stops after an
+uncertain submission to avoid sending a duplicate. **Force** is an
 owner-only override that accepts the collision risk. Delivered messages disappear;
 retained messages expire after 48 hours.
 
@@ -30,9 +31,9 @@ RIREKI and TEGAMI hold the records.
 Acceptance starts one safe attempt. Retryable messages are checked every two seconds.
 **Try Again** starts the same safe attempt immediately.
 
-A safe attempt checks the target identity and dial, then reads the target tile:
+A safe attempt checks the target identity and Control setting, then reads the target tile:
 
-- A non-🤖 dial holds the message.
+- **You only** and **Read** hold the message; **Read and write** allows delivery.
 - An open dialog or menu holds the message.
 - Somebody else's unsubmitted draft holds the message.
 - Thinking, tool use, or an unrecognized prompt does not hold the message. Ronin types
@@ -45,9 +46,9 @@ and may retry Enter three times. It never types a second copy during that attemp
 
 ## Retained states
 
-- **Waiting** — delivery has not typed: the dial blocks writing, a dialog is open, or a
-  foreign draft is present. Automatic retries continue. These checks do not increase
-  Attempts.
+- **Waiting** — delivery has not typed: the target's Control setting does not allow Agent
+  writes, a dialog is open, or a foreign draft is present. Automatic retries continue.
+  These checks do not increase Attempts.
 - **Failed** — delivery typed or may have typed, but success is uncertain: the text never
   appeared, a dialog opened during submission, the prompt changed, the text remained
   after the Enter retries, or an error followed typing. Automatic retries stop.
@@ -59,8 +60,9 @@ Force. Submitting an already-present copy does not increase it.
 
 ## Force
 
-Force is explicit and never automatic. It rechecks the target identity, skips the dial
-and prompt-safety checks, types one copy, and tries Enter for at most ten seconds.
+Force is explicit and never automatic. It rechecks the target identity, bypasses the
+Control setting and prompt-safety checks, types one copy, and tries Enter for at most ten
+seconds.
 
 Force may collide with a draft, act on a dialog, or duplicate a message whose earlier
 submission was uncertain. Use it only after inspecting the retained card and accepting
