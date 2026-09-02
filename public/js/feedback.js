@@ -82,9 +82,9 @@ export function createFeedbackSurface(onSent) {
     form.fields.append(group);
   }
   const contact = node('input', 'fb-contact');
-  contact.type = 'text'; contact.maxLength = 320; contact.autocomplete = 'email';
+  contact.type = 'email'; contact.maxLength = 320; contact.autocomplete = 'email';
   form.fields.append(createField({
-    label: t('feedback.reply_contact', 'Reply contact (optional)'), control: contact,
+    label: t('feedback.reply_email', 'Reply email address (optional)'), control: contact,
     description: t('feedback.reply_help', 'Only if you would like a reply. It is never stored with this Ronin install’s identity.'),
   }).el);
   surface.content.append(form.el);
@@ -92,10 +92,15 @@ export function createFeedbackSurface(onSent) {
   let sent = false;
   const submit = async () => {
     if (send.el.disabled) return;
+    if (contact.value.trim() && !contact.validity.valid) {
+      form.notice.set('failed', t('feedback.reply_invalid', 'Enter an email address or leave it blank.'));
+      contact.focus();
+      return;
+    }
     id ||= packetId();
     send.setDisabled(true); send.el.textContent = t('feedback.sending', 'Sending…');
     form.notice.set('', '');
-    const body = { message: message.value.trim(), reply_contact: contact.value.trim() };
+    const body = { message: message.value.trim(), reply_email: contact.value.trim() };
     for (const [name, values] of Object.entries(selected)) body[name] = [...values];
     const result = await request('/api/feedback', { method: 'POST', json: { packet_id: id, body } });
     if (!result.ok) {
