@@ -8,8 +8,10 @@ mean the internal sub-agent. Delegation using neither vocabulary is your call an
 extra confirmation.
 
 **Your work record** is the owner's account of your task, progress, tracked documents,
-worktrees and team. `read_tegami` reads it, `write_tegami` updates it (`--help` for the
-shape). Keep it true whenever your task, position or documents change.
+worktrees and team. `read_tegami` prints it; `write_tegami < block.json` replaces your
+block with the JSON on stdin. The shape is in the letter you were seeded with and in the
+`write_tegami` row of `ronin_catalogs/TOOLS.md`. Keep it true whenever your task, position
+or documents change.
 
 **Other sessions.** Check the session's `@ronin-control` dial before reading or writing it;
 only the owner changes a dial, and a refusal is an answer, not a retry. `tejun-peek
