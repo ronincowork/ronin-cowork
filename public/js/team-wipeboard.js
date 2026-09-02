@@ -45,6 +45,7 @@ export function createTeamWipeboard() {
   // -- the owner's line: a box and a button; a failed post never costs the words --
   const composeRow = el('div', 'twb-compose');
   const say = document.createElement('textarea');
+  say.classList.add('wk-field-control');
   say.rows = 2;
   say.placeholder = t('team_wipeboard.placeholder', 'say something to the team — every member is interrupted');
   say.spellcheck = false;

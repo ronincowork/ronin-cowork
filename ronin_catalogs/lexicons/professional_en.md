@@ -17,13 +17,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.provider:** model provider
 - **add_agent.model:** model
 - **add_agent.default:** default
-- **add_agent.task:** task  (optional)
-- **add_agent.task_open:** open
+- **add_agent.template:** template
+- **add_agent.no_template:** No template
 - **add_agent.desk_line_control:** Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.
 - **add_agent.desk_line_plain:** Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.
-- **add_agent.shell:** Open a shell, not an Agent
-- **add_agent.shell_why:** A raw terminal in this Team — no Agent is launched and nothing is sent to it.
 - **add_agent.actions:** Launch actions
+- **add_agent.full_alternative:** Alternative: for full new Agent controls, use the
+- **add_agent.full_link:** detailed launch page
 - **add_agent.start:** Start
 - **add_agent.cancel:** Cancel
 - **add_agent.starting:** Starting…
@@ -835,6 +835,7 @@ The catalog entry goes. {dir} is not touched.
 
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list
+- **docs.close_agent:** Close documents and return to this Agent
 - **docs.save:** Save
 - **docs.pill_tracked:** Tracked
 - **docs.pill_plans:** Plans
@@ -1348,9 +1349,12 @@ The catalog entry goes. {dir} is not touched.
 - **head.mention_help:** Mention another session — choose a name to add it to the message box
 - **head.mention_quiet:** Mentions — no session in this tile yet
 - **head.macros_quiet:** Macros — no session in this tile yet
-- **head.more_help:** This session's other controls — 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
 - **head.dial_quiet:** Control dial — no session in this tile yet
+- **head.docs_help:** This Agent's tracked docs — open one over this tile
+- **head.docs_quiet:** This Agent's docs — no Agent in this workspace
+- **head.docs_read:** Docs — {n} tracked by this Agent. Open one over this tile.
+- **head.docs_none:** Docs — this Agent is tracking none yet.
 - **head.note_help:** Session note (post-it)
 - **head.note_quiet:** Session note — no session in this tile yet
 - **head.note_has:** Session note (has notes)
@@ -1448,7 +1452,7 @@ The catalog entry goes. {dir} is not touched.
 - **league.rosters_unavailable:** Durable rosters unavailable — showing live Teams only.
 
 ## docs — tiledocs.js
-- **docs.empty_session:** This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>
+- **docs.empty_session:** Nothing tracked yet. Ask this Agent to update its Work Record with the docs it is tracking; they will appear here.
 
 ## head — tilementions.js
 - **head.mention_aria:** Mention another session

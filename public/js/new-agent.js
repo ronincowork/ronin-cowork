@@ -150,12 +150,26 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   /* ---- 3 · Template ---- */
   const stepTemplate = createStep({ n: 3, key: 'template', title: t('template', 'Template') });
+  function restoreTemplateDefaults() {
+    const value = (field) => seed?.seeds?.[field]?.value;
+    draft.instructions = '';
+    instructionsInput.value = '';
+    draft.books = Array.isArray(value('behaviours')) ? [...value('behaviours')] : [];
+    for (const key of ['reach', 'recruit']) draft[key] = value(key) || 'open';
+    draft.output = [value('output') || 'open'].flat().filter(Boolean);
+    draft.teamMode = 'new'; draft.team = ''; draft.newTeam = '';
+    touched.mandate = false; touched.books = false;
+  }
   function applyTemplate(name) {
     draft.template = name;
     draft.expanded = {};
+    // Make your own and every new template start from inherited defaults, never the last
+    // template's answers. Name, kind and where are the owner's own answers and stay put.
+    restoreTemplateDefaults();
     const row = templateRow();
     if (!row) { snapshot = ''; paint(); return; }
-    if (row.brief) { draft.instructions = row.brief; instructionsInput.value = row.brief; }
+    draft.instructions = row.brief || '';
+    instructionsInput.value = draft.instructions;
     // A template's output may still be a single word — the record wraps a legacy scalar,
     // and so does the form, rather than handing a string to code that expects a list.
     // The shelf hands back a parsed mandate — `{ reach, recruit, output[] }` or null when
@@ -179,6 +193,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   /* ---- 4 · Instructions ---- */
   const stepInstructions = createStep({ n: 4, key: 'instructions', title: t('new_agent.instructions', 'Instructions'), onToggle: () => toggle('instructions') });
   const instructionsInput = el('textarea');
+  instructionsInput.classList.add('wk-field-control');
   instructionsInput.rows = 6;
   instructionsInput.autocapitalize = 'off';
   instructionsInput.spellcheck = false;

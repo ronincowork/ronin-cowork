@@ -82,8 +82,8 @@ function registerWorkbenchCatalog() {
   add({ type: WB_TYPES.archives, header: 'surface', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
   add({ type: WB_TYPES.team, header: 'surface', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
   profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives]);
-  // THE TEAM BENCH HAS ONE LAUNCHER (owner, 2026-08-31): Add Agent to Team, whose shell
-  // tick covers the one thing only the old board offered here — an empty pane.
+  // THE TEAM BENCH HAS ONE SHORTCUT: Add Agent to Team. It always births a Cowork Agent;
+  // terminal and bare-metal choices stay on the full launch page.
   profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.terminal, WB_TYPES.addAgent]);
 }
 export function createCoworkView(options = {}) {
@@ -210,6 +210,7 @@ export function createCoworkView(options = {}) {
       team: () => (campaign || team === UNASSIGNED ? '' : team),
       roster: () => teamByName(team) || null,
       connect: (name) => connectSession(name, id),
+      fullLaunch: () => ctx?.navigate('launch'),
     });
     return [id, { el: view.el, enter: () => view.enter() }];
   }));

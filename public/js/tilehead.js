@@ -57,6 +57,7 @@ import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
 import { clampTip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 import { buildTileMore } from './tilemore.js';
+import { buildTileDocs } from './tiledocs.js';
 import { buildTileMentions } from './tilementions.js';
 import { isCoarse } from './tiledrop.js';
 import { S, serviceMissing } from './state.js';
@@ -139,8 +140,9 @@ const HEADER = () => {
   // NO `needs`. It is a container, not an act: it holds 🔒, which works with no session
   // at all, and dimming it would hide the six explanations of why its contents are dim.
   { key: 'moreBtn', hosts: true,
-    widget: () => buildTileMore(),
-    help: t('head.more_help', "This session's other controls — ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill") },
+    // No hover help: the fixed help box covered the drop this button exists to reveal.
+    // メ explains itself by opening; every control inside carries its own words.
+    widget: () => buildTileMore() },
 
   // Hidden until there is a reading — a plain shell pane has no context, and that is fine.
   //
@@ -158,6 +160,18 @@ const HEADER = () => {
   { key: 'dial', drop: true, needs: 'session', holds: true,
     widget: (tile) => makeDial(CONTROL_POSITIONS(), (v) => tile.pickControl(v)),
     help: dialTitle(), quiet: t('head.dial_quiet', 'Control dial — no session in this tile yet') },
+
+  { key: 'docsBtn', drop: true, needs: 'session',
+    widget: (tile) => buildTileDocs(tile),
+    help: t('head.docs_help', "This Agent's tracked docs — open one over this tile"),
+    quiet: t('head.docs_quiet', "This Agent's docs — no Agent in this workspace"),
+    read: (tile, el) => {
+      const n = ((tile.session && tile.tegami?.docs) || []).length;
+      el.classList.toggle('has-docs', !!n);
+      return n
+        ? t('head.docs_read', 'Docs — {n} tracked by this Agent. Open one over this tile.', { n })
+        : t('head.docs_none', 'Docs — this Agent is tracking none yet.');
+    } },
 
   { key: 'noteBtn', cls: 'note', text: '📝', drop: true, modal: true, needs: 'session',
     help: t('head.note_help', 'Session note (post-it)'),

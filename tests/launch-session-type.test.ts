@@ -145,11 +145,15 @@ test('both Mika callers use the dedicated door and state no session_role', async
   }
 });
 
-test('the in-Team Agent form sends a ways behaviour, never a launch role', async () => {
+test('the in-Team Agent form sends template behaviours and mandate, never a launch role', async () => {
   const source = await fs.readFile(new URL('../public/js/add-agent.js', import.meta.url), 'utf8');
-  assert.match(source, /behaviours:\s*draft\.task \? \[draft\.task\] : \[\]/);
-  assert.match(source, /ways:cut_code/);
-  assert.doesNotMatch(source, /session_role:\s*draft\.task/);
+  assert.match(source, /draft\.behaviours = \[\.\.\.row\.behaviours\]/);
+  assert.match(source, /draft\.reach = row\.mandate\.reach/);
+  assert.match(source, /draft\.recruit = row\.mandate\.recruit/);
+  assert.match(source, /draft\.output = \[row\.mandate\.output\]\.flat\(\)\.filter\(Boolean\)/);
+  assert.match(source, /behaviours:\s*\[\.\.\.draft\.behaviours\]/);
+  assert.match(source, /mandate:\s*\{ reach: draft\.reach, recruit: draft\.recruit, output: \[\.\.\.draft\.output\] \}/);
+  assert.doesNotMatch(source, /session_role\s*:/);
 });
 
 test.after(() => server.close());

@@ -905,6 +905,22 @@ async function checkJourneys(page, label, jsErrors) {
  */
 async function runPhonePass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
+  // Catch the FIRST paintable state, not merely the settled page. The phone used to
+  // reveal index.html's desktop bar (including the "2" shape button), then hide it only
+  // after buildPhone marked the body. A settled-state assertion cannot see that flash.
+  await page.addInitScript(() => {
+    const timer = setInterval(() => {
+      // The init script itself runs while the parser is still above index.html's inline
+      // veil, when computed visibility is briefly its default. The contract begins when
+      // application code removes this class, so sample that transition and nothing prior.
+      if (!document.body || document.documentElement.classList.contains('boot-pending')) return;
+      window.__roninFirstVisible = {
+        phone: !!document.getElementById('phone'),
+        bar: document.getElementById('bar') ? getComputedStyle(document.getElementById('bar')).display : null,
+      };
+      clearInterval(timer);
+    }, 0);
+  });
   try {
     await page.goto(URL_.replace(/#.*$/, ''), { waitUntil: 'networkidle', timeout: 30_000 });
   } catch (e) {
@@ -916,6 +932,9 @@ async function runPhonePass({ label, browser, contextOpts }) {
     barHidden: !document.getElementById('bar') || getComputedStyle(document.getElementById('bar')).display === 'none',
     failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
   }));
+  const firstVisible = await page.evaluate(() => window.__roninFirstVisible || null);
+  if (firstVisible?.phone && firstVisible.bar === 'none') ok(`${label}: first paint is the phone shell, never desktop chrome`);
+  else bad(`${label}: first paint exposed desktop chrome before the phone shell (${JSON.stringify(firstVisible)})`);
   if (shell.phone) ok(`${label}: the phone shell mounted`);
   else bad(`${label}: no phone shell — the workbench booted on a phone viewport`);
   if (shell.barHidden) ok(`${label}: the workbench chrome is hidden whole`);

@@ -9,11 +9,11 @@ const lines = (value) => value.split('\n').map((entry) => entry.trim()).filter(B
 
 const field = (form, label, name, value, kind = 'input', help = '') => {
   const row = el('label', 'tw-config-field'); row.append(el('span', null, label));
-  const input = document.createElement(kind); input.name = name; input.value = value || ''; row.append(input);
+  const input = document.createElement(kind); input.classList.add('wk-field-control'); input.name = name; input.value = value || ''; row.append(input);
   if (help) row.append(el('small', null, help)); form.append(row); return input;
 };
 const select = (form, label, name, values, value) => {
-  const input = el('select'); input.name = name;
+  const input = el('select', 'wk-field-control'); input.name = name;
   for (const item of values) input.add(new Option(item.label, item.value)); input.value = value; const row = el('label', 'tw-config-field'); row.append(el('span', null, label), input); form.append(row); return input;
 };
 const reading = (form, label, value, empty) => { const row = el('div', 'tw-config-reading'); row.append(el('span', null, label), el('output', null, value || empty)); form.append(row); };
