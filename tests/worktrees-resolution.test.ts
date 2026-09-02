@@ -20,8 +20,23 @@ import {
 
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-worktrees-matrix-'));
 
+const gitLocationVariables = [
+  'GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR',
+  'GIT_PREFIX', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_NAMESPACE',
+] as const;
+
+const isolatedGitEnvironment = (): NodeJS.ProcessEnv => {
+  const env = { ...process.env };
+  for (const name of gitLocationVariables) delete env[name];
+  return env;
+};
+
 const git = (dir: string, ...args: string[]): string =>
-  execFileSync('git', ['-C', dir, ...args], { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
+  execFileSync('git', ['-C', dir, ...args], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: isolatedGitEnvironment(),
+  }).toString().trim();
 
 interface RepositoryFixture {
   input: WorktreesRepositoryInput;
