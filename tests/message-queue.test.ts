@@ -19,3 +19,18 @@ test('a missing target is retained as a failed inbound message, then dismisses',
   assert.deepEqual(await queue.listQueuedMessages(), []);
   await fs.rm(root, { recursive: true, force: true });
 });
+
+test('pending tells expose an existing sender-to-target lane before another is sent', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-lane-'));
+  process.env.RONIN_MESSAGE_QUEUE_DIR = root;
+  const queue = await import(`../src/message-queue.ts?lane=${Date.now()}`);
+  const first = await queue.enqueueMessage('worktrees_roots', 'one authoritative instruction', 'tell', 'machine_settings');
+  await queue.enqueueMessage('worktrees_matrix', 'a separate lane', 'tell', 'machine_settings');
+  await queue.enqueueMessage('worktrees_roots', 'owner notice is not this sender lane', 'owner');
+  assert.deepEqual(
+    (await queue.pendingTellsFrom('machine_settings', 'worktrees_roots')).map((item) => item.id),
+    [first.id],
+  );
+  assert.deepEqual(await queue.pendingTellsFrom('coordinator', 'worktrees_roots'), []);
+  await fs.rm(root, { recursive: true, force: true });
+});
