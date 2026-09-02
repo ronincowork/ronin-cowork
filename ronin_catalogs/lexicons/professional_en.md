@@ -19,8 +19,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.default:** default
 - **add_agent.template:** template
 - **add_agent.no_template:** No template
-- **add_agent.desk_line_control:** Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.
-- **add_agent.desk_line_plain:** Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.
+- **add_agent.desk_line_control:** Ronin Worktrees is on for this Team. In each Project Root that also allows Worktrees, this Agent gets a private branch and worktree and can hand work in; other roots use their checkout.
+- **add_agent.desk_line_plain:** Ronin Worktrees is off for this Team. This Agent uses each repository checkout even when that Project Root allows Worktrees.
 - **add_agent.actions:** Launch actions
 - **add_agent.full_alternative:** Alternative: for full new Agent controls, use the
 - **add_agent.full_link:** detailed launch page
@@ -191,10 +191,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.no_profile:** As stock — none chosen.
 - **campaign_view.roots_n:** {n} roots
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
-- **campaign_view.new_project_desks:** New projects use desks?
-- **campaign_view.new_project_desks_yes:** Desks
-- **campaign_view.new_project_desks_no:** None
-- **campaign_view.new_project_desks_help:** Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project.
+- **campaign_view.new_project_worktrees:** Worktrees for new project roots
+- **campaign_view.new_project_worktrees_yes:** Allow Ronin Worktrees
+- **campaign_view.new_project_worktrees_no:** Use the checkout
+- **campaign_view.new_project_worktrees_help:** Default repository permission for roots added later. An Agent also needs the Ronin Worktrees Routine from its Campaign or Team. Change an existing repository on its Project Root card below.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
 - **campaign_view.head:** Campaign: {name}
@@ -825,12 +825,16 @@ The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
 - **roots.empty:** No project roots yet — add one below.
 - **roots.loading:** loading…
-- **roots.chip_worktrees:** Worktrees
-- **roots.chip_checkout:** Use the checkout
+- **roots.chip_worktrees:** Repository: Worktrees allowed
+- **roots.chip_checkout:** Repository: use checkout
 - **roots.chip_reviewed_title:** Reviewed: work moves through {working}, then review reaches {stable}. The branch mounted here is incidental.
 - **roots.chip_direct_title:** Direct: commits land on {stable} itself.
-- **roots.chip_shared:** shared checkout
-- **roots.chip_shared_title:** No RONIN_REPO record: sessions use this checkout. Add a repository profile to choose Worktrees or direct publishing.
+- **roots.chip_shared:** Repository: use checkout
+- **roots.chip_shared_title:** No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.
+- **roots.worktrees_guide:** Two independent answers control Ronin Worktrees: the Agent must receive the Ronin Worktrees Routine from its Campaign or Team, and this repository must allow Worktrees. This page controls the repository answer.
+- **roots.state_worktrees:** This repository allows Ronin Worktrees. An Agent also needs the Ronin Worktrees Routine from its Campaign or Team.
+- **roots.state_checkout:** This repository uses its checkout. That repository choice wins even if an Agent has the Ronin Worktrees Routine.
+- **roots.state_undeclared:** No repository profile is declared, so Agents use the checkout. Edit this root to allow Ronin Worktrees.
 
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list
@@ -844,6 +848,10 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_docs_hint:** Where this root keeps its documentation — directories or files, relative to the directory
 - **roots.f_plans:** plans
 - **roots.f_plans_hint:** Where this root keeps its build-out plans
+- **roots.group_root:** Project Root
+- **roots.group_root_help:** The directory Ronin may offer to Agents and the words used to find it.
+- **roots.group_repository:** Repository workflow
+- **roots.group_repository_help:** Publishing describes where accepted commits go. Worktrees separately decides whether this repository participates in Ronin’s managed worktree workflow.
 - **roots.f_mode:** publishing
 - **roots.f_mode_hint:** Reviewed uses a working branch and a final PR to stable. Direct publishes on stable itself.
 - **roots.mode_reviewed:** reviewed release
@@ -853,13 +861,14 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_stable:** stable
 - **roots.f_stable_hint:** The published branch. You choose its name.
 - **roots.f_worktrees:** Worktrees
-- **roots.f_worktrees_hint:** Worktrees gives equipped Cowork Agents a private branch and worktree in this repository. Use the checkout leaves Git to your instructions and this repository’s own guidance.
+- **roots.f_worktrees_hint:** This repository allows or declines Ronin Worktrees. The Agent’s Routine is selected separately under Campaign or Team Routines.
 - **roots.worktrees_enabled:** Use Ronin Worktrees
 - **roots.worktrees_disabled:** Use the checkout
 - **roots.flow_reviewed:** {working} → review → {stable}
 - **roots.flow_direct:** commits → {stable}
-- **roots.flow_worktrees:** Equipped Cowork Agents use their own worktree and hand work in.
-- **roots.flow_checkout:** Agents use this checkout under your Git instructions.
+- **roots.worktrees_two_gates:** This is the repository permission. It takes effect only when the Agent is also born with the Ronin Worktrees Routine, selected under Campaign or Team Routines.
+- **roots.flow_worktrees:** Agents with the Ronin Worktrees Routine use their own worktree and hand work in; other Agents use the checkout.
+- **roots.flow_checkout:** Every Agent uses this checkout, even when it carries the Ronin Worktrees Routine.
 - **roots.flow_preview:** Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.
 - **roots.profile_confirm:** Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.
 - **docs.open_browser:** Open in browser ↗

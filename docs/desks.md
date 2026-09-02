@@ -47,7 +47,7 @@ gives a coding launch its desk, the contract in its brief, the desk actions and 
 `desks=none`, or no file, gives none of them and the session starts in the checkout. There
 is no install-wide switch. The Campaign's Ronin Worktrees choice defaults the file written for
 a new project root (`declareArrangement`, `src/desks/arrangement.ts`). For an existing root,
-the editor reads the current publishing mode, owner-named branches, and coordination choice.
+the editor reads the current publishing mode, owner-named branches, and Worktrees repository choice.
 After one exact before/after confirmation it rewrites `RONIN_REPO` directly and atomically
 (`PUT /api/project-roots/:name/repo-profile`, `setArrangementProfile`). It performs no
 migration or running-Agent reconciliation. A coding launch that gets no desk says why on its receipt (*no desk —
