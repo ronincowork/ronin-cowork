@@ -123,11 +123,6 @@ export class Tile {
       // Desktop: click focuses the terminal. Works great — left untouched.
       // (Home-panel clicks must NOT steal focus into the terminal, though.)
       this.body.addEventListener('pointerdown', (e) => {
-        // Docs is an editor OVER the terminal, but still lives in the same tile body.
-        // Letting this bubble into focusTerminal() made every selection/edit gesture
-        // hand focus straight back to xterm, so the textarea looked read-only while its
-        // Save button claimed otherwise.
-        if (e.target instanceof Element && e.target.closest('.tile-doc-view')) return;
         this.focusTerminal();
       });
       // A drag that was meant to be a copy and silently was not — say the key.

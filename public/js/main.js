@@ -147,14 +147,6 @@ export async function init() {
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
   workspace.start();
 
-  // THE DESKTOP FIRST PAINT ends here: the route's real workspace is mounted and the
-  // header now belongs to it. Session discovery, event wiring and home catalogs below
-  // enrich that workspace; none decides which surface the person is looking at. Keeping
-  // the veil over those reads exposed only the light canvas (--bg, the beige flash) on
-  // every reload, sometimes for seconds on a busy box. Phone lifts the same veil at its
-  // own mount boundary above; desktop must not make network readiness a paint boundary.
-  reveal();
-
   guard('install workspace controls', build);
   guard('services activation status', installServicesStatus);
   // The session list is the one step worth reporting loudly: without it every tile
@@ -178,6 +170,7 @@ export async function init() {
   // wired ONCE, on the document: nothing that sets a title has to know it exists, so
   // this covers the whole app including the static titles in index.html.
   guard('house tooltips', installTips);
+  reveal();
 }
 
 // Boot inside a guard too: if init throws before its own guards are reached, the
