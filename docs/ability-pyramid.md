@@ -66,11 +66,10 @@ Launch facts select the levels:
 | `<service>_connected/` | an enabled Routine declaration plus the live connection choice | a connected service seeds its own signed reading |
 | `root/<project_root>/` | the root picked at launch | the owner only — stock cannot know a machine's directories |
 | `routine/<routine>/FILE.md` | each effective Routine manifest at birth | stock and owner Routine readings, selected explicitly by the catalog |
-| `assignment/` | a launch that resolved repository desks | the desk contract shipped by cowork; the owner may shadow it |
 
 The toggle governs both halves of a connection (owner's ruling, 2026-08-17): launched
 off, a session gets neither a service's tools nor a word about them. These levels add up
-rather than override: root, connection, effective Routines and desk assignment are fixed
+rather than override: root, connection and effective Routines are fixed
 at birth and compiled into one README. Work-specific reading is selected separately
 as `behaviours`; those `ways:<book>` files join that same birth reading once and are not a
 mutable shelf axis. A T2 file that would help every session is mis-shelved and belongs up

@@ -63,19 +63,22 @@ test('the brief carries every desk, the primary, the line, and the four words â€
   assert.doesNotMatch(none, /desk/i, 'a launch with no assignment is told nothing about desks');
 });
 
-test('the desk contract rides the assignment level, and only that', async () => {
+test('the desk contract is the Worktrees Routine\'s page: no Routine, no desk reading', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-launch-desks-test-'));
   const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
   const oldCatalogs = process.env.RONIN_CATALOGS_DIR;
   process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
   process.env.RONIN_CATALOGS_DIR = path.join(temp, 'catalogs');
   try {
-    const without = (await bootFiles('', false, false)).map((f) => path.basename(f));
-    const withDesks = (await bootFiles('', false, true)).map((f) => path.basename(f));
-    assert.ok(!without.includes('DESK_CONTRACT.md'), 'no assignment, no desk reading');
-    assert.ok(withDesks.includes('DESK_CONTRACT.md'), 'an assignment reads the desk contract');
-    assert.deepEqual(withDesks.filter((f) => f !== 'DESK_CONTRACT.md').sort(), without.sort(), 'the level adds exactly one book');
-    const contract = await readFile((await bootFiles('', false, true)).find((f) => path.basename(f) === 'DESK_CONTRACT.md')!, 'utf8');
+    const without = (await bootFiles('', false, [])).map((f) => path.basename(f));
+    const withRoutine = await bootFiles('', false, ['routine/ronin_worktrees/WORKTREES.md']);
+    const names = withRoutine.map((f) => path.basename(f));
+    assert.ok(!without.includes('WORKTREES.md'), 'no Worktrees Routine, no desk reading');
+    assert.ok(names.includes('WORKTREES.md'), 'the Worktrees Routine reads its page');
+    assert.deepEqual(names.filter((f) => f !== 'WORKTREES.md').sort(), without.sort(), 'the Routine adds exactly one page');
+    assert.ok(!names.some((f) => f.includes('DESK_CONTRACT')), 'there is no separate desk contract');
+    const contract = await readFile(withRoutine.find((f) => path.basename(f) === 'WORKTREES.md')!, 'utf8');
+    assert.match(contract, /Your brief names no desk/);
     assert.match(contract, /Stop and ask the team lead when the desk is missing or contradictory/);
     assert.match(contract, /tejun-desk status --assignment/);
     assert.match(contract, /never by making a branch or worktree yourself/);
@@ -86,7 +89,7 @@ test('the desk contract rides the assignment level, and only that', async () => 
   }
 });
 
-test('Ronin Worktrees declares its capability guide; an actual assignment alone selects the desk contract', async () => {
+test('Ronin Worktrees declares its one page, and no separate desk contract', async () => {
   const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
   const control = await readFile(path.join(repo, 'ronin_catalogs', 'routines', 'ronin_worktrees.md'), 'utf8');
   assert.match(control, /\*\*reading:\*\* routine\/ronin_worktrees\/WORKTREES\.md/);
