@@ -82,8 +82,9 @@
      brown". Derived from --kaki, so the brand line moves both. Value history still
      standing: tenth-toward-kaki (invisible), #decb8f (khaki-yellow), opaque gold,
      the 62% cream wash, the 78% wash ("no different"), the amber-navy brown. */
-  --kaki-hint: color-mix(in srgb, var(--kaki) 55%, #000000);
-  --kaki-tint: color-mix(in srgb, var(--kaki) 42%, #ffffff);
+  /* Owner-selected from the chooser, 2026-09-02: dark 2 (45%) and light B (52%). */
+  --kaki-hint: color-mix(in srgb, var(--kaki) 45%, #000000);
+  --kaki-tint: color-mix(in srgb, var(--kaki) 52%, #ffffff);
   /* THE WORKBENCH'S HEADER BAND — dark wears the kaki HINT with its own light ink
      (the theme's text tokens are tuned for the navy ground, not a warm band); light
      wears the kaki TINT with dark ink in its block below. Attention on the dark
@@ -325,8 +326,10 @@
      paper, not a warm band. */
   --cowork-head-bg: var(--kaki-tint);
   --cowork-head-fg: #201a0e;
-  --cowork-head-muted: #5a4d28;
-  --cowork-head-attention: #8a3413;
+  /* Inks darkened with the B tint: the stronger terracotta sits lower than the old
+     pale band, and the previous olive/kaki inks fell under the 4.5 floor on it. */
+  --cowork-head-muted: #4f2e1b;
+  --cowork-head-attention: #7a2f10;
   --bg: #f4f2ec;
   --bg-2: #eae7df;
   --panel: #ffffff;
