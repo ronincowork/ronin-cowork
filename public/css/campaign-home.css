@@ -74,7 +74,8 @@
     transform: translateY(calc(var(--edge-2) * -1));
     box-shadow: var(--shadow-menu);
   }
-  .ch-glyph { display: block; font-size: var(--ch-glyph); line-height: 1; color: var(--ch-tone); }
+  .ch-glyph { display: block; height: var(--ch-glyph); font-size: var(--ch-glyph); line-height: 1; color: var(--ch-tone); white-space: nowrap; }
+  .ch-glyph svg { display: block; width: var(--ch-glyph); height: var(--ch-glyph); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: square; stroke-linejoin: round; }
   .ch-door h2 {
     margin: var(--space-10) 0 0;
     font-size: var(--text-9);
