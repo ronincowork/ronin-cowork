@@ -35,6 +35,7 @@ import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { buildKeysRow } from './keysrow.js';
+import { buildTileDocView } from './tile-doc-view.js';
 import { isCoarse } from './tiledrop.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
 import { desksOf, refreshDesks } from './desks.js';
@@ -92,6 +93,8 @@ export class Tile {
         S.lastSelection = s;
       },
     });
+    this.docView = buildTileDocView(this);
+    this.body.append(this.docView.el);
 
     // THE SOCKET — beside both views, owned by neither.
     this.wire = new TileWire({
@@ -264,6 +267,12 @@ export class Tile {
     document
       .querySelectorAll('.tdrop.open, .tmac.open')
       .forEach((m) => m.classList.remove('open'));
+  }
+
+  /** Open one tracked document over this Agent; closing it reveals the live pane again. */
+  openDoc(path) {
+    this.clearOverlays();
+    void this.docView.open(path);
   }
 
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */

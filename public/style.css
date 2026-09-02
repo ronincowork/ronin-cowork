@@ -1222,6 +1222,26 @@ body {
   border-color: var(--accent);
 }
 
+/* One Agent's shared Docs editor, over its terminal on desktop and in the phone shell. */
+.tile-doc-view {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  padding: var(--space-4);
+  background: var(--bg);
+}
+.tile-doc-view.open { display: flex; }
+.tile-doc-close {
+  align-self: flex-end;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raise);
+  color: var(--fg-strong);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
 /* Work Louder pad — a ui.sheet consumer since 2026-08-17; the board is a picture of the
    Creator Micro 2. The scrim, the centering and the open/closed switch belong to the
    primitive now (@layer ui, .ui-sheet), which is why the `#padsheet { position: fixed;

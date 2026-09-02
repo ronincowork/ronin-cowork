@@ -17,11 +17,10 @@ import { DOC_MIME } from './team-drag.js';
  * `write_tegami --doc <path>`, and a doc nobody listed is reached by asking the agent to
  * list it. That is the whole finding mechanism. See docs/mdedit.md.
  *
- * THE EDITOR HAS A SECOND DOOR SINCE 2026-08-18 — 📄 on a tile header opens ONE of that
- * session's docs straight into it (`js/tiledocs.js` → `commons.js` `openDoc` → `open`
- * below). It narrows this list to the session the tile is already showing; it enumerates
- * nothing this pane does not, and the rule above is untouched — the caller has to hold a
- * path that an agent already listed. Read that file before re-litigating this one.
+ * THE EDITOR HAS A SECOND DOOR — Docs in an Agent tile's メ menu opens ONE of that
+ * Agent's tracked files in place (`js/tiledocs.js` → `tile-doc-view.js` → `open` below).
+ * It enumerates only paths already listed in that Agent's work record; the rule above is
+ * untouched, and desktop and phone relocate the same control rather than growing two.
  *
  * THE TEAM PAGE IS A THIRD DOOR SINCE 2026-08-25 — its Docs channel service mounts this
  * same pane (`js/team-view.js`) over the same `homeData`, narrowed by `only` to the
@@ -197,14 +196,16 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
       doSave();
     }
   });
-  back.addEventListener('click', () => {
+  const leave = () => {
     if (dirty && !confirm(t('docs.discard_confirm', 'Discard unsaved changes?'))) return;
     openPath = null;
     markDirty(false);
     frame.src = 'about:blank'; // stop the page's scripts; the list is what's showing now
     show('list');
     refresh();
-  });
+    return true;
+  };
+  back.addEventListener('click', leave);
 
   /* ---------- the list ---------- */
 
@@ -333,5 +334,6 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     // ONE-DIRECTIONAL, deliberately: this pane learns nothing about tiles or headers in
     // return. It takes a path and shows it; who asked, and why, stays the caller's.
     open,
+    leave,
   };
 }

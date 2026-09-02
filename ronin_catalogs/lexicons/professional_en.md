@@ -834,6 +834,7 @@ The catalog entry goes. {dir} is not touched.
 
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list
+- **docs.close_agent:** Close documents and return to this Agent
 - **docs.save:** Save
 - **docs.pill_tracked:** Tracked
 - **docs.pill_plans:** Plans
@@ -1349,6 +1350,11 @@ The catalog entry goes. {dir} is not touched.
 - **head.more_help:** This session's other controls — 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
 - **head.dial_quiet:** Control dial — no session in this tile yet
+- **head.docs_help:** This Agent's tracked docs — open one over this tile
+- **head.docs_quiet:** This Agent's docs — no Agent in this workspace
+- **head.docs_no_michi:** This Agent's docs — michi is not installed, so no Agent keeps a doc list
+- **head.docs_read:** Docs — {n} tracked by this Agent. Open one over this tile.
+- **head.docs_none:** Docs — this Agent is tracking none yet.
 - **head.note_help:** Session note (post-it)
 - **head.note_quiet:** Session note — no session in this tile yet
 - **head.note_has:** Session note (has notes)
