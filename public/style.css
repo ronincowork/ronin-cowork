@@ -1275,9 +1275,9 @@ body {
   cursor: pointer;
 }
 .pad-card .pad-bar button.armed {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
+  border-color: var(--kiiro);
 }
 .pad-card .pad-board {
   display: grid;
@@ -1344,12 +1344,12 @@ body {
   border-color: var(--fg);
 }
 .pad-card .pad-key.hit {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--kiiro);
+  border-color: var(--kiiro);
 }
 .pad-card .pad-key.hit b,
 .pad-card .pad-key.hit small {
-  color: var(--on-accent);
+  color: var(--on-kiiro);
 }
 .pad-card .pad-widget {
   aspect-ratio: 1;
@@ -1380,10 +1380,10 @@ body {
 }
 /* the encoder / joystick flash too, so you can see what a turn or flick emits */
 .pad-card .pad-widget.hit {
-  background: var(--accent);
+  background: var(--kiiro);
   border-style: solid;
-  border-color: var(--accent);
-  color: var(--on-accent);
+  border-color: var(--kiiro);
+  color: var(--on-kiiro);
 }
 .pad-card .pad-edit {
   display: none;
@@ -2205,12 +2205,12 @@ body {
    commit-buttons in the app (`.fr-go`, `.st-go`) rather than an outline that reads as
    secondary next to a red one. */
 .end-session-actions .primary {
-  background: var(--accent);
-  border-color: var(--accent-deep);
-  color: var(--on-accent);
+  background: var(--kiiro);
+  border-color: var(--kiiro-deep);
+  color: var(--on-kiiro);
 }
 .end-session-actions .primary:hover:not(:disabled) {
-  background: var(--accent-deep);
+  background: var(--kiiro-deep);
 }
 .end-session-actions .danger {
   color: var(--bad);
@@ -2932,8 +2932,8 @@ body {
   color: var(--fg-strong);
 }
 .gb-privacy > button:hover {
-  background: var(--accent);
-  color: var(--bg);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
 }
 .gb-card h3 {
   margin: 0 0 var(--space-3);
@@ -4816,9 +4816,9 @@ button.wb-door:hover b {
     cursor: pointer;
   }
   #bar .shape-cycle:active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--on-accent);
+    background: var(--kiiro);
+    border-color: var(--kiiro);
+    color: var(--on-kiiro);
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
   #bar .brand {
@@ -6600,9 +6600,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   cursor: pointer;
 }
 .tile:is(.tape-on, .keys-on) .composer .keysrow button:active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--kiiro);
+  border-color: var(--kiiro);
+  color: var(--on-kiiro);
 }
 /* Clearance for both rows, so the last line of the transcript stays visible. The
    measurement rule from the composer's own clearance: this is that height plus the
@@ -6734,9 +6734,9 @@ body[data-phone] #viewhost {
   text-decoration: none;
 }
 #phone .ph-back:active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--kiiro);
+  border-color: var(--kiiro);
+  color: var(--on-kiiro);
 }
 /* メ on the phone bar — the same kaki face it wears on the iPad bar (#bar rules are
    scoped away from this shell, so the seat is restated here). */
