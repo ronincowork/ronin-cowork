@@ -298,6 +298,15 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
  * and whoever actually leads must get the reading whichever way they came to it.
  * The owner's sops store shadows the shipped page file-for-file, same as every SOP.
  */
+/**
+ * A Routine's reading rides its switch both ways: ON delivers `reading`, OFF delivers
+ * `reading_off` — the page that says what the owner is working without and where the switch
+ * is (owner, 2026-09-02). Every stock Routine therefore has a page in every packet.
+ */
+export function routineReading(routines: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[]): string[] {
+  return routines.flatMap((routine) => (routine.enabled ? routine.reading : routine.reading_off));
+}
+
 async function bootReading(
   projectRoot: string,
   mcpOn: boolean,
@@ -565,7 +574,7 @@ export async function resolveForm(
     control: routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
     desk: form.desk,
   });
-  const enabledReading = routines.filter((routine) => routine.enabled).flatMap((routine) => routine.reading);
+  const enabledReading = routineReading(routines);
   const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
   const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   const selectedBehaviours = form.behaviours ?? (parentSeed?.seeds.behaviours.value as string[] | undefined) ?? [];

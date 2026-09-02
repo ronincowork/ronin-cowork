@@ -12,6 +12,7 @@ Routine definition.
 - **label:** person-facing name
 - **blurb:** one honest line about what it equips
 - **reading:** routine/<token>/FILE.md, ...
+- **reading_off:** routine/<token>/OFF.md, ...
 - **sops:** name, ...
 - **macros:** name, ...
 - **actions:** name, ...
@@ -23,7 +24,9 @@ Routine definition.
 ```
 
 Use `—` for an empty list. Lists contain names, not copied content. `reading` entries are
-boot-shelf coordinates; SOP names omit `.md`; macro/action/tool names use their catalog
+boot-shelf coordinates, delivered when the Routine is on; `reading_off` entries are the
+same kind of coordinate, delivered when it is OFF — the page that says what the owner is
+working without and where the switch is; SOP names omit `.md`; macro/action/tool names use their catalog
 tokens. An MCP name is the connection identity the launch adapter resolves, never command
 flags embedded in Markdown.
 

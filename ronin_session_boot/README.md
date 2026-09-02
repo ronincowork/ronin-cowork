@@ -14,7 +14,7 @@ same name replaces ours whole; a new name sits beside it.
 | `all/` | every session, always |
 | `<service>_connected/` | only when an enabled Routine declares it and the connection is on |
 | `root/<project_root>/` | only sessions working in that directory |
-| `routine/<routine>/FILE.md` | only when an enabled Routine manifest declares the file |
+| `routine/<routine>/FILE.md` | when a Routine manifest declares the file: `reading:` if the Routine is on, `reading_off:` if it is off |
 
 A session receives every applicable level compiled into one per-session `README.md`:
 Ronin's teaching inlined, your `root/` documents listed by title and path.
@@ -37,11 +37,12 @@ README beside a session's letter is the only document the newborn is asked to op
 
 ## What ships
 
-Two universal sources and one generated fragment:
+Three universal sources and one generated fragment:
 
 - `all/KOTOBA_GLOSSARY.md` — the house vocabulary, so every session means the same things
   by the same words.
 - `all/SHELVES.md` — the map of where everything is, and what is on each shelf.
+- `all/RONIN_UTILITY.md` — where everything is in the coworkspace and how the owner drives it.
 - `SESSION_MACROS.md` is a template, not read directly. At birth Ronin fills its active
   macro section from the resolved `MACROS.md` catalog (`preview: yes`) and includes it in
   the compiled README.

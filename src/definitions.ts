@@ -234,6 +234,8 @@ export type RoutineBundle = (typeof ROUTINE_BUNDLES)[number];
 
 export interface RoutineRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
   reading: string[];
+  /** Delivered when the Routine is OFF: what the owner is working without, and the switch. */
+  reading_off: string[];
   sops: string[];
   macros: string[];
   actions: string[];
@@ -294,6 +296,7 @@ export async function listRoutines(): Promise<RoutineRow[]> {
     label: d.get('label') || d.name,
     blurb: d.get('blurb'),
     reading: splitDefinitionList(d.get('reading')),
+    reading_off: splitDefinitionList(d.get('reading_off')),
     sops: splitDefinitionList(d.get('sops')),
     macros: splitDefinitionList(d.get('macros')),
     actions: splitDefinitionList(d.get('actions')),
