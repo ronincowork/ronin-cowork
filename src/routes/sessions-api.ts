@@ -36,7 +36,7 @@ import {
   stopSessionTree,
 } from '../tmux.js';
 import { sendText } from '../send.js';
-import { attemptMessage, enqueueMessage } from '../message-queue.js';
+import { attemptMessage, enqueueMessage, MessageRefused } from '../message-queue.js';
 import { sessionKey } from '../session-dir.js';
 import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';
@@ -518,6 +518,7 @@ export function registerSessions(app: express.Express): void {
       const retained = await attemptMessage(item.id, 'safe');
       res.json({ ok: true, control, expanded: expanded != null, queued: retained !== null, started: retained === null, message: retained });
     } catch (e) {
+      if (e instanceof MessageRefused) return res.status(404).json({ error: e.message, code: 'target_missing' });
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });

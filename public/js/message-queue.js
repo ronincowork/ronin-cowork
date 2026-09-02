@@ -44,7 +44,7 @@ export function watchMessageQueueAttention() {
       const response = await fetch('/api/messages');
       const body = await response.json();
       const ids = new Set((Array.isArray(body.messages) ? body.messages : [])
-        .filter((message) => message.state === 'stuck' || message.state === 'failed')
+        .filter((message) => message.state === 'stuck' || message.state === 'failed' || message.state === 'target_missing')
         .map((message) => message.id));
       if ([...ids].some((id) => !attentionSeen.has(id))) {
         attention(t('messages.attention', 'Check Team Commons → Agent Message Queue'));
@@ -98,8 +98,9 @@ export function buildMessageQueue(host, onCount = () => {}) {
       const card = el('article', `mq-card mq-${message.state}`);
       const head = el('div', 'mq-head');
       const waiting = message.state === 'stuck' && message.attempts === 0;
-      const state = waiting ? t('messages.waiting', 'Waiting') : message.state === 'failed' ? t('messages.failed', 'Failed') : t('messages.pending', 'Pending');
-      const since = message.state === 'failed' ? message.updated_at : message.created_at;
+      const missing = message.state === 'target_missing';
+      const state = missing ? t('messages.target_missing', 'Target missing') : waiting ? t('messages.waiting', 'Waiting') : message.state === 'failed' ? t('messages.failed', 'Failed') : t('messages.pending', 'Pending');
+      const since = message.state === 'failed' || missing ? message.updated_at : message.created_at;
       head.append(el('strong', '', typeOf(message.source)), el('span', 'mq-state', t('messages.state_age', '{state} · {age}', { state, age: ageOf(since) })));
       const route = el('dl', 'mq-route');
       route.append(
@@ -117,7 +118,8 @@ export function buildMessageQueue(host, onCount = () => {}) {
       retry.addEventListener('click', () => void act(message, '/retry', retry, t('messages.trying', 'Trying…')));
       force.addEventListener('click', () => void act(message, '/force', force, t('messages.forcing', 'Forcing…')));
       dismiss.addEventListener('click', () => void act(message, '', dismiss, t('messages.dismissing', 'Dismissing…'), 'DELETE'));
-      actions.append(retry, force, dismiss);
+      if (missing) actions.append(dismiss);
+      else actions.append(retry, force, dismiss);
       card.append(head, route, text, reason, actions);
       board.append(card);
     }

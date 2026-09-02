@@ -3,16 +3,18 @@ import fs, { type FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { storeDir } from './stores.js';
-import { getControl, sessionExists } from './tmux.js';
+import { getControl, listSessions } from './tmux.js';
 import { deliverForce, deliverSafe } from './send.js';
 
-export type MessageState = 'pending' | 'stuck' | 'failed';
+export type MessageState = 'pending' | 'stuck' | 'failed' | 'target_missing';
 export type MessageSource = 'tell' | 'wipeboard_notice' | 'owner' | 'house';
 
 export interface QueuedMessage {
   id: string;
   from: string;
   target: string;
+  /** The durable birth identity. A reused tmux name is a different recipient. */
+  target_key: string;
   text: string;
   source: MessageSource;
   state: MessageState;
@@ -20,9 +22,11 @@ export interface QueuedMessage {
   attempts: number;
   created_at: string;
   updated_at: string;
+  expires_at: string;
 }
 
 const DIR = storeDir('message_queue');
+export const MESSAGE_TTL_MS = 48 * 60 * 60 * 1_000;
 const active = new Set<string>();
 const file = (id: string) => path.join(DIR, `${id}.json`);
 const lockFile = (id: string) => path.join(DIR, `${id}.lock`);
@@ -39,8 +43,19 @@ export async function listQueuedMessages(): Promise<QueuedMessage[]> {
   let names: string[];
   try { names = await fs.readdir(DIR); } catch { return []; }
   const rows: QueuedMessage[] = [];
+  const now = Date.now();
   for (const name of names.filter((n) => n.endsWith('.json')).sort()) {
-    try { rows.push(JSON.parse(await fs.readFile(path.join(DIR, name), 'utf8')) as QueuedMessage); } catch { /* incomplete/hand-edited file stays out of execution */ }
+    try {
+      const item = JSON.parse(await fs.readFile(path.join(DIR, name), 'utf8')) as QueuedMessage;
+      // Pre-instance queues cannot safely be assigned after an upgrade. The queue is
+      // transport, not a record: expire them rather than let a reused name inherit them.
+      const expires = Date.parse(item.expires_at);
+      if (!item.target_key || !Number.isFinite(expires) || expires <= now) {
+        await fs.unlink(path.join(DIR, name)).catch(() => {});
+        continue;
+      }
+      rows.push(item);
+    } catch { /* incomplete/hand-edited file stays out of execution */ }
   }
   return rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
@@ -50,13 +65,26 @@ const sourceFrom = (source: MessageSource): string => ({
 })[source];
 
 export async function enqueueMessage(target: string, text: string, source: MessageSource, from = sourceFrom(source)): Promise<QueuedMessage> {
-  const at = new Date().toISOString();
+  const targetSession = (await listSessions()).find((session) => session.name === target);
+  if (!targetSession) throw new MessageRefused(target);
+  const now = Date.now();
+  const at = new Date(now).toISOString();
   const item: QueuedMessage = {
-    id: randomUUID(), from, target, text, source, state: 'pending', reason: 'waiting for delivery',
-    attempts: 0, created_at: at, updated_at: at,
+    id: randomUUID(), from, target, target_key: targetSession.key, text, source,
+    state: 'pending', reason: 'waiting for delivery', attempts: 0,
+    created_at: at, updated_at: at, expires_at: new Date(now + MESSAGE_TTL_MS).toISOString(),
   };
   await write(item);
   return item;
+}
+
+export class MessageRefused extends Error {
+  readonly target: string;
+  constructor(target: string) {
+    super(`Target session '${target}' does not exist. Choose a session from the roster, or use the team's wipeboard.`);
+    this.name = 'MessageRefused';
+    this.target = target;
+  }
 }
 
 export async function dismissMessage(id: string): Promise<boolean> {
@@ -107,8 +135,11 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
       await write(item);
       return item;
     };
-    if (!(await sessionExists(item.target))) {
-      return retain('failed', 'target session does not exist');
+    const targetSession = (await listSessions()).find((session) => session.name === item.target);
+    if (!targetSession || targetSession.key !== item.target_key) {
+      return retain('target_missing', targetSession
+        ? 'the target name now belongs to a different session'
+        : 'target session no longer exists');
     }
     if (mode === 'safe') {
       const control = await getControl(item.target);
@@ -137,7 +168,7 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
 
 export async function processMessageQueue(): Promise<void> {
   for (const item of await listQueuedMessages()) {
-    if (item.state !== 'failed') await attemptMessage(item.id, 'safe');
+    if (item.state !== 'failed' && item.state !== 'target_missing') await attemptMessage(item.id, 'safe');
   }
 }
 

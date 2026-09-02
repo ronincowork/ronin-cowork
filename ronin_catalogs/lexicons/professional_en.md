@@ -1167,6 +1167,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.waiting:** Waiting
 - **messages.failed:** Failed
 - **messages.pending:** Pending
+- **messages.target_missing:** Target missing
 - **messages.state_age:** {state} · {age}
 - **messages.age_now:** just now
 - **messages.age_short_seconds:** {seconds}s

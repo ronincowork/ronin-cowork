@@ -29,6 +29,13 @@ Every sender uses the same delivery engine. Automatic checks and **Try Again** u
 delivery: the target must exist, its dial must permit writing, and its Agent must show a
 recognized empty prompt. Busy work, dialogs, drafts and unknown prompts retain the card
 with the measured reason.
+
+A message to a name that is not on the roster is **refused**, with directions to choose a
+live session from the roster or use the team's wipeboard. Accepted mail binds to the
+target's durable session key, not its reusable name. If that session ends, its retained
+card changes to **Target missing** and offers Dismiss only; a later session born with the
+same name can never receive it. All retained mail expires after 48 hours. The queue is a
+transport, not a record; RIREKI and TEGAMI remain the records.
 If the prompt changes during submission, delivery is ambiguous rather than merely
 blocked: the message may have entered while another actor changed the prompt. Ronin marks
 it failed and stops automatic retries so it cannot silently send a duplicate.
@@ -43,7 +50,7 @@ and announces its outcome. A card that clears says **Delivered and cleared** bef
 absence becomes the only evidence; a retained message says why it is still waiting.
 
 The queue is working state in the `message_queue` data store. Each item records:
-`id`, `from`, `target`, `text`, `source`, `state`, `reason`, `attempts`, `created_at`, and
-`updated_at`. Its REST surface is `GET/POST /api/messages`,
+`id`, `from`, `target`, `target_key`, `text`, `source`, `state`, `reason`, `attempts`,
+`created_at`, `updated_at`, and `expires_at`. Its REST surface is `GET/POST /api/messages`,
 `POST /api/messages/:id/retry`, `POST /api/messages/:id/force`, and
 `DELETE /api/messages/:id`.
