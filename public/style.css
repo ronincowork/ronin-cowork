@@ -1221,6 +1221,14 @@ body {
   color: var(--accent);
   border-color: var(--accent);
 }
+/* Desktop's horizontal メ strip otherwise offers only an unexplained page glyph. The
+   phone sheet already supplies its own Docs word beside this same relocated button. */
+.tile-head .tmore .tdocs-btn {
+  width: auto;
+  padding-inline: var(--space-3);
+  gap: var(--space-2);
+}
+.tile-head .tmore .tdocs-btn::after { content: attr(data-label); }
 
 /* One Agent's shared Docs editor, over its terminal on desktop and in the phone shell. */
 .tile-doc-view {
