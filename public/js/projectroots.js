@@ -39,7 +39,7 @@ export function buildProjectRoots(root, isShowing) {
 
   const guide = document.createElement('p');
   guide.className = 'pr-guide';
-  guide.textContent = t('roots.worktrees_guide', 'Two independent answers control Ronin Worktrees: the Agent must receive the Ronin Worktrees Routine from its Campaign or Team, and this repository must allow Worktrees. This page controls the repository answer.');
+  guide.textContent = t('roots.worktrees_guide', 'For Ronin Worktrees to run, both must be on: the repo needs Worktrees on, and the Agent needs Worktrees on. This page controls the repo.');
 
   const list = document.createElement('div');
   list.className = 'pr-list';
@@ -294,7 +294,7 @@ export function buildProjectRoots(root, isShowing) {
         worktreesState = document.createElement('p');
         worktreesState.className = 'pr-worktrees-state';
         worktreesState.textContent = enabled
-          ? t('roots.state_worktrees', 'This repository allows Ronin Worktrees. An Agent also needs the Ronin Worktrees Routine from its Campaign or Team.')
+          ? t('roots.state_worktrees', 'Repo: Worktrees on. Agent must also have Worktrees on.')
           : t('roots.state_checkout', 'This repository uses its checkout. That repository choice wins even if an Agent has the Ronin Worktrees Routine.');
       } else if (a) {
         chip(t('roots.chip_shared', 'Repository: use checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.'));
