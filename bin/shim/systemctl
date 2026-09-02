@@ -22,7 +22,6 @@
 # Speed bump, not physics: /usr/bin/systemctl still exists — but going around this is a
 # deliberate, visible act rather than a reflex.
 set -u
-SELF_DIR=$(cd "$(dirname "$0")" && pwd)
 # REAL_DIR anchors the repo's own guard script below and must survive being run through
 # a projected session-commands symlink (src/routine-tools.ts) — the floor projects this
 # shim to every Cowork Agent, and the unresolved $0 pointed ../.. at a store with no
@@ -35,8 +34,36 @@ while [ -L "$SELF" ]; do
   case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
 done
 REAL_DIR=$(cd "$(dirname "$SELF")" && pwd)
-REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v systemctl)
-[ -n "${REAL:-}" ] || REAL=/usr/bin/systemctl
+
+# A born session sees the projected alias first and may also retain the checkout's
+# bin/shim on PATH. Removing only the alias directory leaves the checkout spelling of
+# this exact file, so command -v selects us again and the two spellings recurse. Resolve
+# every candidate and skip every path which names this shim; the first different
+# executable is the host systemctl. The guard below still runs here before that exec.
+canonical_file() {
+  candidate=$1
+  while [ -L "$candidate" ]; do
+    link=$(readlink "$candidate")
+    case $link in /*) candidate=$link ;; *) candidate=$(dirname "$candidate")/$link ;; esac
+  done
+  candidate_dir=$(cd "$(dirname "$candidate")" 2>/dev/null && pwd) || return 1
+  printf '%s/%s\n' "$candidate_dir" "$(basename "$candidate")"
+}
+SELF_REAL=$(canonical_file "$0")
+REAL=
+old_ifs=$IFS
+IFS=:
+for search_dir in $PATH; do
+  [ -n "$search_dir" ] || search_dir=.
+  candidate=$search_dir/systemctl
+  [ -x "$candidate" ] || continue
+  candidate_real=$(canonical_file "$candidate") || continue
+  [ "$candidate_real" = "$SELF_REAL" ] && continue
+  REAL=$candidate_real
+  break
+done
+IFS=$old_ifs
+[ -n "$REAL" ] || REAL=/usr/bin/systemctl
 
 # First non-flag argument is the verb; the rest are units.
 verb=""; units=""
@@ -71,8 +98,7 @@ fi
 
 if [ "$destructive" = 1 ] && [ "$hits_server" = 1 ] && [ "${RONIN_KILL_TMUX:-}" != "1" ]; then
   # Ask the REAL tmux — the shim beside us would only add dial checks we don't want here.
-  TMUX_BIN=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v tmux)
-  [ -n "${TMUX_BIN:-}" ] || TMUX_BIN=/usr/bin/tmux
+  TMUX_BIN=/usr/bin/tmux
   all=$("$TMUX_BIN" list-sessions -F '#{session_name}' 2>/dev/null || true)
   real=$(printf '%s\n' "$all" | grep -v '^$' | grep -cv '^grid_' || true)
   if [ "${real:-0}" -gt 0 ]; then
