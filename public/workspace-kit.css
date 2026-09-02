@@ -68,7 +68,7 @@
   /* The selector is three shelves, not one mixed list. Blue names Workbench utilities
      (Commons/roster and birth doors); kaki names the actual Teams or Agents between
      them. Placement is visible in the workspaces and adds no pressed state here. */
-  .wk-workbench-selector-cards .wk-selector-utility { border-color: var(--accent-2); box-shadow: inset var(--edge-2) 0 var(--accent-2); }
+  .wk-workbench-selector-cards .wk-selector-utility { border-color: var(--define-line); box-shadow: inset var(--edge-2) 0 var(--define-line); }
   .wk-workbench-selector-cards .wk-selector-entity { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
   .wk-workbench-selector-cards .wk-selector-utility + .wk-selector-entity,
   .wk-workbench-selector-cards .wk-selector-entity + .wk-selector-utility,
