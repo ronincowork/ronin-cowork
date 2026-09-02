@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import {
   resolveWorktrees,
   type WorktreesCapability,
@@ -20,23 +20,37 @@ import {
 
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-worktrees-matrix-'));
 
-const gitLocationVariables = [
-  'GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR',
-  'GIT_PREFIX', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES',
-  'GIT_NAMESPACE',
-] as const;
-
 const isolatedGitEnvironment = (): NodeJS.ProcessEnv => {
   const env = { ...process.env };
-  for (const name of gitLocationVariables) delete env[name];
+  // Promotion is itself Git machinery. Its candidate/BYOIN child may inherit location,
+  // discovery and `git -c` configuration through any GIT_* variable; none describes the
+  // disposable repositories this test creates. Start their Git processes from no Git
+  // context, and make host-level config unable to add hooks, signing, aliases or includes.
+  for (const name of Object.keys(env)) if (name.startsWith('GIT_')) delete env[name];
+  env.GIT_CONFIG_NOSYSTEM = '1';
+  env.GIT_CONFIG_GLOBAL = '/dev/null';
+  env.GIT_TERMINAL_PROMPT = '0';
+  env.GIT_PAGER = 'cat';
   return env;
 };
 
-const git = (dir: string, ...args: string[]): string =>
-  execFileSync('git', ['-C', dir, ...args], {
+const git = (dir: string, ...args: string[]): string => {
+  const argv = ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgSign=false', '-C', dir, ...args];
+  const result = spawnSync('git', argv, {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: isolatedGitEnvironment(),
-  }).toString().trim();
+    encoding: 'utf8',
+  });
+  if (result.status !== 0 || result.signal || result.error) {
+    throw new Error([
+      `fixture Git failed: git ${argv.join(' ')}`,
+      `status=${String(result.status)} signal=${String(result.signal)} error=${result.error?.message ?? ''}`,
+      `stdout=${result.stdout.trim()}`,
+      `stderr=${result.stderr.trim()}`,
+    ].join('\n'));
+  }
+  return result.stdout.trim();
+};
 
 interface RepositoryFixture {
   input: WorktreesRepositoryInput;
