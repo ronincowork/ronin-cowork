@@ -26,6 +26,7 @@ import { t } from './lexicon.js';
 import { applyPageWords } from './pagewords.js';
 
 export async function init() {
+  const reveal = () => document.documentElement.classList.remove('boot-pending');
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
   // so a tile is born knowing. `stream:false` = the 🔓 tape view is off (no record
   // service — the free build); every tile is 🔒 and the switch is inert. An operator
@@ -54,12 +55,12 @@ export async function init() {
   // tile is built. One request; a box that cannot answer gets stock, not a failure.
   try { await loadDeskProfile(); } catch (e) { console.warn('desk profile', e); }
   guard('page words', applyPageWords); // index.html's static words, through the lexicon
-  // Resolve the root palette before revealing the document. A profile skin is not a
-  // second paint: it is the one root token set this boot uses. The boot class prevents
-  // stock surfaces painting while the catalog read is still resolving.
+  // Resolve the root palette before mounting the chosen surface. A profile skin is not
+  // a second paint: it is the one root token set this boot uses. The boot veil stays up
+  // until setup, phone, or desktop has actually mounted — revealing here used to flash
+  // the static desktop bar (including its "2" shape control) before the phone decision.
   try { await restoreSkin(activeProfile()?.skin || ''); }
   catch (e) { console.warn('restore skin', e); }
-  finally { document.documentElement.classList.remove('boot-pending'); }
 
   // FIRST LOAD. A fresh install lands here; everyone else never sees it.
   //
@@ -94,6 +95,7 @@ export async function init() {
         const q = new URLSearchParams({ tiles: (landing?.tiles ?? []).join(',') });
         location.href = '/?' + q;
       });
+      reveal();
       return;
     }
   }
@@ -104,6 +106,7 @@ export async function init() {
   // and none of the chrome below. iPad (coarse but wide) and desktop continue as ever.
   if (IS_PHONE) {
     await buildPhone();
+    reveal();
     return;
   }
 
@@ -167,8 +170,12 @@ export async function init() {
   // wired ONCE, on the document: nothing that sets a title has to know it exists, so
   // this covers the whole app including the static titles in index.html.
   guard('house tooltips', installTips);
+  reveal();
 }
 
 // Boot inside a guard too: if init throws before its own guards are reached, the
 // header must still be usable and the reason must be on screen.
-init().catch((e) => showFailure('startup', e));
+init().catch((e) => {
+  document.documentElement.classList.remove('boot-pending');
+  showFailure('startup', e);
+});
