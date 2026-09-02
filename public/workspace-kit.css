@@ -12,7 +12,10 @@
      compact, whatever size its markup asked for, so no surface can outgrow the row. */
   .wk-surface-header .wk-action { min-height: 0; padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
   .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
-  .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
+  /* The PRIMARY action wears the brand (token audit ruling, 2026-09-02): kiiro is the
+     primary; kaki keeps identity/heightened surfaces (the Services check stays kakiiro
+     by its own ruling) and the pressed/selected edge language. */
+  .wk-action[data-kind='primary'] { border-color: var(--kiiro); background: var(--kiiro); color: var(--on-kiiro); }
   /* ACTION WAITING (owner, 2026-09-01): a header action over a dirty surface goes bright
      kiiro so it is unmissable. The fill is the kiiro PAIR (@tokens' ruling, same day):
      --warn is the theme-tuned warning INK and never a fill. Clean surfaces keep the
