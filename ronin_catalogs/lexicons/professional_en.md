@@ -199,7 +199,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.new_project_worktrees:** Worktrees for new project roots
 - **campaign_view.new_project_worktrees_yes:** Allow Ronin Worktrees
 - **campaign_view.new_project_worktrees_no:** Use the checkout
-- **campaign_view.new_project_worktrees_help:** Default repository permission for roots added later. An Agent also needs the Ronin Worktrees Routine from its Campaign or Team. Change an existing repository on its Project Root card below.
+- **campaign_view.new_project_worktrees_help:** Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for roots added later; change an existing repository on its Project Root card below.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
 - **campaign_view.head:** Campaign: {name}
@@ -848,8 +848,8 @@ The catalog entry goes. {dir} is not touched.
 - **roots.chip_direct_title:** Direct: commits land on {stable} itself.
 - **roots.chip_shared:** Repository: use checkout
 - **roots.chip_shared_title:** No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.
-- **roots.worktrees_guide:** Two independent answers control Ronin Worktrees: the Agent must receive the Ronin Worktrees Routine from its Campaign or Team, and this repository must allow Worktrees. This page controls the repository answer.
-- **roots.state_worktrees:** This repository allows Ronin Worktrees. An Agent also needs the Ronin Worktrees Routine from its Campaign or Team.
+- **roots.worktrees_guide:** For Ronin Worktrees to run, both must be on: the repo needs Worktrees on, and the Agent needs Worktrees on. This page controls the repo.
+- **roots.state_worktrees:** Repo: Worktrees on. Agent must also have Worktrees on.
 - **roots.state_checkout:** This repository uses its checkout. That repository choice wins even if an Agent has the Ronin Worktrees Routine.
 - **roots.state_undeclared:** No repository profile is declared, so Agents use the checkout. Edit this root to allow Ronin Worktrees.
 
