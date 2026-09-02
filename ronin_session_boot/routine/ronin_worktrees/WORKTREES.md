@@ -6,6 +6,9 @@ both the Agent and the repository must have Worktrees on.
 **Your brief names no desk.** Work in the project root's ordinary checkout under the
 repository's own instructions. Do not invent a desk, branch, hand-in target or managed
 workflow because this Routine is on; the launch receipt says why no desk was opened.
+The Agent capability does not override the repository: when the brief says a repository
+does not use Worktrees, edit directly in the checkout it names. Do not request a desk for
+that repository; there is no missing desk to resolve.
 `ronin-repo-init <project-root>` is only for a Configuration task that explicitly asks for a
 local Git repository. Routine selection alone is never permission to initialize one.
 
