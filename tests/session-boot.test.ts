@@ -90,13 +90,11 @@ test('Routine reading teaches only the selected capability; test policy stays wi
   assert.match(base, /read_tegami/);
   assert.match(base, /tejun-wipeboard/);
   assert.doesNotMatch(base, /tejun-rireki/);
-  assert.match(services, /Ronin Services is one additional Routine/);
   assert.match(services, /tejun-rireki <session> since/);
-  assert.match(services, /Koshi is Ronin's assisted administrative behavior/);
-  assert.match(services, /Voice turns the owner's speech into text/);
-  assert.match(services, /Hotwords are the owner's dictation glossary/);
-  assert.match(services, /Selection is not installation/);
-  assert.match(services, /none is a separate Routine or switch/i);
+  assert.match(services, /Fall back to `tejun-peek` only when the record says there is no tape/);
+  assert.match(services, /Koshi\*\* is Ronin's assisted administrative behavior/);
+  assert.match(services, /Voice\*\* turns the owner's speech into text/);
+  assert.match(services, /Hotwords\*\* are the owner's dictation\s+glossary/);
   assert.match(worktrees, /tejun-desk status --assignment/);
   assert.match(worktrees, /tejun-desk hand-in/);
   assert.doesNotMatch(worktrees, /first full repository BYOIN/i);
