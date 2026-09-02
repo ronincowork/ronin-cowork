@@ -300,12 +300,11 @@ async function bootReading(
   projectRoot: string,
   mcpOn: boolean,
   bornLead = false,
-  assigned = false,
   routineReading: string[] = [],
   routineMacros?: ReadonlySet<string>,
   session = '',
 ): Promise<string[]> {
-  const files = await bootFiles(projectRoot, mcpOn, assigned, routineReading, routineMacros, session);
+  const files = await bootFiles(projectRoot, mcpOn, routineReading, routineMacros, session);
   // Team leadership is explicit; no selected reading infers it.
   if (bornLead && !files.includes(teamsSopPath())) files.push(teamsSopPath());
   return files;
@@ -574,7 +573,7 @@ export async function resolveForm(
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = coworkAgent && agent
-    ? await bootReading(root.name, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledReading, enabledMacros, name)
+    ? await bootReading(root.name, !mcpOffWanted, !!form.team_lead && !!form.team, enabledReading, enabledMacros, name)
     : [];
   const completeReading = [...shelfReading, ...resolvedBehaviours.delivered.map((book) => book.file)];
   const birthReading = coworkAgent && agent

@@ -221,7 +221,7 @@ Non-Git directories remain legal project roots and receive no `RONIN_REPO`.
 
 A session in the enabled/enabled cell works at a **repo desk** — the internal record for its
 own branch and worktree, cut from its team's line
-(`ronin_session_boot/assignment/DESK_CONTRACT.md`; the model is `docs/worktrees.md`). Commit preserves work privately at the desk;
+(`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`; the model is `docs/worktrees.md`). Commit preserves work privately at the desk;
 **hand-in** publishes committed work to the team line; the lead's **team promotion** runs the
 one full repository BYOIN and admits the team's state to `dev`. A desk branch is never
 published to the remote and never opened as a PR. Until a repository's desks are enabled, its
