@@ -8,7 +8,7 @@ export function repositoryNeeds(
     .filter((project) => project.repo === 'no repo')
     .map((project) => ({
       leaf: 'desks.new_project',
-      needs: `${project.name} needs a local Git repository to allow Ronin Worktrees`,
+      needs: `${project.name} needs a local Git repository for managed file coordination`,
       how: `run ronin-repo-init ${project.dir} — it initializes locally and never assumes a remote`,
       met_by: 'agent' as const,
     }));

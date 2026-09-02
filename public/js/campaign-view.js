@@ -51,15 +51,15 @@ function registerCampaignSurfaces() {
   add({ type: TYPES.profile, header: 'surface', label: () => t('cowork.tab_profile', 'Desk profile'), summary: (_tenant, e) => currently.profile(e), create: ({ environment: e }) => { const surface = createDeskProfileSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
   add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Project roots'), summary: (_tenant, e) => currently.roots(e), create: ({ environment: e }) => {
     const surface = WorkspaceKit.primitives.createSurface({ label: t('cowork.tab_roots', 'Project roots'), className: 'cv-surface' });
-    // This is only the repository-side seed for roots added later. Agent capability is
-    // selected independently by the Campaign/Team Routines surface; existing roots keep
-    // the answer in their own repository profile below.
+    // NEW PROJECTS USE DESKS? — the default a new root's RONIN_REPO is written with. It
+    // sits beside the roots (SETTEI audit, 2026-08-30) because that is where a root is
+    // added; each root's own row shows and changes what its file actually says.
     const newDesks = elem('div', 'cv-body');
     const paintNewDesks = (current) => newDesks.replaceChildren(choice(
-      t('campaign_view.new_project_worktrees', 'Worktrees for new project roots'),
-      [{ value: 'managed', label: t('campaign_view.new_project_worktrees_yes', 'Allow Ronin Worktrees') }, { value: 'none', label: t('campaign_view.new_project_worktrees_no', 'Use the checkout') }],
+      t('campaign_view.new_project_desks', 'New projects use desks?'),
+      [{ value: 'managed', label: t('campaign_view.new_project_desks_yes', 'Desks') }, { value: 'none', label: t('campaign_view.new_project_desks_no', 'None') }],
       current,
-      t('campaign_view.new_project_worktrees_help', 'Default repository permission for roots added later. An Agent also needs the Ronin Worktrees Routine from its Campaign or Team. Change an existing repository on its Project Root card below.'),
+      t('campaign_view.new_project_desks_help', 'Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project.'),
       async (v) => { const r = await request('/api/settei/desks', { method: 'PUT', json: { new_project: v } }); paintNewDesks(r.ok ? v : current); },
     ));
     const host = elem('div', 'desk-pane desk-proj show');
