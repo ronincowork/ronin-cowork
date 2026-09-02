@@ -15,7 +15,6 @@ same name replaces ours whole; a new name sits beside it.
 | `<service>_connected/` | only when an enabled Routine declares it and the connection is on |
 | `root/<project_root>/` | only sessions working in that directory |
 | `routine/<routine>/FILE.md` | only when an enabled Routine manifest declares the file |
-| `assignment/` | only sessions whose launch resolved repo desks — the desk contract, `DESK_CONTRACT.md`. A launch given no desk reads nothing here |
 
 A session receives every applicable level compiled into one per-session `README.md`:
 Ronin's teaching inlined, your `root/` documents listed by title and path.

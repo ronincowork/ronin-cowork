@@ -17,10 +17,9 @@ shelf**, because pasting a project's whole catalog is what made the packet unrea
 | `<service>_connected/` (e.g. `gbrain_connected/`) | only when an enabled Routine declares that level and its connection is on |
 | `root/<project_root>/` | only sessions working in that directory |
 | `routine/<routine>/FILE.md` | only when an effective Routine's manifest explicitly names that file |
-| `assignment/` | only sessions whose launch resolved repo desks — the desk contract (`DESK_CONTRACT.md`: commit → hand-in → team promotion → Git push). A launch given no desk reads nothing here; the level is a fact about the launch, not an axis a static shelf could guess |
 
-The levels are **additive, not a hierarchy**. Root, connection, effective Routines and
-desk assignment are independent launch facts; their files compile into one birth README
+The levels are **additive, not a hierarchy**. Root, connection and effective Routines are
+independent launch facts; their files compile into one birth README
 and nothing overrides another level. Work-specific reading uses the separate
 `behaviours` choice: each selected `ways:<book>` joins that same birth reading once.
 There is no mutable role level and no live re-delivery observer.

@@ -130,8 +130,8 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
 
 /**
  * The concrete block the brief carries — facts, not a Git lecture. Every desk, its path,
- * the line it hands in to, and the four words. The long reading (DESK_CONTRACT.md) rides
- * the `assignment` shelf level beside it.
+ * the line it hands in to, and the four words. The long reading is the Worktrees Routine's
+ * own page (routine/ronin_worktrees/WORKTREES.md), delivered when that Routine is on.
  */
 export function renderDeskBlock(a: Assignment): string {
   const width = Math.max(...a.desks.map((d) => d.repo.length));

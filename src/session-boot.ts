@@ -25,20 +25,15 @@
  *                             it wholesale. Near-empty on purpose.
  *   <session_boot store>/     YOURS, outside every repo. Survives upgrade AND uninstall.
  *
- * FOUR LEVELS — universal, Project Root, Routine declarations and an actual assignment:
+ * THREE LEVELS — universal, Project Root and Routine declarations:
  *
  *   all/                    every session, always
  *   <service>_connected/    only when an enabled Routine declares it and MCP is on
  *   root/<project_root>/    only sessions working in that directory
  *   routine/<name>/FILE.md  only when the enabled Routine manifest declares that file
- *   assignment/             only sessions whose launch resolved repo desks — the desk
- *                           contract (commit → hand-in → team promotion → Git push). A
- *                           launch given no desk reads nothing here: the level is a fact
- *                           about the launch, never a guess a static shelf could make
- *                           (docs/control-surface.md §2, 2026-08-28)
  *
  * They are ADDITIVE, not a hierarchy — nothing overrides anything. Root, connection,
- * Routine and assignment each answer a separate launch fact.
+ * Routine answers a separate launch fact.
  *
  * SHADOWING is by filename within a level: your `all/SHELVES.md` replaces ours whole.
  * Across levels there is no shadowing, because they are answering different questions.
@@ -59,7 +54,7 @@ const STOCK = path.join(__dirname, '..', 'ronin_session_boot');
 const SESSION_MACROS_TEMPLATE = path.join(STOCK, 'SESSION_MACROS.md');
 
 /** The levels, in reading order. `root`, `role` and `routine` take resolved values. */
-export type Level = 'all' | 'root' | 'role' | 'routine' | 'assignment';
+export type Level = 'all' | 'root' | 'role' | 'routine';
 
 const userShelf = () => storeDir('session_boot');
 
@@ -180,7 +175,6 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
     path.join(base, 'all'),
     path.join(base, 'root'),
     path.join(base, 'routine'),
-    path.join(base, 'assignment'),
     ...roots.map((r) => path.join(base, 'root', r)),
   ];
   await Promise.all(dirs.map((d) => mkdir(d, { recursive: true }).catch(() => {})));
@@ -261,7 +255,6 @@ async function declaredFiles(refs: readonly string[], mcpOn: boolean): Promise<s
 export async function bootFiles(
   projectRoot: string,
   mcpOn = true,
-  assigned = false,
   routineReading: string[] = [],
   routineMacros?: ReadonlySet<string>,
   session = '',
@@ -271,10 +264,9 @@ export async function bootFiles(
     ...await levelFiles(path.join(STOCK, 'all'), path.join(user, 'all')),
     // Stock cannot have a root/ — it does not know the owner's directories.
     ...(projectRoot ? await filesIn(path.join(user, 'root', projectRoot)) : []),
+    // The desk contract is the Worktrees Routine's own page: on when the Routine is on,
+    // and its text says what to do when the launch opened no desk.
     ...await declaredFiles(routineReading, mcpOn),
-    // The desk contract rides only an ACTUAL assignment, independently of the Routine
-    // selection that made one possible.
-    ...(assigned ? await levelFiles(path.join(STOCK, 'assignment'), path.join(user, 'assignment')) : []),
   ];
   // The same symlinked source can be selected by two honest authorities. Deliver its
   // content once, first selection winning, without collapsing unrelated same-name files.
