@@ -29,7 +29,6 @@
   --bg-2: #0f131c;
   --panel: #131826;
   --raise: #1a2233;
-  --raise-2: #263047;
   --well: #0d1220;
   /* ---- edges, three weights: hairline furniture, control edge, emphasized edge */
   --line: #1f2738;
@@ -140,19 +139,14 @@
      ground is a bruise, so -lift is that lift and the two hexes stay untouched as
      the record of what they are.
 
-     The semantic `--heighten-*` aliases pair kaki with the hexagon for access or view
-     controls whose discoverability is part of their function. The copy hint predates
-     that pair and uses kaki-lift for the same reason: its job is to not be missed. */
+     The copy hint uses kaki-lift for the same heightened reason: its job is to not
+     be missed. (The `--heighten-*` alias family was deleted by the 2026-09-02 token
+     audit — designed in docs/ui.md, defined here, and read by nothing ever; every
+     heightened surface reads kaki directly, and a dead semantic layer is where the
+     next agent's guess goes wrong.) */
   --kaki: #c46243;
   --kaki-lift: #e08163;
   --aiiro: #274a78;
-  --aiiro-lift: #6f95cc;
-  --heighten: var(--kaki);
-  --heighten-hover: var(--kaki-lift);
-  --heighten-fg: var(--on-strong);
-  --heighten-shape: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-  --heighten-inline-size: 22.5px;
-  --heighten-block-size: 21px;
 
   /* ---- THE TERMINAL PALETTE — the tokens js/theme.js reads back into xterm's theme
      object (`termTheme()`), plus the tape/composer surfaces that sit over the pane.
@@ -353,7 +347,6 @@
   --bg-2: #eae7df;
   --panel: #ffffff;
   --raise: #f1efe8;
-  --raise-2: #e6e2d8;
   --well: #f7f5ef;
   --line: #d9d4c8;
   --line-2: #c8c2b2;
@@ -387,7 +380,6 @@
   --shadow-menu: 0 8px 24px rgb(30 30 30 / 18%);
   --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
   --kaki-lift: #a34e2f;
-  --aiiro-lift: #3d6394;
 
   /* ---- THE TERMINAL, ON PAPER (2026-08-19, the owner's ask: "the terminal is still
      white on black … so that the terminal is not so intimidating to non-terminal users").
