@@ -28,6 +28,7 @@ session_boot_cache|data|session-boot
 session_commands|data|session-commands
 bench|data|bench
 telemetry|data|telemetry
+ageru|user|ageru
 ledger|data|ledger
 message_queue|data|message-queue
 sops|user|sops

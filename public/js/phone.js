@@ -29,6 +29,8 @@ import { createTerminalTileHost } from './terminal-tile-host.js';
 import { makeDrop } from './tiledrop.js';
 import { S } from './state.js';
 import { t } from './lexicon.js';
+import { WorkspaceKit } from './workspace-kit.js';
+import { createFeedbackSurface } from './feedback.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -50,6 +52,7 @@ function agentLabel(session) {
 const routeFromHash = () => {
   const parts = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
   if (parts[0] !== 'm') return { screen: 'teams' };
+  if (parts[1] === 'feedback') return { screen: 'feedback' };
   if (parts[1] === 't' && parts[2]) return { screen: 'agents', team: parts[2] };
   if (parts[1] === 's' && parts[2] && parts[3]) return { screen: 'terminal', team: parts[2], session: parts[3] };
   return { screen: 'teams' };
@@ -71,6 +74,10 @@ export async function buildPhone() {
   // hidden desktop bar, not cloned — captured once, because a later paint detaches it
   // and getElementById would then find nothing. Tapping it is the way home (href="./").
   const brand = document.getElementById('brandbtn');
+  const feedbackAction = WorkspaceKit.primitives.createAction({ label: t('feedback.button', 'Feedback'), size: 'compact', className: 'fb-bar-action' });
+  feedbackAction.el.addEventListener('click', () => { location.hash = '#/m/feedback'; });
+  const barContent = (...items) => [...items, feedbackAction.el];
+  const feedback = createFeedbackSurface(() => { location.hash = '#/m'; });
 
   let route = routeFromHash();
   let rows = new Map(); // session name -> /api/home row (status, ctx, model, tegami)
@@ -90,7 +97,7 @@ export async function buildPhone() {
 
   /* ---------- screen 1 · the Coworks ---------- */
   const paintTeams = () => {
-    bar.replaceChildren(...(brand ? [brand] : []), el('span', 'ph-title', t('phone.coworks', 'Cowork: Teams')));
+    bar.replaceChildren(...barContent(...(brand ? [brand] : []), el('span', 'ph-title', t('phone.coworks', 'Cowork: Teams'))));
     const list = el('div', 'ph-list');
     const teams = teamsFromState().filter((team) => !team.holding || unassignedSessions().length);
     for (const team of teams) {
@@ -206,10 +213,10 @@ export async function buildPhone() {
     }).join('\n');
     if (signature === agentsPainted) return;
     agentsPainted = signature;
-    bar.replaceChildren(
+    bar.replaceChildren(...barContent(
       backLink('#/m'),
       el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })),
-    );
+    ));
     const list = el('div', 'ph-list');
     for (const member of membersOfTeam(team)) {
       const row = rows.get(member.name) || {};
@@ -263,13 +270,13 @@ export async function buildPhone() {
     sheet.addRow(node('dial'), t('me.control', 'Control'), 'stay');
     sheet.addRow(node('killBtn'), t('me.kill', 'Kill session'));
 
-    bar.replaceChildren(
+    bar.replaceChildren(...barContent(
       backLink(teamHash(team)),
       el('span', 'ph-title', agentLabel(S.sessions.find((row) => row.name === session) || { name: session })),
       sheet.btn,
       sheet.menu,
       tile.docsBtn.menu,
-    );
+    ));
   };
   const closeTerminal = () => {
     sheet?.close();
@@ -287,6 +294,13 @@ export async function buildPhone() {
     return back;
   };
 
+  const paintFeedback = () => {
+    closeTerminal();
+    bar.replaceChildren(...barContent(backLink('#/m'), el('span', 'ph-title', t('feedback.title', 'Feedback'))));
+    main.replaceChildren(feedback.el);
+    feedback.show?.();
+  };
+
   /* ---------- the router ---------- */
   const render = () => {
     const next = routeFromHash();
@@ -296,6 +310,7 @@ export async function buildPhone() {
     route = next;
     if (route.screen === 'teams') paintTeams();
     else if (route.screen === 'agents') { paintAgents(); void readRows(); }
+    else if (route.screen === 'feedback') paintFeedback();
     else if (!host) openTerminal();
   };
   window.addEventListener('hashchange', () => guard('phone route', render));
