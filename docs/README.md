@@ -19,6 +19,7 @@ contracts remain available, but they are not prerequisites for installing or usi
 |---|---|
 | How do I find and arrange work? | [Workbench](workbench.md) |
 | How do I add or change a project root? | [Project roots](project-roots.md) |
+| How do parallel Agents avoid colliding in the same files? | [Ronin Worktrees](worktrees.md) |
 | How do session Control settings work? | [Session Control](session-control-dials.md) |
 | How do I customize Ronin without editing shipped files? | [Customize](customize.md) and [shadowing](shadowing.md) |
 | What is a template, and how does my agent keep mine? | [Templates](templates.md) |
