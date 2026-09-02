@@ -9,6 +9,7 @@ export type Control = 'user' | 'read' | 'write';
 
 /** tmux user option holding a session's control dial (see ronin_catalogs/ACTIONS.md control-check). */
 export const CONTROL_OPT = '@ronin-control';
+export const SESSION_KEY_OPT = '@ronin-key';
 
 /**
  * DELIVERED BY `env`, NOT BY `-e`. `-e` sets the SESSION environment, and tmux does not
@@ -33,6 +34,8 @@ export function newSessionArgs(
     env?: Readonly<Record<string, string>>;
     argv?: readonly string[];
     control?: Control;
+    /** Stable per-session data key, stamped in the same tmux transaction as birth. */
+    key?: string;
   } = {},
 ): string[] {
   const envPairs = Object.entries(opts.env ?? {})
@@ -46,5 +49,6 @@ export function newSessionArgs(
     a.push('--', ...argv, ';', 'set-option', '-w', '-t', name, 'remain-on-exit', 'on');
   }
   if (opts.control) a.push(';', 'set-option', '-t', name, CONTROL_OPT, opts.control);
+  if (opts.key) a.push(';', 'set-option', '-t', name, SESSION_KEY_OPT, opts.key);
   return a;
 }

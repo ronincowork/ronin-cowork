@@ -179,7 +179,7 @@ export interface Resolved {
   team_branch: string;
   team_wipeboard: string;
   team_state: '' | 'active' | 'archived';
-  /** Literal files the server put in the assisted brief's `Read first:` sentence. */
+  /** Source files during resolution; the executor replaces them with the compiled README. */
   birth_reading: string[];
   /** The valid selected books handed over beside the Routine reading. */
   behaviours: DeliveredBehaviour[];
@@ -236,10 +236,9 @@ export function buildBrief(
   // a brief that mentions desks to a session standing in `dev` is the failure the control
   // surface exists to prevent (src/launch-desks.ts).
   if (assignment?.desks.length) parts.push(renderDeskBlock(assignment));
-  // THE SESSION BOOT SHELF, listed at this instant rather than remembered. This replaced
-  // the project_root's `read:` — a stored list of literal paths that went stale in silence
-  // the moment a file moved. Nothing is written down now, so nothing can be wrong: a file
-  // that is gone simply is not named. See src/session-boot.ts.
+  // THE BIRTH README POINTER. ResolveForm initially supplies the resolved sources; the
+  // launch executor compiles them into one per-session README and replaces this sentence
+  // before building provider argv. See src/session-boot.ts and routes/launch.ts.
   const reading = [...boot, ...(form.seed ?? [])].filter(Boolean);
   if (reading.length) parts.push(`Read first: ${reading.join(', ')}.`);
   const prompt = form.prompt?.trim() ?? '';
@@ -302,11 +301,11 @@ async function bootReading(
   mcpOn: boolean,
   bornLead = false,
   assigned = false,
-  routines: string[] = [],
+  routineReading: string[] = [],
   routineMacros?: ReadonlySet<string>,
   session = '',
 ): Promise<string[]> {
-  const files = await bootFiles(projectRoot, mcpOn, assigned, routines, routineMacros, session);
+  const files = await bootFiles(projectRoot, mcpOn, assigned, routineReading, routineMacros, session);
   // Team leadership is explicit; no selected reading infers it.
   if (bornLead && !files.includes(teamsSopPath())) files.push(teamsSopPath());
   return files;
@@ -565,7 +564,7 @@ export async function resolveForm(
     control: routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
     desk: form.desk,
   });
-  const enabledRoutines = routines.filter((routine) => routine.enabled).map((routine) => routine.name);
+  const enabledReading = routines.filter((routine) => routine.enabled).flatMap((routine) => routine.reading);
   const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
   const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   const selectedBehaviours = form.behaviours ?? (parentSeed?.seeds.behaviours.value as string[] | undefined) ?? [];
@@ -575,7 +574,7 @@ export async function resolveForm(
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = coworkAgent && agent
-    ? await bootReading(root.name, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
+    ? await bootReading(root.name, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledReading, enabledMacros, name)
     : [];
   const completeReading = [...shelfReading, ...resolvedBehaviours.delivered.map((book) => book.file)];
   const birthReading = coworkAgent && agent

@@ -1,9 +1,7 @@
 # BASE ABILITIES — ordinary Ronin work
 
 This reading belongs to the **Ronin Base** Routine. It teaches the ordinary session,
-work-record and team-coordination behaviours that Base offers. During the transition to
-effective-Routine startup reading, the same teaching remains in `all/REQUIRED_ABILITIES.md`
-for compatibility.
+work-record and team-coordination behaviours that Base offers.
 
 ## Session macros
 
