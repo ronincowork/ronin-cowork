@@ -43,7 +43,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (out.ok) { console.log(`restart guard: ok — ${out.reason}`); process.exit(0); }
     console.error(`ronin-guard: refusing to restart Ronin — ${out.reason}.`);
     console.error('ronin-guard: Promote the team through bin/ronin-promote so this exact dev tip receives a receipt.');
-    console.error('ronin-guard: Owner-only one-shot override: RONIN_UNRECEIPTED_DEV=1 systemctl --user restart ronin');
+    console.error('ronin-guard: Owner-only one-shot override: RONIN_UNRECEIPTED_DEV=1 tejun-machine-restart');
     process.exit(4);
   } catch (e) {
     console.error(`ronin-guard: refusing to restart Ronin — receipt check could not prove the tip (${e.message}).`);

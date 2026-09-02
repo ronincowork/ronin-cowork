@@ -19,8 +19,8 @@
 # Guards, in the order they bite:
 #   - tmux-server.service OWNS every session on the box (docs/tmux-server-cgroup.md).
 #     While any session is live it is LEFT ALONE — running, enabled, installed — and
-#     this script says what to run once the sessions are done. RONIN_KILL_TMUX=1
-#     overrides, exactly as it does for the shim.
+#     this script proceeds only after every session is gone. There is no override from
+#     inside a session.
 #   - the statusLine is removed only if it points at our script; one the user set
 #     themselves is not ours to take (same ownership test setup.sh applies going in).
 #   - want the data first? bin/ronin-export — the readout reminds you.
@@ -78,14 +78,13 @@ if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
 
   if [ -f "$UNIT_DIR/tmux-server.service" ]; then
     live=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | wc -l | tr -d ' ')
-    if [ "$live" != "0" ] && [ "${RONIN_KILL_TMUX:-}" != "1" ]; then
+    if [ "$live" != "0" ]; then
       say "LEFT ALONE: tmux-server.service — $live live session(s) would die with it."
-      say "  When the sessions are done:  systemctl --user disable --now tmux-server &&"
-      say "  rm $UNIT_DIR/tmux-server.service  (or re-run with RONIN_KILL_TMUX=1)"
+      say "  End those sessions through Ronin, then re-run this uninstall."
     else
       act "stop, disable and remove tmux-server.service ($live live session(s))"
       if [ "$GO" = 1 ]; then
-        RONIN_KILL_TMUX=1 systemctl --user disable --now tmux-server 2>/dev/null || true
+        systemctl --user disable --now tmux-server 2>/dev/null || true
         rm -f "$UNIT_DIR/tmux-server.service"
       fi
     fi

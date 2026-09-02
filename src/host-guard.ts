@@ -6,7 +6,7 @@
  * asks for one — so if no server is running at that moment, the server it forks
  * lands inside ronin.service. systemd's default KillMode=control-group then
  * SIGTERMs every process in that cgroup on stop, which means a routine
- * `systemctl --user restart ronin` silently kills the tmux server and with it
+ * restarting Ronin silently kills the tmux server and with it
  * every session, agent and shell on the machine. It looks like tmux "resetting
  * itself on the regular"; nobody typed a kill command.
  *
@@ -38,7 +38,7 @@ export async function checkTmuxServerCgroup(): Promise<boolean> {
         '',
         '[ronin] ⚠  THE TMUX SERVER IS INSIDE THIS SERVICE\'S CGROUP.',
         `[ronin]    tmux server pid ${pid} · cgroup ${mine}`,
-        '[ronin]    `systemctl --user restart ronin` will SIGTERM it and kill',
+        '[ronin]    restarting Ronin now will SIGTERM it and kill',
         '[ronin]    EVERY tmux session, agent and shell on this machine.',
         '[ronin]    This is the OWNER\'s to repair, when the box is quiet — not an',
         '[ronin]    agent\'s, and not now: the repair replaces the server, which ends',
@@ -64,10 +64,22 @@ export async function checkTmuxServerCgroup(): Promise<boolean> {
  * no unit installed, or not Linux and we simply fall through to plain tmux, which
  * is the pre-existing behaviour.
  */
-export async function ensureTmuxServer(): Promise<void> {
+type HostExec = (file: string, args: string[]) => Promise<unknown>;
+
+export async function ensureTmuxServer(
+  env: NodeJS.ProcessEnv = process.env,
+  exec: HostExec = pexec,
+): Promise<void> {
   if (process.platform !== 'linux') return;
+  // An explicit tmux socket is a private/test server, not the machine's session
+  // engine.  Managing the global systemd unit from here crosses those identities:
+  // an empty TMUX_TMPDIR once made this branch restart tmux-server.service and end
+  // every live production session on the box.  Let the following tmux command create
+  // the explicitly selected private server itself; systemd owns only the default
+  // production socket.
+  if (env.TMUX || env.TMUX_TMPDIR) return;
   try {
-    await pexec('tmux', ['list-sessions']);
+    await exec('tmux', ['list-sessions']);
     return; // a server is running — whoever owns it, we're not about to fork one
   } catch {
     // no server (or no sessions and exit-empty left it down) — fall through
@@ -77,7 +89,7 @@ export async function ensureTmuxServer(): Promise<void> {
     // server dies it sits at "active (exited)" and `start` is a no-op. Safe here —
     // no server means no sessions to lose. Not run during our own activation
     // (that's ExecStartPre's --no-block job), so this cannot deadlock on After=.
-    await pexec('systemctl', ['--user', 'restart', 'tmux-server.service']);
+    await exec('systemctl', ['--user', 'restart', 'tmux-server.service']);
     console.log('[ronin] no tmux server — started tmux-server.service (keeps it out of our cgroup)');
   } catch {
     console.warn(

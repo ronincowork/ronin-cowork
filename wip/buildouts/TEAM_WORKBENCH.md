@@ -188,7 +188,7 @@ finish on what the page shows:
 
 **Traps a successor should know (beyond the ones under LANDED):**
 - The server runs `tsx src/index.ts` with no watch: a change under `src/` needs
-  `systemctl --user restart ronin`; `public/` is served live.
+  `tejun-machine-restart`; `public/` is served live.
 - `refreshHome()` in `home.js` is a no-op unless a Commons is open in a Sessions tile —
   the team page reads `/api/home` itself (`readRows`), every 5s while entered.
 - Any Tile built while the team page is not entered, or left in its DOM after `leave()`,

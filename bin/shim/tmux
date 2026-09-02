@@ -6,8 +6,7 @@
 # one vendor's hook system.
 #   user -> no reads, no writes   ·   read -> reads only   ·   write/empty -> all
 # Dial flips are owner-only, by any path.
-# Speed bump, not physics: /usr/bin/tmux still exists — but going around this is a
-# deliberate, visible act rather than an accident.
+# There is deliberately no Agent override for ending the server that holds it.
 set -u
 # REAL_DIR is where this shim's FILE lives (bin/shim in the checkout or release), the
 # anchor for ../../vendor and ../../libexec — resolved through $0's symlink, because a
@@ -49,17 +48,16 @@ fi
 
 # kill-server is not a dial question — it ends EVERY session on the socket at
 # once, and it can never be scoped to the caller's own session. Refused while
-# any session is alive; RONIN_KILL_TMUX=1 overrides (same override as the
-# systemctl shim's tmux-server guard). The probe honours -S/-L so a private
+# any session is alive, with no Agent override. The probe honours -S/-L so a private
 # test socket is judged by its own sessions, not the live server's.
-if printf '%s' "$args" | grep -q 'kill-server' && [ "${RONIN_KILL_TMUX:-0}" != 1 ]; then
+if printf '%s' "$args" | grep -q 'kill-server'; then
   sock=(); prev=
   for a in "$@"; do
     case "$prev" in -S|-L) sock=("$prev" "$a"); prev=; continue ;; esac
     case "$a" in -S|-L) prev=$a ;; -S?*|-L?*) sock=("$a") ;; esac
   done
   n=$("$REAL" ${sock[@]+"${sock[@]}"} list-sessions 2>/dev/null | wc -l)
-  [ "$n" -gt 0 ] && deny "kill-server would end all $n live session(s) on this socket at once. To end one session: kill-session -t <name> (dial-checked). To really kill the server: RONIN_KILL_TMUX=1 tmux kill-server."
+  [ "$n" -gt 0 ] && deny "kill-server would end all $n live session(s) on this socket at once. To end one session, use Ronin. Session-engine maintenance is the owner's hand, outside every session."
 fi
 
 # new-session is capped, not dial-checked — there is no session yet to have a dial. This
