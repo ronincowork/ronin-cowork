@@ -81,7 +81,7 @@ where a session is born now. `docs/ui.md` is the written contract those modules 
 | `weblink.js` | 198 | keypad — WebHID programming of the device |
 | `layout.js` | 420 | `build`, `buildDrawers` — assembling the page |
 | `main.js` | 72 | `init` and the boot call |
-| `tips.js` | 289 | the help box — the one hover/focus explanation panel |
+| `tips.js` | 289 | system-wide tooltip suppression; title text survives only as accessible labels while the house help panel is disabled |
 | `mika.js` | 81 | `askMika` — the way to the house assistant |
 | `provenance.js` | 74 | the ◆/◈ marks — a catalog entry that is yours |
 

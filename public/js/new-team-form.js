@@ -26,6 +26,7 @@
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
+import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
@@ -482,11 +483,31 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     }
     busy = true;
     raise.setDisabled(true);
+    notice.set('info', t('new_team.checking_names', 'Checking Agent names…'));
+    const picks = agentPicks(draft.agents);
+    // CHECK BEFORE THE FIRST WRITE. The launch door rightly refuses an explicit name
+    // collision, but discovering one after POST /api/team-rosters leaves a Team with only
+    // part of the cast. The form knows the whole proposed cast, so its gate checks both
+    // the live set and duplicates inside the form before it creates anything.
+    const live = await request('/api/sessions', { cache: 'no-store' });
+    if (!live.ok) {
+      busy = false;
+      raise.setDisabled(false);
+      return notice.set('failed', t('new_team.name_check_failed', 'Agent names could not be checked, so nothing was created. {reason}', {
+        reason: live.message,
+      }));
+    }
+    const conflicts = conflictingAgentNames(picks, Array.isArray(live.data) ? live.data : []);
+    if (conflicts.length) {
+      busy = false;
+      raise.setDisabled(false);
+      return notice.set('failed', t('new_team.agent_name_taken', 'Nothing was created. Choose another name for: {names}.', {
+        names: conflicts.join(', '),
+      }));
+    }
     notice.set('info', t('new_team.raising', 'Raising the team…'));
     // THE LOADER OWNS THE CAST (@team_loader, agreed on the board): one call creates the
-    // record and, only if that succeeded, fires every picked row through the launch door —
-    // ordinary rows first, a marked lead last, none waited on. My serial loop was a
-    // placeholder for exactly this and is deleted rather than merged.
+    // record and, only if that succeeded, sends every picked row through the launch door.
     //
     // `agentPicks` is where the screen's words become the route's: a row says assignment
     // and lead, the wire says instructions and team_lead (lead's P0 ruling).
@@ -499,12 +520,21 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       raise.setDisabled(false);
       return notice.set('failed', made.message);
     }
-    // Then the cast, through the loader: rows fire independently, a marked lead last, none
-    // waited on. `agentPicks` is where the screen's words become the route's — a row says
-    // assignment and lead, the wire says instructions and team_lead.
-    launchTeamAgents(request, name, agentPicks(draft.agents));
+    // Then the cast, through the loader: births are awaited in order because every one
+    // updates this Team's membership record. `agentPicks` is where the screen's words
+    // become the route's — a row says assignment and lead, the wire says instructions
+    // and team_lead.
+    const outcomes = await launchTeamAgents(request, name, picks);
+    const refused = outcomes.filter(({ result }) => !result?.ok);
     busy = false;
     raise.setDisabled(false);
+    if (refused.length) {
+      return notice.set('failed', t('new_team.staffing_failed', 'Team created, but {failed} of {total} Agents could not be launched: {names}. Open the Team and add them there.', {
+        failed: refused.length,
+        total: outcomes.length,
+        names: refused.map(({ row }) => row.name).join(', '),
+      }));
+    }
     notice.set('', '');
     reset();
     await created?.(name);

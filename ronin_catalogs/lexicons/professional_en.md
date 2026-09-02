@@ -355,6 +355,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.agents:** Agents
 - **new_team.agents_meta:** {n} agents
 - **new_team.agent_name:** name
+- **new_team.agent_name_taken:** Nothing was created. Choose another name for: {names}.
 - **new_team.agent_assignment:** what this Agent does
 - **new_team.mark_team_lead:** Mark as team lead
 - **new_team.agent_more:** Its mandate
@@ -466,6 +467,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.members:** members
 - **new_team.members_note:** derived from live tags — never stored here
 - **new_team.inherits:** an agent born here inherits
+- **new_team.staffing_failed:** Team created, but {failed} of {total} Agents could not be launched: {names}. Open the Team and add them there.
+- **new_team.checking_names:** Checking Agent names…
+- **new_team.name_check_failed:** Agent names could not be checked, so nothing was created. {reason}
 - **new_team.raising:** Raising the team…
 - **new_team.save_name_placeholder:** template name
 - **new_team.save_as_new:** Save as new template

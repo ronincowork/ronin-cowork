@@ -3,11 +3,13 @@
 /**
  * Birth every picked Agent after its Team record has been created.
  *
- * Each row is its own launch. Ordinary rows are fired first and a marked lead is fired
- * last, without waiting for any birth to finish. Outcomes belong to the existing launch
- * door; the Team form does not monitor, retry or roll back them.
+ * Each row is its own launch. Ordinary rows finish first and a marked lead finishes last.
+ * Launches are deliberately SERIAL: every birth updates the same Team membership record,
+ * so concurrent read/modify/write births can overwrite one another and leave a two-Agent
+ * form with one member. A refusal is retained in the returned outcomes and does not stop
+ * the remaining rows.
  */
-export function launchTeamAgents(request, team, rows = []) {
+export async function launchTeamAgents(request, team, rows = []) {
   const launch = (row) => request('/api/launch', {
     method: 'POST',
     json: {
@@ -22,5 +24,7 @@ export function launchTeamAgents(request, team, rows = []) {
 
   const ordinary = rows.filter((row) => row.team_lead !== true);
   const leads = rows.filter((row) => row.team_lead === true);
-  for (const row of [...ordinary, ...leads]) void launch(row);
+  const outcomes = [];
+  for (const row of [...ordinary, ...leads]) outcomes.push({ row, result: await launch(row) });
+  return outcomes;
 }

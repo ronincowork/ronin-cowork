@@ -174,9 +174,8 @@ export async function init() {
   guard('activate first tile', () => {
     if (tiles[0]) tiles[0].activate();
   });
-  // One box for every `title` in the client, styled and placed by us. Wired last and
-  // wired ONCE, on the document: nothing that sets a title has to know it exists, so
-  // this covers the whole app including the static titles in index.html.
+  // Titles are seized once, document-wide, so neither the retired house panel nor native
+  // browser hover bubbles cover the controls. Their text remains as accessible labels.
   guard('house tooltips', installTips);
 }
 

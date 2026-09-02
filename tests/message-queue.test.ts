@@ -1,8 +1,34 @@
-import test from 'node:test';
+import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+
+const exec = promisify(execFile);
+
+/** A private tmux server gives queue tests a real, test-owned recipient and birth key. */
+async function liveTarget(t: TestContext, name: string): Promise<string> {
+  const tmuxRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-target-'));
+  const before = { tmux: process.env.TMUX, pane: process.env.TMUX_PANE, tmpdir: process.env.TMUX_TMPDIR };
+  const env = { ...process.env, TMUX_TMPDIR: tmuxRoot };
+  delete env.TMUX;
+  delete env.TMUX_PANE;
+  await exec('/usr/bin/tmux', ['new-session', '-d', '-s', name], { env });
+  process.env.TMUX_TMPDIR = tmuxRoot;
+  delete process.env.TMUX;
+  delete process.env.TMUX_PANE;
+  t.after(async () => {
+    await exec('/usr/bin/tmux', ['kill-server'], { env }).catch(() => {});
+    await fs.rm(tmuxRoot, { recursive: true, force: true });
+    for (const [key, value] of Object.entries(before)) {
+      const envKey = key === 'tmux' ? 'TMUX' : key === 'pane' ? 'TMUX_PANE' : 'TMUX_TMPDIR';
+      if (value === undefined) delete process.env[envKey]; else process.env[envKey] = value;
+    }
+  });
+  return name;
+}
 
 test('a send to a missing target is refused with roster and wipeboard teaching', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-'));
@@ -16,11 +42,11 @@ test('a send to a missing target is refused with roster and wipeboard teaching',
   await fs.rm(root, { recursive: true, force: true });
 });
 
-test('pending tells expose an existing sender-to-target lane before another is sent', async () => {
+test('pending tells expose an existing sender-to-target lane before another is sent', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-lane-'));
   process.env.RONIN_MESSAGE_QUEUE_DIR = root;
   const queue = await import(`../src/message-queue.ts?lane=${Date.now()}`);
-  const target = process.env.RONIN_SESSION || 'queue_hygiene';
+  const target = await liveTarget(t, 'queue_lane_target');
   const first = await queue.enqueueMessage(target, 'one authoritative instruction', 'tell', 'machine_settings');
   await queue.enqueueMessage(target, 'another sender is a separate lane', 'tell', 'coordinator');
   await queue.enqueueMessage(target, 'owner notice is not this sender lane', 'owner');
@@ -32,11 +58,11 @@ test('pending tells expose an existing sender-to-target lane before another is s
   await fs.rm(root, { recursive: true, force: true });
 });
 
-test('accepted mail binds to the target instance and a reused name cannot receive it', async () => {
+test('accepted mail binds to the target instance and a reused name cannot receive it', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-'));
   process.env.RONIN_MESSAGE_QUEUE_DIR = root;
   const queue = await import(`../src/message-queue.ts?test=${Date.now()}`);
-  const ownName = process.env.RONIN_SESSION || 'queue_hygiene';
+  const ownName = await liveTarget(t, 'queue_instance_target');
   const item = await queue.enqueueMessage(ownName, 'do not deliver this test message', 'house');
   assert.ok(item.target_key && item.target_key !== ownName, 'the live session birth key is stored');
   item.target_key = `${item.target_key}-dead-predecessor`;
