@@ -13,7 +13,7 @@ import { readCampaign } from './campaign-config.js';
 import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { Assignment } from './desks/schema.js';
 import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
-import { resolveRoutines, routineChoices, type ResolvedRoutine } from './routines.js';
+import { resolveAgentRoutines, routineChoices, type ResolvedRoutine } from './routines.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
@@ -409,14 +409,10 @@ export async function resolveForm(
   // compose, so both resolve EMPTY here rather than falling through to the default
   // `claude`: the tile is meant to be left at a shell prompt, untouched.
   const agent = sessionType === 'terminal' ? false : bareMetalAgent ? true : profile.agent;
-  const routines = agent
-    ? resolveRoutines(
-        routineCatalog,
-        routineChoices(campaign?.config.agent_defaults.routines),
-        roster ? routineChoices(roster.routines) : undefined,
-        form.routines ? routineChoices(form.routines) : undefined,
-      )
-    : [];
+  const routines = resolveAgentRoutines(
+    routineCatalog, campaign?.config.agent_defaults.routines,
+    roster?.routines, form.routines, agent,
+  );
   // WHICH COMMAND — every rule, every refusal and both owner defaults live in
   // `src/launch-command.ts`. It is the one concern on this path that is decided by data
   // the owner controls rather than by anything the launch form knows, and it had grown

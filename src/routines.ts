@@ -74,3 +74,21 @@ export function resolveRoutines(
   }
   return resolved;
 }
+
+/** Normalize the three persisted/input layers and resolve the map delivered at birth. */
+export function resolveAgentRoutines(
+  catalog: RoutineRow[],
+  campaign: unknown,
+  team: unknown,
+  agentOverrides: unknown,
+  hasAgent: boolean,
+): ResolvedRoutine[] {
+  return hasAgent
+    ? resolveRoutines(
+        catalog,
+        routineChoices(campaign),
+        team === undefined ? undefined : routineChoices(team),
+        agentOverrides === undefined ? undefined : routineChoices(agentOverrides),
+      )
+    : [];
+}
