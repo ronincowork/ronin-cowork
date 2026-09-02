@@ -1416,6 +1416,9 @@ The catalog entry goes. {dir} is not touched.
 - **bar.shape_title:** Two workspaces — click for four
 - **bar.shape_two:** Two workspaces — click for four
 - **bar.shape_four:** Four workspaces — click for two
+- **bar.place_teams:** Teams
+- **bar.place_teams_title:** See all of your teams here
+- **bar.place_team:** Your team: {team}
 
 ## me — tiledrop.js (the メ sheet)
 - **me.status:** Status

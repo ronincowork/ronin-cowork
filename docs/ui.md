@@ -19,9 +19,10 @@ declared first:
   universal `:focus-visible` ring.
 - **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the central
   `#attention-flash`, and the help box.
-- **ui** also owns the app-bar navigation pair: `.ui-bar-nav` is a clickable label and
-  `.ui-bar-value` is the plain loaded value beside it. Native button chrome and
-  feature-local bar styling are forbidden.
+- **ui** also owns the app-bar navigation set: `.ui-bar-nav` is a clickable label,
+  `.ui-bar-value` is the plain loaded value beside it, and `.ui-bar-place` is the one
+  italic reading centred in the bar that says which page the doors led to. Native button
+  chrome and feature-local bar styling are forbidden.
 - **app** — every composition and feature rule, in source order.
 
 Later layers win, so the cascade guarantees exactly one direction: every Ronin rule
