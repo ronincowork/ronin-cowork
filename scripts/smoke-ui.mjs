@@ -240,6 +240,11 @@ async function checkCurrentWorkspace(page, label) {
       first: head?.firstElementChild?.className || '',
       second: head?.children[1]?.className || '',
       torii: head?.firstElementChild?.textContent || '',
+      selector: [...document.querySelectorAll('[data-workspace-view]:not([hidden]) .wk-workbench-selector-cards .wk-card')].map((card) => ({
+        utility: card.classList.contains('wk-selector-utility'),
+        entity: card.classList.contains('wk-selector-entity'),
+        pressed: card.hasAttribute('aria-pressed'),
+      })),
     };
   });
   if (state.view === 'team') ok(`${label}: Team is the active cowork-space destination`);
@@ -251,6 +256,15 @@ async function checkCurrentWorkspace(page, label) {
   } else if (/torii/.test(state.first) && /sess/.test(state.second) && state.torii === '⛩') {
     ok(`${label}: Torii rename is first, immediately before the session name`);
   } else bad(`${label}: tile-head order is wrong — ${JSON.stringify(state)}`);
+  const firstEntity = state.selector.findIndex((card) => card.entity);
+  const lastEntity = state.selector.findLastIndex((card) => card.entity);
+  const shelves = firstEntity > 0 && lastEntity >= firstEntity
+    && state.selector.slice(0, firstEntity).every((card) => card.utility)
+    && state.selector.slice(firstEntity, lastEntity + 1).every((card) => card.entity)
+    && state.selector.slice(lastEntity + 1).every((card) => card.utility);
+  if (shelves && state.selector.every((card) => !card.pressed)) {
+    ok(`${label}: selector separates blue utilities from kaki Agents without placement highlights`);
+  } else bad(`${label}: selector hierarchy/placement state is unclear — ${JSON.stringify(state.selector)}`);
 }
 
 /**
