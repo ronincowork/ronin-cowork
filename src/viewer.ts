@@ -86,22 +86,6 @@ export async function createViewer(target: string, tag: string): Promise<string>
   // options). The owner's real session keeps its bar for anyone attaching from a
   // terminal, and their ~/.tmux.conf is not touched. The tile gains the row.
   await pexec('tmux', ['set-option', '-t', exactPane(viewer), 'status', 'off']).catch(() => {});
-  // NO TMUX BINDING CAN FIRE FROM A TILE (owner, 2026-09-02: "I definitely see that
-  // counter grabber in the top right. It sounds like we don't need it."). tmux's root
-  // key table binds WheelUpPane, MouseDrag1Pane, the scrollbar and double-click to
-  // copy-mode, and those fire on a mouse ESCAPE the client delivers whether or not the
-  // `mouse` option is on — measured: with mouse off and no app tracking, one SGR
-  // wheel-up through a tile put the SHARED pane into copy-mode, freezing it for the
-  // agent and every viewer and showing the [n/m] counter the owner kept landing in. The
-  // 2026-09-01 mouse-off only stopped tmux ASKING for the mouse; it did not stop tmux
-  // acting on one that arrives. So the viewer gets an empty key table and no prefix:
-  // every byte a tile sends goes to the pane, and the only way into copy-mode from a
-  // tile is gone. Scoped to the viewer — the owner's own session keeps its prefix and
-  // bindings for anyone attaching from a terminal. `send-keys -X cancel` (attachViewer)
-  // still works: it is a command, not a binding.
-  await pexec('tmux', ['set-option', '-t', exactPane(viewer), 'key-table', 'ronin-viewer']).catch(() => {});
-  await pexec('tmux', ['set-option', '-t', exactPane(viewer), 'prefix', 'None']).catch(() => {});
-  await pexec('tmux', ['set-option', '-t', exactPane(viewer), 'prefix2', 'None']).catch(() => {});
   return viewer;
 }
 
