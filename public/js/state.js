@@ -39,6 +39,12 @@ export const IS_MAC = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'].includes(nav
 export const SELECT_MOD = IS_MAC ? '⌥ Option' : '⇧ Shift';
 /** Did this mouse event carry it? Mirrors xterm's rule above. */
 export const forcesSelection = (e) => (IS_MAC ? e.altKey : e.shiftKey);
+// SGR mouse-wheel sequences. With viewer mouse off (2026-09-01) tmux passes these to
+// the running app AS INPUT, so every sender must first ask termview.mouseTracking() —
+// injected at an app that is not listening, they land as typed escape bytes (the
+// owner's "scroll locked" agents nobody had touched).
+export const WHEEL_UP = '\x1b[<64;1;1M';
+export const WHEEL_DOWN = '\x1b[<65;1;1M';
 
 /**
  * SHARED MUTABLE STATE — one object, on purpose.

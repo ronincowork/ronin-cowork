@@ -25,7 +25,7 @@ Copy `.env.example` to `.env` and edit; every value is optional with a sane defa
 | `GRID_USER` · `GRID_PASS` | unset | HTTP Basic gate, both required to enable. The owner's browser login is separate (`bin/ronin-passwd`); either satisfies the gate |
 | `RONIN_ALLOWED_ORIGINS` | unset | extra hostnames a browser may open a websocket from — only needed behind a non-Tailscale reverse proxy that rewrites `Host` |
 | `TMUX_WINDOW_SIZE` | `latest` | window-size policy for browser viewers beside another client (`latest` / `largest` / `smallest` / `manual`) |
-| `TMUX_MOUSE` | `off` | tmux mouse mode on the viewer sessions. `off` (the default since 2026-09-01): the tile's wheel scrolls xterm's local buffer and never reaches tmux or the app; `on`: tmux copy-mode takes the wheel |
+| `TMUX_MOUSE` | `off` | tmux mouse mode on the browser viewer sessions (`src/config.ts`). `off` since 2026-09-01: a wheel over a locked tile reaches the running app (Claude Code takes it as mouse reports); `on` hands the wheel to tmux copy-mode, which froze the shared pane for every viewer |
 | `RONIN_NEW_SESSION_DIR` | `$HOME` | where a picker-born session starts when no project root decides it |
 | `SCRIBE_URL` | `http://127.0.0.1:3004` | the dictation proxy |
 | `RONIN_USER_ROOT` · `RONIN_DATA_ROOT` | store defaults | relocate the two store roots (`src/stores.ts`) |
