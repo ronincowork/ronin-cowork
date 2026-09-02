@@ -52,10 +52,13 @@
       </a>
       <span id="coworkssep" class="ui-bar-separator" aria-hidden="true" hidden>•</span>
       <a id="coworksbtn" class="ui-bar-nav" href="#/cowork" hidden>Coworks</a>
-      <span id="teamsep" class="ui-bar-separator" aria-hidden="true" hidden>•</span>
-      <span id="teamvalue" class="ui-bar-value" hidden></span>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
-      <span class="grow"></span>
+      <!-- THE PLACE — one italic reading centred in the grow gap so a first-time visitor
+           can tell the two Workbench pages apart: "Teams" on the Coworks page, "Your team:
+           <name>" on a Team page (owner, 2026-09-02). It used to be the Team's name beside
+           the Coworks door, where it read as one more door. js/workspace-header.js writes
+           it; nothing else does. -->
+      <span class="grow"><span id="viewplace" class="ui-bar-place" hidden></span></span>
       <!-- THE LAYOUT MAP — the workspace drawn small: one rectangle per column, click
            to show or hide, drag to reorder. Empty unless the active view has columns
            to arrange (the Team workbench does; Sessions and League do not). The

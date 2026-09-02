@@ -1,4 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { t } from './lexicon.js';
+
 /** The one navigation header shared by every Ronin workspace. */
 const readable = (name = '') => String(name).split(/[_-]+/).filter(Boolean)
   .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
@@ -7,8 +9,9 @@ export function installWorkspaceHeader(workspace) {
   const ronin = document.getElementById('brandbtn');
   const separator = document.getElementById('coworkssep');
   const coworkers = document.getElementById('coworksbtn');
-  const teamSeparator = document.getElementById('teamsep');
-  const team = document.getElementById('teamvalue');
+  // THE PLACE reading, centred in the bar's middle. The left is doors only; this says
+  // which Workbench page the doors led to, in words a first-time visitor has.
+  const place = document.getElementById('viewplace');
 
   const root = () => {
     history.pushState(null, '', location.pathname + location.search);
@@ -28,12 +31,17 @@ export function installWorkspaceHeader(workspace) {
     const landing = !active || active.id === 'home';
     if (separator) separator.hidden = landing;
     if (coworkers) coworkers.hidden = landing;
-    const teamPage = active?.id === 'team';
-    if (teamSeparator) teamSeparator.hidden = !teamPage;
-    if (team) {
-      const name = teamPage ? active.param : '';
-      team.textContent = readable(name);
-      team.hidden = !teamPage;
+    if (place) {
+      const teamPage = active?.id === 'team' && active.param;
+      const coworksPage = active?.id === 'cowork';
+      if (teamPage) {
+        place.textContent = t('bar.place_team', 'Your team: {team}', { team: readable(active.param) });
+        place.title = '';
+      } else if (coworksPage) {
+        place.textContent = t('bar.place_teams', 'Teams');
+        place.title = t('bar.place_teams_title', 'See all of your teams here');
+      }
+      place.hidden = !(teamPage || coworksPage);
     }
   };
   refresh();

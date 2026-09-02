@@ -99,16 +99,22 @@ Rules that make them peers:
 
 ### The bar's navigation
 
-The left side is two label/value pairs, not a breadcrumb:
+The left side is doors, not a breadcrumb; the middle is one reading:
 
 ```text
-Ronin  <selected Campaign>     Coworks  <selected Cowork or blank>
+Ronin  •  Coworks                 Teams                        <verbs>
+Ronin  •  Coworks           Your team: Sea Settle              <verbs>
 ```
 
-`Ronin` and `Coworks` are the only doors. Their values are readings and never buttons;
-there are no slash separators. The root landing shows only Ronin. Both doors consume the
-shared `.ui-bar-nav` primitive and both readings consume `.ui-bar-value` from
-`docs/ui.md`; a feature must not restyle either.
+`Ronin` and `Coworks` are the only doors, and the root landing shows only Ronin. The
+Team's name used to sit beside the Coworks door, where a first-time visitor read it as
+one more door and could not tell the all-Teams page from one Team's page (owner,
+2026-09-02). It now sits centred in the bar as **the place**: *Teams* on the Coworks page
+(its tooltip says "See all of your teams here"), *Your team: <name>* on a Team page,
+italic so it reads as information and never as a button. Doors consume the shared
+`.ui-bar-nav` primitive and the place consumes `.ui-bar-place` from `docs/ui.md`; a
+feature must not restyle either. `js/workspace-header.js` writes the place; nothing
+else does.
 
 ### The root landing
 
