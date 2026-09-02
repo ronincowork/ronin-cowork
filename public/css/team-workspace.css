@@ -104,31 +104,12 @@
      the surface is narrow; the minimum is tokens, never a raw measurement. */
   .aa-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 6), 1fr)); gap: var(--space-6); align-items: start; }
   .aa-col { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
-  /* Same guard, same reason: a terminal launches no agent, so New Agent hides the
-     provider/model column — which display:flex silently ignored until it was driven. */
   .aa-col[hidden] { display: none; }
-  /* The shell tick folds every Agent-only control away: a pane takes none of them. */
-  .aa-form[data-shell='true'] .aa-agent-only { display: none; }
   .aa-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .07em; }
-  .aa-tasks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-  .aa-chip { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-2) var(--space-6); cursor: pointer; font-size: var(--text-3); }
-  .aa-chip:hover { border-color: var(--kaki); color: var(--fg-strong); }
-  .aa-chip[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki-lift); }
-  /* `open` is the not-applicable box, not a peer among the tasks — dotted, as everywhere. */
-  .aa-chip[data-open='true'] { border-style: dashed; }
-  /* The shell tick rides this rectangle; the desk stopped being an asked question
-     (owner, 2026-08-31) and its row below is a consequence line, not a control. */
-  .aa-desk { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; width: 100%; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-4) var(--space-5); cursor: pointer; text-align: left; font: inherit; }
   .aa-deskline { border-top: var(--edge) solid var(--line); padding-top: var(--space-4); color: var(--muted); }
   .aa-deskline small { font-size: var(--text-2); }
   .aa-deskline[hidden] { display: none; }
-  .aa-desk:hover { border-color: var(--kaki); }
-  .aa-desk[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
   .aa-box { width: var(--space-7); height: var(--space-7); border: var(--edge) solid var(--line-3); background: var(--panel); }
-  .aa-desk[aria-pressed='true'] .aa-box { border-color: var(--kaki); background: var(--kaki); }
-  .aa-desk b { display: block; color: var(--fg-strong); font-size: var(--text-3); font-weight: 400; }
-  .aa-desk[aria-pressed='true'] b { color: var(--kaki-lift); }
-  .aa-desk small { display: block; color: var(--muted); font-size: var(--text-2); }
   /* What the Team fixed, at the FOOT: none of it is changeable here, so it does not sit
      above the fields that are. */
   .aa-fixed { display: grid; grid-template-columns: calc(var(--space-12) * 2.5) minmax(0, 1fr); gap: var(--space-2) var(--space-5); align-items: baseline; margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-6); }

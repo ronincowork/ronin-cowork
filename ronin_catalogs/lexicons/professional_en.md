@@ -17,13 +17,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.provider:** model provider
 - **add_agent.model:** model
 - **add_agent.default:** default
-- **add_agent.task:** task  (optional)
-- **add_agent.task_open:** open
+- **add_agent.no_template:** No template
 - **add_agent.desk_line_control:** Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.
 - **add_agent.desk_line_plain:** Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.
-- **add_agent.shell:** Open a shell, not an Agent
-- **add_agent.shell_why:** A raw terminal in this Team — no Agent is launched and nothing is sent to it.
 - **add_agent.actions:** Launch actions
+- **add_agent.full_launch:** Full Agent launch
 - **add_agent.start:** Start
 - **add_agent.cancel:** Cancel
 - **add_agent.starting:** Starting…

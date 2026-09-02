@@ -2,9 +2,8 @@
 /**
  * ADD AGENT TO TEAM — the in-Team quick launch, on the Workspace Kit.
  *
- * STAGED, NOT LIVE (owner, 2026-08-31). This is registered as its own Workbench surface
- * beside the existing New Agent card. `js/launcher.js` has since been retired; it mounted
- * the `.ks-*` board on the same page, and the owner decides when one replaces the other.
+ * This is the Team page's shortcut: always a Cowork Agent, with the Team supplying kind,
+ * place and Routines. Terminal and bare-metal choices live on the full launch page.
  *
  * WHY IT IS NOT NEW AGENT. You are already in the Team, so the Team has answered most of
  * the form: its name, its project_root, and — once the cascade records exist — its
@@ -31,18 +30,11 @@
 import { launchSpecData, projectData } from './home.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { dialRow, dialRowMulti } from './form-steps.js';
 
-/** The work books a Team of each kind is offered. Hardcoded HERE and nowhere else until
- *  the ways shelf carries the ruled `kinds:` field (NEW_AGENT.md § 4.5). */
-const TASKS_BY_KIND = Object.freeze({
-  coding: ['ways:quarter_back', 'ways:riff_on_it', 'ways:draft_plan', 'ways:cut_code', 'ways:chase_bug', 'ways:check_work'],
-  work: ['ways:riff_on_it', 'ways:draft_plan', 'ways:check_work', 'ways:personal_assistant', 'ways:odd_job'],
-  personal: ['ways:personal_assistant', 'ways:riff_on_it', 'ways:odd_job'],
-  household: ['ways:personal_assistant', 'ways:riff_on_it', 'ways:odd_job'],
-});
-const DEFAULT_TASKS = TASKS_BY_KIND.coding;
-
-const readable = (book) => book.replace(/^ways:/, '').replaceAll('_', ' ');
+const REACH = ['open', 'discuss', 'plan', 'execute'];
+const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
+const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 
 /**
  * @param {object} kit  the Workspace Kit
@@ -50,12 +42,16 @@ const readable = (book) => book.replace(/^ways:/, '').replaceAll('_', ' ');
  *   `team()` the Team this page shows · `roster()` its durable record or null ·
  *   `connect(name)` seats the born Agent in the workspace that made it.
  */
-export function createAddAgentView(kit, { team, roster, connect } = {}) {
+export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 
-  const draft = { name: '', instruction: '', provider: '', model: '', task: '', shell: false };
+  const draft = {
+    name: '', instruction: '', provider: '', model: '', template: '', behaviours: [],
+    reach: 'open', recruit: 'open', output: ['open'],
+  };
   let busy = false;
+  let templates = [];
   /** The seed door's answer, or null while it does not exist yet. */
   let seed = null;
   const seeded = (field) => seed?.seeds?.[field]?.value ?? '';
@@ -71,7 +67,6 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   // and the fallbacks exist because the door lands after this surface does.
   const rootOf = () => seeded('project_root') || rosterRow()?.project_root || projectData?.[0]?.name || '';
   const kindOf = () => seeded('kind') || rosterRow()?.kind || '';
-  const tasks = () => TASKS_BY_KIND[kindOf()] || DEFAULT_TASKS;
 
   /* ---- the four fields ---- */
   const nameInput = el('input');
@@ -94,23 +89,6 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   });
   const nameField = createField({ label: t('add_agent.name', 'name'), control: nameInput });
 
-  /* ---- shell or Agent (owner, 2026-08-31): the one thing the retired New Agent card
-     offered here that this surface did not. Ticked, the form drops to the name and the
-     place — a raw pane, nothing is sent to it — and Start opens the terminal. ---- */
-  const shellRow = el('button', 'aa-desk aa-shell');
-  shellRow.type = 'button';
-  const shellBox = el('span', 'aa-box');
-  const shellText = el('span', 'aa-desk-text');
-  const shellTitle = el('b', null, t('add_agent.shell', 'Open a shell, not an Agent'));
-  const shellWhy = el('small', null, t('add_agent.shell_why', 'A raw terminal in this Team — no Agent is launched and nothing is sent to it.'));
-  shellText.append(shellTitle, shellWhy);
-  shellRow.append(shellBox, shellText);
-  shellRow.addEventListener('click', () => { draft.shell = !draft.shell; paintShape(); });
-  function paintShape() {
-    shellRow.setAttribute('aria-pressed', String(draft.shell));
-    form.dataset.shell = String(draft.shell);
-  }
-
   const instruction = el('textarea');
   instruction.rows = 3;
   instruction.autocapitalize = 'off';
@@ -118,6 +96,45 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   instruction.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
   instruction.addEventListener('input', () => { draft.instruction = instruction.value; });
   const instructionField = createField({ label: t('add_agent.instruction', 'instruction'), control: instruction });
+
+  /* Optional shortcut only. The full form owns browsing and saving templates; here one
+     selected agent template simply overlays the Team defaults before the owner's hand. */
+  const templateSelect = el('select');
+  const templateField = createField({ label: t('template', 'Template'), control: templateSelect });
+  function resetTemplateAnswers() {
+    const value = (field) => seeded(field);
+    draft.instruction = '';
+    instruction.value = '';
+    draft.behaviours = Array.isArray(value('behaviours')) ? [...value('behaviours')] : [];
+    draft.reach = value('reach') || 'open';
+    draft.recruit = value('recruit') || 'open';
+    draft.output = [value('output') || 'open'].flat().filter(Boolean);
+  }
+  function applyTemplate() {
+    draft.template = templateSelect.value;
+    resetTemplateAnswers();
+    const row = templates.find((entry) => entry.name === draft.template);
+    if (row) {
+      draft.instruction = row.brief || '';
+      instruction.value = draft.instruction;
+      if (row.mandate) {
+        draft.reach = row.mandate.reach;
+        draft.recruit = row.mandate.recruit;
+        draft.output = [row.mandate.output].flat().filter(Boolean);
+      }
+      if (row.behaviours.length) draft.behaviours = [...row.behaviours];
+    }
+    paintMandate();
+  }
+  templateSelect.addEventListener('change', applyTemplate);
+  function paintTemplates() {
+    const kind = kindOf();
+    const offered = !kind || kind === 'open' ? templates : templates.filter((row) => row.kinds.includes(kind));
+    templateSelect.replaceChildren(new Option(t('add_agent.no_template', 'No template'), ''));
+    for (const row of offered) templateSelect.add(new Option(row.label, row.name));
+    if (!offered.some((row) => row.name === draft.template)) draft.template = '';
+    templateSelect.value = draft.template;
+  }
 
   // TWO PICKS, AND EITHER MAY STAND ALONE. Naming the provider and no model gets that
   // provider's preferred model, server-side; both blank is the install default. The
@@ -153,24 +170,17 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     paintModels();
   }
 
-  /* ---- the task row: optional, and open by default ---- */
-  const taskHead = el('p', 'aa-head', t('add_agent.task', 'task  (optional)'));
-  const taskRow = el('div', 'aa-tasks');
-  function paintTasks() {
-    taskRow.replaceChildren();
-    const offer = [{ name: '', label: t('add_agent.task_open', 'open'), open: true }, ...tasks().map((name) => ({ name, label: readable(name) }))];
-    for (const item of offer) {
-      const chip = el('button', 'aa-chip');
-      chip.type = 'button';
-      chip.textContent = item.label;
-      if (item.open) chip.dataset.open = 'true';
-      chip.setAttribute('aria-pressed', String(draft.task === item.name));
-      chip.addEventListener('click', () => {
-        draft.task = item.name;
-        paintTasks();
-      });
-      taskRow.append(chip);
-    }
+  const mandateHead = el('p', 'aa-head', t('mandate', 'Mandate'));
+  const mandateHost = el('div', 'aa-mandate');
+  function paintMandate() {
+    mandateHost.replaceChildren(
+      dialRow(t('reach', 'Reach'), REACH, draft.reach, (value) => { draft.reach = value; paintMandate(); }),
+      dialRow(t('recruit', 'Recruit'), RECRUIT, draft.recruit, (value) => { draft.recruit = value; paintMandate(); }),
+      dialRowMulti(t('output', 'Output'), OUTPUT, draft.output, (value, on) => {
+        draft.output = on ? [...draft.output, value] : draft.output.filter((entry) => entry !== value);
+        paintMandate();
+      }),
+    );
   }
 
   /* ---- THE DESK IS NOT AN ASKED QUESTION (owner, 2026-08-31, folding the earlier
@@ -188,7 +198,7 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   const controlled = () => {
     const rows = seed?.routines;
     if (!Array.isArray(rows)) return null;
-    return rows.some((r) => r.on && /control/i.test(r.name || ''));
+    return rows.some((r) => r.on && r.name === 'ronin_worktrees');
   };
   function paintDesk() {
     const control = controlled();
@@ -227,14 +237,12 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
 
   const reset = () => {
     draft.name = '';
-    draft.instruction = '';
-    draft.task = '';
-    draft.shell = false;
+    draft.template = '';
     nameInput.value = '';
-    instruction.value = '';
-    paintTasks();
+    resetTemplateAnswers();
+    paintTemplates();
+    paintMandate();
     paintDesk();
-    paintShape();
   };
   // createAction takes its handler at construction — there is no setAction — so the
   // actions are built after `reset` and `launch` exist.
@@ -243,30 +251,23 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     busy = true;
     start.setDisabled(true);
     notice.set('info', t('add_agent.starting', 'Starting…'));
-    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_type` is stated explicitly. A shell is
-    // a `terminal`: a pane, its name, its team and its place, and nothing an Agent would
-    // take (the route refuses the rest by name). Nothing about routines is sent either
-    // way: they are resolved server-side, and a caller that states one is guessing at
-    // the server's job (NEW_AGENT.md § 7.4).
+    // This Team shortcut births a Cowork Agent only. Terminal and bare-metal launches
+    // belong on the full launch page; the Team supplies kind, routines and place here.
     const result = await request('/api/launch', {
       method: 'POST',
-      json: draft.shell
-        ? {
-          session_type: 'terminal',
-          team: teamName(),
-          name: draft.name.trim(),
-          project_root: rootOf(),
-        }
-        : {
-          session_type: 'cowork_agent',
-          behaviours: draft.task ? [draft.task] : [],
-          team: teamName(),
-          instructions: draft.instruction.trim(),
-          name: draft.name.trim(),
-          project_root: rootOf(),
-          provider: draft.provider,
-          model: draft.model,
-        },
+      json: {
+        session_type: 'cowork_agent',
+        behaviours: [...draft.behaviours],
+        team: teamName(),
+        instructions: draft.instruction.trim(),
+        name: draft.name.trim(),
+        project_root: rootOf(),
+        provider: draft.provider,
+        model: draft.model,
+        kind: kindOf(),
+        mandate: { reach: draft.reach, recruit: draft.recruit, output: [...draft.output] },
+        ...(draft.template ? { template: draft.template } : {}),
+      },
     });
     busy = false;
     start.setDisabled(false);
@@ -291,23 +292,18 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
 
   const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void launch() });
   const cancel = createAction({ label: t('add_agent.cancel', 'Cancel'), action: () => { reset(); notice.set('', ''); } });
-  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [cancel, start] });
+  const full = createAction({ label: t('add_agent.full_launch', 'Full Agent launch'), action: () => fullLaunch?.() });
+  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [full, cancel, start] });
 
-  // NAME LEFT, MODELS RIGHT (owner, 2026-08-31: full-width rows "looked pretty
-  // horrible"). The shell tick sits under the name; everything only an Agent takes is
-  // marked `aa-agent-only` and folds away when the tick is on.
+  // NAME LEFT, MODELS RIGHT; this Team shortcut is always a Cowork Agent.
   const top = el('div', 'aa-top');
   const left = el('div', 'aa-col');
-  left.append(nameField.el, shellRow);
-  const right = el('div', 'aa-col aa-agent-only');
+  left.append(nameField.el);
+  const right = el('div', 'aa-col');
   right.append(providerField.el, modelField.el);
   top.append(left, right);
-  instructionField.el.classList.add('aa-agent-only');
-  taskHead.classList.add('aa-agent-only');
-  taskRow.classList.add('aa-agent-only');
-  deskLine.classList.add('aa-agent-only');
-  form.append(top, instructionField.el, taskHead, taskRow, deskLine);
-  paintShape();
+  form.append(top, templateField.el, instructionField.el, mandateHead, mandateHost, deskLine);
+  paintMandate();
   surface.content.append(form, actions.el, notice.el, fixed);
 
   return {
@@ -315,17 +311,23 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     /** Called whenever the surface is shown: the catalogs and the roster may have moved. */
     enter: async () => {
       paintProviders();
-      paintTasks();
       paintDesk();
       paintFixed();
       // A 404 is ordinary: the door is frozen, not built. Everything above already
       // painted from what exists, so a missing door costs the seeds and nothing else.
-      const answer = await request(`/api/launch-seed?team=${encodeURIComponent(teamName())}`);
+      const [answer, tray] = await Promise.all([
+        request(`/api/launch-seed?team=${encodeURIComponent(teamName())}`),
+        request('/api/templates/agents'),
+      ]);
+      templates = tray.ok && Array.isArray(tray.data) ? tray.data : [];
       if (!answer.ok) return;
       seed = answer.data || null;
       if (!draft.provider) draft.provider = seeded('provider');
       if (!draft.model) draft.model = seeded('model');
+      if (!draft.template) resetTemplateAnswers();
       paintProviders();
+      paintTemplates();
+      paintMandate();
       paintDesk();
       paintFixed();
     },
