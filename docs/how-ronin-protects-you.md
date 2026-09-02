@@ -61,7 +61,7 @@ what remains unknown, and what would change the recommendation.
   Services activation and usage counts use the disclosed allowlisted path and leave an
   egress record.
 - **Work separation:** prompts, branches, worktrees, and coordination procedures reduce
-  accidental collision; they are not security isolation.
+  accidental collision; they are not security isolation ([how Worktrees decide](worktrees.md)).
 
 ## Hand back the result
 

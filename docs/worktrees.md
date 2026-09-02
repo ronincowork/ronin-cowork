@@ -5,6 +5,15 @@ assignment. It gives an enabled coding Agent a private Git worktree, a private b
 the commit → hand-in → team-promotion workflow. Repositories outside that combination use
 their ordinary checkout and Git workflow.
 
+Three keys carry the whole idea:
+
+- **What it does:** isolated working folders and branches keep parallel Agents from
+  colliding in the same files.
+- **When it works:** both sides must say yes — the repository's Project Root enables
+  Worktrees, and the Agent carries the Worktrees Routine.
+- **The tradeoff:** work leaves the private worktree through the managed path — commit,
+  hand-in, and the Team lead's merge — rather than landing directly on the shared branch.
+
 ## Resolution model
 
 Two facts determine the result for each repository:
