@@ -74,17 +74,18 @@
      accent's own hue. This one line is the whole brand color: change it and the band,
      the attention flash and the phone's Start all follow. */
   --kiiro: #e0af68;
-  /* THE BAND SHADES — both are OPAQUE KAKI, one concept per the owner's 2026-09-02
-     ruling: "the dark and light themes should both be similar concepts where there
-     is an opaque [kaki] color. Obviously not the same, because one is dark and one
-     is light." Mixed with pure black/white so the persimmon HUE survives — the
-     prior dark hint mixed amber into the navy ground and went "some kind of weird
-     brown". Derived from --kaki, so the brand line moves both. Value history still
-     standing: tenth-toward-kaki (invisible), #decb8f (khaki-yellow), opaque gold,
-     the 62% cream wash, the 78% wash ("no different"), the amber-navy brown. */
-  /* Owner-selected from the chooser, 2026-09-02: dark 2 (45%) and light B (52%). */
-  --kaki-hint: color-mix(in srgb, var(--kaki) 45%, #000000);
-  --kaki-tint: color-mix(in srgb, var(--kaki) 52%, #ffffff);
+  /* THE BAND SHADES — one concept, an OPAQUE ORANGE of the kaki family, resolved
+     dark and light per shell (owner, 2026-09-02). NOT a kaki/black or kaki/white
+     mix, deliberately: brown IS dark orange, so darkening kaki can only make brown,
+     and tinting muted red-orange makes flesh-pink — both verdicts landed ("looks
+     brown… no orange aspect", "fleshy pink"). A band that READS orange keeps
+     saturation up and leans a touch yellow, so these are literals — kaki pushed
+     toward fire — and the gate measures them directly. Owner-selected D1/L2 from
+     the chooser, picked for ink contrast and readability. Value history still
+     standing: khaki-yellow, gold, the cream washes, the amber-navy brown, the
+     45%-black brown, the 52%-white flesh-pink. */
+  --kaki-hint: #6f300e;
+  --kaki-tint: #f2a566;
   /* THE WORKBENCH'S HEADER BAND — dark wears the kaki HINT with its own light ink
      (the theme's text tokens are tuned for the navy ground, not a warm band); light
      wears the kaki TINT with dark ink in its block below. Attention on the dark
