@@ -1354,7 +1354,6 @@ The catalog entry goes. {dir} is not touched.
 - **head.dial_quiet:** Control dial — no session in this tile yet
 - **head.docs_help:** This Agent's tracked docs — open one over this tile
 - **head.docs_quiet:** This Agent's docs — no Agent in this workspace
-- **head.docs_no_michi:** This Agent's docs — michi is not installed, so no Agent keeps a doc list
 - **head.docs_read:** Docs — {n} tracked by this Agent. Open one over this tile.
 - **head.docs_none:** Docs — this Agent is tracking none yet.
 - **head.note_help:** Session note (post-it)
@@ -1454,7 +1453,7 @@ The catalog entry goes. {dir} is not touched.
 - **league.rosters_unavailable:** Durable rosters unavailable — showing live Teams only.
 
 ## docs — tiledocs.js
-- **docs.empty_session:** This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>
+- **docs.empty_session:** Nothing tracked yet. Ask this Agent to update its Work Record with the docs it is tracking; they will appear here.
 
 ## head — tilementions.js
 - **head.mention_aria:** Mention another session

@@ -9,6 +9,7 @@ export function buildTileDocs(tile) {
   btn.className = 'tdocs-btn';
   btn.type = 'button';
   btn.textContent = '📄';
+  btn.dataset.label = t('me.docs', 'Docs');
 
   const menu = document.createElement('div');
   menu.className = 'tdocs';
@@ -20,7 +21,7 @@ export function buildTileDocs(tile) {
     if (!docs.length) {
       const empty = document.createElement('div');
       empty.className = 'tdocs-empty';
-      empty.textContent = t('docs.empty_session', 'This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>');
+      empty.textContent = t('docs.empty_session', 'Nothing tracked yet. Ask this Agent to update its Work Record with the docs it is tracking; they will appear here.');
       menu.append(empty);
       return;
     }
