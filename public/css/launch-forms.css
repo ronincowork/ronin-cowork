@@ -88,6 +88,11 @@
   .ntf-form textarea { resize: vertical; }
   .ntf-foot { margin-top: var(--space-6); }
   .ntf-tmplname { font-size: var(--text-3); width: calc(var(--space-12) * 5); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
+  .aa-lead-choice { display: flex; align-items: flex-start; gap: var(--space-3); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); cursor: pointer; }
+  .aa-lead-choice input { flex: none; margin-top: var(--space-1); accent-color: var(--kaki); }
+  .aa-lead-choice span { display: grid; gap: var(--space-1); }
+  .aa-lead-choice b { color: var(--fg-strong); font-size: var(--text-3); }
+  .aa-lead-choice small { color: var(--muted); font-size: var(--text-2); line-height: 1.4; }
 
   /* ── the two doors ── */
   .fs-seg { display: flex; align-self: flex-start; margin-bottom: var(--space-5); border: var(--edge) solid var(--line-2); }

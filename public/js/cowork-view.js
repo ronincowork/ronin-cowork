@@ -209,6 +209,7 @@ export function createCoworkView(options = {}) {
     const view = createAddAgentView(WorkspaceKit, {
       team: () => (campaign || team === UNASSIGNED ? '' : team),
       roster: () => teamByName(team) || null,
+      members: () => membersOfTeam(team),
       connect: (name) => connectSession(name, id),
       fullLaunch: () => ctx?.navigate('launch'),
     });

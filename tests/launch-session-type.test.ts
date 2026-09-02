@@ -152,6 +152,7 @@ test('the in-Team Agent form sends template behaviours and mandate, never a laun
   assert.match(source, /draft\.recruit = row\.mandate\.recruit/);
   assert.match(source, /draft\.output = \[row\.mandate\.output\]\.flat\(\)\.filter\(Boolean\)/);
   assert.match(source, /behaviours:\s*\[\.\.\.draft\.behaviours\]/);
+  assert.match(source, /team_lead:\s*draft\.teamLead/);
   assert.match(source, /mandate:\s*\{ reach: draft\.reach, recruit: draft\.recruit, output: \[\.\.\.draft\.output\] \}/);
   assert.doesNotMatch(source, /session_role\s*:/);
 });
