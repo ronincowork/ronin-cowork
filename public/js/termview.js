@@ -5,9 +5,13 @@
  * tmux paints a fixed screen; scroll-back is LOCAL since viewer mouse went off
  * (2026-09-01) — xterm keeps a 30,000-line buffer of what streamed through, the wheel
  * scrolls it, and the ↓ latest pill (wireJumpPill) is the way home. tmux copy-mode is
- * no longer entered from a tile. This is Locked, it works, and RIREKI does not touch
- * it — the scroll saga's settled boundary, and the reason this module is deliberately
- * thin: it wraps xterm and nothing else.
+ * no longer entered from a tile, and since 2026-09-02 THE WHEEL NEVER REACHES THE APP
+ * either (owner: "I thought the scroll wheel was turned off"): xterm forwards a wheel
+ * to any app holding mouse tracking, Claude Code holds it, and the owner kept landing
+ * in the CLI's own scrollback view, stuck. The custom wheel handler below keeps every
+ * wheel — physical, touch drag, keypad detent — on the local buffer. This is Locked,
+ * it works, and RIREKI does not touch it — the scroll saga's settled boundary, and the
+ * reason this module is deliberately thin: it wraps xterm and nothing else.
  *
  * The other view is `tapeview.js`, which reads the tape and never touches tmux at all.
  * The tile composes one or the other; neither knows the other exists.
@@ -15,7 +19,7 @@
  * xterm itself stays a classic script (`window.Terminal`, `window.FitAddon`) — the
  * vendor files load before the module graph runs, so it is referenced, never imported.
  */
-import { IS_TOUCH, SELECT_MOD, WHEEL_DOWN, WHEEL_UP, forcesSelection } from './state.js';
+import { IS_TOUCH, SELECT_MOD, forcesSelection } from './state.js';
 import { termFace, termTheme } from './theme.js';
 import { t } from './lexicon.js';
 
@@ -49,6 +53,18 @@ export class TermView {
     this.fitAddon = new FitAddon.FitAddon();
     this.term.loadAddon(this.fitAddon);
     this.term.open(body);
+    // THE WHEEL IS OURS. xterm's default hands a wheel to an app that holds mouse
+    // tracking (Claude Code does) as SGR mouse reports, and the app scrolls ITSELF —
+    // its own scrollback view, which the tile cannot see or leave. Returning false here
+    // keeps xterm from forwarding and scrolls the local buffer instead, so the ↓ latest
+    // pill is always the way home. An app without mouse tracking never got the wheel
+    // anyway (xterm scrolls, or translates to arrows on the alternate screen).
+    this.term.attachCustomWheelEventHandler((e) => {
+      if (!this.mouseTracking()) return true;
+      const lines = e.deltaMode === 1 ? e.deltaY : e.deltaY / 20;
+      this.term.scrollLines(Math.trunc(lines) || Math.sign(lines));
+      return false;
+    });
     this.term.onData(hooks.onData);
     this.term.onResize(hooks.onResize);
     // Stash the selection as soon as it's made; a streaming TUI repaint can clear the
@@ -97,12 +113,12 @@ export class TermView {
   }
 
   /**
-   * IS ANYONE LISTENING FOR MOUSE? With viewer mouse off (2026-09-01), a raw wheel
-   * escape sent at the pane is no longer consumed by tmux: it reaches the running app.
-   * An app holding mouse tracking (Claude Code's TUI) scrolls its own view with it; an
-   * app that is not gets the bytes AS TYPED INPUT — the owner watched agents nobody had
-   * touched sit "scroll locked" on injected wheels, and a bare CLI would show escape
-   * garbage on its prompt. Every wheel sender asks this first.
+   * IS THE APP LISTENING FOR MOUSE? Only the wheel handler above asks, to know when
+   * xterm would otherwise forward a wheel to the app. Nothing in the client sends a
+   * wheel escape at the pane any more: under viewer mouse off (2026-09-01) one reached
+   * the app as input — agents nobody had touched sat "scroll locked" on injected
+   * wheels — and with the app listening it scrolled the app's own view instead of the
+   * tile's, which is the trap the owner kept falling into (2026-09-02).
    */
   mouseTracking() {
     return (this.term.modes?.mouseTrackingMode ?? 'none') !== 'none';
@@ -216,8 +232,8 @@ export class TermView {
   /**
    * TOUCH ONLY: one-finger drag over the terminal scrolls the tmux scrollback.
    *
-   * Locked has no local buffer — the history lives on the server, so a gesture has to
-   * be translated into wheel escapes and sent. That is what this does.
+   * Locked scrolls xterm's local buffer — the finger is translated into local
+   * `scrollLines`, never into wheel escapes sent at the pane (see the wheel handler).
    *
    * Tape-fed tiles must NOT come through here. Their content is already in a plain
    * scrollable div, so iOS scrolls it natively with real momentum and rubber banding.
@@ -254,19 +270,8 @@ export class TermView {
         const y = e.touches[0].clientY;
         accum += y - lastY; // finger DOWN reveals older lines => wheel up
         lastY = y;
-        if (hooks.isLocked() && this.mouseTracking()) {
-          // the mirror, app listening: inject wheel events — the APP scrolls its view
-          while (accum >= STEP) {
-            hooks.sendRaw(WHEEL_UP);
-            accum -= STEP;
-          }
-          while (accum <= -STEP) {
-            hooks.sendRaw(WHEEL_DOWN);
-            accum += STEP;
-          }
-        } else if (hooks.isLocked()) {
-          // the mirror, nobody listening: scroll xterm's local buffer — a wheel escape
-          // here would land as typed input in the pane (see mouseTracking above)
+        if (hooks.isLocked()) {
+          // the mirror: scroll xterm's local buffer, whatever the app is listening for
           const n = Math.trunc(accum / STEP);
           if (n) {
             accum -= n * STEP;

@@ -1,5 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { IS_TOUCH, S, WHEEL_DOWN, WHEEL_UP, tiles } from './state.js';
+import { IS_TOUCH, S, tiles } from './state.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { t } from './lexicon.js';
@@ -160,13 +160,11 @@ export function firePadBinding(bind) {
     const k = PAD_KEYS()[bind.key];
     if (!k) return;
     if (k.scroll) {
-      // Encoder detents: locked = inject wheel events ONLY when the app listens for
-      // mouse (otherwise they land as typed input under viewer mouse off — see
-      // termview.mouseTracking), else scroll xterm's local buffer; unlocked =
-      // scrub the local DVR — same split as touch drag-scroll.
+      // Encoder detents: locked = scroll xterm's local buffer (never a wheel escape at
+      // the pane — termview's wheel handler says why); unlocked = scrub the local DVR —
+      // same split as touch drag-scroll.
       if (!S.active) return;
-      if (S.active.locked && S.active.term.mouseTracking()) for (let i = 0; i < 3; i++) S.active.sendRaw(k.scroll < 0 ? WHEEL_UP : WHEEL_DOWN);
-      else if (S.active.locked) S.active.term.scrollLines(k.scroll < 0 ? -3 : 3);
+      if (S.active.locked) S.active.term.scrollLines(k.scroll < 0 ? -3 : 3);
       else if (S.active.tapeMode) {
         // A tape-fed tile hides xterm — its transcript lives in the tape div, so the
         // scroll keys page that instead of a canvas nobody can see.
