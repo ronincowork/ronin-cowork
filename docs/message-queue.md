@@ -29,6 +29,11 @@ Every sender uses the same delivery engine. Automatic checks and **Try Again** u
 delivery: the target must exist, its dial must permit writing, and its Agent must show a
 recognized empty prompt. Busy work, dialogs, drafts and unknown prompts retain the card
 with the measured reason.
+A message is recognised by its own text, not only by the prompt row. A long message
+wraps into a draft taller than the prompt window; safe delivery still sees it sitting at
+the prompt, presses Enter, and confirms. A copy an earlier attempt left stranded at the
+prompt is submitted on the next attempt, never typed again and never refused as somebody
+else's draft. Only text the pane never showed is retained without an Enter.
 
 A message to a name that is not on the roster is **refused**, with directions to choose a
 live session from the roster or use the team's wipeboard. Accepted mail binds to the
