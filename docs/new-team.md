@@ -124,7 +124,7 @@ service. Leaving needs no terminal parking or resource teardown.
 
 ## Exact resume checklist
 
-1. Work at your repo desk (`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`), never on `master`.
+1. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`), never on `master`.
 2. Read this file and `docs/workspace-kit.md` completely.
 3. Inspect status, current history, and every owned file; trust the tree over handoffs.
 4. Preserve unrelated dirty work.

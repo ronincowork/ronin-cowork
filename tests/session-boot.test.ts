@@ -136,11 +136,11 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
     await mkdir(path.join(temp, 'shelf', 'notes'), { recursive: true });
     await writeFile(path.join(temp, 'shelf', 'notes', 'LOOSE.md'), '# not a level');
 
-    const connected = (await bootFiles('', true, ['gbrain_connected/'])).map((f) => path.basename(f));
+    const connected = (await bootFiles('', true, false, ['gbrain_connected/'])).map((f) => path.basename(f));
     assert.ok(connected.includes('GBRAIN_TOOLS.md'), 'MCP on should read the service-signed level');
     assert.ok(!connected.includes('LOOSE.md'), 'a directory that is not a level is not read');
 
-    const disconnected = (await bootFiles('', false, ['gbrain_connected/'])).map((f) => path.basename(f));
+    const disconnected = (await bootFiles('', false, false, ['gbrain_connected/'])).map((f) => path.basename(f));
     assert.ok(
       !disconnected.includes('GBRAIN_TOOLS.md'),
       'MCP off must read no connected level — tools and know-how ride the one choice',
@@ -166,11 +166,11 @@ test('only enabled Routine levels contribute startup reading', async () => {
     await mkdir(path.join(temp, 'shelf', 'routine', 'gbrain'), { recursive: true });
     await writeFile(path.join(temp, 'shelf', 'routine', 'gbrain', 'GBRAIN.md'), '# gbrain');
 
-    const base = (await bootFiles('', false, ['routine/ronin_base/BASE.md'])).map((f) => path.basename(f));
+    const base = (await bootFiles('', false, false, ['routine/ronin_base/BASE.md'])).map((f) => path.basename(f));
     assert.ok(base.includes('BASE.md'));
     assert.ok(!base.includes('GBRAIN.md'), 'an unselected Routine contributes no reading');
 
-    const none = (await bootFiles('', false, [])).map((f) => path.basename(f));
+    const none = (await bootFiles('', false, false, [])).map((f) => path.basename(f));
     assert.ok(!none.includes('BASE.md') && !none.includes('GBRAIN.md'));
   } finally {
     if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;
@@ -186,7 +186,7 @@ test('generated macro reading contains only the effective Routine macros', async
   const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
   process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
   try {
-    const boot = await bootFiles('', false, [], new Set(['forkit']));
+    const boot = await bootFiles('', false, false, [], new Set(['forkit']));
     const guide = await readFile(boot.find((file) => path.basename(file) === 'SESSION_MACROS.md')!, 'utf8');
     assert.match(guide, /\+forkit:/);
     assert.doesNotMatch(guide, /\+cutcode:/, 'a Control macro is not taught by Base alone');

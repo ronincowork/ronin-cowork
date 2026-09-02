@@ -583,6 +583,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.new_session:** New session
 - **cowork.tab_roster:** Roster
 - **cowork.tab_archives:** Archived
+- **glossary.new_session:** new session
 - **team.workspace_3:** Workspace 3
 - **team.workspace_4:** Workspace 4
 - **team.count_2_title:** Two workspaces around the roster
@@ -1646,38 +1647,61 @@ The catalog entry goes. {dir} is not touched.
 - **keys.right:** Right
 
 ## glossary — the words an agent says to a person for the house terms (KOTOBA_GLOSSARY.md, rendered at session birth; no UI reads these)
+- **glossary.ronin:** Ronin
 - **glossary.coworkspace:** the coworkspace
 - **glossary.tile:** tile
+- **glossary.session:** session
+- **glossary.agent:** agent
+- **glossary.commons:** session commons
 - **glossary.desk:** the desk
+- **glossary.workbench:** the workbench
 - **glossary.workspace:** workspace
+- **glossary.surface:** surface
+- **glossary.terminal_tile:** terminal tile
 - **glossary.team_commons:** team commons
+- **glossary.campaign:** campaign
 - **glossary.campaign_commons:** the commons
 - **glossary.cowork_commons:** cowork commons
+- **glossary.selector_column:** selector column
 - **glossary.tab:** tab
 - **glossary.cowork_setup:** cowork setup
 - **glossary.locked:** Locked / Unlocked
 - **glossary.roster:** the roster
+- **glossary.launch:** launch
 - **glossary.team_roster:** Cowork record
 - **glossary.team_lead:** team lead · 人
 - **glossary.wipeboard:** wipeboard
+- **glossary.brief:** Brief
 - **glossary.docs:** the Docs tab
 - **glossary.configuration:** Configuration
 - **glossary.hotwords:** Hotwords
 - **glossary.project_root:** project root
+- **glossary.project_root_list:** the project root list
+- **glossary.customization:** your own macros and jobs
+- **glossary.pad:** Pad
 - **glossary.control:** Control
+- **glossary.launch_mode:** Model provider configuration · Dangerously
+- **glossary.gbrain_mode:** Connected · Disconnected
 - **glossary.team:** Cowork
 - **glossary.note:** Note
 - **glossary.work_record:** work record
+- **glossary.rung:** rung · leg · phase · gate
 - **glossary.memory:** memory
 - **glossary.stats:** Stats
 - **glossary.macros:** macros
+- **glossary.macro:** macro
+- **glossary.invocation:** typing a macro
 - **glossary.desk_profile:** desk profile
 - **glossary.session_type:** session type
+- **glossary.kind:** kind
+- **glossary.template:** template
 - **glossary.behaviour:** behaviour
 - **glossary.routine:** routine
 - **glossary.ronin_base:** Ronin Base
+- **glossary.routine_floor:** Cowork floor
 - **glossary.ronin_worktrees:** worktrees
 - **glossary.ronin_services:** Ronin Services
+- **glossary.specialized_routine:** specialized routine
 - **glossary.terminal:** terminal
 - **glossary.bare_metal_agent:** bare-metal Agent
 - **glossary.cowork_agent:** Cowork Agent
@@ -1687,9 +1711,11 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.output:** Output
 - **glossary.fork:** fork
 - **glossary.harakiri:** harakiri
+- **glossary.packet_kinds:** Usage counts · Feedback · Macro submission
 - **glossary.packet:** what gets sent
 - **glossary.egress_log:** where Ronin has connected
 - **glossary.services:** Services
+- **glossary.session_menu:** Status · Work record · Macros · Detach · Kill session
 - **glossary.message_queue:** message queue
 - **league.commons:** League commons
 - **league.view:** League view
