@@ -19,8 +19,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.default:** default
 - **add_agent.template:** template
 - **add_agent.no_template:** No template
-- **add_agent.desk_line_control:** Ronin Worktrees is on for this Team. In each Project Root that also allows Worktrees, this Agent gets a private branch and worktree and can hand work in; other roots use their checkout.
-- **add_agent.desk_line_plain:** Ronin Worktrees is off for this Team. This Agent uses each repository checkout even when that Project Root allows Worktrees.
+- **add_agent.worktrees_mode:** Agent work mode
+- **add_agent.worktrees_on:** Own worktree where the Project Root allows it
+- **add_agent.worktrees_off:** Use the project checkout and its branches
+- **add_agent.worktrees_inherited:** Inherited from this Team. Change it here for this Agent only; the Project Root remains a separate gate.
+- **add_agent.worktrees_overridden:** Overridden for this Agent only. The Team and Project Root are unchanged.
+- **add_agent.worktrees_choose_checkout:** Change to checkout mode
+- **add_agent.worktrees_choose_own:** Change to own-worktree mode
 - **add_agent.actions:** Launch actions
 - **add_agent.full_alternative:** Alternative: for full new Agent controls, use the
 - **add_agent.full_link:** detailed launch page
@@ -263,7 +268,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roles_none:** No session roles on this install.
 - **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
-- **campaign_view.routines_help:** Choose what each new Cowork Agent starts with. Changes land in forms opened after this save; nothing already running or stored changes.
+- **campaign_view.routines_help:** Choose what new Cowork Agents start with. This Campaign answer seeds new Teams; a Team may replace it, and New Agent shows the resolved answer. Nothing already running changes.
+- **campaign_view.worktrees_routine_help:** On: an Agent uses its own worktree only in Project Roots that allow Worktrees. Off: it works directly in each project checkout and its branches. Project Root permission is configured separately.
 - **campaign_view.routines_n:** {n} on
 - **campaign_view.routine_no_description:** No description supplied.
 - **campaign_view.available:** Available
@@ -271,7 +277,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
 - **campaign_view.rt_worktrees:** Ronin worktrees
-- **campaign_view.rt_worktrees_what:** Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks.
+- **campaign_view.rt_worktrees_what:** Agent work mode: private branch and worktree where a Project Root allows Worktrees; direct work in the checkout and its branches everywhere else.
 - **campaign_view.rt_by_repo:** per repository — see Project roots
 - **campaign_view.rt_gbrain:** gbrain
 - **campaign_view.rt_gbrain_what:** The shared memory service: its reading and its MCP tools for sessions born with it connected.
@@ -449,6 +455,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.floor:** Cowork floor
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
+- **new_team.worktrees_mode:** Agent work mode
+- **new_team.worktrees_on:** Own worktree where the Project Root allows it
+- **new_team.worktrees_off:** Use the project checkout and its branches
+- **new_team.worktrees_help:** This Team answer is inherited by Agents born onto it and replaces the Campaign default. A Project Root must also allow Worktrees; otherwise that repository uses its checkout.
 - **new_team.kit_meta:** {routines} routines · {books} books
 - **new_team.lead_include:** Include a team lead
 - **new_team.lead_include_sub:** Raised with the team and briefed.
@@ -472,10 +482,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.model:** model
 - **forms.none:** —
 - **forms.always:** always
+- **forms.campaign:** campaign
 - **forms.campaign_on:** campaign on
 - **forms.campaign_off:** campaign off
 - **forms.team_on:** team turns on
 - **forms.team_off:** team turns off
+- **forms.agent:** agent
+- **forms.agent_override:** agent overrides
 
 ## new_agent — new-agent.js (the drawn launch form, staged beside the ＋ New board)
 - **new_agent.title:** New Agent
@@ -511,6 +524,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.routines_terminal:** agent: none — a pane
 - **new_agent.routines_bare:** no floor, no routines
 - **new_agent.blank_note:** A blank field is an answer, not a gap.
+- **new_agent.worktrees_mode:** Agent work mode
+- **new_agent.worktrees_on:** Own worktree where the Project Root allows it
+- **new_agent.worktrees_off:** Use the project checkout and its branches
+- **new_agent.worktrees_resolved:** Resolved from {source}. The selected Project Root is a separate gate: if it does not allow Worktrees, this Agent uses that checkout.
 
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted
@@ -968,7 +985,7 @@ The catalog entry goes. {dir} is not touched.
 - **setup.bundle_base:** Ronin Base
 - **setup.bundle_base_copy:** Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.
 - **setup.bundle_worktrees:** Ronin Worktrees
-- **setup.bundle_worktrees_copy:** Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.
+- **setup.bundle_worktrees_copy:** Gives Agents the private-worktree mode. They use it only in Project Roots that allow Ronin Worktrees; other repositories use their checkout and branches.
 - **setup.bundle_services:** Services
 - **setup.bundle_services_copy:** Adds your Services to every agent — voice, transcripts, machine care.
 - **setup.desk_profile:** Desk profile
@@ -1576,7 +1593,11 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.references:** References
 - **team_config.references_help:** One URL or note per line.
 - **team_config.routines:** Routines
-- **team_config.routines_help:** This complete on/off map is the Team’s own. Campaign changes affect only the next Team form.
+- **team_config.routines_help:** This complete on/off map is the Team’s own and is inherited by new Agents. It replaces the Campaign defaults; existing Agents do not change.
+- **team_config.worktrees_mode:** Agent work mode
+- **team_config.worktrees_on:** Own worktree where the Project Root allows it
+- **team_config.worktrees_off:** Use the project checkout and its branches
+- **team_config.worktrees_help:** A Project Root must separately allow Worktrees. If it does not, Agents on this Team use that repository’s checkout.
 - **team_config.kit_floor_alone:** the floor alone — no Routine is on
 - **team_config.no_description:** No description supplied.
 - **team_config.behaviours:** Behaviours

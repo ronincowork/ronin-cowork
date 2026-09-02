@@ -191,8 +191,12 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
      `desk: own | none` survives on the launch body as an unadvertised escape hatch; no
      form surfaces it, and this one no longer sends it. ---- */
   const deskLine = el('div', 'aa-deskline');
+  const deskMode = el('strong');
   const deskWhy = el('small');
-  deskLine.append(deskWhy);
+  let worktreesOverride = null;
+  const deskToggle = createAction({ label: '', size: 'compact', action: () => { worktreesOverride = !(worktreesOverride ?? controlled()); paintDesk(); } }).el;
+  deskToggle.classList.add('aa-worktrees-toggle');
+  deskLine.append(el('b', null, t('add_agent.worktrees_mode', 'Agent work mode')), deskMode, deskWhy, deskToggle);
   /** Is `ronin_worktrees` on for this birth? The resolved map's answer, never this
    *  form's — and null while the seed door is not there to ask. */
   const controlled = () => {
@@ -205,9 +209,16 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
     // Nothing is claimed before the resolved map has answered.
     deskLine.hidden = control === null;
     if (control === null) return;
-    deskWhy.textContent = control
-      ? t('add_agent.desk_line_control', 'Ronin Worktrees is on for this Team. In each Project Root that also allows Worktrees, this Agent gets a private branch and worktree and can hand work in; other roots use their checkout.')
-      : t('add_agent.desk_line_plain', 'Ronin Worktrees is off for this Team. This Agent uses each repository checkout even when that Project Root allows Worktrees.');
+    const effective = worktreesOverride ?? control;
+    deskMode.textContent = effective
+      ? t('add_agent.worktrees_on', 'Own worktree where the Project Root allows it')
+      : t('add_agent.worktrees_off', 'Use the project checkout and its branches');
+    deskWhy.textContent = worktreesOverride === null
+      ? t('add_agent.worktrees_inherited', 'Inherited from this Team. Change it here for this Agent only; the Project Root remains a separate gate.')
+      : t('add_agent.worktrees_overridden', 'Overridden for this Agent only. The Team and Project Root are unchanged.');
+    deskToggle.textContent = effective
+      ? t('add_agent.worktrees_choose_checkout', 'Change to checkout mode')
+      : t('add_agent.worktrees_choose_own', 'Change to own-worktree mode');
   }
 
   /* ---- what the Team fixed: at the FOOT, because none of it is changeable here ---- */
@@ -239,6 +250,7 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
     draft.name = '';
     draft.template = '';
     nameInput.value = '';
+    worktreesOverride = null;
     resetTemplateAnswers();
     paintTemplates();
     paintMandate();
@@ -266,6 +278,7 @@ export function createAddAgentView(kit, { team, roster, connect, fullLaunch } = 
         model: draft.model,
         kind: kindOf(),
         mandate: { reach: draft.reach, recruit: draft.recruit, output: [...draft.output] },
+        ...(worktreesOverride === null ? {} : { routines: { ronin_worktrees: worktreesOverride } }),
         ...(draft.template ? { template: draft.template } : {}),
       },
     });

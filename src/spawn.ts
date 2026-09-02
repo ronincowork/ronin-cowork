@@ -13,7 +13,7 @@ import { readCampaign } from './campaign-config.js';
 import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { Assignment } from './desks/schema.js';
 import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
-import { resolveRoutines, type ResolvedRoutine } from './routines.js';
+import { resolveRoutines, routineChoices, type ResolvedRoutine } from './routines.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
@@ -91,6 +91,8 @@ export interface SpawnForm {
   kind?: string;
   /** Chosen birth books. Absent inherits the parent seed; an explicit [] chooses none. */
   behaviours?: string[]; template?: string; // preset is validated provenance only, never reapplied
+  /** Per-Agent Routine overrides. Unnamed Routines retain the Team or Campaign answer. */
+  routines?: Record<string, boolean>;
   /** Optional first instruction. Blank still launches a fully booted Agent. */
   prompt?: string;
   /** What the session is called. Blank is derived and de-duplicated. */
@@ -185,7 +187,7 @@ export interface Resolved {
   kind: string;
   /** Unusable selected books omitted while the birth continued. */
   ignored: string[];
-  /** Campaign defaults after Team exceptions; the sole input to Routine projections. */
+  /** Campaign map after complete Team and sparse Agent overrides; sole Routine projection input. */
   routines: ResolvedRoutine[];
   /** Server-owned attribution for every resolved reading. The browser only renders it. */
   stated_by: Record<string, StatedBy[]>;
@@ -407,6 +409,14 @@ export async function resolveForm(
   // compose, so both resolve EMPTY here rather than falling through to the default
   // `claude`: the tile is meant to be left at a shell prompt, untouched.
   const agent = sessionType === 'terminal' ? false : bareMetalAgent ? true : profile.agent;
+  const routines = agent
+    ? resolveRoutines(
+        routineCatalog,
+        routineChoices(campaign?.config.agent_defaults.routines),
+        roster ? routineChoices(roster.routines) : undefined,
+        form.routines ? routineChoices(form.routines) : undefined,
+      )
+    : [];
   // WHICH COMMAND — every rule, every refusal and both owner defaults live in
   // `src/launch-command.ts`. It is the one concern on this path that is decided by data
   // the owner controls rather than by anything the launch form knows, and it had grown
@@ -453,9 +463,9 @@ export async function resolveForm(
   // Routine which declares connections turns the provider's MCP door on; no separate
   // gbrain/session switch is consulted. An explicit launch may still request MCP for
   // connections outside the Routine catalog.
-  const routineMcp = parentSeed?.resolved_routines
+  const routineMcp = routines
     .filter((routine) => routine.enabled)
-    .flatMap((routine) => routine.mcp) ?? [];
+    .flatMap((routine) => routine.mcp);
   // THE TEMPLATE'S gbrain DELIVERS THROUGH THE LANDED CONTROL (ruled 2026-09-01): a
   // picked agent template carrying `routines_on: gbrain` resolves gbrain_mode to
   // connected when the launch did not state one — the explicit hand still wins, and
@@ -556,13 +566,9 @@ export async function resolveForm(
     team: form.team ?? '',
     project_root: root.name,
     agent,
-    control: (parentSeed?.resolved_routines ?? resolveRoutines(routineCatalog, {}, undefined))
-      .some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
+    control: routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
     desk: form.desk,
   });
-  const routines = agent
-    ? (parentSeed?.resolved_routines ?? resolveRoutines(routineCatalog, {}, undefined))
-    : [];
   const enabledRoutines = routines.filter((routine) => routine.enabled).map((routine) => routine.name);
   const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
   const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
@@ -690,7 +696,9 @@ export async function resolveForm(
         ? (preset.behaviours ? preset.source! : explicit)
         : parentSeed?.seeds.behaviours.stated_by ?? system,
       kind: form.kind !== undefined ? explicit : parentSeed?.seeds.kind.stated_by ?? system,
-      routines: parentSeed?.routines.flatMap((routine) => routine.stated_by) ?? system,
+      routines: form.routines && Object.keys(routineChoices(form.routines)).length
+        ? explicit
+        : parentSeed?.routines.flatMap((routine) => routine.stated_by) ?? system,
     },
   };
 }

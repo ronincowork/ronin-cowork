@@ -203,7 +203,7 @@ The Project Root editor reads these four profile fields live from `RONIN_REPO`. 
 means work collects on `working` before the owner's final PR to `stable`; `mode=direct` means
 accepted work publishes on `stable` itself. The Worktrees choice is a separate repository
 permission. **Two independent answers must both allow managed Worktrees:** the Agent is born
-with the Ronin Worktrees Routine from its Campaign or Team, and this repository allows
+with the Ronin Worktrees Routine after Campaign → Team → Agent resolution, and this repository allows
 Worktrees. If either answer is off, the Agent uses the checkout. A worktree by itself is
 only Git isolation; the Ronin Worktrees combination adds the private branch, internal desk
 record, assignment reading, and hand-in path with receipts. `desks=managed|none` remains
