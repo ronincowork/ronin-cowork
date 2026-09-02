@@ -43,6 +43,7 @@
   .tw-config-field:nth-child(3) { grid-column: 1 / -1; }
   .tw-config-field input, .tw-config-field textarea { width: 100%; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3); font: inherit; }
   .tw-config-field textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
+  .tw-config-field select[multiple] { width: 100%; box-sizing: border-box; font: inherit; }
   .tw-config-reading output { color: var(--fg-strong); padding: var(--space-3) 0; }
   .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .tw-config-status, .tw-config-empty { color: var(--muted); }

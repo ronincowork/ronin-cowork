@@ -1597,7 +1597,8 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.project_root:** Project root
 - **team_config.default:** Default
 - **team_config.branch:** Branch
-- **team_config.wipeboard:** Wipeboard
+- **team_config.repos:** Repos
+- **team_config.repos_help:** Repositories this Cowork works in; each new Agent gets a desk in each. Empty means the Project root alone. Hold Ctrl or ⌘ to pick several.
 - **team_config.references:** References
 - **team_config.references_help:** One URL or note per line.
 - **team_config.routines:** Routines

@@ -16,6 +16,11 @@ const select = (form, label, name, values, value) => {
   const input = el('select', 'wk-field-control'); input.name = name;
   for (const item of values) input.add(new Option(item.label, item.value)); input.value = value; const row = el('label', 'tw-config-field'); row.append(el('span', null, label), input); form.append(row); return input;
 };
+const multi = (form, label, name, values, selected, help = '') => {
+  const input = el('select', 'wk-field-control'); input.name = name; input.multiple = true; input.size = Math.min(Math.max(values.length, 2), 5);
+  for (const item of values) input.add(new Option(item.label, item.value, false, selected.includes(item.value)));
+  const row = el('label', 'tw-config-field'); row.append(el('span', null, label), input); if (help) row.append(el('small', null, help)); form.append(row); return input;
+};
 const reading = (form, label, value, empty) => { const row = el('div', 'tw-config-reading'); row.append(el('span', null, label), el('output', null, value || empty)); form.append(row); };
 const valueLabel = (value, tr) => ({
   open: tr('campaign_view.option_open', 'Open'), discuss: tr('campaign_view.option_discuss', 'Discuss'), plan: tr('campaign_view.option_plan', 'Plan'), execute: tr('campaign_view.option_execute', 'Execute'), nobody: tr('campaign_view.option_nobody', 'Nobody'),
@@ -49,8 +54,13 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const kind = select(form, t('team_config.kind', 'Kind'), 'kind', optionRows(['open', 'coding', 'work', 'personal', 'household', 'social', 'school'], t), roster.kind);
     const objective = field(form, t('team_config.objective', 'Purpose'), 'objective', roster.objective, 'textarea');
     const projectRoot = select(form, t('team_config.project_root', 'Project root'), 'project_root', [{ value: '', label: t('team_config.default', 'Default') }, ...roots.map((root) => ({ value: root.name, label: root.name }))], roster.project_root);
+    // THE REPOS, one control (owner, 2026-09-02): every repository on this list gives each
+    // new Agent a desk, so it sits between the Project root and the Branch and is chosen
+    // from the repository roots. Empty means the Project root alone, which is what the
+    // desk derivation already reads. The wipeboard is the team's own and is not edited
+    // here: changing it under a running team breaks its board.
+    const repos = multi(form, t('team_config.repos', 'Repos'), 'repos', roots.filter((root) => root.repo !== false).map((root) => ({ value: root.name, label: root.name })), list(roster.repos), t('team_config.repos_help', 'Repositories this Cowork works in; each new Agent gets a desk in each. Empty means the Project root alone. Hold Ctrl or ⌘ to pick several.'));
     const branch = field(form, t('team_config.branch', 'Branch'), 'branch', roster.branch);
-    const wipeboard = field(form, t('team_config.wipeboard', 'Wipeboard'), 'wipeboard', roster.wipeboard);
     const references = field(form, t('team_config.references', 'References'), 'references', list(roster.references).join('\n'), 'textarea', t('team_config.references_help', 'One URL or note per line.'));
 
     const routineMap = completeTeamRoutineMap(routines, roster.routines);
@@ -106,7 +116,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); if (saveAction) saveAction.setDisabled(true); else save.disabled = true; status.textContent = t('team_config.saving', 'Saving…');
       const saved = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}`, { method: 'PUT', json: {
-        title: title.value, kind: kind.value, objective: objective.value, project_root: projectRoot.value, branch: branch.value, wipeboard: wipeboard.value, references: lines(references.value),
+        title: title.value, kind: kind.value, objective: objective.value, project_root: projectRoot.value, repos: [...repos.selectedOptions].map((option) => option.value), branch: branch.value, references: lines(references.value),
         routines: Object.fromEntries([...routineInputs].map(([name, input]) => [name, input.checked])), behaviours: { books: lines(behaviours.value), required: required.checked },
         // Spread what was read so a key this card does not draw is carried rather than
         // dropped — but NOT `permissions`, which is ruled out of agent_defaults entirely;
