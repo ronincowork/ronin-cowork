@@ -15,12 +15,12 @@
   /* The PRIMARY action wears the brand (token audit ruling, 2026-09-02): kiiro is the
      primary; kaki keeps identity/heightened surfaces (the Services check stays kakiiro
      by its own ruling) and the pressed/selected edge language. */
-  .wk-action[data-kind='primary'] { border-color: var(--kiiro); background: var(--kiiro); color: var(--on-kiiro); }
+  .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
   /* ACTION WAITING (owner, 2026-09-01): a header action over a dirty surface goes bright
      kiiro so it is unmissable. The fill is the kiiro PAIR (@tokens' ruling, same day):
      --warn is the theme-tuned warning INK and never a fill. Clean surfaces keep the
      resting look above. */
-  .wk-action[data-attention='true'] { border-color: var(--kiiro); background: var(--kiiro); color: var(--on-kiiro); font-weight: 700; }
+  .wk-action[data-attention='true'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); font-weight: 700; }
   .wk-action[data-kind='danger'] { border-color: var(--bad); color: var(--bad-soft); }
   .wk-action[data-size='compact'] { min-height: var(--space-11); padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
   .wk-action[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki); }

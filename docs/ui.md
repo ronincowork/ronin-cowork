@@ -118,7 +118,10 @@ The roles, defined in `public/style.css`:
 - terminal: the `--term-*` block — xterm's palette and the tape/composer surfaces,
   read back into JS by `termTheme()` (`public/js/theme.js`), never restated
 
-Amber is attention and identity; `--warn` is "needs you"; red is only ever wrong.
+**Kaki is the brand** (owner, 2026-09-02: the hito mark's persimmon is the main color —
+earlier rulings that said "kiiro" meant kaki): every primary and attention FILL reads
+`--kaki`/`--on-strong`. Amber (`--kiiro`, `--accent`, `--warn`) is the supporting
+family — the band's derived shades, edges, rings and warning ink; red is only ever wrong.
 `--bad` is never used categorically in charts (the `--k-*` job colours exist for that).
 
 **Services Check status is kakiiro.** It is the owner's deliberate outbound check after
@@ -287,7 +290,7 @@ a `destroy()` owner at that moment, not speculatively.
   on it when the drop closes under the keyboard. The paragraph above still stands, and it
   is about the BAR; a tile header is not the bar.
 - **Toast** — `ui.toast`: one chip, `role=status`, errors hold longer than successes.
-- **Attention flash** — `ui.attention`: one bounded, central kiiro cue with `role=status`;
+- **Attention flash** — `ui.attention`: one bounded, central kaki cue with `role=status`;
   it never steals focus and names the surface where the owner action is waiting.
 - **Field** — `ui.field`: a real accessible name and a message line for a control,
   `display: contents` so the layout it sits in does not move. Labels are

@@ -60,12 +60,13 @@
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
-  /* KIIRO — the house's core yellow-orange, THEME-INVARIANT by ruling (owner,
-     2026-09-01: "make sure that the tokens between light and dark don't mean we lose
-     our core color, which is the kiiro"). Declared once, never re-declared by the
-     light block: a brand color that mutates per theme stops being the brand. Every
-     kiiro FILL reads this pair (the attention flash, the phone's Start; the band
-     reads the tint variant below with its own ink family);
+  /* KIIRO — the house's amber, THEME-INVARIANT. NOT THE BRAND: the owner ruled
+     2026-09-02 that "kiiro" in every earlier band/button ruling MEANT KAKI, the hito
+     mark's persimmon — "I mistakenly in the past called that kiiro." The BRAND is
+     --kaki below: every primary/attention FILL reads --kaki/--on-strong. Kiiro
+     remains the amber the band variants derive from (their owner-approved values
+     are unchanged) and the dark band's attention ink, where kaki cannot hold the
+     contrast floor;
      --warn stays separate as the theme-tuned warning ink, because thin text genuinely
      needs a darker value on paper — a shade of kiiro, not a replacement for it. */
   /* Value history: #f0c674 (gold) read as YELLOW on the band — "it's not anything to
@@ -73,7 +74,6 @@
      accent's own hue. This one line is the whole brand color: change it and the band,
      the attention flash and the phone's Start all follow. */
   --kiiro: #e0af68;
-  --on-kiiro: #201a0e;
   /* KIIRO-TINT — the light opaque SHADING variant of the brand token: kiiro for
      surfaces, not text. Derived FROM the token so a hue correction stays that one
      --kiiro line; check-css resolves the mix and holds the band's ink floors on it.
@@ -84,9 +84,6 @@
      toward kaki FIRST (70/30, holding the orange), then lightens hard (45% over
      white): distinctly lighter than the token, distinctly orange, never cream. */
   --kiiro-tint: color-mix(in srgb, color-mix(in srgb, var(--kiiro) 70%, var(--kaki)) 45%, #ffffff);
-  /* KIIRO-DEEP — the pressed/hover depth of a kiiro fill, as --accent-deep is to
-     --accent. Invariant like its parent. */
-  --kiiro-deep: color-mix(in srgb, var(--kiiro) 82%, #000000);
   /* KIIRO-HINT — the DARK shading variant: the shell's own band ground with a
      visible kiiro cast. 22% because the tenth-toward-kaki cut proved 10% invisible
      ("I still don't see the kiiro shading"). Theme-relative BY DESIGN here — the
@@ -625,10 +622,10 @@ body {
   max-width: 88vw;
   /* A kiiro FILL, so it reads the invariant brand pair — light mode's --warn is a
      text ink and would mustard this band (owner, 2026-09-01). */
-  border: var(--edge) solid var(--kiiro);
+  border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
   padding: var(--space-6) var(--space-8);
   font-size: var(--text-5);
   font-weight: 700;
@@ -1295,9 +1292,9 @@ body {
   cursor: pointer;
 }
 .pad-card .pad-bar button.armed {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
-  border-color: var(--kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
+  border-color: var(--kaki);
 }
 .pad-card .pad-board {
   display: grid;
@@ -1364,12 +1361,12 @@ body {
   border-color: var(--fg);
 }
 .pad-card .pad-key.hit {
-  background: var(--kiiro);
-  border-color: var(--kiiro);
+  background: var(--kaki);
+  border-color: var(--kaki);
 }
 .pad-card .pad-key.hit b,
 .pad-card .pad-key.hit small {
-  color: var(--on-kiiro);
+  color: var(--on-strong);
 }
 .pad-card .pad-widget {
   aspect-ratio: 1;
@@ -1400,10 +1397,10 @@ body {
 }
 /* the encoder / joystick flash too, so you can see what a turn or flick emits */
 .pad-card .pad-widget.hit {
-  background: var(--kiiro);
+  background: var(--kaki);
   border-style: solid;
-  border-color: var(--kiiro);
-  color: var(--on-kiiro);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 .pad-card .pad-edit {
   display: none;
@@ -2225,12 +2222,12 @@ body {
    commit-buttons in the app (`.fr-go`, `.st-go`) rather than an outline that reads as
    secondary next to a red one. */
 .end-session-actions .primary {
-  background: var(--kiiro);
-  border-color: var(--kiiro-deep);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 .end-session-actions .primary:hover:not(:disabled) {
-  background: var(--kiiro-deep);
+  background: var(--kaki-lift);
 }
 .end-session-actions .danger {
   color: var(--bad);
@@ -2952,8 +2949,8 @@ body {
   color: var(--fg-strong);
 }
 .gb-privacy > button:hover {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
 }
 .gb-card h3 {
   margin: 0 0 var(--space-3);
@@ -3378,9 +3375,9 @@ body {
    what it means now. */
 .dc-back.attention,
 .dc-save.attention {
-  border-color: var(--kiiro);
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  border-color: var(--kaki);
+  background: var(--kaki);
+  color: var(--on-strong);
   font-weight: 700;
 }
 .dc-who {
@@ -4838,9 +4835,9 @@ button.wb-door:hover b {
     cursor: pointer;
   }
   #bar .shape-cycle:active {
-    background: var(--kiiro);
-    border-color: var(--kiiro);
-    color: var(--on-kiiro);
+    background: var(--kaki);
+    border-color: var(--kaki);
+    color: var(--on-strong);
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
   #bar .brand {
@@ -5180,8 +5177,8 @@ button.wb-door:hover b {
   border-radius: var(--radius-md);
   /* Was the shell's one blue fill (--action, a role the palette comment itself
      disowns). A send is a primary action, so it wears the brand pair. */
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
   font-size: var(--text-6);
   cursor: pointer;
 }
@@ -6284,9 +6281,9 @@ button.wb-door:hover b {
   flex-wrap: wrap;
 }
 .fr-go {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
-  border: var(--edge) solid var(--kiiro-deep);
+  background: var(--kaki);
+  color: var(--on-strong);
+  border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6294,7 +6291,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .fr-go:hover {
-  background: var(--kiiro-deep);
+  background: var(--kaki-lift);
 }
 .fr-go:disabled {
   opacity: 0.6;
@@ -6333,9 +6330,9 @@ button.wb-door:hover b {
 /* the ⚙ offer — a real button in the room's own tokens: filled, hover-dark, cursor.
    It was wearing .st-inp (an input's clothes) and read as a dead field. */
 .st-go {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
-  border: var(--edge) solid var(--kiiro-deep);
+  background: var(--kaki);
+  color: var(--on-strong);
+  border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6344,7 +6341,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .st-go:hover {
-  background: var(--kiiro-deep);
+  background: var(--kaki-lift);
 }
 .st-go:disabled {
   opacity: 0.6;
@@ -6468,8 +6465,8 @@ button.wb-door:hover b {
 .cs-review-key { display: block; color: var(--muted); font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; }
 .cs-review-value { display: block; margin-top: var(--space-1); color: var(--fg); font-size: var(--text-3); overflow-wrap: anywhere; }
 .cs-review-foot { padding: var(--space-6) var(--space-7) var(--space-7); }
-.cs-save { width: 100%; border: var(--edge) solid var(--kiiro); border-radius: var(--radius-xs); background: var(--kiiro); color: var(--on-kiiro); padding: var(--space-5); font: 600 var(--text-3)/1 var(--font-mono); cursor: pointer; }
-.cs-save:hover { background: var(--kiiro-deep); color: var(--on-kiiro); }
+.cs-save { width: 100%; border: var(--edge) solid var(--kaki); border-radius: var(--radius-xs); background: var(--kaki); color: var(--on-strong); padding: var(--space-5); font: 600 var(--text-3)/1 var(--font-mono); cursor: pointer; }
+.cs-save:hover { background: var(--kaki-lift); color: var(--on-strong); }
 .cs-save:disabled { opacity: .6; cursor: default; }
 .cs-save-note { margin: var(--space-4) 0 0; text-align: center; color: var(--muted); font-size: var(--text-2); }
 .cs-status { margin-top: var(--space-4); }
@@ -6625,9 +6622,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   cursor: pointer;
 }
 .tile:is(.tape-on, .keys-on) .composer .keysrow button:active {
-  background: var(--kiiro);
-  border-color: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 /* Clearance for both rows, so the last line of the transcript stays visible. The
    measurement rule from the composer's own clearance: this is that height plus the
@@ -6759,9 +6756,9 @@ body[data-phone] #viewhost {
   text-decoration: none;
 }
 #phone .ph-back:active {
-  background: var(--kiiro);
-  border-color: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 /* メ on the phone bar — the same kaki face it wears on the iPad bar (#bar rules are
    scoped away from this shell, so the seat is restated here). */
@@ -6912,8 +6909,8 @@ body[data-phone] .tile-head {
   /* KIIRO, the house's core yellow — the invariant brand pair, not --action (blue,
      which belongs to nothing on this shell) and not --warn (a theme-tuned text ink
      that mustards in light mode). Owner, 2026-09-01. */
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
   font-size: var(--text-5);
   font-weight: 600;
   cursor: pointer;
