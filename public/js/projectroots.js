@@ -133,10 +133,10 @@ export function buildProjectRoots(root, isShowing) {
       const working = mk(t('roots.f_working', 'working'), 'repo-working', before.working || 'dev', t('roots.f_working_hint', 'The integration branch for reviewed work. You choose its name.'), 'dev', repoFields);
       const stable = mk(t('roots.f_stable', 'stable'), 'repo-stable', before.stable || existing.facts?.repo?.branch || 'main', t('roots.f_stable_hint', 'The published branch. You choose its name.'), 'main', repoFields);
       working.removeAttribute('data-key'); stable.removeAttribute('data-key');
-      const worktrees = pick(t('roots.f_worktrees', 'Worktrees'), creating ? seedWorktrees : before.worktrees, [['enabled', t('roots.worktrees_enabled', 'Use Ronin Worktrees')], ['disabled', t('roots.worktrees_disabled', 'Use the checkout')]], t('roots.f_worktrees_hint', 'This repository allows or declines Ronin Worktrees. The Agent’s Routine is selected separately under Campaign or Team Routines.'));
+      const worktrees = pick(t('roots.f_worktrees', 'Worktrees'), creating ? seedWorktrees : before.worktrees, [['enabled', t('roots.worktrees_enabled', 'Use Ronin Worktrees')], ['disabled', t('roots.worktrees_disabled', 'Use the checkout')]], t('roots.f_worktrees_hint', 'Worktrees keep each Agent’s file changes in a separate working folder and branch. Both the Agent and repo must have Worktrees on.'));
       const worktreesNote = document.createElement('p');
       worktreesNote.className = 'pr-worktrees-note';
-      worktreesNote.textContent = t('roots.worktrees_two_gates', 'This is the repository permission. It takes effect only when the Agent is also born with the Ronin Worktrees Routine, selected under Campaign or Team Routines.');
+      worktreesNote.textContent = t('roots.worktrees_two_gates', 'This controls the repo. Worktrees use a managed hand-in and Team-lead merge process.');
       repoFields.append(worktreesNote);
       const preview = document.createElement('p');
       preview.className = 'pr-flow';
@@ -147,8 +147,8 @@ export function buildProjectRoots(root, isShowing) {
           ? t('roots.flow_reviewed', '{working} → review → {stable}', { working: working.value.trim() || '—', stable: stable.value.trim() || '—' })
           : t('roots.flow_direct', 'commits → {stable}', { stable: stable.value.trim() || '—' });
         const worktreesFlow = worktrees.value === 'enabled'
-          ? t('roots.flow_worktrees', 'Agents with the Ronin Worktrees Routine use their own worktree and hand work in; other Agents use the checkout.')
-          : t('roots.flow_checkout', 'Every Agent uses this checkout, even when it carries the Ronin Worktrees Routine.');
+          ? t('roots.flow_worktrees', 'Agents with Worktrees on use their own working folder and branch; other Agents use the checkout.')
+          : t('roots.flow_checkout', 'Every Agent uses this checkout, even when the Agent has Worktrees on.');
         preview.textContent = t('roots.flow_preview', 'Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.', { branches: branchFlow, worktrees: worktreesFlow });
       };
       for (const control of [mode, working, stable, worktrees]) control.addEventListener('input', syncProfile);

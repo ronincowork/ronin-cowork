@@ -70,7 +70,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
       worktreesMode.replaceChildren(
         el('b', null, t('team_config.worktrees_mode', 'Agent work mode')),
         el('strong', null, on ? t('team_config.worktrees_on', 'Own worktree where the Project Root allows it') : t('team_config.worktrees_off', 'Use the project checkout and its branches')),
-        el('small', null, t('team_config.worktrees_help', 'A Project Root must separately allow Worktrees. If it does not, Agents on this Team use that repository’s checkout.')),
+        el('small', null, t('team_config.worktrees_help', 'Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')),
       );
     };
     routineInputs.get('ronin_worktrees')?.addEventListener('change', paintWorktreesMode);
