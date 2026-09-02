@@ -6,7 +6,7 @@
 #   or the commons launcher asks for a session — the server lands inside
 #   ronin.service. systemd's default KillMode=control-group then SIGTERMs
 #   *every process in that cgroup* on stop, so a routine
-#   `systemctl --user restart ronin` kills the tmux server and every session,
+#   restarting Ronin kills the tmux server and every session,
 #   agent and shell on the box. Nobody typed `tmux kill-anything`.
 #   This unit starts the server first, in its own cgroup, so restarting the app is
 #   just restarting the app.

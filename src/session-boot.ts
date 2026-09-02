@@ -16,9 +16,8 @@
  *     session wearing a particular hat, or doing a particular kind of work;
  *   - and the user had nowhere of their own to add to it.
  *
- * A shelf answers all four, and it does it by holding files rather than names of files.
- * Nothing is written down, so nothing can go stale: the brief is a directory listing
- * taken at the moment of the launch.
+ * A shelf answers all four with live files rather than stored absolute paths. At birth
+ * the selected sources are compiled into one README in the session's own record.
  *
  * TWO HALVES, the same split `ronin_sops` and `ronin_library` already use:
  *
@@ -26,17 +25,12 @@
  *                             it wholesale. Near-empty on purpose.
  *   <session_boot store>/     YOURS, outside every repo. Survives upgrade AND uninstall.
  *
- * FOUR LEVELS — one universal, two from the session's own launch, and one from the
- * is born onto, and one from the launch's own MCP choice (owner's ruling, 2026-08-17):
+ * FOUR LEVELS — universal, Project Root, Routine declarations and an actual assignment:
  *
  *   all/                    every session, always
- *   <service>_connected/    only sessions launched with MCP on — how a connected session
- *                           learns what it is connected to. Cowork ships NO such folder
- *                           and matches the pattern only: a connected service makes and
- *                           seeds its own (gbrain's setup makes gbrain_connected/), so
- *                           the level is signed by its service (owner's ruling,
- *                           2026-08-20) and the free build never names a vendor
+ *   <service>_connected/    only when an enabled Routine declares it and MCP is on
  *   root/<project_root>/    only sessions working in that directory
+ *   routine/<name>/FILE.md  only when the enabled Routine manifest declares that file
  *   assignment/             only sessions whose launch resolved repo desks — the desk
  *                           contract (commit → hand-in → team promotion → Git push). A
  *                           launch given no desk reads nothing here: the level is a fact
@@ -50,7 +44,7 @@
  * Across levels there is no shadowing, because they are answering different questions.
  */
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, realpath, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storeDir } from './stores.js';
@@ -223,71 +217,112 @@ async function filesIn(dir: string): Promise<string[]> {
   return out;
 }
 
-/**
- * The connected levels on one shelf half: every `<service>_connected/` directory,
- * sorted. Cowork ships none — a connected service seeds its own (gbrain's setup makes
- * `gbrain_connected/`), which is how the level says WHOSE reading it is while the free
- * build never names a vendor.
- */
-async function connectedLevels(base: string): Promise<string[]> {
-  let names: string[];
-  try {
-    names = await readdir(base);
-  } catch {
-    return []; // absent is the ordinary state, never an error
-  }
+/** Stock first, then the owner's same-named file for ONE level. Shadowing never reaches
+ * across levels: a root README and a Routine README are two additive documents. */
+async function levelFiles(stock: string, user: string): Promise<string[]> {
+  const byName = new Map<string, string>();
+  for (const file of await filesIn(stock)) byName.set(path.basename(file), file);
+  for (const file of await filesIn(user)) byName.set(path.basename(file), file);
+  return [...byName.values()];
+}
+
+/** Resolve the exact boot-shelf coordinates a Routine manifest declared. A manifest is
+ * the membership list; merely placing another file beside a declared one does not make
+ * it required reading. */
+async function declaredFiles(refs: readonly string[], mcpOn: boolean): Promise<string[]> {
+  const user = userShelf();
   const out: string[] = [];
-  for (const name of names.sort()) {
-    if (!name.endsWith('_connected') || name.startsWith('.')) continue;
-    const full = path.join(base, name);
-    try {
-      if ((await stat(full)).isDirectory()) out.push(full);
-    } catch {
-      /* vanished mid-read */
+  for (const raw of refs) {
+    const ref = raw.trim().replace(/^\/+/, '');
+    if (!ref || ref.includes('..') || path.isAbsolute(raw)) continue;
+    if (ref.endsWith('_connected/') && !mcpOn) continue;
+    if (!ref.startsWith('routine/') && !/^[a-z0-9_-]+_connected\/$/.test(ref)) continue;
+    if (ref.endsWith('/')) {
+      out.push(...await levelFiles(path.join(STOCK, ref), path.join(user, ref)));
+      continue;
     }
+    const stock = path.join(STOCK, ref);
+    const owner = path.join(user, ref);
+    let selected = '';
+    for (const candidate of [stock, owner]) {
+      try {
+        if ((await stat(candidate)).isFile()) selected = candidate;
+      } catch { /* absent and dangling declarations deliver nothing */ }
+    }
+    if (selected) out.push(selected);
   }
   return out;
 }
 
 /**
- * What this session should read, in reading order: `all`, connected services, its root,
- * effective Routines and its assignment contract — stock before the owner's at each level.
- *
- * Deduplicated BY FILENAME, last writer winning, which is what makes the shadow work: your
- * `all/SHELVES.md` displaces ours because yours is read second. Across levels the same
- * name would also collapse — deliberate, and the reason a file meant for one root should
- * not be given a name that stock already uses.
+ * The source documents for this session, in reading order. Owner files shadow stock only
+ * at the same level/coordinate; identical canonical sources selected twice are deduped.
  */
 export async function bootFiles(
   projectRoot: string,
   mcpOn = true,
   assigned = false,
-  routines: string[] = [],
+  routineReading: string[] = [],
   routineMacros?: ReadonlySet<string>,
   session = '',
 ): Promise<string[]> {
   const user = userShelf();
-  const dirs: string[] = [path.join(STOCK, 'all'), path.join(user, 'all')];
-  // The connected shelves ride the launch's own MCP choice: off means no tools AND no
-  // reading list about them — the same decision, honored in both places.
-  if (mcpOn) dirs.push(...(await connectedLevels(STOCK)), ...(await connectedLevels(user)));
-  // Stock cannot have a root/ — it does not know the owner's directories.
-  if (projectRoot) dirs.push(path.join(user, 'root', projectRoot));
-  // Routine reading is additive and comes only from the effective birth answer.
-  for (const routine of routines) {
-    dirs.push(path.join(STOCK, 'routine', routine), path.join(user, 'routine', routine));
+  const selected = [
+    ...await levelFiles(path.join(STOCK, 'all'), path.join(user, 'all')),
+    // Stock cannot have a root/ — it does not know the owner's directories.
+    ...(projectRoot ? await filesIn(path.join(user, 'root', projectRoot)) : []),
+    ...await declaredFiles(routineReading, mcpOn),
+    // The desk contract rides only an ACTUAL assignment, independently of the Routine
+    // selection that made one possible.
+    ...(assigned ? await levelFiles(path.join(STOCK, 'assignment'), path.join(user, 'assignment')) : []),
+  ];
+  // The same symlinked source can be selected by two honest authorities. Deliver its
+  // content once, first selection winning, without collapsing unrelated same-name files.
+  const seen = new Set<string>();
+  const files: string[] = [];
+  for (const file of selected) {
+    const key = await realpath(file).catch(() => file);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    files.push(file);
   }
-  // The desk contract rides only a launch that actually resolved desks — a launch fact,
-  // so it cannot be an axis folder; it is on or off, and off contributes nothing.
-  if (assigned) dirs.push(path.join(STOCK, 'assignment'), path.join(user, 'assignment'));
-
-  const byName = new Map<string, string>();
-  for (const dir of dirs) for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
   // Generated last, so the live catalog's macro reading is always the file handed over.
-  byName.set('SESSION_MACROS.md', await sessionMacrosReading(routineMacros, session));
+  files.push(await sessionMacrosReading(routineMacros, session));
   // The glossary is rendered from whichever copy won (stock, or the owner's shadow of it)
   // with the active desk profile's words — KOKUGO, 2026-08-27.
-  const glossary = byName.get('KOTOBA_GLOSSARY.md');
-  if (glossary) byName.set('KOTOBA_GLOSSARY.md', await glossaryReading(glossary));
-  return [...byName.values()];
+  const glossary = files.find((file) => path.basename(file) === 'KOTOBA_GLOSSARY.md');
+  if (glossary) files[files.indexOf(glossary)] = await glossaryReading(glossary);
+  return files;
+}
+
+/** Compile the resolved source set into the ONE document a newborn is asked to read.
+ * The section comments retain provenance for an audit without turning paths into a hunt. */
+export async function compileBirthReadmeAt(dir: string, sources: readonly string[], session: string): Promise<string> {
+  const sections: string[] = [];
+  const seen = new Set<string>();
+  for (const source of sources) {
+    try {
+      const key = await realpath(source);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const text = (await readFile(source, 'utf8')).trim();
+      if (!text) continue;
+      const demoted = text.replace(/^(#{1,6})(?=\s)/gm, (heading) => `${heading}#`.slice(0, 6));
+      sections.push(`<!-- source: ${source} -->\n${demoted}`);
+    } catch { /* a source that vanished before compilation is omitted, never stale */ }
+  }
+  const body = [
+    '# Read first',
+    '',
+    `This is the startup reading Ronin compiled for **${session}**. It is the exact packet this Agent was born with.`,
+    '',
+    ...sections.flatMap((section, index) => [index ? '\n---\n' : '', section]),
+    '',
+  ].join('\n');
+  await mkdir(dir, { recursive: true });
+  const target = path.join(dir, 'README.md');
+  const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;
+  await writeFile(temp, body, 'utf8');
+  await rename(temp, target);
+  return target;
 }

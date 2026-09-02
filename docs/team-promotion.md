@@ -40,7 +40,7 @@ installed machine and user stores; that remains the distinct maintenance/update 
    <expected_old>`) in receipt order; the mounted funnel worktree is then refreshed to the
    new tip. The first race stops the rest: refs past it are `skipped`, the receipt goes
    `interrupted`, and nothing is overwritten.
-5. **Restart + health** — `systemctl --user restart ronin`, then `/api/health` and the
+5. **Restart + health** — `tejun-machine-restart`, then `/api/health` and the
    render check (`scripts/smoke-ui.mjs`, a SKIP with no browser). On failure, `team
    revert` runs automatically through the same door and the team wipeboard is told.
 

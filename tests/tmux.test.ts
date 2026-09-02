@@ -90,3 +90,10 @@ test('env assignments are sorted, so a birth argv is reproducible', () => {
   const sep = a.indexOf('--');
   assert.deepEqual(a.slice(sep + 1, sep + 4), ['env', 'ALPHA=2', 'ZED=1']);
 });
+
+test('a supplied session record key is stamped in the same tmux birth transaction', () => {
+  const a = newSessionArgs('beta', { argv: ['claude'], key: 'beta-unique-key' });
+  const key = a.indexOf('@ronin-key');
+  assert.notEqual(key, -1);
+  assert.deepEqual(a.slice(key - 3, key + 2), ['set-option', '-t', 'beta', '@ronin-key', 'beta-unique-key']);
+});

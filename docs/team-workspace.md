@@ -225,7 +225,7 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
 - There is no Team-scoped 1/2/4 mode. Sessions retains its separate raw grid.
 - The hosted Tile keeps its global picker; switching it to a non-member is existing Tile
   behavior.
-- `src/` changes need `systemctl --user restart ronin` (`tsx`, no watch); `public/` is live.
+- `src/` changes need `tejun-machine-restart` (`tsx`, no watch); `public/` is live.
 
 ## Exact resume checklist
 

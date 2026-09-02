@@ -125,7 +125,8 @@ process. Verified after: **no process runs from `ronin-cowork-live`**, and exact
 Ronin serves — the supervised unit's tree on `100.101.235.17:3006`, dev checkout, which is
 what the owner's `dohyo-unified` URL proxies to. **No kill was needed and none was run.**
 The `ronin-cowork-live` checkout stays on disk untouched; it still carries an uncommitted
-`REQUIRED_ABILITIES.md` edit (the forkit lesson) that should be ported to `dev` before
+edit to the former universal abilities reading (the forkit lesson, since taught by
+`ronin_session_boot/routine/ronin_base/BASE_ABILITIES.md`) that should be ported to `dev` before
 that checkout is ever removed — removing it is the owner's own act.
 
 ## Shared seams other workstreams read

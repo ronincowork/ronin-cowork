@@ -64,10 +64,19 @@ test('the tmux-server guard still refuses with sessions live, asking the real tm
   assert.doesNotMatch(r.err, /grid_view/, 'viewer sessions are not counted');
 });
 
-test('the escape hatch still passes the restart through to the real systemctl', async () => {
-  const r = await run(path.join(projected, 'systemctl'), ['--user', 'restart', 'tmux-server'], { RONIN_KILL_TMUX: '1' });
-  assert.equal(r.code, 0, `${r.code} ${r.err}`);
-  assert.equal(r.out.trim(), 'REAL --user restart tmux-server');
+test('an unrelated environment value cannot bypass the guard', async () => {
+  const r = await run(path.join(projected, 'systemctl'), ['--user', 'restart', 'tmux-server'], { UNRELATED_OVERRIDE: '1' });
+  assert.equal(r.code, 4, `${r.code} ${r.err}`);
+  assert.match(r.err, /ronin-guard: refusing/);
+});
+
+test('a private empty TMUX_TMPDIR cannot hide production sessions from the guard', async () => {
+  const r = await run(path.join(projected, 'systemctl'), ['--user', 'restart', 'tmux-server'], {
+    TMUX: '',
+    TMUX_TMPDIR: '/tmp/private-empty-socket',
+  });
+  assert.equal(r.code, 4, `${r.code} ${r.err}`);
+  assert.match(r.err, /agent_a/);
 });
 
 test('a different checkout\'s own bin/shim copy on PATH is rejected too (not the same inode)', async () => {

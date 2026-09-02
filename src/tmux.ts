@@ -231,6 +231,8 @@ export interface CreateOpts {
    * that it reaches a direct-exec Agent that sources no rc file.
    */
   env?: Readonly<Record<string, string>>;
+  /** Stable key for the per-session record, installed atomically with the runtime. */
+  key?: string;
 }
 
 export async function createSession(name: string, dir?: string, opts: CreateOpts = {}): Promise<void> {
@@ -275,6 +277,7 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
     env: opts.env,
     argv: opts.argv,
     control: opts.control,
+    key: opts.key,
   });
   try {
     await pexec('tmux', build(true));
