@@ -26,9 +26,12 @@ The channel opens with a short owner-facing note explaining that Agent-to-Agent 
 occasionally need a nudge and that Try Again is gentler than Force.
 
 Every sender uses the same delivery engine. Automatic checks and **Try Again** use safe
-delivery: the target must exist, its dial must permit writing, and its Agent must show a
-recognized empty prompt. Busy work, dialogs, drafts and unknown prompts retain the card
-with the measured reason.
+delivery: the target must exist and its dial must permit writing; then the message is
+typed and submitted **whether or not the Agent is mid-thought** (owner, 2026-09-02) — the
+CLIs queue input typed while they work. Exactly two things hold a message: somebody's
+unsubmitted draft at the prompt, because typing over what a person is typing is the one
+real send violation, and an open dialog, because its Enter would choose on the owner's
+behalf. Both retain the card with that reason and are retried when the prompt clears.
 A message is recognised by its own text, not only by the prompt row. A long message
 wraps into a draft taller than the prompt window; safe delivery still sees it sitting at
 the prompt, presses Enter, and confirms. A copy an earlier attempt left stranded at the
