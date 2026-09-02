@@ -312,8 +312,8 @@ const FLOOR = [
   // The workbench band — the family that kept losing kiiro or its ink to a retune.
   ['--cowork-head-fg', '--cowork-head-bg', 7], ['--cowork-head-muted', '--cowork-head-bg', 4.5],
   ['--cowork-head-attention', '--cowork-head-bg', 4.5],
-  // Brand fills are kaki (owner ruling 2026-09-02: the hito persimmon is the brand);
-  // the --on-strong/--kaki pair above already holds their floor.
+  // Kiiro fills: the brand pair at rest and pressed/hover depth.
+  ['--on-kiiro', '--kiiro', 4.5], ['--on-kiiro', '--kiiro-deep', 4.5],
   ['--term-fg', '--term-bg', 7], ['--term-tape-fg', '--term-tape-bg', 7], ['--term-input-fg', '--term-well', 7],
 ];
 for (const [name, toks] of [['dark', darkTokens], ['light', lightTokens]]) {

@@ -22,13 +22,21 @@
  * two switches can only disagree. SETTEI's "new projects use desks?" is a default that
  * writes the file when a project root is added (src/desks/arrangement.ts), not a gate.
  */
-import { arrangementOf, arrangementWorktreesInput } from './desks/arrangement.js';
 import type { Assignment, RepoDesk } from './desks/schema.js';
-import { deriveAssignment, writeAssignment } from './desks/registry.js';
-import { resolveWorktrees } from './worktrees-resolution.js';
+import { deriveAssignment } from './desks/registry.js';
 
-/** Compatibility input retained while launch forms stop sending the retired desk override. */
+/** The launch box's one control, pre-answered: `own` forces a desk, `none` refuses one, absent = by Control. */
 export type DeskChoice = 'own' | 'none';
+
+/**
+ * Whether THIS launch wants desks at all. A plain terminal has no agent to brief.
+ */
+export function wantsDesk(input: { agent: boolean; control: boolean; desk?: DeskChoice }): boolean {
+  if (!input.agent) return false;
+  if (input.desk === 'none') return false;
+  if (input.desk === 'own') return true;
+  return input.control;
+}
 
 /**
  * Derive the assignment — pure, opens nothing. An assignment with no desks (every repo
@@ -42,30 +50,9 @@ export async function resolveLaunchDesks(input: {
   control: boolean;
   desk?: DeskChoice;
 }): Promise<Assignment | null> {
-  if (!input.agent) return null;
-  const assignment = await deriveAssignment({ session: input.session, team: input.team, project_root: input.project_root });
-  const repositories = await Promise.all(assignment.desks.map(async (candidate) => {
-    const arrangement = await arrangementOf(candidate.repo);
-    return arrangementWorktreesInput(arrangement, {
-      worktree: candidate.worktree,
-      branch: candidate.branch,
-      line: candidate.line,
-    });
-  }));
-  const resolution = resolveWorktrees({
-    capability: {
-      worktrees: input.control ? 'enabled' : 'disabled',
-      provenance: 'resolved_routines.ronin_worktrees',
-    },
-    repositories,
-  });
-  const managed = new Set(resolution.repositories.filter((repository) => repository.mode === 'managed').map((repository) => repository.repo));
-  const desks = assignment.desks.filter((desk) => managed.has(desk.repo));
-  if (!desks.length) return null;
-  const primary = desks.some((desk) => desk.repo === assignment.project_root)
-    ? assignment.project_root
-    : desks[0]!.repo;
-  return { ...assignment, primary, desks };
+  if (!wantsDesk(input)) return null;
+  const a = await deriveAssignment({ session: input.session, team: input.team, project_root: input.project_root });
+  return a.desks.length ? a : null;
 }
 
 /** The desk the shell starts in. */
@@ -74,16 +61,17 @@ export function primaryDesk(a: Assignment): RepoDesk {
 }
 
 /**
- * Open every resolved managed row before the CLI is spawned through Track 1's `openDesk`
- * operation (branch cut from the line, worktree mounted, upstream set, record written).
- * The candidate assignment is not re-derived here: doing so would reintroduce a second
- * applicability decision after `resolveWorktrees`. Imported at call time so this module
- * compiles before the desk implementation exists; at launch its absence, or any desk that
- * will not open, is a refusal with the reason in it — never a silent fallback. The
- * assignment handed back carries the worktree paths as opened.
+ * Open every desk of the assignment before the CLI is spawned — Track 1's seam
+ * (`src/desks/desk.ts`, `resolveAssignmentDesks`): it derives the assignment again from the
+ * same three facts and opens each desk (branch cut from the line, worktree mounted,
+ * upstream set, record written). Imported at call time so this module compiles before it
+ * exists; at launch its absence, or any desk that will not open, is a refusal with the
+ * reason in it — never a silent fallback (docs/control-surface.md §2: "launch may not
+ * silently fall back to a funnel checkout"). The assignment handed back carries the
+ * worktree paths as opened.
  */
 export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
-  let opener: { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> };
+  let opener: { resolveAssignmentDesks: (i: { session: string; team: string; project_root: string }) => Promise<Assignment> };
   try {
     opener = (await import('./desks/desk.js')) as typeof opener;
   } catch (e) {
@@ -94,31 +82,7 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
   }
   let opened: Assignment;
   try {
-    const desks: RepoDesk[] = [];
-    for (const candidate of a.desks) {
-      const openedDesk = await opener.openDesk({
-        repo: candidate.repo,
-        session: a.session,
-        team: a.team,
-        assignment: a.id,
-        branch: candidate.branch,
-      });
-      desks.push({
-        repo: openedDesk.repo,
-        root: openedDesk.root,
-        branch: openedDesk.branch,
-        worktree: openedDesk.worktree,
-        line: openedDesk.line,
-        mode: openedDesk.mode,
-        session: openedDesk.session,
-        team: openedDesk.team,
-        assignment: openedDesk.assignment,
-        state: openedDesk.state,
-        opened_at: openedDesk.opened_at,
-      });
-    }
-    opened = { ...a, desks };
-    await writeAssignment(opened);
+    opened = await opener.resolveAssignmentDesks({ session: a.session, team: a.team, project_root: a.project_root });
   } catch (e) {
     throw new Error(`Could not open the desks for ${a.id} — ${(e as Error)?.message ?? e}. The launch was refused; nothing was started in a funnel checkout.`);
   }

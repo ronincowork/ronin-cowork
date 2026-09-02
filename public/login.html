@@ -45,7 +45,7 @@
       /* This page stands alone (it cannot assume style.css served before auth), so
          these are MIRRORS of the sheet's tokens, value for value — the 2026-09-02
          token audit found four drifted (both --ok values, both --line/light --line
-         family) and no brand kaki at all. If a value moves in style.css, it moves here. */
+         family) and no kiiro at all. If a value moves in style.css, it moves here. */
       :root {
         --bg: #0b0e14;
         --panel: #131826;
@@ -53,8 +53,8 @@
         --fg: #c5c8c6;
         --muted: #6b7488;
         --accent: #e0af68;
-        --kaki: #c46243;
-        --on-strong: #fff;
+        --kiiro: #e0af68;
+        --on-kiiro: #201a0e;
         --bad-soft: #e6a1a1;
         --ok: #b5bd68;
         --well: #0d1220;
@@ -114,7 +114,7 @@
       /* The passkey button is the RECOMMENDED door when it is offered at all, so it is
          the filled one. The password below it stays a peer, not a demotion — it is the
          fallback the owner may always take. */
-      button.primary { background: var(--kaki); color: var(--on-strong); font-weight: 600; border-color: var(--kaki); }
+      button.primary { background: var(--kiiro); color: var(--on-kiiro); font-weight: 600; border-color: var(--kiiro); }
       /* ---- the ui/status grammar, copied — see the head comment ---- */
       .ui-status { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
       .ui-status:empty { display: none; }
