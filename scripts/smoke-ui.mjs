@@ -1049,11 +1049,36 @@ async function checkA11y(page, label, axeSrc) {
 
 async function runPass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
+  // Hold session discovery after the selected workspace can mount. The first visible
+  // desktop frame must arrive while this unrelated read is still pending; otherwise a
+  // reload is just the bare theme canvas until every boot enrichment finishes.
+  let releaseSessions;
+  const sessionsHeld = new Promise((resolve) => { releaseSessions = resolve; });
+  await page.route('**/api/sessions', async (route) => {
+    await sessionsHeld;
+    await route.continue();
+  });
+  const navigation = page.goto(URL_.replace(/#.*$/, '') + '#/team/%20unassigned', { waitUntil: 'networkidle', timeout: 30_000 });
+  let paintedBeforeSessions = false;
   try {
-    await page.goto(URL_.replace(/#.*$/, '') + '#/team/%20unassigned', { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.waitForFunction(() => !document.documentElement.classList.contains('boot-pending')
+      && !!document.querySelector('#viewhost > :not([hidden])'), null, { timeout: 10_000 });
+    paintedBeforeSessions = true;
+  } catch (e) {
+    const boot = await page.evaluate(() => ({
+      pending: document.documentElement.classList.contains('boot-pending'),
+      views: [...document.querySelectorAll('[data-workspace-view]')].map((el) => ({ id: el.dataset.workspaceView, hidden: el.hidden })),
+    }));
+    bad(`${label}: selected desktop workspace stayed veiled behind session discovery: ${e.message} — ${JSON.stringify(boot)}`);
+  } finally {
+    releaseSessions();
+  }
+  try {
+    await navigation;
   } catch (e) {
     bad(`${label}: page did not load: ${e.message}`);
   }
+  if (paintedBeforeSessions) ok(`${label}: selected desktop workspace paints before session discovery completes`);
   await page.waitForTimeout(3000);
   // Agent cards show their readable title; the fixed session ID remains the resource key.
   // Never make seating depend on those two strings happening to be identical.
@@ -1080,7 +1105,28 @@ async function runPass({ label, browser, contextOpts }) {
   else ok(`${label}: no failed requests`);
 
   await checkDom(page, label);
-  if (probeAvailable) await attachProbe(page, label);
+  if (probeAvailable) {
+    await attachProbe(page, label);
+    // The in-Tile Docs editor shares `.tile-body` with xterm. Exercise that exact
+    // bubbling seam: a pointer gesture in the editor must retain editor focus instead
+    // of the body's terminal-focus handler stealing it.
+    const docsKeepsFocus = await page.evaluate(() => {
+      const body = document.querySelector('.tile .tile-body');
+      if (!body) return false;
+      const overlay = document.createElement('div');
+      overlay.className = 'tile-doc-view';
+      const area = document.createElement('textarea');
+      overlay.append(area);
+      body.append(overlay);
+      area.focus();
+      area.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      const kept = document.activeElement === area;
+      overlay.remove();
+      return kept;
+    });
+    if (docsKeepsFocus) ok(`${label}: in-Tile Docs keeps selection and editing focus away from xterm`);
+    else bad(`${label}: in-Tile Docs loses selection/editing focus to xterm`);
+  }
   else console.log(`  SKIP — ${label}: live-pane attach probe (session capacity is full)`);
   await checkCurrentWorkspace(page, label);
 

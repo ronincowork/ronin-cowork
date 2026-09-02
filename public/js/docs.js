@@ -80,6 +80,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   const save = document.createElement('button');
   save.className = 'dc-save';
   save.textContent = t('docs.save', 'Save');
+  save.disabled = true;
   // THE ↗ AND THE FRAME ARE THE HTML HALF OF THE EDITOR (owner, 2026-08-26): a listed
   // `.html` is a page, not prose, so it renders in a frame where the textarea would be,
   // and ↗ opens the same URL in a tab of its own. Both hang off `/raw/<path>`, which serves
@@ -149,6 +150,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     pop.removeAttribute('href');
     area.value = '';
     area.disabled = true;
+    save.disabled = true;
     markDirty(false);
     say(t('docs.loading', 'loading…'));
     show('edit');
@@ -161,6 +163,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     }
     area.value = r.data.text ?? '';
     area.disabled = false;
+    save.disabled = false;
     markDirty(false);
     say('');
   };
