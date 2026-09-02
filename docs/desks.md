@@ -62,9 +62,10 @@ from the working line if missing and mounted at its worktree; the desk branch is
 the line (or an existing branch remounted — a parked desk, or a leftover, which is adopted
 rather than lost); upstream is set to the line; `node_modules` is linked from the home
 checkout when present; the row is written. Idempotent. A coding launch calls
-`resolveAssignmentDesks()` — derive the assignment from the team roster's `repos`, open
-each desk, write the assignment row — before the CLI is spawned; a failure is thrown, and
-launch does not fall back to a funnel checkout on its own.
+`resolveLaunchDesks()` to derive candidate coordinates, normalize each repository, and
+dispatch once through `resolveWorktrees()`. `prepareLaunchDesks()` then opens only the
+resolved managed rows through `openDesk()` and writes the assignment before the CLI is
+spawned; a failure is thrown, and launch does not fall back to a funnel checkout on its own.
 
 ## Hand-in
 
@@ -136,7 +137,8 @@ beside the line and the ref moves by one atomic `update-ref`.
 
 ## What the other tracks read
 
-- launch: `deriveAssignment()` (pure), `resolveAssignmentDesks()` (opens), `Assignment`;
+- launch: `deriveAssignment()` (pure candidate planning), `resolveLaunchDesks()` (one
+  Worktrees resolution), `prepareLaunchDesks()` (opens resolved managed rows), `Assignment`;
 - visibility: `listDesks({session|team|repo})` → `DeskStatus[]`, `readDesk()`,
   `receiptsForDesk()`;
 - promotion: `acceptedSince(repo, line, lastPromotedLineSha)` → the receipts a change set
