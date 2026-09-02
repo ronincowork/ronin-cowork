@@ -201,28 +201,27 @@ remains.
 
 The Project Root editor reads these four profile fields live from `RONIN_REPO`. `mode=reviewed`
 means work collects on `working` before the owner's final PR to `stable`; `mode=direct` means
-accepted work publishes on `stable` itself. `desks=managed|none` separately says whether
-Ronin supplies managed file coordination. **It does not say whether an Agent may have a
-worktree.** A worktree is isolation — a folder off a branch — and a session can be started
-in one on any Git root, including a `direct` root or one with `desks=none`. What
-`desks=managed` adds is the *contract around it*: the branch cut from the declared line,
-the upstream, the desk record, the `assignment/` reading handed over at birth, and a
-hand-in path with receipts. A root that supplies none of that is not refusing Agents a
-place to work; it is declining to coordinate what they do there, and an Agent working in
-such a root reports to the owner rather than handing in. Branch names are owner choices. A changed profile
+accepted work publishes on `stable` itself. The Worktrees choice is a separate repository
+permission. **Two independent answers must both allow managed Worktrees:** the Agent is born
+with the Ronin Worktrees Routine from its Campaign or Team, and this repository allows
+Worktrees. If either answer is off, the Agent uses the checkout. A worktree by itself is
+only Git isolation; the Ronin Worktrees combination adds the private branch, internal desk
+record, assignment reading, and hand-in path with receipts. `desks=managed|none` remains
+only the compatibility spelling stored in `RONIN_REPO`; the editor presents **Allow Ronin
+Worktrees** and **Use the checkout**. Branch names are owner choices. A changed profile
 is shown once as exact before/after text and, on confirmation, rewritten directly and
 atomically. This is not a migration: refs, desks, Teams, and running Agent instructions are
 untouched.
 
-The same form appears while adding a root. Its coordination choice is seeded from the current
-new-project default (the seam Campaign Routine resolution will replace), while its mode and
+The same form appears while adding a root. Its repository Worktrees choice is seeded from
+**Worktrees for new project roots** on the Campaign workbench, while its mode and
 branch suggestions remain editable before **Add**. For a Git directory the confirmed proposal
 is the file that is written; the backend does not substitute `dev`, `master`, or `main`.
 Non-Git directories remain legal project roots and receive no `RONIN_REPO`.
 
-A session that changes code works at a **repo desk** — its own branch and worktree, cut from
-its team's line (`ronin_session_boot/assignment/DESK_CONTRACT.md`; the model is the lab's
-WORKTREES buildout). Commit preserves work privately at the desk;
+A session in the enabled/enabled cell works at a **repo desk** — the internal record for its
+own branch and worktree, cut from its team's line
+(`ronin_session_boot/assignment/DESK_CONTRACT.md`; the model is `docs/worktrees.md`). Commit preserves work privately at the desk;
 **hand-in** publishes committed work to the team line; the lead's **team promotion** runs the
 one full repository BYOIN and admits the team's state to `dev`. A desk branch is never
 published to the remote and never opened as a PR. Until a repository's desks are enabled, its

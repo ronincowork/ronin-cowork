@@ -26,9 +26,9 @@ import {
 } from './git.js';
 import {
   deriveAssignment, deskStatus, deskWorktree, lineFor, listDeskRecords, readDesk, removeDesk, updateDesk,
-  writeAssignment, writeDesk,
+  writeDesk,
 } from './registry.js';
-import type { Assignment, DeskNotice, DeskRecord, DeskStatus, RepoArrangement, RepoDesk, TeamLine } from './schema.js';
+import type { DeskNotice, DeskRecord, DeskStatus, RepoArrangement, TeamLine } from './schema.js';
 
 export class DeskRefused extends Error {}
 
@@ -221,27 +221,6 @@ export async function parkedDesks(filter: { repo?: string; team?: string } = {})
   const out: DeskStatus[] = [];
   for (const r of recs) out.push(await deskStatus(r, await arrangementOf(r.repo)));
   return out;
-}
-
-/**
- * THE LAUNCH SEAM (Track 3 consumes this): resolve a session's assignment and OPEN every
- * desk in it before the agent is spawned. A repo that takes no managed desk contributes
- * none — a direct repo, or one with no RONIN_REPO, gets no invented state. A failure to
- * open is thrown, visibly; launch must not fall back to a funnel checkout on its own.
- */
-export async function resolveAssignmentDesks(input: { session: string; team: string; project_root: string }): Promise<Assignment> {
-  const derived = await deriveAssignment(input);
-  const desks: RepoDesk[] = [];
-  for (const d of derived.desks) {
-    const st = await openDesk({ repo: d.repo, session: input.session, team: input.team, assignment: derived.id, branch: d.branch });
-    desks.push({
-      repo: st.repo, root: st.root, branch: st.branch, worktree: st.worktree, line: st.line, mode: st.mode,
-      session: st.session, team: st.team, assignment: st.assignment, state: st.state, opened_at: st.opened_at,
-    });
-  }
-  const a: Assignment = { ...derived, desks };
-  if (desks.length) await writeAssignment(a);
-  return a;
 }
 
 /** Refresh the mounted line worktree to its ref. Only called on a worktree verified clean under the line's lock. */

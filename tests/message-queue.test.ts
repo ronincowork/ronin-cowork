@@ -16,6 +16,22 @@ test('a send to a missing target is refused with roster and wipeboard teaching',
   await fs.rm(root, { recursive: true, force: true });
 });
 
+test('pending tells expose an existing sender-to-target lane before another is sent', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-lane-'));
+  process.env.RONIN_MESSAGE_QUEUE_DIR = root;
+  const queue = await import(`../src/message-queue.ts?lane=${Date.now()}`);
+  const target = process.env.RONIN_SESSION || 'queue_hygiene';
+  const first = await queue.enqueueMessage(target, 'one authoritative instruction', 'tell', 'machine_settings');
+  await queue.enqueueMessage(target, 'another sender is a separate lane', 'tell', 'coordinator');
+  await queue.enqueueMessage(target, 'owner notice is not this sender lane', 'owner');
+  assert.deepEqual(
+    (await queue.pendingTellsFrom('machine_settings', target)).map((item) => item.id),
+    [first.id],
+  );
+  assert.equal((await queue.pendingTellsFrom('coordinator', target)).length, 1);
+  await fs.rm(root, { recursive: true, force: true });
+});
+
 test('accepted mail binds to the target instance and a reused name cannot receive it', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-'));
   process.env.RONIN_MESSAGE_QUEUE_DIR = root;

@@ -4,8 +4,8 @@ The mechanics under `tejun-desk`. What a session is told is
 `ronin_session_boot/assignment/DESK_CONTRACT.md`. This page is the tool-side reference:
 what is recorded where, what each operation does to git, and what it refuses.
 
-> The model and its rulings live in the lab: `ronin-cowork/docs/worktrees.md`; the
-> network around it is `docs/control-surface.md` beside it.
+> The current model is `docs/worktrees.md`; the network around it is
+> `docs/control-surface.md` beside it.
 
 ## The words, used strictly
 
@@ -47,7 +47,7 @@ gives a coding launch its desk, the contract in its brief, the desk actions and 
 `desks=none`, or no file, gives none of them and the session starts in the checkout. There
 is no install-wide switch. The Campaign's Ronin Worktrees choice defaults the file written for
 a new project root (`declareArrangement`, `src/desks/arrangement.ts`). For an existing root,
-the editor reads the current publishing mode, owner-named branches, and coordination choice.
+the editor reads the current publishing mode, owner-named branches, and Worktrees repository choice.
 After one exact before/after confirmation it rewrites `RONIN_REPO` directly and atomically
 (`PUT /api/project-roots/:name/repo-profile`, `setArrangementProfile`). It performs no
 migration or running-Agent reconciliation. A coding launch that gets no desk says why on its receipt (*no desk —
@@ -62,9 +62,10 @@ from the working line if missing and mounted at its worktree; the desk branch is
 the line (or an existing branch remounted — a parked desk, or a leftover, which is adopted
 rather than lost); upstream is set to the line; `node_modules` is linked from the home
 checkout when present; the row is written. Idempotent. A coding launch calls
-`resolveAssignmentDesks()` — derive the assignment from the team roster's `repos`, open
-each desk, write the assignment row — before the CLI is spawned; a failure is thrown, and
-launch does not fall back to a funnel checkout on its own.
+`resolveLaunchDesks()` to derive candidate coordinates, normalize each repository, and
+dispatch once through `resolveWorktrees()`. `prepareLaunchDesks()` then opens only the
+resolved managed rows through `openDesk()` and writes the assignment before the CLI is
+spawned; a failure is thrown, and launch does not fall back to a funnel checkout on its own.
 
 ## Hand-in
 
@@ -136,7 +137,8 @@ beside the line and the ref moves by one atomic `update-ref`.
 
 ## What the other tracks read
 
-- launch: `deriveAssignment()` (pure), `resolveAssignmentDesks()` (opens), `Assignment`;
+- launch: `deriveAssignment()` (pure candidate planning), `resolveLaunchDesks()` (one
+  Worktrees resolution), `prepareLaunchDesks()` (opens resolved managed rows), `Assignment`;
 - visibility: `listDesks({session|team|repo})` → `DeskStatus[]`, `readDesk()`,
   `receiptsForDesk()`;
 - promotion: `acceptedSince(repo, line, lastPromotedLineSha)` → the receipts a change set

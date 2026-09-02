@@ -10,7 +10,7 @@ const projects = [
 test('Control plus a non-repository becomes one agent task', () => {
   assert.deepEqual(repositoryNeeds({ desks: { new_project: 'managed' } }, { projects }), [{
     leaf: 'desks.new_project',
-    needs: 'plain needs a local Git repository for managed file coordination',
+    needs: 'plain needs a local Git repository to allow Ronin Worktrees',
     how: 'run ronin-repo-init /work/plain — it initializes locally and never assumes a remote',
     met_by: 'agent',
   }]);

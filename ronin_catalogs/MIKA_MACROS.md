@@ -50,8 +50,8 @@ origin`, `branch --show-current`. Not there? Say so and stop.
 
 | # | Action | With |
 |---|---|---|
-| 1 | propose-and-confirm | The block: handle from the basename, `remit` from that README line, `read` from README/KOTOBA **only where they exist**, `match` from basename + remote — **and, for a git repository, `desks: yes` or `no`** (owner, 2026-08-29): yes = coding sessions work at their own desk and hand in; no = they work in the checkout. Propose the ⚙ default (*New projects use desks?*, `GET /api/settei` → `set.desks.new_project`); the owner may flip it in the same breath |
-| 2 | report-outcome | On a yes: `POST /api/project-roots` with `desks: managed` or `none` in the body (`PUT` edit, `DELETE` exclude). The repository's `RONIN_REPO` is written from it — say so, and that it is theirs to commit. Then the block as written |
+| 1 | propose-and-confirm | The block: handle from the basename, `remit` from that README line, `read` from README/KOTOBA **only where they exist**, `match` from basename + remote — and, for a Git repository, whether the repository **allows Ronin Worktrees** or **uses the checkout**. Explain that this is repository applicability; the Agent separately needs the Ronin Worktrees Routine from its Campaign or Team. Propose the ⚙ default (*Worktrees for new project roots*, `GET /api/settei` → `set.desks.new_project`); the owner may flip it in the same breath |
+| 2 | report-outcome | On confirmation: `POST /api/project-roots` with the normalized repository profile (`PUT` edit, `DELETE` exclude). Compatibility storage may still write `desks=managed|none` in the repository's `RONIN_REPO`; never present that storage spelling as the product choice. Say the file is theirs to commit, then report the block as written |
 
 **Never invent a `dir`** — ask which one. **Excluding touches nothing on disk**, and you
 say so when you propose it. Absolute paths at any depth are all first-class; Ronin does

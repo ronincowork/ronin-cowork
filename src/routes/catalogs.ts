@@ -30,7 +30,7 @@ import {
   type RootField,
 } from '../project-roots.js';
 import { campaignFilter, campaignResolver } from '../campaign-scope.js';
-import { assertArrangementProfileCurrent, readArrangement, setArrangementProfile, validateArrangementProfile } from '../desks/arrangement.js';
+import { arrangementProfile, assertArrangementProfileCurrent, readArrangement, setArrangementProfile, validateArrangementProfile } from '../desks/arrangement.js';
 import { readDesksSection } from '../user-config.js';
 import {
   listSavedLaunches,
@@ -181,7 +181,7 @@ export function registerCatalogs(app: express.Express): void {
       const [roots, bySession] = await Promise.all([listProjectRoots(), projectRootsOfSessions()]);
       const facts = await Promise.all(roots.map((r) => repoFacts(r)));
       // THE ARRANGEMENT, apart from the branch that happens to be mounted at the root:
-      // reviewed or direct, managed desks or a shared checkout, read from the repo's
+      // reviewed or direct, Worktrees or the checkout, read from the repo's
       // checked-in RONIN_REPO (absent = today's behaviour, reported as such — never
       // guessed from the branch). docs/control-surface.md § 5, "Project-root Admin".
       const arrangements = await Promise.all(
@@ -194,9 +194,15 @@ export function registerCatalogs(app: express.Express): void {
         else untagged++;
       }
       res.json({
-        roots: roots.map((r, i) => ({ ...r, facts: facts[i], arrangement: arrangements[i], sessions: counts[r.name] ?? 0 })),
+        roots: roots.map((r, i) => ({
+          ...r,
+          facts: facts[i],
+          arrangement: arrangements[i],
+          repo_profile: arrangements[i] ? arrangementProfile(arrangements[i]) : null,
+          sessions: counts[r.name] ?? 0,
+        })),
         untagged,
-        new_project_desks: (await readDesksSection()).new_project,
+        new_project_worktrees: (await readDesksSection()).new_project === 'none' ? 'disabled' : 'enabled',
       });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
@@ -213,7 +219,12 @@ export function registerCatalogs(app: express.Express): void {
       // Campaign. `repoFacts` reads the directory and never the Campaign.
       const facts = await repoFacts({ name: 'candidate', dir, remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' });
       const arrangement = facts.repo ? await readArrangement('candidate', facts.dir).catch(() => null) : null;
-      res.json({ ...facts, arrangement, new_project_desks: (await readDesksSection()).new_project });
+      res.json({
+        ...facts,
+        arrangement,
+        repo_profile: arrangement ? arrangementProfile(arrangement) : null,
+        new_project_worktrees: (await readDesksSection()).new_project === 'none' ? 'disabled' : 'enabled',
+      });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
@@ -251,7 +262,7 @@ export function registerCatalogs(app: express.Express): void {
       const arrangement = root && facts.repo
         ? await setArrangementProfile(root.dir, req.body?.profile, req.body?.before)
         : null;
-      res.json({ ok: true, arrangement });
+      res.json({ ok: true, repo_profile: arrangement ? arrangementProfile(arrangement) : null });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
@@ -270,7 +281,7 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   // THE REPOSITORY PROFILE on the editor: after one explicit before/after confirmation,
-  // rewrite RONIN_REPO directly. This is configuration, not a migration: no refs, desks,
+  // rewrite RONIN_REPO directly. This is configuration, not a migration: no refs, worktrees,
   // running Agents or recovery state are changed here.
   app.put('/api/project-roots/:name/repo-profile', async (req, res) => {
     const { name } = req.params;
@@ -279,7 +290,8 @@ export function registerCatalogs(app: express.Express): void {
     try {
       const root = (await listProjectRoots()).find((r) => r.name === name);
       if (!root) return res.status(404).json({ error: `"${name}" is not in the catalog.` });
-      res.json({ ok: true, arrangement: await setArrangementProfile(root.dir, req.body?.profile, req.body?.before) });
+      const arrangement = await setArrangementProfile(root.dir, req.body?.profile, req.body?.before);
+      res.json({ ok: true, repo_profile: arrangementProfile(arrangement) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
