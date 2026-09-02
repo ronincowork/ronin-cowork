@@ -13,6 +13,9 @@ import { askMika } from './mika.js';
 import { S, serviceOff } from './state.js';
 import { t } from './lexicon.js';
 import { buildMessageQueue } from './message-queue.js';
+import { choice } from './campaign-desk.js';
+import { saveCampaign } from './campaigns.js';
+import { applyTheme, setCampaignTheme } from './theme.js';
 
 /**
  * THE COWORK COMMONS — the install's shared surface, a `workspace_surface` (owner,
@@ -88,6 +91,35 @@ export function coworkCommons(options = {}) {
       if (!built) { built = true; room = build(); }
       return room;
     };
+  };
+
+  /* ---- Themes: the Campaign's pointer and touch surfaces ---- */
+  const themes = pane('themes', 'cv-body');
+  const themeOptions = () => [
+    { value: 'light', label: t('campaign_view.theme_light', 'Light') },
+    { value: 'dark', label: t('campaign_view.theme_dark', 'Dark') },
+  ];
+  const paintThemes = () => {
+    const campaign = options.campaign?.();
+    themes.replaceChildren();
+    if (!campaign) {
+      themes.append(node('p', 'cc-p', t('campaign_view.none_selected', 'No Campaign selected.')));
+      return;
+    }
+    const save = (field) => async (value) => {
+      const r = await saveCampaign(campaign.id, { desk: { [field]: value } });
+      if (!r.ok) return paintThemes();
+      const desk = options.campaign?.()?.desk || {};
+      setCampaignTheme(desk);
+      applyTheme();
+      paintThemes();
+    };
+    themes.append(
+      choice(t('campaign_view.theme_desktop', 'Desktop'), themeOptions(), campaign.desk?.theme || 'light',
+        t('campaign_view.theme_help', 'Light or dark for pointer surfaces.'), save('theme')),
+      choice(t('campaign_view.theme_mobile', 'Mobile'), themeOptions(), campaign.desk?.theme_mobile || 'light',
+        t('campaign_view.theme_mobile_help', 'Light or dark for touch surfaces — iPad and phone.'), save('theme_mobile')),
+    );
   };
 
   /* ---- ▦ Desk: Ronin usage stats ---- */
@@ -237,6 +269,7 @@ export function coworkCommons(options = {}) {
   const enterAll = (rooms) => () => { for (const r of rooms() || []) r?.enter?.(); };
   const service = (el, enter) => ({ el, mount: () => {}, enter: () => enter?.(), leave: () => {}, destroy: () => {} });
   const services = {
+    themes: service(themes, paintThemes),
     health: service(health, enterAll(healthRooms)),
     account: service(account, accountEnter),
     profile: service(profile, enterAll(profileRooms)),
@@ -250,6 +283,7 @@ export function coworkCommons(options = {}) {
   // machine's tabs and leaves out the two it already has as surfaces of its own.
   const wanted = Array.isArray(options.tabs) && options.tabs.length ? new Set(options.tabs) : null;
   const channels = [
+    { id: 'themes', label: t('cowork.tab_themes', 'Themes') },
     { id: 'health', label: t('cowork.tab_health', 'Desk') },
     { id: 'account', label: t('cowork.tab_account', 'Account') },
     { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
@@ -258,7 +292,7 @@ export function coworkCommons(options = {}) {
     { id: 'messages', label: t('cowork.tab_messages', 'Messages') },
     { id: 'help', label: t('cowork.tab_help', 'Help desk') },
     { id: 'keypad', label: t('cowork.tab_keypad', 'Keypad') },
-  ].filter((c) => !wanted || wanted.has(c.id));
+  ].filter((c) => (!wanted || wanted.has(c.id)) && (c.id !== 'themes' || options.campaign));
   surface = createChannelSurface({
     label: options.label || t('cowork.commons', 'Ronin Desk'),
     channels,
