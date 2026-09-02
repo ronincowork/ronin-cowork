@@ -89,13 +89,11 @@ compile inlines the page the action names.
 
 ## The boot shelf — what you were handed at birth
 
-Universal (`all/` + one generated): `SHELVES.md` (this map), `KOTOBA_GLOSSARY.md` (the
-vocabulary), `REQUIRED_ABILITIES.md` (the abilities every session uses — read it before
-improvising anything), `SESSION_MACROS.md` (the live `+macro:` roster, generated at your
-birth). Scoped levels reach only the sessions they apply to: `<service>_connected/`
-(e.g. `gbrain_connected/` — a connected service seeds its own reading, read only by
-sessions launched with MCP on), `root/<project_root>/`, `role/<session_role>/`,
-`task/<session_role>/`.
+Ronin resolves the universal vocabulary and shelf map, the chosen Project Root, each
+enabled Routine manifest, any actual desk assignment, selected behavior books and
+explicit seeds into one per-session `README.md`. The live `+macro:` roster is generated
+into that same document. The brief names only the compiled README, which also appears in
+the Agent's tracked Docs.
 `docs/session-boot.md`.
 
 ## The tools — what you run
@@ -118,9 +116,9 @@ The session_role may be blank, and blank is a real answer rather than a gap.
 ## The short routing rules
 
 - **A `+name:` lands in your pane** → compile it (`tejun <name>`), execute, report.
-  Never a remembered workflow. `REQUIRED_ABILITIES.md` has the full rule.
+  Never a remembered workflow. Ronin Base's section has the full rule.
 - **Anything about another session** → dial first (`@ronin-control`), and never flip
-  it. `REQUIRED_ABILITIES.md`, then `docs/session-control-dials.md`.
+  it. Ronin Base's section teaches the route.
 - **You need a process and no macro named one** → the SOP roster above; the situation
   picks the book.
 - **A fact about this machine** → measured, never remembered: `tejun-survey`,

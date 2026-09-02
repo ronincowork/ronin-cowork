@@ -4,9 +4,7 @@ Ronin Services is one additional Routine. It contains the durable session record
 Voice and Hotwords; none is a separate Routine or switch in this rollout. Installation
 or service-roster presence never selects it implicitly.
 
-Ronin Services supplies these four service-backed capabilities together. Compatible
-teaching remains in `all/REQUIRED_ABILITIES.md` during the transition to fully
-Routine-addressed startup reading.
+Ronin Services supplies these four service-backed capabilities together.
 
 ## The durable session record
 

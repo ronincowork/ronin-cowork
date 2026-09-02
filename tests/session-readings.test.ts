@@ -17,7 +17,7 @@ test('Session Readings resolves level shapes, leaf links and per-level shadows',
       await mkdir(path.join(shelf, dir), { recursive: true });
       await writeFile(path.join(shelf, dir, `${dir.replaceAll('/', '-')}.md`), `# ${dir}\n`);
     }
-    await writeFile(path.join(shelf, 'all', 'REQUIRED_ABILITIES.md'), '# Owner abilities\n');
+    await writeFile(path.join(shelf, 'all', 'SHELVES.md'), '# Owner abilities\n');
     const outside = path.join(temp, 'outside.md');
     await writeFile(outside, '# Linked reading\n');
     await symlink(outside, path.join(shelf, 'root/project', 'linked.md'));
@@ -29,7 +29,7 @@ test('Session Readings resolves level shapes, leaf links and per-level shadows',
     for (const level of ['all', 'root/project', 'role/CutCode', 'gbrain_connected']) {
       assert.ok(rows.some((row) => row.level === level), `${level} should be represented`);
     }
-    const shadow = rows.find((row) => row.name === 'all/REQUIRED_ABILITIES.md');
+    const shadow = rows.find((row) => row.name === 'all/SHELVES.md');
     assert.equal(shadow?.origin, 'user');
     assert.equal(shadow?.shadowed, true);
     assert.equal(shadow?.content, '# Owner abilities\n');

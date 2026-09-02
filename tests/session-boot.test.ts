@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { bootFiles } from '../src/session-boot.js';
+import { bootFiles, compileBirthReadmeAt } from '../src/session-boot.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
 import { listMacros } from '../src/macros.js';
@@ -51,7 +51,7 @@ test('every assisted session is handed the session macro routing guide', async (
   }
 });
 
-test('every assisted session is handed the required abilities', async () => {
+test('the universal shelf carries vocabulary and navigation, not optional abilities or developer test policy', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
   const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
   process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
@@ -60,22 +60,11 @@ test('every assisted session is handed the required abilities', async () => {
     // universal set. A blank axis omits only its own level.
     const boot = await bootFiles('', false);
     const names = boot.map((file) => path.basename(file));
-    for (const required of ['SHELVES.md', 'KOTOBA_GLOSSARY.md', 'REQUIRED_ABILITIES.md']) {
+    for (const required of ['SHELVES.md', 'KOTOBA_GLOSSARY.md']) {
       assert.ok(names.includes(required), `the universal boot shelf should contain ${required}`);
     }
-
-    const card = boot.find((file) => path.basename(file) === 'REQUIRED_ABILITIES.md')!;
-    const text = await readFile(card, 'utf8');
-    // The card must name the guarded routes — these are the words a session cannot search for.
-    assert.match(text, /tejun-rireki/);
-    assert.match(text, /tejun-send/);
-    assert.match(text, /\+forkit/);
-    assert.match(text, /fork it[\s\S]*new session[\s\S]*visible Ronin tmux session/i);
-    assert.match(text, /spawn it[\s\S]*spawn an agent[\s\S]*internal sub-agent/i);
-    assert.match(text, /neither vocabulary[\s\S]*no extra owner confirmation/i);
-    assert.match(text, /@ronin-control/);
-    // And rule the fallback the right way round: peek is the fallback, never the normal route.
-    assert.match(text, /tejun-peek/);
+    assert.ok(!names.includes('REQUIRED_ABILITIES.md'));
+    assert.ok(!names.some((name) => name.includes('TEST_PROTOCOLS')));
   } finally {
     if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
     else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
@@ -83,16 +72,13 @@ test('every assisted session is handed the required abilities', async () => {
   }
 });
 
-test('accepted Routine reading drafts keep universal compatibility teaching', async () => {
+test('Routine reading teaches only the selected capability; test policy stays with repository contributors', async () => {
   const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
-  const [required, protocols, base, services, control, machine, machineProtocols] = await Promise.all([
-    readFile(path.join(repo, 'ronin_session_boot', 'all', 'REQUIRED_ABILITIES.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'all', 'TEST_PROTOCOLS.md'), 'utf8'),
+  const [base, services, worktrees, machine] = await Promise.all([
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'BASE_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_worktrees', 'WORKTREES_TEST_PROTOCOLS.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_worktrees', 'WORKTREES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_host', 'HOST_ABILITIES.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_host', 'HOST_TEST_PROTOCOLS.md'), 'utf8'),
   ]);
 
   assert.match(base, /tejun forkit/);
@@ -106,22 +92,11 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
   assert.match(services, /Hotwords are the owner's dictation glossary/);
   assert.match(services, /Selection is not installation/);
   assert.match(services, /none is a separate Routine or switch/i);
-  assert.match(control, /team promotion/i);
-  assert.match(control, /first full repository BYOIN/i);
-  assert.match(control, /second full repository BYOIN/i);
+  assert.match(worktrees, /tejun-desk status --assignment/);
+  assert.match(worktrees, /tejun-desk hand-in/);
+  assert.doesNotMatch(worktrees, /first full repository BYOIN/i);
   assert.match(machine, /tejun-survey/);
   assert.match(machine, /bin\/ronin-store --all/);
-  assert.match(machineProtocols, /installed third-party-box maintenance/);
-
-  // Compatibility stays universal until effective-Routine startup reading is delivered.
-  assert.match(required, /tejun forkit/);
-  assert.match(required, /tejun-wipeboard/);
-  assert.match(required, /tejun-survey/);
-  assert.match(protocols, /team promotion/i);
-  assert.match(protocols, /first full[\s\S]*repository BYOIN/i);
-  assert.match(protocols, /second full repository BYOIN/i);
-  assert.match(protocols, /Installed-box maintenance/);
-  assert.match(protocols, /user-store customization/);
 });
 
 test('a referenced session is caught up on through the tape, pane peek as fallback', () => {
@@ -160,11 +135,11 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
     await mkdir(path.join(temp, 'shelf', 'notes'), { recursive: true });
     await writeFile(path.join(temp, 'shelf', 'notes', 'LOOSE.md'), '# not a level');
 
-    const connected = (await bootFiles('', true)).map((f) => path.basename(f));
+    const connected = (await bootFiles('', true, false, ['gbrain_connected/'])).map((f) => path.basename(f));
     assert.ok(connected.includes('GBRAIN_TOOLS.md'), 'MCP on should read the service-signed level');
     assert.ok(!connected.includes('LOOSE.md'), 'a directory that is not a level is not read');
 
-    const disconnected = (await bootFiles('', false)).map((f) => path.basename(f));
+    const disconnected = (await bootFiles('', false, false, ['gbrain_connected/'])).map((f) => path.basename(f));
     assert.ok(
       !disconnected.includes('GBRAIN_TOOLS.md'),
       'MCP off must read no connected level — tools and know-how ride the one choice',
@@ -190,7 +165,7 @@ test('only enabled Routine levels contribute startup reading', async () => {
     await mkdir(path.join(temp, 'shelf', 'routine', 'gbrain'), { recursive: true });
     await writeFile(path.join(temp, 'shelf', 'routine', 'gbrain', 'GBRAIN.md'), '# gbrain');
 
-    const base = (await bootFiles('', false, false, ['ronin_base'])).map((f) => path.basename(f));
+    const base = (await bootFiles('', false, false, ['routine/ronin_base/BASE.md'])).map((f) => path.basename(f));
     assert.ok(base.includes('BASE.md'));
     assert.ok(!base.includes('GBRAIN.md'), 'an unselected Routine contributes no reading');
 
@@ -230,4 +205,23 @@ test('startup reading is never stripped when instructions are present', () => {
 
   const brief = buildBrief(profile, undefined, form, undefined, ['/stock/SESSION_MACROS.md']);
   assert.match(brief, /Read first: \/stock\/SESSION_MACROS\.md\./);
+});
+
+test('resolved sources compile into one session README with duplicate sources included once', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-readme-test-'));
+  try {
+    const one = path.join(temp, 'ONE.md');
+    const two = path.join(temp, 'TWO.md');
+    await writeFile(one, '# First guide\n\nalpha\n');
+    await writeFile(two, '# Second guide\n\nbeta\n');
+    const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [one, one, two], 'new-agent');
+    assert.equal(path.basename(target), 'README.md');
+    const text = await readFile(target, 'utf8');
+    assert.match(text, /^# Read first/m);
+    assert.match(text, /startup reading Ronin compiled for \*\*new-agent\*\*/);
+    assert.equal(text.match(/## First guide/g)?.length, 1);
+    assert.equal(text.match(/## Second guide/g)?.length, 1);
+  } finally {
+    await rm(temp, { recursive: true, force: true });
+  }
 });

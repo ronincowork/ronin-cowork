@@ -1,8 +1,7 @@
 # HOST ABILITIES — measure the box
 
 This reading belongs to the **Ronin Host** Routine. It teaches machine, account and store
-inspection backed by measured tools. During the transition to effective-Routine startup
-reading, the same teaching remains in `all/REQUIRED_ABILITIES.md` for compatibility.
+inspection backed by measured tools.
 
 Facts about a machine are measured, never remembered: written paths, capacity, identities
 and installation state go stale.

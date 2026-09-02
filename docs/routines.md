@@ -66,7 +66,8 @@ picker.
 | `vpn` | Reaching your own Ronin from your other devices. |
 
 with `tejun-survey`, `tejun-account` and `tejun-secrets` to measure rather than assert, and
-`HOST_ABILITIES.md` / `HOST_TEST_PROTOCOLS.md` as birth reading.
+`HOST_ABILITIES.md` as birth reading. Testing Ronin itself remains repository-contributor
+instruction and is not part of a user's Routine.
 
 Its SOPs report and diagnose; none of them repairs the box unasked. The session engine in
 particular is never a session's to restart: it owns every session on the machine, so the
@@ -114,7 +115,7 @@ same result feeds every delivery mechanism.
 For each enabled Routine, the unified birth transaction projects the manifest into the
 places where its behaviours actually work:
 
-- `routine/<name>/` startup reading is handed to the Agent;
+- the manifest's declared startup reading is compiled into the Agent's one birth README;
 - its macros and actions are offered and compile;
 - its command tools are findable by bare name;
 - its requested MCP connections are included when available;

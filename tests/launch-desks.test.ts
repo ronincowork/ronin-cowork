@@ -86,8 +86,9 @@ test('the desk contract rides the assignment level, and only that', async () => 
   }
 });
 
-test('Ronin Worktrees declares the desk contract as its reading', async () => {
+test('Ronin Worktrees declares its capability guide; an actual assignment alone selects the desk contract', async () => {
   const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
   const control = await readFile(path.join(repo, 'ronin_catalogs', 'routines', 'ronin_worktrees.md'), 'utf8');
-  assert.match(control, /\*\*reading:\*\* assignment\/DESK_CONTRACT\.md/);
+  assert.match(control, /\*\*reading:\*\* routine\/ronin_worktrees\/WORKTREES\.md/);
+  assert.doesNotMatch(control, /assignment\/DESK_CONTRACT\.md/);
 });
