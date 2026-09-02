@@ -85,7 +85,7 @@ export function createFeedbackSurface(onSent) {
   contact.type = 'email'; contact.maxLength = 320; contact.autocomplete = 'email';
   form.fields.append(createField({
     label: t('feedback.reply_email', 'Reply email address (optional)'), control: contact,
-    description: t('feedback.reply_help', 'Only if you would like a reply. It is never stored with this Ronin install’s identity.'),
+    description: t('feedback.reply_help', 'If you would like to hear from us, we may reply or invite you to the Ronin community. No spam. This address is never stored with this Ronin install’s identity.'),
   }).el);
   surface.content.append(form.el);
   let id = '';

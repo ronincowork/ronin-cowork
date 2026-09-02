@@ -5,7 +5,8 @@ in the selected workspace, replacing that workspace's current content. It is not
 an overlay.
 
 The form has one free-text message and optional choices describing the person, what they use
-Ronin for, and the kind of feedback. A reply email address is optional. Pressing **Send** approves
+Ronin for, and the kind of feedback. An email address is optional and lets Ronin reply or
+invite the person to the community; it is not used for spam. Pressing **Send** approves
 that one packet and sends it to Ronin HQ. A successful send briefly says thank you, then puts
 the first ordinary selector surface in the workspace.
 
