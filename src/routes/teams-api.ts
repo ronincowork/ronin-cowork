@@ -64,6 +64,11 @@ function editOf(body: unknown): RosterEdit {
   }
   if (b.objective !== undefined) edit.objective = String(b.objective).trim().slice(0, 2000);
   if (b.project_root !== undefined) edit.project_root = String(b.project_root).trim().slice(0, 128);
+  // The repos list rides as an array or a comma-separated string; the store spells it
+  // comma-separated on the file line. Third consumer of "repos, else project_root" —
+  // the promotion CLI and deriveAssignment already keep the promise.
+  if (b.repos !== undefined) edit.repos = (Array.isArray(b.repos) ? b.repos : String(b.repos).split(','))
+    .map(String).map((v) => v.trim().slice(0, 128)).filter(Boolean);
   if (b.references !== undefined) edit.references = Array.isArray(b.references)
     ? b.references.map(String).map((v) => v.trim().slice(0, 500)).filter(Boolean) : [];
   if (b.routines !== undefined) edit.routines = b.routines && typeof b.routines === 'object' && !Array.isArray(b.routines)
