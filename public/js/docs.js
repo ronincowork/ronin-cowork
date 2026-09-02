@@ -103,6 +103,10 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   area.autocapitalize = 'off';
   area.autocomplete = 'off';
   area.setAttribute('autocorrect', 'off');
+  // A Tile owns pointerdown to activate/focus its terminal. This editor is seated over
+  // that terminal, so its selection gesture ends here; otherwise an ancestor or a
+  // restored older Tile handler can hand focus back to xterm before the drag begins.
+  area.addEventListener('pointerdown', (event) => event.stopPropagation());
   ed.append(bar, frame, area);
   root.append(pills, list, ed);
   const isPage = (p) => /\.html?$/i.test(p);

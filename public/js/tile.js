@@ -151,7 +151,10 @@ export class Tile {
       this.activate();
       // `this.home` (the tile commons) retired on 2026-08-28 with the grid page; a click in
       // the body threw on it for a few hours and took the terminal's focus with it.
-      if (!IS_TOUCH && this.body.contains(e.target)) this.term.focus();
+      // Docs replaced that body overlay with a real editor. It owns its own focus just
+      // as header controls do; only the terminal body itself redirects into xterm.
+      if (!IS_TOUCH && this.body.contains(e.target)
+        && !(e.target instanceof Element && e.target.closest('.tile-doc-view'))) this.term.focus();
     });
     this.syncOutput();
 
