@@ -295,10 +295,40 @@ export async function bootFiles(
   return files;
 }
 
-/** Compile the resolved source set into the ONE document a newborn is asked to read.
- * The section comments retain provenance for an audit without turning paths into a hunt. */
-export async function compileBirthReadmeAt(dir: string, sources: readonly string[], session: string): Promise<string> {
-  const sections: string[] = [];
+/** Ronin's own teaching — the stock shelf, the owner's shelf at every level but `root/`,
+ * and the generated fragments — is inlined into the birth README. Everything else the
+ * launch selected (the owner's project-root documents, selected behaviour books, explicit
+ * seeds, the teams SOP) is listed by title and path instead: those are reference the Agent
+ * opens at the project, and pasting a 1,200-line catalog is what made the packet unreadable. */
+export function isShelfTeaching(file: string): boolean {
+  const under = (base: string) => file === base || file.startsWith(base + path.sep);
+  if (under(STOCK) || under(storeDir('session_boot_cache'))) return true;
+  const shelf = userShelf();
+  return under(shelf) && !under(path.join(shelf, 'root'));
+}
+
+/** The first heading of a document, or its file name when it has none. */
+function titleOf(text: string, file: string): string {
+  const heading = text.match(/^#{1,6}\s+(.+?)\s*$/m);
+  return heading ? heading[1].trim() : path.basename(file);
+}
+
+/**
+ * Compile the resolved source set into the ONE document a newborn is asked to read.
+ *
+ * The page opens with what the packet holds, so a reader — the Agent, or the owner in the
+ * Docs tab — sees the shape before the text. Each inlined section keeps a visible source
+ * line, so provenance survives without a path hunt. `inline` decides which sources are
+ * pasted in and which are listed; the launch passes `isShelfTeaching`.
+ */
+export async function compileBirthReadmeAt(
+  dir: string,
+  sources: readonly string[],
+  session: string,
+  inline: (file: string) => boolean = () => true,
+): Promise<string> {
+  const sections: { title: string; body: string }[] = [];
+  const shelf: { title: string; file: string }[] = [];
   const seen = new Set<string>();
   for (const source of sources) {
     try {
@@ -307,22 +337,42 @@ export async function compileBirthReadmeAt(dir: string, sources: readonly string
       seen.add(key);
       const text = (await readFile(source, 'utf8')).trim();
       if (!text) continue;
+      const title = titleOf(text, source);
+      if (!inline(source)) {
+        shelf.push({ title, file: source });
+        continue;
+      }
       const demoted = text.replace(/^(#{1,6})(?=\s)/gm, (heading) => `${heading}#`.slice(0, 6));
-      sections.push(`<!-- source: ${source} -->\n${demoted}`);
+      sections.push({ title, body: `_Source: ${source}_\n\n${demoted}` });
     } catch { /* a source that vanished before compilation is omitted, never stale */ }
   }
-  const body = [
-    '# Read first',
+  const lines = [
+    `# Read first — ${session}`,
     '',
-    `This is the startup reading Ronin compiled for **${session}**. It is the exact packet this Agent was born with.`,
+    `Ronin compiled this one document for **${session}** at birth (${new Date().toISOString()}). It is the whole startup packet: read it once, top to bottom, then keep it as the reference it is.`,
     '',
-    ...sections.flatMap((section, index) => [index ? '\n---\n' : '', section]),
+    '## In this packet',
     '',
-  ].join('\n');
+    ...sections.map((section, index) => `${index + 1}. ${section.title}`),
+  ];
+  if (shelf.length) {
+    lines.push(
+      '',
+      '## On your shelf',
+      '',
+      'Selected for you, and read at the project rather than pasted here. Open each when you begin work.',
+      '',
+      '| Document | Where |',
+      '|---|---|',
+      ...shelf.map((row) => `| ${row.title.replace(/\|/g, '\\|')} | \`${row.file}\` |`),
+    );
+  }
+  for (const section of sections) lines.push('', '---', '', section.body);
+  lines.push('');
   await mkdir(dir, { recursive: true });
   const target = path.join(dir, 'README.md');
   const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(temp, body, 'utf8');
+  await writeFile(temp, lines.join('\n'), 'utf8');
   await rename(temp, target);
   return target;
 }

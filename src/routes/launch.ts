@@ -51,7 +51,7 @@ import { readCampaign } from '../campaign-config.js';
 import { listRoutines } from '../definitions.js';
 import { resolveLaunchSeed } from '../launch-seed.js';
 import type { SessionsDefaults } from '../launch-command.js';
-import { compileBirthReadmeAt } from '../session-boot.js';
+import { compileBirthReadmeAt, isShelfTeaching } from '../session-boot.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 
@@ -315,7 +315,7 @@ export function registerLaunch(app: express.Express): void {
       birthDir = sessionRecordDir(birthKey);
       try {
         const sources = [...resolved.birth_reading];
-        const readme = await compileBirthReadmeAt(birthDir, sources, resolved.name);
+        const readme = await compileBirthReadmeAt(birthDir, sources, resolved.name, isShelfTeaching);
         const sourceSentence = `Read first: ${sources.join(', ')}.`;
         if (!resolved.brief.includes(sourceSentence)) {
           await rm(birthDir, { recursive: true, force: true });

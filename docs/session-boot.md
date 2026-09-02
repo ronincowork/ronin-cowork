@@ -5,7 +5,11 @@ starts. It is read once, when a session is born.
 
 The birth compiler selects the applicable shelf files, removes duplicate sources, and
 writes one `README.md` into the newborn's per-session directory. The brief points to that
-one document, and the same README appears automatically in the Agent's tracked Docs.
+one document, and the same README appears automatically in the Agent's tracked Docs. The
+page opens with its own contents list. Ronin's teaching — `all/`, Routine reading, the
+desk contract, the generated macro roster — is inlined; the owner's project-root documents,
+selected behaviour books and explicit seeds are listed by title and path under **On your
+shelf**, because pasting a project's whole catalog is what made the packet unreadable.
 
 | put it in | and it reaches |
 |---|---|

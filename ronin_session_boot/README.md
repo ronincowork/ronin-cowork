@@ -17,7 +17,8 @@ same name replaces ours whole; a new name sits beside it.
 | `routine/<routine>/FILE.md` | only when an enabled Routine manifest declares the file |
 | `assignment/` | only sessions whose launch resolved repo desks — the desk contract, `DESK_CONTRACT.md`. A launch given no desk reads nothing here |
 
-A session receives every applicable level compiled into one per-session `README.md`.
+A session receives every applicable level compiled into one per-session `README.md`:
+Ronin's teaching inlined, your `root/` documents listed by title and path.
 Nothing overrides another level; owner files shadow stock only at the same coordinate.
 
 **Stock has no `root/` and no connected folder, and cannot.** The session_roles ship, so

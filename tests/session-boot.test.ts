@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { bootFiles, compileBirthReadmeAt } from '../src/session-boot.js';
+import { bootFiles, compileBirthReadmeAt, isShelfTeaching } from '../src/session-boot.js';
+import { storeDir } from '../src/stores.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
 import { listMacros } from '../src/macros.js';
@@ -207,21 +208,37 @@ test('startup reading is never stripped when instructions are present', () => {
   assert.match(brief, /Read first: \/stock\/SESSION_MACROS\.md\./);
 });
 
-test('resolved sources compile into one session README with duplicate sources included once', async () => {
+test('resolved sources compile into one session README: teaching inlined once, reference listed by title and path', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-readme-test-'));
   try {
     const one = path.join(temp, 'ONE.md');
     const two = path.join(temp, 'TWO.md');
+    const catalog = path.join(temp, 'CATALOG.md');
     await writeFile(one, '# First guide\n\nalpha\n');
     await writeFile(two, '# Second guide\n\nbeta\n');
-    const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [one, one, two], 'new-agent');
+    await writeFile(catalog, '# Every noun in the house\n\n' + 'a row\n'.repeat(1000));
+    const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [one, one, two, catalog], 'new-agent', (file) => file !== catalog);
     assert.equal(path.basename(target), 'README.md');
     const text = await readFile(target, 'utf8');
-    assert.match(text, /^# Read first/m);
-    assert.match(text, /startup reading Ronin compiled for \*\*new-agent\*\*/);
+    assert.match(text, /^# Read first — new-agent/m);
+    assert.match(text, /compiled this one document for \*\*new-agent\*\*/);
+    // The page opens with its own table of contents, then the reference shelf.
+    assert.match(text, /## In this packet\n\n1\. First guide\n2\. Second guide\n/);
+    assert.match(text, new RegExp(`\\| Every noun in the house \\| \`${catalog.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\` \\|`));
+    // A duplicate source is delivered once; a listed reference is never pasted in.
     assert.equal(text.match(/## First guide/g)?.length, 1);
     assert.equal(text.match(/## Second guide/g)?.length, 1);
+    assert.doesNotMatch(text, /a row\n/);
+    assert.ok(text.split('\n').length < 40, 'a compiled packet of short guides stays a page');
   } finally {
     await rm(temp, { recursive: true, force: true });
   }
+});
+
+test('the stock shelf, the owner shelf and generated fragments are teaching; the owner root shelf is reference', () => {
+  const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+  assert.equal(isShelfTeaching(path.join(repo, 'ronin_session_boot', 'all', 'SHELVES.md')), true);
+  assert.equal(isShelfTeaching(path.join(storeDir('session_boot'), 'routine', 'ronin_base', 'OWN.md')), true);
+  assert.equal(isShelfTeaching(path.join(storeDir('session_boot'), 'root', 'proj', 'KOTOBA.md')), false);
+  assert.equal(isShelfTeaching('/somewhere/else/ways/book.md'), false);
 });
