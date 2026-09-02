@@ -19,7 +19,8 @@
  *
  * Neither is fixable by waiting longer, and that is the point of the file: "has painted a
  * prompt" and "is accepting input" are different facts, and no timeout turns one into the
- * other. Read the pane back instead.
+ * other. Read the pane back instead — AFTER sending, to confirm; never before, to refuse
+ * (owner ruling 2026-09-02, at `deliverSafe`).
  */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -164,23 +165,31 @@ const paneIO = (name: string): PaneIO => ({
 });
 
 /**
- * Automatic delivery and Try Again: an uncertain prompt is a retained message.
+ * Automatic delivery and Try Again.
  *
- * Two cases are decided by the draft, not the prompt row. (1) After typing, a message
- * the prompt read cannot see but the pane plainly holds at the prompt IS typed, and gets
- * its Enter — returning here without one is how a message strands. (2) On entry, a draft
- * at the prompt that is THIS message is an earlier attempt's stranded copy: it is not
- * typed again (never a second copy) and not refused (never a permanent stall); it is
- * submitted. Any other draft is somebody's unsubmitted words and is left alone.
+ * THE OWNER'S RULING (2026-09-02): a message is typed and submitted whether or not the
+ * Agent is mid-thought. "Who cares what their mid-thought is — we should still send and
+ * land the message." The CLIs queue input typed while they work; a queue of Ronin's own
+ * that refused to type until a recognised empty prompt appeared held fifteen messages at
+ * zero attempts while the owner pressed Force one by one. The only send violation is
+ * typing over what a person is typing, so exactly two things hold a message:
+ *   - somebody's unsubmitted draft at the prompt that is not this message;
+ *   - an open dialog, whose Enter would choose on the owner's behalf.
+ * Everything else is sent. Delivery is then confirmed by the draft leaving the prompt.
+ *
+ * Two cases are decided by the draft, not the prompt row. A message the prompt read
+ * cannot see but the pane holds at the prompt IS typed, and gets its Enter. A draft at
+ * the prompt that is THIS message is an earlier attempt's stranded copy: not typed again
+ * (never a second copy), not refused (never a permanent stall) — submitted.
  */
 export async function deliverSafe(name: string, text: string, onAttempt?: () => void, io: PaneIO = paneIO(name)): Promise<DeliveryResult> {
   let raw = await io.read();
   const before = parsePrompt(raw);
   let typedText: string | null;
+  let unseen = false;
   if (draftAtPrompt(raw, text)) {
     typedText = before.text;
   } else {
-    if (!before.found) return { delivered: false, submitted: false, reason: 'busy or prompt not recognized' };
     if (before.menu) return { delivered: false, submitted: false, reason: 'dialog is open' };
     if (before.text) return { delivered: false, submitted: false, reason: 'unsubmitted text is already at the prompt' };
     onAttempt?.();
@@ -189,8 +198,11 @@ export async function deliverSafe(name: string, text: string, onAttempt?: () => 
     raw = await io.read();
     const typed = parsePrompt(raw);
     if (typed.menu) return { delivered: false, submitted: false, reason: 'dialog opened before submit' };
-    if (!typed.text && !draftAtPrompt(raw, text)) return { delivered: false, submitted: false, reason: 'text did not become visible at the prompt' };
     typedText = typed.text;
+    // Text the pane shows nowhere after typing is the one thing worth doubting: a CLI
+    // still starting swallows input whole. Enter is still pressed (harmless at an empty
+    // prompt), and the verdict below asks whether the text ever appeared at all.
+    unseen = !typed.text && !squash(raw).includes(fingerprintOf(text));
   }
   await io.enter();
   for (let i = 0; i < 3; i++) {
@@ -200,6 +212,7 @@ export async function deliverSafe(name: string, text: string, onAttempt?: () => 
     if (now.menu) return { delivered: false, submitted: true, reason: 'dialog opened while submitting' };
     const pending = draftAtPrompt(raw, text) || (typedText !== null && now.text === typedText);
     if (!pending) {
+      if (unseen && !squash(raw).includes(fingerprintOf(text))) return { delivered: false, submitted: true, reason: 'the text never appeared in the pane' };
       if (!now.found || now.text === null) return { delivered: true, submitted: true, reason: 'delivered' };
       return { delivered: false, submitted: true, reason: 'The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.' };
     }
