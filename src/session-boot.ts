@@ -305,6 +305,20 @@ function titleOf(text: string, file: string): string {
   return heading ? heading[1].trim() : path.basename(file);
 }
 
+/** A library card's one line: the document's first sentence of ordinary prose after its
+ * heading — not a heading, quote, comment, table or list. A document that opens badly
+ * shows it on every front page it is listed on, which is the pressure that fixes it. */
+function reachForItWhen(text: string): string {
+  const paragraphs = text
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter((p) => p && !/^(#|>|\||[-*] |\d+\. |```)/.test(p));
+  const first = paragraphs[0]?.replace(/\s+/g, ' ') ?? '';
+  const sentence = first.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? first;
+  return sentence.length > 180 ? `${sentence.slice(0, 177).trimEnd()}…` : sentence;
+}
+
 /**
  * Compile the resolved source set into the ONE document a newborn is asked to read.
  *
@@ -320,7 +334,7 @@ export async function compileBirthReadmeAt(
   inline: (file: string) => boolean = () => true,
 ): Promise<string> {
   const sections: { title: string; body: string }[] = [];
-  const shelf: { title: string; file: string }[] = [];
+  const shelf: { title: string; file: string; when: string }[] = [];
   const seen = new Set<string>();
   for (const source of sources) {
     try {
@@ -331,7 +345,7 @@ export async function compileBirthReadmeAt(
       if (!text) continue;
       const title = titleOf(text, source);
       if (!inline(source)) {
-        shelf.push({ title, file: source });
+        shelf.push({ title, file: source, when: reachForItWhen(text) });
         continue;
       }
       const demoted = text.replace(/^(#{1,6})(?=\s)/gm, (heading) => `${heading}#`.slice(0, 6));
@@ -354,9 +368,9 @@ export async function compileBirthReadmeAt(
       '',
       'Library cards, not reading: each names a document selected for you and what it holds. Open one when you need it, not before.',
       '',
-      '| Document | Where |',
-      '|---|---|',
-      ...shelf.map((row) => `| ${row.title.replace(/\|/g, '\\|')} | \`${row.file}\` |`),
+      '| Document | What it holds | Where |',
+      '|---|---|---|',
+      ...shelf.map((row) => `| ${row.title.replace(/\|/g, '\\|')} | ${row.when.replace(/\|/g, '\\|')} | \`${row.file}\` |`),
     );
   }
   for (const section of sections) lines.push('', '---', '', section.body);

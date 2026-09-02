@@ -218,7 +218,7 @@ test('resolved sources compile into one session README: teaching inlined once, r
     const catalog = path.join(temp, 'CATALOG.md');
     await writeFile(one, '# First guide\n\nalpha\n');
     await writeFile(two, '# Second guide\n\nbeta\n');
-    await writeFile(catalog, '# Every noun in the house\n\n' + 'a row\n'.repeat(1000));
+    await writeFile(catalog, '# Every noun in the house\n\n<!-- a comment -->\n> a quote first\n\nThe definition of every house noun, one row each. More words follow.\n\n' + 'a row\n'.repeat(1000));
     const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [one, one, two, catalog], 'new-agent', (file) => file !== catalog);
     assert.equal(path.basename(target), 'README.md');
     const text = await readFile(target, 'utf8');
@@ -226,7 +226,8 @@ test('resolved sources compile into one session README: teaching inlined once, r
     assert.match(text, /compiled this one document for \*\*new-agent\*\*/);
     // The page opens with its own table of contents, then the reference shelf.
     assert.match(text, /## In this packet\n\n1\. First guide\n2\. Second guide\n/);
-    assert.match(text, new RegExp(`\\| Every noun in the house \\| \`${catalog.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\` \\|`));
+    // The card says what the document holds: its first sentence of prose, not its quote or comment.
+    assert.match(text, new RegExp(`\\| Every noun in the house \\| The definition of every house noun, one row each\\. \\| \`${catalog.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\` \\|`));
     // A duplicate source is delivered once; a listed reference is never pasted in.
     assert.equal(text.match(/## First guide/g)?.length, 1);
     assert.equal(text.match(/## Second guide/g)?.length, 1);
