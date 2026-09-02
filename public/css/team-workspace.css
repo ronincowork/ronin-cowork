@@ -104,7 +104,9 @@
      `.ntf-form` in css/launch-forms.css. */
   .aa-form { display: flex; flex-direction: column; gap: var(--space-6); margin-bottom: var(--space-7); font-size: var(--text-3); }
   .aa-control { box-sizing: border-box; width: 100%; min-width: 0; }
-  .aa-short-control { height: var(--space-11); }
+  /* Inputs and native selects share one measured row. `--space-11` alone is only 28px
+     in this density and clips the select's text; the field also needs its vertical inset. */
+  .aa-short-control { height: calc(var(--space-11) + (2 * var(--space-2))); }
   .aa-form textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
   /* Name left, provider + model right (owner, 2026-08-31) — the columns drop to one when
      the surface is narrow; the minimum is tokens, never a raw measurement. */
