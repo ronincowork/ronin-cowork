@@ -28,6 +28,20 @@ test('absence in the selected complete map is implicit off — never live inheri
   assert.ok(got.every((routine) => !routine.enabled && routine.stated_by === 'implicit_off'));
 });
 
+test('an Agent partially overrides its Team without changing the remaining Team map', () => {
+  const got = resolveRoutines(
+    catalog,
+    { ronin_base: false, ronin_worktrees: false, gbrain: false },
+    { ronin_base: true, ronin_worktrees: true, gbrain: true },
+    { ronin_worktrees: false },
+  );
+  assert.deepEqual(got.map(({ name, enabled, stated_by }) => ({ name, enabled, stated_by })), [
+    { name: 'ronin_base', enabled: true, stated_by: 'team' },
+    { name: 'ronin_worktrees', enabled: false, stated_by: 'agent' },
+    { name: 'gbrain', enabled: true, stated_by: 'team' },
+  ]);
+});
+
 test('configuration accepts only named literal booleans', () => {
   assert.deepEqual(routineChoices({ ronin_base: true, gbrain: 'off', '../bad': false }), { ronin_base: true });
   assert.deepEqual(routineChoices(['ronin_base']), {});

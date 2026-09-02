@@ -26,6 +26,7 @@ import { t } from './lexicon.js';
 import { applyPageWords } from './pagewords.js';
 
 export async function init() {
+  const reveal = () => document.documentElement.classList.remove('boot-pending');
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
   // so a tile is born knowing. `stream:false` = the 🔓 tape view is off (no record
   // service — the free build); every tile is 🔒 and the switch is inert. An operator
@@ -54,12 +55,12 @@ export async function init() {
   // tile is built. One request; a box that cannot answer gets stock, not a failure.
   try { await loadDeskProfile(); } catch (e) { console.warn('desk profile', e); }
   guard('page words', applyPageWords); // index.html's static words, through the lexicon
-  // Resolve the root palette before revealing the document. A profile skin is not a
-  // second paint: it is the one root token set this boot uses. The boot class prevents
-  // stock surfaces painting while the catalog read is still resolving.
+  // Resolve the root palette before mounting the chosen surface. A profile skin is not
+  // a second paint: it is the one root token set this boot uses. The boot veil stays up
+  // until setup, phone, or desktop has actually mounted — revealing here used to flash
+  // the static desktop bar (including its "2" shape control) before the phone decision.
   try { await restoreSkin(activeProfile()?.skin || ''); }
   catch (e) { console.warn('restore skin', e); }
-  finally { document.documentElement.classList.remove('boot-pending'); }
 
   // FIRST LOAD. A fresh install lands here; everyone else never sees it.
   //
@@ -94,6 +95,7 @@ export async function init() {
         const q = new URLSearchParams({ tiles: (landing?.tiles ?? []).join(',') });
         location.href = '/?' + q;
       });
+      reveal();
       return;
     }
   }
@@ -104,6 +106,7 @@ export async function init() {
   // and none of the chrome below. iPad (coarse but wide) and desktop continue as ever.
   if (IS_PHONE) {
     await buildPhone();
+    reveal();
     return;
   }
 
@@ -144,6 +147,14 @@ export async function init() {
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
   workspace.start();
 
+  // THE DESKTOP FIRST PAINT ends here: the route's real workspace is mounted and the
+  // header now belongs to it. Session discovery, event wiring and home catalogs below
+  // enrich that workspace; none decides which surface the person is looking at. Keeping
+  // the veil over those reads exposed only the light canvas (--bg, the beige flash) on
+  // every reload, sometimes for seconds on a busy box. Phone lifts the same veil at its
+  // own mount boundary above; desktop must not make network readiness a paint boundary.
+  reveal();
+
   guard('install workspace controls', build);
   guard('services activation status', installServicesStatus);
   // The session list is the one step worth reporting loudly: without it every tile
@@ -163,12 +174,14 @@ export async function init() {
   guard('activate first tile', () => {
     if (tiles[0]) tiles[0].activate();
   });
-  // One box for every `title` in the client, styled and placed by us. Wired last and
-  // wired ONCE, on the document: nothing that sets a title has to know it exists, so
-  // this covers the whole app including the static titles in index.html.
+  // Titles are seized once, document-wide, so neither the retired house panel nor native
+  // browser hover bubbles cover the controls. Their text remains as accessible labels.
   guard('house tooltips', installTips);
 }
 
 // Boot inside a guard too: if init throws before its own guards are reached, the
 // header must still be usable and the reason must be on screen.
-init().catch((e) => showFailure('startup', e));
+init().catch((e) => {
+  document.documentElement.classList.remove('boot-pending');
+  showFailure('startup', e);
+});

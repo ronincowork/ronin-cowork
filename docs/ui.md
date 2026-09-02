@@ -111,14 +111,17 @@ The roles, defined in `public/style.css`:
   `--aiiro` (Ronin navigation and selection) — Kojin's fixed palette, borrowed. The kaki
   identity ruling is the open hexagonal **hito** mark; using the same colour for heightened
   action connects “this needs you” to the house without making every Ronin surface kaki.
-  `--heighten`, `--heighten-hover`, `--heighten-fg`, and
-  `--heighten-shape` are the semantic treatment: a kaki hexagon for an access or view
-  control whose ability to be found quickly is part of its function.
+  Heightened surfaces read `--kaki`/`--kaki-lift` directly — the `--heighten-*` alias
+  family this page once described was defined but never read, and the 2026-09-02
+  token audit deleted it rather than leave a dead semantic layer to mislead.
 - elevation: `--scrim`, `--shadow-menu`, `--shadow-sheet` — the whole vocabulary
 - terminal: the `--term-*` block — xterm's palette and the tape/composer surfaces,
   read back into JS by `termTheme()` (`public/js/theme.js`), never restated
 
-Amber is attention and identity; `--warn` is "needs you"; red is only ever wrong.
+**Kaki is the brand** (owner, 2026-09-02: the hito mark's persimmon is the main color —
+earlier rulings that said "kiiro" meant kaki): every primary and attention FILL reads
+`--kaki`/`--on-strong`. Amber (`--kiiro`, `--accent`, `--warn`) is the supporting
+family — the band's derived shades, edges, rings and warning ink; red is only ever wrong.
 `--bad` is never used categorically in charts (the `--k-*` job colours exist for that).
 
 **Services Check status is kakiiro.** It is the owner's deliberate outbound check after
@@ -287,7 +290,7 @@ a `destroy()` owner at that moment, not speculatively.
   on it when the drop closes under the keyboard. The paragraph above still stands, and it
   is about the BAR; a tile header is not the bar.
 - **Toast** — `ui.toast`: one chip, `role=status`, errors hold longer than successes.
-- **Attention flash** — `ui.attention`: one bounded, central kiiro cue with `role=status`;
+- **Attention flash** — `ui.attention`: one bounded, central kaki cue with `role=status`;
   it never steals focus and names the surface where the owner action is waiting.
 - **Field** — `ui.field`: a real accessible name and a message line for a control,
   `display: contents` so the layout it sits in does not move. Labels are
@@ -391,8 +394,9 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
 - Inert-but-explaining controls use `setInert` (`widgets.js`) — dimmed, hoverable,
   `aria-disabled`, the reason in the help text. `disabled` is for controls whose
   explanation is unnecessary.
-- Every `title` becomes the help box (`tips.js`), which also serves keyboard focus and
-  supplies `aria-label` to icon-only buttons. Labels are gated by `check-tips`.
+- Every `title` is seized by `tips.js`, which supplies `aria-label` to icon-only buttons.
+  The house help box and native browser title bubbles are disabled system-wide; `check-tips`
+  drives hover and focus to hold that absence.
 - **A control that names itself on its face gets no pop-up.** The Commons room tabs and the
   ⚡ macro cards both lost theirs on 2026-08-18. A macro card already prints its `label:` and
   `blurb:` in two always-visible lines, so the box repeated the answer and laid 300px of it
@@ -409,22 +413,9 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
   needs more than its label needs a better label. An `off` tab's reason is its
   `aria-label`, not a `title`: a title is a pop-up waiting to happen, and a disabled
   button was never hoverable anyway.
-- The box hangs off **the nearest thing below the header that the control is inside, else
-  the header** — メ's drop, or the Commons tab strip. Docking to the header put a 300px box
-  across seven of the ten rooms, and since a tab is not in the header it also failed the
-  side test and docked to the tile's far right, so the answer appeared at the opposite end
-  of the strip from the question. The tabs have since lost their help outright (above), but
-  the rule stands on the ✕, which is a bare glyph with no label of its own and would cover
-  the tabs the same way. The side is read off whatever divides that anchor's two groups, in
-  DOM order: the header's `.grow` spacer, or the strip's ✕, which carries `margin-left:
-  auto` and so is the strip's own spacer.
-- The help box's header — the line above the rule — carries a keyboard shortcut, a live
-  reading, or nothing, and **exists only when it has content** (owner, 2026-08-17: an
-  empty header over every macro row buried the text under a blank block). A shortcut
-  reaches it by being written at the FRONT of the label, `⌃⇧C — the CoWorking Commons: …`;
-  `tips.js` lifts it into the header and takes it off the front of the explanation. There
-  is no shortcut registry and deliberately isn't one — the chords stay owned by the
-  handler in `layout.js`.
+- The former fixed help box remains dormant in `tips.js` for now; it must not be wired back
+  to hover or keyboard focus without a new owner ruling. Shortcuts remain owned by their
+  handlers in `layout.js`, not by tooltip text.
 - Escape closes the topmost transient surface, everywhere. A capture-phase Escape listener
   (the tile drops, the job menu) has to YIELD while a modal sheet is up over it, or being
   first in the propagation order quietly makes it topmost when it is not — メ's drop, which
@@ -436,7 +427,7 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
 `check-modules` (cycles across the whole graph, orphans, resolution, top-level import
 use, the 700-line ceiling) · `check-css` (colour spelled once; app patches no
 primitive and shadows no token; the contrast floor, both themes) · `check-dead`
-(deletions leave no corpses) · `check-tips` (labels fit) · `smoke-ui` (desktop +
+(deletions leave no corpses) · `check-tips` (hover/focus help stays absent) · `smoke-ui` (desktop +
 phone render, the journey probes, and an axe scan at three states — serious/critical
 fail; color-contrast is excluded there because contrast policy is check-css's tiered
 floor, including the documented sub-AA `--muted` secondary tier the density ruling

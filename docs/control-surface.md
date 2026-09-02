@@ -398,9 +398,11 @@ replacement pass is insufficient; the classification is the audit.
   `candidateWorktree(repo, line)` = `<worktrees>/.candidates/<repo>/<line>`, `lineFor`.
 - **Lifecycle** `src/desks/desk.ts`: `openDesk({repo, session, team, assignment?, branch?})`
   → `DeskStatus` (refuses funnel points, direct/undeclared repos, Syncthing §0),
-  `resolveAssignmentDesks(input)` → `Assignment` (the launch seam; throws visibly),
   `adoptLine`, `syncDesk`, `closeDesk(repo, branch, {unmount})` → parked|deleted,
   `discardDesk` (explicit only), `recoverDesk(repo, branch, session)`, `parkedDesks`.
+- **Resolution and launch**: `src/worktrees-resolution.ts` owns the pure per-repository
+  Agent-capability × repository-applicability decision. `src/launch-desks.ts` exposes
+  `resolveLaunchDesks()` and `prepareLaunchDesks()` as its one production consumer.
 - **Hand-in** `src/desks/hand-in.ts`: `handIn(repo, branch)` → `{receipt, notices}`;
   `handInAssignment({desks})`. Per-line lock `src/desks/queue.ts` (`withLineLock`,
   `queueHolder`; dead-pid reclaim). Line advanced only by `casRef` (`update-ref` with
@@ -412,7 +414,7 @@ replacement pass is insufficient; the classification is the audit.
   [--assignment] | sync | park [--unmount] | parked | recover | discard --yes | receipts
   [--line [--accepted|--since]|--id] | assignment`. Exit 0/2/3/4/5. Test seams
   `RONIN_SESSION`, `RONIN_TEAMS`.
-- **Consumed by**: Track 3 (`deriveAssignment`, `resolveAssignmentDesks`), Track 4
+- **Consumed by**: Track 3 (`deriveAssignment`, `resolveLaunchDesks`, `prepareLaunchDesks`), Track 4
   (`listDesks`, `readDesk`, `receiptsForDesk`, `readArrangement`), Track 2
   (`acceptedSince`, `ChangeSetReceipt` shape), Track 5 (`RONIN_REPO` read here).
 - **Open for the owner** (in CONTROL_STATE_HANDIN.md): repo segment in the worktree

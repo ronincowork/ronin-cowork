@@ -37,9 +37,13 @@ export function buildProjectRoots(root, isShowing) {
   count.className = 'pr-count';
   head.append(count);
 
+  const guide = document.createElement('p');
+  guide.className = 'pr-guide';
+  guide.textContent = t('roots.worktrees_guide', 'For Ronin Worktrees to run, both must be on: the repo needs Worktrees on, and the Agent needs Worktrees on. This page controls the repo.');
+
   const list = document.createElement('div');
   list.className = 'pr-list';
-  root.append(head, list);
+  root.append(head, guide, list);
 
   const say = (msg, bad) => {
     list.innerHTML = '';
@@ -64,7 +68,20 @@ export function buildProjectRoots(root, isShowing) {
   function form(existing, creating = false) {
     const f = document.createElement('div');
     f.className = 'pr-form';
-    const mk = (label, key, value, hint, ph) => {
+    const group = (title, description) => {
+      const box = document.createElement('fieldset');
+      box.className = 'pr-group';
+      const legend = document.createElement('legend');
+      legend.textContent = title;
+      const help = document.createElement('p');
+      help.className = 'pr-group-help';
+      help.textContent = description;
+      box.append(legend, help);
+      f.appendChild(box);
+      return box;
+    };
+    const rootFields = group(t('roots.group_root', 'Project Root'), t('roots.group_root_help', 'The directory Ronin may offer to Agents and the words used to find it.'));
+    const mk = (label, key, value, hint, ph, host = rootFields) => {
       const wrap = document.createElement('label');
       wrap.className = 'pr-f';
       const l = document.createElement('span');
@@ -79,7 +96,7 @@ export function buildProjectRoots(root, isShowing) {
       i.spellcheck = false;
       i.dataset.key = key;
       wrap.append(l, i);
-      f.appendChild(wrap);
+      host.appendChild(wrap);
       return i;
     };
     // The handle is shown, never edited: renaming is a catalog edit by hand, not a form
@@ -93,40 +110,59 @@ export function buildProjectRoots(root, isShowing) {
     mk(t('roots.f_plans', 'plans'), 'plans', (existing.plans || []).join(', '), t('roots.f_plans_hint', 'Where this root keeps its build-out plans'), 'wip/buildouts, wip/handoffs');
 
     // Existing repositories expose the complete checked-in profile. Mode describes how
-    // accepted work publishes; managed coordination is a separate, additive choice.
+    // accepted work publishes; Worktrees is a separate, additive choice.
     let profileFields = null;
     if (creating || existing.facts?.repo) {
-      const seedDesks = creating ? (data?.new_project_desks || 'managed') : (existing.arrangement?.desks || 'none');
+      const seedWorktrees = creating ? (data?.new_project_worktrees || 'enabled') : (existing.repo_profile?.worktrees || 'disabled');
       const before = {
-        mode: existing.arrangement?.mode || 'direct',
+        mode: existing.repo_profile?.mode || 'direct',
         working: existing.arrangement?.source === 'absent' ? '' : (existing.arrangement?.working || ''),
         stable: existing.arrangement?.source === 'absent' ? '' : (existing.arrangement?.stable || ''),
-        desks: existing.arrangement?.desks || 'none',
+        worktrees: existing.repo_profile?.worktrees || 'disabled',
       };
-      const pick = (label, value, options, hint) => {
+      const repoFields = group(t('roots.group_repository', 'Repository workflow'), t('roots.group_repository_help', 'Publishing describes where accepted commits go. Worktrees separately decides whether this repository participates in Ronin’s managed worktree workflow.'));
+      const pick = (label, value, options, hint, host = repoFields) => {
         const wrap = document.createElement('label'); wrap.className = 'pr-f';
         const l = document.createElement('span'); l.textContent = label; l.title = hint;
         const select = document.createElement('select');
         for (const [v, text] of options) { const o = document.createElement('option'); o.value = v; o.textContent = text; select.append(o); }
-        select.value = value; wrap.append(l, select); f.append(wrap); return select;
+        select.value = value; wrap.append(l, select); host.append(wrap); return select;
       };
-      const initialMode = creating ? (seedDesks === 'managed' ? 'reviewed' : 'direct') : before.mode;
+      const initialMode = creating ? (seedWorktrees === 'enabled' ? 'reviewed' : 'direct') : before.mode;
       const mode = pick(t('roots.f_mode', 'publishing'), initialMode, [['reviewed', t('roots.mode_reviewed', 'reviewed release')], ['direct', t('roots.mode_direct', 'direct publishing')]], t('roots.f_mode_hint', 'Reviewed uses a working branch and a final PR to stable. Direct publishes on stable itself.'));
-      const working = mk(t('roots.f_working', 'working'), 'repo-working', before.working || 'dev', t('roots.f_working_hint', 'The integration branch for reviewed work. You choose its name.'), 'dev');
-      const stable = mk(t('roots.f_stable', 'stable'), 'repo-stable', before.stable || existing.facts?.repo?.branch || 'main', t('roots.f_stable_hint', 'The published branch. You choose its name.'), 'main');
+      const working = mk(t('roots.f_working', 'working'), 'repo-working', before.working || 'dev', t('roots.f_working_hint', 'The integration branch for reviewed work. You choose its name.'), 'dev', repoFields);
+      const stable = mk(t('roots.f_stable', 'stable'), 'repo-stable', before.stable || existing.facts?.repo?.branch || 'main', t('roots.f_stable_hint', 'The published branch. You choose its name.'), 'main', repoFields);
       working.removeAttribute('data-key'); stable.removeAttribute('data-key');
-      const desks = pick(t('roots.f_coordination', 'coordination'), creating ? seedDesks : before.desks, [['managed', t('roots.desks_managed', 'managed')], ['none', t('roots.desks_none', 'none')]], t('roots.f_coordination_hint', 'Managed supplies private desks and hand-in. None uses the repository checkout.'));
-      const syncMode = () => { working.closest('label').hidden = mode.value !== 'reviewed'; };
-      mode.addEventListener('change', syncMode); syncMode();
-      profileFields = { before, mode, working, stable, desks };
+      const worktrees = pick(t('roots.f_worktrees', 'Worktrees'), creating ? seedWorktrees : before.worktrees, [['enabled', t('roots.worktrees_enabled', 'Use Ronin Worktrees')], ['disabled', t('roots.worktrees_disabled', 'Use the checkout')]], t('roots.f_worktrees_hint', 'Worktrees keep each Agent’s file changes in a separate working folder and branch. Both the Agent and repo must have Worktrees on.'));
+      const worktreesNote = document.createElement('p');
+      worktreesNote.className = 'pr-worktrees-note';
+      worktreesNote.textContent = t('roots.worktrees_two_gates', 'This controls the repo. Worktrees use a managed hand-in and Team-lead merge process.');
+      repoFields.append(worktreesNote);
+      const preview = document.createElement('p');
+      preview.className = 'pr-flow';
+      repoFields.append(preview);
+      const syncProfile = () => {
+        working.closest('label').hidden = mode.value !== 'reviewed';
+        const branchFlow = mode.value === 'reviewed'
+          ? t('roots.flow_reviewed', '{working} → review → {stable}', { working: working.value.trim() || '—', stable: stable.value.trim() || '—' })
+          : t('roots.flow_direct', 'commits → {stable}', { stable: stable.value.trim() || '—' });
+        const worktreesFlow = worktrees.value === 'enabled'
+          ? t('roots.flow_worktrees', 'Agents with Worktrees on use their own working folder and branch; other Agents use the checkout.')
+          : t('roots.flow_checkout', 'Every Agent uses this checkout, even when the Agent has Worktrees on.');
+        preview.textContent = t('roots.flow_preview', 'Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.', { branches: branchFlow, worktrees: worktreesFlow });
+      };
+      for (const control of [mode, working, stable, worktrees]) control.addEventListener('input', syncProfile);
+      syncProfile();
+      profileFields = { before, mode, working, stable, worktrees };
       if (creating) dirInput.addEventListener('change', async () => {
         const inspected = await request(`/api/project-roots/inspect?dir=${encodeURIComponent(dirInput.value.trim())}`, { cache: 'no-store' });
         if (!inspected.ok || !inspected.data.repo) return;
         const a = inspected.data.arrangement;
+        const p = inspected.data.repo_profile;
         if (a?.source !== 'absent') {
-          Object.assign(profileFields.before, { mode: a.mode, working: a.mode === 'reviewed' ? a.working : '', stable: a.stable, desks: a.desks });
-          mode.value = a.mode; working.value = a.working || ''; stable.value = a.stable || ''; desks.value = a.desks; syncMode();
-        } else if (inspected.data.repo.branch && stable.value === 'main') stable.value = inspected.data.repo.branch;
+          Object.assign(profileFields.before, { mode: p.mode, working: p.mode === 'reviewed' ? p.working : '', stable: p.stable, worktrees: p.worktrees });
+          mode.value = p.mode; working.value = p.working || ''; stable.value = p.stable || ''; worktrees.value = p.worktrees; syncProfile();
+        } else if (inspected.data.repo.branch && stable.value === 'main') { stable.value = inspected.data.repo.branch; syncProfile(); }
       });
     }
 
@@ -160,7 +196,7 @@ export function buildProjectRoots(root, isShowing) {
             mode: inspected.data.arrangement.mode,
             working: inspected.data.arrangement.source === 'absent' ? '' : (inspected.data.arrangement.working || ''),
             stable: inspected.data.arrangement.source === 'absent' ? '' : (inspected.data.arrangement.stable || ''),
-            desks: inspected.data.arrangement.desks,
+            worktrees: inspected.data.repo_profile.worktrees,
           });
         }
         if (creationIsRepo) {
@@ -168,13 +204,13 @@ export function buildProjectRoots(root, isShowing) {
             mode: profileFields.mode.value,
             working: profileFields.mode.value === 'reviewed' ? profileFields.working.value.trim() : '',
             stable: profileFields.stable.value.trim(),
-            desks: profileFields.desks.value,
+            worktrees: profileFields.worktrees.value,
           };
           const line = (p) => [
             `mode=${p.mode}`,
             ...(p.mode === 'reviewed' ? [`working=${p.working}`] : []),
             `stable=${p.stable}`,
-            `desks=${p.desks}`,
+            `worktrees=${p.worktrees}`,
           ].join('\n');
           if ((creating || JSON.stringify(proposedProfile) !== JSON.stringify(profileFields.before)) && !confirm(t('roots.profile_confirm', 'Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.', { before: line(profileFields.before), after: line(proposedProfile) }))) return;
         }
@@ -233,6 +269,7 @@ export function buildProjectRoots(root, isShowing) {
       if (title) c.title = title;
       facts.appendChild(c);
     };
+    let worktreesState = null;
     if (r.archived) {
       chip(t('roots.chip_archived', 'archived'), 'muted', t('roots.chip_archived_title', 'Off the new-session picker. Still here, and still launchable by name.'));
     }
@@ -248,13 +285,22 @@ export function buildProjectRoots(root, isShowing) {
       // checked-in RONIN_REPO. No record = today's shared checkout, said plainly.
       const a = r.arrangement;
       if (a && a.source !== 'absent') {
-        const managed = a.mode === 'reviewed' && a.desks === 'managed';
-        chip(managed ? t('roots.chip_reviewed_desks', 'reviewed · desks') : a.mode === 'reviewed' ? t('roots.chip_reviewed', 'reviewed') : t('roots.chip_direct', 'direct'), '',
+        const p = r.repo_profile;
+        const enabled = p?.worktrees === 'enabled';
+        chip(enabled ? t('roots.chip_worktrees', 'Repository: Worktrees allowed') : t('roots.chip_checkout', 'Repository: use checkout'), '',
           a.mode === 'reviewed'
-            ? t('roots.chip_reviewed_title', 'Reviewed: work happens at desks that hand in to a team line; team promotion moves {working}; {stable} moves by PR. The branch mounted here is incidental.', { working: a.working || 'dev', stable: a.stable || 'master' })
-            : t('roots.chip_direct_title', 'Direct: commits land on {stable} itself. No desks, no team line.', { stable: a.stable || 'main' }));
+            ? t('roots.chip_reviewed_title', 'Reviewed: work moves through {working}, then review reaches {stable}. The branch mounted here is incidental.', { working: a.working || 'dev', stable: a.stable || 'master' })
+            : t('roots.chip_direct_title', 'Direct: commits land on {stable} itself.', { stable: a.stable || 'main' }));
+        worktreesState = document.createElement('p');
+        worktreesState.className = 'pr-worktrees-state';
+        worktreesState.textContent = enabled
+          ? t('roots.state_worktrees', 'Repo: Worktrees on. Agent must also have Worktrees on.')
+          : t('roots.state_checkout', 'This repository uses its checkout. That repository choice wins even if an Agent has the Ronin Worktrees Routine.');
       } else if (a) {
-        chip(t('roots.chip_shared', 'shared checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing.'));
+        chip(t('roots.chip_shared', 'Repository: use checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.'));
+        worktreesState = document.createElement('p');
+        worktreesState.className = 'pr-worktrees-state';
+        worktreesState.textContent = t('roots.state_undeclared', 'No repository profile is declared, so Agents use the checkout. Edit this root to allow Ronin Worktrees.');
       }
     } else {
       // A project_root need not be a project_repo. `~/lab` is one; this is a
@@ -313,7 +359,9 @@ export function buildProjectRoots(root, isShowing) {
     acts.append(edit, shelve, drop);
 
     b.prepend(top);
-    b.append(facts, acts);
+    b.append(facts);
+    if (worktreesState) b.append(worktreesState);
+    b.append(acts);
     if (editing === r.name) b.appendChild(form(r));
     return b;
   }

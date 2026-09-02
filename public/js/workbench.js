@@ -202,11 +202,16 @@ export function createWorkbench(options = {}) {
       const label = offer.label ?? (typeof definition.label === 'function' ? definition.label(tenant, options.environment) : definition.label || definition.type);
       const summary = offer.summary ?? (typeof definition.summary === 'function' ? definition.summary(tenant, options.environment) : definition.summary || '');
       const detail = { ...offer, key: offer.key || '' };
-      const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, selected: locations(definition.type, detail.key).length > 0, action: () => place(definition.type, selected, detail) });
+      // A selector card is a door, not a status lamp. The workspace itself already shows
+      // what is placed there; painting every matching door as pressed made one of two
+      // visible Agents look selected and the other not as seats changed underneath it.
+      const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: () => place(definition.type, selected, detail) });
       // A readable title is display text, not identity. Consumers such as the render gate
       // address an offered resource by its fixed key even after its title is edited.
       if (detail.key) card.el.dataset.workbenchOfferResource = detail.key;
-      if (offer.className) card.el.classList.add(offer.className);
+      for (const cls of [definition.className, offer.className]) {
+        if (cls) card.el.classList.add(...String(cls).split(/\s+/).filter(Boolean));
+      }
       if (offer.onPointerEnter) card.el.addEventListener('pointerenter', offer.onPointerEnter);
       if (offer.onPointerLeave) card.el.addEventListener('pointerleave', offer.onPointerLeave);
       card.el.draggable = true;

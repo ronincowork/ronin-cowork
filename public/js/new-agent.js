@@ -1,30 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * NEW AGENT — the drawn launch form, and since 2026-08-31 the ONLY one: it was staged
- * beside the ＋ New board, the owner ruled that board obsolete, and `js/launcher.js` is
- * deleted. It seats on the Coworks bench and in the Launch workbench, whose Team | Agent
- * toggle chooses between this and New Team. The drawn contract is ronin-lab
- * `concepts/new-agent-condensed.html` — the density the owner preferred — and the object
- * it produces is `NEW_AGENT.md` § 7.4, nothing more: everything else on the resolved
- * profile is the server's, and a caller that states one is guessing at its job.
- *
- * THE SESSION TYPE DECIDES THE FORM (§ 1.1). A terminal is asked three things because
- * there are only three to ask — the rest is not hidden, it does not exist for that
- * session. A bare-metal Agent adds instructions and a model; only a Cowork Agent has a
- * kind, a template, a mandate and a loadout.
- *
- * TWO DOORS for a Cowork Agent, and the difference is where answers come from, never how
- * much is asked: Manual asks everything and fills nothing in; Template offers the tray,
- * and a pick answers the rest and folds it away — the number, the name and the answer
- * stay on the row, and the header opens it.
- *
- * WHERE THE ANSWERS COME FROM: `GET /api/launch-seed?team=` (CASCADE § 5.1) — the team's
- * answers when one is chosen, the campaign's for a rōnin. A default LANDS and is then
- * yours: joining a team lands its kind, touching the kind by hand stops the team
- * overwriting it. Routines are previewed with provenance and never editable here; the
- * desk is not an asked question anywhere (owner's fold, 2026-08-31) — the routine
- * selection is the decision, and no desk key rides this launch.
- */
+/** NEW AGENT — the sole drawn launch form. Session type decides which questions exist;
+ * only a Cowork Agent has kind, template, mandate, and loadout. Defaults arrive through
+ * `GET /api/launch-seed?team=` and land until the user's hand changes them. Routines use
+ * Campaign → Team → Agent resolution; the resulting Worktrees capability is combined
+ * later with the selected Project Root's independent permission. No desk key rides the
+ * launch. */
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
@@ -46,7 +26,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
     teamMode: 'new', team: '', newTeam: '',
     reach: 'open', recruit: 'open', output: ['open'], launchMode: 'live_dangerously',
-    books: [], root: '',
+    books: [], root: '', routineOverrides: {},
     expanded: {},
   };
   let seed = null;
@@ -150,12 +130,26 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   /* ---- 3 · Template ---- */
   const stepTemplate = createStep({ n: 3, key: 'template', title: t('template', 'Template') });
+  function restoreTemplateDefaults() {
+    const value = (field) => seed?.seeds?.[field]?.value;
+    draft.instructions = '';
+    instructionsInput.value = '';
+    draft.books = Array.isArray(value('behaviours')) ? [...value('behaviours')] : [];
+    for (const key of ['reach', 'recruit']) draft[key] = value(key) || 'open';
+    draft.output = [value('output') || 'open'].flat().filter(Boolean);
+    draft.teamMode = 'new'; draft.team = ''; draft.newTeam = '';
+    touched.mandate = false; touched.books = false;
+  }
   function applyTemplate(name) {
     draft.template = name;
     draft.expanded = {};
+    // Make your own and every new template start from inherited defaults, never the last
+    // template's answers. Name, kind and where are the owner's own answers and stay put.
+    restoreTemplateDefaults();
     const row = templateRow();
     if (!row) { snapshot = ''; paint(); return; }
-    if (row.brief) { draft.instructions = row.brief; instructionsInput.value = row.brief; }
+    draft.instructions = row.brief || '';
+    instructionsInput.value = draft.instructions;
     // A template's output may still be a single word — the record wraps a legacy scalar,
     // and so does the form, rather than handing a string to code that expects a list.
     // The shelf hands back a parsed mandate — `{ reach, recruit, output[] }` or null when
@@ -179,6 +173,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   /* ---- 4 · Instructions ---- */
   const stepInstructions = createStep({ n: 4, key: 'instructions', title: t('new_agent.instructions', 'Instructions'), onToggle: () => toggle('instructions') });
   const instructionsInput = el('textarea');
+  instructionsInput.classList.add('wk-field-control');
   instructionsInput.rows = 6;
   instructionsInput.autocapitalize = 'off';
   instructionsInput.spellcheck = false;
@@ -309,23 +304,40 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   /* ---- 8 · Loadout ---- */
   const stepLoadout = createStep({ n: 8, key: 'loadout', title: t('loadout', 'Tools and skills'), onToggle: () => toggle('loadout') });
   const routinesHead = el('p', 'fs-head', t('routines', 'Routines'));
+  const worktreesMode = el('div', 'fs-worktrees-mode');
   const routinesHost = el('div');
   function paintRoutinePreview() {
-    // A PREVIEW WITH PROVENANCE, NEVER A SWITCH (CASCADE § 5.1): the resolved set is the
-    // campaign's and the team's; this form renders it and offers nothing to flip.
+    // Campaign → Team → Agent; Project Root applicability stays orthogonal.
     routinesHost.replaceChildren();
-    const row = (label, prov, on) => {
-      const line = el('div', 'fs-routine');
+    const row = (label, prov, on, act = null) => {
+      const line = el(act ? 'button' : 'div', 'fs-routine');
+      if (act) { line.type = 'button'; line.addEventListener('click', act); }
       line.dataset.on = String(on);
-      const words = el('div');
-      words.append(el('b', null, label));
+      const words = el('div'); words.append(el('b', null, label));
       line.append(el('span', 'fs-mark', on ? '✓' : ''), words, el('span', 'fs-prov', prov));
       routinesHost.append(line);
     };
     row(t('new_team.floor', 'Cowork floor'), t('forms.always', 'always'), true);
     for (const routine of seed?.routines || []) {
-      row(routine.name, routine.stated_by?.[0]?.layer || '', routine.on);
+      const overridden = Object.prototype.hasOwnProperty.call(draft.routineOverrides, routine.name);
+      const on = overridden ? draft.routineOverrides[routine.name] : routine.on;
+      const provenance = overridden ? t('forms.agent_override', 'agent overrides') : (routine.stated_by?.[0]?.layer || '');
+      row(routine.name, provenance, on, () => {
+        const next = !on;
+        if (next === routine.on) delete draft.routineOverrides[routine.name];
+        else draft.routineOverrides[routine.name] = next;
+        paintRoutinePreview(); paintFolds(); paintFoot();
+      });
     }
+    const worktrees = (seed?.routines || []).find((routine) => routine.name === 'ronin_worktrees');
+    const overridden = Object.prototype.hasOwnProperty.call(draft.routineOverrides, 'ronin_worktrees');
+    const worktreesOn = overridden ? draft.routineOverrides.ronin_worktrees : worktrees?.on;
+    worktreesMode.replaceChildren(
+      el('b', null, t('new_agent.worktrees_mode', 'Agent work mode')),
+      el('strong', null, worktreesOn ? t('new_agent.worktrees_on', 'Own worktree where the Project Root allows it')
+        : t('new_agent.worktrees_off', 'Use the project checkout and its branches')),
+      el('small', null, t('new_agent.worktrees_help', 'Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')),
+    );
   }
   /* ---- launch mode: the enum that replaces `permissions` ----
    * Owner, 2026-09-01, and an enum rather than the boolean he first named: Ronin offers
@@ -381,7 +393,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       paintFoot();
     }));
   }
-  stepLoadout.body.append(modeHost, routinesHead, routinesHost, shelvesHost);
+  stepLoadout.body.append(modeHost, routinesHead, worktreesMode, routinesHost, shelvesHost);
 
   /* ---- the plan: which steps exist for this type and door ---- */
   const steps = {
@@ -405,7 +417,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     where: () => draft.root,
     mandate: () => `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
     loadout: () => t('new_agent.loadout_meta', '{routines} routines · {books} books', {
-      routines: (seed?.routines || []).filter((row) => row.on).length + 1, books: draft.books.length,
+      routines: (seed?.routines || []).filter((row) => Object.prototype.hasOwnProperty.call(draft.routineOverrides, row.name) ? draft.routineOverrides[row.name] : row.on).length + 1, books: draft.books.length,
     }),
   };
   function paintFolds() {
@@ -432,7 +444,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       ? el('em', null, t('new_agent.routines_terminal', 'agent: none — a pane'))
       : draft.type === 'bare_metal_agent'
         ? el('em', null, t('new_agent.routines_bare', 'no floor, no routines'))
-        : tagRow([{ text: t('new_team.floor_tag', 'floor'), on: true }, ...(seed?.routines || []).filter((row) => row.on).map((row) => ({ text: row.name, on: true }))])]);
+        : tagRow([{ text: t('new_team.floor_tag', 'floor'), on: true }, ...(seed?.routines || []).filter((row) => Object.prototype.hasOwnProperty.call(draft.routineOverrides, row.name) ? draft.routineOverrides[row.name] : row.on).map((row) => ({ text: row.name, on: true }))])]);
     if (isCowork() && draft.books.length) rows.push([t('behaviours', 'Behaviours'), tagRow(draft.books.map((text) => ({ text, on: true })))]);
     rows.push([t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode]);
     rows.push([t('gbrain_mode.head', 'gbrain connection'), gbrainMode() === 'connected' ? t('gbrain_mode.connected', 'Connected') : t('gbrain_mode.disconnected', 'Disconnected')]);
@@ -512,6 +524,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
           kind: draft.kind,
           mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output },
           behaviours: [...draft.books],
+          ...(Object.keys(draft.routineOverrides).length ? { routines: { ...draft.routineOverrides } } : {}),
           launch_mode: draft.launchMode,
           gbrain_mode: gbrainMode(),
           ...(draft.template ? { template: draft.template } : {}),

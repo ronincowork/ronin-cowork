@@ -32,7 +32,7 @@ import { execFileSync } from 'node:child_process';
 import { HOST_TOOLS, defaultUrl, loadPlaywright, loadAxeSource } from './lib/ui-host.mjs';
 
 // Host derivation and the playwright hunt both live in scripts/lib/ui-host.mjs — this
-// script and check-tips need the same two answers, and when each had its own copy they
+// this script and check-tips need the same two answers, and when each had its own copy they
 // disagreed about the host.
 const args = process.argv.slice(2);
 const URL_ = args.find((a) => !a.startsWith('--')) || defaultUrl(args.includes('--staging'));
@@ -240,6 +240,11 @@ async function checkCurrentWorkspace(page, label) {
       first: head?.firstElementChild?.className || '',
       second: head?.children[1]?.className || '',
       torii: head?.firstElementChild?.textContent || '',
+      selector: [...document.querySelectorAll('[data-workspace-view]:not([hidden]) .wk-workbench-selector-cards .wk-card')].map((card) => ({
+        utility: card.classList.contains('wk-selector-utility'),
+        entity: card.classList.contains('wk-selector-entity'),
+        pressed: card.hasAttribute('aria-pressed'),
+      })),
     };
   });
   if (state.view === 'team') ok(`${label}: Team is the active cowork-space destination`);
@@ -251,6 +256,15 @@ async function checkCurrentWorkspace(page, label) {
   } else if (/torii/.test(state.first) && /sess/.test(state.second) && state.torii === '⛩') {
     ok(`${label}: Torii rename is first, immediately before the session name`);
   } else bad(`${label}: tile-head order is wrong — ${JSON.stringify(state)}`);
+  const firstEntity = state.selector.findIndex((card) => card.entity);
+  const lastEntity = state.selector.findLastIndex((card) => card.entity);
+  const shelves = firstEntity > 0 && lastEntity >= firstEntity
+    && state.selector.slice(0, firstEntity).every((card) => card.utility)
+    && state.selector.slice(firstEntity, lastEntity + 1).every((card) => card.entity)
+    && state.selector.slice(lastEntity + 1).every((card) => card.utility);
+  if (shelves && state.selector.every((card) => !card.pressed)) {
+    ok(`${label}: selector separates blue utilities from kaki Agents without placement highlights`);
+  } else bad(`${label}: selector hierarchy/placement state is unclear — ${JSON.stringify(state.selector)}`);
 }
 
 /**
@@ -905,6 +919,22 @@ async function checkJourneys(page, label, jsErrors) {
  */
 async function runPhonePass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
+  // Catch the FIRST paintable state, not merely the settled page. The phone used to
+  // reveal index.html's desktop bar (including the "2" shape button), then hide it only
+  // after buildPhone marked the body. A settled-state assertion cannot see that flash.
+  await page.addInitScript(() => {
+    const timer = setInterval(() => {
+      // The init script itself runs while the parser is still above index.html's inline
+      // veil, when computed visibility is briefly its default. The contract begins when
+      // application code removes this class, so sample that transition and nothing prior.
+      if (!document.body || document.documentElement.classList.contains('boot-pending')) return;
+      window.__roninFirstVisible = {
+        phone: !!document.getElementById('phone'),
+        bar: document.getElementById('bar') ? getComputedStyle(document.getElementById('bar')).display : null,
+      };
+      clearInterval(timer);
+    }, 0);
+  });
   try {
     await page.goto(URL_.replace(/#.*$/, ''), { waitUntil: 'networkidle', timeout: 30_000 });
   } catch (e) {
@@ -916,6 +946,9 @@ async function runPhonePass({ label, browser, contextOpts }) {
     barHidden: !document.getElementById('bar') || getComputedStyle(document.getElementById('bar')).display === 'none',
     failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
   }));
+  const firstVisible = await page.evaluate(() => window.__roninFirstVisible || null);
+  if (firstVisible?.phone && firstVisible.bar === 'none') ok(`${label}: first paint is the phone shell, never desktop chrome`);
+  else bad(`${label}: first paint exposed desktop chrome before the phone shell (${JSON.stringify(firstVisible)})`);
   if (shell.phone) ok(`${label}: the phone shell mounted`);
   else bad(`${label}: no phone shell — the workbench booted on a phone viewport`);
   if (shell.barHidden) ok(`${label}: the workbench chrome is hidden whole`);
@@ -1030,11 +1063,36 @@ async function checkA11y(page, label, axeSrc) {
 
 async function runPass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
+  // Hold session discovery after the selected workspace can mount. The first visible
+  // desktop frame must arrive while this unrelated read is still pending; otherwise a
+  // reload is just the bare theme canvas until every boot enrichment finishes.
+  let releaseSessions;
+  const sessionsHeld = new Promise((resolve) => { releaseSessions = resolve; });
+  await page.route('**/api/sessions', async (route) => {
+    await sessionsHeld;
+    await route.continue();
+  });
+  const navigation = page.goto(URL_.replace(/#.*$/, '') + '#/team/%20unassigned', { waitUntil: 'networkidle', timeout: 30_000 });
+  let paintedBeforeSessions = false;
   try {
-    await page.goto(URL_.replace(/#.*$/, '') + '#/team/%20unassigned', { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.waitForFunction(() => !document.documentElement.classList.contains('boot-pending')
+      && !!document.querySelector('#viewhost > :not([hidden])'), null, { timeout: 10_000 });
+    paintedBeforeSessions = true;
+  } catch (e) {
+    const boot = await page.evaluate(() => ({
+      pending: document.documentElement.classList.contains('boot-pending'),
+      views: [...document.querySelectorAll('[data-workspace-view]')].map((el) => ({ id: el.dataset.workspaceView, hidden: el.hidden })),
+    }));
+    bad(`${label}: selected desktop workspace stayed veiled behind session discovery: ${e.message} — ${JSON.stringify(boot)}`);
+  } finally {
+    releaseSessions();
+  }
+  try {
+    await navigation;
   } catch (e) {
     bad(`${label}: page did not load: ${e.message}`);
   }
+  if (paintedBeforeSessions) ok(`${label}: selected desktop workspace paints before session discovery completes`);
   await page.waitForTimeout(3000);
   // Agent cards show their readable title; the fixed session ID remains the resource key.
   // Never make seating depend on those two strings happening to be identical.
@@ -1061,7 +1119,38 @@ async function runPass({ label, browser, contextOpts }) {
   else ok(`${label}: no failed requests`);
 
   await checkDom(page, label);
-  if (probeAvailable) await attachProbe(page, label);
+  if (probeAvailable) {
+    await attachProbe(page, label);
+    // The in-Tile Docs editor shares `.tile-body` with xterm. Exercise that exact
+    // bubbling seam: a pointer gesture in the editor must retain editor focus instead
+    // of the body's terminal-focus handler stealing it.
+    const docsFocus = await page.evaluate(() => {
+      // Warm terminal pools keep hidden Tiles mounted. A hidden pool seat is no more a
+      // focus target than a closed Docs overlay, so take the body the person can see.
+      const body = [...document.querySelectorAll('.tile .tile-body')].find((node) => node.getClientRects().length);
+      if (!body) return { kept: false, active: '', reason: 'no visible tile body' };
+      const overlay = body.querySelector('.tile-doc-view');
+      const area = overlay?.querySelector('.dc-text');
+      if (!overlay || !area) return { kept: false, active: '', reason: 'Docs editor is absent' };
+      // Match a successfully loaded text document without reading or writing a user's
+      // file. The controls and event wiring are the real ones created by buildDocs().
+      overlay.classList.add('open');
+      overlay.dataset.view = 'edit';
+      area.disabled = false;
+      area.focus();
+      const before = `${document.activeElement?.tagName || ''}.${document.activeElement?.className || ''}`;
+      const rect = area.getBoundingClientRect();
+      area.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      const kept = document.activeElement === area;
+      const active = `${document.activeElement?.tagName || ''}.${document.activeElement?.className || ''}`;
+      overlay.classList.remove('open');
+      overlay.dataset.view = 'list';
+      area.disabled = true;
+      return { kept, active, before, rect: [rect.width, rect.height] };
+    });
+    if (docsFocus.kept) ok(`${label}: in-Tile Docs keeps selection and editing focus away from xterm`);
+    else bad(`${label}: in-Tile Docs loses selection/editing focus to xterm (${docsFocus.reason || `before ${docsFocus.before}, active ${docsFocus.active}, rect ${docsFocus.rect}`})`);
+  }
   else console.log(`  SKIP — ${label}: live-pane attach probe (session capacity is full)`);
   await checkCurrentWorkspace(page, label);
 

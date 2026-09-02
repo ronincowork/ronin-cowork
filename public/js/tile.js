@@ -35,6 +35,7 @@ import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { buildKeysRow } from './keysrow.js';
+import { buildTileDocView } from './tile-doc-view.js';
 import { isCoarse } from './tiledrop.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
 import { desksOf, refreshDesks } from './desks.js';
@@ -92,6 +93,8 @@ export class Tile {
         S.lastSelection = s;
       },
     });
+    this.docView = buildTileDocView(this);
+    this.body.append(this.docView.el);
 
     // THE SOCKET — beside both views, owned by neither.
     this.wire = new TileWire({
@@ -143,7 +146,10 @@ export class Tile {
       this.activate();
       // `this.home` (the tile commons) retired on 2026-08-28 with the grid page; a click in
       // the body threw on it for a few hours and took the terminal's focus with it.
-      if (!IS_TOUCH && this.body.contains(e.target)) this.term.focus();
+      // Docs replaced that body overlay with a real editor. It owns its own focus just
+      // as header controls do; only the terminal body itself redirects into xterm.
+      if (!IS_TOUCH && this.body.contains(e.target)
+        && !(e.target instanceof Element && e.target.closest('.tile-doc-view'))) this.term.focus();
     });
     this.syncOutput();
 
@@ -201,7 +207,7 @@ export class Tile {
     if (this.session !== session) return;
     // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
     // a 404 — the chip simply never shows, same as a session with no letter.
-    if (!session || serviceMissing('michi')) {
+    if (!session) {
       this.closeLadder();
       syncTileHead(this);
       return;
@@ -264,6 +270,12 @@ export class Tile {
     document
       .querySelectorAll('.tdrop.open, .tmac.open')
       .forEach((m) => m.classList.remove('open'));
+  }
+
+  /** Open one tracked document over this Agent; closing it reveals the live pane again. */
+  openDoc(path) {
+    this.clearOverlays();
+    void this.docView.open(path);
   }
 
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */
@@ -465,6 +477,10 @@ export class Tile {
     const sel = this.outputEl?.el ?? this.outputEl;
     if (!sel || !sel.options) return;
     sel.value = this.output;
+    // Without Services there is nothing to choose — every unlocked source is RIREKI's,
+    // so a one-option dropdown is noise and the control disappears whole (owner,
+    // 2026-09-02). The state side is already clamped: setOutput forces 'locked'.
+    sel.hidden = !!S.streamOff;
     for (const option of [...sel.options])
       if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
     sel.title = S.streamOff

@@ -56,6 +56,13 @@
 /** Rest before it opens. Long enough that crossing a row is silent, short enough not to feel broken. */
 const DELAY_MS = 300;
 
+// OWNER, 2026-09-02: the docked help panel is disabled system-wide. It was appearing
+// over menus and controls far more often than it supplied useful information. Keep the
+// title takeover below: without it, disabling our panel merely resurrects the browser's
+// native hover bubbles. This one switch preserves the implementation for reconsideration
+// without allowing either kind of popup onto the screen.
+const HELP_BOX_ENABLED = false;
+
 let box = null;
 let statusEl = null;
 let whatEl = null;
@@ -340,6 +347,7 @@ function seizeTitles() {
 /** Wire the document once. Safe to call before the grid exists. */
 export function installTips() {
   seizeTitles();
+  if (!HELP_BOX_ENABLED) return;
   const target = (e) => {
     const el = e.target?.closest?.('[title], [data-tip]');
     return el && (el.title || el.dataset.tip) ? el : null;

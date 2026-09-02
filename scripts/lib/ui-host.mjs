@@ -1,7 +1,7 @@
 /**
  * Where the running UI is, and how to get a browser — for the checks that need both.
  *
- * Two scripts need this (`smoke-ui`, `check-tips`) and for a while they each had their
+ * Two browser gates need this (`smoke-ui`, `check-tips`) and for a while they each had their
  * own copy. The copies disagreed: one derived the host the way the server actually binds,
  * the other assumed loopback, and `check-tips` failed against a server that was up and
  * answering the whole time. Two implementations of one fact drift the moment either is

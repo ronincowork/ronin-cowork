@@ -350,6 +350,20 @@ test('stated_by carries the settled launch, Team, role, and Campaign layers', as
   assert.match(campaign.stated_by.dial[0]?.source ?? '', /agent_defaults\.dial/);
 });
 
+test('a sparse Agent Routine choice overrides its parent only for that birth', async () => {
+  const inherited = await resolveForm(forkitForm(), new Set());
+  const parentWorktrees = inherited.routines.find((routine) => routine.name === 'ronin_worktrees');
+  assert.ok(parentWorktrees, 'the Worktrees Routine is in the launch catalog');
+
+  const overridden = await resolveForm(forkitForm({
+    routines: { ronin_worktrees: !parentWorktrees!.enabled },
+  }), new Set());
+  const agentWorktrees = overridden.routines.find((routine) => routine.name === 'ronin_worktrees');
+  assert.equal(agentWorktrees?.enabled, !parentWorktrees!.enabled);
+  assert.equal(agentWorktrees?.stated_by, 'agent');
+  assert.deepEqual(overridden.stated_by.routines, [{ layer: 'launch', source: 'launch request' }]);
+});
+
 test('server resolution returns profile and durable Team context without browser reconstruction', async () => {
   const resolved = await resolveForm(forkitForm(), new Set());
   assert.equal(resolved.launch_mode, 'live_dangerously');

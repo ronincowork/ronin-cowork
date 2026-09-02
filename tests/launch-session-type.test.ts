@@ -87,6 +87,19 @@ test('cowork kind and behaviours survive body acceptance while unusable shapes a
   assert.deepEqual(ignored.ignored, ['behaviours', 'kind']);
 });
 
+test('cowork accepts a partial Agent Routine override and filters malformed choices', () => {
+  const accepted = acceptedLaunchBody({
+    name: 'proof',
+    routines: { ronin_worktrees: false, gbrain: true, malformed: 'yes', '../bad': true },
+  });
+  assert.deepEqual(accepted.body.routines, { ronin_worktrees: false, gbrain: true });
+  assert.deepEqual(accepted.ignored, []);
+
+  const malformed = acceptedLaunchBody({ name: 'proof', routines: ['ronin_worktrees'] });
+  assert.equal(malformed.body.routines, undefined);
+  assert.deepEqual(malformed.ignored, ['routines']);
+});
+
 test('settled launch enums are accepted and their retired keys are receipt-only', () => {
   const accepted = acceptedLaunchBody({ name: 'proof', launch_mode: 'configured', gbrain_mode: 'connected' });
   assert.equal(accepted.body.launch_mode, 'configured');
@@ -145,11 +158,16 @@ test('both Mika callers use the dedicated door and state no session_role', async
   }
 });
 
-test('the in-Team Agent form sends a ways behaviour, never a launch role', async () => {
+test('the in-Team Agent form sends template behaviours and mandate, never a launch role', async () => {
   const source = await fs.readFile(new URL('../public/js/add-agent.js', import.meta.url), 'utf8');
-  assert.match(source, /behaviours:\s*draft\.task \? \[draft\.task\] : \[\]/);
-  assert.match(source, /ways:cut_code/);
-  assert.doesNotMatch(source, /session_role:\s*draft\.task/);
+  assert.match(source, /draft\.behaviours = \[\.\.\.row\.behaviours\]/);
+  assert.match(source, /draft\.reach = row\.mandate\.reach/);
+  assert.match(source, /draft\.recruit = row\.mandate\.recruit/);
+  assert.match(source, /draft\.output = \[row\.mandate\.output\]\.flat\(\)\.filter\(Boolean\)/);
+  assert.match(source, /behaviours:\s*\[\.\.\.draft\.behaviours\]/);
+  assert.match(source, /team_lead:\s*draft\.teamLead/);
+  assert.match(source, /mandate:\s*\{ reach: draft\.reach, recruit: draft\.recruit, output: \[\.\.\.draft\.output\] \}/);
+  assert.doesNotMatch(source, /session_role\s*:/);
 });
 
 test.after(() => server.close());

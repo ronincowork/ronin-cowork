@@ -16,14 +16,21 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.instruction_placeholder:** what this Agent should do
 - **add_agent.provider:** model provider
 - **add_agent.model:** model
+- **add_agent.make_team_lead:** Make Team Lead
+- **add_agent.make_team_lead_sub:** Replace the current Team Lead when this Agent launches.
+- **add_agent.lead_swap_failed:** Started {name} as Team Lead, but could not clear Team Lead from: {names}.
 - **add_agent.default:** default
-- **add_agent.task:** task  (optional)
-- **add_agent.task_open:** open
-- **add_agent.desk_line_control:** Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.
-- **add_agent.desk_line_plain:** Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.
-- **add_agent.shell:** Open a shell, not an Agent
-- **add_agent.shell_why:** A raw terminal in this Team — no Agent is launched and nothing is sent to it.
+- **add_agent.template:** template
+- **add_agent.no_template:** No template
+- **add_agent.worktrees_mode:** Agent work mode
+- **add_agent.worktrees_on:** Own worktree where the Project Root allows it
+- **add_agent.worktrees_off:** Use the project checkout and its branches
+- **add_agent.worktrees_help:** Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
+- **add_agent.worktrees_choose_checkout:** Change to checkout mode
+- **add_agent.worktrees_choose_own:** Change to own-worktree mode
 - **add_agent.actions:** Launch actions
+- **add_agent.full_alternative:** Alternative: for full new Agent controls, use the
+- **add_agent.full_link:** detailed launch page
 - **add_agent.start:** Start
 - **add_agent.cancel:** Cancel
 - **add_agent.starting:** Starting…
@@ -191,10 +198,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.no_profile:** As stock — none chosen.
 - **campaign_view.roots_n:** {n} roots
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
-- **campaign_view.new_project_desks:** New projects use desks?
-- **campaign_view.new_project_desks_yes:** Desks
-- **campaign_view.new_project_desks_no:** None
-- **campaign_view.new_project_desks_help:** Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project.
+- **campaign_view.new_project_worktrees:** Worktrees for new project roots
+- **campaign_view.new_project_worktrees_yes:** Allow Ronin Worktrees
+- **campaign_view.new_project_worktrees_no:** Use the checkout
+- **campaign_view.new_project_worktrees_help:** Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for roots added later; change an existing repository on its Project Root card below.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
 - **campaign_view.head:** Campaign: {name}
@@ -207,6 +214,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.skin:** Skin
 - **campaign_view.skin_help:** The look — colours, corners, faces.
 - **campaign_view.theme:** Theme
+- **campaign_view.theme_desktop:** Desktop
 - **campaign_view.theme_help:** Light or dark for pointer surfaces; Automatic is the house default — light.
 - **campaign_view.theme_mobile:** Theme (mobile)
 - **campaign_view.theme_mobile_help:** Light or dark for touch surfaces — iPad and phone; Automatic is the house default — light.
@@ -262,7 +270,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roles_none:** No session roles on this install.
 - **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
-- **campaign_view.routines_help:** Choose what each new Cowork Agent starts with. Changes land in forms opened after this save; nothing already running or stored changes.
+- **campaign_view.routines_help:** Choose what new Cowork Agents start with. This Campaign answer seeds new Teams; a Team may replace it, and New Agent shows the resolved answer. Nothing already running changes.
+- **campaign_view.worktrees_routine_help:** Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **campaign_view.routines_n:** {n} on
 - **campaign_view.routine_no_description:** No description supplied.
 - **campaign_view.available:** Available
@@ -270,7 +279,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
 - **campaign_view.rt_worktrees:** Ronin worktrees
-- **campaign_view.rt_worktrees_what:** Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks.
+- **campaign_view.rt_worktrees_what:** Agent work mode: private branch and worktree where a Project Root allows Worktrees; direct work in the checkout and its branches everywhere else.
 - **campaign_view.rt_by_repo:** per repository — see Project roots
 - **campaign_view.rt_gbrain:** gbrain
 - **campaign_view.rt_gbrain_what:** The shared memory service: its reading and its MCP tools for sessions born with it connected.
@@ -349,6 +358,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.agents:** Agents
 - **new_team.agents_meta:** {n} agents
 - **new_team.agent_name:** name
+- **new_team.agent_name_taken:** Nothing was created. Choose another name for: {names}.
 - **new_team.agent_assignment:** what this Agent does
 - **new_team.mark_team_lead:** Mark as team lead
 - **new_team.agent_more:** Its mandate
@@ -448,6 +458,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.floor:** Cowork floor
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
+- **new_team.worktrees_mode:** Agent work mode
+- **new_team.worktrees_on:** Own worktree where the Project Root allows it
+- **new_team.worktrees_off:** Use the project checkout and its branches
+- **new_team.worktrees_help:** Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **new_team.kit_meta:** {routines} routines · {books} books
 - **new_team.lead_include:** Include a team lead
 - **new_team.lead_include_sub:** Raised with the team and briefed.
@@ -456,6 +470,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.members:** members
 - **new_team.members_note:** derived from live tags — never stored here
 - **new_team.inherits:** an agent born here inherits
+- **new_team.staffing_failed:** Team created, but {failed} of {total} Agents could not be launched: {names}. Open the Team and add them there.
+- **new_team.checking_names:** Checking Agent names…
+- **new_team.name_check_failed:** Agent names could not be checked, so nothing was created. {reason}
 - **new_team.raising:** Raising the team…
 - **new_team.save_name_placeholder:** template name
 - **new_team.save_as_new:** Save as new template
@@ -471,10 +488,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.model:** model
 - **forms.none:** —
 - **forms.always:** always
+- **forms.campaign:** campaign
 - **forms.campaign_on:** campaign on
 - **forms.campaign_off:** campaign off
 - **forms.team_on:** team turns on
 - **forms.team_off:** team turns off
+- **forms.agent:** agent
+- **forms.agent_override:** agent overrides
 
 ## new_agent — new-agent.js (the drawn launch form, staged beside the ＋ New board)
 - **new_agent.title:** New Agent
@@ -510,6 +530,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.routines_terminal:** agent: none — a pane
 - **new_agent.routines_bare:** no floor, no routines
 - **new_agent.blank_note:** A blank field is an answer, not a gap.
+- **new_agent.worktrees_mode:** Agent work mode
+- **new_agent.worktrees_on:** Own worktree where the Project Root allows it
+- **new_agent.worktrees_off:** Use the project checkout and its branches
+- **new_agent.worktrees_help:** Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted
@@ -824,16 +848,20 @@ The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
 - **roots.empty:** No project roots yet — add one below.
 - **roots.loading:** loading…
-- **roots.chip_reviewed_desks:** reviewed · desks
-- **roots.chip_reviewed:** reviewed
-- **roots.chip_direct:** direct
-- **roots.chip_reviewed_title:** Reviewed: work happens at desks that hand in to a team line; team promotion moves {working}; {stable} moves by PR. The branch mounted here is incidental.
-- **roots.chip_direct_title:** Direct: commits land on {stable} itself. No desks, no team line.
-- **roots.chip_shared:** shared checkout
-- **roots.chip_shared_title:** No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing.
+- **roots.chip_worktrees:** Repository: Worktrees allowed
+- **roots.chip_checkout:** Repository: use checkout
+- **roots.chip_reviewed_title:** Reviewed: work moves through {working}, then review reaches {stable}. The branch mounted here is incidental.
+- **roots.chip_direct_title:** Direct: commits land on {stable} itself.
+- **roots.chip_shared:** Repository: use checkout
+- **roots.chip_shared_title:** No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.
+- **roots.worktrees_guide:** For Ronin Worktrees to run, both must be on: the repo needs Worktrees on, and the Agent needs Worktrees on. This page controls the repo.
+- **roots.state_worktrees:** Repo: Worktrees on. Agent must also have Worktrees on.
+- **roots.state_checkout:** This repository uses its checkout. That repository choice wins even if an Agent has the Ronin Worktrees Routine.
+- **roots.state_undeclared:** No repository profile is declared, so Agents use the checkout. Edit this root to allow Ronin Worktrees.
 
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list
+- **docs.close_agent:** Close documents and return to this Agent
 - **docs.save:** Save
 - **docs.pill_tracked:** Tracked
 - **docs.pill_plans:** Plans
@@ -843,6 +871,10 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_docs_hint:** Where this root keeps its documentation — directories or files, relative to the directory
 - **roots.f_plans:** plans
 - **roots.f_plans_hint:** Where this root keeps its build-out plans
+- **roots.group_root:** Project Root
+- **roots.group_root_help:** The directory Ronin may offer to Agents and the words used to find it.
+- **roots.group_repository:** Repository workflow
+- **roots.group_repository_help:** Publishing describes where accepted commits go. Worktrees separately decides whether this repository participates in Ronin’s managed worktree workflow.
 - **roots.f_mode:** publishing
 - **roots.f_mode_hint:** Reviewed uses a working branch and a final PR to stable. Direct publishes on stable itself.
 - **roots.mode_reviewed:** reviewed release
@@ -851,10 +883,16 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_working_hint:** The integration branch for reviewed work. You choose its name.
 - **roots.f_stable:** stable
 - **roots.f_stable_hint:** The published branch. You choose its name.
-- **roots.f_coordination:** coordination
-- **roots.f_coordination_hint:** Managed supplies private desks and hand-in. None uses the repository checkout.
-- **roots.desks_managed:** managed
-- **roots.desks_none:** none
+- **roots.f_worktrees:** Worktrees
+- **roots.f_worktrees_hint:** Worktrees keep each Agent’s file changes in a separate working folder and branch. Both the Agent and repo must have Worktrees on.
+- **roots.worktrees_enabled:** Use Ronin Worktrees
+- **roots.worktrees_disabled:** Use the checkout
+- **roots.flow_reviewed:** {working} → review → {stable}
+- **roots.flow_direct:** commits → {stable}
+- **roots.worktrees_two_gates:** This controls the repo. Worktrees use a managed hand-in and Team-lead merge process.
+- **roots.flow_worktrees:** Agents with Worktrees on use their own working folder and branch; other Agents use the checkout.
+- **roots.flow_checkout:** Every Agent uses this checkout, even when the Agent has Worktrees on.
+- **roots.flow_preview:** Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.
 - **roots.profile_confirm:** Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document
@@ -953,7 +991,7 @@ The catalog entry goes. {dir} is not touched.
 - **setup.bundle_base:** Ronin Base
 - **setup.bundle_base_copy:** Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.
 - **setup.bundle_worktrees:** Ronin Worktrees
-- **setup.bundle_worktrees_copy:** Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.
+- **setup.bundle_worktrees_copy:** Gives Agents the private-worktree mode. They use it only in Project Roots that allow Ronin Worktrees; other repositories use their checkout and branches.
 - **setup.bundle_services:** Services
 - **setup.bundle_services_copy:** Adds your Services to every agent — voice, transcripts, machine care.
 - **setup.desk_profile:** Desk profile
@@ -1005,10 +1043,10 @@ The catalog entry goes. {dir} is not touched.
 - **setup.cap_none:** No limit — allow any number
 - **setup.cap_estimate:** {n} — Ronin estimate for this {ram} GB machine
 - **setup.cap_n:** {n} agent sessions
-- **setup.services_lede:** Extra capabilities for your coworkspace. Base RoninCoWork works fully without them.
+- **setup.services_lede:** Extra capabilities for your coworkspace, in beta today. Base RoninCoWork works fully without them.
 - **setup.optional:** Optional
 - **setup.services_intro_strong:** Keep the work on your machine, add the view around it.
-- **setup.services_intro:** Services add live agent plans, readable transcripts, voice, usage history, and long-term memory.
+- **setup.services_intro:** Services add live agent plans, readable transcripts, voice, usage history, and long-term memory. It is early days for this side. Sharing your email is optional — it registers your interest, keeps you part of the Ronin community as it grows, and what is ready reaches you as it lands.
 - **setup.feature_gbrain:** Long-term agent memory
 - **setup.services_start:** Start Ronin Services activation
 - **setup.services_start_copy:** Ronin will send your email address, this terms version, and an activation request.
@@ -1152,6 +1190,7 @@ The catalog entry goes. {dir} is not touched.
 ## desk — desk.js (the desk's rows and tooltips)
 - **cowork.commons:** Ronin Desk
 - **cowork.tab_health:** Desk
+- **cowork.tab_themes:** Themes
 - **cowork.tab_account:** Account
 - **cowork.tab_profile:** Desk profile
 - **cowork.tab_roots:** Project roots
@@ -1166,6 +1205,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.waiting:** Waiting
 - **messages.failed:** Failed
 - **messages.pending:** Pending
+- **messages.target_missing:** Target missing
 - **messages.state_age:** {state} · {age}
 - **messages.age_now:** just now
 - **messages.age_short_seconds:** {seconds}s
@@ -1346,9 +1386,12 @@ The catalog entry goes. {dir} is not touched.
 - **head.mention_help:** Mention another session — choose a name to add it to the message box
 - **head.mention_quiet:** Mentions — no session in this tile yet
 - **head.macros_quiet:** Macros — no session in this tile yet
-- **head.more_help:** This session's other controls — 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
 - **head.dial_quiet:** Control dial — no session in this tile yet
+- **head.docs_help:** This Agent's tracked docs — open one over this tile
+- **head.docs_quiet:** This Agent's docs — no Agent in this workspace
+- **head.docs_read:** Docs — {n} tracked by this Agent. Open one over this tile.
+- **head.docs_none:** Docs — this Agent is tracking none yet.
 - **head.note_help:** Session note (post-it)
 - **head.note_quiet:** Session note — no session in this tile yet
 - **head.note_has:** Session note (has notes)
@@ -1446,7 +1489,7 @@ The catalog entry goes. {dir} is not touched.
 - **league.rosters_unavailable:** Durable rosters unavailable — showing live Teams only.
 
 ## docs — tiledocs.js
-- **docs.empty_session:** This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>
+- **docs.empty_session:** Nothing tracked yet. Ask this Agent to update its Work Record with the docs it is tracking; they will appear here.
 
 ## head — tilementions.js
 - **head.mention_aria:** Mention another session
@@ -1556,7 +1599,11 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.references:** References
 - **team_config.references_help:** One URL or note per line.
 - **team_config.routines:** Routines
-- **team_config.routines_help:** This complete on/off map is the Team’s own. Campaign changes affect only the next Team form.
+- **team_config.routines_help:** This complete on/off map is the Team’s own and is inherited by new Agents. It replaces the Campaign defaults; existing Agents do not change.
+- **team_config.worktrees_mode:** Agent work mode
+- **team_config.worktrees_on:** Own worktree where the Project Root allows it
+- **team_config.worktrees_off:** Use the project checkout and its branches
+- **team_config.worktrees_help:** Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **team_config.kit_floor_alone:** the floor alone — no Routine is on
 - **team_config.no_description:** No description supplied.
 - **team_config.behaviours:** Behaviours

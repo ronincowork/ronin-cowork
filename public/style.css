@@ -29,7 +29,6 @@
   --bg-2: #0f131c;
   --panel: #131826;
   --raise: #1a2233;
-  --raise-2: #263047;
   --well: #0d1220;
   /* ---- edges, three weights: hairline furniture, control edge, emphasized edge */
   --line: #1f2738;
@@ -46,7 +45,17 @@
      warn/bad = the two grades of wrong. --on-accent/--on-strong are the text colours
      that sit ON a filled accent/action surface. */
   --accent: #e0af68;
+  /* ONE focus ring for the whole shell, and it rings the BRAND (owner, 2026-09-02:
+     "yes make the focus ring kaki too"). One token so a keyboard user's ring never
+     changes color by neighborhood — the earlier accent/kaki drift, unified. */
+  --focus-ring: var(--kaki);
   --accent-2: #81a2be;
+  /* DEFINE-LINE — the cool blue line that cleanly defines a warm surface against the
+     shell (owner, 2026-09-02: "I like that blue and how it works with the orange…
+     a blue light line around the headers… add this blue to our tokens"). Named as a
+     ROLE and aliased to --accent-2 so the hue stays single-sourced and theme-tuned;
+     wearers: the workbench band perimeter, the selector's utility doors. */
+  --define-line: var(--accent-2);
   --accent-deep: #d8a13a;
   /* Soft selected-state washes — two of the seven names the 2026-09-01 token audit
      found CONSUMED while defined nowhere, every read quietly dropped by the browser
@@ -57,12 +66,13 @@
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
-  /* KIIRO — the house's core yellow-orange, THEME-INVARIANT by ruling (owner,
-     2026-09-01: "make sure that the tokens between light and dark don't mean we lose
-     our core color, which is the kiiro"). Declared once, never re-declared by the
-     light block: a brand color that mutates per theme stops being the brand. Every
-     kiiro FILL reads this pair (the attention flash, the phone's Start; the band
-     reads the tint variant below with its own ink family);
+  /* KIIRO — the house's amber, THEME-INVARIANT. NOT THE BRAND: the owner ruled
+     2026-09-02 that "kiiro" in every earlier band/button ruling MEANT KAKI, the hito
+     mark's persimmon — "I mistakenly in the past called that kiiro." The BRAND is
+     --kaki below: every primary/attention FILL reads --kaki/--on-strong. Kiiro
+     remains the amber the band variants derive from (their owner-approved values
+     are unchanged) and the dark band's attention ink, where kaki cannot hold the
+     contrast floor;
      --warn stays separate as the theme-tuned warning ink, because thin text genuinely
      needs a darker value on paper — a shade of kiiro, not a replacement for it. */
   /* Value history: #f0c674 (gold) read as YELLOW on the band — "it's not anything to
@@ -70,42 +80,32 @@
      accent's own hue. This one line is the whole brand color: change it and the band,
      the attention flash and the phone's Start all follow. */
   --kiiro: #e0af68;
-  --on-kiiro: #201a0e;
-  /* KIIRO-TINT — the light opaque SHADING variant of the brand token: kiiro for
-     surfaces, not text. Derived FROM the token so a hue correction stays that one
-     --kiiro line; check-css resolves the mix and holds the band's ink floors on it.
-     First of the kiiro variant family (the token audit names a line variant next).
-     Value history: a plain 78% white-tint read as "no different" from the rejected
-     62% wash (owner, 2026-09-01 pm) — srgb white-tinting an amber desaturates it
-     toward the cream-yellow every verdict has rejected. So the tint warms the base
-     toward kaki FIRST (70/30, holding the orange), then lightens hard (45% over
-     white): distinctly lighter than the token, distinctly orange, never cream. */
-  --kiiro-tint: color-mix(in srgb, color-mix(in srgb, var(--kiiro) 70%, var(--kaki)) 45%, #ffffff);
-  /* KIIRO-DEEP — the pressed/hover depth of a kiiro fill, as --accent-deep is to
-     --accent. Invariant like its parent. */
-  --kiiro-deep: color-mix(in srgb, var(--kiiro) 82%, #000000);
-  /* KIIRO-HINT — the DARK shading variant: the shell's own band ground with a
-     visible kiiro cast. 22% because the tenth-toward-kaki cut proved 10% invisible
-     ("I still don't see the kiiro shading"). Theme-relative BY DESIGN here — the
-     whole point is staying the shell's darkness — unlike --kiiro-tint, which is the
-     committed light shade. */
-  --kiiro-hint: color-mix(in srgb, var(--kiiro) 22%, var(--bg-2));
-  /* THE WORKBENCH'S HEADER BAND — dark wears the HINT, light wears the TINT (owner,
-     2026-09-01 evening, the standing verdict): a light band on the dark shell "looks
-     awful… It should be dark mode with a bit of background hint to the orange
-     color", and the tint's hue direction was ruled right for light ("the color, I
-     guess, is better"). This SUPERSEDES the same-day one-shade-both-modes ruling.
-     The full run of prior verdicts, so no rejected value returns: tenth-toward-kaki
-     (invisible), #decb8f (khaki), opaque gold, the 62% cream wash, the 78% wash
-     ("doesn't look any different"), opaque kiiro in dark ("absolute shit"), and any
-     LIGHT band on the dark shell. Dark ink is the theme's own; light's ink family
-     rides its block below. Every workbench wears THIS band — wk-surface-header,
-     tile-head, wk-channel-service-tabs, ntf-band all read the family. */
-  --cowork-head-bg: var(--kiiro-hint);
-  --cowork-head-fg: var(--fg-strong);
-  --cowork-head-muted: var(--muted-2);
-  /* Attention on the dark band: kiiro itself is the cue. */
+  /* THE BAND SHADES — one concept, an OPAQUE ORANGE of the kaki family, resolved
+     dark and light per shell (owner, 2026-09-02). NOT a kaki/black or kaki/white
+     mix, deliberately: brown IS dark orange, so darkening kaki can only make brown,
+     and tinting muted red-orange makes flesh-pink — both verdicts landed ("looks
+     brown… no orange aspect", "fleshy pink"). A band that READS orange keeps
+     saturation up and leans a touch yellow, so these are literals — kaki pushed
+     toward fire — and the gate measures them directly. Owner-selected D1/L2 from
+     the chooser, picked for ink contrast and readability. Value history still
+     standing: khaki-yellow, gold, the cream washes, the amber-navy brown, the
+     45%-black brown, the 52%-white flesh-pink. */
+  --kaki-hint: #6f300e;
+  --kaki-tint: #f2a566;
+  /* THE WORKBENCH'S HEADER BAND — dark wears the kaki HINT with its own light ink
+     (the theme's text tokens are tuned for the navy ground, not a warm band); light
+     wears the kaki TINT with dark ink in its block below. Attention on the dark
+     band speaks kiiro — the amber pops on deep persimmon and holds the floor.
+     Every workbench wears THIS band — wk-surface-header, tile-head,
+     wk-channel-service-tabs, ntf-band all read the family. */
+  --cowork-head-bg: var(--kaki-hint);
+  --cowork-head-fg: var(--on-strong);
+  --cowork-head-muted: #d9b8ab;
   --cowork-head-attention: var(--kiiro);
+  /* The band's perimeter speaks the define-line (owner, 2026-09-02): the cool blue
+     ring that cleanly defines the kaki band, same blue as the selector's utility
+     doors. One token for every band; both themes follow --accent-2's tuning. */
+  --cowork-head-line: var(--define-line);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -136,19 +136,14 @@
      ground is a bruise, so -lift is that lift and the two hexes stay untouched as
      the record of what they are.
 
-     The semantic `--heighten-*` aliases pair kaki with the hexagon for access or view
-     controls whose discoverability is part of their function. The copy hint predates
-     that pair and uses kaki-lift for the same reason: its job is to not be missed. */
+     The copy hint uses kaki-lift for the same heightened reason: its job is to not
+     be missed. (The `--heighten-*` alias family was deleted by the 2026-09-02 token
+     audit — designed in docs/ui.md, defined here, and read by nothing ever; every
+     heightened surface reads kaki directly, and a dead semantic layer is where the
+     next agent's guess goes wrong.) */
   --kaki: #c46243;
   --kaki-lift: #e08163;
   --aiiro: #274a78;
-  --aiiro-lift: #6f95cc;
-  --heighten: var(--kaki);
-  --heighten-hover: var(--kaki-lift);
-  --heighten-fg: var(--on-strong);
-  --heighten-shape: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-  --heighten-inline-size: 22.5px;
-  --heighten-block-size: 21px;
 
   /* ---- THE TERMINAL PALETTE — the tokens js/theme.js reads back into xterm's theme
      object (`termTheme()`), plus the tape/composer surfaces that sit over the pane.
@@ -307,7 +302,7 @@
   --bar-nav-bg: transparent;
   --bar-nav-fg: var(--fg-strong);
   --bar-nav-hover: var(--accent);
-  --bar-nav-focus: var(--accent);
+  --bar-nav-focus: var(--focus-ring);
   --bar-nav-size: var(--text-7);
   --bar-value-fg: var(--bar-nav-fg);
   --bar-value-size: var(--bar-nav-size);
@@ -337,19 +332,19 @@
    index.html applies the saved value inline before first paint. THE --term-* TOKENS ARE
    REMAPPED HERE TOO: light means light all the way into the pane, terminal included. */
 :root[data-theme='light'] {
-  /* LIGHT wears the kiiro-tint band (the hue the owner ruled right for light);
-     DARK keeps its dark band with the orange hint — the family's root defaults.
-     The band's own dark ink here, because the light theme's text tokens are tuned
-     for paper, not for a kiiro surface. */
-  --cowork-head-bg: var(--kiiro-tint);
+  /* LIGHT wears the kaki TINT (the same opaque-kaki concept as dark's hint, resolved
+     light) with the band's own dark ink — the theme's text tokens are tuned for
+     paper, not a warm band. */
+  --cowork-head-bg: var(--kaki-tint);
   --cowork-head-fg: #201a0e;
-  --cowork-head-muted: #5a4d28;
-  --cowork-head-attention: #8a3413;
+  /* Inks darkened with the B tint: the stronger terracotta sits lower than the old
+     pale band, and the previous olive/kaki inks fell under the 4.5 floor on it. */
+  --cowork-head-muted: #4f2e1b;
+  --cowork-head-attention: #7a2f10;
   --bg: #f4f2ec;
   --bg-2: #eae7df;
   --panel: #ffffff;
   --raise: #f1efe8;
-  --raise-2: #e6e2d8;
   --well: #f7f5ef;
   --line: #d9d4c8;
   --line-2: #c8c2b2;
@@ -383,7 +378,6 @@
   --shadow-menu: 0 8px 24px rgb(30 30 30 / 18%);
   --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
   --kaki-lift: #a34e2f;
-  --aiiro-lift: #3d6394;
 
   /* ---- THE TERMINAL, ON PAPER (2026-08-19, the owner's ask: "the terminal is still
      white on black … so that the terminal is not so intimidating to non-terminal users").
@@ -481,7 +475,7 @@
    see it (:focus-visible), and a control wanting a tighter ring may add radius, not
    remove the outline. This used to exist for exactly one control (the brand). */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -629,10 +623,10 @@ body {
   max-width: 88vw;
   /* A kiiro FILL, so it reads the invariant brand pair — light mode's --warn is a
      text ink and would mustard this band (owner, 2026-09-01). */
-  border: var(--edge) solid var(--kiiro);
+  border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
   padding: var(--space-6) var(--space-8);
   font-size: var(--text-5);
   font-weight: 700;
@@ -833,7 +827,6 @@ body {
     color: var(--accent);
   }
 }
-#bar .brand-home:focus-visible { outline-color: var(--kaki); }
 #bar .bar-cowork-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bar .grow {
   flex: 1;
@@ -1221,6 +1214,34 @@ body {
   color: var(--accent);
   border-color: var(--accent);
 }
+/* Desktop's horizontal メ strip otherwise offers only an unexplained page glyph. The
+   phone sheet already supplies its own Docs word beside this same relocated button. */
+.tile-head .tmore .tdocs-btn {
+  width: auto;
+  padding-inline: var(--space-3);
+  gap: var(--space-2);
+}
+.tile-head .tmore .tdocs-btn::after { content: attr(data-label); }
+
+/* One Agent's shared Docs editor, over its terminal on desktop and in the phone shell. */
+.tile-doc-view {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  padding: var(--space-4);
+  background: var(--bg);
+}
+.tile-doc-view.open { display: flex; }
+.tile-doc-close {
+  align-self: flex-end;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raise);
+  color: var(--fg-strong);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
 
 /* Work Louder pad — a ui.sheet consumer since 2026-08-17; the board is a picture of the
    Creator Micro 2. The scrim, the centering and the open/closed switch belong to the
@@ -1272,9 +1293,9 @@ body {
   cursor: pointer;
 }
 .pad-card .pad-bar button.armed {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
+  background: var(--kaki);
+  color: var(--on-strong);
+  border-color: var(--kaki);
 }
 .pad-card .pad-board {
   display: grid;
@@ -1341,12 +1362,12 @@ body {
   border-color: var(--fg);
 }
 .pad-card .pad-key.hit {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--kaki);
+  border-color: var(--kaki);
 }
 .pad-card .pad-key.hit b,
 .pad-card .pad-key.hit small {
-  color: var(--on-accent);
+  color: var(--on-strong);
 }
 .pad-card .pad-widget {
   aspect-ratio: 1;
@@ -1377,10 +1398,10 @@ body {
 }
 /* the encoder / joystick flash too, so you can see what a turn or flick emits */
 .pad-card .pad-widget.hit {
-  background: var(--accent);
+  background: var(--kaki);
   border-style: solid;
-  border-color: var(--accent);
-  color: var(--on-accent);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 .pad-card .pad-edit {
   display: none;
@@ -1518,7 +1539,10 @@ body {
   min-width: 0;
   min-height: 0;
   background: var(--panel);
-  border: var(--edge) solid var(--line);
+  /* The tile is a card like any workbench surface: its perimeter speaks the
+     define-line too, so the grid page and the bench read as one system. The armed
+     frame (.tile.active, accent) and the dropped mark still override. */
+  border: var(--edge) solid var(--define-line);
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
@@ -1555,7 +1579,7 @@ body {
      on stock): a skin that moves the band's shade moves this head with it, so the
      selector's band and the tile heads beside it can never split. */
   background: var(--cowork-head-bg);
-  border-bottom: var(--edge) solid var(--line);
+  border-bottom: var(--edge) solid var(--cowork-head-line);
   flex: 0 0 auto;
   font-family: var(--workbench-head-font);
   font-size: var(--workbench-head-size);
@@ -2202,12 +2226,12 @@ body {
    commit-buttons in the app (`.fr-go`, `.st-go`) rather than an outline that reads as
    secondary next to a red one. */
 .end-session-actions .primary {
-  background: var(--accent);
-  border-color: var(--accent-deep);
-  color: var(--on-accent);
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 .end-session-actions .primary:hover:not(:disabled) {
-  background: var(--accent-deep);
+  background: var(--kaki-lift);
 }
 .end-session-actions .danger {
   color: var(--bad);
@@ -2929,8 +2953,8 @@ body {
   color: var(--fg-strong);
 }
 .gb-privacy > button:hover {
-  background: var(--accent);
-  color: var(--bg);
+  background: var(--kaki);
+  color: var(--on-strong);
 }
 .gb-card h3 {
   margin: 0 0 var(--space-3);
@@ -3132,6 +3156,15 @@ body {
   font-size: var(--text-3);
   flex: 1;
 }
+.pr-guide {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: var(--edge-2) solid var(--kiiro);
+  background: var(--panel);
+  color: var(--fg);
+  font-size: var(--text-3);
+  line-height: 1.45;
+}
 .pr-list {
   overflow-y: auto;
   min-height: 0;
@@ -3218,16 +3251,53 @@ body {
   flex-direction: column;
   gap: var(--space-3);
 }
-.pr-f {
+.pr-group {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-sm);
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-3);
 }
-.pr-f span {
-  width: 74px;
-  flex: none;
+.pr-group legend {
+  padding: 0 var(--space-2);
+  color: var(--fg-strong);
+  font-weight: 700;
+}
+.pr-group-help,
+.pr-worktrees-note,
+.pr-worktrees-state,
+.pr-flow {
+  margin: 0;
   color: var(--muted-2);
   font-size: var(--text-3);
+  line-height: 1.4;
+}
+.pr-worktrees-note {
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--panel) 90%, var(--kiiro));
+  border-left: var(--edge-2) solid var(--kiiro);
+  color: var(--fg);
+}
+.pr-worktrees-state {
+  margin-top: var(--space-3);
+}
+.pr-f {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+.pr-f[hidden] {
+  display: none;
+}
+.pr-f span {
+  width: auto;
+  color: var(--muted-2);
+  font-size: var(--text-3);
+  font-weight: 650;
 }
 .pr-f input,
 .pr-f select {
@@ -3347,16 +3417,18 @@ body {
 .dc-group[hidden] {
   display: none;
 }
-/* KIIRO — yellow when there is something to save; the ← wears it too so the way out is
-   as easy to find as the way to keep it (owner, 2026-08-28). */
-/* TOKEN? (audit mark, 2026-09-01): class says kiiro, token is --warn — deliberately,
-   because this is thin INK and invariant #e0af68 text fails on light paper. If the
-   dirty state should read brand-kiiro, it takes a FILL treatment like the Kit's
-   data-attention, not an ink swap. Owner rules; TOKENS_AUDIT.md § 3.5. */
-.dc-back.kiiro,
-.dc-save.kiiro {
-  border-color: var(--warn);
-  color: var(--warn);
+/* DIRTY = the attention FILL (audit mark 5 resolved, 2026-09-02): something to save
+   goes bright kiiro the same way the Kit's data-attention does — a fill with its own
+   ink, not thin amber text that fails on light paper (the reason the old ink read
+   --warn). The ← wears it too so the way out is as easy to find as the way to keep
+   it (owner, 2026-08-28). The class was named `kiiro` while reading --warn; it says
+   what it means now. */
+.dc-back.attention,
+.dc-save.attention {
+  border-color: var(--kaki);
+  background: var(--kaki);
+  color: var(--on-strong);
+  font-weight: 700;
 }
 .dc-who {
   display: flex;
@@ -3454,6 +3526,8 @@ body {
   font-size: var(--text-4);
   line-height: 1.45;
   resize: none;
+  -webkit-user-select: text;
+  user-select: text;
 }
 .dc-empty {
   color: var(--muted);
@@ -4813,9 +4887,9 @@ button.wb-door:hover b {
     cursor: pointer;
   }
   #bar .shape-cycle:active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--on-accent);
+    background: var(--kaki);
+    border-color: var(--kaki);
+    color: var(--on-strong);
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
   #bar .brand {
@@ -5001,7 +5075,7 @@ button.wb-door:hover b {
   color: var(--term-tape-fg);
   background: var(--term-jump-bg);
   border: var(--edge) solid var(--term-tape-line-2);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   padding: var(--space-3) var(--space-6);
   cursor: pointer;
 }
@@ -5025,7 +5099,7 @@ button.wb-door:hover b {
   color: var(--term-tape-fg);
   background: var(--term-jump-bg);
   border: var(--edge) solid var(--term-tape-line-2);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   padding: var(--space-3) var(--space-6);
   cursor: pointer;
 }
@@ -5155,8 +5229,8 @@ button.wb-door:hover b {
   border-radius: var(--radius-md);
   /* Was the shell's one blue fill (--action, a role the palette comment itself
      disowns). A send is a primary action, so it wears the brand pair. */
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
   font-size: var(--text-6);
   cursor: pointer;
 }
@@ -5955,7 +6029,7 @@ button.wb-door:hover b {
   padding: var(--space-3) var(--space-5);
   background: var(--raise);
   border: var(--edge) solid var(--line-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   color: var(--fg-strong);
   font: inherit;
   font-size: var(--text-3);
@@ -6259,9 +6333,9 @@ button.wb-door:hover b {
   flex-wrap: wrap;
 }
 .fr-go {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
-  border: var(--edge) solid var(--kiiro-deep);
+  background: var(--kaki);
+  color: var(--on-strong);
+  border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6269,7 +6343,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .fr-go:hover {
-  background: var(--kiiro-deep);
+  background: var(--kaki-lift);
 }
 .fr-go:disabled {
   opacity: 0.6;
@@ -6308,9 +6382,9 @@ button.wb-door:hover b {
 /* the ⚙ offer — a real button in the room's own tokens: filled, hover-dark, cursor.
    It was wearing .st-inp (an input's clothes) and read as a dead field. */
 .st-go {
-  background: var(--kiiro);
-  color: var(--on-kiiro);
-  border: var(--edge) solid var(--kiiro-deep);
+  background: var(--kaki);
+  color: var(--on-strong);
+  border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6319,7 +6393,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .st-go:hover {
-  background: var(--kiiro-deep);
+  background: var(--kaki-lift);
 }
 .st-go:disabled {
   opacity: 0.6;
@@ -6335,7 +6409,10 @@ button.wb-door:hover b {
 .ramrpm { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: default; user-select: none; }
 .ramrpm[data-band='warn'] { color: var(--warn); border-color: var(--warn); }
 .ramrpm[data-band='red'] { color: var(--bad); border-color: var(--bad); }
-.services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
+/* A BUTTON is a masu, not a pill (audit mark 6, 2026-09-02): pill stays for
+   read-only badges (.ramrpm above keeps its), a pressable control wears the square
+   rung. */
+.services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
 .services-state.busy::before { content: '◌'; display: inline-block; margin-right: var(--space-3); animation: services-spin var(--motion-slow) linear infinite; }
 .services-pop { position: fixed; z-index: 50; width: min(360px, calc(100vw - var(--space-8))); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-menu); padding: var(--space-7); }
 .services-pop-message { margin: 0 0 var(--space-6); color: var(--muted-2); }
@@ -6441,7 +6518,7 @@ button.wb-door:hover b {
 .cs-review-value { display: block; margin-top: var(--space-1); color: var(--fg); font-size: var(--text-3); overflow-wrap: anywhere; }
 .cs-review-foot { padding: var(--space-6) var(--space-7) var(--space-7); }
 .cs-save { width: 100%; border: var(--edge) solid var(--kaki); border-radius: var(--radius-xs); background: var(--kaki); color: var(--on-strong); padding: var(--space-5); font: 600 var(--text-3)/1 var(--font-mono); cursor: pointer; }
-.cs-save:hover { background: transparent; color: var(--kaki); }
+.cs-save:hover { background: var(--kaki-lift); color: var(--on-strong); }
 .cs-save:disabled { opacity: .6; cursor: default; }
 .cs-save-note { margin: var(--space-4) 0 0; text-align: center; color: var(--muted); font-size: var(--text-2); }
 .cs-status { margin-top: var(--space-4); }
@@ -6464,7 +6541,9 @@ button.wb-door:hover b {
    2026-08-25: the thread stood 2221px tall inside an 853px page). */
 .wk-layout-surface { display: flex; flex-direction: column; }
 .wk-layout-surface > .wk-surface { flex: 1 1 auto; min-height: 0; }
-.wk-surface { position: relative; display: flex; flex-direction: column; border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
+/* The surface card's perimeter is the define-line (owner, 2026-09-02): one blue
+   outline per object, band as its cap — the utility-door treatment, bench-wide. */
+.wk-surface { position: relative; display: flex; flex-direction: column; border: var(--edge) solid var(--define-line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
 /* THE BANDS LINE UP (owner, 2026-09-01: "the central work selector is shifted up"):
    three band containers had three top edges — a headed layout slot (the work selector)
    wore no chrome so its band began at the wrapper's very top; a .wk-surface pushed its
@@ -6472,7 +6551,7 @@ button.wb-door:hover b {
    surface's for 2px. Measured live: tops 53/54/55. One chrome, one edge: a headed slot
    wears the surface's card, and a tile inside a surface sheds its duplicate (the
    surface already draws the card; the active inset shadow still shows). */
-.wk-layout-surface:has(> .wk-surface-header) { border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
+.wk-layout-surface:has(> .wk-surface-header) { border: var(--edge) solid var(--define-line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
 .wk-surface .wk-terminal-host > .tile { border: 0; border-radius: 0; }
 .wk-surface-content { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; }
 .wk-surface-controls { flex: 0 0 auto; }
@@ -6519,7 +6598,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
 /* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
    at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line-2); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--cowork-head-line); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
 .wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--cowork-head-fg); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
 .wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--cowork-head-muted); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); box-shadow: inset 0 calc(-1 * var(--space-1)) 0 var(--accent); }
@@ -6597,9 +6676,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   cursor: pointer;
 }
 .tile:is(.tape-on, .keys-on) .composer .keysrow button:active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 /* Clearance for both rows, so the last line of the transcript stays visible. The
    measurement rule from the composer's own clearance: this is that height plus the
@@ -6731,9 +6810,9 @@ body[data-phone] #viewhost {
   text-decoration: none;
 }
 #phone .ph-back:active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
 }
 /* メ on the phone bar — the same kaki face it wears on the iPad bar (#bar rules are
    scoped away from this shell, so the seat is restated here). */
@@ -6884,8 +6963,8 @@ body[data-phone] .tile-head {
   /* KIIRO, the house's core yellow — the invariant brand pair, not --action (blue,
      which belongs to nothing on this shell) and not --warn (a theme-tuned text ink
      that mustards in light mode). Owner, 2026-09-01. */
-  background: var(--kiiro);
-  color: var(--on-kiiro);
+  background: var(--kaki);
+  color: var(--on-strong);
   font-size: var(--text-5);
   font-weight: 600;
   cursor: pointer;

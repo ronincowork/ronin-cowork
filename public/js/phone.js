@@ -256,7 +256,9 @@ export async function buildPhone() {
     tile.dropStatus.classList.add('tdrop-status');
     tile.setFooter(tile.ctxPct ?? null, tile.ctxModel || '');
     sheet.addRow(node('workRecordBtn'), t('me.ladder', 'Work record'));
-    sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
+    // No Services, no choice: the Output row only exists where an unlocked view does.
+    if (!S.streamOff) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
+    sheet.addRow(node('docsBtn'), t('me.docs', 'Docs'));
     sheet.addRow(node('noteBtn'), t('me.note', 'Note'));
     sheet.addRow(node('dial'), t('me.control', 'Control'), 'stay');
     sheet.addRow(node('killBtn'), t('me.kill', 'Kill session'));
@@ -266,6 +268,7 @@ export async function buildPhone() {
       el('span', 'ph-title', agentLabel(S.sessions.find((row) => row.name === session) || { name: session })),
       sheet.btn,
       sheet.menu,
+      tile.docsBtn.menu,
     );
   };
   const closeTerminal = () => {

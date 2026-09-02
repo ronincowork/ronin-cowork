@@ -9,11 +9,11 @@ const lines = (value) => value.split('\n').map((entry) => entry.trim()).filter(B
 
 const field = (form, label, name, value, kind = 'input', help = '') => {
   const row = el('label', 'tw-config-field'); row.append(el('span', null, label));
-  const input = document.createElement(kind); input.name = name; input.value = value || ''; row.append(input);
+  const input = document.createElement(kind); input.classList.add('wk-field-control'); input.name = name; input.value = value || ''; row.append(input);
   if (help) row.append(el('small', null, help)); form.append(row); return input;
 };
 const select = (form, label, name, values, value) => {
-  const input = el('select'); input.name = name;
+  const input = el('select', 'wk-field-control'); input.name = name;
   for (const item of values) input.add(new Option(item.label, item.value)); input.value = value; const row = el('label', 'tw-config-field'); row.append(el('span', null, label), input); form.append(row); return input;
 };
 const reading = (form, label, value, empty) => { const row = el('div', 'tw-config-reading'); row.append(el('span', null, label), el('output', null, value || empty)); form.append(row); };
@@ -61,9 +61,21 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     // floor alone.
     const kitOn = routines.filter((routine) => routineMap[routine.name]).map((routine) => routine.label || routine.name);
     reading(form, t('team_kit', 'Shared toolkit'), kitOn.join(' · '), t('team_config.kit_floor_alone', 'the floor alone — no Routine is on'));
-    const routineSet = el('fieldset', 'tw-config-wide tw-routines'); routineSet.append(el('legend', null, t('team_config.routines', 'Routines')), el('p', 'tw-config-note', t('team_config.routines_help', 'This complete on/off map is the Team’s own. Campaign changes affect only the next Team form.')));
+    const routineSet = el('fieldset', 'tw-config-wide tw-routines'); routineSet.append(el('legend', null, t('team_config.routines', 'Routines')), el('p', 'tw-config-note', t('team_config.routines_help', 'This complete on/off map is the Team’s own and is inherited by new Agents. It replaces the Campaign defaults; existing Agents do not change.')));
     const routineInputs = new Map();
     for (const routine of routines) { const row = el('label', 'tw-routine'); const input = el('input'); input.type = 'checkbox'; input.checked = routineMap[routine.name]; routineInputs.set(routine.name, input); const words = el('span'); words.append(el('b', null, routine.label || routine.name), el('small', null, routine.blurb || t('team_config.no_description', 'No description supplied.'))); row.append(input, words); routineSet.append(row); }
+    const worktreesMode = el('div', 'tw-worktrees-mode');
+    const paintWorktreesMode = () => {
+      const on = routineInputs.get('ronin_worktrees')?.checked === true;
+      worktreesMode.replaceChildren(
+        el('b', null, t('team_config.worktrees_mode', 'Agent work mode')),
+        el('strong', null, on ? t('team_config.worktrees_on', 'Own worktree where the Project Root allows it') : t('team_config.worktrees_off', 'Use the project checkout and its branches')),
+        el('small', null, t('team_config.worktrees_help', 'Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')),
+      );
+    };
+    routineInputs.get('ronin_worktrees')?.addEventListener('change', paintWorktreesMode);
+    paintWorktreesMode();
+    routineSet.insertBefore(worktreesMode, routineSet.children[2] || null);
     form.append(routineSet);
 
     const behaviours = field(form, t('team_config.behaviours', 'Behaviours'), 'behaviours', list(behaviour.books).join('\n'), 'textarea', t('team_config.behaviours_help', 'One shelf:name book per line.'));

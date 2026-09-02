@@ -24,7 +24,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { storeDir } from '../stores.js';
 import { readTeamRoster } from '../team-rosters.js';
-import { arrangementOf, desksManaged } from './arrangement.js';
+import { arrangementOf } from './arrangement.js';
 import { aheadBehind, dirtyFiles, revParse, worktreeOf } from './git.js';
 import {
   soloDeskBranch, teamDeskBranch, teamLineBranch,
@@ -183,18 +183,18 @@ export const writeAssignment = async (a: Assignment): Promise<Assignment> => {
 };
 
 /**
- * DERIVE what desks an assignment WOULD have — pure, opens nothing. The repository comes
- * from the team's project_root default or, for a rōnin, the launch's project_root. A repo
- * whose arrangement does not take managed desks contributes no desk:
- * a direct repo (Koe's `main`) or an absent RONIN_REPO is a legal answer of "no desk here".
- * `primary` is the project_root when it has a desk, else the first desk's repo, else ''.
+ * DERIVE candidate coordinates for an assignment — pure, opens nothing and decides no
+ * applicability. The repositories come from the team roster's repos list, else its
+ * project_root default — the same "repos, else project_root" promise the promotion CLI
+ * keeps — or, for a rōnin, the launch's project_root. `resolveLaunchDesks` combines these candidates with
+ * normalized repository profiles and Agent capability through the one Worktrees resolver.
  */
 export async function deriveAssignment(input: { session: string; team: string; project_root: string }): Promise<Assignment> {
   const { session, team, project_root } = input;
   let repos = [project_root];
   if (team) {
     const roster = await readTeamRoster(team);
-    repos = [roster?.project_root || project_root].filter(Boolean);
+    repos = roster?.repos.length ? roster.repos : [roster?.project_root || project_root].filter(Boolean);
   }
   const desks: RepoDesk[] = [];
   const now = new Date().toISOString();
@@ -206,7 +206,6 @@ export async function deriveAssignment(input: { session: string; team: string; p
     } catch {
       continue;
     }
-    if (!desksManaged(a)) continue;
     const branch = team ? teamDeskBranch(team, session) : soloDeskBranch(session);
     desks.push({
       repo, root: repo, branch,

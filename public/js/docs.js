@@ -17,11 +17,10 @@ import { DOC_MIME } from './team-drag.js';
  * `write_tegami --doc <path>`, and a doc nobody listed is reached by asking the agent to
  * list it. That is the whole finding mechanism. See docs/mdedit.md.
  *
- * THE EDITOR HAS A SECOND DOOR SINCE 2026-08-18 — 📄 on a tile header opens ONE of that
- * session's docs straight into it (`js/tiledocs.js` → `commons.js` `openDoc` → `open`
- * below). It narrows this list to the session the tile is already showing; it enumerates
- * nothing this pane does not, and the rule above is untouched — the caller has to hold a
- * path that an agent already listed. Read that file before re-litigating this one.
+ * THE EDITOR HAS A SECOND DOOR — Docs in an Agent tile's メ menu opens ONE of that
+ * Agent's tracked files in place (`js/tiledocs.js` → `tile-doc-view.js` → `open` below).
+ * It enumerates only paths already listed in that Agent's work record; the rule above is
+ * untouched, and desktop and phone relocate the same control rather than growing two.
  *
  * THE TEAM PAGE IS A THIRD DOOR SINCE 2026-08-25 — its Docs channel service mounts this
  * same pane (`js/team-view.js`) over the same `homeData`, narrowed by `only` to the
@@ -81,6 +80,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   const save = document.createElement('button');
   save.className = 'dc-save';
   save.textContent = t('docs.save', 'Save');
+  save.disabled = true;
   // THE ↗ AND THE FRAME ARE THE HTML HALF OF THE EDITOR (owner, 2026-08-26): a listed
   // `.html` is a page, not prose, so it renders in a frame where the textarea would be,
   // and ↗ opens the same URL in a tab of its own. Both hang off `/raw/<path>`, which serves
@@ -103,6 +103,10 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   area.autocapitalize = 'off';
   area.autocomplete = 'off';
   area.setAttribute('autocorrect', 'off');
+  // A Tile owns pointerdown to activate/focus its terminal. This editor is seated over
+  // that terminal, so its selection gesture ends here; otherwise an ancestor or a
+  // restored older Tile handler can hand focus back to xterm before the drag begins.
+  area.addEventListener('pointerdown', (event) => event.stopPropagation());
   ed.append(bar, frame, area);
   root.append(pills, list, ed);
   const isPage = (p) => /\.html?$/i.test(p);
@@ -117,7 +121,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   // KIIRO WHEN THERE IS SOMETHING TO SAVE (owner, 2026-08-28): the Save button and the ←
   // both go yellow the moment the text differs, so the way out is as easy to find as the
   // way to keep it. Cleared on save, on open, on back.
-  const markDirty = (on) => { dirty = on; save.classList.toggle('kiiro', on); back.classList.toggle('kiiro', on); };
+  const markDirty = (on) => { dirty = on; save.classList.toggle('attention', on); back.classList.toggle('attention', on); };
 
   /* ---------- opening and saving ---------- */
 
@@ -150,6 +154,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     pop.removeAttribute('href');
     area.value = '';
     area.disabled = true;
+    save.disabled = true;
     markDirty(false);
     say(t('docs.loading', 'loading…'));
     show('edit');
@@ -162,6 +167,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     }
     area.value = r.data.text ?? '';
     area.disabled = false;
+    save.disabled = false;
     markDirty(false);
     say('');
   };
@@ -197,14 +203,16 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
       doSave();
     }
   });
-  back.addEventListener('click', () => {
+  const leave = () => {
     if (dirty && !confirm(t('docs.discard_confirm', 'Discard unsaved changes?'))) return;
     openPath = null;
     markDirty(false);
     frame.src = 'about:blank'; // stop the page's scripts; the list is what's showing now
     show('list');
     refresh();
-  });
+    return true;
+  };
+  back.addEventListener('click', leave);
 
   /* ---------- the list ---------- */
 
@@ -333,5 +341,6 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     // ONE-DIRECTIONAL, deliberately: this pane learns nothing about tiles or headers in
     // return. It takes a path and shows it; who asked, and why, stays the caller's.
     open,
+    leave,
   };
 }

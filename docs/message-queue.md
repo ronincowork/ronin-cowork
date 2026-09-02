@@ -1,49 +1,97 @@
 # Message queue
 
-The message queue is the live flow of inbound messages waiting to enter sessions. It is
-not a transcript and not a wipeboard: delivered messages disappear immediately, and a
-wipeboard post never enters it. When a wipeboard post asks Ronin to interrupt a session,
-that separate notice is an inbound message and may wait here.
+## TL;DR
 
-Its visible home is **Team Commons → Agent Message Queue**, beside Docs, Wipeboard, and
-Team Configuration. It is a channel inside the existing Team Commons surface, not a
-separate Cowork card or machine-level tab.
-When retained messages exist, that channel button uses the theme's warning colour and
-bolds the full label; the attention state clears with the empty queue. The tab never adds
-a count—the waiting cards are already visible when opened.
-An ordinary open of Team Commons lands directly on Agent Message Queue while that
-attention state is active. Explicit links to another channel still win, and a newly
-arriving message never pulls the owner away from a tab they already chose.
-Outside the queue tab, each newly stuck or failed message produces one bounded central
-kiiro flash: **Check Team Commons → Agent Message Queue**. Polling does not repeat the
-flash for the same retained message.
-Each retained card shows **From**, **To**, message type, status and attempts. Waiting age
-runs from creation; failed age runs from the failure event. Under an hour the compact
-clock includes seconds and visibly advances while the channel is open. A busy eligibility
-check that never typed is shown as **Waiting** with zero attempts rather than implying
-that delivery itself repeatedly failed.
-The channel opens with a short owner-facing note explaining that Agent-to-Agent messages
-occasionally need a nudge and that Try Again is gentler than Force.
+Ronin accepts a message only for a live session and binds it to that session's birth
+identity. It tries delivery immediately and continues while the message is safely
+retryable. An Agent thinking or running a tool still receives the message.
 
-Every sender uses the same delivery engine. Automatic checks and **Try Again** use safe
-delivery: the target must exist, its dial must permit writing, and its Agent must show a
-recognized empty prompt. Busy work, dialogs, drafts and unknown prompts retain the card
-with the measured reason.
-If the prompt changes during submission, delivery is ambiguous rather than merely
-blocked: the message may have entered while another actor changed the prompt. Ronin marks
-it failed and stops automatic retries so it cannot silently send a duplicate.
+Automatic delivery waits when the target's Control setting does not allow Agent writes,
+when a dialog is open, or when somebody else's draft is present. It stops after an
+uncertain submission to avoid sending a duplicate. **Force** is an
+owner-only override that accepts the collision risk. Delivered messages disappear;
+retained messages expire after 48 hours.
 
-**Force** is the owner's bounded override. One press types the message once, then spends
-at most ten seconds pressing Enter and checking whether it submitted. It may collide with
-whatever the Agent is doing. It never runs forever and never types a second copy. Success
-removes the card; failure leaves it for another decision.
+## Acceptance and identity
 
-Every action answers immediately on its button (`Trying…`, `Forcing…`, or `Dismissing…`)
-and announces its outcome. A card that clears says **Delivered and cleared** before its
-absence becomes the only evidence; a retained message says why it is still waiting.
+- A target must be a valid name on the live roster.
+- A nonexistent target is refused. The refusal points to the roster and the team's
+  wipeboard.
+- An accepted message stores the target session's durable key. The name alone is never
+  its identity.
+- If the target ends, or the name belongs to a different session birth, the message
+  becomes **Target missing**. It cannot be delivered or forced; the owner may dismiss it.
+- Every retained message expires 48 hours after acceptance.
 
-The queue is working state in the `message_queue` data store. Each item records:
-`id`, `from`, `target`, `text`, `source`, `state`, `reason`, `attempts`, `created_at`, and
-`updated_at`. Its REST surface is `GET/POST /api/messages`,
-`POST /api/messages/:id/retry`, `POST /api/messages/:id/force`, and
-`DELETE /api/messages/:id`.
+The queue is transport, not a record. Delivered and expired items leave no archive here.
+RIREKI and TEGAMI hold the records.
+
+## Automatic delivery
+
+Acceptance starts one safe attempt. Retryable messages are checked every two seconds.
+**Try Again** starts the same safe attempt immediately.
+
+A safe attempt checks the target identity and Control setting, then reads the target tile:
+
+- **You only** and **Read** hold the message; **Read and write** allows delivery.
+- An open dialog or menu holds the message.
+- Somebody else's unsubmitted draft holds the message.
+- Thinking, tool use, or an unrecognized prompt does not hold the message. Ronin types
+  the message and submits it because the Agent CLI queues input while it works.
+- If the same message is already at the prompt, Ronin submits that copy without typing a
+  second one.
+
+After typing, Ronin confirms that the message leaves the prompt. It presses Enter once
+and may retry Enter three times. It never types a second copy during that attempt.
+
+## Retained states
+
+- **Waiting** — delivery has not typed: the target's Control setting does not allow Agent
+  writes, a dialog is open, or a foreign draft is present. Automatic retries continue.
+  These checks do not increase Attempts.
+- **Failed** — delivery typed or may have typed, but success is uncertain: the text never
+  appeared, a dialog opened during submission, the prompt changed, the text remained
+  after the Enter retries, or an error followed typing. Automatic retries stop.
+- **Target missing** — the original target session is gone or its name was reused.
+  Dismiss is the only action.
+
+Attempts increases when safe delivery types a new copy and whenever the owner presses
+Force. Submitting an already-present copy does not increase it.
+
+## Force
+
+Force is explicit and never automatic. It rechecks the target identity, bypasses the
+Control setting and prompt-safety checks, types one copy, and tries Enter for at most ten
+seconds.
+
+Force may collide with a draft, act on a dialog, or duplicate a message whose earlier
+submission was uncertain. Use it only after inspecting the retained card and accepting
+those risks. Success clears the card; failure leaves it visible.
+
+## Team Commons
+
+The queue is **Team Commons → Agent Message Queue**, beside Docs, Wipeboard, and Team
+Configuration.
+
+- A retained message gives the channel warning emphasis.
+- Opening Team Commons selects the queue when it needs attention, unless an explicit
+  channel link was requested.
+- A new retained problem produces one bounded notification: **Check Team Commons → Agent
+  Message Queue**. Polling does not repeat it.
+- Each card shows From, To, message type, state, age, attempts, text, reason, and the
+  actions valid for that state.
+- Actions report their result immediately. Successful delivery says **Delivered and
+  cleared** before the card disappears.
+
+## Stored shape and API
+
+Each queue item contains `id`, `from`, `target`, `target_key`, `text`, `source`, `state`,
+`reason`, `attempts`, `created_at`, `updated_at`, and `expires_at`.
+
+The REST surface is:
+
+- `GET /api/messages`
+- `POST /api/messages`
+- `POST /api/messages/:id/retry`
+- `POST /api/messages/:id/force`
+- `DELETE /api/messages/:id`

@@ -44,6 +44,12 @@ installed machine and user stores; that remains the distinct maintenance/update 
    render check (`scripts/smoke-ui.mjs`, a SKIP with no browser). On failure, `team
    revert` runs automatically through the same door and the team wipeboard is told.
 
+The `systemctl` command may arrive through a Routine-projected symlink while the same
+checkout shim is also on `PATH`. The guard resolves both spellings to one file, skips all
+self-aliases when selecting the host `systemctl`, and still applies Ronin's destructive
+restart checks before the host command runs. Promotion health therefore probes
+`ronin.service` rather than timing out in a shim loop and falling back to `tmux-ronin`.
+
 `--dry-run` does 1–2 and writes nothing. `--no-restart` stops after 4.
 
 ## Recovery: resume, abandon, revert, bisect

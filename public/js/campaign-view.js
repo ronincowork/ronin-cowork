@@ -17,7 +17,7 @@ const PROFILE = 'campaign';
 // the machine's own half — account, health — is the Admin Desk's.
 const TYPES = Object.freeze({ identity: 'campaign.identity', profile: 'campaign.desk-profile', roots: 'campaign.project-roots', defaults: 'campaign.agent-defaults', routines: 'campaign.routines', roles: 'campaign.session-roles', machine: 'campaign.machine', create: 'campaign.new' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
-const MACHINE_TABS = Object.freeze(['health', 'account', 'archives', 'messages', 'help', 'keypad']);
+const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.roles, 'campaign.team-templates': TYPES.roles, '@new-campaign': TYPES.create });
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
@@ -51,15 +51,15 @@ function registerCampaignSurfaces() {
   add({ type: TYPES.profile, header: 'surface', label: () => t('cowork.tab_profile', 'Desk profile'), summary: (_tenant, e) => currently.profile(e), create: ({ environment: e }) => { const surface = createDeskProfileSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
   add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Project roots'), summary: (_tenant, e) => currently.roots(e), create: ({ environment: e }) => {
     const surface = WorkspaceKit.primitives.createSurface({ label: t('cowork.tab_roots', 'Project roots'), className: 'cv-surface' });
-    // NEW PROJECTS USE DESKS? — the default a new root's RONIN_REPO is written with. It
-    // sits beside the roots (SETTEI audit, 2026-08-30) because that is where a root is
-    // added; each root's own row shows and changes what its file actually says.
+    // This is only the repository-side seed for roots added later. Agent capability is
+    // selected independently by the Campaign/Team Routines surface; existing roots keep
+    // the answer in their own repository profile below.
     const newDesks = elem('div', 'cv-body');
     const paintNewDesks = (current) => newDesks.replaceChildren(choice(
-      t('campaign_view.new_project_desks', 'New projects use desks?'),
-      [{ value: 'managed', label: t('campaign_view.new_project_desks_yes', 'Desks') }, { value: 'none', label: t('campaign_view.new_project_desks_no', 'None') }],
+      t('campaign_view.new_project_worktrees', 'Worktrees for new project roots'),
+      [{ value: 'managed', label: t('campaign_view.new_project_worktrees_yes', 'Allow Ronin Worktrees') }, { value: 'none', label: t('campaign_view.new_project_worktrees_no', 'Use the checkout') }],
       current,
-      t('campaign_view.new_project_desks_help', 'Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project.'),
+      t('campaign_view.new_project_worktrees_help', 'Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for roots added later; change an existing repository on its Project Root card below.'),
       async (v) => { const r = await request('/api/settei/desks', { method: 'PUT', json: { new_project: v } }); paintNewDesks(r.ok ? v : current); },
     ));
     const host = elem('div', 'desk-pane desk-proj show');
@@ -75,14 +75,16 @@ function registerCampaignSurfaces() {
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.
-  add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad.'), create: () => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk') }); return { el: surface.el, show: () => surface.select(surface.current() || 'health') }; } });
+  add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'Themes · Account · Archived · Messages · Help desk · Keypad · Desk.'), create: ({ environment: e }) => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk'), campaign: e.selected }); return { el: surface.el, show: () => surface.select(surface.current() || 'themes') }; } });
   // The card says Templates (owner, 2026-08-30); what opens is the session roles, which are
   // the templates that exist.
   add({ type: TYPES.roles, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.roles_summary', 'What a launch here offers an Agent to be.'), create: () => { const surface = createSessionRolesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
   add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
   // ONE CAMPAIGN SHIPS (owner, 2026-08-30): there is no way yet to look at several, so
   // New Campaign is not offered — the surface stays in the library, off the profile.
-  profiles.define(PROFILE, Object.values(TYPES).filter((type) => type !== TYPES.create));
+  // Desk profile remains registered so a remembered workspace can still restore it, but
+  // its beta card is hidden from discovery. Themes now have their stable home in Ronin Desk.
+  profiles.define(PROFILE, Object.values(TYPES).filter((type) => type !== TYPES.create && type !== TYPES.profile));
 }
 
 export function createCampaignView() {
@@ -116,7 +118,7 @@ export function createCampaignView() {
    * state), so a tab that remembered the two-seat days still gets four; after that the
    * arrangement is the person's, and an emptied workspace stays empty.
    */
-  const FIRST_OPEN = Object.freeze({ workspace1: TYPES.identity, workspace2: TYPES.profile, workspace3: TYPES.roots, workspace4: TYPES.defaults });
+  const FIRST_OPEN = Object.freeze({ workspace1: TYPES.identity, workspace2: TYPES.machine, workspace3: TYPES.roots, workspace4: TYPES.defaults });
   const blank = (id) => { const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' }); surface.content.append(elem('p', 'cv-blank-word', t('team.workspace_blank', 'Workspace'))); return surface.el; };
   const save = () => ctx?.patchViewState('campaign', bench.snapshot());
   bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign', 'Campaign'), title: () => selected()?.title || t('campaign', 'Campaign'), shapeControl: document.getElementById('shapecycle'), onStateChange: save, onPlacement: save });
