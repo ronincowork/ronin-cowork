@@ -206,7 +206,7 @@ Ronin against the live tmux server for UI evidence.
 
 1. Obtain an explicit owner or `view_mgr` assignment for a fresh Customize successor.
 2. Re-read this file, the latest `five-eyes` wipeboard Brief/posts, Workspace Kit ruling, `docs/test-protocols.md`, and current KOTOBA/session-boot contracts.
-3. Work at your repo desk (`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`); inspect status, `git branch -vv`, and changes since `18d9b35`. In a shared checkout, identify unrelated edits.
+3. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`); inspect status, `git branch -vv`, and changes since `18d9b35`. In a shared checkout, identify unrelated edits.
 4. Inspect the four owned modules and current Kit. Verify every claim here against the tree and update stale facts first.
 5. Report committed state, remaining work, current visual verdict, one bounded next leg, requested shared seams, and non-touch scope to `view_mgr`; wait for acknowledgement.
 6. Classify Surface spacing, control styling, and cross-surface layout changes as Kit or

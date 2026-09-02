@@ -229,7 +229,7 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
 
 ## Exact resume checklist
 
-1. Work at your repo desk (`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`); never act on
+1. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`); never act on
    `master` without a fresh owner instruction.
 2. Read `wip/buildouts/TEAM_WORKBENCH.md` (HANDOFF first), this file, and `docs/workspace-kit.md`.
 3. Inspect `git status`; in a shared checkout, preserve unrelated changes.

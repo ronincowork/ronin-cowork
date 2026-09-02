@@ -67,7 +67,13 @@ The tile composes one or the other. Neither knows the other exists.
 **🔒 Locked — `public/js/termview.js`.** The untouched `tmux attach` mirror. xterm.js, an
 emulator, because the stream is a live screen full of positioning. Scrollback stays
 server-side, so scrolling round-trips through tmux copy-mode. This works and RIREKI does not
-touch it.
+touch it. Copy-mode is confined to scrolling by the tmux server's own configuration
+(`deploy/tmux-server.conf`, the file every install's tmux-server unit starts with): the
+wheel enters it with the position indicator hidden and leaves it at the bottom, and every
+jump, search, goto and repeat key is unbound in both copy-mode key tables, so typing while
+scrolled up does nothing until the view is back at the bottom or Escape is pressed. Scroll,
+page, arrow and cancel keys are untouched. `tests/tmux-server-conf.test.ts` starts a server
+from that file and pins it.
 
 **🔓 Unlocked — `public/js/tapeview.js`.** RIREKI's client-side render. **It holds no tmux
 connection** — no attach, no viewer session, no pipe; tmux does not know this view exists.

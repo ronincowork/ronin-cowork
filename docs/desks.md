@@ -1,7 +1,7 @@
 # Desks — the state and hand-in floor
 
 The mechanics under `tejun-desk`. What a session is told is
-`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`. This page is the tool-side reference:
+`ronin_session_boot/assignment/DESK_CONTRACT.md`. This page is the tool-side reference:
 what is recorded where, what each operation does to git, and what it refuses.
 
 > The current model is `docs/worktrees.md`; the network around it is
