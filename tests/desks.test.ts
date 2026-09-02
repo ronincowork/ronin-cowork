@@ -76,6 +76,7 @@ const { lockDir, withLineLock, queueHolder } = await import('../src/desks/queue.
 const { createTeamRoster } = await import('../src/team-rosters.js');
 
 await createTeamRoster('comp', { objective: 'desks', project_root: 'cowork', branch: '' });
+await createTeamRoster('multi', { objective: 'two repos', project_root: 'cowork', repos: ['cowork', 'koe'], branch: '' });
 
 const commitFile = async (wt: string, file: string, text: string, msg = `edit ${file}`) => {
   await fs.mkdir(path.dirname(path.join(wt, file)), { recursive: true });
@@ -106,6 +107,10 @@ test('deriveAssignment: the team project_root supplies its one repository defaul
   assert.deepEqual(a.desks.map((d) => `${d.repo}:${d.branch}→${d.line}`), ['cowork:team/comp/fable→team/comp/dev']);
   const solo = await deriveAssignment({ session: 'lone', team: '', project_root: 'cowork' });
   assert.deepEqual(solo.desks.map((d) => `${d.branch}→${d.line}`), ['solo/lone→dev']);
+  const both = await deriveAssignment({ session: 'fable', team: 'multi', project_root: 'cowork' });
+  assert.deepEqual(both.desks.map((d) => `${d.repo}:${d.branch}`), ['cowork:team/multi/fable', 'koe:team/multi/fable'],
+    'the roster repos list yields a desk per repository');
+  assert.equal(both.primary, 'cowork');
   const direct = await deriveAssignment({ session: 'k', team: '', project_root: 'koe' });
   assert.deepEqual(direct.desks.map((d) => d.repo), ['koe'], 'candidate planning preserves a direct repository');
   assert.equal(direct.primary, 'koe');
