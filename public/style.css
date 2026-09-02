@@ -6471,8 +6471,8 @@ button.wb-door:hover b {
 .cs-review-key { display: block; color: var(--muted); font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; }
 .cs-review-value { display: block; margin-top: var(--space-1); color: var(--fg); font-size: var(--text-3); overflow-wrap: anywhere; }
 .cs-review-foot { padding: var(--space-6) var(--space-7) var(--space-7); }
-.cs-save { width: 100%; border: var(--edge) solid var(--kaki); border-radius: var(--radius-xs); background: var(--kaki); color: var(--on-strong); padding: var(--space-5); font: 600 var(--text-3)/1 var(--font-mono); cursor: pointer; }
-.cs-save:hover { background: transparent; color: var(--kaki); }
+.cs-save { width: 100%; border: var(--edge) solid var(--kiiro); border-radius: var(--radius-xs); background: var(--kiiro); color: var(--on-kiiro); padding: var(--space-5); font: 600 var(--text-3)/1 var(--font-mono); cursor: pointer; }
+.cs-save:hover { background: var(--kiiro-deep); color: var(--on-kiiro); }
 .cs-save:disabled { opacity: .6; cursor: default; }
 .cs-save-note { margin: var(--space-4) 0 0; text-align: center; color: var(--muted); font-size: var(--text-2); }
 .cs-status { margin-top: var(--space-4); }
