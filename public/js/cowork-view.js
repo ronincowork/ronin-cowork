@@ -65,22 +65,22 @@ const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 function registerWorkbenchCatalog() {
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
-  add({ type: WB_TYPES.commons, header: 'channels', label: () => t('team.commons_card', 'Team commons'), summary: () => t('team.commons_summary', 'See Docs / Wipeboard / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
+  add({ type: WB_TYPES.commons, header: 'channels', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Team commons'), summary: () => t('team.commons_summary', 'See Docs / Wipeboard / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
   add({ type: WB_TYPES.desk, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), create: ({ workspace, environment }) => environment.desk(workspace) });
   // ADD AGENT IS THE TEAM PAGE'S ONE LAUNCHER (owner, 2026-08-31: "we should only have
   // one there"). Drawn contract: ronin-lab `concepts/add-agent-to-team.html`.
-  add({ type: WB_TYPES.addAgent, header: 'surface', label: () => t('add_agent.card', 'Add Agent to Team'), summary: () => t('add_agent.card_summary', 'The Team answers the rest.'), variant: 'dotted', create: ({ workspace, environment }) => environment.addAgent(workspace) });
-  add({ type: WB_TYPES.terminal, header: 'terminal', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
-  add({ type: WB_TYPES.roster, header: 'surface', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
+  add({ type: WB_TYPES.addAgent, header: 'surface', className: 'wk-selector-utility wk-selector-group-after', label: () => t('add_agent.card', 'Add Agent to Team'), summary: () => t('add_agent.card_summary', 'The Team answers the rest.'), variant: 'dotted', create: ({ workspace, environment }) => environment.addAgent(workspace) });
+  add({ type: WB_TYPES.terminal, header: 'terminal', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
+  add({ type: WB_TYPES.roster, header: 'surface', className: 'wk-selector-utility', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
   // THE DRAWN FORMS ARE THE ONLY ONES NOW (owner, 2026-08-31): "the old new team and the
   // old new agent workspaces have been made obsolete by yours". The seven-field card and
   // the ＋ New board are gone from this bench and from the repository; a workspace that
   // remembers one resolves to its replacement through `legacyTypes`.
   // Drawn contracts: ronin-lab `concepts/new-team.html` and `concepts/new-agent-condensed.html`.
-  add({ type: WB_TYPES.newTeamForm, header: 'surface', label: () => t('new_team.title', 'New Team'), summary: () => t('new_team.card_summary', 'Template · kit · lead — the drawn form.'), variant: 'dotted', create: ({ workspace, environment }) => environment.newTeamForm(workspace) });
-  add({ type: WB_TYPES.newAgent, header: 'surface', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment }) => environment.newAgent(workspace) });
-  add({ type: WB_TYPES.archives, header: 'surface', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
-  add({ type: WB_TYPES.team, header: 'surface', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
+  add({ type: WB_TYPES.newTeamForm, header: 'surface', className: 'wk-selector-utility wk-selector-group-after', label: () => t('new_team.title', 'New Team'), summary: () => t('new_team.card_summary', 'Template · kit · lead — the drawn form.'), variant: 'dotted', create: ({ workspace, environment }) => environment.newTeamForm(workspace) });
+  add({ type: WB_TYPES.newAgent, header: 'surface', className: 'wk-selector-utility', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment }) => environment.newAgent(workspace) });
+  add({ type: WB_TYPES.archives, header: 'surface', className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
+  add({ type: WB_TYPES.team, header: 'surface', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
   profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives]);
   // THE TEAM BENCH HAS ONE SHORTCUT: Add Agent to Team. It always births a Cowork Agent;
   // terminal and bare-metal choices stay on the full launch page.
