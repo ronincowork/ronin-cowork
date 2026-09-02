@@ -146,7 +146,10 @@ export class Tile {
       this.activate();
       // `this.home` (the tile commons) retired on 2026-08-28 with the grid page; a click in
       // the body threw on it for a few hours and took the terminal's focus with it.
-      if (!IS_TOUCH && this.body.contains(e.target)) this.term.focus();
+      // Docs replaced that body overlay with a real editor. It owns its own focus just
+      // as header controls do; only the terminal body itself redirects into xterm.
+      if (!IS_TOUCH && this.body.contains(e.target)
+        && !(e.target instanceof Element && e.target.closest('.tile-doc-view'))) this.term.focus();
     });
     this.syncOutput();
 
@@ -220,7 +223,7 @@ export class Tile {
     // `syncTileHead`, not `syncHeader` — the reading pass, without re-fetching the dial.
     syncTileHead(this);
     if (this.ladderOpen) this.drawLadder();
-    if (!this.tegami) this.closeLadder();
+    if (!this.tegami && !serviceMissing('michi')) this.closeLadder();
   }
 
   /*
@@ -279,6 +282,14 @@ export class Tile {
   drawLadder() {
     this.el.querySelector('.shingo-ladder')?.remove();
     const box = buildLadder(this.tegami, desksOf(this.session));
+    if (!this.tegami && serviceMissing('michi')) {
+      // The button must answer, not draw an empty strip: on a plain install the letter
+      // is real (agents keep it on disk) but nothing here can read it.
+      const note = document.createElement('div');
+      note.className = 'sl-section';
+      note.textContent = t('ladder.services_off', 'Live work records are part of Ronin Services (beta) — not installed here. Agents still keep their records on disk.');
+      box.appendChild(note);
+    }
     this.el.querySelector('.tile-head').after(box);
     this.workRecordBtn.classList.add('open');
     this.workRecordBtn.setAttribute('aria-expanded', 'true');

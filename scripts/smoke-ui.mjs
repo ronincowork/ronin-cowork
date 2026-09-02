@@ -1049,11 +1049,36 @@ async function checkA11y(page, label, axeSrc) {
 
 async function runPass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
+  // Hold session discovery after the selected workspace can mount. The first visible
+  // desktop frame must arrive while this unrelated read is still pending; otherwise a
+  // reload is just the bare theme canvas until every boot enrichment finishes.
+  let releaseSessions;
+  const sessionsHeld = new Promise((resolve) => { releaseSessions = resolve; });
+  await page.route('**/api/sessions', async (route) => {
+    await sessionsHeld;
+    await route.continue();
+  });
+  const navigation = page.goto(URL_.replace(/#.*$/, '') + '#/team/%20unassigned', { waitUntil: 'networkidle', timeout: 30_000 });
+  let paintedBeforeSessions = false;
   try {
-    await page.goto(URL_.replace(/#.*$/, '') + '#/team/%20unassigned', { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.waitForFunction(() => !document.documentElement.classList.contains('boot-pending')
+      && !!document.querySelector('#viewhost > :not([hidden])'), null, { timeout: 10_000 });
+    paintedBeforeSessions = true;
+  } catch (e) {
+    const boot = await page.evaluate(() => ({
+      pending: document.documentElement.classList.contains('boot-pending'),
+      views: [...document.querySelectorAll('[data-workspace-view]')].map((el) => ({ id: el.dataset.workspaceView, hidden: el.hidden })),
+    }));
+    bad(`${label}: selected desktop workspace stayed veiled behind session discovery: ${e.message} — ${JSON.stringify(boot)}`);
+  } finally {
+    releaseSessions();
+  }
+  try {
+    await navigation;
   } catch (e) {
     bad(`${label}: page did not load: ${e.message}`);
   }
+  if (paintedBeforeSessions) ok(`${label}: selected desktop workspace paints before session discovery completes`);
   await page.waitForTimeout(3000);
   // Agent cards show their readable title; the fixed session ID remains the resource key.
   // Never make seating depend on those two strings happening to be identical.
@@ -1080,7 +1105,38 @@ async function runPass({ label, browser, contextOpts }) {
   else ok(`${label}: no failed requests`);
 
   await checkDom(page, label);
-  if (probeAvailable) await attachProbe(page, label);
+  if (probeAvailable) {
+    await attachProbe(page, label);
+    // The in-Tile Docs editor shares `.tile-body` with xterm. Exercise that exact
+    // bubbling seam: a pointer gesture in the editor must retain editor focus instead
+    // of the body's terminal-focus handler stealing it.
+    const docsFocus = await page.evaluate(() => {
+      // Warm terminal pools keep hidden Tiles mounted. A hidden pool seat is no more a
+      // focus target than a closed Docs overlay, so take the body the person can see.
+      const body = [...document.querySelectorAll('.tile .tile-body')].find((node) => node.getClientRects().length);
+      if (!body) return { kept: false, active: '', reason: 'no visible tile body' };
+      const overlay = body.querySelector('.tile-doc-view');
+      const area = overlay?.querySelector('.dc-text');
+      if (!overlay || !area) return { kept: false, active: '', reason: 'Docs editor is absent' };
+      // Match a successfully loaded text document without reading or writing a user's
+      // file. The controls and event wiring are the real ones created by buildDocs().
+      overlay.classList.add('open');
+      overlay.dataset.view = 'edit';
+      area.disabled = false;
+      area.focus();
+      const before = `${document.activeElement?.tagName || ''}.${document.activeElement?.className || ''}`;
+      const rect = area.getBoundingClientRect();
+      area.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      const kept = document.activeElement === area;
+      const active = `${document.activeElement?.tagName || ''}.${document.activeElement?.className || ''}`;
+      overlay.classList.remove('open');
+      overlay.dataset.view = 'list';
+      area.disabled = true;
+      return { kept, active, before, rect: [rect.width, rect.height] };
+    });
+    if (docsFocus.kept) ok(`${label}: in-Tile Docs keeps selection and editing focus away from xterm`);
+    else bad(`${label}: in-Tile Docs loses selection/editing focus to xterm (${docsFocus.reason || `before ${docsFocus.before}, active ${docsFocus.active}, rect ${docsFocus.rect}`})`);
+  }
   else console.log(`  SKIP — ${label}: live-pane attach probe (session capacity is full)`);
   await checkCurrentWorkspace(page, label);
 

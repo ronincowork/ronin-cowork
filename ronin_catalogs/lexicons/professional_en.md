@@ -1040,7 +1040,7 @@ The catalog entry goes. {dir} is not touched.
 - **setup.services_lede:** Extra capabilities for your coworkspace, in beta today. Base RoninCoWork works fully without them.
 - **setup.optional:** Optional
 - **setup.services_intro_strong:** Keep the work on your machine, add the view around it.
-- **setup.services_intro:** Services add live agent plans, readable transcripts, voice, usage history, and long-term memory. It is early days for this side: sharing your email registers your interest, and what is ready reaches you as it lands.
+- **setup.services_intro:** Services add live agent plans, readable transcripts, voice, usage history, and long-term memory. It is early days for this side. Sharing your email is optional — it registers your interest, keeps you part of the Ronin community as it grows, and what is ready reaches you as it lands.
 - **setup.feature_gbrain:** Long-term agent memory
 - **setup.services_start:** Start Ronin Services activation
 - **setup.services_start_copy:** Ronin will send your email address, this terms version, and an activation request.
@@ -1257,6 +1257,7 @@ The catalog entry goes. {dir} is not touched.
 ## ladder — shingo.js (the ladder chip and panel)
 - **ladder.task_at_hand:** Task at hand
 - **ladder.task_unstated:** No task stated in this work record.
+- **ladder.services_off:** Live work records are part of Ronin Services (beta) — not installed here. Agents still keep their records on disk.
 - **ladder.current_action:** Current action
 - **ladder.worktrees:** Worktrees
 - **ladder.branch:** Branch

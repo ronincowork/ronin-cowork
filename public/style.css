@@ -3513,6 +3513,8 @@ body {
   font-size: var(--text-4);
   line-height: 1.45;
   resize: none;
+  -webkit-user-select: text;
+  user-select: text;
 }
 .dc-empty {
   color: var(--muted);
