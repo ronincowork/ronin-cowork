@@ -3350,16 +3350,18 @@ body {
 .dc-group[hidden] {
   display: none;
 }
-/* KIIRO — yellow when there is something to save; the ← wears it too so the way out is
-   as easy to find as the way to keep it (owner, 2026-08-28). */
-/* TOKEN? (audit mark, 2026-09-01): class says kiiro, token is --warn — deliberately,
-   because this is thin INK and invariant #e0af68 text fails on light paper. If the
-   dirty state should read brand-kiiro, it takes a FILL treatment like the Kit's
-   data-attention, not an ink swap. Owner rules; TOKENS_AUDIT.md § 3.5. */
-.dc-back.kiiro,
-.dc-save.kiiro {
-  border-color: var(--warn);
-  color: var(--warn);
+/* DIRTY = the attention FILL (audit mark 5 resolved, 2026-09-02): something to save
+   goes bright kiiro the same way the Kit's data-attention does — a fill with its own
+   ink, not thin amber text that fails on light paper (the reason the old ink read
+   --warn). The ← wears it too so the way out is as easy to find as the way to keep
+   it (owner, 2026-08-28). The class was named `kiiro` while reading --warn; it says
+   what it means now. */
+.dc-back.attention,
+.dc-save.attention {
+  border-color: var(--kiiro);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
+  font-weight: 700;
 }
 .dc-who {
   display: flex;
