@@ -37,9 +37,13 @@ export function buildProjectRoots(root, isShowing) {
   count.className = 'pr-count';
   head.append(count);
 
+  const guide = document.createElement('p');
+  guide.className = 'pr-guide';
+  guide.textContent = t('roots.worktrees_guide', 'Two independent answers control Ronin Worktrees: the Agent must receive the Ronin Worktrees Routine from its Campaign or Team, and this repository must allow Worktrees. This page controls the repository answer.');
+
   const list = document.createElement('div');
   list.className = 'pr-list';
-  root.append(head, list);
+  root.append(head, guide, list);
 
   const say = (msg, bad) => {
     list.innerHTML = '';
@@ -64,7 +68,20 @@ export function buildProjectRoots(root, isShowing) {
   function form(existing, creating = false) {
     const f = document.createElement('div');
     f.className = 'pr-form';
-    const mk = (label, key, value, hint, ph) => {
+    const group = (title, description) => {
+      const box = document.createElement('fieldset');
+      box.className = 'pr-group';
+      const legend = document.createElement('legend');
+      legend.textContent = title;
+      const help = document.createElement('p');
+      help.className = 'pr-group-help';
+      help.textContent = description;
+      box.append(legend, help);
+      f.appendChild(box);
+      return box;
+    };
+    const rootFields = group(t('roots.group_root', 'Project Root'), t('roots.group_root_help', 'The directory Ronin may offer to Agents and the words used to find it.'));
+    const mk = (label, key, value, hint, ph, host = rootFields) => {
       const wrap = document.createElement('label');
       wrap.className = 'pr-f';
       const l = document.createElement('span');
@@ -79,7 +96,7 @@ export function buildProjectRoots(root, isShowing) {
       i.spellcheck = false;
       i.dataset.key = key;
       wrap.append(l, i);
-      f.appendChild(wrap);
+      host.appendChild(wrap);
       return i;
     };
     // The handle is shown, never edited: renaming is a catalog edit by hand, not a form
@@ -103,30 +120,35 @@ export function buildProjectRoots(root, isShowing) {
         stable: existing.arrangement?.source === 'absent' ? '' : (existing.arrangement?.stable || ''),
         worktrees: existing.repo_profile?.worktrees || 'disabled',
       };
-      const pick = (label, value, options, hint) => {
+      const repoFields = group(t('roots.group_repository', 'Repository workflow'), t('roots.group_repository_help', 'Publishing describes where accepted commits go. Worktrees separately decides whether this repository participates in Ronin’s managed worktree workflow.'));
+      const pick = (label, value, options, hint, host = repoFields) => {
         const wrap = document.createElement('label'); wrap.className = 'pr-f';
         const l = document.createElement('span'); l.textContent = label; l.title = hint;
         const select = document.createElement('select');
         for (const [v, text] of options) { const o = document.createElement('option'); o.value = v; o.textContent = text; select.append(o); }
-        select.value = value; wrap.append(l, select); f.append(wrap); return select;
+        select.value = value; wrap.append(l, select); host.append(wrap); return select;
       };
       const initialMode = creating ? (seedWorktrees === 'enabled' ? 'reviewed' : 'direct') : before.mode;
       const mode = pick(t('roots.f_mode', 'publishing'), initialMode, [['reviewed', t('roots.mode_reviewed', 'reviewed release')], ['direct', t('roots.mode_direct', 'direct publishing')]], t('roots.f_mode_hint', 'Reviewed uses a working branch and a final PR to stable. Direct publishes on stable itself.'));
-      const working = mk(t('roots.f_working', 'working'), 'repo-working', before.working || 'dev', t('roots.f_working_hint', 'The integration branch for reviewed work. You choose its name.'), 'dev');
-      const stable = mk(t('roots.f_stable', 'stable'), 'repo-stable', before.stable || existing.facts?.repo?.branch || 'main', t('roots.f_stable_hint', 'The published branch. You choose its name.'), 'main');
+      const working = mk(t('roots.f_working', 'working'), 'repo-working', before.working || 'dev', t('roots.f_working_hint', 'The integration branch for reviewed work. You choose its name.'), 'dev', repoFields);
+      const stable = mk(t('roots.f_stable', 'stable'), 'repo-stable', before.stable || existing.facts?.repo?.branch || 'main', t('roots.f_stable_hint', 'The published branch. You choose its name.'), 'main', repoFields);
       working.removeAttribute('data-key'); stable.removeAttribute('data-key');
-      const worktrees = pick(t('roots.f_worktrees', 'Worktrees'), creating ? seedWorktrees : before.worktrees, [['enabled', t('roots.worktrees_enabled', 'Use Ronin Worktrees')], ['disabled', t('roots.worktrees_disabled', 'Use the checkout')]], t('roots.f_worktrees_hint', 'Worktrees gives equipped Cowork Agents a private branch and worktree in this repository. Use the checkout leaves Git to your instructions and this repository’s own guidance.'));
+      const worktrees = pick(t('roots.f_worktrees', 'Worktrees'), creating ? seedWorktrees : before.worktrees, [['enabled', t('roots.worktrees_enabled', 'Use Ronin Worktrees')], ['disabled', t('roots.worktrees_disabled', 'Use the checkout')]], t('roots.f_worktrees_hint', 'This repository allows or declines Ronin Worktrees. The Agent’s Routine is selected separately under Campaign or Team Routines.'));
+      const worktreesNote = document.createElement('p');
+      worktreesNote.className = 'pr-worktrees-note';
+      worktreesNote.textContent = t('roots.worktrees_two_gates', 'This is the repository permission. It takes effect only when the Agent is also born with the Ronin Worktrees Routine, selected under Campaign or Team Routines.');
+      repoFields.append(worktreesNote);
       const preview = document.createElement('p');
       preview.className = 'pr-flow';
-      f.append(preview);
+      repoFields.append(preview);
       const syncProfile = () => {
         working.closest('label').hidden = mode.value !== 'reviewed';
         const branchFlow = mode.value === 'reviewed'
           ? t('roots.flow_reviewed', '{working} → review → {stable}', { working: working.value.trim() || '—', stable: stable.value.trim() || '—' })
           : t('roots.flow_direct', 'commits → {stable}', { stable: stable.value.trim() || '—' });
         const worktreesFlow = worktrees.value === 'enabled'
-          ? t('roots.flow_worktrees', 'Equipped Cowork Agents use their own worktree and hand work in.')
-          : t('roots.flow_checkout', 'Agents use this checkout under your Git instructions.');
+          ? t('roots.flow_worktrees', 'Agents with the Ronin Worktrees Routine use their own worktree and hand work in; other Agents use the checkout.')
+          : t('roots.flow_checkout', 'Every Agent uses this checkout, even when it carries the Ronin Worktrees Routine.');
         preview.textContent = t('roots.flow_preview', 'Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.', { branches: branchFlow, worktrees: worktreesFlow });
       };
       for (const control of [mode, working, stable, worktrees]) control.addEventListener('input', syncProfile);
@@ -247,6 +269,7 @@ export function buildProjectRoots(root, isShowing) {
       if (title) c.title = title;
       facts.appendChild(c);
     };
+    let worktreesState = null;
     if (r.archived) {
       chip(t('roots.chip_archived', 'archived'), 'muted', t('roots.chip_archived_title', 'Off the new-session picker. Still here, and still launchable by name.'));
     }
@@ -264,12 +287,20 @@ export function buildProjectRoots(root, isShowing) {
       if (a && a.source !== 'absent') {
         const p = r.repo_profile;
         const enabled = p?.worktrees === 'enabled';
-        chip(enabled ? t('roots.chip_worktrees', 'Worktrees') : t('roots.chip_checkout', 'Use the checkout'), '',
+        chip(enabled ? t('roots.chip_worktrees', 'Repository: Worktrees allowed') : t('roots.chip_checkout', 'Repository: use checkout'), '',
           a.mode === 'reviewed'
             ? t('roots.chip_reviewed_title', 'Reviewed: work moves through {working}, then review reaches {stable}. The branch mounted here is incidental.', { working: a.working || 'dev', stable: a.stable || 'master' })
             : t('roots.chip_direct_title', 'Direct: commits land on {stable} itself.', { stable: a.stable || 'main' }));
+        worktreesState = document.createElement('p');
+        worktreesState.className = 'pr-worktrees-state';
+        worktreesState.textContent = enabled
+          ? t('roots.state_worktrees', 'This repository allows Ronin Worktrees. An Agent also needs the Ronin Worktrees Routine from its Campaign or Team.')
+          : t('roots.state_checkout', 'This repository uses its checkout. That repository choice wins even if an Agent has the Ronin Worktrees Routine.');
       } else if (a) {
-        chip(t('roots.chip_shared', 'shared checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Add a repository profile to choose Worktrees or direct publishing.'));
+        chip(t('roots.chip_shared', 'Repository: use checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.'));
+        worktreesState = document.createElement('p');
+        worktreesState.className = 'pr-worktrees-state';
+        worktreesState.textContent = t('roots.state_undeclared', 'No repository profile is declared, so Agents use the checkout. Edit this root to allow Ronin Worktrees.');
       }
     } else {
       // A project_root need not be a project_repo. `~/lab` is one; this is a
@@ -328,7 +359,9 @@ export function buildProjectRoots(root, isShowing) {
     acts.append(edit, shelve, drop);
 
     b.prepend(top);
-    b.append(facts, acts);
+    b.append(facts);
+    if (worktreesState) b.append(worktreesState);
+    b.append(acts);
     if (editing === r.name) b.appendChild(form(r));
     return b;
   }
