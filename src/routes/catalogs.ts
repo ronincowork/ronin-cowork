@@ -50,7 +50,7 @@ import {
   listTeamTemplates,
   writeRoleTasks,
 } from '../definitions.js';
-import { saveAgentTemplate, saveTeamTemplate } from '../templates.js';
+import { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } from '../templates.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
 
 // fs errors carry absolute paths (`ENOENT: open '/home/…'`); the browser gets the
@@ -439,6 +439,17 @@ export function registerCatalogs(app: express.Express): void {
   app.post('/api/templates/teams', async (req, res) => {
     try {
       res.json({ ok: true, template: await saveTeamTemplate(req.body ?? {}) });
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
+    }
+  });
+  // Remove one of the owner's templates (installed from the library, or saved). A shipped
+  // box is refused; removing the owner's copy of a shadowed name brings the shipped one back.
+  app.delete('/api/templates/:shelf/:name', async (req, res) => {
+    const shelf = String(req.params.shelf);
+    if (shelf !== 'agents' && shelf !== 'teams') return res.status(400).json({ error: 'A shelf is agents or teams.' });
+    try {
+      res.json({ ok: true, ...(await removeUserTemplate(shelf, String(req.params.name))) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }

@@ -70,6 +70,10 @@ Two rules the agent follows when it files for you:
 - **A shipped box is shadowed whole, never edited in place.** Your copy replaces ours
   file-for-file; delete your copy and the shipped box is back.
 - **A new name adds a box; `- **hidden:** yes` in a same-named file withdraws one.**
+- **What came from the library can go again.** A box installed from the library, or one
+  you saved, is removed from its detail on the Campaign page's Templates surface
+  (`DELETE /api/templates/<shelf>/<name>`) — your file only; removing your copy of a
+  shipped name brings the shipped box back.
 
 ## Saving from the forms
 
