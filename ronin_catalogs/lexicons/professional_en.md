@@ -337,8 +337,12 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.verdict_refused:** refused — a bundle never replaces one of Ronin’s tools
 - **campaign_view.routines:** Routines
 - **campaign_view.routines_help:** What is installed on this machine, and what new Cowork Agents start with. The switches seed new Teams; a Team may replace them, and New Agent shows the resolved answer. Nothing already running changes.
-- **campaign_view.svc_activated:** Installed and activated on this machine.
-- **campaign_view.svc_installed:** Installed on this machine ({parts}), not activated yet.
+- **campaign_view.svc_activated:** Activated with Ronin HQ: the template library and the hosted parts are yours.
+- **campaign_view.svc_not_activated:** Not activated with Ronin HQ. Activation is optional and separate from the switch: it unlocks the hosted parts — the template library first — with an email and a confirmation.
+- **campaign_view.svc_installed:** Installed on this machine: {parts}. The switch on the right turns it on for new Agents.
+- **campaign_view.svc_pill_installed:** Installed
+- **campaign_view.svc_pill_activated:** Installed · activated
+- **campaign_view.svc_pill_absent:** Not installed
 - **campaign_view.svc_absent:** Not installed on this machine.
 - **campaign_view.svc_sending:** Sending the confirmation email…
 - **campaign_view.svc_waiting:** Waiting for your confirmation — open the email sent to {email}.
@@ -349,7 +353,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.svc_email:** you@example.com
 - **campaign_view.svc_send:** Send confirmation email
 - **campaign_view.svc_expired:** That confirmation link expired. Ask for a fresh one.
-- **campaign_view.svc_ask:** Activation is an email and a confirmation. The address is only used for the entitlement.
+- **campaign_view.svc_ask:** To activate: the address the entitlement should go to, then confirm from the email.
 - **campaign_view.sell_head:** What Ronin Services adds
 - **campaign_view.sell_library:** The template library — teams and agents Ronin keeps and grows, with the procedures, macros and tools they read, installed with one press.
 - **campaign_view.sell_assistant:** A background assistant that keeps every agent’s work record and instructions current, so the roster and the tile say what each agent is doing.
