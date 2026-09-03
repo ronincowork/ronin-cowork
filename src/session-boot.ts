@@ -43,6 +43,7 @@ import { mkdir, readFile, readdir, realpath, rename, stat, writeFile } from 'nod
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storeDir } from './stores.js';
+import { resolveFiles } from './resources.js';
 import { listMacros } from './macros.js';
 import { activeDeskProfileName, listDeskProfiles } from './desk-profiles.js';
 import { resolveLexicon } from './lexicons.js';
@@ -180,44 +181,10 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
   await Promise.all(dirs.map((d) => mkdir(d, { recursive: true }).catch(() => {})));
 }
 
-/**
- * Every readable file in one directory, sorted, or nothing at all if it is not there.
- *
- * README.md is NOT excluded, and that took a bug to settle: a doc genuinely called
- * README.md is ordinary content — the first thing you would put on a root's shelf — and
- * skipping it silently dropped one. A shelf's own explainer instead lives at the SHELF
- * ROOT, one level above `all/`, `root/` and `role/`, where nothing ever scans.
- */
-async function filesIn(dir: string): Promise<string[]> {
-  let names: string[];
-  try {
-    names = await readdir(dir);
-  } catch {
-    return []; // absent is the ordinary state, never an error
-  }
-  const out: string[] = [];
-  for (const name of names.sort()) {
-    if (name.startsWith('.')) continue;
-    const full = path.join(dir, name);
-    try {
-      // stat, not lstat: a symlink into a repo is the NORMAL case here — it is how a doc
-      // that already lives somewhere gets on the shelf without being copied and without
-      // drifting from the original. A link whose target has gone simply does not appear.
-      if ((await stat(full)).isFile()) out.push(full);
-    } catch {
-      /* dangling link, or vanished mid-read */
-    }
-  }
-  return out;
-}
-
 /** Stock first, then the owner's same-named file for ONE level. Shadowing never reaches
  * across levels: a root README and a Routine README are two additive documents. */
 async function levelFiles(stock: string, user: string): Promise<string[]> {
-  const byName = new Map<string, string>();
-  for (const file of await filesIn(stock)) byName.set(path.basename(file), file);
-  for (const file of await filesIn(user)) byName.set(path.basename(file), file);
-  return [...byName.values()];
+  return (await resolveFiles({ stock, user })).map((file) => file.path);
 }
 
 /** Resolve the exact boot-shelf coordinates a Routine manifest declared. A manifest is
@@ -263,7 +230,10 @@ export async function bootFiles(
   const selected = [
     ...await levelFiles(path.join(STOCK, 'all'), path.join(user, 'all')),
     // Stock cannot have a root/ — it does not know the owner's directories.
-    ...(projectRoot ? await filesIn(path.join(user, 'root', projectRoot)) : []),
+    ...(projectRoot
+      ? (await resolveFiles({ stock: '', user: path.join(user, 'root', projectRoot) }))
+        .map((file) => file.path)
+      : []),
     // The desk contract is the Worktrees Routine's own page: on when the Routine is on,
     // and its text says what to do when the launch opened no desk.
     ...await declaredFiles(routineReading, mcpOn),

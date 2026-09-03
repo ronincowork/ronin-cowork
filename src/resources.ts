@@ -52,11 +52,13 @@ export interface ResolvedFile {
 
 export interface ResolveSpec {
   stock: string;
-  store: string;
+  store?: string;
+  user?: string;
   include?: (relative: string) => boolean;
 }
 
 async function layerFiles(dir: string): Promise<Map<string, { path: string; text: string }>> {
+  if (!dir) return new Map();
   let entries;
   try {
     entries = await readdir(dir, { withFileTypes: true });
@@ -66,7 +68,7 @@ async function layerFiles(dir: string): Promise<Map<string, { path: string; text
   }
   const files = new Map<string, { path: string; text: string }>();
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (!entry.isFile() || entry.name.startsWith('.')) continue;
+    if ((!entry.isFile() && !entry.isSymbolicLink()) || entry.name.startsWith('.')) continue;
     const file = path.join(dir, entry.name);
     try {
       files.set(entry.name, { path: file, text: await readFile(file, 'utf8') });
@@ -78,7 +80,8 @@ async function layerFiles(dir: string): Promise<Map<string, { path: string; text
 }
 
 export async function resolveFiles(spec: ResolveSpec): Promise<ResolvedFile[]> {
-  const [stock, user] = await Promise.all([layerFiles(spec.stock), layerFiles(storeDir(spec.store))]);
+  const userDir = spec.user ?? (spec.store ? storeDir(spec.store) : '');
+  const [stock, user] = await Promise.all([layerFiles(spec.stock), layerFiles(userDir)]);
   const names = [...new Set([...stock.keys(), ...user.keys()])].sort();
   return names.flatMap((relative) => {
     if (spec.include && !spec.include(relative)) return [];

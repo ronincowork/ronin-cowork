@@ -40,9 +40,9 @@
  * not a definition; it is reported by name and omitted. `scripts/check-catalogs.ts` fails
  * the build for a malformed STOCK file, which is where that mistake is ours to fix.
  */
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './resources.js';
+import { STOCK_DIR, entryValue, isKeyLine, resolveFiles, type Origin } from './resources.js';
 import { storeDir } from './stores.js';
 
 /** The definition directories — one file per token. The template catalog is TWO
@@ -84,49 +84,6 @@ const isDefinitionFile = (n: string): boolean =>
 const isHidden = (d: Definition): boolean => /^yes$/i.test(d.get('hidden'));
 
 /**
- * Every definition in one directory, keyed by token. A directory that is not there is the
- * ORDINARY state for the user half — a fresh install has never written one — and reads as
- * empty rather than as a fault.
- */
-async function readDir(base: string, origin: Origin): Promise<Map<string, Definition>> {
-  let names: string[];
-  try {
-    names = await readdir(base);
-  } catch {
-    return new Map();
-  }
-  const out = new Map<string, Definition>();
-  for (const name of names.sort()) {
-    if (!isDefinitionFile(name)) continue;
-    const file = path.join(base, name);
-    let raw: string;
-    try {
-      raw = await readFile(file, 'utf8');
-    } catch {
-      continue; // vanished mid-read, or a dangling link
-    }
-    const lines = raw.split('\n');
-    if (!lines.some(isKeyLine)) {
-      // Named, not swallowed. A file in a definition directory that states nothing is
-      // either a mistake or a note somebody meant to put elsewhere, and either way the
-      // owner needs to hear which file it was.
-      console.error(`[ronin] ${file}: no \`- **key:** value\` lines — not a definition, skipped.`);
-      continue;
-    }
-    const token = name.replace(/\.md$/, '');
-    out.set(token, {
-      name: token,
-      origin,
-      shadowed: false,
-      file,
-      get: (key: string) => entryValue(lines, key),
-      has: (key: string) => entryValue(lines, key) !== '',
-    });
-  }
-  return out;
-}
-
-/**
  * Both halves, merged, with provenance intact.
  *
  * Ordered by the stated `order:` and then by label, NOT by which half a definition came
@@ -135,15 +92,25 @@ async function readDir(base: string, origin: Origin): Promise<Map<string, Defini
  * so the board is stable across machines and across an upgrade that adds a file.
  */
 export async function readDefinitions(kind: DefinitionKind): Promise<Definition[]> {
-  const [stock, user] = await Promise.all([
-    readDir(path.join(STOCK_DIR, kind), 'stock'),
-    readDir(path.join(storeDir('catalogs'), kind), 'user'),
-  ]);
   const merged = new Map<string, Definition>();
-  for (const [token, d] of stock) merged.set(token, d);
-  for (const [token, d] of user) {
-    // Yours in ours' place — the one case a surface must be able to say out loud.
-    merged.set(token, { ...d, shadowed: stock.has(token) });
+  for (const file of await resolveFiles({
+    stock: path.join(STOCK_DIR, kind),
+    user: path.join(storeDir('catalogs'), kind),
+    include: isDefinitionFile,
+  })) {
+    const lines = file.text.split('\n');
+    if (!lines.some(isKeyLine)) {
+      console.error(`[ronin] ${file.path}: no \`- **key:** value\` lines — not a definition, skipped.`);
+      continue;
+    }
+    merged.set(file.name, {
+      name: file.name,
+      origin: file.origin,
+      shadowed: file.shadowed,
+      file: file.path,
+      get: (key: string) => entryValue(lines, key),
+      has: (key: string) => entryValue(lines, key) !== '',
+    });
   }
   const rank = (d: Definition): number => {
     const n = Number(d.get('order'));
