@@ -11,7 +11,6 @@ import { isCoarse } from './tiledrop.js';
 
 export function build() {
   // Each wiring block is guarded separately: losing one control must not cost the
-  // rest of the header, which is exactly what happened on 2026-08-08.
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
@@ -52,7 +51,6 @@ export function build() {
         if (e.altKey === e.shiftKey) return; // exactly one of Alt / Shift, never both
         // Ctrl+Alt+C — the CoWorking Commons ("the Commons") over the tile you are in, on
         // the session roster. C for Commons. Same act as ⛩, the most-used control on the
-        // header (it said メ until 2026-08-17, when ⛩ took the Commons everywhere and メ
         // came back on that header as the drop): getting to the list of sessions should
         // not cost a mouse trip. Falls back to the first visible
         // tile so it works before you have clicked into anything.
@@ -80,7 +78,6 @@ export function build() {
           return;
         }
         // 1 / 2 / 4 — how many tiles are on screen, the same three the layout buttons
-        // set. It used to focus tile N, which is the wrong verb for a number: 1-2-4 is
         // written on the buttons as a COUNT, so the chord means the same thing the
         // button does. 3 is deliberately dead — there is no 3-up layout to go to.
       },
@@ -97,7 +94,6 @@ export function build() {
   // visible in the strip, so nothing vanishes silently).
   // THE LOCK LIVES ON EACH TILE, and only there.
   //
-  // There used to be one 🔒/🔓 in the top bar driving a global that every tile read, so a
   // click reconnected all four at once. Making it act on the active tile instead was
   // still wrong: a control in the window chrome cannot say WHICH pane it means, and you
   // have to look somewhere else to find out. Each tile head carries its own switch, next
@@ -108,7 +104,6 @@ export function build() {
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
 
-  // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
   // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool
   // and the desk's own asks; the pad panel opens from a row on the ⚙ Admin Desk
   // (js/cowork-commons.js) and its physical keys never needed the button.
@@ -172,7 +167,6 @@ export function build() {
   } else {
     // Copy = hold the force-selection modifier and drag, then ⌘C / Ctrl-C. The modifier
     // is Option on a Mac and SHIFT everywhere else — xterm's own rule, mirrored in
-    // `forcesSelection` (js/state.js); this comment used to say Option flatly and left
     // Windows and Linux with nothing. Either way it forces a native selection over a
     // mouse-grabbing app or tmux mouse mode. The old Copy Mode toggle is retired — one
     // way to copy, works in any pane, locked or unlocked. A drag that produces no
@@ -198,17 +192,6 @@ export function build() {
   }
 }
 
-/**
- * TOUCH: trim the desktop chrome off the bar. The keys that used to live in a
- * drawer here (and the ニ sheet that opened it) are gone — they dock on every
- * coarse tile's composer now (js/keysrow.js), next to the box they drive, instead
- * of two taps away at the wrong end of the screen. The 2⇄4 shape button goes too
- * (owner, 2026-09-01): a coarse bench is pinned at two workspaces — see the Kit's
- * own pin in workbench.js — so a count control would be a dead switch. The spacer
- * STAYS: it is what slides the tab name, the layout map and RAM_RPM to the right
- * (owner, same day). Desktop never calls this; a phone never reaches it (the
- * shell hides the bar whole).
- */
 export function trimBarForTouch() {
   if (!isCoarse()) return;
   document.getElementById('shapecycle')?.remove();

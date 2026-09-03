@@ -22,7 +22,7 @@ New Team does not:
 - require or infer a lead;
 - manage membership separately from live session tags.
 
-## Why staffing is not here (owner, 2026-08-29)
+## Why staffing is not here
 
 The retired second stage let the owner propose seats, preflight them, and launch them in
 order as part of creating the Team. It was a second, worse copy of the New Agent launcher
@@ -83,8 +83,7 @@ New Team owns:
 - `public/css/launch-forms.css` — governed feature styling, never Kit geometry;
 - this README.
 
-**The seven-field card is gone** (owner, 2026-08-31, "the old new team and the old new
-agent workspaces have been made obsolete by yours"): its surface and its stylesheet are
+**The seven-field card is gone**: its surface and its stylesheet are
 deleted — Git holds them — and the drawn form is the only New Team. One behaviour did not
 come across: the retired card persisted a half-typed draft through the typed view state,
 and the drawn form's draft lives in the surface for as long as the workspace holds it.

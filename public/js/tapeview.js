@@ -1,27 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * TAPEVIEW — RIREKI's client-side render. The 🔓 unlocked view.
- *
- * KOTOBA has RIREKI covering "capture, storage, render and the consumers". The server
- * half honours that (`src/services/rireki/`, `libexec/rireki/`); this is the client half,
- * and it lived inside `class Tile` until 2026-08-13 — the fold machine, the tape
- * append/prepend and the scroll anchoring, all squatting in the coworkspace. A tile is
- * one cell of the coworkspace; the render of a tape is RIREKI's. Now it is its own
- * module, and the tile merely mounts it.
- *
- * IT HOLDS NO TMUX CONNECTION. No attach, no viewer session, no pipe — tmux does not
- * know this view exists. Display comes from the tape; input goes back through the
- * socket the tile owns (`tilewire.js`), which is why nothing here touches a WebSocket.
- *
- * A plain scrollable element, not a terminal: a tape-fed stream is 100% plain text
- * (measured: zero cursor-move or erase sequences in a whole 796KB stream). Feeding
- * that to xterm.js buys nothing and costs everything that matters — it re-renders rows
- * on every scroll tick, so on a phone it never feels like a page. A div with
- * overflow-y:auto gets hardware-accelerated momentum scrolling for free.
- *
- * 🔒 Locked is the other view (`termview.js`) and must be an emulator: there the stream
- * is a live screen full of positioning.
- */
 import { ANSI_RE } from './ansi.js';
 import { groupRecs } from './tapefold.js';
 import { t } from './lexicon.js';
@@ -291,7 +268,6 @@ export class TapeView {
     // The way back down is a button, not a physics problem: show it while scrolled up.
     this.jump.classList.toggle('show', el.scrollHeight - el.scrollTop - el.clientHeight > 200);
     // Reach for older lines only while moving UP. Near the top every scroll event is in
-    // fetch range, so a downward flick used to fire a fetch too — whose prepend then
     // re-anchored scrollTop and killed the flick's momentum a few pixels in. Trying to
     // leave the top of the transcript felt like scrolling through wet sand. (At the
     // literal top no scroll event fires at all — the wheel listener above covers that.)

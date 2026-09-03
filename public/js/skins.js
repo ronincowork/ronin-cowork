@@ -1,43 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * SKINS — the look, chosen at runtime, spelled as design tokens.
- *
- * A skin is a set of `--token: value` pairs from `ronin_catalogs/SKINS.md` (shadowable:
- * shipped skins update with the repo, a skin of yours is yours and an upgrade cannot touch
- * it — `docs/shadowing.md`). Applying one sets those custom properties and nothing else.
- *
- * THE WHOLE FEATURE IS THIRTY LINES BECAUSE THE FOUNDATION WAS MADE FIRST. Every value that
- * carries look became a token on 2026-08-19 — shape, space, type, voice, edge, motion —
- * and `check-css` keeps it that way. Before that, a skin could have changed colour and
- * nothing else; the rest of the look was spelled in five hundred places. This file is the
- * dividend, not the work.
- *
- * WHY A <style> BLOCK AND NOT INLINE PROPERTIES. Inline styles on `<html>` beat every
- * stylesheet rule, including `:root[data-theme='light']` — so a skin set inline would
- * silently kill the light shell for any colour token it named, whether it meant to or not.
- * A stylesheet block plays by the ordinary rules instead, which is what lets the decision
- * below be a decision rather than an accident.
- *
- * LIGHT AND DARK ARE AN AXIS INSIDE A SKIN, not a thing a skin fights (2026-08-19). Three
- * spellings in the catalog and three rules out of them:
- *
- *   --radius-md      both shells   — shape, space, type and motion want this
- *   dark--bg         the dark one
- *   light--bg        the light one
- *
- * Until today there was only the first, so naming a colour overrode it in light mode too
- * and the flip quietly stopped working for that token. Harmless for the shipped skins,
- * which are shape and spacing; useless for a skin that is actually about colour. A skin can
- * now have a dark face and a light face, which is what lets the theme keep being the theme.
- *
- * EXACTLY ONE SHELL RULE EVER MATCHES, because `applyTheme` always resolves the choice to
- * an explicit `data-theme` — even 'auto' writes the attribute it resolved to. So there is
- * no third state to design for and no `prefers-color-scheme` query needed here.
- *
- * A MISSPELLED TOKEN IS INERT. It sets a custom property no rule reads. A skin cannot break
- * the app, only fail to change it — which is the safety story, and it is structural rather
- * than checked: there is no selector in a skin to get wrong.
- */
 import { request } from './request.js';
 import { applyTheme } from './theme.js';
 

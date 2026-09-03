@@ -5,26 +5,6 @@ import { loadProjects } from './home.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 
-/* ---------- PROJECT ROOT — the fourth commons pane (tab: ▣ Project root) ----------
- *
- * "Which directories on this machine are part of my Ronin?" — the inclusion_list,
- * with a block per project_root.
- *
- * ADDING A ROOT IS A CARD AT THE END OF THE LIST (owner, 2026-08-30), in the shape of the
- * roots above it: press it and the same form the edit uses opens inside it, with the
- * handle editable this once. The ＋ include button that handed the job to Mika went with
- * the Admin Desk — on the Settings page there was no tile for her to answer in, so the
- * button did nothing, and a button that does nothing is worse than a form.
- *
- * The buttons are the Kit's actions, so they are the same buttons as everywhere else.
- *
- * The catalog (ronin_catalogs/PROJECT_ROOTS.md) stays the source of truth and stays
- * hand-editable — this pane is a co-editor, not an owner. It writes only the owner's
- * INTENT (which directories, what they are called). What a session in this root READS at
- * birth is no longer a field here — it is the files on the root's session-boot shelf; everything volatile beside it —
- * does the directory still exist, is it a project_repo, how many sessions serve it —
- * is read live from /api/project-roots/detail and stored nowhere.
- */
 export function buildProjectRoots(root, isShowing) {
   const { createAction } = WorkspaceKit.primitives;
   const NEW = '\0new'; // `editing` when the add card's form is open — no root has this handle
@@ -105,7 +85,6 @@ export function buildProjectRoots(root, isShowing) {
     const dirInput = mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Any absolute path, at any depth'), '~/work/api');
     mk(t('roots.f_remit', 'remit'), 'remit', existing.remit, t('roots.f_remit_hint', 'The one line you pick it from in a list'), t('roots.f_remit_placeholder', 'what this is'));
     mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this project_root from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
-    // THE DOC SHELVES (owner, 2026-08-28) — where the ▧ Docs tab's Docs and Plans pills look.
     mk(t('roots.f_docs', 'docs'), 'docs', (existing.docs || []).join(', '), t('roots.f_docs_hint', 'Where this root keeps its documentation — directories or files, relative to the directory'), 'docs, README.md');
     mk(t('roots.f_plans', 'plans'), 'plans', (existing.plans || []).join(', '), t('roots.f_plans_hint', 'Where this root keeps its build-out plans'), 'wip/buildouts, wip/handoffs');
 

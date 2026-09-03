@@ -243,10 +243,6 @@ export function buildMachineSettings(root, isShowing) {
     }
     if (!(observed.weights ?? []).length) body.appendChild(obsRow(t('settei.local_weights', 'local weights'), t('settei.weights_none', 'none downloaded')));
 
-    /* agent installations — THE CHECKBOX IS THE INSTALLED BIT (owner, 2026-08-18):
-     * ticked-and-fixed means it is on the box; an empty one is live — ticking it puts
-     * the thing on the needed list. Col 2 the name, col 3 where it is (or who makes
-     * it). One meaning, taught ONCE on the hint line. */
     group(t('settei.group_agents', 'agent installations'));
     const hint = document.createElement('div');
     hint.className = 'st-row st-link';
@@ -292,9 +288,6 @@ export function buildMachineSettings(root, isShowing) {
       body.appendChild(tickRow(a.installed, 'agent', id, a.label ?? id, a.installed ? a.path ?? '' : a.from ?? ''));
     }
 
-    /* services — the SAME leading-tick format as the agents (owner, 2026-08-18):
-       Ronin Services is a bundle, one row, tick = installed; gbrain likewise; and
-       "use gbrain" stays its own setting beneath — a choice, not a fact. */
     group(t('settei.group_services', 'services'));
     body.appendChild(tickRow(observed.ronin.services.length > 0, 'service', '*', t('settei.ronin_services', 'Ronin Services'), ''));
     body.appendChild(tickRow(observed.ronin.services.includes('gbrain'), 'service', 'gbrain', 'gbrain', ''));
@@ -321,17 +314,12 @@ export function buildMachineSettings(root, isShowing) {
     const activation = set.services.activation ?? {};
     body.appendChild(obsRow(t('settei.subscription', 'subscription'), st.subscription,
       activation.email_masked ? ` ${activation.email_masked}` : ''));
-    // THE REAL FLOW, replacing the pasted code. The id used to be typed in from the
     // email and recorded without being checked; now the operator asks Ronin HQ, the
     // person confirms on whatever device they are holding, and the install polls until
     // the entitlement arrives. The card renders the durable stage rather than what this
     // page remembers doing, so a reload or a second tab lands on the truth.
     servicesCard(body);
 
-    /* THE NEEDED BOX (owner, 2026-08-18) — every unmet thing in one place: the
-     * registry's requires and the owner's own wants, computed per read. Satisfy one
-     * and it vanishes on the next look with no write anywhere. This is exactly the
-     * list the setup seat reads at its own start. */
     group(t('settei.group_needed', 'still needed'));
     for (const n of rec.needed ?? []) {
       body.appendChild(obsRow(n.leaf, n.needs, ` ${n.how}`));

@@ -1,25 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE TILE — one cell of the coworkspace, and nothing more.
- *
- * A tile is a header (session name, dials, chip, buttons), a mount point, and the
- * commons panel that overlays it when no session is showing. It COMPOSES one of two
- * views and never owns the machinery of either:
- *
- *   🔒 locked   `termview.js`  the untouched `tmux attach` mirror
- *   🔓 unlocked `tapeview.js`  RIREKI's client-side render, fed from the tape
- *
- * with the socket beside them both (`tilewire.js`) and the text entry its own module
- * (`composer.js`). Until 2026-08-13 all four lived in this class — 1,270 lines, and
- * the tape half of it was RIREKI's render squatting in the coworkspace (KOTOBA has
- * RIREKI covering "capture, storage, render and the consumers"). The owner's ruling:
- * the tile is a thin cell; even the render is separate from it.
- *
- * Construction order is load-bearing and always has been: `this.body` must exist
- * before anything mounts into it. One line breaking that rule — an appendChild
- * nineteen lines early — threw in this constructor and took the whole UI down on
- * 2026-08-08. Views mount in DOM order: tape, then the commons panel, then xterm.
- */
 import { fetchSessions, setSessionTitle } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
@@ -138,13 +117,11 @@ export class Tile {
     //
     // Locked: xterm keeps the wheel — it scrolls its own local buffer, unless the app
     // in the pane holds mouse tracking, in which case xterm forwards the wheel and the
-    // app scrolls itself. tmux sees none of it (viewer mouse off, 2026-09-01).
     // Tape-fed: the transcript is a plain scrollable div and the browser scrolls it.
     // Marking a tile active on header focus, without stealing keyboard focus —
     // without stealing keyboard focus from controls in the head.
     this.el.addEventListener('focusin', (e) => {
       this.activate();
-      // `this.home` (the tile commons) retired on 2026-08-28 with the grid page; a click in
       // the body threw on it for a few hours and took the terminal's focus with it.
       // Docs replaced that body overlay with a real editor. It owns its own focus just
       // as header controls do; only the terminal body itself redirects into xterm.
@@ -217,7 +194,6 @@ export class Tile {
     // A failed read keeps the last chip rather than blanking it — the poll heals it.
     if (r.kind === 'network') return;
     this.tegami = r.ok ? r.data : null;
-    // 📄 reads its count off the letter (2026-08-18) and this is the only place the letter
     // changes. Measured without it: switch a tile from a session with docs to one with none
     // and 📄 stayed lit, claiming the previous session's docs until the roster poll redrew.
     // `syncTileHead`, not `syncHeader` — the reading pass, without re-fetching the dial.
@@ -225,17 +201,6 @@ export class Tile {
     if (this.ladderOpen) this.drawLadder();
     if (!this.tegami) this.closeLadder();
   }
-
-  /*
-   * `toggleLetter` / `closeLetter` were here until 2026-08-17. They drew the TEGAMI file
-   * verbatim over the pane, opened from a ⛩ in this tile's header, and they were the only
-   * client reader of `/api/sessions/:name/tegami/raw`. The owner removed that button — the
-   * torii now means "the Commons" everywhere — so the panel, its opener and `buildLetter`
-   * all went with it rather than lingering as an unreachable surface.
-   *
-   * The server route is MICHI's and is untouched: a service owns its own endpoints, and
-   * this client no longer being a consumer is not a reason to take one away.
-   */
 
   toggleLadder() {
     if (this.ladderOpen) this.closeLadder();
@@ -252,19 +217,6 @@ export class Tile {
     this.workRecordBtn.setAttribute('aria-expanded', 'false');
   }
 
-  /**
-   * Put everything away that is covering the pane: this tile's ladder and letter, and
-   * the page-level sheets (メ, ニ, ⚡) which are not this tile's to own but are in the
-   * way just the same.
-   *
-   * One method rather than a dismissal at each call site, because "what counts as
-   * open" is the thing that will grow — the next sheet someone adds should be closed
-   * by every caller automatically, not by remembering to add it in three places.
-   *
-   * The き Commons menu used to be dismissed here too. It is gone (2026-08-17): ⛩
-   * Commons goes straight to ⌂ Roster and drops nothing, so there is no fourth surface
-   * left to put away. If a bar control ever drops a menu again, it is closed HERE.
-   */
   clearOverlays() {
     this.closeLadder();
     document
@@ -390,7 +342,6 @@ export class Tile {
     // local viewport answers scrollToBottom; a pane in tmux copy mode (a raw-attach
     // owner, a leftover) answers {t:'bottom'}'s cancel; an app scrolled inside ITSELF
     // answers the wheel burst — but ONLY when it is listening for mouse. Sent blind,
-    // the burst reaches the app as typed input under viewer mouse off (2026-09-01: the
     // owner watched untouched agents sit "scroll locked" on injected wheels — every
     // composer send fired 150 of these).
     this.term.scrollToBottom();
@@ -479,7 +430,6 @@ export class Tile {
     sel.value = this.output;
     // Without Services there is nothing to choose — every unlocked source is RIREKI's,
     // so a one-option dropdown is noise and the control disappears whole (owner,
-    // 2026-09-02). The state side is already clamped: setOutput forces 'locked'.
     sel.hidden = !!S.streamOff;
     for (const option of [...sel.options])
       if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
@@ -488,18 +438,6 @@ export class Tile {
       : t('output.title_choose', 'Output — choose the live terminal or a RIREKI view');
   }
 
-  /**
-   * How full the context is and which model is answering. Both are scraped from
-   * ORDINARY PANE TEXT (src/ctx.ts) — the same status line the CLI already prints —
-   * never from agent internals. A pane with no status line (a plain shell) reports
-   * null for both, and the reading collapses rather than showing a placeholder.
-   *
-   * WHERE IT SHOWS. On touch, the Status row of the tile's ⋯ drop, beside the ladder.
-   * It used to be a strip above the text entry — a touch-only element, never once
-   * visible on desktop — and the bottom of a phone is the keyboard and the box you
-   * type in. There is no room down there, so nothing lives there any more.
-   * On desktop the gauge in the header carries the percent, as it always has.
-   */
   setFooter(pct, model) {
     this.ctxPct = pct;
     this.ctxModel = model;
@@ -548,7 +486,6 @@ export class Tile {
   }
 
   setDot(state) {
-    // The dot left the head on 2026-08-28; the state still rides the tile for the stylesheet.
     this.el.dataset.link = state;
   }
 

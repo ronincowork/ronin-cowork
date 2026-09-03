@@ -1,110 +1,52 @@
-/* ronin-cowork — the one stylesheet, in four cascade layers.
- *
- * WHAT @layer ENFORCES, honestly: later layers WIN, so the one direction the cascade
- * guarantees is vendor-lowest — every Ronin rule beats xterm.css by construction, not
- * by load-order accident. app being the STRONGEST layer is what lets a consumer size
- * its own dialog card; it also means the cascade cannot stop app from patching a
- * primitive or shadowing a token. That rule is real and it is scripts/check-css.mjs's
- * to enforce (its checks 4 and 5) — a gate, not the cascade. The first cut of this
- * header claimed the reverse; corrected 2026-08-16, the gate landed the same day.
- * Splitting into files stays a mechanical move for the day a layer earns its own;
- * docs/ui.md carries the contract.
- *
- *   vendor       xterm.css, imported into the lowest layer
- *   foundations  the design tokens (dark + light), reset, page chrome, focus
- *   ui           the shared primitives: sheet/card, toast, help box
- *   app          everything Ronin — compositions and feature rules, order preserved
- *
- * COLOUR IS SPELLED ONCE. Every colour in this file is a token definition (a
- * `--name:` line) or a var()/color-mix() over one — scripts/check-css.mjs fails the
- * build on a raw colour anywhere else. That gate is what killed the 87-hex drift.
- */
+
 @layer vendor, foundations, ui, app;
 @import url('/vendor/xterm.css') layer(vendor);
 
 @layer foundations {
 :root {
-  /* ---- surfaces, dark (the default): canvas, bar, panel, raised control, input well */
+
   --bg: #0b0e14;
   --bg-2: #0f131c;
   --panel: #131826;
   --raise: #1a2233;
   --well: #0d1220;
-  /* ---- edges, three weights: hairline furniture, control edge, emphasized edge */
+
   --line: #1f2738;
   --line-2: #2a3247;
   --line-3: #3a4560;
-  /* ---- text, five weights: strong, body, muted, quiet, zero-state */
+
   --fg-strong: #d7e3f7;
   --fg: #c5c8c6;
   --muted: #6b7488;
   --muted-2: #8fa3c8;
   --muted-3: #6f80a0;
   --dim: #454d61;
-  /* ---- meaning: amber = attention/identity, blue = reference, green = healthy,
-     warn/bad = the two grades of wrong. --on-accent/--on-strong are the text colours
-     that sit ON a filled accent/action surface. */
+
   --accent: #e0af68;
-  /* ONE focus ring for the whole shell, and it rings the BRAND (owner, 2026-09-02:
-     "yes make the focus ring kaki too"). One token so a keyboard user's ring never
-     changes color by neighborhood — the earlier accent/kaki drift, unified. */
+
   --focus-ring: var(--kaki);
   --accent-2: #81a2be;
-  /* DEFINE-LINE — the cool blue line that cleanly defines a warm surface against the
-     shell (owner, 2026-09-02: "I like that blue and how it works with the orange…
-     a blue light line around the headers… add this blue to our tokens"). Named as a
-     ROLE and aliased to --accent-2 so the hue stays single-sourced and theme-tuned;
-     wearers: the workbench band perimeter, the selector's utility doors. */
+
   --define-line: var(--accent-2);
   --accent-deep: #d8a13a;
-  /* Soft selected-state washes — two of the seven names the 2026-09-01 token audit
-     found CONSUMED while defined nowhere, every read quietly dropped by the browser
-     (the other five were remapped to real roles; the gate now fails an undefined
-     var()). Derived from tuned parents, so they tune with the theme. */
+
   --accent-soft: color-mix(in srgb, var(--accent) 22%, transparent);
   --ok-soft: color-mix(in srgb, var(--ok) 22%, transparent);
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
-  /* KIIRO — the house's amber, THEME-INVARIANT. NOT THE BRAND: the owner ruled
-     2026-09-02 that "kiiro" in every earlier band/button ruling MEANT KAKI, the hito
-     mark's persimmon — "I mistakenly in the past called that kiiro." The BRAND is
-     --kaki below: every primary/attention FILL reads --kaki/--on-strong. Kiiro
-     remains the amber the band variants derive from (their owner-approved values
-     are unchanged) and the dark band's attention ink, where kaki cannot hold the
-     contrast floor;
-     --warn stays separate as the theme-tuned warning ink, because thin text genuinely
-     needs a darker value on paper — a shade of kiiro, not a replacement for it. */
-  /* Value history: #f0c674 (gold) read as YELLOW on the band — "it's not anything to
-     do with orange" (owner) — so kiiro is the house's amber-ORANGE, the armed-frame
-     accent's own hue. This one line is the whole brand color: change it and the band,
-     the attention flash and the phone's Start all follow. */
+
+
   --kiiro: #e0af68;
-  /* THE BAND SHADES — one concept, an OPAQUE ORANGE of the kaki family, resolved
-     dark and light per shell (owner, 2026-09-02). NOT a kaki/black or kaki/white
-     mix, deliberately: brown IS dark orange, so darkening kaki can only make brown,
-     and tinting muted red-orange makes flesh-pink — both verdicts landed ("looks
-     brown… no orange aspect", "fleshy pink"). A band that READS orange keeps
-     saturation up and leans a touch yellow, so these are literals — kaki pushed
-     toward fire — and the gate measures them directly. Owner-selected D1/L2 from
-     the chooser, picked for ink contrast and readability. Value history still
-     standing: khaki-yellow, gold, the cream washes, the amber-navy brown, the
-     45%-black brown, the 52%-white flesh-pink. */
+
   --kaki-hint: #6f300e;
   --kaki-tint: #f2a566;
-  /* THE WORKBENCH'S HEADER BAND — dark wears the kaki HINT with its own light ink
-     (the theme's text tokens are tuned for the navy ground, not a warm band); light
-     wears the kaki TINT with dark ink in its block below. Attention on the dark
-     band speaks kiiro — the amber pops on deep persimmon and holds the floor.
-     Every workbench wears THIS band — wk-surface-header, tile-head,
-     wk-channel-service-tabs, ntf-band all read the family. */
+
   --cowork-head-bg: var(--kaki-hint);
   --cowork-head-fg: var(--on-strong);
   --cowork-head-muted: #d9b8ab;
   --cowork-head-attention: var(--kiiro);
-  /* The band's perimeter speaks the define-line (owner, 2026-09-02): the cool blue
-     ring that cleanly defines the kaki band, same blue as the selector's utility
-     doors. One token for every band; both themes follow --accent-2's tuning. */
+
   --cowork-head-line: var(--define-line);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
@@ -122,45 +64,17 @@
   --on-accent: #000;
   --on-strong: #fff;
   --chart-ink: rgb(11 14 20 / 82%);
-  /* ---- elevation: one scrim, two shadows. That is the whole vocabulary. */
+
   --scrim: rgb(0 0 0 / 50%);
   --shadow-menu: 0 8px 24px rgb(0 0 0 / 45%);
   --shadow-sheet: 0 12px 34px rgb(0 0 0 / 50%);
-  /* ---- Kojin house colours (karate/SYSTEM.md — the palette there is FIXED, six
-     values, and these are two of them by name). Ronin borrows them for the two bar
-     openers so メ and ニ read as a matched pair rather than two grey glyphs.
-     Kaki  (persimmon) — agent action, and heightened access/visibility. The one
-     saturated mark: it sharpens a control the owner must be able to find quickly.
-     Aiiro (indigo)    — selection and navigation. RONIN itself.
-     Kojin's dark theme lifts the indigo "to carry"; #274A78 on this near-black
-     ground is a bruise, so -lift is that lift and the two hexes stay untouched as
-     the record of what they are.
 
-     The copy hint uses kaki-lift for the same heightened reason: its job is to not
-     be missed. (The `--heighten-*` alias family was deleted by the 2026-09-02 token
-     audit — designed in docs/ui.md, defined here, and read by nothing ever; every
-     heightened surface reads kaki directly, and a dead semantic layer is where the
-     next agent's guess goes wrong.) */
   --kaki: #c46243;
   --kaki-lift: #e08163;
   --aiiro: #274a78;
 
-  /* ---- THE TERMINAL PALETTE — the tokens js/theme.js reads back into xterm's theme
-     object (`termTheme()`), plus the tape/composer surfaces that sit over the pane.
-     Spelled HERE and nowhere else: the THEME literal that used to shadow these in
-     state.js is gone (TOKENS' D2 defect — one palette, two spellings).
-     THIS IS THE DARK SET; THE LIGHT SHELL REMAPS EVERY ONE OF THEM (2026-08-19). It used
-     to not, and the comment here argued the case: a terminal reads dark, every TUI palette
-     assumes it. Both halves were true and the conclusion was still wrong — the owner's
-     point is that white-on-black IS the wall a non-terminal person hits, and a light shell
-     that keeps it has not actually gone light. The palette is Tomorrow Night; the light
-     block below is its own sibling, Tomorrow, on the house paper. */
-  /* THE 256-COLOUR CUBE, and which way it is read. xterm's palette is 16 named slots —
-     the --term-ansi-* tokens below — plus 240 more that the standard DEFINES ARITHMETICALLY
-     (a 6x6x6 RGB cube and 24 greys). Those 240 are not tokens and must not become 240
-     token lines; what IS a decision, and so lives here, is whether this shell reads them
-     as written or flipped. js/theme.js does the arithmetic and spells no colour.
-     `standard` on the dark shell because that is the ground every TUI palette assumes. */
+
+
   --term-cube: standard;
   --term-bg: #0b0e14;
   --term-fg: #c5c8c6;
@@ -196,33 +110,9 @@
   --term-input-line: #2b3644;
   --term-input-fg: #e6eaf0;
 
-  /* ================= THE SHAPE OF THE THING =================================
-     COLOUR WAS SPELLED ONCE FROM 2026-08-16; EVERYTHING ELSE WAS NOT, until today.
-     The census that prompted this (2026-08-19): eleven distinct border-radius values,
-     twelve font-sizes including 10.5/11.5/12.5px — half-pixel type is somebody
-     eyeballing it — and spacing on nearly every integer from 1 to 18. An agent could
-     not get a colour wrong and could not get a radius right.
 
-     THE POINT IS NOT TIDINESS. It is that **editing this block re-skins the whole app**
-     (owner, 2026-08-19: *"if someone wanted to change how their co-work space looked
-     entirely, they could just change everything by giving a simple instruction to
-     update the design tokens"*). That promise only holds if NOTHING carrying look is
-     spelled anywhere else, which is why `scripts/check-css.mjs` gates each family below
-     exactly as it has gated colour since 2026-08-16. A raw `8px` radius in a feature
-     rule is the same defect as a raw `#131826`.
 
-     THESE ARE THEME-INDEPENDENT and so are defined once. The light theme overrides
-     colour roles and nothing here: a square corner is square in both shells.
 
-     TO RE-SKIN: set every --radius-* to 0 and the app is square. Scale the --space-*
-     ladder and it breathes. Change --font-ui and the whole shell changes voice. None of
-     it needs a single feature rule touched. */
-
-  /* ---- CORNERS. One ladder, five rungs, and the app uses `md` unless it has a reason.
-     `pill` and `round` are shapes rather than sizes — a chip and a dot — and are named
-     for what they are so that squaring the app (every rung to 0) leaves a dot a dot.
-     `hair` is the dial needle: 1px, which is "soften the tip", not a corner. It is a rung
-     rather than an exception because an exception is where a system starts leaking. */
   --radius-hair: 1px;
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -232,10 +122,7 @@
   --radius-pill: 999px;
   --radius-round: 50%;
 
-  /* ---- SPACE. A 2px ladder: every step is one rung, no half-rungs, and the odd values
-     that were in the file (1, 3, 5, 7, 9, 11) snapped to their neighbour when this came
-     in. `4` is the house default — the gap between related controls, the padding inside
-     a small one. Above `10` the rungs widen because nothing needs 18 and 22 both. */
+
   --space-1: 2px;
   --space-2: 4px;
   --space-3: 6px;
@@ -248,26 +135,16 @@
   --space-10: 24px;
   --space-11: 28px;
   --space-12: 34px;
-  /* ONE HEADER DEPTH for every row that tops a workspace column — a tile's head, the
-     commons' tab strip, the team roster's head. Three headers at 39, 40 and 41px read
-     as three panels; at one depth they read as one instrument (measured 2026-08-26).
-     Its parts: a 28px tab, the 6px the row pads above and below it, and the rule under. */
+
   --row-head: calc(var(--space-11) + var(--space-6) + var(--edge));
 
-  /* One typographic voice for the permanent head over every Workbench surface. The
-     frame has three approved header forms (Kit, terminal Tile, and channel strip), but
-     their title must not inherit a feature body's type or choose a private size.
-     Raised from --text-3 (owner, 2026-09-01: "the text for the headers … is so small …
-     grow that a bit … through the kit … using tokens"): one token, every header —
-     the roster title, the agent names on the tiles, the selector — moves together. */
+
   --workbench-head-font: var(--font-ui);
   --workbench-head-size: var(--text-5);
   --workbench-head-weight: 700;
   --workbench-head-line: 1.2;
 
-  /* ---- TYPE. Ronin is a dense operational tool and its type scale is small and tight
-     on purpose; `--text-3` (12px) is the body of this app, not a caption. The scale is
-     what the file already used, minus the half-pixels. */
+
   --text-1: 9px;
   --text-2: 11px;
   --text-3: 12px;
@@ -278,34 +155,20 @@
   --text-8: 18px;
   --text-9: 20px;
   --text-10: 26px;
-  /* FOUR FORM SIZES (owner, 2026-09-03): every form in the house — the Kit's fields, the
-     New Agent form, Team Configuration — reads these four and no fifth. Section header ·
-     key · input · note. Change a token here and every form moves together. */
+
   --form-head: var(--text-4);
   --form-key: var(--text-3);
   --form-input: var(--text-4);
   --form-note: var(--text-2);
-  /* Below the ladder, and named rather than numbered so nobody reaches for it by
-     accident: 10px is the smallest type in the house and is for a stamp, not a sentence. */
+
   --text-micro: 10px;
 
-  /* ---- VOICE. THREE roles, and the third is not a nicety. The census found SEVEN
-     distinct stacks doing the work of these three — four spellings of the system UI face
-     and three of mono — which is drift of exactly the kind the colour gate ended.
 
-     `--font-term` IS SEPARATE FROM `--font-mono` ON PURPOSE. It is the face xterm itself
-     renders with (`js/termview.js`), and the tape, the composer and the jump button have
-     to match it glyph-for-glyph or a wrapped line stops lining up with the terminal above
-     it. Flattening the two would look like tidying and would desynchronise the tape.
-     js/termview.js READS THIS TOKEN rather than restating the stack, the same way
-     js/theme.js reads the --term-* colours, so the face is spelled once for both. */
   --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-term: Menlo, 'DejaVu Sans Mono', Consolas, monospace;
 
-  /* ---- BAR NAVIGATION. A label is a door; the value beside it is context, never a
-     second door. These semantic roles keep native button chrome and feature-local
-     guesses out of the app bar. */
+
   --bar-nav-bg: transparent;
   --bar-nav-fg: var(--fg-strong);
   --bar-nav-hover: var(--accent);
@@ -316,16 +179,11 @@
   --bar-brand-mark-h: 27px;
   --bar-brand-track: -0.005em;
 
-  /* ---- EDGES. Every border in the app is one hairline; the token exists so that a
-     heavier-lined theme is one edit and not four hundred. */
+
   --edge: 1px;
   --edge-2: 2px;
 
-  /* ---- MOTION. Four speeds, and the file had six before this — 120ms, 0.15s, 0.25s,
-     0.3s, 0.6s and 0.9s, in two unit spellings. A control answering the pointer is
-     `quick`; something that moves or reveals is `settle`; `slow` is a fade you are meant
-     to notice; `hint` is the one-shot copy flourish. Nothing here animates for
-     decoration, which is why the ladder stops at four. */
+
   --motion-quick: 120ms;
   --motion-settle: 250ms;
   --motion-slow: 600ms;
@@ -334,18 +192,12 @@
   --ease-out: ease-out;
 }
 
-/* ---- THE LIGHT THEME — the same roles, resolved for a light shell. js/theme.js sets
-   `data-theme` from the owner's ⚙ System choice (per device, localStorage), and
-   index.html applies the saved value inline before first paint. THE --term-* TOKENS ARE
-   REMAPPED HERE TOO: light means light all the way into the pane, terminal included. */
+
 :root[data-theme='light'] {
-  /* LIGHT wears the kaki TINT (the same opaque-kaki concept as dark's hint, resolved
-     light) with the band's own dark ink — the theme's text tokens are tuned for
-     paper, not a warm band. */
+
   --cowork-head-bg: var(--kaki-tint);
   --cowork-head-fg: #201a0e;
-  /* Inks darkened with the B tint: the stronger terracotta sits lower than the old
-     pale band, and the previous olive/kaki inks fell under the 4.5 floor on it. */
+
   --cowork-head-muted: #4f2e1b;
   --cowork-head-attention: #7a2f10;
   --bg: #f4f2ec;
@@ -386,48 +238,8 @@
   --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
   --kaki-lift: #a34e2f;
 
-  /* ---- THE TERMINAL, ON PAPER (2026-08-19, the owner's ask: "the terminal is still
-     white on black … so that the terminal is not so intimidating to non-terminal users").
-     Same sixteen roles, same reader — js/theme.js `termTheme()` re-reads these on every
-     flip, so nothing but these lines is the mechanism.
 
-     THE PALETTE IS TOMORROW, the day sibling of the dark set's Tomorrow Night, so the two
-     shells are one scheme rather than two moods. Two departures from stock Tomorrow, both
-     forced by the ground rather than taste:
 
-       YELLOW AND THE BRIGHTS ARE DARKENED. Tomorrow's #eab700 yellow is 1.7:1 on paper —
-       a TUI's warning would be a blank line. Every colour here clears 3:1 on --term-bg,
-       which is what makes a light pane legible rather than merely light.
-
-       WHITE IS NOT WHITE. Every dark scheme maps ANSI 7/15 to the foreground, so a TUI
-       printing \e[37m or \e[97m gets its strongest ink. Map them literally on paper and
-       that text vanishes — the fault Solarized Light is famous for. Here 7 IS the
-       foreground (exactly as the dark set makes both #c5c8c6) and 15 is darker still:
-       bright white stays the STRONGEST mark, which is the role the code emitting it
-       means, and the only reading that survives inverting the ground.
-
-     THE INK WENT DARKER ON 2026-08-19, an hour after it landed: stock Tomorrow's #4d4d4c
-     is 8:1 on this paper and the owner read it as washed — "the text is now black, it's a
-     bit light". It is now 12.5:1. Worth keeping as the correction it is: clearing the
-     7:1 floor is what check-css can measure, and it is not the same as looking right.
-     Body text was TWO tokens, not one — plenty of TUIs print body through ANSI 37 rather
-     than the default foreground, so darkening --term-fg alone would have fixed half the
-     screen and left the other half exactly as pale.
-
-     The pane is the lightest paper in the room (--panel is #fff, but a pane is a page, and
-     it sits a shade above the desk it lies on). */
-  /* THE CUBE IS FLIPPED ON PAPER, and this is a REGRESSION FIX rather than a nicety.
-     Until cfb8230 the terminal stayed dark under the light shell, so a TUI painting from
-     the cube always had the dark ground it was written for. Making the terminal follow the
-     shell took that away from every program that addresses the cube instead of the sixteen
-     named slots — Codex is the one in this house: its tape is 38;5;231 (pure white, ~4k
-     times in one session) and fills of 48;5;22/52/237/16. On paper that is 1.06:1, which
-     is why the owner saw "big bright white sections" where the output should have been.
-     Claude Code was unaffected because an -ansi theme emits slot NAMES, and those are
-     remapped below. Flipping lightness and keeping hue is what makes "light ink on a dark
-     ground" survive onto paper — and it has to be a flip rather than a darkening, because
-     ONE palette serves both text and fills: darken everything for legibility and every
-     background fill turns back into a dark rectangle. */
   --term-cube: invert;
   --term-bg: #faf8f2;
   --term-fg: #2e302c;
@@ -441,20 +253,7 @@
   --term-ansi-magenta: #7a4d9c;
   --term-ansi-cyan: #2c7a7a;
   --term-ansi-white: #2e302c;
-  /* BRIGHTBLACK IS A FILL HERE, NOT DIM TEXT — the one slot whose role INVERTS with the
-     ground rather than just its value (2026-08-19, an hour after the palette landed).
-     Claude Code draws the owner's own message as \e[100m background + \e[97m text; with
-     brightBlack a mid grey (#767874) that was near-black ink on a grey bar at 4.1:1, and
-     the owner could not read his own words. It is now 12.9:1.
 
-     The two jobs cannot both be served and the choice is forced, not preferred: brightWhite
-     must be DARK so \e[97m body text survives on paper (see above), and dark text needs a
-     LIGHT fill under it. Fix one end and the other follows. A mid grey is the compromise
-     that fails both — a bar too heavy to sit on the page and too dark to write on.
-     THE COST, stated so the next person does not rediscover it as a bug: a TUI using slot 8
-     as dim text gets 1.3:1 here, i.e. nothing. Claude Code does not (it dims with \e[2m,
-     which xterm blends against the ground and is unaffected); a tool that does will look
-     blank rather than faint, and the remedy is this line, not a patch elsewhere. */
   --term-ansi-br-black: #dcd8ce;
   --term-ansi-br-red: #d13b3b;
   --term-ansi-br-green: #6f8f28;
@@ -478,9 +277,7 @@
   --term-input-fg: #2c2e36;
 }
 
-/* Keyboard focus is visible EVERYWHERE, one rule: the amber ring. Pointer users never
-   see it (:focus-visible), and a control wanting a tighter ring may add radius, not
-   remove the outline. This used to exist for exactly one control (the brand). */
+
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
@@ -491,15 +288,9 @@
   box-sizing: border-box;
 }
 
-/* Dark scrollbars everywhere the browser draws one (home pane, macro/pad/copy
-   sheets, DVR strip). Same root cause as the terminal white bars: attaching a
-   pointing device — a Work Louder pad's joystick counts — makes macOS switch
-   from fading overlay scrollbars to always-on legacy ones, and unstyled they
-   are drawn light-mode over this dark theme. Scoped to scrollbars only, so
-   native form controls are left alone. The terminal viewport opts out below
-   (width 0) — there the bar covered code rather than sitting in a margin. */
+
 * {
-  scrollbar-width: thin; /* Firefox */
+  scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
 }
 *::-webkit-scrollbar {
@@ -525,7 +316,7 @@ body {
   color: var(--fg);
   font-family: var(--font-ui);
   -webkit-text-size-adjust: 100%;
-  overflow: hidden; /* never let the page scroll behind the keyboard */
+  overflow: hidden;
 }
 
 body {
@@ -538,8 +329,7 @@ body {
 
 @layer ui {
 
-/* A top-bar navigation label and the plain value loaded beside it. Every bar door uses
-   this reset; a raw <button> in the bar is not a navigation primitive. */
+
 .ui-bar-nav {
   appearance: none;
   border: 0;
@@ -566,8 +356,7 @@ body {
   white-space: nowrap;
 }
 .ui-bar-separator { color: var(--muted); }
-/* The bar's place reading — italic so it reads as information, never as a door — and
-   sized to the value it replaced. Truncates before it can push the verbs. */
+
 .ui-bar-place {
   color: var(--bar-value-fg);
   font-size: var(--bar-value-size);
@@ -577,10 +366,7 @@ body {
   text-overflow: ellipsis;
   min-width: 0;
 }
-/* ---- ui-sheet / ui-card — the modal primitive (js/ui.js `sheet`) ----
-   Dialog semantics, focus entry/trap/return and dismissal live in JS; this is the
-   look: a scrim, a centered card. Consumers size their card and may accent its
-   border via their own class (app layer) — they do not restyle the primitive. */
+
 .ui-sheet {
   display: none;
   position: fixed;
@@ -601,9 +387,7 @@ body {
   border-radius: var(--radius-xl);
 }
 
-/* ---- the toast — one transient outcome chip (js/ui.js `toast`) ----
-   Grew out of the pad's #padtoast; tile-scoped errors that were alert() land here
-   now. role=status, so it is announced without stealing focus. */
+
 #toast {
   position: fixed;
   left: 50%;
@@ -631,7 +415,7 @@ body {
   border-color: var(--bad);
 }
 
-/* Central owner-attention cue: kiiro means an action is waiting, not that it failed. */
+
 #attention-flash {
   position: fixed;
   left: 50%;
@@ -639,8 +423,7 @@ body {
   transform: translate(-50%, -50%);
   z-index: 41;
   max-width: 88vw;
-  /* A kiiro FILL, so it reads the invariant brand pair — light mode's --warn is a
-     text ink and would mustard this band (owner, 2026-09-01). */
+
   border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-xs);
   background: var(--kaki);
@@ -655,14 +438,11 @@ body {
 }
 #attention-flash.show { opacity: 1; }
 
-/* ---- field / status — the labelled-control and async-outcome primitives (js/ui.js) ----
-   .ui-field is display:contents ON PURPOSE: it exists to add a real accessible name
-   and a message line to a control already sitting in someone's flex/grid, without
-   adding a box that layout would have to accommodate. */
+
 .ui-field {
   display: contents;
 }
-/* Visually hidden, present to assistive tech — the standard clip recipe. */
+
 .ui-sr {
   position: absolute;
   width: 1px;
@@ -689,19 +469,7 @@ body {
   color: var(--ok);
 }
 
-/* ---- THE HELP BOX (js/tips.js) --------------------------------------------------
-   One panel, one size, one place. It replaced FOUR overlapping ways the header had of
-   explaining itself — the native `title`, the dial's badge, the gauge's badge, and a
-   tooltip added on top of those — which between them put two boxes on screen at once
-   for a single hover, at different sizes in different spots.
 
-   FIXED WIDTH AND FIXED HEIGHT, both. Growing to fit was the previous attempt and it is
-   what made the thing restless: crossing a row of buttons resized the panel under the
-   pointer. Here the geometry is a constant and the CONTENT is the only variable. Labels
-   are written to fit; `scripts/check-tips.mjs` fails the build if one does not, so a
-   too-long label is caught at build time instead of being silently clipped at 2am.
-
-   TWO ZONES, and the header is CONDITIONAL — see `.helpbox-status:empty` below. */
 .helpbox {
   position: fixed;
   z-index: 90;
@@ -717,25 +485,17 @@ body {
   background: var(--panel);
   box-shadow: var(--shadow-menu);
   font: var(--text-3)/1.45 var(--font-ui);
-  /* A label may carry a URL, and a URL is one word: without this the box cannot break it
-     and it spills 17px past the edge at any length (the 🌿 label, measured 2026-08-26). */
+
   overflow-wrap: anywhere;
-  /* THE BACKSTOP, not the mechanism. `check-tips` is what guarantees labels fit; this is
-     what happens if one ever slips past it. Without it the overflow rendered OUTSIDE the
-     border, spraying a stray line across the terminal underneath — measured, on the dial.
-     A clip is contained and looks like a bug; loose text over the pane looks like a
-     corrupted screen. */
+
   overflow: hidden;
-  /* It explains what is under the pointer; it must never become what is under it. */
+
   pointer-events: none;
 }
 .helpbox.show {
   display: block;
 }
-/* THE HEADER LINE — a keyboard shortcut (⌃⇧C on き Commons), or what this control reads
-   right now (the dial's position, the gauge's percentage). One line, clipped rather than
-   wrapped: a reading that grew to two lines would push the explanation down and break the
-   fixed geometry. */
+
 .helpbox-status {
   margin-bottom: var(--space-2);
   padding-bottom: var(--space-2);
@@ -746,34 +506,18 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* NO CONTENT, NO HEADER — and no rule either, which is the half that mattered.
-   This line used to carry `min-height: 1.45em` so it held its height when empty, on the
-   argument that the box would otherwise reflow between a control with a reading and one
-   without. But `.helpbox` is a fixed width AND height: nothing reflows either way, so the
-   reserved line bought nothing and charged the majority case for it. Most controls have
-   no reading, the macro rows have neither reading nor shortcut, and every one of them
-   drew an empty block plus a divider on top of its two lines of text. Owner, 2026-08-17,
-   scrolling the macro list: "you barely see the text, and there's this big white block
-   head at the top."
 
-   `:empty` is the whole rule — one test, on content, so no caller can opt in or out of it
-   by accident. It matches only an element with NO child nodes, which is why `tips.js`
-   trims every source and writes '' rather than a space: one stray whitespace text node
-   and the divider is back. Same shape as `.ui-status:empty` above, for the same reason. */
 .helpbox-status:empty {
   display: none;
 }
-/* WHAT IS THIS — three lines at this width and font, four when there is no header above
-   it. The build check is calibrated to the WITH-header case (`check-tips.mjs` reserves the
-   line in its probe), so it stays the conservative measurement of the two. Changing either
-   box dimension means re-running it. */
+
 .helpbox-what {
   color: var(--fg);
 }
 }
 
 @layer app {
-/* ---- top bar ---- */
+
 #bar {
   display: flex;
   align-items: center;
@@ -785,16 +529,8 @@ body {
   user-select: none;
   flex: 0 0 auto;
 }
-/* The mark is the way home. It was a <span> — decoration — and the roster sat three
-   taps down (ニ sheet → Commons → ⌂ Roster on a phone, a menu hop on the Mac), which
-   is too far from the one screen you keep coming back to. Clicking the logo to get
-   to the front page is the oldest convention on the web; this just honours it.
-   Still LOOKS like the wordmark: no button chrome until you point at it. */
-/* ＋ NEW TAB — beside the brand, and deliberately NOT one of the five right-hand verbs.
-   Those share a measured `min-width: 100px` (see the bar rule below) and that number means
-   those five; a sixth wearing it would push the row 100px wider for a control whose whole
-   label is one character. So this is sized for what it is: a small square next to the
-   wordmark, quiet until you look for it. */
+
+
 #bar .newtab {
   appearance: none;
   width: 24px;
@@ -853,7 +589,7 @@ body {
   align-items: center;
   min-width: 0;
 }
-/* The Workbench shape control uses the compact bar-button treatment. */
+
 #bar .shape-cycle {
   display: inline-flex;
   align-items: center;
@@ -867,8 +603,8 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
-/* Copy panel — real selectable text, native copy on any device */
-/* Per-session note (post-it) — centered modal on desktop, full-bleed on phones */
+
+
 #notesheet .ns-card {
   display: flex;
   flex-direction: column;
@@ -924,27 +660,14 @@ body {
   color: var(--accent);
   border-color: var(--accent);
 }
-/* The MARK — what this session is doing, beside the name rather than out among the
-   controls on the right. Sits with the name and the ladder chip: "who is this, and
-   where are they". */
-/* THE MARK'S WEIGHT. Half the catalog's icons are TEXT glyphs (✂ ❯ • ミ) and half are
-   colour emoji (🏈 💭 🗺 🐞 🔎). The two do not sit at the same visual weight: a text
-   glyph is thin strokes in the foreground colour, an emoji is a filled colour blob the
-   font draws at whatever size it likes. At 13px the football read as massive next to the
-   scissors, which is the look worth keeping.
-   Two turns of the dial, and both are needed — size alone leaves a small blob:
-     · smaller than the label beside it. The mark identifies, it does not announce.
-     · `saturate()` to calm the colour ones. Greys have no saturation to lose, so this
-       lands ONLY on the emoji and leaves ✂ ❯ • ミ and the button's own border untouched. */
+
+
 .tile-head button.job {
   margin-left: var(--space-2);
   font-size: var(--text-2);
   filter: saturate(0.72);
 }
-/* Not marked: a `?` on a dashed edge (js/tile.js). It was drawn EMPTY first, and an empty
-   button among six others is invisible — the owner could not find the control at all. The
-   glyph is dimmed so it reads as a question rather than as a mark in its own right, and
-   brightens on hover like the answer it is asking for. */
+
 .tile-head button.job.unset {
   border-style: dashed;
   border-color: var(--line);
@@ -955,17 +678,7 @@ body {
   color: var(--fg);
 }
 
-/* 🏈 ON ITS OWN — the one glyph in the set the font draws as a big filled ellipse where
-   the rest are strokes or small shapes, so at the size that suits them it reads as
-   massive. The owner's call, looking at all nine: "they're all fine, except for the
-   football". One more step down for this mark only.
 
-   Keyed on the NAME rather than the character, because the character is the definition's
-   to change and a rule matching on 🏈 would go stale the moment it did. The coupling is
-   real either way: rename `QuarterBack` in ronin_catalogs/session_roles/ and this stops
-   applying — the mark simply returns to the common size, which is a visible nudge rather
-   than a broken layout. Everything the mark IS still comes from the catalog; this tunes
-   only how big one of them is drawn. */
 .tile-head button.job[data-job='QuarterBack'] {
   font-size: var(--text-1);
 }
@@ -1002,27 +715,7 @@ body {
     border-radius: 0;
   }
 }
-/* Tile ⚡ macros — four TEACHING buttons, dropped from the tile header (which is
-   position:relative), not a full-screen modal.
 
-   It was a dense list of `+name:` rows with the explanation on hover until 2026-08-17.
-   The owner: "it's just very ugly… I would rather have four macros and have larger
-   buttons. These should be headlines, and the boxes are big enough that you can actually
-   describe in them what that means, so people can then go, 'Oh, I see.'" So the row is a
-   CARD — headline, then body copy that is always on screen, never a tooltip (he reads
-   Ronin on a phone, and a phone has no hover). Which four is the catalog's business:
-   `preview: yes` in ronin_catalogs/MACROS.md, read by src/macros.ts.
-
-   TWO COLUMNS WHEN THERE IS ROOM, AND NO QUERY OF ANY KIND. Four cards in one column
-   are 454px tall; a 4-up tile is ~418px and `.tile` is `overflow: hidden`, so the fourth
-   card was cut in half by the tile's own edge — measured 2026-08-17, and an unreadable
-   button is the exact failure this drop was rebuilt to end. It wraps into a 2×2 instead,
-   which halves the height. `auto-fit` + `minmax` does that from the width it actually
-   has, so the anchor stays honest at every tile size and on the phone (~390px, one
-   column) without a `@media` — which would be the wrong question here anyway, since a
-   narrow tile and a narrow phone are different facts — and without `@container tile`,
-   which cannot be asked from here: that container is `.tile-body`, and this drop hangs
-   off `.tile-head`, its SIBLING. */
 .tmac {
   display: none;
   position: absolute;
@@ -1030,9 +723,7 @@ body {
   right: 6px;
   z-index: 12;
   width: min(560px, calc(100% - 12px));
-  /* The opening height. `tilemacros.js` immediately tightens this to the room actually
-     left below the header IN THIS TILE, which no CSS length can name — see the note
-     there. Kept here so the box is bounded even before that runs. */
+
   max-height: 60vh;
   overflow-y: auto;
   background: var(--panel);
@@ -1046,9 +737,7 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: var(--space-3);
 }
-/* The same card as the launcher's kind buttons (.ks-btn) — headline + description, left
-   aligned, room to breathe — because it is the same job: choosing a thing you may never
-   have heard of by reading what it does. */
+
 .tmac .tmac-row {
   display: flex;
   flex-direction: column;
@@ -1074,13 +763,11 @@ body {
   font-weight: 600;
   line-height: 1.25;
 }
-/* A macro Ronin types and submits for you. Marked, because pressing Enter into a
-   working session is not the same act as dropping text in the box. */
+
 .tmac .tmac-row.sends b {
   color: var(--accent);
 }
-/* NOT clamped. The body copy is the whole point of the button — a description cut off
-   at two lines teaches half of something, which is the failure the cards replaced. */
+
 .tmac .tmac-row small {
   color: var(--muted);
   font-size: var(--text-3);
@@ -1094,11 +781,11 @@ body {
   border-color: var(--line);
 }
 
-/* The @ picker is a compact native control in the tile head. */
+
 .tile-head select.tmention-btn {
   flex: 0 0 auto;
   width: 26px;
-  min-width: 0; /* the picker's readable floor is the picker's, not this glyph's */
+  min-width: 0;
   height: 24px;
   padding: 0;
   appearance: none;
@@ -1121,25 +808,11 @@ body {
   padding: 0;
   line-height: 1;
 }
-/* text on its way in — an @mention or a doc reference over the tile (js/tiledroptext.js) */
+
 .tile .tile-body[data-drop-text='true'] .composer textarea { border-color: var(--accent); }
 .tile .tile-body[data-drop-text='true'] { outline: var(--edge) dashed var(--accent); outline-offset: calc(-1 * var(--edge)); }
 
-/* Tile メ — the rest of the header, dropped in ONE HORIZONTAL STRIP (owner, 2026-08-17:
-   "you just see those boxes exactly as they are, but maybe it just drops down
-   horizontally"). Deliberately the same box as .tmac above it — same anchor corner, same
-   panel, same shadow — because they are two drops off one header and ⚡ sits right beside
-   メ; a second look would read as a second kind of thing.
 
-   What is NOT here is any rule for what is inside: the six controls keep the `.tile-head
-   button` sizing they were built with, since they are the same elements, merely appended
-   somewhere else. That is the whole point of the move, and a `.tmore button { … }` block
-   would quietly undo it.
-
-   WRAPS rather than clipping. The strip is ~212px at six controls and a 4-up tile is far
-   wider, so this is the tile nobody has built yet — but an absolutely-positioned row that
-   overflows its tile is a control you cannot reach, and a wrap is cheaper than a container
-   query for the same promise. */
 .tmore {
   display: none;
   position: absolute;
@@ -1162,15 +835,7 @@ body {
   display: flex;
 }
 
-/* Tile 📄 — THIS session's listed docs (owner, 2026-08-18; js/tiledocs.js). The third drop
-   off this one header, so it is deliberately the same box as .tmac and .tmore above it:
-   same anchor corner, same panel, same shadow. A LIST rather than a strip, because these
-   are filenames and a filename wants its own line.
 
-   Height is bounded in JS (`fitDropToTile`, js/tilemore.js) and the note there says why no
-   CSS length can do it: `.tile` is overflow:hidden, so a list longer than the room under
-   the header is CUT with no scrollbar — the failure ⚡'s cards measured on 2026-08-17. The
-   60vh here is only the bound before that runs. */
 .tdocs {
   display: none;
   position: absolute;
@@ -1189,10 +854,7 @@ body {
 .tdocs.open {
   display: block;
 }
-/* The ▧ Docs tab's row, at drop size (.dc-row is the same shape sized for a pane). Every
-   dimension here is an OVERRIDE: this menu lives inside .tile-head, whose `button` rule is
-   a 26×24 square for glyphs, and a filename in a 26px box is invisible. .tmac-row does the
-   same for the same reason. */
+
 .tdocs .tdocs-row {
   display: flex;
   align-items: baseline;
@@ -1216,7 +878,7 @@ body {
   color: var(--fg-strong);
   font-weight: 600;
 }
-/* The last two directories, and they yield first: the name is what you are reading. */
+
 .tdocs .tdocs-row span {
   color: var(--muted);
   font-size: var(--text-2);
@@ -1230,14 +892,12 @@ body {
   line-height: 1.45;
   padding: var(--space-4) var(--space-3);
 }
-/* Lit when this session has listed something — the same reading 🏷 and 📝 carry, so the
-   drop does not have to be opened to learn it is empty. */
+
 .tile-head button.tdocs-btn.has-docs {
   color: var(--accent);
   border-color: var(--accent);
 }
-/* Desktop's horizontal メ strip otherwise offers only an unexplained page glyph. The
-   phone sheet already supplies its own Docs word beside this same relocated button. */
+
 .tile-head .tmore .tdocs-btn {
   width: auto;
   padding-inline: var(--space-3);
@@ -1245,7 +905,7 @@ body {
 }
 .tile-head .tmore .tdocs-btn::after { content: attr(data-label); }
 
-/* One Agent's shared Docs editor, over its terminal on desktop and in the phone shell. */
+
 .tile-doc-view {
   display: none;
   position: absolute;
@@ -1265,11 +925,7 @@ body {
   cursor: pointer;
 }
 
-/* Work Louder pad — a ui.sheet consumer since 2026-08-17; the board is a picture of the
-   Creator Micro 2. The scrim, the centering and the open/closed switch belong to the
-   primitive now (@layer ui, .ui-sheet), which is why the `#padsheet { position: fixed;
-   z-index: 30; … }` block that used to stand here is gone with the JS that toggled it.
-   What stays is what is THIS card's: its width, its scroll, and the board inside it. */
+
 .pad-card {
   display: flex;
   flex-direction: column;
@@ -1325,7 +981,7 @@ body {
   gap: var(--space-5);
   padding: var(--space-7);
 }
-/* Captured off-layout chords (e.g. ⌥⌘1 dummies) — same key look, own row */
+
 .pad-card .pad-extras {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1352,10 +1008,7 @@ body {
     background 0.12s,
     border-color 0.12s;
 }
-/* A key is a square, so a caption like "⌸ Session switcher" cannot fit on one line.
-   It WRAPS (up to three lines, then clamps) rather than being cut off with an
-   ellipsis: a truncated binding name is unreadable on the one surface whose whole
-   job is telling you what a key does. */
+
 .pad-card .pad-key b {
   max-width: 92%;
   display: -webkit-box;
@@ -1402,7 +1055,7 @@ body {
   border-radius: var(--radius-lg);
   font-size: var(--text-8);
 }
-/* Universal-key widgets carry symbol + name — smaller type so it fits */
+
 .pad-card .pad-kesc,
 .pad-card .pad-ktab,
 .pad-card .pad-ent,
@@ -1418,7 +1071,7 @@ body {
 .pad-card .pad-joy {
   border-radius: var(--radius-round);
 }
-/* the encoder / joystick flash too, so you can see what a turn or flick emits */
+
 .pad-card .pad-widget.hit {
   background: var(--kaki);
   border-style: solid;
@@ -1472,13 +1125,7 @@ body {
   white-space: nowrap;
   cursor: pointer;
 }
-/* Ask-on-press prompt: the popped window IS the macro's args field. A ui.sheet consumer
-   since 2026-08-17, so the scrim and the open switch are the primitive's; this card's own
-   business is that it is ONE ROW — name, then box — where every other card in the house is
-   a column, hence the explicit flex-direction over .ui-card's default.
-   It used to sit at z-index 35 above the pad panel's 30, because an ask-key pressed while
-   ▦ is open has to pop OVER the board. Both are .ui-sheet at one z-index now, and DOM
-   order carries it instead: js/layout.js builds the panel first, the prompt second. */
+
 #padask .pa-card {
   display: flex;
   flex-direction: row;
@@ -1506,7 +1153,7 @@ body {
   padding: 0 var(--space-5);
   font-size: var(--text-5);
 }
-/* ⚙ program-the-pad row (WebHID) */
+
 .pad-card .pad-prog {
   display: flex;
   flex-wrap: wrap;
@@ -1537,7 +1184,7 @@ body {
   line-height: 1.4;
 }
 
-/* ---- grid ---- */
+
 #viewhost {
   flex: 1 1 auto;
   display: flex;
@@ -1554,16 +1201,14 @@ body {
   display: none;
 }
 
-/* ---- tile ---- */
+
 .tile {
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   background: var(--panel);
-  /* The tile is a card like any workbench surface: its perimeter speaks the
-     define-line too, so the grid page and the bench read as one system. The armed
-     frame (.tile.active, accent) and the dropped mark still override. */
+
   border: var(--edge) solid var(--define-line);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -1572,34 +1217,19 @@ body {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent) inset;
 }
-/*
- * TYPED INPUT WAS DROPPED — the socket was not open when a key was pressed.
- *
- * Keystrokes into a locked tile used to vanish in silence while the socket was down,
- * which on a phone is most of the time a reconnect is in flight. They are still
- * dropped (queued keystrokes replayed into a live shell later is worse), but never
- * silently: the tile flashes its edge so you know to type it again. The unlocked box
- * has its own `.composer.noconn` mark, which sits closer to what you were typing.
- */
+
 .tile.dropped {
   border-color: var(--bad-deep);
 }
 .tile-head {
   display: flex;
   align-items: center;
-  /* WRAPS rather than clips. A tile in a squeezed team workspace (236px at its floor)
-     used to push ⚡ メ and the way to the commons off its right edge and squash the
-     session name to a 14px stub — a row you could neither read nor use. Now the controls take
-     a second line when the first is full: a squeezed tile costs one row of terminal and
-     keeps every control (measured 2026-08-26). A Sessions tile never reaches that
-     width at 4-up, so the grid never sees the second line. */
+
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-4);
   padding: var(--space-3) var(--space-4);
   min-height: var(--row-head);
-  /* The one head shade, shared with every workbench band (--cowork-head-bg is bg-2
-     on stock): a skin that moves the band's shade moves this head with it, so the
-     selector's band and the tile heads beside it can never split. */
+
   background: var(--cowork-head-bg);
   border-bottom: var(--edge) solid var(--cowork-head-line);
   flex: 0 0 auto;
@@ -1610,9 +1240,7 @@ body {
 .tile-head .grow {
   flex: 1;
 }
-/* The session name yields; the controls don't. Without this every button in the row is
-   shrinkable (they carry a fixed width but the default flex-shrink: 1), so one more
-   control squashes them all to slivers on a narrow tile. */
+
 .tile-head .sess {
   flex: 0 1 auto;
   min-width: 6rem;
@@ -1641,7 +1269,7 @@ body {
 .tile-head button:hover {
   border-color: var(--accent);
 }
-/* The Torii rename and メ drop need a little more room than square icon glyphs. */
+
 .tile-head button.torii,
 .tile-head button.tmore-btn {
   width: 28px;
@@ -1656,11 +1284,9 @@ body {
   border-color: var(--bad);
 }
 
-/* ---- cockpit dial (house motif for discrete multi-position controls) ----
-   A rotary knob: tick marks = detents, pointer = current position, tap = next.
-   Debut use: the per-session control dial 👤 user / 👁 read / 🤖 write. */
+
 .tile-head {
-  position: relative; /* anchors .dial-badge just below the header */
+  position: relative;
 }
 .tile-head button.dial {
   padding: 0;
@@ -1686,11 +1312,7 @@ body {
   background: var(--muted);
 }
 .dial-ptr {
-  /* THE NEEDLE'S OWN GEOMETRY, named because the three numbers must move together: the
-     hand is `--ptr-len` tall, pulled up by exactly its own length so it pivots on the
-     centre, and nudged left by half its width to sit on it. Left raw, a later edit to
-     the height silently un-centres the pivot — which is the class of bug a measurement
-     with a name does not have. Not the space ladder: this is a clock hand, not rhythm. */
+
   --ptr-len: 7px;
   --ptr-wide: 2px;
 
@@ -1716,17 +1338,13 @@ body {
   color: var(--ok);
   border-color: var(--ok);
 }
-/* Inert either way: `.off` is the tile header's inert state (dimmed but still hoverable,
-   so the title reaches you — see `.tile-head button.off`), `:disabled` covers any other
-   dial. Both look the same; only one of them can still speak. */
+
 .dial:disabled,
 .dial.off {
   opacity: 0.4;
   cursor: default;
 }
-/* NEVER SHOWN. The badge is where the dial's position sentence is KEPT; the help box
-   reads it and displays it (js/tips.js). Both its hover reveal and its 1400ms flash on
-   turn are gone — each was a second bubble competing with the one box. */
+
 .dial-badge {
   position: absolute;
   top: calc(100% + 3px);
@@ -1742,18 +1360,13 @@ body {
   white-space: nowrap;
   pointer-events: none;
 }
-/* Desktop: hovering the dial reveals the badge as its help text — our own element,
-   instant and reliable (native title tooltips proved flaky here). */
+
 @media (hover: hover) and (pointer: fine) {
-  /* NO HOVER REVEAL — same reason as .gauge-badge. The dial's position now reads on
-     the help box's status line, so one hover produces one panel. Hovering the dial used
-     to raise this badge AND the box, 297x18 in one place and 280x86 in another. */
+
 }
-/* ---- cockpit gauge (readout counterpart to the dial: dials input, gauges read) ----
-   Debut use: the context gauge ⛽ — needle 0→100, green/amber/red by fullness.
-   Hidden entirely (attribute) when the pane has no context reading. */
+
 .tile-head button.gauge {
-  position: relative; /* anchors .gauge-badge right under the gauge itself */
+  position: relative;
   padding: 0;
 }
 .gauge[hidden] {
@@ -1767,10 +1380,7 @@ body {
   margin: 0 auto;
   border-radius: var(--radius-round);
   border: var(--edge) solid var(--line);
-  /* Revealed tachometer fill: the arc from 6:00 to the needle, coloured by the
-     zones it has reached — green to 9:00, amber to 12:00, red beyond. --g1/--g2/--g3
-     are the zone cut-points already clipped to the sweep (set in js/widgets.js makeGauge;
-     mapping 0%→6:00, 15%→9:00, 50%→12:00, ~80%→3:00). Unswept face stays dark. */
+
   background: conic-gradient(
     from 180deg,
     var(--ok) 0 var(--g1, 0deg),
@@ -1780,11 +1390,7 @@ body {
   );
 }
 .gauge-ptr {
-  /* THE NEEDLE'S OWN GEOMETRY, named because the three numbers must move together: the
-     hand is `--ptr-len` tall, pulled up by exactly its own length so it pivots on the
-     centre, and nudged left by half its width to sit on it. Left raw, a later edit to
-     the height silently un-centres the pivot — which is the class of bug a measurement
-     with a name does not have. Not the space ladder: this is a clock hand, not rhythm. */
+
   --ptr-len: 7px;
   --ptr-wide: 2px;
 
@@ -1795,13 +1401,12 @@ body {
   height: var(--ptr-len);
   margin: calc(var(--ptr-len) * -1) 0 0 calc(var(--ptr-wide) / -2);
   border-radius: var(--radius-hair);
-  background: var(--fg); /* contrasts with the fill so the edge stays a clock hand */
+  background: var(--fg);
   transform-origin: 50% 100%;
   transition: transform var(--motion-settle) var(--ease);
 }
-/* The gauge's readout badge: same look as the dial's, but anchored to the gauge
-   button so the number pops up directly beneath it, not off at the header edge. */
-/* NEVER SHOWN — same as .dial-badge. Text carrier for the help box's status line. */
+
+
 .gauge-badge {
   position: absolute;
   top: calc(100% + 6px);
@@ -1818,31 +1423,11 @@ body {
   white-space: nowrap;
   pointer-events: none;
 }
-/* Desktop: hover reveals the badge (the number), same pattern as the dial. */
+
 @media (hover: hover) and (pointer: fine) {
-  /* NO HOVER REVEAL. The gauge's reading is hover help, and hover help is the help
-     box's job now (js/tips.js) — this badge opening under the gauge at the same moment
-     as the box put two panels on screen for one control. The badge stays for the
-     .show flash on click, which is feedback about an action, not hover. */
+
 }
-/* THE TILE IS THE CONTAINER — `@container tile (…)` is measured against this box.
- *
- * Ronin is a tile-based workspace, not a desktop app that shrinks. A Commons room is
- * narrow because it is on a phone OR because it is one cell of a 4-up desktop grid,
- * and `@media (max-width: …)` cannot tell those apart: on a 1280px Mac each tile body
- * is ~630px wide and every viewport rule still handed it the roomy desktop layout.
- * So anything that describes THIS BOX asks this box (see `@container tile` below);
- * only genuine shell changes — the app bar going icon-only, a sheet covering the
- * screen, the grid stacking into a scroll column — stay on viewport queries.
- *
- * `inline-size`, never `size`: size containment would make the block axis independent
- * of the contents too, and this box's height is the flex row's to give. The layout
- * containment that rides along costs nothing here — the box is already
- * `position: relative` and already `overflow: hidden`, and every fixed-position
- * surface in the client (helpbox, toast, sheets, .job-menu, #chip) is
- * appended to document.body rather than into a tile, so nothing loses its viewport
- * anchor. xterm is unaffected: FitAddon measures the terminal element inside this
- * box, and this box's own width still comes from the grid column, not its contents. */
+
 .tile-body {
   container-type: inline-size;
   container-name: tile;
@@ -1851,26 +1436,16 @@ body {
   padding: var(--space-2) var(--space-1) var(--space-1) var(--space-3);
   background: var(--bg);
   overflow: hidden;
-  position: relative; /* the tape view fills this box */
+  position: relative;
 }
 .tile-body .xterm {
   height: 100%;
 }
-/* Kill xterm's own viewport scrollbar. xterm.css sets `overflow-y: scroll` on
-   .xterm-viewport, so macOS draws a scrollbar there — invisible while it's an
-   overlay bar, but a permanent light-grey band the moment a pointing device is
-   attached (a Work Louder pad's joystick counts) and macOS flips to legacy
-   always-on scrollbars. Worse, FitAddon reserves `scrollBarWidth` measured ONCE
-   at attach: measured 0, then 15px appears, and the bar sits on top of the last
-   column until something forces a refit. Width 0 keeps that measurement honest
-   on every platform. Nothing is lost — tmux owns scrollback when 🔒 Locked, and
-   wheel/drag/keys still scroll the local buffer when 🔓 Unlocked. */
+
 .xterm .xterm-viewport {
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
 }
-/* Touch: a tape-fed tile's history is already in this element, so let the OS scroll it
-   — momentum and rubber-banding included — instead of us translating the gesture.
-   Locked still hijacks the gesture in JS, because there the history is on the server. */
+
 @media (pointer: coarse) {
   .xterm .xterm-viewport {
     -webkit-overflow-scrolling: touch;
@@ -1883,11 +1458,11 @@ body {
   height: 0;
 }
 
-/* Unlocked (DVR) chrome: the strip showing locally-parked text (Enter sends it). */
+
 .tile-body {
   position: relative;
 }
-/* honest-mode chip: unlocked tile over an alternate-screen app — no tape exists */
+
 .alt-note {
   display: none;
   position: absolute;
@@ -1926,23 +1501,7 @@ body {
   display: block;
 }
 
-/* THE COPY HINT — a drag in a locked tile that produced no selection (js/termview.js).
-   In KAKI, and loud on purpose.
 
-   The first cut was a quiet grey pill in a corner, and the owner's objection was the
-   right one: on a screen where four terminals are always painting, a soft fade in the
-   furniture colour is exactly the thing the eye has learned to ignore. So it takes the
-   one saturated mark in the house palette and it MOVES differently from the terminal
-   text behind it — text scrolls vertically, this pulses in place.
-
-   KAKI IS ALREADY DOING A JOB (agent action / THIS SESSION, on the phone's メ opener),
-   and this gives it a second. Accepted deliberately: the two never share a screen —
-   メ is touch-only and this is desktop-only — and what both uses have in common is
-   "the thing you are meant to look at right now".
-
-   Sits TOP-right: the bottom of a tile is the dvr strip and the composer. Not a tap
-   target — it says a key and goes away, and anything clickable here would be in the
-   way of the next drag. */
 .copyhint {
   position: absolute;
   top: 8px;
@@ -1953,7 +1512,7 @@ body {
   border-radius: var(--radius-sm);
   background: var(--kaki-lift);
   border: var(--edge) solid var(--kaki);
-  color: var(--bg); /* near-black on the lift — 6.9:1 */
+  color: var(--bg);
   font: 600 var(--text-3)/1.35 var(--font-ui);
   pointer-events: none;
   opacity: 0;
@@ -1961,8 +1520,7 @@ body {
 .copyhint.show {
   animation: copyhint-in var(--motion-hint) var(--ease-out) forwards;
 }
-/* Snap in, beat twice, hold. The ring is what carries at the edge of vision; the
-   scale is small on purpose, because a pill that jumps far reads as a bug. */
+
 @keyframes copyhint-in {
   0% {
     opacity: 0;
@@ -1987,13 +1545,7 @@ body {
   }
 }
 
-/* The tile's own edge, flashed kaki behind the pill — the half that works while you
-   are looking at a DIFFERENT tile.
 
-   An ::after overlay, not an inset box-shadow on .tile-body itself: an inset shadow
-   paints above the background and BELOW the children, and the child here is a canvas
-   filling the whole box, so the ring would have been invisible in exactly the view it
-   exists for. z-index 5 puts it over the terminal and under the pill (6). */
 .tile-body.hinting::after {
   content: "";
   position: absolute;
@@ -2017,10 +1569,7 @@ body {
   }
 }
 
-/* DESIGN_TOKENS.md §7: "every animation ships a prefers-reduced-motion fallback that
-   resolves to the FINISHED state — copy that discipline, don't just copy the keyframes."
-   The finished state here is the pill, plainly visible. It still leaves after 5s,
-   because the timeout is JS and does not care about motion preferences. */
+
 @media (prefers-reduced-motion: reduce) {
   .copyhint.show {
     animation: none;
@@ -2031,17 +1580,9 @@ body {
   }
 }
 
-/* ---- touch: control keys + the keypad (hidden on desktop) ----
-   The floating ⌨ (#fab), the floating 🎤 (#mic) and the compose overlay (#compose)
-   are GONE, rules and all. They were a second text entry: you typed in the tile's
-   composer and spoke into the overlay's textarea, and the words never met. The mic
-   is now .cmic, a button on the one box. */
+
 @media (pointer: coarse) {
-  /* ONE BOX for every glyph control, and it is ⚡'s (owner, 2026-09-01: "make them all
-     exactly like the Macro button"). Without the longer selectors the base sheet's
-     torii/メ width (28px, higher specificity) beat this rule, and the @ picker is a
-     SELECT the button rule never reached — three sizes on one row. The worded
-     work-record keeps its own width (its rule outranks these). */
+
   .tile-head button,
   .tile-head button.torii,
   .tile-head button.tmore-btn,
@@ -2052,7 +1593,7 @@ body {
     font-size: var(--text-5);
     border-radius: var(--radius-sm);
   }
-  /* The select centers its glyph by line, not by flex. */
+
   .tile-head select.tmention-btn {
     line-height: 30px;
   }
@@ -2061,17 +1602,13 @@ body {
   }
 }
 
-/* ---- home panel: the default state of a sessionless tile (and where a tile
-   lands when its session dies). Overlays the terminal; lean, phone-first. ---- */
+
 .home {
   position: absolute;
   inset: 0;
   z-index: 3;
   display: none;
-  /* The pane is a plain column holding TWO views (the null board and the home list).
-     The two-column split lives on .home-main, sized by auto-fit rather than a media
-     query: a home panel is sized by its TILE, so a 2x2 grid on a big desktop still
-     gets narrow panels that must collapse to one column. */
+
   flex-direction: column;
   gap: var(--space-5);
   padding: var(--space-5);
@@ -2107,9 +1644,7 @@ body {
   flex-direction: column;
   gap: var(--space-1);
 }
-/* Archived sessions are disk records, not a second kind of live row. The section sits
-   after the roster and uses a quieter two-column row: its only primary act is bringing
-   the agent back into tmux. */
+
 .home-archives {
   padding: var(--space-5);
 }
@@ -2187,7 +1722,7 @@ body {
   color: var(--bad);
 }
 
-/* The trash choice states the destructive boundary before either action is taken. */
+
 .end-session-card {
   width: min(440px, calc(100vw - 32px));
   padding: var(--space-7);
@@ -2206,13 +1741,7 @@ body {
   flex-wrap: wrap;
   gap: var(--space-3);
 }
-/* A CONTROL MUST ANSWER THE HAND. These two buttons carried six declarations and not one
-   interaction state: no pointer, no hover, no press, and — the failure the owner actually
-   hit — no `:disabled` look, while `finish()` in js/session-retire.js disables BOTH of
-   them for the entire length of the request. Archiving stops a tmux session, so that is
-   not instant; the click therefore read as "nothing happened", right up until the sheet
-   vanished by itself. Nothing was wrong with the tokens — the ramps below were all here
-   the whole time; this rule just never reached for them. */
+
 .end-session-actions button {
   min-height: 40px;
   padding: var(--space-3) var(--space-5);
@@ -2229,8 +1758,7 @@ body {
 .end-session-actions button:hover:not(:disabled) {
   background: var(--raise);
 }
-/* The press. `.tile-head button:active` is this same motif one row up — the header the
-   sheet opens from — so a click here answers the way a click there already does. */
+
 .end-session-actions button:active:not(:disabled) {
   transform: translateY(1px);
 }
@@ -2238,15 +1766,12 @@ body {
   outline: var(--edge) solid var(--accent);
   outline-offset: 2px;
 }
-/* The house's disabled motif: opacity plus a dead cursor, as `.fr-go`, `.st-go` and
-   fourteen other rules in this sheet already spell it. */
+
 .end-session-actions button:disabled {
   opacity: 0.6;
   cursor: default;
 }
-/* Archive is the recommended way out, so it is a FILLED primary like the other two
-   commit-buttons in the app (`.fr-go`, `.st-go`) rather than an outline that reads as
-   secondary next to a red one. */
+
 .end-session-actions .primary {
   background: var(--kaki);
   border-color: var(--kaki);
@@ -2263,7 +1788,7 @@ body {
   background: var(--bad-ground);
   border-color: var(--bad-deep);
 }
-/* ---- the session max: the roster's top line, above the list it describes ---- */
+
 .home-maxrow {
   display: flex;
   align-items: center;
@@ -2293,12 +1818,11 @@ body {
   color: var(--muted);
   margin-left: auto;
 }
-/* At the limit the count is the warning — no banner, no extra row: the line that
-   states the rule is the line that says you have hit it. */
+
 .home-maxnow.full {
   color: var(--warn);
 }
-/* ---- KOSHIDASHI: the null pane — buttons that put a session out to work ---- */
+
 .home-null {
   display: flex;
   flex-direction: column;
@@ -2311,9 +1835,7 @@ body {
   gap: var(--space-5);
   min-height: 0;
 }
-/* Commons tabs, one at a time, named by [data-pane] on .home. (Was a single
-   `.browsing` toggle while there were only two — see buildHome. ⚙ System left the
-   panes for the bar's one sheet, 2026-08-16.) */
+
 .home-null,
 .home-archives,
 .home-wipe,
@@ -2329,8 +1851,7 @@ body {
 .home[data-pane='archives'] .home-archives {
   display: block;
 }
-/* The same room seated as a Cowork workbench surface (Rehydrate Archived): no pane
-   strip around it there, so the surface context is what shows it. */
+
 .tw-archives .home-archives {
   display: block;
 }
@@ -2340,11 +1861,7 @@ body {
 .home[data-pane='docs'] .home-docs {
   display: flex;
 }
-/* ---- THE ACCOUNT TAB'S RAIL (js/cowork-commons.js) — the admin desk's nav, kept (owner,
-   2026-08-27: "we should still have the selectors on the left … not get rid of the UI that
-   we have from the previous admin desk, which is actually quite good"). A NAV, NOT A STRIP,
-   inside the tab: pick a room on the left, see one room on the right. The rows that became
-   tabs of their own left it; the rest of the desk is here as it was. */
+
 .desk-nav {
   flex: 0 0 154px;
   display: flex;
@@ -2354,7 +1871,7 @@ body {
   border-right: var(--edge) solid var(--line);
   overflow-y: auto;
 }
-/* THE RAIL'S ONE CONTROL — « narrower — in the RAIL because the rail is chrome. */
+
 .desk-railtop {
   display: flex;
   justify-content: space-between;
@@ -2414,17 +1931,13 @@ body {
   background: var(--raise);
   color: var(--fg-strong);
 }
-/* Visible but inert — the same treatment `.home-tabs button.off` gives an absent room,
-   so the desk does not invent a second way of saying "not plugged in". */
+
 .desk-row.off {
   opacity: 0.3;
   pointer-events: none;
 }
 
-/* NAMED BY DEFAULT (owner, 2026-08-18: "glyphs & labels"), and the container query says
-   how a name LAYS OUT, never whether it shows: beside its glyph where there is room,
-   stacked under it in a 4-up tile at 70px rather than 154. 680px is the number the tab
-   strip already breaks at — one breakpoint for the tile, not two. */
+
 @container (max-width: 680px) {
   .desk-nav {
     flex-basis: 70px;
@@ -2453,9 +1966,7 @@ body {
     padding-top: 0;
   }
 }
-/* COLLAPSED BY HAND, and it wins at every width because it is the owner's answer rather
-   than the box's. One class more specific than the rules above, which is all it needs:
-   a container query changes WHEN a rule applies, never how strong it is. */
+
 .desk-nav.railed {
   flex-basis: 44px;
   padding: var(--space-5) var(--space-3);
@@ -2494,16 +2005,12 @@ body {
   display: flex;
   flex-direction: column;
 }
-/* The Account tab is the rail beside the content, and a container for the rail's query. */
+
 .cc-pane.cc-rail {
   container-type: inline-size;
 }
 
-/* ---- THE COWORK COMMONS' ROOMS (js/cowork-commons.js). The admin desk — an overlay a
-   tile drew on itself, with a rail, a ✕ and eleven rows — retired on 2026-08-27 (owner:
-   "another workspace alternative"); its rooms are re-hung on the Kit's channel surface
-   under six tabs. `.desk-<room>` below is each room's own layout rule, untouched: the rooms
-   moved surfaces, not names. A pane is shown by `.show` now, not by the desk's data-room. */
+
 .desk-pane {
   display: none;
   flex: 1;
@@ -2513,14 +2020,12 @@ body {
 .desk-pane.show {
   display: flex;
 }
-/* The app's own blocks (js/system.js) are plain content, so they get the padding the
-   sheet used to give them. */
+
 .cc-app {
   flex-direction: column;
   padding: var(--space-4) 0 var(--space-6);
 }
-/* The surface's own box: a tab is one scrolling pane; a `.cc-stack` pane is several
-   rooms under headings, one after another, the way "the rest of the desk" reads. */
+
 .cc-pane {
   display: flex;
   flex: 1;
@@ -2563,17 +2068,14 @@ body {
   font-size: var(--text-3);
   cursor: pointer;
 }
-/* Reserved chat — geometry promised, nothing implied (the team commons' Chat rule). */
+
 .cc-chat {
   flex: 1;
   min-height: 12rem;
   border: var(--edge) dashed var(--line);
   border-radius: var(--radius-md);
 }
-/* The pad's card INLINE — the SAME card, the same graphic, as the sheet showed (owner,
-   2026-08-27: "it should be the exact same graphic we had for the sheet"); every pad rule is
-   scoped to `.pad-card` so it draws the same wherever the card is. Only the sheet's box
-   limits are lifted here: the tab is the box. */
+
 .cc .pad-card {
   flex: 1;
   min-height: 0;
@@ -2585,8 +2087,7 @@ body {
 .cc .pad-close {
   display: none;
 }
-/* The tile commons' two rooms, re-hung here (2026-08-27): their panes show only inside
-   `.home[data-pane=…]` by the commons' own rule; on these tabs they ARE the tab. */
+
 .cc-pane[data-tab='archives'] .home-archives {
   display: flex;
   flex: 1;
@@ -2599,7 +2100,7 @@ body {
   min-height: 0;
   overflow-y: auto;
 }
-/* ⚙'s destination on the grid page: the surface at full width. */
+
 .cc-view {
   display: flex;
   min-height: 0;
@@ -2613,12 +2114,7 @@ body {
   min-height: 0;
 }
 
-/* ---- ⚙ CONFIGURATION: the install record, in one room (js/machine-settings.js).
-   Three kinds of row and they must not look alike: a `.st-field` is something you set,
-   a `.st-obs` is what the box measured and has no control at all, and `.st-note` is
-   what follows from the two. The difference is carried by weight and colour rather
-   than by a border, because the rows sit in one column and a boxed row would read as
-   a card. ---- */
+
 .desk-settei {
   flex-direction: column;
   gap: 0;
@@ -2684,10 +2180,7 @@ body {
   color: var(--muted-3);
   font-size: var(--text-3);
 }
-/* The label sits in a fixed first column and the control beside it; the field's own
-   status line has no rule here on purpose — `.ui-status` is a primitive and the app
-   layer may not select one, so the message simply wraps onto the next line, which is
-   where it wanted to be. */
+
 .st-field {
   display: flex;
   flex-wrap: wrap;
@@ -2724,11 +2217,7 @@ body {
   }
 }
 
-/* ---- ⚙ SYSTEM: appearance, the updater and the way out (js/system.js).
-   NO LONGER A SHEET. `#syssheet .sys-card` sized the dialog these lived in until
-   2026-08-18; the three groups hang in the admin_desk's nav now, so the box that held
-   them is gone and the width belongs to the desk's pane. The content rules below are
-   untouched — they were only ever about the content. ---- */
+
 .sys {
   display: flex;
   flex-direction: column;
@@ -2748,11 +2237,7 @@ body {
 .sys-id small {
   opacity: 0.7;
 }
-/* ---- THE SKIN PICKER, beside the light/dark flip (js/system.js). A row per skin, each
-   carrying its own blurb, because the question "what do these do" is answered by reading
-   them and not by picking one to find out. A skin of the owner's own says so on its face:
-   `origin` is what separates something you added from something of ours you replaced, and
-   only the second can silently stop tracking an upgrade. ---- */
+
 .sys-skins {
   display: flex;
   flex-direction: column;
@@ -2795,7 +2280,7 @@ body {
   color: var(--muted);
   font-size: var(--text-2);
 }
-/* Provenance, in the launcher's own words — a skin of yours, or one of ours you replaced. */
+
 .sys-skin-mine {
   border: var(--edge) solid var(--kaki);
   border-radius: var(--radius-pill);
@@ -2818,9 +2303,7 @@ body {
   opacity: 1;
 }
 
-/* ---- 目 KOSHI: which outlet each incarnation asks.
-   One column at every width, like the wipeboard and the project list: a home panel is
-   sized by its TILE, so a viewport media query would be the wrong instrument. ---- */
+
 .desk-koshi {
   flex-direction: column;
   min-height: 0;
@@ -2903,7 +2386,7 @@ body {
   font-size: var(--text-3);
 }
 
-/* ---- GBRAIN: local process, privacy boundary, search and integrations. ---- */
+
 .desk-gbrain {
   flex-direction: column;
   min-height: 0;
@@ -2928,7 +2411,7 @@ body {
   padding: var(--space-5) var(--space-5);
 }
 .gb-log {
-  /* the Load button's live installer log — same species as a terminal readout */
+
   max-height: 180px;
   overflow: auto;
   font-size: var(--text-2);
@@ -2937,13 +2420,11 @@ body {
   white-space: pre-wrap;
 }
 .gb-remove {
-  /* the way back out — present, quiet, never competing with the panel above it */
+
   margin-top: var(--space-5);
   opacity: 0.7;
 }
-/* Every button on the gbrain room wears the house tokens (owner, 2026-08-17: a raw
-   browser button that ignores hover reads as dead). Same recipe as the notesheet
-   bar; the Load press alone is accented, because it is the room's one big verb. */
+
 .gb-head button,
 .gb-card button {
   background: var(--panel);
@@ -2967,7 +2448,7 @@ body {
   cursor: default;
 }
 .gb-privacy > button {
-  /* the Load press — the room's one primary */
+
   height: 36px;
   padding: 0 var(--space-8);
   font-size: var(--text-4);
@@ -3046,9 +2527,7 @@ body {
   font-size: var(--text-2);
 }
 
-/* ---- ▥ HOTWORDS: the words dictation keeps getting wrong (ronin_catalogs/HOTWORDS.md).
-   One column at every width, like the wipeboard and the project list: a home panel is
-   sized by its TILE, so a viewport media query would be the wrong instrument. ---- */
+
 .desk-hotwords {
   flex-direction: column;
   min-height: 0;
@@ -3062,8 +2541,7 @@ body {
   min-height: 0;
   gap: var(--space-4);
 }
-/* Add sits at the TOP: it is the thing you came here to do, and on a phone the top is
-   the half of the panel the keyboard does not cover. */
+
 .hot-add {
   display: flex;
   gap: var(--space-3);
@@ -3112,8 +2590,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  /* 44px: the row carries a delete, and a mis-tapped delete is the one mistake here
-     that costs anything. Apple's minimum, and worth the vertical space. */
+
   min-height: 44px;
   padding: 0 var(--space-2) 0 var(--space-5);
   background: var(--bg-2);
@@ -3149,7 +2626,7 @@ body {
   }
 }
 @media (pointer: coarse) {
-  /* 16px stops iOS Safari zooming the page when the field takes focus. */
+
   .hot-add input {
     font-size: var(--text-7);
     height: 44px;
@@ -3159,9 +2636,7 @@ body {
   }
 }
 
-/* ---- PROJECT ROOT: the inclusion_list — which directories are part of your Ronin.
-   One column at every width, like the wipeboard: a home panel is sized by its TILE,
-   so a viewport media query would be the wrong instrument. ---- */
+
 .desk-proj {
   flex-direction: column;
   gap: var(--space-4);
@@ -3201,7 +2676,7 @@ body {
   padding: var(--space-4) var(--space-5);
   background: var(--panel);
 }
-/* The add card: the last block in the list, the shape of a root, drawn as a place to fill. */
+
 .pr-block.pr-add {
   border-style: dashed;
   background: transparent;
@@ -3209,8 +2684,7 @@ body {
 .pr-block.gone {
   border-color: var(--bad-line);
 }
-/* Archived: still here, off the new-session picker. Dimmed and dashed rather than
-   coloured — it is retired, not broken, and `gone` owns the alarming border. */
+
 .pr-block.archived {
   border-style: dashed;
   background: none;
@@ -3347,10 +2821,7 @@ body {
   opacity: 0.8;
 }
 
-/* ---- MDEDIT (▧ Docs): the docs each session listed, and a plain editor for one.
-   Two views in one pane, switched by [data-view] — never two elements fighting over
-   `display` from JS. Single column at every width: a home panel is sized by its TILE,
-   so a viewport media query would be the wrong instrument here as everywhere else. ---- */
+
 .home-docs {
   flex-direction: column;
   gap: var(--space-4);
@@ -3379,8 +2850,7 @@ body {
   flex-direction: column;
   gap: var(--space-3);
 }
-/* 'edit' is the textarea and Save; 'view' is the frame and ↗. One bar, two bodies —
-   an .html renders as the page it is instead of as its source (owner, 2026-08-26). */
+
 .home-docs[data-view='edit'] .dc-frame,
 .home-docs[data-view='edit'] .dc-open,
 .home-docs[data-view='view'] .dc-text,
@@ -3393,7 +2863,7 @@ body {
   width: 100%;
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--panel); /* a page paints its own ground; until it does, the panel, not the well */
+  background: var(--panel);
 }
 .dc-open {
   margin-left: auto;
@@ -3406,7 +2876,7 @@ body {
   text-decoration: none;
   white-space: nowrap;
 }
-/* THE SHELF TABS — three compact rectangles, one pressed (owner, 2026-08-28/09-01) */
+
 .dc-pills {
   display: flex;
   gap: var(--space-2);
@@ -3439,12 +2909,7 @@ body {
 .dc-group[hidden] {
   display: none;
 }
-/* DIRTY = the attention FILL (audit mark 5 resolved, 2026-09-02): something to save
-   goes bright kiiro the same way the Kit's data-attention does — a fill with its own
-   ink, not thin amber text that fails on light paper (the reason the old ink read
-   --warn). The ← wears it too so the way out is as easy to find as the way to keep
-   it (owner, 2026-08-28). The class was named `kiiro` while reading --warn; it says
-   what it means now. */
+
 .dc-back.attention,
 .dc-save.attention {
   border-color: var(--kaki);
@@ -3532,8 +2997,7 @@ body {
 .dc-note.bad {
   color: var(--bad-soft);
 }
-/* The editor fills the tile: a document is the whole point of the pane, and a short box
-   with the rest of the tile empty is the shape of a comment field, not an editor. */
+
 .dc-text {
   flex: 1;
   min-height: 0;
@@ -3564,19 +3028,14 @@ body {
   line-height: 1.45;
 }
 
-/* ---- WIPEBOARD: one surface a set of agents all read and write. A file and a tmux
-   option, rendered. Single column on every width — a thread wants one column, and a
-   home panel is sized by its TILE, so a media query would be the wrong instrument. ---- */
+
 .home-wipe {
   flex-direction: column;
   gap: var(--space-4);
   min-height: 0;
   flex: 1;
 }
-/* THE LISTING — teams in the roster's own dress (.home-group / .home-grp are reused on
- * purpose: "the same recognizable listing style" is the ask, not a lookalike), with the
- * wipeboard-only rows beneath. A heading that opens something is a button; it keeps the
- * roster look and gains the hand. */
+
 .wb-list {
   flex: 1;
   min-height: 0;
@@ -3757,7 +3216,7 @@ button.wb-door:hover b {
   overflow-wrap: anywhere;
   color: var(--fg);
 }
-/* The owner's steer must never read as an agent's post. */
+
 .wb-post.owner {
   border-left-color: var(--accent-deep);
 }
@@ -3795,8 +3254,7 @@ button.wb-door:hover b {
   font-size: var(--text-3);
   margin: auto;
 }
-/* Touch only: keep the compose line reachable above the keyboard, and give the
-   thread room by letting the brief stay collapsed (buildWipeboard sets .shut). */
+
 @media (pointer: coarse) {
   .wb-compose {
     position: sticky;
@@ -3864,17 +3322,11 @@ button.wb-door:hover b {
     border-color: var(--accent);
   }
 }
-/* THE BLANK-TASK LAUNCH — first button in every role section: this role, nothing named
-   yet. Dashed, because it is the section's own affordance rather than one of the tasks
-   shelved on it, and a reader scanning a fold should be able to tell them apart without
-   reading a word. Every role has exactly one, including roles the owner invents. */
+
 .ks-btn-role {
   border-style: dashed;
 }
-/* ---- FAMILY ROLES: the sections of the ＋ New board (js/rolefamilies.js). Drawn as the same
-   collapsible groupings the Job Group shelves were — `group` stays the roster's
-   addressing word. Membership lives in each role's own definition file now
-   (ronin_catalogs/role_families/), which is what promoted a shelf into a role. ---- */
+
 .ks-classes {
   display: flex;
   flex-direction: column;
@@ -3920,7 +3372,7 @@ button.wb-door:hover b {
 .ks-class > .ks-grid {
   padding: 0 var(--space-5) var(--space-5);
 }
-/* "unclassed" — only drawn once shelves exist; until then flat IS the whole board. */
+
 .ks-loose-h {
   color: var(--muted-2);
   font-size: var(--text-2);
@@ -3954,7 +3406,7 @@ button.wb-door:hover b {
   color: var(--muted);
   font-size: var(--text-2);
 }
-/* Drag a job onto a shelf to ADD it there — the roster's own cue, in ks clothes. */
+
 .ks-class.drop-ready {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
@@ -4030,16 +3482,9 @@ button.wb-door:hover b {
   }
 }
 
-/* The session's MARK: the icon of its session_role, before the name on every row. It
-   replaced the 人 leader mark, which sat here and named only who was in charge. Fixed
-   width so the names stay in a column whether or not a row is marked — an unmarked
-   session is a real state and must not shove the list sideways. */
-/* Same two turns as the tile's button — see `.tile-head button.job`. A roster row is a
-   READ, so the mark sits quieter here than anywhere: it is scanned down a column, not
-   pressed. */
-/* Its own track now (`--hr-mark`), so the `flex`/`margin-right` that used to hold the
-   column open went with the flex row — the grid holds it, and a second mechanism saying
-   the same thing is the one that drifts (2026-08-17). */
+
+
+
 .home-job {
   width: 1.35em;
   font-size: var(--text-2);
@@ -4047,14 +3492,13 @@ button.wb-door:hover b {
   text-align: center;
   filter: saturate(0.72);
 }
-/* Also the switch: click to re-mark what the session is doing (js/commons.js). */
+
 .home-job.btn {
   cursor: pointer;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
 }
-/* Not marked — nothing drawn, but the column is still held open, so the gap is legible
-   as "nobody has said" rather than as a rendering fault. */
+
 .home-job.off {
   opacity: 0.35;
 }
@@ -4064,18 +3508,10 @@ button.wb-door:hover b {
     outline: 1px solid var(--line);
   }
 }
-/* TOUCH: the mark is drawn, never a button — the tap padding is what a phone-width row
-   cannot spare, not the glyph; re-marking is a desktop verb (js/commons.js). Nothing to
-   declare for it any more, now that the grid holds the column: the `margin-right: 4px`
-   that lived here was the flex row's spacing, and it went with the flex row. The row's
-   own touch SHAPE (five columns, not six) is stated beside `.home-row` instead — stated
-   here it lost to the base rule, which is later in the file and equally specific, and the
-   402px row kept paying 34px for a 🏷 that touch never builds (caught in the browser,
-   2026-08-17: the phone's name track measured 48px). */
 
 
-/* The re-mark menu: pick one of the catalog's jobs. A popover, not a sheet — the 🏷
-   editor is a sheet because it edits a list; this picks one of eight and dies. */
+
+
 .job-opt.none {
   margin-top: var(--space-1);
   border-top: var(--edge) solid var(--line);
@@ -4087,10 +3523,9 @@ button.wb-door:hover b {
     background: var(--bg);
   }
 }
-/* A roster row still carries no duplicate 🏷 button. Group changes here use the spatial
-   roster interaction instead: drag the row into a group heading. */
 
-/* group heading in the session list — the tag, and how many are in it */
+
+
 .home-grp {
   display: flex;
   align-items: center;
@@ -4213,52 +3648,13 @@ button.wb-door:hover b {
 .home-group-add button:hover { border-color: var(--accent); color: var(--accent); }
 .home-group-msg { color: var(--muted); font-size: var(--text-2); }
 .home-row.dragging { opacity: .45; }
-/* THE ROW IS SIX INVISIBLE COLUMNS (owner's ruling 2026-08-17).
 
-   It was a flex row with a `.grow` spacer, so every reading floated to wherever the ones
-   before it happened to end: a session with no ladder put its ⛽ figure where a session
-   with one put its status word, and no two rows agreed on where anything was. You could
-   read a row; you could not read the LIST. Fixed tracks pin the x of every landmark —
-   the SHINGO chip starts in the same place on row one and row nine, and so does the
-   context reading — and A MISSING VALUE LEAVES ITS SLOT EMPTY rather than dragging
-   everything to its right leftwards. Missing is missing; that is the readable answer.
-
-   `justify-self: start` on the cells is what makes this a COLUMN rather than a row of
-   stretched boxes: each reading begins at its track's left edge and takes only the width
-   it needs, so a short chip stays a short chip sitting in a fixed slot.
-
-   The tracks are NAMED so the two places that reshape the row set numbers, not templates
-   — a template said twice is a rule you then have to keep in step. Every number below was
-   MEASURED in the browser rather than guessed (2026-08-17), which is the only way a fixed
-   track is honest: the widest realistic content, plus a couple of pixels, and anything
-   past that ellipsizes. `phase 3 · leg 4/6 · 12h` is 130px of 10.5px mono; `awaiting
-   input` is 68px; `⛽ 100%` is 46px; the 🏷 pill is 27px. An agent can write an unbounded
-   `ladder_state` into the chip, so clipping has to be the outcome for the tail — the
-   alternative is one session's prose setting the geometry of every other row.
-
-   SIX became true again on 2026-08-17, when the 🏷 pill's retired track was replaced by
-   `--hr-stack`: WHICH MODEL IS ANSWERING (js/roster.js). It was `agent · provider · model`
-   at 140px for about an hour, and the owner cut it to the model alone — which halved the
-   track, because `gpt-5.6-sol` is 62px of 11px text, `gpt-5-codex` 62px, `sonnet 4.5`
-   55px and `opus 5` 38px. 76px shows every one of them whole with room for a longer name
-   to give up its tail.
-
-   THE 140px VERSION IS THE LESSON WORTH KEEPING. A fixed track charges its full width on
-   every row whether or not anything is in it, so while the birth stamp was unwritten it
-   took 140px from every row to display nothing at all — and the report that went with it
-   claimed the cost was to the session name, which measurement then refuted: the name
-   track is 181px here and the longest name on the board needs 81px. Size a track to what
-   its content actually reaches, not to the worst case it could theoretically reach, and
-   check what it looks like EMPTY.
-
-   It is the LAST track on purpose: the most clip-prone reading on the row, and at the
-   right edge a clip runs into the row's own padding rather than into another column. */
 .home-row {
-  --hr-mark: 1.35em; /* the session_role glyph — the same width `.home-job` already held */
+  --hr-mark: 1.35em;
   --hr-shingo: 132px;
   --hr-status: 70px;
   --hr-ctx: 48px;
-  --hr-desks: 96px; /* `⑂ team/comp/fable` in the micro mono, clipped past that (the help has it whole) */
+  --hr-desks: 96px;
   --hr-stack: 76px;
   display: grid;
   grid-template-columns:
@@ -4281,8 +3677,7 @@ button.wb-door:hover b {
   background: var(--bg-2);
   border-color: var(--line);
 }
-/* The name takes the slack, and clips rather than widening its track: a long session
-   name must not be the thing that moves the columns for every other row. */
+
 .home-row b {
   min-width: 0;
   font-weight: 500;
@@ -4290,12 +3685,7 @@ button.wb-door:hover b {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* EVERY CELL NAMES ITS COLUMN, and this is the load-bearing half of the whole idea.
-   Auto-placement fills the next FREE track, so a session with no ladder would drop its
-   status word into the ladder's slot and its ⛽ figure into the status word's — the very
-   sliding the fixed grid exists to stop, reintroduced by the engine's default. Named
-   columns mean an absent element leaves a HOLE, which is what was asked for. Scoped
-   under `.home-row` so nothing later on the bare class can quietly outrank it. */
+
 .home-row > .home-job {
   grid-column: 1;
 }
@@ -4317,7 +3707,7 @@ button.wb-door:hover b {
 .home-row > .home-stack {
   grid-column: 7;
 }
-/* Each reading starts at its own track's left edge and stops at its right one. */
+
 .home-row > .home-shingo,
 .home-row > .home-status,
 .home-row > .home-ctx,
@@ -4328,35 +3718,9 @@ button.wb-door:hover b {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* The touch override that restated this template with five tracks instead of six is
-   gone (2026-08-17): the 🏷 left the row on every device, so five IS the base rule and
-   a finger and a mouse now want the same shape. The lesson it recorded outlives it —
-   a `0px` track still collects its gap, so dropping a column means dropping it from the
-   template, not sizing it to nothing. */
 
-/* A TILE UNDER 600px DROPS THE agent · provider · model READING ENTIRELY.
 
-   THE ONE PLACE THE TEMPLATE IS RESTATED, and the note above about a template said twice
-   being a rule you then have to keep in step still stands — this is the exception it
-   warned about, taken knowingly, and the pair to keep in step is these two blocks. That
-   note's own lesson is why this is a restatement rather than a `--hr-stack: 0px`: A `0px`
-   TRACK STILL COLLECTS ITS GAP, so a column is dropped from the template or it is not
-   dropped at all. `display: none` on the cell is the other half —
-   without it the element still names `grid-column: 6`, grid invents an implicit sixth
-   track for it, and the row overflows exactly as if nothing had been reclaimed.
 
-   THE NUMBER, MEASURED (2026-08-17, Chromium, 4-up tiles). The column costs 148px (140px
-   plus its gap), all of it out of the session name, and the name is the one track that
-   gives: at the owner's own 4-up desktop tile — 629px body, 587px row — the name goes
-   from 237px to 121px, which is his trade to make and he made it. Below that it stops
-   being a trade: a 579px tile leaves the name 71px, and a 402px phone leaves it ZERO and
-   overflows the row by 63px. 600px is where the kept case bottoms out at a ~95px name;
-   under it the reading goes and the name gets its 240px back whole.
-
-   So this is the one reading on the row that a narrow tile does not carry. It is the
-   right one to lose: it is a LABEL on the session (what it was launched as, which does
-   not change) rather than news about it (held at a gate, awaiting input, 92% of context),
-   and it is the one you can still get by opening the session. */
 @container tile (max-width: 600px) {
   .home-row {
     grid-template-columns:
@@ -4368,21 +3732,7 @@ button.wb-door:hover b {
   }
 }
 
-/* A NARROW TILE: give the name back what the chip can spare. Numbers only — this block
-   restates no template (the 600px block above is the single exception, and says why).
 
-   THE THRESHOLD IS THE ROSTER'S OWN, not the 680px the Commons strip uses further down,
-   and the difference is the whole point of asking the tile rather than the viewport: at
-   680px this fired inside the owner's ordinary 4-up desktop tile (629px body, 585px row)
-   where the roomy tracks fit with 233px left for the name, and clipped the SHINGO chip to
-   buy width nothing needed. 520px is where the name is genuinely down to ~140px and the
-   trade starts paying. Below it the chip drops to the length that still shows a position
-   and an age WHOLE — `phase 2 · 0/3 · 14m` measures 108px on a 402px phone, so 110px is
-   the number, and the leg count is what gives way above it. The status word does not
-   move: `awaiting input` clipped to `awaiting i…` is the one reading here that would be
-   worse said than unsaid. Measured, not reasoned — on the phone the roomy tracks left
-   the name 76px and the chip 2px short, and both of those were only visible in a
-   browser. */
 @container tile (max-width: 520px) {
   .home-row {
     --hr-shingo: 110px;
@@ -4409,9 +3759,7 @@ button.wb-door:hover b {
   color: var(--muted);
   white-space: nowrap;
 }
-/* WHICH DESK — `⑂ team/comp/fable`, derived from git and the desk registry on the server,
-   never the agent's prose. Amber when an update is pending or a hand-in is blocked: the
-   two readings a lead acts on (WORKTREES.md "Koshi / roster"). */
+
 .home-desks {
   font-family: var(--font-term);
   font-size: var(--text-micro);
@@ -4422,13 +3770,7 @@ button.wb-door:hover b {
 .tilehead .checkout.attn {
   color: var(--warn);
 }
-/* WHAT THE SESSION IS RUNNING — `codex · openai · gpt-5-codex`. Drawn exactly like the
-   other secondary readings on the row (11px, muted, one line): it is a label on the
-   session, not news about it, so it must never out-shout the status word beside it, and
-   the two facts that are only known at spawn look no different from the one scraped live
-   — the row does not owe the reader that seam. Lowercasing is done in the DOM rather than
-   with `text-transform`, because the string is a NAME (`opus 5`, `gpt-5-codex`) and a
-   selectable/copyable name should be the same characters it appears to be. */
+
 .home-stack {
   font-size: var(--text-2);
   color: var(--muted);
@@ -4483,7 +3825,7 @@ button.wb-door:hover b {
 .home button.home-go:disabled {
   opacity: 0.5;
 }
-/* ---- birth chip: "a session appeared" — slides in under the top bar ---- */
+
 #chip {
   position: fixed;
   top: calc(max(var(--space-4), env(safe-area-inset-top)) + 42px);
@@ -4519,7 +3861,7 @@ button.wb-door:hover b {
   padding: var(--space-2) var(--space-4);
 }
 
-/* ---- session switcher: one pad key opens it, arrows walk it, same key lands it ---- */
+
 #sesspick .sp-card {
   display: flex;
   flex-direction: column;
@@ -4582,7 +3924,7 @@ button.wb-door:hover b {
   font-size: var(--text-2);
 }
 
-/* Mode toggle: manual (your words, verbatim) vs assisted (composed brief). */
+
 .ks-mode { display: flex; align-items: center; gap: 6px; margin: 2px 0 6px; }
 .ks-mode button {
   border: var(--edge) solid var(--line-2);
@@ -4595,7 +3937,7 @@ button.wb-door:hover b {
 }
 .ks-mode button.on { background: var(--raise); color: var(--fg-strong); border-color: var(--line-3); }
 .ks-mode small { color: var(--muted-3); font-size: 11px; }
-/* Say plainly what happens to the words you type — in the panel, not a tooltip. */
+
 .ks-say {
   margin: 0 0 var(--space-4);
   color: var(--muted-2);
@@ -4610,7 +3952,7 @@ button.wb-door:hover b {
   font-size: var(--text-2);
 }
 
-/* The optional picks belong to assisted only — in manual they would be our wording. */
+
 .ks-form .ks-extras { display: none; }
 .ks-form.assisted .ks-extras { display: flex; }
 .ks-form textarea {
@@ -4627,8 +3969,7 @@ button.wb-door:hover b {
 }
 .ks-form.assisted textarea { min-height: 92px; }
 
-/* The name block sits above the prompt block: called-what, then told-what. Monospace
-   because what you type IS the session name — the same string you address later. */
+
 .ks-form input.ks-name {
   font-family: var(--font-mono);
   font-size: var(--text-4);
@@ -4647,19 +3988,12 @@ button.wb-door:hover b {
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-3);
 }
-/* Two inputs side by side need room for two inputs — a fact about THIS FORM's box, not
-   about the phone. It was `@media (max-width: 680px)` until 2026-08-17, so the pair
-   stayed side by side and unreadably narrow in a 4-up desktop tile, where the form is
-   ~630px wide and the viewport is 1280. Asked of the tile now (see `.tile-body`). */
+
 @container tile (max-width: 680px) {
   .ks-extras { flex-direction: column; }
 }
 
-/* A launch resolving `agent: none` — a plain terminal (ronin_catalogs/session_roles/).
-   Everything that only makes sense when an agent is being briefed goes away: the
-   mode toggle, the prompt box, the optional wording, and the brain picker. What is
-   left is the name, where it opens, and which group it joins. Placed after the
-   .assisted rules deliberately — same specificity, so this one wins. */
+
 .ks-form.noagent .ks-mode,
 .ks-form.noagent .ks-say,
 .ks-form.noagent textarea,
@@ -4669,76 +4003,39 @@ button.wb-door:hover b {
 .ks-form.noagent .ks-model { display: none; }
 
 
-/* Admin panes behind one tab strip: ＋ new · ▤ sessions. Before this, spawning a
-   session replaced the panel and there was no way back to it. */
+
 .home-tabs {
   display: flex;
-  /* 0 0 auto: the strip is CHROME and holds its height. Without it the flex column
-     let a long roster compress the strip (flex-shrink default 1) — its measured
-     height tracked the LIVE session count, which is also why visual-ui saw it flap. */
+
   flex: 0 0 auto;
   align-items: center;
-  /* Named because the fade below has to CANCEL them both out of the layout, and a fade
-     that quietly restated `6px` would shift the first tab the day either number moved
-     — which is precisely what it did on the first cut (visual-ui caught the tab at
-     x=34 instead of 28: the negative margin ate the fade's width and forgot the flex
-     gap that came with it). The narrow strip overrides `--tabs-gap`, not `gap`. */
+
   --tabs-gap: 6px;
   --tabs-fade: 20px;
   --tabs-pad: 10px;
   gap: var(--tabs-gap);
   padding: var(--space-4) var(--tabs-pad) 0;
-  /* The strip SCROLLS everywhere, not only on phones: a 4-up desktop tile is
-     narrower than the row of rooms, and flex overflow was silently clipping the
-     last tabs there — found on the owner's Mac, 2026-08-16.
 
-     `overscroll-behavior-x: contain` is what makes "the strip moves, the page does
-     not" true rather than aspirational: without it, flicking the strip past its end
-     hands the gesture on to the page and the whole roster slides — which is the
-     behaviour being fixed, arriving by another door. (This explanation used to sit
-     over the phone block below, which restated all three of these declarations; the
-     restatement went on 2026-08-17 and the reason came up here to the one rule.) */
   flex-wrap: nowrap;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  /* NO SCROLLBAR, AT ANY WIDTH — and the fades below are what replaces it.
-     It was `thin` plus a RESERVED `scrollbar-gutter: stable` gutter, on two arguments
-     that were each true and together wrong. The gutter was reserved because a
-     conditional scrollbar flapped the strip's height between runs (26/28/30px, caught
-     by visual-ui) — so the strip paid a permanent 3px of dead space, at every width,
-     to stabilise a bar it did not want. And the bar was kept on a mouse as the way a
-     mouse user learns the tail is still there. Owner, 2026-08-18: "there is a scroll
-     bar showing at times and it looks awful." At times is the tell — it is drawn on
-     overflow, over the bottom edge of the tabs, in a strip 26px tall.
-     Nothing draws now, so the height is constant WITHOUT reserving anything, which is
-     what the gutter was buying; and the affordance moves to the fades, which say the
-     same thing in the place the eye already is. */
+
   scrollbar-width: none;
 }
 .home-tabs::-webkit-scrollbar {
   display: none;
 }
-/* ---- THE EDGE FADES — what tells you the strip still has tabs on it ----
-   Ten rooms plus the ✕ measure 831px against a 599px desktop tile, so a third of the
-   strip is always off-screen. The ✕ is sticky and opaque, so a tab sliding under it
-   was BUTT-JOINED against it — "▦ Stat" cut off mid-word at a hard vertical edge,
-   which reads as a rendering fault rather than as "there is more over here".
-   Both ends now dissolve instead, and only when there is something behind them to
-   dissolve into: `commons.js` writes `data-edge` from the scroll position. */
+
 .home-tabs::before {
   content: '';
-  /* A STICKY FLEX ITEM, not an overlay. `.home-tabs` IS the scroller, so an absolutely
-     positioned child would slide off with the tabs; sticky at left:0 pins it to the
-     scrollport's leading edge. The negative margin keeps it out of the layout, so it
-     cannot widen scrollWidth — which is the number the fades are decided from. */
+
   position: sticky;
   left: 0;
   z-index: 1;
   flex: 0 0 auto;
   align-self: stretch;
   width: var(--tabs-fade);
-  /* out of the layout entirely — its own width, plus the flex gap it would otherwise
-     open between itself and the first tab */
+
   margin-right: calc(-1 * (var(--tabs-fade) + var(--tabs-gap)));
   background: linear-gradient(to right, var(--bg), transparent);
   opacity: 0;
@@ -4746,9 +4043,9 @@ button.wb-door:hover b {
   pointer-events: none;
 }
 .home-tabs button {
-  flex: 0 0 auto; /* never squeeze a label to fit — that is what scrolling is for */
+  flex: 0 0 auto;
 }
-/* the tablist inside the strip — semantics only, no box (see commons.js) */
+
 .home-tabrow {
   display: contents;
 }
@@ -4764,10 +4061,7 @@ button.wb-door:hover b {
 }
 .home-tabs button.on { background: var(--raise); color: var(--fg-strong); border-color: var(--line-3); }
 .home-tabs .home-x {
-  /* ✕ rides the right edge instead of scrolling out of reach — at EVERY width, in
-     this one rule: it is the way back to the terminal, so it is never a thing you go
-     looking for. The background is what stops tabs showing through underneath it as
-     they pass. The narrow block below adds an outline and nothing else. */
+
   position: sticky;
   right: 0;
   margin-left: auto;
@@ -4780,10 +4074,7 @@ button.wb-door:hover b {
 }
 .home-tabs .home-x::before {
   content: '';
-  /* The ✕ is already what a scrolled tab disappears behind — it is sticky, at the
-     right edge, over an opaque background. This is that same cover, 20px wider and
-     soft, so the tab under it fades out instead of being sliced. Absolute here, not
-     sticky: it hangs off the ✕, which is doing the sticking already. */
+
   position: absolute;
   top: 0;
   bottom: 0;
@@ -4796,12 +4087,7 @@ button.wb-door:hover b {
 }
 .home-tabs .home-x::after {
   content: '';
-  /* THE FAR SIDE OF THE ✕, which had a leak. The strip's right padding is inside the
-     scrollport, so the sticky ✕ pins `right: 0` against the PADDING box and stops a
-     gutter short of the strip's edge — and the tabs scrolling past it went through that
-     gutter, so a 10px slice of the tab behind the ✕ showed up on its far side, outboard
-     of everything. Solid rather than a fade: there is nothing out here to hint at, the
-     strip simply ends. Sized from the same token as the padding that opens the gap. */
+
   position: absolute;
   top: 0;
   bottom: 0;
@@ -4810,8 +4096,7 @@ button.wb-door:hover b {
   background: var(--bg);
   pointer-events: none;
 }
-/* Only where there is something behind the fade. `data-edge` is the scroll position,
-   written by commons.js: a fade that is always on is just a smudge on the edge. */
+
 .home-tabs[data-edge='left']::before,
 .home-tabs[data-edge='both']::before {
   opacity: 1;
@@ -4820,33 +4105,10 @@ button.wb-door:hover b {
 .home-tabs[data-edge='both'] .home-x::before {
   opacity: 1;
 }
-/* ---- A NARROW COMMONS: TIGHTEN THE STRIP, NAIL DOWN THE PAGE ----
-   Seven rooms plus the ✕ measure 549px against a 402px phone. I wrapped them onto two
-   rows first; the owner looked at it and asked for a scrolling strip instead, so the
-   strip is the one thing that moves sideways and the page underneath is nailed down.
 
-   This whole block was `@media (max-width: 680px)` until 2026-08-17, and most of it
-   was answering the wrong question. A Commons room is narrow because it is on a phone
-   OR because it is one cell of a 4-up desktop grid — on a 1280px Mac the tile body is
-   ~630px and the viewport rule never fired, so the crowded case got the roomy layout.
-   It asks the tile now (`container-name: tile`, on `.tile-body`). The number is kept
-   at 680px deliberately: on the 402px phone the tile body is well under it, so the
-   phone renders byte-identically and the change is purely that narrow DESKTOP tiles
-   finally get the same treatment.
-
-   THREE DECLARATIONS WENT INSTEAD OF MOVING, because the base rules above already say
-   them at every width and had done since the strip was made to scroll unconditionally
-   (2026-08-16): `.home-tabs`'s flex-wrap/overflow-x/overscroll-behavior-x — including
-   the `overscroll-behavior-x: contain` this comment used to explain, which is why the
-   explanation now lives beside the base rule — `.home-tabs button`'s `flex: 0 0 auto`,
-   and all of `.home-x`'s sticky/margin/flex/background. Restating a rule under a
-   condition reads as "this is what makes it true here", and it was not.
-
-   The two touch-shaped survivors moved DOWN to `pointer: coarse` rather than here —
-   see the block below; their reasons name the finger, not the box. */
 @container tile (max-width: 680px) {
   .home {
-    overflow-x: hidden; /* nothing added later reintroduces the sideways slide */
+    overflow-x: hidden;
   }
   .home-tabs {
     --tabs-gap: 4px;
@@ -4855,24 +4117,15 @@ button.wb-door:hover b {
   .home-tabs button {
     padding: var(--space-3) var(--space-5);
   }
-  /* Crowded strip: give ✕ its own edge. It is already sticky at every width (above) —
-     what changes here is that the tabs sliding under it are close enough to read as
-     one run of buttons, so the outline is what keeps it a destination. */
+
   .home-tabs .home-x {
     border-color: var(--line-2);
   }
 }
-/* ONE RULE LEFT HERE, and its reason is the FINGER rather than the width — which is why
-   it sits under `pointer: coarse` and not in the container query above.
 
-   The scrollbar pair that used to keep it company is gone (2026-08-18): hiding the bar
-   was a touch-only concession, on the argument that a mouse user needs it to learn the
-   tail is still there. The strip says that itself now, at both ends, on every input —
-   see the edge fades on `.home-tabs::before`. A rule that is true at every width and
-   for every pointer belongs in the base rule, so that is where it went. */
 @media (pointer: coarse) {
   .home-tabs button {
-    min-height: 32px; /* a tap target, not a narrow-box measurement */
+    min-height: 32px;
   }
 }
 
@@ -4883,16 +4136,11 @@ button.wb-door:hover b {
     padding-right: var(--space-4);
   }
 
-  /* ---- touch (iPad-class): the bar keeps the page's own controls -----------------
-     The hoisted one-row phone header is GONE — a phone never builds this bar at all
-     (the shell, js/phone.js) — so what is left here is the iPad's seat for the shape
-     button, and the anchor the tile-level sheets (.tmac, .tdocs) drop from. */
+
   #bar {
     position: relative;
   }
-  /* THE SHAPE (2 ⇄ 4) at the end of the row — the grid count's old seat and look.
-     Deliberately NOT a house colour: it changes the screen under it, and furniture —
-     panel and line — keeps it from reading as a door. */
+
   #bar .shape-cycle {
     flex: 0 0 auto;
     margin-left: auto;
@@ -4913,7 +4161,7 @@ button.wb-door:hover b {
     border-color: var(--kaki);
     color: var(--on-strong);
   }
-  /* The brand yields first — the session name matters more than the word "ronin". */
+
   #bar .brand {
     flex: 0 1 auto;
     min-width: 0;
@@ -4921,9 +4169,7 @@ button.wb-door:hover b {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  /* Anchored to #bar (position:relative), like .tmac — a panel would be the wrong
-     weight for what is one tap and gone. Translucent so the pane still reads
-     underneath: this is a sheet over the terminal, not a new screen. */
+
   .tdrop {
     display: none;
     position: absolute;
@@ -4948,7 +4194,7 @@ button.wb-door:hover b {
     display: flex;
     align-items: center;
     gap: var(--space-5);
-    /* 44px: the row is the tap target, not the 34px control sitting in it. */
+
     min-height: 44px;
     padding: 0 var(--space-3);
     border-radius: var(--radius-md);
@@ -4957,8 +4203,7 @@ button.wb-door:hover b {
   .tdrop-row:active {
     background: var(--line);
   }
-  /* The Status row is a READING, not a door: no tap, no press state, no pointer.
-     It is first in the sheet and it is the only row that does nothing. */
+
   .tdrop-row.inert {
     cursor: default;
     padding-bottom: var(--space-2);
@@ -4975,25 +4220,19 @@ button.wb-door:hover b {
     font-size: var(--text-6);
     white-space: nowrap;
   }
-  /* The Status row's word is a live reading (ctx % · model), not a label — set
-     apart so it doesn't read as another thing you can tap into. */
+
   .tdrop-row > span.tdrop-status {
     color: var(--muted);
     font-size: var(--text-4);
   }
-  /* A control that hides itself (no ladder up, no context reading) takes its word
-     with it — tiledrop.js syncs this too, for engines without :has(). */
+
   .tdrop-row:has(> [hidden]) {
     display: none;
   }
 }
 
 
-/* ── The tape view ────────────────────────────────────────────────────────────
-   A tape-fed tile renders plain text, so it is a scrollable element, not a
-   terminal. That is the entire reason scrolling feels like a page here: the OS
-   scrolls it, with momentum and rubber-banding, and nothing re-renders per tick.
-   🔒 Locked keeps xterm, where a live positioned screen genuinely needs one. */
+
 .tile select.output {
   width: 148px;
   border: var(--edge) solid var(--line);
@@ -5003,10 +4242,7 @@ button.wb-door:hover b {
   font: var(--text-2)/1.2 var(--font-mono);
   padding: var(--space-1) var(--space-2);
 }
-/* On the head row (since 2026-08-26) it is a fixed 5rem, not 148px: a wrapping row
-   breaks on natural widths before anything shrinks, so a wide select here put メ and C
-   on a second line at a team workspace's default 626px. 5rem shows the chosen word;
-   the long names show in the drop-down (measured: one line at 626px seated). */
+
 .tile-head select.output { width: auto; flex: 0 0 5rem; min-width: 0; }
 @media (pointer: coarse) {
   .tile select.output { width: 44px; height: 40px; padding: 0; flex: 0 0 44px; }
@@ -5024,20 +4260,11 @@ button.wb-door:hover b {
 .tile.tape-on .tape {
   display: block;
   position: absolute;
-  /* Cancel .tile-body padding so the text owns the tile. The negative inset makes the
-     tape WIDER THAN ITS TILE by design — measured 410px inside a 402px phone, starting
-     at -6 — which is fine only because .tile-body clips it. Without that clip it is an
-     element hanging past the right edge of the screen, and iOS Safari lets you pan a
-     page to reach anything that does: the roster slid left and right and nothing in
-     the roster was the cause. */
+
   inset: -4px -2px -2px -6px;
   overflow-y: auto;
   overflow-x: hidden;
-  /* NO -webkit-overflow-scrolling: touch — modern iOS momentum-scrolls any overflow
-     container by default, and the legacy property resurrects a classic WebKit bug:
-     the scrollable EXTENT is cached, so content appended later sits below a floor
-     the gesture cannot cross. That was "the render gets stopped up above" on the
-     phone: the text was all there, the scroll refused to reach it. */
+
   overscroll-behavior: contain;
   white-space: pre-wrap;
   word-break: break-word;
@@ -5048,21 +4275,18 @@ button.wb-door:hover b {
   margin: 0;
   -webkit-text-size-adjust: 100%;
 }
-/* The emulator is not in the picture at all while the tape view is up — leaving it
-   rendering underneath would cost work every frame for something nobody can see. */
+
 .tile.tape-on .xterm {
   display: none;
 }
 
-/* The live frame — the pane's current screen under the transcript, replaced wholesale.
-   Visually a footer: the seam says "below this line is NOW, above it is history". */
+
 .tile.tape-on .tape .tframe {
   border-top: var(--edge) dashed var(--term-tape-line);
   margin-top: var(--space-4);
   padding-top: var(--space-3);
 }
-/* Tool-output folds — ⎿ blocks collapsed the way the CLI collapses them.
-   Native <details>: tap opens, tap closes, default closed. */
+
 .tile.tape-on .tape details.fold {
   margin: var(--space-1) 0;
 }
@@ -5076,14 +4300,11 @@ button.wb-door:hover b {
   color: var(--term-tape-muted-2);
 }
 
-/* ↓ latest — the deterministic way back to the live end of the transcript. Exists
-   only on tape tiles, shows only while scrolled up. */
+
 .tile .tapejump {
   display: none;
 }
-/* The mirror's own ↓ latest — same pill, on the xterm surface. With viewer mouse off a
-   wheel scrolls xterm's local buffer, which the server cannot see or end; the pill shows
-   whenever the viewport has left the live end (js/termview.js wireJumpPill). */
+
 .tile .termjump {
   display: none;
 }
@@ -5091,7 +4312,7 @@ button.wb-door:hover b {
   display: block;
   position: absolute;
   right: 14px;
-  bottom: 58px; /* clear the docked composer, which owns the bottom edge */
+  bottom: 58px;
   z-index: 3;
   font: var(--text-3) var(--font-term);
   color: var(--term-tape-fg);
@@ -5115,7 +4336,7 @@ button.wb-door:hover b {
   display: block;
   position: absolute;
   right: 14px;
-  bottom: 58px; /* clear the docked composer, which owns the bottom edge */
+  bottom: 58px;
   z-index: 3;
   font: var(--text-3) var(--font-term);
   color: var(--term-tape-fg);
@@ -5142,12 +4363,8 @@ button.wb-door:hover b {
   }
 }
 
-/* ---------- failure containment (see js/errors.js, the containment layer) ----------
-   A blank page that looks fine and does nothing is the worst failure this app has
-   (2026-08-08). Anything that throws now says so here, on top of everything. */
-/* In NORMAL FLOW, not fixed: it pushes the page down instead of covering the top bar.
-   Covering the header would hide the controls that still work, which is the opposite
-   of the point. */
+
+
 #failbar {
   position: relative;
   z-index: 9999;
@@ -5184,7 +4401,7 @@ button.wb-door:hover b {
 #failbar .failbar-x:hover {
   color: var(--fg-strong);
 }
-/* A tile that failed to build keeps the grid's shape instead of collapsing it. */
+
 .tile.tile-dead {
   border-color: var(--bad);
 }
@@ -5199,11 +4416,7 @@ button.wb-door:hover b {
   word-break: break-word;
 }
 
-/* ── The composer: the unlocked tile's text entry ──────────────────────────────────
-   Unlocked input used to ride xterm's onData, but a tape-fed tile hides xterm, so the
-   surface had nowhere to type. Docked at the bottom, growing with the text. Locked
-   tiles never show it; desktop unlocked had no input at all before, so this is purely
-   additive and changes nothing that already worked. */
+
 .tile .composer {
   display: none;
 }
@@ -5233,11 +4446,11 @@ button.wb-door:hover b {
   font: var(--text-4)/1.35 var(--font-ui);
   outline: none;
 }
-/* Send refused because the socket is down: keep the text, say so, retry lands it. */
+
 .tile:is(.tape-on, .keys-on) .composer.noconn textarea {
   border-color: var(--bad-deep);
 }
-/* Enter arrived while the clip was still transcribing: queued, sends on landing. */
+
 .tile:is(.tape-on, .keys-on) .composer.queued .csend {
   opacity: 0.4;
 }
@@ -5249,17 +4462,13 @@ button.wb-door:hover b {
   min-width: 38px;
   border: 0;
   border-radius: var(--radius-md);
-  /* Was the shell's one blue fill (--action, a role the palette comment itself
-     disowns). A send is a primary action, so it wears the brand pair. */
+
   background: var(--kaki);
   color: var(--on-strong);
   font-size: var(--text-6);
   cursor: pointer;
 }
-/* 🎤 on the box, between the text and ↵ — the mic used to be a floating circle over
-   the terminal that opened a SECOND textarea and dictated into that. It belongs on the
-   one entry, beside the key that sends what it wrote. Quieter than ↵: dictating is a
-   way of typing, not a second way of sending. */
+
 .tile:is(.tape-on, .keys-on) .composer .cmic {
   height: 30px;
   min-width: 34px;
@@ -5270,39 +4479,32 @@ button.wb-door:hover b {
   font-size: var(--text-6);
   cursor: pointer;
 }
-/* Listening is the one state worth shouting: it means the microphone is live. */
+
 .tile:is(.tape-on, .keys-on) .composer .cmic.listening {
   background: var(--rec);
   border-color: var(--rec);
   color: var(--on-strong);
 }
-/* … while the clip is on its way to the host and back. Whisper gives nothing until the
-   recording stops, so this wait is the whole cost of not sending your voice to Apple —
-   it has to be visible rather than look like a dead button. */
+
 .tile:is(.tape-on, .keys-on) .composer .cmic.busy {
   opacity: 0.6;
   cursor: default;
 }
-/* Room for it, so the last line of the transcript is never hidden behind the box.
-   A MEASUREMENT, NOT A RUNG — it is the composer's own height plus air, so it belongs to
-   this feature and not to the space ladder. Named rather than left raw: a bare 52px is
-   exactly what check-css exists to stop, and the honest way past that gate is to say what
-   the number IS, not to give the ladder a step nothing else would ever use. */
+
 .tile.tape-on .tape {
   --tape-clearance: 52px;
 
   padding-bottom: var(--tape-clearance);
 }
 @media (pointer: coarse) {
-  /* 16px stops iOS Safari zooming the page when the field takes focus. */
+
   .tile:is(.tape-on, .keys-on) .composer textarea { font-size: 16px; }
 }
 
-/* The per-tile lock, in the tile head with the other per-tile controls. */
+
 .tile-head .lock.armed { color: var(--ok-2); }
 
-/* Each tile's own 🔒/🔓 — the switch lives with the pane it acts on, never in the
-   window chrome, which cannot say which pane it means. */
+
 .tile-head .lock {
   font-size: var(--text-3);
   opacity: 0.75;
@@ -5311,29 +4513,13 @@ button.wb-door:hover b {
   opacity: 1;
   color: var(--ok-2);
 }
-/* No record service installed (the free build): the 🔓 view is off, so the switch is
-   visible but inert — opaque says "not plugged in", not "missing". The commons tab of
-   an absent service gets the same treatment. (It named `.commons-row` too, until the
-   bar's Commons menu went on 2026-08-17 — the tab strip is the only registry-fed
-   surface left, so it is the only one that has to say "off".) */
+
 .home-tabs button.off {
   opacity: 0.3;
   pointer-events: none;
 }
 
-/* THE TILE HEADER'S INERT CONTROLS STAY HOVERABLE — every one of them, and this is the
-   whole reason they are a separate rule.
 
-   `pointer-events: none` and `disabled` both stop hover events reaching an element, and
-   a `title` is delivered BY a hover event. So either one greys a control out and takes
-   its tooltip with it — which is backwards: the control you cannot use is the one whose
-   label you most want to read, because what you are actually asking is *why not*. Every
-   dimmed control in this header was silent, 🔒 included.
-
-   The dim is opacity and a cursor, nothing more. Nothing here needs pointer-events to
-   stay safe: each handler already guards on what it needs (`if (!this.session) return`,
-   `if (S.streamOff) return`), which is the honest place for the check anyway — a rule in
-   a stylesheet is not what should be enforcing whether an action may happen. */
 .tile-head .lock.off {
   opacity: 0.3;
   cursor: default;
@@ -5343,8 +4529,7 @@ button.wb-door:hover b {
   opacity: 0.4;
   cursor: default;
 }
-/* Where it happened — the top stack frames, under the message. A message with no
-   location sends the reader hunting; that was a real complaint (2026-08-08). */
+
 #failbar .failbar-at {
   white-space: pre-wrap;
   word-break: break-all;
@@ -5354,7 +4539,7 @@ button.wb-door:hover b {
   font-size: var(--text-2);
 }
 
-/* ================= Work record — the SHINGO reading expanded ================= */
+
 .tile-head button.work-record {
   flex: 0 0 auto;
   width: auto;
@@ -5438,8 +4623,7 @@ button.wb-door:hover b {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* A side road is not an alarm — the session meant to step off, and nothing here wants
-   the owner. Blue rather than the gate's amber, which is reserved for "you are needed". */
+
 .shingo-ladder .sl-side {
   color: var(--accent-2);
   padding-bottom: var(--space-3);
@@ -5452,11 +4636,7 @@ button.wb-door:hover b {
   align-items: baseline;
   white-space: nowrap;
 }
-/* THE THREE FIXED COLUMNS — torii · mark · number — all one width, all centred, one gap
-   between each. Reserved on every row, so the ladder never shuffles sideways as the
-   torii moves down it and the three read as an even gutter rather than three sizes.
-   (They were 14/14/12 with the number right-aligned, which is why the spacing looked
-   wrong between the mark and the number but right between the torii and the mark.) */
+
 .shingo-ladder .sl-here,
 .shingo-ladder .sl-m,
 .shingo-ladder .sl-n {
@@ -5471,9 +4651,7 @@ button.wb-door:hover b {
   color: var(--dim);
   font-variant-numeric: tabular-nums;
 }
-/* The mark carries the single most-read fact on the ladder, so it is set heavier and a
-   size up from the text around it — at body weight both glyphs render hairline and the
-   done/not-done split stops being legible at a glance, which is the whole job. */
+
 .shingo-ladder .sl-m {
   font-size: var(--text-5);
   font-weight: 700;
@@ -5504,10 +4682,7 @@ button.wb-door:hover b {
   text-shadow: 0 0 6px color-mix(in srgb, var(--ok) 35%, transparent);
 }
 
-/* ONE LIVE ROW. You are waiting at the gate or you are doing leg four — never both — so
-   amber belongs to exactly one row and every other rung stays quiet. A gate further down
-   the ladder is a PLAN: it is drawn as plainly as a planned leg, because painting it
-   amber is what made two rows look live at once. */
+
 .shingo-ladder .sl-row.now {
   background: color-mix(in srgb, var(--accent) 13%, transparent);
   box-shadow: inset 2px 0 0 var(--accent);
@@ -5524,11 +4699,7 @@ button.wb-door:hover b {
   border-color: var(--accent);
 }
 
-/* The gate's label — the only word on the ladder, because a gate is the only rung that
-   stops the work and wants the owner. It must READ AS A BOX at a glance even when the
-   gate is not the live rung: legible border, filled ground, real weight. Amber is still
-   reserved for the one live row (below), so a gate you have passed or not yet reached is
-   plainly a gate without pretending to be where the session is. */
+
 .shingo-ladder .sl-tag {
   flex: 0 0 auto;
   font-size: var(--text-1);
@@ -5541,8 +4712,7 @@ button.wb-door:hover b {
   color: var(--muted-2);
 }
 
-/* The honesty rule, rendered: a phase whose legs are undetermined shows nothing under
-   it rather than a guess. */
+
 .shingo-ladder .sl-und {
   color: var(--dim);
   font-style: italic;
@@ -5559,10 +4729,7 @@ button.wb-door:hover b {
   border-top: var(--edge) solid var(--line);
 }
 
-/* The board column, and since 2026-08-17 a column in the literal sense: it sits in the
-   row's fixed `--hr-shingo` track (see `.home-row`), which is what makes "run your eye
-   down the chips" a thing you can actually do. The `flex: 0 0 auto` that held it out of
-   the old flow went with the flow. */
+
 .home-shingo {
   font-family: var(--font-term);
   font-size: var(--text-micro);
@@ -5578,22 +4745,12 @@ button.wb-door:hover b {
   background: color-mix(in srgb, var(--warn) 12%, transparent);
 }
 
-/* The TEGAMI letter panel and its ⛩ button stood here until 2026-08-17 (.tile-head
-   button.torii, .shingo-letter, .sletter-head/-path/-x/-body). The owner removed the
-   button — the torii means "the Commons" everywhere now — so the panel it opened went
-   with it. js/shingo.js records what the surface was and where it would belong if it
-   comes back. */
+
 
 #bar { position: relative; }
 
 
-/* ---- ▦ STATS: TOMODACHI's readout — how this install actually gets used ----
-   Counts and charts only, no generated prose. Everything is CSS plus one inline SVG
-   sparkline: no chart library, no dependency. One column at every width for the same
-   reason as the wipeboard — a home panel is sized by its TILE, so a viewport media
-   query would be the wrong instrument. Desktop behaviour is untouched by this file;
-   nothing here is gated on pointer type because nothing here needs to be.
-   Plan: co-working/user_repo/wip/buildouts/TOMODACHI.md · contract: docs/soroban.md */
+
 .desk-stats {
   flex-direction: column;
   min-height: 0;
@@ -5602,11 +4759,7 @@ button.wb-door:hover b {
   overflow: auto;
   font-variant-numeric: tabular-nums;
 }
-/* The session_roles get a stable colour each, so the same task is the same colour in
-   every chart. Base16 siblings of the app's own accents; --bad is never used
-   categorically, so red keeps meaning "wrong". `QuarterBack` spent one day as a role_family
-   and is a task again (R33), so it is back in this list — and back in the birth-to-death
-   chart, because a session genuinely does move into and out of coordinating. */
+
 .desk-stats {
   --k-RiffOnIt: #b294bb;
   --k-DraftPlan: #81a2be;
@@ -5658,7 +4811,7 @@ button.wb-door:hover b {
   font-size: var(--text-2);
 }
 
-/* The fault banner. Mechanical: the caught error verbatim, select-all, paste to fix. */
+
 .td-fault {
   border: var(--edge) solid var(--bad);
   background: color-mix(in srgb, var(--bad) 6%, transparent);
@@ -5922,8 +5075,7 @@ button.wb-door:hover b {
   color: var(--muted);
 }
 
-/* A zero here is not a gap in the data — it is a feature nobody has found yet, which
-   makes this grid the cheapest feature-discovery surface in the product. */
+
 .td-caps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -5964,17 +5116,13 @@ button.wb-door:hover b {
   border-top: var(--edge) solid var(--line);
 }
 
-/* ---- THE SHAPE BUTTON (owner, 2026-08-28: "put that in the place of the 1,2,4 button …
-   alt between the numbers"). One button wearing the count it is on — 2 or 4 — clicked
-   to alternate; js/team-view.js writes the face and owns the click. It stands where the
-   grid count stood and wears its look. Centred, tabular digits so 2 / 4 do not shift. */
+
 #bar .shape-cycle {
   justify-content: center;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
-/* Sizing is per-surface and must not cross: the touch block earlier in this file gives
-   it a 44px finger target, and an unscoped min-width down here would quietly undo it. */
+
 @media (hover: hover) and (pointer: fine) {
   #bar .shape-cycle {
     min-width: 34px;
@@ -5989,10 +5137,7 @@ button.wb-door:hover b {
     color: var(--fg);
   }
 }
-/* ---- PROVENANCE: a catalog entry that is the user's own (js/provenance.js).
-   Stock gets NOTHING — silence is the right rendering for "as shipped", and the
-   common case must not be decorated to serve the rare one. Two glyphs, because
-   "I added this" and "this stands in Ronin's place" are different facts. ---- */
+
 .prov {
   margin-left: 0.35em;
   font-size: 0.85em;
@@ -6000,7 +5145,7 @@ button.wb-door:hover b {
   opacity: 0.85;
   cursor: help;
 }
-/* Changed, not added — the one that can silently stop tracking an upgrade. */
+
 .prov-shad {
   color: var(--accent-deep);
 }
@@ -6032,8 +5177,7 @@ button.wb-door:hover b {
   color: var(--bad-soft);
 }
 
-/* ---- SAVED LAUNCHES: the launcher form, filled in ahead of time and named.
-   Sits above the kind board because it is the shortcut past it. ---- */
+
 .ks-saved {
   display: flex;
   flex-wrap: wrap;
@@ -6060,8 +5204,7 @@ button.wb-door:hover b {
 .ks-saved-btn:hover {
   border-color: var(--info);
 }
-/* The MCP toggle: quiet while on (the default needs no attention), loud while off —
-   a session launching with no MCP servers is a deliberate state worth a color. */
+
 .ks-mcp {
   font-size: var(--text-3);
 }
@@ -6069,8 +5212,7 @@ button.wb-door:hover b {
   color: var(--warn);
   border-color: var(--warn);
 }
-/* Credit line on the opened form (`credit:` in the catalog) — a real link, accent per
-   the design tokens ("Electric blue — active, links, focus"), own tap target. */
+
 .ks-credit {
   display: inline-block;
   font-size: var(--text-2);
@@ -6078,8 +5220,7 @@ button.wb-door:hover b {
   text-decoration: none;
   margin: var(--space-1) 0 var(--space-2);
 }
-/* An explicit display beats the [hidden] UA rule, so restate it — without this the
-   credit, once shown for one kind, stuck to every kind's form after it. */
+
 .ks-credit[hidden] {
   display: none;
 }
@@ -6088,7 +5229,7 @@ button.wb-door:hover b {
   text-decoration: underline;
 }
 
-/* ---- ▥ Hotwords: whose list is showing (copy-on-write, not a merge) ---- */
+
 .hot-whose {
   margin: var(--space-1) 0 var(--space-3);
   color: var(--muted-2);
@@ -6098,8 +5239,7 @@ button.wb-door:hover b {
   color: var(--info);
 }
 
-/* ---- the roster's stale line (js/roster.js): a failed /api/home refresh keeps the
-   last good list and says so here, instead of a quiet board lying about freshness. */
+
 .home-stale {
   padding: var(--space-2) var(--space-4);
   margin-bottom: var(--space-2);
@@ -6109,15 +5249,14 @@ button.wb-door:hover b {
   font-size: var(--text-2);
 }
 
-/* The launcher form's own failure line (js/launcher.js) — the brief stays in the
-   boxes, the reason lands under the controls it refers to. */
+
 .ks-err {
   color: var(--bad-soft);
   font-size: var(--text-3);
   line-height: 1.4;
 }
 
-/* Inline result line on the note sheet: saving…, not saved — why. */
+
 #notesheet .ns-msg {
   color: var(--muted);
   font-size: var(--text-2);
@@ -6127,7 +5266,7 @@ button.wb-door:hover b {
   color: var(--bad-soft);
 }
 
-/* ⚙ System — appearance: two buttons, one lit (js/system.js, js/theme.js). */
+
 .sys-theme {
   display: flex;
   align-items: center;
@@ -6152,16 +5291,9 @@ button.wb-door:hover b {
   border-color: var(--accent);
   color: var(--accent);
 }
-/* ---- COWORK_SETUP — the surface a fresh install opens on (js/cowork-setup.js).
-   A document, not a grid: the host fixes itself to the viewport and scrolls inside
-   (the inline rule in cowork-setup.js says why). Everything here is furniture for the
-   registry's own sections and fields — no rule knows a field. ---- */
+
 .fr-root {
-  /* THIS SURFACE'S OWN MEASURE, and it is deliberately not the app's. Ronin proper is a
-     dense operational grid; first-load is a document someone reads once, so its gutter
-     grows with the viewport and its title is fluid. Feature-scoped tokens rather than raw
-     values — the app ladder should not gain a 64px rung that only one page would use, and
-     a re-skin should still be able to find these by name. */
+
   --fr-gutter: clamp(var(--space-8), 6vw, 64px);
   --fr-foot: 80px;
   --fr-title: clamp(22px, 4.5vw, 30px);
@@ -6219,7 +5351,7 @@ button.wb-door:hover b {
   flex-direction: column;
   gap: var(--space-5);
 }
-/* the machine strip — the few facts a later answer depends on */
+
 .fr-facts {
   display: flex;
   flex-wrap: wrap;
@@ -6238,7 +5370,7 @@ button.wb-door:hover b {
   color: var(--fg-strong);
   font-variant-numeric: tabular-nums;
 }
-/* one asked row: label above control, hint below (ui.field wraps them) */
+
 .fr-row {
   display: flex;
   flex-direction: column;
@@ -6264,7 +5396,7 @@ button.wb-door:hover b {
   width: 100%;
   font-variant-ligatures: none;
 }
-/* the agents on this box */
+
 .fr-agent {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -6293,7 +5425,7 @@ button.wb-door:hover b {
   color: var(--muted-2);
   font-size: var(--text-3);
 }
-/* the services pitch, its deal row, and the two asks behind it */
+
 .fr-sell h3 {
   margin: 0 0 var(--space-1);
   font-size: var(--text-5);
@@ -6345,7 +5477,7 @@ button.wb-door:hover b {
   border-top: var(--edge) solid var(--line);
   padding-top: var(--space-5);
 }
-/* the foot: one Save, its note, the status line */
+
 .fr-foot {
   max-width: 640px;
   margin: var(--space-11) auto var(--space-3);
@@ -6387,9 +5519,7 @@ button.wb-door:hover b {
   }
 }
 
-/* agent installations — the request column LEADS (owner, 2026-08-18): a tick asks
-   for it, ✓ means the box already has it. The hint line above the rows carries the
-   one teaching; the rows carry none. */
+
 .st-agent {
   display: grid;
   grid-template-columns: 24px minmax(0, 156px) minmax(0, 1fr);
@@ -6401,8 +5531,7 @@ button.wb-door:hover b {
   text-align: center;
 }
 
-/* the ⚙ offer — a real button in the room's own tokens: filled, hover-dark, cursor.
-   It was wearing .st-inp (an input's clothes) and read as a dead field. */
+
 .st-go {
   background: var(--kaki);
   color: var(--on-strong);
@@ -6422,18 +5551,12 @@ button.wb-door:hover b {
   cursor: default;
 }
 
-/* Services activation: static while waiting; motion only during a real check/install. */
-/* RAM_RPM — the box's working reading. QUIET BY DEFAULT: it wears --muted-2 like any
-   other passive readout, because a gauge that shouts all day is wallpaper by tomorrow
-   and stops carrying information. Only the two bands that mean something take colour,
-   and they take the palette's own --warn and --bad rather than inventing a red. It is a
-   readout, not a control: no pointer, no hover lift, nothing happens when it is clicked. */
+
+
 .ramrpm { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: default; user-select: none; }
 .ramrpm[data-band='warn'] { color: var(--warn); border-color: var(--warn); }
 .ramrpm[data-band='red'] { color: var(--bad); border-color: var(--bad); }
-/* A BUTTON is a masu, not a pill (audit mark 6, 2026-09-02): pill stays for
-   read-only badges (.ramrpm above keeps its), a pressable control wears the square
-   rung. */
+
 .services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
 .services-state.busy::before { content: '◌'; display: inline-block; margin-right: var(--space-3); animation: services-spin var(--motion-slow) linear infinite; }
 .services-pop { position: fixed; z-index: 50; width: min(360px, calc(100vw - var(--space-8))); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-menu); padding: var(--space-7); }
@@ -6446,7 +5569,7 @@ button.wb-door:hover b {
 .st-services .services-check:hover { background: var(--kaki-lift); }
 @keyframes services-spin { to { transform: rotate(360deg); } }
 
-/* cowork_setup — a first-class document beside the workspace, using the same skin. */
+
 .cs-root { background: var(--bg); color: var(--fg); font: var(--text-5)/1.65 var(--font-ui); }
 .cs-shell { width: min(calc(100% - 40px), 1120px); margin: 0 auto; padding-bottom: 96px; }
 .cs-topbar { min-height: 76px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 72px; border-bottom: var(--edge) solid var(--line); }
@@ -6553,26 +5676,16 @@ button.wb-door:hover b {
   .cs-agent { grid-template-columns: auto 1fr; } .cs-agent .cs-agent-desc, .cs-agent .cs-tag, .cs-agent-more { grid-column: 2; justify-self: start; }
 }
 
-/* WORKSPACE KIT — view-neutral geometry. Feature Eyes namespace their own meaning. */
+
 .wk-layout, .wk-room-view { width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .wk-layout { display: grid; gap: var(--space-3); padding: var(--space-3); overflow: auto; }
 .wk-layout-surface, .wk-surface { min-width: 0; min-height: 0; }
-/* A surface FILLS its slot. The wrapper had no height behavior, so every surface was
-   auto-height — content-sized — and a long one (the wipeboard thread) overflowed the
-   layout's overflow:hidden and was CLIPPED, unscrollable (found by measurement,
-   2026-08-25: the thread stood 2221px tall inside an 853px page). */
+
 .wk-layout-surface { display: flex; flex-direction: column; }
 .wk-layout-surface > .wk-surface { flex: 1 1 auto; min-height: 0; }
-/* The surface card's perimeter is the define-line (owner, 2026-09-02): one blue
-   outline per object, band as its cap — the utility-door treatment, bench-wide. */
+
 .wk-surface { position: relative; display: flex; flex-direction: column; border: var(--edge) solid var(--define-line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
-/* THE BANDS LINE UP (owner, 2026-09-01: "the central work selector is shifted up"):
-   three band containers had three top edges — a headed layout slot (the work selector)
-   wore no chrome so its band began at the wrapper's very top; a .wk-surface pushed its
-   band down by its 1px border; a hosted tile stacked its own card border on its
-   surface's for 2px. Measured live: tops 53/54/55. One chrome, one edge: a headed slot
-   wears the surface's card, and a tile inside a surface sheds its duplicate (the
-   surface already draws the card; the active inset shadow still shows). */
+
 .wk-layout-surface:has(> .wk-surface-header) { border: var(--edge) solid var(--define-line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
 .wk-surface .wk-terminal-host > .tile { border: 0; border-radius: 0; }
 .wk-surface-content { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; }
@@ -6596,11 +5709,8 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-session-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); overflow: hidden; }
 .wk-explorer-layout { grid-template-columns: minmax(12rem, 2fr) minmax(0, 5fr); overflow: hidden; }
 .wk-new-team-layout { grid-template-columns: minmax(0, 1fr); align-items: start; overflow: auto; }
-/* Rows were unconstrained: the single row grew to the tallest surface and the grid's
-   overflow:hidden CLIPPED the rest — the 2026-08-25 "cannot scroll the wipeboard" bug.
-   minmax(0,1fr) is what makes every surface's bounded height real. */
-/* Columns are written inline by the frame from the arrangement (fr units, one per
-   visible slot) — there is no fixed count and no per-combination rule here. */
+
+
 .wk-workbench-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
 .wk-workbench-layout > .wk-layout-surface[hidden] { display: none; }
 .wk-explorer-rail { min-width: 0; min-height: 0; border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: auto; }
@@ -6618,8 +5728,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='failed'] > .wk-state { color: var(--bad-soft); }
 .wk-explorer-rail[data-state='stale'] > .wk-state { color: var(--warn); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
-/* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
-   at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
+
 .wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--cowork-head-line); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
 .wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--cowork-head-fg); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
 .wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--cowork-head-muted); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
@@ -6649,11 +5758,10 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 }
 
 }
-/* ⚙ THE MACHINE — the detail behind RAM_RPM. Values right-aligned in the mono face so a
-   column of numbers reads as a column; everything else inherits the desk's own rows. */
+
 .sys-machine { margin-top: var(--space-5); }
 .sys-machine .mach-v { margin-left: auto; font: var(--text-2) var(--font-mono); color: var(--muted-2); }
-/* Messages — the live inbound queue; delivered cards disappear rather than archive. */
+
 .mq-note { margin: var(--space-5) var(--space-5) 0; color: var(--muted-2); font-size: var(--text-3); }
 .mq-board { display: grid; gap: var(--space-4); padding: var(--space-5); overflow: auto; }
 .mq-empty { color: var(--muted); margin: 0; }
@@ -6670,12 +5778,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .mq-actions { justify-content: flex-end; }
 .mq-force { border-color: var(--bad); }
 
-/* ── The keys row — Esc, ^C, Tab and the arrows, docked on the composer ────────────
-   Every coarse-pointer tile (phone shell and iPad workbench alike): the software
-   keyboard has none of these keys, so they ride the composer (js/keysrow.js) —
-   always visible with it, lifting over the keyboard with it, zero taps away. The
-   drawer they replace lived at the TOP of the page, two taps from a composer pinned
-   at the bottom. JS gates the row to coarse pointers, so no media query here. */
+
 .tile:is(.tape-on, .keys-on) .composer.show {
   flex-wrap: wrap;
 }
@@ -6702,45 +5805,30 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   border-color: var(--kaki);
   color: var(--on-strong);
 }
-/* Clearance for both rows, so the last line of the transcript stays visible. The
-   measurement rule from the composer's own clearance: this is that height plus the
-   keys row, not a space-ladder rung. */
+
 .tile.keys-on.tape-on .tape {
   --tape-clearance: 104px;
 }
-/* The LOCKED mirror on a coarse tile (a box with no tape service): the composer and
-   keys row overlay the body exactly as on the tape, and the body's own padding hands
-   them that ground — the pty refits to the content box, so the CLI's input line is
-   never covered. Same measurement as the clearance above. */
+
 .tile.keys-on:not(.tape-on) .tile-body {
-  /* A measurement, not a rung: the composer's height plus the keys row, exactly as
-     the tape's own clearance names it. */
+
   --composer-ground: 104px;
 
   padding-bottom: var(--composer-ground);
 }
 
-/* ── #phone — the phone shell (js/phone.js) ────────────────────────────────────────
-   An iPhone-class screen never boots the workbench; main.js mounts this instead.
-   Three screens under one slim bar: the Coworks, a Cowork's Agents, one Agent's
-   tile. The workbench chrome (bar, keypad, viewhost) is hidden whole — none of it
-   is built on this path, but the static shell is still in index.html. */
+
 body[data-phone] #bar,
 body[data-phone] #viewhost {
   display: none;
 }
-/* The three-door home stacks in a NARROW DESKTOP window — a phone lands on its own
-   shell and never meets this page. Here rather than campaign-home.css because the
-   feature files carry no raw measurements, and a media query cannot read a token. */
+
 @media (max-width: 680px) {
   .ch-doors {
     grid-template-columns: 1fr;
   }
 }
-/* ✕ on the composer — clear OUR dialog. The composer is Ronin's own box, so one key
-   empties it whichever provider is in the pane (hardware Esc does the same); the keys
-   the AGENT's in-pane box needs are the keys row's. Visible only while the box holds
-   something — grow() keeps .hastext true exactly then. */
+
 .tile:is(.tape-on, .keys-on) .composer .cclear {
   display: none;
   height: 30px;
@@ -6757,33 +5845,24 @@ body[data-phone] #viewhost {
   align-items: center;
   justify-content: center;
 }
-/* ── The workbench on touch (owner, 2026-09-01) ────────────────────────────────────
-   Here rather than workspace-kit.css: that sheet is injected by JS with no
-   cache-busting, and a stale copy on a tablet is how an armed workspace looked dead. */
+
 @media (pointer: coarse) {
-  /* The armed workspace wears a visible frame. The tap-a-workspace-then-tap-a-card
-     flow already existed; a 1px inset outline was no evidence on a tablet. */
+
   .wk-workbench-cell.wk-workbench-selected {
     outline: 3px solid var(--accent);
     outline-offset: -3px;
   }
-  /* An ARMED EMPTY workspace says so inside the box, not just at its edge (owner,
-     2026-09-01: tapping an empty workspace showed nothing at all — a seated tile
-     lights its own header, a blank had only the frame). The ground tints and the
-     word turns accent, so "tap here, then tap an agent" reads at arm's length. */
+
   .wk-workbench-cell.wk-workbench-selected .tw-blank {
     background: color-mix(in srgb, var(--accent) 8%, transparent);
   }
   .wk-workbench-cell.wk-workbench-selected .tw-blank-word {
     color: var(--accent);
   }
-  /* One band height for every header strip on the bench — the selector's, the blank
-     seat's and the commons tabs match the tile head beside them (its 32px controls
-     plus their padding); a shorter shaded band next to a taller one read as a third
-     kind of thing. */
+
   .wk-surface-header,
   .wk-channel-service-tabs {
-    /* A measurement, not a rung: the coarse tile-head control height plus its padding. */
+
     --band: calc(32px + 2 * var(--space-3) + var(--edge));
 
     min-height: var(--band);
@@ -6797,7 +5876,7 @@ body[data-phone] #viewhost {
   background: var(--bg);
 }
 #phone .ph-bar {
-  position: relative; /* the anchor the メ sheet drops from */
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -6836,8 +5915,7 @@ body[data-phone] #viewhost {
   border-color: var(--kaki);
   color: var(--on-strong);
 }
-/* メ on the phone bar — the same kaki face it wears on the iPad bar (#bar rules are
-   scoped away from this shell, so the seat is restated here). */
+
 #phone .ph-bar .tdrop-btn {
   flex: 0 0 auto;
   height: 40px;
@@ -6915,8 +5993,7 @@ body[data-phone] #viewhost {
   color: var(--muted);
   text-align: center;
 }
-/* The stage. The workbench's kit stylesheet never loads on this path, so the host
-   sizing it would have provided is restated here, phone-scoped. */
+
 #phone .ph-term {
   flex: 1;
   min-height: 0;
@@ -6934,10 +6011,9 @@ body[data-phone] .wk-terminal-host > .tile {
   height: 100%;
 }
 body[data-phone] .tile-head {
-  display: none; /* the ph-bar replaces it; its controls live in the メ sheet */
+  display: none;
 }
-/* ＋ Launch New Agent — the card at the foot of a Cowork's Agents on the phone
-   (js/phone.js): a name, the words, and the Cowork's defaults for everything else. */
+
 #phone .ph-launch-open {
   width: 100%;
   min-height: 44px;
@@ -6970,7 +6046,7 @@ body[data-phone] .tile-head {
   background: var(--well);
   color: var(--fg);
   padding: var(--space-3) var(--space-4);
-  font: 16px/1.35 var(--font-ui); /* 16px stops iOS Safari zooming the field */
+  font: 16px/1.35 var(--font-ui);
   resize: none;
 }
 #phone .ph-launch-note {
@@ -6982,9 +6058,7 @@ body[data-phone] .tile-head {
   min-height: 44px;
   border: 0;
   border-radius: var(--radius-md);
-  /* KIIRO, the house's core yellow — the invariant brand pair, not --action (blue,
-     which belongs to nothing on this shell) and not --warn (a theme-tuned text ink
-     that mustards in light mode). Owner, 2026-09-01. */
+
   background: var(--kaki);
   color: var(--on-strong);
   font-size: var(--text-5);
@@ -7002,8 +6076,7 @@ body[data-phone] .tile-head {
 #phone .ph-launch-state[data-kind='failed'] {
   color: var(--bad-soft);
 }
-/* The house mark on the shell's front door — the same #brandbtn node, relocated, so
-   its href and handlers ride along; the #bar-scoped brand rules cannot reach it here. */
+
 #phone .ph-bar .brand {
   display: inline-flex;
   flex: 0 0 auto;

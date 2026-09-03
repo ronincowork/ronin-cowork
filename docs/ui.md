@@ -34,9 +34,7 @@ into files is a mechanical move for the day a layer earns one.
 
 ## The look is spelled once — all of it
 
-**Editing `@layer foundations` re-skins the whole app.** That is the promise (owner,
-2026-08-19: *"if someone wanted to change how their co-work space looked entirely, they
-could just change everything by giving a simple instruction to update the design tokens"*),
+**Editing `@layer foundations` re-skins the whole app.** That is the promise,
 and it only holds while nothing carrying look is spelled anywhere else — so
 `scripts/check-css.mjs` gates every family, not just colour. A raw `8px` radius in a
 feature rule is the same defect as a raw `#131826`.
@@ -119,8 +117,7 @@ The roles, defined in `public/style.css`:
 - terminal: the `--term-*` block — xterm's palette and the tape/composer surfaces,
   read back into JS by `termTheme()` (`public/js/theme.js`), never restated
 
-**Kaki is the brand** (owner, 2026-09-02: the hito mark's persimmon is the main color —
-earlier rulings that said "kiiro" meant kaki): every primary and attention FILL reads
+**Kaki is the brand**: every primary and attention FILL reads
 `--kaki`/`--on-strong`. Amber (`--kiiro`, `--accent`, `--warn`) is the supporting
 family — the band's derived shades, edges, rings and warning ink; red is only ever wrong.
 `--bad` is never used categorically in charts (the `--k-*` job colours exist for that).
@@ -314,7 +311,7 @@ strip. A row carried a full label and an optional compact label for the
 402px strip, and a hint. A new room is one registry row plus one feature module;
 service gating stays `serviceOff()` in `state.js`.
 
-**The bar is a DESTINATION, the strip is the choosing (owner's ruling 2026-08-17).**
+**The bar is a DESTINATION, the strip is the choosing.**
 ⛩ Commons is one press and lands on ⌂ Roster — "the main tab in the Commons and first
 port of call on hitting the Commons". It dropped a registry-fed popover of every room
 until then; the menu is gone, glyph and all (き → ⛩, the house mark for "open the
@@ -330,7 +327,7 @@ in 2026-08-31's forms settling).
 
 ⚙ Account is deliberately NOT a room: install-level facts (release, updates,
 appearance, log out) are page-level, so ONE control in the bar opens one sheet
-(`system.js`) — a room meant four copies, one per tile (owner's ruling 2026-08-16).
+(`system.js`) — a room meant four copies, one per tile.
 It reads **Account** since 2026-08-17 and that is **a staging post, not the final
 shape**: the owner wants an Accounts tab in the Commons eventually, backed by SETTEI.
 Only the label moved — the fields such a room would hold (owner name, entitlement) are
@@ -369,8 +366,7 @@ the desk was up, because an empty tile has nothing behind its overlays. ⚙ togg
 `desk` — and each surface filters to its own. That is the same file that exists because the
 strip and the old き menu drifted; a row now states which surface owns it, so they cannot.
 
-**How you know the strip has more on it: a fade, not a scrollbar** (owner, 2026-08-18:
-"there is a scroll bar showing at times and it looks awful"). Ten rooms plus the ✕ is
+**How you know the strip has more on it: a fade, not a scrollbar**. Ten rooms plus the ✕ is
 831px against a 599px desktop tile, so a third of the strip is off-screen at any moment.
 The bar used to be that signal on a mouse, drawn across the bottom edge of a 26px strip
 on overflow, with a permanently reserved `scrollbar-gutter` behind it to stop the strip's
@@ -406,8 +402,7 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
   never back to `title` — `tips.js` takes over any `title` it finds, so a title **is** a
   pop-up here by definition. The macro invocation (`+name:`) lives there now; it stays off
   the face by the earlier ruling and out of a box by this one.
-- **The Commons room tabs carry no hover help at all** (owner, 2026-08-18: "we don't need
-  a pop-up. There doesn't need to be anything on hover. Just get rid of it"). A tab's label
+- **The Commons room tabs carry no hover help at all**. A tab's label
   already says what its room is, so a panel restating it in a sentence was cost with no
   reader — and it was landing over the strip it described. The registry's `hint` column
   went with the line that read it rather than staying unread. A room that

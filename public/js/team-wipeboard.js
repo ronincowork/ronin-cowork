@@ -1,24 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE TEAM'S WIPEBOARD SLICE — the thread, and nothing else.
- *
- * "When you open the whiteboard for a team page, it should just be the whiteboard"
- * (owner, 2026-08-23): no Brief (that is Team Configuration's), no board picker — the
- * board is ASSUMED, resolved from the team's roster by the caller. The server creates
- * the board on open (owner, 2026-08-24), so this slice never meets a missing one: an
- * empty thread is the conversation that has not started yet, said in one quiet line.
- *
- * A wipeboard is a transport, not a record: every post lives its 48 hours — whoever
- * has read it — then clears (owner, 2026-08-25: TTL only, so the board never looks
- * empty to the one person who has not read it yet, and scroll-back works). The thread
- * view says so instead of letting a shortening conversation read as data loss.
- *
- * The owner's compose row posts loud — every member is interrupted ("all agents should
- * see that", owner 2026-08-23). The agents' quiet default lives in the CLI, not here.
- *
- * Channel-service contract (team-view.js): { el, mount, enter, leave, destroy }. This
- * slice polls only while entered, and stops the moment it is left.
- */
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
@@ -36,7 +16,6 @@ export function createTeamWipeboard() {
   let entered = false;
   let timer = 0;
   let inFlight = false; // one request at a time: overlapping polls re-rendered the whole
-  // thread on every response and yanked the scroll — the 2026-08-25 "can't scroll" bug
 
   const thread = el('div', 'twb-thread');
   const note = el('p', 'tw-note');
@@ -65,16 +44,6 @@ export function createTeamWipeboard() {
     return d;
   };
 
-  /**
-   * PINNED TO THE BOTTOM IS AN INTENT, not a moment. The reader is pinned until they
-   * scroll up; while pinned, the view holds the freshest post — through new posts,
-   * resizes, AND the tab becoming visible. That last one is the bug this shape fixes:
-   * the board loads while hidden behind the Chat tab (the landing tab, owner's ruling),
-   * and scrolling a hidden element does nothing — so the owner opened the tab pegged to
-   * the top (2026-08-25, twice). A ResizeObserver re-applies the intent the moment the
-   * panel gains real dimensions. Scrolling up releases the pin; returning near the
-   * bottom re-engages it; the reader's own post always re-pins.
-   */
   let wantBottom = true;
   const pinnedToBottom = () => thread.scrollHeight - thread.scrollTop - thread.clientHeight < 48;
   const snap = () => { thread.scrollTop = thread.scrollHeight; };

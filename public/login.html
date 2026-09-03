@@ -5,34 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0e14" />
     <title>Log in · Ronin</title>
-    <!-- THE HOUSE MARK. Copied from ronin-lab, which owns it — public/brand/README.md says
-         where and why. SVG first so a retina tab and a bookmark bar stay sharp at any size;
-         the 32px PNG is the fallback for anything that will not take one. The 256 is what
-         iOS puts on a home screen, which is the arrival REMOTE_ACCESS is built around. -->
     <link rel="icon" type="image/svg+xml" href="/brand/nin-mark.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/brand/nin-mark-32.png" />
     <link rel="apple-touch-icon" href="/brand/nin-mark-256.png" />
-    <!-- SELF-CONTAINED ON PURPOSE: this page is served ahead of the auth gate, so it
-         loads nothing else — style.css and the app stay behind the door. The handful
-         of colours below are the same tokens style.css defines; a palette change
-         touches both, and this comment is the pointer that keeps them honest.
-
-         THE PRIMITIVES ARE COPIED, NOT IMPORTED, AND THAT IS THE CONSTRAINT TALKING
-         (2026-08-17). The plan wants this page to be an early consumer of ui/field,
-         ui/button and ui/status. It cannot IMPORT them: js/ui.js and style.css both
-         sit behind the gate, and moving them in front of it to dress a login form
-         would put the whole client's stylesheet on the unauthenticated surface — a bad
-         trade for a page with three controls. So it consumes the GRAMMAR instead: the
-         same `.ui-status` element with the same `data-kind` values (''/'ok'/'bad'),
-         the same `role="status"`, the same `.ui-sr` clip recipe, the same "empty means
-         hidden" rule. Identical names on both sides mean the day a pre-auth asset
-         bundle exists, this becomes a deletion rather than a rewrite. Keep them
-         spelled the same as js/ui.js and style.css or that day gets expensive. -->
     <script>
       try {
-        /* A device pin, else the cached Campaign theme for this surface (touch reads
-           the mobile value), else the house light — the same chain index.html reads
-           (owner, 2026-09-01). */
         var t = localStorage.getItem('tmuxgrid.theme');
         if (t !== 'light' && t !== 'dark') {
           var coarse = matchMedia('(pointer: coarse)').matches;
@@ -42,10 +19,6 @@
       } catch (e) {}
     </script>
     <style>
-      /* This page stands alone (it cannot assume style.css served before auth), so
-         these are MIRRORS of the sheet's tokens, value for value — the 2026-09-02
-         token audit found four drifted (both --ok values, both --line/light --line
-         family) and no brand kaki at all. If a value moves in style.css, it moves here. */
       :root {
         --bg: #0b0e14;
         --panel: #131826;

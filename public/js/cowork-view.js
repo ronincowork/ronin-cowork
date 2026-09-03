@@ -70,12 +70,10 @@ function registerWorkbenchCatalog() {
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: WB_TYPES.commons, header: 'channels', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Team commons'), summary: () => t('team.commons_summary', 'See Docs / Wipeboard / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
   add({ type: WB_TYPES.desk, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), create: ({ workspace, environment }) => environment.desk(workspace) });
-  // ADD AGENT IS THE TEAM PAGE'S ONE LAUNCHER (owner, 2026-08-31: "we should only have
   // one there"). Drawn contract: ronin-lab `concepts/add-agent-to-team.html`.
   add({ type: WB_TYPES.addAgent, header: 'surface', className: 'wk-selector-utility wk-selector-group-after', label: () => t('add_agent.card', 'Add Agent to Team'), summary: () => t('add_agent.card_summary', 'The Team answers the rest.'), variant: 'dotted', create: ({ workspace, environment }) => environment.addAgent(workspace) });
   add({ type: WB_TYPES.terminal, header: 'terminal', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
   add({ type: WB_TYPES.roster, header: 'surface', className: 'wk-selector-utility', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
-  // THE DRAWN FORMS ARE THE ONLY ONES NOW (owner, 2026-08-31): "the old new team and the
   // old new agent workspaces have been made obsolete by yours". The seven-field card and
   // the ＋ New board are gone from this bench and from the repository; a workspace that
   // remembers one resolves to its replacement through `legacyTypes`.
@@ -124,7 +122,6 @@ export function createCoworkView(options = {}) {
       else if (!seat.empty) {
         const blank = createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' });
         // The header already says Workspace; the body saying it again read as a stutter
-        // (owner, 2026-09-01). Inside, just the state, small.
         blank.content.append(el('p', 'tw-blank-word', t('team.workspace_empty', 'empty')));
         seat.empty = { el: blank.el, mount: () => {}, destroy: () => blank.el.remove() };
         seat.surface.content.append(seat.empty.el);
@@ -223,7 +220,6 @@ export function createCoworkView(options = {}) {
   const campaignIdentity = createCampaignIdentity((name) => {
     if (entered && campaign) renderCards([]);
   });
-  // CREATE THE TEAM AND LAND IN IT (owner, 2026-08-29). The Team is the record the moment
   // its roster exists, so the form that made it hands the workspace over to it and goes
   // back to empty. Staffing happens from inside the Team, through Add Agent.
   const newTeamFormBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => {
@@ -236,13 +232,11 @@ export function createCoworkView(options = {}) {
     // The detail rides through: `S.showNewSession(prompt)` seeds the form's Instructions.
     return [id, { el: view.el, enter: (detail) => view.enter(detail) }];
   })) : {};
-  // CAMPAIGN CONFIGURATION HAS LEFT THIS PAGE (owner, 2026-08-29). The Campaign commons
   // carried Campaign identity, Project roots and Templates behind a tab strip here; those
   // are Campaign-level and are now surfaces of Campaign Manage (js/campaign-view.js).
   // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
   // surface rather than the one tab left in a strip.
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamRosterSurface()])) : {};
-  // REHYDRATE ARCHIVED IS A SURFACE (owner, 2026-08-31): the Commons' Archived room,
   // seated in a workspace, grouped by Team of record, each row's act a labelled button.
   // A rehydrated session lands in the workspace whose surface woke it, like a birth.
   const archivesBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => {
@@ -342,7 +336,6 @@ export function createCoworkView(options = {}) {
     if (!seats[id].pool.has(name)) return false;
     if (surfaceIn(id)) cellPlace(id, seats[id].surface.el);
     // Never steal keyboard focus on a coarse pointer: focusing the terminal summons
-    // the iOS keyboard over a workspace the owner opened to READ (owner, 2026-09-01).
     // Typing there is a deliberate tap into the composer, exactly as on the phone.
     if (!seats[id].pool.show(name, focus && !isCoarse())) return false;
     touch(id);
@@ -354,7 +347,6 @@ export function createCoworkView(options = {}) {
   /* ---------- one controller, two callers ---------- */
   // Everything that changes this page goes through arrange(): the C/T buttons and the
   // roster cards call it, and so does a draft an agent hands in with tejun-teampage
-  // (owner, 2026-08-26). What a draft omits stays as it is.
   const arranger = createArranger({
     showColumn: (name) => { name = name === 'roster' ? 'selector' : name; if (bench.arrangement.state().hidden.includes(name)) bench.arrangement.toggle(name); },
     hideColumn: (name) => { name = name === 'roster' ? 'selector' : name; if (!bench.arrangement.state().hidden.includes(name)) bench.arrangement.toggle(name); },
@@ -421,7 +413,6 @@ export function createCoworkView(options = {}) {
       // arriving, then let it go — a workspace waiting forever is the blank the owner met.
       else if (wanted && loaded !== team) continue;
       else if (lead() && !isShown(lead())) putSession(lead(), id, false);
-      // Otherwise the workspace stays BLANK — no commons by default (owner, 2026-08-27).
     }
   };
 
@@ -446,7 +437,6 @@ export function createCoworkView(options = {}) {
   };
   const disarmPrewarm = () => window.clearTimeout(dwellTimer);
 
-  // THE CARD IS A READING, NOT A LABEL (owner, 2026-08-25: "shingo, model, ready, session
   // taken"). The readings ride /api/home's row — the same row the Commons roster reads:
   // MICHI's SHINGO chip, the status, the model, the context gauge. Read on entry and every
   // five seconds while entered (the Commons' own cadence); nothing is guessed when a
@@ -506,7 +496,6 @@ export function createCoworkView(options = {}) {
   // `refreshTeams()`, which this page runs once on entry; the cards, though, are drawn
   // off `S.sessions`, which the events feed keeps current. A session that joined the team
   // after entry therefore had a card and no seat in either pool — its card clicked and
-  // dragged into nothing (owner, 2026-08-26: "that one Kanban is broken"). The fix is the
   // whole paint again whenever the member set or the 人 changes: on the feed's event, and
   // on the five-second row read as the fallback.
   const membership = (members) => members.map((m) => m.name + (m.team_lead ? ' 人' : '')).join('\n');
@@ -530,7 +519,6 @@ export function createCoworkView(options = {}) {
     bench.refreshSelector();
   }
 
-  // THE CONFIGURATION IS NOT ON THE FIVE-SECOND CLOCK (owner, 2026-09-01: "flashing the
   // team configuration on and off"). Every tick and publish lands here; the panel is
   // torn down only when configSignature says something it draws actually moved.
   let seenConfig = '';

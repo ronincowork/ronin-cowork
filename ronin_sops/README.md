@@ -18,7 +18,7 @@ prescriptive. **The difference is who fetches it:**
 | **`ronin_library/`** | the **machinery** — an action names it, `ronin_bin/tejun` inlines it at compile | mid-task, unasked | the agent, mid-step |
 
 **An action never leads to an SOP.** An SOP may point at an action — its `> Tool:` header
-does — and the arrow runs that way only (owner, 2026-08-15). The test when you are
+does — and the arrow runs that way only. The test when you are
 unsure: **if you can name the action that would cite it, it is library.** If the only
 answer is "someone would look it up when the topic came up", it is an SOP.
 

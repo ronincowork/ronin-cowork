@@ -2,18 +2,6 @@
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
 export const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
-/**
- * VERSION 3 (2026-08-29) — the Campaign cut. Two things changed that a stored v2 record
- * cannot be read correctly without knowing about:
- *
- *   1. `campaign` is a REAL destination again (Campaign select/create/manage). It briefly
- *      named the Cowork collection, and v2 carried `views.campaign` forward into
- *      `views.cowork` for that reason. Run that carry-forward for v2 and older ONLY —
- *      applied to a v3 record it would eat the reclaimed namespace.
- *   2. `campaignSelection` joins the top level, because the home, Coworks and Agents
- *      doors share ONE selection. It is per tab on purpose (never SETTEI), so two tabs
- *      may inspect different Campaigns without fighting.
- */
 export const WORKSPACE_STATE_VERSION = 3;
 const PREVIOUS_WORKSPACE_STATE_KEY = 'ronin.workspace.v1';
 
@@ -21,7 +9,6 @@ const text = (value) => (typeof value === 'string' ? value : '');
 
 export const defaultWorkspaceState = () => ({
   version: WORKSPACE_STATE_VERSION,
-  // The three-door home is the install's root arrival (owner, 2026-08-29): Campaign,
   // Coworks, Agents. The Cowork collection is one of the three doors, not the landing.
   view: 'home',
   team: '',
@@ -121,36 +108,7 @@ export function hashFor(view, param = '') {
  * registered id and an element are structural. Lifecycle failures are contained to the
  * destination and reported without taking the compatibility Sessions view down.
  */
-/**
- * THE TAB'S NAME, SPELLED IN ONE PLACE (owner, 2026-08-23).
- *
- * `tmux ronin` was the name of the thing this grew out of, and because `index.html` shipped
- * it as a literal `<title>` it went into every tab and — the way the owner found it — into
- * every bookmark saved from the app. It is not the product's name and no surface should be
- * able to spell the house name for itself again.
- *
- * A view now says only WHAT IT IS — a team's name, `League`, a session — or says nothing at
- * all. The house half is added here, and it is one word: `Ronin`, with the capital it
- * carries everywhere else. Nothing, and the tab is just the house.
- *
- * THE NAME COMES FIRST AND THE HOUSE COMES LAST (owner, 2026-08-23), because a browser
- * truncates a tab from the END. Whatever the owner opened this tab FOR therefore survives
- * at every width, and `Ronin` — the part every tab shares, and so the part that
- * distinguishes nothing — is the first thing given up when the strip is tight.
- *
- * NO MARK IN THE TEXT. The mark is the favicon (`public/brand/nin-mark.svg`), which is
- * where a tab, a bookmark bar and a home screen all already look for one. Spelling a
- * SECOND mark in the title beside it — the ⛩ this briefly carried — puts two different
- * house marks an inch apart and spends the leading characters, the ones truncation never
- * reaches, on something that identifies nothing.
- */
 const HOUSE = 'Ronin';
-/**
- * A NAMED TAB DROPS THE HOUSE (owner, 2026-08-26: "we don't need Ronin in there unless
- * it's the default"). A view hands back a string — what it is — and the house is added;
- * or `{ bare: text }` — a title the owner composed, spelled whole, with nothing added.
- * The Team page uses the second when its tab has been named: `<name> · <team>`.
- */
 export const tabTitle = (what) => {
   if (what && typeof what === 'object' && what.bare) return String(what.bare);
   return what ? `${what} · ${HOUSE}` : HOUSE;

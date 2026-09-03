@@ -32,7 +32,7 @@ matters—never “two-workspace Campaign surface.”
 └───────────────────────┴──────────────────────┴──────────────────────────────────────────┘
 ```
 
-**Two shapes** (owner, 2026-08-27): **2** — workspace 1 · selector column · workspace 2, as
+**Two shapes**: **2** — workspace 1 · selector column · workspace 2, as
 drawn; and **4** — a 2×2 of workspaces with the selector column left, centre or right. A
 workspace column is a STACK: workspace 3 sits under 1, workspace 4 under 2, and the count
 (the bar's **2 ⇄ 4** button, in the seat the grid count had — one button wearing the count, clicked to alternate — or `count=4` from `tejun-teampage`)
@@ -55,16 +55,16 @@ Three kinds of thing, and only three, sit inside the bar:
 | **team_commons** | one team | **commons strip** — a strong Team Commons identity followed by rectangular channel tabs | Docs (three compact rectangular shelf tabs: **Tracked** — what agents listed; **Plans** and **Docs** — the files under the places each project root names on its record, grouped by root, the team's repos first) · Wipeboard · Agent Message Queue · Team Configuration (Chat hidden until it is a thing — owner, 2026-08-28). Reached from the **Team commons card**, first on the roster |
 | **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). The Team roster now lives on the Cowork workbench. |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
-| *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default (owner, 2026-08-27) |
+| *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default |
 | `campaign_commons` | this campaign | Campaign Commons strip | Campaign · Project roots · Team roster · Templates |
 
 Rules that make them peers:
 
-- **No flip on any head** (owner, 2026-08-28): the team commons is the FIRST CARD of the
+- **No flip on any head**: the team commons is the FIRST CARD of the
   roster, thinner than a session's, and goes into a workspace like one — click for the
   selected cell, drag onto any cell. The SHINGO light signal sits at the far RIGHT of a
   tile head; the connection dot is gone. The selector column's head reads *Roster: <team>*.
-- **A cell owns selection and drops, whatever it holds** (owner, 2026-08-28): a card dropped on
+- **A cell owns selection and drops, whatever it holds**: a card dropped on
   any workspace clobbers what is there — session, commons, launcher, anything to come.
   Nothing per surface: `cowork-view.js` keeps ONE registry (`SURFACES`: token · element ·
   show) and a new surface is one entry in it — the cells, the memory, the view report and
@@ -108,8 +108,7 @@ Ronin  •  Coworks           Your team: Sea Settle              <verbs>
 
 `Ronin` and `Coworks` are the only doors, and the root landing shows only Ronin. The
 Team's name used to sit beside the Coworks door, where a first-time visitor read it as
-one more door and could not tell the all-Teams page from one Team's page (owner,
-2026-09-02). It now sits centred in the bar as **the place**: *Teams* on the Coworks page
+one more door and could not tell the all-Teams page from one Team's page. It now sits centred in the bar as **the place**: *Teams* on the Coworks page
 (its tooltip says "See all of your teams here"), *Your team: <name>* on a Team page,
 italic so it reads as information and never as a button. Doors consume the shared
 `.ui-bar-nav` primitive and the place consumes `.ui-bar-place` from `docs/ui.md`; a

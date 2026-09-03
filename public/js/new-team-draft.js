@@ -1,14 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
 
-/**
- * THE TEAM NAME RULES — a name IS the tag its sessions carry, so the same three helpers
- * answer for every surface that asks a person to type one.
- *
- * This file used to hold the seven-field New Team draft as well. That card and its
- * `js/new-team.js` are retired (owner, 2026-08-31); the drawn forms — `new-team-form.js`
- * and `new-agent.js` — build their own drafts and keep only the naming rules from here.
- */
-
 /** A team name obeys the tag rules — it IS the tag. Mirrors `isValidTeamName` in
  *  src/team-rosters.ts; the server refuses regardless, this only tells you sooner. */
 export const isValidTeamName = (s) => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);

@@ -1,39 +1,13 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE DRAFT — how the team page is told to look, by a button or by an agent.
- *
- * One controller, two callers (owner, 2026-08-26). A draft names only what should
- * change; what it omits stays as it is. Its line form is what an agent types:
- *
- *   workspace1=view_mgr            a session's tile in that workspace
- *   workspace2=commons             the commons there (on the tab it was last on)
- *   workspace2=commons:docs        the commons, on that tab (docs · wipeboard · config)
- *   workspace2=commons:docs:<path> the commons on ▧ Docs, with that file open
- *   workspace2=cowork              the cowork commons there (on the tab it was last on)
- *   workspace2=cowork:roots        the cowork commons, on that tab
- *                                  (health · account · profile · roots · help · keypad)
- *   workspace1=new                 the ＋ New session surface there
- *   workspace1=terminal            the workspace's seat back, as it was
- *   workspace1=empty               the seat, with nothing in it
- *   workspace3=…  workspace4=…      the lower cells of the 2×2 (count=4)
- *   count=2 | count=4              two workspaces around the roster, or four two-by-two
- *   order=workspace2,roster,workspace1   (a column word names a STACK: 1 over 3, 2 over 4)
- *   hidden=roster    shown=roster  hidden=none
- *
- * `me` stands for the asking session. Nothing here knows how a workspace shows a
- * thing — team-view.js hands in the verbs, this only decides which to call.
- */
-
 import { request } from './request.js';
 
 // The cowork commons' tab words, as a draft names them. A PLAIN CONSTANT here, not an
 // import from cowork-commons.js: that module reaches state.js (DOM at top level) and this
-// one is unit-tested under node (tests/team-arrange.test.js — kokugo, 2026-08-27).
 const COWORK_TABS = { health: 'health', account: 'account', profile: 'profile', roots: 'roots', roster: 'roster', archives: 'archives', help: 'help', keypad: 'keypad' };
 
 const COLUMNS = ['workspace1', 'roster', 'workspace2'];
 const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'];
-const TABS = { wipeboard: 'wipeboard', docs: 'docs', config: 'team-configuration', 'team-configuration': 'team-configuration' }; // chat is hidden (owner, 2026-08-28)
+const TABS = { wipeboard: 'wipeboard', docs: 'docs', config: 'team-configuration', 'team-configuration': 'team-configuration' };
 
 /** Tokens (`key=value`) → { draft, errors }. Unknown words are errors, not guesses. */
 export function parseDraft(tokens = [], me = '') {

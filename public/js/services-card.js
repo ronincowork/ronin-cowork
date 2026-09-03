@@ -40,7 +40,6 @@ export function servicesCard(container, onChange) {
   function render(state) {
     if (!state) {
       // SAY IT WHERE IT CAN BE SEEN. `line.el` is only mounted on the success path
-      // below, so this branch used to write into a node that was not in the document —
       // an unreachable operator looked exactly like a card with nothing to show.
       line.say(t('services.unreachable', 'could not reach the operator'), 'bad');
       wrap.replaceChildren(line.el);
@@ -92,7 +91,6 @@ export function servicesCard(container, onChange) {
       f.el.classList.add('st-field');
       // The same disclosure as first run, because a person may meet Services for the first
       // time here rather than there. docs/services-activation.md lists what this must say;
-      // it previously listed five things and this said one, which made the document a claim
       // about the product rather than a description of it.
       f.say(t('services.disclosure', 'Ronin receives this address, the accepted terms version, and a request from '
         + 'this install — enough to verify you and manage Services access. Services then '

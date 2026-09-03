@@ -92,7 +92,6 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const recruit = select(form, t('team_config.recruit', 'Recruit'), 'recruit', optionRows(['open', 'nobody', 'propose agents', 'staff agents'], t), defaults.recruit || 'open');
     const output = select(form, t('team_config.output', 'Output'), 'output', optionRows(['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'], t), defaults.output || 'open');
     const dial = select(form, t('team_config.dial', 'Control'), 'dial', optionRows(['user', 'read', 'write'], t), defaults.dial || 'write');
-    // `permissions` is retired and `launch_mode` replaces it (owner + lead, 2026-09-01).
     // Measured by @dangerous_mode before their record lands: this card built agent_defaults
     // FRESH rather than spreading what it read, so a save here would have dropped a Team's
     // configured launch mode back to stock without saying so. The ruled display words are

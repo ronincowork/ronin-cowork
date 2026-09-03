@@ -1,29 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * LAUNCH — one workbench, two cards, and you decide what goes where.
- *
- * Reached from the root page, and that is who it is for (owner, 2026-08-31: "this is
- * really only accessed from the root page, so this is sort of for the first-time
- * experience. People can kind of play with it, see what they can do."). The fast path
- * lives where the fast loaders already are — the Coworks bench and Add Agent.
- *
- * THE SHAPE, ruled 2026-09-01 after two versions that were not it: "we're going to put
- * the team and the agent cards in the selector, and you're going to be able to put either
- * workspace one or workspace two, this team page or this agent page… We're dropping this
- * little button that you have in the selector header, and we're dropping the 1, 2, 3, 4,
- * 5, 6 cards in the middle. Drop that and just allow us so that we can have the new team
- * and new agent on the same page."
- *
- * So: no mode toggle, no step outline, no separate output surface. Two cards. Either form
- * in either workspace, both at once if you want them — which is the thing the toggle and
- * the outline were both in the way of. Each form carries its own reading under it again,
- * and its launch button rides its tile header (`createSurface({ actions })`), asleep until
- * a name is typed.
- *
- * ONE FORM PER CARD PER WORKSPACE. The Workbench keys an instance by workspace, so putting
- * New Agent in both seats gives two independent drafts — two Agents being written side by
- * side is a use, not a bug.
- */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
@@ -54,7 +29,6 @@ function registerLaunchSurfaces() {
     summary: () => t('launch.new_agent_summary', 'Start an Agent in a Team or on its own.'),
     create: ({ environment, workspace }) => environment.agent(workspace),
   });
-  // THE THIRD CARD (owner, 2026-09-01): "a third kanban card in the middle, which is help
   // or instructions… I should be able to scroll up and down the form, and the help should
   // scroll up and down." It follows whichever form is on the bench.
   add({

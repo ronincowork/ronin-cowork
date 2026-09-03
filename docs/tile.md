@@ -127,8 +127,7 @@ Built order (`public/js/tilehead.js`):
                                                   └─ 🔒 🏷 ⛽ 🎛 📄 📝 🗑
 ```
 
-**Three on top, the rest behind メ** (owner's ruling 2026-08-17; six then, seven since 📄
-landed on 2026-08-18). The row used to end in
+**Three on top, the rest behind メ**. The row used to end in
 eight controls against a picker that has to fit a session name, and at four tiles up
 there was not room for both — measured at a 629px tile, the eight left the spacer 23px
 short before the picker started giving up characters. So ⛩ Commons and ⚡ Macros stay,
@@ -229,7 +228,7 @@ session, because it is the way to GET one. **A way in, not a close:** the sessio
 streaming behind the panel and ✕ on the tab strip comes back to it. Stopping viewing is the
 blank option in the picker; killing is 🗑.
 
-**The torii means this, and only this, everywhere** (owner's ruling 2026-08-17). It was メ
+**The torii means this, and only this, everywhere**. It was メ
 here and き in the bar for the same act, while ⛩ on this same header meant something else
 entirely — the letter. One glyph for two things and two glyphs for one thing. Both moved in
 the same pass, so the mark never had a period of meaning both.
@@ -262,7 +261,7 @@ A macro marked `send:` is the exception — it fires and presses Enter for you, 
 says `sent — wait Ns before sending it again` in place of its description rather than
 silently swallowing an impatient second tap.
 
-**FOUR CARDS, AND THE DROP IS A TEACHING SURFACE (owner's ruling, 2026-08-17).** It was
+**FOUR CARDS, AND THE DROP IS A TEACHING SURFACE.** It was
 every macro in the catalog, one `+name:` row each, the explanation on hover. The owner:
 *"I would rather have four macros and have larger buttons… These should be headlines, and
 the boxes are big enough that you can actually describe in them what that means, so people
@@ -280,7 +279,7 @@ can then go, 'Oh, I see.'"* Three consequences, and none of them is cosmetic:
   on hover. Confirmed directly by the owner, who also has a phone, where hover does not
   exist. This is body copy inside the button and deliberately independent of `tips.js`.
 
-**TWO AUDIENCES, AND NO FALLBACK BETWEEN THEM (owner's ruling, 2026-08-17).** *"We need to
+**TWO AUDIENCES, AND NO FALLBACK BETWEEN THEM.** *"We need to
 split out the description and the agent instruction into two different things because they
 don't overlap, and the macro should carry both."* A catalog entry is written twice:
 

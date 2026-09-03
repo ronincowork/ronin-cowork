@@ -42,7 +42,7 @@ moment of asking (`deskStatus`). Nothing here is prose an agent maintains.
 
 ## The gate
 
-**`RONIN_REPO` in the repository is the one switch** (owner, 2026-08-29). `desks=managed`
+**`RONIN_REPO` in the repository is the one switch**. `desks=managed`
 gives a coding launch its desk, the contract in its brief, the desk actions and the tools;
 `desks=none`, or no file, gives none of them and the session starts in the checkout. There
 is no install-wide switch. The Campaign's Ronin Worktrees choice defaults the file written for
@@ -95,7 +95,7 @@ with the line is left as it is (`conflict`), to be contained at its own hand-in.
 
 Repository verification does not run at any step. `dev` never moves here.
 
-**The lead is told, dial or no dial** (owner law, 2026-08-28). An accepted hand-in, or a
+**The lead is told, dial or no dial**. An accepted hand-in, or a
 conflict, reaches every lead of the line's team — the 人, `@ronin-lead` on the session —
 through `libexec/ronin-house-send`, which enters the same durable inbound message queue:
 reviewing the team line
@@ -105,8 +105,7 @@ its job is waiting is house machinery (the same footing as Koshi's marker and
 human draft or presses Enter into a dialog; when it cannot deliver, the queue retains the
 notice visibly for mechanical retry and the hand-in output says which happened.
 
-**No lead set: the handing-in session holds the job** (owner law, 2026-08-28: *"the
-fallback is the agent handing in — it has to work end to end with no lead"*). The hand-in
+**No lead set: the handing-in session holds the job**. The hand-in
 prints `YOU ARE THE LEAD FOR THIS ONE` with the words: review the line, promote when
 coherent (`bin/ronin-promote <team>`); a conflict is yours to resolve at your desk. A
 record goes on the wipeboard without interrupting anyone. Promotion is not restricted to a
@@ -116,7 +115,7 @@ designated lead — the receipt records who ran it — so nothing is ever tied u
 
 ## Close, park, recover, discard
 
-> **Park is retired (owner, ruled 2026-08-30 — `docs/worktrees.md` § Hand in or close).**
+> **Park is retired.**
 > A desk is handed in or closed; a desk always has a living owner; ending a session checks
 > for desks it solely owns. This section describes the code as it still is until the
 > lab's DESK_OWNERSHIP build-out lands: `park`, `parkedDesks` and

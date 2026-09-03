@@ -2,28 +2,6 @@
 import { S } from './state.js';
 import { t } from './lexicon.js';
 
-/**
- * DICTATION — one engine, ours, on both surfaces.
- *
- * It used to be two. Touch ran Apple's Web Speech (`webkitSpeechRecognition`) into a
- * compose overlay; desktop recorded a clip and posted it to the host. Web Speech is gone,
- * and the reason is not tidiness:
- *
- *   It cannot be taught a word. The spec's one vocabulary hook (SpeechGrammarList,
- *   JSGF) is deprecated and not meaningfully implemented, so `ctx` came back as
- *   CHIZU and TEGAMI as "the gummy", every time, with no way to fix it.
- *   It sent the audio to Apple.
- *   It was Safari-only, so every other browser showed no mic at all.
- *   And it was a worse copy of a control already on screen — the iPhone keyboard's
- *   own 🎤 is the same engine, streams the same way, and cannot be taken away.
- *
- * Recording to the host loses the live transcript and buys the glossary
- * (ronin_catalogs/HOTWORDS.md, edited in the commons's ▥ Hotwords) and audio that never leaves the
- * building. Keeping both means the two dictations on a phone now differ in something
- * other than which button you press — which is the comparison worth having.
- * See co-working/user_repo/README/DICTATION.md.
- */
-
 /** Can this browser record at all? Needs a secure context for getUserMedia — which
  *  over the tailnet means the https URL, not the bare IP. */
 export const CAN_RECORD =
@@ -130,7 +108,6 @@ export function wireDictation(ta, micBtn) {
   if (!CAN_RECORD) return null;
 
   // The clip goes off for transcription AFTER the second tap, so there is a `busy`
-  // beat where the box is still empty. An Enter in that beat used to hit the empty
   // box and do nothing, and the transcript then landed a moment later looking
   // ignored. The composer checks `busy` and queues the send via `afterText`.
   let busyState = false;

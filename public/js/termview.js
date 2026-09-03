@@ -1,20 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * TERMVIEW — the 🔒 locked view: the untouched `tmux attach` mirror.
- *
- * tmux paints a fixed screen; scroll-back is LOCAL since viewer mouse went off
- * (2026-09-01) — xterm keeps a 30,000-line buffer of what streamed through, the wheel
- * scrolls it, and the ↓ latest pill (wireJumpPill) is the way home. tmux copy-mode is
- * no longer entered from a tile. This is Locked, it works, and RIREKI does not touch
- * it — the scroll saga's settled boundary, and the reason this module is deliberately
- * thin: it wraps xterm and nothing else.
- *
- * The other view is `tapeview.js`, which reads the tape and never touches tmux at all.
- * The tile composes one or the other; neither knows the other exists.
- *
- * xterm itself stays a classic script (`window.Terminal`, `window.FitAddon`) — the
- * vendor files load before the module graph runs, so it is referenced, never imported.
- */
 import { IS_TOUCH, SELECT_MOD, WHEEL_DOWN, WHEEL_UP, forcesSelection } from './state.js';
 import { termFace, termTheme } from './theme.js';
 import { t } from './lexicon.js';
@@ -29,7 +13,6 @@ export class TermView {
     this.body = body;
     this.term = new Terminal({
       // Face AND palette both resolved from the stylesheet (js/theme.js) — spelled once,
-      // in CSS, and xterm reads that spelling. The font used to be the one exception here
       // and is not any more: --font-term and --text-4.
       ...termFace(),
       theme: termTheme(),
@@ -96,25 +79,10 @@ export class TermView {
     this.term.scrollToBottom();
   }
 
-  /**
-   * IS ANYONE LISTENING FOR MOUSE? With viewer mouse off (2026-09-01), a raw wheel
-   * escape sent at the pane is no longer consumed by tmux: it reaches the running app.
-   * An app holding mouse tracking (Claude Code's TUI) scrolls its own view with it; an
-   * app that is not gets the bytes AS TYPED INPUT — the owner watched agents nobody had
-   * touched sit "scroll locked" on injected wheels, and a bare CLI would show escape
-   * garbage on its prompt. Every wheel sender asks this first.
-   */
   mouseTracking() {
     return (this.term.modes?.mouseTrackingMode ?? 'none') !== 'none';
   }
 
-  /**
-   * The way back from a local scroll-back (owner, 2026-09-01: a tile "still stuck in
-   * scroll mode"). With viewer mouse off, the wheel scrolls xterm's OWN buffer — the
-   * server never knows, so no server-side jump can end it, and a desktop owner types
-   * into the composer, so xterm's scroll-on-input never fires either. The tape view's
-   * ↓ latest pill, on the mirror: shown whenever the viewport has left the live end.
-   */
   wireJumpPill(hooks) {
     const pill = document.createElement('button');
     pill.type = 'button';
@@ -143,30 +111,6 @@ export class TermView {
     } catch (_) {}
   }
 
-  /**
-   * DESKTOP ONLY: catch the drag that was meant to be a copy, and say the key.
-   *
-   * The failure this exists for is silent and looks like success. When the app in a
-   * locked tile holds mouse tracking (Claude Code's TUI does), a plain drag is forwarded
-   * as mouse escapes the APP consumes: the browser never saw a selection and the
-   * laptop's clipboard is untouched, but the user watched text respond under their
-   * cursor, so they press ⌘C, get whatever was there before, and conclude that copying
-   * is broken. Nothing on screen ever mentions the modifier. (tmux's own copy-mode grab
-   * of the drag is gone with viewer mouse off, 2026-09-01; the app-side grab remains.)
-   *
-   * THE TEST IS "THEY TRIED AND GOT NOTHING", not "is mouse reporting on". A real drag
-   * that leaves `getSelection()` empty is the honest condition: it fires for tmux mouse
-   * mode, for an app holding the mouse itself, and for whatever the next cause turns out
-   * to be. Asking xterm about its modes would be narrower AND more brittle.
-   *
-   * Held to ONCE PER TILE, re-arming after ten minutes (the owner's call, 2026-08-15). A
-   * hint on every drag is a nag, and the second one teaches nothing the first did not.
-   *
-   * Locked only — the unlocked transcript is a plain div where selection already works —
-   * and desktop only, because touch has no drag-to-select to rescue.
-   *
-   * @param {{isLocked: () => boolean, overHome: (el: EventTarget) => boolean}} hooks
-   */
   wireCopyHint(hooks) {
     if (IS_TOUCH) return;
     const REARM_MS = 10 * 60 * 1000;

@@ -28,20 +28,6 @@ const HERE = '⛩';
  * The header chip. Hidden until a ladder exists — a session that keeps no TEGAMI costs
  * nothing on screen, which is what keeps this optional in practice as well as in theory.
  */
-/**
- * Clamp agent-authored text before it becomes a hover label. The help box is a fixed
- * three lines (~120 chars at its width); stock labels are guaranteed to fit by
- * check-tips at build time, but a session's own words arrive at runtime and are
- * unbounded — without this, one long objective overflows the box and fails the gate
- * for the whole install.
- *
- * THE BUDGET IS THE WHOLE LABEL, not this fragment of it, which is why `room` exists
- * (2026-08-17). The chip does not hover its objective alone: it appends "Held at a gate ·
- * ladder unchanged for 3h" underneath. Clamping the objective to the full 120 and THEN
- * adding 45 more characters spends the budget twice, and check-tips duly failed at 165
- * chars / 17px over on a real session — the exact overflow the clamp was written to
- * prevent, walked around by its own caller. A caller that adds a tail passes what is left.
- */
 export function clampTip(s, room = 120) {
   return s.length > room ? s.slice(0, room - 1) + '…' : s;
 }
@@ -297,18 +283,6 @@ export function buildLadder(letter, deskEntry = null) {
 
   return box;
 }
-
-/*
- * `buildLetter` stood here until 2026-08-17 — the TEGAMI file verbatim, in a selectable
- * <pre>, opened from a ⛩ in the tile header. The owner removed that button (the torii
- * now means "the Commons" everywhere), which left this with no caller, and an unreachable
- * renderer is a corpse check-dead is right to refuse.
- *
- * What went with it is worth naming, because the comment that stood here argued for it:
- * the chip and the ladder are an INTERPRETATION, and this was the source. If the raw view
- * is ever wanted again it belongs inside the ladder panel, where the reader already is.
- * `GET /api/sessions/:name/tegami/raw` still serves it — the route is michi's and stays.
- */
 
 /** `51m`, `3h`, `2d` — short enough to sit on a board row. */
 export function humanAge(ms) {

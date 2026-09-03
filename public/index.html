@@ -7,20 +7,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Ronin</title>
-    <!-- THE HOUSE MARK. Copied from ronin-lab, which owns it — public/brand/README.md says
-         where and why. SVG first so a retina tab and a bookmark bar stay sharp at any size;
-         the 32px PNG is the fallback for anything that will not take one. The 256 is what
-         iOS puts on a home screen, which is the arrival REMOTE_ACCESS is built around. -->
     <link id="tabicon" rel="icon" type="image/svg+xml" href="/brand/nin-mark.svg" />
     <link rel="apple-touch-icon" href="/brand/nin-mark-256.png" />
-    <!-- The saved theme, applied BEFORE the stylesheet paints — a light-theme reload
-         must not flash dark. Inline and tiny on purpose; js/theme.js owns the rest. -->
     <script>
       try {
-        /* A device pin, else the cached Campaign theme for THIS surface — touch reads
-           the mobile value, a pointer the desktop one (both written by js/theme.js when
-           the served desk is learned) — else the house light (owner, 2026-09-01). The
-           dark shell is the stylesheet's bare state, so only light sets the attribute. */
         var t = localStorage.getItem('tmuxgrid.theme');
         if (t !== 'light' && t !== 'dark') {
           var coarse = matchMedia('(pointer: coarse)').matches;
@@ -29,16 +19,7 @@
         if (t === 'light') document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
-    <!-- THE BOOT VEIL, inline so it cannot lose the race it exists to win (owner,
-         2026-09-01: the first visit "paints light for a beat, then corrects"). It lived
-         in workspace-kit.css, which JS injects late — so on exactly the cold first
-         visit whose theme cache is also empty, the page painted unveiled in the wrong
-         shell before the veil's own stylesheet had arrived. main.js lifts it after the
-         desk profile (the served theme) and skin have resolved. -->
     <style>:root.boot-pending body { visibility: hidden; }</style>
-    <!-- xterm.css rides inside style.css now (@import into the lowest cascade layer,
-         still the absolute /vendor path shared by live and staging) so every app rule
-         outranks vendor rules by layer order rather than by accident of load order. -->
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="css/team-workspace.css" />
     <link rel="stylesheet" href="css/launch-forms.css" />
@@ -54,45 +35,17 @@
       <span id="coworkssep" class="ui-bar-separator" aria-hidden="true" hidden>•</span>
       <a id="coworksbtn" class="ui-bar-nav" href="#/cowork" hidden>Coworks</a>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
-      <!-- THE PLACE — one italic reading centred in the grow gap so a first-time visitor
-           can tell the two Workbench pages apart: "Teams" on the Coworks page, "Your team:
-           <name>" on a Team page (owner, 2026-09-02). It used to be the Team's name beside
-           the Coworks door, where it read as one more door. js/workspace-header.js writes
-           it; nothing else does. -->
       <span class="grow"><span id="viewplace" class="ui-bar-place" hidden></span></span>
-      <!-- THE LAYOUT MAP — the workspace drawn small: one rectangle per column, click
-           to show or hide, drag to reorder. Empty unless the active view has columns
-           to arrange (the Team workbench does; Sessions and League do not). The
-           ViewHost (js/workspace.js) fills it; no feature writes here. It sits in the
-           grow gap, left of the five verbs, which keep their measured width. -->
-      <!-- THE TAB'S NAME — a field the owner can type over, because three tabs each titled
-           "team · Ronin" cannot be told apart (owner, 2026-08-26). Empty unless the active
-           view offers a name to edit (the Team page does; its default is the team). The
-           ViewHost fills it; what is typed becomes the browser tab's title, per tab. -->
       <span id="viewname" class="wk-view-name"></span>
       <span id="viewmap" class="wk-view-map"></span>
-      <!-- RAM_RPM — the box's working reading. A tachometer: always there, mostly
-           ignored, so you learn what normal looks like without being told. On the RIGHT,
-           with the readouts and verbs — the left of the bar is navigation only (owner,
-           2026-08-29); it stays outside the verbs' measured width because it is a readout
-           and does nothing when clicked. js/ramrpm.js writes the face and the title. -->
       <span id="ramrpm" class="ramrpm" hidden></span>
       <span id="feedbackaction"></span>
-      <!-- THE SHAPE — 2 ⇄ 4 (owner, 2026-08-28): one button wearing the count the cowork_space
-           is on, clicked to alternate, in the seat the 1·2·4 count had. js/team-view.js
-           writes its face and owns the click; hidden when no cowork_space is showing. -->
       <button id="shapecycle" class="shape-cycle" hidden data-t-title="bar.shape_title" title="Two workspaces — click for four">2</button>
-      <!-- The header keys (.ctrls Esc ^C ⤓, the ⋯ More-keys button and the #keypad it
-           promised) are GONE — hidden on desktop since the drawer era, and on touch
-           every coarse tile carries its own keys row on the composer now (js/keysrow.js),
-           next to the box it drives instead of two taps away at the top of the page. -->
-    </header>
+      </header>
     <div id="viewhost">
       <section id="cowork-view" class="cc-view" hidden></section>
     </div>
 
-    <!-- /vendor stays absolute: served from node_modules, shared by live and staging.
-         Everything else is RELATIVE so this exact file also works under /staging/. -->
     <script src="/vendor/xterm.js"></script>
     <script src="/vendor/addon-fit.js"></script>
     <script type="module" src="js/main.js"></script>
