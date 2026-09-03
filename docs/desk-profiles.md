@@ -23,11 +23,11 @@ way the skin pick alone used to be.
 
 **The leaf and its route are unchanged; what moved is where the fact is stored.** Since
 2026-08-29 desk settings belong to a **campaign**. Applying a catalog profile copies all
-controlled values into `machine settings campaign record.desk`; the Campaign can then change any one of
+controlled values into `campaign_config.desk`; the Campaign can then change any one of
 them. Reapplying a profile deliberately overwrites those values. The saved profile name
 is provenance, not a live reference, so later catalog edits cannot silently repaint an
 existing Campaign. The effective vocabulary, skin, theme and defaults live here rather than
-in `machine_settings.json`, and both the read and the write resolve through `src/campaigns.ts`.
+in `ronin.json`, and both the read and the write resolve through `src/campaign-config.ts`.
 An install running several campaigns has one profile per campaign, and a combined view
 paints in the primary campaign's. `docs/campaigns.md`. `GET /api/desk-profiles` serves the list (with
 `origin`, so the picker can say which are yours) and the active name in one answer, and

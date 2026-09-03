@@ -9,10 +9,10 @@ import { homedir } from 'node:os';
 import type express from 'express';
 import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
-import { listSkins } from '../skin-catalog.js';
-import { listLexicons, resolveLexicon } from '../lexicon-catalog.js';
+import { listSkins } from '../skins.js';
+import { listLexicons, resolveLexicon } from '../lexicons.js';
 import { activeDeskProfileName, listDeskProfiles } from '../desk-profiles.js';
-import { initialCampaign } from '../campaigns.js';
+import { initialCampaign } from '../campaign-config.js';
 import { listSops } from '../resources.js';
 import { listWays } from '../resources.js';
 import { listActions } from '../actions.js';
@@ -31,7 +31,7 @@ import {
 } from '../project-roots.js';
 import { campaignFilter, campaignResolver } from '../campaign-scope.js';
 import { arrangementProfile, assertArrangementProfileCurrent, readArrangement, setArrangementProfile, validateArrangementProfile } from '../desks/arrangement.js';
-import { readDesksSection } from '../machine-state.js';
+import { readDesksSection } from '../user-config.js';
 import {
   listSavedLaunches,
   saveLaunch,
@@ -49,7 +49,7 @@ import {
   listSessionRoles,
   listTeamTemplates,
   writeRoleTasks,
-} from '../resource-adapters.js';
+} from '../definitions.js';
 import { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } from '../templates.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
 
@@ -118,7 +118,7 @@ export function registerCatalogs(app: express.Express): void {
 
   /* THE LOOK, as entries. A skin is a set of design tokens and nothing else — no selector,
    * no rule — so this route serves data the client sets as custom properties and could not
-   * turn into markup if it tried (src/skin-catalog.ts). Shadowable like any catalog: shipped
+   * turn into markup if it tried (src/skins.ts). Shadowable like any catalog: shipped
    * skins update with the repo, a skin of yours is yours and an upgrade cannot touch it. */
   app.get('/api/skins', async (_req, res) => {
     try {
@@ -476,7 +476,7 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   /* THE LEXICONS — the list, and one resolved flat through its `base:` chain
-   * (src/lexicon-catalog.ts). The client only ever asks for the flat one. */
+   * (src/lexicons.ts). The client only ever asks for the flat one. */
   app.get('/api/lexicons', async (_req, res) => {
     try {
       res.json(await listLexicons());

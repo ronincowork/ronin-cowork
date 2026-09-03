@@ -28,7 +28,7 @@ import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
 import { completeRoutineChoices } from './routines.js';
 
 async function completeRoutines(value: unknown): Promise<Record<string, boolean>> {
-  const { listRoutines } = await import('./resource-adapters.js');
+  const { listRoutines } = await import('./definitions.js');
   return completeRoutineChoices(await listRoutines(), value);
 }
 
@@ -85,7 +85,7 @@ export const isCreatableTeamName = (s: string): boolean => isValidTeamName(s) &&
 
 /**
  * A Campaign id is a PATH SEGMENT here, so this is a guard before it is a validator.
- * `machine settings campaign record` owns the canonical rule; what this file must guarantee is that an id
+ * `campaign_config` owns the canonical rule; what this file must guarantee is that an id
  * arriving from a route can never climb out of the store — `..`, a slash or an absolute
  * path would write a roster anywhere on the box. Same shape as a team name, and the
  * narrowness is the point rather than a coincidence.

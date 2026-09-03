@@ -46,7 +46,7 @@ import { storeDir } from './resources.js';
 import { resolveFiles } from './resources.js';
 import { listMacros } from './macros.js';
 import { activeDeskProfileName, listDeskProfiles } from './desk-profiles.js';
-import { resolveLexicon } from './lexicon-catalog.js';
+import { resolveLexicon } from './lexicons.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

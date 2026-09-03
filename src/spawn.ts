@@ -2,14 +2,14 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { mergeSessionDefaults, resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './resources.js';
-import { bootFiles, ensureShelf } from './birth-readme.js';
+import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
-import { readAgentsSection, readDesksSection } from './machine-state.js';
+import { readAgentsSection, readDesksSection } from './user-config.js';
 import { storeDir } from './resources.js';
-import { findDefinition, listRoutines, routineReading } from './resource-adapters.js';
+import { findDefinition, listRoutines, routineReading } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
-import { readCampaign } from './campaigns.js';
+import { readCampaign } from './campaign-config.js';
 import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { ResolvedWorktreesRepository } from './worktrees-resolution.js';
 import type { Assignment } from './desks/schema.js';
@@ -238,7 +238,7 @@ export function buildBrief(
   if (assignment?.desks.length) parts.push(renderDeskBlock(assignment));
   // THE BIRTH README POINTER. ResolveForm initially supplies the resolved sources; the
   // launch executor compiles them into one per-session README and replaces this sentence
-  // before building provider argv. See src/birth-readme.ts and routes/launch.ts.
+  // before building provider argv. See src/session-boot.ts and routes/launch.ts.
   const reading = [...boot, ...(form.seed ?? [])].filter(Boolean);
   if (reading.length) parts.push(`Read first: ${reading.join(', ')}.`);
   const prompt = form.prompt?.trim() ?? '';

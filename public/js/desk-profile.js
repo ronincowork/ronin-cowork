@@ -13,7 +13,7 @@
  *     nothing more — a tile's own choice is per tile and is never overwritten here;
  *   - the skin is NOT applied here. `restoreSkin(profile.skin)` in main.js does it, in
  *     the order the theme requires (theme, then skin), and keeps the device's own pick
- *     if it made one since — see skin-catalog.js for that rule.
+ *     if it made one since — see skins.js for that rule.
  * The Team page reads `team_arrangement` itself when a tab has nothing of its own.
  */
 import { request } from './request.js';

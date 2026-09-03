@@ -1,5 +1,5 @@
-import type { CampaignConfig } from './campaigns.js';
-import type { RoutineRow } from './resource-adapters.js';
+import type { CampaignConfig } from './campaign-config.js';
+import type { RoutineRow } from './definitions.js';
 import type { SessionsDefaults } from './launch-command.js';
 import type { StatedBy } from './launch-profile.js';
 import type { ProjectRootInfo } from './project-roots.js';

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import type { RoutineRow } from '../src/resource-adapters.js';
+import type { RoutineRow } from '../src/definitions.js';
 import { completeRoutineChoices, resolveRoutines, routineChoices } from '../src/routines.js';
-import { listRoutines } from '../src/resource-adapters.js';
+import { listRoutines } from '../src/definitions.js';
 
 const row = (name: string): RoutineRow => ({
   name, label: name, blurb: '', origin: 'stock', shadowed: false,

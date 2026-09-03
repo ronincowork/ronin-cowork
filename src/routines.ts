@@ -7,7 +7,7 @@
  * tests cannot acquire subtly different cascades. Delivery adapters annotate availability
  * after this selection has been resolved.
  */
-import type { RoutineRow } from './resource-adapters.js';
+import type { RoutineRow } from './definitions.js';
 
 export type RoutineChoices = Record<string, boolean>;
 

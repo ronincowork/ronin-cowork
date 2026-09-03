@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { RoutineRow } from '../src/resource-adapters.js';
+import type { RoutineRow } from '../src/definitions.js';
 import { projectRoutineTools } from '../src/routine-tools.js';
 import type { ResolvedRoutine } from '../src/routines.js';
 

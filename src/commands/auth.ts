@@ -7,7 +7,7 @@
  *
  * A password change rotates the signing secret, which ends every session at once —
  * that IS the revocation story (src/auth.ts). A RUNNING operator picks the change up
- * on its next request (the record is cached by machine_settings.json's mtime); enabling auth for
+ * on its next request (the record is cached by ronin.json's mtime); enabling auth for
  * the FIRST time wants a restart only so the boot log states the new posture.
  */
 import { createInterface } from 'node:readline';

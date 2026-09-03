@@ -18,7 +18,7 @@
  */
 import { listSessions } from '../tmux.js';
 import { sessionKey } from '../session-dir.js';
-import { readWipeboardSettings } from '../machine-state.js';
+import { readWipeboardSettings } from '../user-config.js';
 import {
   appendPost,
   boardExists,

@@ -61,7 +61,7 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
 
 
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
-  const defs = await probe('../src/resource-adapters.js');
+  const defs = await probe('../src/definitions.js');
   if (defs && typeof defs.listSessionRoles === 'function') {
     for (const kind of ['session_roles', 'role_families'] as const) {
       const dir = path.join(catalogsDir, kind);

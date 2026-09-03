@@ -2,7 +2,7 @@
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
 import { buildMachinePanel } from './machine-panel.js';
-import { followProfileSkin } from './skin-catalog.js';
+import { followProfileSkin } from './skins.js';
 import { activeProfile, deskProfiles, loadDeskProfile, setDeskProfile } from './desk-profile.js';
 import { t } from './lexicon.js';
 import { S } from './state.js';

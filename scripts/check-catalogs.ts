@@ -34,11 +34,11 @@ import {
   listTeamTemplates,
   type DefinitionKind,
   type TemplateBox,
-} from '../src/resource-adapters.js';
+} from '../src/definitions.js';
 import { listDeskProfiles } from '../src/desk-profiles.js';
-import { listLexicons } from '../src/lexicon-catalog.js';
+import { listLexicons } from '../src/lexicons.js';
 import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
-import { findDefinition } from '../src/resource-adapters.js';
+import { findDefinition } from '../src/definitions.js';
 import { listMacros } from '../src/macros.js';
 import { listSessionLaunchSpecs } from '../src/project-roots.js';
 

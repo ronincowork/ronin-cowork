@@ -22,7 +22,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { listRoleFamilies, listSessionRoles } from '../src/resource-adapters.js';
+import { listRoleFamilies, listSessionRoles } from '../src/definitions.js';
 
 /** `SESSION_JOBS.md` as it stood at the cut, in its file order. */
 const FORMER_JOBS = [

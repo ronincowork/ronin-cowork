@@ -21,7 +21,7 @@
  * So Ronin installs where the agents' own installers already install. Two consequences
  * follow and both are the point: an agent Ronin installed is indistinguishable from one
  * the owner installed by hand, and uninstalling Ronin leaves them alone — they are the
- * owner's tools, not Ronin's state. That is also why this is NOT a store (src/resources.ts):
+ * owner's tools, not Ronin's state. That is also why this is NOT a store (src/stores.ts):
  * a store is a place Ronin keeps its own working state and an uninstall deletes it. This
  * is the same class as `~/.claude/settings.json` — somebody else's directory that setup.sh
  * legitimately writes into.

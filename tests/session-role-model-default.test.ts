@@ -98,7 +98,7 @@ test('every stock session_role resolves to the same command — the role never d
   // The general form of the ruling. If any shipped definition regrows a `model:` that the
   // resolver honours, exactly one of these rows will differ from the rest.
   await sessionDefault('openai', 'gpt-5.6-terra');
-  const { readDefinitions } = await import('../src/resource-adapters.js');
+  const { readDefinitions } = await import('../src/definitions.js');
   const roles = await readDefinitions('session_roles');
   const agentRoles = roles.filter((d) => !/^none$/i.test(d.get('agent')));
   assert.ok(agentRoles.length >= 5, 'the stock shelf is populated, so this proves something');

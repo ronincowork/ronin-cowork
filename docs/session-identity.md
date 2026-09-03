@@ -151,7 +151,7 @@ out separately:
 
 | Surface | Where | Filters viewers by |
 |---|---|---|
-| the session max (launch guard) | `liveCount()`, `src/machine-settings.ts` | name prefix |
+| the session max (launch guard) | `liveCount()`, `src/user-config.ts` | name prefix |
 | the roster, the tile picker, `/events` | `listSessions()`, `src/tmux.ts` | name prefix |
 | project-root lookup | `src/tmux.ts` | name prefix |
 | the session record | `src/services/rireki/rireki.ts` (three places) | name prefix |

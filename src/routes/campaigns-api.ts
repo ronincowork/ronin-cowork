@@ -8,7 +8,7 @@
  * here would be the embedded-list the plan forbids.
  *
  * **CREATE SAVES THE CAMPAIGN AND STOPS** (owner, 2026-08-29). New Campaign sets the stage:
- * it writes one `machine settings campaign record` and selects it. It creates no Cowork, no team_roster, no
+ * it writes one `campaign_config` and selects it. It creates no Cowork, no team_roster, no
  * project_root and launches no Agent — and that is true here by construction rather than by
  * care, because this module imports none of those stores. The response is the whole record
  * so the client has the id it needs to select without a second round trip.
@@ -28,7 +28,7 @@ import {
   writeCampaign,
   type CampaignEdit,
   type CampaignState,
-} from '../campaigns.js';
+} from '../campaign-config.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 

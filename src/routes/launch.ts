@@ -28,7 +28,7 @@ import {
   setTags,
 } from '../tmux.js';
 import { launchArgv, newProviderSession } from '../agents.js';
-import { AtSessionMax, liveCount, readAgentsSection, readDesksSection, readMax, readOwner, writeMax, writeOwner } from '../machine-state.js';
+import { AtSessionMax, liveCount, readAgentsSection, readDesksSection, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, type SpawnForm } from '../spawn.js';
 import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
@@ -47,11 +47,11 @@ import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
 import { initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
-import { readCampaign } from '../campaigns.js';
-import { listRoutines } from '../resource-adapters.js';
+import { readCampaign } from '../campaign-config.js';
+import { listRoutines } from '../definitions.js';
 import { resolveLaunchSeed } from '../launch-seed.js';
 import type { SessionsDefaults } from '../launch-command.js';
-import { compileBirthReadmeAt, isShelfTeaching } from '../birth-readme.js';
+import { compileBirthReadmeAt, isShelfTeaching } from '../session-boot.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 

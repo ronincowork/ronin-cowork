@@ -22,7 +22,7 @@ import {
 } from './auth.js';
 import { cleanupViewers, listSessions } from './tmux.js';
 import { publishRoninUrl } from './operator-url.js';
-import { publishMax, publishOwner } from './machine-state.js';
+import { publishMax, publishOwner } from './user-config.js';
 import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
@@ -35,9 +35,9 @@ import { startTomodachiSender } from './activation/tomodachi.js';
 import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
-import { ensureInitialCampaign } from './campaigns.js';
+import { ensureInitialCampaign } from './campaign-config.js';
 import { migrateCampaignScope } from './campaign-scope.js';
-import { stampFreshInstall } from './machine-state.js';
+import { stampFreshInstall } from './user-config.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerLibrary } from './routes/library-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
@@ -118,12 +118,12 @@ function checkAuth(headers: { authorization?: string; cookie?: string }): boolea
  *
  * No `secure: true`, deliberately: this same server is reached over plain HTTP on the
  * tailnet IP as well as HTTPS through `tailscale serve`, and a Secure cookie would make
- * the HTTP address impossible to log into. The tailnet is the wall (src/machine-settings.ts);
+ * the HTTP address impossible to log into. The tailnet is the wall (src/config.ts);
  * the flag would be theatre there and a lockout here.
  *
  * Returns FALSE when there is no password record to sign with, and callers must respect
  * that rather than assume it (2026-08-17): `ronin-passwd clear` can remove the record
- * while registered passkeys remain in machine_settings.json, and the first version of this returned
+ * while registered passkeys remain in ronin.json, and the first version of this returned
  * void — so a passkey login answered `{ok:true}`, set no cookie, and bounced the owner
  * straight back to /login with nothing to explain it. A door that reports success and
  * does not open is worse than one that refuses.
@@ -272,15 +272,15 @@ startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/ac
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
-// A box being born says so, ONCE, and only when machine_settings.json does not exist yet. Absence of
-// the key means an install older than the key, which must stay quiet — src/machine-settings.ts.
+// A box being born says so, ONCE, and only when ronin.json does not exist yet. Absence of
+// the key means an install older than the key, which must stay quiet — src/user-config.ts.
 void stampFreshInstall();
 
 // THE INITIAL CAMPAIGN — seeded once, from the campaign name, description and desk_profile
-// this install already had. Idempotent by existence: a box with any machine settings campaign record,
+// this install already had. Idempotent by existence: a box with any campaign_config,
 // archived ones included, has already migrated and this touches nothing. Best-effort like
 // the stamp above — a store we cannot write is a different failure, and throwing here would
-// cost the whole boot — src/campaigns.ts.
+// cost the whole boot — src/campaign-config.ts.
 // THE SCOPE MIGRATION runs behind the seed and in the same spirit: additive, idempotent,
 // and only ever stamping a record that carries no Campaign. It re-homes unmarked
 // team_rosters under the initial Campaign, marks project_roots and saved templates, and

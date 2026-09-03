@@ -490,6 +490,6 @@ export async function writeRoleTasks(role: string, tasks: string[]): Promise<str
   return splitDefinitionList(back.get('session_roles'));
 }
 
-export const routineReading = (
-  routines: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[],
-): string[] => routines.flatMap((routine) => routine.enabled ? routine.reading : routine.reading_off);
+/** A Routine contributes the reading for its resolved state. */
+export const routineReading = (routines: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[]): string[] =>
+  routines.flatMap((routine) => (routine.enabled ? routine.reading : routine.reading_off));
