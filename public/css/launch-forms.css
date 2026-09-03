@@ -13,7 +13,8 @@
   /* The action bar sits OUTSIDE the form, so it needs saying here too — otherwise Save as
      template keeps the browser's 16px while the box beside it is 12px. It gets its own
      class from `createActionBar` rather than this file reaching for a `.wk-` selector. */
-  .ntf-form, .ntf-foot, .ntf-actions { font-size: var(--text-3); }
+  .ntf-form, .ntf-actions { font-size: var(--form-input); }
+  .ntf-foot { font-size: var(--form-note); }
   .ntf-form { display: flex; flex-direction: column; margin-bottom: var(--space-7); }
 
   /* ── the team's own agents: a short row, opened when you want the rest ── */
@@ -68,29 +69,29 @@
     padding: var(--space-4) var(--space-5);
     cursor: pointer;
     font: inherit;
-    font-size: var(--text-3);
+    font-size: var(--form-head);
     text-align: left;
   }
   .ntf-band-chev { flex: none; }
   .ntf-band:hover { border-color: var(--kaki); color: var(--fg-strong); }
 
   /* ── the help workspace: prose beside the step you are on ── */
-  .lh-surface { font-size: var(--text-3); }
+  .lh-surface { font-size: var(--form-input); }
   .lh-body { display: flex; flex-direction: column; gap: var(--space-7); }
   .lh-section { border-left: var(--edge) solid var(--line); padding-left: var(--space-6); }
   .lh-section[hidden] { display: none; }
   /* The step the form is showing: the same kaki edge the pressed controls use, so "where
      you are" reads the same way on both sides of the bench. */
   .lh-section[data-current='true'] { border-left-color: var(--kaki); }
-  .lh-section h3 { margin: 0 0 var(--space-3); color: var(--fg-strong); font-size: var(--text-3); }
+  .lh-section h3 { margin: 0 0 var(--space-3); color: var(--fg-strong); font-size: var(--form-head); }
   .lh-section[data-current='true'] h3 { color: var(--kaki); }
   .lh-section p { margin: 0; color: var(--muted-2); line-height: 1.6; }
   .ntf-form textarea { resize: vertical; }
   .ntf-foot { margin-top: var(--space-6); }
-  .ntf-tmplname { font-size: var(--text-3); width: calc(var(--space-12) * 5); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
+  .ntf-tmplname { font-size: var(--form-input); width: calc(var(--space-12) * 5); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
   /* ── the two doors ── */
   .fs-seg { display: flex; align-self: flex-start; margin-bottom: var(--space-5); border: var(--edge) solid var(--line-2); }
-  .fs-seg button { border: 0; background: transparent; color: var(--muted-2); padding: var(--space-2) var(--space-6); cursor: pointer; font: inherit; font-size: var(--text-2); }
+  .fs-seg button { border: 0; background: transparent; color: var(--muted-2); padding: var(--space-2) var(--space-6); cursor: pointer; font: inherit; font-size: var(--form-input); }
   .fs-seg button[aria-pressed='true'] { background: var(--kaki); color: var(--on-strong); }
   /* A type with no template door hides the segment — and a display rule beats the UA's
      [hidden], so the guard is not optional. Found by driving: `seg.hidden` was a no-op. */
@@ -102,20 +103,20 @@
   .fs-step[hidden] { display: none; }
   .fs-step[data-collapsed='true'] { align-items: center; padding: var(--space-2) 0; }
   .fs-step-head { display: flex; align-items: baseline; gap: var(--space-3); min-width: 0; }
-  .fs-step-head h3 { margin: 0; color: var(--fg-strong); font-size: var(--text-3); font-weight: 600; }
+  .fs-step-head h3 { margin: 0; color: var(--fg-strong); font-size: var(--form-head); font-weight: 600; }
   .fs-step-n { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: var(--space-7); height: var(--space-7); background: var(--kaki); color: var(--on-strong); font-size: var(--text-1); font-weight: 700; }
-  .fs-chev { margin-left: auto; color: var(--muted); font-size: var(--text-2); }
+  .fs-chev { margin-left: auto; color: var(--muted); font-size: var(--form-note); }
   .fs-togglable { cursor: pointer; }
   .fs-togglable:hover h3 { color: var(--kaki-lift); }
   .fs-step-body { min-width: 0; display: flex; flex-direction: column; gap: var(--space-4); }
   .fs-step-body[hidden] { display: none; }
-  .fs-sum { color: var(--accent); font-size: var(--text-2); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-sum { color: var(--accent); font-size: var(--form-note); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fs-sum[hidden] { display: none; }
-  .fs-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .07em; }
+  .fs-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: .07em; }
   .fs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 4), 1fr)); gap: var(--space-3); }
 
   /* ── the kind tiles: `open` dotted and set apart, never a seventh peer ── */
-  .fs-gridlabel { display: block; color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .06em; }
+  .fs-gridlabel { display: block; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: .06em; }
   .fs-kinds { display: flex; flex-direction: column; gap: var(--space-2); }
   .fs-kindgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
   .fs-kindtile { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
@@ -123,16 +124,17 @@
   .fs-kindtile[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
   .fs-kindtile[aria-pressed='true'] span { color: var(--kaki-lift); }
   .fs-kindtile i { font-style: normal; font-size: var(--text-4); line-height: 1; }
-  .fs-kindtile span { overflow: hidden; font-size: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
+  .fs-kindtile span { overflow: hidden; font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
   .fs-kindtile[data-open='true'] { align-self: start; border-style: dashed; }
 
   /* ── the template tray ── */
   .fs-tmplgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-12) * 5), 1fr)); gap: var(--space-2); }
+  .fs-tmplnote { margin: var(--space-3) 0 0; font-size: var(--text-2); color: var(--muted); line-height: 1.5; }
   .fs-tmpl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
   .fs-tmpl:hover { border-color: var(--kaki); }
   .fs-tmpl[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
   .fs-tmpl i { font-style: normal; font-size: var(--text-4); line-height: 1; }
-  .fs-tmpl b { display: block; overflow: hidden; color: var(--fg-strong); font-size: var(--text-3); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-tmpl b { display: block; overflow: hidden; color: var(--fg-strong); font-size: var(--form-input); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
   .fs-tmpl[aria-pressed='true'] b { color: var(--kaki-lift); }
   .fs-tmpl:disabled { opacity: .45; border-style: dashed; cursor: default; }
   .fs-tmpl:disabled:hover { border-color: var(--line-2); }
@@ -142,55 +144,55 @@
   .fs-routine[data-on='false'] { opacity: .6; }
   button.fs-routine { cursor: pointer; }
   button.fs-routine:hover { border-color: var(--kaki); }
-  .fs-routine b { display: block; color: var(--fg-strong); font-size: var(--text-3); font-weight: 400; }
-  .fs-routine small { display: block; color: var(--muted); font-size: var(--text-2); }
+  .fs-routine b { display: block; color: var(--fg-strong); font-size: var(--form-input); font-weight: 400; }
+  .fs-routine small { display: block; color: var(--muted); font-size: var(--form-note); }
   .fs-worktrees-mode { display: flex; flex-direction: column; gap: var(--space-1); border-left: var(--edge-2) solid var(--kiiro); background: color-mix(in srgb, var(--panel) 90%, var(--kiiro)); padding: var(--space-3) var(--space-4); color: var(--fg); }
-  .fs-worktrees-mode b { font-size: var(--text-2); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-  .fs-worktrees-mode strong { color: var(--fg-strong); font-size: var(--text-3); }
-  .fs-worktrees-mode small { color: var(--muted); font-size: var(--text-2); line-height: 1.4; }
+  .fs-worktrees-mode b { font-size: var(--form-key); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .fs-worktrees-mode strong { color: var(--fg-strong); font-size: var(--form-input); }
+  .fs-worktrees-mode small { color: var(--muted); font-size: var(--form-note); line-height: 1.4; }
   .fs-mark { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; width: var(--space-6); height: var(--space-6); border: var(--edge) solid var(--line-3); background: var(--panel); color: var(--on-strong); font-size: var(--text-1); }
   .fs-routine[data-on='true'] .fs-mark { border-color: var(--kaki); background: var(--kaki); }
-  .fs-prov { color: var(--muted); font-family: var(--font-mono); font-size: var(--text-1); white-space: nowrap; }
+  .fs-prov { color: var(--muted); font-family: var(--font-mono); font-size: var(--form-note); white-space: nowrap; }
   .fs-way { display: grid; gap: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
   .fs-way:hover { border-color: var(--kaki); }
   .fs-way[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
-  .fs-way b { color: var(--fg-strong); font-size: var(--text-3); font-weight: 600; }
+  .fs-way b { color: var(--fg-strong); font-size: var(--form-input); font-weight: 600; }
   .fs-way[aria-pressed='true'] b { color: var(--kaki-lift); }
-  .fs-way small { color: var(--muted); font-size: var(--text-2); }
-  .fs-door { align-self: flex-start; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-6); font: inherit; font-size: var(--text-3); }
+  .fs-way small { color: var(--muted); font-size: var(--form-note); }
+  .fs-door { align-self: flex-start; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-6); font: inherit; font-size: var(--form-input); }
   .fs-door:disabled { opacity: .45; cursor: default; }
 
   /* ── the mandate dials — the New Agent drawing's button rows, `open` leading ── */
   .fs-dial { display: grid; grid-template-columns: calc(var(--space-12) * 2) minmax(0, 1fr); gap: var(--space-4); align-items: center; }
-  .fs-dial > h4 { margin: 0; color: var(--muted); font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; }
+  .fs-dial > h4 { margin: 0; color: var(--muted); font-size: var(--form-key); letter-spacing: .06em; text-transform: uppercase; }
   .fs-dial-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 3), 1fr)); gap: var(--space-2); }
   .fs-dial-opt { display: grid; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-2) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
   .fs-dial-opt:hover { border-color: var(--kaki); }
   .fs-dial-opt[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
-  .fs-dial-opt b { overflow: hidden; color: var(--fg-strong); font-size: var(--text-2); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-dial-opt b { overflow: hidden; color: var(--fg-strong); font-size: var(--form-input); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
   .fs-dial-opt[aria-pressed='true'] b { color: var(--kaki-lift); }
 
   /* ── New Agent's own few shapes ── */
-  .na-omitted { margin: 0; color: var(--dim); font-size: var(--text-1); }
+  .na-omitted { margin: 0; color: var(--dim); font-size: var(--form-note); }
   .na-omitted[hidden] { display: none; }
   .na-team-choices { margin-bottom: var(--space-4); }
   .na-surface textarea { min-height: calc(var(--space-12) * 3); resize: vertical; }
-  .na-note { margin: var(--space-4) 0 0; color: var(--dim); font-size: var(--text-2); }
+  .na-note { margin: var(--space-4) 0 0; color: var(--dim); font-size: var(--form-note); }
   .na-sopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-12) * 4), 1fr)); gap: var(--space-1); }
   .na-sop { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-2) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
   .na-sop:hover { border-color: var(--kaki); }
   .na-sop[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
   .na-sop[aria-pressed='true'] .aa-box { border-color: var(--kaki); background: var(--kaki); }
-  .na-sop b { overflow: hidden; color: var(--fg-strong); font-family: var(--font-mono); font-size: var(--text-2); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+  .na-sop b { overflow: hidden; color: var(--fg-strong); font-family: var(--font-mono); font-size: var(--form-input); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
   .na-sop[aria-pressed='true'] b { color: var(--kaki-lift); }
 
   /* ── tags and the born reading ── */
   .fs-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
-  .fs-tag { border: var(--edge) solid var(--line-2); background: var(--panel); color: var(--muted); padding: 0 var(--space-3); font-family: var(--font-mono); font-size: var(--text-1); white-space: nowrap; }
+  .fs-tag { border: var(--edge) solid var(--line-2); background: var(--panel); color: var(--muted); padding: 0 var(--space-3); font-family: var(--font-mono); font-size: var(--form-note); white-space: nowrap; }
   .fs-tag[data-on='true'] { border-color: var(--kaki); color: var(--kaki); }
-  .fs-tags-empty { color: var(--dim); font-style: normal; font-size: var(--text-2); }
+  .fs-tags-empty { color: var(--dim); font-style: normal; font-size: var(--form-note); }
   .fs-reading { display: grid; grid-template-columns: calc(var(--space-12) * 2.5) minmax(0, 1fr); gap: var(--space-2) var(--space-5); align-items: baseline; margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-6); }
-  .fs-reading dt { color: var(--muted); font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; }
-  .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--text-2); }
+  .fs-reading dt { color: var(--muted); font-size: var(--form-key); letter-spacing: .06em; text-transform: uppercase; }
+  .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--dim); font-style: normal; }
 }

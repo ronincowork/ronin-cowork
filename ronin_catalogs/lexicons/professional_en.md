@@ -264,11 +264,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.col_model:** Preferred model
 - **campaign_view.col_default:** Default
 - **campaign_view.no_launch_table:** No launch table on this install.
-- **campaign_view.roles:** Session roles
-- **campaign_view.roles_summary:** What a launch here offers an Agent to be.
-- **campaign_view.roles_help:** What a launch here offers an Agent to be. Team casts and agent loadouts are on the Templates card.
 - **campaign_view.templates_summary:** Team casts, agent loadouts, and the library to download more from.
-- **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. Both shelves are plain files: the ones you save, and the ones a bundle installs, live in your own stores.
+- **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. A handful ship inside Ronin; the rest are on the library.
+- **campaign_view.library_none_kind:** Nothing of this kind on the library.
 - **campaign_view.templates_teams:** Teams — projects
 - **campaign_view.templates_agents:** Agents — people
 - **campaign_view.templates_none:** Nothing on this shelf.
@@ -323,8 +321,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.verdict_same_shipped:** already shipped — skipped
 - **campaign_view.verdict_same_yours:** already yours — skipped
 - **campaign_view.verdict_refused:** refused — a bundle never replaces one of Ronin’s tools
-- **campaign_view.roles_none:** No session roles on this install.
-- **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
 - **campaign_view.routines_help:** Choose what new Cowork Agents start with. This Campaign answer seeds new Teams; a Team may replace it, and New Agent shows the resolved answer. Nothing already running changes.
 - **campaign_view.worktrees_routine_help:** Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
@@ -537,8 +533,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
 - **forms.own:** Make your own
 - **forms.own_blurb:** Fresh and empty. Fill it in yourself.
-- **forms.library:** From the Ronin library
-- **forms.library_blurb:** Published bundles, pulled in and run. Not yet built.
+- **forms.library_note:** More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.
 - **forms.default:** default
 - **forms.provider:** model provider
 - **forms.model:** model
@@ -1271,6 +1266,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.type_wipeboard:** Wipeboard notification
 - **messages.type_owner:** Owner message
 - **messages.type_house:** House message
+- **messages.type_jikan:** Cron job
 - **messages.reason_prompt_changed:** The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.
 - **messages.retry:** Try Again
 - **messages.force:** Force
@@ -1631,6 +1627,43 @@ The catalog entry goes. {dir} is not touched.
 - **provenance.shadowed:** Yours — this replaces Ronin's shipped entry of the same name. Upgrades to that entry will not reach you.
 - **provenance.own:** Yours — added by you, in your catalogs store. An upgrade cannot touch it.
 
+## team_jikan — team-jikan.js (the Cron jobs tab on the team commons)
+
+- **team_jikan.help:** A request delivered to one agent of this team, by name or to its lead, at a moment or on a rhythm. Ronin checks every minute and delivers through the message door — the dial is honoured, and a busy agent gets it queued. Nothing here starts an agent or a team.
+- **team_jikan.new:** New job
+- **team_jikan.request:** What is the request?
+- **team_jikan.request_placeholder:** +brief: — the words the agent will receive
+- **team_jikan.to:** To
+- **team_jikan.to_lead:** the team lead, whoever that is at the time
+- **team_jikan.when:** When
+- **team_jikan.when_placeholder:** weekdays 08:00
+- **team_jikan.when_help:** One time: once 2026-09-04 08:00. Repeating: daily 08:00 · weekdays 08:00 · weekly mon 08:00 · monthly 1 09:00 · hourly · every 30m · or a five-field cron line.
+- **team_jikan.when_preview:** {words} → next {next}
+- **team_jikan.never:** never — that time has passed
+- **team_jikan.add:** Schedule it
+- **team_jikan.saving:** scheduling…
+- **team_jikan.scheduled:** scheduled — next {next}
+- **team_jikan.scheduled_head:** Scheduled
+- **team_jikan.done_head:** Done
+- **team_jikan.none:** Nothing scheduled. Add one above, or an agent can with tejun-jikan.
+- **team_jikan.none_done:** Nothing has run yet.
+- **team_jikan.col_request:** Request
+- **team_jikan.col_to:** To
+- **team_jikan.col_when:** When
+- **team_jikan.col_next:** Next
+- **team_jikan.col_last:** Last
+- **team_jikan.by:** set by {by}
+- **team_jikan.lead:** 人 lead
+- **team_jikan.not_yet:** not yet
+- **team_jikan.delivered:** delivered
+- **team_jikan.queued:** queued — waiting to enter
+- **team_jikan.pause:** Pause
+- **team_jikan.resume:** Resume
+- **team_jikan.run_now:** Run at next tick
+- **team_jikan.paused:** paused
+- **team_jikan.remove:** Remove
+- **team_jikan.read_failed:** Could not read the jobs — {message}
+
 ## workspace — workspace-primitives.js (the Kit's own words)
 - **workspace.channels:** Team channels
 - **workspace.channel_chat:** Chat
@@ -1638,6 +1671,7 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
 - **workspace.channel_agent_message_queue:** Agent Message Queue
+- **workspace.channel_cron_jobs:** Cron jobs
 - **team_config.no_roster:** This Cowork has no saved roster.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Cowork ID
@@ -1650,11 +1684,17 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.kind_social:** Social
 - **team_config.kind_school:** School
 - **team_config.objective:** Purpose
-- **team_config.project_root:** Project root
+- **where.born_in:** Born in
+- **where.worktrees_on:** Worktrees are on (see Routines): a ticked repository opens a desk for each new Agent at birth; branches are Ronin's.
+- **where.worktrees_off:** Worktrees are off (see Routines): a ticked repository is where this Cowork works, on the branch you name, or as checked out.
+- **where.col_repo:** Repository
+- **where.col_branch:** Branch
+- **where.label:** Where it works
+- **where.summary:** born in {root} · {repos}
+- **where.desks:** desks in {list}
+- **where.checkouts:** works in {list}
+- **where.none:** no auto desk
 - **team_config.default:** Default
-- **team_config.branch:** Branch
-- **team_config.repos:** Repos
-- **team_config.repos_help:** Repositories this Cowork works in; each new Agent gets a desk in each. Empty means the Project root alone. Hold Ctrl or ⌘ to pick several.
 - **team_config.references:** References
 - **team_config.references_help:** One URL or note per line.
 - **team_config.routines:** Routines
@@ -1720,6 +1760,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.team_roster:** Cowork record
 - **glossary.team_lead:** team lead · 人
 - **glossary.wipeboard:** wipeboard
+- **glossary.cron_jobs:** Cron jobs
 - **glossary.docs:** the Docs tab
 - **glossary.configuration:** Configuration
 - **glossary.hotwords:** Hotwords

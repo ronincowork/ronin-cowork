@@ -5,7 +5,7 @@ import { healthCheck, notifyTeam, restartService } from './health.js';
 import { routeProvingFailure } from './routing.js';
 import { diagnoseFunnel } from './funnel-recovery.js';
 import {
-  advanceState, anyAdvanced, blockingReceipt, lastGoodPromotion, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
+  advanceState, anyAdvanced, blockingReceipt, inFlightReceipt, lastGoodPromotion, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
   type CompatProof, type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate, type RepoProof,
 } from './receipts.js';
 
@@ -64,6 +64,8 @@ export interface PromoteOptions {
   revert_of?: string;
   /** The interrupted receipt this promotion finishes — the one blocker it may pass. */
   resuming?: string;
+  /** Prove even while another team's promotion is on the fly. Say it; do not default it. */
+  anyway?: boolean;
 }
 
 export interface PromoteOutcome {
@@ -100,6 +102,12 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
   const blocker = await blockingReceipt(o.team, ledger);
   if (blocker && blocker.id !== o.resuming) {
     return { ok: false, receipt: blocker, nothing: false, message: `promotion ${blocker.id} is ${blocker.state} — resume or abandon it first` };
+  }
+  // Look before you prove: one BYOIN on the box at a time, by looking, not by locking.
+  const busy = o.anyway ? null : await inFlightReceipt(ledger);
+  // A resume finishes the moving receipt; a revert undoes it — neither waits on it.
+  if (busy && busy.id !== o.resuming && busy.id !== o.revert_of) {
+    return { ok: false, receipt: busy, nothing: false, message: `BUSY: promotion ${busy.id} (${busy.team}) is ${busy.state} since ${busy.updated_at} — two BYOINs on one box trample each other; wait for it to finish, then run again (--anyway to go regardless)` };
   }
 
   // ---- prepare

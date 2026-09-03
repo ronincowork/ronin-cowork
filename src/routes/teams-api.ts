@@ -69,6 +69,12 @@ function editOf(body: unknown): RosterEdit {
   // the promotion CLI and deriveAssignment already keep the promise.
   if (b.repos !== undefined) edit.repos = (Array.isArray(b.repos) ? b.repos : String(b.repos).split(','))
     .map(String).map((v) => v.trim().slice(0, 128)).filter(Boolean);
+  // Per-repository branches for a team working without Worktrees: {repo: branch}. Blank
+  // or absent means whatever is checked out. Never a desk branch — those are Ronin's.
+  if (b.branches !== undefined) edit.branches = b.branches && typeof b.branches === 'object' && !Array.isArray(b.branches)
+    ? Object.fromEntries(Object.entries(b.branches as Record<string, unknown>)
+        .map(([repo, branch]) => [repo.trim().slice(0, 128), String(branch ?? '').trim().slice(0, 128)])
+        .filter(([repo, branch]) => repo && branch)) : {};
   if (b.references !== undefined) edit.references = Array.isArray(b.references)
     ? b.references.map(String).map((v) => v.trim().slice(0, 500)).filter(Boolean) : [];
   if (b.routines !== undefined) edit.routines = b.routines && typeof b.routines === 'object' && !Array.isArray(b.routines)

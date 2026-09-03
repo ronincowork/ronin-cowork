@@ -43,7 +43,7 @@ const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
 const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 
 /** A fresh row. `open` is the screen's business; everything else is the Agent's. */
-export const agentRow = () => ({ name: '', assignment: '', lead: false, reach: 'open', recruit: 'open', output: ['open'], open: false });
+export const agentRow = () => ({ name: '', assignment: '', lead: false, reach: 'open', recruit: 'open', output: ['open'], routinesOn: [], routinesOff: [], open: false });
 
 /**
  * The rows as the loader and a template want them — nested mandate, no screen state.
@@ -66,6 +66,11 @@ export function agentPicks(rows) {
       instructions: row.assignment.trim(),
       mandate: { reach: row.reach, recruit: row.recruit, output: [...row.output] },
       team_lead: !!row.lead,
+      // The row's OWN Routine switches, laid in by a template (a cast row's
+      // routines_on/off, 2026-09-03); the form has no per-row control yet, so these ride
+      // through untouched and the launch's agent layer applies them.
+      routines_on: [...(row.routinesOn || [])],
+      routines_off: [...(row.routinesOff || [])],
     }));
 }
 

@@ -7,6 +7,8 @@ import { readTeamRoster } from './team-rosters.js';
 import { readArrangement } from './desks/arrangement.js';
 import { teamLineBranch } from './desks/schema.js';
 import { acceptedLinesForTeam } from './desks/receipts.js';
+import { isAncestor, revParse } from './desks/git.js';
+import { unpromotedAcceptedLines } from './promotion/discovery.js';
 import { abandonPromotion, bisectLine, promoteTeam, resumePromotion, revertPromotion } from './promotion/promote.js';
 import { lastGoodPromotion, listReceipts, publicPromotionReceipt, readReceipt, summarize, toChangeSet } from './promotion/receipts.js';
 import { openPullRequest } from './promotion/pr.js';
@@ -19,7 +21,8 @@ import { storeDir } from './stores.js';
  * ronin-promote — the lead's door from a team line into `dev`. `bin/ronin-promote` is the
  * bash face; this is the whole of it.
  *
- *   ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--repo name=dir …]
+ *   ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--anyway] [--repo name=dir …]
+ *     BUSY when another team's promotion is on the fly: wait, then run again. --anyway proves regardless.
  *   ronin-promote resume <receipt-id> [--no-restart]
  *   ronin-promote abandon <receipt-id> <reason…>
  *   ronin-promote revert <receipt-id|last> [--mode …]
@@ -48,7 +51,15 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
   if (!roster) throw new Error(await missingRosterMessage(team));
   const roots = await listProjectRoots();
   const defaults = roster.repos.length ? roster.repos : roster.project_root ? [roster.project_root] : [];
-  const accepted = await acceptedLinesForTeam(team);
+  const overrides = new Map(args.filter((a, i) => args[i - 1] === '--repo' && a.includes('=')).map((a) => a.split('=') as [string, string]));
+  const accepted = await unpromotedAcceptedLines(await acceptedLinesForTeam(team), async ({ repo, line }) => {
+    const dir = overrides.get(repo) ?? roots.find((root) => root.name === repo)?.dir;
+    if (!dir) return false;
+    const arr = await readArrangement(repo, dir).catch(() => null);
+    if (!arr || arr.mode === 'direct') return false;
+    const [lineTip, targetTip] = await Promise.all([revParse(dir, line), revParse(dir, arr.working)]);
+    return !!lineTip && !!targetTip && !(await isAncestor(dir, lineTip, targetTip));
+  });
   const acceptedByRepo = new Map<string, string>();
   for (const row of accepted) {
     const prior = acceptedByRepo.get(row.repo);
@@ -57,7 +68,6 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
   }
   const names = [...new Set([...defaults, ...accepted.map((row) => row.repo)])];
   if (!names.length) throw new Error(`team '${team}' has no default repos and no accepted hand-ins`);
-  const overrides = new Map(args.filter((a, i) => args[i - 1] === '--repo' && a.includes('=')).map((a) => a.split('=') as [string, string]));
   const specs: RepoSpec[] = [];
   for (const name of names) {
     const dir = overrides.get(name) ?? roots.find((r) => r.name === name)?.dir;
@@ -98,7 +108,7 @@ function report(out: { ok: boolean; message: string; receipt: { id: string; stat
 async function main(): Promise<void> {
   const [cmd, ...rest] = positional;
   if (!cmd || flag('--help')) {
-    say('usage: ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--repo name=dir]');
+    say('usage: ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--anyway] [--repo name=dir]');
     say('       ronin-promote pr <team>          open or update the dev → master PR from the last complete receipt');
     say('       ronin-promote funnel diagnose <team> [--repo name] | show|preserve|clear <receipt-id>');
     say('       ronin-promote resume|abandon|revert|bisect|receipts|show …   (bin/ronin-promote --help for the whole list)');
@@ -193,7 +203,7 @@ async function main(): Promise<void> {
       const team = cmd;
       const specs = await reposForTeam(team);
       say(`team ${team}: ${specs.map((s) => `${s.repo} ${s.line} → ${s.target} (${s.dir})`).join(', ')}`);
-      const out = await promoteTeam({ team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), log: say });
+      const out = await promoteTeam({ team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), anyway: flag('--anyway'), log: say });
       if (out.ok && out.receipt?.state === 'complete') {
         say('');
         say('to open the dev → master pull request from this receipt, when it is time:');

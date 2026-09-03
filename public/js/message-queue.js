@@ -26,6 +26,7 @@ function typeOf(source) {
     wipeboard_notice: t('messages.type_wipeboard', 'Wipeboard notification'),
     owner: t('messages.type_owner', 'Owner message'),
     house: t('messages.type_house', 'House message'),
+    jikan: t('messages.type_jikan', 'Cron job'),
   })[source] || source;
 }
 

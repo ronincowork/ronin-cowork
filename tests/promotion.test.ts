@@ -283,3 +283,17 @@ test('dry run proves and writes nothing, moves nothing', async () => {
   assert.equal((await R.listReceipts(undefined, LEDGER)).length, before);
   assert.equal(sh(cw.dir, 'rev-parse', 'dev'), cw.base);
 });
+
+test('look before you prove: another team on the fly is BUSY, a stale one is not, --anyway goes', async () => {
+  const other = R.advanceState(R.newReceipt({ team: 'other', kind: 'team_promotion', repos: [], by: 'lead' }), 'proving');
+  await R.writeReceipt(other, LEDGER);
+  const cw = await fixture('busy-cowork');
+  const busy = await P.promoteTeam({ team: 'busy', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(), restart: false, ...quiet });
+  assert.equal(busy.ok, false);
+  assert.match(busy.message, /^BUSY: promotion .* \(other\) is proving/);
+  assert.equal(busy.receipt?.id, other.id);
+  assert.equal((await R.inFlightReceipt(LEDGER, Date.parse(other.updated_at) + 21 * 60_000))?.id, undefined, 'twenty minutes on, a moving receipt is a leftover, not a promotion');
+  const anyway = await P.promoteTeam({ team: 'busy', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(), restart: false, anyway: true, ...quiet });
+  assert.equal(anyway.ok, true, anyway.message);
+  await R.writeReceipt(R.advanceState(other, 'failed'), LEDGER);
+});

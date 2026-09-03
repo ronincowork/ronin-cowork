@@ -5,6 +5,7 @@
  * 2s, skipped entirely while no browser is listening; attach/note flapping is
  * deliberately not an event. No new transport, no new dependency.
  */
+import { onClock } from '../jikan.js';
 import { type WebSocket } from 'ws';
 import { listSessions } from '../tmux.js';
 import { withAxes } from '../tegami.js';
@@ -33,12 +34,12 @@ export function broadcastEvent(msg: Record<string, unknown>): number {
   return sent;
 }
 
-/** The 2s membership poll. Called once at boot — a timer is a choice index.ts makes, not an import side effect. */
+/** The 2s membership poll, on JIKAN's clock (src/jikan.ts). Called once at boot — a timer is a choice index.ts makes, not an import side effect. */
 export function startSessionsBroadcast(): void {
   let lastSessionNames = '';
-  setInterval(() => {
+  onClock('sessions_broadcast', 2000, async () => {
     if (eventClients.size === 0) return;
-    listSessions()
+    await listSessions()
       .then(withAxes)
       .then((list) => {
         // The watched string carries the SESSION_TASK as well as the name. Membership is
@@ -58,5 +59,5 @@ export function startSessionsBroadcast(): void {
         for (const ws of eventClients) if (ws.readyState === ws.OPEN) ws.send(msg);
       })
       .catch(() => {});
-  }, 2000);
+  });
 }

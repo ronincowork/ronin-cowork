@@ -39,41 +39,61 @@
   .home-grp-actions.tile-head { min-height: 0; padding: 0; border: 0; background: transparent; flex-wrap: nowrap; }
   .tw-config { display: flex; flex-direction: column; gap: var(--space-10); padding: var(--space-6) var(--space-7); overflow-y: auto; }
   .tw-config-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
-  .tw-config-field, .tw-config-reading { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); font-size: var(--text-3); }
-  .tw-config-field:nth-child(3) { grid-column: 1 / -1; }
+  .tw-config-field, .tw-config-reading { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); }
+  .tw-config-field:has(textarea) { grid-column: 1 / -1; }
   .tw-config-field input, .tw-config-field textarea { width: 100%; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3); font: inherit; }
   .tw-config-field textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
-  .tw-config-field select[multiple] { width: 100%; box-sizing: border-box; font: inherit; }
+  .tw-where { position: relative; }
+  /* The value line wears the Kit control exactly as the Kind select beside it does — same
+     padding, same depth — plus the same down arrow, so it reads as "click to expand". */
+  .tw-where summary { position: relative; display: block; cursor: pointer; list-style: none; padding-right: calc(var(--space-4) + var(--space-7)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tw-where summary::after { content: '▾'; position: absolute; right: var(--space-4); top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .tw-where summary::-webkit-details-marker { display: none; }
+  .tw-where[open] summary { border-color: var(--define-line); }
+  .tw-where-body { position: absolute; z-index: 5; top: calc(100% + var(--space-2)); left: 0; min-width: 100%; width: max-content; max-width: min(90vw, calc(var(--space-12) * 12)); display: grid; gap: var(--space-4); padding: var(--space-4); background: var(--bg-2); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); }
+  .tw-where-repos { display: grid; gap: var(--space-2); }
+  .tw-where-repo { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: center; color: var(--fg); }
+  .tw-where-head { color: var(--muted); }
+  .tw-where-desks .tw-where-repo { grid-template-columns: auto minmax(0, 1fr); }
+  .tw-where-desks .tw-where-repo input[type='text'], .tw-where-desks .tw-where-head span:last-child { display: none; }
   .tw-config-reading output { color: var(--fg-strong); padding: var(--space-3) 0; }
   .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .tw-config-status, .tw-config-empty { color: var(--muted); }
   .tw-config-wide { grid-column: 1 / -1; }
-  .tw-config-note { margin: 0; color: var(--muted); font-size: var(--text-3); line-height: 1.5; }
+  .tw-config-note { margin: 0; color: var(--muted); line-height: 1.5; }
   .tw-routines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); border: var(--edge) solid var(--line); border-radius: var(--radius-sm); padding: var(--space-4); }
   .tw-routines legend { color: var(--fg-strong); font-weight: 600; padding: 0 var(--space-2); }
   .tw-routines > .tw-config-note { grid-column: 1 / -1; }
   .tw-worktrees-mode { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--space-1); border-left: var(--edge-2) solid var(--kiiro); background: color-mix(in srgb, var(--panel) 90%, var(--kiiro)); padding: var(--space-3) var(--space-4); }
-  .tw-worktrees-mode b { color: var(--muted); font-size: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
-  .tw-worktrees-mode strong { color: var(--fg-strong); font-size: var(--text-3); }
-  .tw-worktrees-mode small { color: var(--muted); font-size: var(--text-2); line-height: 1.4; }
+  .tw-worktrees-mode b { color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .tw-worktrees-mode strong { color: var(--fg-strong); }
+  .tw-worktrees-mode small { color: var(--muted); line-height: 1.4; }
   .tw-routine { display: flex; align-items: flex-start; gap: var(--space-3); }
   .tw-routine input { accent-color: var(--accent); margin-top: var(--space-1); }
   .tw-routine span { display: flex; flex-direction: column; gap: var(--space-1); }
   .tw-routine small, .tw-config-field small { color: var(--muted); line-height: 1.4; }
+  /* FOUR TEXT SIZES ON THIS FORM AND THE ROSTER'S EDIT COLUMN, and no fifth (owner, 2026-09-03):
+     section header · key · input · note. Every element here reads one of them; a new
+     element joins one of these four selectors rather than bringing a size of its own. */
+  .tw-config, .league-team-edit-content { font-size: var(--form-input); }
+  .tw-routines legend, .league-team-roster-title { font-size: var(--form-head); }
+  .tw-config-field > span, .tw-config-reading > span, .tw-where-head, .tw-worktrees-mode b { font-size: var(--form-key); }
+  .tw-config-field input, .tw-config-field textarea, .tw-config-field select, .tw-where summary, .tw-where-repo input, .tw-config-reading output, .tw-routine b, .tw-worktrees-mode strong, .tw-config-check span, .league-team-member-words strong, .league-team-add select, .tw-config-actions { font-size: var(--form-input); }
+  .tw-config-note, .tw-config-field small, .tw-routine small, .tw-worktrees-mode small, .tw-config-status, .league-team-member-words span, .league-team-empty { font-size: var(--form-note); }
   .tw-config-check { display: flex; align-items: center; gap: var(--space-3); color: var(--fg-strong); }
   .tw-config-check input { accent-color: var(--accent); }
 
   /* A Team dropped into the Cowork bench becomes a quiet roster, not an admin form. */
-  .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); font-size: var(--text-3); }
+  .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); }
   .league-team-roster, .league-team-config { flex: 0 0 auto; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
-  .league-team-roster-title { margin: 0 0 var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); color: var(--fg-strong); font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .league-team-roster-title { margin: 0 0 var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); color: var(--fg-strong); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
   .league-team-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); border-bottom: var(--edge) solid var(--line); padding: var(--space-2) 0; }
   .league-team-member-identity { display: flex; align-items: center; min-width: 0; gap: var(--space-3); }
   .league-team-member-mark { width: var(--space-6); color: var(--kaki); font-size: var(--text-5); line-height: 1; text-align: center; }
   .league-team-member-words { display: flex; flex-direction: column; min-width: 0; gap: var(--space-1); line-height: 1.1; }
-  .league-team-member-words strong { overflow: hidden; color: var(--fg-strong); font-size: var(--text-5); font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
-  .league-team-member-words span, .league-team-empty { color: var(--muted); font-size: var(--text-2); }
+  .league-team-member-words strong { overflow: hidden; color: var(--fg-strong); font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
+  .league-team-member-words span, .league-team-empty { color: var(--muted); }
   .league-team-member-actions { flex-wrap: nowrap; gap: var(--space-2); }
   .league-team-empty { margin: 0; border-bottom: var(--edge) solid var(--line); padding: var(--space-5) 0; }
   .league-team-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); margin-top: var(--space-5); }
@@ -135,4 +155,18 @@
   .aa-fixed dt { color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .06em; }
   .aa-fixed dd { margin: 0; color: var(--fg-strong); font-size: var(--text-2); min-width: 0; }
   .aa-from { color: var(--muted); font-size: var(--text-1); margin-left: var(--space-3); }
+
+  /* JIKAN — the Cron jobs tab (team-jikan.js): the add form, then the scheduled and done lists. */
+  .tj { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5); }
+  .tj-form { gap: var(--space-4); }
+  .tj-preview { color: var(--muted); }
+  .tj-lists { display: flex; flex-direction: column; gap: var(--space-6); }
+  .tj-table { width: 100%; border-collapse: collapse; font-size: var(--text-3); }
+  .tj-table th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--muted); font-weight: 600; border-bottom: var(--edge) solid var(--line); }
+  .tj-table td { padding: var(--space-3); vertical-align: top; border-bottom: var(--edge) solid var(--line); }
+  .tj-request b { color: var(--fg-strong); font-weight: 600; }
+  .tj-by { display: block; margin-top: var(--space-1); font-size: var(--text-2); color: var(--muted); }
+  .tj-row[data-state='paused'] td { color: var(--muted); }
+  .tj-row[data-state='paused'] .tj-request b { color: var(--muted); }
+  .tj-actions { display: flex; gap: var(--space-2); white-space: nowrap; }
 }

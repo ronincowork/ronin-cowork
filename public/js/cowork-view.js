@@ -8,6 +8,7 @@ import { createAddAgentView } from './add-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
+import { createTeamJikan } from './team-jikan.js';
 import { buildMessageQueue, watchMessageQueueAttention } from './message-queue.js';
 import { buildDocs } from './docs.js';
 import { buildArchives } from './archives.js';
@@ -156,6 +157,7 @@ export function createCoworkView(options = {}) {
   // Each workspace owns its rendered Commons instance and local presentation state.
   const createTeamCommons = () => {
     const wipeboard = createTeamWipeboard();
+    const jikan = createTeamJikan();
     const docsPane = el('div', 'home-docs tw-docs');
     const docs = buildDocs(null, docsPane, () => entered && docsPane.isConnected,
       (name) => membersOfTeam(team).some((m) => m.name === name), () => teamByName(team)?.repos || []);
@@ -186,17 +188,18 @@ export function createCoworkView(options = {}) {
         { id: 'docs', label: t('workspace.channel_docs', 'Docs') },
         { id: 'wipeboard', label: t('workspace.channel_wipeboard', 'Wipeboard') },
         { id: 'agent-message-queue', label: messageLabel },
+        { id: 'cron-jobs', label: t('workspace.channel_cron_jobs', 'Cron jobs') },
         { id: 'team-configuration', label: t('workspace.channel_team_configuration', 'Team Configuration') },
       ],
       selected: 'docs',
-      services: { wipeboard, docs: docsService, 'agent-message-queue': { el: messages, mount: () => {}, enter: messageQueue.enter, leave: messageQueue.leave, destroy: messageQueue.destroy }, 'team-configuration': service(config) },
+      services: { wipeboard, docs: docsService, 'agent-message-queue': { el: messages, mount: () => {}, enter: messageQueue.enter, leave: messageQueue.leave, destroy: messageQueue.destroy }, 'cron-jobs': jikan, 'team-configuration': service(config) },
     });
     messageTab = channels.tabs.querySelector('[data-service="agent-message-queue"]');
     channels.tabs.addEventListener('click', () => { chooseQueueOnOpen = false; });
     paintMessageAttention();
     channels.el.dataset.workbenchSurface = COMMONS;
     return {
-      el: channels.el, channels, wipeboard, docs, config, messageQueue,
+      el: channels.el, channels, wipeboard, jikan, docs, config, messageQueue,
       attendQueueOnOpen: () => {
         chooseQueueOnOpen = true;
         if (retainedCount > 0) paintMessageAttention();
@@ -563,6 +566,8 @@ export function createCoworkView(options = {}) {
     // tag-only team. The server creates it on open, so the slice never meets a void.
     for (const commons of Object.values(teamCommons)) {
       commons.wipeboard.setBoard(team === UNASSIGNED ? '' : (roster.durable && roster.wipeboard) || team);
+      // JIKAN is by active team: the tag-only or durable team, and its live members for the To list.
+      commons.jikan.setTeam(team === UNASSIGNED ? '' : team, members.map((m) => m.name));
     }
   };
 
