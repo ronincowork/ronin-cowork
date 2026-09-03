@@ -3,7 +3,7 @@ import { promisify } from 'node:util';
 import { addJob, listJobs, nextRun, parseWhen, removeJob, setJob } from '../jikan.js';
 
 const USAGE = `usage: tejun-jikan [--team t]
-       tejun-jikan add --when "<timing>" [--to lead|<session>] [--team t] <request...>
+       tejun-jikan add --when "<timing>" --kind one-off|recurring [--expires <date-time>] [--to lead|<session>] [--team t] <request...>
        tejun-jikan pause|resume|now|remove <id> [--team t]
        tejun-jikan when "<timing>"
 timing: once 2026-09-04 08:00 · daily 08:00 · weekdays 08:00 · weekly mon 08:00 · monthly 1 09:00 · hourly · every 30m · 0 8 * * 1-5`;
@@ -27,7 +27,7 @@ async function main(): Promise<void> {
   const opts: Record<string, string> = {};
   const argv = process.argv.slice(2);
   for (let i = 0; i < argv.length; i++) {
-    if (['--team', '--when', '--to'].includes(argv[i])) opts[argv[i].slice(2)] = argv[++i] ?? '';
+    if (['--team', '--when', '--to', '--expires', '--kind'].includes(argv[i])) opts[argv[i].slice(2)] = argv[++i] ?? '';
     else positional.push(argv[i]);
   }
   const verb = ['add', 'pause', 'resume', 'now', 'remove', 'when'].includes(positional[0] ?? '') ? positional.shift()! : 'list';
@@ -54,8 +54,9 @@ async function main(): Promise<void> {
   }
   if (verb === 'add') {
     const request = positional.join(' ');
-    if (!opts.when || !request) { console.error(USAGE); process.exit(2); }
-    const job = await addJob(team, { request, to: opts.to || 'lead', when: opts.when, by: me.name || 'owner' });
+    const inferred = /^(once|at) /.test(opts.when || '') ? 'one-off' : 'recurring';
+    if (!opts.when || !request || !['one-off', 'recurring'].includes(opts.kind) || opts.kind !== inferred) { console.error(USAGE); process.exit(2); }
+    const job = await addJob(team, { request, to: opts.to || 'lead', when: opts.when, expires: opts.expires || '', by: me.name || 'owner' });
     console.log(`SCHEDULED ${job.id} on ${team}: to ${job.to}, ${job.when}, due ${job.due} — ${job.request}`);
     return;
   }

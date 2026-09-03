@@ -1668,22 +1668,31 @@ The catalog entry goes. {dir} is not touched.
 
 ## team_jikan — team-jikan.js (the Cron jobs tab on the team commons)
 
-- **team_jikan.help:** A request delivered to one agent of this team, by name or to its lead, at a moment or on a rhythm. Ronin checks every minute and delivers through the message door — the dial is honoured, and a busy agent gets it queued. Nothing here starts an agent or a team.
+- **team_jikan.help:** Cron jobs send a message to a team lead or named member at the time you choose.
 - **team_jikan.new:** New job
-- **team_jikan.request:** What is the request?
-- **team_jikan.request_placeholder:** +brief: — the words the agent will receive
+- **team_jikan.request:** Request
+- **team_jikan.request_placeholder:** Write the message the agent should receive
+- **team_jikan.request_help:** Plain words, exactly as if you typed them to the agent. A macro such as +name: is optional.
 - **team_jikan.to:** To
-- **team_jikan.to_lead:** the team lead, whoever that is at the time
+- **team_jikan.to_lead:** Team lead (default)
 - **team_jikan.when:** When
-- **team_jikan.when_placeholder:** weekdays 08:00
-- **team_jikan.when_preview:** {words} → next {next}
-- **team_jikan.never:** never — that time has passed
-- **team_jikan.add:** Schedule it
-- **team_jikan.saving:** scheduling…
-- **team_jikan.scheduled:** scheduled — next {next}
+- **team_jikan.advanced:** Advanced schedule
+- **team_jikan.advanced_placeholder:** Enter the schedule grammar
+- **team_jikan.expires:** Expires
+- **team_jikan.expires_help:** Optional. Recurring jobs stop after this date and time.
+- **team_jikan.checking:** Checking next runs…
+- **team_jikan.next_three:** Next: {runs}
+- **team_jikan.never:** No future runs
+- **team_jikan.add:** Schedule job
+- **team_jikan.close:** Close
+- **team_jikan.edit:** Edit job
+- **team_jikan.save:** Save changes
+- **team_jikan.filter_message:** Filter messages
+- **team_jikan.remove_confirm:** Remove this job?
+- **team_jikan.all_teams_summary:** Scheduled messages across every team
 - **team_jikan.scheduled_head:** Scheduled
 - **team_jikan.done_head:** Done
-- **team_jikan.none:** Nothing scheduled. Add one above, or an agent can with tejun-jikan.
+- **team_jikan.none:** No jobs yet. Choose New job to schedule a message.
 - **team_jikan.none_done:** Nothing has run yet.
 - **team_jikan.col_request:** Request
 - **team_jikan.col_to:** To
