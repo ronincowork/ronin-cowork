@@ -88,6 +88,11 @@ export async function enqueueMessage(target: string, text: string, source: Messa
   return item;
 }
 
+export async function deliverMessage(target: string, text: string, source: MessageSource, from?: string): Promise<QueuedMessage | null> {
+  const item = await enqueueMessage(target, text, source, from);
+  return attemptMessage(item.id, 'safe');
+}
+
 export class MessageRefused extends Error {
   readonly target: string;
   constructor(target: string) {

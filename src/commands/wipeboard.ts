@@ -19,6 +19,7 @@
 import { listSessions } from '../tmux.js';
 import { sessionKey } from '../session-dir.js';
 import { readWipeboardSettings } from '../machine-state.js';
+import { deliverMessage } from '../message-queue.js';
 import {
   appendPost,
   boardExists,
@@ -349,18 +350,11 @@ async function post(named: string | null, argv: string[]): Promise<number> {
  */
 async function notify(session: string, message: string): Promise<string> {
   if (process.env.RONIN_NO_NOTIFY) return 'not notified (test seam)';
-  const { execFile } = await import('node:child_process');
-  const { promisify } = await import('node:util');
-  const { fileURLToPath } = await import('node:url');
-  const path = await import('node:path');
-  const send = path.join(path.dirname(fileURLToPath(import.meta.url)), 'message-cli.ts');
-  const tsx = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'node_modules', '.bin', 'tsx');
   try {
-    const { stdout } = await promisify(execFile)(tsx, [send, 'wipeboard_notice', session, message]);
-    return stdout.trim().startsWith('DELIVERED') ? 'notified' : stdout.trim();
+    const retained = await deliverMessage(session, message, 'wipeboard_notice');
+    return retained ? `queued — ${retained.reason}` : 'notified';
   } catch (e) {
-    const line = String((e as { stdout?: string })?.stdout ?? '').trim().split('\n').pop() ?? '';
-    return `not notified — ${line || 'tejun-send failed'}`;
+    return `not notified — ${String((e as Error).message ?? e)}`;
   }
 }
 
