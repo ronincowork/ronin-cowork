@@ -126,6 +126,12 @@ export interface SpawnForm {
    * `own` asks for one regardless, `none` refuses one. Ignored for a plain terminal.
    */
   desk?: DeskChoice;
+  /**
+   * WHERE THIS LAUNCH WORKS (owner, 2026-09-03): the team repositories that open as desks
+   * for this Agent, by project_root name. Absent means the Team's own ticks; present, it is
+   * this launch's answer — a quick job unticks a desk, a heavy one ticks an extra.
+   */
+  repos?: string[];
 }
 
 /** What the form resolves to once sentinels are filled from the catalogs. */
@@ -562,6 +568,7 @@ export async function resolveForm(
     agent,
     control: routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
     desk: form.desk,
+    repos: form.repos,
   });
   const assignment = worktrees.assignment;
   const enabledReading = routineReading(routines);
@@ -655,7 +662,7 @@ export async function resolveForm(
     stated_by: {
       name: form.name ? explicit : system,
       dir: profile.dir ? profile.stated_by.dir : assignment ? system : rootSource,
-      assignment: form.desk ? explicit : system,
+      assignment: form.desk || form.repos ? explicit : system,
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
       session_type: explicit,

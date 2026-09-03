@@ -46,9 +46,11 @@ export async function resolveLaunchDesks(input: {
   agent: boolean;
   control: boolean;
   desk?: DeskChoice;
+  /** This launch's own repositories, overriding the Team's ticks (src/spawn.ts SpawnForm). */
+  repos?: string[];
 }): Promise<LaunchWorktrees> {
   if (!input.agent) return { assignment: null, repositories: [] };
-  const assignment = await deriveAssignment({ session: input.session, team: input.team, project_root: input.project_root });
+  const assignment = await deriveAssignment({ session: input.session, team: input.team, project_root: input.project_root, repos: input.repos });
   const repositories = await Promise.all(assignment.desks.map(async (candidate) => {
     const arrangement = await arrangementOf(candidate.repo);
     return arrangementWorktreesInput(arrangement, {

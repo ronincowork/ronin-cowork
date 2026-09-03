@@ -1,6 +1,7 @@
 /* Editable reading of one complete durable team_roster. Membership is intentionally absent. */
 import { t } from './lexicon.js';
 import { request } from './request.js';
+import { createWhereItWorks } from './where-it-works.js';
 
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -46,29 +47,10 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const defaults = bucket(roster.agent_defaults); const behaviour = bucket(roster.behaviours);
     const form = el('form', 'tw-config-form'); reading(form, t('team_config.cowork_id', 'Cowork ID'), roster.name, t('settei.none_set', '— none set —'));
     const title = field(form, t('team_config.title', 'Readable title'), 'title', roster.title);
-    // WHERE IT WORKS (owner, 2026-09-02/03): one field, the value expands. Born in — the Project root,
-    // the folder every new Agent starts in. Works in — the Campaign's repository roots, one
-    // tick each. With Worktrees on a tick opens a desk at birth and the branch is Ronin's;
-    // with Worktrees off a tick names a repository the team works in and its box names the
-    // branch, blank meaning as checked out. Nothing ticked is the simple-job default: born
-    // in the folder, no desk. The Worktrees switch stays under Routines; this row reads it.
-    // Same pattern as every field: the key above, the value as the input. The value line
-    // ("born in ronin_cowork · no automatic desk") is the summary of a <details>; clicking it
-    // drops the selector down over the form. It sits left of Kind.
+    // WHERE IT WORKS — the shared control (js/where-it-works.js); the key above it like every field.
     const whereField = el('div', 'tw-config-field'); whereField.append(el('span', null, t('where.label', 'Where it works')));
-    const where = el('details', 'tw-where'); const whereSummary = el('summary', 'wk-field-control'); const whereBody = el('div', 'tw-where-body'); where.append(whereSummary, whereBody); whereField.append(where); form.append(whereField);
-    const projectRoot = select(whereBody, t('where.born_in', 'Born in'), 'project_root', [{ value: '', label: t('team_config.default', 'Default') }, ...roots.map((root) => ({ value: root.name, label: root.name }))], roster.project_root);
-    const worktreesLine = el('p', 'tw-config-note'); whereBody.append(worktreesLine);
-    const repoRows = new Map(); const repoList = el('div', 'tw-where-repos'); whereBody.append(repoList); const storedBranches = bucket(roster.branches);
-    // One header row names the columns; the boxes below stay blank.
-    const head = el('div', 'tw-where-repo tw-where-head'); head.append(el('span'), el('span', null, t('where.col_repo', 'Repository')), el('span', null, t('where.col_branch', 'Branch'))); repoList.append(head);
-    for (const root of roots.filter((root) => root.repo !== false)) {
-      const row = el('label', 'tw-where-repo'); const tick = el('input'); tick.type = 'checkbox'; tick.checked = list(roster.repos).includes(root.name);
-      const branch = el('input', 'wk-field-control'); branch.type = 'text'; branch.value = storedBranches[root.name] || '';
-      row.append(tick, el('span', null, root.name), branch); repoList.append(row); repoRows.set(root.name, { tick, branch });
-    }
-    const tickedRepos = () => [...repoRows].filter(([, row]) => row.tick.checked).map(([name]) => name);
-    const tickedBranches = () => Object.fromEntries([...repoRows].filter(([, row]) => row.tick.checked && row.branch.value.trim()).map(([name, row]) => [name, row.branch.value.trim()]));
+    const where = createWhereItWorks({ roots, root: roster.project_root, repos: list(roster.repos), branches: bucket(roster.branches), rootDefaultLabel: t('team_config.default', 'Default') });
+    whereField.append(where.el); form.append(whereField);
     const kind = select(form, t('team_config.kind', 'Kind'), 'kind', optionRows(['open', 'coding', 'work', 'personal', 'household', 'social', 'school'], t), roster.kind);
     const objective = field(form, t('team_config.objective', 'Purpose'), 'objective', roster.objective, 'textarea');
     const references = field(form, t('team_config.references', 'References'), 'references', list(roster.references).join('\n'), 'textarea', t('team_config.references_help', 'One URL or note per line.'));
@@ -119,18 +101,9 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
       { value: 'configured', label: t('launch_mode.configured', 'Model provider configuration') },
       { value: 'live_dangerously', label: t('launch_mode.live', 'Dangerously') },
     ], defaults.launch_mode || 'live_dangerously');
-    // The row reads the Worktrees switch live: grey the branch boxes when Ronin owns the branch.
+    // The control reads the Worktrees switch live.
     const worktreesInput = routineInputs.get('ronin_worktrees');
-    const paintWhere = () => {
-      const on = !!worktreesInput?.checked;
-      worktreesLine.textContent = on ? t('where.worktrees_on', 'Worktrees are on (see Routines): a ticked repository opens a desk for each new Agent at birth; branches are Ronin\'s.') : t('where.worktrees_off', 'Worktrees are off (see Routines): a ticked repository is where this Cowork works, on the branch you name, or as checked out.');
-      // With Worktrees on the branch is Ronin's: the column is not greyed, it is gone.
-      repoList.classList.toggle('tw-where-desks', on);
-      for (const { branch } of repoRows.values()) branch.disabled = on;
-      const ticked = tickedRepos();
-      whereSummary.textContent = t('where.summary', 'born in {root} · {repos}', { root: projectRoot.value || t('team_config.default', 'Default'), repos: ticked.length ? (on ? t('where.desks', 'desks in {list}', { list: ticked.join(', ') }) : t('where.checkouts', 'works in {list}', { list: ticked.join(', ') })) : t('where.none', 'no auto desk') });
-    };
-    worktreesInput?.addEventListener('change', paintWhere); projectRoot.addEventListener('change', paintWhere); for (const { tick } of repoRows.values()) tick.addEventListener('change', paintWhere); paintWhere();
+    where.setWorktrees(!!worktreesInput?.checked); worktreesInput?.addEventListener('change', () => where.setWorktrees(worktreesInput.checked));
     form.append(el('p', 'tw-config-note tw-config-wide', t('team_config.next_form', 'These defaults land in the next Agent form that opens. Nothing live changes.')));
 
     const actions = el('div', 'tw-config-actions'); const status = el('span', 'tw-config-status');
@@ -138,7 +111,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); if (saveAction) saveAction.setDisabled(true); else save.disabled = true; status.textContent = t('team_config.saving', 'Saving…');
       const saved = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}`, { method: 'PUT', json: {
-        title: title.value, kind: kind.value, objective: objective.value, project_root: projectRoot.value, repos: tickedRepos(), branches: tickedBranches(), references: lines(references.value),
+        title: title.value, kind: kind.value, objective: objective.value, project_root: where.root, repos: where.repos(), branches: where.branches(), references: lines(references.value),
         routines: Object.fromEntries([...routineInputs].map(([name, input]) => [name, input.checked])), behaviours: { books: lines(behaviours.value), required: required.checked },
         // Spread what was read so a key this card does not draw is carried rather than
         // dropped — but NOT `permissions`, which is ruled out of agent_defaults entirely;

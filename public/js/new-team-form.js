@@ -25,6 +25,7 @@
  */
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { createWhereItWorks } from './where-it-works.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
@@ -46,7 +47,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const draft = {
     template: '', templateName: '', title: '',
     name: '', kind: 'coding', objective: '',
-    root: '', branch: '',
+    root: '', repos: [], branches: {},
     provider: '', model: '', reach: 'open', recruit: 'open', output: ['open'],
     dial: 'write',
     routines: {}, books: [], launchMode: 'live_dangerously',
@@ -236,28 +237,16 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     (provider, model) => { draft.provider = provider; draft.model = model; paintFoot(); },
     (label, control) => createField({ label, control }).el,
   );
-  const rootSelect = el('select');
-  rootSelect.addEventListener('change', () => { draft.root = rootSelect.value; paintFoot(); });
-  const branchInput = el('input');
-  branchInput.type = 'text';
-  branchInput.spellcheck = false;
-  branchInput.placeholder = 'team/<name>/dev';
-  branchInput.addEventListener('input', () => { draft.branch = branchInput.value.trim(); paintFoot(); });
+  // WHERE IT WORKS (owner, 2026-09-03): the shared control — Born in, a tick per repository,
+  // a Branch column only when Worktrees is off. The single team branch field is gone.
+  const where = createWhereItWorks({ rootDefaultLabel: t('new_team.root_default', '— the box’s default —'), onChange: () => { draft.root = where.root; draft.repos = where.repos(); draft.branches = where.branches(); paintFoot(); } });
   const wherePair = el('div', 'fs-pair');
-  wherePair.append(
-    createField({ label: t('team.project_root', 'Project root'), control: rootSelect }).el,
-    createField({ label: t('team.branch', 'Branch'), control: branchInput }).el,
-  );
+  wherePair.append(createField({ label: t('where.label', 'Where it works'), control: where.el }).el);
   // NO WIPEBOARD FIELD (owner, 2026-09-01): "the wipeboard is automatically configured…
   // no one ever even sees the fucking name." The store already defaults it to the team's
   // own token, so the form asks nothing and sends nothing.
   stepWhere.body.append(pair.el, wherePair);
-  function paintRoots() {
-    rootSelect.replaceChildren();
-    rootSelect.add(new Option(t('new_team.root_default', '— the box’s default —'), ''));
-    for (const root of roots) rootSelect.add(new Option(root.name, root.name));
-    rootSelect.value = roots.some((root) => root.name === draft.root) ? draft.root : '';
-  }
+  function paintRoots() { where.setRoots(roots); where.root = draft.root; where.setRepos(draft.repos, draft.branches); draft.root = where.root; }
 
   /* ---- step 5 · Team kit ---- */
   const stepKit = createStep({ n: 6, key: 'kit', title: t('team_kit', 'Shared toolkit'), onToggle: () => toggle('kit') });
@@ -300,6 +289,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   function paintRoutines() {
     routinesHost.replaceChildren();
     const worktreesOn = routineOn('ronin_worktrees');
+    where.setWorktrees(worktreesOn);
     worktreesMode.replaceChildren(
       el('b', null, t('new_team.worktrees_mode', 'Agent work mode')),
       el('strong', null, worktreesOn
@@ -383,7 +373,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const plan = () => ['top', 'template', 'objective', 'lead', 'where', 'kit'];
   const meta = {
     objective: () => draft.objective.slice(0, 40),
-    where: () => `${draft.root || t('new_team.root_default', '— the box’s default —')} @ ${draft.branch || '—'}`,
+    where: () => where.summary(),
     kit: () => t('new_team.kit_meta', '{routines} routines · {books} books', {
       routines: onNames().length + 1, books: draft.books.length,
     }),
@@ -404,7 +394,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     foot.append(readingRows([
       [t('add_agent.team', 'team'), name],
       [t('team.objective', 'Objective'), draft.objective],
-      [t('add_agent.place', 'place'), draft.root ? `${draft.root}${draft.branch ? ` @ ${draft.branch}` : ''}` : ''],
+      [t('add_agent.place', 'place'), where.summary()],
       [t('new_team.agents', 'Agents'), draft.agents.some((row) => row.name)
         ? tagRow(draft.agents.filter((row) => row.name).map((row) => ({ text: row.lead ? `人 ${row.name}` : row.name, on: true })))
         : ''],
@@ -465,7 +455,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     kind: draft.kind,
     objective: draft.objective.trim(),
     project_root: draft.root,
-    branch: draft.branch,
+    repos: draft.repos,
+    branches: draft.branches,
     routines: { ...draft.routines },
     behaviours: { books: [...draft.books] },
     agent_defaults: {
@@ -576,7 +567,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.template = '';
     draft.name = '';
     draft.objective = '';
-    draft.branch = '';
+    draft.repos = []; draft.branches = {};
     draft.books = [];
     draft.agents = [];
     draft.expanded = {};
@@ -586,7 +577,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     titleInput.value = '';
     titleTouched = false;
     objectiveInput.value = '';
-    branchInput.value = '';
     applySeed();
     paint();
   }
@@ -596,7 +586,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     if (!seed) return;
     const value = (field) => seed.seeds?.[field]?.value;
     draft.root = value('project_root') || '';
-    draft.branch = value('branch') || '';
     draft.provider = value('provider') || '';
     draft.model = value('model') || '';
     for (const key of ['reach', 'recruit', 'dial']) {
@@ -611,7 +600,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.books = Array.isArray(value('behaviours')) ? [...value('behaviours')] : [];
     seedRoutines = Object.fromEntries((seed.routines || []).map((row) => [row.name, row.on]));
     draft.routines = { ...seedRoutines };
-    branchInput.value = draft.branch;
+    paintRoots();
   }
 
   function paint() {
