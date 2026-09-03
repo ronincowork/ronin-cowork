@@ -39,6 +39,7 @@ import { ensureInitialCampaign } from './campaign-config.js';
 import { migrateCampaignScope } from './campaign-scope.js';
 import { stampFreshInstall } from './user-config.js';
 import { registerUpdate } from './routes/update-api.js';
+import { registerLibrary } from './routes/library-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
 import { registerMessages } from './routes/messages-api.js';
@@ -260,6 +261,7 @@ registerDesks(app); // /api/sessions/:name/desks, /api/teams/:name/desks — der
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
+registerLibrary(app); // /api/library* — the template library: index and bundles off the site on a press, install into the owner's stores — src/routes/library-api.ts
 registerSettei(app); // /api/settei — the install record, and writes BY NAME only — src/routes/settei-api.ts
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
 startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts

@@ -14,7 +14,7 @@ contracts or make a contributor follow the installation journey.
 
 Testing: `docs/test-protocols.md`. Ordinary dev work does **not** run BYOIN — not at a
 commit, not at a hand-in. Desk work follows the desk contract handed to you at birth
-(`ronin_session_boot/assignment/DESK_CONTRACT.md`): **commit** preserves, **hand-in**
+(`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`): **commit** preserves, **hand-in**
 publishes to your team line, the lead's **team promotion** runs the first full repository
 BYOIN at `team → dev`, the second runs at `dev → master`, and `git push` is the release
 path's word alone. Installed-box

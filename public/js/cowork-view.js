@@ -23,6 +23,7 @@ import { createCampaignIdentity } from './campaign.js';
 import { renderTeamConfiguration } from './team-configuration.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
+import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -63,6 +64,7 @@ const WB_TYPES = Object.freeze({ addAgent: 'team.add-agent', commons: 'team.comm
 const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 
 function registerWorkbenchCatalog() {
+  registerFeedbackSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: WB_TYPES.commons, header: 'channels', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Team commons'), summary: () => t('team.commons_summary', 'See Docs / Wipeboard / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
@@ -81,10 +83,10 @@ function registerWorkbenchCatalog() {
   add({ type: WB_TYPES.newAgent, header: 'surface', className: 'wk-selector-utility', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment }) => environment.newAgent(workspace) });
   add({ type: WB_TYPES.archives, header: 'surface', className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
   add({ type: WB_TYPES.team, header: 'surface', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
-  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives]);
+  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, FEEDBACK_TYPE]);
   // THE TEAM BENCH HAS ONE SHORTCUT: Add Agent to Team. It always births a Cowork Agent;
   // terminal and bare-metal choices stay on the full launch page.
-  profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.terminal, WB_TYPES.addAgent]);
+  profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.terminal, WB_TYPES.addAgent, FEEDBACK_TYPE]);
 }
 export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
@@ -248,6 +250,7 @@ export function createCoworkView(options = {}) {
     return [id, { el: surface.el, room }];
   })) : {};
   const environment = {
+    feedback: (workspace) => createFeedbackSurface(() => bench.place(campaign ? WB_TYPES.roster : WB_TYPES.commons, workspace)),
     teamCommons: (id) => ({ el: teamCommons[id].el, show: (detail = {}) => { const item = teamCommons[id]; if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => putSession(detail.key, id) }),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
@@ -601,6 +604,7 @@ export function createCoworkView(options = {}) {
       placeholder: () => campaign ? t('campaign.coworks', 'Coworks') : team || t('team.team', 'Team'),
       set: (value) => { ctx?.patchViewState(viewKey, { tabName: String(value || '').trim() }); },
     },
+    placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),
     mount: (_host, context) => {
       ctx = context;
       for (const commons of Object.values(teamCommons)) commons.channels.mount(context);

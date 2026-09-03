@@ -87,3 +87,29 @@ export async function acceptedSince(repo: string, line: string, sinceLineSha: st
   const i = all.findIndex((r) => r.line_sha === sinceLineSha);
   return i < 0 ? all : all.slice(i + 1);
 }
+
+/**
+ * Repository/line pairs on which a team has accepted work. The hand-in ledger is the
+ * authority: an explicitly opened managed repository need not be a Team birth default.
+ */
+export async function acceptedLinesForTeam(team: string): Promise<Array<{ repo: string; line: string }>> {
+  const root = path.join(storeDir('desks'), 'receipts');
+  const repos = await readdir(root, { withFileTypes: true }).catch(() => []);
+  const found = new Map<string, { repo: string; line: string }>();
+  for (const entry of repos) {
+    if (!entry.isDirectory()) continue;
+    const dir = path.join(root, entry.name);
+    const files = await readdir(dir).catch(() => []);
+    for (const file of files) {
+      if (!file.endsWith('.jsonl')) continue;
+      const text = await readFile(path.join(dir, file), 'utf8').catch(() => '');
+      for (const row of text.split('\n')) {
+        if (!row) continue;
+        const receipt = JSON.parse(row) as HandInReceipt;
+        if (receipt.team !== team || receipt.result !== 'accepted') continue;
+        found.set(`${receipt.repo}\0${receipt.line}`, { repo: receipt.repo, line: receipt.line });
+      }
+    }
+  }
+  return [...found.values()].sort((a, b) => a.repo.localeCompare(b.repo) || a.line.localeCompare(b.line));
+}

@@ -3,30 +3,30 @@
 **Named for booting a session, never the application.** Nothing here runs when Ronin
 starts. It is read once, when a session is born.
 
-Put a file on the shelf and new sessions read it. That is the whole feature.
+The birth compiler selects the applicable shelf files, removes duplicate sources, and
+writes one `README.md` into the newborn's per-session directory. The brief points to that
+one document, and the same README appears automatically in the Agent's tracked Docs. The
+page opens with its own contents list. Ronin's teaching — `all/`, Routine reading, the
+desk contract, the generated macro roster — is inlined; the owner's project-root documents,
+selected behaviour books and explicit seeds are listed by title and path under **On your
+shelf**, because pasting a project's whole catalog is what made the packet unreadable.
 
 | put it in | and it reaches |
 |---|---|
 | `all/` | every session, always |
-| `<service>_connected/` (e.g. `gbrain_connected/`) | only sessions launched with MCP on — how a connected session learns what it is connected to, signed by the service that seeded it |
+| `<service>_connected/` (e.g. `gbrain_connected/`) | only when an enabled Routine declares that level and its connection is on |
 | `root/<project_root>/` | only sessions working in that directory |
-| `routine/<routine>/` | only sessions born with that effective Routine |
-| `assignment/` | only sessions whose launch resolved repo desks — the desk contract (`DESK_CONTRACT.md`: commit → hand-in → team promotion → Git push). A launch given no desk reads nothing here; the level is a fact about the launch, not an axis a static shelf could guess |
+| `routine/<routine>/FILE.md` | only when an effective Routine's manifest explicitly names that file — `reading:` when the Routine is on, `reading_off:` when it is off (the page that says what the owner is working without, and where the switch is) |
 
-The levels are **additive, not a hierarchy**. Root, connection, effective Routines and
-desk assignment are independent launch facts; their files compile into one birth reading
+The levels are **additive, not a hierarchy**. Root, connection and effective Routines are
+independent launch facts; their files compile into one birth README
 and nothing overrides another level. Work-specific reading uses the separate
 `behaviours` choice: each selected `ways:<book>` joins that same birth reading once.
 There is no mutable role level and no live re-delivery observer.
 
-The connected level makes the launch toggle govern both halves of a connection (owner's
-ruling, 2026-08-17): a session launched with MCP off gets neither the tools nor the
-reading list about them. Cowork ships **no** connected folder and matches the pattern
-only — any `<service>_connected/` directory on the shelf is read by connected sessions.
-A connected service makes and seeds its own (gbrain's setup makes `gbrain_connected/`),
-so the name says whose reading it is (owner's ruling, 2026-08-20) while the free build
-names no vendor. An empty connected folder nothing seeded would be a claim about a
-connection that does not exist, which is why Ronin never pre-creates one.
+The connected level makes the launch decision govern both halves of a connection: off
+means neither tools nor connection reading. A connected directory is not broadcast merely
+because it exists; an enabled Routine manifest must select it.
 
 ## The two halves
 
@@ -71,22 +71,20 @@ is obvious:
   doing a particular kind of work;
 - **the owner had nowhere of their own** to add to it.
 
-A shelf answers all four by holding *files* rather than *names of files*. The brief is a
-directory listing taken at the instant of the launch, so a removed shelf file simply stops
-appearing. The one generated reading, `SESSION_MACROS.md`, is rebuilt from the live catalog
-at that same instant rather than maintained as a second list.
+A shelf answers all four with live files rather than stored absolute paths. Universal and
+root levels select their live directory contents; Routine manifests select exact shelf
+coordinates. A removed file simply stops appearing. `SESSION_MACROS.md` is rebuilt from
+the live catalog at that same instant.
 
 `read:` is deleted, not deprecated. Existing entries were converted to links on their
 root's shelf.
 
 ## Name collisions are real
 
-The shelf is keyed by filename. A file replaces one of the same name at the same level —
-that is the shadow, and it is deliberate. Across levels the same name also collapses to
-one.
-
-So **two files both called `README.md` cannot both be shelved.** Rename one on the way in
-(plans-README.md). Mika does this and says that she did.
+The shelf is keyed by filename **within one level**. An owner file replaces stock at that
+same coordinate. Two different levels may honestly contain `README.md`; both become
+sections in the compiled birth README. If two coordinates resolve to the same symlink
+target, the compiler includes that source once.
 
 ## Where the directories come from
 
@@ -104,7 +102,7 @@ could not be made.**
 
 ## What ships
 
-Three universal shelf files and one generated reading:
+Two universal shelf files and one generated fragment:
 
 - **`all/KOTOBA_GLOSSARY.md`** — the house vocabulary, so every session means the same
   things by the same words.
@@ -112,18 +110,14 @@ Three universal shelf files and one generated reading:
   (owner's ruling, 2026-08-20: a map naming zero books teaches nothing). Each roster
   sits beside the `ls` that resolves the live truth, stores included, and the directory
   wins whenever the two disagree.
-- **`all/REQUIRED_ABILITIES.md`** — the abilities every session uses whatever its root
-  or job, organized by topic: session macros, other sessions (the dial, reading one
-  through RIREKI's tape, messaging one through `tejun-send`, and the absolute routing
-  split between `forkit`/“fork it”/“new session” (visible Ronin session) and “spawn an
-  agent” (internal sub-agent)), and measuring this machine. These are capabilities a
-  session cannot search for without already knowing their names, which is why they are taught rather
-  than shelved deeper. New universal topics join this file as sections; a topic splits
-  out only when its section grows past teaching into procedure.
 - **`SESSION_MACROS.md`** — a stock template whose active section is generated at birth
   from the resolved `MACROS.md` catalog. The entries marked `preview: yes` are both what the
   tile button shows and what the new session reads. The generated copy is disposable data
-  at `ronin-store session_boot_cache`; the template is not handed over directly.
+  as an internal compiler fragment; the template is not handed over directly.
+
+Abilities belong to the Routine that equips them: Base, Worktrees, Services or Host. Test
+protocols are repository-contributor instructions and never enter user birth reading.
+The compiled result lives as `README.md` beside that session's letter and birth receipt.
 
 A shelf that arrives full is a shelf nobody curates.
 

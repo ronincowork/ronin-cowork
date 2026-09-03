@@ -266,7 +266,63 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.no_launch_table:** No launch table on this install.
 - **campaign_view.roles:** Session roles
 - **campaign_view.roles_summary:** What a launch here offers an Agent to be.
-- **campaign_view.roles_help:** What a launch here offers an Agent to be. Templates for a whole Team do not exist yet.
+- **campaign_view.roles_help:** What a launch here offers an Agent to be. Team casts and agent loadouts are on the Templates card.
+- **campaign_view.templates_summary:** Team casts, agent loadouts, and the library to download more from.
+- **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. Both shelves are plain files: the ones you save, and the ones a bundle installs, live in your own stores.
+- **campaign_view.templates_teams:** Teams — projects
+- **campaign_view.templates_agents:** Agents — people
+- **campaign_view.templates_none:** Nothing on this shelf.
+- **campaign_view.templates_yours:** yours
+- **campaign_view.templates_yours_over:** yours, replacing ours
+- **campaign_view.templates_shipped:** shipped
+- **campaign_view.templates_agents_n:** {n} agents
+- **campaign_view.templates_cast:** Cast
+- **campaign_view.templates_instructions:** Instructions
+- **campaign_view.templates_books:** Reads
+- **campaign_view.templates_download:** Download as a bundle
+- **campaign_view.templates_download_help:** This template, with your copies of the books and Routines it names, as one file you could put on a library.
+- **campaign_view.library:** Template library
+- **campaign_view.library_help:** Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read, as one download. Nothing is fetched until you press, and the plan is shown before anything is written.
+- **campaign_view.library_check:** Check the library
+- **campaign_view.library_checking:** Asking ronincowork.com for its library…
+- **campaign_view.library_source:** {n} bundles from {source}
+- **campaign_view.library_none:** The library lists no bundles yet.
+- **campaign_view.library_reading:** Reading {name} from the library…
+- **campaign_view.library_plan_help:** What installing this bundle writes into your stores, and what it leaves alone.
+- **campaign_view.library_plan_store:** Shelf
+- **campaign_view.library_plan_item:** Item
+- **campaign_view.library_plan_verdict:** Outcome
+- **campaign_view.library_executables:** This bundle installs {n} executable tools onto your Agents’ PATH. Read them before you rely on them.
+- **campaign_view.library_install:** Install
+- **campaign_view.library_install_n:** Install ({n})
+- **campaign_view.library_install_replace:** Install, replacing my {n}
+- **campaign_view.library_nothing_to_write:** Nothing new to install
+- **campaign_view.library_installing:** Installing…
+- **campaign_view.library_installed:** Installed {label}: {written} written · {skipped} left alone · {refused} refused.
+- **campaign_view.library_hold_team:** team
+- **campaign_view.library_hold_teams:** teams
+- **campaign_view.library_hold_agent:** agent
+- **campaign_view.library_hold_agents:** agents
+- **campaign_view.library_hold_routine:** Routine
+- **campaign_view.library_hold_routines:** Routines
+- **campaign_view.library_hold_sop:** SOP
+- **campaign_view.library_hold_sops:** SOPs
+- **campaign_view.library_hold_way:** way of working
+- **campaign_view.library_hold_ways:** ways of working
+- **campaign_view.library_hold_page:** reference page
+- **campaign_view.library_hold_pages:** reference pages
+- **campaign_view.library_hold_macro:** macro
+- **campaign_view.library_hold_macros:** macros
+- **campaign_view.library_hold_action:** action
+- **campaign_view.library_hold_actions:** actions
+- **campaign_view.library_hold_tool:** tool
+- **campaign_view.library_hold_tools:** tools
+- **campaign_view.verdict_new:** new — will be added
+- **campaign_view.verdict_shadows:** yours will replace the shipped one
+- **campaign_view.verdict_replaces:** you already have your own — kept unless you say replace
+- **campaign_view.verdict_same_shipped:** already shipped — skipped
+- **campaign_view.verdict_same_yours:** already yours — skipped
+- **campaign_view.verdict_refused:** refused — a bundle never replaces one of Ronin’s tools
 - **campaign_view.roles_none:** No session roles on this install.
 - **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
@@ -583,7 +639,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.new_session:** New session
 - **cowork.tab_roster:** Roster
 - **cowork.tab_archives:** Archived
-- **glossary.new_session:** new session
 - **team.workspace_3:** Workspace 3
 - **team.workspace_4:** Workspace 4
 - **team.count_2_title:** Two workspaces around the roster
@@ -1417,6 +1472,9 @@ The catalog entry goes. {dir} is not touched.
 - **bar.shape_title:** Two workspaces — click for four
 - **bar.shape_two:** Two workspaces — click for four
 - **bar.shape_four:** Four workspaces — click for two
+- **bar.place_teams:** Teams
+- **bar.place_teams_title:** See all of your teams here
+- **bar.place_team:** Your team: {team}
 
 ## me — tiledrop.js (the メ sheet)
 - **me.status:** Status
@@ -1595,7 +1653,8 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.project_root:** Project root
 - **team_config.default:** Default
 - **team_config.branch:** Branch
-- **team_config.wipeboard:** Wipeboard
+- **team_config.repos:** Repos
+- **team_config.repos_help:** Repositories this Cowork works in; each new Agent gets a desk in each. Empty means the Project root alone. Hold Ctrl or ⌘ to pick several.
 - **team_config.references:** References
 - **team_config.references_help:** One URL or note per line.
 - **team_config.routines:** Routines
@@ -1647,61 +1706,32 @@ The catalog entry goes. {dir} is not touched.
 - **keys.right:** Right
 
 ## glossary — the words an agent says to a person for the house terms (KOTOBA_GLOSSARY.md, rendered at session birth; no UI reads these)
-- **glossary.ronin:** Ronin
 - **glossary.coworkspace:** the coworkspace
 - **glossary.tile:** tile
-- **glossary.session:** session
-- **glossary.agent:** agent
-- **glossary.commons:** session commons
 - **glossary.desk:** the desk
-- **glossary.workbench:** the workbench
 - **glossary.workspace:** workspace
-- **glossary.surface:** surface
-- **glossary.terminal_tile:** terminal tile
 - **glossary.team_commons:** team commons
-- **glossary.campaign:** campaign
 - **glossary.campaign_commons:** the commons
 - **glossary.cowork_commons:** cowork commons
-- **glossary.selector_column:** selector column
 - **glossary.tab:** tab
 - **glossary.cowork_setup:** cowork setup
 - **glossary.locked:** Locked / Unlocked
 - **glossary.roster:** the roster
-- **glossary.launch:** launch
 - **glossary.team_roster:** Cowork record
 - **glossary.team_lead:** team lead · 人
 - **glossary.wipeboard:** wipeboard
-- **glossary.brief:** Brief
 - **glossary.docs:** the Docs tab
 - **glossary.configuration:** Configuration
 - **glossary.hotwords:** Hotwords
 - **glossary.project_root:** project root
-- **glossary.project_root_list:** the project root list
-- **glossary.customization:** your own macros and jobs
-- **glossary.pad:** Pad
-- **glossary.control:** Control
-- **glossary.launch_mode:** Model provider configuration · Dangerously
-- **glossary.gbrain_mode:** Connected · Disconnected
 - **glossary.team:** Cowork
 - **glossary.note:** Note
 - **glossary.work_record:** work record
-- **glossary.rung:** rung · leg · phase · gate
 - **glossary.memory:** memory
 - **glossary.stats:** Stats
 - **glossary.macros:** macros
-- **glossary.macro:** macro
-- **glossary.invocation:** typing a macro
 - **glossary.desk_profile:** desk profile
 - **glossary.session_type:** session type
-- **glossary.kind:** kind
-- **glossary.template:** template
-- **glossary.behaviour:** behaviour
-- **glossary.routine:** routine
-- **glossary.ronin_base:** Ronin Base
-- **glossary.routine_floor:** Cowork floor
-- **glossary.ronin_worktrees:** worktrees
-- **glossary.ronin_services:** Ronin Services
-- **glossary.specialized_routine:** specialized routine
 - **glossary.terminal:** terminal
 - **glossary.bare_metal_agent:** bare-metal Agent
 - **glossary.cowork_agent:** Cowork Agent
@@ -1709,13 +1739,10 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.reach:** Reach
 - **glossary.recruit:** Recruit
 - **glossary.output:** Output
-- **glossary.fork:** fork
 - **glossary.harakiri:** harakiri
-- **glossary.packet_kinds:** Usage counts · Feedback · Macro submission
 - **glossary.packet:** what gets sent
 - **glossary.egress_log:** where Ronin has connected
 - **glossary.services:** Services
-- **glossary.session_menu:** Status · Work record · Macros · Detach · Kill session
 - **glossary.message_queue:** message queue
 - **league.commons:** League commons
 - **league.view:** League view
@@ -1752,3 +1779,31 @@ The catalog entry goes. {dir} is not touched.
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.
 - **customize.lexicons:** Lexicons
 - **customize.lexicons_blurb:** The words a surface uses — a wording or a language, one file each. Say only what changes; the rest falls through to the floor.
+- **feedback.button:** Feedback
+- **feedback.title:** Feedback
+- **feedback.message:** What would you like to tell us?
+- **feedback.message_placeholder:** Tell us anything. What do you like? What should we add or change?
+- **feedback.message_help:** Write as much or as little as you want. Everything below is optional.
+- **feedback.about:** A little about you
+- **feedback.about_developer:** Developer
+- **feedback.about_founder:** Founder
+- **feedback.about_researcher:** Researcher
+- **feedback.about_student:** Student
+- **feedback.using:** What do you use Ronin for?
+- **feedback.using_coding:** Coding
+- **feedback.using_research:** Research
+- **feedback.using_writing:** Writing
+- **feedback.using_operations:** Operations
+- **feedback.kind:** What kind of feedback is this?
+- **feedback.kind_like:** Something I like
+- **feedback.kind_idea:** An idea
+- **feedback.kind_problem:** Something is not working
+- **feedback.kind_question:** A question
+- **feedback.other:** Something else
+- **feedback.reply_email:** Reply email address (optional)
+- **feedback.reply_invalid:** Enter an email address or leave it blank.
+- **feedback.reply_help:** If you would like to hear from us, we may reply or invite you to the Ronin community. No spam. This address is never stored with this Ronin install’s identity.
+- **feedback.send:** Send
+- **feedback.sending:** Sending…
+- **feedback.sent:** Sent — thank you
+- **feedback.thank_you:** Thank you for helping us make Ronin better.

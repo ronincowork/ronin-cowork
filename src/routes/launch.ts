@@ -11,6 +11,7 @@
  * spawn failure can never reach the event loop.
  */
 import type express from 'express';
+import { rm } from 'node:fs/promises';
 import {
   capturePane,
   createSession,
@@ -50,6 +51,9 @@ import { readCampaign } from '../campaign-config.js';
 import { listRoutines } from '../definitions.js';
 import { resolveLaunchSeed } from '../launch-seed.js';
 import type { SessionsDefaults } from '../launch-command.js';
+import { compileBirthReadmeAt, isShelfTeaching } from '../session-boot.js';
+import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
+import { readTegami } from '../tegami-read.js';
 
 /**
  * The Campaign a newborn Agent joins: its Cowork's when it is born onto one, else the
@@ -73,7 +77,7 @@ async function deskNote(r: { assignment?: unknown; routines?: Array<{ name: stri
   const a = await readArrangement(root.name, root.dir).catch(() => null);
   if (!a) return `no desk — ${root.name}'s RONIN_REPO could not be read`;
   if (a.source === 'absent') return `no desk — ${root.name} has no RONIN_REPO (add one: mode=reviewed working=dev stable=master desks=managed)`;
-  if (a.desks !== 'managed') return `no desk — ${root.name} is declared ${a.mode}, desks ${a.desks}`;
+  if (a.desks !== 'managed') return `no Worktree — ${root.name} uses its checkout at ${root.dir}; edit directly there`;
   return '';
 }
 
@@ -88,7 +92,7 @@ const RETIRED_LAUNCH_KEYS = new Set([
   'role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle', 'permissions', 'mcp',
 ]);
 const RETURNED_LAUNCH_KEYS = new Set([
-  'assignment', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
+  'assignment', 'work_locations', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
 ]);
 const SESSION_TYPES = new Set(['cowork_agent', 'bare_metal_agent', 'terminal']);
 const KINDS = new Set(['open', 'coding', 'work', 'personal', 'household', 'social', 'school']);
@@ -261,6 +265,9 @@ export function registerLaunch(app: express.Express): void {
     let resolved;
     let launch: { argv: string[]; parked: boolean } = { argv: [], parked: false };
     let routineTools: RoutineToolProjection | null = null;
+    let birthKey = '';
+    let birthDir = '';
+    let runtimeBorn = false;
     try {
       const live = await listSessions();
       const taken = new Set(live.map((s) => s.name));
@@ -296,6 +303,32 @@ export function registerLaunch(app: express.Express): void {
       }
     }
 
+    // ONE BIRTH READING. ResolveForm selected the authoritative source files; the
+    // executor now knows the accepted session name and can mint its stable tenancy.
+    // Compile before argv is built so the only pointer the provider receives already
+    // names the durable README the owner can inspect later in this Agent's Docs.
+    if (resolved.session_type === 'cowork_agent' && resolved.agent) {
+      // The documented key shape is `<name>-<digits>`: the janitor's fallback uses tmux's
+      // created-epoch, a Cowork birth mints the millisecond epoch before tmux exists and
+      // stamps it in the same transaction, so no window is ever unstamped.
+      birthKey = `${resolved.name}-${Date.now()}`;
+      birthDir = sessionRecordDir(birthKey);
+      try {
+        const sources = [...resolved.birth_reading];
+        const readme = await compileBirthReadmeAt(birthDir, sources, resolved.name, isShelfTeaching);
+        const sourceSentence = `Read first: ${sources.join(', ')}.`;
+        if (!resolved.brief.includes(sourceSentence)) {
+          await rm(birthDir, { recursive: true, force: true });
+          return res.status(500).json({ error: 'The birth reading was compiled, but its brief did not contain the resolved source list.' });
+        }
+        resolved.brief = resolved.brief.replace(sourceSentence, `Read first: ${readme}.`);
+        resolved.birth_reading = [readme];
+      } catch (e) {
+        if (birthDir) await rm(birthDir, { recursive: true, force: true });
+        return res.status(500).json({ error: `Could not compile this Agent's birth README: ${String((e as Error)?.message ?? e)}` });
+      }
+    }
+
     try {
       await emitSessionWillBorn(resolved.name); // rireki resets a reused name's stale tape here
       // THE CLI IS THE TILE'S PROCESS, and the brief rides on its command line. There is no
@@ -305,6 +338,7 @@ export function registerLaunch(app: express.Express): void {
       const launchWords = resolved.session_type === 'bare_metal_agent' ? (form.prompt ?? '') : resolved.brief;
       launch = resolved.agent ? await launchArgv(resolved.cmd, launchWords) : { argv: [], parked: false };
       if (resolved.agent && !launch.argv.length) {
+        if (birthDir) await rm(birthDir, { recursive: true, force: true });
         return res.status(400).json({
           error: `Could not find ${resolved.cmd.trim().split(/\s+/)[0]} on this machine. Install it from ⚙ Configuration, then launch again.`,
         });
@@ -324,7 +358,10 @@ export function registerLaunch(app: express.Express): void {
         // Closed atomically with birth. The resolved Control opens only after the brief,
         // identity, Team, Campaign, letter and role-delivery baseline are all installed.
         control: resolved.agent ? 'user' : undefined,
+        key: birthKey || undefined,
       });
+      runtimeBorn = true;
+      if (birthKey) rememberSessionKey(resolved.name, birthKey);
       if (resolved.tags.length) {
         await setTags(resolved.name, resolved.tags);
         // Born onto a team whose wipeboard is already a conversation? Then the newborn
@@ -371,6 +408,7 @@ export function registerLaunch(app: express.Express): void {
       }
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
+      if (birthDir && !runtimeBorn) await rm(birthDir, { recursive: true, force: true });
       void appendLaunchLedger(form, resolved, false);
       // A full box is not a server fault: 429 so the launcher shows the reason as a refusal
       // rather than a crash, and so a caller can tell "try later" from "this is broken".
@@ -523,14 +561,18 @@ export function registerLaunch(app: express.Express): void {
           } catch {
             // session vanished mid-scan — plain row, no readings
           }
-          // THE ROW SOCKET: services contribute their fields (michi's tegami ladder
-          // column among them); none registered = nothing added and the board prints "—".
+          // Core owns the letter and the birth README, so tracked Docs work with or
+          // without Services. A service may contribute other live fields; the core read
+          // wins only for `tegami`, keeping its automatic README in the one doc list.
+          const contributed = await collectRowFields(s.name);
+          const tegami = await readTegami(s.name);
           return {
             ...s,
             status,
             ctx,
             model,
-            ...(await collectRowFields(s.name)),
+            ...contributed,
+            ...(tegami ? { tegami } : {}),
           };
         }),
       );

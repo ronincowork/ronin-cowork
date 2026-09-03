@@ -225,11 +225,11 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
 - There is no Team-scoped 1/2/4 mode. Sessions retains its separate raw grid.
 - The hosted Tile keeps its global picker; switching it to a non-member is existing Tile
   behavior.
-- `src/` changes need `systemctl --user restart ronin` (`tsx`, no watch); `public/` is live.
+- `src/` changes need `tejun-machine-restart` (`tsx`, no watch); `public/` is live.
 
 ## Exact resume checklist
 
-1. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`); never act on
+1. Work at your repo desk (`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`); never act on
    `master` without a fresh owner instruction.
 2. Read `wip/buildouts/TEAM_WORKBENCH.md` (HANDOFF first), this file, and `docs/workspace-kit.md`.
 3. Inspect `git status`; in a shared checkout, preserve unrelated changes.

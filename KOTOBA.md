@@ -326,6 +326,8 @@ session_type (required)  ×  project_root (required)  ×  team (optional — non
 | **template** | user_scope definition · session_scope selection | **a shadowable preset that overlays only the fields it carries onto a form, then stops — and there are TWO KINDS on two shelves** (the shelf split, owner 2026-09-01): an **`agent_template`** (`ronin_catalogs/templates/agents/`) is a LOADOUT — what one session is handed: `brief`, `mandate`, `behaviours`, routine switches, optional `team_mode: new` for a box born into its own team; a **`team_template`** (`ronin_catalogs/templates/teams/`) is a CAST — the Team's `objective` plus `agents:`, the embedded list of launch rows `{ name, instructions, mandate, team_lead }`, the lead just one of the agents, marked (`lead_brief`/`lead_mandate` are dead). Neither form is shown a template written for the other; the two shelves are separate namespaces. Seeding order is level above → template → the owner's hand. Pressing one makes its values the record's own; only provenance remains, never a live reference | `docs/templates.md` · `src/definitions.ts` · `ronin_catalogs/templates/README.md` |
 | **kind** | user_scope selection · session_scope selection | **[planned] what a Team is for, and an Agent value seeded from its Team:** `open` · `coding` · `work` · `personal` · `household` · `social` · `school`. `open` leads the list, is preselected at first logon and means no requirement: it filters and seeds nothing. The first-logon Kind answer selects defaults and is consumed at Save; a Campaign is kindless | `NEW_AGENT.md` (ronin-lab) § 5.4 · `CASCADE.md` § 3 |
 | **session_mandate** | session_scope selection | **[planned] how far an Agent may go before it checks in, how it may build out a Team, and what it hands back** — Reach and Recruit are dials; Output is a list of instructions. **Reach:** `open` · `discuss` · `plan` · `execute`. **Recruit:** `open` · `nobody` · `propose agents` · `staff agents`. **Output:** any list drawn from `open` · `a plan` · `ideas` · `code` · `an artifact` · `the team` · `no code`. Absence is silence and `no code` is an explicit instruction; combinations are never validated, so `code` and `no code` may coexist when that is what the owner stated. The Campaign and Team may seed it; the Agent launch owns its answer. It is read, never enforced, and is never derived from a behaviour | `NEW_AGENT.md` (ronin-lab) § 7 |
+| **template_bundle** | system_scope format · user_scope install | **a team template with COPIES of everything it names, as one JSON document (`ronin-bundle/1`) — for download, never for the shelf.** Files by store (`catalogs`, `sops`, `ways`, `library`, `tools`) and entries by catalog (`MACROS.md`, `ACTIONS.md`, `TOOLS.md`). A copy is allowed only in transit: an install lands every one in the owner's stores, where the ordinary readers find it as they find anything hand-written, and skips a copy identical to what ships (an upgrade-proof shadow nobody asked for), writes over the owner's own only on `replace`, and never lets a tool stand in for one of Ronin's. **Not a Routine** — a Routine names its parts and copies nothing; a bundle carries the Routine and its parts together. `pack` builds one from this install, the owner's copies only | `src/bundles.ts` · `bin/ronin-bundle` · `docs/templates.md` |
+| **template_library** | system_scope | **the shelf of template bundles on the public site** (https://ronincowork.com/library/index.json, `ronin-library/1`): one card per bundle — face, `url`, `sha256`, `holds` counts. Read through the one AGERU client on a press of the Campaign page's Templates card, never on a timer; the plan is shown before anything is written | `src/routes/library-api.ts` · `public/js/campaign-templates.js` |
 | **definition file** | system_scope | one definition per FILE, named by its token — `templates/<name>.md`, `routines/<name>.md`, `ways/<name>.md`. The merged stock ⊕ user directory IS the manifest; there is no second generated file to drift from | `docs/shadowing.md` |
 | **whole-definition shadowing** | system_scope | a user file of the same token replaces that one house definition **whole** — never field by field, or neither file would tell the truth. A new token adds; `- **hidden:** yes` withdraws a house definition without deleting shipped files. Provenance (`stock` · `user` · `shadowed`) rides every row so a surface can say **ours**, **yours**, or **yours replacing ours** | `docs/shadowing.md` |
 | **launch cascade** | system_scope | **[planned] SETTEI → Campaign → Team → Agent.** A parent value LANDS in the next form as an ordinary editable answer; a template then overlays exactly what it carries; the owner's hand is last. Save makes those values the child's own and later parent edits never reach down. Routine maps are complete booleans, not a live inherit state. One resolver returns provenance as `stated_by`; surfaces never reconstruct it | `CASCADE.md` (ronin-lab) § 1 · § 5 |
@@ -546,9 +548,9 @@ egress surface, and `egress_log` is what makes the claim checkable rather than a
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **AGERU** (上げる) | system_scope | the one outbound door: compose → review → send, and the log of every attempt **[planned]** | `co-working/user_repo/wip/buildouts/AGERU.md` |
-| **ageru_packet** | system_scope | one thing that leaves: five-key envelope + a `packet_kind`-specific body against a closed schema. Composed to disk, reviewed on disk, sent from those exact bytes — **never composed at send time** | `co-working/user_repo/wip/buildouts/AGERU.md` |
+| **ageru_packet** | system_scope | one thing that leaves: five-key envelope + a `packet_kind`-specific body against a closed schema. Machine-written packets are composed before their scheduled send; a human-written packet is composed from the disclosed form by its one explicit Send | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **packet_kind** | system_scope | which of the three: `tomodachi` (counts) · `kansou` (feedback) · `tejun` (a submitted macro). A fourth is a cowork change somebody has to argue for | `co-working/user_repo/wip/buildouts/AGERU.md` |
-| **kansou** (感想) | system_scope | the feedback packet — the_owner telling us something in their own words. ⚠R28 **[proposed]** | `co-working/user_repo/wip/buildouts/AGERU.md` § OPEN 1 |
+| **kansou** (感想) | system_scope | the feedback packet — the_owner telling us something in their own words. Its v1 body is closed: `message` plus optional `about`, `using_ronin_for`, `feedback_kind`, and `reply_email`; it never carries an install or entitlement id | `wip/handoffs/FEEDBACK_BUTTON.md` |
 | **ageru_outbox** | user_scope | the `ageru` store's outbox — a store row it must add when it is built (`docs/stores.md`), never a path of its own. Validated packets waiting on a human. Anyone who can write a file can queue one; **that is the socket**, per `RONIN_SERVICES.md` §3 | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **egress_log** | user_scope | every outbound attempt Ronin ever made, **model-provider calls included**. The ZDR evidence: two hostnames, greppable | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **ageru_receipt** | user_scope | what the collector said back, stored beside the sent bytes. Dedup for us, proof for them | `co-working/user_repo/wip/buildouts/AGERU.md` |
@@ -562,9 +564,10 @@ egress surface, and `egress_log` is what makes the claim checkable rather than a
 **The consent rule is one line, and it is load-bearing: only the machine-written packet gets a
 standing switch.** `tomodachi` is house nouns and counts, so it can be weekly and unattended.
 `kansou` and `tejun` carry human prose and are approved **one packet at a time, every time** —
-there is no "remember my choice" on either, by design.
+there is no "remember my choice" on either, by design. For `kansou`, the disclosed form is
+the review and its Send button is the approval; there is no standing switch or hidden send.
 
-**Identity is never shared across `packet_kind`s.** (A services install is the stated exception — see § SERVICES INSTALL.) `install id` (tomodachi) · reply contact
+**Identity is never shared across `packet_kind`s.** (A services install is the stated exception — see § SERVICES INSTALL.) `install id` (tomodachi) · reply email
 (kansou) · attribution handle (tejun) are three fields with three lifetimes and no join —
 because one feedback address joined to an install id retroactively de-anonymises every drop
 that install ever sent. This binds the collector, not just the client.
@@ -892,7 +895,7 @@ somewhere else. Ronin has no address of its own; it asks. Record: `docs/stores.m
 | **ronin_sops** | system_scope | the shipped standard operating procedures — how a house goes about a domain, one SOP per file, fetched by the SITUATION and never by the machinery. **The pair test: if you can name the action that would cite it, it is library.** Starts near-empty like the library; the owner's own `sops` store shadows it file-for-file — a `user_customization` you author, like a macro | `ronin_sops/README.md` |
 | **ronin_session_boot** | system_scope | the shipped **session boot shelf** — what a new `cowork_agent` reads before anything else. Named for booting a session, never the application. The unified birth resolves universal floor reading, Campaign/Team context, Routine contributions and selected behaviours (`ronin_sops/` or `ways/`) once, then records the receipt. The owner's `session_boot` store shadows shipped reading file-for-file | `docs/session-boot.md` · `CONTROL_BUNDLES.md` (ronin-lab) |
 | **ronin_bin** | system_scope | **everything an agent types, and nothing else** — every `tejun*` plus `write_tegami`/`read_tegami` (moved out of `bin/` 2026-08-14). On PATH via setup.sh, behind `bin/shim` and ahead of `bin/`. A **tool** is the subset that also implements a cataloged action. The fifth shelf: ronin_session_boot · ronin_catalogs · ronin_library · ronin_sops · ronin_bin | `ronin_bin/README.md` |
-| **SHELVES** | system_scope | the one page that says the four shelves exist and what each answers, so an agent can *find* a catalog, a library page or an SOP without any of them being pasted at it. Names **no individual entry**, so adding one never dates it. Owner, 2026-08-15: the name is `SHELVES`, it lives in `docs/`, and it is a file rather than lines in a brief. It reaches a session through the **boot shelf** — `ronin_session_boot/all/` symlinks it, and `buildBrief` lists that level at spawn — so every session is handed it, and no pointer is written down anywhere to go stale | `docs/SHELVES.md` |
+| **SHELVES** | system_scope | the one page that says the four shelves exist and what each answers, so an agent can *find* a catalog, a library page or an SOP without any of them being pasted at it. Names **no individual entry**, so adding one never dates it. Owner, 2026-08-15: the name is `SHELVES`, it lives in `docs/`, and it is a file rather than lines in a brief. It reaches a session through the **boot shelf** — `ronin_session_boot/all/` symlinks it, and the birth compiles that level into the session's one `README.md` — so every session is handed it, and no pointer is written down anywhere to go stale | `docs/SHELVES.md` |
 | **libexec** | system_scope | executables **the machine invokes and nobody types** — `ronin-gate` (ExecStartPost), `rireki/` (the tmux applet), `koshi` (the job process), `ronin-may-spawn`, `ronin-claim` (the git hooks). The Unix split `bin` (a person types it) vs `libexec` (a program invokes it), adopted 2026-08-14. NOT on PATH | § SCRIPTS |
 | **the session directory** | session_scope | the `session` store, `<store>/<key>/` — one session's own record: TEGAMI, RIREKI's tape, the scroll. R5 closed: the store resolves it, and there is no second answer | `src/stores.ts` |
 | **house_dirs** | system_scope | the three directories of a project_repo the documents library page writes into (owner, 2026-08-14): **`wip/`** — what might be, mutable and mortal, deleted when the work lands; **`docs/`** — what is, state-of-fact only (a project_repo's docs/; the Ronin repo's own docs/ stays the system-docs tier); **`manifest/`** — the drawer: one terse line per entry, date · what · pointer, past/present/future all welcome, prose never | `ronin_library/documents.md` |
@@ -1145,12 +1148,10 @@ Recommend the rule be narrowed to say so in `TOOLS.md` itself.
    `scripts/proto-v2.mjs`, the DVR prototypes from the parked time-scrub work, were deleted
    2026-08-14 (owner's call; git holds them).
 
-**R28 · `kansou` (感想) or plain `feedback`?** The three `packet_kind`s want to be house
-nouns, and two already are (`tomodachi`, `tejun`), which is the case for `kansou`. Against it:
-the kind is a JSON string with no reading face, so the Japanese buys consistency in the one
-place nobody looks — and *feedback* is a word every user already has. **AGERU itself is
-settled** (the owner's own word, 2026-08-13); this is only the third kind's name.
-`co-working/user_repo/wip/buildouts/AGERU.md` § OPEN 1.
+**R28 · CLOSED — `kansou` is the packet kind; Feedback is its user-facing word.** The
+owner's 2026-09-02 cut ships the third AGERU kind under the already-proposed house noun while
+the button and form use the plain word a person already has. The JSON string has no reading
+face, so the two names do not compete.
 
 ---
 
@@ -1202,8 +1203,9 @@ catalog could not discover that an SOP exists. It is **`docs/SHELVES.md`** — t
 document (`public/js/docs.js` still has to tell two files of that name apart).
 
 **CLOSED on the reach too, by the boot shelf rather than by a pointer.** `ronin_session_boot/all/`
-symlinks `docs/SHELVES.md`, and `buildBrief` lists that level **at spawn**, so every
-session is handed the map without anything being written down. That is a better answer
+symlinks `docs/SHELVES.md`, and the birth compiles that level **at spawn** into the
+session's one `README.md`, so every session is handed the map without anything being
+written down. That is a better answer
 than the pointer line proposed here: a stored path — the `read:` key it replaced — goes
 stale in silence the moment a file moves, while a level listed at the instant of use
 cannot, because a file that is gone simply is not named. The SOP shelf's second reach

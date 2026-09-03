@@ -21,9 +21,12 @@ installed machine and user stores; that remains the distinct maintenance/update 
 
 ## What `bin/ronin-promote <team>` does
 
-1. **Prepare** — for every repo on the team's roster (`repos`, else its `project_root`),
-   resolve the home checkout, the line (`branch` on the roster, else `team/<team>/dev`)
-   and the target (`working=` in the repo's `RONIN_REPO`). Build the candidate: a
+1. **Prepare** — for every repository in the team's birth defaults (`repos`, else its
+   `project_root`) **and every repository with an accepted hand-in for that team**, resolve
+   the home checkout, the accepted ledger's line (otherwise `branch` on the roster, else
+   `team/<team>/dev`) and the target (`working=` in the repo's `RONIN_REPO`). Thus an
+   explicitly opened managed repository is promoted without polluting the birth profile.
+   Build the candidate: a
    throwaway worktree detached at the target's tip, the line merged into it. Under the
    `worktrees` store, `.candidates/<repo>/<target>` — beside the desks, out of their way.
    A conflict, a missing line, or unsaved tracked changes in the funnel worktree refuses
@@ -40,7 +43,7 @@ installed machine and user stores; that remains the distinct maintenance/update 
    <expected_old>`) in receipt order; the mounted funnel worktree is then refreshed to the
    new tip. The first race stops the rest: refs past it are `skipped`, the receipt goes
    `interrupted`, and nothing is overwritten.
-5. **Restart + health** — `systemctl --user restart ronin`, then `/api/health` and the
+5. **Restart + health** — `tejun-machine-restart`, then `/api/health` and the
    render check (`scripts/smoke-ui.mjs`, a SKIP with no browser). On failure, `team
    revert` runs automatically through the same door and the team wipeboard is told.
 

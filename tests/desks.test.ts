@@ -70,7 +70,7 @@ const statusOf = async (repo: string, branch: string) => {
   if (!d) throw new Error(`no desk ${repo}:${branch}`);
   return d;
 };
-const { receiptsForLine, receiptsForDesk, acceptedSince } = await import('../src/desks/receipts.js');
+const { receiptsForLine, receiptsForDesk, acceptedSince, acceptedLinesForTeam } = await import('../src/desks/receipts.js');
 const { casRef, revParse } = await import('../src/desks/git.js');
 const { lockDir, withLineLock, queueHolder } = await import('../src/desks/queue.js');
 const { createTeamRoster } = await import('../src/team-rosters.js');
@@ -137,6 +137,23 @@ test('openDesk: cut from the team line, mounted, upstream set, recorded; the lin
   // Idempotent.
   const again = await openDesk({ repo: 'cowork', session: 'fable', team: 'comp' });
   assert.equal(again.worktree, st.worktree);
+});
+
+test('openDesk: an explicit managed repo need not already be on the team roster', async () => {
+  const st = await openDesk({ repo: 'services', session: 'extra', team: 'comp', assignment: 'extra@comp' });
+  assert.equal(st.branch, 'team/comp/extra');
+  assert.equal(st.line, 'team/comp/dev');
+  assert.equal(st.assignment, 'extra@comp');
+  assert.equal(st.mounted, true);
+  assert.equal(sh(services, ['rev-parse', '--abbrev-ref', 'team/comp/extra@{upstream}']), 'team/comp/dev');
+});
+
+test('accepted hand-ins discover an explicit managed repo outside the team roster', async () => {
+  const wt = deskWorktree('services', 'team/comp/extra');
+  await commitFile(wt, 'outside-roster.txt', 'accepted work\n');
+  const { receipt } = await handIn('services', 'team/comp/extra');
+  assert.equal(receipt.result, 'accepted', receipt.reason);
+  assert.deepEqual(await acceptedLinesForTeam('comp'), [{ repo: 'services', line: 'team/comp/dev' }]);
 });
 
 test('openDesk refuses: a funnel point by name, a direct repo, an undeclared repo', async () => {

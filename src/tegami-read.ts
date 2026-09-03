@@ -18,7 +18,8 @@
  * agent last left it: if it looks stale, ask the agent to update its work record.
  */
 import { promises as fs } from 'node:fs';
-import { sessionKey } from './session-dir.js';
+import path from 'node:path';
+import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
 
 /**
@@ -224,7 +225,9 @@ export async function readTegami(name: string): Promise<Tegami | null> {
       ladder_state: off,
       at,
       ladder,
-      docs: await readDocs(b.docs),
+      // The birth README is machinery-owned tracked reading. The Agent need not edit its
+      // work record to make the exact packet it started with visible in Docs.
+      docs: await readDocs([path.join(sessionDir(key), 'README.md'), ...(Array.isArray(b.docs) ? b.docs : [])]),
       chip: chipFor(ladder, at, off),
       quietMs: Date.now() - stat.mtimeMs,
     };

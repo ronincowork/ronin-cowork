@@ -10,7 +10,8 @@ import { findDefinition, listRoutines } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaign-config.js';
-import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
+import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
+import type { ResolvedWorktreesRepository } from './worktrees-resolution.js';
 import type { Assignment } from './desks/schema.js';
 import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
 import { resolveAgentRoutines, routineChoices, type ResolvedRoutine } from './routines.js';
@@ -19,6 +20,8 @@ import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
 import { templateProvenance } from './template-provenance.js';
 import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
+export const routineReading = (routines: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[]): string[] =>
+  routines.flatMap((routine) => (routine.enabled ? routine.reading : routine.reading_off));
 /**
  * The mechanical executor: a filled form in, a briefed session out.
  *
@@ -140,13 +143,10 @@ export interface Resolved {
   team: string;
   /** Never '' — a session must be born somewhere, and the resolver refuses otherwise. */
   project_root: string;
-  /**
-   * THE ASSIGNMENT — every repo desk this launch was given, or null: a manual launch, a
-   * plain terminal, a non-code role, a direct/undeclared repository, or the switch off.
-   * Null means the brief says nothing about desks and `dir` is the root's own directory.
-   * Derived here, OPENED by the route before the CLI starts (src/launch-desks.ts).
-   */
+  /** Managed repo desks, opened by the route before the CLI starts; null when none. */
   assignment: Assignment | null;
+  /** The canonical capability × repository resolution, including direct checkouts. */
+  work_locations: ResolvedWorktreesRepository[];
   brief: string;
   /**
    * False when the profile resolves `agent: none` — a plain terminal. `cmd` and `brief` are
@@ -179,7 +179,7 @@ export interface Resolved {
   team_branch: string;
   team_wipeboard: string;
   team_state: '' | 'active' | 'archived';
-  /** Literal files the server put in the assisted brief's `Read first:` sentence. */
+  /** Source files during resolution; the executor replaces them with the compiled README. */
   birth_reading: string[];
   /** The valid selected books handed over beside the Routine reading. */
   behaviours: DeliveredBehaviour[];
@@ -213,6 +213,7 @@ export function buildBrief(
   boot: string[] = [],
   roster?: TeamRoster | null,
   assignment?: Assignment | null,
+  workLocations: ResolvedWorktreesRepository[] = [],
 ): string {
   const parts: string[] = [];
   if (profile.posture.length) parts.push(`You are the ${profile.label}. ${profile.posture.join(' ')}`);
@@ -220,31 +221,27 @@ export function buildBrief(
   // objective comes from the roster — the durable half — and the wipeboard is the
   // team's own conversation surface. A rōnin launch has no line here at all.
   if (roster) {
-    const bits = [`You are born onto team "${roster.name}"`];
-    if (roster.objective) bits.push(`its objective: ${roster.objective}`);
-    bits.push(`its wipeboard is "${roster.wipeboard}" (tejun-wipeboard ${roster.wipeboard})`);
-    parts.push(bits.join('. ') + '.');
+    const lines = [`Team: ${roster.name}`];
+    if (roster.objective) lines.push(`Objective: ${roster.objective}`);
+    lines.push(`Wipeboard: ${roster.wipeboard} (tejun-wipeboard ${roster.wipeboard})`);
+    parts.push(lines.join('\n'));
   } else if (form.team) {
     parts.push(
       `You are born onto team "${form.team}" — a tag-only team: its members are the sessions carrying its tag ` +
         `(tejun-team ${form.team}), it has no durable roster, and its wipeboard is "${form.team}" (tejun-wipeboard ${form.team}).`,
     );
   }
-  // THE DESKS, concrete: every repo desk, its path, the line it hands in to, and the four
-  // words — before the reading, because it is the one fact about WHERE this session is
-  // that nothing else in the brief states. A launch with no assignment has no line here:
-  // a brief that mentions desks to a session standing in `dev` is the failure the control
-  // surface exists to prevent (src/launch-desks.ts).
+  // Concrete resolved locations precede the reading; managed rows also carry their line.
+  if (workLocations.length) parts.push(renderWorkLocations(workLocations));
   if (assignment?.desks.length) parts.push(renderDeskBlock(assignment));
-  // THE SESSION BOOT SHELF, listed at this instant rather than remembered. This replaced
-  // the project_root's `read:` — a stored list of literal paths that went stale in silence
-  // the moment a file moved. Nothing is written down now, so nothing can be wrong: a file
-  // that is gone simply is not named. See src/session-boot.ts.
+  // THE BIRTH README POINTER. ResolveForm initially supplies the resolved sources; the
+  // launch executor compiles them into one per-session README and replaces this sentence
+  // before building provider argv. See src/session-boot.ts and routes/launch.ts.
   const reading = [...boot, ...(form.seed ?? [])].filter(Boolean);
   if (reading.length) parts.push(`Read first: ${reading.join(', ')}.`);
   const prompt = form.prompt?.trim() ?? '';
   const opening = (profile.opening ?? '').replace(/\{prompt\}/g, prompt).trim();
-  if (opening) parts.push(opening);
+  if (opening) parts.push(`Your task:\n${opening}`);
   if (form.reference) {
     parts.push(
       // RIREKI's tape is the taught-normal catch-up (owner's ruling, 2026-08-20): it is
@@ -257,7 +254,9 @@ export function buildBrief(
   }
   if (form.inject?.trim()) parts.push(form.inject.trim());
   if (profile.ack) parts.push(ACK_RULE);
-  return parts.join(' ');
+  // ONE BLOCK PER FACT, a blank line between: a person glancing at the tile sees the team,
+  // the desks, the reading and the task as four things, not one run-on sentence.
+  return parts.join('\n\n');
 }
 
 /**
@@ -289,7 +288,6 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
 
 /**
  * The birth reading list, plus THE TEAM-BUILDING SOP for a lead launch.
- *
  * A session_role that is some family's `default_lead_role` is the coordinating kind of
  * work, and its launch carries `ronin_sops/teams.md` — how to raise supporting sessions
  * and place them into a team. Route 1 of two: route 2 is the `team_lead` designation on
@@ -301,12 +299,11 @@ async function bootReading(
   projectRoot: string,
   mcpOn: boolean,
   bornLead = false,
-  assigned = false,
-  routines: string[] = [],
+  routineReading: string[] = [],
   routineMacros?: ReadonlySet<string>,
   session = '',
 ): Promise<string[]> {
-  const files = await bootFiles(projectRoot, mcpOn, assigned, routines, routineMacros, session);
+  const files = await bootFiles(projectRoot, mcpOn, routineReading, routineMacros, session);
   // Team leadership is explicit; no selected reading infers it.
   if (bornLead && !files.includes(teamsSopPath())) files.push(teamsSopPath());
   return files;
@@ -553,11 +550,10 @@ export async function resolveForm(
       return true;
     });
   };
-  // THE NAME is settled before the desks, because a desk branch carries it.
   const name = wanted || slugName(profile.session_role || form.team || 'session', form.prompt ?? '', taken);
-  // THE DESKS, derived (never opened here — the route opens them, before the CLI starts).
-  // Null is an honest answer for most launches; see src/launch-desks.ts for the three.
-  const assignment = bareMetalAgent || sessionType === 'terminal' ? null : await resolveLaunchDesks({
+  const worktrees = bareMetalAgent || sessionType === 'terminal'
+    ? { assignment: null, repositories: [] }
+    : await resolveLaunchDesks({
     session: name,
     team: form.team ?? '',
     project_root: root.name,
@@ -565,7 +561,8 @@ export async function resolveForm(
     control: routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
     desk: form.desk,
   });
-  const enabledRoutines = routines.filter((routine) => routine.enabled).map((routine) => routine.name);
+  const assignment = worktrees.assignment;
+  const enabledReading = routineReading(routines);
   const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
   const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   const selectedBehaviours = form.behaviours ?? (parentSeed?.seeds.behaviours.value as string[] | undefined) ?? [];
@@ -575,7 +572,7 @@ export async function resolveForm(
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = coworkAgent && agent
-    ? await bootReading(root.name, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
+    ? await bootReading(root.name, !mcpOffWanted, !!form.team_lead && !!form.team, enabledReading, enabledMacros, name)
     : [];
   const completeReading = [...shelfReading, ...resolvedBehaviours.delivered.map((book) => book.file)];
   const birthReading = coworkAgent && agent
@@ -596,10 +593,11 @@ export async function resolveForm(
     // the launch — the same category as its dial, and a launch must not be able to leave
     // it to chance. Exactly one definition carries one (`mikaassist`, `{install}`): she
     // works on Ronin's own business, so she starts where Ronin's documents are whatever
-    // root was picked. AN ASSIGNMENT wins over the root: the session starts in its
-    // primary desk, never in the root's funnel checkout (docs/worktrees.md, the one rule).
-    dir: profileDir(profile) || (assignment ? primaryDesk(assignment).worktree : '') || root.dir || '',
+    // root was picked. Otherwise the 2x2 resolution wins: managed root → its Worktree;
+    // direct root → its ordinary checkout.
+    dir: profileDir(profile) || primaryWorkLocation(worktrees.repositories, root.name) || root.dir || '',
     assignment,
+    work_locations: worktrees.repositories,
     cmd,
     // Born onto a team = tagged into it, through the same membership the roster derives
     // from. The team rides FIRST so a truncated list can never drop the birth team.
@@ -624,6 +622,7 @@ export async function resolveForm(
           completeReading,
           roster,
           assignment,
+          worktrees.repositories,
         )
       : '',
     agent,

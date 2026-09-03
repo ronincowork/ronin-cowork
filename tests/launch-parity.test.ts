@@ -205,7 +205,7 @@ test("forkit's own inputs change its words and nothing about the mechanism", asy
   );
   // The handoff prompt and the team are INPUTS. They must reach the brief and the tags…
   assert.match(forked.brief, /wip\/handoffs\/TOPIC\.md/);
-  assert.match(forked.brief, /born onto team "scratchteam"/);
+  assert.match(forked.brief, /^Team: scratchteam$/m);
   assert.match(forked.brief, /prove the parity/, "the roster's objective rides the brief");
   assert.deepEqual(forked.tags, ['scratchteam']);
   assert.deepEqual(plain.tags, []);

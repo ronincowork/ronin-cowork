@@ -7,6 +7,9 @@ Claude and Codex can run side by side, each in its own worktree. Ronin gives the
 terminal sessions one browser surface on a machine you control; you choose how independently
 or closely they work through the Routines you opt into.
 
+If Ronin looks cool to you, [give us a star](https://github.com/ronincowork/ronin-cowork)—it
+helps other people find it.
+
 ## Work side by side
 
 <a href="https://ronincowork.com/explainers/workbench/">

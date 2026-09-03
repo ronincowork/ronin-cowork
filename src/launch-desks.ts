@@ -25,7 +25,12 @@
 import { arrangementOf, arrangementWorktreesInput } from './desks/arrangement.js';
 import type { Assignment, RepoDesk } from './desks/schema.js';
 import { deriveAssignment, writeAssignment } from './desks/registry.js';
-import { resolveWorktrees } from './worktrees-resolution.js';
+import { resolveWorktrees, type ResolvedWorktreesRepository } from './worktrees-resolution.js';
+
+export interface LaunchWorktrees {
+  assignment: Assignment | null;
+  repositories: ResolvedWorktreesRepository[];
+}
 
 /** Compatibility input retained while launch forms stop sending the retired desk override. */
 export type DeskChoice = 'own' | 'none';
@@ -41,8 +46,8 @@ export async function resolveLaunchDesks(input: {
   agent: boolean;
   control: boolean;
   desk?: DeskChoice;
-}): Promise<Assignment | null> {
-  if (!input.agent) return null;
+}): Promise<LaunchWorktrees> {
+  if (!input.agent) return { assignment: null, repositories: [] };
   const assignment = await deriveAssignment({ session: input.session, team: input.team, project_root: input.project_root });
   const repositories = await Promise.all(assignment.desks.map(async (candidate) => {
     const arrangement = await arrangementOf(candidate.repo);
@@ -61,16 +66,18 @@ export async function resolveLaunchDesks(input: {
   });
   const managed = new Set(resolution.repositories.filter((repository) => repository.mode === 'managed').map((repository) => repository.repo));
   const desks = assignment.desks.filter((desk) => managed.has(desk.repo));
-  if (!desks.length) return null;
+  if (!desks.length) return { assignment: null, repositories: resolution.repositories };
   const primary = desks.some((desk) => desk.repo === assignment.project_root)
     ? assignment.project_root
     : desks[0]!.repo;
-  return { ...assignment, primary, desks };
+  return { assignment: { ...assignment, primary, desks }, repositories: resolution.repositories };
 }
 
-/** The desk the shell starts in. */
-export function primaryDesk(a: Assignment): RepoDesk {
-  return a.desks.find((d) => d.repo === a.primary) ?? a.desks[0]!;
+/** The selected project root's resolved location; first row is the deterministic fallback. */
+export function primaryWorkLocation(repositories: ResolvedWorktreesRepository[], projectRoot: string): string {
+  return repositories.find((repository) => repository.repo === projectRoot)?.location
+    ?? repositories[0]?.location
+    ?? '';
 }
 
 /**
@@ -130,8 +137,8 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
 
 /**
  * The concrete block the brief carries — facts, not a Git lecture. Every desk, its path,
- * the line it hands in to, and the four words. The long reading (DESK_CONTRACT.md) rides
- * the `assignment` shelf level beside it.
+ * the line it hands in to, and one pointer. The contract itself is the Worktrees Routine's
+ * page (routine/ronin_worktrees/WORKTREES.md), compiled into the README the brief names.
  */
 export function renderDeskBlock(a: Assignment): string {
   const width = Math.max(...a.desks.map((d) => d.repo.length));
@@ -140,6 +147,17 @@ export function renderDeskBlock(a: Assignment): string {
   return [
     `Your assignment has ${n} desk${n === 1 ? '' : 's'}:`,
     ...rows,
-    'Save changes in a desk. Commit preserves only that desk. `tejun-desk hand-in` publishes committed work to its team line; it is not `git push` and it runs no full BYOIN. The lead\'s team promotion runs full BYOIN and promotes the accepted team state to dev.',
+    'Work only in a desk; the desk contract is in your README.',
+  ].join('\n');
+}
+
+/** Every repository gets one resolved working location from the canonical 2x2. */
+export function renderWorkLocations(repositories: ResolvedWorktreesRepository[]): string {
+  const direct = repositories.filter((repository) => repository.mode === 'direct');
+  if (!direct.length) return '';
+  return [
+    'Direct work locations:',
+    ...direct.map((repository) =>
+      `  ${repository.repo}  ${repository.location}  (this repository does not use Worktrees; edit directly in this checkout)`),
   ].join('\n');
 }

@@ -72,3 +72,11 @@ always a new file, never over a shipped one (those are edited on the campaign pa
 Your agent keeps these for you: templates are plain files, so "keep this recipe with
 the Dinner Party template" is something you say to a session, and it writes the SOP to
 your store, shadows the template, and adds the book itself — `docs/templates.md`.
+
+## Bundles
+
+A **template bundle** is a team template with copies of everything it names — agent boxes,
+SOPs, ways, Routines and their macros, actions and tools — as one JSON document, for the
+template library on ronincowork.com or a library of your own. Installing one lands every
+copy in your stores (never here); `bin/ronin-bundle` packs and installs by hand, and the
+Campaign page's Templates card does it from the library. The rules are in `docs/templates.md`.

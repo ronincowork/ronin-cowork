@@ -12,12 +12,25 @@ export interface RoutineToolProjection {
   missing: string[];
 }
 
-const sourceFor = (name: string): { command: string; source: string } => name.startsWith('shim/')
-  ? {
-    command: name.slice('shim/'.length),
-    source: path.join(REPO_ROOT, 'bin', 'shim', name.slice('shim/'.length)),
+/**
+ * Where a named tool's executable is. A guard shim is only ever ours. Every other bare
+ * command resolves the way every shelf does — the owner's `tools` store first (a template
+ * bundle installs there, src/bundles.ts), then the shipped `ronin_bin/`. A user file of
+ * the same name shadows ours whole, exactly as a user SOP or macro does.
+ */
+const sourceFor = async (name: string): Promise<{ command: string; source: string }> => {
+  if (name.startsWith('shim/')) {
+    const command = name.slice('shim/'.length);
+    return { command, source: path.join(REPO_ROOT, 'bin', 'shim', command) };
   }
-  : { command: name, source: path.join(REPO_ROOT, 'ronin_bin', name) };
+  const own = path.join(storeDir('tools'), name);
+  try {
+    await access(own);
+    return { command: name, source: own };
+  } catch {
+    return { command: name, source: path.join(REPO_ROOT, 'ronin_bin', name) };
+  }
+};
 
 /**
  * The guard shim is floor. Every other bare command comes from an enabled Routine.
@@ -47,7 +60,7 @@ export async function projectRoutineTools(
   const delivered: string[] = [];
   const missing: string[] = [];
   for (const name of [...names].sort()) {
-    const { command, source } = sourceFor(name);
+    const { command, source } = await sourceFor(name);
     try {
       await access(source);
       await symlink(source, path.join(dir, command));

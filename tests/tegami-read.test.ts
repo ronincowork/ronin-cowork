@@ -85,6 +85,16 @@ test('docs list only what exists, absolute paths only', async () => {
   assert.equal(t.chip.text, '—', 'no ladder up reads as a dash, not an invention');
 });
 
+test('the session birth README is automatically tracked without an agent-authored docs entry', async () => {
+  const name = 'tegami-read-birth';
+  await writeLetter(name, '{ "docs": [], "ladder": [] }');
+  const readme = path.join(temp, name, 'README.md');
+  await fs.writeFile(readme, '# Read first\n');
+  const t = await readTegami(name);
+  assert.ok(t);
+  assert.deepEqual(t.docs, [readme]);
+});
+
 test('an unfenced bare object still parses — an agent that drops the fence keeps its readout', async () => {
   await fs.mkdir(path.join(temp, 'tegami-read-bare'), { recursive: true });
   await fs.writeFile(

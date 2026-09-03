@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# ronin-bundle — a template bundle in and out of this install.
+#
+# Usage: ronin-bundle pack <team> [--agents a,b] [--sops x] [--ways y] [--library z]
+#                                 [--macros m] [--actions a] [--tools t] [--version v] [--out file]
+#        ronin-bundle plan <file.json>                 what an install would write, nothing written
+#        ronin-bundle install <file.json> [--replace]  install into your stores; the receipt is the answer
+#        ronin-bundle card <file.json> --url <rel>     the index card a library carries for it
+#
+# A BUNDLE IS A TEAM AND EVERYTHING IT READS (docs/templates.md): the team template, the
+# agent templates beside it, the SOPs and ways it names, the Routines it turns on with their
+# macros, actions and tools — one JSON document, `ronin-bundle/1`. `pack` carries only YOUR
+# copies out (what ships is on every install already); `install` lands every copy in your
+# own stores and never in the repo. The Templates card on the Campaign page does the same
+# through the public library; this is the same thing by hand, and how you make one to publish.
+#
+# THE LOGIC IS NOT HERE. src/bundle-cli.ts and src/bundles.ts own it, covered by the unit
+# floor (tests/bundles.test.ts) — the same arrangement as tejun-desk.
+set -u
+SELF=${BASH_SOURCE[0]}
+while [ -L "$SELF" ]; do
+  link=$(readlink "$SELF")
+  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
+done
+HERE=$(cd "$(dirname "$SELF")/.." && pwd)
+cd "$HERE" || { echo "NO-REPO: cannot reach the Ronin tree"; exit 1; }
+exec npx tsx src/bundle-cli.ts "$@"

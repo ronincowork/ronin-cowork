@@ -30,12 +30,14 @@ import { createNewAgentView } from './new-agent.js';
 import { createLaunchHelpView } from './launch-help.js';
 import { refreshTeams } from './team-controller.js';
 import { t } from './lexicon.js';
+import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
 
 const PROFILE = 'launch';
 const TYPES = Object.freeze({ team: 'launch.team', agent: 'launch.agent', help: 'launch.help' });
 const node = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
 function registerLaunchSurfaces() {
+  registerFeedbackSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({
@@ -63,7 +65,7 @@ function registerLaunchSurfaces() {
     variant: 'dotted',
     create: ({ environment, workspace }) => environment.help(workspace),
   });
-  profiles.define(PROFILE, [TYPES.team, TYPES.agent, TYPES.help]);
+  profiles.define(PROFILE, [TYPES.team, TYPES.agent, TYPES.help, FEEDBACK_TYPE]);
 }
 
 export function createLaunchView() {
@@ -81,6 +83,7 @@ export function createLaunchView() {
     show: () => { if (!started.has(view)) { started.add(view); void view.enter(); } },
   });
   const environment = {
+    feedback: (workspace) => createFeedbackSurface(() => bench.place(TYPES.team, workspace)),
     team: (workspace) => {
       if (!teamBySeat[workspace]) {
         teamBySeat[workspace] = createNewTeamFormView(WorkspaceKit, {
@@ -121,6 +124,7 @@ export function createLaunchView() {
     el: bench.host,
     glyph: '＋',
     arrangement: bench.arrangement,
+    placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),
     title: () => t('campaign_home.launch', 'New Project'),
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {

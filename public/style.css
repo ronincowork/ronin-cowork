@@ -559,6 +559,17 @@ body {
   white-space: nowrap;
 }
 .ui-bar-separator { color: var(--muted); }
+/* The bar's place reading — italic so it reads as information, never as a door — and
+   sized to the value it replaced. Truncates before it can push the verbs. */
+.ui-bar-place {
+  color: var(--bar-value-fg);
+  font-size: var(--bar-value-size);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
 /* ---- ui-sheet / ui-card — the modal primitive (js/ui.js `sheet`) ----
    Dialog semantics, focus entry/trap/return and dismissal live in JS; this is the
    look: a scrim, a centered card. Consumers size their card and may accent its
@@ -830,6 +841,10 @@ body {
 #bar .bar-cowork-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bar .grow {
   flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
 }
 /* The Workbench shape control uses the compact bar-button treatment. */
 #bar .shape-cycle {

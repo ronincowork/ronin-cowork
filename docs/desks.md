@@ -1,7 +1,7 @@
 # Desks — the state and hand-in floor
 
 The mechanics under `tejun-desk`. What a session is told is
-`ronin_session_boot/assignment/DESK_CONTRACT.md`. This page is the tool-side reference:
+`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`. This page is the tool-side reference:
 what is recorded where, what each operation does to git, and what it refuses.
 
 > The current model is `docs/worktrees.md`; the network around it is
@@ -57,7 +57,10 @@ migration or running-Agent reconciliation. A coding launch that gets no desk say
 
 `openDesk({repo, session, team})` — refused when the repository is `direct`, has no
 `RONIN_REPO`, or sits in a Syncthing share whose `.stignore` does not exclude `.git`;
-refused when the requested branch is a funnel point. Otherwise: the team line is created
+refused when the requested branch is a funnel point. An explicit `tejun-desk open <repo>`
+does not require that repository to already appear on the team's roster. Any Agent can
+name any managed repository; the roster only determines which desks birth opens
+automatically. Otherwise: the team line is created
 from the working line if missing and mounted at its worktree; the desk branch is cut from
 the line (or an existing branch remounted — a parked desk, or a leftover, which is adopted
 rather than lost); upstream is set to the line; `node_modules` is linked from the home

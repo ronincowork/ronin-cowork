@@ -70,11 +70,13 @@ answer as `worktrees: enabled|disabled`. Other consumers must not compare `desks
 2. `arrangementWorktreesInput()` normalizes each repository profile.
 3. `resolveWorktrees()` runs once across the assignment.
 4. Launch preparation opens only the rows resolved as `managed`.
-5. If no repository resolves as managed, the launch uses its ordinary checkout path.
+5. The launch brief names every resolved location: the opened Worktree for a managed row,
+   or an explicit instruction to edit directly in the repository checkout for a direct row.
 
 A managed launch never silently falls back to a shared funnel checkout when opening its
 worktree fails. The launch is refused with the reason. Direct repositories remain direct
-and are not represented as missing desks.
+and are not represented as missing desks. The Agent does not ask `tejun-desk` to decide
+again; the 2×2 result is already in its brief.
 
 An assignment can span several repositories. A desk is the repository-specific internal
 record joining a session, branch, worktree, and integration line. The user-facing capability

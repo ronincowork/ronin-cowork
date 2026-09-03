@@ -53,6 +53,12 @@ const KEY_TTL_MS = 2_000;
 const keyCache = new Map<string, { key: string; at: number }>();
 const keyInFlight = new Map<string, Promise<string>>();
 
+/** A birth that stamped its key already knows the answer. Prime the short-lived reader
+ * cache so immediate letter/receipt writes cannot observe a pre-birth fallback. */
+export function rememberSessionKey(name: string, key: string): void {
+  keyCache.set(name, { key, at: Date.now() });
+}
+
 export async function sessionKey(name: string): Promise<string> {
   const hit = keyCache.get(name);
   if (hit && Date.now() - hit.at < KEY_TTL_MS) return hit.key;
