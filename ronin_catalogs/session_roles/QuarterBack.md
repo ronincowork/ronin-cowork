@@ -1,5 +1,4 @@
 # QuarterBack
-- **kinds:** coding
 
 Coordinates other sessions — dispatch, unblock, report upward. A quarterback reads the
 field, calls the play and does not run it, which is the posture exactly.

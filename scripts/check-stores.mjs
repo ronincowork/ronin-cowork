@@ -1,4 +1,22 @@
 #!/usr/bin/env node
+/**
+ * check-stores — the store table has two bindings, and they must never disagree.
+ *
+ * `src/stores.ts` answers for the server; `bin/ronin-store` answers for every bash tool
+ * (bin/ stays zero-dependency, so it cannot import the TypeScript). Two copies of one
+ * table is exactly the shape that produced the defect this whole thing exists to kill:
+ * `RIREKI_DIR` honoured in eight places and hardcoded in two more, so setting it sent
+ * the letters one way and the tape the other, and nothing said so.
+ *
+ * So the copies are gated, not trusted. Every store is resolved BOTH ways under several
+ * environments — fresh box, legacy box, canonical override, legacy override, moved roots
+ * — and any disagreement fails `npm run verify`.
+ *
+ *   node scripts/check-stores.mjs
+ *
+ * Also asserts the naming convention holds: ids are unique slugs and the canonical
+ * override is mechanically `RONIN_<ID>_DIR`, so nobody has to remember a fifth spelling.
+ */
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,12 +31,14 @@ const ok = (msg) => console.log(`  ok    ${msg}`);
 
 const { STORES, resolveStore, envName } = await tsImport('../src/stores.ts', import.meta.url);
 
+/** Every env name the table can be steered by — cleared before each case. */
 const ALL_KNOBS = [
   'RONIN_USER_ROOT',
   'RONIN_DATA_ROOT',
   ...STORES.map((s) => envName(s.id)),
 ];
 
+/** `bin/ronin-store --all` as {id: {root, source, dir}}. */
 function bashAll(env) {
   const out = execFileSync(TOOL, ['--all'], { encoding: 'utf8', env });
   const rows = {};
@@ -29,6 +49,7 @@ function bashAll(env) {
   return rows;
 }
 
+/** The same, from TypeScript, with process.env pointed at the case. */
 function tsAll(env) {
   const saved = { ...process.env };
   for (const k of Object.keys(process.env)) delete process.env[k];
@@ -41,6 +62,7 @@ function tsAll(env) {
   }
 }
 
+/** A base environment with every store knob cleared, so a case says exactly what it means. */
 const base = () => {
   const e = { ...process.env };
   for (const k of ALL_KNOBS) delete e[k];
@@ -74,12 +96,19 @@ for (const [label, env] of CASES) {
   else ok(`${label} — ${STORES.length} stores agree`);
 }
 
+// The table only knows the stores bash knows: a row added to one and not the other.
 const known = Object.keys(bashAll({ ...base(), HOME: FRESH }));
 const extra = known.filter((id) => !STORES.some((s) => s.id === id));
 if (extra.length) fail(`bin/ronin-store has rows src/stores.ts does not: ${extra.join(', ')}`);
 else ok('both tables carry the same rows');
 
+// The convention itself — one spelling, derivable, never remembered.
 for (const s of STORES) {
+  // UNDERSCORES, NOT HYPHENS — and the reason is the very next line. The override is
+  // derived as RONIN_<ID>_DIR, so a hyphenated id yields `RONIN_SESSION-BOOT_DIR`, which
+  // is not a legal environment variable name in any shell: the store would simply have no
+  // working override. The rule used to permit exactly that and forbid the safe spelling.
+  // No id has ever had a separator, so nothing is grandfathered by this.
   if (!/^[a-z][a-z0-9_]*$/.test(s.id)) fail(`store id '${s.id}' is not a lowercase slug (letters, digits, underscore)`);
   if (envName(s.id) !== `RONIN_${s.id.toUpperCase()}_DIR`) fail(`${s.id}: override is not RONIN_<ID>_DIR`);
   if (!['user', 'data'].includes(s.root)) fail(`${s.id}: root '${s.root}' is neither user nor data`);

@@ -1,5 +1,4 @@
 # ChaseBug
-- **kinds:** coding
 
 Chase a fault to its cause and fix the cause.
 

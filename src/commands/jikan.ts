@@ -1,3 +1,13 @@
+/**
+ * tejun-jikan — an Agent's door to its team's Cron jobs (JIKAN, src/jikan.ts).
+ *
+ *   tejun-jikan                                  the team's jobs
+ *   tejun-jikan add --when "<timing>" [--to lead|<session>] <request...>
+ *   tejun-jikan pause|resume|now|remove <id>      now = due at the next tick
+ *   tejun-jikan when "<timing>"                  the next three moments those words mean
+ *   --team <t> when this session is on several teams, or none. Exit 2 = bad arguments or no
+ *   team, 3 = refused (the line says why). The logic is src/jikan.ts; this is the wrapper.
+ */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { addJob, listJobs, nextRun, parseWhen, removeJob, setJob } from '../jikan.js';
@@ -8,6 +18,7 @@ const USAGE = `usage: tejun-jikan [--team t]
        tejun-jikan when "<timing>"
 timing: once 2026-09-04 08:00 · daily 08:00 · weekdays 08:00 · weekly mon 08:00 · monthly 1 09:00 · hourly · every 30m · 0 8 * * 1-5`;
 
+/** This session's name and teams, from its own pane — the wipeboard tool's rule. */
 async function whoami(): Promise<{ name: string; teams: string[] }> {
   const name = process.env.RONIN_SESSION ?? '';
   const pane = process.env.TMUX_PANE;

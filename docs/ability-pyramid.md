@@ -47,7 +47,7 @@ only that per-session README (`docs/session-boot.md`):
 
 | File | Static / generated | What it is |
 |---|---|---|
-| `ronin_catalogs/lexicons/professional_en.md` | static | the vocabulary — the same words meaning the same things |
+| `KOTOBA_GLOSSARY.md` | static | the vocabulary — the same words meaning the same things |
 | `SESSION_MACROS.md` | generated at each birth | the live `+macro:` roster from the resolved catalog, and the compile-first routing rule |
 
 Generated content exists because a checked-in list describes stock, not this machine, the

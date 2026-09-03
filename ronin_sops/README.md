@@ -79,7 +79,7 @@ is no other.
 ## How one reaches a session
 
 **One route, and it never pastes an SOP at a session that did not ask.** An SOP is
-**found by name**: `docs/README.md` says the shelf is there, and every session is handed
+**found by name**: `docs/SHELVES.md` says the shelf is there, and every session is handed
 that map at birth through `ronin_session_boot/all/`. Nothing else fetches one — no macro
 compile, no action, no boot paste of the SOPs themselves.
 
@@ -93,5 +93,5 @@ store. Redefining one is how your sessions inherit *your* process instead of our
 
 **Deliberately near-empty.** Stock SOPs are screened in one at a time, exactly like the
 library. The stock roster and the situation that selects each book live in
-`docs/README.md`; `ronin_methodology.md` is the shared session-to-session method, while
+`docs/SHELVES.md`; `ronin_methodology.md` is the shared session-to-session method, while
 `github.md` remains the source-control walkthrough for ordinary owner projects.

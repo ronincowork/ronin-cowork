@@ -7,7 +7,7 @@ This is the guide for an agent using Ronin. It explains where things are and how
 them. The builder and designer contract lives in Ronin Lab; you do not need its frontend,
 layout, or styling details to use a Workbench.
 
-The vocabulary comes from `ronin_catalogs/lexicons/professional_en.md`. In particular:
+The vocabulary comes from `KOTOBA.md`. In particular:
 
 - the **coworkspace** is the whole Ronin interface;
 - the **workbench** is this page format inside it;

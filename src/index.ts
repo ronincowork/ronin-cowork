@@ -52,7 +52,9 @@ import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
-import { resumePromotionRestarts } from './promotion/promote.js';
+// THE ASSEMBLER BLOCK — the one place in core a service is named (check-kyokai's
+// exception, and on split day this block becomes discovery over the installed-services
+// store; docs/connector-contract.md is the contract, sockets-contract.ts its shape).
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure } from './sockets.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 
@@ -67,6 +69,15 @@ const app = express();
 app.use(express.json());
 const cliToken = randomBytes(32).toString('base64url');
 
+// --- optional HTTP Basic auth (gates everything, including the websocket) ---
+/**
+ * Constant-time string equality.
+ *
+ * `timingSafeEqual` throws on a length mismatch, so comparing the raw strings would
+ * leak the secret's LENGTH through that early throw — the one thing a plain `===`
+ * also gave away. Hashing both sides first makes every comparison the same 32 bytes,
+ * so neither the length nor the position of the first wrong character is observable.
+ */
 function sameSecret(a: string, b: string): boolean {
   const ha = createHash('sha256').update(a).digest();
   const hb = createHash('sha256').update(b).digest();
@@ -80,11 +91,21 @@ function checkBasic(header?: string): boolean {
   const i = decoded.indexOf(':');
   const u = decoded.slice(0, i);
   const p = decoded.slice(i + 1);
+  // Both compares always run: `&&` would short-circuit on a wrong username and answer
+  // faster than it does for a right one, which is the leak this function exists to close.
   const okUser = sameSecret(u, config.user);
   const okPass = sameSecret(p, config.pass);
   return okUser && okPass;
 }
 
+/**
+ * The one authorization question, for HTTP and the websocket upgrade alike.
+ *
+ * Either door satisfies it: Basic (GRID_USER/GRID_PASS — scripts, tools, the old way)
+ * or the login cookie (`ronin-passwd` + /login — the owner's browser). With NEITHER
+ * configured everything is open, exactly as before, and `assertBindIsSafe` is what
+ * keeps that state loopback/tailnet-only.
+ */
 function checkAuth(headers: { authorization?: string; cookie?: string }): boolean {
   if (headers.authorization?.startsWith('Bearer ') && sameSecret(headers.authorization.slice(7), cliToken)) return true;
   if (!authEnabled && !passwordAuthEnabled()) return true;
@@ -93,6 +114,23 @@ function checkAuth(headers: { authorization?: string; cookie?: string }): boolea
   return !!rec && checkToken(rec.secret, cookieToken(headers.cookie));
 }
 
+/**
+ * Mint the session cookie. ONE definition, because there are now three doors that end
+ * here — password, passkey and recovery code — and three copies of a cookie's flags is
+ * three chances for one of them to forget `httpOnly`.
+ *
+ * No `secure: true`, deliberately: this same server is reached over plain HTTP on the
+ * tailnet IP as well as HTTPS through `tailscale serve`, and a Secure cookie would make
+ * the HTTP address impossible to log into. The tailnet is the wall (src/machine-settings.ts);
+ * the flag would be theatre there and a lockout here.
+ *
+ * Returns FALSE when there is no password record to sign with, and callers must respect
+ * that rather than assume it (2026-08-17): `ronin-passwd clear` can remove the record
+ * while registered passkeys remain in machine_settings.json, and the first version of this returned
+ * void — so a passkey login answered `{ok:true}`, set no cookie, and bounced the owner
+ * straight back to /login with nothing to explain it. A door that reports success and
+ * does not open is worse than one that refuses.
+ */
 function issueSession(res: express.Response): boolean {
   const rec = authRecord();
   if (!rec) return false;
@@ -105,12 +143,15 @@ function issueSession(res: express.Response): boolean {
   return true;
 }
 
+// --- the login door (the only routes ahead of the gate) ---
 app.get('/login', (_req, res) => res.sendFile(path.join(PUBLIC, 'login.html')));
 registerPasskeyLogin(app, issueSession); // /api/passkey/{options,login,recover} — src/routes/passkey-api.ts
 app.post('/api/login', async (req, res) => {
   const rec = authRecord();
   if (!rec) return res.status(404).json({ error: 'No password is set on this install — see bin/ronin-passwd.' });
   const addr = req.socket.remoteAddress ?? '?';
+  // Five failures a minute, then a minute in the corner: scrypt is the wall, this
+  // keeps the log legible and a guessing loop pointless.
   if (!loginAllowed(addr)) return res.status(429).json({ error: 'Too many attempts — wait a minute.' });
   const pw = typeof req.body?.password === 'string' ? req.body.password : '';
   if (!(await verifyRecord(rec, pw))) {
@@ -126,10 +167,19 @@ app.post('/api/logout', (_req, res) => {
   res.json({ ok: true });
 });
 
+// THE HOUSE MARK, AHEAD OF THE GATE. The login page is the first thing an arrival sees,
+// and a favicon request from it would otherwise be answered with a redirect BACK to the
+// login page — HTML where an image was asked for, so the one page that most needs to look
+// like somewhere wears a blank tab. `public/brand/` holds identity artwork and nothing
+// else; a logo is not a secret and the gate gives up nothing by passing it. Deliberately
+// NOT wearing noCacheClient — that exists because iOS served a stale APP, and an icon is
+// the one asset where the browser holding on to it is the desired behaviour.
 app.use('/brand', express.static(path.join(PUBLIC, 'brand')));
 
 app.use((req, res, next) => {
   if (checkAuth(req.headers)) return next();
+  // A person in a browser gets the login page, not a bare 401 — but only when there
+  // IS a login page to give (a Basic-only install keeps the challenge it always had).
   if (passwordAuthEnabled() && req.method === 'GET' && req.accepts(['json', 'html']) === 'html') {
     return res.redirect('/login');
   }
@@ -137,16 +187,53 @@ app.use((req, res, next) => {
   res.status(401).send('Authentication required.');
 });
 
+// --- vendored browser assets (served straight from node_modules, no build step) ---
 app.get('/vendor/xterm.css', (_req, res) => res.sendFile(path.join(NM, '@xterm/xterm/css/xterm.css')));
 app.get('/vendor/xterm.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/xterm/lib/xterm.js')));
 app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/addon-fit/lib/addon-fit.js')));
 
+// cowork_setup is a first-class companion surface, not a mode smuggled into the
+// workspace URL. It runs the same client because both surfaces share the live APIs.
 app.get('/cowork-setup', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
 
+/**
+ * NEVER LET A BROWSER RUN A STALE CLIENT.
+ *
+ * `public/` is served straight off the working tree, so a deploy changes the client the
+ * moment the file changes — but only for a browser that bothers to ask. Safari (iOS
+ * especially) will happily reuse a cached `app.js` for a long time, and the instant
+ * client and server disagree about the wire protocol that stale copy is not merely old,
+ * it is BROKEN: it calls methods the new client removed, or ignores messages the new
+ * server sends, and the tile goes blank with nothing in the UI to say why.
+ *
+ * That is exactly how one deploy took every pane down and how the rollback failed to
+ * bring them back. `no-cache` does NOT mean "do not store" — the browser still keeps the
+ * file and still gets a 304 when nothing has changed. It means "ask first", which is the
+ * only correct answer for an app that must stay in lockstep with its server.
+ */
 const noCacheClient = (res: express.Response, filePath: string) => {
   if (/\.(?:html|js|css)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
 };
 
+/**
+ * STAGING — see a candidate client BEFORE it is the only one you have.
+ *
+ * On 2026-08-08 a change went straight to live twice, and the second time the UI it
+ * replaced was the only way to look at anything. The lesson was not "test more", it was
+ * that there was nowhere to LOOK. `/staging/` is that somewhere: a second copy of the
+ * client, served by this same server against the same tmux sessions, so a candidate can
+ * be opened in one tab while the working UI stays untouched in another.
+ *
+ * It is the client only — same API, same /pty and /events sockets (the client asks for
+ * those by absolute path, so a staged client drives the live server exactly as the real
+ * one does). Nothing here forks the backend.
+ *
+ *   npm run stage                      # copy public/ -> public-staging/
+ *   open  https://<host>:8443/staging/ # look at it
+ *   node scripts/smoke-ui.mjs https://<host>:8443/staging/   # gate it
+ *
+ * Absent directory = feature simply off, so a fresh clone serves nothing extra.
+ */
 const STAGING = process.env.RONIN_STAGING_DIR ?? path.join(ROOT, 'public-staging');
 if (fs.existsSync(STAGING)) {
   app.use('/staging', express.static(STAGING, { setHeaders: noCacheClient }));
@@ -155,6 +242,8 @@ if (fs.existsSync(STAGING)) {
 
 app.use(express.static(PUBLIC, { setHeaders: noCacheClient }));
 
+// --- REST API ---
+// iOS Safari caches ETag-only fetch responses and serves them stale; API data must never cache.
 app.use('/api', (_req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
@@ -164,6 +253,7 @@ app.get('/api/health', (_req, res) =>
   res.json({
     ok: true,
     auth: authEnabled,
+    // The client's ⚙ System pane shows Log out only when a login actually exists.
     login: passwordAuthEnabled(),
     transcribe: Boolean(config.scribeUrl),
   }),
@@ -186,16 +276,42 @@ registerInstalled(app); // /api/installed — what is on this machine: installed
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
+// A box being born says so, ONCE, and only when machine_settings.json does not exist yet. Absence of
+// the key means an install older than the key, which must stay quiet — src/machine-settings.ts.
 void stampFreshInstall();
 
+// THE INITIAL CAMPAIGN — seeded once, from the campaign name, description and desk_profile
+// this install already had. Idempotent by existence: a box with any machine settings campaign record,
+// archived ones included, has already migrated and this touches nothing. Best-effort like
+// the stamp above — a store we cannot write is a different failure, and throwing here would
+// cost the whole boot — src/campaigns.ts.
+// THE SCOPE MIGRATION runs behind the seed and in the same spirit: additive, idempotent,
+// and only ever stamping a record that carries no Campaign. It re-homes unmarked
+// team_rosters under the initial Campaign, marks project_roots and saved templates, and
+// publishes the id onto every LIVE Agent with no restart — src/campaign-scope.ts.
 void ensureInitialCampaign()
   .then(() => migrateCampaignScope())
   .catch(() => {});
 
+// Services register, then their routes mount — AFTER core's, which is safe because
+// every service path (/api/tomodachi/*, /api/transcribe, /api/koshi*) is disjoint
+// from every core path; nothing shadows, nothing falls through differently.
+/**
+ * THE ASSEMBLER IS DISCOVERY (the connector's last leg, per docs/connector-contract.md
+ * § Wiring): scan src/services/ at boot, import each service's register entry, call
+ * it. An empty or absent directory IS the free build — absence is never an error.
+ * Installing services is putting them there and restarting (docs/release.md); no
+ * service is ever named in core, so check-kyokai's line holds with nothing to except.
+ * A service that fails to LOAD is logged and skipped, per the contract's boot rule
+ * (a throw is logged, never fatal) — a broken add-on must not take down the grid.
+ */
 const services: ServiceRegistration[] = [];
 const SERVICES_DIR = path.join(__dirname, 'services');
 if (fs.existsSync(SERVICES_DIR)) {
   for (const dir of fs.readdirSync(SERVICES_DIR).sort()) {
+    // A shipped services archive carries compiled register.js (the owner's ruling:
+    // the archive delivers services, never source); a dev tree carries register.ts.
+    // tsx runs both, and .js wins when both exist — an install is its shipped form.
     const entry = ['register.js', 'register.ts']
       .map((f) => path.join(SERVICES_DIR, dir, f))
       .find((p) => fs.existsSync(p));
@@ -206,6 +322,8 @@ if (fs.existsSync(SERVICES_DIR)) {
       services.push({ name: typeof mod.name === 'string' ? mod.name : dir, register: mod.register });
     } catch (e) {
       console.error(`[services] ${dir} failed to load and is OFF: ${(e as Error).message}`);
+      // Logged AND recorded: the activation watcher asks whether the install actually
+      // delivered, and a console line cannot be asked.
       noteServiceFailure(dir, (e as Error).message);
     }
   }
@@ -216,7 +334,13 @@ for (const s of services) {
 }
 mountServiceRoutes(app);
 
+// AFTER the assembler, never before: an install that finished by restarting us is waiting
+// on a verdict, and the roster just built above is the evidence for it.
 void resumeInstallWatch();
+
+
+
+
 
 registerSessions(app); // per-session: kill/harakiri, meta, dials, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
@@ -224,6 +348,29 @@ registerMessages(app); // /api/messages* — durable inbound session delivery
 registerCli(app); // /api/cli/:tool — command-line faces of operator verbs
 startMessageQueue();
 
+
+/**
+ * MDEDIT — read and write ONE file, by path. The ▧ Docs tab is the only caller.
+ *
+ * **There is no allowlist, no realpath containment and no extension check, and that is the
+ * owner's ruling, not an oversight:** *"If someone can get to the point where they're
+ * viewing that file, they can write it. There's only one user and agents, and the agents
+ * have full access anyway."* Ronin binds to the tailnet and every agent on the box already
+ * has a shell, so a path filter here would guard nothing while costing a rule to maintain.
+ *
+ * No mtime precondition either. Whole-file write, last write wins. Two people editing one
+ * doc at the same moment lose a paragraph, and retyping a paragraph is a cheaper failure
+ * than another moving part — the same KISS ruling.
+ *
+ * THE BODY IS text/plain, NOT JSON, and that is load-bearing: `app.use(express.json())`
+ * runs on every request with a 100kb default, so a JSON save would 413 on a large document
+ * before reaching this handler. A non-JSON content-type makes the global parser skip the
+ * body entirely and leaves the limit to the parser below. It also spares us escaping an
+ * entire document to post it.
+ *
+ * See docs/mdedit.md. The LIST of files is TEGAMI's (services); opening one is not a
+ * services concern at all, which is why these two routes are plain cowork.
+ */
 app.get('/api/file', async (req, res) => {
   const file = String(req.query.path ?? '');
   if (!file.startsWith('/')) return res.status(400).json({ error: 'An absolute path is required.' });
@@ -232,6 +379,8 @@ app.get('/api/file', async (req, res) => {
     res.json({ path: file, text });
   } catch (e) {
     const code = (e as NodeJS.ErrnoException)?.code;
+    // 404 rather than an empty editor: a doc that was renamed out from under the list must
+    // say so, or the owner types into a buffer that will be saved to a path they did not mean.
     if (code === 'ENOENT' || code === 'EISDIR') return res.status(404).json({ error: 'No such file.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
   }
@@ -242,6 +391,9 @@ app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, re
   if (!file.startsWith('/')) return res.status(400).json({ error: 'An absolute path is required.' });
   const text = typeof req.body === 'string' ? req.body : '';
   try {
+    // Refuse to CREATE. Every path here came off a session's doc list, so a path that does
+    // not exist means the file moved while the tab was open — and writing it back would
+    // silently resurrect a stale copy at the old name instead of saving the edit.
     await fs.promises.access(file);
     await fs.promises.writeFile(file, text, 'utf8');
     res.json({ ok: true, bytes: Buffer.byteLength(text) });
@@ -252,6 +404,18 @@ app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, re
   }
 });
 
+/**
+ * THE FILE ITSELF, AS THE BROWSER WOULD RENDER IT (owner, 2026-08-26: *"i cant view an html
+ * in [the docs tab] … if we can have a mini viewer in the doc tab that would be cool. and
+ * then have a open into browser tab button"*). `/api/file` hands back TEXT for the editor;
+ * this hands back the file with its own content-type, so an `.html` a session listed can
+ * sit in an iframe inside the ▧ Docs pane, or open in a tab of its own from the ↗ button.
+ *
+ * PATH-SHAPED, NOT A QUERY: `/raw/<abs path>/page.html` rather than `/raw?path=`, so a page's
+ * relative `<img src="pic.png">` resolves to `/raw/<abs path>/pic.png` and comes through the
+ * same door. Same absolute-path rule, same "no filter" ruling as `/api/file` above — the
+ * browser is on the tailnet with the owner's cookie, and every agent already has the shell.
+ */
 app.get('/raw/*', (req, res) => {
   const file = '/' + String((req.params as Record<string, string>)[0] ?? '');
   res.sendFile(file, { dotfiles: 'allow', headers: { 'Cache-Control': 'no-store' } }, (e) => {
@@ -262,7 +426,12 @@ app.get('/raw/*', (req, res) => {
   });
 });
 
+// --- HTTP + WebSocket server ---
 const server = createServer(app);
+// A tape-fed tile opens with its whole reconstructed history — a couple of megabytes of
+// plain text, which is exactly the payload a phone on a weak connection least wants to
+// wait for. Terminal text compresses roughly tenfold, so this is the cheapest large win
+// available. Locked tiles carry small frames and are unaffected either way.
 const wss = new WebSocketServer({
   noServer: true,
   perMessageDeflate: {
@@ -272,11 +441,14 @@ const wss = new WebSocketServer({
 });
 
 server.on('upgrade', (req, socket, head) => {
+  // Same one question as HTTP — the browser's socket carries the login cookie.
   if (!checkAuth(req.headers)) {
     socket.write('HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm="tmux-ronin"\r\n\r\n');
     socket.destroy();
     return;
   }
+  // A page Ronin did not serve may not open a socket with the owner's ambient
+  // credentials — auth cannot tell that apart, only the Origin can. See src/ws/origin.ts.
   if (!originAllowed(req.headers.origin, req.headers.host)) {
     console.warn(`[tmux-ronin] refused a socket from origin ${req.headers.origin}`);
     socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
@@ -298,11 +470,16 @@ server.on('upgrade', (req, socket, head) => {
         ws.send(JSON.stringify({ t: 'error', m: String((e as Error)?.message ?? e) }));
         ws.close();
       } catch {
+        /* ignore */
       }
     });
   });
 });
 
+
+// FIRST, before any side effect: an unguarded door is not a thing to discover late.
+// This runs ahead of cleanupViewers() deliberately — a refused boot must not have
+// killed anyone's viewer sessions on its way out.
 async function startBox(): Promise<void> {
 try {
   assertBindIsSafe(passwordAuthEnabled());
@@ -314,14 +491,23 @@ try {
 await checkTmuxServerCgroup(); // loud if our own restart would kill every session
 const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
+// THE BOOT SOCKET: every service's timers, janitors and sinks start inside its own
+// register.ts boot hook — rireki's janitor+warmer+settler, counting's sink+catalog
+// feed, michi's letter sweep. What used to be wired line-by-line here is now each
+// service's own business; a hook that throws is logged and costs only its service.
 await startBootHooks();
 startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
+// The house board — the one board every install has, seeded once and then the user's.
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
+// The session max onto the same bus. The tmux server outlives Ronin, but a tmux server
+// restarted without us would lose the option — so it is republished on every boot, and
 void publishMax();
 void publishOwner();
 
 server.listen(config.port, config.bind, async () => {
+  // Publish only after the listener has actually bound. Publishing before listen allowed
+  // a failed or test operator to advertise an address that never became live.
   if (isBoxInstance) {
     try {
       await publishRoninUrl(`http://${config.bind}:${config.port}`, cliToken);
@@ -332,14 +518,25 @@ server.listen(config.port, config.bind, async () => {
   console.log(
     `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
   );
+  // Printed because a refused socket is otherwise a mystery from the browser end:
+  // the page simply does not connect, and this line is what the log can be read against.
   console.log(`[tmux-ronin] browser sockets accepted from: ${allowedOrigins().join(', ')}`);
-  void resumePromotionRestarts().catch((e) => console.error(`[tmux-ronin] promotion continuation failed: ${String((e as Error).message ?? e)}`));
 });
+
+// The letter sweep and the sanitiser's catalog feed moved into michi's and counting's
+// own boot hooks (src/services/*/register.ts) — started above with everything else.
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
+    // Service stop hooks FIRST — counting's flushSync (the last beads reach disk;
+    // losing them silently is the only sin) and rireki's stopJanitor live there now.
     stopBootHooks();
+    // Failsafe: a wedged tmux call must never hold the stop hostage — systemd
+    // was hitting its 90s final-sigterm timeout (ronin dead the whole time). Best-
+    // effort cleanup gets 2s; startup cleanup catches whatever this pass missed.
     setTimeout(() => process.exit(0), 2000).unref();
+    // Viewers only. Recorders (Faucet B) are tmux's, not ours — they keep running
+    // while Ronin is stopped, which is the entire point of the applet.
     void Promise.allSettled([cleanupViewers()]).finally(() => process.exit(0));
   });
 }

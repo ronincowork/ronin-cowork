@@ -1,8 +1,20 @@
+/**
+ * THE BIRTH ARGUMENT VECTOR — the `tmux new-session` argv, pure and on its own so it can
+ * be asserted without a live tmux. The forms in `tmux.ts` are the dangerous strings in
+ * this tree (see that module's header); an argv exercised only through a real server is
+ * an argv nobody checks, and this one carries a fix that was invisible for exactly that
+ * reason.
+ */
 export type Control = 'user' | 'read' | 'write';
 
+/** tmux user option holding a session's control dial (see ronin_catalogs/ACTIONS.md control-check). */
 export const CONTROL_OPT = '@ronin-control';
 export const SESSION_KEY_OPT = '@ronin-key';
 
+/**
+ * `env` delivers values to the initial process. The `-e` is kept as well, for
+ * panes a hand opens later in the same session.
+ */
 export function newSessionArgs(
   name: string,
   opts: {
@@ -10,6 +22,7 @@ export function newSessionArgs(
     env?: Readonly<Record<string, string>>;
     argv?: readonly string[];
     control?: Control;
+    /** Stable per-session data key, stamped in the same tmux transaction as birth. */
     key?: string;
   } = {},
 ): string[] {

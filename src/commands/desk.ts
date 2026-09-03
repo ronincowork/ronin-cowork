@@ -1,3 +1,19 @@
+/**
+ * desk-cli — `tejun-desk`, the one door a session has onto its desks.
+ *
+ * WHY TYPESCRIPT: the same arrangement as `tejun-wipeboard` → `wipeboard-cli.ts`. The
+ * logic — registry, candidates, compare-and-swap, receipts, adoption — is `src/desks/`,
+ * covered by the unit floor; a bash re-implementation would be a second copy free to
+ * drift. The bash wrapper (`ronin_bin/tejun-desk`) only finds the tree and execs this.
+ *
+ * Every verb is a one-line verdict first, detail after; exit codes agents branch on:
+ *   0 done · 2 bad arguments · 3 no session / no desk · 4 REFUSED · 5 could not run git
+ *
+ * The session is whoever is typing (`TMUX_PANE`), or `--session`; `RONIN_SESSION` and
+ * `RONIN_TEAMS` are the test seams so the unit floor never shells tmux. The repo defaults
+ * to this session's desks — one repo, no argument needed; several, `--assignment`
+ * (hand-in) or a repo name.
+ */
 import { listSessions } from '../tmux.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from '../desks/registry.js';
 import { closeDesk, discardDesk, openDesk, parkedDesks, recoverDesk, syncDesk } from '../desks/desk.js';
@@ -26,6 +42,7 @@ async function whoami(): Promise<string> {
       if (id === pane && name && !name.startsWith('grid_')) return name;
     }
   } catch {
+    /* no server */
   }
   return '';
 }
@@ -94,6 +111,7 @@ function receiptLine(r: HandInReceipt): string {
   return `${r.at}  ${r.result.toUpperCase().padEnd(8)}  ${r.repo}:${r.desk}  ${r.source_tip.slice(0, 10)} onto ${r.expected_old.slice(0, 10)}  ${tail}  [${r.id}]`;
 }
 
+/** This session's desks, narrowed to one repo when named. */
 async function mine(session: string, repo: string): Promise<DeskStatus[]> {
   const all = await listDesks({ session, ...(repo ? { repo } : {}) });
   return all.filter((d) => d.state === 'open');
@@ -151,6 +169,10 @@ async function main(): Promise<void> {
           out(`${receipt.result.toUpperCase()} ${deskId(d)} → ${d.line}${receipt.result === 'accepted' ? ` now ${receipt.line_sha.slice(0, 10)}` : ''}${receipt.reason ? ` — ${receipt.reason}` : ''}${receipt.conflict_files.length ? ` — files: ${receipt.conflict_files.join(', ')}` : ''}  [${receipt.id}]`);
           for (const n of notices) if (n.kind !== 'adopted' || n.desk === d.branch) out(noticeLine(n));
           if (receipt.result !== 'accepted') worst = 4;
+          // The lead is told, dial or no dial: review and promote is its primary job
+          // (owner law 2026-08-28; src/desks/lead.ts). Accepted → "promote when coherent";
+          // a conflict → "adjudicate". Anything else (refused: nothing ahead, dirty
+          // funnel) is the session's own to fix and does not reach the lead.
           const team = teamOfLine(d.line);
           const outcome = receipt.result === 'accepted' ? 'accepted' : receipt.conflict_files.length ? 'conflict' : null;
           if (team && outcome) {
