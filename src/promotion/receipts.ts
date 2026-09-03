@@ -1,9 +1,53 @@
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../resources.js';
 import type { ChangeSetReceipt, ChangeSetRepo, ChangeSetState } from '../desks/schema.js';
 
 export const PROMOTION_LEDGER_DIR = (): string => storeDir('promotion_ledger');
+const LOCK_NAME = '.box-promotion-lock';
+export const PROMOTION_IN_FLIGHT_MS = 20 * 60_000;
+
+export interface PromotionLock { id: string; team: string; at: string }
+
+export async function acquirePromotionLock(lock: PromotionLock, dir = PROMOTION_LEDGER_DIR(), log: (line: string) => void = () => undefined, staleMs = PROMOTION_IN_FLIGHT_MS): Promise<void> {
+  await mkdir(dir, { recursive: true });
+  const file = path.join(dir, LOCK_NAME);
+  let announced = '';
+  for (;;) {
+    try {
+      const handle = await open(file, 'wx');
+      await handle.writeFile(JSON.stringify(lock) + '\n');
+      await handle.close();
+      return;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+    }
+    let held: PromotionLock | null = null;
+    try { held = JSON.parse(await readFile(file, 'utf8')) as PromotionLock; } catch { /* retried below */ }
+    if (held?.id === lock.id) return;
+    const age = held ? Date.now() - Date.parse(held.at) : staleMs + 1;
+    if (!held || !Number.isFinite(age) || age > staleMs) {
+      log(`reclaiming stale promotion lock${held ? `: ${held.team}'s ${held.id} exceeded the in-flight window` : ': unreadable owner'}`);
+      await unlink(file).catch(() => undefined);
+      continue;
+    }
+    const receipt = await readReceipt(held.id, dir);
+    const state = receipt?.state ?? 'preparing';
+    const notice = `waiting: ${held.team}'s ${held.id} is ${state}`;
+    if (notice !== announced) { log(notice); announced = notice; }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
+export async function releasePromotionLock(id: string, dir = PROMOTION_LEDGER_DIR()): Promise<void> {
+  const file = path.join(dir, LOCK_NAME);
+  try {
+    const held = JSON.parse(await readFile(file, 'utf8')) as PromotionLock;
+    if (held.id === id) await unlink(file);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+  }
+}
 
 export type PromotionState =
   | 'preparing'   // candidates being built; nothing proved, nothing moved
@@ -145,6 +189,7 @@ export function newReceiptId(team: string, kind: PromotionReceipt['kind']): stri
 }
 
 export function newReceipt(input: {
+  id?: string;
   team: string;
   kind?: PromotionReceipt['kind'];
   repos: RepoCandidate[];
@@ -154,7 +199,7 @@ export function newReceipt(input: {
   const at = now();
   const kind = input.kind ?? 'team_promotion';
   return {
-    id: newReceiptId(input.team, kind),
+    id: input.id ?? newReceiptId(input.team, kind),
     kind,
     team: input.team,
     at,

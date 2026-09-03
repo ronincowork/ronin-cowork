@@ -2,7 +2,7 @@ import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
 import {
-  advanceState, anyAdvanced, blockingReceipt, lastGoodPromotion, listReceipts, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
+  acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
   type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate,
 } from './receipts.js';
 
@@ -51,14 +51,25 @@ export interface PromoteOutcome {
 const noop = (): void => undefined;
 
 export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
+  const ledger = o.ledgerDir ?? PROMOTION_LEDGER_DIR();
+  const log = o.log ?? noop;
+  const receiptId = newReceiptId(o.team, o.kind ?? 'team_promotion');
+  const lockId = o.resuming ?? o.revert_of ?? receiptId;
+  await acquirePromotionLock({ id: lockId, team: o.team, at: new Date().toISOString() }, ledger, log);
+  let keepLock = false;
+  try {
+    const outcome = await promoteTeamLocked(o, receiptId);
+    keepLock = outcome.receipt?.state === 'restarting';
+    return outcome;
+  } finally {
+    if (!keepLock) await releasePromotionLock(lockId, ledger);
+  }
+}
+
+async function promoteTeamLocked(o: PromoteOptions, receiptId: string): Promise<PromoteOutcome> {
   const fx = o.effects ?? realEffects;
   const log = o.log ?? noop;
   const ledger = o.ledgerDir ?? PROMOTION_LEDGER_DIR();
-
-  const blocker = await blockingReceipt(o.team, ledger);
-  if (blocker && blocker.id !== o.resuming) {
-    log(`  warning: promotion ${blocker.id} is ${blocker.state}; starting another promotion anyway.`);
-  }
   log(`→ preparing candidates for team ${o.team}`);
   const prepared: { c: RepoCandidate; cdir?: string; nothing: boolean }[] = [];
   const lastGood = await lastGoodPromotion(o.team, ledger);
@@ -73,7 +84,7 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
   const active = prepared.filter((p) => !p.nothing && !p.c.refused);
   if (!active.length) return { ok: true, receipt: null, nothing: true, message: 'nothing to promote — every line is already in its target' };
 
-  let r = newReceipt({ team: o.team, kind: o.kind, repos: active.map((p) => p.c), by: o.by, revert_of: o.revert_of });
+  let r = newReceipt({ id: receiptId, team: o.team, kind: o.kind, repos: active.map((p) => p.c), by: o.by, revert_of: o.revert_of });
 
   r = advanceState(r, 'proving');
   if (!o.dryRun) await writeReceipt(r, ledger);
@@ -126,12 +137,14 @@ export async function finishPromotionRestart(
   if (health.passed) {
     r = advanceState(r, 'complete');
     await writeReceipt(r, ledger);
+    await releasePromotionLock(r.revert_of ?? r.id, ledger);
     return { ok: true, receipt: r, nothing: false, message: `complete — ${r.repos.map((x) => `${x.repo} ${x.target}@${x.candidate.slice(0, 7)}`).join(', ')}; the app is up` };
   }
 
   if (r.kind === 'team_revert') {
     r = advanceState(r, 'unhealthy');
     await writeReceipt(r, ledger);
+    await releasePromotionLock(r.revert_of ?? r.id, ledger);
     await fx.notify(primary, r.team, `from promotion: REVERT ${r.id} restarted but health FAILED — ${failedNames(health)}. No further automatic action; the lead decides.`);
     return { ok: false, receipt: r, nothing: false, message: `revert landed but health still fails: ${failedNames(health)}` };
   }
@@ -141,11 +154,13 @@ export async function finishPromotionRestart(
     r = advanceState(r, 'reverted');
     r.reverted_by = rev.receipt.id;
     await writeReceipt(r, ledger);
+    await releasePromotionLock(r.id, ledger);
     await fx.notify(primary, r.team, `from promotion: ${r.id} was REVERTED — health failed after restart (${failedNames(health)}); revert ${rev.receipt.id} landed and the app is up. The range stays in the ledger, attributed: ${r.repos.map((x) => `${x.repo} ${x.expected_old.slice(0, 7)}..${x.candidate.slice(0, 7)}`).join(', ')}.`);
     return { ok: false, receipt: r, nothing: false, message: `health failed (${failedNames(health)}); reverted by ${rev.receipt.id}` };
   }
   r = advanceState(r, 'unhealthy');
   await writeReceipt(r, ledger);
+  await releasePromotionLock(r.id, ledger);
   await fx.notify(primary, r.team, `from promotion: ${r.id} is UNHEALTHY — health failed after restart (${failedNames(health)}) and the revert did not land: ${rev.message}. The lead decides.`);
   return { ok: false, receipt: r, nothing: false, message: `health failed and the revert did not land: ${rev.message}` };
 }

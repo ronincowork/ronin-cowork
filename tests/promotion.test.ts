@@ -146,6 +146,39 @@ test('resume accepts a restarting receipt and records restart health', async () 
   assert.equal(resumed.receipt?.health?.passed, true);
 });
 
+test('promotions from different teams wait for one box-wide restart and health lock', async () => {
+  const first = await fixture('box-lock-first', 1);
+  const second = await fixture('box-lock-second', 1);
+  const held = await P.promoteTeam({
+    team: 'alpha', repos: [spec('first', first.dir)], by: 'lead', effects: fakes(),
+    deferRestart: async () => undefined, ...quiet,
+  });
+  assert.equal(held.receipt?.state, 'restarting');
+  const lines: string[] = [];
+  let finished = false;
+  const waiting = P.promoteTeam({
+    team: 'beta', repos: [spec('second', second.dir)], by: 'lead', effects: fakes(), restart: false,
+    ledgerDir: LEDGER, log: (line) => lines.push(line),
+  }).then((out) => { finished = true; return out; });
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  assert.equal(finished, false);
+  assert(lines.includes(`waiting: alpha's ${held.receipt!.id} is restarting`));
+  await P.finishPromotionRestart(held.receipt!, { effects: fakes(), ledgerDir: LEDGER });
+  assert.equal((await waiting).ok, true);
+});
+
+test('a promotion reclaims a lock older than the in-flight window and says why', async () => {
+  const cw = await fixture('stale-box-lock', 1);
+  await R.acquirePromotionLock({ id: 'old-receipt', team: 'old-team', at: new Date(0).toISOString() }, LEDGER);
+  const lines: string[] = [];
+  const out = await P.promoteTeam({
+    team: 'new-team', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(), restart: false,
+    ledgerDir: LEDGER, log: (line) => lines.push(line),
+  });
+  assert.equal(out.ok, true);
+  assert(lines.some((line) => line === "reclaiming stale promotion lock: old-team's old-receipt exceeded the in-flight window"));
+});
+
 test('a conflict is contained in the candidate: refused at prepare, dev and its worktree untouched', async () => {
   const cw = await fixture('cowork', 1);
   // dev gains a commit that collides with hand-in 1.

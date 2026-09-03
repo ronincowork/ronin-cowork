@@ -3,6 +3,9 @@
 `bin/ronin-promote <team>` calls the operator's HTTP promotion surface, which admits a
 team line into its repository's working line, and prints the reply.
 Promotion coordinates candidate construction, reference movement, restart, and health.
+One box-wide lock covers that entire run across every team. A later promotion waits,
+names the active team, receipt, and state, then proceeds when health has been recorded.
+Locks older than the in-flight window are reclaimed with the reason shown.
 Repository verification is independent: run `npm run verify` when a repository verdict is
 needed.
 
