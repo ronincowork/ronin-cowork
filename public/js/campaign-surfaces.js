@@ -90,8 +90,8 @@ export function createCampaignIdentitySurface(campaign) {
 
 /**
  * SESSION ROLES — what a launch in this Campaign offers, read-only (owner, 2026-08-30).
- * Templates exist for Agents (the session_roles catalog) and not yet for Teams; this says
- * both plainly instead of offering a form for the one that does not exist. Grouped by
+ * The roles are what a session is DOING, grouped by role family as the launcher groups
+ * them; the templates proper (casts, loadouts, the library) are campaign-templates.js.
  * role family as the launcher groups them; a role in no family sits in the tail.
  */
 export function createSessionRolesSurface() {
@@ -104,7 +104,7 @@ export function createSessionRolesSurface() {
   let roles = [];
   const paint = () => {
     body.replaceChildren();
-    body.append(el('p', 'cv-note', t('campaign_view.roles_help', 'What a launch here offers an Agent to be. Templates for a whole Team do not exist yet.')));
+    body.append(el('p', 'cv-note', t('campaign_view.roles_help', 'What a launch here offers an Agent to be. Team casts and agent loadouts are on the Templates card.')));
     if (!roles.length) return surface.setState('empty', t('campaign_view.roles_none', 'No session roles on this install.'));
     surface.setState(null, '');
     const placed = new Set();

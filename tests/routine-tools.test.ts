@@ -12,6 +12,7 @@ import type { ResolvedRoutine } from '../src/routines.js';
 const exec = promisify(execFile);
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-routine-tools-'));
 process.env.RONIN_SESSION_COMMANDS_DIR = temp;
+process.env.RONIN_TOOLS_DIR = path.join(temp, 'own-tools');
 
 const routine = (name: string, enabled: boolean, tools: string[]): ResolvedRoutine => ({
   name, label: name, blurb: '', origin: 'stock', shadowed: false,
@@ -66,4 +67,15 @@ test('projected ronin_bin tools resolve the symlink and reach the repository', a
     const r = await run(args);
     assert.doesNotMatch(r.out, REACH_FAILURES, `${args.join(' ')}: ${r.out}`);
   }
+});
+
+test('a tool in the owner\'s tools store is projected by name, and shadows a shipped one', async () => {
+  await fs.mkdir(process.env.RONIN_TOOLS_DIR!, { recursive: true });
+  await fs.writeFile(path.join(process.env.RONIN_TOOLS_DIR!, 'tejun-review'), '#!/bin/sh\necho REVIEWED\n', { mode: 0o755 });
+  await fs.writeFile(path.join(process.env.RONIN_TOOLS_DIR!, 'tejun'), '#!/bin/sh\necho MINE\n', { mode: 0o755 });
+  const projected = await projectRoutineTools('owned', [routine('weekly_review', true, ['tejun-review', 'tejun', 'tejun-missing'])]);
+  assert.deepEqual(projected.delivered, ['shim/systemctl', 'shim/tmux', 'tejun', 'tejun-review']);
+  assert.deepEqual(projected.missing, ['tejun-missing']);
+  assert.equal(await fs.readlink(path.join(projected.dir, 'tejun-review')), path.join(process.env.RONIN_TOOLS_DIR!, 'tejun-review'));
+  assert.equal(await fs.readlink(path.join(projected.dir, 'tejun')), path.join(process.env.RONIN_TOOLS_DIR!, 'tejun'));
 });

@@ -91,3 +91,41 @@ to — its procedure is `ronin_sops/codebase_team.md`, and your own copy of that
 changes how it staffs. The listing is the directory (`ls
 ronin_catalogs/templates/teams "$(bin/ronin-store catalogs)/templates/teams"`), never
 a page like this one.
+
+## Bundles and the template library
+
+A template names its books and its Routines; it carries no copy of them, and on the
+shelf that is right. It is wrong for a download: a Dinner Party template is worthless on
+another install without the menu book it reads. So the one place copies are allowed is
+**in transit** — a **template bundle**, one JSON document (`ronin-bundle/1`) holding a team
+template, the agent templates beside it, the SOPs and ways they name, the Routines they
+turn on, and those Routines' macros, actions and tools. On install every copy lands in
+**your own stores** — catalogs, sops, ways, library, and a `tools` store for executables —
+where the ordinary readers find it exactly as they find anything you wrote by hand. Nothing
+a bundle installs touches the install itself; an upgrade never sees it.
+
+```text
+{ format: "ronin-bundle/1", name, label, art, blurb, kinds, version,
+  files:   [{ store: catalogs|sops|ways|library|tools, path, text }],   whole files
+  entries: [{ catalog: MACROS.md|ACTIONS.md|TOOLS.md, name, text }] }   entry-merged
+```
+
+**The template library** is the shelf of bundles on ronincowork.com
+(https://ronincowork.com/library/index.json, `ronin-library/1`), and the Campaign page's **Templates** card is the way in: *Check the
+library* reads the index — only when pressed, never on a timer — and pressing a bundle
+shows the **plan** before anything is written: each item, the shelf it lands on, and its
+outcome. Three rules an install obeys, all of them the house's already:
+
+- a copy identical to what ships is **skipped** — a shadow that changes nothing is an
+  upgrade-proof copy nobody asked for;
+- a file of yours is written over only by the second button, *Install, replacing my N*;
+- a tool never replaces one of Ronin's — a bundle may add a command, never take one.
+
+Every read of the library goes through the one allowlisted client (`src/activation/transport.ts`)
+and lands in the egress record like any other call. The index carries a `sha256` per bundle
+and the install refuses a document that does not match it.
+
+**Yours, outward.** A team card's *Download as a bundle* (or `bin/ronin-bundle pack <team>`)
+builds the same document from this install — your copies only, since what ships is on every
+install — for a library of your own or for the public one. The code is `src/bundles.ts`;
+the door is `src/routes/library-api.ts`; the surface is `public/js/campaign-templates.js`.

@@ -227,6 +227,14 @@ export const STORES: readonly Store[] = [
     when: 'first project_root included',
   },
   {
+    id: 'tools',
+    root: 'user',
+    rel: 'tools',
+    what: "the user's own agent tools — executables a template bundle installed; projected onto an Agent's PATH beside ronin_bin/ when a Routine names them",
+    createdBy: "cowork's `src/bundles.ts`",
+    when: 'first bundle carrying a tool installed',
+  },
+  {
     id: 'memory',
     root: 'user',
     rel: 'memory',

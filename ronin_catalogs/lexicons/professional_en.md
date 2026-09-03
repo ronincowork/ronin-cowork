@@ -266,7 +266,63 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.no_launch_table:** No launch table on this install.
 - **campaign_view.roles:** Session roles
 - **campaign_view.roles_summary:** What a launch here offers an Agent to be.
-- **campaign_view.roles_help:** What a launch here offers an Agent to be. Templates for a whole Team do not exist yet.
+- **campaign_view.roles_help:** What a launch here offers an Agent to be. Team casts and agent loadouts are on the Templates card.
+- **campaign_view.templates_summary:** Team casts, agent loadouts, and the library to download more from.
+- **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. Both shelves are plain files: the ones you save, and the ones a bundle installs, live in your own stores.
+- **campaign_view.templates_teams:** Teams — projects
+- **campaign_view.templates_agents:** Agents — people
+- **campaign_view.templates_none:** Nothing on this shelf.
+- **campaign_view.templates_yours:** yours
+- **campaign_view.templates_yours_over:** yours, replacing ours
+- **campaign_view.templates_shipped:** shipped
+- **campaign_view.templates_agents_n:** {n} agents
+- **campaign_view.templates_cast:** Cast
+- **campaign_view.templates_instructions:** Instructions
+- **campaign_view.templates_books:** Reads
+- **campaign_view.templates_download:** Download as a bundle
+- **campaign_view.templates_download_help:** This template, with your copies of the books and Routines it names, as one file you could put on a library.
+- **campaign_view.library:** Template library
+- **campaign_view.library_help:** Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read, as one download. Nothing is fetched until you press, and the plan is shown before anything is written.
+- **campaign_view.library_check:** Check the library
+- **campaign_view.library_checking:** Asking ronincowork.com for its library…
+- **campaign_view.library_source:** {n} bundles from {source}
+- **campaign_view.library_none:** The library lists no bundles yet.
+- **campaign_view.library_reading:** Reading {name} from the library…
+- **campaign_view.library_plan_help:** What installing this bundle writes into your stores, and what it leaves alone.
+- **campaign_view.library_plan_store:** Shelf
+- **campaign_view.library_plan_item:** Item
+- **campaign_view.library_plan_verdict:** Outcome
+- **campaign_view.library_executables:** This bundle installs {n} executable tools onto your Agents’ PATH. Read them before you rely on them.
+- **campaign_view.library_install:** Install
+- **campaign_view.library_install_n:** Install ({n})
+- **campaign_view.library_install_replace:** Install, replacing my {n}
+- **campaign_view.library_nothing_to_write:** Nothing new to install
+- **campaign_view.library_installing:** Installing…
+- **campaign_view.library_installed:** Installed {label}: {written} written · {skipped} left alone · {refused} refused.
+- **campaign_view.library_hold_team:** team
+- **campaign_view.library_hold_teams:** teams
+- **campaign_view.library_hold_agent:** agent
+- **campaign_view.library_hold_agents:** agents
+- **campaign_view.library_hold_routine:** Routine
+- **campaign_view.library_hold_routines:** Routines
+- **campaign_view.library_hold_sop:** SOP
+- **campaign_view.library_hold_sops:** SOPs
+- **campaign_view.library_hold_way:** way of working
+- **campaign_view.library_hold_ways:** ways of working
+- **campaign_view.library_hold_page:** reference page
+- **campaign_view.library_hold_pages:** reference pages
+- **campaign_view.library_hold_macro:** macro
+- **campaign_view.library_hold_macros:** macros
+- **campaign_view.library_hold_action:** action
+- **campaign_view.library_hold_actions:** actions
+- **campaign_view.library_hold_tool:** tool
+- **campaign_view.library_hold_tools:** tools
+- **campaign_view.verdict_new:** new — will be added
+- **campaign_view.verdict_shadows:** yours will replace the shipped one
+- **campaign_view.verdict_replaces:** you already have your own — kept unless you say replace
+- **campaign_view.verdict_same_shipped:** already shipped — skipped
+- **campaign_view.verdict_same_yours:** already yours — skipped
+- **campaign_view.verdict_refused:** refused — a bundle never replaces one of Ronin’s tools
 - **campaign_view.roles_none:** No session roles on this install.
 - **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
