@@ -1,16 +1,16 @@
 /**
  * SETTEI — the one read and the one write door.
  *
- * `GET /api/settei` hands back the whole record: what the owner set, what the box
- * observed, what follows from both, and the schema that declares it (src/settei.ts).
+ * `GET /api/machine-settings` hands back the whole record: what the owner set, what the box
+ * observed, what follows from both, and the schema that declares it (src/machine-settings.ts).
  * One call, because the tab's entire job is showing an install in one place and three
  * round trips would be three chances to render half of one.
  *
  * **THE WRITES ARE BY NAME, AND THAT IS THE SAFETY PROPERTY.** There is no
- * `PUT /api/settei` that takes a document. `ronin.json` carries `auth` — a scrypt record
+ * `PUT /api/machine-settings` that takes a document. `ronin.json` carries `auth` — a scrypt record
  * and the secret that signs session tokens — and `passkeys`; a route that accepted the
  * config and wrote it would let a browser post a new signing secret. So the one door,
- * `PUT /api/settei/:family`, accepts only the families named in FAMILY_WRITERS below —
+ * `PUT /api/machine-settings/:family`, accepts only the families named in FAMILY_WRITERS below —
  * each writer names the keys it may touch and ignores everything else in the body, and
  * each goes through `updateConfig`, which preserves every section the caller never
  * heard of. An unknown family is refused, never guessed at.
@@ -28,7 +28,7 @@
  * `writeOwner()` so the tmux bus copy republishes exactly as before.
  */
 import type express from 'express';
-import { readSettei } from '../settei.js';
+import { readMachineSettings } from '../machine-settings.js';
 import {
   completeSetup,
   writeWantedSection,
@@ -172,14 +172,14 @@ const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<
 
 };
 
-export function registerSettei(app: express.Express): void {
+export function registerMachineSettings(app: express.Express): void {
   /**
    * THE RECORD. Assembled per request and never cached: two of its three sections are
    * measurements, and a cached measurement is a stale one with no way to tell.
    */
-  app.get('/api/settei', async (_req, res) => {
+  app.get('/api/machine-settings', async (_req, res) => {
     try {
-      res.json(await readSettei());
+      res.json(await readMachineSettings());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
@@ -194,7 +194,7 @@ export function registerSettei(app: express.Express): void {
    * There is no route to SET pending — a box is stamped at birth, once, by
    * `stampFreshInstall()`, and nothing can re-arm it over HTTP.
    */
-  app.put('/api/settei/setup', async (_req, res) => {
+  app.put('/api/machine-settings/setup', async (_req, res) => {
     try {
       await completeSetup();
       res.json({ ok: true });
@@ -209,7 +209,7 @@ export function registerSettei(app: express.Express): void {
    * the heavy door on purpose: `main.js` routes on this answer and a failed read stays
    * quiet by design.
    */
-  app.get('/api/settei/setup', async (_req, res) => {
+  app.get('/api/machine-settings/setup', async (_req, res) => {
     try {
       const s = await readSetupSection();
       res.json({ pending: s.pending === true, completed_at: s.completed_at ?? null });
@@ -219,7 +219,7 @@ export function registerSettei(app: express.Express): void {
   });
 
   /** THE ONE WRITE DOOR. Every family the record owns saves through here. */
-  app.put('/api/settei/:family', async (req, res) => {
+  app.put('/api/machine-settings/:family', async (req, res) => {
     const family = String(req.params.family);
     const writer = FAMILY_WRITERS[family];
     if (!writer) {

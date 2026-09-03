@@ -2,11 +2,11 @@
 
 /* THE SCHEMA VOCABULARY — the interpreter both settei surfaces share.
  *
- * The record's `schema` block (src/settei.ts SETTEI_SCHEMA) declares every askable
+ * The record's `schema` block (src/machine-settings.ts MACHINE_SETTINGS_SCHEMA) declares every askable
  * leaf as data; this module knows how to READ that vocabulary — paths, seeds, option
  * sources, value shapes, the omission rule — and deliberately knows NO field. A field
  * name appearing in this file would be the second declaration the registry exists to
- * end. The renderers (js/cowork-setup.js, js/settei.js) own furniture and layout; this
+ * end. The renderers (js/cowork-setup.js, js/machine-settings.js) own furniture and layout; this
  * owns meaning.
  *
  * `ctx` is what a surface already fetched and chose: { record, home, modelOpts,

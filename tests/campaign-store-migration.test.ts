@@ -4,7 +4,7 @@
  * An install that predates Campaigns kept its one implicit body of work in `ronin.json` as
  * `campaign.{name,description}` with `desk.profile` beside it. The migration derives one
  * id from that name, seeds a `campaign_config` from those three values, and hands the
- * legacy SETTEI readers over to it — so `GET /api/settei` keeps serving the same
+ * legacy SETTEI readers over to it — so `GET /api/machine-settings` keeps serving the same
  * `set.campaign` and `set.desk` a client has always read, from a different home.
  *
  * The two properties worth a test each: NOTHING IS LOST (the seeded record says what
@@ -74,7 +74,7 @@ test('it is idempotent — safe on every boot, forever', async () => {
 });
 
 test('the legacy SETTEI readers answer exactly what they used to, from the new home', async () => {
-  // `GET /api/settei` builds set.campaign and set.desk from these two, and
+  // `GET /api/machine-settings` builds set.campaign and set.desk from these two, and
   // public/js/campaign.js reads them. The shapes are the contract; the home changed.
   assert.deepEqual(await readCampaignSection(), {
     name: 'Ice Cream Vending',

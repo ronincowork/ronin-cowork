@@ -31,19 +31,19 @@ process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');
 await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 await fs.mkdir(path.join(temp, 'catalogs'), { recursive: true });
 
-const { registerSettei } = await import('../src/routes/settei-api.js');
+const { registerMachineSettings } = await import('../src/routes/machine-settings-api.js');
 const { readAgentsSection } = await import('../src/user-config.js');
 
 const app = express();
 app.use(express.json());
-registerSettei(app);
+registerMachineSettings(app);
 const server: Server = createServer(app);
 await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
 /** One ⚙ row's save: the family body it lands, and nothing else — as toRequest builds it. */
 const save = (json: unknown) =>
-  fetch(`${base}/api/settei/agents`, {
+  fetch(`${base}/api/machine-settings/agents`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(json),

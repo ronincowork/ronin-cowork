@@ -300,8 +300,8 @@ export const writeMachineSection = (v: { name?: string; where?: string; monitor?
  * 2026-08-29. They describe a BODY OF WORK, and `ronin.json` is the record of a MACHINE —
  * so when a Campaign became a durable object of its own they moved to its store, and
  * `src/campaign-config.ts` is the one writer of both. Its `readCampaignSection` /
- * `readDeskSection` keep exactly the shapes that used to live here, so `src/settei.ts`,
- * `src/routes/settei-api.ts` and `src/desk-profiles.ts` changed an import and nothing else.
+ * `readDeskSection` keep exactly the shapes that used to live here, so `src/machine-settings.ts`,
+ * `src/routes/machine-settings-api.ts` and `src/desk-profiles.ts` changed an import and nothing else.
  *
  * The two old keys are still IN the file on an upgraded install and are read exactly once
  * more, by `ensureInitialCampaign()`, to seed the initial record — through the generic

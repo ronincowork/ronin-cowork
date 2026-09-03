@@ -36,7 +36,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config, authEnabled, tailnetIp } from './config.js';
-import { SETTEI_SCHEMA, providerModelFields, type ProviderModelField } from './settei-registry.js';
+import { MACHINE_SETTINGS_SCHEMA, providerModelFields, type ProviderModelField } from './machine-settings-schema.js';
 import { repositoryNeeds } from './repository-needs.js';
 import { secureUrl } from './passkey.js';
 import { listServices } from './sockets.js';
@@ -74,7 +74,7 @@ const TAILNET_IP = tailnetIp();
 /** One project as the record shows it. NO per-root model: there is ONE default for
  * new sessions (`agents.sessions.default`, the owner's ruling 2026-08-18) and a root
  * carries none — whatever columns the roots file still has, settei does not read them. */
-export interface SetteiProject {
+export interface MachineSettingsProject {
   name: string;
   dir: string;
   /** The one line a person picks a project from in a list. Already in the roots file. */
@@ -82,25 +82,25 @@ export interface SetteiProject {
 }
 
 /** What a job that needs a model is pointed at. `key_env` is a NAME, never a key. */
-export interface SetteiJob {
+export interface MachineSettingsJob {
   outlet: string;
   provider: string | null;
   model: string | null;
   key_env: string | null;
 }
 
-export interface SetteiRecord {
+export interface MachineSettingsRecord {
   set: Record<string, unknown>;
   observed: Record<string, unknown>;
   status: Record<string, unknown>;
   /** What a choice still needs, judged per read — met items do not exist. Every entry
-   * carries the choke (`met_by`, src/settei-registry.ts): what KIND of hand closes it.
+   * carries the choke (`met_by`, src/machine-settings-schema.ts): what KIND of hand closes it.
    * The list is served already partitioned that way — one read, and a surface renders
    * the three kinds by filtering, never by re-deciding what it is looking at. */
   needed: Array<{ leaf: string; needs: string; how: string; met_by: MetBy }>;
   /** The registry, plus one generated row per provider the launch table carries. */
-  schema: Omit<typeof SETTEI_SCHEMA, 'fields'>
-    & { fields: Array<(typeof SETTEI_SCHEMA)['fields'][number] | ProviderModelField> };
+  schema: Omit<typeof MACHINE_SETTINGS_SCHEMA, 'fields'>
+    & { fields: Array<(typeof MACHINE_SETTINGS_SCHEMA)['fields'][number] | ProviderModelField> };
 }
 
 /** The choke: what kind of hand closes a requirement. Declared per row in the registry,
@@ -312,7 +312,7 @@ async function readSet(): Promise<Record<string, unknown>> {
   const setup = await readSetupSection();
   const roots = await listProjectRoots();
 
-  const projects: SetteiProject[] = roots.map((r) => ({
+  const projects: MachineSettingsProject[] = roots.map((r) => ({
     name: r.name,
     dir: r.dir,
     remit: r.remit,
@@ -411,14 +411,14 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
 
   const tools = Object.fromEntries(
     await Promise.all(
-      SETTEI_SCHEMA.scans.tools.map(async (t) => [t, (await whichPath(t)) !== null] as const),
+      MACHINE_SETTINGS_SCHEMA.scans.tools.map(async (t) => [t, (await whichPath(t)) !== null] as const),
     ),
   );
 
   // PRESENCE ONLY. The variable's name is public; its value is not, and there is no
   // path from this record to one. The names come from the registry — a name worth
   // scanning is a name the registry mentions — plus what the typed jobs point at.
-  const keyNames = [...new Set([...SETTEI_SCHEMA.scans.keys, ...jobKeyNames])];
+  const keyNames = [...new Set([...MACHINE_SETTINGS_SCHEMA.scans.keys, ...jobKeyNames])];
   const keys = Object.fromEntries(keyNames.map((k) => [k, Boolean(process.env[k])]));
 
   const id = roninIdentity();
@@ -462,7 +462,7 @@ async function computeStatus(
   const setOwner = set.owner as Record<string, unknown>;
   const agentsSeen = observed.agents as Record<string, { installed: boolean; path: string | null }>;
   const keys = observed.keys as Record<string, boolean>;
-  const projects = set.projects as SetteiProject[];
+  const projects = set.projects as MachineSettingsProject[];
   const services = set.services as Record<string, unknown>;
   const servicesActivation = services.activation as PublicActivation;
   const max = (set.sessions as Record<string, number>).max;
@@ -511,7 +511,7 @@ async function computeStatus(
   };
   const dflt = sessionDefault.default;
 
-  const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, SetteiJob>;
+  const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, MachineSettingsJob>;
   const jobStatus = Object.fromEntries(
     Object.entries(jobs).map(([name, j]) => {
       const needs = j?.key_env;
@@ -637,8 +637,8 @@ function holds(
 function computeNeeded(
   set: Record<string, unknown>,
   observed: Record<string, unknown>,
-): SetteiRecord['needed'] {
-  const declared = SETTEI_SCHEMA.requires
+): MachineSettingsRecord['needed'] {
+  const declared = MACHINE_SETTINGS_SCHEMA.requires
     .filter((r) => holds(r.applies, set, observed) && !holds(r.met, set, observed))
     .map((r) => ({ leaf: r.leaf, needs: r.needs, how: r.how, met_by: r.met_by as MetBy }));
   // THE WANT LIST — the owner's own additions (⚙, 'add to needed'). A want IS a check
@@ -677,9 +677,9 @@ function computeNeeded(
 
 /** The whole record. One call, one answer, no writes — schema included, because the
  * schema of the object is part of the object and a renderer needs nothing else. */
-export async function readSettei(): Promise<SetteiRecord> {
+export async function readMachineSettings(): Promise<MachineSettingsRecord> {
   const set = await readSet();
-  const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, SetteiJob>;
+  const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, MachineSettingsJob>;
   const jobKeyNames = Object.values(jobs)
     .map((j) => j?.key_env)
     .filter((k): k is string => typeof k === 'string' && k.length > 0);
@@ -694,7 +694,7 @@ export async function readSettei(): Promise<SetteiRecord> {
     needed,
     // The registry plus one row per provider the launch table knows — generated because
     // providers are data on disk, not a list this house may hard-code.
-    schema: { ...SETTEI_SCHEMA, fields: [...SETTEI_SCHEMA.fields,
+    schema: { ...MACHINE_SETTINGS_SCHEMA, fields: [...MACHINE_SETTINGS_SCHEMA.fields,
       ...providerModelFields([...new Set((await listSessionLaunchSpecs()).map((s) => s.provider))])] },
   };
 }

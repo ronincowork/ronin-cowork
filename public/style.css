@@ -2613,7 +2613,7 @@ body {
   min-height: 0;
 }
 
-/* ---- ⚙ CONFIGURATION: the install record, in one room (js/settei.js).
+/* ---- ⚙ CONFIGURATION: the install record, in one room (js/machine-settings.js).
    Three kinds of row and they must not look alike: a `.st-field` is something you set,
    a `.st-obs` is what the box measured and has no control at all, and `.st-note` is
    what follows from the two. The difference is carried by weight and colour rather

@@ -69,7 +69,7 @@ const deriveId = (name) => text(name).toLowerCase().replace(/[^a-z0-9]+/g, '_').
  * Read-only, never written back, and never produced when the store itself answered.
  */
 async function synthesize() {
-  const r = await request('/api/settei');
+  const r = await request('/api/machine-settings');
   const campaign = r.ok ? r.data?.set?.campaign : null;
   const name = text(campaign?.name);
   return [shape({
@@ -146,12 +146,12 @@ export async function saveCampaign(id, fields) {
     return r;
   }
   if ('desk_profile' in fields) {
-    const r = await request('/api/settei/desk', { method: 'PUT', json: { profile: text(fields.desk_profile) } });
+    const r = await request('/api/machine-settings/desk', { method: 'PUT', json: { profile: text(fields.desk_profile) } });
     if (!r.ok) return r;
   }
   if ('title' in fields || 'description' in fields) {
     const now = campaignById(id) || {};
-    const r = await request('/api/settei/campaign', {
+    const r = await request('/api/machine-settings/campaign', {
       method: 'PUT',
       json: {
         name: 'title' in fields ? text(fields.title) : now.title,

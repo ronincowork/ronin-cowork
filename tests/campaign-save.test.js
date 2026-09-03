@@ -92,6 +92,6 @@ test('no Campaign API at all synthesizes one, and then writes SETTEI instead', a
   await saveCampaign('ronin', { title: 'Renamed' });
   // The record does not exist yet, so its fields go where they actually live today.
   const write = calls.find((c) => c.method === 'PUT');
-  assert.equal(write.url, '/api/settei/campaign');
+  assert.equal(write.url, '/api/machine-settings/campaign');
   assert.ok(!calls.some((c) => c.url.startsWith('/api/campaigns/')), 'never writes a record the store does not have');
 });

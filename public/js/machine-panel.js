@@ -96,7 +96,7 @@ export function buildMachinePanel() {
     title: t('machine.stop_title', 'Stop gathering machine readings and hide the gauge. Nothing was installed on the box, so there is nothing to undo — turn it back on whenever you like.'),
   });
   off.addEventListener('click', async () => {
-    const r = await request('/api/settei/machine', { method: 'PUT', body: { monitor: false } });
+    const r = await request('/api/machine-settings/machine', { method: 'PUT', body: { monitor: false } });
     msg.textContent = r && r.ok ? t('machine.stopped', 'Off. Reload to clear the gauge.') : t('machine.save_failed', 'Could not save that.');
   });
   row.append(refresh, off);

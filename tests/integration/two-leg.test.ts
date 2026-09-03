@@ -149,7 +149,7 @@ test('THE WALK: real Cowork modules take a real install from nothing to entitled
   const { request, poll } = await import('../../src/activation/flow.js');
   const { getClaimSecret, getEntitlementToken } = await import('../../src/activation/secrets.js');
   const { readState } = await import('../../src/activation/state.js');
-  const { readSettei } = await import('../../src/settei.js');
+  const { readMachineSettings } = await import('../../src/machine-settings.js');
 
   const requested = await request(EMAIL);
   assert.equal(requested.stage, 'awaiting_email');
@@ -181,7 +181,7 @@ test('THE WALK: real Cowork modules take a real install from nothing to entitled
 
   // SETTEI reads that same durable aggregate. It must not wait for a second browser PUT
   // or consult the retired manually written services fields in ronin.json.
-  const settei = await readSettei();
+  const settei = await readMachineSettings();
   const services = settei.set.services as {
     activation: { entitlement_id: string | null };
     entitlement?: unknown;

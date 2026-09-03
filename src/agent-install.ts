@@ -149,7 +149,7 @@ const sessionFor = (name: string): string => `install_${name}`;
  * `kind` is the registry's own verb, so the day the services bundle becomes mechanical it
  * is one branch here and no change at any caller. Today only `agent` is mechanical, and
  * anything else is refused out loud rather than silently dropped: `met_by` already said
- * which items belong here (src/settei-registry.ts), so an item arriving that does not is
+ * which items belong here (src/machine-settings-schema.ts), so an item arriving that does not is
  * worth saying.
  */
 export async function dispatchInstall(items: InstallItem[]): Promise<InstallStarted[]> {

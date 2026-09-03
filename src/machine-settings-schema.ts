@@ -1,10 +1,10 @@
 /**
  * THE SETTEI REGISTRY — pure data, served with every answer as `schema`.
  *
- * Split from src/settei.ts by the line ceiling and nothing else: this is still the
+ * Split from src/machine-settings.ts by the line ceiling and nothing else: this is still the
  * ONE declaration, the assembly still reads it, and no other file may know a field.
  * Nothing in this file executes — a value here is a datum a renderer interprets
- * through public/js/settei-schema.js, never a code path.
+ * through public/js/machine-settings-schema.js, never a code path.
  */
 
 /**
@@ -54,10 +54,10 @@
  * typed data and joins at read time. No other file may carry a list of these names.
  *
  * `families` maps a write family to its route — most through the one write door
- * (`PUT /api/settei/:family`); the exceptions say where the leaf actually lives (the
+ * (`PUT /api/machine-settings/:family`); the exceptions say where the leaf actually lives (the
  * cap's shared route with ⌂ Roster, the catalogs store's own POST).
  */
-export const SETTEI_SCHEMA = {
+export const MACHINE_SETTINGS_SCHEMA = {
   sections: [
     {
       id: 'campaign',
@@ -179,7 +179,7 @@ export const SETTEI_SCHEMA = {
     // NEW PROJECTS AND DESKS (owner, 2026-08-29) — what a project's RONIN_REPO says when
     // its root is added — is asked beside the Project roots on #/campaign since the SETTEI
     // audit (2026-08-30): a choice has one home. It still lands at `desks.new_project`
-    // through `PUT /api/settei/desks`; only the ⚙ row went.
+    // through `PUT /api/machine-settings/desks`; only the ⚙ row went.
     {
       // THE DESK PROFILE (R38): the owner's standing defaults for the surfaces they work
       // at — skin, lexicon, a new tile's RIREKI view, and the Team page's order. Asked
@@ -239,11 +239,11 @@ export const SETTEI_SCHEMA = {
   ],
 
   families: {
-    owner: { method: 'PUT', route: '/api/settei/owner' },
-    wanted: { method: 'PUT', route: '/api/settei/wanted' },
-    machine: { method: 'PUT', route: '/api/settei/machine' },
-    agents: { method: 'PUT', route: '/api/settei/agents' },
-    bootstrap: { method: 'PUT', route: '/api/settei/bootstrap' },
+    owner: { method: 'PUT', route: '/api/machine-settings/owner' },
+    wanted: { method: 'PUT', route: '/api/machine-settings/wanted' },
+    machine: { method: 'PUT', route: '/api/machine-settings/machine' },
+    agents: { method: 'PUT', route: '/api/machine-settings/agents' },
+    bootstrap: { method: 'PUT', route: '/api/machine-settings/bootstrap' },
     'session-max': { method: 'PUT', route: '/api/session-max' },
   },
 
@@ -294,7 +294,7 @@ export const SETTEI_SCHEMA = {
   seat: {
     behaviours: ['ways:setup'],
     name: 'setup',
-    prompt: 'Finish what setup still needs. Your task shelf says how: read GET /api/settei at start — needed[] is your reading list, and set is what the owner already answered; never re-ask it.',
+    prompt: 'Finish what setup still needs. Your task shelf says how: read GET /api/machine-settings at start — needed[] is your reading list, and set is what the owner already answered; never re-ask it.',
   },
 };
 

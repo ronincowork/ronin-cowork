@@ -14,7 +14,7 @@
  * beside it — two keys describing a body of work, in the file that also describes the
  * MACHINE. The plan's rule is *there must not be two writable Campaign records*, so the
  * legacy SETTEI accessors are re-pointed onto this store rather than kept in parallel:
- * `src/settei.ts`, `src/routes/settei-api.ts` and `src/desk-profiles.ts` now read and
+ * `src/machine-settings.ts`, `src/routes/machine-settings-api.ts` and `src/desk-profiles.ts` now read and
  * write a Campaign through here, and `ronin.json`'s old keys are read exactly once more,
  * by `ensureInitialCampaign()`, to seed the record. The dependency runs one way — this
  * module reads `user-config.ts`, never the reverse — which is what keeps `check-modules`
@@ -534,7 +534,7 @@ export async function ensureInitialCampaign(): Promise<CampaignConfig> {
 
 /**
  * THE CAMPAIGN LEAF SETTEI STILL SERVES. `set.campaign.{name,description}` keeps its shape
- * on `GET /api/settei` — `public/js/campaign.js` and `@campaign_ui`'s compatibility read
+ * on `GET /api/machine-settings` — `public/js/campaign.js` and `@campaign_ui`'s compatibility read
  * both depend on it — but the fact now comes from the initial Campaign's record rather
  * than from `ronin.json`. One record, two readers; not two records.
  *
@@ -562,7 +562,7 @@ export async function writeCampaignSection(v: { name?: string; description?: str
 /**
  * THE DESK PROFILE, which is a Campaign's and not the install's (the plan's SETTEI
  * boundary: `desk_profile` controls vocabulary, skin and offered templates for ONE body of
- * work). Same shape `readDeskSection` had, so `src/desk-profiles.ts` and `src/settei.ts`
+ * work). Same shape `readDeskSection` had, so `src/desk-profiles.ts` and `src/machine-settings.ts`
  * change an import and nothing else. `''` still means "as stock" everywhere.
  */
 export async function readDeskSection(): Promise<{ profile?: string }> {

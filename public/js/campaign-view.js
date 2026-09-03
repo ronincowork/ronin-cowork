@@ -63,12 +63,12 @@ function registerCampaignSurfaces() {
       [{ value: 'managed', label: t('campaign_view.new_project_worktrees_yes', 'Allow Ronin Worktrees') }, { value: 'none', label: t('campaign_view.new_project_worktrees_no', 'Use the checkout') }],
       current,
       t('campaign_view.new_project_worktrees_help', 'Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for roots added later; change an existing repository on its Project Root card below.'),
-      async (v) => { const r = await request('/api/settei/desks', { method: 'PUT', json: { new_project: v } }); paintNewDesks(r.ok ? v : current); },
+      async (v) => { const r = await request('/api/machine-settings/desks', { method: 'PUT', json: { new_project: v } }); paintNewDesks(r.ok ? v : current); },
     ));
     const host = elem('div', 'desk-pane desk-proj show');
     surface.content.append(newDesks, host);
     const room = buildProjectRoots(host, () => e.entered() && host.isConnected, null);
-    return { el: surface.el, show: () => { room.enter(); void request('/api/settei').then((r) => paintNewDesks(r.ok && r.data?.set?.desks?.new_project === 'none' ? 'none' : 'managed')); } };
+    return { el: surface.el, show: () => { room.enter(); void request('/api/machine-settings').then((r) => paintNewDesks(r.ok && r.data?.set?.desks?.new_project === 'none' ? 'none' : 'managed')); } };
   } });
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
   // ROUTINES (owner, 2026-08-30): the switchboard for control systems — see the lab's
@@ -104,8 +104,8 @@ export function createCampaignView() {
     const r = await request('/api/project-roots/detail', { cache: 'no-store' });
     rootsHere = r.ok && Array.isArray(r.data?.roots) ? r.data.roots : [];
   };
-  const readSettei = async () => {
-    const r = await request('/api/settei');
+  const readMachineSettings = async () => {
+    const r = await request('/api/machine-settings');
     setteiRead = r.ok ? r.data : null;
   };
   const environment = {
@@ -137,7 +137,7 @@ export function createCampaignView() {
       ctx = context; entered = true;
       const typed = teamWorkspaceState(context.state, context.viewState('campaign'), bench.declaration);
       bench.enter({ ...typed, ...context.viewState('campaign') });
-      await Promise.all([loadCampaigns(), readRoots(), readSettei()]);
+      await Promise.all([loadCampaigns(), readRoots(), readMachineSettings()]);
       if (!entered) return;
       for (const id of bench.ids) { const type = LEGACY[typed.seats[id]] || typed.seats[id]; if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id); }
       if (!context.viewState('campaign')?.opened) {

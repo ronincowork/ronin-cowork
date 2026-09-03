@@ -1,13 +1,13 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
-import { pm, getPath, currentOf, optionsOf, toRequest } from './settei-schema.js';
+import { pm, getPath, currentOf, optionsOf, toRequest } from './machine-settings-schema.js';
 import { servicesCard } from './services-card.js';
 import { t } from './lexicon.js';
 
 /* ---------- ⚙ CONFIGURATION — what this install IS, in one room ----------
  *
- * One fetch (`GET /api/settei`) and one screen. The record it draws has three sections
+ * One fetch (`GET /api/machine-settings`) and one screen. The record it draws has three sections
  * and the pane keeps them visibly apart, because a row you can change and a row the box
  * measured are not the same kind of row:
  *
@@ -29,14 +29,14 @@ import { t } from './lexicon.js';
  * becoming a second owner. The session max is the same number as ⌂ Roster's over one
  * route: two views, never two settings.
  *
- * THE TYPED ROWS RENDER FROM THE RECORD'S OWN `schema` (the registry, src/settei.ts),
- * through the vocabulary in js/settei-schema.js — a leaf asked anywhere is editable
+ * THE TYPED ROWS RENDER FROM THE RECORD'S OWN `schema` (the registry, src/machine-settings.ts),
+ * through the vocabulary in js/machine-settings-schema.js — a leaf asked anywhere is editable
  * here structurally, and this file knows no field. The found and derived rows stay
  * composed by hand on purpose: "pointed at openai — OPENAI_API_KEY not set" is worth
  * more than a generic renderer could say. Layout — which schema section lands in
  * which group — is this room's own furniture.
  */
-export function buildSettei(root, isShowing) {
+export function buildMachineSettings(root, isShowing) {
   let rec = null;
   let specs = [];
   let deskProfiles = []; // /api/desk-profiles — the ⚙ select's options (R38)
@@ -268,7 +268,7 @@ export function buildSettei(root, isShowing) {
       box.addEventListener('change', async () => {
         const next = wantedNow().filter((w) => !(w.kind === kind && w.name === name));
         if (box.checked) next.push({ kind, name });
-        await request('/api/settei/wanted', { method: 'PUT', json: { wanted: next } });
+        await request('/api/machine-settings/wanted', { method: 'PUT', json: { wanted: next } });
         await load({ quiet: true });
       });
       return box;
@@ -308,7 +308,7 @@ export function buildSettei(root, isShowing) {
     gbField.say(t('settei.use_gbrain_hint', 'tick this if your agents use it'));
     gb.addEventListener('change', async () => {
       gbField.say(t('settei.saving', 'saving…'));
-      const r = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: gb.checked } });
+      const r = await request('/api/machine-settings/gbrain', { method: 'PUT', json: { enabled: gb.checked } });
       gbField.say(r.ok ? t('settei.saved', 'saved') : r.message, !r.ok);
     });
     const gbRow = document.createElement('div');
@@ -369,7 +369,7 @@ export function buildSettei(root, isShowing) {
     // Two calls, not one: the record is this install, and the launch table is what the
     // house supports. Keeping them apart is what lets the dropdown offer a provider this
     // box has not installed yet and say so, instead of pretending the table is the box.
-    const [r, sp, dp] = await Promise.all([request('/api/settei'), request('/api/session-launch-specs'), request('/api/desk-profiles')]);
+    const [r, sp, dp] = await Promise.all([request('/api/machine-settings'), request('/api/session-launch-specs'), request('/api/desk-profiles')]);
     specs = sp.ok && Array.isArray(sp.data) ? sp.data : [];
     deskProfiles = dp.ok && Array.isArray(dp.data?.profiles) ? dp.data.profiles : [];
     if (!r.ok) {

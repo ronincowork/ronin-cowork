@@ -620,8 +620,8 @@ export function registerLaunch(app: express.Express): void {
     }
   });
 
-  // The owner's name is WRITTEN through the settei door (`PUT /api/settei/owner`,
-  // routes/settei-api.ts) — its only writers were the setup surfaces, so it folded in
+  // The owner's name is WRITTEN through the settei door (`PUT /api/machine-settings/owner`,
+  // routes/machine-settings-api.ts) — its only writers were the setup surfaces, so it folded in
   // (2026-08-18). The read stays here beside the fallback rule it documents.
 
   app.put('/api/session-max', async (req, res) => {
