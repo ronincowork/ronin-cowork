@@ -141,7 +141,10 @@ async function main(): Promise<void> {
     }
     case 'resume': {
       const id = rest[0]; if (!id) throw new Error('resume needs a receipt id');
-      return report(await resumePromotion({ id, by, log: say, restart: !flag('--no-restart') }));
+      return report(await resumePromotion({
+        id, by, log: say, restart: !flag('--no-restart'),
+        ...(process.env.RONIN_CLI_HTTP && !flag('--no-restart') ? { deferRestart: async (receipt) => { process.stderr.write(`RONIN_PROMOTION_FOLLOWUP=${receipt.id}\n`); } } : {}),
+      }));
     }
     case 'abandon': {
       const id = rest[0]; if (!id) throw new Error('abandon needs a receipt id');
@@ -203,7 +206,10 @@ async function main(): Promise<void> {
       const team = cmd;
       const specs = await reposForTeam(team);
       say(`team ${team}: ${specs.map((s) => `${s.repo} ${s.line} → ${s.target} (${s.dir})`).join(', ')}`);
-      const out = await promoteTeam({ team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), anyway: flag('--anyway'), log: say });
+      const out = await promoteTeam({
+        team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), anyway: flag('--anyway'), log: say,
+        ...(process.env.RONIN_CLI_HTTP && !flag('--no-restart') ? { deferRestart: async (receipt) => { process.stderr.write(`RONIN_PROMOTION_FOLLOWUP=${receipt.id}\n`); } } : {}),
+      });
       if (out.ok && out.receipt?.state === 'complete') {
         say('');
         say('to open the dev → master pull request from this receipt, when it is time:');

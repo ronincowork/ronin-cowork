@@ -2,7 +2,7 @@ import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
 import {
-  advanceState, anyAdvanced, blockingReceipt, lastGoodPromotion, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
+  advanceState, anyAdvanced, blockingReceipt, lastGoodPromotion, listReceipts, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
   type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate,
 } from './receipts.js';
 
@@ -61,6 +61,8 @@ export interface PromoteOptions {
   resuming?: string;
   /** Prove even while another team's promotion is on the fly. Say it; do not default it. */
   anyway?: boolean;
+  /** Hand the durable restarting receipt to a continuation after the caller has replied. */
+  deferRestart?: (receipt: PromotionReceipt) => Promise<void>;
 }
 
 export interface PromoteOutcome {
@@ -123,8 +125,29 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
   r = advanceState(r, 'restarting');
   await writeReceipt(r, ledger);
   const primary = active[0].c.dir;
-  log('→ restarting the live app from the dev worktree');
-  r.restart = await fx.restart();
+  if (o.deferRestart) {
+    await o.deferRestart(r);
+    return { ok: true, receipt: r, nothing: false, message: `restarting — receipt ${r.id}; health follows the restart` };
+  }
+  return finishPromotionRestart(r, { primary, ledgerDir: ledger, effects: fx, log, mode: o.mode });
+}
+
+export async function finishPromotionRestart(
+  receipt: PromotionReceipt,
+  options: { primary?: string; ledgerDir?: string; effects?: Effects; log?: (line: string) => void; mode?: ByoinMode; restartAlreadyRequested?: boolean } = {},
+): Promise<PromoteOutcome> {
+  let r = receipt;
+  const ledger = options.ledgerDir ?? PROMOTION_LEDGER_DIR();
+  const fx = options.effects ?? realEffects;
+  const log = options.log ?? noop;
+  const primary = options.primary ?? r.repos[0]?.dir ?? '';
+  if (r.state !== 'restarting') return { ok: false, receipt: r, nothing: false, message: `${r.id} is ${r.state}, not restarting` };
+  if (options.restartAlreadyRequested) {
+    r.restart = { unit: 'tmux-ronin.service', at: new Date().toISOString(), ok: true, detail: 'operator returned after restart request' };
+  } else {
+    log('→ restarting the live app from the dev worktree');
+    r.restart = await fx.restart();
+  }
   const health: HealthResult = r.restart?.ok ? await fx.health(primary) : { passed: false, checks: [{ name: 'restart', status: 'FAIL', detail: r.restart?.detail ?? 'restart failed' }], at: new Date().toISOString() };
   r.health = health;
   for (const c of health.checks) log(`  ${c.status.padEnd(5)} health: ${c.name}${c.detail ? ` — ${c.detail.split('\n')[0]}` : ''}`);
@@ -138,22 +161,33 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
   if (r.kind === 'team_revert') {
     r = advanceState(r, 'unhealthy');
     await writeReceipt(r, ledger);
-    await fx.notify(primary, o.team, `from promotion: REVERT ${r.id} restarted but health FAILED — ${failedNames(health)}. No further automatic action; the lead decides.`);
+    await fx.notify(primary, r.team, `from promotion: REVERT ${r.id} restarted but health FAILED — ${failedNames(health)}. No further automatic action; the lead decides.`);
     return { ok: false, receipt: r, nothing: false, message: `revert landed but health still fails: ${failedNames(health)}` };
   }
   log('→ health failed — reverting through the same door');
-  const rev = await revertPromotion({ receipt: r, by: 'health', mode: o.mode, ledgerDir: ledger, effects: fx, log });
+  const rev = await revertPromotion({ receipt: r, by: 'health', mode: options.mode ?? r.proofs[0]?.mode ?? 'full', ledgerDir: ledger, effects: fx, log });
   if (rev.ok && rev.receipt) {
     r = advanceState(r, 'reverted');
     r.reverted_by = rev.receipt.id;
     await writeReceipt(r, ledger);
-    await fx.notify(primary, o.team, `from promotion: ${r.id} was REVERTED — health failed after restart (${failedNames(health)}); revert ${rev.receipt.id} landed and the app is up. The range stays in the ledger, attributed: ${r.repos.map((x) => `${x.repo} ${x.expected_old.slice(0, 7)}..${x.candidate.slice(0, 7)}`).join(', ')}.`);
+    await fx.notify(primary, r.team, `from promotion: ${r.id} was REVERTED — health failed after restart (${failedNames(health)}); revert ${rev.receipt.id} landed and the app is up. The range stays in the ledger, attributed: ${r.repos.map((x) => `${x.repo} ${x.expected_old.slice(0, 7)}..${x.candidate.slice(0, 7)}`).join(', ')}.`);
     return { ok: false, receipt: r, nothing: false, message: `health failed (${failedNames(health)}); reverted by ${rev.receipt.id}` };
   }
   r = advanceState(r, 'unhealthy');
   await writeReceipt(r, ledger);
-  await fx.notify(primary, o.team, `from promotion: ${r.id} is UNHEALTHY — health failed after restart (${failedNames(health)}) and the revert did not land: ${rev.message}. The lead decides.`);
+  await fx.notify(primary, r.team, `from promotion: ${r.id} is UNHEALTHY — health failed after restart (${failedNames(health)}) and the revert did not land: ${rev.message}. The lead decides.`);
   return { ok: false, receipt: r, nothing: false, message: `health failed and the revert did not land: ${rev.message}` };
+}
+
+export async function resumePromotionRestarts(maxAgeMs = 5 * 60_000): Promise<void> {
+  const ledger = PROMOTION_LEDGER_DIR();
+  const now = Date.now();
+  for (const receipt of await listReceipts(undefined, ledger)) {
+    if (receipt.state !== 'restarting' || now - Date.parse(receipt.updated_at) > maxAgeMs) continue;
+    const current = await Promise.all(receipt.repos.map(targetAt));
+    if (current.some((tip, index) => tip !== receipt.repos[index].candidate)) continue;
+    await finishPromotionRestart(receipt, { ledgerDir: ledger, restartAlreadyRequested: true });
+  }
 }
 
 const failedNames = (h: HealthResult): string => h.checks.filter((c) => c.status === 'FAIL').map((c) => c.name).join(', ') || 'unknown';
@@ -203,6 +237,7 @@ export interface ResumeOptions {
   effects?: Effects;
   log?: (line: string) => void;
   restart?: boolean;
+  deferRestart?: (receipt: PromotionReceipt) => Promise<void>;
 }
 
 /**
@@ -217,6 +252,13 @@ export async function resumePromotion(o: ResumeOptions): Promise<PromoteOutcome>
   const log = o.log ?? noop;
   const r = await readReceipt(o.id, ledger);
   if (!r) return { ok: false, receipt: null, nothing: false, message: `no receipt ${o.id}` };
+  if (r.state === 'restarting') {
+    if (o.deferRestart) {
+      await o.deferRestart(r);
+      return { ok: true, receipt: r, nothing: false, message: `restarting — receipt ${r.id}; health follows the restart` };
+    }
+    return finishPromotionRestart(r, { ledgerDir: ledger, effects: o.effects, log, mode: r.proofs[0]?.mode ?? 'full' });
+  }
   if (r.state !== 'interrupted' && r.state !== 'advancing') return { ok: false, receipt: r, nothing: false, message: `${o.id} is ${r.state} — only an interrupted promotion resumes` };
 
   // Anything still `pending` from a process that died mid-advance: verify what actually moved.

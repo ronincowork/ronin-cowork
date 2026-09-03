@@ -51,6 +51,7 @@ import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
+import { resumePromotionRestarts } from './promotion/promote.js';
 // THE ASSEMBLER BLOCK — the one place in core a service is named (check-kyokai's
 // exception, and on split day this block becomes discovery over the installed-services
 // store; docs/connector-contract.md is the contract, sockets-contract.ts its shape).
@@ -519,6 +520,7 @@ server.listen(config.port, config.bind, async () => {
   // Printed because a refused socket is otherwise a mystery from the browser end:
   // the page simply does not connect, and this line is what the log can be read against.
   console.log(`[tmux-ronin] browser sockets accepted from: ${allowedOrigins().join(', ')}`);
+  void resumePromotionRestarts().catch((e) => console.error(`[tmux-ronin] promotion continuation failed: ${String((e as Error).message ?? e)}`));
 });
 
 // The letter sweep and the sanitiser's catalog feed moved into michi's and counting's
