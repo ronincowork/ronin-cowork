@@ -1,9 +1,9 @@
 /**
  * THE AGERU TRANSPORT — one allowlisted HTTPS client, and the house stays at two doors.
  *
- * Two addresses answer behind this one door: Ronin HQ (activation, Tomodachi) and the
- * public site's template library (a GET of a JSON index and a bundle, on a press). Same
- * client, same allowlist, same record — a second address is not a second door.
+ * Three contracts answer behind this one door — activation, Tomodachi, and the template
+ * library (a GET of an index and a bundle, on a press, with the Services token). Same
+ * client, same allowlist, same record.
  *
  * `src/settei.ts` states the law: "the house has exactly two [egress doors] (AGERU, and the
  * model provider)". Services activation and Tomodachi are two different CONTRACTS and two
@@ -20,13 +20,11 @@ import { appendEgress } from './egress.js';
 const ALLOWED_HOST = process.env.RONIN_HQ_HOST ?? 'hq.ronincowork.com';
 
 /**
- * THE TEMPLATE LIBRARY is the second address behind the same door — the public site's
- * `library/` shelf of template bundles (src/bundles.ts). Same client, same allowlist
- * discipline, same egress record: a GET that only ever carries a path. It is never called
- * on a timer; the owner presses the button (the update-check rule, src/routes/update-api.ts).
+ * THE TEMPLATE LIBRARY is HQ's shelf (owner, 2026-09-03): a Ronin Services feature, read
+ * with the entitlement token through this same door. The public site shows descriptions
+ * only; the documents live here. Never called on a timer — the owner presses the button.
  */
-export const LIBRARY_BASE = process.env.RONIN_LIBRARY_BASE ?? 'https://ronincowork.com/library/';
-const LIBRARY_HOST = new URL(LIBRARY_BASE).hostname;
+export const LIBRARY_BASE = process.env.RONIN_LIBRARY_BASE ?? `https://${ALLOWED_HOST}/library/`;
 
 const TIMEOUT_MS = 15_000;
 
@@ -47,19 +45,20 @@ function assertAllowed(url: URL): void {
   if (url.protocol !== 'https:' && url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') {
     throw new EgressRefused(`refusing plaintext egress to ${url.hostname}`);
   }
-  const allowed = [ALLOWED_HOST, LIBRARY_HOST, '127.0.0.1', 'localhost'];
-  if (!allowed.includes(url.hostname)) {
-    throw new EgressRefused(`${url.hostname} is not an allowlisted Ronin host`);
+  if (url.hostname !== ALLOWED_HOST && url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') {
+    throw new EgressRefused(`${url.hostname} is not the allowlisted Ronin host`);
   }
 }
 
 /**
- * Read one document off the template library. GET only, no token, JSON in — and every
- * call, success or failure, lands in the egress record like an HQ call. The path is
- * resolved against LIBRARY_BASE and must stay under it: a bundle's `url` is data from a
- * remote index, and data does not get to choose a host.
+ * Read one document off the template library: GET, the Services token, JSON in — and every
+ * call, success or failure, in the egress record like an HQ call. The path is resolved
+ * against LIBRARY_BASE and must stay under it: a bundle's `url` is data from a remote
+ * index, and data does not get to choose a host. No token, no call: the library is a
+ * Services feature, and an unentitled box is refused here before any socket opens.
  */
-export async function fetchLibrary<T>(pathname: string): Promise<{ status: number; body: T | null; text: string }> {
+export async function fetchLibrary<T>(pathname: string, token: string): Promise<{ status: number; body: T | null; text: string }> {
+  if (!token) throw new EgressRefused('the template library is a Ronin Services feature; this box holds no entitlement');
   const base = new URL(LIBRARY_BASE);
   const url = new URL(pathname, base);
   assertAllowed(url);
@@ -72,7 +71,7 @@ export async function fetchLibrary<T>(pathname: string): Promise<{ status: numbe
   try {
     const res = await fetch(url, {
       method: 'GET',
-      headers: { accept: 'application/json', 'user-agent': 'ronin-cowork' },
+      headers: { accept: 'application/json', authorization: `Bearer ${token}`, 'user-agent': 'ronin-cowork' },
       signal: AbortSignal.timeout(TIMEOUT_MS),
       redirect: 'error',
     });

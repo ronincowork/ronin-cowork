@@ -224,6 +224,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.output:** Output
 - **campaign_view.output_help:** What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.
 - **campaign_view.with_services:** Ronin Services
+- **campaign_view.services_install:** Install Ronin Services
+- **campaign_view.services_install_summary:** The template library, transcripts, voice and memory. An email, a yes, and a confirmation.
+- **campaign_view.services_install_help:** Ronin Services is the part of Ronin we run for you: the template library Ronin keeps and grows, readable transcripts, voice, Koshi and memory. Enter the email the entitlement should go to and press the button; the confirmation arrives by mail, and this card leaves the selector once it lands.
 - **campaign_view.services_title:** Arrives with Ronin Services.
 - **campaign_view.kind:** Kind
 - **campaign_view.kind_help:** The default kind of work for a new Cowork or project here. Nothing reads it yet.
@@ -292,10 +295,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.templates_download:** Download as a bundle
 - **campaign_view.templates_download_help:** This template, with your copies of the books and Routines it names, as one file you could put on a library.
 - **campaign_view.library:** On the Ronin library — not on your system yet
-- **campaign_view.library_help:** Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press, the plan is shown before anything is written, and an installed one appears below, on your system.
+- **campaign_view.library_help:** The shelf Ronin keeps and grows, a Ronin Services feature: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press; everything a bundle holds is shown before anything is written; an installed one appears below, on your system.
+- **campaign_view.library_services_off:** The template library is a Ronin Services feature, and Ronin Services is off on this box. Switch it on under Ronin Desk → Account → Ronin Services. The handful that ship inside Ronin are below, and yours either way.
+- **campaign_view.library_show_all:** Show everything it holds
+- **campaign_view.library_hide_all:** Hide the contents
 - **campaign_view.library_check:** Check the library
-- **campaign_view.library_checking:** Asking ronincowork.com for its library…
-- **campaign_view.library_source:** {n} bundles from {source}
+- **campaign_view.library_checking:** Asking Ronin HQ for the library…
+- **campaign_view.library_source:** {n} bundles on the library
 - **campaign_view.library_none:** The library lists no bundles yet.
 - **campaign_view.library_reading:** Reading {name} from the library…
 - **campaign_view.library_plan_help:** What installing this bundle writes into your stores, and what it leaves alone.

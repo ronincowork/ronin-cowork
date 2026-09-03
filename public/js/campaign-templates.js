@@ -154,6 +154,7 @@ export function createTemplatesSurface() {
     detail.replaceChildren();
     if (!r.ok) { detail.append(el('p', 'cv-note', r.message)); return; }
     const plan = Array.isArray(r.data?.plan) ? r.data.plan : [];
+    const bundle = r.data?.bundle || null;
     detail.append(el('span', 'cv-eyebrow', `${card.art ? `${card.art} ` : ''}${card.label || card.name} · ${holdsWords(card.holds)}`));
     if (card.blurb) detail.append(el('p', 'cv-note', card.blurb));
     detail.append(el('p', 'cv-note', t('campaign_view.library_plan_help', 'What installing this bundle writes into your stores, and what it leaves alone.')));
@@ -170,6 +171,17 @@ export function createTemplatesSurface() {
     detail.append(table);
     const executables = plan.filter((i) => i.executable && i.verdict !== 'refused').length;
     if (executables) detail.append(el('p', 'cv-note', t('campaign_view.library_executables', 'This bundle installs {n} executable tools onto your Agents’ PATH. Read them before you rely on them.', { n: executables })));
+    // EVERYTHING IT HOLDS, before Install (owner, 2026-09-03): the site shows descriptions;
+    // the documents themselves are read here, file by file, as they will land.
+    if (bundle) {
+      const show = createAction({ label: t('campaign_view.library_show_all', 'Show everything it holds') });
+      const contents = el('div', 'cv-body');
+      contents.hidden = true;
+      show.el.addEventListener('click', () => { contents.hidden = !contents.hidden; show.el.textContent = contents.hidden ? t('campaign_view.library_show_all', 'Show everything it holds') : t('campaign_view.library_hide_all', 'Hide the contents'); });
+      for (const f of bundle.files || []) { contents.append(el('span', 'cv-eyebrow', `${f.store}/${f.path}${f.executable ? ' · executable' : ''}`), el('pre', 'cv-pre', f.text)); }
+      for (const e of bundle.entries || []) { contents.append(el('span', 'cv-eyebrow', `${e.catalog} · ${e.name}`), el('pre', 'cv-pre', e.text)); }
+      detail.append(createActionBar({ actions: [show] }).el, contents);
+    }
     const writes = plan.filter((i) => i.verdict === 'new' || i.verdict === 'shadows-shipped').length;
     const replaces = plan.filter((i) => i.verdict === 'replaces-yours').length;
     const result = createNotice({});
@@ -202,18 +214,24 @@ export function createTemplatesSurface() {
     kind: 'primary',
     action: async () => {
       check.setDisabled(true);
-      libraryNotice.set('info', t('campaign_view.library_checking', 'Asking ronincowork.com for its library…'));
+      libraryNotice.set('info', t('campaign_view.library_checking', 'Asking Ronin HQ for the library…'));
       const r = await request('/api/library', { cache: 'no-store' });
       check.setDisabled(false);
-      if (!r.ok) { library = null; libraryNotice.set('failed', r.message); paintLibrary(); return; }
+      if (!r.ok) {
+        library = null;
+        // Services off: the shelf is there and opaque; say so, and say where the switch is.
+        libraryNotice.set(r.data?.services_off ? 'warning' : 'failed', r.data?.services_off ? t('campaign_view.library_services_off', 'The template library is a Ronin Services feature, and Ronin Services is off on this box. Switch it on under Ronin Desk → Account → Ronin Services. The handful that ship inside Ronin are below, and yours either way.') : r.message);
+        paintLibrary();
+        return;
+      }
       library = { source: r.data?.source || '', bundles: Array.isArray(r.data?.bundles) ? r.data.bundles : [] };
-      libraryNotice.set('success', t('campaign_view.library_source', '{n} bundles from {source}', { n: library.bundles.length, source: library.source }));
+      libraryNotice.set('success', t('campaign_view.library_source', '{n} bundles on the library', { n: library.bundles.length }));
       paintLibrary();
     },
   });
   libraryRoom.append(
     el('span', 'cv-eyebrow', t('campaign_view.library', 'On the Ronin library — not on your system yet')),
-    el('p', 'cv-note', t('campaign_view.library_help', 'Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press, the plan is shown before anything is written, and an installed one appears below, on your system.')),
+    el('p', 'cv-note', t('campaign_view.library_help', 'The shelf Ronin keeps and grows, a Ronin Services feature: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press; everything a bundle holds is shown before anything is written; an installed one appears below, on your system.')),
     createActionBar({ actions: [check] }).el,
     libraryNotice.el,
     libraryGrid,
