@@ -206,7 +206,9 @@ export function createTemplatesSurface() {
       if (!r.ok) {
         library = null;
         // Services off: the shelf is there and opaque; say so, and say where the switch is.
-        libraryNotice.set(r.data?.services_off ? 'warning' : 'failed', r.data?.services_off ? t('campaign_view.library_services_off', 'The template library is a Ronin Services feature, and Ronin Services is off on this box. Switch it on under Ronin Desk → Account → Ronin Services. The handful that ship inside Ronin are below, and yours either way.') : r.message);
+        // The server's sentence is the truth in the three facts' own words (installed ·
+        // activated · switched); it names Ronin Desk → Installed. Never "off" from here.
+        libraryNotice.set(r.data?.services_off ? 'warning' : 'failed', r.message);
         paintLibrary();
         return;
       }

@@ -21,6 +21,7 @@ import type express from 'express';
 import { homedir } from 'node:os';
 import { fetchLibrary, LIBRARY_BASE } from '../activation/transport.js';
 import { getEntitlementToken } from '../activation/secrets.js';
+import { servicesStatusSentence } from './installed-api.js';
 import {
   bundleHolds,
   installBundle,
@@ -37,12 +38,11 @@ import {
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 const TOKEN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
-/** No Services, no shelf — said in words the surface can show, with where the switch is. */
-export const SERVICES_OFF = 'The template library is a Ronin Services feature, and Ronin Services is off on this box. Switch it on under Ronin Desk → Account → Ronin Services; the handful of templates that ship inside Ronin stay yours either way.';
-class ServicesOff extends Error { constructor() { super(SERVICES_OFF); this.name = 'ServicesOff'; } }
+/** No entitlement, no shelf — said in the three facts' own words (src/routes/installed-api.ts), never "off". */
+class ServicesOff extends Error { constructor(status: string) { super(`The template library is a Ronin Services feature. ${status} The handful of templates that ship inside Ronin stay yours either way.`); this.name = 'ServicesOff'; } }
 async function token(): Promise<string> {
   const held = await getEntitlementToken();
-  if (!held) throw new ServicesOff();
+  if (!held) throw new ServicesOff(await servicesStatusSentence());
   return held;
 }
 const status = (e: unknown, otherwise: number) => (e instanceof ServicesOff ? 402 : otherwise);

@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { buildInstalled } from './installed.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { buildProjectRoots } from './projectroots.js';
 import { buildHotwords } from './hotwords.js';
@@ -90,6 +91,10 @@ export function coworkCommons(options = {}) {
         t('campaign_view.theme_mobile_help', 'Light or dark for touch surfaces — iPad and phone.'), save('theme_mobile')),
     );
   };
+
+  /* ---- Installed: what is on this machine — installs, activation, and the switches, apart ---- */
+  const installed = pane('installed');
+  const installedRooms = once(() => [buildInstalled(installed, showing('installed'))]);
 
   /* ---- ▦ Desk: Ronin usage stats ---- */
   const health = pane('health');
@@ -240,6 +245,7 @@ export function coworkCommons(options = {}) {
     themes: service(themes, paintThemes),
     health: service(health, enterAll(healthRooms)),
     account: service(account, accountEnter),
+    installed: service(installed, enterAll(installedRooms)),
     profile: service(profile, enterAll(profileRooms)),
     roots: service(roots, enterAll(rootsRooms)),
     archives: service(archivesPane, enterAll(archivesRooms)),
@@ -253,6 +259,7 @@ export function coworkCommons(options = {}) {
     { id: 'themes', label: t('cowork.tab_themes', 'Themes') },
     { id: 'health', label: t('cowork.tab_health', 'Desk') },
     { id: 'account', label: t('cowork.tab_account', 'Account') },
+    { id: 'installed', label: t('cowork.tab_installed', 'Installed') },
     { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
     { id: 'roots', label: t('cowork.tab_roots', 'Project roots') },
     { id: 'archives', label: t('cowork.tab_archives', 'Archived') },

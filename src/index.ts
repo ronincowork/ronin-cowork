@@ -41,6 +41,7 @@ import { stampFreshInstall } from './machine-state.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerLibrary } from './routes/library-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
+import { registerInstalled } from './routes/installed-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
 import { registerMessages } from './routes/messages-api.js';
@@ -271,6 +272,7 @@ registerLibrary(app); // /api/library* — the template library: index and bundl
 registerMachineSettings(app); // /api/machine-settings — the install record, and writes BY NAME only — src/routes/machine-settings-api.ts
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
 startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts
+registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
