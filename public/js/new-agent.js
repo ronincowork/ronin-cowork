@@ -7,6 +7,7 @@
  * launch. */
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { createWhereItWorks } from './where-it-works.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
   createBand, createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
@@ -38,7 +39,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   let snapshot = '';
   let busy = false;
   let loaded = false;
-  const touched = { mandate: false, model: false, root: false, books: false, launchMode: false };
+  const touched = { mandate: false, model: false, root: false, repos: false, books: false, launchMode: false };
 
   /* THE LAUNCH BUTTON LIVES IN THE TILE HEADER (owner, 2026-09-01), quiet and compact
    * like Save as template rather than a slab at the bottom of a long scroll — and it is
@@ -260,29 +261,18 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     (provider, model) => { draft.provider = provider; draft.model = model; touched.model = true; paintFoot(); },
     (label, control) => createField({ label, control }).el,
   );
-  const rootSelect = el('select');
-  rootSelect.addEventListener('change', () => { draft.root = rootSelect.value; touched.root = true; paintFoot(); });
-  const branchInput = el('input');
-  branchInput.type = 'text';
-  branchInput.readOnly = true;
-  branchInput.placeholder = '—';
+  // WHERE IT WORKS (owner, 2026-09-03): the shared control, seeded from the Team. Born in
+  // is this launch's own; the ticks are the Team's desks until the person changes them,
+  // and then the launch carries its own `repos`. Branches are the Team's and read-only here.
+  const where = createWhereItWorks({ branchesEditable: false, onChange: () => { if (where.root !== draft.root) { draft.root = where.root; touched.root = true; } else { draft.repos = where.repos(); touched.repos = true; } paintFoot(); } });
   const wherePair = el('div', 'fs-pair');
-  wherePair.append(
-    createField({ label: t('team.project_root', 'Project root'), control: rootSelect }).el,
-    createField({ label: t('team.branch', 'Branch'), control: branchInput }).el,
-  );
+  wherePair.append(createField({ label: t('where.label', 'Where it works'), control: where.el }).el);
   stepWhere.body.append(pair.el, wherePair);
   function paintBranch() {
     const team = draft.teamMode === 'existing' ? teams.find((row) => row.name === draft.team) : null;
-    branchInput.value = team?.branch || '';
+    if (!touched.repos) { draft.repos = null; where.setRepos(team?.repos || [], team?.branches || {}); }
   }
-  function paintRoots() {
-    rootSelect.replaceChildren();
-    for (const root of roots) rootSelect.add(new Option(root.name, root.name));
-    if (draft.root && !roots.some((root) => root.name === draft.root)) rootSelect.add(new Option(draft.root, draft.root));
-    rootSelect.value = draft.root || (roots[0]?.name ?? '');
-    draft.root = rootSelect.value;
-  }
+  function paintRoots() { where.setRoots(roots); where.root = draft.root; draft.root = where.root; }
 
   /* ---- 7 · Mandate ---- */
   const stepMandate = createStep({ n: 7, key: 'mandate', title: t('mandate', 'Mandate'), onToggle: () => toggle('mandate') });
@@ -332,6 +322,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     const worktrees = (seed?.routines || []).find((routine) => routine.name === 'ronin_worktrees');
     const overridden = Object.prototype.hasOwnProperty.call(draft.routineOverrides, 'ronin_worktrees');
     const worktreesOn = overridden ? draft.routineOverrides.ronin_worktrees : worktrees?.on;
+    where.setWorktrees(!!worktreesOn);
     worktreesMode.replaceChildren(
       el('b', null, t('new_agent.worktrees_mode', 'Agent work mode')),
       el('strong', null, worktreesOn ? t('new_agent.worktrees_on', 'Own worktree where the Project Root allows it')
@@ -522,6 +513,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
           session_type: 'cowork_agent', name, team, project_root: draft.root,
           instructions: draft.instructions.trim(), provider: draft.provider, model: draft.model,
           kind: draft.kind,
+          ...(touched.repos && Array.isArray(draft.repos) ? { repos: draft.repos } : {}),
           mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output },
           behaviours: [...draft.books],
           ...(Object.keys(draft.routineOverrides).length ? { routines: { ...draft.routineOverrides } } : {}),

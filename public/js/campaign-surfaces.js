@@ -88,53 +88,6 @@ export function createCampaignIdentitySurface(campaign) {
 }
 
 
-/**
- * SESSION ROLES — what a launch in this Campaign offers, read-only (owner, 2026-08-30).
- * The roles are what a session is DOING, grouped by role family as the launcher groups
- * them; the templates proper (casts, loadouts, the library) are campaign-templates.js.
- * role family as the launcher groups them; a role in no family sits in the tail.
- */
-export function createSessionRolesSurface() {
-  const { createSurface, createCard } = WorkspaceKit.primitives;
-  const label = t('campaign_view.roles', 'Session roles');
-  const surface = createSurface({ label, className: 'cv-surface' });
-  const body = el('div', 'cv-body');
-  surface.content.append(body);
-  let families = [];
-  let roles = [];
-  const paint = () => {
-    body.replaceChildren();
-    body.append(el('p', 'cv-note', t('campaign_view.roles_help', 'What a launch here offers an Agent to be. Team casts and agent loadouts are on the Templates card.')));
-    if (!roles.length) return surface.setState('empty', t('campaign_view.roles_none', 'No session roles on this install.'));
-    surface.setState(null, '');
-    const placed = new Set();
-    const group = (heading, names) => {
-      const rows = names.map((n) => roles.find((r) => r.name === n)).filter(Boolean);
-      if (!rows.length) return;
-      body.append(el('span', 'cv-eyebrow', heading));
-      const grid = el('div', 'cv-cards');
-      for (const r of rows) {
-        placed.add(r.name);
-        grid.append(createCard({ heading: r.label || r.name, summary: r.blurb || '', mark: r.icon || null }).el);
-      }
-      body.append(grid);
-    };
-    for (const f of families) group(f.label || f.name, Array.isArray(f.session_roles) ? f.session_roles : []);
-    group(t('campaign_view.roles_loose', 'No family'), roles.map((r) => r.name).filter((n) => !placed.has(n)));
-  };
-  return {
-    el: surface.el,
-    enter: () => {
-      paint();
-      void Promise.all([request('/api/role-families'), request('/api/session-roles')]).then(([f, r]) => {
-        families = f.ok && Array.isArray(f.data) ? f.data : [];
-        roles = r.ok && Array.isArray(r.data) ? r.data : [];
-        paint();
-      });
-    },
-  };
-}
-
 /** New Campaign: the stage is set here and nothing else is born with it. */
 export function createNewCampaignSurface(onCreated) {
   const { createSurface } = WorkspaceKit.primitives;

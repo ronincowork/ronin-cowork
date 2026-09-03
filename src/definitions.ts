@@ -489,3 +489,7 @@ export async function writeRoleTasks(role: string, tasks: string[]): Promise<str
   if (!back) throw new Error(`Refused: "${role}" does not read back after the edit.`);
   return splitDefinitionList(back.get('session_roles'));
 }
+
+/** A Routine contributes the reading for its resolved state. */
+export const routineReading = (routines: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[]): string[] =>
+  routines.flatMap((routine) => (routine.enabled ? routine.reading : routine.reading_off));

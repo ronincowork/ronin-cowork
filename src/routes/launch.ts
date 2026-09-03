@@ -84,7 +84,7 @@ async function deskNote(r: { assignment?: unknown; routines?: Array<{ name: stri
 const LAUNCH_KEYS = new Set([
   'session_type', 'session_role', 'team', 'team_lead', 'instructions', 'prompt', 'name',
   'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'gbrain_mode', 'launch_mode',
-  'tags', 'seed', 'inject', 'reference', 'desk',
+  'tags', 'seed', 'inject', 'reference', 'desk', 'repos',
   'kind', 'behaviours', 'routines',
   'template',
 ]);
@@ -125,6 +125,10 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.desk !== undefined && body.desk !== 'own' && body.desk !== 'none') drop('desk');
   if (body.gbrain_mode !== undefined && body.gbrain_mode !== 'connected' && body.gbrain_mode !== 'disconnected') drop('gbrain_mode');
   if (body.launch_mode !== undefined && body.launch_mode !== 'configured' && body.launch_mode !== 'live_dangerously') drop('launch_mode');
+  // `repos` is this launch's own answer to which team repositories open as desks — a list
+  // of project_root names, cowork_agent only; absent means the Team's ticks.
+  if (body.repos !== undefined && (!Array.isArray(body.repos) || body.repos.some((r: unknown) => typeof r !== 'string'))) drop('repos');
+  if (body.repos !== undefined && sessionType !== 'cowork_agent') drop('repos');
   if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
   if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
   if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
