@@ -1,6 +1,7 @@
 # Desks — the state and hand-in floor
 
-The mechanics under `tejun-desk`. What a session is told is
+The HTTP desk surface owns these mechanics. `tejun-desk` calls it and prints its reply.
+What a session is told is
 `ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`. This page is the tool-side reference:
 what is recorded where, what each operation does to git, and what it refuses.
 

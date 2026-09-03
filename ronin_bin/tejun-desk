@@ -18,8 +18,7 @@
 # marked pending, its files untouched. Nothing here deletes an unintegrated tip except
 # `discard --yes`.
 #
-# THE LOGIC IS NOT HERE. src/desk-cli.ts owns it and src/desks/ is covered by the unit
-# floor (tests/desks.test.ts) — the same arrangement tejun-wipeboard uses.
+# src/desk-cli.ts calls the operator HTTP surface and prints its reply.
 set -u
 # RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
 # session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,

@@ -21,10 +21,7 @@
 # receives the post on their next check. Address it to whoever has to act on it; leave it
 # open only when everyone has to.
 #
-# THE LOGIC IS NOT HERE. src/wipeboard-cli.ts owns it and the unit floor covers it —
-# the same arrangement tejun-rireki uses for scroll-cli.ts. A bash re-implementation of
-# the post format, the id rule and the cursor rule would be a second copy free to drift
-# from the server's, with the tests only ever covering one of them.
+# src/wipeboard-cli.ts calls the operator HTTP surface and prints its reply.
 set -u
 # RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
 # session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,

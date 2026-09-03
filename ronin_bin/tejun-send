@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # tejun-send — put one inbound session message through the durable delivery queue.
 # Usage: tejun-send <session> <message...>
+# src/message-cli.ts calls the operator HTTP surface and prints its reply.
 set -euo pipefail
 [ $# -ge 2 ] || { echo "usage: tejun-send <session> <message...>" >&2; exit 2; }
 # RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the

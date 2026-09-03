@@ -13,8 +13,8 @@ it, or when it ages past the TTL. Nothing here is a record: RIREKI's tape holds 
 tile printed, and a decision worth keeping belongs in a session's TEGAMI, a `docs/` page,
 or a commit message.
 
-The storage half is `src/wipeboards.ts`; the one action is `src/wipeboard-cli.ts`, which
-`ronin_bin/tejun-wipeboard` runs; the REST over both is `src/routes/wipeboards-api.ts`.
+The operator's HTTP API is the wipeboard surface. `tejun-wipeboard` calls that surface
+and prints its reply; it does not read or write wipeboard storage itself.
 Wipeboards live in the wipeboards **store** (user root, `bin/ronin-store wipeboards` —
 never a hand-spelled path), so one survives an uninstall and `rm -rf <repo>` cannot take
 it.

@@ -10,6 +10,7 @@
 #   bin/ronin-promote bisect <team> [--repo r]    check each hand-in applies to the working line
 #   bin/ronin-promote receipts [team]             the ledger, one line each
 #   bin/ronin-promote show <receipt-id> [--pr-block|--shared]
+# src/promotion-cli.ts calls the operator HTTP surface and prints its reply.
 #
 # Promotion builds each candidate, writes its receipt, advances references by
 # compare-and-swap, restarts the live app, and checks deployment health. The receipt is

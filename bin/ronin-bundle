@@ -14,8 +14,7 @@
 # own stores and never in the repo. The Templates card on the Campaign page does the same
 # through the public library; this is the same thing by hand, and how you make one to publish.
 #
-# THE LOGIC IS NOT HERE. src/bundle-cli.ts and src/bundles.ts own it, covered by the unit
-# floor (tests/bundles.test.ts) — the same arrangement as tejun-desk.
+# src/bundle-cli.ts calls the operator HTTP surface and prints its reply.
 set -u
 SELF=${BASH_SOURCE[0]}
 while [ -L "$SELF" ]; do

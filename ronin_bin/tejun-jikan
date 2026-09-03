@@ -16,8 +16,7 @@
 # Scheduling a request commits the owner's machine to future action: propose it and wait
 # for the yes before you add one (ACTIONS.md § schedule-request).
 #
-# THE LOGIC IS NOT HERE. src/jikan-cli.ts and src/jikan.ts own it, covered by the unit
-# floor (tests/jikan.test.ts) — the same arrangement as tejun-wipeboard.
+# src/jikan-cli.ts calls the operator HTTP surface and prints its reply.
 set -u
 SELF=${BASH_SOURCE[0]}
 while [ -L "$SELF" ]; do

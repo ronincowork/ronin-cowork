@@ -9,7 +9,7 @@
 # change the password — a password change rotates the signing secret and logs every
 # other device out. Enter the code on the login page under "use a recovery code".
 # Only its scrypt hash is stored, in the user config store's ronin.json.
-# See src/recovery-cli.ts for the working half, src/passkey.ts for the rest.
+# src/recovery-cli.ts calls the operator HTTP surface and prints its reply.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"

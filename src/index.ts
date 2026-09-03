@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
 import { config, authEnabled, assertBindIsSafe } from './config.js';
 import {
@@ -44,6 +44,7 @@ import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
 import { registerMessages } from './routes/messages-api.js';
+import { registerCli } from './routes/cli-api.js';
 import { startMessageQueue } from './message-queue.js';
 import { seedHouseBoard } from './wipeboards.js';
 import { handleEvents, startSessionsBroadcast } from './ws/events.js';
@@ -63,6 +64,7 @@ const NM = path.join(ROOT, 'node_modules');
 
 const app = express();
 app.use(express.json());
+const cliToken = randomBytes(32).toString('base64url');
 
 // --- optional HTTP Basic auth (gates everything, including the websocket) ---
 /**
@@ -102,6 +104,7 @@ function checkBasic(header?: string): boolean {
  * keeps that state loopback/tailnet-only.
  */
 function checkAuth(headers: { authorization?: string; cookie?: string }): boolean {
+  if (headers.authorization?.startsWith('Bearer ') && sameSecret(headers.authorization.slice(7), cliToken)) return true;
   if (!authEnabled && !passwordAuthEnabled()) return true;
   if (checkBasic(headers.authorization)) return true;
   const rec = authRecord();
@@ -338,6 +341,7 @@ void resumeInstallWatch();
 registerSessions(app); // per-session: kill/harakiri, meta, dials, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
 registerMessages(app); // /api/messages* — durable inbound session delivery
+registerCli(app); // /api/cli/:tool — command-line faces of operator verbs
 startMessageQueue();
 
 
@@ -500,7 +504,7 @@ server.listen(config.port, config.bind, async () => {
   // Publish only after the listener has actually bound. Publishing before listen allowed
   // a failed or test operator to advertise an address that never became live.
   try {
-    await publishRoninUrl(`http://${config.bind}:${config.port}`);
+    await publishRoninUrl(`http://${config.bind}:${config.port}`, cliToken);
   } catch (e) {
     console.error(`[tmux-ronin] could not publish @ronin-url: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
   }

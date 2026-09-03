@@ -1,6 +1,7 @@
 # Team promotion
 
-`bin/ronin-promote <team>` admits a team line into its repository's working line.
+`bin/ronin-promote <team>` calls the operator's HTTP promotion surface, which admits a
+team line into its repository's working line, and prints the reply.
 Promotion coordinates candidate construction, reference movement, restart, and health.
 Repository verification is independent: run `npm run verify` when a repository verdict is
 needed.

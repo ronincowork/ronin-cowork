@@ -451,7 +451,8 @@ agent is behind a pane.
 
 `/login` (`public/login.html`) is the one pre-auth page: self-contained on purpose,
 same visual language, same theme switch. The password is set on the host with
-`bin/ronin-passwd`; the mechanics are `src/auth.ts`.
+`bin/ronin-passwd`; the command calls the authenticated operator HTTP surface and prints
+its reply. The password prompt remains local and does not echo.
 
 **Three doors, one session.** Passkey, password and recovery code all end by minting the
 same HttpOnly `<expiry>.<hmac>` cookie, signed by the secret stored beside the scrypt
@@ -471,7 +472,8 @@ Host), so one build serves every install.
 **Registration is behind the gate, spending is in front.** A passkey is added from ⚙
 System (`public/js/system.js`) after proving you are already the owner; the login page
 can only use one. There is deliberately no unauthenticated registration route.
-`bin/ronin-recovery` mints a one-shot code, valid 30 minutes, for the case where a
+`bin/ronin-recovery` calls the authenticated operator HTTP surface to mint a one-shot
+code, valid 30 minutes, for the case where a
 passkey will not offer itself and changing the password — which would log every other
 device out — is too big a hammer. `src/passkey.ts` holds the verification and
 `src/routes/passkey-api.ts` the routes; `tests/passkey.test.ts` signs real assertions
