@@ -33,7 +33,6 @@ implementation contract.
 
 | Question | Route |
 |---|---|
-| KOTOBA, the glossary, KOKUGO, the lexicons, the table — which one do I want, and what keeps them true? | [Vocabulary map](vocabulary-map.md) |
- [Test protocols](test-protocols.md) define when scoped checks and
-full repository verification belong. [The API surface](api-surface.html) maps routes,
-websockets, sockets, and commands.
+| How do I verify a repository change? | Run `npm run verify`; run Playwright suites explicitly when diagnosing the rendered UI. |
+
+[The API surface](api-surface.html) maps routes, websockets, sockets, and commands.

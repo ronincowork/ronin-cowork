@@ -13,7 +13,7 @@ import { abandonPromotion, bisectLine, promoteTeam, resumePromotion, revertPromo
 import { lastGoodPromotion, listReceipts, publicPromotionReceipt, readReceipt, summarize, toChangeSet } from './promotion/receipts.js';
 import { openPullRequest } from './promotion/pr.js';
 import type { RepoSpec } from './promotion/candidate.js';
-import type { ByoinMode } from './promotion/byoin.js';
+import type { ByoinMode } from './promotion/promote.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from './promotion/funnel-recovery.js';
 import { storeDir } from './stores.js';
 

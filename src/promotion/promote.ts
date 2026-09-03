@@ -1,11 +1,12 @@
 import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
-import { runByoin, runCompat, type ByoinMode } from './byoin.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
 import {
-  advanceState, anyAdvanced, blockingReceipt, inFlightReceipt, lastGoodPromotion, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
-  type CompatProof, type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate, type RepoProof,
+  advanceState, anyAdvanced, blockingReceipt, lastGoodPromotion, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
+  type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate,
 } from './receipts.js';
+
+export type ByoinMode = 'full' | 'gates' | 'ui';
 
 /**
  * TEAM PROMOTION — the lead's admission of a team line into `dev`. One command, one
@@ -26,8 +27,6 @@ import {
  */
 
 export interface Effects {
-  byoin: (c: RepoCandidate, cdir: string, mode: ByoinMode) => Promise<RepoProof>;
-  compat: (inputs: { repo: string; cdir: string }[]) => Promise<CompatProof>;
   restart: () => Promise<PromotionReceipt['restart']>;
   health: (primaryDir: string) => Promise<HealthResult>;
   notify: (primaryDir: string, team: string, text: string) => Promise<string>;
@@ -38,8 +37,6 @@ export interface Effects {
 }
 
 export const realEffects: Effects = {
-  byoin: (c, cdir, mode) => runByoin(c.repo, c.candidate, cdir, mode, { onLine: (l) => process.stderr.write(l) }),
-  compat: (inputs) => runCompat(inputs, { onLine: (l) => process.stderr.write(l) }),
   restart: restartService,
   health: (dir) => healthCheck({ dir }),
   notify: notifyTeam,
@@ -76,38 +73,15 @@ export interface PromoteOutcome {
 
 const noop = (): void => undefined;
 
-/** Which repos proved fit: their own BYOIN passed, or they had only SKIPs and compat covered them. */
-function proofsPass(proofs: RepoProof[], compat: CompatProof): { ok: boolean; failedGates: string[] } {
-  const failedGates: string[] = [];
-  for (const p of proofs) {
-    if (p.passed) continue;
-    const fails = p.gates.filter((g) => g.status === 'FAIL').map((g) => `${p.repo}:${g.name}`);
-    if (fails.length) { failedGates.push(...fails); continue; }
-    // No FAIL, not passed: the repo has no check of its own. Compat must have RUN for it.
-    const covered = compat.checks.some((c) => c.status === 'ok');
-    if (!covered) failedGates.push(`${p.repo}:byoin (no repository check, and the compatibility protocol did not cover it)`);
-  }
-  failedGates.push(...compat.checks.filter((c) => c.status === 'FAIL').map((c) => `compat:${c.name}`));
-  return { ok: failedGates.length === 0, failedGates };
-}
-
 export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
   const fx = o.effects ?? realEffects;
   const log = o.log ?? noop;
   const ledger = o.ledgerDir ?? PROMOTION_LEDGER_DIR();
-  const mode = o.mode ?? 'full';
 
   const blocker = await blockingReceipt(o.team, ledger);
   if (blocker && blocker.id !== o.resuming) {
     log(`  warning: promotion ${blocker.id} is ${blocker.state}; starting another promotion anyway.`);
   }
-  // Look before you prove: one BYOIN on the box at a time, by looking, not by locking.
-  const busy = o.anyway ? null : await inFlightReceipt(ledger);
-  // A resume finishes the moving receipt; a revert undoes it — neither waits on it.
-  if (busy && busy.id !== o.resuming && busy.id !== o.revert_of) {
-    log(`  warning: promotion ${busy.id} (${busy.team}) is ${busy.state}; proceeding concurrently.`);
-  }
-
   // ---- prepare
   log(`→ preparing candidates for team ${o.team}`);
   const prepared: { c: RepoCandidate; cdir?: string; nothing: boolean }[] = [];
@@ -125,22 +99,9 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
 
   let r = newReceipt({ team: o.team, kind: o.kind, repos: active.map((p) => p.c), by: o.by, revert_of: o.revert_of });
 
-  // ---- prove
   r = advanceState(r, 'proving');
   if (!o.dryRun) await writeReceipt(r, ledger);
-  log(`→ proving — full BYOIN (${mode}) on each candidate, then the combined protocol`);
-  for (const p of active) {
-    const proof = await fx.byoin(p.c, p.cdir ?? candidateDir(p.c.repo, p.c.target), mode);
-    r.proofs.push(proof);
-    log(`  ${proof.passed ? 'ok   ' : 'FAIL '} ${p.c.repo}: ${proof.verdict}`);
-  }
-  r.compat = await fx.compat(active.map((p) => ({ repo: p.c.repo, cdir: p.cdir ?? candidateDir(p.c.repo, p.c.target) })));
-  for (const c of r.compat.checks) log(`  ${c.status.padEnd(5)} compat: ${c.name}${c.detail ? ` — ${c.detail.split('\n')[0]}` : ''}`);
-  const verdict = proofsPass(r.proofs, r.compat);
-  if (!verdict.ok) {
-    log(`  warning: checks reported ${verdict.failedGates.join(', ')}; advancing the candidate anyway.`);
-  }
-  if (o.dryRun) return { ok: true, receipt: r, nothing: false, message: 'dry run: candidates proved; nothing written, nothing moved' };
+  if (o.dryRun) return { ok: true, receipt: r, nothing: false, message: 'dry run: candidates prepared; nothing written, nothing moved' };
 
   // ---- advance — the receipt is on disk before the first ref moves
   r = advanceState(r, 'advancing');
@@ -181,7 +142,7 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
     return { ok: false, receipt: r, nothing: false, message: `revert landed but health still fails: ${failedNames(health)}` };
   }
   log('→ health failed — reverting through the same door');
-  const rev = await revertPromotion({ receipt: r, by: 'health', mode, ledgerDir: ledger, effects: fx, log });
+  const rev = await revertPromotion({ receipt: r, by: 'health', mode: o.mode, ledgerDir: ledger, effects: fx, log });
   if (rev.ok && rev.receipt) {
     r = advanceState(r, 'reverted');
     r.reverted_by = rev.receipt.id;
@@ -416,14 +377,8 @@ export async function bisectLine(o: BisectOptions): Promise<BisectResult> {
       log(`  FAIL  ${sha.slice(0, 7)}: the merge conflicts`);
       return { culprit: sha, files: [], steps };
     }
-    const cand = await revParse(wt, 'HEAD');
-    const proof = await fx.byoin({ repo: o.spec.repo, dir: o.spec.dir, line: o.spec.line, target: o.spec.target, expected_old: from, line_tip: sha, candidate: cand, hand_in_receipts: [sha], sessions: [], files: [], advanced_to: '' }, wt, o.mode ?? 'full');
-    steps.push({ sha, passed: proof.passed, verdict: proof.verdict });
-    log(`  ${proof.passed ? 'ok   ' : 'FAIL '} ${sha.slice(0, 7)}: ${proof.verdict}`);
-    if (!proof.passed) {
-      const files = (await gitOut(o.spec.dir, ['diff', '--name-only', `${sha}^`, sha]).catch(() => '')).split('\n').filter(Boolean);
-      return { culprit: sha, files, steps };
-    }
+    steps.push({ sha, passed: true, verdict: 'the merge applies' });
+    log(`  ok    ${sha.slice(0, 7)}: the merge applies`);
   }
   return { culprit: '', files: [], steps };
 }

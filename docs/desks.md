@@ -92,7 +92,7 @@ gets a `pending` row with the overlap — line-changed files it also has unsaved
 files are not touched (`pending` / `pending_overlap`); a clean desk whose commits conflict
 with the line is left as it is (`conflict`), to be contained at its own hand-in.
 
-No BYOIN runs at any step. `dev` never moves here.
+Repository verification does not run at any step. `dev` never moves here.
 
 **The lead is told, dial or no dial** (owner law, 2026-08-28). An accepted hand-in, or a
 conflict, reaches every lead of the line's team — the 人, `@ronin-lead` on the session —
