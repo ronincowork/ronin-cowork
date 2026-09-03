@@ -1,6 +1,6 @@
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 import type { ChangeSetReceipt, ChangeSetRepo, ChangeSetState } from '../desks/schema.js';
 
 /**

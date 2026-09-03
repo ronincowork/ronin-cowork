@@ -4,7 +4,7 @@ import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 
 const execFileP = promisify(execFile);
 

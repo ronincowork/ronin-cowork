@@ -5,7 +5,7 @@ import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { readAgentsSection, readDesksSection } from './user-config.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import { findDefinition, listRoutines } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';

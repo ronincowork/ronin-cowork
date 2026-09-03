@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import { exactPane } from './tmux.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 
 const pexec = promisify(execFile);
 

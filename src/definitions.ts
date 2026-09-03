@@ -43,7 +43,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { STOCK_DIR, entryValue, isKeyLine, resolveFiles, type Origin } from './resources.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 
 /** The definition directories — one file per token. The template catalog is TWO
  *  directories (the shelf split, TEMPLATE_LIBRARY.md): a `templates/agents/` box is one

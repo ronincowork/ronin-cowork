@@ -16,7 +16,7 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 
 export type Stage =
   | 'not_requested' | 'requesting' | 'awaiting_email' | 'verified'

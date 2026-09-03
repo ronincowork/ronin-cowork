@@ -1,9 +1,60 @@
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { storeDir } from './stores.js';
+import os from 'node:os';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export type RootId = 'user' | 'data';
+export type StoreSource = 'env' | 'default';
+export interface Store { readonly id: string; readonly root: RootId; readonly rel: string }
+export const ROOT_REL: Record<RootId, string> = { user: 'ronin', data: '.ronin' };
+const store = (id: string, root: RootId, rel: string): Store => ({ id, root, rel });
+export const STORES: readonly Store[] = [
+  store('session', 'data', 'sessions'),
+  store('archived_sessions', 'data', 'archived-sessions'),
+  store('session_boot_cache', 'data', 'session-boot'),
+  store('session_commands', 'data', 'session-commands'),
+  store('bench', 'data', 'bench'),
+  store('telemetry', 'data', 'telemetry'),
+  store('ageru', 'user', 'ageru'),
+  store('ledger', 'data', 'ledger'),
+  store('message_queue', 'data', 'message-queue'),
+  store('sops', 'user', 'sops'),
+  store('ways', 'user', 'ways'),
+  store('library', 'user', 'library'),
+  store('session_boot', 'user', 'session_boot'),
+  store('wipeboards', 'user', 'wipeboards'),
+  store('jikan', 'user', 'jikan'),
+  store('team_rosters', 'user', 'team_rosters'),
+  store('desks', 'user', 'desks'),
+  store('worktrees', 'user', 'worktrees'),
+  store('catalogs', 'user', 'catalogs'),
+  store('tools', 'user', 'tools'),
+  store('memory', 'user', 'memory'),
+  store('config', 'user', 'config'),
+  store('koshi_weights', 'user', 'koshi_weights'),
+  store('koshi_weights_service', 'user', 'koshi_weights_service'),
+  store('gbrain_brain', 'user', 'gbrain_brain'),
+  store('gbrain_service', 'user', 'gbrain_service'),
+  store('promotion_ledger', 'data', 'promotion-ledger'),
+  store('services_secrets', 'user', 'services_secrets'),
+];
+const storesById = new Map(STORES.map((row) => [row.id, row]));
+export const envName = (id: string): string => `RONIN_${id.toUpperCase()}_DIR`;
+export function rootDir(root: RootId): string {
+  const override = root === 'user' ? process.env.RONIN_USER_ROOT : process.env.RONIN_DATA_ROOT;
+  return override?.trim() || path.join(os.homedir(), ROOT_REL[root]);
+}
+export function resolveStore(id: string): { dir: string; source: StoreSource } {
+  const row = storesById.get(id);
+  if (!row) throw new Error(`unknown store '${id}'`);
+  const override = process.env[envName(id)]?.trim();
+  return override
+    ? { dir: override, source: 'env' }
+    : { dir: path.join(rootDir(row.root), row.rel), source: 'default' };
+}
+export const storeDir = (id: string): string => resolveStore(id).dir;
 
 /** System scope: the shipped catalogs. Replaced wholesale by an upgrade — never written. */
 /** @service — KOE reads the stock hotwords list through this.

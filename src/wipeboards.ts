@@ -2,7 +2,7 @@ import { link, mkdir, readFile, readdir, rename, rm, stat, unlink, writeFile } f
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { readOwner } from './user-config.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 
 /**
  * WIPEBOARDS — the transport a set of sessions talk across.

@@ -2,7 +2,7 @@
 import { access, mkdir, rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { REPO_ROOT } from './config.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import type { ResolvedRoutine } from './routines.js';
 
 export interface RoutineToolProjection {

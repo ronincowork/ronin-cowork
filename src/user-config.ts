@@ -35,7 +35,7 @@ import os from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 
 const pexec = promisify(execFile);
 

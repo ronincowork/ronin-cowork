@@ -22,7 +22,7 @@
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { arrangementOf } from './arrangement.js';
 import { aheadBehind, dirtyFiles, revParse, worktreeOf } from './git.js';

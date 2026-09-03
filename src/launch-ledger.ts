@@ -1,6 +1,6 @@
 import { appendFile, mkdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import type { Resolved, SpawnForm } from './spawn.js';
 import { sessionKey, sessionDir } from './session-dir.js';
 

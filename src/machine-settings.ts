@@ -43,7 +43,7 @@ import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { listProjectRoots, listSessionLaunchSpecs } from './project-roots.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import {
   publicState,

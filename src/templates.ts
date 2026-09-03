@@ -22,7 +22,7 @@ import {
   type AgentTemplateRow,
   type TeamTemplateRow,
 } from './definitions.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 
 const isValidToken = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
