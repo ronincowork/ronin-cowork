@@ -438,23 +438,18 @@ export function registerLaunch(app: express.Express): void {
       const list = await withAxes(await listSessions());
       const out = await Promise.all(
         list.map(async (s) => {
-          let status: SessionStatus | null = null;
-          let ctx: number | null = null;
-          let model: string | null = null;
-          try {
-            const text = await capturePane(s.name, 0);
-            status = classifyStatus(text);
-            ctx = scanContext(text);
-            model = scanModel(text);
-          } catch {
-          }
-          const contributed = await collectRowFields(s.name);
-          const tegami = await readTegami(s.name);
+          const [pane, contributed, tegami] = await Promise.all([
+            capturePane(s.name, 0).then((text) => ({
+              status: classifyStatus(text),
+              ctx: scanContext(text),
+              model: scanModel(text),
+            })).catch(() => ({ status: null, ctx: null, model: null })),
+            collectRowFields(s.name),
+            readTegami(s.name),
+          ]);
           return {
             ...s,
-            status,
-            ctx,
-            model,
+            ...pane,
             ...contributed,
             ...(tegami ? { tegami } : {}),
           };

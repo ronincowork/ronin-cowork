@@ -27,29 +27,29 @@ import { listTeamRosters } from '../team-rosters.js';
 import { readWipeboardSettings } from '../machine-state.js';
 import { count } from '../counts.js';
 
-async function memberKeys(board: string): Promise<{ name: string; key: string }[]> {
-  const team = await teamBehind(board);
+async function memberKeys(
+  team: string | null,
+  sessions: Awaited<ReturnType<typeof listSessions>>,
+): Promise<{ name: string; key: string }[]> {
   if (!team) return [];
-  return (await listSessions()).filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name, key: s.key }));
+  return sessions.filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name, key: s.key }));
 }
 
 const SWEEP_EVERY_MS = 45_000;
 const lastSweep = new Map<string, number>();
 
-async function sweep(board: string): Promise<void> {
+async function sweep(board: string, knownTeam?: string | null): Promise<void> {
   const last = lastSweep.get(board) ?? 0;
   if (Date.now() - last < SWEEP_EVERY_MS) return;
   lastSweep.set(board, Date.now());
   try {
-    const { ttlMs } = await readWipeboardSettings(board);
-    await reapPosts(board, { members: await memberKeys(board), ttlMs });
-    const sessions = await listSessions();
-    const rosters = await listTeamRosters();
+    const team = knownTeam === undefined ? await teamBehind(board) : knownTeam;
+    const [settings, sessions, rosters] = await Promise.all([
+      readWipeboardSettings(board), listSessions(), listTeamRosters(),
+    ]);
+    await reapPosts(board, { members: await memberKeys(team, sessions), ttlMs: settings.ttlMs });
     await reapBoard(board, {
-      teamMembers: await (async () => {
-        const t = await teamBehind(board);
-        return t ? sessions.filter((s) => s.tags.includes(t)).map((s) => s.name) : [];
-      })(),
+      teamMembers: team ? sessions.filter((s) => s.tags.includes(team)).map((s) => s.name) : [],
       enrolled: [],
       rosterPointsAtIt: rosters.some((r) => r.wipeboard === board),
     });
@@ -96,9 +96,9 @@ async function teamBehind(board: string): Promise<string | null> {
 
 const isTeamBoard = async (name: string): Promise<boolean> => (await teamBehind(name)) !== null;
 
-async function boardMembers(board: string): Promise<{ name: string; control: Control }[]> {
+async function boardMembers(board: string, knownTeam?: string | null): Promise<{ name: string; control: Control }[]> {
   const sessions = await listSessions();
-  const team = await teamBehind(board);
+  const team = knownTeam === undefined ? await teamBehind(board) : knownTeam;
   if (!team) return [];
   return sessions.filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name, control: s.control }));
 }
@@ -137,14 +137,14 @@ export function registerWipeboards(app: express.Express): void {
         if (!team) return res.status(404).json({ error: 'No such wipeboard.' });
         await ensureBoard(name, teamStub(team));
       }
-      await sweep(name);
+      await sweep(name, team);
       if (!(await boardExists(name))) {
         return res.json({
           name, brief: '', posts: [], newest: '', file: boardPath(name),
           members: [], kind: team ? 'team' : 'custom', reaped: true,
         });
       }
-      const [board, members] = await Promise.all([readBoard(name), boardMembers(name)]);
+      const [board, members] = await Promise.all([readBoard(name), boardMembers(name, team)]);
       const since = String(req.query.since ?? '');
       const limit = Math.max(0, Math.min(500, Number(req.query.limit ?? 0) || 0));
       let posts = since ? board.posts.filter((p) => p.id > since) : board.posts;

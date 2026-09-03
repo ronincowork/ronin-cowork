@@ -1,7 +1,7 @@
 import os from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { readMachineSettings, writeMachineSettings } from './machine-settings.js';
+import { readMachineSettingsDocument, readMachineSettingsSection, writeMachineSettings } from './machine-settings.js';
 
 const pexec = promisify(execFile);
 
@@ -17,8 +17,7 @@ function clean(v: unknown): number {
 }
 
 export async function readSection<T>(key: string, fallback: T): Promise<T> {
-  const v = (await readMachineSettings()).set[key];
-  return v && typeof v === 'object' ? (v as T) : fallback;
+  return readMachineSettingsSection(key, fallback);
 }
 
 export const writeSection = <T>(key: string, value: T): Promise<void> =>
@@ -37,7 +36,7 @@ export const updateSection = <T extends Record<string, unknown>>(
 });
 
 async function updateConfig(mutate: (doc: Record<string, unknown>) => void): Promise<void> {
-  const before = (await readMachineSettings()).set;
+  const before = await readMachineSettingsDocument();
   const doc = { ...before };
   mutate(doc);
   for (const [key, value] of Object.entries(doc)) {
@@ -166,7 +165,7 @@ export const readSetupSection = (): Promise<Record<string, unknown>> =>
 
 export async function stampFreshInstall(): Promise<void> {
   try {
-    if (Object.keys((await readMachineSettings()).set).length > 0) return;
+    if (Object.keys(await readMachineSettingsDocument()).length > 0) return;
     await updateConfig((doc) => {
       doc.setup = { pending: true, stamped_at: new Date().toISOString() };
     });

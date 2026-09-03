@@ -23,8 +23,10 @@ readMachineSettings()
 writeMachineSettings(family, value)
 ```
 
-The read returns `{ set, observed, status, needed, schema }`. Only `set` is durable.
-Machine observations, derived status, and unmet needs are computed for each read.
+The read returns `{ set, observed, status, needed, schema }`. Only `set` is durable. The
+durable document is read once and the in-process copy is replaced after an atomic write.
+Machine observations are shared for five seconds; derived status and unmet needs use that
+recent observation without repeating host probes inside collection reads.
 
 The HTTP surface has one route and one verb in each direction:
 
@@ -46,4 +48,5 @@ not written into the document.
 the same relative path replaces the shipped file whole; new user files join the result.
 Every resolved item carries `origin` and `shadowed` state. Catalog sections, definitions,
 SOPs, ways, skins, lexicons, templates, session readings, and bundles use this resolution
-rule.
+rule. Directory listings and file contents are shared by resolver calls within one HTTP
+request and are read again for the next request.
