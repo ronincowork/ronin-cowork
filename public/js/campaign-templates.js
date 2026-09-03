@@ -61,6 +61,7 @@ export function createTemplatesSurface() {
   const body = el('div', 'cv-body');
   surface.content.append(body);
   let kind = 'open';
+  let shape = 'all'; // all · team · agent — the second axis, beside kind (owner, 2026-09-03)
   let teams = [];
   let agents = [];
   let library = null; // { source, bundles } after the press; null before
@@ -76,7 +77,25 @@ export function createTemplatesSurface() {
 
   const byKind = (rows) => (kind === 'open' ? rows : rows.filter((row) => (row.kinds || []).includes(kind)));
   const originWord = (row) => (row.origin === 'user' ? (row.shadowed ? t('campaign_view.templates_yours_over', 'yours, replacing ours') : t('campaign_view.templates_yours', 'yours')) : t('campaign_view.templates_shipped', 'shipped'));
-  const paintKinds = () => kindHost.replaceChildren(kindTiles(kind, (key) => { kind = key; paintKinds(); paintLibrary(); paintShelves(); }));
+  /** All · Teams · Agents, drawn as the kind tiles are so the two rows read as one control. */
+  const shapeTiles = () => {
+    const wrap = el('div', 'fs-kinds');
+    wrap.append(el('span', 'fs-gridlabel', t('campaign_view.shape', 'Show')));
+    const grid = el('div', 'fs-kindgrid');
+    for (const [key, icon, word] of [['all', '○', t('campaign_view.shape_all', 'All')], ['team', '⛩', t('campaign_view.shape_team', 'Teams')], ['agent', '人', t('campaign_view.shape_agent', 'Agents')]]) {
+      const box = el('button', 'fs-kindtile');
+      box.type = 'button';
+      box.setAttribute('aria-pressed', String(key === shape));
+      box.append(el('i', null, icon), el('span', null, word));
+      box.addEventListener('click', () => { shape = key; paintKinds(); paintLibrary(); paintShelves(); });
+      grid.append(box);
+    }
+    wrap.append(grid);
+    return wrap;
+  };
+  const paintKinds = () => kindHost.replaceChildren(shapeTiles(), kindTiles(kind, (key) => { kind = key; paintKinds(); paintLibrary(); paintShelves(); }));
+  const isTeamCard = (card) => !!card.holds?.teams;
+  const byShape = (rows, isTeam) => (shape === 'all' ? rows : rows.filter((row) => (shape === 'team') === isTeam(row)));
 
   /* ---- a picked box opens its detail under the grids ---- */
   /** One of the owner's boxes can go again; the second press is the yes. */
@@ -172,7 +191,7 @@ export function createTemplatesSurface() {
   const paintLibrary = () => {
     libraryGrid.replaceChildren();
     if (!library) return;
-    const rows = byKind(library.bundles);
+    const rows = byShape(byKind(library.bundles), isTeamCard);
     if (!rows.length) { libraryNotice.set('info', library.bundles.length ? t('campaign_view.library_none_kind', 'Nothing of this kind on the library.') : t('campaign_view.library_none', 'The library lists no bundles yet.')); return; }
     for (const card of rows) {
       libraryGrid.append(templateBox(card.art || '▤', card.label || card.name, card.blurb || '', picked === `library:${card.name}`, () => { picked = `library:${card.name}`; paintLibrary(); paintShelves(); void showPlan(card); }));
@@ -220,8 +239,8 @@ export function createTemplatesSurface() {
       if (shipped.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_shipped_with', 'Shipped with Ronin')), grid(shipped, key, show)); }
       if (yours.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_installed', 'Installed from the library, or saved by you')), grid(yours, key, show)); }
     };
-    shelf(t('campaign_view.templates_teams', 'Teams — projects'), byKind(teams), 'team', showTeam);
-    shelf(t('campaign_view.templates_agents', 'Agents — people'), byKind(agents), 'agent', showAgent);
+    if (shape !== 'agent') shelf(t('campaign_view.templates_teams', 'Teams — projects'), byKind(teams), 'team', showTeam);
+    if (shape !== 'team') shelf(t('campaign_view.templates_agents', 'Agents — people'), byKind(agents), 'agent', showAgent);
   };
   const readShelves = async () => {
     const [tm, ag] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents')]);

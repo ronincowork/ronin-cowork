@@ -270,6 +270,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.templates_teams:** Teams — projects
 - **campaign_view.templates_agents:** Agents — people
 - **campaign_view.templates_none:** Nothing on this shelf.
+- **campaign_view.shape:** Show
+- **campaign_view.shape_all:** All
+- **campaign_view.shape_team:** Teams
+- **campaign_view.shape_agent:** Agents
 - **campaign_view.templates_on_system:** On your system — what New Team and New Agent offer
 - **campaign_view.templates_on_system_help:** Shipped with Ronin, or installed from the library, or saved by you. Anything installed or saved can be removed again from its box.
 - **campaign_view.templates_shipped_with:** Shipped with Ronin
