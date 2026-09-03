@@ -135,6 +135,10 @@ A star updates the loaded default and leaves the selector open. A row name loads
 closes; Edit or Launch acts on that row and closes. A closed selector has no box, height or
 stale children. The approved composition is the Campaign Home concept in Ronin Lab; the
 live owner is `public/js/campaign-home.js`, never a simplified second interaction.
+
+The Campaign page shows the loaded Campaign's editable identity, desk profile, routines,
+defaults and templates. It does not offer New Campaign while multiple Campaigns are off;
+this is a client display choice, and the Campaign API remains available.
 - **surface head** — the genus for a surface's top row: *tile head*, *commons strip*,
   *column head*. No head carries a flip — a surface gets into a workspace from the selector column, or by drag.
 
