@@ -2,7 +2,7 @@
 /** Campaign is a Workbench tenant: it supplies context, never frame or placement code. */
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
-import { campaignById, campaignOf, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
+import { MULTIPLE_CAMPAIGNS_ENABLED, campaignById, campaignOf, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createCampaignIdentitySurface, createNewCampaignSurface } from './campaign-surfaces.js';
 import { choice, createDeskProfileSurface, skinWord } from './campaign-desk.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
@@ -15,7 +15,6 @@ import { coworkCommons } from './cowork-commons.js';
 import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
 
 const PROFILE = 'campaign';
-const MULTIPLE_CAMPAIGNS_ENABLED = false;
 // No Ronin Desk here (owner, 2026-08-30): its tabs repeat what these surfaces are, and
 // the machine's own half — account, health — is the Admin Desk's.
 // KEY ORDER IS THE SELECTOR'S ORDER (owner, 2026-09-03): Ronin Desk · Templates · Agent

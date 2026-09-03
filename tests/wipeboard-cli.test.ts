@@ -1,5 +1,5 @@
 /**
- * THE ONE ACTION, as executable assertions — the tool an agent actually types.
+ * THE ONE ACTION, as executable assertions for the server-side command.
  *
  * `src/wipeboards.ts` is covered by tests/wipeboards.test.ts; this covers the thing on
  * top of it, because until now the CLI had only ever been driven by hand. What matters
@@ -7,7 +7,7 @@
  * printed, what the exit code is, and whether a run that printed something records the
  * read while a run that refused changes nothing.
  *
- * It spawns the real entry through tsx, so what is asserted is what ships. No tmux: the
+ * It spawns the HTTP surface's command through tsx. No tmux: the
  * tool resolves its session and membership through the RONIN_SESSION / RONIN_BOARDS /
  * RONIN_MEMBERS seams that exist for exactly this reason.
  */
@@ -23,12 +23,12 @@ import { promisify } from 'node:util';
 const pexec = promisify(execFile);
 const exists = (p: string): Promise<boolean> => fs.stat(p).then(() => true, () => false);
 const REPO = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const CLI = path.join(REPO, 'src', 'wipeboard-cli.ts');
+const CLI = path.join(REPO, 'src', 'commands', 'wipeboard.ts');
 
 const store = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-wb-cli-'));
 const rosters = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-wb-cli-rosters-'));
 
-/** Run the shipped entry as an agent would, and hand back what an agent would see. */
+/** Run the command implementation and hand back its reply. */
 async function run(
   session: string,
   args: string[],

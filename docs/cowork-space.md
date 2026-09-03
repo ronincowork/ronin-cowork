@@ -119,26 +119,17 @@ else does.
 ### The root landing
 
 The bare `/` route is the landing, not a remembered workspace and not a Campaign editor.
-It has three loaded doors: Campaign, Coworks and Agents. The large door launches what is
-loaded: Campaign opens that Campaign's all-Coworks page; Coworks opens the loaded Cowork;
-Agents opens the loaded Agent in its Cowork.
+It has three direct doors: Machine Settings, Coworks and New Project. Machine Settings
+opens the one Campaign page; Coworks opens the coworkspace; New Project opens launch.
+There is no Campaign picker, default star, archive action or New Campaign footer.
 
-The value chip opens that door's selector. Every row has one star and one explicit action:
+The live owner is `public/js/campaign-home.js`.
 
-| selector | star means | row action | footer |
-|---|---|---|---|
-| Campaign | load this Campaign and re-home the other defaults | Edit | New Campaign |
-| Coworks | load this Cowork | Launch | New Cowork |
-| Agents | load this Agent | Launch | New Agent |
-
-A star updates the loaded default and leaves the selector open. A row name loads it and
-closes; Edit or Launch acts on that row and closes. A closed selector has no box, height or
-stale children. The approved composition is the Campaign Home concept in Ronin Lab; the
-live owner is `public/js/campaign-home.js`, never a simplified second interaction.
-
-The Campaign page shows the loaded Campaign's editable identity, desk profile, routines,
-defaults and templates. It does not offer New Campaign while multiple Campaigns are off;
-this is a client display choice, and the Campaign API remains available.
+The Campaign page shows the Campaign's editable identity, desk profile, routines,
+defaults and templates. With `MULTIPLE_CAMPAIGNS_ENABLED` off, the client does not render
+controls that add, select, default, archive or delete Campaigns. The Campaign API remains
+available. The fixed Campaign id is not rendered; its title, description and all other
+Campaign content remain editable.
 - **surface head** — the genus for a surface's top row: *tile head*, *commons strip*,
   *column head*. No head carries a flip — a surface gets into a workspace from the selector column, or by drag.
 
