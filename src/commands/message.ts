@@ -1,4 +1,4 @@
-import { attemptMessage, enqueueMessage, MessageRefused, pendingTellsFrom, type MessageSource } from '../message-queue.js';
+import { deliverMessage, MessageRefused, pendingTellsFrom, type MessageSource } from '../message-queue.js';
 import { isValidName } from '../tmux.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -22,8 +22,7 @@ try {
     const pending = await pendingTellsFrom(sender, target);
     if (pending.length) console.warn(`WARNING: ${pending.length} unresolved tell(s) from '${sender}' to '${target}' remain visible in Messages; sending this one too.`);
   }
-  const item = await enqueueMessage(target, text, source, from);
-  const retained = await attemptMessage(item.id, 'safe');
+  const retained = await deliverMessage(target, text, source, from);
   console.log(retained
     ? `QUEUED for '${target}': ${retained.reason} (message ${retained.id})`
     : `DELIVERED to '${target}'.`);

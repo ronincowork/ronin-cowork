@@ -14,6 +14,7 @@ or a commit message.
 
 The operator's HTTP API is the wipeboard surface. `tejun-wipeboard` calls that surface
 and prints its reply; it does not read or write wipeboard storage itself.
+Use the wipeboard for team-wide messages and `tejun-send` for one session, with no board in between.
 Wipeboards live in the wipeboards **store** (user root, `bin/ronin-store wipeboards` —
 never a hand-spelled path), so one survives an uninstall and `rm -rf <repo>` cannot take
 it.

@@ -6,6 +6,8 @@
 `read_tegami`. `setup.sh` puts this
 directory on PATH, after `bin/shim` (the guards) and ahead of `bin/`.
 
+Use the wipeboard for team-wide messages and `tejun-send` for one session, with no board in between.
+
 **The shelf is defined by its audience, the catalog by its rule.** Anything an agent
 types by bare name belongs here — the letter tools included, which is why they moved
 out of `bin/` on 2026-08-14. A **TEJUN tool** is the subset that additionally

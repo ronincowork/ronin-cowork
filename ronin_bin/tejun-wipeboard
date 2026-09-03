@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # tejun-wipeboard — THE ONE ACTION: what you have not read, on every wipeboard you are on.
+# Use the wipeboard for team-wide messages; use tejun-send for one session, with no board in between.
 #
 # Usage: tejun-wipeboard                              everything unread, then it is read
 #        tejun-wipeboard boards                       which wipeboards exist
