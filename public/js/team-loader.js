@@ -10,6 +10,15 @@
  * the remaining rows.
  */
 export async function launchTeamAgents(request, team, rows = []) {
+  // A row's own Routine switches become the launch's agent layer (src/routines.ts): on
+  // over off when a template states both, and nothing sent when it states neither, so
+  // an ordinary row still inherits the team's map untouched.
+  const routinesOf = (row) => {
+    const map = {};
+    for (const name of row.routines_off || []) map[name] = false;
+    for (const name of row.routines_on || []) map[name] = true;
+    return Object.keys(map).length ? { routines: map } : {};
+  };
   const launch = (row) => request('/api/launch', {
     method: 'POST',
     json: {
@@ -19,6 +28,7 @@ export async function launchTeamAgents(request, team, rows = []) {
       name: row.name,
       instructions: row.instructions,
       mandate: row.mandate,
+      ...routinesOf(row),
     },
   });
 

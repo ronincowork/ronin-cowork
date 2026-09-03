@@ -129,6 +129,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       name: pick.name || '',
       assignment: pick.instructions || '',
       lead: pick.team_lead === true,
+      routinesOn: Array.isArray(pick.routines_on) ? [...pick.routines_on] : [],
+      routinesOff: Array.isArray(pick.routines_off) ? [...pick.routines_off] : [],
       ...(pick.mandate ? {
         reach: pick.mandate.reach,
         recruit: pick.mandate.recruit,

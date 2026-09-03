@@ -153,6 +153,8 @@ export async function saveTeamTemplate(body: TeamTemplateSave): Promise<TeamTemp
       ...line('team_lead', lead ? 'yes' : ''),
       ...line('instructions', words(row.instructions, 2000)),
       ...line('mandate', mandate),
+      ...line('routines_on', list(row.routines_on).join(', ')),
+      ...line('routines_off', list(row.routines_off).join(', ')),
     );
   }
   await commit([

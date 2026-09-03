@@ -352,6 +352,11 @@ export interface TemplateAgentRow {
   instructions: string;
   mandate: TemplateMandate | null;
   team_lead: boolean;
+  /** This row's OWN Routine switches over the team's map — the agent layer of the cascade
+   *  (src/routines.ts), stated in the template (owner, 2026-09-03: gbrain off on the rows
+   *  that gain nothing from it). Exactly the fields the row carries; empty means inherit. */
+  routines_on: string[];
+  routines_off: string[];
 }
 
 /** A team template — a CAST: the Team's own answers plus the agents it launches. The
@@ -417,6 +422,8 @@ export function parseTemplateAgents(raw: string): TemplateAgentRow[] {
         instructions: entryValue(lines, 'instructions'),
         mandate: mandate ? templateMandate(mandate) : null,
         team_lead: /^yes$/i.test(entryValue(lines, 'team_lead')),
+        routines_on: splitDefinitionList(entryValue(lines, 'routines_on')),
+        routines_off: splitDefinitionList(entryValue(lines, 'routines_off')),
       };
     })
     .filter((row) => row.name);

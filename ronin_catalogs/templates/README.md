@@ -48,7 +48,9 @@ form's, not a file here: a template that filled nothing in would collapse nothin
 | `## agents` | the cast — one `### <name>` section per agent row, below the field lines |
 
 Each cast row carries `instructions:`, optionally `mandate:`, and `team_lead: yes` on
-exactly one row — the lead is just one of the agents, marked. A row is the same object
+exactly one row — the lead is just one of the agents, marked. A row may also carry its
+own `routines_on:` / `routines_off:` over the team's map — the agent layer of the
+cascade, so a template can say "this lane, gbrain off" while the team keeps it on. A row is the same object
 the New Team form's agent line produces and the team loader launches; every row stays
 editable and deletable on the form before the raise.
 

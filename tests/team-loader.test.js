@@ -17,7 +17,7 @@ test('the Team loader finishes ordinary rows serially and the lead last', async 
   const outcomes = await launchTeamAgents(request, 'dinner', [
     { name: 'cook', instructions: 'cook', mandate: { reach: 'execute', recruit: 'open', output: ['an artifact'] }, team_lead: false },
     { name: 'host', instructions: 'host', mandate: { reach: 'execute', recruit: 'staff agents', output: ['the team'] }, team_lead: true },
-    { name: 'music', instructions: 'music', mandate: { reach: 'execute', recruit: 'open', output: ['ideas'] }, team_lead: false },
+    { name: 'music', instructions: 'music', mandate: { reach: 'execute', recruit: 'open', output: ['ideas'] }, team_lead: false, routines_off: ['gbrain'], routines_on: ['ronin_worktrees'] },
   ]);
 
   assert.deepEqual(calls.map((call) => call.body.name), ['cook', 'music', 'host']);
@@ -26,7 +26,8 @@ test('the Team loader finishes ordinary rows serially and the lead last', async 
     session_type: 'cowork_agent', team: 'dinner', team_lead: true,
     name: 'host', instructions: 'host',
     mandate: { reach: 'execute', recruit: 'staff agents', output: ['the team'] },
-  });
+  }, 'a row with no switches of its own sends no routines and inherits the team map');
+  assert.deepEqual(calls[1].body.routines, { gbrain: false, ronin_worktrees: true }, 'a row\'s own switches ride as the agent layer');
 });
 
 test('one refused launch does not stop the other rows', async () => {
