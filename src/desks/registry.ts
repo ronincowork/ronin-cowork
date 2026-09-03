@@ -191,10 +191,14 @@ export const writeAssignment = async (a: Assignment): Promise<Assignment> => {
  */
 export async function deriveAssignment(input: { session: string; team: string; project_root: string }): Promise<Assignment> {
   const { session, team, project_root } = input;
+  // WHERE A TEAM WORKS (owner, 2026-09-02): the roster's ticked repositories, and only
+  // those. Nothing ticked is the simple-job default — born in the project root, no desk;
+  // a desk in any team repository opens on demand (`tejun-desk open <repo>`). The
+  // project_root is never a desk by implication. A rōnin has no roster and keeps its one.
   let repos = [project_root];
   if (team) {
     const roster = await readTeamRoster(team);
-    repos = roster?.repos.length ? roster.repos : [roster?.project_root || project_root].filter(Boolean);
+    repos = roster ? roster.repos : [project_root];
   }
   const desks: RepoDesk[] = [];
   const now = new Date().toISOString();

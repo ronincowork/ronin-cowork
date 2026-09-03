@@ -64,6 +64,9 @@ export interface TeamRoster {
    *  Empty means the project_root's repository alone (docs/team-promotion.md). */
   repos: string[];
   branch: string;
+  /** Per-repository branches for a team working without Worktrees ({repo: branch}); absent
+   *  means as checked out. With Worktrees on the branch is Ronin's and this is not read. */
+  branches: Record<string, string>;
   /** The board underneath this team. Defaults to the team's own token. */
   wipeboard: string;
   state: 'active' | 'archived';
@@ -121,6 +124,14 @@ const BLANK = '—';
  * line can be hand-edited to claim another Campaign, and a record that claims one place
  * while sitting in another is exactly the drift the nesting exists to prevent.
  */
+/** A {string: string} map, anything else reads as empty. */
+function stringMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+    .filter(([key, entry]) => key.trim() && typeof entry === 'string' && entry.trim())
+    .map(([key, entry]) => [key.trim().slice(0, 128), (entry as string).trim().slice(0, 128)]));
+}
+
 function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
   const lines = raw.split('\n');
   const get = (k: string) => {
@@ -151,6 +162,7 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     project_root: get('project_root'),
     repos: strings(get('repos').split(','), 160),
     branch: get('branch'),
+    branches: stringMap(json('branches')),
     wipeboard: get('wipeboard') || name,
     state: /^archived$/i.test(get('state')) ? 'archived' : 'active',
     references: strings(json('references'), 500),
@@ -254,6 +266,7 @@ export interface RosterEdit {
   project_root?: string;
   repos?: string[];
   branch?: string;
+  branches?: Record<string, string>;
   wipeboard?: string;
   state?: 'active' | 'archived';
   references?: string[];
@@ -269,7 +282,7 @@ export interface RosterEdit {
  * once at create and never reachable through an edit.
  */
 const KEYS: (keyof RosterEdit)[] = [
-  'title', 'kind', 'objective', 'project_root', 'repos', 'branch', 'wipeboard', 'state',
+  'title', 'kind', 'objective', 'project_root', 'repos', 'branch', 'branches', 'wipeboard', 'state',
   'references', 'routines', 'behaviours', 'agent_defaults',
 ];
 
@@ -288,6 +301,7 @@ function render(name: string, r: TeamRoster): string {
     line('project_root', r.project_root),
     line('repos', r.repos.join(', ')),
     line('branch', r.branch),
+    line('branches', JSON.stringify(r.branches)),
     line('wipeboard', r.wipeboard || name),
     line('state', r.state),
     line('references', JSON.stringify(r.references)),
@@ -352,6 +366,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     project_root: edit.project_root ?? '',
     repos: edit.repos ?? [],
     branch: edit.branch ?? '',
+    branches: edit.branches ?? {},
     // An explicit token is the owner's and is taken as given; only the DEFAULT is allocated,
     // because the default is the only thing that could collide with another Campaign's
     // same-named Cowork.

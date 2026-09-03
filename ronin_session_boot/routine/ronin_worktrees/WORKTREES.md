@@ -12,7 +12,9 @@ that repository; there is no missing desk to resolve.
 `ronin-repo-init <project-root>` is only for a Configuration task that explicitly asks for a
 local Git repository. Routine selection alone is never permission to initialize one.
 
-**Your brief names a desk.** Then the rest of this page is your working agreement. A
+**Your brief names a desk.** Then the rest of this page is your working agreement. Your
+team's other repositories are territory, not desks: `tejun-desk open <repo>` opens one, cut
+from the team's line, when the work takes you there. A
 **desk** is that repository's private branch and the worktree mounted on it, opened before
 your CLI started. The desks — repo, path, branch, the team line each hands in to — are the
 block in your brief and the `repos[]` on your letter.

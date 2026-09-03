@@ -100,11 +100,11 @@ test('arrangement: absent RONIN_REPO is today, reviewed has defaults, bad values
   await assert.rejects(arrangementOf('nope'), /no project_root named/);
 });
 
-test('deriveAssignment: the team project_root supplies its one repository default', async () => {
+test('deriveAssignment: a team desks only its ticked repositories; nothing ticked is born with no desk', async () => {
   const a = await deriveAssignment({ session: 'fable', team: 'comp', project_root: 'cowork' });
   assert.equal(a.id, 'fable@comp');
-  assert.equal(a.primary, 'cowork');
-  assert.deepEqual(a.desks.map((d) => `${d.repo}:${d.branch}→${d.line}`), ['cowork:team/comp/fable→team/comp/dev']);
+  assert.deepEqual(a.desks, [], 'the project_root is never a desk by implication');
+  assert.equal(a.primary, '');
   const solo = await deriveAssignment({ session: 'lone', team: '', project_root: 'cowork' });
   assert.deepEqual(solo.desks.map((d) => `${d.branch}→${d.line}`), ['solo/lone→dev']);
   const both = await deriveAssignment({ session: 'fable', team: 'multi', project_root: 'cowork' });

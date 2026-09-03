@@ -232,7 +232,9 @@ export function buildBrief(
     );
   }
   // Concrete resolved locations precede the reading; managed rows also carry their line.
-  if (workLocations.length) parts.push(renderWorkLocations(workLocations));
+  if (workLocations.length) parts.push(renderWorkLocations(workLocations, roster?.branches ?? {}));
+  // The project root is named for every launch, before any managed desks.
+  if (root) parts.push(`Born in ${root.name} at ${root.dir}.`);
   if (assignment?.desks.length) parts.push(renderDeskBlock(assignment));
   // THE BIRTH README POINTER. ResolveForm initially supplies the resolved sources; the
   // launch executor compiles them into one per-session README and replaces this sentence
@@ -592,9 +594,7 @@ export async function resolveForm(
     // The profile's own `dir:` WINS over the project_root's, because it is a constant of
     // the launch — the same category as its dial, and a launch must not be able to leave
     // it to chance. Exactly one definition carries one (`mikaassist`, `{install}`): she
-    // works on Ronin's own business, so she starts where Ronin's documents are whatever
-    // root was picked. Otherwise the 2x2 resolution wins: managed root → its Worktree;
-    // direct root → its ordinary checkout.
+    // works on Ronin's own business. Otherwise the 2x2 location wins.
     dir: profileDir(profile) || primaryWorkLocation(worktrees.repositories, root.name) || root.dir || '',
     assignment,
     work_locations: worktrees.repositories,

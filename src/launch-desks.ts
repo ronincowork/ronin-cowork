@@ -152,12 +152,14 @@ export function renderDeskBlock(a: Assignment): string {
 }
 
 /** Every repository gets one resolved working location from the canonical 2x2. */
-export function renderWorkLocations(repositories: ResolvedWorktreesRepository[]): string {
+export function renderWorkLocations(repositories: ResolvedWorktreesRepository[], branches: Readonly<Record<string, string>> = {}): string {
   const direct = repositories.filter((repository) => repository.mode === 'direct');
   if (!direct.length) return '';
   return [
     'Direct work locations:',
-    ...direct.map((repository) =>
-      `  ${repository.repo}  ${repository.location}  (this repository does not use Worktrees; edit directly in this checkout)`),
+    ...direct.map((repository) => {
+      const branch = branches[repository.repo];
+      return `  ${repository.repo}  ${repository.location}  (no Worktrees; edit directly in this checkout${branch ? `, on branch ${branch}` : ''})`;
+    }),
   ].join('\n');
 }
