@@ -1,10 +1,8 @@
 # ronin-cowork — agent contract
 
-Testing: `docs/test-protocols.md`. Ordinary dev work does **not** run BYOIN — not at a
-commit, not at a hand-in. Desk work follows the desk contract handed to you at birth
-(`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`): **commit** preserves, **hand-in**
-publishes to your team line, the lead's **team promotion** runs the one full repository
-BYOIN at `team → dev`, and `git push` is the release path's word alone. Installed-box
-BYOIN after maintenance or a store change is a separate matter on that page. That
-provider-neutral page is the whole contract; this file is only the pointer your CLI
-auto-reads.
+Run `npm run verify` for TypeScript and behavior tests. Playwright suites are explicit
+diagnostic commands. Desk work follows the desk contract handed to you at birth
+(`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`): **commit** preserves,
+**hand-in** publishes to the team line, and `git push` belongs only to release work.
+After changing an installed box or its user stores, run `npm run byoin` to check that
+current user customization surfaces.

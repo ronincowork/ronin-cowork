@@ -1,6 +1,6 @@
 # ronin_sops — how this house goes about things
 
-**test_protocols:** changed anything here? run `bin/ronin-byoin` and read the verdict — `docs/test-protocols.md` is the page.
+After changing this shelf, run `npm run verify`. User-store shadows are checked with `npm run byoin`.
 
 An **SOP** is the standard way this install approaches an area of work: source control,
 data, getting a thing deployed. **Not the only way and not the right way** — the way, so

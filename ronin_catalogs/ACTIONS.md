@@ -453,16 +453,13 @@ to nothing; it is never a log). **Work in your assignment's desks** — the repo
 your brief and on your letter (`repos[]`); never edit `dev` or a team line, which are
 funnel points. **Commit** coherent checkpoints privately as you go. At each DONE leg,
 **offer a hand-in** — `tejun-desk hand-in` when the work is coherent for the team; a leg
-may prompt it, never perform it for you, and it is not `git push`. Run no full BYOIN at a
+may prompt it, never perform it for you, and it is not `git push`. Run no repository-wide verification at a
 commit or a hand-in. An accepted hand-in, or a conflict, tells your team's lead by itself,
 regardless of the lead's dial — reviewing the team line and promoting it is the lead's
 primary job (owner law 2026-08-28) — so you never need to `tejun-send` the lead about a
 hand-in, and a watch-only lead is not a reason to stop. If the team has no lead, the
 hand-in tells you so and the job is yours: review the line and `bin/ronin-promote <team>`
 when it is coherent; a conflict is yours to resolve (`tejun-desk sync`, fix, hand in).
-**Look before you prove:** a promotion runs the one full BYOIN, and two proving on one box
-at once trample each other, so `ronin-promote` answers `BUSY: …` when any team's promotion
-is on the fly. That is not a fault: wait for it to finish, then run again.
 Nothing waits on a lead that was never set. If your brief lists no desk (manual launch, plain terminal, a
 repository under direct publishing) you have none: commit to that repository's declared
 line as its own instructions say, and invent no desk state. Verify per the doc, with
@@ -581,7 +578,7 @@ Mechanical admission, serialized per line: a throwaway candidate is built at the
 tip, your desk is merged into it, and the line advances by compare-and-swap to the
 candidate — or not at all. A conflict is contained in the candidate; the hand-in is
 rejected with the two sides and the files, your desk is marked blocked, and the lead
-adjudicates. No full BYOIN runs here and nothing reaches the remote: that is team
+adjudicates. No repository-wide verification runs here and nothing reaches the remote: that is team
 promotion, the lead's act. One receipt is appended per attempt, accepted or not. After an
 accepted hand-in every sibling desk on the line adopts it (clean) or is told (dirty).
 `--assignment` hands in every desk in your assignment, each to its own repo's line;

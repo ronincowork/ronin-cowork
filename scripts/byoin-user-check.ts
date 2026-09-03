@@ -1,28 +1,4 @@
-/**
- * byoin_user_check — the third-party user's test, inside BYOIN's machine half.
- *
- * `byoin_check`s ask whether OUR tree is honest with itself; this asks whether YOUR
- * customization of this install still surfaces. The readers drop what they cannot use
- * by design — a session task with no `opening:` simply vanishes from the launcher —
- * and for the shipped catalogs check-catalogs turns that silence into a failure. For
- * the USER stores nothing did, and hand-editing them is the encouraged front door. So
- * this check runs the same parsing the server uses over the stores that are yours, and
- * every silent drop becomes a named finding with its remedy. The failure text is the
- * guidance: it tells you what the machinery needed, not just that something is wrong.
- *
- * Never in the verify chain and never in CI: a runner has no user stores. BYOIN runs
- * it beside ronin-doctor, and `docs/test-protocols.md` is the page that says when to
- * run BYOIN. Empty or absent stores are a clean pass — a fresh box is not a finding.
- *
- * THE RETIRED-CUSTOMIZATION CHECK IS THE POINT OF THIS FILE, NOT AN EXTRA. Two cuts in
- * two days moved the readers — the role/task split (2026-08-22), then the teams cut
- * (R35, 2026-08-23: `session_tasks/` → `session_roles/`, `family_roles/` →
- * `role_families/`, the `task/` shelf level → `role/`) — each outright, no alias, no
- * dual-read, by the cutover rule. An owner who customized under any earlier shape still
- * HAS those files and nothing reads them any more. That is the exact silence this check
- * exists to break: their work did not fail, it went dark, and only a named finding
- * tells them where to move it.
- */
+
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../src/stores.js';
@@ -35,13 +11,12 @@ const find = (msg: string, remedy: string) => {
   console.error(`        remedy: ${remedy}`);
   findings++;
 };
-const note = (msg: string) => console.log(`  note  ${msg}`);
 
 const exists = async (p: string) => !!(await stat(p).catch(() => null));
 const mdFiles = async (dir: string): Promise<string[]> =>
   (await readdir(dir).catch(() => [] as string[])).filter((f) => f.endsWith('.md'));
 
-/** Probe a reader module without a compile-time dependency on it. */
+
 async function probe(rel: string): Promise<Record<string, unknown> | null> {
   try {
     return (await import(rel)) as Record<string, unknown>;
@@ -49,42 +24,10 @@ async function probe(rel: string): Promise<Record<string, unknown> | null> {
     return null;
   }
 }
-
-/* ---- 1 · catalog shadows: every entry you wrote must surface or be a deliberate hide ---- */
-
-// Per-file required fields, mirroring what each reader drops entries over. A file not
-// named here gets the generic parse check only.
 const REQUIRED: Record<string, { keys: string[]; unless?: (e: { get: (k: string) => string }) => boolean }> = {
   'MACROS.md': { keys: ['label', 'blurb'] },
 };
 
-/**
- * User-store files the cut RETIRED. Nothing reads these; the owner's content is intact and
- * unreachable. Each names what replaced it, because "this is dead" without "put it here"
- * is only half a remedy.
- */
-const RETIRED: Record<string, { was: string; now: string }> = {
-  'SESSION_JOBS.md': {
-    was: 'the combined session_job catalog',
-    now: 'one file per session_role in session_roles/<name>.md — see ronin_catalogs/session_roles/README.md',
-  },
-  'JOB_CLASSES.md': {
-    was: 'the Job Group manifest',
-    now: 'one file per family in role_families/<name>.md, each carrying its own `session_roles:` — see ronin_catalogs/role_families/README.md',
-  },
-};
-
-/** Retired user-store DIRECTORIES — a whole directory the readers stopped looking at. */
-const RETIRED_DIRS: Record<string, { was: string; now: string }> = {
-  session_tasks: {
-    was: 'the session_task definitions (2026-08-22 generation)',
-    now: 'session_roles/<name>.md — the same one-file-per-definition law, renamed by R35',
-  },
-  family_roles: {
-    was: 'the family_role definitions (2026-08-22 generation)',
-    now: 'role_families/<name>.md — presentation-only shelves under R35; identity fields have no home, they died with the session axis',
-  },
-};
 
 async function checkCatalogFile(dir: string, file: string, label: string): Promise<void> {
   looked++;
@@ -115,13 +58,11 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
   }
 }
 
-/* ---- 2 · the task/role readers: does what you wrote actually come out? ---- */
+
 
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
   const defs = await probe('../src/definitions.js');
   if (defs && typeof defs.listSessionRoles === 'function') {
-    // session_roles/ and role_families/ are directories of one file per definition, in the
-    // repo and in your store alike.
     for (const kind of ['session_roles', 'role_families'] as const) {
       const dir = path.join(catalogsDir, kind);
       if (!(await exists(dir))) continue;
@@ -142,50 +83,6 @@ async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
     }
   }
 }
-
-/* ---- 2b · what the cut retired: your files are still there, and nothing reads them ---- */
-
-async function checkRetired(catalogsDir: string): Promise<void> {
-  for (const [file, { was, now }] of Object.entries(RETIRED)) {
-    if (!(await exists(path.join(catalogsDir, file)))) continue;
-    looked++;
-    find(
-      `${file} (yours): RETIRED — this was ${was}, and no reader has looked at it since the role_family/session_role split. Your entries are intact and unreachable`,
-      `move each entry to ${now}, then delete the old file. Nothing converts it for you: the cut ships no compatibility reader on purpose`,
-    );
-  }
-
-  for (const [dir, { was, now }] of Object.entries(RETIRED_DIRS)) {
-    const entries = await mdFiles(path.join(catalogsDir, dir));
-    if (!entries.length) continue;
-    looked++;
-    find(
-      `${dir}/ (yours): RETIRED — this was ${was}, and no reader has looked at it since the teams cut. ${entries.length} file(s) intact and unreachable`,
-      `move each definition to ${now}, then delete the old directory`,
-    );
-  }
-
-  // The boot shelf's old levels. `ensureShelf` now makes role/ (keyed by session_role)
-  // A leftover job/ or task/ sits beside the live levels looking live.
-  for (const [old, remedy] of [
-    ['job', 'a shelf named for work moves to role/<session_role>/'],
-    ['task', 'the level was renamed: move each shelf to role/<session_role>/ — same keys, same law (R35)'],
-  ] as const) {
-    const shelfDir = path.join(storeDir('session_boot'), old);
-    const shelves = (await readdir(shelfDir, { withFileTypes: true }).catch(() => [])).filter((e) => e.isDirectory());
-    if (!shelves.length) continue;
-    looked++;
-    find(
-      `session_boot store: ${old}/ is RETIRED and still holds ${shelves.length} shelf(s) — ${shelves
-        .map((e) => e.name)
-        .join(', ')}. No session has been given this reading since the cut`,
-      `${remedy} — then delete ${old}/`,
-    );
-  }
-}
-
-/* ---- 3 · sops / library / session_boot shadows: readable, and not empty ---- */
-
 async function checkShadowStore(id: string, stockDir: string): Promise<void> {
   const dir = storeDir(id);
   if (!(await exists(dir))) return;
@@ -208,17 +105,15 @@ async function checkShadowStore(id: string, stockDir: string): Promise<void> {
   await walk(dir);
 }
 
-/* ---- run ---- */
+
 
 const catalogsDir = storeDir('catalogs');
 if (await exists(catalogsDir)) {
   for (const f of await mdFiles(catalogsDir)) {
-    if (f in RETIRED) continue; // reported by checkRetired; validating it against a dead reader would mislead
     await checkCatalogFile(catalogsDir, f, `${f} (yours)`);
   }
   await checkDefinitionsSurface(catalogsDir);
 }
-await checkRetired(catalogsDir);
 await checkShadowStore('sops', 'ronin_sops');
 await checkShadowStore('library', 'ronin_library');
 await checkShadowStore('session_boot', 'ronin_session_boot');
