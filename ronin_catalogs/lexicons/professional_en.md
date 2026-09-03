@@ -1287,6 +1287,7 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_keypad:** Keypad
 - **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
+- **messages.reconnecting:** Reconnecting…
 - **messages.note:** Sometimes Agent-to-Agent messages get stuck and need your help. Try Again is gentle; Force gives it one determined shove. 😉
 - **messages.from:** From
 - **messages.to_label:** To
@@ -1674,10 +1675,9 @@ The catalog entry goes. {dir} is not touched.
 - **team_jikan.request_placeholder:** Write the message the agent should receive
 - **team_jikan.request_help:** Plain words, exactly as if you typed them to the agent. A macro such as +name: is optional.
 - **team_jikan.to:** To
+- **team_jikan.team:** Team
 - **team_jikan.to_lead:** Team lead (default)
 - **team_jikan.when:** When
-- **team_jikan.advanced:** Advanced schedule
-- **team_jikan.advanced_placeholder:** Enter the schedule grammar
 - **team_jikan.expires:** Expires
 - **team_jikan.expires_help:** Optional. Recurring jobs stop after this date and time.
 - **team_jikan.checking:** Checking next runs…

@@ -478,14 +478,13 @@ body {
 .tj-form[hidden], .tj-filter-team[hidden], .tj-when-parts > [hidden] { display: none; }
 .tj-form-title { color: var(--fg-strong); font-size: var(--form-head); }
 .tj-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
-.tj-fields > .ui-field:first-child, .tj-advanced, .tj-grammar, .tj-preview { grid-column: 1 / -1; }
+.tj-fields > [hidden] { display: none; }
+.tj-fields > .ui-field:first-child, .tj-grammar, .tj-preview { grid-column: 1 / -1; }
 .tj-fields .ui-field { display: flex; flex-direction: column; gap: var(--space-2); }
 .tj-fields .ui-field > label { color: var(--muted); font-size: var(--form-key); }
 .tj-control { box-sizing: border-box; width: 100%; min-width: 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
 .tj-request-input { resize: vertical; }
 .tj-when-parts { display: flex; gap: var(--space-3); align-items: start; }
-.tj-advanced { color: var(--muted); }
-.tj-advanced summary { cursor: pointer; margin-bottom: var(--space-2); }
 .tj-grammar { color: var(--fg-strong); overflow-wrap: anywhere; }
 .tj-form-actions { justify-content: flex-start; }
 .tj-filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
@@ -506,7 +505,7 @@ body {
 .wk-channel-service-tab[data-service='cron-jobs'][data-count]::after { content: attr(data-count); margin-left: var(--space-2); border-radius: var(--radius-pill); background: var(--well); color: var(--muted); padding: var(--space-1) var(--space-2); font-size: var(--text-1); }
 @media (max-width: 760px) {
   .tj-fields, .tj-filters { grid-template-columns: 1fr; }
-  .tj-fields > .ui-field:first-child, .tj-advanced, .tj-grammar, .tj-preview { grid-column: auto; }
+  .tj-fields > .ui-field:first-child, .tj-grammar, .tj-preview { grid-column: auto; }
   .tj-head { align-items: flex-start; }
 }
 
