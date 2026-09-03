@@ -126,9 +126,12 @@ export function buildMessageQueue(host, onCount = () => {}) {
     }
   };
   let timer = null;
+  // The live operator briefly disappears during an update. A background queue read
+  // may fail in that gap; it has no user action to report and the next poll retries it.
+  const poll = () => void render().catch(() => {});
   const enter = () => {
-    void render();
-    if (!timer) timer = setInterval(() => void render(), 2_000);
+    poll();
+    if (!timer) timer = setInterval(poll, 2_000);
   };
   const leave = () => { clearInterval(timer); timer = null; };
   return { enter, leave, destroy: leave };
