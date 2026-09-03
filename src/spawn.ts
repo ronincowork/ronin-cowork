@@ -214,6 +214,7 @@ export function buildBrief(
   roster?: TeamRoster | null,
   assignment?: Assignment | null,
   workLocations: ResolvedWorktreesRepository[] = [],
+  resolvedMandate: Mandate = mandate(form.mandate),
 ): string {
   const parts: string[] = [];
   if (profile.posture.length) parts.push(`You are the ${profile.label}. ${profile.posture.join(' ')}`);
@@ -231,6 +232,21 @@ export function buildBrief(
         `(tejun-team ${form.team}), it has no durable roster, and its wipeboard is "${form.team}" (tejun-wipeboard ${form.team}).`,
     );
   }
+  // THE LAUNCH CONTRACT, IN THE PROMPT. These are suggestions the Agent reads, never
+  // controls Ronin enforces. `open` means the owner stated no constraint, so silence is
+  // the honest rendering; only actual choices deserve prompt space. Output is plural by
+  // design. Leadership is a designation, not a mandate axis, and is named only when the
+  // Agent is actually born onto a team as its lead.
+  const mandateLines: string[] = [];
+  if (resolvedMandate.reach !== 'open') mandateLines.push(`Reach: ${resolvedMandate.reach}`);
+  if (resolvedMandate.recruit !== 'open') mandateLines.push(`Recruit: ${resolvedMandate.recruit}`);
+  const outputs = resolvedMandate.output.filter((value) => value !== 'open');
+  if (outputs.length) mandateLines.push(`Output: ${outputs.join(', ')}`);
+  const birthContract = [
+    ...(form.team && form.team_lead ? ['Designation: Team Lead'] : []),
+    ...mandateLines,
+  ];
+  if (birthContract.length) parts.push(birthContract.join('\n'));
   // Concrete resolved locations precede the reading; managed rows also carry their line.
   if (workLocations.length) parts.push(renderWorkLocations(workLocations, roster?.branches ?? {}));
   // The project root is named for every launch, before any managed desks.
@@ -625,6 +641,7 @@ export async function resolveForm(
           roster,
           assignment,
           worktrees.repositories,
+          resolvedMandate,
         )
       : '',
     agent,
