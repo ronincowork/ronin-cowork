@@ -23,7 +23,7 @@
  *                ack · opening. The last layer to state it wins.
  *
  *   ADDITIVE     the boot shelf's `role/<session_role>/` reading level
- *                (src/session-boot.ts). Posture is a single statement now — the one
+ *                (src/birth-readme.ts). Posture is a single statement now — the one
  *                definition's — but stays an array so the brief's shape is stable.
  *
  *   LOCKED       `mcp: always`. A layer may not contradict it and neither may the launch.
@@ -45,7 +45,7 @@
  * EVERY REFUSAL NAMES A FILE. A definition directory has many small files and a wrong
  * field is worth nothing to the owner if the message says only "the catalog".
  */
-import type { Definition } from './definitions.js';
+import type { Definition } from './resource-adapters.js';
 
 /** The dial a session is BORN on — a constant of the launch, never a live control. */
 export type Dial = 'user' | 'read' | 'write';

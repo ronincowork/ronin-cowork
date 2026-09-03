@@ -30,7 +30,7 @@ process.env.RONIN_CONFIG_DIR = config;
 process.env.RONIN_CATALOGS_DIR = catalogs;
 process.env.RONIN_WIPEBOARDS_DIR = wipeboards;
 
-const { createCampaign, ensureInitialCampaign, initialCampaign } = await import('../src/campaign-config.js');
+const { createCampaign, ensureInitialCampaign, initialCampaign } = await import('../src/campaigns.js');
 const { createTeamRoster, listTeamRosters, readTeamRoster } = await import('../src/team-rosters.js');
 const {
   assertSameCampaignRoot,

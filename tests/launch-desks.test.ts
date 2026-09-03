@@ -13,7 +13,7 @@ import path from 'node:path';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks } from '../src/launch-desks.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
-import { bootFiles } from '../src/session-boot.js';
+import { bootFiles } from '../src/birth-readme.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
 import type { Assignment } from '../src/desks/schema.js';
 

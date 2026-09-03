@@ -515,7 +515,7 @@ async function checkJourneys(page, label, jsErrors) {
   // that pins one of those roles makes the corresponding rendered comparison stay equal.
   const setShippedSkin = async (name) => {
     const expected = await page.evaluate(async (wanted) => {
-    const { listSkins, setSkin } = await import('./js/skins.js');
+    const { listSkins, setSkin } = await import('./js/skin-catalog.js');
     const skin = (await listSkins()).find((entry) => entry.name === wanted);
     if (!skin) throw new Error(`shipped skin missing: ${wanted}`);
     setSkin(skin);
@@ -589,7 +589,7 @@ async function checkJourneys(page, label, jsErrors) {
   }
   await setShippedSkin('stock');
   const stockRestored = await page.evaluate(async (expected) => {
-    const { currentSkin } = await import('./js/skins.js');
+    const { currentSkin } = await import('./js/skin-catalog.js');
     return currentSkin() === 'stock'
       && getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim() === expected;
   }, stockRadius);

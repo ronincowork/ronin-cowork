@@ -2,11 +2,11 @@
  * AUTH — the owner's login, beside the tailnet, never instead of it.
  *
  * The standing posture is unchanged: Ronin binds to the tailnet and the tailnet is the
- * wall (src/config.ts assertBindIsSafe). This adds the owner-shaped door for the cases
+ * wall (src/machine-settings.ts assertBindIsSafe). This adds the owner-shaped door for the cases
  * the wall does not cover — a proxy in front, a shared box, a browser that should not
  * hold Basic credentials forever:
  *
- *   password   set with `bin/ronin-passwd`, stored in ronin.json as an scrypt record.
+ *   password   set with `bin/ronin-passwd`, stored in the credential store as an scrypt record.
  *              Nothing here invents a user table: one install, one owner, one password.
  *   session    an HttpOnly cookie carrying `<expiry>.<hmac>` signed by a secret that
  *              lives beside the scrypt record. STATELESS on purpose: the operator
@@ -25,11 +25,10 @@
  *              passkey therefore REQUIRES a password record — the secret lives here.
  *
  * The crypto pieces are PURE (record in, verdict out) so tests/auth.test.ts holds them
- * with no live machine; only the two exported *Config functions touch ronin.json.
+ * with no live machine; credential access stays behind `credential-store.ts`.
  */
 import { createHmac, randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from 'node:crypto';
-import { readFileSync, statSync } from 'node:fs';
-import { configPath, readSection, updateAuthSection } from './user-config.js';
+import { credentialMtime, readCredential, readCredentialSync, writeCredential } from './credential-store.js';
 
 // promisify(scrypt)'s type drops the options overload, and the options carry the cost
 // parameters — hand-rolled so N/r/p actually reach the KDF.
@@ -38,7 +37,7 @@ const scryptAsync = (pw: string, salt: Buffer, keylen: number, opts: ScryptOptio
     scrypt(pw, salt, keylen, opts, (err, key) => (err ? reject(err) : resolve(key))),
   );
 
-/** The shape ronin.json's `auth` section holds. Params are stored so they can be
+/** The shape the auth credential record holds. Params are stored so they can be
  *  raised later without invalidating existing records. */
 export interface AuthRecord {
   salt: string; // base64
@@ -129,7 +128,7 @@ export function cookieToken(header: string | undefined): string | undefined {
 /** Sessions live this long; a login refreshes the clock. */
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-/* ------------------------------------------------- the record, off ronin.json */
+/* ------------------------------------------------- the credential record */
 
 /**
  * Read the auth section, cached by the file's mtime: the request path asks on every
@@ -140,15 +139,14 @@ let cached: { rec: AuthRecord | null; mtime: number } | null = null;
 export function authRecord(): AuthRecord | null {
   let mtime = 0;
   try {
-    mtime = statSync(configPath()).mtimeMs;
+    mtime = credentialMtime('auth');
   } catch {
     /* no config file — no password set */
   }
   if (cached && cached.mtime === mtime) return cached.rec;
   let rec: AuthRecord | null = null;
   try {
-    const doc = JSON.parse(readFileSync(configPath(), 'utf8')) as Record<string, unknown>;
-    const a = doc?.auth as Partial<AuthRecord> | undefined;
+    const a = readCredentialSync<Partial<AuthRecord> | null>('auth', null) ?? undefined;
     if (a && typeof a.salt === 'string' && typeof a.hash === 'string' && typeof a.secret === 'string') {
       rec = a as AuthRecord;
     }
@@ -166,19 +164,19 @@ export const passwordAuthEnabled = (): boolean => authRecord() !== null;
  *  what logs every existing session out, which is what changing a password means. */
 export async function setPassword(password: string): Promise<void> {
   const rec = await makeRecord(password);
-  await updateAuthSection(rec as unknown as Record<string, unknown>);
+  await writeCredential('auth', rec);
   cached = null;
 }
 
 /** Remove password login (back to tailnet/Basic only). */
 export async function clearPassword(): Promise<void> {
-  await updateAuthSection(null);
+  await writeCredential('auth', null);
   cached = null;
 }
 
 /** Report for `ronin-passwd` status: set or not, without touching the hash. */
 export async function authStatus(): Promise<{ set: boolean }> {
-  const a = await readSection<Record<string, unknown>>('auth', {});
+  const a = await readCredential<Record<string, unknown>>('auth', {});
   return { set: typeof a.hash === 'string' };
 }
 

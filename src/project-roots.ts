@@ -123,7 +123,7 @@ const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.sli
  * renders it as "none yet" rather than an error.
  *
  * `project_root` is the REQUIRED one of the three universal axes — with `role_family` (who
- * the session is) and `session_role` (what it is doing now), in src/definitions.ts. The
+ * the session is) and `session_role` (what it is doing now), in src/resource-adapters.ts. The
  * same keys scope a memory.
  */
 export async function listProjectRoots(): Promise<ProjectRootInfo[]> {
@@ -179,7 +179,7 @@ async function ensureFirstRoot(): Promise<void> {
       await upsertProjectRoot('home', {
         dir: os.homedir(),
         remit: 'Your home directory — where Ronin starts until you name a project of your own.',
-      });
+      }, { declareArrangement: false });
     } catch {
       // A box that cannot write its own catalog still serves: the roster shows no roots
       // and says so. The floor must never take the page down with it.
@@ -448,7 +448,7 @@ export async function upsertProjectRoot(name: string, fields: Partial<Record<Roo
   // silently undeclared. Only on creation, only for a git repo, never over an existing file.
   if (!found && fields.dir && options.declareArrangement !== false) {
     const { declareArrangement } = await import('./desks/arrangement.js');
-    const { readDesksSection } = await import('./user-config.js');
+    const { readDesksSection } = await import('./machine-state.js');
     await declareArrangement(expand(fields.dir), (await readDesksSection()).new_project).catch(() => null);
   }
 }

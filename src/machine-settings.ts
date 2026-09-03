@@ -5,7 +5,7 @@
  * the whole of this file: every line in the record arrived one of three ways, and keeping
  * those apart is what stops a config file lying.
  *
- *   set        the owner typed it        PERSISTS — ronin.json + the roots file
+ *   set        the owner typed it        PERSISTS — machine_settings.json + the roots file
  *   observed   the box measured it       never stored, and carries `observed_at`
  *   status     follows from the other two computed here, never stored
  *
@@ -18,7 +18,7 @@
  *
  * WHAT THIS FILE MAY NOT DO, and the reason is load-bearing:
  *
- *  - **It never returns `ronin.json`.** The document also carries `auth` (a scrypt record
+ *  - **It never returns `machine_settings.json`.** The document also carries `auth` (a scrypt record
  *    AND the secret that signs session tokens) and `passkeys`. The obvious implementation
  *    of "one place you see the setup" is a GET that hands back the file, and that GET
  *    would hand out the signing secret. Every section below is assembled from NAMED keys.
@@ -31,7 +31,7 @@
  */
 import os from 'node:os';
 import { readFile } from 'node:fs/promises';
-import { access, readdir, stat } from 'node:fs/promises';
+import { access, mkdir, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -49,35 +49,121 @@ import {
   readState as readServicesActivation,
   type ActivationState,
 } from './activation/state.js';
-import {
-  readAgentsSection,
-  readMachineSection,
-  readOwner,
-  readMax,
-  readSection,
-  readSetupSection,
-  liveCount,
-  readDesksSection,
-  completeSetup,
-  writeWantedSection,
-  writeAgentsSection,
-  writeGbrainSection,
-  writeMachineSection,
-  writeOwner,
-  writeDesksSection,
-  writeMax,
-} from './user-config.js';
 // THE CAMPAIGN'S OWN LEAVES. `set.campaign.{name,description}` and `set.desk.profile` keep
 // the shapes this record has always served, but the fact behind them is now the initial
-// campaign_config rather than a section of ronin.json — one writable Campaign record.
-import {
-  readCampaignSection,
-  readDeskSection,
-  writeCampaignSection,
-  writeDeskSection,
-  populateHomeMachine,
-} from './campaign-config.js';
+// machine settings campaign record rather than a section of machine_settings.json — one writable Campaign record.
 const pexec = promisify(execFile);
+const MACHINE_SETTINGS_FILE = () => path.join(storeDir('config'), 'machine_settings.json');
+const MAX_OPT = '@ronin-session-max';
+const OWNER_OPT = '@ronin-owner';
+const NO_LIMIT = 0;
+let writeQueue = Promise.resolve();
+
+async function readDocument(): Promise<Record<string, unknown>> {
+  try {
+    const value = JSON.parse(await readFile(MACHINE_SETTINGS_FILE(), 'utf8')) as unknown;
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? value as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
+}
+
+async function updateDocument(
+  mutate: (document: Record<string, unknown>) => void | Promise<void>,
+): Promise<void> {
+  const operation = writeQueue.then(async () => {
+    const document = await readDocument();
+    await mutate(document);
+    await mkdir(storeDir('config'), { recursive: true });
+    const temporary = `${MACHINE_SETTINGS_FILE()}.${process.pid}.${Date.now()}.tmp`;
+    await writeFile(temporary, JSON.stringify(document, null, 2) + '\n');
+    await rename(temporary, MACHINE_SETTINGS_FILE());
+  });
+  writeQueue = operation.catch(() => {});
+  return operation;
+}
+
+async function readSection<T>(key: string, fallback: T): Promise<T> {
+  const value = (await readDocument())[key];
+  return value && typeof value === 'object' ? value as T : fallback;
+}
+
+async function updateSection<T extends Record<string, unknown>>(
+  key: string,
+  mutate: (value: T) => T,
+): Promise<void> {
+  return updateDocument((document) => {
+    const current = document[key];
+    const value = current && typeof current === 'object' && !Array.isArray(current)
+      ? current as T : {} as T;
+    document[key] = mutate(value);
+  });
+}
+
+const cleanMax = (value: unknown): number => {
+  const number = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : NO_LIMIT;
+};
+async function readMax(): Promise<number> {
+  return cleanMax((await readSection<Record<string, unknown>>('sessions', {})).max);
+}
+async function publishMax(value = 0): Promise<void> {
+  await pexec('tmux', ['set-option', '-s', MAX_OPT, String(value)]).catch(() => {});
+}
+async function writeMax(max: number): Promise<number> {
+  const value = cleanMax(max);
+  await updateSection('sessions', (sessions) => ({ ...sessions, max: value }));
+  await publishMax(value);
+  return value;
+}
+const machineUser = (): string => {
+  try { return os.userInfo().username || 'owner'; } catch { return 'owner'; }
+};
+async function readOwner(): Promise<string> {
+  const name = (await readSection<{ name?: unknown }>('owner', {})).name;
+  return typeof name === 'string' && name.trim() ? name.trim() : machineUser();
+}
+async function publishOwner(value: string): Promise<void> {
+  await pexec('tmux', ['set-option', '-s', OWNER_OPT, value]).catch(() => {});
+}
+async function writeOwner(name: string): Promise<string> {
+  const value = String(name ?? '').trim().slice(0, 64) || machineUser();
+  await updateSection('owner', (owner) => ({ ...owner, name: value }));
+  await publishOwner(value);
+  return value;
+}
+const readMachineSection = () => readSection<Record<string, unknown>>('machine', {});
+const readAgentsSection = () => readSection<Record<string, unknown>>('agents', {});
+const readSetupSection = () => readSection<Record<string, unknown>>('setup', {});
+async function readDesksSection(): Promise<{ new_project: 'managed' | 'none' }> {
+  const value = await readSection<{ new_project?: unknown }>('desks', {});
+  return { new_project: value.new_project === 'none' ? 'none' : 'managed' };
+}
+const writeMachineSection = (value: Record<string, unknown>) =>
+  updateSection('machine', (current) => ({ ...current, ...value }));
+const writeAgentsSection = (value: Record<string, unknown>) =>
+  updateDocument((document) => { document.agents = value; });
+const writeGbrainSection = (value: Record<string, unknown>) =>
+  updateDocument((document) => { document.gbrain = value; });
+const writeDesksSection = (value: { new_project?: string }) =>
+  updateSection('desks', (current) => ({
+    ...current,
+    ...(value.new_project === undefined ? {} : {
+      new_project: value.new_project === 'none' ? 'none' : 'managed',
+    }),
+  }));
+const writeWantedSection = (wanted: Array<{ kind: string; name: string }>) =>
+  updateDocument((document) => { document.wanted = wanted; });
+const completeSetup = () => updateDocument((document) => {
+  document.setup = { completed_at: new Date().toISOString() };
+});
+async function liveCount(): Promise<number> {
+  try {
+    const { stdout } = await pexec('tmux', ['list-sessions', '-F', '#{session_name}']);
+    return stdout.split('\n').filter((name) => name && !name.startsWith('grid_')).length;
+  } catch { return 0; }
+}
 
 export function tailnetIp(): string {
   try {
@@ -351,8 +437,13 @@ async function readSet(): Promise<Record<string, unknown>> {
   const machine = await readMachineSection();
   const agents = await readAgentsSection();
   const gbrain = await readSection<Record<string, unknown>>('gbrain', {});
-  const desk = await readDeskSection();
-  const campaign = await readCampaignSection();
+  const koshi = await readSection<Record<string, unknown>>('koshi', {});
+  const wipeboard = await readSection<Record<string, unknown>>('wipeboard', {});
+  const campaigns = await readSection<Record<string, unknown>>('campaigns', {});
+  const firstCampaign = Object.entries(campaigns)
+    .sort(([a], [b]) => a.localeCompare(b))[0];
+  const campaignRecord = firstCampaign && firstCampaign[1] && typeof firstCampaign[1] === 'object'
+    ? firstCampaign[1] as Record<string, unknown> : {};
   const setup = await readSetupSection();
   const roots = await listProjectRoots();
 
@@ -364,7 +455,8 @@ async function readSet(): Promise<Record<string, unknown>> {
 
   const activation = await readServicesActivation();
   return {
-    campaign: { name: typedStr(campaign.name), description: typedStr(campaign.description) },
+    campaign: { name: typedStr(campaignRecord.title), description: typedStr(campaignRecord.description) },
+    campaigns,
     owner: { name: typedStr(owner.name) },
     machine: {
       name: typedStr(machine.name),
@@ -376,9 +468,11 @@ async function readSet(): Promise<Record<string, unknown>> {
     // rather than walking off a missing branch.
     agents: { sessions: sessionDefaults(agents.sessions), jobs: (agents.jobs as unknown) ?? {} },
     gbrain: { enabled: gbrain.enabled === true },
+    koshi,
+    wipeboard,
     // THE DESK (R38) — which desk_profile the surfaces read their defaults from; '' is
     // "as stock", the ordinary state of every install older than the catalog.
-    desk: { profile: typedStr(desk.profile) },
+    desk: { profile: typedStr(campaignRecord.desk_profile) },
     // NEW PROJECTS AND DESKS (owner, 2026-08-29) — the default written into a new
     // project's RONIN_REPO; the file, not this, is the gate.
     desks: { new_project: typedStr((await readDesksSection()).new_project) },
@@ -401,7 +495,7 @@ async function readSet(): Promise<Record<string, unknown>> {
 /**
  * SETTEI'S VIEW OF SERVICES, derived from the activation aggregate and nowhere else.
  *
- * The old implementation also read `ronin.json.services.{entitlement,email,verified,terms}`.
+ * The old implementation also read `machine_settings.json.services.{entitlement,email,verified,terms}`.
  * Those fields came from a superseded flow where a person pasted an unverified code from an
  * email. They are not evidence of an entitlement and are deliberately ignored on upgraded
  * installs. Shiwake confirmation reaches this record only through activation polling.
@@ -755,6 +849,7 @@ export async function writeMachineSettings(
     return { ok: true };
   }
   if (family === 'bootstrap') {
+    const { populateHomeMachine } = await import('./campaigns.js');
     const campaign = await populateHomeMachine(body);
     await writeDesksSection({
       new_project: body.routine_bundle === 'worktrees' || body.routine_bundle === 'services'
@@ -763,6 +858,7 @@ export async function writeMachineSettings(
     return { ok: true, campaign_id: campaign.id };
   }
   if (family === 'campaign') {
+    const { writeCampaignSection } = await import('./campaigns.js');
     await writeCampaignSection({
       name: editString(body.name),
       description: editString(body.description),
@@ -779,6 +875,7 @@ export async function writeMachineSettings(
     return { ok: true };
   }
   if (family === 'desk') {
+    const { writeDeskSection } = await import('./campaigns.js');
     await writeDeskSection({ profile: editString(body.profile) ?? '' });
     return { ok: true };
   }
@@ -801,6 +898,18 @@ export async function writeMachineSettings(
       .map(({ kind, name }) => ({ kind, name }));
     await writeWantedSection(wanted);
     return { ok: true, wanted };
+  }
+  if (family === 'campaigns') {
+    await updateDocument((document) => { document.campaigns = body.campaigns ?? {}; });
+    return { ok: true };
+  }
+  if (family === 'record-section') {
+    const key = String(body.key ?? '');
+    if (!['sessions', 'owner', 'machine', 'agents', 'gbrain', 'desks', 'wanted', 'setup', 'koshi', 'wipeboard'].includes(key)) {
+      throw new Error(`no machine-settings section named '${key}'`);
+    }
+    await updateDocument((document) => { document[key] = body.value ?? {}; });
+    return { ok: true };
   }
   if (family === 'agents') {
     const prior = await readAgentsSection();
