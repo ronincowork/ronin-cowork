@@ -17,26 +17,6 @@ import type { ByoinMode } from '../promotion/promote.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
 import { storeDir } from '../resources.js';
 
-/**
- * ronin-promote — the lead's door from a team line into `dev`. `bin/ronin-promote` is the
- * bash face; this is the whole of it.
- *
- *   ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--anyway] [--repo name=dir …]
- *     BUSY when another team's promotion is on the fly: wait, then run again. --anyway proves regardless.
- *   ronin-promote resume <receipt-id> [--no-restart]
- *   ronin-promote abandon <receipt-id> <reason…>
- *   ronin-promote revert <receipt-id|last> [--mode …]
- *   ronin-promote bisect <team> [--repo name] [--from <sha>] [--mode …]
- *   ronin-promote receipts [team]
- *   ronin-promote show <receipt-id> [--pr-block | --shared]
- *
- * A team's repos are its birth defaults plus every repository with an accepted hand-in
- * for that team. Each resolves to a project_root's dir; its line comes from the accepted
- * ledger when present, otherwise the roster's `branch` or `team/<team>/dev`; the
- * target is each repo's declared working line (RONIN_REPO). A direct repo has no team
- * line and is refused here — desks are chosen by declared arrangement, never forced.
- */
-
 const args = process.argv.slice(2);
 const flag = (name: string): boolean => args.includes(name);
 const opt = (name: string): string | undefined => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
@@ -174,8 +154,6 @@ async function main(): Promise<void> {
       process.exit(0);
     }
     case 'pr': {
-      // The release PR, from the ledger — the open-pr action, mechanically. Owner,
-      // 2026-08-28: agents do not assemble gh commands or paste receipt blocks by hand.
       const team = rest[0]; if (!team) throw new Error('pr needs a team');
       const specs = await reposForTeam(team);
       const receipt = await lastGoodPromotion(team);

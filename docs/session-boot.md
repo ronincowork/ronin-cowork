@@ -104,9 +104,9 @@ could not be made.**
 
 Two universal shelf files and one generated fragment:
 
-- **`all/KOTOBA_GLOSSARY.md`** — the house vocabulary, so every session means the same
+- **`all/ronin_catalogs/lexicons/professional_en.md`** — the house vocabulary, so every session means the same
   things by the same words.
-- **`all/SHELVES.md`** — the map of where everything is **and what is on each shelf**. Each roster
+- **`all/README.md`** — the map of where everything is **and what is on each shelf**. Each roster
   sits beside the `ls` that resolves the live truth, stores included, and the directory
   wins whenever the two disagree.
 - **`SESSION_MACROS.md`** — a stock template whose active section is generated at birth
