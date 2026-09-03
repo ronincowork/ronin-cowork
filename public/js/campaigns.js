@@ -24,11 +24,6 @@
  * tabs may inspect different Campaigns without fighting.
  */
 import { request } from './request.js';
-import { activeProfile } from './desk-profile.js';
-
-/** The last-resort id, used only when no Campaign API answered AND SETTEI names nothing —
- *  the same home Campaign the server seeds (src/campaign-config.ts HOME_ID). */
-const UNNAMED_CAMPAIGN_ID = 'home';
 
 /** `{ campaigns, ok, synthesized }` — the last read. `null` until one has happened. */
 let read = null;
@@ -61,43 +56,18 @@ const shape = (row) => ({
  * `normalizeSelection` discards ids the list does not carry. Every filter below therefore
  * asks `initialCampaignId()` — the list's own first record — and never this spelling.
  */
-const deriveId = (name) => text(name).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || UNNAMED_CAMPAIGN_ID;
-
-/**
- * The one implicit Campaign of an install that predates the store, built from what that
- * install already answers: SETTEI's campaign leaf and the desk profile it already wears.
- * Read-only, never written back, and never produced when the store itself answered.
- */
-async function synthesize() {
-  const r = await request('/api/machine-settings');
-  const campaign = r.ok ? r.data?.set?.campaign : null;
-  const name = text(campaign?.name);
-  return [shape({
-    id: deriveId(name),
-    title: name || 'Ronin Home',
-    description: text(campaign?.description),
-    desk_profile: activeProfile()?.name || '',
-    state: 'active',
-  })];
-}
-
 /**
  * Read the Campaign list. A 404 or an unreachable server is the compatibility window and
  * synthesizes; every other answer — including a successful empty list — is taken as said.
  */
 export async function loadCampaigns() {
   const r = await request('/api/campaigns', { cache: 'no-store' });
-  const absent = !r.ok && (r.status === 404 || r.kind === 'network');
-  if (absent) {
-    read = { campaigns: await synthesize(), ok: true, synthesized: true };
-    return read;
-  }
   if (!r.ok) {
-    read = { campaigns: [], ok: false, synthesized: false, message: r.message };
+    read = { campaigns: [], ok: false, message: r.message };
     return read;
   }
   const rows = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.campaigns) ? r.data.campaigns : [];
-  read = { campaigns: rows.map(shape).filter((row) => row.id), ok: true, synthesized: false };
+  read = { campaigns: rows.map(shape).filter((row) => row.id), ok: true };
   return read;
 }
 
@@ -122,9 +92,6 @@ export const campaignById = (id) => campaigns().find((row) => row.id === id) || 
  * to it. This reads `campaigns()` rather than `visibleCampaigns()` for exactly that reason.
  */
 export const initialCampaignId = () => campaigns()[0]?.id || '';
-/** Did the last read invent its list because no Campaign API answered? */
-export const isSynthesized = () => !!read?.synthesized;
-
 /**
  * Save fields onto one `campaign_config`.
  *
@@ -136,32 +103,9 @@ export const isSynthesized = () => !!read?.synthesized;
  * branch is deleted with the fallback.
  */
 export async function saveCampaign(id, fields) {
-  if (!isSynthesized()) {
-    // PUT is the store's one edit door and it takes ONLY THE KEYS STATED
-    // (src/routes/campaigns-api.ts) — so a partial edit stays partial and the keys this
-    // call does not name are left alone. There is no PATCH route; sending one 404s, which
-    // is how the Identity and Desk Profile saves failed silently before.
-    const r = await request(`/api/campaigns/${encodeURIComponent(id)}`, { method: 'PUT', json: fields });
-    if (r.ok) await loadCampaigns();
-    return r;
-  }
-  if ('desk_profile' in fields) {
-    const r = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'desk', value: { profile: text(fields.desk_profile) } } });
-    if (!r.ok) return r;
-  }
-  if ('title' in fields || 'description' in fields) {
-    const now = campaignById(id) || {};
-    const r = await request('/api/machine-settings', {
-      method: 'PATCH',
-      json: { family: 'campaign', value: {
-        name: 'title' in fields ? text(fields.title) : now.title,
-        description: 'description' in fields ? text(fields.description) : now.description,
-      } },
-    });
-    if (!r.ok) return r;
-  }
-  await loadCampaigns();
-  return { ok: true, status: 200, data: campaignById(id) || {} };
+  const r = await request(`/api/campaigns/${encodeURIComponent(id)}`, { method: 'PUT', json: fields });
+  if (r.ok) await loadCampaigns();
+  return r;
 }
 
 /**

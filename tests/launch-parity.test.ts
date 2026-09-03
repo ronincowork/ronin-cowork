@@ -57,7 +57,7 @@ process.env.RONIN_CONFIG_DIR = path.join(temp, 'config');
 // nothing must land here for both callers alike.
 await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 await fs.writeFile(
-  path.join(temp, 'config', 'ronin.json'),
+  path.join(temp, 'config', 'machine_settings.json'),
   JSON.stringify({ agents: { sessions: { default: { provider: 'anthropic', model: 'fable' } } } }),
 );
 process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');

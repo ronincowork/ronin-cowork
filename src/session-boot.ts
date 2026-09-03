@@ -184,7 +184,7 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
 /** Stock first, then the owner's same-named file for ONE level. Shadowing never reaches
  * across levels: a root README and a Routine README are two additive documents. */
 async function levelFiles(stock: string, user: string): Promise<string[]> {
-  return (await resolveFiles({ stock, user })).map((file) => file.path);
+  return (await resolveFiles({ stock, user, symlinks: true })).map((file) => file.path);
 }
 
 /** Resolve the exact boot-shelf coordinates a Routine manifest declared. A manifest is
@@ -231,7 +231,7 @@ export async function bootFiles(
     ...await levelFiles(path.join(STOCK, 'all'), path.join(user, 'all')),
     // Stock cannot have a root/ — it does not know the owner's directories.
     ...(projectRoot
-      ? (await resolveFiles({ stock: '', user: path.join(user, 'root', projectRoot) }))
+      ? (await resolveFiles({ stock: '', user: path.join(user, 'root', projectRoot), symlinks: true }))
         .map((file) => file.path)
       : []),
     // The desk contract is the Worktrees Routine's own page: on when the Routine is on,

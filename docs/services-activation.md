@@ -28,7 +28,7 @@ that door. Free Cowork must be able to request Services without Services being p
 
 ## The house still has two egress doors
 
-`src/settei.ts` states the law: the house has exactly two doors — AGERU, and the model
+`src/machine-settings.ts` states the law: the house has exactly two doors — AGERU, and the model
 provider. **Activation does not add a third.**
 
 Activation and Tomodachi are two different *contracts* and two different *consent events*, but
@@ -69,7 +69,7 @@ masked address, accepted terms version, activation stage, `entitlement_id`, and 
 time. The secret store owns the bearer token. SETTEI derives its Services and subscription
 lines from that aggregate and cannot write entitlement facts.
 
-Older builds exposed `PUT /api/settei/services` and stored
+Older builds exposed `PATCH /api/machine-settings` and stored
 `ronin.json.services.{entitlement,email,verified,terms}` for a superseded flow where the owner
 pasted a code from an email. That data was never verified and is not migrated into the real
 activation record. Upgraded installs may retain those inert keys, but no entitlement, status,

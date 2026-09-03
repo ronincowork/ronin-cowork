@@ -10,7 +10,7 @@ import type { AddressInfo } from 'node:net';
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-name-only-team-'));
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(temp, 'team_rosters');
 process.env.RONIN_WIPEBOARDS_DIR = path.join(temp, 'wipeboards');
-process.env.RONIN_CAMPAIGNS_DIR = path.join(temp, 'campaigns');
+process.env.RONIN_CONFIG_DIR = path.join(temp, 'config');
 const { registerTeams } = await import('../src/routes/teams-api.js');
 
 const app = express();

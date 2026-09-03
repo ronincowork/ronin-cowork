@@ -20,13 +20,13 @@ import path from 'node:path';
 
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-campaign-scope-'));
 const rosters = path.join(root, 'team_rosters');
-const campaigns = path.join(root, 'campaigns');
+const config = path.join(root, 'config');
 const catalogs = path.join(root, 'catalogs');
 const wipeboards = path.join(root, 'wipeboards');
-for (const d of [rosters, campaigns, catalogs, wipeboards]) await fs.mkdir(d, { recursive: true });
+for (const d of [rosters, config, catalogs, wipeboards]) await fs.mkdir(d, { recursive: true });
 
 process.env.RONIN_TEAM_ROSTERS_DIR = rosters;
-process.env.RONIN_CAMPAIGNS_DIR = campaigns;
+process.env.RONIN_CONFIG_DIR = config;
 process.env.RONIN_CATALOGS_DIR = catalogs;
 process.env.RONIN_WIPEBOARDS_DIR = wipeboards;
 

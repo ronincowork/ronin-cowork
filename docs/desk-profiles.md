@@ -16,8 +16,8 @@ means "as stock".
 
 ## Which one is active is the campaign's
 
-`set.desk.profile` — one leaf, read by `GET /api/settei` like every other and written by
-`PUT /api/settei/desk` (`{ profile }`; blank goes back to stock). A choice that must hold
+`set.desk.profile` — one leaf, read by `GET /api/machine-settings` like every other and written by
+`PATCH /api/machine-settings` (`{ profile }`; blank goes back to stock). A choice that must hold
 across browsers is not a browser's to keep, which is why this is not `localStorage` the
 way the skin pick alone used to be.
 

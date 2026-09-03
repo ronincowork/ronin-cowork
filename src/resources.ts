@@ -55,9 +55,13 @@ export interface ResolveSpec {
   store?: string;
   user?: string;
   include?: (relative: string) => boolean;
+  symlinks?: boolean;
 }
 
-async function layerFiles(dir: string): Promise<Map<string, { path: string; text: string }>> {
+async function layerFiles(
+  dir: string,
+  symlinks: boolean,
+): Promise<Map<string, { path: string; text: string }>> {
   if (!dir) return new Map();
   let entries;
   try {
@@ -68,7 +72,7 @@ async function layerFiles(dir: string): Promise<Map<string, { path: string; text
   }
   const files = new Map<string, { path: string; text: string }>();
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if ((!entry.isFile() && !entry.isSymbolicLink()) || entry.name.startsWith('.')) continue;
+    if ((!entry.isFile() && !(symlinks && entry.isSymbolicLink())) || entry.name.startsWith('.')) continue;
     const file = path.join(dir, entry.name);
     try {
       files.set(entry.name, { path: file, text: await readFile(file, 'utf8') });
@@ -81,7 +85,10 @@ async function layerFiles(dir: string): Promise<Map<string, { path: string; text
 
 export async function resolveFiles(spec: ResolveSpec): Promise<ResolvedFile[]> {
   const userDir = spec.user ?? (spec.store ? storeDir(spec.store) : '');
-  const [stock, user] = await Promise.all([layerFiles(spec.stock), layerFiles(userDir)]);
+  const [stock, user] = await Promise.all([
+    layerFiles(spec.stock, spec.symlinks === true),
+    layerFiles(userDir, spec.symlinks === true),
+  ]);
   const names = [...new Set([...stock.keys(), ...user.keys()])].sort();
   return names.flatMap((relative) => {
     if (spec.include && !spec.include(relative)) return [];
@@ -118,7 +125,10 @@ export async function listSops(): Promise<SopRow[]> {
     const blurb = file.text.split(/\n\s*\n/)
       .map((part) => part.replace(/^>\s?/gm, '').replace(/\s+/g, ' ').trim())
       .find((part) => part && !part.startsWith('#')) || '';
-    return { ...file, label, blurb, content: file.text };
+    return {
+      name: file.name, label, blurb, content: file.text,
+      origin: file.origin, shadowed: file.shadowed,
+    };
   }).sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }
 
@@ -146,7 +156,10 @@ export async function listWays(): Promise<WayRow[]> {
     const blurb = file.text.split(/\n\s*\n/)
       .map((part) => part.replace(/^>\s?/gm, '').replace(/\s+/g, ' ').trim())
       .find((part) => part && !part.startsWith('#') && !part.startsWith('- **')) || '';
-    return { ...file, label, kinds, blurb: blurb.slice(0, 200) };
+    return {
+      name: file.name, label, kinds, blurb: blurb.slice(0, 200),
+      origin: file.origin, shadowed: file.shadowed,
+    };
   }).sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }
 

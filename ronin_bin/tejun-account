@@ -12,7 +12,7 @@
 # only the named fields below and the file is never served or echoed whole, by anything.
 #
 # THE LOCAL FILE READ IS BLESSED HERE (ruling, 2026-08-18). Doctrine says surfaces
-# convert the one door (`GET /api/settei`) and bash reads the bus; this tool reads the
+# convert the one door (`GET /api/machine-settings`) and bash reads the bus; this tool reads the
 # file directly because it must answer on a box whose operator is not running — the
 # exact moment an account question gets asked. Named keys only, never the document.
 set -u

@@ -41,7 +41,7 @@ missing headless browser is the ordinary state of a fresh box, not a fault; neve
 contributor-only host tools to make a first install look green.
 
 ```
-GET /api/settei     set · observed · status
+GET /api/machine-settings     set · observed · status
 ```
 
 `set` is what the owner answered. `observed` is what the box measured. **`status` is where

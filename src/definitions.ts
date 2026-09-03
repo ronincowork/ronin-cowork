@@ -97,6 +97,7 @@ export async function readDefinitions(kind: DefinitionKind): Promise<Definition[
     stock: path.join(STOCK_DIR, kind),
     user: path.join(storeDir('catalogs'), kind),
     include: isDefinitionFile,
+    symlinks: true,
   })) {
     const lines = file.text.split('\n');
     if (!lines.some(isKeyLine)) {

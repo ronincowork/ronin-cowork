@@ -171,7 +171,7 @@
       <text class="t sm" x="310" y="88">/api/launch · /api/launch-seed · /api/sessions · /api/home</text>
       <text class="t sm" x="310" y="105">/api/sessions/:name/{note,teams,control,ctx,send}</text>
       <text class="t sm" x="310" y="122">/api/wipeboards*</text>
-      <text class="t sm" x="310" y="139">/api/settei*  ·  /api/{macros,agents,session-roles}</text>
+      <text class="t sm" x="310" y="139">/api/machine-settings*  ·  /api/{macros,agents,session-roles}</text>
       <text class="t sm" x="310" y="156">/api/project-roots*  ·  /api/saved-launches*</text>
       <text class="t sm" x="310" y="173">/api/passkey*  ·  /api/version  ·  /api/update/*</text>
       <text class="t sm" x="310" y="190">/api/file  (the ▧ Docs editor)</text>
@@ -320,14 +320,12 @@
     </tbody>
   </table></div>
 
-  <h3>Settei <span class="who">— the install record: one read, one write door</span></h3>
+  <h3>Machine configuration <span class="who">— one read and one write door</span></h3>
   <div class="table-scroll"><table>
     <thead><tr><th style="width:38%">Endpoint</th><th>What it does</th></tr></thead>
     <tbody>
-      <tr><td class="p"><span class="v">GET</span> /api/settei</td><td>The whole record — what the owner set, what the box observed, what follows, and the schema. Assembled per request; two of three sections are measurements.</td></tr>
-      <tr><td class="p"><span class="v">GET</span> /api/settei/setup</td><td>Is this box still waiting for its first run? Reads one section, measures nothing.</td></tr>
-      <tr><td class="p"><span class="v w">PUT</span> /api/settei/setup</td><td>First run is finished — the only way the pending flag is ever cleared. There is <b>no route to re-arm it</b>.</td></tr>
-      <tr><td class="p"><span class="v w">PUT</span> /api/settei/:family</td><td><b>The one write door, and the safety property.</b> There is deliberately no <code>PUT /api/settei</code> taking a document — <code>ronin.json</code> holds the scrypt record and the token-signing secret. Each named family's writer touches only its own keys; an unknown family is refused, never guessed at. <b>No credential crosses this boundary in either direction.</b></td></tr>
+      <tr><td class="p"><span class="v">GET</span> /api/machine-settings</td><td>The public record: durable choices, current observations, derived status, unmet needs, and the schema.</td></tr>
+      <tr><td class="p"><span class="v w">PATCH</span> /api/machine-settings</td><td>Writes one named family from <code>{ family, value }</code>. No credential is returned.</td></tr>
     </tbody>
   </table></div>
 
@@ -596,7 +594,7 @@
   <code>src/services/</code> · <code>ronin_bin/</code></div>
   <div>the set · docs/tile.md (what the tile does with /pty) ·
   docs/session-control-dials.md (the dial every write route checks) ·
-  docs/settei.md (the record behind /api/settei) · connector-contract.md (the sockets)</div>
+  docs/settei.md (the record behind /api/machine-settings) · connector-contract.md (the sockets)</div>
   <div>cut 2026-08-19 — one page for a surface that had none</div>
 </footer>
 

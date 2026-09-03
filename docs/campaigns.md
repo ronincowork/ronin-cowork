@@ -111,10 +111,10 @@ the rule that decided it: only settings that semantically vary with the body of 
 | | the want list, and the first-run stamp |
 
 **One writable record, structurally.** The legacy accessors were re-pointed onto this store
-rather than kept in parallel: `src/settei.ts`, `src/routes/settei-api.ts` and
-`src/desk-profiles.ts` each changed one import and nothing else, so `GET /api/settei` still
+rather than kept in parallel: `src/machine-settings.ts`, `src/routes/machine-settings-api.ts` and
+`src/desk-profiles.ts` each changed one import and nothing else, so `GET /api/machine-settings` still
 serves the same `set.campaign` and `set.desk` shapes a client has always read — from a
-different home. `PUT /api/settei/campaign` and `PUT /api/settei/desk` still work and now
+different home. `PATCH /api/machine-settings` and `PATCH /api/machine-settings` still work and now
 land in the initial record.
 
 The dependency runs **one way** — `campaign-config.ts` reads `user-config.ts`, never the

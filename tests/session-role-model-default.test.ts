@@ -44,7 +44,7 @@ await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 /** The one setting that decides what a new Agent launches as. */
 async function sessionDefault(provider: string, model: string): Promise<void> {
   await fs.writeFile(
-    path.join(temp, 'config', 'ronin.json'),
+    path.join(temp, 'config', 'machine_settings.json'),
     JSON.stringify({ agents: { sessions: { default: { provider, model } } } }),
   );
 }

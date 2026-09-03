@@ -6,7 +6,7 @@ answered is already saved — **never ask for any of it again.**
 ## First act, before anything else
 
 ```
-GET /api/settei
+GET /api/machine-settings
 ```
 
 One read, and it is your whole brief. `set` is what the owner said — intent, not

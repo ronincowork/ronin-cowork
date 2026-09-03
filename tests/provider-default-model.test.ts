@@ -35,12 +35,11 @@ process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
 process.env.RONIN_CONFIG_DIR = path.join(temp, 'config');
 process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(temp, 'team_rosters');
-process.env.RONIN_CAMPAIGNS_DIR = path.join(temp, 'campaigns');
 await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 
 /** The whole `agents` section as the owner's file would hold it. */
 async function agents(sessions: Record<string, unknown>): Promise<void> {
-  await fs.writeFile(path.join(temp, 'config', 'ronin.json'), JSON.stringify({ agents: { sessions } }));
+  await fs.writeFile(path.join(temp, 'config', 'machine_settings.json'), JSON.stringify({ agents: { sessions } }));
 }
 
 const { resolveForm } = await import('../src/spawn.js');
@@ -84,11 +83,13 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
     default: { provider: 'openai', model: 'gpt-5.6-sol' },
     by_provider: { anthropic: 'fable', openai: 'gpt-5.6-terra' },
   });
-  await fs.mkdir(path.join(temp, 'campaigns'), { recursive: true });
-  await fs.writeFile(path.join(temp, 'campaigns', 'work.json'), JSON.stringify({
+  const file = path.join(temp, 'config', 'machine_settings.json');
+  const document = JSON.parse(await fs.readFile(file, 'utf8'));
+  document.campaigns = { work: {
     title: 'Work',
     config: { agent_defaults: { provider: 'anthropic', model: 'opus' } },
-  }));
+  } };
+  await fs.writeFile(file, JSON.stringify(document));
   // Nothing named: the Campaign's default pair, not ⚙'s.
   const inherited = await resolveForm(launch({ campaign_id: 'work' }), new Set());
   assert.ok(inherited.cmd.startsWith('claude --model opus'), inherited.cmd);
@@ -104,10 +105,12 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
   const explicit = await resolveForm(launch({ campaign_id: 'work', model: 'gpt-5.6-terra' }), new Set());
   assert.ok(explicit.cmd.startsWith('codex --model gpt-5.6-terra'), explicit.cmd);
   // A half-pair is no default: ⚙'s pair answers, and the Campaign is not guessed for.
-  await fs.writeFile(path.join(temp, 'campaigns', 'half.json'), JSON.stringify({
+  const withHalf = JSON.parse(await fs.readFile(file, 'utf8'));
+  withHalf.campaigns.half = {
     title: 'Half',
     config: { agent_defaults: { provider: 'anthropic' } },
-  }));
+  };
+  await fs.writeFile(file, JSON.stringify(withHalf));
   const half = await resolveForm(launch({ campaign_id: 'half' }), new Set());
   assert.ok(half.cmd.startsWith('codex --model gpt-5.6-sol'), half.cmd);
 });
