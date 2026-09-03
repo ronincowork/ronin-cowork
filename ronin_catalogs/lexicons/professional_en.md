@@ -1793,7 +1793,7 @@ The catalog entry goes. {dir} is not touched.
 - **keys.left:** Left
 - **keys.right:** Right
 
-## glossary — the words an agent says to a person for the house terms (KOTOBA_GLOSSARY.md, rendered at session birth; no UI reads these)
+## glossary — the words an agent says to a person for the house terms (ronin_catalogs/lexicons/professional_en.md, rendered at session birth; no UI reads these)
 - **glossary.coworkspace:** the coworkspace
 - **glossary.tile:** tile
 - **glossary.desk:** the desk

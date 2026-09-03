@@ -1,1 +1,0 @@
-../ronin_catalogs/lexicons/professional_en.md

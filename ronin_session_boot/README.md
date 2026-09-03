@@ -39,10 +39,10 @@ README beside a session's letter is the only document the newborn is asked to op
 
 Three universal sources and one generated fragment:
 
-- `all/KOTOBA_GLOSSARY.md` — the house vocabulary, so every session means the same things
+- `all/ronin_catalogs/lexicons/professional_en.md` — the house vocabulary, so every session means the same things
   by the same words.
-- `all/SHELVES.md` — the map of where everything is, and what is on each shelf.
-- `all/RONIN_UTILITY.md` — where everything is in the coworkspace and how the owner drives it.
+- `all/README.md` — the map of where everything is, and what is on each shelf.
+- `all/README.md` — where everything is in the coworkspace and how the owner drives it.
 - `SESSION_MACROS.md` is a template, not read directly. At birth Ronin fills its active
   macro section from the resolved `MACROS.md` catalog (`preview: yes`) and includes it in
   the compiled README.

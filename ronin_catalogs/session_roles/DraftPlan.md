@@ -1,4 +1,5 @@
 # DraftPlan
+- **kinds:** coding, work
 
 Plan a known piece of work as a doc. No code yet — the plan is the whole output.
 

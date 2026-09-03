@@ -1,21 +1,3 @@
-/**
- * REPOSITORY ARRANGEMENT — how one repository is run, read from its checked-in record.
- *
- * The record is `RONIN_REPO` at the repo's root (Track 5's file, key=value like VERSION):
- *
- *   mode=reviewed|direct     reviewed: accepted work moves through a working branch
- *   working=dev              the local working line (reviewed only)
- *   stable=master            the published line
- *   desks=managed|none       compatibility storage for Worktrees enabled|disabled
- *   publish=dev,master       which lines may reach the remote (optional; ruled 2026-08-20)
- *
- * An ABSENT file is today's behaviour — a shared checkout, the claim hook active — and is
- * reported as such (`source: 'absent'`), never guessed from whichever branch happens to be
- * mounted. That is the counter-test Koe provides: a direct `main` repo must never grow a
- * fake team line because a tool assumed every repo is reviewed.
- *
- * The repo is keyed by its project_root NAME; the record is read from the root's `dir`.
- */
 import { access, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -41,11 +23,9 @@ export interface RepoProfile {
 
 export interface WorktreesProfileProvenance {
   source: RepoArrangement['source'];
-  /** The compatibility spelling read at the repository boundary. Never shown to a user. */
   storage: 'desks=managed' | 'desks=none' | 'absent';
 }
 
-/** The repository-owned half of Worktrees resolution, normalized from RONIN_REPO. */
 export interface WorktreesRepositoryProfile {
   worktrees: WorktreesSetting;
   branches: {
@@ -56,7 +36,6 @@ export interface WorktreesRepositoryProfile {
   provenance: WorktreesProfileProvenance;
 }
 
-
 export const arrangementProfile = (a: RepoArrangement): RepoProfile => ({
   mode: a.mode,
   working: a.mode === 'reviewed' ? a.working : '',
@@ -64,10 +43,6 @@ export const arrangementProfile = (a: RepoArrangement): RepoProfile => ({
   worktrees: a.desks === 'managed' ? 'enabled' : 'disabled',
 });
 
-/**
- * Translate compatibility storage into the stable repository-domain input. This is the
- * only exported adapter allowed to interpret `desks=managed|none`.
- */
 export const arrangementWorktreesProfile = (a: RepoArrangement): WorktreesRepositoryProfile => ({
   worktrees: a.desks === 'managed' ? 'enabled' : 'disabled',
   branches: {
@@ -81,11 +56,6 @@ export const arrangementWorktreesProfile = (a: RepoArrangement): WorktreesReposi
   },
 });
 
-/**
- * Supply the pure resolver's repository input. Repository applicability and branches
- * come only from RONIN_REPO; explicit managed coordinates come from assignment planning.
- * This adapter normalizes facts and does not decide whether Worktrees applies.
- */
 export function arrangementWorktreesInput(
   arrangement: RepoArrangement,
   managed?: WorktreesManagedCandidate,
@@ -102,8 +72,6 @@ export function arrangementWorktreesInput(
   };
 }
 
-
-/** Parse the record's text. Exported for the unit floor; unknown keys are ignored, bad values refused by name. */
 export function parseArrangement(repo: string, dir: string, text: string | null): RepoArrangement {
   if (text === null) {
     return { repo, dir, mode: 'direct', working: '', stable: '', desks: 'none', publish: [], source: 'absent' };
@@ -127,22 +95,11 @@ export function parseArrangement(repo: string, dir: string, text: string | null)
   return { repo, dir, mode, working, stable, desks: desksRaw, publish, source: 'RONIN_REPO' };
 }
 
-/**
- * WRITE THE RECORD FOR A NEW PROJECT (owner, 2026-08-29): the one gate is this file, so
- * adding a project root writes it — from SETTEI's "new project roots use Worktrees?" seed —
- * rather than leaving the project silently undeclared. Writes only when the directory is
- * a git repository and has no RONIN_REPO yet; never overwrites a declaration. `managed`
- * declares the house arrangement (reviewed, dev → master); `none` declares direct on the
- * branch the checkout is on. The file is left for the owner to commit — it is theirs.
- * Returns what was written, or null when nothing was.
- */
 export async function declareArrangement(dir: string, desks: 'managed' | 'none'): Promise<string | null> {
   const file = path.join(dir, RONIN_REPO_FILE);
   try { await access(path.join(dir, '.git')); } catch { return null; }
   try { await access(file); return null; } catch { /* absent — write it */ }
   let branch = 'main';
-  // symbolic-ref, not rev-parse: a repository with no commits yet has an unborn branch
-  // that rev-parse cannot name, and a new project is often exactly that.
   try { branch = (await run('git', ['-C', dir, 'symbolic-ref', '--short', 'HEAD'])).stdout.trim() || 'main'; } catch { /* detached or bare — keep main */ }
   const body = desks === 'managed'
     ? ['mode=reviewed', 'working=dev', 'stable=master', 'desks=managed']
@@ -158,13 +115,6 @@ export async function declareArrangement(dir: string, desks: 'managed' | 'none')
   return text;
 }
 
-/**
- * FLIP DESKS FOR ONE PROJECT (owner, 2026-08-29): the checkbox on the project-root editor.
- * `managed` → desks=managed, and a direct record becomes reviewed dev → master (a desk
- * needs a working line); `none` → desks=none, mode and lines untouched. No file yet →
- * written fresh by declareArrangement. Comment lines and unknown keys are kept as they
- * are; only the keys named change. Not a git repo → refused.
- */
 async function setDesks(dir: string, desks: 'managed' | 'none'): Promise<RepoArrangement> {
   try { await access(path.join(dir, '.git')); } catch { throw new Error(`${dir} is not a git repository — desks need a repository to declare`); }
   const file = path.join(dir, RONIN_REPO_FILE);
@@ -202,9 +152,6 @@ export function validateArrangementProfile(value: unknown): RepoProfile {
   if (p.worktrees !== 'enabled' && p.worktrees !== 'disabled') throw new Error('worktrees must be enabled or disabled.');
   const stable = typeof p.stable === 'string' ? p.stable.trim() : '';
   const working = typeof p.working === 'string' ? p.working.trim() : '';
-  // Git's ref grammar, kept pure so the API can validate before any repository write.
-  // This is the branch-name subset of `git check-ref-format --branch`: no revision
-  // operators, control/space/ref punctuation, dot components, lock suffixes or dashes.
   const safe = (v: string) => {
     if (!v || v === '@' || v.startsWith('-') || v.startsWith('.') || v.endsWith('.') || v.endsWith('/')) return false;
     if (v.includes('..') || v.includes('@{') || v.includes('//') || /[\x00-\x20\x7f~^:?*[\\]/.test(v)) return false;
@@ -215,7 +162,6 @@ export function validateArrangementProfile(value: unknown): RepoProfile {
   return { mode: p.mode, working: p.mode === 'reviewed' ? working : '', stable, worktrees: p.worktrees };
 }
 
-/** Read-only compare used before a multi-file caller starts its surrounding catalog edit. */
 export async function assertArrangementProfileCurrent(dir: string, expected: unknown): Promise<void> {
   const beforeExpected = expected as RepoProfile;
   if (!beforeExpected || typeof beforeExpected !== 'object') throw new Error('The current repository profile is required.');
@@ -225,12 +171,6 @@ export async function assertArrangementProfileCurrent(dir: string, expected: unk
   }
 }
 
-/**
- * Rewrite the owner's repository profile directly. This deliberately performs no branch,
- * desk, Agent or migration work. `expected` makes the confirmation honest if the file was
- * changed after the editor opened; the replacement itself is atomic within the repo dir.
- * Comments and keys outside the four-field profile (for example `publish`) are retained.
- */
 export async function setArrangementProfile(dir: string, proposed: unknown, expected: unknown): Promise<RepoArrangement> {
   try { await access(path.join(dir, '.git')); } catch { throw new Error(`${dir} is not a git repository — it has no repository profile`); }
   const profile = validateArrangementProfile(proposed);
@@ -264,7 +204,6 @@ export async function setArrangementProfile(dir: string, proposed: unknown, expe
   return readArrangement(path.basename(dir), dir);
 }
 
-/** Read the record from a directory. */
 export async function readArrangement(repo: string, dir: string): Promise<RepoArrangement> {
   let text: string | null = null;
   try {
@@ -275,7 +214,6 @@ export async function readArrangement(repo: string, dir: string): Promise<RepoAr
   return parseArrangement(repo, dir, text);
 }
 
-/** The arrangement of a project_root by name. An unknown root is a refusal, never an invented repo. */
 export async function arrangementOf(root: string, roots?: ProjectRootInfo[]): Promise<RepoArrangement> {
   const all = roots ?? (await listProjectRoots());
   const r = all.find((x) => x.name === root);
@@ -283,5 +221,4 @@ export async function arrangementOf(root: string, roots?: ProjectRootInfo[]): Pr
   return readArrangement(r.name, r.dir);
 }
 
-/** True when a repo takes managed desks at all. */
 export const desksManaged = (a: RepoArrangement): boolean => a.mode === 'reviewed' && a.desks === 'managed';

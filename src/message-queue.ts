@@ -1,4 +1,3 @@
-/** Durable inbound session delivery. A delivered item is absence, never archived state. */
 import fs, { type FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -14,7 +13,6 @@ export interface QueuedMessage {
   id: string;
   from: string;
   target: string;
-  /** The durable birth identity. A reused tmux name is a different recipient. */
   target_key: string;
   text: string;
   source: MessageSource;
@@ -48,8 +46,6 @@ export async function listQueuedMessages(): Promise<QueuedMessage[]> {
   for (const name of names.filter((n) => n.endsWith('.json')).sort()) {
     try {
       const item = JSON.parse(await fs.readFile(path.join(DIR, name), 'utf8')) as QueuedMessage;
-      // Pre-instance queues cannot safely be assigned after an upgrade. The queue is
-      // transport, not a record: expire them rather than let a reused name inherit them.
       const expires = Date.parse(item.expires_at);
       if (!item.target_key || !Number.isFinite(expires) || expires <= now) {
         await fs.unlink(path.join(DIR, name)).catch(() => {});
@@ -61,9 +57,6 @@ export async function listQueuedMessages(): Promise<QueuedMessage[]> {
   return rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
-/** A sender gets one unresolved tell lane per target. New wording must wait until the
- * visible queued instruction is delivered or explicitly dismissed, otherwise a lead can
- * unknowingly stack contradictory calls behind a busy prompt. */
 export async function pendingTellsFrom(from: string, target: string): Promise<QueuedMessage[]> {
   return (await listQueuedMessages()).filter((item) =>
     item.source === 'tell' && item.from === from && item.target === target
@@ -110,9 +103,6 @@ export async function dismissMessage(id: string): Promise<boolean> {
 export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'): Promise<QueuedMessage | null> {
   if (!validId(id)) return null;
   if (active.has(id)) {
-    // `null` means the item is gone because it delivered. A concurrent in-process
-    // attempt still owns a live item, so return that item instead of falsely
-    // reporting delivery to a second caller.
     try { return JSON.parse(await fs.readFile(file(id), 'utf8')) as QueuedMessage; } catch { return null; }
   }
   active.add(id);
@@ -124,8 +114,6 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
       await lock.writeFile(`${process.pid}\n${Date.now()}\n`);
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
-      // Another CLI or the operator owns this attempt. A dead claim is reclaimed after
-      // Force's maximum duration plus margin; a live claim is never raced.
       try {
         const age = Date.now() - (await fs.stat(lockFile(id))).mtimeMs;
         if (age > 15_000) { await fs.unlink(lockFile(id)); return attemptMessage(id, mode); }
@@ -141,8 +129,6 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
       item.attempts += 1;
     };
     const retain = async (state: MessageState, reason: string): Promise<QueuedMessage> => {
-      // The worker checks eligibility frequently, but a busy check is not a delivery
-      // attempt. Do not churn the record—or its visible counter—when nothing changed.
       if (!attempted && item.state === state && item.reason === reason) return item;
       item.state = state;
       item.reason = reason;
@@ -162,12 +148,8 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
         ? await deliverForce(item.target, item.text)
         : await deliverSafe(item.target, item.text, countAttempt);
       if (result.delivered) { await dismissMessage(id); return null; }
-      // Once text was submitted but confirmation became ambiguous, automatic retries
-      // must stop: typing a second copy is worse than leaving one visible for the owner.
       return retain(mode === 'force' || result.submitted ? 'failed' : 'stuck', result.reason);
     } catch (e) {
-      // Before typing, a transient read can be tried again. After typing, an exception
-      // makes delivery ambiguous; stop rather than risk a second copy.
       return retain(mode === 'force' || attempted ? 'failed' : 'stuck', String((e as Error).message ?? e));
     }
   } finally {
@@ -183,7 +165,6 @@ export async function processMessageQueue(): Promise<void> {
   }
 }
 
-/** The queue's retry rhythm, on JIKAN's clock (src/jikan.ts): every 2 s, and once now. */
 export function startMessageQueue(): () => void {
   void processMessageQueue();
   return onClock('message_queue', 2_000, processMessageQueue);
