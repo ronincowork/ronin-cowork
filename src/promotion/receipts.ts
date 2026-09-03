@@ -278,6 +278,19 @@ export async function blockingReceipt(team: string, dir = PROMOTION_LEDGER_DIR()
   return all.find(blocksTeam) ?? null;
 }
 
+/**
+ * LOOK BEFORE YOU PROVE (owner, 2026-09-03). Two promotions proving on one box at once
+ * trample each other — a restart from one kills the other's test children (pbs 8ft9,
+ * 07:49:46) — and no lock is wanted: just look. The receipt of ANY team that is still
+ * moving (preparing · proving · advancing · restarting) and was touched within `staleMs`
+ * is "on the fly"; older ones are a crashed process's leftovers and block nobody.
+ */
+export async function inFlightReceipt(dir = PROMOTION_LEDGER_DIR(), now = Date.now(), staleMs = 20 * 60_000): Promise<PromotionReceipt | null> {
+  const moving: readonly PromotionState[] = ['preparing', 'proving', 'advancing', 'restarting'];
+  const all = await listReceipts(undefined, dir);
+  return all.reverse().find((r) => moving.includes(r.state) && now - Date.parse(r.updated_at) < staleMs) ?? null;
+}
+
 /** The last promotion that completed for a team — `bisect` replays forward from here. */
 export async function lastGoodPromotion(team: string, dir = PROMOTION_LEDGER_DIR()): Promise<PromotionReceipt | null> {
   const all = await listReceipts(team, dir);

@@ -1657,8 +1657,6 @@ The catalog entry goes. {dir} is not touched.
 - **team_jikan.col_when:** When
 - **team_jikan.col_next:** Next
 - **team_jikan.col_last:** Last
-- **team_jikan.col_ran:** Ran
-- **team_jikan.col_outcome:** Outcome
 - **team_jikan.by:** set by {by}
 - **team_jikan.lead:** 人 lead
 - **team_jikan.not_yet:** not yet
@@ -1666,12 +1664,10 @@ The catalog entry goes. {dir} is not touched.
 - **team_jikan.queued:** queued — waiting to enter
 - **team_jikan.pause:** Pause
 - **team_jikan.resume:** Resume
-- **team_jikan.run_now:** Run now
-- **team_jikan.ran:** Ran {id}: {outcome}
+- **team_jikan.run_now:** Run at next tick
+- **team_jikan.paused:** paused
 - **team_jikan.remove:** Remove
 - **team_jikan.read_failed:** Could not read the jobs — {message}
-- **team_jikan.clock:** Clock last checked {at}.
-- **team_jikan.clock_waiting:** Clock starting.
 
 ## workspace — workspace-primitives.js (the Kit's own words)
 - **workspace.channels:** Team channels

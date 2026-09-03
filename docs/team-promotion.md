@@ -55,6 +55,15 @@ restart checks before the host command runs. Promotion health therefore probes
 
 `--dry-run` does 1–2 and writes nothing. `--no-restart` stops after 4.
 
+**Look before you prove** (owner, 2026-09-03). Two promotions proving on one box at once
+trample each other — a restart from one kills the other's test children — so before it
+proves, `ronin-promote` looks at the ledger for any team's receipt still moving
+(preparing · proving · advancing · restarting, touched in the last 20 minutes) and answers
+`BUSY: promotion <id> (<team>) is <state> since <time>` instead of running. That is not a
+lock and there is no queue: wait for it to finish, then run again. `--anyway` proves
+regardless, for the case you have judged. An agent that sees BUSY is not wrong; it was
+told to look, and it looked.
+
 ## Recovery: resume, abandon, revert, bisect
 
 - **`resume <id>`** — an interrupted promotion: refs already `done` stay done; raced or

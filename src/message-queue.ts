@@ -184,7 +184,8 @@ export async function processMessageQueue(): Promise<void> {
   }
 }
 
-/** The queue's retry rhythm, on JIKAN's clock (src/jikan.ts): every 2 s, and once at boot. */
+/** The queue's retry rhythm, on JIKAN's clock (src/jikan.ts): every 2 s, and once now. */
 export function startMessageQueue(): () => void {
-  return onClock({ name: 'message_queue', everyMs: 2_000, atBoot: 0, run: processMessageQueue });
+  void processMessageQueue();
+  return onClock('message_queue', 2_000, processMessageQueue);
 }
