@@ -49,7 +49,23 @@ export const currentTheme = () => {
  *  per device so the pre-boot inline scripts paint the right shell before this module
  *  loads. */
 const clean = (value) => (value === 'light' || value === 'dark' ? value : '');
-let campaignThemes = { desktop: '', mobile: '' };
+// START FROM THE SAME LAST-KNOWN ANSWER AS THE INLINE HEAD SCRIPT. The head restores
+// this cache before CSS paints; starting the module from empty made main.js's first
+// applyTheme() replace a cached dark shell with the light fallback while the served
+// Campaign desk was still in flight, then loadDeskProfile() changed it back to dark.
+// That dark → light → dark sequence was the reload flash. The server remains
+// authoritative: setCampaignTheme() replaces both values as soon as its answer arrives.
+const cachedCampaignThemes = () => {
+  try {
+    return {
+      desktop: clean(localStorage.getItem('tmuxgrid.theme.system')),
+      mobile: clean(localStorage.getItem('tmuxgrid.theme.system.mobile')),
+    };
+  } catch (_) {
+    return { desktop: '', mobile: '' }; // private/blocked storage: house light below
+  }
+};
+let campaignThemes = cachedCampaignThemes();
 const COARSE = window.matchMedia('(pointer: coarse)').matches;
 export function setCampaignTheme(desk) {
   campaignThemes = { desktop: clean(desk?.theme), mobile: clean(desk?.theme_mobile) };
