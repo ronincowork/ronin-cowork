@@ -3,7 +3,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { campaignById, campaignOf, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { createCampaignIdentitySurface, createNewCampaignSurface, createSessionRolesSurface } from './campaign-surfaces.js';
+import { createCampaignIdentitySurface, createNewCampaignSurface } from './campaign-surfaces.js';
 import { choice, createDeskProfileSurface, skinWord } from './campaign-desk.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
 import { createRoutinesSurface, routinesSummary } from './campaign-routines.js';
@@ -17,10 +17,12 @@ import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from '.
 const PROFILE = 'campaign';
 // No Ronin Desk here (owner, 2026-08-30): its tabs repeat what these surfaces are, and
 // the machine's own half — account, health — is the Admin Desk's.
-const TYPES = Object.freeze({ identity: 'campaign.identity', profile: 'campaign.desk-profile', roots: 'campaign.project-roots', defaults: 'campaign.agent-defaults', routines: 'campaign.routines', templates: 'campaign.templates', roles: 'campaign.session-roles', machine: 'campaign.machine', create: 'campaign.new' });
+// KEY ORDER IS THE SELECTOR'S ORDER (owner, 2026-09-03): Ronin Desk · Templates · Agent
+// defaults · Project roots lead, and they are the four the page opens on.
+const TYPES = Object.freeze({ machine: 'campaign.machine', templates: 'campaign.templates', defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', routines: 'campaign.routines', profile: 'campaign.desk-profile', create: 'campaign.new' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
-const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.templates, 'campaign.team-templates': TYPES.templates, '@new-campaign': TYPES.create });
+const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.templates, 'campaign.team-templates': TYPES.templates, 'campaign.session-roles': TYPES.templates, '@new-campaign': TYPES.create });
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
 /**
@@ -79,11 +81,10 @@ function registerCampaignSurfaces() {
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.
   add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'Themes · Account · Archived · Messages · Help desk · Keypad · Desk.'), create: ({ environment: e }) => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk'), campaign: e.selected }); return { el: surface.el, show: () => surface.select(surface.current() || 'themes') }; } });
-  // TEMPLATES (2026-09-03): the two shelves the launch forms draw — teams and agents —
-  // and the template library on the public site they can be grown from. Until this
-  // landed the card opened the session roles; those keep their own card below.
+  // TEMPLATES (2026-09-03): the library first, then the two shelves the launch forms draw
+  // — teams and agents — in the forms' own boxes, by kind. The session-roles card that once
+  // stood behind this word is gone (owner, 2026-09-03: outdated); a remembered seat maps here.
   add({ type: TYPES.templates, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.templates_summary', 'Team casts, agent loadouts, and the library to download more from.'), create: () => { const surface = createTemplatesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
-  add({ type: TYPES.roles, header: 'surface', label: () => t('campaign_view.roles', 'Session roles'), summary: () => t('campaign_view.roles_summary', 'What a launch here offers an Agent to be.'), create: () => { const surface = createSessionRolesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
   add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
   // ONE CAMPAIGN SHIPS (owner, 2026-08-30): there is no way yet to look at several, so
   // New Campaign is not offered — the surface stays in the library, off the profile.
@@ -119,12 +120,12 @@ export function createCampaignView() {
     settei: () => setteiRead,
   };
   /**
-   * FIRST OPEN (owner, 2026-08-30): the page opens as the whole record — four settings
-   * up, one per workspace, at count 4. Applied ONCE per browser (`opened` in the view
-   * state), so a tab that remembered the two-seat days still gets four; after that the
-   * arrangement is the person's, and an emptied workspace stays empty.
+   * THE DEFAULT VIEW (owner, 2026-09-03): the page always loads four up — Ronin Desk,
+   * Templates, Agent defaults, Project roots — and every blank workspace takes its default
+   * on every entry. A surface the person placed elsewhere is left where they put it; only
+   * an empty seat is filled, and a surface already on the page is never placed twice.
    */
-  const FIRST_OPEN = Object.freeze({ workspace1: TYPES.identity, workspace2: TYPES.machine, workspace3: TYPES.roots, workspace4: TYPES.defaults });
+  const DEFAULT_VIEW = Object.freeze({ workspace1: TYPES.machine, workspace2: TYPES.templates, workspace3: TYPES.defaults, workspace4: TYPES.roots });
   const blank = (id) => { const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' }); surface.content.append(elem('p', 'cv-blank-word', t('team.workspace_blank', 'Workspace'))); return surface.el; };
   const save = () => ctx?.patchViewState('campaign', bench.snapshot());
   bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign', 'Campaign'), title: () => selected()?.title || t('campaign', 'Campaign'), shapeControl: document.getElementById('shapecycle'), onStateChange: save, onPlacement: save });
@@ -140,9 +141,9 @@ export function createCampaignView() {
       await Promise.all([loadCampaigns(), readRoots(), readSettei()]);
       if (!entered) return;
       for (const id of bench.ids) { const type = LEGACY[typed.seats[id]] || typed.seats[id]; if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id); }
+      bench.setCount(4);
+      for (const [id, type] of Object.entries(DEFAULT_VIEW)) if (bench.isDefault(id) && !bench.locations(type).length) bench.place(type, id);
       if (!context.viewState('campaign')?.opened) {
-        bench.setCount(4);
-        for (const [id, type] of Object.entries(FIRST_OPEN)) if (bench.isDefault(id) && !bench.locations(type).length) bench.place(type, id);
         bench.select('workspace1');
         ctx?.patchViewState('campaign', { opened: true });
       }

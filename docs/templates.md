@@ -78,19 +78,22 @@ NEW file in your store, on the saving form's shelf — an existing name on that 
 refused, never silently shadowed. Shipped boxes are edited on the campaign page (or by
 your agent, as above), not from a launch form.
 
-## The shipped library
+## The shipped handful, and the library
 
-Ten projects — Staff My Codebase 🎬, Ship an App 🏗, Raid My Codebase 🛠, Health
-Checks 📈, Ship the Tour 🎸, Dinner Party 🕯, Health & Fitness 🏃, Bake for the Fair
-🥧, Redo the Study 🪑, Put the Garden Right 🌿 — and eleven people, from the Personal
-Assistant 📇 (gbrain on, born into its own team) and the System Administrator 🔧 to
-the Housekeeper 🔑. The first project to try is **Staff My Codebase** 🎬: a code
-coordinator born as the marked lead, and an assessor that surveys your codebase,
-staffs one specialist per service into the team, and hands you a crew you can talk
-to — its procedure is `ronin_sops/codebase_team.md`, and your own copy of that book
-changes how it staffs. The listing is the directory (`ls
-ronin_catalogs/templates/teams "$(bin/ronin-store catalogs)/templates/teams"`), never
-a page like this one.
+A handful ships — one or two a kind, so every launch form has something on the tray — and
+**the Ronin library on ronincowork.com is where the rest live** (owner, 2026-09-03). Four
+projects: **Staff My Codebase** 🎬 for code, **Morning Brief** ☕ for work, **Health &
+Fitness** 🏃 for yourself, **Dinner Party** 🕯 for the house; and five people: the Personal
+Assistant 📇 (gbrain on, born into its own team), the System Administrator 🔧, the Office
+Manager ⚙, the Housekeeper 🔑 and the Training Coach 🏋. The first project to try is Staff
+My Codebase: a code coordinator born as the marked lead, and an assessor that surveys your
+codebase, staffs one specialist per service into the team, and hands you a crew — its
+procedure is `ronin_sops/codebase_team.md`. Everything else — Ship an App, Raid My
+Codebase, Health Checks, Ship the Tour, Bake for the Fair, Redo the Study, Put the Garden
+Right, the Bookkeeper, the Designer and the rest — is a bundle on the library: see it there,
+download it inside Ronin (Campaign → Templates → Check the library), and it lands on your
+shelf like anything you wrote. The listing is the directory (`ls ronin_catalogs/templates/teams
+"$(bin/ronin-store catalogs)/templates/teams"`), never a page like this one.
 
 ## Bundles and the template library
 

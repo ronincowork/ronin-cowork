@@ -129,6 +129,7 @@
 
   /* ── the template tray ── */
   .fs-tmplgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-12) * 5), 1fr)); gap: var(--space-2); }
+  .fs-tmplnote { margin: var(--space-3) 0 0; font-size: var(--text-2); color: var(--muted); line-height: 1.5; }
   .fs-tmpl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
   .fs-tmpl:hover { border-color: var(--kaki); }
   .fs-tmpl[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
