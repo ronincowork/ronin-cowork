@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { renderDeskBlock, resolveLaunchDesks } from '../src/launch-desks.js';
+import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks } from '../src/launch-desks.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { bootFiles } from '../src/session-boot.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
@@ -33,20 +33,43 @@ const profile = { session_role: 'CutCode', label: 'cut code', posture: [], openi
 
 test('a launch that wants no desk resolves null without touching any registry', async () => {
   const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, control: false });
-  assert.equal(a, null);
+  assert.equal(a.assignment, null);
 });
 
 test('the retired desk override is not a second Worktrees switch', async () => {
   const forced = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, control: false, desk: 'own' });
   const refused = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, control: true, desk: 'none' });
-  assert.equal(forced, null);
-  assert.equal(refused, null);
+  assert.equal(forced.assignment, null);
+  assert.equal(refused.assignment, null);
 });
 
 test('a coding launch on a repository with no RONIN_REPO resolves null — the file is the gate', async () => {
   // `nowhere` is no project_root on this box, so its arrangement is absent → no desk.
   const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, control: true });
-  assert.equal(a, null);
+  assert.equal(a.assignment, null);
+});
+
+test('the 2x2 result tells an Agent the location for managed and direct repositories', () => {
+  const repositories = [
+    {
+      repo: 'cowork', project_root: 'cowork', worktrees: 'enabled', mode: 'managed',
+      location: '/w/cowork', branches: { working: 'dev', stable: 'master' },
+      managed: { worktree: '/w/cowork', branch: 'team/comp/fable', line: 'team/comp/dev' },
+      reason: 'agent_and_repository_enabled', provenance: { agent: 'routine', repository: 'RONIN_REPO' },
+    },
+    {
+      repo: 'lab', project_root: 'lab', worktrees: 'disabled', mode: 'direct',
+      location: '/src/lab', branches: { working: 'main', stable: 'main' }, managed: null,
+      reason: 'repository_disabled', provenance: { agent: 'routine', repository: 'RONIN_REPO' },
+    },
+  ] as const;
+  const locations = renderWorkLocations([...repositories]);
+  assert.doesNotMatch(locations, /cowork/, 'managed locations are already named by the desk block');
+  assert.match(locations, /lab  \/src\/lab  \(this repository does not use Worktrees; edit directly in this checkout\)/);
+  assert.equal(primaryWorkLocation([...repositories], 'lab'), '/src/lab');
+  const brief = buildBrief(profile, undefined, { session_role: 'CutCode', prompt: 'Plan in lab.' }, undefined, [], null, assignment, [...repositories]);
+  assert.match(brief, /Direct work locations:/);
+  assert.match(brief, /lab  \/src\/lab  \(this repository does not use Worktrees; edit directly in this checkout\)/);
 });
 
 test('the brief carries every desk, the primary, the line, and the four words — or nothing at all', () => {
