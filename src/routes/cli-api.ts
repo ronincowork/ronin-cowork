@@ -1,7 +1,7 @@
 import type { Express } from 'express';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
-import { REPO_ROOT } from '../config.js';
+import { REPO_ROOT } from '../resources.js';
 
 const TOOLS = new Set(['wipeboard', 'desk', 'promotion', 'jikan', 'bundle', 'recovery', 'auth', 'message']);
 
