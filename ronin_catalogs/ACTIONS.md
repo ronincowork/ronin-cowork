@@ -672,6 +672,18 @@ stop; do not retry with the block reshaped until something sticks.
 **Do not batch.** One change, one confirmation. Three proposals in one message get one
 "yes" that meant the first of them.
 
+## schedule-request — put a request on the team's clock
+`action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
+> Tool: `tejun-jikan add --when "<timing>" [--to lead|<session>] <request...>` → `SCHEDULED <id> …`
+A Cron job (JIKAN) is one request delivered to one session of your team — by name, or
+`lead` — at a moment or on a rhythm, by Ronin's own clock, through the ordinary message
+door. It commits the owner's machine to future action, so it is a **propose-and-confirm**:
+say the request, who gets it and when, in the tile, and add it only on the owner's yes —
+never on your own initiative, and never for another team. `tejun-jikan when "<timing>"`
+proves the timing words before you propose them; `tejun-jikan` lists what is already
+there so you do not schedule a thing twice. Nothing on the clock births a session or a
+team: a job whose session is gone is refused and left standing for the owner to see.
+
 ## report-outcome
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
 Close every macro by telling the owner what happened — outcome first, in plain

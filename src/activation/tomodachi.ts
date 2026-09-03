@@ -13,6 +13,7 @@
  *
  * A packet is therefore only removed from the outbox once a RECEIPT is in hand.
  */
+import { onClock } from '../jikan.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../stores.js';
@@ -137,10 +138,8 @@ export async function listReceipts(limit = 20): Promise<Receipt[]> {
  *
  * Unref'd, so it never holds the process open.
  */
-export function startTomodachiSender(everyMs = 3_600_000): NodeJS.Timeout {
-  const timer = setInterval(() => { void sendDuePackets(); }, everyMs);
-  timer.unref();
-  // One sweep shortly after boot, for the machine that was off when a packet was written.
-  setTimeout(() => { void sendDuePackets(); }, 60_000).unref();
-  return timer;
+export function startTomodachiSender(everyMs = 3_600_000): () => void {
+  // On JIKAN's clock (src/jikan.ts): the hourly sweep, and one sweep shortly after
+  // boot for the machine that was off when a packet was written.
+  return onClock({ name: 'tomodachi', everyMs, atBoot: 60_000, run: async () => { await sendDuePackets(); } });
 }

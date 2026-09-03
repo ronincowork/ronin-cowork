@@ -4,7 +4,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const args = process.argv.slice(2);
-const sources = new Set<MessageSource>(['tell', 'wipeboard_notice', 'owner', 'house']);
+const sources = new Set<MessageSource>(['tell', 'wipeboard_notice', 'owner', 'house', 'jikan']);
 const source: MessageSource = sources.has(args[0] as MessageSource) ? args.shift() as MessageSource : 'tell';
 const target = args.shift() ?? '';
 const text = args.join(' ').trim();

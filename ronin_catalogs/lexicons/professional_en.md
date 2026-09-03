@@ -1271,6 +1271,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.type_wipeboard:** Wipeboard notification
 - **messages.type_owner:** Owner message
 - **messages.type_house:** House message
+- **messages.type_jikan:** Cron job
 - **messages.reason_prompt_changed:** The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.
 - **messages.retry:** Try Again
 - **messages.force:** Force
@@ -1631,6 +1632,47 @@ The catalog entry goes. {dir} is not touched.
 - **provenance.shadowed:** Yours — this replaces Ronin's shipped entry of the same name. Upgrades to that entry will not reach you.
 - **provenance.own:** Yours — added by you, in your catalogs store. An upgrade cannot touch it.
 
+## team_jikan — team-jikan.js (the Cron jobs tab on the team commons)
+
+- **team_jikan.help:** A request delivered to one agent of this team, by name or to its lead, at a moment or on a rhythm. Ronin checks every minute and delivers through the message door — the dial is honoured, and a busy agent gets it queued. Nothing here starts an agent or a team.
+- **team_jikan.new:** New job
+- **team_jikan.request:** What is the request?
+- **team_jikan.request_placeholder:** +brief: — the words the agent will receive
+- **team_jikan.to:** To
+- **team_jikan.to_lead:** the team lead, whoever that is at the time
+- **team_jikan.when:** When
+- **team_jikan.when_placeholder:** weekdays 08:00
+- **team_jikan.when_help:** One time: once 2026-09-04 08:00. Repeating: daily 08:00 · weekdays 08:00 · weekly mon 08:00 · monthly 1 09:00 · hourly · every 30m · or a five-field cron line.
+- **team_jikan.when_preview:** {words} → next {next}
+- **team_jikan.never:** never — that time has passed
+- **team_jikan.add:** Schedule it
+- **team_jikan.saving:** scheduling…
+- **team_jikan.scheduled:** scheduled — next {next}
+- **team_jikan.scheduled_head:** Scheduled
+- **team_jikan.done_head:** Done
+- **team_jikan.none:** Nothing scheduled. Add one above, or an agent can with tejun-jikan.
+- **team_jikan.none_done:** Nothing has run yet.
+- **team_jikan.col_request:** Request
+- **team_jikan.col_to:** To
+- **team_jikan.col_when:** When
+- **team_jikan.col_next:** Next
+- **team_jikan.col_last:** Last
+- **team_jikan.col_ran:** Ran
+- **team_jikan.col_outcome:** Outcome
+- **team_jikan.by:** set by {by}
+- **team_jikan.lead:** 人 lead
+- **team_jikan.not_yet:** not yet
+- **team_jikan.delivered:** delivered
+- **team_jikan.queued:** queued — waiting to enter
+- **team_jikan.pause:** Pause
+- **team_jikan.resume:** Resume
+- **team_jikan.run_now:** Run now
+- **team_jikan.ran:** Ran {id}: {outcome}
+- **team_jikan.remove:** Remove
+- **team_jikan.read_failed:** Could not read the jobs — {message}
+- **team_jikan.clock:** Clock last checked {at}.
+- **team_jikan.clock_waiting:** Clock starting.
+
 ## workspace — workspace-primitives.js (the Kit's own words)
 - **workspace.channels:** Team channels
 - **workspace.channel_chat:** Chat
@@ -1638,6 +1680,7 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
 - **workspace.channel_agent_message_queue:** Agent Message Queue
+- **workspace.channel_cron_jobs:** Cron jobs
 - **team_config.no_roster:** This Cowork has no saved roster.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Cowork ID
@@ -1720,6 +1763,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.team_roster:** Cowork record
 - **glossary.team_lead:** team lead · 人
 - **glossary.wipeboard:** wipeboard
+- **glossary.cron_jobs:** Cron jobs
 - **glossary.docs:** the Docs tab
 - **glossary.configuration:** Configuration
 - **glossary.hotwords:** Hotwords
