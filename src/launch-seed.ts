@@ -33,7 +33,6 @@ const campaignBy = (id: string, field: string): StatedBy[] =>
 const teamBy = (roster: TeamRoster): StatedBy[] =>
   [{ layer: 'team', source: teamRosterFile(roster.name, roster.campaign_id) }];
 
-/** The one parent resolver used by both launch and GET /api/launch-seed. */
 export function resolveLaunchSeed(s: LaunchSeedSources): LaunchSeed & { resolved_routines: ResolvedRoutine[] } {
   const c = s.campaign.config.agent_defaults;
   const t = s.roster;

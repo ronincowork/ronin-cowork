@@ -1,13 +1,3 @@
-/**
- * HAND-IN RECEIPTS — the attribution ledger, one line appended per attempt, never edited.
- *
- * One JSONL file per team line per repo under the `desks` store. Every hand-in — accepted,
- * conflicted, stale or refused — appends exactly one row keyed by the exact SHAs it saw,
- * so a failure at the next boundary (the team promotion's full BYOIN, Track 2) can be
- * walked back to the desk and session that introduced it, and a bisect can replay the
- * accepted candidates in the order the line took them. Append is a single `O_APPEND`
- * write of one line, which is atomic for lines this size; no row is ever rewritten.
- */
 import { appendFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
@@ -28,7 +18,6 @@ export async function appendReceipt(r: HandInReceipt): Promise<HandInReceipt> {
   return r;
 }
 
-/** Every receipt on a line, oldest first. A line with no ledger has none. */
 export async function receiptsForLine(repo: string, line: string): Promise<HandInReceipt[]> {
   try {
     const text = await readFile(ledgerFile(repo, line), 'utf8');
@@ -38,10 +27,8 @@ export async function receiptsForLine(repo: string, line: string): Promise<HandI
   }
 }
 
-/** Every receipt a desk has produced on its line, oldest first. */
 export async function receiptsForDesk(repo: string, branch: string, line?: string): Promise<HandInReceipt[]> {
   if (line) return (await receiptsForLine(repo, line)).filter((r) => r.desk === branch);
-  // No line named: walk every ledger this repo has.
   const dir = path.join(storeDir('desks'), 'receipts', repo);
   let files: string[] = [];
   try {
@@ -61,7 +48,6 @@ export async function receiptsForDesk(repo: string, branch: string, line?: strin
   return out.sort((a, b) => a.at.localeCompare(b.at));
 }
 
-/** One receipt by id, or null. */
 export async function receiptById(repo: string, id: string): Promise<HandInReceipt | null> {
   const dir = path.join(storeDir('desks'), 'receipts', repo);
   let files: string[] = [];
@@ -80,7 +66,6 @@ export async function receiptById(repo: string, id: string): Promise<HandInRecei
   return null;
 }
 
-/** Accepted receipts on a line after a given line SHA — what a promotion carries. */
 export async function acceptedSince(repo: string, line: string, sinceLineSha: string): Promise<HandInReceipt[]> {
   const all = (await receiptsForLine(repo, line)).filter((r) => r.result === 'accepted');
   if (!sinceLineSha) return all;
@@ -88,10 +73,6 @@ export async function acceptedSince(repo: string, line: string, sinceLineSha: st
   return i < 0 ? all : all.slice(i + 1);
 }
 
-/**
- * Repository/line pairs on which a team has accepted work. The hand-in ledger is the
- * authority: an explicitly opened managed repository need not be a Team birth default.
- */
 export async function acceptedLinesForTeam(team: string): Promise<Array<{ repo: string; line: string }>> {
   const root = path.join(storeDir('desks'), 'receipts');
   const repos = await readdir(root, { withFileTypes: true }).catch(() => []);

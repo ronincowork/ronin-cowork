@@ -1,34 +1,3 @@
-/**
- * SETTEI — one record of what this install IS, assembled on read.
- *
- * `plans/SETTEI.md` Part VI in ronin-lab is the plan this implements, and its one idea is
- * the whole of this file: every line in the record arrived one of three ways, and keeping
- * those apart is what stops a config file lying.
- *
- *   set        the owner typed it        PERSISTS — machine_settings.json + the roots file
- *   observed   the box measured it       never stored, and carries `observed_at`
- *   status     follows from the other two computed here, never stored
- *
- * **A stored fact is a lie the moment the box changes.** Hostname, core count, which
- * agent CLIs exist and whether a key is present are all things that answer differently
- * next week; writing them down would produce a record that disagrees with its own
- * machine and no way to tell which was right. So only the half a person typed is saved,
- * which is also what keeps the write path a single writer with no cache and nothing to
- * reconcile.
- *
- * WHAT THIS FILE MAY NOT DO, and the reason is load-bearing:
- *
- *  - **It never returns `machine_settings.json`.** The document also carries `auth` (a scrypt record
- *    AND the secret that signs session tokens) and `passkeys`. The obvious implementation
- *    of "one place you see the setup" is a GET that hands back the file, and that GET
- *    would hand out the signing secret. Every section below is assembled from NAMED keys.
- *  - **It never renders a credential.** A key appears as its variable NAME and a boolean
- *    for whether it is set. Never a value, and never a field to type one into.
- *  - **It makes no outbound call.** A record that phones anyone to draw itself has quietly
- *    become a third egress door, and the house has exactly two (AGERU, and the model
- *    provider). Provider comes from the DMI table the kernel already read; region is not
- *    detected at all — it is `machine.where`, in the owner's own words.
- */
 import os from 'node:os';
 import { readFile } from 'node:fs/promises';
 import { access, mkdir, readdir, rename, stat, writeFile } from 'node:fs/promises';
@@ -49,9 +18,6 @@ import {
   readState as readServicesActivation,
   type ActivationState,
 } from './activation/state.js';
-// THE CAMPAIGN'S OWN LEAVES. `set.campaign.{name,description}` and `set.desk.profile` keep
-// the shapes this record has always served, but the fact behind them is now the initial
-// machine settings campaign record rather than a section of machine_settings.json — one writable Campaign record.
 const pexec = promisify(execFile);
 const MACHINE_SETTINGS_FILE = () => path.join(storeDir('config'), 'machine_settings.json');
 const MAX_OPT = '@ronin-session-max';
@@ -239,22 +205,14 @@ export function assertBindIsSafe(passwordAuth = false): void {
   }
 }
 
-/** This node's tailnet address, measured once — see `routes()` for why it is needed. */
 const TAILNET_IP = tailnetIp();
 
-/* ------------------------------------------------------------------ the shapes */
-
-/** One project as the record shows it. NO per-root model: there is ONE default for
- * new sessions (`agents.sessions.default`, the owner's ruling 2026-08-18) and a root
- * carries none — whatever columns the roots file still has, settei does not read them. */
 export interface MachineSettingsProject {
   name: string;
   dir: string;
-  /** The one line a person picks a project from in a list. Already in the roots file. */
   remit: string;
 }
 
-/** What a job that needs a model is pointed at. `key_env` is a NAME, never a key. */
 export interface MachineSettingsJob {
   outlet: string;
   provider: string | null;
@@ -266,35 +224,13 @@ export interface MachineSettingsRecord {
   set: Record<string, unknown>;
   observed: Record<string, unknown>;
   status: Record<string, unknown>;
-  /** What a choice still needs, judged per read — met items do not exist. Every entry
-   * carries the choke (`met_by`, src/machine-settings-schema.ts): what KIND of hand closes it.
-   * The list is served already partitioned that way — one read, and a surface renders
-   * the three kinds by filtering, never by re-deciding what it is looking at. */
   needed: Array<{ leaf: string; needs: string; how: string; met_by: MetBy }>;
-  /** The registry, plus one generated row per provider the launch table carries. */
   schema: Omit<typeof MACHINE_SETTINGS_SCHEMA, 'fields'>
     & { fields: Array<(typeof MACHINE_SETTINGS_SCHEMA)['fields'][number] | ProviderModelField> };
 }
 
-/** The choke: what kind of hand closes a requirement. Declared per row in the registry,
- * where the three values are spelled out at length. `mechanical` is the install
- * operation's subset and the only one anything dispatches. */
 export type MetBy = 'mechanical' | 'owner' | 'agent';
 
-/* ------------------------------------------------------- small honest measurers */
-
-/**
- * Absent reads `null`, never missing: a thing this box could have and does not.
- *
- * FOR TOOLS ONLY — `gh`, `tailscale`, `chromium`. **The agent CLIs do not come through
- * here**, and the difference is the whole reason `src/agents.ts` exists: this process's
- * PATH is not the one a pane gets. `systemd --user` carries a minimal PATH, so a CLI
- * installed through npm-global or nvm is routinely present in the owner's shell and
- * absent here — a scan from node and a scan from the tmux server's environment each
- * answer wrong, in different directions. Agent availability is measured in a LOGIN
- * SHELL by `listAgentAvailability()` and this record consumes that answer rather than
- * producing a second, cheaper, wronger one.
- */
 async function whichPath(cmd: string): Promise<string | null> {
   const dirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
   for (const d of dirs) {
@@ -303,13 +239,11 @@ async function whichPath(cmd: string): Promise<string | null> {
       await access(p);
       return p;
     } catch {
-      /* not here — next */
     }
   }
   return null;
 }
 
-/** One line out of a file, or null. Never throws: a missing fact is not an error. */
 async function readTrimmed(file: string): Promise<string | null> {
   try {
     return (await readFile(file, 'utf8')).trim() || null;
@@ -318,26 +252,18 @@ async function readTrimmed(file: string): Promise<string | null> {
   }
 }
 
-/** Ubuntu 26.04 LTS, or whatever this is. `PRETTY_NAME` is the one humans recognise. */
 async function osName(): Promise<string> {
   const raw = await readTrimmed('/etc/os-release');
   const m = raw?.match(/^PRETTY_NAME="?([^"\n]+)"?/m);
   return m?.[1] ?? `${os.type()} ${os.release()}`;
 }
 
-/**
- * Physical or virtual, and whose. `systemd-detect-virt` answers `none` on metal and
- * names the hypervisor otherwise; the DMI table names the vendor without a network call.
- * Both are best-effort — a box that answers neither is reported as unknown rather than
- * guessed at.
- */
 async function machineFacts(): Promise<Record<string, unknown>> {
   let virt: string | null = null;
   try {
     const { stdout } = await pexec('systemd-detect-virt', [], { timeout: 1500 });
     virt = stdout.trim() || null;
   } catch (e) {
-    // exit 1 means "none" — bare metal, and the message carries it
     const out = (e as { stdout?: string })?.stdout?.trim();
     virt = out || null;
   }
@@ -354,62 +280,30 @@ async function machineFacts(): Promise<Record<string, unknown>> {
   };
 }
 
-/** Loopback in the spellings a person actually writes. Mirrors config.ts's own test. */
 const isLoopback = (a: string): boolean => {
   const s = a.trim().toLowerCase().replace(/^\[|\]$/g, '');
   return s === '127.0.0.1' || s === '::1' || s === 'localhost' || s.startsWith('127.');
 };
 
-/**
- * HOW THIS BOX IS REACHED, AND BY WHOM. The interesting part is not the port, it is
- * the sentence about exposure: an install bound to its tailnet address with no password
- * is not insecure — the tailnet IS the door — and one bound wider with no password is a
- * live shell on an open port. Saying which, in words, is the point of the row.
- */
 function routes(): Record<string, unknown> {
   const bind = config.bind;
   const loopback = isLoopback(bind);
-  // Measured once at module load, exactly as config.ts does for the default bind — a
-  // shell-out per request to answer a question whose answer does not change would be a
-  // cost with no reader.
   const tailnet = !loopback && bind.trim() === TAILNET_IP;
   return {
     url: `http://${bind}:${config.port}`,
     bind,
     port: config.port,
-    // WHAT IS STANDING IN FRONT OF US (owner, 2026-08-23). The three lines above
-    // describe the door THIS PROCESS opened, and on a box running `tailscale serve`
-    // that is not the address a person should type: TLS terminates in tailscaled and
-    // reaches us as plain http on the bind, so the record was naming the inside of the
-    // proxy and calling it the way in. src/passkey.ts already measures the outside for
-    // the login page — the same question, answered from `tailscale serve status` rather
-    // than a hardcoded port — so read it rather than derive a second answer that can
-    // disagree. Its one shell-out is cached for the life of the process, and it is a
-    // local daemon, not the outbound call this file's header forbids.
     secure: secureUrl() ?? null,
     reachable: { loopback, tailnet, wider: !loopback && !tailnet },
     auth: { basic: authEnabled },
   };
 }
 
-/**
- * HOW THIS BOX IS REACHED BY HAND — the ssh family (owner, 2026-08-18). The box can
- * say every address a person could point ssh at, and whether sshd is listening; it
- * can never know the alias the owner types on their laptop — that lives client-side,
- * in an ~/.ssh/config it has no business reading. Interfaces only, no metadata call
- * (the no-egress rule holds): the tailnet address is recognised by its CGNAT range
- * (100.64/10), everything else non-internal is reported as public.
- *
- * `listening` is boolean OR NULL — on a box with no /proc (a Mac) the question is
- * unanswerable, and unanswerable must never be spelled `false`: absent means absent.
- * Only port 22 is asked about; a moved sshd port is the owner's own arrangement.
- */
 async function sshReach(): Promise<Record<string, unknown>> {
   let listening: boolean | null = null;
   try {
     const tcp = await readFile('/proc/net/tcp', 'utf8');
     const tcp6 = (await readTrimmed('/proc/net/tcp6')) ?? '';
-    // /proc/net/tcp: local_address is col 2 (hex ip:port), st is col 4; 0A = LISTEN.
     listening = (tcp + '\n' + tcp6)
       .split('\n')
       .slice(1)
@@ -418,7 +312,6 @@ async function sshReach(): Promise<Record<string, unknown>> {
         return c[3] === '0A' && c[1]?.toUpperCase().endsWith(':0016');
       });
   } catch {
-    /* not linux — unknown, not false */
   }
   const isTailnet = (a: string) => /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(a);
   const tailnet: string[] = [];
@@ -427,17 +320,12 @@ async function sshReach(): Promise<Record<string, unknown>> {
     for (const i of infos ?? []) {
       if (i.internal) continue;
       if (i.family === 'IPv4') (isTailnet(i.address) ? tailnet : pub).push(i.address);
-      // Link-local and ULA v6 reach nobody who does not already have a better route.
       else if (i.family === 'IPv6' && !/^(fe80|fd|fc)/.test(i.address)) pub.push(i.address);
     }
   }
   return { ssh: { listening, port: 22, addresses: { tailnet, public: pub } } };
 }
 
-/** LOCAL WEIGHTS — open models actually downloaded onto this box (the koshi_weights
- * store's models/). Named and sized per read, because "I believe we downloaded qwen"
- * is exactly the sentence a record exists to replace with a measurement. An empty or
- * absent shelf is the ordinary state of a box that has not installed the service. */
 async function localWeights(): Promise<Array<Record<string, unknown>>> {
   const dir = path.join(storeDir('koshi_weights'), 'models');
   let names: string[];
@@ -453,23 +341,14 @@ async function localWeights(): Promise<Array<Record<string, unknown>>> {
       const st = await stat(path.join(dir, n));
       if (st.isFile()) out.push({ name: n, mb: Math.round(st.size / 1024 ** 2) });
     } catch {
-      /* vanished mid-read */
     }
   }
   return out;
 }
 
-/* ------------------------------------------------------------------ the record */
-
-/** A typed string leaf: the owner's words, or null. A BLANK IS NOT AN ANSWER — an
- * empty or whitespace string reads as null, so the fallback machinery downstream
- * (`??` in computeStatus, "unset — using …" in ⚙) never mistakes a cleared field for
- * a given name. The live defect this closes: a stored `machine.name: ""` made
- * status.machine_name empty and the hostname invisible on the whole ⚙ tab. */
 const typedStr = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() !== '' ? v : null;
 
-/** The owner's two session defaults, both always present in the record. */
 const sessionDefaults = (v: unknown): Record<string, unknown> => ({
   default: (v as Record<string, unknown>)?.default ?? { provider: null, model: null },
   by_provider: (v as Record<string, unknown>)?.by_provider ?? {},
@@ -507,25 +386,15 @@ async function readSet(): Promise<Record<string, unknown>> {
     },
     sessions: { max: await readMax() },
     projects,
-    // `by_provider` is normalized so a row reading `…by_provider.<name>` finds a blank
-    // rather than walking off a missing branch.
     agents: { sessions: sessionDefaults(agents.sessions), jobs: (agents.jobs as unknown) ?? {} },
     gbrain: { enabled: gbrain.enabled === true },
     koshi,
     wipeboard,
-    // THE DESK (R38) — which desk_profile the surfaces read their defaults from; '' is
-    // "as stock", the ordinary state of every install older than the catalog.
     desk: { profile: typedStr(campaignRecord.desk_profile) },
-    // NEW PROJECTS AND DESKS (owner, 2026-08-29) — the default written into a new
-    // project's RONIN_REPO; the file, not this, is the gate.
     desks: { new_project: typedStr((await readDesksSection()).new_project) },
-    // THE WANT LIST — typed intents, each judged against found per read (computeNeeded).
-    // The want persists; the needed entry it produces never does.
     wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))
       .filter((w) => typeof w?.kind === 'string' && typeof w?.name === 'string')
       .map((w) => ({ kind: w.kind as string, name: w.name as string })),
-    // ASSERTS "SHOW ME", NEVER "HIDE ME". Absent is the normal state of every install
-    // older than the key, so it has to be quiet — see stampFreshInstall().
     setup: {
       pending: setup.pending === true,
       stamped_at: setup.stamped_at ?? null,
@@ -535,14 +404,6 @@ async function readSet(): Promise<Record<string, unknown>> {
   };
 }
 
-/**
- * SETTEI'S VIEW OF SERVICES, derived from the activation aggregate and nowhere else.
- *
- * The old implementation also read `machine_settings.json.services.{entitlement,email,verified,terms}`.
- * Those fields came from a superseded flow where a person pasted an unverified code from an
- * email. They are not evidence of an entitlement and are deliberately ignored on upgraded
- * installs. Shiwake confirmation reaches this record only through activation polling.
- */
 export function setteiServices(activation: ActivationState) {
   return {
     selected: activation.stage !== 'not_requested' && activation.stage !== 'cancelled',
@@ -552,7 +413,6 @@ export function setteiServices(activation: ActivationState) {
 
 type PublicActivation = ReturnType<typeof publicState>;
 
-/** The standing subscription line. Identity follows Shiwake's durable activation result. */
 export function servicesSubscription(activation: PublicActivation): string {
   if (activation.entitlement_id) {
     return `services: ${activation.entitlement_id}`
@@ -568,21 +428,7 @@ export function servicesSubscription(activation: PublicActivation): string {
   return 'free cowork: no entitlement recorded';
 }
 
-/** The half the box answers for itself. Nothing here is written down.
- * `jobKeyNames` — every `key_env` the typed half names; joins the registry's own
- * key list so a job pointed at a provider is a key the scan checks, automatically. */
 async function readObserved(jobKeyNames: string[]): Promise<Record<string, unknown>> {
-  /**
-   * THE OWNER-RULED STARTING FOUR, measured by ATARASHI's login-shell probe.
-   *
-   * `installed` is the only claim it makes — never *signed in*, because the owner ruled
-   * we do not inspect accounts. And the probe's failure mode is deliberately generous:
-   * if the login shell will not run at all, every agent comes back `installed: false`,
-   * because a shell that will not run is not evidence that nothing is installed. That is
-   * the right default for a page offering an install, so this record keeps the full
-   * `{ installed, path }` rather than flattening to a bare null — a reader can then see
-   * the shape of the claim instead of inheriting a bare absence it cannot check.
-   */
   const agents = Object.fromEntries(
     (await listAgentAvailability()).map((a) => [
       a.id,
@@ -596,9 +442,6 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
     ),
   );
 
-  // PRESENCE ONLY. The variable's name is public; its value is not, and there is no
-  // path from this record to one. The names come from the registry — a name worth
-  // scanning is a name the registry mentions — plus what the typed jobs point at.
   const keyNames = [...new Set([...MACHINE_SETTINGS_SCHEMA.scans.keys, ...jobKeyNames])];
   const keys = Object.fromEntries(keyNames.map((k) => [k, Boolean(process.env[k])]));
 
@@ -625,15 +468,6 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
   };
 }
 
-/**
- * WHAT FOLLOWS — every line a comparison the owner would otherwise make in their head.
- *
- * The rule this section keeps: **registration and configuration, never liveness.**
- * Proving Koshi answers means spending an API call, and a record that costs money to
- * render is a record nobody opens twice. "Pointed at openai, OPENAI_API_KEY not set" is
- * free, and it is the line that earns the section — today that failure is discovered
- * when Koshi tries to answer and cannot.
- */
 async function computeStatus(
   set: Record<string, unknown>,
   observed: Record<string, unknown>,
@@ -649,8 +483,6 @@ async function computeStatus(
   const max = (set.sessions as Record<string, number>).max;
   const running = await liveCount();
 
-  // A project whose directory has gone is the most common real breakage, and the
-  // cheapest thing to check: one stat per root.
   const projectStatus = await Promise.all(
     projects.map(async (p) => {
       let dir = 'ok';
@@ -659,12 +491,6 @@ async function computeStatus(
       } catch {
         dir = 'missing';
       }
-      // THE REPO IS MEASURED, NEVER RECORDED (owner asked 2026-08-18; the model rules
-      // the shape): whether a root has a repository and where origin points are facts
-      // the directory answers per read — a repo cloned tonight shows up tomorrow with
-      // no one editing a catalog, and a note in the roots file would be a stored
-      // measurement, lying the moment someone runs git clone. One file read per root
-      // (.git/config), no exec, no call out.
       let repo = '—';
       if (dir === 'ok') {
         const cfg = await readTrimmed(path.join(p.dir, '.git', 'config'));
@@ -675,7 +501,6 @@ async function computeStatus(
             : 'local repo — no remote';
         } else {
           try {
-            // a .git FILE is a worktree/submodule pointer — a repo, home elsewhere
             await access(path.join(p.dir, '.git'));
             repo = 'repo — worktree of another';
           } catch {
@@ -698,11 +523,6 @@ async function computeStatus(
       const needs = j?.key_env;
       const where = j?.provider ?? j?.outlet;
       if (needs && !keys[needs]) return [name, `pointed at ${where} — ${needs} not set`];
-      // SAY WHEN A CHEAP JOB IS ON THE EXPENSIVE MODEL. A house job is pointed at
-      // something light on purpose — Mika explains the house and runs errands — and the
-      // costly mistake is pointing it at the same model the sessions use without
-      // noticing. Two rows each showing a model name make that invisible; saying it out
-      // loud is most of why the row is worth drawing at all.
       const sameAsDefault = Boolean(j?.model) && j?.model === dflt?.model && j?.provider === dflt?.provider;
       return [
         name,
@@ -717,10 +537,6 @@ async function computeStatus(
     reachable: { loopback: boolean; tailnet: boolean; wider: boolean };
     auth: { basic: boolean };
   };
-  // THE ONE DISTINCTION WORTH SPELLING OUT. Tailnet with no password is a closed door —
-  // the tailnet IS the door, and it is the ordinary deployment. Wider with no password
-  // is a live shell on an open port, and the install refuses to start that way; if it is
-  // ever read here it means a password is what is holding it, and the row should say so.
   const exposure = r.reachable.loopback
     ? 'this box only'
     : r.reachable.tailnet
@@ -739,17 +555,9 @@ async function computeStatus(
       at: r.url,
       state: 'answering',
       exposure,
-      // THE HTTPS ADDRESS, when something terminates a certificate for us — null on a
-      // box with no `tailscale serve`, and the row falls back to `at` unchanged.
       secure: r.secure,
-      // THE ALIAS (owner, 2026-08-18): on a tailnet bind the hostname usually IS the
-      // MagicDNS name, so http://<host>:<port> reaches the same door with a name a
-      // person can remember. Derived from facts already measured — no lookup, no call.
       alias: r.reachable.tailnet ? `http://${obsMachine.host as string}:${(observed.routes as { port: number }).port}` : null,
     }],
-    // REACH BY HAND — the sentence a person actually needs: what to type. The tailnet
-    // address leads because it is the private door; public addresses are listed as
-    // facts, never recommended. Unknown stays unknown — a Mac cannot answer sshd.
     ssh: (() => {
       const reach = (observed.reach as { ssh: { listening: boolean | null; addresses: { tailnet: string[]; public: string[] } } }).ssh;
       if (reach.listening === false) return 'sshd is not listening — not reachable by ssh';
@@ -779,10 +587,6 @@ async function computeStatus(
   };
 }
 
-/* ------------------------------------------------------- what is still needed */
-
-/** One vocabulary check, judged against the record. Four verbs, never more — the
- * first "just one more condition kind" is a new scan family, not a new verb here. */
 function holds(
   check: { kind: string; path?: string; name?: string },
   set: Record<string, unknown>,
@@ -792,7 +596,6 @@ function holds(
     const v = String(check.path ?? '')
       .split('.')
       .reduce<unknown>((o, k) => (o == null ? undefined : (o as Record<string, unknown>)[k]), set);
-    // A blank is not an answer, and neither is false — an untoggled toggle never applies.
     return v != null && v !== '' && v !== false;
   }
   const name = check.name ?? '';
@@ -801,20 +604,11 @@ function holds(
   if (check.kind === 'tool') return (observed.tools as Record<string, boolean>)[name] === true;
   if (check.kind === 'service') {
     const ss = ((observed.ronin as { services: string[] }).services ?? []);
-    // '*' is the bundle: Ronin Services installs as one act, so any registered socket
-    // means the bundle is on the box. Not a sixth verb — a spelling of this one.
     return name === '*' ? ss.length > 0 : ss.includes(name);
   }
   return false;
 }
 
-/**
- * NEEDED — what a choice still needs, judged fresh on every read. A registry
- * `requires` row speaks only while its `applies` check holds, and an entry exists
- * only while its `met` check does not: MET ITEMS DO NOT EXIST, so nothing is ever
- * written, cleared, or stale, and satisfying a need makes its task vanish everywhere
- * with no write anywhere. The ⚙ rows and the seat's reading list render exactly this.
- */
 function computeNeeded(
   set: Record<string, unknown>,
   observed: Record<string, unknown>,
@@ -822,23 +616,9 @@ function computeNeeded(
   const declared = MACHINE_SETTINGS_SCHEMA.requires
     .filter((r) => holds(r.applies, set, observed) && !holds(r.met, set, observed))
     .map((r) => ({ leaf: r.leaf, needs: r.needs, how: r.how, met_by: r.met_by as MetBy }));
-  // THE WANT LIST — the owner's own additions (⚙, 'add to needed'). A want IS a check
-  // the owner typed: judged with the same five verbs, unmet becomes a task, met
-  // simply produces nothing — the want stays typed, the entry was never stored.
-  //
-  // A want carries the choke too, and by VERB rather than by row, because the verb is
-  // what says whose hand it takes. `agent` is mechanical because AGENTS[].operations.install is a line
-  // Ronin holds; `tool` is not, because "install gh" means knowing whether this box is
-  // apt, brew or dnf — judgment, so the seat keeps it; a key and an entitled download
-  // are the owner's own hands. Adding a mechanical verb later is this table, not a
-  // code path.
   const HOW: Record<string, { how: (n: string) => string; met_by: (n: string) => MetBy }> = {
     agent: {
       how: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
-      // ASK THE ONE SOURCE. `mechanical` means Ronin knows the command, so a PARKED agent
-      // — one whose install operation is empty because its installer does not work — is the owner's
-      // hand, not ours. Reading AGENTS here is what stops the landing claiming to install
-      // something the operation would refuse.
       met_by: (n) => (AGENTS.find((a) => a.id === n)?.operations.install ? 'mechanical' : 'owner'),
     },
     service: { how: () => 'install Ronin Services — it registers itself', met_by: () => 'owner' },
@@ -856,8 +636,6 @@ function computeNeeded(
   return [...declared, ...wanted];
 }
 
-/** The whole record. One call, one answer, no writes — schema included, because the
- * schema of the object is part of the object and a renderer needs nothing else. */
 export async function readMachineSettings(): Promise<MachineSettingsRecord> {
   const set = await readSet();
   const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, MachineSettingsJob>;
@@ -873,8 +651,6 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
     observed,
     status,
     needed,
-    // The registry plus one row per provider the launch table knows — generated because
-    // providers are data on disk, not a list this house may hard-code.
     schema: { ...MACHINE_SETTINGS_SCHEMA, fields: [...MACHINE_SETTINGS_SCHEMA.fields,
       ...providerModelFields([...new Set((await listSessionLaunchSpecs()).map((s) => s.provider))])] },
   };
