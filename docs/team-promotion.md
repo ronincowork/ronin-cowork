@@ -55,6 +55,14 @@ restart checks before the host command runs. Promotion health therefore probes
 
 `--dry-run` does 1–2 and writes nothing. `--no-restart` stops after 4.
 
+**No lead, said out loud** (owner, 2026-09-03). Promotion is the lead's job. When nobody is
+marked 人 on the team, `ronin-promote` answers `NO-LEAD: team <t> has no team lead …` and
+proves nothing: the agent that got that line tells the owner and asks for a lead to be
+marked on the Team page — a coordinator that writes no code does fine. Nothing forces the
+choice through a form, and nothing promotes silently in the lead's absence. A revert or a
+resume is Ronin's own recovery and needs no lead; `--anyway` is the owner saying "you do
+it". The hand-in says the same thing at its moment: accepted, waiting, ask for a lead.
+
 **Look before you prove** (owner, 2026-09-03). Two promotions proving on one box at once
 trample each other — a restart from one kills the other's test children — so before it
 proves, `ronin-promote` looks at the ledger for any team's receipt still moving

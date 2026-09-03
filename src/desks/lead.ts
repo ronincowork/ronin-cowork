@@ -108,13 +108,15 @@ export async function replyToHandIn(input: {
 }
 
 /**
- * No lead set: the job falls to the session that handed in (owner law, 2026-08-28: "the
+ * No lead set (owner, 2026-09-03, superseding 2026-08-28's "the job falls to the hander"):
+ * the hand-in stands, promotion waits, and the hander is told to ask the owner for a lead —
+ * said out loud, never silent, never forced. The older law read: "the
  * user is always there — the fallback is the agent handing in; it has to work end to end
  * with no lead, seamlessly"). Its own words, printed to it by the hand-in it just ran.
  */
 export function selfMessage(n: LeadNotice): string {
   if (n.result === 'accepted') {
-    return `no lead is set for ${n.team}, so you hold the lead's job for this hand-in: review the line (tejun-desk receipts --line --accepted) and promote it to dev when it is coherent — bin/ronin-promote ${n.team}. Nothing waits on anyone.`;
+    return `no lead is set for ${n.team}: the hand-in is accepted and waits on the line, but promotion is the lead's job and nobody is marked 人. Tell the owner: "${n.team} has no team lead — please mark one on the Team page (a coordinator that writes no code does fine)." Until then bin/ronin-promote ${n.team} answers NO-LEAD.`;
   }
   return `no lead is set for ${n.team}, so the conflict${n.files?.length ? ` on ${n.files.join(', ')}` : ''} is yours to resolve: tejun-desk sync, resolve the marked files at your desk, commit, hand in again.`;
 }

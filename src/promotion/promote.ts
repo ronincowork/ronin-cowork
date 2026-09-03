@@ -3,6 +3,7 @@ import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCand
 import { runByoin, runCompat, type ByoinMode } from './byoin.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
 import { routeProvingFailure } from './routing.js';
+import { findLeads } from '../desks/lead.js';
 import { diagnoseFunnel } from './funnel-recovery.js';
 import {
   advanceState, anyAdvanced, blockingReceipt, inFlightReceipt, lastGoodPromotion, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
@@ -35,6 +36,8 @@ export interface Effects {
   notify: (primaryDir: string, team: string, text: string) => Promise<string>;
   /** The hand-ins a candidate carries — the desks ledger, with git as the fallback. */
   handInsFor: HandInSource;
+  /** Who is marked 人 for the team right now — the live sessions, never a stored pointer. */
+  leadsFor: (team: string) => Promise<string[]>;
   /** Test seam: runs between advances, so a race can be injected after the first ref moved. */
   beforeAdvance?: (repo: string, index: number) => Promise<void>;
 }
@@ -46,6 +49,7 @@ export const realEffects: Effects = {
   health: (dir) => healthCheck({ dir }),
   notify: notifyTeam,
   handInsFor: ledgerHandIns,
+  leadsFor: findLeads,
 };
 
 export interface PromoteOptions {
@@ -102,6 +106,13 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
   const blocker = await blockingReceipt(o.team, ledger);
   if (blocker && blocker.id !== o.resuming) {
     return { ok: false, receipt: blocker, nothing: false, message: `promotion ${blocker.id} is ${blocker.state} — resume or abandon it first` };
+  }
+  // NO LEAD, SAID OUT LOUD (owner, 2026-09-03). Promotion is the lead's job; a team with
+  // nobody marked 人 is told so in words and asked to get one marked — never forced through a
+  // form, never silently promoted by whoever happened to run it. A revert or a resume is
+  // Ronin's own recovery and needs no lead; `--anyway` is the owner saying "you do it".
+  if (o.kind !== 'team_revert' && !o.resuming && !o.anyway && !(await fx.leadsFor(o.team)).length) {
+    return { ok: false, receipt: null, nothing: false, message: `NO-LEAD: team ${o.team} has no team lead (人), and promotion is the lead's job. Ask the owner to mark one on the Team page — a coordinator that writes no code does fine — then run again. Nothing was proved or moved. (--anyway promotes on the owner's word.)` };
   }
   // Look before you prove: one BYOIN on the box at a time, by looking, not by locking.
   const busy = o.anyway ? null : await inFlightReceipt(ledger);

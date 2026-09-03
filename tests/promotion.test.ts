@@ -72,6 +72,7 @@ function fakes(over: Partial<Effects> = {}): Effects {
     health: async () => ({ passed: true, checks: [{ name: 'api/health', status: 'ok' }], at: new Date().toISOString() }),
     notify: async () => 'posted',
     handInsFor: C.derivedHandIns,
+    leadsFor: async () => ['lead'],
     ...over,
   };
 }
@@ -296,4 +297,15 @@ test('look before you prove: another team on the fly is BUSY, a stale one is not
   const anyway = await P.promoteTeam({ team: 'busy', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(), restart: false, anyway: true, ...quiet });
   assert.equal(anyway.ok, true, anyway.message);
   await R.writeReceipt(R.advanceState(other, 'failed'), LEDGER);
+});
+
+test('no lead: promotion says so in words and proves nothing; --anyway is the owner\'s word', async () => {
+  const cw = await fixture('leadless-cowork');
+  const out = await P.promoteTeam({ team: 'leadless', repos: [spec('cowork', cw.dir)], by: 'someone', effects: fakes({ leadsFor: async () => [] }), restart: false, ...quiet });
+  assert.equal(out.ok, false);
+  assert.match(out.message, /^NO-LEAD: team leadless has no team lead/);
+  assert.match(out.message, /mark one on the Team page/);
+  assert.equal(out.receipt, null, 'nothing proved, nothing written');
+  const anyway = await P.promoteTeam({ team: 'leadless', repos: [spec('cowork', cw.dir)], by: 'someone', effects: fakes({ leadsFor: async () => [] }), restart: false, anyway: true, ...quiet });
+  assert.equal(anyway.ok, true, anyway.message);
 });
