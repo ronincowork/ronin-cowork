@@ -52,16 +52,18 @@ import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
-import { resumePromotionRestarts } from './promotion/promote.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure } from './sockets.js';
 import type { ServiceRegistration } from './sockets-contract.js';
+import { resourceRequestCache } from './resources.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const NM = path.join(ROOT, 'node_modules');
 const isEntryPoint = !!process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
-const isBoxInstance = isEntryPoint && process.env.RONIN_TEST_RUNNER !== '1';
+const isBoxInstance = isEntryPoint
+  && process.env.NODE_ENV === 'production'
+  && process.env.RONIN_TEST_RUNNER !== '1';
 
 const app = express();
 app.use(express.json());
@@ -159,6 +161,7 @@ app.use('/api', (_req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
 });
+app.use('/api', resourceRequestCache);
 
 app.get('/api/health', (_req, res) =>
   res.json({
@@ -333,7 +336,6 @@ server.listen(config.port, config.bind, async () => {
     `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
   );
   console.log(`[tmux-ronin] browser sockets accepted from: ${allowedOrigins().join(', ')}`);
-  void resumePromotionRestarts().catch((e) => console.error(`[tmux-ronin] promotion continuation failed: ${String((e as Error).message ?? e)}`));
 });
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {

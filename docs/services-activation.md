@@ -68,12 +68,9 @@ masked address, accepted terms version, activation stage, `entitlement_id`, and 
 time. The secret store owns the bearer token. SETTEI derives its Services and subscription
 lines from that aggregate and cannot write entitlement facts.
 
-Older builds exposed `PATCH /api/machine-settings` and stored
-`machine_settings.json.services.{entitlement,email,verified,terms}` for a superseded flow where the owner
-pasted a code from an email. That data was never verified and is not migrated into the real
-activation record. Upgraded installs may retain those inert keys, but no entitlement, status,
-installer, or telemetry path trusts them. A real entitlement enters Cowork only through the
-Shiwake confirmation and authenticated poll described here.
+The keys `machine_settings.json.services.{entitlement,email,verified,terms}` are inert. No
+entitlement, status, installer, or telemetry path trusts them. An entitlement enters Cowork
+only through the Shiwake confirmation and authenticated poll described here.
 
 The poll persists the bearer token first, then the matching public identity, then deletes the
 spent claim secret. That order is recoverable at either crash boundary: until the public record
@@ -107,8 +104,7 @@ spent.
 ## Where the person actually sees it
 
 **cowork_setup** (`public/js/cowork-setup.js`) — ticking Services and giving an address now POSTs
-`/api/services/activation`, which asks Ronin HQ to send the confirmation email. It used to
-record a note to itself and contact nobody.
+`/api/services/activation`, which asks Ronin HQ to send the confirmation email.
 
 **HQ being unreachable does not block setup.** Only a refusal we caused — a malformed
 address — stops the page. Anything else finishes setup and leaves a pending request with a
@@ -219,19 +215,11 @@ to press a button left confirmed people looking at a finished flow that had not 
 started, then Services are watched for; if they do not appear within ten minutes the stage
 becomes an error that says the entitlement is safe and a retry needs no new email.
 
-That distinction was measured rather than imagined. On the E2E walk the updater exited 1
-within a second and the stage still read *Installing Services* minutes later, with no error and
-nothing to press — the exact failure USERS_JOURNEY names: a person watching an install is
-fine, a person guessing at a spinner is not. Reporting a stage because a process was launched
-is a guess dressed as a fact.
-
 It goes through the updater that **already exists**. `src/update-run.ts` is the single
 launcher; the ⚙ gear's `POST /api/update/run` and this flow both call it, because two
 launchers drift and the one that drifts is the one nobody presses until it matters.
 
-`POST /api/services/install` is the recovery verb. It **runs** the updater — it used to
-return a JSON description of the handoff, which nothing pressed, so a confirmed person sat at
-"Email confirmed" forever.
+`POST /api/services/install` is the recovery verb. It **runs** the updater.
 
 ### The authorized fetch
 

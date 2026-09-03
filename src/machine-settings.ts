@@ -25,6 +25,9 @@ const OWNER_OPT = '@ronin-owner';
 const NO_LIMIT = 0;
 let writeQueue = Promise.resolve();
 let legacyImport: Promise<Record<string, unknown>> | null = null;
+const documents = new Map<string, { stamp: string; value: Promise<Record<string, unknown>> }>();
+const OBSERVED_TTL_MS = 5_000;
+let observedCache: { expires: number; value: Promise<Record<string, unknown>> } | null = null;
 
 async function importLegacyDocument(): Promise<Record<string, unknown>> {
   const document: Record<string, unknown> = {};
@@ -67,16 +70,35 @@ async function importLegacyDocument(): Promise<Record<string, unknown>> {
 }
 
 async function readDocument(): Promise<Record<string, unknown>> {
-  try {
-    const value = JSON.parse(await readFile(MACHINE_SETTINGS_FILE(), 'utf8')) as unknown;
-    return value && typeof value === 'object' && !Array.isArray(value)
-      ? value as Record<string, unknown> : {};
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return {};
-    legacyImport ??= importLegacyDocument();
-    return legacyImport;
+  const file = MACHINE_SETTINGS_FILE();
+  const stamp = await stat(file, { bigint: true })
+    .then((value) => `${value.mtimeNs}:${value.size}`, () => 'missing');
+  let cached = documents.get(file);
+  if (!cached || cached.stamp !== stamp) {
+    const value = (async () => {
+      try {
+        const value = JSON.parse(await readFile(file, 'utf8')) as unknown;
+        return value && typeof value === 'object' && !Array.isArray(value)
+          ? value as Record<string, unknown> : {};
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return {};
+        legacyImport ??= importLegacyDocument();
+        return legacyImport;
+      }
+    })();
+    cached = { stamp, value };
+    documents.set(file, cached);
+    value.catch(() => documents.delete(file));
   }
+  return structuredClone(await cached.value);
 }
+
+export async function readMachineSettingsSection<T>(key: string, fallback: T): Promise<T> {
+  const value = (await readDocument())[key];
+  return value && typeof value === 'object' ? value as T : fallback;
+}
+
+export const readMachineSettingsDocument = (): Promise<Record<string, unknown>> => readDocument();
 
 async function updateDocument(
   mutate: (document: Record<string, unknown>) => void | Promise<void>,
@@ -88,14 +110,19 @@ async function updateDocument(
     const temporary = `${MACHINE_SETTINGS_FILE()}.${process.pid}.${Date.now()}.tmp`;
     await writeFile(temporary, JSON.stringify(document, null, 2) + '\n');
     await rename(temporary, MACHINE_SETTINGS_FILE());
+    const stamp = await stat(MACHINE_SETTINGS_FILE(), { bigint: true })
+      .then((value) => `${value.mtimeNs}:${value.size}`, () => 'missing');
+    documents.set(MACHINE_SETTINGS_FILE(), {
+      stamp,
+      value: Promise.resolve(structuredClone(document)),
+    });
   });
   writeQueue = operation.catch(() => {});
   return operation;
 }
 
 async function readSection<T>(key: string, fallback: T): Promise<T> {
-  const value = (await readDocument())[key];
-  return value && typeof value === 'object' ? value as T : fallback;
+  return readMachineSettingsSection(key, fallback);
 }
 
 async function updateSection<T extends Record<string, unknown>>(
@@ -468,6 +495,17 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
   };
 }
 
+function cachedObserved(jobKeyNames: string[]): Promise<Record<string, unknown>> {
+  const now = Date.now();
+  if (observedCache && now < observedCache.expires) return observedCache.value;
+  const value = readObserved(jobKeyNames);
+  observedCache = { expires: now + OBSERVED_TTL_MS, value };
+  value.catch(() => {
+    if (observedCache?.value === value) observedCache = null;
+  });
+  return value;
+}
+
 async function computeStatus(
   set: Record<string, unknown>,
   observed: Record<string, unknown>,
@@ -642,7 +680,7 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
   const jobKeyNames = Object.values(jobs)
     .map((j) => j?.key_env)
     .filter((k): k is string => typeof k === 'string' && k.length > 0);
-  const observed = await readObserved(jobKeyNames);
+  const observed = await cachedObserved(jobKeyNames);
   const status = await computeStatus(set, observed);
   const needed = computeNeeded(set, observed);
   needed.push(...repositoryNeeds(set, status));

@@ -77,12 +77,15 @@ export function createRoutinesSurface(campaign) {
     const stage = activation?.stage || 'not_requested';
     const activated = installed?.services?.activated === true;
     const parts = installed?.services?.parts || [];
-    const where = activated
-      ? t('campaign_view.svc_activated', 'Installed and activated on this machine.')
-      : parts.length
-        ? t('campaign_view.svc_installed', 'Installed on this machine ({parts}), not activated yet.', { parts: parts.join(', ') })
-        : t('campaign_view.svc_absent', 'Not installed on this machine.');
-    block.append(el('p', 'cv-choice-why', where));
+    // THREE FACTS, IN THE ORDER THEY MATTER (owner, 2026-09-03): the parts ship with Ronin,
+    // so "installed" is the usual answer; the SWITCH on the right is what turns them on for
+    // new Agents; ACTIVATION with Ronin HQ is a separate, optional step for the hosted parts.
+    block.append(el('p', 'cv-choice-why', parts.length
+      ? t('campaign_view.svc_installed', 'Installed on this machine: {parts}. The switch on the right turns it on for new Agents.', { parts: parts.join(', ') })
+      : t('campaign_view.svc_absent', 'Not installed on this machine.')));
+    block.append(el('p', 'cv-choice-why', activated
+      ? t('campaign_view.svc_activated', 'Activated with Ronin HQ: the template library and the hosted parts are yours.')
+      : t('campaign_view.svc_not_activated', 'Not activated with Ronin HQ. Activation is optional and separate from the switch: it unlocks the hosted parts — the template library first — with an email and a confirmation.')));
     if (!activated) {
       if (stage === 'awaiting_email' || stage === 'address_changed' || stage === 'requesting') {
         block.append(el('p', 'cv-choice-why', stage === 'requesting' ? t('campaign_view.svc_sending', 'Sending the confirmation email…') : t('campaign_view.svc_waiting', 'Waiting for your confirmation — open the email sent to {email}.', { email: activation?.email_masked || '' })));
@@ -103,7 +106,7 @@ export function createRoutinesSurface(campaign) {
         const send = el('button', 'cv-button', t('campaign_view.svc_send', 'Send confirmation email')); send.type = 'submit'; send.dataset.primary = 'true';
         form.append(email, send);
         form.addEventListener('submit', (event) => { event.preventDefault(); if (email.value.trim()) void act('/api/services/activation', { email: email.value.trim() }, notice); });
-        block.append(el('p', 'cv-choice-why', stage === 'expired' ? t('campaign_view.svc_expired', 'That confirmation link expired. Ask for a fresh one.') : t('campaign_view.svc_ask', 'Activation is an email and a confirmation. The address is only used for the entitlement.')), form);
+        block.append(el('p', 'cv-choice-why', stage === 'expired' ? t('campaign_view.svc_expired', 'That confirmation link expired. Ask for a fresh one.') : t('campaign_view.svc_ask', 'To activate: the address the entitlement should go to, then confirm from the email.')), form);
       }
     }
     const sell = el('details', 'cv-sell');
@@ -130,8 +133,12 @@ export function createRoutinesSurface(campaign) {
       if (routine.name === 'ronin_worktrees') words.append(el('p', 'cv-choice-why', t('campaign_view.worktrees_routine_help', 'Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')));
       if (routine.name === 'ronin_services') words.append(installBlock(notice));
       const controls = el('div', 'cv-routine-control');
-      const ok = routine.name === 'ronin_services' ? installed?.services?.activated === true : available(routine);
-      controls.append(el('span', ok ? 'cv-state cv-state-ok' : 'cv-state', ok ? t('campaign_view.available', 'Available') : t('campaign_view.unavailable', 'Unavailable')));
+      // The pill is the INSTALL fact. For Services: installed (its parts are here) or not; activation is said in the row, not here.
+      const ok = routine.name === 'ronin_services' ? (installed?.services?.parts || []).length > 0 : available(routine);
+      const word = routine.name === 'ronin_services'
+        ? (ok ? (installed?.services?.activated ? t('campaign_view.svc_pill_activated', 'Installed · activated') : t('campaign_view.svc_pill_installed', 'Installed')) : t('campaign_view.svc_pill_absent', 'Not installed'))
+        : (ok ? t('campaign_view.available', 'Available') : t('campaign_view.unavailable', 'Unavailable'));
+      controls.append(el('span', ok ? 'cv-state cv-state-ok' : 'cv-state', word));
       const toggle = el('label', 'cv-switch');
       const box = el('input'); box.type = 'checkbox'; box.checked = values[routine.name];
       const state = el('span', null, box.checked ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off'));

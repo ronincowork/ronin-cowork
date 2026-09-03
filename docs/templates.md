@@ -118,7 +118,7 @@ a bundle installs touches the install itself; an upgrade never sees it.
 ```
 
 **The template library** is the shelf Ronin keeps and grows — a **Ronin Services**
-feature (owner, 2026-09-03). ronincowork.com shows what is on it, descriptions only; the
+feature. ronincowork.com shows what is on it, descriptions only; the
 documents are served by Ronin HQ (`ronin-library/1`, https://hq.ronincowork.com/library/index.json) to an entitled box, and the
 Campaign page's **Templates** card is the way in: *Check the library* reads the index —
 only when pressed, never on a timer — and pressing a bundle shows **everything it holds**

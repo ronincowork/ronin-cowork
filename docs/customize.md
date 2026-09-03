@@ -162,31 +162,7 @@ Read-only is a capability, not an error. It ends with an honest change path, nev
 
 Guided handoff is also first-class. Seedable catalogs create the owner's catalog and return its path. Definition directories explain the store location and point the agent at their README. The flow never invents a path or uses the generic file API.
 
-## Current verification
-
-Established from the committed tree:
-
-- The four modules are committed in `ef801cb`.
-- Registration is committed in `d36b440`.
-- Static inspection confirms three sections, ten resources, **nine live reads, one
-  unavailable resources, and no deferred resource**, plus the generation and repaint
-  guards. SOPs, Actions, and Session Readings expose resolved full text in native
-  disclosure controls and carry the provenance/shadow semantics of their storage contracts.
-- `a0f30f4` established and checks the shared feature-CSS/skin contract, but its rendered
-  skin evidence names League, Team, and New Team—not Customize.
-
-Not established:
-
-- No trustworthy browser gate has been recorded against this checkout's Customize code.
-- Earlier `--ui` claims targeted the owner-facing live checkout and are not evidence here.
-- There is no current Customize-specific visual acceptance.
-
-On resumption, verification is governed only by `docs/test-protocols.md`: ordinary work uses
-direct dogfood and scoped diagnostic evidence, not BYOIN. The designated integrator owns
-the one exact-candidate verdict. Never repoint the owner-facing service or start another
-Ronin against the live tmux server for UI evidence.
-
-## Known limits and blocked decisions
+## Limits
 
 1. Tools lacks a complete read surface.
 2. `TOOLS.md` is a table; the TypeScript reader lacks its keyed-table shadow rule.
@@ -201,27 +177,3 @@ Ronin against the live tmux server for UI evidence.
 8. Stylesheet location is ruled (`public/css/*.css`); the shared-Kit versus `cz-*` ownership
    of each proposed visual fix still requires an explicit decision.
 9. The preview lacks the Saved Launches editor, complete failure journeys, and a verified visual/responsive pass.
-
-## Exact resume checklist
-
-1. Obtain an explicit owner or `view_mgr` assignment for a fresh Customize successor.
-2. Re-read this file, the latest `five-eyes` wipeboard Brief/posts, Workspace Kit ruling, `docs/test-protocols.md`, and current KOTOBA/session-boot contracts.
-3. Work at your repo desk (`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`); inspect status, `git branch -vv`, and changes since `18d9b35`. In a shared checkout, identify unrelated edits.
-4. Inspect the four owned modules and current Kit. Verify every claim here against the tree and update stale facts first.
-5. Report committed state, remaining work, current visual verdict, one bounded next leg, requested shared seams, and non-touch scope to `view_mgr`; wait for acknowledgement.
-6. Classify Surface spacing, control styling, and cross-surface layout changes as Kit or
-   feature work. The stylesheet location itself is already ruled: `public/css/`.
-7. Choose one bounded leg. **Next: visual and keyboard acceptance for the resource cards
-   and role-family toggles**, after classifying any shared geometry as Kit work. Tools
-   remains blocked on a shared keyed-table parser contract; do not invent one in Customize.
-8. Obtain a named seam assignment before editing shared server or shell paths. Never bundle parser, route, malformed-data, or saved-launch policy work by assumption.
-9. Edit only approved paths. Preserve the Sessions 1/2/4 raw Tile grid and every other destination.
-10. Record direct dogfood and scoped diagnostic evidence; leave BYOIN to the designated release integrator.
-11. Stage only owned/approved paths and inspect the staged path list. Commit at your desk; hand in coherent work to your team line — team promotion to `dev` is the lead's. Never touch `master`, merge a PR, enable auto-merge, repoint the service, or treat a PR as release authorization.
-12. Delete completed work from this README, refresh verification, and leave the successor one bounded next action—not a historical diary.
-
-## Active constraints
-
-Continue leg by leg from this document, never `wip/buildouts/`, and preserve unrelated
-dirty work. `master`, PR decisions, service pointers, release BYOIN, and other sessions'
-files remain owner-controlled and out of scope.
