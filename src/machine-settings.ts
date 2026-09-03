@@ -58,14 +58,57 @@ const MAX_OPT = '@ronin-session-max';
 const OWNER_OPT = '@ronin-owner';
 const NO_LIMIT = 0;
 let writeQueue = Promise.resolve();
+let legacyImport: Promise<Record<string, unknown>> | null = null;
+
+async function importLegacyDocument(): Promise<Record<string, unknown>> {
+  const document: Record<string, unknown> = {};
+  try {
+    const parsed = JSON.parse(await readFile(path.join(storeDir('config'), 'ronin.json'), 'utf8')) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) Object.assign(document, parsed);
+  } catch {}
+
+  const campaigns: Record<string, unknown> = {};
+  try {
+    for (const name of await readdir(storeDir('campaigns'))) {
+      if (!/^[a-z0-9][a-z0-9_-]{0,63}\.json$/.test(name)) continue;
+      try {
+        const value = JSON.parse(await readFile(path.join(storeDir('campaigns'), name), 'utf8')) as unknown;
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          campaigns[name.slice(0, -5)] = value;
+        }
+      } catch {}
+    }
+  } catch {}
+  if (Object.keys(campaigns).length) document.campaigns = campaigns;
+
+  const { writeCredential } = await import('./credential-store.js');
+  if (document.auth !== undefined) {
+    await writeCredential('auth', document.auth);
+    delete document.auth;
+  }
+  if (document.passkeys !== undefined) {
+    await writeCredential('passkeys', document.passkeys);
+    delete document.passkeys;
+  }
+
+  if (Object.keys(document).length) {
+    await mkdir(storeDir('config'), { recursive: true });
+    const temporary = `${MACHINE_SETTINGS_FILE()}.${process.pid}.import.tmp`;
+    await writeFile(temporary, JSON.stringify(document, null, 2) + '\n');
+    await rename(temporary, MACHINE_SETTINGS_FILE());
+  }
+  return document;
+}
 
 async function readDocument(): Promise<Record<string, unknown>> {
   try {
     const value = JSON.parse(await readFile(MACHINE_SETTINGS_FILE(), 'utf8')) as unknown;
     return value && typeof value === 'object' && !Array.isArray(value)
       ? value as Record<string, unknown> : {};
-  } catch {
-    return {};
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return {};
+    legacyImport ??= importLegacyDocument();
+    return legacyImport;
   }
 }
 

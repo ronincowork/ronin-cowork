@@ -14,7 +14,7 @@ import { t } from './lexicon.js';
 import { deskProfiles } from './desk-profile.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { listSkins, setSkin } from './skin-catalog.js';
+import { listSkins, setSkin } from './skins.js';
 import { applyTheme, setCampaignTheme } from './theme.js';
 
 const el = (tag, cls, text) => {

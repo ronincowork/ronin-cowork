@@ -10,6 +10,11 @@ The document contains the machine, owner, session, agent, setup, and Campaign ch
 Campaigns are keyed by their stable id inside `campaigns`. Authentication secrets and
 passkeys are never returned by the configuration API.
 
+When the machine document is absent, the first read imports `ronin.json` and the JSON
+records in the Campaign store, writes the combined machine document atomically, and uses
+that record from then on. Authentication and passkey records move to the credential store
+during the same import.
+
 `src/machine-settings.ts` owns normalization and the public record. It exports the only
 two configuration operations:
 

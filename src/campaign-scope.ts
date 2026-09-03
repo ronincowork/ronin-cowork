@@ -26,7 +26,7 @@
  */
 import { access, mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { initialCampaign } from './campaigns.js';
+import { initialCampaign, listCampaigns } from './campaigns.js';
 import { listProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { listTeamRosters, teamRosterFile } from './team-rosters.js';
 import { getCampaign, listSessions, setCampaign } from './tmux.js';
@@ -75,7 +75,8 @@ export async function campaignFilter(wanted: readonly string[]): Promise<(stored
   const resolve = await campaignResolver();
   if (!wanted.length) return () => true;
   const set = new Set(wanted);
-  return (stored: string) => set.has(resolve(stored));
+  const known = new Set((await listCampaigns()).map((campaign) => campaign.id));
+  return (stored: string) => Boolean(stored && !known.has(stored)) || set.has(resolve(stored));
 }
 
 /* --------------------------------------------------------------- the refusals */

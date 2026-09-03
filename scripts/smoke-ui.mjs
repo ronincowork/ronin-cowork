@@ -81,7 +81,7 @@ async function openPage(browser, contextOpts) {
   // is written, PUTs pass through untouched, and the real first-load module still gets
   // syntax/dead-code checks. Keeping the route for reloads matters because the gbrain
   // handoff journey deliberately reloads to reset the shared launcher.
-  await page.route('**/api/settei', async (route) => {
+  await page.route('**/api/machine-settings', async (route) => {
     if (route.request().method() !== 'GET') return route.continue();
     // A settei poll can be in flight when this context closes at the end of a pass; the
     // fetch then rejects ("Request context disposed") and, unhandled, that killed the
@@ -90,6 +90,7 @@ async function openPage(browser, contextOpts) {
       const response = await route.fetch();
       const data = await response.json();
       if (data?.set?.owner && !String(data.set.owner.name ?? '').trim()) data.set.owner.name = 'Ronin rendering gate';
+      if (data?.set?.setup) data.set.setup.pending = false;
       await route.fulfill({ response, json: data });
     } catch (_) {
       await route.continue().catch(() => {});
@@ -515,7 +516,7 @@ async function checkJourneys(page, label, jsErrors) {
   // that pins one of those roles makes the corresponding rendered comparison stay equal.
   const setShippedSkin = async (name) => {
     const expected = await page.evaluate(async (wanted) => {
-    const { listSkins, setSkin } = await import('./js/skin-catalog.js');
+    const { listSkins, setSkin } = await import('./js/skins.js');
     const skin = (await listSkins()).find((entry) => entry.name === wanted);
     if (!skin) throw new Error(`shipped skin missing: ${wanted}`);
     setSkin(skin);
@@ -589,7 +590,7 @@ async function checkJourneys(page, label, jsErrors) {
   }
   await setShippedSkin('stock');
   const stockRestored = await page.evaluate(async (expected) => {
-    const { currentSkin } = await import('./js/skin-catalog.js');
+    const { currentSkin } = await import('./js/skins.js');
     return currentSkin() === 'stock'
       && getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim() === expected;
   }, stockRadius);

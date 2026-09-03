@@ -34,6 +34,7 @@ export const STORES: readonly Store[] = [
   store('tools', 'user', 'tools'),
   store('memory', 'user', 'memory'),
   store('config', 'user', 'config'),
+  store('campaigns', 'user', 'campaigns'),
   store('koshi_weights', 'user', 'koshi_weights'),
   store('koshi_weights_service', 'user', 'koshi_weights_service'),
   store('gbrain_brain', 'user', 'gbrain_brain'),

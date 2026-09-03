@@ -7,6 +7,7 @@ import path from 'node:path';
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-machine-settings-campaigns-'));
 process.env.RONIN_CONFIG_DIR = root;
 process.env.RONIN_CATALOGS_DIR = path.join(root, 'catalogs');
+process.env.RONIN_CAMPAIGNS_DIR = path.join(root, 'campaigns');
 
 const {
   archiveCampaign,
