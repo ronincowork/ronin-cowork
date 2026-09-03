@@ -7,6 +7,8 @@ import { readTeamRoster } from './team-rosters.js';
 import { readArrangement } from './desks/arrangement.js';
 import { teamLineBranch } from './desks/schema.js';
 import { acceptedLinesForTeam } from './desks/receipts.js';
+import { isAncestor, revParse } from './desks/git.js';
+import { unpromotedAcceptedLines } from './promotion/discovery.js';
 import { abandonPromotion, bisectLine, promoteTeam, resumePromotion, revertPromotion } from './promotion/promote.js';
 import { lastGoodPromotion, listReceipts, publicPromotionReceipt, readReceipt, summarize, toChangeSet } from './promotion/receipts.js';
 import { openPullRequest } from './promotion/pr.js';
@@ -48,7 +50,15 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
   if (!roster) throw new Error(await missingRosterMessage(team));
   const roots = await listProjectRoots();
   const defaults = roster.repos.length ? roster.repos : roster.project_root ? [roster.project_root] : [];
-  const accepted = await acceptedLinesForTeam(team);
+  const overrides = new Map(args.filter((a, i) => args[i - 1] === '--repo' && a.includes('=')).map((a) => a.split('=') as [string, string]));
+  const accepted = await unpromotedAcceptedLines(await acceptedLinesForTeam(team), async ({ repo, line }) => {
+    const dir = overrides.get(repo) ?? roots.find((root) => root.name === repo)?.dir;
+    if (!dir) return false;
+    const arr = await readArrangement(repo, dir).catch(() => null);
+    if (!arr || arr.mode === 'direct') return false;
+    const [lineTip, targetTip] = await Promise.all([revParse(dir, line), revParse(dir, arr.working)]);
+    return !!lineTip && !!targetTip && !(await isAncestor(dir, lineTip, targetTip));
+  });
   const acceptedByRepo = new Map<string, string>();
   for (const row of accepted) {
     const prior = acceptedByRepo.get(row.repo);
@@ -57,7 +67,6 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
   }
   const names = [...new Set([...defaults, ...accepted.map((row) => row.repo)])];
   if (!names.length) throw new Error(`team '${team}' has no default repos and no accepted hand-ins`);
-  const overrides = new Map(args.filter((a, i) => args[i - 1] === '--repo' && a.includes('=')).map((a) => a.split('=') as [string, string]));
   const specs: RepoSpec[] = [];
   for (const name of names) {
     const dir = overrides.get(name) ?? roots.find((r) => r.name === name)?.dir;

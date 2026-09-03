@@ -21,10 +21,12 @@ installed machine and user stores; that remains the distinct maintenance/update 
 
 ## What `bin/ronin-promote <team>` does
 
-1. **Prepare** — for every repository the team works in (its roster's `repos`) **and every repository with an accepted hand-in for that team**, resolve
+1. **Prepare** — for every repository the team works in (its roster's `repos`) **and every
+   managed repository with accepted work not yet contained in its working target**, resolve
    the home checkout, the accepted ledger's line (otherwise `branch` on the roster, else
    `team/<team>/dev`) and the target (`working=` in the repo's `RONIN_REPO`). Thus an
-   explicitly opened managed repository is promoted without polluting the birth profile.
+   explicitly opened managed repository is promoted without polluting the birth profile;
+   historical, direct, removed, and already-integrated receipt rows are not inputs.
    Build the candidate: a
    throwaway worktree detached at the target's tip, the line merged into it. Under the
    `worktrees` store, `.candidates/<repo>/<target>` — beside the desks, out of their way.
