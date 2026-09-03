@@ -4,7 +4,7 @@ import { mountRamRpm } from './ramrpm.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { applyTheme } from './theme.js';
-import { restoreSkin } from './skins.js';
+import { restoreSkin } from './skin-catalog.js';
 import { activeProfile, loadDeskProfile } from './desk-profile.js';
 import { connectEvents } from './events.js';
 import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome } from './home.js';

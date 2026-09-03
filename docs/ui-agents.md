@@ -90,7 +90,7 @@ addresses the cube instead of the sixteen slots. Claude Code was unaffected; Cod
 ## Adding the next one — Gemini, Grok, Hermes
 
 1. **Find out what it emits.** Attach it, then read its tape out of the `session` store
-   (`ronin-store session` resolves it — never hardcode the path — the store table is `src/stores.ts`):
+   (`ronin-store session` resolves it — never hardcode the path — the store table is `src/resources.ts`):
    `cat -v "$(ronin-store session)"/<name>-*/tape/*/*.tape | grep -oP '\^\[\[[0-9;]*m' | sort | uniq -c | sort -rn | head`
    `38;5;` / `48;5;` is the cube — already handled. `38;2;` / `48;2;` is hardcoded RGB —
    not reachable, and the honest answer is a vendor setting or nothing. Bare `30–37` /
