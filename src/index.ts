@@ -61,6 +61,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const NM = path.join(ROOT, 'node_modules');
+const isEntryPoint = !!process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+const isBoxInstance = isEntryPoint && process.env.RONIN_BOX_INSTANCE === '1' && process.env.RONIN_TEST_RUNNER !== '1';
 
 const app = express();
 app.use(express.json());
@@ -476,6 +478,7 @@ server.on('upgrade', (req, socket, head) => {
 // FIRST, before any side effect: an unguarded door is not a thing to discover late.
 // This runs ahead of cleanupViewers() deliberately — a refused boot must not have
 // killed anyone's viewer sessions on its way out.
+async function startBox(): Promise<void> {
 try {
   assertBindIsSafe(passwordAuthEnabled());
 } catch (e) {
@@ -503,10 +506,12 @@ void publishOwner();
 server.listen(config.port, config.bind, async () => {
   // Publish only after the listener has actually bound. Publishing before listen allowed
   // a failed or test operator to advertise an address that never became live.
-  try {
-    await publishRoninUrl(`http://${config.bind}:${config.port}`, cliToken);
-  } catch (e) {
-    console.error(`[tmux-ronin] could not publish @ronin-url: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
+  if (isBoxInstance) {
+    try {
+      await publishRoninUrl(`http://${config.bind}:${config.port}`, cliToken);
+    } catch (e) {
+      console.error(`[tmux-ronin] could not publish @ronin-url: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
+    }
   }
   console.log(
     `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
@@ -533,3 +538,6 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     void Promise.allSettled([cleanupViewers()]).finally(() => process.exit(0));
   });
 }
+}
+
+if (isEntryPoint) await startBox();

@@ -61,14 +61,36 @@ if (nested.length) {
 }
 console.log(`running ${files.length} test file(s) in tests/`);
 const runRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ronin-test-run-'));
+const tmuxRoot = path.join(runRoot, 't');
+fs.mkdirSync(tmuxRoot);
+const inheritedTmux = process.env.TMUX
+  ? Object.fromEntries(['@ronin-url', '@ronin-cli-token'].map((option) => {
+      const read = spawnSync('tmux', ['show-option', '-s', '-qv', option], { encoding: 'utf8' });
+      return [option, read.status === 0 ? read.stdout : null];
+    }))
+  : null;
 // Several suites exercise real Git locks and compare-and-swap races. Running test files
 // concurrently makes those machine-level fixtures contend on smaller CI runners and
 // produces false promotion failures; the unit floor is deterministic, one file at a time.
+const testEnv = { ...process.env, BIND: process.env.BIND || '127.0.0.1', TMPDIR: runRoot, TMUX_TMPDIR: tmuxRoot, RONIN_TEST_RUNNER: '1', TSX_DISABLE_CACHE: '1' };
+delete testEnv.TMUX;
+delete testEnv.TMUX_PANE;
 const r = spawnSync('node', ['--import', 'tsx', '--import', './tests/fixture-teardown.mjs', '--test', '--test-concurrency=1', ...files], {
   cwd: ROOT,
   stdio: 'inherit',
-  env: { ...process.env, BIND: process.env.BIND || '127.0.0.1', TMPDIR: runRoot, TSX_DISABLE_CACHE: '1' },
+  env: testEnv,
 });
+if (inheritedTmux) {
+  for (const [option, before] of Object.entries(inheritedTmux)) {
+    const read = spawnSync('tmux', ['show-option', '-s', '-qv', option], { encoding: 'utf8' });
+    const after = read.status === 0 ? read.stdout : null;
+    if (after !== before) {
+      console.error(`FAILED — unit tests changed the live tmux server's ${option} option.`);
+      process.exitCode = 1;
+    }
+  }
+}
+fs.rmSync(tmuxRoot, { recursive: true, force: true });
 const leaked = fs.readdirSync(runRoot);
 fs.rmSync(runRoot, { recursive: true, force: true });
 if (leaked.length) {
@@ -81,4 +103,4 @@ if (leaked.length) {
   console.error('Each fixture must remove its mkdtemp directory in teardown. The runner removed this run root as a backstop.');
   process.exit(1);
 }
-process.exit(r.status ?? 1);
+process.exit(process.exitCode || r.status || 0);
