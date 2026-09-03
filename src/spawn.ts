@@ -6,7 +6,7 @@ import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { readAgentsSection, readDesksSection } from './user-config.js';
 import { storeDir } from './stores.js';
-import { findDefinition, listRoutines } from './definitions.js';
+import { findDefinition, listRoutines, routineReading } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaign-config.js';
@@ -20,8 +20,6 @@ import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
 import { templateProvenance } from './template-provenance.js';
 import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
-export const routineReading = (routines: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[]): string[] =>
-  routines.flatMap((routine) => (routine.enabled ? routine.reading : routine.reading_off));
 /**
  * The mechanical executor: a filled form in, a briefed session out.
  *
@@ -126,6 +124,8 @@ export interface SpawnForm {
    * `own` asks for one regardless, `none` refuses one. Ignored for a plain terminal.
    */
   desk?: DeskChoice;
+  /** Where this launch works (owner, 2026-09-03): the repos that open as desks; absent = the Team's ticks. */
+  repos?: string[];
 }
 
 /** What the form resolves to once sentinels are filled from the catalogs. */
@@ -562,6 +562,7 @@ export async function resolveForm(
     agent,
     control: routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
     desk: form.desk,
+    repos: form.repos,
   });
   const assignment = worktrees.assignment;
   const enabledReading = routineReading(routines);
@@ -655,7 +656,7 @@ export async function resolveForm(
     stated_by: {
       name: form.name ? explicit : system,
       dir: profile.dir ? profile.stated_by.dir : assignment ? system : rootSource,
-      assignment: form.desk ? explicit : system,
+      assignment: form.desk || form.repos ? explicit : system,
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
       session_type: explicit,

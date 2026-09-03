@@ -105,6 +105,10 @@ test('deriveAssignment: a team desks only its ticked repositories; nothing ticke
   assert.equal(a.id, 'fable@comp');
   assert.deepEqual(a.desks, [], 'the project_root is never a desk by implication');
   assert.equal(a.primary, '');
+  const own = await deriveAssignment({ session: 'fable', team: 'comp', project_root: 'cowork', repos: ['cowork'] });
+  assert.deepEqual(own.desks.map((d) => d.repo), ['cowork'], "the launch's own repos override the Team's ticks");
+  const quick = await deriveAssignment({ session: 'q', team: 'multi', project_root: 'cowork', repos: [] });
+  assert.deepEqual(quick.desks, [], 'an empty launch answer unticks every Team desk');
   const solo = await deriveAssignment({ session: 'lone', team: '', project_root: 'cowork' });
   assert.deepEqual(solo.desks.map((d) => `${d.branch}→${d.line}`), ['solo/lone→dev']);
   const both = await deriveAssignment({ session: 'fable', team: 'multi', project_root: 'cowork' });
