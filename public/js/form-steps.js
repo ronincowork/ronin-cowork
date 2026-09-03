@@ -232,19 +232,22 @@ export function kindTiles(current, onPick) {
  * nothing in would collapse nothing), the catalog rows follow in their stated order, and
  * the library door stands greyed so the shelf is not mistaken for the whole offer.
  */
+/** ONE TEMPLATE BOX — the launch forms' and the Campaign page's, so the two look the same by construction. */
+export function templateBox(art, label, blurb, picked, act) {
+  const cell = el('button', 'fs-tmpl');
+  cell.type = 'button';
+  cell.title = blurb;
+  cell.setAttribute('aria-pressed', String(picked));
+  const words = el('div');
+  words.append(el('b', null, label));
+  cell.append(el('i', null, art), words);
+  if (act) cell.addEventListener('click', act);
+  return cell;
+}
+
 export function templateTray(rows, current, onPick) {
   const grid = el('div', 'fs-tmplgrid');
-  const box = (art, label, blurb, picked, act) => {
-    const cell = el('button', 'fs-tmpl');
-    cell.type = 'button';
-    cell.title = blurb;
-    cell.setAttribute('aria-pressed', String(picked));
-    const words = el('div');
-    words.append(el('b', null, label));
-    cell.append(el('i', null, art), words);
-    if (act) cell.addEventListener('click', act);
-    return cell;
-  };
+  const box = templateBox;
   grid.append(box('＋', t('forms.own', 'Make your own'), t('forms.own_blurb', 'Fresh and empty. Fill it in yourself.'), current === '', () => onPick('')));
   for (const row of rows) {
     grid.append(box(row.art, row.label, row.blurb, current === row.name, () => onPick(row.name)));

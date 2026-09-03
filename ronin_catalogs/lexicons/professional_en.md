@@ -264,11 +264,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.col_model:** Preferred model
 - **campaign_view.col_default:** Default
 - **campaign_view.no_launch_table:** No launch table on this install.
-- **campaign_view.roles:** Session roles
-- **campaign_view.roles_summary:** What a launch here offers an Agent to be.
-- **campaign_view.roles_help:** What a launch here offers an Agent to be. Team casts and agent loadouts are on the Templates card.
 - **campaign_view.templates_summary:** Team casts, agent loadouts, and the library to download more from.
-- **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. Both shelves are plain files: the ones you save, and the ones a bundle installs, live in your own stores.
+- **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. A handful ship inside Ronin; the rest are on the library.
+- **campaign_view.library_none_kind:** Nothing of this kind on the library.
 - **campaign_view.templates_teams:** Teams — projects
 - **campaign_view.templates_agents:** Agents — people
 - **campaign_view.templates_none:** Nothing on this shelf.
@@ -323,8 +321,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.verdict_same_shipped:** already shipped — skipped
 - **campaign_view.verdict_same_yours:** already yours — skipped
 - **campaign_view.verdict_refused:** refused — a bundle never replaces one of Ronin’s tools
-- **campaign_view.roles_none:** No session roles on this install.
-- **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
 - **campaign_view.routines_help:** Choose what new Cowork Agents start with. This Campaign answer seeds new Teams; a Team may replace it, and New Agent shows the resolved answer. Nothing already running changes.
 - **campaign_view.worktrees_routine_help:** Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
