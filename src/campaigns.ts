@@ -10,12 +10,12 @@
  * without owning any of them.
  *
  * WHY THIS FILE IS THE ONE WRITER. Before it, the install's single implicit Campaign lived
- * in `ronin.json` as `settei.campaign` (name + description) with `settei.desk.profile`
+ * in `machine_settings.json` as `settei.campaign` (name + description) with `settei.desk.profile`
  * beside it — two keys describing a body of work, in the file that also describes the
  * MACHINE. The plan's rule is *there must not be two writable Campaign records*, so the
  * legacy SETTEI accessors are re-pointed onto this store rather than kept in parallel:
  * `src/machine-settings.ts`, `src/routes/machine-settings-api.ts` and `src/desk-profiles.ts` now read and
- * write a Campaign through here, and `ronin.json`'s old keys are read exactly once more,
+ * write a Campaign through here, and `machine_settings.json`'s old keys are read exactly once more,
  * by `ensureInitialCampaign()`, to seed the record. The dependency runs one way — this
  * module reads `user-config.ts`, never the reverse — which is what keeps `check-modules`
  * happy and what makes "one writer" a structural fact instead of a convention.
@@ -34,9 +34,20 @@
  * "which one is default" pointer would be exactly the second mutable record this file
  * exists to prevent. It is ordering and history, and no surface may read it as a default.
  */
-import { readSection, updateSection } from './user-config.js';
+import { readMachineSettings, writeMachineSettings } from './machine-settings.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
 import { completeRoutineChoices } from './routines.js';
+
+async function readCampaigns(): Promise<Record<string, unknown>> {
+  const record = await readMachineSettings();
+  const value = record.set.campaigns;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown> : {};
+}
+
+async function writeCampaigns(campaigns: Record<string, unknown>): Promise<void> {
+  await writeMachineSettings('campaigns', { campaigns });
+}
 
 /** The typed bucket — a Campaign's own defaults, never a dump of all SETTEI. The three
  *  sub-buckets are the plan's, and they are the whole vocabulary: a fourth is a plan
@@ -169,7 +180,7 @@ export async function populateHomeMachine(input: {
   const bundle = (['nothing', 'floor', 'base', 'worktrees', 'services'] as const)
     .includes(input.routine_bundle as SetupRoutineBundle)
     ? input.routine_bundle as SetupRoutineBundle : 'base';
-  const { listRoutines } = await import('./definitions.js');
+  const { listRoutines } = await import('./resource-adapters.js');
   const providerModel = bucket(input.provider_model);
   // Which routines a bundle switches on is CATALOG METADATA (each row's `bundles:`),
   // never names hardcoded here — the owner's ruling. `nothing` and `floor` appear in
@@ -262,7 +273,7 @@ const mergeDeskSettings = (
 
 async function settingsFromTemplate(name: string): Promise<CampaignDeskSettings> {
   if (!name) return emptyDeskSettings();
-  // Dynamic to keep campaign_config the storage owner while desk-profiles retains its
+  // Dynamic to keep machine settings campaign record the storage owner while desk-profiles retains its
   // compatibility active-name reader back into this module.
   const { listDeskProfiles } = await import('./desk-profiles.js');
   const p = (await listDeskProfiles()).find((row) => row.name === name);
@@ -299,16 +310,13 @@ function parse(id: string, raw: string): CampaignConfig | null {
 
 async function writeRecord(c: CampaignConfig): Promise<CampaignConfig> {
   const { id: _id, ...body } = c;
-  await updateSection<Record<string, unknown>>('campaigns', (campaigns) => ({
-    ...campaigns,
-    [c.id]: body,
-  }));
+  await writeCampaigns({ ...await readCampaigns(), [c.id]: body });
   return c;
 }
 
 async function completeAgentDefaults(value: unknown): Promise<AgentDefaults> {
   const defaults = agentDefaults(value);
-  const { listRoutines } = await import('./definitions.js');
+  const { listRoutines } = await import('./resource-adapters.js');
   const catalog = await listRoutines();
   // A STATED map is completed as given; an ABSENT one seeds the catalog's stock rung
   // (`base` — ronin_base and the always-on floor, the owner's ruling), never all-off.
@@ -325,7 +333,7 @@ async function completeAgentDefaults(value: unknown): Promise<AgentDefaults> {
 export async function readCampaign(id: string): Promise<CampaignConfig | null> {
   if (!isValidCampaignId(id)) return null;
   try {
-    const campaigns = await readSection<Record<string, unknown>>('campaigns', {});
+    const campaigns = await readCampaigns();
     if (!Object.hasOwn(campaigns, id)) return null;
     const raw = JSON.stringify(campaigns[id]);
     const parsed = parse(id, raw);
@@ -338,7 +346,7 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
       // the catalog's `base` rung (ronin_base and the floor, per the owner's base+floor
       // ruling), read from each row's `bundles:` metadata, never names hardcoded here.
       // A record that already carries a map is never touched (two-state).
-      const { listRoutines } = await import('./definitions.js');
+      const { listRoutines } = await import('./resource-adapters.js');
       parsed.config.agent_defaults.routines = Object.fromEntries(
         (await listRoutines()).map((row) => [row.name, row.bundles.includes('base')]));
       await writeRecord(parsed);
@@ -365,7 +373,7 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
  * resolver below needs to see an archived initial Campaign. One reader, two questions.
  */
 export async function listCampaigns(): Promise<CampaignConfig[]> {
-  const campaigns = await readSection<Record<string, unknown>>('campaigns', {});
+  const campaigns = await readCampaigns();
   const out: CampaignConfig[] = [];
   for (const id of Object.keys(campaigns)) {
     const c = await readCampaign(id);
@@ -415,7 +423,7 @@ export async function createCampaign(edit: CampaignEdit & { id?: string }): Prom
  *
  * `config` merges per sub-bucket rather than replacing the whole bucket, so a caller that
  * knows about one bucket cannot silently drop another it has never heard of — the same
- * bargain `updateConfig` makes for `ronin.json`.
+ * bargain `updateConfig` makes for `machine_settings.json`.
  */
 export async function writeCampaign(id: string, edit: CampaignEdit): Promise<CampaignConfig> {
   const existing = await readCampaign(id);
@@ -488,7 +496,7 @@ export async function initialCampaign(): Promise<CampaignConfig | null> {
  * untouched. So it is safe on every boot forever, it cannot resurrect a Campaign the owner
  * archived, and it cannot manufacture a second one on a box that already has several.
  *
- * THE OLD KEYS ARE READ, NEVER WRITTEN, AND NEVER DELETED HERE. `ronin.json`'s `campaign`
+ * THE OLD KEYS ARE READ, NEVER WRITTEN, AND NEVER DELETED HERE. `machine_settings.json`'s `campaign`
  * and `desk` sections are this function's seed and nothing else's; after the seed they are
  * inert. Removing them is the plan's build-out leg 5, together with the old writable
  * surface — deleting the owner's data in the same release that stops reading it would
@@ -497,20 +505,6 @@ export async function initialCampaign(): Promise<CampaignConfig | null> {
 export async function ensureInitialCampaign(): Promise<CampaignConfig> {
   const existing = await initialCampaign();
   if (existing) return existing;
-
-  const legacy = await readSection<{ name?: unknown; description?: unknown }>('campaign', {});
-  const desk = await readSection<{ profile?: unknown }>('desk', {});
-  // A legacy install keeps the Campaign it already named. A genuinely fresh install is
-  // populated from the declared collection above; there is one row today by design.
-  const named = str(legacy.name, TITLE_MAX);
-  if (named) {
-    return createCampaign({
-      id: campaignIdFrom(named),
-      title: named,
-      description: str(legacy.description, DESCRIPTION_MAX),
-      desk_profile: str(desk.profile, DESK_PROFILE_MAX),
-    });
-  }
 
   const [first] = FRESH_CAMPAIGNS;
   if (!first) throw new Error('Fresh Campaign catalog is empty.');
@@ -523,7 +517,7 @@ export async function ensureInitialCampaign(): Promise<CampaignConfig> {
  * THE CAMPAIGN LEAF SETTEI STILL SERVES. `set.campaign.{name,description}` keeps its shape
  * on `GET /api/machine-settings` — `public/js/campaign.js` and `@campaign_ui`'s compatibility read
  * both depend on it — but the fact now comes from the initial Campaign's record rather
- * than from `ronin.json`. One record, two readers; not two records.
+ * than from `machine_settings.json`. One record, two readers; not two records.
  *
  * `name` is the record's `title`. The wire name is SETTEI's and does not change, because
  * renaming a served key to match internal vocabulary would break a client for no gain.

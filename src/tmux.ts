@@ -3,7 +3,7 @@ import { promisify } from 'node:util';
 import { config } from './machine-settings.js';
 import { ensureTmuxServer } from './host-guard.js';
 import { removeHandoff } from './handoff.js';
-import { assertUnderMax } from './user-config.js';
+import { assertUnderMax } from './machine-state.js';
 import { CONTROL_OPT, newSessionArgs } from './session-args.js';
 export type { Control } from './session-args.js';
 import type { Control } from './session-args.js';

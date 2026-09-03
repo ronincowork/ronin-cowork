@@ -69,7 +69,7 @@ time. The secret store owns the bearer token. SETTEI derives its Services and su
 lines from that aggregate and cannot write entitlement facts.
 
 Older builds exposed `PATCH /api/machine-settings` and stored
-`ronin.json.services.{entitlement,email,verified,terms}` for a superseded flow where the owner
+`machine_settings.json.services.{entitlement,email,verified,terms}` for a superseded flow where the owner
 pasted a code from an email. That data was never verified and is not migrated into the real
 activation record. Upgraded installs may retain those inert keys, but no entitlement, status,
 installer, or telemetry path trusts them. A real entitlement enters Cowork only through the

@@ -32,7 +32,7 @@ import {
 } from '../wipeboards.js';
 import { sessionKey } from '../session-dir.js';
 import { listTeamRosters } from '../team-rosters.js';
-import { readWipeboardSettings } from '../user-config.js';
+import { readWipeboardSettings } from '../machine-state.js';
 import { count } from '../counts.js';
 
 /**

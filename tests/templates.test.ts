@@ -15,7 +15,7 @@ const temp = await mkdtemp(path.join(tmpdir(), 'ronin-templates-'));
 const previous = process.env.RONIN_CATALOGS_DIR;
 process.env.RONIN_CATALOGS_DIR = temp;
 const { listAgentTemplates, listTeamTemplates, parseTemplateAgents, templateMandate } =
-  await import('../src/definitions.js');
+  await import('../src/resource-adapters.js');
 const { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } = await import('../src/templates.js');
 
 test('the shipped agent shelf surfaces loadouts, and no team answers', async () => {

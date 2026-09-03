@@ -17,7 +17,7 @@ const {
   listCampaigns,
   readCampaign,
   writeCampaign,
-} = await import('../src/campaign-config.js');
+} = await import('../src/campaigns.js');
 
 test('campaign ids remain safe stable tokens', () => {
   assert.equal(isValidCampaignId('home_machine'), true);

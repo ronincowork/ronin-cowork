@@ -21,7 +21,7 @@ import {
   templateMandate,
   type AgentTemplateRow,
   type TeamTemplateRow,
-} from './definitions.js';
+} from './resource-adapters.js';
 import { storeDir } from './resources.js';
 import { STOCK_DIR } from './resources.js';
 

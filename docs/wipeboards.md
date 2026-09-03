@@ -144,7 +144,7 @@ holds the same 48 hours of history for everyone; cursors serve delivery only —
 session's own unread — and a dead session's cursor is swept.
 
 Reaping runs **inline** on every check and every post, so there is no daemon and no
-timer. The number is SETTEI, in `ronin.json` under `wipeboard` — `ttl_hours` (default
+timer. The number is SETTEI, in `machine_settings.json` under `wipeboard` — `ttl_hours` (default
 48), overridable for a single wipeboard by name. `ttl_hours: 0` means never reap.
 
 **No human action deletes a post.** No button, no agent, no membership change. The reaper

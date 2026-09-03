@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { renderGlossary } from '../src/session-boot.js';
+import { renderGlossary } from '../src/birth-readme.js';
 import { activeDeskProfileName, listDeskProfiles } from '../src/desk-profiles.js';
-import { resolveLexicon } from '../src/lexicons.js';
+import { resolveLexicon } from '../src/lexicon-catalog.js';
 
 const TEMPLATE = [
   '<!-- RENDERED_FOR:START -->',

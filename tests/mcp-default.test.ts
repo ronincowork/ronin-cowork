@@ -12,7 +12,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findDefinition, listSessionRoles } from '../src/definitions.js';
+import { findDefinition, listSessionRoles } from '../src/resource-adapters.js';
 import { resolveLaunchProfile } from '../src/launch-profile.js';
 
 const resolve = async (task: string) =>

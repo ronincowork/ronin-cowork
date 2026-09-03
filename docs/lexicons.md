@@ -31,7 +31,7 @@ grammar widened for it (`src/catalog.ts`, `isKeyLine`).
 active lexicon  →  its base:  →  the definition's own label: / the literal in the view
 ```
 
-`src/lexicons.ts` resolves a lexicon **flat** on the server (`GET /api/lexicons/:name`):
+`src/lexicon-catalog.ts` resolves a lexicon **flat** on the server (`GET /api/lexicons/:name`):
 the file's words over its base's, to the floor, with a cycle guard. The client
 (`public/js/lexicon.js`) holds one flat object and answers `t(key, literal)` — the word,
 or the literal the view wrote. So a missing key can never blank a label, and a missing

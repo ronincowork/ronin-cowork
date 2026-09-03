@@ -381,7 +381,7 @@ test('a stock task board keeps a stated order, and OpenShell is never in the mid
   // The one button that hands you a bare shell landing where a habitual click goes is how
   // "New session dumps me to a shell" happens without a single line of launch code being
   // wrong. Order is a launch fact, not decoration.
-  const { listSessionRoles } = await import('../src/definitions.js');
+  const { listSessionRoles } = await import('../src/resource-adapters.js');
   const tasks = await listSessionRoles();
   const names = tasks.map((t) => t.name);
   assert.deepEqual(names, [
@@ -394,7 +394,7 @@ test('a stock task board keeps a stated order, and OpenShell is never in the mid
 });
 
 test('every stock definition states its order, so no board is sorted by accident', async () => {
-  const { readDefinitions } = await import('../src/definitions.js');
+  const { readDefinitions } = await import('../src/resource-adapters.js');
   for (const kind of ['role_families', 'session_roles'] as const) {
     for (const d of await readDefinitions(kind)) {
       if (d.origin !== 'stock') continue; // the owner's own may take the unordered tail
@@ -425,7 +425,7 @@ test('QuarterBack is a session_role, pinned as the developer family\'s default l
   // developer family suggests QuarterBack first when a team is built from its shelf —
   // a default, never the team_lead designation, which is the owner's hand on a live
   // session and may land on the secretary instead.
-  const { listSessionRoles, listRoleFamilies } = await import('../src/definitions.js');
+  const { listSessionRoles, listRoleFamilies } = await import('../src/resource-adapters.js');
   const tasks = await listSessionRoles();
   const roles = await listRoleFamilies();
 

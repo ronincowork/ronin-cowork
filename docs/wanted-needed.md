@@ -17,7 +17,7 @@ looks, with no write anywhere. Met items do not exist.
 | | wanted | needed[] |
 |---|---|---|
 | what it is | the owner's typed intents | what those intents still lack |
-| provenance | **typed** — persists in `ronin.json` `wanted` | **derived** — exists only in the answer |
+| provenance | **typed** — persists in `machine_settings.json` `wanted` | **derived** — exists only in the answer |
 | written by | `PATCH /api/machine-settings` (whole-list, through the one door) | nobody, ever |
 | cleared by | the owner unticking | reality changing |
 | read by | `computeNeeded`, the ⚙ ticks | the ⚙ needed box · the 新 seat at its own start |
