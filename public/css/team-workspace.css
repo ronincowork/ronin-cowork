@@ -54,7 +54,8 @@
   .tw-where-repos { display: grid; gap: var(--space-2); }
   .tw-where-repo { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: center; color: var(--fg); }
   .tw-where-head { color: var(--muted); }
-  .tw-where-repo input[type='text']:disabled { opacity: 0.5; }
+  .tw-where-desks .tw-where-repo { grid-template-columns: auto minmax(0, 1fr); }
+  .tw-where-desks .tw-where-repo input[type='text'], .tw-where-desks .tw-where-head span:last-child { display: none; }
   .tw-config-reading output { color: var(--fg-strong); padding: var(--space-3) 0; }
   .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .tw-config-status, .tw-config-empty { color: var(--muted); }
