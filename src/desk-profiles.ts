@@ -11,7 +11,7 @@
  * state of every install older than the catalog, and it means "as stock" everywhere;
  * nothing here invents a default profile.
  */
-import { type Origin } from './catalog.js';
+import { type Origin } from './resources.js';
 import { readDefinitions, type Definition } from './definitions.js';
 // The profile is the CAMPAIGN's (its vocabulary, skin and offered templates), so the
 // chosen name comes from the initial campaign_config, not from ronin.json. Same shape.

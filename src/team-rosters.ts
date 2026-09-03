@@ -22,7 +22,7 @@
  */
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { entryValue, isKeyLine } from './catalog.js';
+import { entryValue, isKeyLine } from './resources.js';
 import { storeDir } from './stores.js';
 import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
 import { completeRoutineChoices } from './routines.js';

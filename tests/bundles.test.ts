@@ -18,7 +18,7 @@ const { installBundle, packBundle, parseBundle, parseLibraryIndex, planInstall, 
   await import('../src/bundles.js');
 const { listTeamTemplates, listRoutines } = await import('../src/definitions.js');
 const { resolveBehaviourBooks } = await import('../src/behaviours.js');
-const { STOCK_DIR } = await import('../src/catalog.js');
+const { STOCK_DIR } = await import('../src/resources.js');
 const { storeDir } = await import('../src/stores.js');
 
 const TEAM = `# Weekly Review

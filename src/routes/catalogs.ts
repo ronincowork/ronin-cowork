@@ -40,7 +40,7 @@ import {
   isShadowable,
   isValidLaunchName,
   savedLaunchFields,
-} from '../catalog.js';
+} from '../resources.js';
 import {
   findDefinition,
   listAgentTemplates,

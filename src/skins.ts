@@ -1,4 +1,4 @@
-import { entryValue, isKeyLine, readCatalogSections, type Origin } from './catalog.js';
+import { entryValue, isKeyLine, readCatalogSections, type Origin } from './resources.js';
 
 /**
  * SKINS — the look as a shadowable catalog (`ronin_catalogs/SKINS.md`).

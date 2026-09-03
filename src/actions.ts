@@ -5,7 +5,7 @@
  * does not parse the action language or grant a writer; it exposes each resolved block as
  * readable text with the provenance Customize already understands.
  */
-import { readCatalogSections, type Origin } from './catalog.js';
+import { readCatalogSections, type Origin } from './resources.js';
 
 export interface ActionRow {
   name: string;

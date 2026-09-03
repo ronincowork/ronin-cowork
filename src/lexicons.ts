@@ -18,7 +18,7 @@
  * that is the client's half (`public/js/lexicon.js`), and it is why a missing lexicon
  * paints exactly as stock.
  */
-import { entryPairs, type Origin } from './catalog.js';
+import { entryPairs, type Origin } from './resources.js';
 import { findDefinition, readDefinitions, type Definition } from './definitions.js';
 import { readFile } from 'node:fs/promises';
 

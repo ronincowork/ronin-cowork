@@ -42,7 +42,7 @@
  */
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './catalog.js';
+import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './resources.js';
 import { storeDir } from './stores.js';
 
 /** The definition directories — one file per token. The template catalog is TWO

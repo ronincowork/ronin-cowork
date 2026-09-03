@@ -9,7 +9,7 @@ import { lstat, readFile, readdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { storeDir } from './stores.js';
-import type { Origin } from './catalog.js';
+import type { Origin } from './resources.js';
 import { renderGlossary, renderSessionMacrosReading } from './session-boot.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
