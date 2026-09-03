@@ -39,7 +39,7 @@
   .home-grp-actions.tile-head { min-height: 0; padding: 0; border: 0; background: transparent; flex-wrap: nowrap; }
   .tw-config { display: flex; flex-direction: column; gap: var(--space-10); padding: var(--space-6) var(--space-7); overflow-y: auto; }
   .tw-config-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
-  .tw-config-field, .tw-config-reading { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); font-size: var(--text-3); }
+  .tw-config-field, .tw-config-reading { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); }
   .tw-config-field:has(textarea) { grid-column: 1 / -1; }
   .tw-config-field input, .tw-config-field textarea { width: 100%; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3); font: inherit; }
   .tw-config-field textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
@@ -50,42 +50,50 @@
   .tw-where-body { position: absolute; z-index: 5; top: calc(100% + var(--space-2)); left: 0; min-width: 100%; width: max-content; max-width: min(90vw, calc(var(--space-12) * 12)); display: grid; gap: var(--space-4); padding: var(--space-4); background: var(--bg-2); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); }
   .tw-where-repos { display: grid; gap: var(--space-2); }
   .tw-where-repo { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: center; color: var(--fg); }
-  .tw-where-head { color: var(--muted); font-size: var(--text-3); }
+  .tw-where-head { color: var(--muted); }
   .tw-where-repo input[type='text']:disabled { opacity: 0.5; }
   .tw-config-reading output { color: var(--fg-strong); padding: var(--space-3) 0; }
   .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .tw-config-status, .tw-config-empty { color: var(--muted); }
   .tw-config-wide { grid-column: 1 / -1; }
-  .tw-config-note { margin: 0; color: var(--muted); font-size: var(--text-3); line-height: 1.5; }
+  .tw-config-note { margin: 0; color: var(--muted); line-height: 1.5; }
   .tw-routines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); border: var(--edge) solid var(--line); border-radius: var(--radius-sm); padding: var(--space-4); }
   .tw-routines legend { color: var(--fg-strong); font-weight: 600; padding: 0 var(--space-2); }
   .tw-routines > .tw-config-note { grid-column: 1 / -1; }
   .tw-worktrees-mode { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--space-1); border-left: var(--edge-2) solid var(--kiiro); background: color-mix(in srgb, var(--panel) 90%, var(--kiiro)); padding: var(--space-3) var(--space-4); }
-  .tw-worktrees-mode b { color: var(--muted); font-size: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
-  .tw-worktrees-mode strong { color: var(--fg-strong); font-size: var(--text-3); }
-  .tw-worktrees-mode small { color: var(--muted); font-size: var(--text-2); line-height: 1.4; }
+  .tw-worktrees-mode b { color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .tw-worktrees-mode strong { color: var(--fg-strong); }
+  .tw-worktrees-mode small { color: var(--muted); line-height: 1.4; }
   .tw-routine { display: flex; align-items: flex-start; gap: var(--space-3); }
   .tw-routine input { accent-color: var(--accent); margin-top: var(--space-1); }
   .tw-routine span { display: flex; flex-direction: column; gap: var(--space-1); }
   .tw-routine small, .tw-config-field small { color: var(--muted); line-height: 1.4; }
+  /* FOUR TEXT SIZES ON THIS FORM AND THE ROSTER'S EDIT COLUMN, and no fifth (owner, 2026-09-03):
+     section header · key · input · note. Every element here reads one of them; a new
+     element joins one of these four selectors rather than bringing a size of its own. */
+  .tw-config, .league-team-edit-content { font-size: var(--text-4); }
+  .tw-routines legend, .league-team-roster-title { font-size: var(--text-4); }
+  .tw-config-field > span, .tw-config-reading > span, .tw-where-head, .tw-worktrees-mode b { font-size: var(--text-3); }
+  .tw-config-field input, .tw-config-field textarea, .tw-config-field select, .tw-where summary, .tw-where-repo input, .tw-config-reading output, .tw-routine b, .tw-worktrees-mode strong, .tw-config-check span, .league-team-member-words strong, .league-team-add select, .tw-config-actions { font-size: var(--text-4); }
+  .tw-config-note, .tw-config-field small, .tw-routine small, .tw-worktrees-mode small, .tw-config-status, .league-team-member-words span, .league-team-empty { font-size: var(--text-2); }
   .tw-config-check { display: flex; align-items: center; gap: var(--space-3); color: var(--fg-strong); }
   .tw-config-check input { accent-color: var(--accent); }
 
   /* A Team dropped into the Cowork bench becomes a quiet roster, not an admin form. */
-  .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); font-size: var(--text-3); }
+  .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); }
   .league-team-roster, .league-team-config { flex: 0 0 auto; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
-  .league-team-roster-title { margin: 0 0 var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); color: var(--fg-strong); font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .league-team-roster-title { margin: 0 0 var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); color: var(--fg-strong); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
   .league-team-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); border-bottom: var(--edge) solid var(--line); padding: var(--space-2) 0; }
   .league-team-member-identity { display: flex; align-items: center; min-width: 0; gap: var(--space-3); }
   .league-team-member-mark { width: var(--space-6); color: var(--kaki); font-size: var(--text-5); line-height: 1; text-align: center; }
   .league-team-member-words { display: flex; flex-direction: column; min-width: 0; gap: var(--space-1); line-height: 1.1; }
-  .league-team-member-words strong { overflow: hidden; color: var(--fg-strong); font-size: var(--text-5); font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
-  .league-team-member-words span, .league-team-empty { color: var(--muted); font-size: var(--text-2); }
+  .league-team-member-words strong { overflow: hidden; color: var(--fg-strong); font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
+  .league-team-member-words span, .league-team-empty { color: var(--muted); }
   .league-team-member-actions { flex-wrap: nowrap; gap: var(--space-2); }
   .league-team-empty { margin: 0; border-bottom: var(--edge) solid var(--line); padding: var(--space-5) 0; }
   .league-team-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); margin-top: var(--space-5); }
-  .league-team-add select { min-width: 0; font-size: var(--text-3); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
+  .league-team-add select { min-width: 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
 
   /* -- the docs slice: mdedit's own pane (.home-docs, style.css), given the surface's height -- */
   .tw-docs { display: flex; height: 100%; }
