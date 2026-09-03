@@ -17,9 +17,9 @@ import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from '.
 const PROFILE = 'campaign';
 // the machine's own half — account, health — is the Admin Desk's.
 // defaults · Project roots lead, and they are the four the page opens on.
-const TYPES = Object.freeze({ machine: 'campaign.machine', templates: 'campaign.templates', defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', services: 'campaign.services', identity: 'campaign.identity', routines: 'campaign.routines', profile: 'campaign.desk-profile', create: 'campaign.new' });
+const TYPES = Object.freeze({ machine: 'campaign.machine', templates: 'campaign.templates', defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', routines: 'campaign.routines', profile: 'campaign.desk-profile', create: 'campaign.new' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
-const MACHINE_TABS = Object.freeze(['themes', 'account', 'installed', 'archives', 'messages', 'help', 'keypad', 'health']);
+const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.templates, 'campaign.team-templates': TYPES.templates, 'campaign.session-roles': TYPES.templates, '@new-campaign': TYPES.create });
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
@@ -79,14 +79,6 @@ function registerCampaignSurfaces() {
   add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'Themes · Account · Archived · Messages · Help desk · Keypad · Desk.'), create: ({ environment: e }) => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk'), campaign: e.selected }); return { el: surface.el, show: () => surface.select(surface.current() || 'themes') }; } });
   // — teams and agents — in the forms' own boxes, by kind. The session-roles card that once
   add({ type: TYPES.templates, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.templates_summary', 'Team casts, agent loadouts, and the library to download more from.'), create: () => { const surface = createTemplatesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
-  // RONIN SERVICES (owner, 2026-09-03): the card stands on the selector only while this box
-  // holds no entitlement, and its summary says the true state — installed but not activated,
-  // or not installed — never "off". It opens the Installed tab: the one source of truth, with
-  // the activation card (an email, a yes, a confirmation) on it until the entitlement lands.
-  add({ type: TYPES.services, header: 'channels', label: () => t('campaign_view.services_card', 'Ronin Services'), summary: (_tenant, e) => e.servicesWord(), variant: 'dotted', visible: (_tenant, e) => e.servicesEntitled() === false, create: ({ environment: e }) => {
-    const surface = coworkCommons({ tabs: ['installed'], label: t('campaign_view.services_card', 'Ronin Services'), campaign: e.selected });
-    return { el: surface.el, show: () => surface.select('installed') };
-  } });
   if (MULTIPLE_CAMPAIGNS_ENABLED) add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
   // New Campaign is not registered while multiple Campaigns are off.
   // Desk profile remains registered so a remembered workspace can still restore it, but
@@ -113,18 +105,6 @@ export function createCampaignView() {
     const r = await request('/api/machine-settings');
     setteiRead = r.ok ? r.data : null;
   };
-  // Whether this box holds a Services entitlement; null until the first read. The Install
-  // Ronin Services card stands on the selector only while this is false.
-  let servicesEntitled = null;
-  let servicesInstalled = null;
-  const readServices = async () => {
-    const r = await request('/api/installed');
-    servicesEntitled = r.ok ? r.data?.services?.activated === true : null;
-    servicesInstalled = r.ok ? r.data?.services?.installed === true : null;
-  };
-  const servicesWord = () => (servicesInstalled === null ? t('campaign_view.services_reading', 'Reading this machine…')
-    : servicesInstalled ? t('campaign_view.services_not_activated', 'Installed, not activated — an email and a confirmation.')
-      : t('campaign_view.services_absent', 'Not installed. An email and a confirmation start it.'));
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(TYPES.identity, workspace)),
     selected,
@@ -134,9 +114,6 @@ export function createCampaignView() {
     /** How many live roots belong to the selected Campaign; null before the first read. */
     roots: () => (rootsHere === null ? null : rootsHere.filter((root) => !root.archived && campaignOf(root) === selected()?.id).length),
     settei: () => setteiRead,
-    servicesEntitled: () => servicesEntitled,
-    servicesWord,
-    readServices,
   };
   const DEFAULT_VIEW = Object.freeze({ workspace1: TYPES.machine, workspace2: TYPES.templates, workspace3: TYPES.defaults, workspace4: TYPES.roots });
   const blank = (id) => { const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' }); surface.content.append(elem('p', 'cv-blank-word', t('team.workspace_blank', 'Workspace'))); return surface.el; };
@@ -151,7 +128,7 @@ export function createCampaignView() {
       ctx = context; entered = true;
       const typed = teamWorkspaceState(context.state, context.viewState('campaign'), bench.declaration);
       bench.enter({ ...typed, ...context.viewState('campaign') });
-      await Promise.all([loadCampaigns(), readRoots(), readMachineSettings(), readServices()]);
+      await Promise.all([loadCampaigns(), readRoots(), readMachineSettings()]);
       if (!entered) return;
       for (const id of bench.ids) { const type = LEGACY[typed.seats[id]] || typed.seats[id]; if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id); }
       bench.setCount(4);

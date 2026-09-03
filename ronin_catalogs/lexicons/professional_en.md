@@ -184,36 +184,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **commons.tab_off:** {tab} — off, this service is not installed.
 - **commons.sessions:** sessions
 
-## installed — installed.js (the Installed tab on Ronin Desk: installs, activation and switches, apart)
-
-- **installed.reading:** Reading this machine…
-- **installed.here:** Installed on this machine
-- **installed.cowork:** Ronin Cowork
-- **installed.cowork_commit:** commit {commit}
-- **installed.services:** Ronin Services
-- **installed.services_activated:** installed and activated
-- **installed.services_not_activated:** installed, not activated — no entitlement yet
-- **installed.services_absent:** not installed
-- **installed.services_switch:** Ronin Services for new Agents
-- **installed.switch_on:** switched on (Campaign → Routines)
-- **installed.switch_off:** switched off (Campaign → Routines)
-- **installed.not_a_switch:** An install is not a switch. What is installed and activated is this machine’s; which Routines a new Agent is born with — Ronin Base, Worktrees, Services, Host, gbrain — is the Campaign’s, on its Routines surface, and a Team may override it.
-- **installed.activate:** Activate Ronin Services
-- **installed.activate_help:** The parts are here already. Activation is an entitlement for this box: enter the email it should go to, press the button, and confirm from the mail.
-- **installed.activate_help_absent:** Nothing of Services is installed here yet. Activation still starts the same way — an email and a confirmation — and the install follows.
-- **installed.sell_head:** What Ronin Services adds
-- **installed.sell_library:** The template library — teams and agents Ronin keeps and grows, with the procedures, macros and tools they read, installed into your own stores with one press.
-- **installed.sell_assistant:** A background assistant that keeps every agent’s work record and instructions current — so the roster and the tile tell you what each agent is doing without you asking.
-- **installed.sell_transcripts:** The locked terminal becomes streaming text — a durable record of every session that can be re-rendered as a proper transcript, read on a phone, summarised, or turned to voice.
-- **installed.sell_views:** Record-fed views of a tile — Terminal Mirror, Detailed, Condensed, Conversation and Agent Summary — instead of the raw locked terminal.
-- **installed.sell_voice:** Text to voice — hear an agent’s report read back; speak to it from the tile.
-- **installed.sell_hotwords:** Hotwords — teach dictation the words it mishears, once, for every session.
-- **installed.sell_memory:** Unified team memory — what a session learns is kept for the team and recalled at birth, not lost with the tile.
-- **installed.sell_mobile:** A proper terminal on a phone — lower latency, real scrolling, copy and paste that behaves.
-- **installed.sell_stats:** Usage history — what your sessions did, counted over time, never their content.
-- **installed.sell_help:** A help desk that knows your box — Mika, the house assistant, with Ronin’s own procedures in hand.
-- **installed.floor:** Everything else — the coworkspace, teams, agents, worktrees, the handful of templates that ship, and making your own — is Ronin Cowork, open source, and works fully without Services.
-
 ## campaign_view — campaign-view.js (Campaign Manage: the selector's Campaign-level surfaces)
 
 - **campaign_view.campaign_summary:** What this body of work is called, and what it is for.
@@ -254,10 +224,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.output:** Output
 - **campaign_view.output_help:** What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.
 - **campaign_view.with_services:** Ronin Services
-- **campaign_view.services_card:** Ronin Services
-- **campaign_view.services_reading:** Reading this machine…
-- **campaign_view.services_not_activated:** Installed, not activated — an email and a confirmation.
-- **campaign_view.services_absent:** Not installed. An email and a confirmation start it.
 - **campaign_view.services_title:** Arrives with Ronin Services.
 - **campaign_view.kind:** Kind
 - **campaign_view.kind_help:** The default kind of work for a new Cowork or project here. Nothing reads it yet.
@@ -370,7 +336,28 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.verdict_same_yours:** already yours — skipped
 - **campaign_view.verdict_refused:** refused — a bundle never replaces one of Ronin’s tools
 - **campaign_view.routines:** Routines
-- **campaign_view.routines_help:** Choose what new Cowork Agents start with. This Campaign answer seeds new Teams; a Team may replace it, and New Agent shows the resolved answer. Nothing already running changes.
+- **campaign_view.routines_help:** What is installed on this machine, and what new Cowork Agents start with. The switches seed new Teams; a Team may replace them, and New Agent shows the resolved answer. Nothing already running changes.
+- **campaign_view.svc_activated:** Installed and activated on this machine.
+- **campaign_view.svc_installed:** Installed on this machine ({parts}), not activated yet.
+- **campaign_view.svc_absent:** Not installed on this machine.
+- **campaign_view.svc_sending:** Sending the confirmation email…
+- **campaign_view.svc_waiting:** Waiting for your confirmation — open the email sent to {email}.
+- **campaign_view.svc_resend:** Send the email again
+- **campaign_view.svc_resend_after:** after {time}
+- **campaign_view.svc_cancel:** Cancel the request
+- **campaign_view.svc_installing:** Confirmed — Ronin is finishing the install.
+- **campaign_view.svc_email:** you@example.com
+- **campaign_view.svc_send:** Send confirmation email
+- **campaign_view.svc_expired:** That confirmation link expired. Ask for a fresh one.
+- **campaign_view.svc_ask:** Activation is an email and a confirmation. The address is only used for the entitlement.
+- **campaign_view.sell_head:** What Ronin Services adds
+- **campaign_view.sell_library:** The template library — teams and agents Ronin keeps and grows, with the procedures, macros and tools they read, installed with one press.
+- **campaign_view.sell_assistant:** A background assistant that keeps every agent’s work record and instructions current, so the roster and the tile say what each agent is doing.
+- **campaign_view.sell_transcripts:** The locked terminal becomes streaming text — a durable record that can be re-rendered as a transcript, read on a phone, summarised, or turned to voice.
+- **campaign_view.sell_voice:** Text to voice, and voice in — hear a report read back; speak to an agent from the tile.
+- **campaign_view.sell_hotwords:** Hotwords — teach dictation the words it mishears, once, for every session.
+- **campaign_view.sell_memory:** Unified team memory — what a session learns is kept for the team and recalled at birth.
+- **campaign_view.sell_stats:** Usage history — what your sessions did, counted over time, never their content.
 - **campaign_view.worktrees_routine_help:** Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **campaign_view.routines_n:** {n} on
 - **campaign_view.routine_no_description:** No description supplied.
@@ -1290,7 +1277,6 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_health:** Desk
 - **cowork.tab_themes:** Themes
 - **cowork.tab_account:** Account
-- **cowork.tab_installed:** Installed
 - **cowork.tab_profile:** Desk profile
 - **cowork.tab_roots:** Project roots
 - **cowork.tab_help:** Help desk
