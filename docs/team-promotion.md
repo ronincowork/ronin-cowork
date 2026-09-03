@@ -26,7 +26,8 @@ working target needs no candidate.
 ## Recovery
 
 - `resume <id>` rebuilds interrupted candidates from current tips. For a `restarting`
-  receipt it runs restart and health, then records `complete`, `reverted`, or `unhealthy`.
+  receipt it refreshes the durable handoff, runs restart and health, then records
+  `complete`, `reverted`, or `unhealthy`.
 - `abandon <id> <reason>` closes an interrupted attempt without undoing references that
   already moved.
 - `revert <id>|last` builds and lands revert candidates, then restarts and checks health.

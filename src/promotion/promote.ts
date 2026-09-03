@@ -2,7 +2,7 @@ import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
 import {
-  acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
+  acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, now, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
   type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate,
 } from './receipts.js';
 
@@ -219,10 +219,12 @@ export interface ResumeOptions {
 export async function resumePromotion(o: ResumeOptions): Promise<PromoteOutcome> {
   const ledger = o.ledgerDir ?? PROMOTION_LEDGER_DIR();
   const log = o.log ?? noop;
-  const r = await readReceipt(o.id, ledger);
+  let r = await readReceipt(o.id, ledger);
   if (!r) return { ok: false, receipt: null, nothing: false, message: `no receipt ${o.id}` };
   if (r.state === 'restarting') {
     if (o.deferRestart) {
+      r = { ...r, updated_at: now() };
+      await writeReceipt(r, ledger);
       await o.deferRestart(r);
       return { ok: true, receipt: r, nothing: false, message: `restarting — receipt ${r.id}; health follows the restart` };
     }
