@@ -1,6 +1,6 @@
 # Adding macros & actions (TEJUN)
 
-**test_protocols:** ordinary dev work does not run BYOIN; the integrator runs it once at the `dev → master` boundary — `docs/test-protocols.md` is the contract.
+Repository verification is `npm run verify`. Installed user customization is checked with `npm run byoin`.
 
 Entry point for the whole system: `../reading-list/TEJUN.md`. This file: the choreography for
 extending the two catalogs that live here.
