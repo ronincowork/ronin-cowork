@@ -83,7 +83,8 @@ if (!read('public/js/cowork-view.js').includes('createNewTeamFormView(WorkspaceK
 // beta card stays out of discovery. Ronin Desk takes that default seat; Themes leads its
 // tabs and Desk closes them.
 if (!campaign.includes('type !== TYPES.create && type !== TYPES.profile')) problems.push('Campaign discovery must hide the beta Desk profile card without removing its registered surface.');
-if (!campaign.includes('workspace1: TYPES.identity, workspace2: TYPES.machine, workspace3: TYPES.roots, workspace4: TYPES.defaults')) problems.push('Campaign first-open must include Ronin Desk among its four workspaces.');
+// The default view (owner, 2026-09-03): Ronin Desk, Templates, Agent defaults, Project roots — in that order.
+if (!campaign.includes('workspace1: TYPES.machine, workspace2: TYPES.templates, workspace3: TYPES.defaults, workspace4: TYPES.roots')) problems.push('Campaign default view must be Ronin Desk · Templates · Agent defaults · Project roots, four up.');
 if (!campaign.includes("['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']")) problems.push('Ronin Desk tabs must put Themes first and Desk last.');
 for (const contract of ["pane('themes'", "'Desktop'", "'Mobile'", "save('theme')", "save('theme_mobile')"]) {
   if (!coworkCommons.includes(contract)) problems.push(`Ronin Desk Themes is missing ${contract}.`);
