@@ -71,11 +71,11 @@
   /* FOUR TEXT SIZES ON THIS FORM AND THE ROSTER'S EDIT COLUMN, and no fifth (owner, 2026-09-03):
      section header · key · input · note. Every element here reads one of them; a new
      element joins one of these four selectors rather than bringing a size of its own. */
-  .tw-config, .league-team-edit-content { font-size: var(--text-4); }
-  .tw-routines legend, .league-team-roster-title { font-size: var(--text-4); }
-  .tw-config-field > span, .tw-config-reading > span, .tw-where-head, .tw-worktrees-mode b { font-size: var(--text-3); }
-  .tw-config-field input, .tw-config-field textarea, .tw-config-field select, .tw-where summary, .tw-where-repo input, .tw-config-reading output, .tw-routine b, .tw-worktrees-mode strong, .tw-config-check span, .league-team-member-words strong, .league-team-add select, .tw-config-actions { font-size: var(--text-4); }
-  .tw-config-note, .tw-config-field small, .tw-routine small, .tw-worktrees-mode small, .tw-config-status, .league-team-member-words span, .league-team-empty { font-size: var(--text-2); }
+  .tw-config, .league-team-edit-content { font-size: var(--form-input); }
+  .tw-routines legend, .league-team-roster-title { font-size: var(--form-head); }
+  .tw-config-field > span, .tw-config-reading > span, .tw-where-head, .tw-worktrees-mode b { font-size: var(--form-key); }
+  .tw-config-field input, .tw-config-field textarea, .tw-config-field select, .tw-where summary, .tw-where-repo input, .tw-config-reading output, .tw-routine b, .tw-worktrees-mode strong, .tw-config-check span, .league-team-member-words strong, .league-team-add select, .tw-config-actions { font-size: var(--form-input); }
+  .tw-config-note, .tw-config-field small, .tw-routine small, .tw-worktrees-mode small, .tw-config-status, .league-team-member-words span, .league-team-empty { font-size: var(--form-note); }
   .tw-config-check { display: flex; align-items: center; gap: var(--space-3); color: var(--fg-strong); }
   .tw-config-check input { accent-color: var(--accent); }
 
