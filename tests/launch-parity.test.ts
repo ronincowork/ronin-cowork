@@ -383,6 +383,30 @@ test('server resolution returns profile and durable Team context without browser
   assert.equal(resolved.stated_by.team_objective[0]?.layer, 'team_roster');
 });
 
+test('the birth prompt states only constrained mandate axes and a real Team Lead designation', async () => {
+  const constrained = await resolveForm(commonsForm({
+    team: 'scratchteam',
+    team_lead: true,
+    mandate: { reach: 'discuss', recruit: 'open', output: ['ideas', 'no code'] },
+  }), new Set());
+  assert.match(constrained.brief, /Designation: Team Lead/);
+  assert.match(constrained.brief, /Reach: discuss/);
+  assert.doesNotMatch(constrained.brief, /Recruit:/);
+  assert.match(constrained.brief, /Output: ideas, no code/);
+
+  const open = await resolveForm(commonsForm({
+    mandate: { reach: 'open', recruit: 'open', output: ['open'] },
+  }), new Set());
+  assert.doesNotMatch(open.brief, /Designation:|Reach:|Recruit:|Output:/);
+});
+
+test('the birth prompt carries mandate choices inherited from the Team', async () => {
+  const inherited = await resolveForm(forkitForm(), new Set());
+  assert.match(inherited.brief, /Reach: discuss/);
+  assert.match(inherited.brief, /Recruit: nobody/);
+  assert.match(inherited.brief, /Output: ideas/);
+});
+
 test('a stock task board keeps a stated order, and OpenShell is never in the middle of it', async () => {
   // REGRESSION, 2026-08-22. The combined catalog had FILE order; a directory has none, so
   // `order:` is the replacement — and it shipped unpopulated, which sorted the board
