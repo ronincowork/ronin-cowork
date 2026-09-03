@@ -1229,7 +1229,7 @@ The catalog entry goes. {dir} is not touched.
 - **customize.actions_what:** a primitive step macros are composed from
 - **customize.actions_blurb:** The cataloged procedures macros are made of.
 - **customize.tools:** Tools
-- **customize.tools_why:** TOOLS.md is a table, and the server has no table reader — the rule in docs/shadowing.md is implemented in ronin_bin/tejun and not in src/catalog.ts (prerequisite P1).
+- **customize.tools_why:** TOOLS.md is a table, and the server has no table reader — the rule in docs/shadowing.md is implemented in ronin_bin/tejun and not in src/resources.ts (prerequisite P1).
 - **customize.tools_blurb:** The executables that implement actions. A markdown row cannot author one.
 - **customize.role_families:** Role families
 - **customize.role_families_blurb:** The shelves of the ＋ New board. Presentation only — a family never rides a launch.
