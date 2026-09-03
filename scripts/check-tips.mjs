@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * check-tips — the retired help panel stays absent system-wide.
+ *
+ * Titles still become accessible names; they must not survive as native browser bubbles,
+ * and hovering or focusing a labelled control must not create or reveal `.helpbox`.
+ */
 import { defaultUrl, loadPlaywright } from './lib/ui-host.mjs';
 
 const pw = await loadPlaywright();
@@ -14,6 +20,7 @@ try {
   await page.goto(url, { waitUntil: 'load', timeout: 20000 });
   await page.waitForTimeout(2000);
 
+  // Exercise both input paths that formerly opened the panel.
   const control = page.locator('[data-tip]:visible').first();
   if (await control.count()) {
     await control.hover();

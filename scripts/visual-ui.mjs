@@ -1,4 +1,28 @@
 #!/usr/bin/env node
+/**
+ * visual-ui — the composition fingerprint: do the critical compositions still SIT
+ * where they sat, in the colours they wore?
+ *
+ *   node scripts/visual-ui.mjs             # diff against tests/baselines/ui-fingerprint.json
+ *   node scripts/visual-ui.mjs --update    # re-measure and WRITE the baseline (a reviewed act)
+ *
+ * Deliberately NOT pixel screenshots. Live terminals, session names and catalog rows
+ * make pixels churn, and a masked-pixel suite is a maintenance tax a solo owner stops
+ * paying (docs/ui.md). What must not shift unnoticed is the CHROME: where the bar,
+ * its verbs, a tile's head and the Commons strip sit, and which token colours they
+ * resolve to — in both themes. So the fingerprint is element geometry (rounded to
+ * 2px) plus resolved colours for a fixed viewport, which is deterministic on one
+ * machine and reviewable as a JSON diff in git.
+ *
+ * The baseline records the machine (platform-arch) that measured it: font metrics
+ * differ across OSes, so on any other machine this gate SKIPS with a note instead of
+ * crying wolf — the same honesty rule as smoke-ui's engine label. A real change
+ * fails with the exact keys that moved; the remedy for an INTENDED change is
+ * `--update` in the same commit, which puts the new shape in front of review.
+ *
+ * Exit codes match smoke-ui: 0 ok/skip-with-note, 1 a composition shifted, 2 could
+ * not look (no browser).
+ */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -17,7 +41,10 @@ if (!pw) {
   process.exit(2);
 }
 
+/** Geometry + resolved colour for the selectors that are content-independent. */
 async function fingerprint(page, entries) {
+  // Fonts first: the kana/mark glyphs ride fallback fonts that can land after
+  // networkidle, and a late glyph is a width drift is a scrollbar is a 2px lie.
   await page.evaluate(() => document.fonts.ready);
   return page.evaluate((list) => {
     const out = {};
@@ -41,10 +68,19 @@ async function fingerprint(page, entries) {
   }, entries);
 }
 
+// THE ROOT ARRIVAL IS THE CAMPAIGN HOME (2026-08-29): three doors in a frame over a
+// tray. The sessions home it replaced (.home-tabs, .home-maxrow, a tile head) is gone
+// from this route by design, so its selectors are gone from here. On the home every bar
+// control but the brand is hidden (campaign-home.css) — #shapecycle is pinned at its
+// hidden box precisely so its reappearance would show.
 const DESKTOP = [
   '#bar', '#brandbtn', '#shapecycle',
   '.ch-frame', '.ch-doors', '.ch-door', '.ch-release',
 ];
+// NOT the session picker: its flex width follows the live session names — content,
+// not chrome, and a baseline on content is a baseline that cries wolf.
+// The phone is the SHELL now (js/phone.js, the MOBILE plan): #bar never shows there and
+// ニ is never built. The chrome worth baselining is the shell's own bar and list frame.
 const PHONE = ['#phone .ph-bar', '#phone .ph-title', '#phone .ph-main'];
 const LOGIN = ['form', '#pw', '#go', 'h1'];
 
@@ -61,7 +97,10 @@ const shot = { platform: PLATFORM, viewport: '1400x900 / 402x681', surfaces: {} 
   await page.waitForFunction(() => !document.documentElement.classList.contains('boot-pending'));
   await page.waitForTimeout(1500);
   shot.surfaces.desktop = await fingerprint(page, DESKTOP);
+  // Both themes, same chrome: the token flip is part of the composition contract.
   await page.evaluate(() => (document.documentElement.dataset.theme = 'light'));
+  // Themeable borders transition through intermediate colours. Measure the settled
+  // light composition, never whichever interpolation frame the browser happened to paint.
   await page.waitForTimeout(300);
   shot.surfaces['desktop-light'] = await fingerprint(page, ['#bar', '.ch-frame', '.ch-door']);
   await page.close();
@@ -80,6 +119,7 @@ const shot = { platform: PLATFORM, viewport: '1400x900 / 402x681', surfaces: {} 
   await page.close();
 }
 {
+  // login.html is static, so this works before AND after the auth routes exist.
   const page = await (await browser.newContext({ viewport: { width: 800, height: 700 }, colorScheme: 'dark' })).newPage();
   await page.goto(URL_.replace(/\/$/, '') + '/login.html', { waitUntil: 'networkidle', timeout: 30_000 });
   shot.surfaces.login = await fingerprint(page, LOGIN);

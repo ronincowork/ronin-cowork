@@ -16,7 +16,11 @@
 #
 # src/bundle-cli.ts calls the operator HTTP surface and prints its reply.
 set -u
-. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/../ronin_bin/tool-path.sh"
+SELF=${BASH_SOURCE[0]}
+while [ -L "$SELF" ]; do
+  link=$(readlink "$SELF")
+  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
+done
 HERE=$(cd "$(dirname "$SELF")/.." && pwd)
 cd "$HERE" || { echo "NO-REPO: cannot reach the Ronin tree"; exit 1; }
 exec npx tsx src/bundle-cli.ts "$@"

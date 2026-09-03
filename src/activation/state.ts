@@ -1,3 +1,19 @@
+/**
+ * THE LOCAL ACTIVATION STATE MACHINE — durable, and persisted BEFORE anything is reported.
+ *
+ *   not_requested → requesting → awaiting_email → verified → installing → installed
+ *
+ *   awaiting_email → expired | cancelled | address_changed
+ *   any active stage → error, and a retry resumes the SAME stage
+ *
+ * WHY THE ORDER MATTERS. Every transition is written to disk before the browser is told it
+ * succeeded. Report-then-persist would mean a crash in that gap leaves a person looking at
+ * "check your email" while the install has no memory of having asked — so they ask again,
+ * and a second email goes out for an activation that already exists.
+ *
+ * The non-secret half lives in Ronin configuration where the owner can read it. The claim
+ * secret and entitlement token live in the secret store and are never in this record.
+ */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../resources.js';
@@ -9,6 +25,7 @@ export type Stage =
 
 export interface ActivationState {
   stage: Stage;
+  /** Masked for display. The full address is only ever sent to HQ, never shown back. */
   email_masked: string | null;
   activation_id: string | null;
   entitlement_id: string | null;
@@ -17,6 +34,7 @@ export interface ActivationState {
   verified_at: string | null;
   expires_at: string | null;
   resend_available_at: string | null;
+  /** The last stage an error interrupted, so a retry resumes rather than restarts. */
   error_at_stage: Stage | null;
   error_message: string | null;
   updated_at: string;
@@ -47,6 +65,10 @@ export async function readState(): Promise<ActivationState> {
   }
 }
 
+/**
+ * PERSIST, THEN RETURN. Callers must await this before answering the browser — that is the
+ * entire durability guarantee, and it only holds if nobody skips it.
+ */
 export async function writeState(patch: Partial<ActivationState>): Promise<ActivationState> {
   const next: ActivationState = {
     ...(await readState()), ...patch, updated_at: new Date().toISOString(),
@@ -59,6 +81,7 @@ export async function writeState(patch: Partial<ActivationState>): Promise<Activ
   return next;
 }
 
+/** What the browser is allowed to see. No secret has ever been in this record anyway. */
 export function publicState(s: ActivationState) {
   return {
     stage: s.stage,

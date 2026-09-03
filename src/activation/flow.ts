@@ -1,3 +1,20 @@
+/**
+ * THE ACTIVATION FLOW — the operator's half of loop one.
+ *
+ * THIS IS CORE, NOT A SERVICE, and KYOKAI is right to insist on it. `src/services/` is the
+ * paid layer that leaves with its side at the split. Activation is the door a FREE install
+ * uses to ask for the paid one, so it cannot live behind that door — free Cowork must be
+ * able to request Services without Services being present.
+ *
+ * The browser talks only to the local operator. The operator talks to HQ. That shape is not
+ * decoration: the operator holds the claim secret, and a browser that could see it could
+ * hand someone else's tab the ability to claim this install's entitlement.
+ *
+ * A STATUS CHECK IS HOW THE LOOP CLOSES. The email link is opened wherever the person happens to
+ * be — a phone, another laptop, a machine on a different network — and never contacts this
+ * install. So the install asks HQ, on its own schedule, whether the thing it started has
+ * finished. That crosses NAT, survives a closed tab, and survives this process restarting.
+ */
 import { callHq, EgressRefused } from './transport.js';
 import {
   getClaimSecret, putClaimSecret, putEntitlementToken, clearClaimSecret, getEntitlementToken,
@@ -6,10 +23,19 @@ import { maskEmail, readState, writeState, type ActivationState } from './state.
 
 const TERMS_VERSION = '2026-08-01';
 
+/** A refusal we can explain, as opposed to a fault we cannot. */
 export class FlowError extends Error {
   constructor(readonly status: number, message: string) { super(message); }
 }
 
+/**
+ * REQUEST. The consent action — "Send confirmation email", never merely "Save".
+ *
+ * The claim secret is persisted BEFORE success is reported. HQ returns it exactly once, so
+ * a crash between receiving and storing it would strand an activation that can never be
+ * claimed: the email would arrive, the person would click it, and this install would have
+ * no way to prove it was the one that asked.
+ */
 export async function request(email: string): Promise<ActivationState> {
   const current = await readState();
   if (current.stage === 'awaiting_email' || current.stage === 'requesting') {
@@ -35,6 +61,8 @@ export async function request(email: string): Promise<ActivationState> {
       throw new FlowError(res.status || 502, res.error?.message ?? 'Ronin HQ refused the request');
     }
 
+    // Secret first, state second. If this order is ever swapped the activation becomes
+    // unclaimable on a crash, which is the failure nobody would think to test for.
     await putClaimSecret(res.body.claim_secret);
 
     return await writeState({
@@ -44,6 +72,8 @@ export async function request(email: string): Promise<ActivationState> {
       requested_at: new Date().toISOString(),
     });
   } catch (e) {
+    // HQ UNREACHABLE IS NOT A SETUP FAILURE. Free Cowork setup must finish either way; the
+    // person sees "waiting to send" and a Retry, and nothing about their install is broken.
     const message = e instanceof EgressRefused
       ? 'this install refused to contact an unexpected host'
       : e instanceof FlowError ? e.message
@@ -53,6 +83,10 @@ export async function request(email: string): Promise<ActivationState> {
   }
 }
 
+/**
+ * CHECK / RESUME. Called once for each explicit Check status action. It is deliberately not
+ * run on a timer: an unanswered email must not make this install ping HQ forever.
+ */
 export async function poll(): Promise<ActivationState> {
   const state = await readState();
   const claim = await getClaimSecret();
@@ -69,6 +103,7 @@ export async function poll(): Promise<ActivationState> {
     return writeState({ stage: 'expired', error_message: 'this confirmation link expired' });
   }
   if (res.status === 401) {
+    // The stored claim secret no longer matches anything. Say so rather than looping.
     return writeState({
       stage: 'error', error_at_stage: 'awaiting_email',
       error_message: 'this request could not be matched at Ronin HQ — start again',
@@ -95,6 +130,9 @@ export async function poll(): Promise<ActivationState> {
       resend_available_at: res.body.resend_available_at,
     });
   }
+  // Verification must yield both halves of one entitlement. A token without its public
+  // identity cannot be represented accurately, and an id without a token authorizes nothing.
+  // Keep the claim so a later Check status can recover if HQ repairs the response.
   if (!res.body.entitlement_token || !res.body.entitlement_id) {
     return writeState({
       stage: 'error', error_at_stage: 'awaiting_email',
@@ -102,6 +140,9 @@ export async function poll(): Promise<ActivationState> {
     });
   }
 
+  // CONFIRMED. Store the token before announcing verification, for the same reason as the
+  // claim secret — and because every poll mints a fresh token that retires the last one, so
+  // losing this write means the install is holding a credential that no longer works.
   await putEntitlementToken(res.body.entitlement_token);
   const verified = await writeState({
     stage: 'verified',
@@ -109,10 +150,14 @@ export async function poll(): Promise<ActivationState> {
     verified_at: new Date().toISOString(),
     error_at_stage: null, error_message: null,
   });
+  // Clear the claim only after both halves of the entitlement are durable. A crash after
+  // the token write but before the state write remains recoverable because the claim can
+  // poll again. Clearing first stranded a token whose identity SETTEI could never learn.
   await clearClaimSecret();
   return verified;
 }
 
+/** RESEND. The server owns the cooldown; we surface it rather than second-guessing it. */
 export async function resend(): Promise<ActivationState> {
   const state = await readState();
   const claim = await getClaimSecret();
@@ -132,6 +177,7 @@ export async function resend(): Promise<ActivationState> {
   });
 }
 
+/** CANCEL a pending request. Never touches a verified one — that is an entitlement now. */
 export async function cancel(): Promise<ActivationState> {
   const state = await readState();
   const claim = await getClaimSecret();
@@ -149,12 +195,14 @@ export async function cancel(): Promise<ActivationState> {
   });
 }
 
+/** CHANGE ADDRESS — cancel, then request again. Two steps, so neither is implicit. */
 export async function changeAddress(email: string): Promise<ActivationState> {
   await cancel().catch(() => { /* a cancelled or absent request is fine to replace */ });
   await writeState({ stage: 'address_changed' });
   return request(email);
 }
 
+/** Whether this install currently holds a usable entitlement token. */
 export async function isEntitled(): Promise<boolean> {
   return (await getEntitlementToken()) !== null;
 }

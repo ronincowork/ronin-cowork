@@ -12,18 +12,15 @@ needed.
 2. Build each candidate from the current working-line tip plus the team-line tip.
 3. Write a promotion receipt before moving a reference.
 4. Advance each working line with compare-and-swap and refresh its mounted worktree.
-5. Return the `restarting` receipt id to an HTTP caller.
-6. Restart the live app and run deployment health checks unless `--no-restart` was used.
-   The returning operator resumes a fresh `restarting` receipt, records health, and closes
-   it as `complete`, `reverted`, or `unhealthy`.
+5. Restart the live app and run deployment health checks unless `--no-restart` was used.
 
 `--dry-run` builds the candidates and moves nothing. A line already contained in its
 working target needs no candidate.
 
 ## Recovery
 
-- `resume <id>` rebuilds interrupted candidates from current tips. For a `restarting`
-  receipt it runs restart and health, then records `complete`, `reverted`, or `unhealthy`.
+- `resume <id>` rebuilds unfinished candidates from current tips and completes the
+  interrupted change set.
 - `abandon <id> <reason>` closes an interrupted attempt without undoing references that
   already moved.
 - `revert <id>|last` builds and lands revert candidates, then restarts and checks health.

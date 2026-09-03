@@ -144,5 +144,5 @@ Listed so nobody re-derives one by accident and so re-adding it is a decision:
 ## Where the reasoning lives
 
 The build-out plan, in the lab repo's wip directory — including everything cut from v1 and
-why. `ronin_catalogs/lexicons/professional_en.md` § MIKA for the vocabulary, and R31 for the ruling that separated her
+why. `KOTOBA.md` § MIKA for the vocabulary, and R31 for the ruling that separated her
 from KOSHI.

@@ -104,48 +104,6 @@ test('happy path: candidate = dev + line, CAS advance, mounted dev refreshed', a
   assert.equal(again.receipt, null, 'nothing to promote writes no receipt');
 });
 
-test('HTTP promotion replies with the restarting receipt before post-restart health completes it', async () => {
-  const cw = await fixture('http-restart', 1);
-  let handedOff = '';
-  let restarts = 0;
-  let healthChecks = 0;
-  const fx = fakes({
-    restart: async () => { restarts++; return { unit: 'fake', at: new Date().toISOString(), ok: true }; },
-    health: async () => { healthChecks++; return { passed: true, checks: [{ name: 'api/health', status: 'ok' }], at: new Date().toISOString() }; },
-  });
-  const reply = await P.promoteTeam({
-    team: 'http-restart', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fx,
-    deferRestart: async (receipt) => { handedOff = receipt.id; }, ...quiet,
-  });
-  assert.equal(reply.ok, true);
-  assert.equal(reply.receipt?.state, 'restarting');
-  assert.equal(handedOff, reply.receipt?.id);
-  assert.equal(restarts, 0);
-  assert.equal(healthChecks, 0);
-
-  const done = await P.finishPromotionRestart(reply.receipt!, { effects: fx, ledgerDir: LEDGER });
-  assert.equal(done.receipt?.state, 'complete');
-  assert.equal(restarts, 1);
-  assert.equal(healthChecks, 1);
-  assert.equal((await R.readReceipt(handedOff, LEDGER))?.health?.passed, true);
-});
-
-test('resume accepts a restarting receipt and records restart health', async () => {
-  const cw = await fixture('resume-restart', 1);
-  const fx = fakes();
-  const started = await P.promoteTeam({
-    team: 'resume-restart', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fx,
-    deferRestart: async () => undefined, ...quiet,
-  });
-  assert.equal(started.receipt?.state, 'restarting');
-
-  const resumed = await P.resumePromotion({ id: started.receipt!.id, by: 'lead', effects: fx, ...quiet });
-  assert.equal(resumed.ok, true);
-  assert.equal(resumed.receipt?.state, 'complete');
-  assert.equal(resumed.receipt?.restart?.ok, true);
-  assert.equal(resumed.receipt?.health?.passed, true);
-});
-
 test('a conflict is contained in the candidate: refused at prepare, dev and its worktree untouched', async () => {
   const cw = await fixture('cowork', 1);
   // dev gains a commit that collides with hand-in 1.

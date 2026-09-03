@@ -6,10 +6,12 @@ import { sessionKey, sessionDir } from './session-dir.js';
 
 const LEDGER = path.join(storeDir('ledger'), 'spawns.jsonl');
 
+/** Keep the Cowork-birth truth inside the newborn session's own durable tenancy. */
 export async function persistBirthReceipt(session: string, receipt: unknown): Promise<string> {
   return persistBirthReceiptAt(sessionDir(await sessionKey(session)), receipt);
 }
 
+/** Pure-path half for testing and maintenance without a live tmux server. */
 export async function persistBirthReceiptAt(dir: string, receipt: unknown): Promise<string> {
   await mkdir(dir, { recursive: true });
   const target = path.join(dir, 'birth-receipt.json');
@@ -19,6 +21,7 @@ export async function persistBirthReceiptAt(dir: string, receipt: unknown): Prom
   return target;
 }
 
+/** Append-only local launch history. Failure never costs the owner their session. */
 export async function appendLaunchLedger(form: SpawnForm, resolved: Resolved, ok: boolean): Promise<void> {
   try {
     await mkdir(path.dirname(LEDGER), { recursive: true });

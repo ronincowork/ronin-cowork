@@ -1,3 +1,4 @@
+/** The setup task created when managed coordination meets a root with no repository. */
 export function repositoryNeeds(
   set: Record<string, unknown>,
   status: Record<string, unknown>,

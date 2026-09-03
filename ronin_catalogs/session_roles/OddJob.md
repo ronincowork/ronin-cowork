@@ -1,5 +1,4 @@
 # OddJob
-- **kinds:** work, personal, household, social, school
 
 The escape hatch: one stated task that fits no other. A noun compound on purpose — the one
 slot that must not read as a command, because it is the absence of a specific instruction
