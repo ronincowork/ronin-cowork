@@ -182,16 +182,16 @@
   .na-sop:hover { border-color: var(--kaki); }
   .na-sop[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
   .na-sop[aria-pressed='true'] .aa-box { border-color: var(--kaki); background: var(--kaki); }
-  .na-sop b { overflow: hidden; color: var(--fg-strong); font-family: var(--font-mono); font-size: var(--text-2); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+  .na-sop b { overflow: hidden; color: var(--fg-strong); font-family: var(--font-mono); font-size: var(--form-input); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
   .na-sop[aria-pressed='true'] b { color: var(--kaki-lift); }
 
   /* ── tags and the born reading ── */
   .fs-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
-  .fs-tag { border: var(--edge) solid var(--line-2); background: var(--panel); color: var(--muted); padding: 0 var(--space-3); font-family: var(--font-mono); font-size: var(--text-1); white-space: nowrap; }
+  .fs-tag { border: var(--edge) solid var(--line-2); background: var(--panel); color: var(--muted); padding: 0 var(--space-3); font-family: var(--font-mono); font-size: var(--form-note); white-space: nowrap; }
   .fs-tag[data-on='true'] { border-color: var(--kaki); color: var(--kaki); }
-  .fs-tags-empty { color: var(--dim); font-style: normal; font-size: var(--text-2); }
+  .fs-tags-empty { color: var(--dim); font-style: normal; font-size: var(--form-note); }
   .fs-reading { display: grid; grid-template-columns: calc(var(--space-12) * 2.5) minmax(0, 1fr); gap: var(--space-2) var(--space-5); align-items: baseline; margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-6); }
-  .fs-reading dt { color: var(--muted); font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; }
-  .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--text-2); }
+  .fs-reading dt { color: var(--muted); font-size: var(--form-key); letter-spacing: .06em; text-transform: uppercase; }
+  .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--dim); font-style: normal; }
 }
