@@ -157,7 +157,9 @@ export async function finishPromotionRestart(
     return { ok: false, receipt: r, nothing: false, message: `revert landed but health still fails: ${failedNames(health)}` };
   }
   log('→ health failed — reverting through the same door');
-  const rev = await revertPromotion({ receipt: r, by: 'health', mode: options.mode ?? r.proofs[0]?.mode ?? 'full', ledgerDir: ledger, effects: fx, log });
+  // This is already running in the transient continuation. Keep the revert, its restart,
+  // and its health check in this unit so the original receipt closes only after recovery.
+  const rev = await revertPromotion({ receipt: r, by: 'health', mode: options.mode ?? r.proofs[0]?.mode ?? 'full', ledgerDir: ledger, effects: { ...fx }, log });
   if (rev.ok && rev.receipt) {
     r = advanceState(r, 'reverted');
     r.reverted_by = rev.receipt.id;
