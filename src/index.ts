@@ -55,6 +55,8 @@ import { checkTmuxServerCgroup } from './host-guard.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure } from './sockets.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 import { resourceRequestCache } from './resources.js';
+import { compressResponse } from './http-performance.js';
+import { roninIdentity } from './routes/version.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -66,6 +68,7 @@ const isBoxInstance = isEntryPoint
   && process.env.RONIN_TEST_RUNNER !== '1';
 
 const app = express();
+app.use(compressResponse);
 app.use(express.json());
 const cliToken = randomBytes(32).toString('base64url');
 
@@ -143,7 +146,16 @@ app.get('/vendor/xterm.css', (_req, res) => res.sendFile(path.join(NM, '@xterm/x
 app.get('/vendor/xterm.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/xterm/lib/xterm.js')));
 app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/addon-fit/lib/addon-fit.js')));
 
-app.get('/cowork-setup', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
+const assetVersion = roninIdentity().commit.replace(/[^A-Za-z0-9._-]/g, '_');
+const indexHtml = fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion);
+const sendIndex = (_req: express.Request, res: express.Response) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(indexHtml);
+};
+app.get('/', sendIndex);
+app.get('/index.html', sendIndex);
+app.get('/cowork-setup', sendIndex);
+app.use(`/${assetVersion}`, express.static(PUBLIC, { immutable: true, maxAge: '1y', index: false }));
 
 const noCacheClient = (res: express.Response, filePath: string) => {
   if (/\.(?:html|js|css)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache');

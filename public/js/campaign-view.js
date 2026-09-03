@@ -128,8 +128,6 @@ export function createCampaignView() {
       ctx = context; entered = true;
       const typed = teamWorkspaceState(context.state, context.viewState('campaign'), bench.declaration);
       bench.enter({ ...typed, ...context.viewState('campaign') });
-      await Promise.all([loadCampaigns(), readRoots(), readMachineSettings()]);
-      if (!entered) return;
       for (const id of bench.ids) { const type = LEGACY[typed.seats[id]] || typed.seats[id]; if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id); }
       bench.setCount(4);
       for (const [id, type] of Object.entries(DEFAULT_VIEW)) if (bench.isDefault(id) && !bench.locations(type).length) bench.place(type, id);
@@ -138,6 +136,10 @@ export function createCampaignView() {
         ctx?.patchViewState('campaign', { opened: true });
       }
       bench.refreshSelector(); save();
+      const refresh = () => { if (entered) bench.refreshSelector(); };
+      void loadCampaigns().then(refresh);
+      void readRoots().then(refresh);
+      void readMachineSettings().then(refresh);
     },
     leave: () => { entered = false; bench.leave(); },
     destroy: () => { entered = false; bench.leave(); ctx = null; },

@@ -13,6 +13,7 @@
     "visual:ui": "node scripts/visual-ui.mjs",
     "stage": "node scripts/stage.mjs",
     "check:modules": "node scripts/check-modules.mjs",
+    "preloads": "node scripts/generate-modulepreloads.mjs",
     "workbench:ui": "node scripts/workbench-ui.mjs",
     "check:css": "node scripts/check-css.mjs",
     "check:kyokai": "node scripts/check-kyokai.mjs",

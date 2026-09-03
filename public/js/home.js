@@ -46,23 +46,22 @@ export let projectData = null; // /api/project-roots: [{name, dir, read[], provi
 export let launchSpecData = null; // /api/session-launch-specs: [{provider, model, cmd}] — the launch table, in table order
 
 export async function loadProjects() {
-  const [pr, br] = await Promise.all([
-    request('/api/project-roots'),
-    request('/api/session-launch-specs'),
+  const paint = () => tiles.forEach((tile) => tile.renderHome?.());
+  await Promise.allSettled([
+    request('/api/project-roots').then((r) => { if (r.ok && Array.isArray(r.data)) projectData = r.data; paint(); }),
+    request('/api/session-launch-specs').then((r) => { if (r.ok && Array.isArray(r.data)) launchSpecData = r.data; paint(); }),
   ]);
-  if (pr.ok && Array.isArray(pr.data)) projectData = pr.data;
-  if (br.ok && Array.isArray(br.data)) launchSpecData = br.data;
-  tiles.forEach((tile) => tile.renderHome?.());
 }
 
 export let familyData = null; // /api/role-families — the shelves
 export let roleData = null; // /api/session-roles — the buttons
 
 export async function loadPresets() {
-  const [families, roles] = await Promise.all([request('/api/role-families'), request('/api/session-roles')]);
-  if (families.ok && Array.isArray(families.data)) familyData = families.data;
-  if (roles.ok && Array.isArray(roles.data)) roleData = roles.data;
-  tiles.forEach((tile) => tile.renderHome?.());
+  const paint = () => tiles.forEach((tile) => tile.renderHome?.());
+  await Promise.allSettled([
+    request('/api/role-families').then((r) => { if (r.ok && Array.isArray(r.data)) familyData = r.data; paint(); }),
+    request('/api/session-roles').then((r) => { if (r.ok && Array.isArray(r.data)) roleData = r.data; paint(); }),
+  ]);
 }
 
 /**
