@@ -1,24 +1,11 @@
-/**
- * THE GIT FLOOR — every git call the desk machinery makes, sanitized, in one place.
- *
- * Two rules, both learned the hard way elsewhere in this tree: git's location variables
- * override `-C` and are exported to every hook, so they are stripped (`src/tegami.ts`
- * found sessions born under a hook recording the hook's repository); and a ref never
- * moves except by `update-ref` with an expected old value — a compare-and-swap — so a
- * line that moved meanwhile is a reported race, never a silent overwrite.
- *
- * Nothing here decides anything. It runs git and reports.
- */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { envWithoutGitLocation } from '../tegami.js';
 
 const execFileP = promisify(execFile);
 
-/** Machine-authored commits must not depend on a user's or CI runner's global Git config. */
 export const AUTOMATION_IDENTITY = ['-c', 'user.name=Ronin Promote', '-c', 'user.email=promote@ronin.local'] as const;
 
-/** A desk owns its identity. Worktree config prevents one session from relabelling another. */
 export async function stampDeskIdentity(repoDir: string, worktree: string, session: string): Promise<void> {
   await git(repoDir, ['config', 'extensions.worktreeConfig', 'true']);
   await git(worktree, ['config', '--worktree', 'user.name', `Ronin session ${session}`]);
@@ -33,7 +20,6 @@ export class GitError extends Error {
 
 export interface GitResult { stdout: string; stderr: string }
 
-/** Run git in `dir`. Throws GitError on non-zero; the caller decides what that means. */
 export async function git(dir: string, args: string[], opts: { timeout?: number } = {}): Promise<GitResult> {
   try {
     const r = await execFileP('git', ['-C', dir, ...args], {
@@ -50,7 +36,6 @@ export async function git(dir: string, args: string[], opts: { timeout?: number 
 
 export const gitOut = async (dir: string, args: string[]): Promise<string> => (await git(dir, args)).stdout.trim();
 
-/** The SHA a ref resolves to, or '' when it does not exist. */
 export async function revParse(dir: string, ref: string): Promise<string> {
   try {
     return await gitOut(dir, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
@@ -64,7 +49,6 @@ export const branchExists = async (dir: string, branch: string): Promise<boolean
 
 export interface WorktreeRow { path: string; head: string; branch: string; detached: boolean; bare: boolean }
 
-/** `git worktree list --porcelain`, parsed. The only honest answer to "does this branch have a folder". */
 export async function worktreeList(dir: string): Promise<WorktreeRow[]> {
   const out = (await git(dir, ['worktree', 'list', '--porcelain'])).stdout;
   const rows: WorktreeRow[] = [];
@@ -82,27 +66,22 @@ export async function worktreeList(dir: string): Promise<WorktreeRow[]> {
   return rows;
 }
 
-/** The worktree row a branch is checked out in, if any. */
 export async function worktreeOf(dir: string, branch: string): Promise<WorktreeRow | null> {
   return (await worktreeList(dir)).find((w) => w.branch === branch) ?? null;
 }
 
-/** `git worktree add <path> -b <branch> <start>` — a new branch and its folder, together. */
 export async function worktreeAddNew(dir: string, wt: string, branch: string, start: string): Promise<void> {
   await git(dir, ['worktree', 'add', '--no-track', wt, '-b', branch, start]);
 }
 
-/** Mount an existing branch at a folder (re-mounting a parked desk). */
 export async function worktreeAddExisting(dir: string, wt: string, branch: string): Promise<void> {
   await git(dir, ['worktree', 'add', wt, branch]);
 }
 
-/** A detached worktree at a commit — the candidate's shape. */
 export async function worktreeAddDetached(dir: string, wt: string, sha: string): Promise<void> {
   await git(dir, ['worktree', 'add', '--detach', wt, sha]);
 }
 
-/** Unmount a folder. `force` discards local changes — only a caller that has captured them may pass it. */
 export async function worktreeRemove(dir: string, wt: string, force = false): Promise<void> {
   await git(dir, ['worktree', 'remove', ...(force ? ['--force'] : []), wt]);
 }
@@ -113,7 +92,6 @@ export async function setUpstream(dir: string, branch: string, upstream: string)
   await git(dir, ['branch', `--set-upstream-to=${upstream}`, branch]);
 }
 
-/** Unsaved changes in a worktree, as `git status --porcelain` paths (renames report the new name). */
 export async function dirtyFiles(wt: string): Promise<string[]> {
   const out = (await git(wt, ['status', '--porcelain', '--untracked-files=all'])).stdout;
   return out.split('\n').filter(Boolean).map((l) => {
@@ -123,7 +101,6 @@ export async function dirtyFiles(wt: string): Promise<string[]> {
   });
 }
 
-/** Commits on `tip` not on `base`, and the reverse. */
 export async function aheadBehind(dir: string, tip: string, base: string): Promise<{ ahead: number; behind: number }> {
   try {
     const out = await gitOut(dir, ['rev-list', '--left-right', '--count', `${tip}...${base}`]);
@@ -134,7 +111,6 @@ export async function aheadBehind(dir: string, tip: string, base: string): Promi
   }
 }
 
-/** Files that differ between two commits — the overlap check's input. */
 export async function changedFiles(dir: string, from: string, to: string): Promise<string[]> {
   if (!from || !to) return [];
   const out = await gitOut(dir, ['diff', '--name-only', `${from}...${to}`]).catch(() => '');
@@ -143,10 +119,6 @@ export async function changedFiles(dir: string, from: string, to: string): Promi
 
 export interface MergeOutcome { ok: boolean; conflicts: string[] }
 
-/**
- * Merge `ref` into the worktree at `wt`, no editor. On conflict the merge is aborted so
- * the worktree is left exactly as found, and the conflicting files are reported.
- */
 export async function mergeInto(wt: string, ref: string, message?: string): Promise<MergeOutcome> {
   try {
     await git(wt, [...AUTOMATION_IDENTITY, 'merge', '--no-edit', ...(message ? ['-m', message] : []), ref]);
@@ -159,13 +131,6 @@ export async function mergeInto(wt: string, ref: string, message?: string): Prom
   }
 }
 
-/**
- * Bring a mounted line's worktree to its ref. NOT `merge --ff-only`: `update-ref` on a
- * branch that is checked out here has already moved this worktree's HEAD from under it,
- * leaving the old tree in the index (every changed file shows as a staged deletion) and
- * a fast-forward with nothing to do. `reset --hard <ref>` is right in both cases — and is
- * only ever called on a worktree the caller has just verified clean, under the line's lock.
- */
 export async function resetHardTo(wt: string, ref: string): Promise<boolean> {
   try {
     await git(wt, ['reset', '--hard', '--quiet', ref]);
@@ -175,11 +140,6 @@ export async function resetHardTo(wt: string, ref: string): Promise<boolean> {
   }
 }
 
-/**
- * COMPARE-AND-SWAP on a ref: move `refs/heads/<branch>` to `to` only if it is at
- * `expected` right now. Returns false when the line moved meanwhile — the caller
- * re-queues against the new tip. Never force, never overwrite.
- */
 export async function casRef(dir: string, branch: string, to: string, expected: string): Promise<boolean> {
   try {
     await git(dir, ['update-ref', `refs/heads/${branch}`, to, expected]);
@@ -189,12 +149,10 @@ export async function casRef(dir: string, branch: string, to: string, expected: 
   }
 }
 
-/** Delete a branch ref outright — only after its tip is integrated, archived or explicitly discarded. */
 export async function deleteBranch(dir: string, branch: string): Promise<void> {
   await git(dir, ['branch', '-D', branch]);
 }
 
-/** Stage everything and commit; returns the new SHA, or '' when there was nothing to commit. */
 export async function commitAll(wt: string, message: string): Promise<string> {
   await git(wt, ['add', '-A']);
   const staged = await gitOut(wt, ['diff', '--cached', '--name-only']);
@@ -203,7 +161,6 @@ export async function commitAll(wt: string, message: string): Promise<string> {
   return revParse(wt, 'HEAD');
 }
 
-/** Is `ancestor` reachable from `tip`? — "is this tip integrated into the line". */
 export async function isAncestor(dir: string, ancestor: string, tip: string): Promise<boolean> {
   try {
     await git(dir, ['merge-base', '--is-ancestor', ancestor, tip]);

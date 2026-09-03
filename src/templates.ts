@@ -1,19 +1,4 @@
-/**
- * SAVE AS TEMPLATE — the one write the template catalog offers, now per shelf.
- *
- * A save is always NEW: the forms offer "Save as template" over a fresh definition and
- * "Save as new template" over an edited one, and neither writes over the box the owner
- * started from — shipped templates are edited on the campaign page, not here. So a name
- * that already resolves ON ITS SHELF, stock or user's, is refused rather than shadowed:
- * a quiet shadow would be an upgrade-proof copy the owner never asked for. The two
- * shelves are separate namespaces — an agent box and a cast may share a name.
- *
- * The file lands in the OWNER'S catalogs store (`<catalogs store>/templates/<shelf>/`),
- * which is what makes it survive upgrade and uninstall like every catalog of theirs, and
- * it is read back through the ordinary reader before success is reported — a definition
- * that does not read back is a tray that would render without it.
- */
-import { mkdir, rename, writeFile } from 'node:fs/promises';
+import { access, mkdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   listAgentTemplates,
@@ -21,8 +6,11 @@ import {
   templateMandate,
   type AgentTemplateRow,
   type TeamTemplateRow,
-} from './definitions.js';
-import { storeDir } from './stores.js';
+} from './resource-adapters.js';
+import { storeDir } from './resources.js';
+import { STOCK_DIR } from './resources.js';
+
+const STOCK_TEMPLATES = path.join(STOCK_DIR, 'templates');
 
 const isValidToken = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
@@ -34,8 +22,6 @@ const list = (value: unknown): string[] => Array.isArray(value)
   : [];
 const line = (key: string, value: string): string[] => (value ? [`- **${key}:** ${value}`] : []);
 
-/** A mandate arrives as the file's `reach · recruit · output` string OR as the wire
- *  object (`agentPicks()` output); either way the file stores the string form. */
 const mandateText = (value: unknown): string => {
   if (typeof value === 'string') return words(value);
   if (value && typeof value === 'object') {
@@ -66,11 +52,9 @@ export interface AgentTemplateSave extends TemplateBoxSave {
 
 export interface TeamTemplateSave extends TemplateBoxSave {
   objective?: unknown;
-  /** The cast — the ruled wire rows, exactly as `agentPicks()` produces them. */
   agents?: unknown;
 }
 
-/** The shared half: token, collision refusal, and the box lines every shelf carries. */
 async function openSave(
   shelf: 'agents' | 'teams',
   body: TemplateBoxSave,
@@ -167,4 +151,19 @@ export async function saveTeamTemplate(body: TeamTemplateSave): Promise<TeamTemp
   const back = (await listTeamTemplates()).find((row) => row.name === token);
   if (!back) throw new Error(`Refused: "${token}" does not read back after the save.`);
   return back;
+}
+
+export async function removeUserTemplate(shelf: 'agents' | 'teams', name: string): Promise<{ removed: string; shipped_back: boolean }> {
+  const token = words(name, 64).toLowerCase();
+  if (!isValidToken(token)) throw new Error('A template name is lowercase letters, digits, _ and -.');
+  const file = path.join(storeDir('catalogs'), 'templates', shelf, `${token}.md`);
+  try {
+    await unlink(file);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') throw new Error(`"${token}" is not one of yours on the ${shelf} shelf — a shipped box cannot be removed, only shadowed or hidden.`);
+    throw e;
+  }
+  const stock = path.join(STOCK_TEMPLATES, shelf, `${token}.md`);
+  const shippedBack = await access(stock).then(() => true, () => false);
+  return { removed: token, shipped_back: shippedBack };
 }

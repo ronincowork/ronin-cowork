@@ -1,17 +1,3 @@
-/**
- * TEAM ROSTER ROUTES — the durable half of every team.
- *
- * The team is the organizing concept (owner, 2026-08-23): a `team_roster` carries the
- * team's kind, objective, kit and launch defaults, and exists independent of
- * any live session — a League list must show a team with zero members, and a Team View
- * must open on one. The LIVE half (members, leads) is derived per call from the
- * sessions and served by /api/teams* in sessions-api.ts; nothing here ever stores it.
- *
- * Lifecycle, each refusing out loud: create (POST), edit (PUT — metadata as a unit,
- * only the fields in the settled record), dissolve
- * (DELETE — the roster only; the wipeboard is never deleted by a route, owner
- * 2026-08-07, it reverts to a custom board).
- */
 import type express from 'express';
 import {
   createTeamRoster,
@@ -31,17 +17,11 @@ import { assertSameCampaignRoot, campaignFilter, campaignResolver, initialCampai
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
-/**
- * The Campaign a WRITE lands in: the one stated, else the initial one. Every write emits an
- * explicit id — the compatibility fallback is a read-side rule only, so that the day it is
- * removed nothing on disk is still relying on it.
- */
 async function campaignOf(stated: unknown): Promise<string> {
   const asked = typeof stated === 'string' ? stated.trim() : '';
   return asked || (await initialCampaignId());
 }
 
-/** The one shape a write accepts — and the derived facts, refused BY NAME. */
 function editOf(body: unknown): RosterEdit {
   const b = (body ?? {}) as Record<string, unknown>;
   for (const k of ['members', 'sessions', 'team_lead', 'leads', 'leaders']) {
@@ -64,13 +44,8 @@ function editOf(body: unknown): RosterEdit {
   }
   if (b.objective !== undefined) edit.objective = String(b.objective).trim().slice(0, 2000);
   if (b.project_root !== undefined) edit.project_root = String(b.project_root).trim().slice(0, 128);
-  // The repos list rides as an array or a comma-separated string; the store spells it
-  // comma-separated on the file line. Third consumer of "repos, else project_root" —
-  // the promotion CLI and deriveAssignment already keep the promise.
   if (b.repos !== undefined) edit.repos = (Array.isArray(b.repos) ? b.repos : String(b.repos).split(','))
     .map(String).map((v) => v.trim().slice(0, 128)).filter(Boolean);
-  // Per-repository branches for a team working without Worktrees: {repo: branch}. Blank
-  // or absent means whatever is checked out. Never a desk branch — those are Ronin's.
   if (b.branches !== undefined) edit.branches = b.branches && typeof b.branches === 'object' && !Array.isArray(b.branches)
     ? Object.fromEntries(Object.entries(b.branches as Record<string, unknown>)
         .map(([repo, branch]) => [repo.trim().slice(0, 128), String(branch ?? '').trim().slice(0, 128)])
@@ -100,13 +75,9 @@ function editOf(body: unknown): RosterEdit {
 }
 
 export function registerTeams(app: express.Express): void {
-  // THE LEAGUE LIST — every durable team, zero-member teams included, with whether its
-  // board file exists yet (boards materialize on first post, per docs/wipeboards.md).
   app.get('/api/team-rosters', async (req, res) => {
     try {
       const resolve = await campaignResolver();
-      // A machine shows one Campaign. An explicit query is retained for the Campaign
-      // management seam; ordinary Cowork screens name none and receive only the machine's.
       const named = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
       const wanted = named.length ? named : [await machineCampaignId()].filter(Boolean);
       const keep = await campaignFilter(wanted);
@@ -133,28 +104,19 @@ export function registerTeams(app: express.Express): void {
     try {
       const campaign_id = await campaignOf(req.body?.campaign_id);
       const edit = editOf(req.body);
-      // A Cowork may only default to a Project root in its own Campaign.
       await assertSameCampaignRoot(campaign_id, edit.project_root ?? '');
-      // AN AGENT TEMPLATE'S ROUTINES LAND IN THE TEAM IT RAISES (ruled 2026-09-01):
-      // when `team_mode: new` births a box into its own team, the template's
-      // routines_on/off overlay the map this roster STORES at creation — legal per
-      // two-state (the map is written complete here; nothing reaches down later). The
-      // base is the map the body carried, else the Campaign's stored map; an unknown
-      // token is ignored and receipt-named, never a refusal.
       let template;
       const token = String(req.body?.template ?? '').trim();
       if (token) {
-        const { listAgentTemplates } = await import('../definitions.js');
+        const { listAgentTemplates } = await import('../resource-adapters.js');
         const box = (await listAgentTemplates()).find((row) => row.name === token);
         if (!box) template = { source: token, ignored: 'not an agent template on this box' };
         else {
           if (edit.routines === undefined) {
-            const { readCampaign } = await import('../campaign-config.js');
+            const { readCampaign } = await import('../campaigns.js');
             const stored = (await readCampaign(campaign_id))?.config?.agent_defaults as
               { routines?: Record<string, boolean> } | undefined;
-            // No campaign record yet (pre-Atarashi box): the base is the catalog's
-            // stock rung, exactly what the backfill would seed — never an all-off map.
-            const { listRoutines } = await import('../definitions.js');
+            const { listRoutines } = await import('../resource-adapters.js');
             edit.routines = stored?.routines
               ? { ...stored.routines }
               : Object.fromEntries((await listRoutines()).map((row) => [row.name, row.bundles.includes('base')]));
@@ -204,17 +166,6 @@ export function registerTeams(app: express.Express): void {
     }
   });
 
-  /**
-   * THE TEAM DOOR — `PUT /api/team { name, …fields?, session_names?: string[] }` (owner,
-   * 2026-08-26): one upsert. A name with no roster CREATES one from whatever fields are
-   * present; a name with a roster UPDATES only the fields present and leaves the rest.
-   * `session_names` tags those LIVE sessions onto the team — additive, never removing
-   * anyone; a name that is not live is reported back by name, and the rest still go
-   * through. Membership stays derived from tags (the roster stores none of it — `editOf`
-   * still refuses `members` by name); this door only gives the roster call a way to do
-   * the tagging in the same breath. The rare door: most sessions are born onto a team by
-   * `/api/session`, and only a team's creation or a change to its facts comes here.
-   */
   app.put('/api/team', async (req, res) => {
     const name = String(req.body?.name ?? '').trim();
     if (!isCreatableTeamName(name)) {

@@ -24,8 +24,8 @@ block in your brief and the `repos[]` on your letter.
 | Word | Means | Is not |
 |---|---|---|
 | **commit** | a checkpoint on your desk's private branch. Ordinary `git commit`. Nothing propagates | a publication |
-| **hand-in** | you hand your committed range to your team's line (`team/<team>/dev`). Mechanical admission: merge, conflict check, near-instant invariants | `git push`; a full BYOIN |
-| **team promotion** | the lead admits the team's line to `dev`. The one full repository BYOIN runs there; `dev` is live and restarts | yours to run |
+| **hand-in** | you hand your committed range to your team's line (`team/<team>/dev`). Mechanical admission merges and detects conflicts | `git push`; repository verification |
+| **team promotion** | the lead admits the team's line to `dev`; `dev` is live and restarts | yours to run |
 | **git push** | Git's word only: remote publication. Desk branches have no remote and are never pushed | how work reaches the team |
 
 Never say bare *push* about your own work. **Commit preserves. Hand-in publishes.** Commit
@@ -48,8 +48,7 @@ gate or a test run.
   close: `tejun-desk hand-in` (one desk) or `tejun-desk hand-in --assignment` (every desk).
   A conflict is contained in a candidate worktree, the line is untouched, and you are told
   the two sides; the lead adjudicates.
-- **Never run a full BYOIN at commit or hand-in.** Team promotion runs it, once, and the
-  release path runs it again at `dev → master`.
+- **Verify when evidence is needed.** `npm run verify` typechecks and runs behavior tests.
 - **Never `git push`.** Nothing of yours has a remote.
 - **Adopt what your siblings handed in.** When the team line moves you are told. A clean
   desk is brought current at once; a dirty desk gets a **pending** update, taken at your

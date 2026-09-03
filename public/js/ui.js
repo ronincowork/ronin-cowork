@@ -1,27 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * UI PRIMITIVES — the shared behaviours every surface used to hand-roll.
- *
- * Extracted from what already worked, not invented: the note sheet, the tag sheet and
- * the session switcher each carried their own backdrop, their own Escape listener and
- * their own idea of focus (mostly: none); seven panes each had a say()/msg() spelling
- * of the same async status line. The behaviours that must be IDENTICAL live here once:
- *
- *   sheet()   a modal card over a dimmed backdrop — dialog semantics, focus entry,
- *             Tab containment, Escape/backdrop dismissal, focus restoration
- *   toast()   the one transient outcome chip (grew out of the pad's; now house-wide)
- *   attention() a central kiiro cue for owner action that is waiting elsewhere
- *   field()   a control with a REAL accessible name — display:contents, so it adds
- *             semantics to an existing layout without changing a pixel of it
- *   status()  the async outcome line — loading…/saved/not saved-and-why, announced
- *   button()  a semantically-complete <button> in one call
- *   tabs()    tablist semantics + roving tabindex + arrow keys over an existing strip
- *
- * Primitives know no Ronin vocabulary: nothing in this file may name a session, a
- * board or a feature, and nothing here fetches. The full contract each primitive
- * keeps (states, keyboard, focus) is written down in docs/ui.md.
- */
-
 let uid = 0; // unique ids for label/control/tab wiring — four tiles build four of everything
 
 /** Everything a Tab press can land on inside a card. */
@@ -56,29 +33,6 @@ export function sheet(spec) {
 
   const isOpen = () => el.classList.contains('open');
 
-  /**
-   * Put the keyboard back where it came from — AND CHECK THAT IT LANDED.
-   *
-   * The check is the whole point. `.focus()` is a silent no-op on an element that cannot
-   * take focus, and "can it take focus" is not the question `isConnected` answers: a node
-   * inside a `display: none` parent is `isConnected === true` and unfocusable. So the old
-   * guard passed, the call did nothing, focus stayed on `<body>`, and the sheet reported
-   * success. Measured 2026-08-18 on メ's tile-header drop (`tilemore.js`): the strip used
-   * to shut itself the moment a control in it raised a panel, so by the time 📝's sheet
-   * was dismissed its opener was hidden inside a closed drop. That call site was fixed too
-   * — a control raising a MODAL sheet now leaves the drop up, because a full-viewport
-   * scrim cannot be covered by the strip underneath it — but the trap was never theirs
-   * alone: ANY consumer that hides its opener while its sheet is up walks into this, and a
-   * primitive that silently fails to restore focus is a bug wherever it happens.
-   *
-   * The fallback is deliberately NOT a guess at a control. This file knows no Ronin
-   * vocabulary (see the header) and cannot know which button "means" the one that went
-   * away. It guesses a PLACE instead: the nearest ancestor of the opener still rendered,
-   * made focusable with `tabindex=-1` — out of the Tab order, reachable by script. That
-   * leaves the next Tab continuing from where the opener SAT rather than restarting the
-   * page, which is the exact damage this paragraph has existed to prevent since it was
-   * first written. `<body>` is never a destination: landing there is the failure.
-   */
   const restore = () => {
     if (opener?.isConnected) {
       opener.focus();
@@ -98,11 +52,9 @@ export function sheet(spec) {
   const close = () => {
     if (!isOpen()) return;
     el.classList.remove('open');
-    // Focus restoration is the half every hand-rolled sheet forgot: closing used to
     // drop keyboard focus on <body>, and the next Tab started the page over. The guard
     // is only about not YANKING focus off something the owner deliberately moved to
     // while the sheet was up; where it goes when it IS ours to give back is `restore`'s
-    // business, and that verifies rather than hopes (2026-08-18).
     if (el.contains(document.activeElement)) restore();
     opener = null;
     spec.onClose?.();
@@ -126,7 +78,6 @@ export function sheet(spec) {
     // on the mousedown this pointer event compatibility-fires, after this handler, and it
     // moves focus to the nearest focusable ancestor of whatever was pressed. The scrim is
     // a bare <div>, so that is `<body>` — arriving just after close() handed focus back to
-    // the opener, and silently undoing it. Measured 2026-08-18 across every sheet on the
     // page: Escape returned the opener correctly while a backdrop click returned BODY
     // EVERYWHERE, ⚙ System and the session switcher included. Nobody had suspected those
     // two; the drop bug is what made anyone look. Cancelling the pointer's default
@@ -177,12 +128,6 @@ let toastTimer = null;
 let attentionEl = null;
 let attentionTimer = null;
 
-/**
- * One transient chip, bottom-center: the result of an action that has no panel of its
- * own to say it in. Grew out of the pad's toast (macros must SHOW their result, not
- * just perform); tile-scoped errors that used to be `alert()` land here too, because
- * a browser alert steals the keyboard from a live terminal.
- */
 export function toast(msg, ok = true) {
   if (!toastEl) {
     toastEl = document.createElement('div');
@@ -213,20 +158,6 @@ export function attention(msg) {
   attentionTimer = setTimeout(() => attentionEl.classList.remove('show'), 5000);
 }
 
-/* ---------- the button-anchored menu: GONE, and what it was for ----------
- *
- * `popover()` lived here — aria-expanded on the opener, outside click, Escape, focus
- * back on the button. It had exactly ONE consumer, the き Commons menu, and on
- * 2026-08-17 the owner ruled that menu out: ⛩ Commons now goes straight to ⌂ Roster
- * and drops nothing. A primitive with no consumer is a corpse (check-dead flags a dead
- * export), and parked code is not kept alive by an exemption — the tape is in git.
- *
- * THE RULES IT HELD ARE NOT REPEALED, only unused here. The job menu (`widgets.js`)
- * and the touch drops (`tiledrop.js`) still carry the same dismissal grammar in their
- * own code, and the day a bar control drops a menu again, that grammar comes back to
- * this file rather than being hand-rolled at the call site for the fourth time.
- */
-
 /* ---------- the labelled control ---------- */
 
 /**
@@ -246,7 +177,6 @@ export function field(control, spec) {
   const lab = document.createElement('label');
   lab.textContent = spec.label;
   if (spec.sr !== false) lab.className = 'ui-sr';
-  // The counter is taken UNCONDITIONALLY: a control that brought its own id used to
   // skip the ++, so the NEXT line reused the previous field's number and two message
   // elements shared an id — latent until the first pre-named consumer arrived.
   const n = ++uid;

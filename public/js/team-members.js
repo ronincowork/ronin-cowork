@@ -11,7 +11,6 @@ const el = (tag, cls, text) => { const node = document.createElement(tag); if (c
 export const agentTitle = (session) => session.title || String(session.name || '').split(/[_-]+/).filter(Boolean)
   .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 
-// WHAT THE CONFIGURATION PANEL DRAWS, AS ONE COMPARABLE STRING (owner, 2026-09-01:
 // "flashing the team configuration on and off"). Every five-second row read and every
 // refreshTeams() publish land in the panel renderers; redrawing unconditionally flashed
 // the form's loading line, refetched three catalogs, and wiped a half-typed edit. The

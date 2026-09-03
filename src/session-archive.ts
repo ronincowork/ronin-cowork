@@ -2,14 +2,13 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import type { Control } from './tmux.js';
 import { AGENTS, agentSpec } from './agents.js';
 
 export const ARCHIVE_DIR = storeDir('archived_sessions');
 export type ResumableProvider = string;
 
-/** Durable archive data. It deliberately contains no prompt, transcript, or raw argv. */
 export interface ArchivedSession {
   version: 1;
   id: string;
@@ -40,8 +39,6 @@ export async function writeArchive(value: ArchivedSession): Promise<void> {
   const tmp = `${target}.${process.pid}.${randomUUID()}.tmp`;
   try {
     await fs.writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
-    // link is the no-clobber publication primitive rename is not: an existing archive
-    // is a collision, never a manifest that may be silently replaced.
     await fs.link(tmp, target);
   } finally {
     await fs.unlink(tmp).catch(() => {});

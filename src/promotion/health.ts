@@ -2,27 +2,14 @@ import { execFile } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { tailnetIp } from '../config.js';
+import { tailnetIp } from '../machine-settings.js';
 import { envWithoutGitLocation } from '../tegami.js';
 import type { GateResult, HealthResult } from './receipts.js';
 
 const execFileP = promisify(execFile);
 
-/**
- * DEV IS LIVE (ruled 2026-08-28) — a successful team promotion ends by restarting the
- * service from the `dev` worktree and running the deployment health checks. BYOIN proved
- * the repo; this proves the different fact that the accepted `dev` actually came back up.
- * It is the one place the design accepts a visible failure, and the answer to it is
- * `team revert` (promote.ts), run automatically when these checks fail.
- *
- * Health is: the server answers `/api/health`; the page renders (the same smoke-ui gate
- * `libexec/ronin-gate` runs after every unit start); the readouts are sane. A machine
- * with no headless browser gets a SKIP for the render check, never a pass.
- */
-
 export interface RestartResult { unit: string; at: string; ok: boolean; detail?: string }
 
-/** The user unit, or the pre-2026-08-19 name on a box that has not migrated. */
 export async function serviceUnit(): Promise<string> {
   try {
     await execFileP('systemctl', ['--user', 'cat', 'ronin.service'], { timeout: 5_000 });
@@ -44,11 +31,8 @@ export async function restartService(): Promise<RestartResult> {
 }
 
 export interface HealthOptions {
-  /** The app's URL; defaults to the restarted operator's BIND/PORT/tailnet resolution. */
   url?: string;
-  /** How long to wait for `/api/health` to answer at all. */
   waitMs?: number;
-  /** The checkout whose `scripts/smoke-ui.mjs` drives the render check. */
   dir: string;
 }
 
@@ -58,7 +42,6 @@ export function defaultUrl(): string {
   return process.env.RONIN_GATE_URL ?? `http://${host}:${port}/`;
 }
 
-/** Poll until the server answers, up to `waitMs`. */
 async function waitForHealth(url: string, waitMs: number): Promise<GateResult> {
   const deadline = Date.now() + waitMs;
   let last = '';
@@ -81,7 +64,6 @@ async function waitForHealth(url: string, waitMs: number): Promise<GateResult> {
   return { name: 'api/health', status: 'FAIL', detail: `never answered within ${Math.round(waitMs / 1000)}s — last: ${last}` };
 }
 
-/** The render check, exit-code contract as BYOIN reads it: 0 pass, 2 no browser, else broken. */
 async function renderCheck(dir: string, url: string): Promise<GateResult> {
   const script = path.join(dir, 'scripts', 'smoke-ui.mjs');
   if (!(await access(script).then(() => true, () => false))) {
@@ -98,7 +80,6 @@ async function renderCheck(dir: string, url: string): Promise<GateResult> {
   }
 }
 
-/** The deployment health checks, as one result. A SKIP does not fail; a FAIL does. */
 export async function healthCheck(opts: HealthOptions): Promise<HealthResult> {
   const url = opts.url ?? defaultUrl();
   const checks: GateResult[] = [];
@@ -108,12 +89,6 @@ export async function healthCheck(opts: HealthOptions): Promise<HealthResult> {
   return { passed: checks.every((c) => c.status !== 'FAIL'), checks, at: new Date().toISOString() };
 }
 
-/**
- * Tell the lead. The team's wipeboard interrupts the lead by default and nobody else —
- * exactly the audience for "your promotion failed health and was reverted". Best effort:
- * a missing tool is reported in the return, never thrown, because the receipt is already
- * written and the notice is the last thing, not the important thing.
- */
 export async function notifyTeam(repoDir: string, team: string, text: string): Promise<string> {
   const tool = path.join(repoDir, 'ronin_bin', 'tejun-wipeboard');
   try {

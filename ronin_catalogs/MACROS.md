@@ -40,8 +40,7 @@ you or the owner wants the check-ins.
 drop of every tile header. **No marking = not on the drop — the default**, and that is the
 whole of it: the drop is a TEACHING surface rather than an index, four big buttons a person
 who has never heard of a macro can read and go *"oh, I see, it does something I didn't know
-this could do"* (owner, 2026-08-17 — *"If we have too many, people just don't get
-educated"*). Opt-in, not opt-out, because this file holds a dozen entries and the drop holds
+this could do"*. Opt-in, not opt-out, because this file holds a dozen entries and the drop holds
 about four: under opt-out every macro added later would appear on the button until somebody
 noticed it there.
 **DISPLAY ONLY — an unpreviewed macro still runs**, typed by hand, bound to a keypad key, or
@@ -50,16 +49,13 @@ answers "is this on the button", not "does this exist".
 The card is drawn from the entry's `label:` and `blurb:` — which every entry carries, previewed
 or not, for the reason below.
 
-**TWO AUDIENCES, AND NEITHER STANDS IN FOR THE OTHER** (owner, 2026-08-17 — *"we need to
-split out the description and the agent instruction into two different things because they
-don't overlap, and the macro should carry both"*). Every entry here is read by two readers
+**TWO AUDIENCES, AND NEITHER STANDS IN FOR THE OTHER**. Every entry here is read by two readers
 who need opposite things, so it carries two separate pieces of writing:
 
 - **The prose under the heading is the AGENT'S INSTRUCTION** — what you read in order to RUN
   the macro. It opens with the rule the agent must not break (`forkit` starts *"Owner-invoked
   only — never fork on your own initiative"*), it names actions and params, and it assumes the
   house vocabulary. Served as `instruction` on `/api/macros`; the field was called
-  `description` until 2026-08-17, and that name is what invited a human surface to render it.
 - **`label:` and `blurb:` are what a PERSON reads** to decide whether they want the macro.
   Previewed macros use their executable `+name:` spelling as the concise button headline;
   the always-visible blurb explains what it does for somebody who has never heard of it. No
@@ -70,7 +66,6 @@ who need opposite things, so it carries two separate pieces of writing:
 **Both are required on every entry** — `check:catalogs` fails a stock entry missing either —
 and **no human surface may fall back to the instruction.** Showing *"Owner-invoked only —
 never fork on your own initiative"* to a person who tapped a button to find out what it does
-teaches them nothing; that fallback existed until 2026-08-17 and it was the exact overlap the
 owner is splitting. Every macro carries the pair even though the drop shows four, because the
 next surface is a library people browse to adopt macros from, and copy written for four
 entries would have to be written again for all of them.
@@ -139,7 +134,6 @@ is this session working on" and one that answers "what did it remember to mentio
 **Owner-invoked only — never fork on your own initiative.** If a fork seems right,
 PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead.
 Unannounced sessions are untrackable for the human until the UI reveals them. Spin the current conversation's active topic out into its own agent
-session, so the origin session stays on its track. (The breakout pattern, first performed manually 2026-08-05.)
 
 `name` is required, matching the settled launch contract. Every other launch input is
 optional. `tejun-fork` accepts instructions plus optional `team`, repeatable `behaviour`,
@@ -160,7 +154,7 @@ There is no launch-role axis and no mandatory behaviour decision. Do not invent 
 do not stop to ask for one. Pass `--behaviour ways:<book>` only when the owner supplied it
 or the work itself needs that book's reading.
 
-**THREE WAYS TO ASK, AND SAYING NOTHING IS THE FIRST ONE** (owner, 2026-08-29). Say
+**THREE WAYS TO ASK, AND SAYING NOTHING IS THE FIRST ONE**. Say
 only as much as the owner actually said, and let the rest load lazily:
 
 | The owner said | You pass | What is born on |
@@ -359,7 +353,7 @@ after that; send the owner's words unless he asks you to put it your own way).
 | # | Action | With |
 |---|---|---|
 | 1 | control-check | needs `write` **on the target, not on you**. Dialed `user` or `read`: report the lock and ask the owner to flip THAT tile's dial to 🤖, then wait — NEVER flip it yourself |
-| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial and either delivers safely or retains the message in the durable queue. Do not hand-roll pane writes. If this sender already has an unresolved tell queued for that target, it refuses the new wording and names the visible message IDs |
+| 2 | send-to-session | `tejun-send <session> <message>` — one call. It either delivers safely or retains the message in the durable queue. Do not hand-roll pane writes. Existing unresolved wording is reported and the new message proceeds. |
 | 3 | report-outcome | the tool's verdict as it gave it, and what you actually said |
 
 **Say who it is from.** `tejun-send` puts no watermark on the message, so what lands at the

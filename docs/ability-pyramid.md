@@ -47,8 +47,7 @@ only that per-session README (`docs/session-boot.md`):
 
 | File | Static / generated | What it is |
 |---|---|---|
-| `KOTOBA_GLOSSARY.md` | static | the vocabulary — the same words meaning the same things |
-| `SHELVES.md` | generated rosters (ruled 2026-08-20; the current file is the static seed) | the map — which shelf answers which question, and what is on each. Prose is authored; the per-shelf rosters fill at birth from the resolved shelves, store included |
+| `ronin_catalogs/lexicons/professional_en.md` | static | the vocabulary — the same words meaning the same things |
 | `SESSION_MACROS.md` | generated at each birth | the live `+macro:` roster from the resolved catalog, and the compile-first routing rule |
 
 Generated content exists because a checked-in list describes stock, not this machine, the
@@ -67,7 +66,7 @@ Launch facts select the levels:
 | `root/<project_root>/` | the root picked at launch | the owner only — stock cannot know a machine's directories |
 | `routine/<routine>/FILE.md` | each effective Routine manifest at birth | stock and owner Routine readings, selected explicitly by the catalog |
 
-The toggle governs both halves of a connection (owner's ruling, 2026-08-17): launched
+The toggle governs both halves of a connection: launched
 off, a session gets neither a service's tools nor a word about them. These levels add up
 rather than override: root, connection and effective Routines are fixed
 at birth and compiled into one README. Work-specific reading is selected separately

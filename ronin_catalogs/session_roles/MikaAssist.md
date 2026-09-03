@@ -18,7 +18,7 @@ she exists, so the NEXT session is the one refused. Nothing is evicted to make r
 
 There is only ever one of her, and she is the one seat a session never migrates into or
 out of — which is a fact about HER, not about the axis: she is a task like every other
-former session_job, sitting on the `assistant` shelf (owner, 2026-08-22).
+former session_job, sitting on the `assistant` shelf.
 
 - **icon:** ミ
 - **label:** Mika Assist

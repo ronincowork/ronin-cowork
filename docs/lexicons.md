@@ -3,7 +3,6 @@
 A **lexicon** is keys to strings: what a surface says where it would otherwise say the
 stock English. Mechanically it is a language — a wording (*Home* says *occasion* for a
 campaign) and a translation (*Français*) are the same kind of file, and that is the point
-(KOTOBA `lexicon`, ruled with R38 on 2026-08-27). A **desk profile** names one the way it
 names a skin (`docs/desk-profiles.md`).
 
 `Cowork` is the owner-facing lexicon word for the canonical `team` / `team_roster`
@@ -20,12 +19,11 @@ words, to prove the chain), `league_en` (the gamer's words, goofy on purpose), `
 and `terminal_en` (near-empty on purpose — the words grow as the surfaces settle, one file
 at a time, with no code).
 
-Three kinds of key in one table (the third joined 2026-08-27, owner's ruling): a bare word is a surface string (`campaign`, `go`); a
 prefixed key names a catalog entry's label by its token (`kind.household`,
 `role.DraftPlan`, `behaviour.<t>`); a `glossary.*` key is a word an agent
-says to a person for a house term — no surface reads it; the boot shelf renders
-`KOTOBA_GLOSSARY.md` from it at session birth (`docs/kokugo.md` § 8). A key may carry dots — the catalog
-grammar widened for it (`src/catalog.ts`, `isKeyLine`).
+says to a person for a house term. The boot shelf reads
+`ronin_catalogs/lexicons/professional_en.md` directly at session birth. A key may carry
+dots; `isKeyLine` in `src/resources.ts` accepts them.
 
 ## The chain, one rule
 
@@ -33,7 +31,7 @@ grammar widened for it (`src/catalog.ts`, `isKeyLine`).
 active lexicon  →  its base:  →  the definition's own label: / the literal in the view
 ```
 
-`src/lexicons.ts` resolves a lexicon **flat** on the server (`GET /api/lexicons/:name`):
+`src/lexicon-catalog.ts` resolves a lexicon **flat** on the server (`GET /api/lexicons/:name`):
 the file's words over its base's, to the floor, with a cycle guard. The client
 (`public/js/lexicon.js`) holds one flat object and answers `t(key, literal)` — the word,
 or the literal the view wrote. So a missing key can never blank a label, and a missing
@@ -49,7 +47,6 @@ another shipped lexicon spells a bare key the floor lacks (nothing to fall throu
 it **reports** floor keys no view reads yet. A view adds its keys to `professional_en` in
 the same commit.
 
-## Every view reads through `t()` since 2026-08-27
 
 The KOKUGO sweep put every user-facing string in `public/js` and `public/index.html`
 through `t('room.key', 'literal')`, one module per commit, no behaviour change: with no

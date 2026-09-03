@@ -18,7 +18,7 @@
 **THE TASK FAMILY — the set of session_roles presented under this role.** Surface word
 **Family**; `session_roles` in every internal name, because a bare `family` is already the
 settei registry's write family and Node's own address family, which is exactly the
-collision KOTOBA's spelling law exists to prevent (owner, 2026-08-22).
+collision KOTOBA's spelling law exists to prevent.
 
 `- **session_roles:** A, B, C` is the whole link, and the role owns it — a task never names
 a role. **Family is ASSOCIATION, not exclusive ownership**: a task may appear in several

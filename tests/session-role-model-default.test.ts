@@ -44,7 +44,7 @@ await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 /** The one setting that decides what a new Agent launches as. */
 async function sessionDefault(provider: string, model: string): Promise<void> {
   await fs.writeFile(
-    path.join(temp, 'config', 'ronin.json'),
+    path.join(temp, 'config', 'machine_settings.json'),
     JSON.stringify({ agents: { sessions: { default: { provider, model } } } }),
   );
 }
@@ -98,7 +98,7 @@ test('every stock session_role resolves to the same command — the role never d
   // The general form of the ruling. If any shipped definition regrows a `model:` that the
   // resolver honours, exactly one of these rows will differ from the rest.
   await sessionDefault('openai', 'gpt-5.6-terra');
-  const { readDefinitions } = await import('../src/definitions.js');
+  const { readDefinitions } = await import('../src/resource-adapters.js');
   const roles = await readDefinitions('session_roles');
   const agentRoles = roles.filter((d) => !/^none$/i.test(d.get('agent')));
   assert.ok(agentRoles.length >= 5, 'the stock shelf is populated, so this proves something');

@@ -33,7 +33,7 @@ cannot be asked a follow-up question and a person can.
 ## The three answers, cheapest first
 
 ```bash
-bin/ronin-byoin                 # every check, then one verdict
+npm run byoin                   # check current user-store customization
 ```
 
 A **SKIP is neither failure nor proof** — read the line and say what was not checked. A
@@ -41,7 +41,7 @@ missing headless browser is the ordinary state of a fresh box, not a fault; neve
 contributor-only host tools to make a first install look green.
 
 ```
-GET /api/settei     set · observed · status
+GET /api/machine-settings     set · observed · status
 ```
 
 `set` is what the owner answered. `observed` is what the box measured. **`status` is where

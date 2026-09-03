@@ -1,30 +1,54 @@
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 import type { ChangeSetReceipt, ChangeSetRepo, ChangeSetState } from '../desks/schema.js';
 
-/**
- * PROMOTION RECEIPTS — the durable record of every attempt to move a repository's `dev`.
- *
- * A team promotion is the one boundary where the full repository BYOIN runs (docs/worktrees.md,
- * "Team push — the one full BYOIN"). Git cannot advance refs in two repositories at once,
- * so the receipt is what makes an interrupted coordinated promotion VISIBLE and FINISHABLE
- * rather than silently half-landed: for every repo it carries the expected old ref, the
- * candidate ref, and which advances actually happened. It is both recovery state and
- * failure attribution, and it lives in a store — never in a replaceable install file.
- *
- * ONE FILE PER RECEIPT, written temp+rename, so a reader sees a whole receipt or none.
- * The id is the filename. Nothing here is ever rewritten to look better after the fact:
- * a receipt moves forward through its states and the states it went through stay in it.
- *
- * This module owns the SHAPE and the LEDGER only. Building candidates, running BYOIN and
- * moving refs is `promote.ts`; hand-in receipts (the desk → team line record) are Fable 1's
- * and are referenced here by id, never redefined.
- */
-
 export const PROMOTION_LEDGER_DIR = (): string => storeDir('promotion_ledger');
+const LOCK_NAME = '.box-promotion-lock';
+export const PROMOTION_IN_FLIGHT_MS = 20 * 60_000;
 
-/** Where a promotion is in its life. Only these transitions happen (see `advanceState`). */
+export interface PromotionLock { id: string; team: string; at: string }
+
+export async function acquirePromotionLock(lock: PromotionLock, dir = PROMOTION_LEDGER_DIR(), log: (line: string) => void = () => undefined, staleMs = PROMOTION_IN_FLIGHT_MS): Promise<void> {
+  await mkdir(dir, { recursive: true });
+  const file = path.join(dir, LOCK_NAME);
+  let announced = '';
+  for (;;) {
+    try {
+      const handle = await open(file, 'wx');
+      await handle.writeFile(JSON.stringify(lock) + '\n');
+      await handle.close();
+      return;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+    }
+    let held: PromotionLock | null = null;
+    try { held = JSON.parse(await readFile(file, 'utf8')) as PromotionLock; } catch { /* retried below */ }
+    if (held?.id === lock.id) return;
+    const age = held ? Date.now() - Date.parse(held.at) : staleMs + 1;
+    if (!held || !Number.isFinite(age) || age > staleMs) {
+      log(`reclaiming stale promotion lock${held ? `: ${held.team}'s ${held.id} exceeded the in-flight window` : ': unreadable owner'}`);
+      await unlink(file).catch(() => undefined);
+      continue;
+    }
+    const receipt = await readReceipt(held.id, dir);
+    const state = receipt?.state ?? 'preparing';
+    const notice = `waiting: ${held.team}'s ${held.id} is ${state}`;
+    if (notice !== announced) { log(notice); announced = notice; }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
+export async function releasePromotionLock(id: string, dir = PROMOTION_LEDGER_DIR()): Promise<void> {
+  const file = path.join(dir, LOCK_NAME);
+  try {
+    const held = JSON.parse(await readFile(file, 'utf8')) as PromotionLock;
+    if (held.id === id) await unlink(file);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+  }
+}
+
 export type PromotionState =
   | 'preparing'   // candidates being built; nothing proved, nothing moved
   | 'proving'     // full BYOIN + compatibility running on the candidates
@@ -37,25 +61,13 @@ export type PromotionState =
   | 'unhealthy'   // every ref moved, the app restarted, health failed and no revert landed — the lead is told
   | 'abandoned';  // an interrupted receipt the lead explicitly gave up on
 
-/**
- * One repository's part of a change set. Extends Fable 1's `ChangeSetRepo` (the shape the
- * roster and CI read) with what the executor needs to rebuild it: where the repo is, which
- * line and target, the line tip, and the files — attribution's raw material.
- */
 export interface RepoCandidate extends ChangeSetRepo {
-  /** The repository's home checkout — where `dev` is mounted and the app runs from. */
   dir: string;
-  /** The line being promoted, e.g. `team/comp/dev`. */
   line: string;
-  /** The target ref, e.g. `dev`. */
   target: string;
-  /** The team line's tip that went into the candidate. */
   line_tip: string;
-  /** Files touched between `expected_old` and `candidate`. */
   files: string[];
-  /** The sessions whose hand-ins this candidate carries — from the desks ledger; empty when derived from git. */
   sessions: string[];
-  /** Why this repo carries no candidate — a conflict, a dirty funnel worktree — or absent. */
   refused?: string;
   conflict_files?: string[];
 }
@@ -68,14 +80,12 @@ export interface GateResult {
   detail?: string;
 }
 
-/** One repository's BYOIN verdict on its exact candidate. */
 export interface RepoProof {
   repo: string;
   candidate: string;
   mode: 'full' | 'gates' | 'ui';
   passed: boolean;
   gates: GateResult[];
-  /** The tool's own last verdict line, verbatim. */
   verdict: string;
 }
 
@@ -93,7 +103,6 @@ export interface RefAdvance {
   to: string;
   status: AdvanceStatus;
   at?: string;
-  /** For `raced`: what the ref actually held when the swap was attempted. */
   found?: string;
 }
 
@@ -106,9 +115,7 @@ export interface HealthResult {
 export interface PromotionFailure {
   stage: PromotionState;
   message: string;
-  /** Gates that failed, by name, when the stage was `proving`. */
   gates?: string[];
-  /** Attribution: which files changed and which hand-ins carried them. */
   files?: string[];
   hand_in_receipts?: string[];
   sessions?: string[];
@@ -118,12 +125,10 @@ export interface PromotionReceipt {
   id: string;
   kind: 'team_promotion' | 'team_revert';
   team: string;
-  /** Fable 1's `ChangeSetReceipt.at` — the moment the receipt was opened. */
   at: string;
   created_at: string;
   updated_at: string;
   state: PromotionState;
-  /** Every state this receipt has been in, in order — the receipt never forgets. */
   history: { state: PromotionState; at: string }[];
   repos: RepoCandidate[];
   proofs: RepoProof[];
@@ -132,19 +137,11 @@ export interface PromotionReceipt {
   restart?: { unit: string; at: string; ok: boolean; detail?: string };
   health?: HealthResult;
   failure?: PromotionFailure;
-  /** For a `team_revert`: the promotion it reverts. */
   revert_of?: string;
-  /** Set on a promotion once a revert of it landed. */
   reverted_by?: string;
-  /** Who ran it — a session name, or whatever the caller says. */
   by: string;
 }
 
-/**
- * The minimum proof that may cross the box boundary in a pull-request body.
- * Team, session, local-path, branch, hand-in, timing, and operator metadata remain
- * in the private ledger. CI needs only the candidate, its full proof, and its advance.
- */
 export function publicPromotionReceipt(r: PromotionReceipt): object {
   const publicRepoName = (repo: string): string => repo.replace(/^ronin_/, '');
   return {
@@ -157,8 +154,6 @@ export function publicPromotionReceipt(r: PromotionReceipt): object {
     ...(r.reverted_by ? { reverted_by: 'yes' } : {}),
   };
 }
-
-/* ---------------------------------------------------------------- state machine */
 
 const TRANSITIONS: Record<PromotionState, readonly PromotionState[]> = {
   preparing: ['proving', 'failed'],
@@ -175,11 +170,6 @@ const TRANSITIONS: Record<PromotionState, readonly PromotionState[]> = {
 
 export const now = (): string => new Date().toISOString();
 
-/**
- * Move a receipt to its next state, or refuse. Refusal is a thrown error, not a silent
- * no-op: a receipt that claims `complete` after `failed` is exactly the lie this exists
- * to make impossible.
- */
 export function advanceState(r: PromotionReceipt, next: PromotionState): PromotionReceipt {
   if (!TRANSITIONS[r.state].includes(next)) {
     throw new Error(`promotion ${r.id}: cannot go from '${r.state}' to '${next}'`);
@@ -188,20 +178,10 @@ export function advanceState(r: PromotionReceipt, next: PromotionState): Promoti
   return { ...r, state: next, updated_at: at, history: [...r.history, { state: next, at }] };
 }
 
-/**
- * Whether this receipt BLOCKS a new promotion of the same team: a coordinated promotion
- * that moved some refs and not others must be resumed or abandoned before anything else
- * touches those lines (docs/control-surface.md, strict gates). `advancing` counts too —
- * a process that died mid-advance leaves exactly that state behind.
- */
 export const blocksTeam = (r: PromotionReceipt): boolean => r.state === 'advancing' || r.state === 'interrupted';
 
-/** Did any ref actually move? Decides `failed` (none) versus `interrupted` (some). */
 export const anyAdvanced = (r: PromotionReceipt): boolean => r.advances.some((a) => a.status === 'done');
 
-/* ---------------------------------------------------------------- ids */
-
-/** Sortable, unique enough: UTC stamp + team + short random. The id is the filename. */
 export function newReceiptId(team: string, kind: PromotionReceipt['kind']): string {
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
   const rnd = Math.random().toString(36).slice(2, 6);
@@ -209,6 +189,7 @@ export function newReceiptId(team: string, kind: PromotionReceipt['kind']): stri
 }
 
 export function newReceipt(input: {
+  id?: string;
   team: string;
   kind?: PromotionReceipt['kind'];
   repos: RepoCandidate[];
@@ -218,7 +199,7 @@ export function newReceipt(input: {
   const at = now();
   const kind = input.kind ?? 'team_promotion';
   return {
-    id: newReceiptId(input.team, kind),
+    id: input.id ?? newReceiptId(input.team, kind),
     kind,
     team: input.team,
     at,
@@ -233,8 +214,6 @@ export function newReceipt(input: {
     ...(input.revert_of ? { revert_of: input.revert_of } : {}),
   };
 }
-
-/* ---------------------------------------------------------------- the ledger */
 
 const receiptFile = (id: string, dir = PROMOTION_LEDGER_DIR()): string => path.join(dir, `${id}.json`);
 
@@ -255,7 +234,6 @@ export async function readReceipt(id: string, dir = PROMOTION_LEDGER_DIR()): Pro
   }
 }
 
-/** Every receipt, oldest first (ids sort by time). Optionally one team's. */
 export async function listReceipts(team?: string, dir = PROMOTION_LEDGER_DIR()): Promise<PromotionReceipt[]> {
   let names: string[];
   try {
@@ -272,26 +250,17 @@ export async function listReceipts(team?: string, dir = PROMOTION_LEDGER_DIR()):
   return out;
 }
 
-/** The receipt that stops a new promotion for this team, if any. */
 export async function blockingReceipt(team: string, dir = PROMOTION_LEDGER_DIR()): Promise<PromotionReceipt | null> {
   const all = await listReceipts(team, dir);
   return all.find(blocksTeam) ?? null;
 }
 
-/**
- * LOOK BEFORE YOU PROVE (owner, 2026-09-03). Two promotions proving on one box at once
- * trample each other — a restart from one kills the other's test children (pbs 8ft9,
- * 07:49:46) — and no lock is wanted: just look. The receipt of ANY team that is still
- * moving (preparing · proving · advancing · restarting) and was touched within `staleMs`
- * is "on the fly"; older ones are a crashed process's leftovers and block nobody.
- */
 export async function inFlightReceipt(dir = PROMOTION_LEDGER_DIR(), now = Date.now(), staleMs = 20 * 60_000): Promise<PromotionReceipt | null> {
   const moving: readonly PromotionState[] = ['preparing', 'proving', 'advancing', 'restarting'];
   const all = await listReceipts(undefined, dir);
   return all.reverse().find((r) => moving.includes(r.state) && now - Date.parse(r.updated_at) < staleMs) ?? null;
 }
 
-/** The last promotion that completed for a team — `bisect` replays forward from here. */
 export async function lastGoodPromotion(team: string, dir = PROMOTION_LEDGER_DIR()): Promise<PromotionReceipt | null> {
   const all = await listReceipts(team, dir);
   for (let i = all.length - 1; i >= 0; i--) {
@@ -300,14 +269,6 @@ export async function lastGoodPromotion(team: string, dir = PROMOTION_LEDGER_DIR
   return null;
 }
 
-/* ---------------------------------------------------------------- the shared shape */
-
-/**
- * The receipt as Fable 1's `ChangeSetReceipt` — what the roster and CI read. The executor's
- * finer states fold into the five shared ones; a `failed` promotion never moved a ref, so
- * it is `abandoned` in the shared vocabulary (nothing to recover). `advanced_to` is filled
- * from the advances actually done.
- */
 export function toChangeSet(r: PromotionReceipt): ChangeSetReceipt {
   const shared: Record<PromotionState, ChangeSetState> = {
     preparing: 'prepared',
@@ -337,9 +298,6 @@ export function toChangeSet(r: PromotionReceipt): ChangeSetReceipt {
   };
 }
 
-/* ---------------------------------------------------------------- the one-line readout */
-
-/** What the roster or a DM says about a receipt: `landing: cowork done, services pending`. */
 export function summarize(r: PromotionReceipt): string {
   const parts = r.advances.map((a) => `${a.repo} ${a.status}`);
   switch (r.state) {

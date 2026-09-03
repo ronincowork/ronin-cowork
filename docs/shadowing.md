@@ -2,7 +2,7 @@
 
 > **The law is `DAIKUSAN.md`**: *edit nothing shipped — put a file with the same name in
 > your catalog directory and it wins.* This is that law, built. One statement, three
-> implementations (`src/catalog.ts`, `ronin_bin/tejun`, `ronin_bin/tejun-step`), and this page is the
+> implementations (`src/resources.ts`, `ronin_bin/tejun`, `ronin_bin/tejun-step`), and this page is the
 > statement all three obey.
 
 ## The rule
@@ -50,7 +50,7 @@ file happens to define every stock name.
 **Deliberately not shadowable:**
 
 - **MICHI and TEGAMI** — session data in the session store, not stock catalogs. There is
-  no shipped version to win over (owner's ruling, 2026-08-11).
+  no shipped version to win over.
 - **Your `PROJECT_ROOTS.md`** — already user scope. The shipped file keeps only the
   provider·model launch table, which is stock because every install needs session_launch_specs.
 - **`workspace_macro`** — machinery in `src/spawn.ts`, not a catalog. A markdown file
@@ -95,7 +95,7 @@ running operator only when the owner restarts (`docs/repo-to-operator.md`). Chan
 
 ## Three implementations, one statement
 
-`src/catalog.ts` holds the rule for the server; `ronin_bin/tejun` and `ronin_bin/tejun-step` are
+`src/resources.ts` holds the rule for the server; `ronin_bin/tejun` and `ronin_bin/tejun-step` are
 Python and cannot import it, so they implement the same statement — this page — rather
 than sharing the code. If the two ever disagree, this page is what they are both wrong
 about, and it is the thing to fix first.

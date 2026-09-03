@@ -1,31 +1,11 @@
-/**
- * JIKAN (時間, "time") — the house's one clock, and the Cron jobs on it.
- *
- * THE CLOCK is the rails for everything timed (owner, 2026-09-03): the message queue's
- * retry, the sessions broadcast, the Tomodachi sweep and the Cron jobs are each a tick on
- * it. A tick is an interval that never overlaps itself and never throws out. That is all.
- *
- * A CRON JOB is a ping, not infrastructure (owner, 2026-09-03: "if it misses one beat, it
- * doesn't matter"). One request, one session (or `lead`), one `due` date. Every minute the
- * clock asks: is anything due at or before now? If yes, deliver it through the ordinary
- * message door and mark it — done for a one-time job, or the next due for a repeat.
- * "Run now" sets `due` to now; it fires at the next tick. The list is one Markdown file
- * per team in the `jikan` store, hand-editable, and the owner's.
- *
- * Timing words:  once 2026-09-04 08:00 · daily 08:00 · weekdays 08:00 · weekly mon 08:00
- *                monthly 1 09:00 · hourly · every 30m · or a five-field cron line
- */
 import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { entryValue, splitSections } from './catalog.js';
-import { storeDir } from './stores.js';
-
-/* ---------- the clock ---------- */
+import { entryValue, splitSections } from './resources.js';
+import { storeDir } from './resources.js';
 
 const running = new Set<string>();
 
-/** A rhythm on the house clock: never two runs of one name at once, a throw swallowed, never holds the process open. */
 export function onClock(name: string, everyMs: number, run: () => Promise<void>): () => void {
   const timer = setInterval(() => {
     if (running.has(name)) return;
@@ -35,8 +15,6 @@ export function onClock(name: string, everyMs: number, run: () => Promise<void>)
   timer.unref();
   return () => clearInterval(timer);
 }
-
-/* ---------- timing words ---------- */
 
 export type Spec = { kind: 'once'; at: number } | { kind: 'every'; ms: number } | { kind: 'cron'; f: Set<number>[]; anyDom: boolean; anyDow: boolean };
 
@@ -74,7 +52,6 @@ const clock = (s: string | undefined): { h: number; m: number } | null => {
   return m ? { h: Number(m[1]), m: Number(m[2]) } : null;
 };
 
-/** The timing words → a spec, or null. Local clock. */
 export function parseWhen(raw: string): Spec | null {
   const words = raw.trim().replace(/\s+/g, ' ');
   const lower = words.toLowerCase();
@@ -99,7 +76,6 @@ export function parseWhen(raw: string): Spec | null {
   return cron(words);
 }
 
-/** The first moment strictly after `after` the spec means, or null (a once that has passed). */
 export function nextRun(spec: Spec, after: number): number | null {
   if (spec.kind === 'once') return spec.at > after ? spec.at : null;
   if (spec.kind === 'every') return after + spec.ms;
@@ -118,22 +94,15 @@ export function nextRun(spec: Spec, after: number): number | null {
   return null;
 }
 
-/* ---------- the list ---------- */
-
 export type JobState = 'active' | 'paused' | 'done';
 
 export interface Job {
   id: string;
-  /** The words delivered, exactly. */
   request: string;
-  /** A session name on the team, or `lead`. */
   to: string;
-  /** The timing words as written. */
   when: string;
-  /** ISO — fires at the first tick at or after this. '' when done or paused. */
   due: string;
   state: JobState;
-  /** The last firing: `<iso> delivered` · `<iso> queued` · `<iso> refused: …`, or ''. */
   last: string;
   by: string;
 }
@@ -192,7 +161,6 @@ export async function addJob(team: string, draft: JobDraft, now = Date.now()): P
   return job;
 }
 
-/** `active` (from now), `paused` (held), or `now` (due at the next tick). */
 export async function setJob(team: string, id: string, verb: 'active' | 'paused' | 'now', now = Date.now()): Promise<Job> {
   const jobs = await listJobs(team);
   const job = jobs.find((j) => j.id === id);
@@ -216,8 +184,6 @@ export async function removeJob(team: string, id: string): Promise<boolean> {
   return true;
 }
 
-/* ---------- the tick ---------- */
-
 export interface TeamSession { name: string; tags: string[]; leads: string[] }
 export interface Door {
   now: () => number;
@@ -239,7 +205,6 @@ async function fire(team: string, job: Job, door: Door): Promise<Job> {
   return { ...job, last: `${iso(now)} ${outcome}`, due: next === null ? '' : iso(next), state: next === null ? 'done' : job.state };
 }
 
-/** One tick: anything due at or before now, on any team, fires. */
 export async function tick(door: Door): Promise<Job[]> {
   const fired: Job[] = [];
   for (const team of await teamsWithJobs()) {
@@ -258,5 +223,4 @@ export async function tick(door: Door): Promise<Job[]> {
   return fired;
 }
 
-/** The Cron jobs on the clock: every minute. Returns the stop. */
 export const startJikan = (door: Door, everyMs = 60_000): (() => void) => onClock('jikan', everyMs, () => tick(door).then(() => {}));

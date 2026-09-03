@@ -4,7 +4,7 @@ import { buildProjectRoots } from './projectroots.js';
 import { buildHotwords } from './hotwords.js';
 import { buildKoshi } from './koshi.js';
 import { buildGbrain } from './gbrain.js';
-import { buildSettei } from './settei.js';
+import { buildMachineSettings } from './machine-settings.js';
 import { buildStats } from './stats.js';
 import { buildSystemPanel } from './system.js';
 import { buildArchives } from './archives.js';
@@ -17,37 +17,6 @@ import { choice } from './campaign-desk.js';
 import { saveCampaign } from './campaigns.js';
 import { applyTheme, setCampaignTheme } from './theme.js';
 
-/**
- * THE COWORK COMMONS — the install's shared surface, a `workspace_surface` (owner,
- * 2026-08-27; docs/cowork-space.md; KOTOBA `cowork_commons`).
- *
- * It is the `admin_desk` re-hung. The desk was one nav rail over eleven rows and an
- * OVERLAY a tile drew on itself; the owner's ruling: *"too many things in one thing … it
- * should be another workspace alternative"*. So this is the Kit's channel surface — the
- * same primitive, strip and look as the `team_commons` — with its own tabs, and it sits IN a
- * workspace (`cowork-view.js` places it). It has no page-level destination.
- * No room is rewritten: each tab hangs the room builders the desk already had.
- *
- *   Desk             ▦ Ronin usage stats
- *   Account          "the rest, as the current Admin Desk" (owner): ⚙ Configuration ·
- *                    ◐ Appearance · ↑ Release & update · ▥ Hotwords · 目 Koshi · ◇ gbrain ·
- *                    ⏻ Log out
- *   Desk profile     ◫ the profile picker (js/system.js, kokugo's row)
- *   Project roots    ▣ Project roots
- *   Help desk        ミ Mika — *"the Mika assistant, but that can be a holding place now
- *                    for chat"* (owner): her door, over a RESERVED chat area, empty on
- *                    purpose like the team commons' Chat
- *   Keypad           く the pad panel, INLINE (owner: *"no reason to have it separate"*) —
- *                    padpanel.js still builds the card; this tab is where the card lives
- *
- * ONE INSTANCE PER WORKSPACE. The catalog and backing services are shared facts, but a
- * workspace owns its rendered surface, selected tab, scroll position and lifecycle.
- *
- * WHERE AN ASK GOES. gbrain's "ask a PersonalAssistant" used to be handed the desk's own
- * tile; a surface has no tile, so the ask goes to the ACTIVE tile's Commons launcher
- * (`S.active.askPersonalAssistant`), which is where that tile sent it anyway. Mika is
- * asked through `askMika(S.active)`, the way the bar's ミ did before it left (2026-08-27).
- */
 export function coworkCommons(options = {}) {
   const { createChannelSurface } = WorkspaceKit.primitives;
 
@@ -131,7 +100,6 @@ export function coworkCommons(options = {}) {
   });
 
   /* ---- Account: the rest of the desk, AS IT WAS — the rail, and one room at a time ---- */
-  // Owner, 2026-08-27: *"we should still have the selectors on the left … I liked being
   // able to select what you wanted to see, so it wasn't just a long laundry list."* So the
   // desk's nav rail lives on inside this tab: rows on the left, one room on the right,
   // « to narrow the rail. Only what became a tab of its own left the rail.
@@ -142,7 +110,7 @@ export function coworkCommons(options = {}) {
     return box;
   };
   const ACCOUNT_ROWS = [
-    { id: 'settei', label: t('pane.settei', 'Configuration'), glyph: '⚙', build: (host) => buildSettei(host, showing('account')) },
+    { id: 'settei', label: t('pane.settei', 'Configuration'), glyph: '⚙', build: (host) => buildMachineSettings(host, showing('account')) },
     { id: 'release', label: t('desk.row_release', 'Release & update'), glyph: '↑', build: (host) => { host.append(appBox(app.release)); return app; } },
     { id: 'hotwords', label: t('pane.hotwords', 'Hotwords'), glyph: '▥', build: (host) => buildHotwords(host, showing('account')) },
     { id: 'koshi', label: t('pane.koshi', 'Koshi'), glyph: '目', build: (host) => buildKoshi(host, showing('account')) },
@@ -279,7 +247,6 @@ export function coworkCommons(options = {}) {
     help: service(help, enterAll(helpRooms)),
     keypad: service(keypad, () => { if (mountPad()) S.padPanel.render?.(); }),
   };
-  // A caller may name WHICH tabs (owner, 2026-08-30): the Settings workbench seats the
   // machine's tabs and leaves out the two it already has as surfaces of its own.
   const wanted = Array.isArray(options.tabs) && options.tabs.length ? new Set(options.tabs) : null;
   const channels = [

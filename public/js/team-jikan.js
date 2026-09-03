@@ -58,7 +58,6 @@ export function createTeamJikan() {
     el('p', 'tw-config-head', t('team_jikan.new', 'New job')),
     field(t('team_jikan.request', 'What is the request?'), requestInput),
     field(t('team_jikan.to', 'To'), toSelect),
-    field(t('team_jikan.when', 'When'), whenInput, t('team_jikan.when_help', 'One time: once 2026-09-04 08:00. Repeating: daily 08:00 · weekdays 08:00 · weekly mon 08:00 · monthly 1 09:00 · hourly · every 30m · or a five-field cron line.')),
     whenPreview,
     actions,
   );

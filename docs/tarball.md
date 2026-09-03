@@ -1,6 +1,5 @@
 # tarball — cutting a version across all three places
 
-> **Why this file exists.** On 2026-08-21 we tagged and published cowork **v1.3.0** and
 > services **v1.3.0**, and an entitled owner activating Services still received **v1.0.0**,
 > built five days earlier. Nothing errored. The install said "Services ready" and delivered
 > a roster with no gbrain and no koshi_weights — two of the five things the setup page sells.

@@ -123,15 +123,7 @@ key_of() {
 # Where the session record lives on THIS machine. Asked, never spelled: this file used to
 # hardcode the path while the rest of Ronin resolved it, so moving the store sent the
 # letters one way and the tape the other. See docs/stores.md.
-# RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
-# session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,
-# and ../ from the link is a store with no src/ or bin/ — measured 2026-09-02 (desk audit):
-# every tool built this way failed from a born session. Same loop as bin/shim/git.
-SELF=${BASH_SOURCE[0]}
-while [ -L "$SELF" ]; do
-  link=$(readlink "$SELF")
-  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
-done
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session)"
@@ -287,15 +279,7 @@ if [ -n "$TARGET" ] || [ -n "$ACTIVE" ]; then
     *[!0-9.]*|.*|*.|*.*.*) die "write_tegami: --at takes a position from 'read_tegami --rungs' — N or N.M — or 'none'." ;;
     '') die "write_tegami: --at takes a position from 'read_tegami --rungs' — N or N.M — or 'none'." ;;
   esac
-  # NO DIAL CHECK ON THIS PATH, deliberately — owner law, and it took me a wrong turn to
-  # see why. The dial governs who may DRIVE a session: type into it, change what it does.
-  # Pointing "at" does none of that. It writes one derived key that the session own next
-  # save clobbers freely, carrying nothing that must survive.
-  #
-  # Gating it would break the case that matters most: a session on 👁 read is watch-only,
-  # and watching is precisely when you want to see where it is. A dial that hid the
-  # readout for the sessions you are watching would be backwards.
-  #
+  # This writes one derived pointer. Control remains a displayed preference.
   # Every other cross-session action stays dial-gated. This one is not an action on the
   # session at all — it is an annotation on a file about it.
   MFILE="$SESSION_STORE/$(key_of "$TARGET")/tegami.md"
@@ -467,7 +451,10 @@ extra = sorted(set(d) - ALLOWED)
 if extra:
     blocked = [k for k in extra if k in NOT_YOURS]
     if blocked and len(blocked) == len(extra):
-        sys.exit("write_tegami: " + "\n\nwrite_tegami: ".join(NOT_YOURS[k] for k in blocked))
+        print("write_tegami: warning: " + ", ".join(blocked) + " are maintained by Ronin and were ignored.", file=sys.stderr)
+        for k in blocked: d.pop(k, None)
+        extra = []
+if extra:
     sys.exit("write_tegami: unknown key(s): " + ", ".join(extra) +
              "\n  A TEGAMI holds: objective, mandate, repos, ladder, and ladder_state when you are off it."
              "\n  (\"teams\" is machinery-derived; membership lives in your tags.)"

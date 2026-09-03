@@ -25,7 +25,6 @@ export function makeDial(positions, onPick) {
   let cur = positions[0].v;
   // set(v) points the dial. The badge is no longer SHOWN by anything — it is where the
   // position's sentence is kept, and the help box reads it from here as its status line
-  // (js/tips.js, `statusOf`). It used to reveal itself on hover and flash for 1400ms
   // after a turn; both are gone. The flash was kept once on the argument that it is
   // feedback about an action rather than hover help, which was a distinction the eye
   // does not make: turning the dial while the help box was open put a second bubble on
@@ -49,7 +48,6 @@ export function makeDial(positions, onPick) {
 }
 
 /* ---------- cockpit gauge (the readout counterpart: dials are INPUTS, gauges are READOUTS) ---------- */
-// A tiny round meter tuned to the USEFUL context range (Glen 2026-08-06): sessions
 // never reach 100%, and the difference between 6/17/35% is what you actually watch.
 // Nonlinear clock sweep — 0% at 6:00, 15% at 9:00, 50% at 12:00, pegged at 3:00 by
 // ~80% — so early growth moves the needle visibly and past 50% you're in the red

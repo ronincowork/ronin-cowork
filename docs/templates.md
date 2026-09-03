@@ -9,7 +9,7 @@ owner's own distinction:
 > template. If you have a kind of team-oriented requirement with multiple agents
 > coordinating to deliver on a task, that would be a team template."
 
-The short rule (the owner's, 2026-09-01): **agents are people, teams are projects.**
+The short rule: **agents are people, teams are projects.**
 
 **An agent template is a person you'd assign** — one session's loadout: the reading,
 tools, mandate and starting brief. A system administrator you spin up when Ronin is
@@ -70,6 +70,10 @@ Two rules the agent follows when it files for you:
 - **A shipped box is shadowed whole, never edited in place.** Your copy replaces ours
   file-for-file; delete your copy and the shipped box is back.
 - **A new name adds a box; `- **hidden:** yes` in a same-named file withdraws one.**
+- **What came from the library can go again.** A box installed from the library, or one
+  you saved, is removed from its detail on the Campaign page's Templates surface
+  (`DELETE /api/templates/<shelf>/<name>`) — your file only; removing your copy of a
+  shipped name brings the shipped box back.
 
 ## Saving from the forms
 
@@ -81,7 +85,7 @@ your agent, as above), not from a launch form.
 ## The shipped handful, and the library
 
 A handful ships — one or two a kind, so every launch form has something on the tray — and
-**the Ronin library on ronincowork.com is where the rest live** (owner, 2026-09-03). Four
+**the Ronin library on ronincowork.com is where the rest live**. Four
 projects: **Staff My Codebase** 🎬 for code, **Morning Brief** ☕ for work, **Health &
 Fitness** 🏃 for yourself, **Dinner Party** 🕯 for the house; and five people: the Personal
 Assistant 📇 (gbrain on, born into its own team), the System Administrator 🔧, the Office
@@ -113,11 +117,15 @@ a bundle installs touches the install itself; an upgrade never sees it.
   entries: [{ catalog: MACROS.md|ACTIONS.md|TOOLS.md, name, text }] }   entry-merged
 ```
 
-**The template library** is the shelf of bundles on ronincowork.com
-(https://ronincowork.com/library/index.json, `ronin-library/1`), and the Campaign page's **Templates** card is the way in: *Check the
-library* reads the index — only when pressed, never on a timer — and pressing a bundle
-shows the **plan** before anything is written: each item, the shelf it lands on, and its
-outcome. Three rules an install obeys, all of them the house's already:
+**The template library** is the shelf Ronin keeps and grows — a **Ronin Services**
+feature (owner, 2026-09-03). ronincowork.com shows what is on it, descriptions only; the
+documents are served by Ronin HQ (`ronin-library/1`, https://hq.ronincowork.com/library/index.json) to an entitled box, and the
+Campaign page's **Templates** card is the way in: *Check the library* reads the index —
+only when pressed, never on a timer — and pressing a bundle shows **everything it holds**
+and the **plan** before anything is written: each item, the shelf it lands on, and its
+outcome. Without Services the shelf is there but opaque, the card says so and names the
+Ronin Services row on the Campaign page's Routines (an email and a confirmation), and the handful that ship inside Ronin stay
+on the launch forms. Three rules an install obeys, all of them the house's already:
 
 - a copy identical to what ships is **skipped** — a shadow that changes nothing is an
   upgrade-proof copy nobody asked for;
@@ -125,8 +133,8 @@ outcome. Three rules an install obeys, all of them the house's already:
 - a tool never replaces one of Ronin's — a bundle may add a command, never take one.
 
 Every read of the library goes through the one allowlisted client (`src/activation/transport.ts`)
-and lands in the egress record like any other call. The index carries a `sha256` per bundle
-and the install refuses a document that does not match it.
+with the Services token, and lands in the egress record like any other call. The index
+carries a `sha256` per bundle and the install refuses a document that does not match it.
 
 **Yours, outward.** A team card's *Download as a bundle* (or `bin/ronin-bundle pack <team>`)
 builds the same document from this install — your copies only, since what ships is on every

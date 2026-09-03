@@ -1,27 +1,4 @@
 #!/usr/bin/env node
-/**
- * kokugo-table — ONE TABLE of every term the coworkspace reads, with every lexicon beside it.
- *
- *   npm run kokugo:table                     # write docs/kokugo-table.md
- *
- * ON DEMAND, NOT COMMITTED. The page is a REPORT built from the lexicons, and the lexicons
- * are the source. Committing it earned a merge conflict on every wording change — two
- * sessions touching one key collided on 1,700 lines of machine output — while asserting
- * nothing that check-lexicon's real findings do not already cover: the floor is complete,
- * no lexicon spells a key nobody reads, and the glossary room agrees with KOTOBA_GLOSSARY.
- * Those keep us in line. A generated file matching its own generator never did.
- *
- * `professional_en` is the floor — the table of every term. The owner wants to SEE the
- * translations beside it (2026-08-27): key by key, the floor's word and each other
- * lexicon's word, blank where that lexicon falls through. Generated, never hand-kept:
- *
- * Stock ⊕ yours: a lexicon file in the owner's catalogs store (`bin/ronin-store catalogs`
- * → `lexicons/<name>.md`) replaces the stock file of the same name whole, and a new name
- * is a new column — the same shadowing rule the server applies (docs/shadowing.md).
- *
- * Grouped by room: the part of the key before its first dot. A bare key (`campaign`) is
- * the room `(bare)`; a catalog token (`kind.household`) is the room `kind`.
- */
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -45,7 +22,6 @@ const parse = (file) => {
   return { words, fields };
 };
 
-/** Stock files, then the owner's store shadowing them whole by name. */
 const files = new Map();
 for (const f of fs.readdirSync(STOCK)) if (f.endsWith('.md') && f !== 'README.md') files.set(f.replace(/\.md$/, ''), path.join(STOCK, f));
 let store = '';

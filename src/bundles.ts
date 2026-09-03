@@ -1,41 +1,11 @@
-/**
- * TEMPLATE BUNDLES — a team, and everything it reads, as one document you can download.
- *
- * A template names its books (`behaviours: sops:codebase_team`) and a Routine names its
- * macros, actions and tools — neither carries a copy, and that is right for the shelf
- * (docs/shadowing.md). It is wrong for a DOWNLOAD: a Dinner Party template on the public
- * library is worthless without the menu book it reads. So a bundle is the one place copies
- * are allowed, and only in transit: on install every copy lands in the owner's own stores
- * (catalogs · sops · ways · library · tools), where the ordinary readers find it exactly as
- * they find anything the owner wrote by hand. Nothing here writes into the repo.
- *
- * THE FORMAT is one JSON document, `ronin-bundle/1`:
- *
- *   { format, name, label, art, blurb, kinds[], version,
- *     files:   [{ store, path, text, executable? }],   whole files, whole-file shadowed
- *     entries: [{ catalog, name, text }] }             `## name` blocks (MACROS/ACTIONS) or
- *                                                      one table row (TOOLS), entry-merged
- *
- * A LIBRARY is `ronin-library/1`: `{ format, bundles: [card…] }`, each card the bundle's
- * face plus `url` (relative to the index), `sha256` of the bundle document and `holds`
- * counts. The public site builds it from committed sources (site: scripts/pack-library.mjs);
- * `packBundle` below builds the same shape from an install, so an owner can publish theirs.
- *
- * THE THREE RULES an install obeys, all of them already the house's:
- *   - a copy identical to what is shipped is SKIPPED — a shadow that changes nothing is an
- *     upgrade-proof copy nobody asked for (docs/templates.md);
- *   - a file of the owner's is never written over unless they said `replace`;
- *   - a tool never replaces one of Ronin's: a download does not get to stand in front of
- *     `tejun-send` or a guard shim. It may add a command; it may not take one.
- */
 import { createHash } from 'node:crypto';
 import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveBehaviourBooks } from './behaviours.js';
-import { STOCK_DIR, isShadowable, readCatalogSections, seedUserCatalog, splitSections } from './catalog.js';
-import { findDefinition, readDefinitions } from './definitions.js';
-import { storeDir } from './stores.js';
+import { STOCK_DIR, isShadowable, readCatalogSections, seedUserCatalog, splitSections } from './resources.js';
+import { findDefinition, readDefinitions } from './resource-adapters.js';
+import { storeDir } from './resources.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -47,17 +17,14 @@ export type BundleCatalog = 'MACROS.md' | 'ACTIONS.md' | 'TOOLS.md';
 
 export interface BundleFile {
   store: BundleStore;
-  /** Relative to the store: `templates/teams/x.md`, `menus.md`, `tejun-menu`. */
   path: string;
   text: string;
-  /** Only a `tools` file may be, and every `tools` file is. */
   executable?: boolean;
 }
 
 export interface BundleEntry {
   catalog: BundleCatalog;
   name: string;
-  /** A `## name` block for MACROS/ACTIONS; one `| \`name\` | action | usage |` row for TOOLS. */
   text: string;
 }
 
@@ -91,15 +58,11 @@ export interface LibraryIndex {
   bundles: LibraryCard[];
 }
 
-/* ---------- the shape, held ---------- */
-
 const TOKEN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const STORES: readonly BundleStore[] = ['catalogs', 'sops', 'ways', 'library', 'tools'];
 const CATALOGS: readonly BundleCatalog[] = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md'];
-/** The definition shelves a bundle may fill. PROJECT_ROOTS and HOTWORDS are the owner's alone. */
 const CATALOG_DIRS = ['templates/agents', 'templates/teams', 'routines', 'session_roles', 'role_families', 'desk_profiles', 'lexicons'];
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
-/** Commands a bundle may never supply: every shipped tool, and the guards. */
 const GUARDS = ['tmux', 'systemctl', 'git'];
 
 const str = (v: unknown, max = 4000): string => (typeof v === 'string' ? v.slice(0, max) : '');
@@ -107,7 +70,6 @@ const words = (v: unknown, max = 500): string => str(v, max).replace(/\s+/g, ' '
 
 export const sha256 = (text: string): string => createHash('sha256').update(text).digest('hex');
 
-/** Where the SHIPPED copy of a bundle file would be — what "same as shipped" is measured against. */
 function stockPathFor(file: Pick<BundleFile, 'store' | 'path'>): string {
   switch (file.store) {
     case 'catalogs': return path.join(STOCK_DIR, file.path);
@@ -118,7 +80,6 @@ function stockPathFor(file: Pick<BundleFile, 'store' | 'path'>): string {
   }
 }
 
-/** Where the bundle file LANDS: the owner's store for that shelf. */
 const userPathFor = (file: Pick<BundleFile, 'store' | 'path'>): string =>
   path.join(storeDir(file.store), file.path);
 
@@ -150,14 +111,12 @@ function checkEntry(entry: BundleEntry): string | null {
     if (!m || m[1] !== entry.name) return 'a TOOLS row is `| `name` | action | usage |`, on one line';
     return null;
   }
-  // The heading's FIRST WORD is the merge key (src/catalog.ts); `## name — a gloss` is the house's own habit.
   const head = /^##\s+`?([\w-]+)`?(?:\s.*)?$/.exec(entry.text.split('\n')[0] ?? '');
   if (!head || head[1] !== entry.name) return 'a MACROS or ACTIONS entry opens with its own `## name` heading';
   if (/^##\s/m.test(entry.text.split('\n').slice(1).join('\n'))) return 'one entry, one heading';
   return null;
 }
 
-/** Read a document as a bundle, or throw the one sentence that says why it is not one. */
 export function parseBundle(raw: unknown): Bundle {
   const b = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   if (b.format !== BUNDLE_FORMAT) throw new Error(`Not a template bundle: format is not ${BUNDLE_FORMAT}.`);
@@ -200,7 +159,6 @@ export function parseBundle(raw: unknown): Bundle {
   };
 }
 
-/** What a bundle holds, counted by shelf — the card's face on both the site and the tab. */
 export function bundleHolds(bundle: Bundle): Record<string, number> {
   const holds: Record<string, number> = {};
   const bump = (key: string) => { holds[key] = (holds[key] ?? 0) + 1; };
@@ -212,7 +170,6 @@ export function bundleHolds(bundle: Bundle): Record<string, number> {
   return holds;
 }
 
-/** A library index, read and held to its shape; cards with a bad face are dropped, not fatal. */
 export function parseLibraryIndex(raw: unknown): LibraryIndex {
   const i = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   if (i.format !== LIBRARY_FORMAT) throw new Error(`Not a template library: format is not ${LIBRARY_FORMAT}.`);
@@ -242,8 +199,6 @@ export function parseLibraryIndex(raw: unknown): LibraryIndex {
   return { format: LIBRARY_FORMAT, bundles };
 }
 
-/* ---------- the plan: what an install would do, item by item ---------- */
-
 export type Verdict =
   | 'new'              // nothing of that name anywhere — added
   | 'shadows-shipped'  // a shipped copy exists and differs — the owner's copy will outrank it
@@ -258,7 +213,6 @@ export interface PlanItem {
   path: string;
   verdict: Verdict;
   executable: boolean;
-  /** Why a refusal, in one sentence; empty otherwise. */
   why: string;
 }
 
@@ -285,7 +239,6 @@ async function planFile(f: BundleFile): Promise<PlanItem> {
   return item;
 }
 
-/** The text of one `## name` block or one TOOLS row in a catalog file, or null. */
 function findEntry(raw: string, catalog: BundleCatalog, name: string): { text: string; start: number; end: number } | null {
   if (catalog === 'TOOLS.md') {
     const re = new RegExp(`^\\|\\s*\`${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\`\\s*\\|.*$`, 'm');
@@ -326,8 +279,6 @@ export async function planInstall(bundle: Bundle): Promise<PlanItem[]> {
   ];
 }
 
-/* ---------- the install ---------- */
-
 export interface InstallReceipt {
   name: string;
   version: string;
@@ -348,7 +299,6 @@ async function writeWhole(target: string, text: string, executable: boolean): Pr
 
 const TOOLS_HEAD = '| Tool | Implements (action) | Usage |\n|---|---|---|';
 
-/** Put one entry into the owner's copy of a catalog: replace its block or row, else add it. */
 function mergeEntry(raw: string, e: BundleEntry): string {
   const have = findEntry(raw, e.catalog, e.name);
   if (have) return raw.slice(0, have.start) + e.text.trimEnd() + (e.catalog === 'TOOLS.md' ? '' : '\n\n') + raw.slice(have.end).replace(/^\n+/, e.catalog === 'TOOLS.md' ? '\n' : '');
@@ -363,11 +313,6 @@ function mergeEntry(raw: string, e: BundleEntry): string {
   return `${raw.slice(0, footer).trimEnd()}\n\n${block}${raw.slice(footer)}`;
 }
 
-/**
- * Install a bundle into the owner's stores. Idempotent: a second run skips everything the
- * first wrote. `replace` is the only way an owner's own file or entry is written over,
- * and a refusal is never overridden by anything.
- */
 export async function installBundle(bundle: Bundle, opts: { replace?: boolean } = {}): Promise<InstallReceipt> {
   const replace = !!opts.replace;
   const plan = await planInstall(bundle);
@@ -397,14 +342,9 @@ export async function installBundle(bundle: Bundle, opts: { replace?: boolean } 
   return receipt;
 }
 
-/* ---------- packing: a bundle out of this install ---------- */
-
 export interface PackRequest {
-  /** The team template the bundle is built around (its cast, its books, its Routines). */
   team: string;
-  /** Agent templates to carry beside it — loadouts the cast's rows do not already state. */
   agents?: string[];
-  /** Extra books and entries by name, beyond what the templates and Routines name. */
   sops?: string[];
   ways?: string[];
   library?: string[];
@@ -416,12 +356,6 @@ export interface PackRequest {
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 
-/**
- * Build a bundle from this install. Only the OWNER'S copies are carried: what ships with
- * Ronin is on every install already, and an install skips identical copies anyway. A
- * shipped template can still anchor a bundle — its file is carried, and the books it names
- * come along when they are the owner's.
- */
 export async function packBundle(req: PackRequest): Promise<Bundle> {
   const team = await findDefinition('templates/teams', req.team);
   if (!team) throw new Error(`"${req.team}" is not a team template on this box.`);
@@ -498,7 +432,6 @@ export async function packBundle(req: PackRequest): Promise<Bundle> {
   });
 }
 
-/** The card a library index carries for a bundle document — the face, the hash, the counts. */
 export function libraryCard(bundle: Bundle, text: string, url: string): LibraryCard {
   return {
     name: bundle.name,

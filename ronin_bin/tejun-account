@@ -12,20 +12,12 @@
 # only the named fields below and the file is never served or echoed whole, by anything.
 #
 # THE LOCAL FILE READ IS BLESSED HERE (ruling, 2026-08-18). Doctrine says surfaces
-# convert the one door (`GET /api/settei`) and bash reads the bus; this tool reads the
+# convert the one door (`GET /api/machine-settings`) and bash reads the bus; this tool reads the
 # file directly because it must answer on a box whose operator is not running — the
 # exact moment an account question gets asked. Named keys only, never the document.
 set -u
 
-# RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
-# session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,
-# and ../ from the link is a store with no src/ or bin/ — measured 2026-09-02 (desk audit):
-# every tool built this way failed from a born session. Same loop as bin/shim/git.
-SELF=${BASH_SOURCE[0]}
-while [ -L "$SELF" ]; do
-  link=$(readlink "$SELF")
-  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
-done
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 CONFIG_DIR="$("$STORE" config 2>/dev/null)"

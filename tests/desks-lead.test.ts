@@ -41,11 +41,12 @@ test('the lead is told what happened and what to do, in one line', () => {
   assert.match(bad, /adjudicate/);
 });
 
-test('with no lead, the handing-in session holds the job — told how to promote, or how to resolve; nothing waits', () => {
+test('with no lead, the hand-in stands, promotion waits, and the hander is told to ask the owner for a lead (2026-09-03)', () => {
   const ok = selfMessage({ team: 'ronin_comps', line: 'team/ronin_comps/dev', session: 'comp_fable', receiptId: 'hi_1', result: 'accepted' });
   assert.match(ok, /no lead is set for ronin_comps/);
-  assert.match(ok, /bin\/ronin-promote ronin_comps/);
-  assert.match(ok, /Nothing waits on anyone/);
+  assert.match(ok, /promotion is the lead's job and nobody is marked 人/);
+  assert.match(ok, /please mark one on the Team page/);
+  assert.match(ok, /bin\/ronin-promote ronin_comps answers NO-LEAD/);
   const bad = selfMessage({ team: 'ronin_comps', line: 'team/ronin_comps/dev', session: 'comp_fable', receiptId: 'hi_2', result: 'conflict', files: ['a.ts'] });
   assert.match(bad, /conflict on a\.ts is yours to resolve/);
   assert.match(bad, /tejun-desk sync/);

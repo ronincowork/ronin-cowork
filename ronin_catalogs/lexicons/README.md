@@ -3,7 +3,6 @@
 > **DATA.** Nothing here executes. A **lexicon** is keys to strings: what a surface says
 > where it would otherwise say the stock English. Mechanically it is a language — a
 > wording (*Home* says *occasion* for a campaign) and a translation (*Français*) are
-> the same kind of file, and that is deliberate (KOTOBA `lexicon`, 2026-08-27).
 >
 > A **desk_profile** names one (`- **lexicon:** home_en`) the way it names a skin. A
 > lexicon never rides a launch, a letter or a brief: **anything an agent reads stays in

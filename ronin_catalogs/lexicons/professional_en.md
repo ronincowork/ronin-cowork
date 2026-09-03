@@ -270,6 +270,18 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.templates_teams:** Teams — projects
 - **campaign_view.templates_agents:** Agents — people
 - **campaign_view.templates_none:** Nothing on this shelf.
+- **campaign_view.shape:** Show
+- **campaign_view.shape_all:** All
+- **campaign_view.shape_team:** Teams
+- **campaign_view.shape_agent:** Agents
+- **campaign_view.templates_on_system:** On your system — what New Team and New Agent offer
+- **campaign_view.templates_on_system_help:** Shipped with Ronin, or installed from the library, or saved by you. Anything installed or saved can be removed again from its box.
+- **campaign_view.templates_shipped_with:** Shipped with Ronin
+- **campaign_view.templates_installed:** Installed from the library, or saved by you
+- **campaign_view.templates_remove:** Remove from my system
+- **campaign_view.templates_remove_sure:** Remove — press again to confirm
+- **campaign_view.templates_removed:** Removed {name} from your system. It is still on the library.
+- **campaign_view.templates_removed_back:** Removed {name}; the shipped one is back.
 - **campaign_view.templates_yours:** yours
 - **campaign_view.templates_yours_over:** yours, replacing ours
 - **campaign_view.templates_shipped:** shipped
@@ -279,11 +291,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.templates_books:** Reads
 - **campaign_view.templates_download:** Download as a bundle
 - **campaign_view.templates_download_help:** This template, with your copies of the books and Routines it names, as one file you could put on a library.
-- **campaign_view.library:** Template library
-- **campaign_view.library_help:** Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read, as one download. Nothing is fetched until you press, and the plan is shown before anything is written.
+- **campaign_view.library:** On the Ronin library — not on your system yet
+- **campaign_view.library_help:** The shelf Ronin keeps and grows, a Ronin Services feature: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press; everything a bundle holds is shown before anything is written; an installed one appears below, on your system.
+- **campaign_view.library_show_all:** Show everything it holds
+- **campaign_view.library_hide_all:** Hide the contents
 - **campaign_view.library_check:** Check the library
-- **campaign_view.library_checking:** Asking ronincowork.com for its library…
-- **campaign_view.library_source:** {n} bundles from {source}
+- **campaign_view.library_checking:** Asking Ronin HQ for the library…
+- **campaign_view.library_source:** {n} bundles on the library
 - **campaign_view.library_none:** The library lists no bundles yet.
 - **campaign_view.library_reading:** Reading {name} from the library…
 - **campaign_view.library_plan_help:** What installing this bundle writes into your stores, and what it leaves alone.
@@ -322,7 +336,28 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.verdict_same_yours:** already yours — skipped
 - **campaign_view.verdict_refused:** refused — a bundle never replaces one of Ronin’s tools
 - **campaign_view.routines:** Routines
-- **campaign_view.routines_help:** Choose what new Cowork Agents start with. This Campaign answer seeds new Teams; a Team may replace it, and New Agent shows the resolved answer. Nothing already running changes.
+- **campaign_view.routines_help:** What is installed on this machine, and what new Cowork Agents start with. The switches seed new Teams; a Team may replace them, and New Agent shows the resolved answer. Nothing already running changes.
+- **campaign_view.svc_activated:** Installed and activated on this machine.
+- **campaign_view.svc_installed:** Installed on this machine ({parts}), not activated yet.
+- **campaign_view.svc_absent:** Not installed on this machine.
+- **campaign_view.svc_sending:** Sending the confirmation email…
+- **campaign_view.svc_waiting:** Waiting for your confirmation — open the email sent to {email}.
+- **campaign_view.svc_resend:** Send the email again
+- **campaign_view.svc_resend_after:** after {time}
+- **campaign_view.svc_cancel:** Cancel the request
+- **campaign_view.svc_installing:** Confirmed — Ronin is finishing the install.
+- **campaign_view.svc_email:** you@example.com
+- **campaign_view.svc_send:** Send confirmation email
+- **campaign_view.svc_expired:** That confirmation link expired. Ask for a fresh one.
+- **campaign_view.svc_ask:** Activation is an email and a confirmation. The address is only used for the entitlement.
+- **campaign_view.sell_head:** What Ronin Services adds
+- **campaign_view.sell_library:** The template library — teams and agents Ronin keeps and grows, with the procedures, macros and tools they read, installed with one press.
+- **campaign_view.sell_assistant:** A background assistant that keeps every agent’s work record and instructions current, so the roster and the tile say what each agent is doing.
+- **campaign_view.sell_transcripts:** The locked terminal becomes streaming text — a durable record that can be re-rendered as a transcript, read on a phone, summarised, or turned to voice.
+- **campaign_view.sell_voice:** Text to voice, and voice in — hear a report read back; speak to an agent from the tile.
+- **campaign_view.sell_hotwords:** Hotwords — teach dictation the words it mishears, once, for every session.
+- **campaign_view.sell_memory:** Unified team memory — what a session learns is kept for the team and recalled at birth.
+- **campaign_view.sell_stats:** Usage history — what your sessions did, counted over time, never their content.
 - **campaign_view.worktrees_routine_help:** Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **campaign_view.routines_n:** {n} on
 - **campaign_view.routine_no_description:** No description supplied.
@@ -1181,7 +1216,7 @@ The catalog entry goes. {dir} is not touched.
 - **customize.actions_what:** a primitive step macros are composed from
 - **customize.actions_blurb:** The cataloged procedures macros are made of.
 - **customize.tools:** Tools
-- **customize.tools_why:** TOOLS.md is a table, and the server has no table reader — the rule in docs/shadowing.md is implemented in ronin_bin/tejun and not in src/catalog.ts (prerequisite P1).
+- **customize.tools_why:** TOOLS.md is a table, and the server has no table reader — the rule in docs/shadowing.md is implemented in ronin_bin/tejun and not in src/resources.ts (prerequisite P1).
 - **customize.tools_blurb:** The executables that implement actions. A markdown row cannot author one.
 - **customize.role_families:** Role families
 - **customize.role_families_blurb:** The shelves of the ＋ New board. Presentation only — a family never rides a launch.
@@ -1637,7 +1672,6 @@ The catalog entry goes. {dir} is not touched.
 - **team_jikan.to_lead:** the team lead, whoever that is at the time
 - **team_jikan.when:** When
 - **team_jikan.when_placeholder:** weekdays 08:00
-- **team_jikan.when_help:** One time: once 2026-09-04 08:00. Repeating: daily 08:00 · weekdays 08:00 · weekly mon 08:00 · monthly 1 09:00 · hourly · every 30m · or a five-field cron line.
 - **team_jikan.when_preview:** {words} → next {next}
 - **team_jikan.never:** never — that time has passed
 - **team_jikan.add:** Schedule it
@@ -1745,7 +1779,7 @@ The catalog entry goes. {dir} is not touched.
 - **keys.left:** Left
 - **keys.right:** Right
 
-## glossary — the words an agent says to a person for the house terms (KOTOBA_GLOSSARY.md, rendered at session birth; no UI reads these)
+## glossary — the words an agent says to a person for the house terms (ronin_catalogs/lexicons/professional_en.md, rendered at session birth; no UI reads these)
 - **glossary.coworkspace:** the coworkspace
 - **glossary.tile:** tile
 - **glossary.desk:** the desk

@@ -25,7 +25,6 @@
 > names the bare form and is done — a corner is the same corner in either shell. A COLOUR
 > skin gives both faces, so the flip keeps working: it is still the theme's job to say which
 > shell you are in, and the skin's job to say what that shell looks like. (Before
-> 2026-08-19 there was only the bare form, so a colour skin overrode light mode too and
 > quietly spent the flip. If you name a colour bare, that is still what happens — legal, and
 > occasionally the point.)
 >
@@ -49,7 +48,6 @@
 >
 > Which is the honest limit of this whole feature: **a skin's colours are checked by
 > nothing.** The shipped ones are hand-picked to stay clear of the floor; yours are yours.
-> (Ruled with @terminal_black, 2026-08-19, who owns the theme.)
 
 ## stock
 - **label:** Stock

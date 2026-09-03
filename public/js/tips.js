@@ -1,62 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE HELP BOX — one panel, one size, one place. Hovering a control fills it.
- *
- * WHAT WENT WRONG BEFORE, because the shape of this file is a reaction to it. The tile
- * header had grown three separate ways of explaining itself: a native `title` (drawn by
- * the OS, unstyleable, sized and placed however the browser liked), the dial's own
- * `.dial-badge`, and the gauge's own `.gauge-badge` — and then a fourth was added on top
- * in the name of consistency. Hovering the dial put TWO boxes on screen at once, 297x18
- * at one spot and 280x86 at another, with a third flashing when the value changed.
- * Owner: "it's total insanity on the hover".
- *
- * So this replaces all of them rather than joining them. The badges' hover reveals are
- * gone from the stylesheet; their text moved INTO this box as its status line.
- *
- * THE RULES, and they are the whole design:
- *
- *   ONE BOX          a single element, reused. Never two on screen.
- *   ONE SIZE         fixed width AND height. It does not grow for long text and does
- *                    not shrink for short — every label is written to fit, and the
- *                    check that they do is `scripts/check-tips.mjs`.
- *   TWO PLACES       docked under the header of the tile that owns the control, on the
- *                    control's OWN SIDE of it — the header is two groups either side of
- *                    a spacer, and throwing the right-hand cluster's box across to the
- *                    left edge put the answer nowhere near the question. Within a side
- *                    the rectangle is a constant, so crossing the eight right-hand
- *                    buttons changes the words and moves nothing. Never anchored to the
- *                    cursor, never flipped above, never nudged off an edge.
- *   TWO ZONES        a HEADER line — a keyboard shortcut, or what this control currently
- *                    reads, for the ones that have either — and WHAT IS THIS underneath,
- *                    separated by a rule. THE HEADER EXISTS IF AND ONLY IF IT HAS
- *                    CONTENT: no shortcut and no reading means no header and no rule, and
- *                    the explanation starts at the top of the box.
- *
- * THE HEADER USED TO BE UNCONDITIONAL and that was the bug (owner, 2026-08-17). It held
- * its height when empty — `min-height` on `.helpbox-status` — on the argument that the
- * box would otherwise reflow between a control that has a reading and one that does not.
- * That argument was already covered: `.helpbox` is a FIXED width AND height, so nothing
- * reflows either way; the reserved line bought nothing and cost the majority case. Every
- * control without a reading — which is most of them, and ALL of the macro rows — drew an
- * empty block and a rule above two lines of text. Owner, scrolling the macro list: "it's
- * very convoluted because of the way that it has that header. You barely see the text,
- * and there's this big white block head at the top." So the rule is content, not caller:
- * one `:empty` in the stylesheet, and every blank source normalised to '' here so that
- * a whitespace-only reading cannot sneak a rule back in.
- *
- * Controls outside any tile (the top bar) dock under the top bar by the same rule.
- *
- * NOT FOR A FINGER — decided per EVENT, not per device. A finger has no hover, and a box
- * under a fingertip covers what it describes. `IS_TOUCH` is the wrong test: it is true
- * whenever a machine merely HAS a touchscreen, which is most laptops, and gating on it
- * silently switched help off for a mouse. `pointerType` answers per input instead, so a
- * hybrid machine gets it right either way round.
- */
-
 /** Rest before it opens. Long enough that crossing a row is silent, short enough not to feel broken. */
 const DELAY_MS = 300;
 
-// OWNER, 2026-09-02: the docked help panel is disabled system-wide. It was appearing
 // over menus and controls far more often than it supplied useful information. Keep the
 // title takeover below: without it, disabling our panel merely resurrects the browser's
 // native hover bubbles. This one switch preserves the implementation for reconsideration
@@ -112,27 +57,6 @@ function takeOver(el) {
   el.removeAttribute('title');
 }
 
-/**
- * A KEYBOARD SHORTCUT, lifted out of the label it is already written in.
- *
- * There is no shortcut registry and this deliberately does not start one (owner's KISS
- * ruling, 2026-08-17). The chords that exist are owned where they are handled — the
- * Ctrl+Shift / Ctrl+Alt block in `layout.js` — and the two controls that HAVE one already
- * announce it the only way they ever could: at the front of their own title, as
- * `"⌃⇧C — the CoWorking Commons: …"` (`index.html`, き Commons and か New). That prefix is
- * the data. Reading it here is what puts the chord above the rule instead of buried in
- * the middle of a sentence, and costs nothing new to maintain: write the chord at the
- * front of the label, as those two already do, and it lands in the header.
- *
- * THE PATTERN IS DELIBERATELY NARROW. It must not fire on prose, and prose in this client
- * uses the same ` — ` join freely (`padpanel.js` builds `widget — what it does`). So it
- * demands a leading MODIFIER GLYPH — ⌃⇧⌥⌘, which no sentence starts with — then a short
- * key, then the em dash. "Ctrl-C (interrupt)" on ^C is not a shortcut FOR that button, it
- * is what the button sends, and it correctly does not match.
- *
- * `data-keys` is the explicit door for a control built in JS that would rather say so
- * than encode it in prose. Nothing sets it today; it costs one line to honour.
- */
 const CHORD = /^([⌃⇧⌥⌘]+[A-Za-z0-9↑↓←→]{0,5})\s+—\s+/;
 
 function keysOf(el) {
@@ -184,49 +108,6 @@ function setHeader(el) {
   statusEl.textContent = [keysOf(el), statusOf(el)].filter(Boolean).join(' · ');
 }
 
-/**
- * WHERE THE BOX GOES — from the owning TILE and the control's SIDE, never from the
- * control's own position.
- *
- * TWO COORDINATES, not one. The header is two groups either side of a `.grow` spacer:
- * the session picker and the mark sit left, the controls sit right. Docking everything
- * left meant the whole right-hand cluster threw its box across to the far side of the
- * tile, so the answer appeared nowhere near the question. Each side now docks to its
- * own edge.
- *
- * Within a side the rectangle is still a CONSTANT — that is the property worth keeping.
- * Crossing the right-hand buttons cannot move or resize the box; only stepping between
- * the two groups does, and those are two different places on the header.
- *
- * The side is read from DOM ORDER against the spacer rather than from coordinates:
- * position depends on how wide the tile is and which buttons are hidden, whereas the
- * order in the markup is what actually defines the two groups.
- *
- * TWO EXCEPTIONS TO "below the header", and they are the same exception twice: a control
- * that lives in something which ITSELF hangs below the header cannot have its help docked
- * to the header, because the header's bottom edge is where that thing already is.
- *
- *   メ'S DROP (`tilemore.js`), earned in a browser on 2026-08-17. Six header controls
- *   moved into the drop, and docking to the header laid the box straight over the drop —
- *   covering all six while you read about one.
- *
- *   THE COMMONS TAB STRIP (`commons.js`), 2026-08-18. The strip sits immediately below
- *   the header, so anything in it that docked to the header's bottom edge landed ON the
- *   strip: hovering ▣ Roots laid a 300px box across SEVEN of the ten rooms, and since a
- *   tab is not in the header it also failed the spacer test and docked to the tile's far
- *   RIGHT, putting the answer at the opposite end of the strip from the question. Owner:
- *   "the helpful hints are dropping in front of the tabs and hard to find."
- *
- *   THE TABS THEN LOST THEIR HELP OUTRIGHT, which was the owner's second ruling that day
- *   and the better one — a tab's label already says what its room is, so there was never
- *   anything for a box to add (`panes.js`). That does NOT retire this anchor. What is
- *   still in the strip is the ✕, a bare glyph with no label of its own, which is exactly
- *   the case help exists for; and its box would cover the tabs from the header just as
- *   readily. One control is enough to keep the rule honest.
- *
- * So the anchor is "the nearest thing below the header that the control is inside, else
- * the header", and the SIDE is read off whatever divides THAT anchor's two groups.
- */
 function dockFor(el, boxWidth) {
   const tile = el.closest('.tile');
   const head = tile ? tile.querySelector('.tile-head') : document.getElementById('bar');
@@ -273,18 +154,6 @@ function show(el) {
   showing = el;
 }
 
-/**
- * Re-read the status line of the box that is already open.
- *
- * For an instrument whose value changes while you are looking at it — turning the dial
- * is the case that matters, because you turn it by clicking the thing you are hovering.
- * Both the dial and the gauge used to flash a bubble of their own at that moment, which
- * put a second panel on top of the one already reading their value. Now the reading
- * simply changes where it is being read.
- *
- * A no-op unless the box is open for that very control, so a background refresh cannot
- * make a panel appear that nobody asked for.
- */
 export function refreshTipStatus(el) {
   if (!box || !showing || !el || (showing !== el && !el.contains(showing))) return;
   // Through `setHeader` and not `statusOf` directly, so a control whose reading arrives
@@ -308,15 +177,6 @@ function arm(el) {
   timer = setTimeout(() => show(el), wait);
 }
 
-/**
- * Take every title in the document, now and forever after.
- *
- * The sweep catches what is already on the page (index.html's own, and anything built
- * before this ran). The observer catches the rest: a title set by ANY code at ANY time —
- * a refresh rewriting 🏷, a tile built later, a panel opened for the first time — is
- * moved before the OS gets a chance to draw it. Cheap: one attribute filter, and the
- * callback does nothing at all unless a title actually appeared.
- */
 function seizeTitles() {
   const sweep = (node) => {
     if (node.nodeType !== 1) return;

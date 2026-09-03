@@ -1,5 +1,5 @@
 /**
- * THE ONE ACTION, as executable assertions — the tool an agent actually types.
+ * THE ONE ACTION, as executable assertions for the server-side command.
  *
  * `src/wipeboards.ts` is covered by tests/wipeboards.test.ts; this covers the thing on
  * top of it, because until now the CLI had only ever been driven by hand. What matters
@@ -7,7 +7,7 @@
  * printed, what the exit code is, and whether a run that printed something records the
  * read while a run that refused changes nothing.
  *
- * It spawns the real entry through tsx, so what is asserted is what ships. No tmux: the
+ * It spawns the HTTP surface's command through tsx. No tmux: the
  * tool resolves its session and membership through the RONIN_SESSION / RONIN_BOARDS /
  * RONIN_MEMBERS seams that exist for exactly this reason.
  */
@@ -23,19 +23,19 @@ import { promisify } from 'node:util';
 const pexec = promisify(execFile);
 const exists = (p: string): Promise<boolean> => fs.stat(p).then(() => true, () => false);
 const REPO = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const CLI = path.join(REPO, 'src', 'wipeboard-cli.ts');
+const CLI = path.join(REPO, 'src', 'commands', 'wipeboard.ts');
 
 const store = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-wb-cli-'));
 const rosters = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-wb-cli-rosters-'));
 
-/** Run the shipped entry as an agent would, and hand back what an agent would see. */
+/** Run the command implementation and hand back its reply. */
 async function run(
   session: string,
   args: string[],
   env: Record<string, string> = {},
 ): Promise<{ code: number; out: string }> {
   try {
-    const { stdout } = await pexec('npx', ['tsx', CLI, ...args], {
+    const { stdout, stderr } = await pexec('npx', ['tsx', CLI, ...args], {
       cwd: REPO,
       env: {
         ...process.env,
@@ -52,10 +52,10 @@ async function run(
         ...env,
       },
     });
-    return { code: 0, out: stdout };
+    return { code: 0, out: stderr + stdout };
   } catch (e) {
-    const err = e as { code?: number; stdout?: string };
-    return { code: err.code ?? 1, out: err.stdout ?? '' };
+    const err = e as { code?: number; stdout?: string; stderr?: string };
+    return { code: err.code ?? 1, out: (err.stderr ?? '') + (err.stdout ?? '') };
   }
 }
 
@@ -198,8 +198,8 @@ test('bare post with no team refuses plainly, and with two teams asks which', as
   assert.match(lone.out, /NO-TEAM/);
 
   const torn = await run('omega', ['post', 'which one?'], { RONIN_TEAMS: 'crew,squad' });
-  assert.equal(torn.code, 2);
-  assert.match(torn.out, /WHICH-TEAM: you are on crew, squad/);
+  assert.equal(torn.code, 0);
+  assert.match(torn.out, /WARNING: you are on crew, squad; posting to crew/);
 });
 
 test('QUIET BY DEFAULT — a bare post interrupts the lead alone', async () => {
@@ -262,13 +262,12 @@ test('--session leads the whole command, so the formless reads can use it too', 
   assert.match(check.out, /signed by the flag/, "gamma is on the board and had not read it");
 });
 
-test('an unknown flag is refused, never folded into what the board says', async () => {
+test('an unknown flag is reported and included in what the board says', async () => {
   const typo = await run('alpha', ['crew', 'post', '--too', 'beta', 'the rail is yours']);
-  assert.equal(typo.code, 2, 'refused, not posted');
-  assert.match(typo.out, /BAD-FLAG: '--too'/);
-  assert.match(typo.out, /--to, --session/, 'and it names the flags there are');
+  assert.equal(typo.code, 0);
+  assert.match(typo.out, /WARNING: '--too' is not a wipeboard flag/);
   const beta = await run('beta', []);
-  assert.doesNotMatch(beta.out, /the rail is yours/, 'nothing reached the board');
+  assert.match(beta.out, /--too beta the rail is yours/, 'the reported flag remains part of the post');
 });
 
 test('a blank --session is refused rather than signing as nobody', async () => {

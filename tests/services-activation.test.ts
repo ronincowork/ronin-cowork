@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { maskEmail, publicState } from '../src/activation/state.js';
 import { EgressRefused } from '../src/activation/transport.js';
-import { servicesSubscription, setteiServices } from '../src/settei.js';
+import { servicesSubscription, setteiServices } from '../src/machine-settings.js';
 
 test('an address is masked for display and never shown back in full', () => {
   assert.equal(maskEmail('person@example.com'), 'p*****@example.com');

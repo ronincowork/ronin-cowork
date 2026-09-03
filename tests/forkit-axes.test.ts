@@ -18,7 +18,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { readCatalogSections } from '../src/catalog.js';
+import { readCatalogSections } from '../src/resources.js';
 import { listMacros } from '../src/macros.js';
 
 /**

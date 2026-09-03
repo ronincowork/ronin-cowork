@@ -1,7 +1,3 @@
-/* The session outputs. Cowork owns the selector; services own every unlocked source —
- * RIREKI's four views (owner, 2026-08-26: cherry_pick is RIREKI's own view and its
- * technical term; `conversation` was the same thing under another name and is gone),
- * and koshi's summary. */
 import { t } from './lexicon.js';
 // A function, not a table: the lexicon loads after this module is evaluated.
 export function OUTPUTS() {

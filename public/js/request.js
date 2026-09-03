@@ -1,35 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { t } from './lexicon.js';
-/**
- * REQUEST — the one answer to "what happened?" for every JSON call the client makes.
- *
- * Before this, seventeen modules each spelled their own fetch: some threw, some
- * returned `{}`, some swallowed the failure entirely, and `r.json().catch(() => ({}))`
- * was pasted in eleven slightly different shapes. The transport mechanics are now
- * normalized HERE and nowhere else; what a failure MEANS stays with the feature,
- * which is the half that actually differs between a wipeboard and a launch.
- *
- * The contract:
- *
- *   const r = await request('/api/thing', { method: 'POST', json: payload });
- *   // r.ok === true  → { ok, status, data }            data = decoded JSON ({} if none)
- *   // r.ok === false → { ok, status, kind, message, retryable, cause }
- *   //     kind: 'http'    a real answer with a non-2xx status (message = server's
- *   //                     `error` field when it sent one, else "HTTP <status>")
- *   //           'network' the server was never reached — message names Ronin, not
- *   //                     the browser's unhelpful "Failed to fetch"
- *   //           'abort'   the caller's own AbortSignal fired; never worth showing
- *
- * request() NEVER THROWS for a transport outcome — a thrown "Failed to fetch" is how
- * failures used to vanish into empty catch blocks. It does not toast, does not retry
- * a mutation, does not know a single Ronin word. Deliberate non-users: voice.js posts
- * an audio blob (not JSON), stats.js beacons a counter (fire-and-forget) — both are
- * documented streams, not stragglers.
- *
- * The response-shaping is a pure function (`shapeResult`) so tests/request-shape.test.js
- * can hold the contract without a browser or a socket (check-tests' floor).
- */
-
 /** Pure: turn (status, ok, decoded-body-or-null) into the result contract above. */
 export function shapeResult(status, httpOk, body) {
   const data = body && typeof body === 'object' ? body : {};

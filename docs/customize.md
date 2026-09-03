@@ -106,7 +106,7 @@ Shared seams consumed but not owned:
 - `public/js/main.js` and `public/index.html` — installation and shared host.
 - `public/js/workspace-kit.js`, `workspace-primitives.js`, `workspace-layouts.js` — shared foundation.
 - `public/style.css` — shared Kit geometry and tokens.
-- `src/catalog.ts`, `src/definitions.ts`, and shared routes — catalog plumbing used elsewhere.
+- `src/resources.ts`, `src/resource-adapters.ts`, and shared routes — catalog plumbing used elsewhere.
 
 Do not edit a shared seam without `view_mgr` assigning the exact change. Preserve unrelated worktree changes.
 

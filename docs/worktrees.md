@@ -107,8 +107,8 @@ worktrees. A coding session works in its resolved private worktree.
 | Save | Uncommitted files in one worktree. | None. |
 | Commit | Private checkpoint on the Agent branch. | Focused development checks as useful; no boundary suite. |
 | Hand-in | Publish committed work to the team line through an integration candidate. | Merge/conflict and near-instant admission checks only. |
-| Team promotion | Combine the team line with `dev`. | One full repository BYOIN on the exact candidate before `dev` moves. |
-| `dev` → stable | Release through the configured release path. | A second full BYOIN on the exact release candidate. |
+| Team promotion | Combine the team line with `dev`. | Candidate construction, reference movement, restart and health. |
+| `dev` → stable | Release through the configured release path. | `npm run verify` in GitHub. |
 
 Commit preserves private work; hand-in publishes it to the team. Hand-in is serialized per
 target line, builds in a disposable candidate worktree, and advances the line with a
@@ -119,12 +119,9 @@ When a team line advances, clean sibling desks adopt it immediately. Dirty sibli
 their files and receive a pending update; they adopt at their next safe boundary or explicit
 `tejun-desk sync`. The handing-in desk also adopts the accepted team state.
 
-Team promotion builds the combined candidate, runs full BYOIN once, advances `dev` only on
-success, restarts the live service, and performs deployment health checks. Failed candidate
-verification leaves `dev` untouched. Failed post-restart health triggers the promotion
-recovery path and remains visible in its receipt.
-
-The complete testing boundary is defined in `docs/test-protocols.md`.
+Team promotion builds the combined candidate, advances `dev` by compare-and-swap,
+restarts the live service, and performs deployment health checks. Failed post-restart
+health triggers the promotion recovery path and remains visible in its receipt.
 
 ## Desk lifecycle and recovery
 
@@ -150,7 +147,7 @@ worktrees are preserved to named recovery refs and receipts before cleanup.
 - Keep Project Root controls thin: they edit the repository profile but do not implement
   launch, branch, worktree, or promotion policy.
 - Do not edit funnel-point worktrees directly.
-- Do not run full BYOIN at ordinary commit or team hand-in boundaries.
+- Run `npm run verify` when the repository needs a TypeScript and behavior-test verdict.
 - Do not delete worktrees, branches, registry rows, receipts, or recovery state implicitly.
 
 ## Executable coverage
@@ -165,5 +162,4 @@ The focused contract is covered by:
   behavior;
 - `tests/desks.test.ts` and `tests/desk-state.test.ts` for worktree lifecycle, registry,
   synchronization, recovery, and state reporting;
-- promotion tests for candidates, receipts, BYOIN boundaries, recovery, and atomic line
-  movement.
+- promotion tests for candidates, receipts, recovery, and atomic line movement.

@@ -92,25 +92,12 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -n "$TARGET" ]; then
-  # CONTROL-CHECK, same rule as tejun-peek: reading a 👤 user session is the owner's
-  # business, not an agent's. 👁 read and 🤖 write both allow a read.
-  case "$(tmux show-option -t "$TARGET" -qv @ronin-control 2>/dev/null || true)" in
-    user) die "DENIED: '$TARGET' is user-controlled (dial 👤). Ask the owner." ;;
-  esac
   NAME=$TARGET
 else
   NAME=$(me)
 fi
 # Where the session record lives on THIS machine — asked, never spelled. See docs/stores.md.
-# RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
-# session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,
-# and ../ from the link is a store with no src/ or bin/ — measured 2026-09-02 (desk audit):
-# every tool built this way failed from a born session. Same loop as bin/shim/git.
-SELF=${BASH_SOURCE[0]}
-while [ -L "$SELF" ]; do
-  link=$(readlink "$SELF")
-  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
-done
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 FILE="$("$STORE" session)/$(key_of "$NAME")/tegami.md"

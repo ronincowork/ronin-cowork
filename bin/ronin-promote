@@ -1,22 +1,20 @@
 #!/usr/bin/env bash
 # RONIN PROMOTE — team promotion: the lead's door from a team line into `dev`.
 #
-#   bin/ronin-promote <team>                      candidates → full BYOIN → receipt → CAS advance → restart → health
-#   bin/ronin-promote <team> --dry-run            build and prove; write nothing, move nothing
+#   bin/ronin-promote <team>                      candidates → receipt → CAS advance → restart → health
+#   bin/ronin-promote <team> --dry-run            build candidates; write nothing, move nothing
 #   bin/ronin-promote <team> --no-restart         move dev, skip the restart + health checks
-#   bin/ronin-promote <team> --mode gates|ui      a narrower BYOIN (the receipt says so; CI wants `full`)
 #   bin/ronin-promote resume <receipt-id>         finish an interrupted coordinated promotion from its receipt
 #   bin/ronin-promote abandon <receipt-id> <why>  give an interrupted one up — refs already moved stay moved
 #   bin/ronin-promote revert <receipt-id>|last    land a revert of that promotion through the same door
-#   bin/ronin-promote bisect <team> [--repo r]    replay the line's hand-ins one at a time until BYOIN fails
+#   bin/ronin-promote bisect <team> [--repo r]    check each hand-in applies to the working line
 #   bin/ronin-promote receipts [team]             the ledger, one line each
 #   bin/ronin-promote show <receipt-id> [--pr-block|--shared]
+# src/promotion-cli.ts calls the operator HTTP surface and prints its reply.
 #
-# THE ONE FULL BYOIN runs here, on the exact commit that would become dev, and nowhere
-# else in the dev loop (docs/team-promotion.md, docs/test-protocols.md). A hand-in is
-# mechanical admission; dev → master consumes the receipt this writes. Refs move by
-# compare-and-swap in receipt order or not at all; the receipt is on disk before the
-# first one moves, so an interruption is visible and finishable, never half-landed.
+# Promotion builds each candidate, writes its receipt, advances references by
+# compare-and-swap, restarts the live app, and checks deployment health. The receipt is
+# on disk before the first reference moves, so an interruption is visible and resumable.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"

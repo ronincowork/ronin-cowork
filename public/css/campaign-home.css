@@ -1,13 +1,9 @@
-/* Ronin Home composition only; tokens and primitives stay foundations'. */
+
 @layer app {
-  /* The root is not a Cowork workspace. Match the approved Ronin Home composition:
-     the house mark alone in the bar, then the three doors. */
+
   body.ronin-home-active #bar > :not(#brandbtn) { display: none !important; }
 
-  /* MASU — the square sake cup (owner, 2026-08-29). The box keeps a hairline corner so it
-     reads as JOINED rather than cut; the cups sitting in it are true right angles. These
-     are one-off measurements, and a `--name:` line is their one legal home (check-css 6).
-     The tone mixes are named here too: a color-mix belongs on a token line, never inline. */
+
   .ch-view {
     --ch-box: 2px;
     --ch-glyph: 30px;
@@ -56,7 +52,7 @@
     text-decoration: none;
     cursor: pointer;
   }
-  /* the one colour moment, and the door's own tone */
+
   .ch-door::before {
     content: '';
     position: absolute;
@@ -83,8 +79,7 @@
     line-height: 1.15;
     color: var(--fg-strong);
   }
-  /* The caption waits at the garden's far edge instead of clinging to the title: the
-     empty middle stays empty, and a quiet path line leads into the words on approach. */
+
   .ch-is {
     position: absolute;
     top: var(--ch-caption-top);
@@ -123,9 +118,7 @@
   .ch-update-answer[data-state='failed'] { color: var(--bad); }
   .ch-update-answer[data-state='available'] { color: var(--accent); }
 
-  /* ── CAMPAIGN MANAGE — the same bedrock as the Cowork space, Campaign-level surfaces.
-     Geometry only: the workbench, the selector column and the two workspaces. Everything
-     inside a surface is the Kit's own. ── */
+
   .cv-view {
     --cv-blank-h: 120px;
     --cv-cup: 0;
@@ -167,17 +160,23 @@
   .cv-button:hover { border-color: var(--accent); color: var(--fg-strong); }
   .cv-empty { margin: 0; padding: var(--space-5); font-size: var(--text-3); color: var(--muted); }
   .cv-note { margin: 0; font-size: var(--text-3); line-height: 1.5; color: var(--muted); }
+  .cv-pre { margin: 0; padding: var(--space-4); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); font-size: var(--text-2); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
   .cv-eyebrow { font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
   .cv-body > .cv-cards { padding: 0; }
-  /* Agent defaults: one row per provider — the name, its models, the default radio. */
+
   .cv-table { width: 100%; border-collapse: collapse; font-size: var(--text-3); }
   .cv-table th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--muted); font-weight: 600; border-bottom: var(--edge) solid var(--line); }
   .cv-table td { padding: var(--space-3); vertical-align: middle; border-bottom: var(--edge) solid var(--line); }
   .cv-table td b { color: var(--fg-strong); font-weight: 600; }
   .cv-table .cv-input { width: 100%; }
   .cv-from { display: block; margin-top: var(--space-1); font-size: var(--text-2); color: var(--muted); }
-  /* Desk profile: presets as pills with one Apply; each component a choice with its explanation beside it. */
+
   .cv-presets { display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
+  .cv-install { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+  .cv-install .cv-actions { justify-content: flex-start; align-items: center; }
+  .cv-install .cv-input { max-width: 28ch; }
+  .cv-sell summary { cursor: pointer; font-size: var(--text-2); color: var(--muted); }
+  .cv-sell ul { margin: var(--space-2) 0 0; padding-left: var(--space-6); font-size: var(--text-3); line-height: 1.5; color: var(--fg); }
   .cv-pills { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
   .cv-pill {
     display: inline-flex; align-items: center; gap: var(--space-2);
@@ -193,7 +192,7 @@
   .cv-choice-pick { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
   .cv-choice-name { font-weight: 600; color: var(--fg-strong); }
   .cv-choice-why { margin: 0; font-size: var(--text-3); line-height: 1.5; color: var(--muted); }
-  /* Routines: a switch, or the state where there is no switch yet. */
+
   .cv-switch { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-3); color: var(--fg-strong); cursor: pointer; }
   .cv-switch input { accent-color: var(--accent); }
   .cv-routine-control { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }

@@ -1,5 +1,7 @@
 # Message queue
 
+`tejun-send` calls the operator's HTTP message surface and prints its delivery reply.
+
 ## TL;DR
 
 Ronin accepts a message only for a live session and binds it to that session's birth

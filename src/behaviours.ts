@@ -1,9 +1,8 @@
-/** Resolve the two behaviour shelves into literal birth-reading files. */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { listSops } from './sops.js';
-import { storeDir } from './stores.js';
-import { listWays } from './ways.js';
+import { listSops } from './resources.js';
+import { storeDir } from './resources.js';
+import { listWays, wayFile } from './resources.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -17,7 +16,6 @@ export interface ResolvedBehaviours {
   ignored: string[];
 }
 
-/** Unknown shelves, missing books and malformed addresses are omissions, never refusals. */
 export async function resolveBehaviourBooks(input: readonly string[]): Promise<ResolvedBehaviours> {
   const [sops, ways] = await Promise.all([listSops(), listWays()]);
   const shelves = {
@@ -34,14 +32,13 @@ export async function resolveBehaviourBooks(input: readonly string[]): Promise<R
     const match = /^(sops|ways):([a-z0-9][a-z0-9_-]*)$/.exec(book);
     const shelf = match?.[1] as keyof typeof shelves | undefined;
     const name = match?.[2] ?? '';
-    const origin = shelf ? shelves[shelf].get(name) : undefined;
-    if (!shelf || !origin) {
+    const resolved = shelf ? shelves[shelf].get(name) : undefined;
+    if (!shelf || !resolved) {
       ignored.push(`behaviours[${book || String(raw)}]`);
       continue;
     }
-    const file = origin === 'user'
-      ? path.join(storeDir(shelf), `${name}.md`)
-      : path.join(ROOT, shelf === 'sops' ? 'ronin_sops' : 'ways', `${name}.md`);
+    const file = shelf === 'ways' ? await wayFile(name, resolved) : resolved === 'user'
+      ? path.join(storeDir('sops'), `${name}.md`) : path.join(ROOT, 'ronin_sops', `${name}.md`);
     delivered.push({ book, file });
   }
   return { delivered, ignored: ignored.sort() };

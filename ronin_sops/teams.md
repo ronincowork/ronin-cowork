@@ -56,11 +56,10 @@ sessions one at a time, as the work actually needs them — not a batch at birth
 
 - **Catch up through the tape** — `tejun-rireki <member> since` — before touching any
   member; the durable record is authoritative. `tejun-peek` only when there is no tape.
-- **Control-check before you type.** Every member keeps its dial: a 👤 session is the
-  owner's own hands, a 👁 session is watch-only. A dial you cannot write to is the
-  owner's to flip, not yours.
-- **Address the team as one** with `+team:` and the wipeboard, instead of narrating to
-  members one by one through the owner.
+- **Control is visible context.** Every member keeps its stored dial, and it does not
+  restrict reading or messaging the session.
+- **Address the team as one** with `+team:` and the wipeboard for team-wide messages;
+  use `tejun-send` for one session, with no board in between.
 - **Escalate what is the owner's** — a ruling, a merge, a spend — rather than sitting on
   it. That is most of what leading is.
 - **Membership is nobody's fortress.** Anyone may move a session between teams — you,

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, rm } from 'node:fs/promises';
-import { listRoleFamilies, writeRoleTasks } from '../src/definitions.js';
+import { listRoleFamilies, writeRoleTasks } from '../src/resource-adapters.js';
 
 test('typed membership writer preserves the pin and returns shadow provenance after save', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-family-membership-'));

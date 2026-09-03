@@ -1,7 +1,6 @@
 # COWORK SPACE — the surface map
 
 **The page format is the `workbench`.** It was called "the team workspace" while the team was
-the only thing it showed; the name moved up a level on 2026-08-27 (owner: *"I've been
 calling it the team workspace. But to be honest, this is the cowork space"*) because the
 page is about to hold surfaces that are not about a team. `#/team/:name` is one address
 into it; the League will be another. This page is the one document to point at when two
@@ -32,7 +31,7 @@ matters—never “two-workspace Campaign surface.”
 └───────────────────────┴──────────────────────┴──────────────────────────────────────────┘
 ```
 
-**Two shapes** (owner, 2026-08-27): **2** — workspace 1 · selector column · workspace 2, as
+**Two shapes**: **2** — workspace 1 · selector column · workspace 2, as
 drawn; and **4** — a 2×2 of workspaces with the selector column left, centre or right. A
 workspace column is a STACK: workspace 3 sits under 1, workspace 4 under 2, and the count
 (the bar's **2 ⇄ 4** button, in the seat the grid count had — one button wearing the count, clicked to alternate — or `count=4` from `tejun-teampage`)
@@ -52,19 +51,18 @@ Three kinds of thing, and only three, sit inside the bar:
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
 | **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ edit Agent title · View Work Record · output selector · @ · ⚡ · メ. The Torii is first, immediately before the readable title; the permanent session ID does not change. |
-| **team_commons** | one team | **commons strip** — a strong Team Commons identity followed by rectangular channel tabs | Docs (three compact rectangular shelf tabs: **Tracked** — what agents listed; **Plans** and **Docs** — the files under the places each project root names on its record, grouped by root, the team's repos first) · Wipeboard · Agent Message Queue · Team Configuration (Chat hidden until it is a thing — owner, 2026-08-28). Reached from the **Team commons card**, first on the roster |
 | **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). The Team roster now lives on the Cowork workbench. |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
-| *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default (owner, 2026-08-27) |
+| *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default |
 | `campaign_commons` | this campaign | Campaign Commons strip | Campaign · Project roots · Team roster · Templates |
 
 Rules that make them peers:
 
-- **No flip on any head** (owner, 2026-08-28): the team commons is the FIRST CARD of the
+- **No flip on any head**: the team commons is the FIRST CARD of the
   roster, thinner than a session's, and goes into a workspace like one — click for the
   selected cell, drag onto any cell. The SHINGO light signal sits at the far RIGHT of a
   tile head; the connection dot is gone. The selector column's head reads *Roster: <team>*.
-- **A cell owns selection and drops, whatever it holds** (owner, 2026-08-28): a card dropped on
+- **A cell owns selection and drops, whatever it holds**: a card dropped on
   any workspace clobbers what is there — session, commons, launcher, anything to come.
   Nothing per surface: `cowork-view.js` keeps ONE registry (`SURFACES`: token · element ·
   show) and a new surface is one entry in it — the cells, the memory, the view report and
@@ -108,8 +106,7 @@ Ronin  •  Coworks           Your team: Sea Settle              <verbs>
 
 `Ronin` and `Coworks` are the only doors, and the root landing shows only Ronin. The
 Team's name used to sit beside the Coworks door, where a first-time visitor read it as
-one more door and could not tell the all-Teams page from one Team's page (owner,
-2026-09-02). It now sits centred in the bar as **the place**: *Teams* on the Coworks page
+one more door and could not tell the all-Teams page from one Team's page. It now sits centred in the bar as **the place**: *Teams* on the Coworks page
 (its tooltip says "See all of your teams here"), *Your team: <name>* on a Team page,
 italic so it reads as information and never as a button. Doors consume the shared
 `.ui-bar-nav` primitive and the place consumes `.ui-bar-place` from `docs/ui.md`; a
@@ -119,22 +116,17 @@ else does.
 ### The root landing
 
 The bare `/` route is the landing, not a remembered workspace and not a Campaign editor.
-It has three loaded doors: Campaign, Coworks and Agents. The large door launches what is
-loaded: Campaign opens that Campaign's all-Coworks page; Coworks opens the loaded Cowork;
-Agents opens the loaded Agent in its Cowork.
+It has three direct doors: Machine Settings, Coworks and New Project. Machine Settings
+opens the one Campaign page; Coworks opens the coworkspace; New Project opens launch.
+There is no Campaign picker, default star, archive action or New Campaign footer.
 
-The value chip opens that door's selector. Every row has one star and one explicit action:
+The live owner is `public/js/campaign-home.js`.
 
-| selector | star means | row action | footer |
-|---|---|---|---|
-| Campaign | load this Campaign and re-home the other defaults | Edit | New Campaign |
-| Coworks | load this Cowork | Launch | New Cowork |
-| Agents | load this Agent | Launch | New Agent |
-
-A star updates the loaded default and leaves the selector open. A row name loads it and
-closes; Edit or Launch acts on that row and closes. A closed selector has no box, height or
-stale children. The approved composition is the Campaign Home concept in Ronin Lab; the
-live owner is `public/js/campaign-home.js`, never a simplified second interaction.
+The Campaign page shows the Campaign's editable identity, desk profile, routines,
+defaults and templates. With `MULTIPLE_CAMPAIGNS_ENABLED` off, the client does not render
+controls that add, select, default, archive or delete Campaigns. The Campaign API remains
+available. The fixed Campaign id is not rendered; its title, description and all other
+Campaign content remain editable.
 - **surface head** — the genus for a surface's top row: *tile head*, *commons strip*,
   *column head*. No head carries a flip — a surface gets into a workspace from the selector column, or by drag.
 
@@ -149,7 +141,6 @@ live owner is `public/js/campaign-home.js`, never a simplified second interactio
 ## Retired
 
 The raw Sessions 1 / 2 / 4 grid and the `session_commons` embedded inside every Tile were
-removed on 2026-08-28. A terminal Tile is now only a terminal surface. Roster, Archives,
 New Session, Docs and Wipeboard live in the cowork-space surfaces named above.
 
 ## What is NOT a workspace surface

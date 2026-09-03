@@ -1,27 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * LEXICON — the words a surface uses, chosen at runtime.
- *
- * `t(key, literal, vars)` is the whole surface: the active lexicon's word for `key`, else the
- * literal the view wrote, with `{name}` placeholders filled from `vars`. That second argument is the floor's floor — it is what makes a
- * missing lexicon paint exactly as stock, and a missing key never blank a label. Every view reads its strings through `t()` since
- * 2026-08-27 (the KOKUGO sweep); `docs/kokugo.md` is how a new one does the same, and
- * `scripts/check-lexicon.mjs` fails a key the floor lacks.
- *
- * ONE FLAT OBJECT PER PICK. The server resolves the `base:` chain (`src/lexicons.ts`), so
- * this file never learns that `home_en` falls through to `professional_en`, or that a French
- * Home is one file. It is fetched at boot from the active desk profile and again on a
- * pick, never cached in storage — the same reason skins re-fetch: edit the file, reload,
- * wear the change.
- *
- * TWO KINDS OF KEY, ONE CALL. Surface strings (`campaign`, `go`) and catalog tokens by
- * prefix (`kind.household`, `role.DraftPlan`) — a view listing definitions asks
- * `t('kind.' + token, definition.label)` and gets the same fallback rule.
- *
- * WHAT IS NEVER HERE: anything an agent reads. The letter, the brief and the boot shelf
- * stay in stock tokens; a lexicon changes what a PERSON sees and nothing else.
- */
-
 /** The active lexicon: { name, label, words } — null is stock, and ordinary. */
 let active = null;
 

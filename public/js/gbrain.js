@@ -125,7 +125,6 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
     if (!ordered.length) integrations.append(Object.assign(document.createElement('p'), { className: 'gb-empty', textContent: 'No integrations were reported by gbrain.' }));
   };
 
-  // NOT INSTALLED → the whole tab is one button (owner's ask, 2026-08-17): press Load
   // and the service's own installer runs — weights, gbrain, cabinet, wiring, shelves.
   // The button exists ONLY while gbrain is absent; once installed the panel takes over.
   let polling = null;
@@ -180,7 +179,6 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
     privacy.append(btn);
   };
 
-  // The way back out (owner's ask, 2026-08-17): removing is a press too — a quiet one,
   // at the foot of the panel, and it says out loud that the brain repo is kept.
   const renderRemove = () => {
     const el = document.createElement('div');

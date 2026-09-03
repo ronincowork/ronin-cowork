@@ -6,7 +6,7 @@
 # @ronin-tags — there is no team object to create or clean up, and a tag dies with its
 # session. This reads tmux directly (not the Ronin HTTP API) so it still answers when
 # Ronin isn't running. Read-only: it reports each member's dial but changes nothing,
-# and never tags anything. `tejun-group` is the retired name and forwards here.
+# and never tags anything.
 set -u
 
 VIEWER_PREFIX="grid_"   # browser viewer sessions — never on a team

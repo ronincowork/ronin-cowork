@@ -1,9 +1,9 @@
 # QuarterBack
+- **kinds:** coding
 
 Coordinates other sessions — dispatch, unblock, report upward. A quarterback reads the
 field, calls the play and does not run it, which is the posture exactly.
 
-**A TASK, and the owner ruled it so on 2026-08-22.** It spent one day as a `role_family` on
 the theory that coordinating is who you are rather than what you are doing. It is not: a
 Developer *moves into* quarterbacking when the work needs someone calling plays, and moves
 back out again. That is the definition of a `session_role` — and it means the coordinator

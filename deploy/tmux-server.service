@@ -21,6 +21,7 @@
 
 [Unit]
 Description=tmux server (owns every session; kept out of the app's cgroup)
+RefuseManualStop=yes
 
 [Service]
 # oneshot + RemainAfterExit: the client exits immediately, the forked server keeps

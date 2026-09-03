@@ -1,19 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
 
-/**
- * The coarse-pointer sheet primitives. Two exports, two jobs:
- *
- *   isCoarse()  the stylesheet-agreeing touch test — narrower than IS_TOUCH on purpose
- *   makeDrop()  a button and the sheet it drops, shared so every sheet behaves the same
- *
- * The one-row phone header that used to live here (collapseTileHead / expandTileHead,
- * hoisting the tile head into the app bar) is GONE: a phone never builds the bar at
- * all now — it gets the phone shell (js/phone.js, the MOBILE plan), whose メ sheet is
- * built from makeDrop below with the tile's own controls relocated into it. The keys
- * drawer that lived beside it went the same way: the keys ride every coarse tile's
- * composer (js/keysrow.js).
- */
-
 /** Only run where the STYLESHEET agrees. IS_TOUCH is broader (it also accepts a bare
  *  `ontouchstart`), and on a device where the two disagree the relocated nodes would
  *  land in a container the CSS never unhides. When in doubt, leave the bar alone. */
@@ -28,7 +14,6 @@ export function makeDrop(glyph, title, kind) {
   menu.className = 'tdrop';
   // Declared before anything closes over it. An arrow that runs later would survive
   // the temporal dead zone, but a bar that assembles top-to-bottom is exactly the
-  // habit the 2026-08-08 constructor bug earned.
   const close = () => menu.classList.remove('open');
 
   const btn = document.createElement('button');
@@ -69,7 +54,6 @@ export function makeDrop(glyph, title, kind) {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const wasOpen = menu.classList.contains('open');
-    // 📄's doc list joined the sweep on 2026-08-18: it hangs off this same bar once the
     // header is hoisted, so it is a rival exactly as ⚡'s macro list is.
     document.querySelectorAll('.tdrop.open, .tmac.open, .tdocs.open').forEach((m) => m.classList.remove('open'));
     if (wasOpen) return;

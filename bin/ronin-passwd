@@ -4,6 +4,7 @@
 #   bin/ronin-passwd            set (or change) the password — prompts twice, no echo
 #   bin/ronin-passwd clear      remove the login: back to tailnet/Basic only
 #   bin/ronin-passwd status     is a password set?
+# src/auth-cli.ts keeps the prompt local, calls the operator HTTP surface and prints its reply.
 #
 # The password gates the WHOLE web surface (pages, API, both websockets) via an
 # HttpOnly session cookie; Basic auth (GRID_USER/GRID_PASS in .env) keeps working

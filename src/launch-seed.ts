@@ -1,5 +1,5 @@
-import type { CampaignConfig } from './campaign-config.js';
-import type { RoutineRow } from './definitions.js';
+import type { CampaignConfig } from './campaigns.js';
+import type { RoutineRow } from './resource-adapters.js';
 import type { SessionsDefaults } from './launch-command.js';
 import type { StatedBy } from './launch-profile.js';
 import type { ProjectRootInfo } from './project-roots.js';
@@ -33,7 +33,6 @@ const campaignBy = (id: string, field: string): StatedBy[] =>
 const teamBy = (roster: TeamRoster): StatedBy[] =>
   [{ layer: 'team', source: teamRosterFile(roster.name, roster.campaign_id) }];
 
-/** The one parent resolver used by both launch and GET /api/launch-seed. */
 export function resolveLaunchSeed(s: LaunchSeedSources): LaunchSeed & { resolved_routines: ResolvedRoutine[] } {
   const c = s.campaign.config.agent_defaults;
   const t = s.roster;

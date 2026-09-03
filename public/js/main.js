@@ -58,7 +58,6 @@ export async function init() {
   guard('page words', applyPageWords); // index.html's static words, through the lexicon
   // Resolve the root palette before mounting the chosen surface. A profile skin is not
   // a second paint: it is the one root token set this boot uses. The boot veil stays up
-  // until setup, phone, or desktop has actually mounted — revealing here used to flash
   // the static desktop bar (including its "2" shape control) before the phone decision.
   try { await restoreSkin(activeProfile()?.skin || ''); }
   catch (e) { console.warn('restore skin', e); }
@@ -80,8 +79,8 @@ export async function init() {
   // `/cowork-setup` is the deliberate way back in: one surface, one route, one name.
   {
     const wants = location.pathname === '/cowork-setup';
-    const s = wants ? null : await request('/api/settei/setup');
-    if (wants || (s?.ok && s.data.pending === true)) {
+    const s = wants ? null : await request('/api/machine-settings');
+    if (wants || (s?.ok && s.data?.set?.setup?.pending === true)) {
       if (location.pathname !== '/cowork-setup') history.replaceState(null, '', '/cowork-setup');
       const host = document.createElement('div');
       document.body.replaceChildren(host);
@@ -102,7 +101,6 @@ export async function init() {
   }
 
 
-  // THE PHONE SHELL (MOBILE plan, 2026-09-01). An iPhone-class screen never boots the
   // workbench: it gets the three-step drill-down — Cowork, Agent, tile-with-keys —
   // and none of the chrome below. iPad (coarse but wide) and desktop continue as ever.
   if (IS_PHONE) {
@@ -136,13 +134,11 @@ export async function init() {
   guard('register the Customize destination', () => installCustomize(workspace));
   // Cowork collection and Team detail are two scopes of the same discovery workbench.
   guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
-  // THE ROOT ARRIVAL (owner, 2026-08-29): three doors — Campaign, Coworks, Agents —
   // over one Campaign selection the other two inherit. Registered after Cowork because
   // its Campaign door opens that Campaign's Cowork collection, and guarded like every other: the landing
   // page failing must cost the owner a page, never their terminals. `safeView` is this
   // one, so its own failure is reported rather than looping.
   guard('register the Ronin Home destination', () => workspace.register('home', createCampaignHome()));
-  // CAMPAIGN MANAGE — the Campaign-scoped discovery workbench (owner, 2026-08-29):
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.
   guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));

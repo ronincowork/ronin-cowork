@@ -136,7 +136,6 @@ export function buildRoster(tile, host, options = {}) {
     render();
   });
 
-  // A ROW IS A FIXED GRID, NOT A FLOW (owner's ruling 2026-08-17). Every landmark on
   // the right — the SHINGO chip, the status word, the ⛽ reading — sits at the SAME x on
   // every row, so the eye runs straight down a column instead of hunting for where each
   // reading landed. A session with no ladder leaves the ladder's slot EMPTY; it does not
@@ -182,7 +181,6 @@ export function buildRoster(tile, host, options = {}) {
       ? [s.session_role, s.leads?.length ? t('roster.leads', '人 leads {teams}', { teams: s.leads.join(', ') }) : ''].filter(Boolean).join(' · ')
       : t('roster.no_role_yet', 'has not said what it is doing yet');
     r.appendChild(jb);
-    // The name takes the slack (`minmax(0, 1fr)`), so the spacer `.grow` that used to
     // shove the readings rightwards is gone with the flex row it existed to stretch —
     // pushing things apart is what made every row's landmarks land somewhere different.
     const nm = document.createElement('b');
@@ -193,7 +191,6 @@ export function buildRoster(tile, host, options = {}) {
     if (s.tegami && s.tegami.chip && s.tegami.ladder?.length) {
       const sg = document.createElement('span');
       sg.className = 'home-shingo' + (s.tegami.chip.gate ? ' gate' : '');
-      // THE AGE WITHOUT THE WORD, on every device now (owner's ruling 2026-08-17). It
       // was already the touch spelling — "quiet" costs five characters on a row that has
       // none to spare, and a bare duration beside a position reads as one anyway — and
       // the desktop had no better claim on the width. `phase 3 · leg 3/12 · 9h`.
@@ -226,7 +223,6 @@ export function buildRoster(tile, host, options = {}) {
       dd.title = [deskReadout(dk), deskTip(dk)].filter(Boolean).join('\n');
       r.appendChild(dd);
     }
-    // WHICH MODEL IS ANSWERING — that is the whole column (owner's ruling 2026-08-17).
     //
     // It shipped for an hour as `agent · provider · model` — `codex · openai · gpt-5.6-sol`
     // — and the owner cut it to the model alone: "showing just the model is fine, that
@@ -270,7 +266,6 @@ export function buildRoster(tile, host, options = {}) {
     // so the label repeated the heading you just read — and the button was a verb
     // on a board that is meant to be a READ.
     //
-    // NO 🏷 ON A ROSTER ROW AT ALL (owner's ruling 2026-08-17, twice). The first pass
     // dropped the tag NAMES and kept the button, on the reasoning that it was the only
     // way to edit groups without opening the session. The owner's answer: that is not a
     // gap, it is the design — "the way you change the tag is by going into a particular

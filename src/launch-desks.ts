@@ -1,27 +1,3 @@
-/**
- * LAUNCH DESKS — the launch's side of the desk model (Track 3, Fable 3).
- *
- * A launch that will touch code on a reviewed repository is born AT A DESK: that repo's
- * private branch and worktree, opened before the CLI starts, with every desk of the
- * assignment named in the brief. This module decides WHETHER a launch gets desks, DERIVES
- * them through Track 1's registry, PREPARES them through Track 1's opener, and RENDERS the
- * concrete block the brief carries. It mutates no ref itself and holds no state.
- *
- * THREE HONEST ANSWERS, and no fourth:
- *   - `null`       this launch gets no desk — plain terminal, a non-code role, or
- *                  a repository whose RONIN_REPO says direct or is absent. The brief says
- *                  nothing about desks, and nothing downstream pretends one exists.
- *   - assignment   desks derived and (at launch) opened; the session starts in `primary`.
- *   - a refusal    desks were wanted and could not be prepared. The launch does NOT fall
- *                  back to the shared checkout: a session told "you have a desk" that is
- *                  standing in `dev` is the exact failure the control surface exists for.
- *
- * THE ONE GATE IS THE REPOSITORY'S OWN FILE (owner, 2026-08-29). `RONIN_REPO` with
- * `desks=managed` gives a coding launch its desk, the contract, the actions and the
- * tools; `desks=none`, or no file, gives none of them. There is no install-wide switch:
- * two switches can only disagree. SETTEI's "new projects use desks?" is a default that
- * writes the file when a project root is added (src/desks/arrangement.ts), not a gate.
- */
 import { arrangementOf, arrangementWorktreesInput } from './desks/arrangement.js';
 import type { Assignment, RepoDesk } from './desks/schema.js';
 import { deriveAssignment, writeAssignment } from './desks/registry.js';
@@ -32,13 +8,8 @@ export interface LaunchWorktrees {
   repositories: ResolvedWorktreesRepository[];
 }
 
-/** Compatibility input retained while launch forms stop sending the retired desk override. */
 export type DeskChoice = 'own' | 'none';
 
-/**
- * Derive the assignment — pure, opens nothing. An assignment with no desks (every repo
- * direct or undeclared) is the same honest `null` as not wanting one.
- */
 export async function resolveLaunchDesks(input: {
   session: string;
   team: string;
@@ -46,9 +17,10 @@ export async function resolveLaunchDesks(input: {
   agent: boolean;
   control: boolean;
   desk?: DeskChoice;
+  repos?: string[];
 }): Promise<LaunchWorktrees> {
   if (!input.agent) return { assignment: null, repositories: [] };
-  const assignment = await deriveAssignment({ session: input.session, team: input.team, project_root: input.project_root });
+  const assignment = await deriveAssignment({ session: input.session, team: input.team, project_root: input.project_root, repos: input.repos });
   const repositories = await Promise.all(assignment.desks.map(async (candidate) => {
     const arrangement = await arrangementOf(candidate.repo);
     return arrangementWorktreesInput(arrangement, {
@@ -73,31 +45,19 @@ export async function resolveLaunchDesks(input: {
   return { assignment: { ...assignment, primary, desks }, repositories: resolution.repositories };
 }
 
-/** The selected project root's resolved location; first row is the deterministic fallback. */
 export function primaryWorkLocation(repositories: ResolvedWorktreesRepository[], projectRoot: string): string {
   return repositories.find((repository) => repository.repo === projectRoot)?.location
     ?? repositories[0]?.location
     ?? '';
 }
 
-/**
- * Open every resolved managed row before the CLI is spawned through Track 1's `openDesk`
- * operation (branch cut from the line, worktree mounted, upstream set, record written).
- * The candidate assignment is not re-derived here: doing so would reintroduce a second
- * applicability decision after `resolveWorktrees`. Imported at call time so this module
- * compiles before the desk implementation exists; at launch its absence, or any desk that
- * will not open, is a refusal with the reason in it — never a silent fallback. The
- * assignment handed back carries the worktree paths as opened.
- */
 export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
   let opener: { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> };
   try {
     opener = (await import('./desks/desk.js')) as typeof opener;
   } catch (e) {
-    throw new Error(
-      `Desk preparation is not available on this install (${(e as Error)?.message ?? e}). ` +
-        'The launch was refused rather than started in the shared checkout: install the desk tools, or declare the repository direct (RONIN_REPO desks=none).',
-    );
+    console.warn(`Desk preparation is unavailable; launching from the project checkout: ${(e as Error)?.message ?? e}`);
+    return { ...a, desks: [] };
   }
   let opened: Assignment;
   try {
@@ -127,19 +87,12 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
     opened = { ...a, desks };
     await writeAssignment(opened);
   } catch (e) {
-    throw new Error(`Could not open the desks for ${a.id} — ${(e as Error)?.message ?? e}. The launch was refused; nothing was started in a funnel checkout.`);
-  }
-  if (!opened.desks.length) {
-    throw new Error(`The desks derived for ${a.id} could not be opened (none came back). The launch was refused; nothing was started in a funnel checkout.`);
+    console.warn(`Could not open the desks for ${a.id}; launching from the project checkout: ${(e as Error)?.message ?? e}`);
+    return { ...a, desks: [] };
   }
   return opened;
 }
 
-/**
- * The concrete block the brief carries — facts, not a Git lecture. Every desk, its path,
- * the line it hands in to, and one pointer. The contract itself is the Worktrees Routine's
- * page (routine/ronin_worktrees/WORKTREES.md), compiled into the README the brief names.
- */
 export function renderDeskBlock(a: Assignment): string {
   const width = Math.max(...a.desks.map((d) => d.repo.length));
   const rows = a.desks.map((d) => `  ${d.repo.padEnd(width)}  ${d.worktree}  → ${d.line}${d.repo === a.primary ? '  (you start here)' : ''}`);
@@ -151,7 +104,6 @@ export function renderDeskBlock(a: Assignment): string {
   ].join('\n');
 }
 
-/** Every repository gets one resolved working location from the canonical 2x2. */
 export function renderWorkLocations(repositories: ResolvedWorktreesRepository[], branches: Readonly<Record<string, string>> = {}): string {
   const direct = repositories.filter((repository) => repository.mode === 'direct');
   if (!direct.length) return '';

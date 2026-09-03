@@ -1,20 +1,20 @@
 # Wipeboards — the team's board
 
-**The team board is the unit** (owner, 2026-08-24). Every team has a board — where its
+**The team board is the unit**. Every team has a board — where its
 sessions talk to each other instead of routing every message through the owner — and a
 session never has to be told it exists: the board is **assumed**. A "generalist" wipeboard
 over an arbitrary grouping outside a team is a possible second utility for later; it is
 deliberately not built, and none of its machinery remains.
 
-**It is not history.** A wipeboard is "just a means for communicating back and forth"
-(owner, 2026-08-23), and "once everyone has seen the message, there's really no need to
+**It is not history.** A wipeboard is "just a means for communicating back and forth", and "once everyone has seen the message, there's really no need to
 keep it". A post is **delivered and then reaped** — when every reader it was for has read
 it, or when it ages past the TTL. Nothing here is a record: RIREKI's tape holds what a
 tile printed, and a decision worth keeping belongs in a session's TEGAMI, a `docs/` page,
 or a commit message.
 
-The storage half is `src/wipeboards.ts`; the one action is `src/wipeboard-cli.ts`, which
-`ronin_bin/tejun-wipeboard` runs; the REST over both is `src/routes/wipeboards-api.ts`.
+The operator's HTTP API is the wipeboard surface. `tejun-wipeboard` calls that surface
+and prints its reply; it does not read or write wipeboard storage itself.
+Use the wipeboard for team-wide messages and `tejun-send` for one session, with no board in between.
 Wipeboards live in the wipeboards **store** (user root, `bin/ronin-store wipeboards` —
 never a hand-spelled path), so one survives an uninstall and `rm -rf <repo>` cannot take
 it.
@@ -32,7 +32,7 @@ The tool works out which session is asking, which team it is on (the roster's wi
 — see below), and either hands back everything unread, oldest first, or lands the post
 where the team talks. **Agents never manage ids, timestamps, cursors, pages or files.**
 Nothing unread answers in one line; being on no team is an ordinary answer, not an error;
-and a session on several teams is asked which (`WHICH-TEAM`) rather than guessed at.
+and a session on several Teams is told which first Team was selected.
 
 Everything else is explicit, secondary, and **moves no cursor**:
 
@@ -68,7 +68,7 @@ and advance only its own cursor.
 ## Writing, and who gets interrupted
 
 A post's audience decides **who is interrupted**, not who may read — and an agent's post
-is **quiet by default** (owner, 2026-08-24): most posts do not need the whole team pulled
+is **quiet by default**: most posts do not need the whole team pulled
 out of its work, so a bare post interrupts the lead alone, and widening is deliberate. The
 lead sees everything that hits the board; a leaderless team has nobody always-on; the
 poster is never sent their own post, lead or not.
@@ -81,7 +81,7 @@ poster is never sent their own post, lead or not.
 | `post --to none "…"` | nobody — it lands and waits to be found |
 
 The **owner's** line is the one exception, the other way: an owner post interrupts
-everyone, because "all agents should see that" (owner, 2026-08-23). The quiet default is
+everyone, because "all agents should see that". The quiet default is
 for agents.
 
 **Where the owner meets a board: the team page.** Opening a team shows its board as the
@@ -100,9 +100,9 @@ Address a post to whoever has to act on it; leave it open only when everyone has
 
 The notice a post fires is **a pointer, never a copy**: one line naming the wipeboard and
 the poster, telling the reader to run the one action. It carries no path, and never asks
-for a reply. **The dial is law** — a 👤/👁 session is on the wipeboard, may read it, and is
-never typed into; that refusal is reported, never worked around, and no dial is ever
-flipped to get a notice through. A member that was not notified still gets the post on its
+for a reply. It uses the same durable delivery queue as `tejun-send`: the notice is
+submitted now or remains visible for another attempt. Control stays stored and visible;
+it does not restrict delivery. A member that was not notified still gets the post on its
 next check.
 
 ## The layout
@@ -119,10 +119,8 @@ One directory per wipeboard:
 A post file is a header and its text:
 
 ```
-### @eye_league · 2026-08-23 13:36
 League's rail contract is settled.
 
-### @eye_league → @eye_team, @view_mgr · 2026-08-23 13:36
 Aimed at two people; everyone can still read it.
 ```
 
@@ -139,7 +137,7 @@ post, and a header whose audience will not parse means **everyone**, never nobod
 
 ## Reaping
 
-**One rule: the TTL** (owner, 2026-08-25). A post lives its 48 hours — whoever has read
+**One rule: the TTL**. A post lives its 48 hours — whoever has read
 it — then the machine retires it. Read-reaping was dropped the day the owner met a board
 everyone *else* had read: it looked empty to the one person who had not, which reads as
 broken, and it killed scrolling back over what the team had been saying. The board now
@@ -147,7 +145,7 @@ holds the same 48 hours of history for everyone; cursors serve delivery only —
 session's own unread — and a dead session's cursor is swept.
 
 Reaping runs **inline** on every check and every post, so there is no daemon and no
-timer. The number is SETTEI, in `ronin.json` under `wipeboard` — `ttl_hours` (default
+timer. The number is SETTEI, in `machine_settings.json` under `wipeboard` — `ttl_hours` (default
 48), overridable for a single wipeboard by name. `ttl_hours: 0` means never reap.
 
 **No human action deletes a post.** No button, no agent, no membership change. The reaper
@@ -156,7 +154,7 @@ deletes another agent's post.
 
 ## The team owns the board, and membership is the team
 
-**A team roster's `wipeboard:` id is what identifies a board** (owner, 2026-08-23):
+**A team roster's `wipeboard:` id is what identifies a board**:
 *"Every team roster should have a whiteboard ID, and that whiteboard ID should match with
 a single whiteboard. I don't care what the names are."*
 
@@ -176,8 +174,7 @@ a single whiteboard. I don't care what the names are."*
   `docs/campaign-scope.md` § Wipeboards.
 - **Membership is the team's, derived at every read.** Tag a session into the team and it
   is on that team's board; untag it and it is off. The two cannot drift because they are
-  one fact. There is no other membership: **custom enrolment is cut** (owner, 2026-08-24 —
-  MVP is the team board; the `@ronin-wipeboards` option is no longer consulted anywhere).
+  one fact. There is no other membership: **custom enrolment is cut**.
 - **No create step for anyone.** The board is not something anyone makes; it is something
   the roster implies.
 - A session on several teams reads all their boards; posting bare asks which team it means.

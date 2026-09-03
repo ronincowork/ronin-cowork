@@ -10,7 +10,6 @@ is short enough to read every time. The machinery it describes: `public/js/lexic
 (the helper), `ronin_catalogs/lexicons/` (the words, one file per lexicon), `docs/lexicons.md`
 (how the chain resolves), `docs/desk-profiles.md` (how a person picks one), and
 `npm run kokugo:table` (every key and every lexicon's word beside it — generated on demand,
-never edited and never committed, so no path here names it). The sweep that put every existing view through this door landed 2026-08-27.
 
 ## 1 · The helper
 
@@ -142,13 +141,13 @@ reads these attributes as keys the client reads.
 ## 8 · The glossary room — what an agent says to a person
 
 The house names (TEGAMI, TEJUN, RIREKI …) never reach a person's face, and tools and docs
-use them freely with agents. `KOTOBA_GLOSSARY.md` is where a session learns which word to
+use them freely with agents. `ronin_catalogs/lexicons/professional_en.md` is where a session learns which word to
 SAY for each — and since the desk profile decides what the person is looking at, that
 page is rendered per session. Its keyed cells are `**word**<!--g:glossary.key-->`; the
 words live in the lexicon under `glossary.*` (floor: the plain English the glossary
 carries); **no surface reads them** — the one consumer is the boot shelf, which renders
 the glossary at session birth from the active profile's resolved lexicon
-(`src/session-boot.ts`, `renderGlossary`) with a header line saying which profile it was
+(`src/birth-readme.ts`, `renderGlossary`) with a header line saying which profile it was
 rendered for. One-time, by ruling: a profile changed mid-session is not re-read.
 
 Adding a row to the glossary means marking its UI word and adding the `glossary.*` line

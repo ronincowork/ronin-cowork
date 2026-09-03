@@ -1,23 +1,12 @@
-/* The drawn launch forms (js/form-steps.js, js/new-team-form.js) — feature composition
-   only; Workspace Kit owns the foundation. Drawn contracts: ronin-lab concepts/
-   new-team.html and new-agent-condensed.html, the condensed density the owner preferred:
-   label-left steps, one rectangle for every clickable thing, collapse-on-pick. */
+
 @layer app {
-  /* THE FORM SETS THE SIZE, NOT THE SURFACE. Every label, heading and note here is sized
-     explicitly; a `.wk-field-control` is `font: inherit`, so with no size above it the
-     control inherited the browser's 16px and stood a third taller than its own label.
-     I first put the size on the surface root — which the Workspace Kit HEADER also
-     inherits, so "New Team" and "New Agent" rendered at 12px while the selector's own
-     "Launch" sat at 16px. The owner spotted the mismatch. The size belongs to the
-     things that hold controls, and the header is the Kit's business, not this file's. */
-  /* The action bar sits OUTSIDE the form, so it needs saying here too — otherwise Save as
-     template keeps the browser's 16px while the box beside it is 12px. It gets its own
-     class from `createActionBar` rather than this file reaching for a `.wk-` selector. */
+
+
   .ntf-form, .ntf-actions { font-size: var(--form-input); }
   .ntf-foot { font-size: var(--form-note); }
   .ntf-form { display: flex; flex-direction: column; margin-bottom: var(--space-7); }
 
-  /* ── the team's own agents: a short row, opened when you want the rest ── */
+
   .ntf-agent { border-top: var(--edge) solid var(--line); padding: var(--space-3) 0; }
   .ntf-agent:first-child { border-top: 0; }
   .ntf-agent-head { display: flex; align-items: center; gap: var(--space-3); }
@@ -40,15 +29,12 @@
     cursor: pointer; font: inherit;
   }
   .ntf-agent-lead:hover, .ntf-agent-more:hover, .ntf-agent-drop:hover { color: var(--fg-strong); }
-  /* The 人 mark is the only thing that distinguishes a lead now, so it has to read as ON. */
+
   .ntf-agent-lead[aria-pressed='true'] { border-color: var(--kaki); color: var(--kaki); }
   .ntf-agent-detail { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5) 0 var(--space-3) calc(var(--space-12) * 1); }
 
-  /* ── the band that says everything under it is a default ── */
-  /* A BAND, NOT A WHISPER. It said the right sentence and read as a right-aligned aside,
-     which is why the owner asked for the message again on the Shared toolkit. It carries
-     the workbench's own header tint so it reads as the divider it is: everything under it
-     belongs to the Agents this Team will launch, not to the Team itself. */
+
+
   .ntf-band {
     display: flex;
     align-items: center;
@@ -59,12 +45,7 @@
     border: var(--edge) solid var(--cowork-head-line);
     border-radius: var(--radius-xs);
     background: var(--cowork-head-bg);
-    /* READABLE, NOT DECORATIVE (owner, 2026-09-01): "it's really hard to read when it's a
-       light text on a darker background… we just need to be solid white. So it's readable.
-       It's not hidden text or somehow small text." A band states a rule that governs
-       everything under it, so it reads at full strength — in the band's own ink, since
-       the band is one kiiro in both themes and the theme's text tokens are not tuned
-       for it. */
+
     color: var(--cowork-head-fg);
     padding: var(--space-4) var(--space-5);
     cursor: pointer;
@@ -75,13 +56,12 @@
   .ntf-band-chev { flex: none; }
   .ntf-band:hover { border-color: var(--kaki); color: var(--fg-strong); }
 
-  /* ── the help workspace: prose beside the step you are on ── */
+
   .lh-surface { font-size: var(--form-input); }
   .lh-body { display: flex; flex-direction: column; gap: var(--space-7); }
   .lh-section { border-left: var(--edge) solid var(--line); padding-left: var(--space-6); }
   .lh-section[hidden] { display: none; }
-  /* The step the form is showing: the same kaki edge the pressed controls use, so "where
-     you are" reads the same way on both sides of the bench. */
+
   .lh-section[data-current='true'] { border-left-color: var(--kaki); }
   .lh-section h3 { margin: 0 0 var(--space-3); color: var(--fg-strong); font-size: var(--form-head); }
   .lh-section[data-current='true'] h3 { color: var(--kaki); }
@@ -89,15 +69,14 @@
   .ntf-form textarea { resize: vertical; }
   .ntf-foot { margin-top: var(--space-6); }
   .ntf-tmplname { font-size: var(--form-input); width: calc(var(--space-12) * 5); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
-  /* ── the two doors ── */
+
   .fs-seg { display: flex; align-self: flex-start; margin-bottom: var(--space-5); border: var(--edge) solid var(--line-2); }
   .fs-seg button { border: 0; background: transparent; color: var(--muted-2); padding: var(--space-2) var(--space-6); cursor: pointer; font: inherit; font-size: var(--form-input); }
   .fs-seg button[aria-pressed='true'] { background: var(--kaki); color: var(--on-strong); }
-  /* A type with no template door hides the segment — and a display rule beats the UA's
-     [hidden], so the guard is not optional. Found by driving: `seg.hidden` was a no-op. */
+
   .fs-seg[hidden] { display: none; }
 
-  /* ── label-left steps; a folded step keeps its number, name and answer on one line ── */
+
   .fs-step { display: grid; grid-template-columns: calc(var(--space-12) * 4) minmax(0, 1fr); gap: var(--space-6); align-items: start; padding: var(--space-5) 0; border-bottom: var(--edge) solid var(--line); }
   .fs-step:last-of-type { border-bottom: 0; }
   .fs-step[hidden] { display: none; }
@@ -115,7 +94,7 @@
   .fs-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: .07em; }
   .fs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 4), 1fr)); gap: var(--space-3); }
 
-  /* ── the kind tiles: `open` dotted and set apart, never a seventh peer ── */
+
   .fs-gridlabel { display: block; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: .06em; }
   .fs-kinds { display: flex; flex-direction: column; gap: var(--space-2); }
   .fs-kindgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
@@ -127,7 +106,7 @@
   .fs-kindtile span { overflow: hidden; font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
   .fs-kindtile[data-open='true'] { align-self: start; border-style: dashed; }
 
-  /* ── the template tray ── */
+
   .fs-tmplgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-12) * 5), 1fr)); gap: var(--space-2); }
   .fs-tmplnote { margin: var(--space-3) 0 0; font-size: var(--text-2); color: var(--muted); line-height: 1.5; }
   .fs-tmpl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
@@ -139,7 +118,7 @@
   .fs-tmpl:disabled { opacity: .45; border-style: dashed; cursor: default; }
   .fs-tmpl:disabled:hover { border-color: var(--line-2); }
 
-  /* ── routine rows and the lead's two ways ── */
+
   .fs-routine { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; width: 100%; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); text-align: left; font: inherit; }
   .fs-routine[data-on='false'] { opacity: .6; }
   button.fs-routine { cursor: pointer; }
@@ -162,7 +141,7 @@
   .fs-door { align-self: flex-start; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-6); font: inherit; font-size: var(--form-input); }
   .fs-door:disabled { opacity: .45; cursor: default; }
 
-  /* ── the mandate dials — the New Agent drawing's button rows, `open` leading ── */
+
   .fs-dial { display: grid; grid-template-columns: calc(var(--space-12) * 2) minmax(0, 1fr); gap: var(--space-4); align-items: center; }
   .fs-dial > h4 { margin: 0; color: var(--muted); font-size: var(--form-key); letter-spacing: .06em; text-transform: uppercase; }
   .fs-dial-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 3), 1fr)); gap: var(--space-2); }
@@ -172,7 +151,7 @@
   .fs-dial-opt b { overflow: hidden; color: var(--fg-strong); font-size: var(--form-input); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
   .fs-dial-opt[aria-pressed='true'] b { color: var(--kaki-lift); }
 
-  /* ── New Agent's own few shapes ── */
+
   .na-omitted { margin: 0; color: var(--dim); font-size: var(--form-note); }
   .na-omitted[hidden] { display: none; }
   .na-team-choices { margin-bottom: var(--space-4); }
@@ -186,7 +165,7 @@
   .na-sop b { overflow: hidden; color: var(--fg-strong); font-family: var(--font-mono); font-size: var(--form-input); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
   .na-sop[aria-pressed='true'] b { color: var(--kaki-lift); }
 
-  /* ── tags and the born reading ── */
+
   .fs-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
   .fs-tag { border: var(--edge) solid var(--line-2); background: var(--panel); color: var(--muted); padding: 0 var(--space-3); font-family: var(--font-mono); font-size: var(--form-note); white-space: nowrap; }
   .fs-tag[data-on='true'] { border-color: var(--kaki); color: var(--kaki); }

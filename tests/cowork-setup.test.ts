@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { toRequests } from '../public/js/settei-schema.js';
-import { SETTEI_SCHEMA } from '../src/settei-registry.js';
+import { toRequests } from '../public/js/machine-settings-schema.js';
+import { MACHINE_SETTINGS_SCHEMA } from '../src/machine-settings-schema.js';
 
 test('cowork_setup is the live two-stage companion page, not the legacy renderer', async () => {
   const source = await readFile(new URL('../public/js/cowork-setup.js', import.meta.url), 'utf8');
@@ -11,7 +11,7 @@ test('cowork_setup is the live two-stage companion page, not the legacy renderer
     'Campaign', 'This machine', 'You', 'Kind', 'Routine Bundles', 'Your agents',
     'How new sessions should start', 'Optional', 'When you save', 'Save and open RoninCoWork',
   ]) assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(source, /\/api\/settei/);
+  assert.match(source, /\/api\/machine-settings/);
   assert.match(source, /\/api\/agents/);
   assert.match(source, /\/api\/session-launch-specs/);
   assert.match(source, /toRequests\(schema, values\)/);
@@ -19,7 +19,7 @@ test('cowork_setup is the live two-stage companion page, not the legacy renderer
 });
 
 test('the two setup asks are registry rows and the renderer carries no client field list', async () => {
-  const registry = await readFile(new URL('../src/settei-registry.ts', import.meta.url), 'utf8');
+  const registry = await readFile(new URL('../src/machine-settings-schema.ts', import.meta.url), 'utf8');
   const source = await readFile(new URL('../public/js/cowork-setup.js', import.meta.url), 'utf8');
   assert.match(registry, /id: 'mainIntent'/);
   assert.match(registry, /id: 'routineBundle'/);
@@ -29,8 +29,8 @@ test('the two setup asks are registry rows and the renderer carries no client fi
 });
 
 test('the setup seat names its behaviour and carries no retired launch role', () => {
-  assert.deepEqual(SETTEI_SCHEMA.seat.behaviours, ['ways:setup']);
-  assert.ok(!('session_role' in SETTEI_SCHEMA.seat));
+  assert.deepEqual(MACHINE_SETTINGS_SCHEMA.seat.behaviours, ['ways:setup']);
+  assert.ok(!('session_role' in MACHINE_SETTINGS_SCHEMA.seat));
 });
 
 test('registry metadata writes the campaign bootstrap without a client field list', () => {
@@ -39,11 +39,13 @@ test('registry metadata writes the campaign bootstrap without a client field lis
       { id: 'intent', lands: { family: 'bootstrap', key: 'kind' } },
       { id: 'model', shape: 'provider-model', lands: { family: 'agents', key: 'sessions.default' }, setup_lands: { family: 'bootstrap', key: 'provider_model' } },
     ],
-    families: { bootstrap: { route: '/api/settei/bootstrap', method: 'PUT' }, agents: { route: '/api/settei/agents', method: 'PUT' } },
+    families: { bootstrap: { route: '/api/machine-settings', method: 'PATCH' }, agents: { route: '/api/machine-settings', method: 'PATCH' } },
   };
   const rows = toRequests(schema, { intent: 'coding', model: 'openai\tgpt-5' });
   assert.deepEqual(rows.find((row) => row.family === 'bootstrap')?.json, {
-    kind: 'coding', provider_model: { provider: 'openai', model: 'gpt-5' },
+    family: 'bootstrap', value: {
+      kind: 'coding', provider_model: { provider: 'openai', model: 'gpt-5' },
+    },
   });
 });
 

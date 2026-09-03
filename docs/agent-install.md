@@ -1,6 +1,5 @@
 # Agent install — how Ronin puts an agent CLI on the box
 
-What happens when someone ticks an agent that is not installed. Shipped 2026-08-20; the
 code is `src/agent-install.ts`, the commands are `src/agents.ts`, and the PATH half is
 `setup.sh`.
 
@@ -29,7 +28,7 @@ under a release directory would vanish at the next update with nothing on screen
 why. `~/.local` also needs no root, and is already where some agents' own installers put
 themselves.
 
-It is deliberately **not a store** — the table and its one rule are `src/stores.ts`. A
+It is deliberately **not a store** — the table and its one rule are `src/resources.ts`. A
 store is Ronin's own working state and an uninstall deletes it; an agent Ronin installed
 is the owner's tool, and an uninstall leaves it alone.
 

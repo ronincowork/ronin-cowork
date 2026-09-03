@@ -7,16 +7,6 @@ import { t } from './lexicon.js';
 /** A team tag said as a title, the same way the Cowork page falls back: parts, capitalized. */
 const readableTag = (tag) => tag.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 
-/**
- * The disk-backed Archived room — the Commons tab and the Cowork workbench's Rehydrate
- * Archived surface are the same list. Nothing here enters the live session set.
- *
- * REHYDRATE IS A BUTTON, NOT THE ROW (owner, 2026-08-31): the row used to be one big
- * click that rehydrated at once — nothing said so, and a person reading the list woke
- * sessions by accident. The row is now a reading; the one act on it is the labelled
- * button beside it. Rows sit under their Team of record — the tags the session carried
- * when it was archived — with the tagless under Ronin, which is an ordinary state.
- */
 export function buildArchives(tile, host) {
   host.className = 'home-archives';
   const head = document.createElement('div');

@@ -1,27 +1,16 @@
-/**
- * ROUTINE RESOLUTION — one answer for every birth projection.
- *
- * A Team record is a complete on/off map captured when that Team is saved. Birth reads
- * that map whole; only a rōnin (no Team record) reads the Campaign map. This
- * module deliberately does not read stores or decide availability, so launch, preview and
- * tests cannot acquire subtly different cascades. Delivery adapters annotate availability
- * after this selection has been resolved.
- */
-import type { RoutineRow } from './definitions.js';
+import type { RoutineRow } from './resource-adapters.js';
 
 export type RoutineChoices = Record<string, boolean>;
 
 export interface ResolvedRoutine extends RoutineRow {
   enabled: boolean;
   stated_by: 'campaign' | 'team' | 'agent' | 'dependency' | 'implicit_off';
-  /** Selected Routines which made this one additive, empty for a direct choice. */
   required_by: string[];
 }
 
 const own = (map: RoutineChoices, name: string): boolean =>
   Object.prototype.hasOwnProperty.call(map, name);
 
-/** Only literal booleans are choices. Configuration prose such as "off" is not data. */
 export function routineChoices(value: unknown): RoutineChoices {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return Object.fromEntries(
@@ -30,7 +19,6 @@ export function routineChoices(value: unknown): RoutineChoices {
   );
 }
 
-/** Save-time normalization: every catalog Routine receives an explicit on/off answer. */
 export function completeRoutineChoices(catalog: RoutineRow[], value: unknown): RoutineChoices {
   const choices = routineChoices(value);
   return Object.fromEntries(catalog.map((routine) => [routine.name, choices[routine.name] ?? false]));
@@ -54,8 +42,6 @@ export function resolveRoutines(
     return { ...routine, enabled: false, stated_by: 'implicit_off' as const, required_by: [] as string[] };
   });
   const byName = new Map(resolved.map((routine) => [routine.name, routine]));
-  // Close the graph to a fixed point. A direct off is overridden by an enabled dependent:
-  // the additive progression is a product invariant, not a contradictory partial state.
   let changed = true;
   while (changed) {
     changed = false;
@@ -75,7 +61,6 @@ export function resolveRoutines(
   return resolved;
 }
 
-/** Normalize the three persisted/input layers and resolve the map delivered at birth. */
 export function resolveAgentRoutines(
   catalog: RoutineRow[],
   campaign: unknown,

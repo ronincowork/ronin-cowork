@@ -18,7 +18,7 @@ frontmatter, macros. See `ronin_catalogs/role_families/` for who a session is an
 it is. One lookup fixes: where to work (`dir`), what a cold agent reads first (`read`),
 and which memories it recalls (`memory`). A root never chooses a model — sessions have
 ONE default (`agents.sessions.default`, set in ⚙ Configuration), and every launch may
-pick otherwise on the form (owner, 2026-08-18).
+pick otherwise on the form.
 
 ## Providers and models — the launch table
 
