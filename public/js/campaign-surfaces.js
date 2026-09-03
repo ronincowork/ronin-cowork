@@ -17,7 +17,7 @@
 import { t } from './lexicon.js';
 import { field } from './ui.js';
 import { deskProfiles } from './desk-profile.js';
-import { saveCampaign } from './campaigns.js';
+import { MULTIPLE_CAMPAIGNS_ENABLED, saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
 
@@ -54,11 +54,13 @@ export function createCampaignIdentitySurface(campaign) {
   const title = make(t('campaign.name', 'Campaign name'), el('input'), t('campaign_view.name_help', 'On the door, the browser tab and the address.'), 120, t('campaign.name_placeholder', 'My campaign'));
   const description = make(t('campaign.description', 'Description'), el('textarea'), t('campaign_view.description_help', 'What this body of work is for. Shown on its card.'), 500, t('campaign.description_placeholder', 'What this campaign is for'));
   description.control.rows = 3;
-  // The id is shown fixed, in grey: it is the address every campaign_id points at — a
-  // fact to read, not a choice (owner, 2026-08-30).
-  const id = make(t('campaign_view.id', 'Id'), el('input'), t('campaign_view.id_help', 'Fixed once created — printed on every record that points here, so it cannot change.'));
-  id.control.readOnly = true;
-  id.control.tabIndex = -1;
+  const id = MULTIPLE_CAMPAIGNS_ENABLED
+    ? make(t('campaign_view.id', 'Id'), el('input'), t('campaign_view.id_help', 'Fixed once created — printed on every record that points here, so it cannot change.'))
+    : null;
+  if (id) {
+    id.control.readOnly = true;
+    id.control.tabIndex = -1;
+  }
 
   const save = async (fields, f) => {
     const row = campaign();
@@ -79,7 +81,7 @@ export function createCampaignIdentitySurface(campaign) {
       head.title.textContent = row?.title ? t('campaign_view.head', 'Campaign: {name}', { name: row.title }) : t('campaign', 'Campaign');
       title.control.value = row?.title || '';
       description.control.value = row?.description || '';
-      id.control.value = row?.id || '';
+      if (id) id.control.value = row?.id || '';
       title.f.setValidation('', '');
       description.f.setValidation('', '');
       surface.setState(row ? null : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));

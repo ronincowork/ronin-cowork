@@ -25,6 +25,8 @@
  */
 import { request } from './request.js';
 
+export const MULTIPLE_CAMPAIGNS_ENABLED = false;
+
 /** `{ campaigns, ok, synthesized }` — the last read. `null` until one has happened. */
 let read = null;
 

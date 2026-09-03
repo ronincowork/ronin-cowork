@@ -4,7 +4,7 @@ The quick answers for "where is…", "how do I…" and "what is this" about Roni
 
 ## The pages
 
-- **The home page** (`/`) has three doors: **Campaign**, **Coworks**, **Agents**. Each door launches what is loaded; its chip opens a selector where a star sets the default and the footer makes a new one — **New Campaign**, **New Cowork**, **New Agent**. This is where a fuller new Agent or Team is made.
+- **The home page** (`/`) has three doors: **Machine Settings**, **Coworks**, **New Project**. Machine Settings opens the fixed Campaign; the page does not offer Campaign selection or creation. New Project is where a fuller new Agent or Team is made.
 - **The bar** on every page has two doors, **Ronin** (the Campaign's all-Coworks page) and **Coworks** (your Cowork's workbench), the **か New** button for a quick new session, **⚙** for the cowork commons, and the **2 ⇄ 4** button for the workbench shape.
 - **On a phone** the coworkspace is three steps: pick the Cowork, pick the Agent, drive it in a full-screen tile with the composer docked at the bottom.
 

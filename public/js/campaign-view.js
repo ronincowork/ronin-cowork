@@ -2,7 +2,7 @@
 /** Campaign is a Workbench tenant: it supplies context, never frame or placement code. */
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
-import { campaignById, campaignOf, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
+import { MULTIPLE_CAMPAIGNS_ENABLED, campaignById, campaignOf, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createCampaignIdentitySurface, createNewCampaignSurface } from './campaign-surfaces.js';
 import { choice, createDeskProfileSurface, skinWord } from './campaign-desk.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
@@ -85,12 +85,14 @@ function registerCampaignSurfaces() {
   // — teams and agents — in the forms' own boxes, by kind. The session-roles card that once
   // stood behind this word is gone (owner, 2026-09-03: outdated); a remembered seat maps here.
   add({ type: TYPES.templates, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.templates_summary', 'Team casts, agent loadouts, and the library to download more from.'), create: () => { const surface = createTemplatesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
-  add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
-  // ONE CAMPAIGN SHIPS (owner, 2026-08-30): there is no way yet to look at several, so
-  // New Campaign is not offered — the surface stays in the library, off the profile.
+  if (MULTIPLE_CAMPAIGNS_ENABLED) add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
+  // New Campaign is not registered while multiple Campaigns are off.
   // Desk profile remains registered so a remembered workspace can still restore it, but
   // its beta card is hidden from discovery. Themes now have their stable home in Ronin Desk.
-  profiles.define(PROFILE, [...Object.values(TYPES).filter((type) => type !== TYPES.create && type !== TYPES.profile), FEEDBACK_TYPE]);
+  profiles.define(PROFILE, [
+    ...Object.values(TYPES).filter((type) => (MULTIPLE_CAMPAIGNS_ENABLED || type !== TYPES.create) && type !== TYPES.profile),
+    FEEDBACK_TYPE,
+  ]);
 }
 
 export function createCampaignView() {
