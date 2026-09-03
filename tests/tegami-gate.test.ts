@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 
 /* LAUNCH_READY leg 3 — `writeGate` is loud, and it is a GUEST in the session's letter.
  * Its refusals are the interesting half: the moment an agent has written a real ladder,
- * those are its words. The store root is redirected per the env contract in src/stores.ts
+ * those are its words. The store root is redirected per the env contract in src/resources.ts
  * so this test never touches a real session. */
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-gate-test-'));
 process.env.RONIN_SESSION_DIR = root;

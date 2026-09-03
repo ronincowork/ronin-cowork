@@ -9,11 +9,11 @@ let failed = 0;
 const fail = (msg) => { console.error(`  FAIL  ${msg}`); failed++; };
 const ok = (msg) => console.log(`  ok    ${msg}`);
 
-const { STORES } = await tsImport('../src/stores.ts', import.meta.url);
+const { STORES } = await tsImport('../src/resources.ts', import.meta.url);
 
 const ALLOW = {
   'README.md': 'the install commands a person types before ronin-store exists',
-  'src/stores.ts': 'the table itself',
+  'src/resources.ts': 'the table itself',
   'bin/ronin-store': 'the bash binding of the table',
   'scripts/ronin-uninstall': 'must work when the install is broken or gone, so it carries the defaults ronin-store would have answered',
   'scripts/check-place.mjs': 'this file',
