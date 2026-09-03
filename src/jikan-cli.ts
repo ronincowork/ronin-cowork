@@ -53,7 +53,8 @@ async function main(): Promise<void> {
     return;
   }
   const me = await whoami();
-  const team = opts.team || (me.teams.length === 1 ? me.teams[0] : '');
+  const team = opts.team || me.teams[0] || '';
+  if (!opts.team && me.teams.length > 1) console.warn(`WARNING: this session is on ${me.teams.join(', ')}; using ${team}.`);
   if (!team) { console.error(me.teams.length > 1 ? `WHICH-TEAM: this session is on ${me.teams.join(', ')} — name one with --team` : 'NO-TEAM: name one with --team'); process.exit(2); }
 
   if (verb === 'list') {

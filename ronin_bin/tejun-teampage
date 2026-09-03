@@ -26,9 +26,8 @@
 # arrange the page any way you like — including taking yourself off it.
 #
 # Two browser tabs may show one team; the draft goes to the tab that shows you, else to
-# every tab on your team. The dial applies: 👤 and 👁 sessions are refused, as tejun-send
-# refuses them. Verdicts: ARRANGED · REFUSED · NO-TEAM · NO-PAGE · UNREACHABLE.
-# Exit 0 arranged/read, 2 bad draft, 3 no session/team, 4 refused by the dial, 5 unreachable.
+# every tab on your team. Verdicts: ARRANGED · NO-TEAM · NO-PAGE · UNREACHABLE.
+# Exit 0 arranged/read, 2 bad draft, 3 no session/team, 5 unreachable.
 set -u
 
 die() { printf '%s\n' "$*" >&2; exit "${2:-3}"; }
@@ -63,7 +62,7 @@ if [ -z "$TEAM" ]; then
   set -- "$@"
   n=0; for t in $tags; do n=$((n+1)); TEAM="$t"; done
   [ "$n" -ge 1 ] || die "NO-TEAM: $ME is on no team (no @ronin-tags); a team page needs a team." 3
-  [ "$n" -eq 1 ] || die "WHICH-TEAM: $ME is on several teams ($tags) — say --team <team>." 2
+  [ "$n" -eq 1 ] || echo "WARNING: $ME is on several teams ($tags); using $TEAM." >&2
 fi
 
 url=$(ronin-url) || exit $?

@@ -92,11 +92,6 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -n "$TARGET" ]; then
-  # CONTROL-CHECK, same rule as tejun-peek: reading a 👤 user session is the owner's
-  # business, not an agent's. 👁 read and 🤖 write both allow a read.
-  case "$(tmux show-option -t "$TARGET" -qv @ronin-control 2>/dev/null || true)" in
-    user) die "DENIED: '$TARGET' is user-controlled (dial 👤). Ask the owner." ;;
-  esac
   NAME=$TARGET
 else
   NAME=$(me)

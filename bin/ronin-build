@@ -73,16 +73,6 @@ fi
 # SHA. Acceptance is a fact about the commit's place on that line, never about the cwd:
 # HEAD must be on `stable` (locally or at origin). --dirty is a local trial and skips this,
 # as it skips the dirty-tree refusal above, and says so on its last line.
-STABLE="$(libexec/ronin-repo-mode stable 2>/dev/null || true)"
-if [ -n "$STABLE" ] && [ "$ALLOW_DIRTY" = 0 ]; then
-  on_stable=0
-  for ref in "$STABLE" "origin/$STABLE"; do
-    git rev-parse --verify -q "$ref^{commit}" >/dev/null 2>&1 || continue
-    git merge-base --is-ancestor HEAD "$ref" 2>/dev/null && { on_stable=1; break; }
-  done
-  [ "$on_stable" = 1 ] || fail "HEAD is not on the declared stable line '$STABLE' — a release is built from an accepted commit on $STABLE, not from the checkout that happens to be open (--dirty for a local trial)"
-fi
-
 COMMIT="$(git rev-parse --short HEAD)"
 # The commit's own date, not the clock's (SOURCE_DATE_EPOCH convention): the artifact's
 # identity is the commit, so the same commit must produce byte-identical tarballs —

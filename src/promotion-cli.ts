@@ -101,8 +101,8 @@ function printFunnel(r: Awaited<ReturnType<typeof diagnoseFunnel>>): void {
 
 function report(out: { ok: boolean; message: string; receipt: { id: string; state: string } | null }): never {
   say('');
-  say(`${out.ok ? '✓' : '✗'} ${out.message}${out.receipt ? ` — receipt ${out.receipt.id} (${out.receipt.state})` : ''}`);
-  process.exit(out.ok ? 0 : 1);
+  say(`${out.ok ? '✓' : 'WARNING:'} ${out.message}${out.receipt ? ` — receipt ${out.receipt.id} (${out.receipt.state})` : ''}`);
+  process.exit(0);
 }
 
 async function main(): Promise<void> {

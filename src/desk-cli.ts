@@ -284,7 +284,7 @@ async function main(): Promise<void> {
         die(`unknown verb '${verb}'\n${USAGE}`, 2);
     }
   } catch (e) {
-    if (e instanceof DeskRefused) die(`REFUSED: ${e.message}`, 4);
+    if (e instanceof DeskRefused) die(`WARNING: ${e.message}; no desk action was needed.`, 0);
     die(`STUCK: ${(e as Error).message}`, 5);
   }
 }

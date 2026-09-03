@@ -493,7 +493,6 @@ void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed 
 
 // The session max onto the same bus. The tmux server outlives Ronin, but a tmux server
 // restarted without us would lose the option — so it is republished on every boot, and
-// `libexec/ronin-may-spawn` reads a missing option as "no limit" rather than as zero.
 void publishMax();
 void publishOwner();
 

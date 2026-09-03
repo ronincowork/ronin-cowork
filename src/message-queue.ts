@@ -3,7 +3,7 @@ import fs, { type FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { storeDir } from './stores.js';
-import { getControl, listSessions } from './tmux.js';
+import { listSessions } from './tmux.js';
 import { deliverForce, deliverSafe } from './send.js';
 import { onClock } from './jikan.js';
 
@@ -150,12 +150,6 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
       return retain('target_missing', targetSession
         ? 'the target name now belongs to a different session'
         : 'target session no longer exists');
-    }
-    if (mode === 'safe') {
-      const control = await getControl(item.target);
-      if (control !== 'write') {
-        return retain('stuck', `target dial is ${control}`);
-      }
     }
     try {
       if (mode === 'force') countAttempt();

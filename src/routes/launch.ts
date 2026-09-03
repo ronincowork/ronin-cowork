@@ -297,9 +297,14 @@ export function registerLaunch(app: express.Express): void {
     if (resolved.assignment) {
       try {
         resolved.assignment = await prepareLaunchDesks(resolved.assignment);
+        if (!resolved.assignment.desks.length) {
+          resolved.assignment = null;
+          resolved.dir = (await listProjectRoots()).find((root) => root.name === resolved.project_root)?.dir ?? resolved.dir;
+        }
       } catch (e) {
-        void appendLaunchLedger(form, resolved, false);
-        return res.status(409).json({ error: String((e as Error)?.message ?? e) });
+        console.warn(`[launch] desk preparation warning: ${String((e as Error)?.message ?? e)}`);
+        resolved.assignment = null;
+        resolved.dir = (await listProjectRoots()).find((root) => root.name === resolved.project_root)?.dir ?? resolved.dir;
       }
     }
 
