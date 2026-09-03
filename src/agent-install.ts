@@ -48,7 +48,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { AGENTS, listAgentAvailability } from './agents.js';
-import { REPO_ROOT } from './config.js';
+import { REPO_ROOT } from './resources.js';
 import { runCommand } from './send.js';
 import { collectBirthLines, emitSessionWillBorn } from './sockets.js';
 import { createSession, killSessionTree, sessionExists } from './tmux.js';

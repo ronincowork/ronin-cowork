@@ -4,6 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+export const REPO_ROOT = path.join(__dirname, '..');
 
 export type RootId = 'user' | 'data';
 export type StoreSource = 'env' | 'default';

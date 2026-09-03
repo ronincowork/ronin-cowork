@@ -1,6 +1,6 @@
 /** Server-owned launch mechanics that are not public launch fields or catalog roles. */
 import type { LaunchProfile } from './launch-profile.js';
-import { REPO_ROOT } from './config.js';
+import { REPO_ROOT } from './resources.js';
 
 export type HouseSeat = 'mika';
 
