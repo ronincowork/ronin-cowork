@@ -16,6 +16,7 @@ import type { RepoSpec } from '../promotion/candidate.js';
 import type { ByoinMode } from '../promotion/promote.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
 import { storeDir } from '../resources.js';
+import { findLeads } from '../desks/lead.js';
 
 const args = process.argv.slice(2);
 const flag = (name: string): boolean => args.includes(name);
@@ -179,6 +180,10 @@ async function main(): Promise<void> {
     }
     default: {
       const team = cmd;
+      if (!flag('--anyway') && !(await findLeads(team)).length) {
+        say(`NO-LEAD: team ${team} has no team lead (人), and promotion is the lead's job. Ask the owner to mark one on the Team page — a coordinator that writes no code does fine — then run again. Nothing was built or moved. (--anyway promotes on the owner's word.)`);
+        process.exit(1);
+      }
       const specs = await reposForTeam(team);
       say(`team ${team}: ${specs.map((s) => `${s.repo} ${s.line} → ${s.target} (${s.dir})`).join(', ')}`);
       const out = await promoteTeam({ team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), anyway: flag('--anyway'), log: say });

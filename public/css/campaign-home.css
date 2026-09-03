@@ -160,6 +160,7 @@
   .cv-button:hover { border-color: var(--accent); color: var(--fg-strong); }
   .cv-empty { margin: 0; padding: var(--space-5); font-size: var(--text-3); color: var(--muted); }
   .cv-note { margin: 0; font-size: var(--text-3); line-height: 1.5; color: var(--muted); }
+  .cv-pre { margin: 0; padding: var(--space-4); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); font-size: var(--text-2); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
   .cv-eyebrow { font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
   .cv-body > .cv-cards { padding: 0; }
 

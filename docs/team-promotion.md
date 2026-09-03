@@ -31,6 +31,14 @@ expected reference for each repository, each reference advance, restart and heal
 results, and recovery state. An interrupted receipt keeps partial movement visible until
 it is resumed or abandoned.
 
+**No lead, said out loud** (owner, 2026-09-03). Promotion is the lead's job. When nobody is
+marked 人 on the team, `ronin-promote` answers `NO-LEAD: team <t> has no team lead …` and
+builds no candidate: the agent that got that line tells the owner and asks for a lead to be
+marked on the Team page — a coordinator that writes no code does fine. Nothing forces the
+choice through a form, and nothing promotes silently in the lead's absence. A revert or a
+resume is Ronin's own recovery and needs no lead; `--anyway` is the owner saying "you do
+it". The hand-in says the same thing at its moment: accepted, waiting, ask for a lead.
+
 The release pull request is opened with:
 
 ```sh
