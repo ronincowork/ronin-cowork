@@ -62,7 +62,7 @@ const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const NM = path.join(ROOT, 'node_modules');
 const isEntryPoint = !!process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
-const isBoxInstance = isEntryPoint && process.env.RONIN_BOX_INSTANCE === '1' && process.env.RONIN_TEST_RUNNER !== '1';
+const isBoxInstance = isEntryPoint && process.env.RONIN_TEST_RUNNER !== '1';
 
 const app = express();
 app.use(express.json());
