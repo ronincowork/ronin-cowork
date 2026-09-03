@@ -1,6 +1,6 @@
 import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
-import { healthCheck, notifyTeam, restartService } from './health.js';
+import { healthCheck, notifyTeam, restartService, serviceStartedAfter } from './health.js';
 import { queuePromotionContinuation } from './continuation.js';
 import {
   acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, now, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
@@ -130,8 +130,10 @@ export async function finishPromotionRestart(
   const log = options.log ?? noop;
   const primary = options.primary ?? r.repos[0]?.dir ?? '';
   if (r.state !== 'restarting') return { ok: false, receipt: r, nothing: false, message: `${r.id} is ${r.state}, not restarting` };
-  if (options.restartAlreadyRequested) {
-    r.restart = { unit: 'tmux-ronin.service', at: new Date().toISOString(), ok: true, detail: 'operator returned after restart request' };
+  const advancedAt = r.advances.reduce((latest, advance) => advance.at && advance.at > latest ? advance.at : latest, r.created_at);
+  const alreadyRestarted = options.restartAlreadyRequested || (fx === realEffects && await serviceStartedAfter(advancedAt));
+  if (alreadyRestarted) {
+    r.restart = { unit: r.restart?.unit ?? 'ronin.service', at: new Date().toISOString(), ok: true, detail: 'ronin.service already restarted after the refs advanced' };
   } else {
     log('→ restarting the live app from the dev worktree');
     r.restart = await fx.restart();
