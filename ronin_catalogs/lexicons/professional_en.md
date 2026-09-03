@@ -1287,6 +1287,7 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_keypad:** Keypad
 - **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
+- **messages.reconnecting:** Reconnecting…
 - **messages.note:** Sometimes Agent-to-Agent messages get stuck and need your help. Try Again is gentle; Force gives it one determined shove. 😉
 - **messages.from:** From
 - **messages.to_label:** To
