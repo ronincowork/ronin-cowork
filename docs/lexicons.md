@@ -21,9 +21,9 @@ at a time, with no code).
 
 prefixed key names a catalog entry's label by its token (`kind.household`,
 `role.DraftPlan`, `behaviour.<t>`); a `glossary.*` key is a word an agent
-says to a person for a house term — no surface reads it; the boot shelf renders
-`KOTOBA_GLOSSARY.md` from it at session birth (`docs/kokugo.md` § 8). A key may carry dots — the catalog
-grammar widened for it (`src/catalog.ts`, `isKeyLine`).
+says to a person for a house term. The boot shelf reads
+`ronin_catalogs/lexicons/professional_en.md` directly at session birth. A key may carry
+dots; `isKeyLine` in `src/resources.ts` accepts them.
 
 ## The chain, one rule
 

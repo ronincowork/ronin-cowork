@@ -18,7 +18,7 @@ import express from 'express';
 import type { AddressInfo } from 'node:net';
 import { createServer, type Server } from 'node:http';
 
-process.env.BIND = '127.0.0.1'; // src/config.ts must not shell `tailscale` at import
+process.env.BIND = '127.0.0.1'; // src/machine-settings.ts must not shell `tailscale` at import
 const { registerSessions } = await import('../src/routes/sessions-api.js');
 
 const app = express();

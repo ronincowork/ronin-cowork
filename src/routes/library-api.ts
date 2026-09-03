@@ -1,22 +1,3 @@
-/**
- * THE TEMPLATE LIBRARY — bundles on the public site, and the one way in.
- *
- * Every verb here is a PRESS. `GET /api/library` asks the site for its index only when
- * the Templates surface's button is pressed — never on a timer, never at boot (the
- * update-check rule, src/routes/update-api.ts). The fetch goes through the AGERU
- * transport (src/activation/transport.ts): allowlisted host, egress record, no token.
- *
- * A download is two reads and one write: the index (for the card and its sha256), the
- * bundle (held to the hash the index promised), then `installBundle` into the owner's
- * stores. The plan is answered BEFORE anything is written so the surface can show what
- * will land where, and `replace` is the only way an owner's own file is written over.
- *
- * `POST /api/library/install` also takes a whole bundle document in the body — one the
- * owner built with `bin/ronin-bundle` — and that path makes no outbound call and needs no
- * Services: making your own is the floor. Reading the shelf is the Services feature
- * (owner, 2026-09-03): without an entitlement the read is refused in words, with the
- * switch named, and the handful that ship inside Ronin stay.
- */
 import type express from 'express';
 import { homedir } from 'node:os';
 import { fetchLibrary, LIBRARY_BASE } from '../activation/transport.js';
@@ -53,7 +34,6 @@ async function readIndex(): Promise<LibraryCard[]> {
   return parseLibraryIndex(r.body).bundles;
 }
 
-/** One bundle off the site, checked against the card the index carries for it. */
 async function readBundle(name: string): Promise<{ card: LibraryCard; bundle: Bundle }> {
   const card = (await readIndex()).find((c) => c.name === name);
   if (!card) throw new Error(`The library lists no bundle called "${name}".`);
@@ -76,7 +56,6 @@ export function registerLibrary(app: express.Express): void {
     }
   });
 
-  // The bundle's face and the plan — what an install WOULD write — nothing written.
   app.get('/api/library/bundles/:name', async (req, res) => {
     const name = String(req.params.name ?? '');
     if (!TOKEN.test(name)) return res.status(400).json({ error: 'A bundle name is lowercase letters, digits, _ and -.' });
@@ -89,8 +68,6 @@ export function registerLibrary(app: express.Express): void {
     }
   });
 
-  // `{ name, replace? }` fetches and installs; `{ bundle, replace? }` installs a document
-  // the owner already holds. Both answer the receipt: written, skipped, refused.
   app.post('/api/library/install', async (req, res) => {
     const body = (req.body ?? {}) as { name?: unknown; bundle?: unknown; replace?: unknown };
     const replace = body.replace === true;
@@ -109,8 +86,6 @@ export function registerLibrary(app: express.Express): void {
     }
   });
 
-  // A bundle OUT of this install, built around one team template — what the owner would
-  // put on a library of their own. Answered as a download; nothing is stored.
   app.get('/api/library/pack/:team', async (req, res) => {
     const team = String(req.params.team ?? '');
     if (!TOKEN.test(team)) return res.status(400).json({ error: 'A template name is lowercase letters, digits, _ and -.' });

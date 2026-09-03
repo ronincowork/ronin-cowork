@@ -143,16 +143,4 @@
   .aa-from { color: var(--muted); font-size: var(--text-1); margin-left: var(--space-3); }
 
 
-  .tj { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5); }
-  .tj-form { gap: var(--space-4); }
-  .tj-preview { color: var(--muted); }
-  .tj-lists { display: flex; flex-direction: column; gap: var(--space-6); }
-  .tj-table { width: 100%; border-collapse: collapse; font-size: var(--text-3); }
-  .tj-table th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--muted); font-weight: 600; border-bottom: var(--edge) solid var(--line); }
-  .tj-table td { padding: var(--space-3); vertical-align: top; border-bottom: var(--edge) solid var(--line); }
-  .tj-request b { color: var(--fg-strong); font-weight: 600; }
-  .tj-by { display: block; margin-top: var(--space-1); font-size: var(--text-2); color: var(--muted); }
-  .tj-row[data-state='paused'] td { color: var(--muted); }
-  .tj-row[data-state='paused'] .tj-request b { color: var(--muted); }
-  .tj-actions { display: flex; gap: var(--space-2); white-space: nowrap; }
 }

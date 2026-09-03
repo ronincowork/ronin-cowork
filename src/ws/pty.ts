@@ -1,14 +1,3 @@
-/**
- * Bridge one browser tile <-> tmux over a websocket — FAUCET A, the attach mirror.
- *
- * The tile mirrors a grouped-viewer `tmux attach` pty: tmux paints a fixed screen and
- * the scrollback stays server-side (copy-mode is a Faucet A painting, so scrolling
- * round-trips). This is Locked, it works, and RIREKI does not touch it.
- *
- * Unlocked is handled by handleTapeTile instead: it reads the tape and never touches
- * tmux at all. The old `stream` mode that claimed Faucet B for itself is gone — the
- * recorder owns that faucet now, and two claimants would silently evict each other.
- */
 import { randomBytes } from 'node:crypto';
 import { type WebSocket } from 'ws';
 import pty from '@lydell/node-pty';
@@ -23,10 +12,6 @@ import {
 } from '../tmux.js';
 import { getStreamHandler } from '../sockets.js';
 
-/**
- * How often a tile socket must prove its peer is still there. One missed interval ends
- * it — see the heartbeat at the foot of handlePty for why that is the safe direction.
- */
 const HEARTBEAT_MS = 30_000;
 
 export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
@@ -42,8 +27,6 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
   }
 
   if (tape) {
-    // The stream (🔓 tape) handler is rireki's, plugged in via the connector. Absent
-    // service = the unlocked view is off; say so and let the client fall back to 🔒.
     const h = getStreamHandler();
     if (!h) {
       ws.send(JSON.stringify({ t: 'error', m: 'The unlocked view is off — no record service is installed.' }));
@@ -55,8 +38,6 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
 
   const viewer = await createViewer(session, randomBytes(3).toString('hex'));
 
-  // Don't leak the host tmux context into the child, or `tmux attach` complains
-  // about nesting and may misbehave.
   const env: NodeJS.ProcessEnv = { ...process.env };
   delete env.TMUX;
   delete env.TMUX_PANE;
@@ -70,7 +51,6 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
   });
 
   let closed = false;
-  // Declared before cleanup and armed after the handlers: the two refer to each other.
   let beat: ReturnType<typeof setInterval> | undefined;
   const cleanup = () => {
     if (closed) return;
@@ -79,7 +59,6 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
     try {
       term.kill();
     } catch {
-      /* already dead */
     }
     void killSession(viewer);
   };
@@ -116,14 +95,10 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
       try {
         term.resize(cols, rows);
       } catch {
-        /* race on close */
       }
     } else if (msg.t === 'bottom') {
-      // Jump to the live bottom by exiting copy mode (deep scrollback defeats wheel bursts).
       void jumpToBottom(viewer);
     } else if (msg.t === 'hist') {
-      // Float mode: one-shot scrollback fetch — the browser scrolls the text natively
-      // instead of round-tripping wheel events through tmux copy-mode.
       const n = Math.min(10000, Math.max(100, Number(msg.n) || 2000));
       capturePane(viewer, n)
         .then((text) => {
@@ -138,32 +113,12 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
   ws.on('close', cleanup);
   ws.on('error', cleanup);
 
-  /**
-   * THE HEARTBEAT — the only thing that tells a live tile socket from a dead one.
-   *
-   * `cleanup` is what reaps this socket's viewer, and 'close' is what drives it. A rude
-   * disconnect never sends one: a closed lid, a backgrounded phone, a walk out of wifi
-   * range or a NAT table quietly forgetting the flow all leave the server holding a
-   * half-open socket with no error and no close event. The BROWSER notices every one of
-   * those and reconnects two seconds later (public/js/tilewire.js) — and a reconnect is a
-   * new socket, so it gets a new viewer. Without a heartbeat the pane collects one more
-   * `grid_*` name per rude disconnect, and nothing sweeps them until Ronin restarts:
-   * cleanupViewers() runs at boot and at shutdown and never in between. On a phone, which
-   * is mid-reconnect all the time, that is the normal case rather than the exception.
-   *
-   * Terminating a connection that was merely slow costs nothing, which is why one missed
-   * interval is enough: the client reconnects on its own, and a tile that reconnects is
-   * the ordinary case this file is already written around. Leaving a dead one costs a
-   * viewer that outlives every browser that could have closed it.
-   */
   let alive = true;
   ws.on('pong', () => {
     alive = true;
   });
   beat = setInterval(() => {
     if (!alive) {
-      // No 'close' is coming from a peer that is not there; make one, then reap directly
-      // in case terminate's own close is not delivered. cleanup is idempotent.
       ws.terminate();
       cleanup();
       return;
@@ -172,7 +127,6 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
     try {
       ws.ping();
     } catch {
-      /* closing under us — the next tick terminates */
     }
   }, HEARTBEAT_MS);
 }

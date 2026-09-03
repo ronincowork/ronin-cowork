@@ -1,31 +1,11 @@
-/**
- * JIKAN (時間, "time") — the house's one clock, and the Cron jobs on it.
- *
- * THE CLOCK is the rails for everything timed (owner, 2026-09-03): the message queue's
- * retry, the sessions broadcast, the Tomodachi sweep and the Cron jobs are each a tick on
- * it. A tick is an interval that never overlaps itself and never throws out. That is all.
- *
- * A CRON JOB is a ping, not infrastructure (owner, 2026-09-03: "if it misses one beat, it
- * doesn't matter"). One request, one session (or `lead`), one `due` date. Every minute the
- * clock asks: is anything due at or before now? If yes, deliver it through the ordinary
- * message door and mark it — done for a one-time job, or the next due for a repeat.
- * "Run now" sets `due` to now; it fires at the next tick. The list is one Markdown file
- * per team in the `jikan` store, hand-editable, and the owner's.
- *
- * Timing words:  once 2026-09-04 08:00 · daily 08:00 · weekdays 08:00 · weekly mon 08:00
- *                monthly 1 09:00 · hourly · every 30m · or a five-field cron line
- */
 import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { entryValue, splitSections } from './resources.js';
 import { storeDir } from './resources.js';
 
-/* ---------- the clock ---------- */
-
 const running = new Set<string>();
 
-/** A rhythm on the house clock: never two runs of one name at once, a throw swallowed, never holds the process open. */
 export function onClock(name: string, everyMs: number, run: () => Promise<void>): () => void {
   const timer = setInterval(() => {
     if (running.has(name)) return;
@@ -35,8 +15,6 @@ export function onClock(name: string, everyMs: number, run: () => Promise<void>)
   timer.unref();
   return () => clearInterval(timer);
 }
-
-/* ---------- timing words ---------- */
 
 export type Spec = { kind: 'once'; at: number } | { kind: 'every'; ms: number } | { kind: 'cron'; f: Set<number>[]; anyDom: boolean; anyDow: boolean };
 
@@ -74,7 +52,6 @@ const clock = (s: string | undefined): { h: number; m: number } | null => {
   return m ? { h: Number(m[1]), m: Number(m[2]) } : null;
 };
 
-/** The timing words → a spec, or null. Local clock. */
 export function parseWhen(raw: string): Spec | null {
   const words = raw.trim().replace(/\s+/g, ' ');
   const lower = words.toLowerCase();
@@ -99,7 +76,6 @@ export function parseWhen(raw: string): Spec | null {
   return cron(words);
 }
 
-/** The first moment strictly after `after` the spec means, or null (a once that has passed). */
 export function nextRun(spec: Spec, after: number): number | null {
   if (spec.kind === 'once') return spec.at > after ? spec.at : null;
   if (spec.kind === 'every') return after + spec.ms;
@@ -118,24 +94,19 @@ export function nextRun(spec: Spec, after: number): number | null {
   return null;
 }
 
-/* ---------- the list ---------- */
-
 export type JobState = 'active' | 'paused' | 'done';
 
 export interface Job {
   id: string;
-  /** The words delivered, exactly. */
   request: string;
-  /** A session name on the team, or `lead`. */
   to: string;
-  /** The timing words as written. */
   when: string;
-  /** ISO — fires at the first tick at or after this. '' when done or paused. */
   due: string;
   state: JobState;
-  /** The last firing: `<iso> delivered` · `<iso> queued` · `<iso> refused: …`, or ''. */
   last: string;
   by: string;
+  expires: string;
+  history: string[];
 }
 
 const TOKEN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
@@ -147,13 +118,15 @@ function parseJobs(raw: string): Job[] {
   return splitSections(raw, 'user').filter((s) => isValidJobId(s.name)).map((s) => {
     const get = (k: string) => entryValue(s.lines, k);
     const state = get('state');
-    return { id: s.name, request: get('request'), to: get('to') || 'lead', when: get('when'), due: get('due'), state: state === 'paused' || state === 'done' ? state : 'active', last: get('last'), by: get('by') || 'owner' };
+    let history: string[] = [];
+    try { history = JSON.parse(get('history') || '[]'); } catch {}
+    return { id: s.name, request: get('request'), to: get('to') || 'lead', when: get('when'), due: get('due'), state: state === 'paused' || state === 'done' ? state : 'active', last: get('last'), by: get('by') || 'owner', expires: get('expires'), history: Array.isArray(history) ? history.slice(-5) : [] };
   });
 }
 
 const render = (team: string, jobs: Job[]): string =>
   `# ${team} — Cron jobs (JIKAN)\n\n> Ronin checks every minute and delivers what is due to the session named, or to whoever leads the team. Hand-edit freely: \`state: paused\` holds a job; \`due\` is when it next fires.\n\n${jobs.map((j) =>
-    `## ${j.id}\n- **request:** ${j.request}\n- **to:** ${j.to}\n- **when:** ${j.when}\n- **due:** ${j.due}\n- **state:** ${j.state}\n- **last:** ${j.last}\n- **by:** ${j.by}\n`).join('\n')}`;
+    `## ${j.id}\n- **request:** ${j.request}\n- **to:** ${j.to}\n- **when:** ${j.when}\n- **due:** ${j.due}\n- **expires:** ${j.expires}\n- **state:** ${j.state}\n- **last:** ${j.last}\n- **history:** ${JSON.stringify(j.history)}\n- **by:** ${j.by}\n`).join('\n')}`;
 
 export async function listJobs(team: string): Promise<Job[]> {
   if (!isValidTeam(team)) return [];
@@ -174,7 +147,7 @@ const teamsWithJobs = async (): Promise<string[]> => {
 const text = (v: unknown, max: number): string => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const iso = (ms: number): string => new Date(ms).toISOString();
 
-export interface JobDraft { request: unknown; to?: unknown; when: unknown; by?: unknown }
+export interface JobDraft { request: unknown; to?: unknown; when: unknown; by?: unknown; expires?: unknown }
 
 export async function addJob(team: string, draft: JobDraft, now = Date.now()): Promise<Job> {
   if (!isValidTeam(team)) throw new Error('A team name is lowercase letters, digits, _ and -.');
@@ -184,21 +157,25 @@ export async function addJob(team: string, draft: JobDraft, now = Date.now()): P
   if (to !== 'lead' && !/^[A-Za-z0-9][\w.-]{0,63}$/.test(to)) throw new Error('A job goes to a session by name, or to `lead`.');
   const when = text(draft.when, 120);
   const spec = parseWhen(when);
-  if (!spec) throw new Error('Timing is `once 2026-09-04 08:00`, `daily 08:00`, `weekdays 08:00`, `weekly mon 08:00`, `monthly 1 09:00`, `hourly`, `every 30m`, or a five-field cron line.');
+  if (!spec) throw new Error('Choose a date and time, a daily or weekly time, or an interval. Advanced schedules accept the house grammar.');
   const next = nextRun(spec, now);
   if (next === null) throw new Error('That time has already passed.');
-  const job: Job = { id: `j${randomBytes(4).toString('hex').slice(0, 6)}`, request, to, when, due: iso(next), state: 'active', last: '', by: text(draft.by, 64) || 'owner' };
+  const expiresText = text(draft.expires, 40);
+  const expiresAt = expiresText ? Date.parse(expiresText) : NaN;
+  if (expiresText && (!Number.isFinite(expiresAt) || expiresAt <= now)) throw new Error('Expires must be a future date and time.');
+  if (Number.isFinite(expiresAt) && next > expiresAt) throw new Error('The first run must be before the expiry.');
+  const job: Job = { id: `j${randomBytes(4).toString('hex').slice(0, 6)}`, request, to, when, due: iso(next), state: 'active', last: '', by: text(draft.by, 64) || 'owner', expires: Number.isFinite(expiresAt) ? iso(expiresAt) : '', history: [] };
   await writeJobs(team, [...(await listJobs(team)), job]);
   return job;
 }
 
-/** `active` (from now), `paused` (held), or `now` (due at the next tick). */
 export async function setJob(team: string, id: string, verb: 'active' | 'paused' | 'now', now = Date.now()): Promise<Job> {
   const jobs = await listJobs(team);
   const job = jobs.find((j) => j.id === id);
   if (!job) throw new Error('No such job.');
   const spec = parseWhen(job.when);
-  const next = spec ? nextRun(spec, now) : null;
+  const proposed = spec ? nextRun(spec, now) : null;
+  const next = proposed !== null && (!job.expires || proposed <= Date.parse(job.expires)) ? proposed : null;
   const out: Job = verb === 'paused'
     ? { ...job, state: 'paused', due: '' }
     : verb === 'now'
@@ -209,14 +186,28 @@ export async function setJob(team: string, id: string, verb: 'active' | 'paused'
   return out;
 }
 
+export async function updateJob(team: string, id: string, draft: JobDraft, now = Date.now()): Promise<Job> {
+  const jobs = await listJobs(team);
+  const old = jobs.find((job) => job.id === id);
+  if (!old) throw new Error('No such job.');
+  const replacement = await addJob(team, { ...draft, by: old.by }, now);
+  const all = await listJobs(team);
+  const updated = { ...replacement, id, last: old.last, history: old.history };
+  await writeJobs(team, all.filter((job) => job.id !== id && job.id !== replacement.id).concat(updated));
+  return updated;
+}
+
+export async function listAllJobs(): Promise<Array<Job & { team: string }>> {
+  const rows = await Promise.all((await teamsWithJobs()).map(async (team) => (await listJobs(team)).map((job) => ({ ...job, team }))));
+  return rows.flat();
+}
+
 export async function removeJob(team: string, id: string): Promise<boolean> {
   const jobs = await listJobs(team);
   if (!jobs.some((j) => j.id === id)) return false;
   await writeJobs(team, jobs.filter((j) => j.id !== id));
   return true;
 }
-
-/* ---------- the tick ---------- */
 
 export interface TeamSession { name: string; tags: string[]; leads: string[] }
 export interface Door {
@@ -235,11 +226,12 @@ async function fire(team: string, job: Job, door: Door): Promise<Job> {
   if (!target) outcome = job.to === 'lead' ? `refused: ${team} has no lead` : `refused: ${job.to} is not on ${team}`;
   else outcome = await door.deliver(target, deliveryText(job)).catch((e: Error) => `refused: ${e.message}`);
   const spec = parseWhen(job.when);
-  const next = spec && spec.kind !== 'once' ? nextRun(spec, now) : null;
-  return { ...job, last: `${iso(now)} ${outcome}`, due: next === null ? '' : iso(next), state: next === null ? 'done' : job.state };
+  const proposed = spec && spec.kind !== 'once' ? nextRun(spec, now) : null;
+  const next = proposed !== null && (!job.expires || proposed <= Date.parse(job.expires)) ? proposed : null;
+  const record = `${iso(now)} ${outcome}`;
+  return { ...job, last: record, history: [...job.history, record].slice(-5), due: next === null ? '' : iso(next), state: next === null ? 'done' : job.state };
 }
 
-/** One tick: anything due at or before now, on any team, fires. */
 export async function tick(door: Door): Promise<Job[]> {
   const fired: Job[] = [];
   for (const team of await teamsWithJobs()) {
@@ -247,6 +239,12 @@ export async function tick(door: Door): Promise<Job[]> {
     const after: Job[] = [];
     let changed = false;
     for (const job of jobs) {
+      if (job.state === 'active' && job.expires && Date.parse(job.expires) <= door.now()) {
+        const record = `${iso(door.now())} expired`;
+        after.push({ ...job, state: 'done', due: '', last: record, history: [...job.history, record].slice(-5) });
+        changed = true;
+        continue;
+      }
       if (job.state !== 'active' || !job.due || Date.parse(job.due) > door.now()) { after.push(job); continue; }
       const out = await fire(team, job, door);
       after.push(out);
@@ -258,5 +256,4 @@ export async function tick(door: Door): Promise<Job[]> {
   return fired;
 }
 
-/** The Cron jobs on the clock: every minute. Returns the stop. */
 export const startJikan = (door: Door, everyMs = 60_000): (() => void) => onClock('jikan', everyMs, () => tick(door).then(() => {}));

@@ -104,6 +104,97 @@ test('happy path: candidate = dev + line, CAS advance, mounted dev refreshed', a
   assert.equal(again.receipt, null, 'nothing to promote writes no receipt');
 });
 
+test('HTTP promotion replies with the restarting receipt before post-restart health completes it', async () => {
+  const cw = await fixture('http-restart', 1);
+  let handedOff = '';
+  let restarts = 0;
+  let healthChecks = 0;
+  const fx = fakes({
+    restart: async () => { restarts++; return { unit: 'fake', at: new Date().toISOString(), ok: true }; },
+    health: async () => { healthChecks++; return { passed: true, checks: [{ name: 'api/health', status: 'ok' }], at: new Date().toISOString() }; },
+  });
+  const reply = await P.promoteTeam({
+    team: 'http-restart', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fx,
+    deferRestart: async (receipt) => { handedOff = receipt.id; }, ...quiet,
+  });
+  assert.equal(reply.ok, true);
+  assert.equal(reply.receipt?.state, 'restarting');
+  assert.equal(handedOff, reply.receipt?.id);
+  assert.equal(restarts, 0);
+  assert.equal(healthChecks, 0);
+
+  const done = await P.finishPromotionRestart(reply.receipt!, { effects: fx, ledgerDir: LEDGER });
+  assert.equal(done.receipt?.state, 'complete');
+  assert.equal(restarts, 1);
+  assert.equal(healthChecks, 1);
+  assert.equal((await R.readReceipt(handedOff, LEDGER))?.health?.passed, true);
+});
+
+test('resume accepts a restarting receipt and records restart health', async () => {
+  const cw = await fixture('resume-restart', 1);
+  const fx = fakes();
+  const started = await P.promoteTeam({
+    team: 'resume-restart', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fx,
+    deferRestart: async () => undefined, ...quiet,
+  });
+  assert.equal(started.receipt?.state, 'restarting');
+
+  const resumed = await P.resumePromotion({ id: started.receipt!.id, by: 'lead', effects: fx, ...quiet });
+  assert.equal(resumed.ok, true);
+  assert.equal(resumed.receipt?.state, 'complete');
+  assert.equal(resumed.receipt?.restart?.ok, true);
+  assert.equal(resumed.receipt?.health?.passed, true);
+});
+
+test('explicit resume refreshes an old restarting receipt before handing it to boot recovery', async () => {
+  const cw = await fixture('resume-old-restart', 1);
+  const started = await P.promoteTeam({
+    team: 'resume-old-restart', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(),
+    deferRestart: async () => undefined, ...quiet,
+  });
+  const old = { ...started.receipt!, updated_at: '2000-01-01T00:00:00.000Z' };
+  await R.writeReceipt(old, LEDGER);
+  let handedOff = '';
+  const resumed = await P.resumePromotion({
+    id: old.id, by: 'lead', effects: fakes(), ledgerDir: LEDGER,
+    deferRestart: async (receipt) => { handedOff = receipt.id; },
+  });
+  assert.equal(resumed.ok, true);
+  assert.equal(handedOff, old.id);
+  assert(Date.parse(resumed.receipt!.updated_at) > Date.parse(old.updated_at));
+  assert.equal((await R.readReceipt(old.id, LEDGER))?.updated_at, resumed.receipt?.updated_at);
+  await P.finishPromotionRestart(resumed.receipt!, { effects: fakes(), ledgerDir: LEDGER });
+});
+
+test('promotions from different teams answer BUSY immediately with the active receipt state', async () => {
+  const first = await fixture('box-lock-first', 1);
+  const second = await fixture('box-lock-second', 1);
+  const held = await P.promoteTeam({
+    team: 'alpha', repos: [spec('first', first.dir)], by: 'lead', effects: fakes(),
+    deferRestart: async () => undefined, ...quiet,
+  });
+  assert.equal(held.receipt?.state, 'restarting');
+  const lines: string[] = [];
+  await assert.rejects(P.promoteTeam({
+    team: 'beta', repos: [spec('second', second.dir)], by: 'lead', effects: fakes(), restart: false,
+    ledgerDir: LEDGER, log: (line) => lines.push(line),
+  }), { message: `BUSY: alpha's ${held.receipt!.id} is restarting` });
+  await P.finishPromotionRestart(held.receipt!, { effects: fakes(), ledgerDir: LEDGER });
+  assert.equal(lines.length, 0);
+});
+
+test('a promotion reclaims a lock older than the in-flight window and says why', async () => {
+  const cw = await fixture('stale-box-lock', 1);
+  await R.acquirePromotionLock({ id: 'old-receipt', team: 'old-team', at: new Date(0).toISOString() }, LEDGER);
+  const lines: string[] = [];
+  const out = await P.promoteTeam({
+    team: 'new-team', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(), restart: false,
+    ledgerDir: LEDGER, log: (line) => lines.push(line),
+  });
+  assert.equal(out.ok, true);
+  assert(lines.some((line) => line === "reclaiming stale promotion lock: old-team's old-receipt exceeded the in-flight window"));
+});
+
 test('a conflict is contained in the candidate: refused at prepare, dev and its worktree untouched', async () => {
   const cw = await fixture('cowork', 1);
   // dev gains a commit that collides with hand-in 1.

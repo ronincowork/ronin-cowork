@@ -1,5 +1,15 @@
 # UI — the contract the frontend enforces
 
+The operator serves the client as native ES modules. `index.html` contains a generated
+`modulepreload` for every module reachable from `js/main.js`, allowing the browser to
+request the graph in parallel. Static JS and CSS use the running commit as their URL
+prefix and cache immutable for a year; HTML keeps its ETag and revalidates so a new
+commit supplies new asset URLs. Compressible static and API responses use Brotli or gzip.
+`index.html` paints the desktop Workbench frame and its moving empty surfaces before any
+script loads. The client replaces that shell with the live workspace, then fills each
+surface as its own request returns; one slow or failed read does not hold the other
+surfaces blank.
+
 The client grew feature by feature, each solving markup, colour, fetch, failure and
 focus for itself. This document is the set of decisions that are now made ONCE, and it
 is written against enforcement, not aspiration: where a rule has a gate, the gate is

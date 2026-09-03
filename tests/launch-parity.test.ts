@@ -19,7 +19,7 @@
  * the READING LIST must be identical, field for field. A second launch path would have to
  * reproduce this table to pass, which is the point.
  *
- * No tmux, no socket: every store is redirected per the env contract in src/stores.ts.
+ * No tmux, no socket: every store is redirected per the env contract in src/resources.ts.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -58,7 +58,16 @@ process.env.RONIN_CONFIG_DIR = path.join(temp, 'config');
 await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 await fs.writeFile(
   path.join(temp, 'config', 'machine_settings.json'),
-  JSON.stringify({ agents: { sessions: { default: { provider: 'anthropic', model: 'fable' } } } }),
+  JSON.stringify({
+    agents: { sessions: { default: { provider: 'anthropic', model: 'fable' } } },
+    campaigns: {
+      home_machine: {
+        title: 'Ronin Home',
+        state: 'active',
+        config: { agent_defaults: { dial: 'write' } },
+      },
+    },
+  }),
 );
 process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');
 
@@ -503,9 +512,9 @@ test('kind and behaviours resolve at birth, with unusable books ignored rather t
   assert.equal(born.kind, 'coding');
   assert.deepEqual(born.behaviours.map((row) => row.book), ['sops:github', 'ways:cut_code']);
   assert.ok(born.birth_reading.some((file) => file.endsWith('/ronin_sops/github.md')));
-  assert.ok(born.birth_reading.some((file) => file.endsWith('/ways/cut_code.md')));
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/session_roles/CutCode.md')));
   assert.match(born.brief, /ronin_sops\/github\.md/);
-  assert.match(born.brief, /ways\/cut_code\.md/);
+  assert.match(born.brief, /session_roles\/CutCode\.md/);
   assert.deepEqual(born.ignored, ['behaviours[ways:not_there]']);
   assert.equal(born.stated_by.kind[0]?.layer, 'launch');
   assert.equal(born.stated_by.behaviours[0]?.layer, 'launch');

@@ -12,31 +12,12 @@ import { unpromotedAcceptedLines } from '../promotion/discovery.js';
 import { abandonPromotion, bisectLine, promoteTeam, resumePromotion, revertPromotion } from '../promotion/promote.js';
 import { lastGoodPromotion, listReceipts, publicPromotionReceipt, readReceipt, summarize, toChangeSet } from '../promotion/receipts.js';
 import { openPullRequest } from '../promotion/pr.js';
+import { promotionUnitProgress, queuePromotionContinuation } from '../promotion/continuation.js';
 import type { RepoSpec } from '../promotion/candidate.js';
 import type { ByoinMode } from '../promotion/promote.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
 import { storeDir } from '../resources.js';
 import { findLeads } from '../desks/lead.js';
-
-/**
- * ronin-promote — the lead's door from a team line into `dev`. `bin/ronin-promote` is the
- * bash face; this is the whole of it.
- *
- *   ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--anyway] [--repo name=dir …]
- *     BUSY when another team's promotion is on the fly: wait, then run again. --anyway proves regardless.
- *   ronin-promote resume <receipt-id> [--no-restart]
- *   ronin-promote abandon <receipt-id> <reason…>
- *   ronin-promote revert <receipt-id|last> [--mode …]
- *   ronin-promote bisect <team> [--repo name] [--from <sha>] [--mode …]
- *   ronin-promote receipts [team]
- *   ronin-promote show <receipt-id> [--pr-block | --shared]
- *
- * A team's repos are its birth defaults plus every repository with an accepted hand-in
- * for that team. Each resolves to a project_root's dir; its line comes from the accepted
- * ledger when present, otherwise the roster's `branch` or `team/<team>/dev`; the
- * target is each repo's declared working line (RONIN_REPO). A direct repo has no team
- * line and is refused here — desks are chosen by declared arrangement, never forced.
- */
 
 const args = process.argv.slice(2);
 const flag = (name: string): boolean => args.includes(name);
@@ -142,7 +123,10 @@ async function main(): Promise<void> {
     }
     case 'resume': {
       const id = rest[0]; if (!id) throw new Error('resume needs a receipt id');
-      return report(await resumePromotion({ id, by, log: say, restart: !flag('--no-restart') }));
+      return report(await resumePromotion({
+        id, by, log: say, restart: !flag('--no-restart'),
+        ...(!flag('--no-restart') ? { deferRestart: queuePromotionContinuation } : {}),
+      }));
     }
     case 'abandon': {
       const id = rest[0]; if (!id) throw new Error('abandon needs a receipt id');
@@ -172,8 +156,6 @@ async function main(): Promise<void> {
       process.exit(0);
     }
     case 'pr': {
-      // The release PR, from the ledger — the open-pr action, mechanically. Owner,
-      // 2026-08-28: agents do not assemble gh commands or paste receipt blocks by hand.
       const team = rest[0]; if (!team) throw new Error('pr needs a team');
       const specs = await reposForTeam(team);
       const receipt = await lastGoodPromotion(team);
@@ -197,7 +179,10 @@ async function main(): Promise<void> {
       if (!r) throw new Error(`no receipt ${id}`);
       if (flag('--pr-block')) say('```ronin-promotion-receipt\n' + JSON.stringify(publicPromotionReceipt(r)) + '\n```');
       else if (flag('--shared')) say(JSON.stringify(toChangeSet(r), null, 2));
-      else say(JSON.stringify(r, null, 2));
+      else {
+        const progress = await promotionUnitProgress(r);
+        say(JSON.stringify({ ...r, ...(progress ? { unit_progress: progress } : {}) }, null, 2));
+      }
       process.exit(0);
     }
     default: {
@@ -208,7 +193,10 @@ async function main(): Promise<void> {
       }
       const specs = await reposForTeam(team);
       say(`team ${team}: ${specs.map((s) => `${s.repo} ${s.line} → ${s.target} (${s.dir})`).join(', ')}`);
-      const out = await promoteTeam({ team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), anyway: flag('--anyway'), log: say });
+      const out = await promoteTeam({
+        team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), anyway: flag('--anyway'), log: say,
+        ...(!flag('--no-restart') ? { deferRestart: queuePromotionContinuation } : {}),
+      });
       if (out.ok && out.receipt?.state === 'complete') {
         say('');
         say('to open the dev → master pull request from this receipt, when it is time:');

@@ -54,13 +54,12 @@ export async function init() {
   // THE DESK PROFILE before the grid (R38): its lexicon is what every t() reads, and its
   // RIREKI view is the Output a new tile is born with — so it has to be known before a
   // tile is built. One request; a box that cannot answer gets stock, not a failure.
-  try { await loadDeskProfile(); } catch (e) { console.warn('desk profile', e); }
+  void loadDeskProfile().then(() => applyPageWords()).catch((e) => console.warn('desk profile', e));
   guard('page words', applyPageWords); // index.html's static words, through the lexicon
   // Resolve the root palette before mounting the chosen surface. A profile skin is not
   // a second paint: it is the one root token set this boot uses. The boot veil stays up
   // the static desktop bar (including its "2" shape control) before the phone decision.
-  try { await restoreSkin(activeProfile()?.skin || ''); }
-  catch (e) { console.warn('restore skin', e); }
+  void restoreSkin(activeProfile()?.skin || '').catch((e) => console.warn('restore skin', e));
 
   // FIRST LOAD. A fresh install lands here; everyone else never sees it.
   //
@@ -144,6 +143,7 @@ export async function init() {
   guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
   workspace.start();
+  document.getElementById('bootframe')?.remove();
 
   // THE DESKTOP FIRST PAINT ends here: the route's real workspace is mounted and the
   // header now belongs to it. Session discovery, event wiring and home catalogs below

@@ -1,13 +1,6 @@
-/**
- * JIKAN over HTTP — the Cron jobs tab's door, per team, and the tick on the house clock.
- *
- * Read `src/jikan.ts` first. This wears it as routes and starts the tick with the house's
- * real parts: tmux's session list, and the message queue (enqueue, then one safe attempt —
- * exactly what `tejun-send` does). The unit floor replaces both with fakes.
- */
 import type express from 'express';
 import { homedir } from 'node:os';
-import { addJob, isValidJobId, isValidTeam, listJobs, nextRun, parseWhen, removeJob, setJob, startJikan, type Door } from '../jikan.js';
+import { addJob, isValidJobId, isValidTeam, listAllJobs, listJobs, nextRun, parseWhen, removeJob, setJob, startJikan, updateJob, type Door } from '../jikan.js';
 import { attemptMessage, enqueueMessage } from '../message-queue.js';
 import { listSessions } from '../tmux.js';
 
@@ -20,14 +13,14 @@ export const houseDoor: Door = {
 };
 
 export function registerJikan(app: express.Express): void {
-  // Prove timing words before they are saved: the next three moments they mean.
   app.get('/api/jikan/when', (req, res) => {
     const spec = parseWhen(String(req.query?.words ?? '').slice(0, 120));
-    if (!spec) return res.status(400).json({ error: 'Timing is `once 2026-09-04 08:00`, `daily 08:00`, `weekdays 08:00`, `weekly mon 08:00`, `monthly 1 09:00`, `hourly`, `every 30m`, or a five-field cron line.' });
+    if (!spec) return res.status(400).json({ error: 'Choose a date and time, a daily or weekly time, or an interval. Advanced schedules accept the house grammar.' });
     const next: string[] = [];
     for (let t = Date.now(), i = 0; i < 3; i++) { const n = nextRun(spec, t); if (n === null) break; next.push(new Date(n).toISOString()); t = n; }
     res.json({ next });
   });
+  app.get('/api/jikan', (_req, res) => { void answer(res, async () => ({ jobs: await listAllJobs() }), 500); });
 
   const team = (req: express.Request, res: express.Response): string | null => {
     const name = String(req.params.team ?? '');
@@ -43,18 +36,17 @@ export function registerJikan(app: express.Express): void {
   app.post('/api/teams/:team/jikan', (req, res) => {
     const t = team(req, res);
     const b = (req.body ?? {}) as Record<string, unknown>;
-    if (t) void answer(res, async () => ({ ok: true, job: await addJob(t, { request: b.request, to: b.to, when: b.when, by: 'owner' }) }));
+    if (t) void answer(res, async () => ({ ok: true, job: await addJob(t, { request: b.request, to: b.to, when: b.when, expires: b.expires, by: 'owner' }) }));
   });
-  // `{ state: 'active' | 'paused' | 'now' }` — now means due at the next tick.
   app.put('/api/teams/:team/jikan/:id', (req, res) => {
     const t = team(req, res);
     const verb = String((req.body as { state?: unknown } | undefined)?.state ?? '');
     if (!t) return;
-    if (!isValidJobId(String(req.params.id)) || !['active', 'paused', 'now'].includes(verb)) return res.status(400).json({ error: 'Send { state: active | paused | now }.' });
-    void answer(res, async () => ({ ok: true, job: await setJob(t, String(req.params.id), verb as 'active' | 'paused' | 'now') }));
+    if (!isValidJobId(String(req.params.id))) return res.status(400).json({ error: 'No such job.' });
+    if (['active', 'paused', 'now'].includes(verb)) void answer(res, async () => ({ ok: true, job: await setJob(t, String(req.params.id), verb as 'active' | 'paused' | 'now') }));
+    else void answer(res, async () => ({ ok: true, job: await updateJob(t, String(req.params.id), { request: (req.body as any)?.request, to: (req.body as any)?.to, when: (req.body as any)?.when, expires: (req.body as any)?.expires }) }));
   });
   app.delete('/api/teams/:team/jikan/:id', (req, res) => { const t = team(req, res); if (t) void answer(res, async () => ({ ok: isValidJobId(String(req.params.id)) && await removeJob(t, String(req.params.id)) }), 500); });
 }
 
-/** The tick, on the house's parts. Called once from index.ts. */
 export const startHouseJikan = (): (() => void) => startJikan(houseDoor);

@@ -42,5 +42,14 @@ export function createTeamRosterSurface() {
     },
   });
   subscribe(() => roster.render());
-  return { el: surface.el, render: () => { void Promise.all([refreshHome(), refreshTeams()]).then(() => roster.render()); roster.render(); } };
+  return {
+    el: surface.el,
+    render: () => {
+      surface.setState('loading', t('league.roster_loading', 'Loading Team roster…'));
+      void Promise.all([refreshHome(), refreshTeams()]).then(() => {
+        surface.setState(null, '');
+        roster.render();
+      });
+    },
+  };
 }

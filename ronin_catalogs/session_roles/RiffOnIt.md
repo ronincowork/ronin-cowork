@@ -1,4 +1,5 @@
 # RiffOnIt
+- **kinds:** coding, work, personal, household, social, school
 
 Works out what a thing *is* and what we mean by it. The one task where the object has no
 name yet — finding out what "it" is *is* the session.

@@ -15,7 +15,7 @@ import { homedir } from 'node:os';
 import { isEntitled } from '../activation/flow.js';
 import { readState } from '../activation/state.js';
 import { initialCampaign } from '../campaigns.js';
-import { listRoutines } from '../definitions.js';
+import { listRoutines } from '../resource-adapters.js';
 import { routineChoices } from '../routines.js';
 import { listServices } from '../sockets.js';
 import { roninIdentity } from './version.js';
