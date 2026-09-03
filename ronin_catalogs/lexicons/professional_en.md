@@ -537,8 +537,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
 - **forms.own:** Make your own
 - **forms.own_blurb:** Fresh and empty. Fill it in yourself.
-- **forms.library:** From the Ronin library
-- **forms.library_blurb:** Published bundles, pulled in and run. Not yet built.
+- **forms.library_note:** More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.
 - **forms.default:** default
 - **forms.provider:** model provider
 - **forms.model:** model

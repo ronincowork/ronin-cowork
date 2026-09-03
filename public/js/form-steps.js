@@ -249,10 +249,11 @@ export function templateTray(rows, current, onPick) {
   for (const row of rows) {
     grid.append(box(row.art, row.label, row.blurb, current === row.name, () => onPick(row.name)));
   }
-  const soon = box('▤', t('forms.library', 'From the Ronin library'), t('forms.library_blurb', 'Published bundles, pulled in and run. Not yet built.'), false, null);
-  soon.disabled = true;
-  grid.append(soon);
-  return grid;
+  // A HANDFUL SHIPS; THE REST ARE ON THE LIBRARY (owner, 2026-09-03). The tray says where,
+  // in words, and offers no door of its own: the download happens on the Campaign page.
+  const wrap = el('div');
+  wrap.append(grid, el('p', 'fs-tmplnote', t('forms.library_note', 'More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.')));
+  return wrap;
 }
 
 /**
