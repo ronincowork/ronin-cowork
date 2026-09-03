@@ -22,7 +22,7 @@ import {
   type AgentTemplateRow,
   type TeamTemplateRow,
 } from './definitions.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import { STOCK_DIR } from './resources.js';
 
 const STOCK_TEMPLATES = path.join(STOCK_DIR, 'templates');

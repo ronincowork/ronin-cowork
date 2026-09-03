@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
-import { config, authEnabled, assertBindIsSafe } from './config.js';
+import { config, authEnabled, assertBindIsSafe } from './machine-settings.js';
 import {
   COOKIE,
   SESSION_TTL_MS,

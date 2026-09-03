@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import type { Control } from './tmux.js';
 import { AGENTS, agentSpec } from './agents.js';
 

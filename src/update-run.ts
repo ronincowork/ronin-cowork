@@ -10,7 +10,7 @@
  */
 import { execFile, spawn } from 'node:child_process';
 import { join } from 'node:path';
-import { REPO_ROOT } from './config.js';
+import { REPO_ROOT } from './resources.js';
 
 // The same path update-api.ts used, from the same source of truth. A second way to find
 // the repo root is a second answer waiting to disagree.

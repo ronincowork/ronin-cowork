@@ -11,7 +11,7 @@
  */
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 import { branchKey } from './registry.js';
 
 export const lockDir = (repo: string, line: string): string =>

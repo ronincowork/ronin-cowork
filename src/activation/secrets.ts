@@ -14,7 +14,7 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 
 const dir = () => storeDir('services_secrets');
 const claimFile = () => path.join(dir(), 'claim_secret');

@@ -19,7 +19,7 @@ const { installBundle, packBundle, parseBundle, parseLibraryIndex, planInstall, 
 const { listTeamTemplates, listRoutines } = await import('../src/definitions.js');
 const { resolveBehaviourBooks } = await import('../src/behaviours.js');
 const { STOCK_DIR } = await import('../src/resources.js');
-const { storeDir } = await import('../src/stores.js');
+const { storeDir } = await import('../src/resources.js');
 
 const TEAM = `# Weekly Review
 - **label:** Weekly Review

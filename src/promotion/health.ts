@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { tailnetIp } from '../config.js';
+import { tailnetIp } from '../machine-settings.js';
 import { envWithoutGitLocation } from '../tegami.js';
 import type { GateResult, HealthResult } from './receipts.js';
 

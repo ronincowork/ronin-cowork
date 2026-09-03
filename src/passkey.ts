@@ -45,7 +45,7 @@
 import { execFileSync } from 'node:child_process';
 import { createHash, createPublicKey, randomBytes, verify as cryptoVerify } from 'node:crypto';
 import { readSection, updatePasskeysSection } from './user-config.js';
-import { config } from './config.js';
+import { config } from './machine-settings.js';
 import type { AuthRecord } from './auth.js';
 
 /* ------------------------------------------------------------------ the shapes */

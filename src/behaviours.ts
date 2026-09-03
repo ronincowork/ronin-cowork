@@ -2,7 +2,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listSops } from './resources.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import { listWays } from './resources.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');

@@ -11,7 +11,7 @@
 import { appendFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 import { branchKey } from './registry.js';
 import type { HandInReceipt } from './schema.js';
 

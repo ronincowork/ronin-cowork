@@ -15,7 +15,7 @@ import { openPullRequest } from '../promotion/pr.js';
 import type { RepoSpec } from '../promotion/candidate.js';
 import type { ByoinMode } from '../promotion/promote.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 
 /**
  * ronin-promote — the lead's door from a team line into `dev`. `bin/ronin-promote` is the

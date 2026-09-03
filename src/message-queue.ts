@@ -2,7 +2,7 @@
 import fs, { type FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import { listSessions } from './tmux.js';
 import { deliverForce, deliverSafe } from './send.js';
 import { onClock } from './jikan.js';

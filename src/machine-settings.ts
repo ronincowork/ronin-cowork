@@ -33,9 +33,8 @@ import os from 'node:os';
 import { readFile } from 'node:fs/promises';
 import { access, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
-import { config, authEnabled, tailnetIp } from './config.js';
 import { MACHINE_SETTINGS_SCHEMA, providerModelFields, type ProviderModelField } from './machine-settings-schema.js';
 import { repositoryNeeds } from './repository-needs.js';
 import { secureUrl } from './passkey.js';
@@ -43,7 +42,7 @@ import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { listProjectRoots, listSessionLaunchSpecs } from './project-roots.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import {
   publicState,
@@ -79,6 +78,37 @@ import {
   populateHomeMachine,
 } from './campaign-config.js';
 const pexec = promisify(execFile);
+
+export function tailnetIp(): string {
+  try {
+    return execFileSync('tailscale', ['ip', '-4'], { encoding: 'utf8' }).trim().split('\n')[0]?.trim()
+      || '127.0.0.1';
+  } catch {
+    return '127.0.0.1';
+  }
+}
+
+export const config = {
+  port: Number(process.env.PORT ?? 3006),
+  bind: process.env.BIND?.trim() || tailnetIp(),
+  user: process.env.GRID_USER ?? '',
+  pass: process.env.GRID_PASS ?? '',
+  windowSize: process.env.TMUX_WINDOW_SIZE?.trim() || 'latest',
+  mouse: process.env.TMUX_MOUSE?.trim() || 'off',
+  viewerPrefix: 'grid_',
+  newSessionDir: process.env.RONIN_NEW_SESSION_DIR?.trim() || `${process.env.HOME}`,
+  scribeUrl: process.env.SCRIBE_URL?.trim() ?? 'http://127.0.0.1:3004',
+} as const;
+
+export const authEnabled = Boolean(config.user && config.pass);
+
+export function assertBindIsSafe(passwordAuth = false): void {
+  const bind = config.bind.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  const loopback = bind === 'localhost' || bind === '::1' || bind.startsWith('127.');
+  if (!authEnabled && !passwordAuth && !loopback && bind !== tailnetIp()) {
+    console.warn(`[ronin] BIND=${config.bind} exposes live terminals without authentication.`);
+  }
+}
 
 /** This node's tailnet address, measured once — see `routes()` for why it is needed. */
 const TAILNET_IP = tailnetIp();

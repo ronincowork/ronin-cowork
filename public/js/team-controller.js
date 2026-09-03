@@ -30,12 +30,6 @@ export async function refreshTeams() {
   const [live, durable] = await Promise.all([fetchSessions(), request('/api/team-rosters', { cache: 'no-store' })]);
   if (durable.ok && Array.isArray(durable.data)) {
     rosters = durable.data; loaded = true;
-    const valid = new Set(rosters.filter((team) => team.state !== 'archived').map((team) => team.name));
-    const dangling = sessions().filter((session) => (session.tags || []).some((team) => !valid.has(team)));
-    if (dangling.length) {
-      await Promise.all(dangling.map((session) => request(`/api/sessions/${encodeURIComponent(session.name)}/teams`, { method: 'PUT', json: { teams: (session.tags || []).filter((team) => valid.has(team)) } })));
-      await fetchSessions();
-    }
   }
   publish();
   return { live, durable, snapshot: snapshot() };

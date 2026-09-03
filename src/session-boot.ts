@@ -42,7 +42,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, realpath, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 import { resolveFiles } from './resources.js';
 import { listMacros } from './macros.js';
 import { activeDeskProfileName, listDeskProfiles } from './desk-profiles.js';

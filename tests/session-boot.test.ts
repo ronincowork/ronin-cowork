@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { bootFiles, compileBirthReadmeAt, isShelfTeaching } from '../src/session-boot.js';
-import { storeDir } from '../src/stores.js';
+import { storeDir } from '../src/resources.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { routineReading } from '../src/definitions.js';
 import type { LaunchProfile } from '../src/launch-profile.js';

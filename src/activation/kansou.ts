@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 import { callHq } from './transport.js';
 
 const packetDir = () => path.join(storeDir('ageru'), 'kansou');

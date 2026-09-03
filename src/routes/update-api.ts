@@ -20,7 +20,7 @@
 import type express from 'express';
 import { execFile } from 'node:child_process';
 import { join } from 'node:path';
-import { REPO_ROOT } from '../config.js';
+import { REPO_ROOT } from '../resources.js';
 import { runUpdater, type Started } from '../update-run.js';
 
 const UPDATER = join(REPO_ROOT, 'bin', 'ronin-update');
