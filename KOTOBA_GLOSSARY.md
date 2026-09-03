@@ -2,7 +2,7 @@
 
 Ronin's internal system names are Japanese: **TEJUN · MICHI · TEGAMI · SHINGO · RIREKI ·
 OBOERU · TOMODACHI · SOROBAN · KOSHI · KOE · DAIKUSAN · KOTOBA · AGERU · JUSHO · BYOIN ·
-SETTEI · KYOKAI · SHIWAKE · KOKUGO**. You will meet them in tool names, files and documents.
+SETTEI · KYOKAI · SHIWAKE · KOKUGO · JIKAN**. You will meet them in tool names, files and documents.
 They never reach the person you work for: use the plain word below. Only **Ronin** itself
 is a name a user learns. Everything not listed here is ordinary English and needs no gloss.
 
@@ -15,6 +15,7 @@ is a name a user learns. Everything not listed here is ordinary English and need
 | You will see | Say | What it is |
 |---|---|---|
 | TEJUN | **macros**<!--g:glossary.macros--> | A saved instruction, typed at an agent as `+name: what you want`. |
+| JIKAN | **Cron jobs**<!--g:glossary.cron_jobs--> | A request delivered to an agent of the team, by name or to its lead, at a set time or on a rhythm, by Ronin's own clock. Say "schedule a request"; never "jikan". |
 | MICHI · TEGAMI · SHINGO · `ladder` | **work record**<!--g:glossary.work_record--> | The one record a session keeps of its work. Say "update your work record". |
 | RIREKI | the recording | Everything a tile printed, kept on disk. The Services card calls it Readable transcripts. |
 | OBOERU | **memory**<!--g:glossary.memory--> | Notes that outlive the session that wrote them. |

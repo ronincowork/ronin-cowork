@@ -5,9 +5,10 @@ import { randomUUID } from 'node:crypto';
 import { storeDir } from './stores.js';
 import { getControl, listSessions } from './tmux.js';
 import { deliverForce, deliverSafe } from './send.js';
+import { onClock } from './jikan.js';
 
 export type MessageState = 'pending' | 'stuck' | 'failed' | 'target_missing';
-export type MessageSource = 'tell' | 'wipeboard_notice' | 'owner' | 'house';
+export type MessageSource = 'tell' | 'wipeboard_notice' | 'owner' | 'house' | 'jikan';
 
 export interface QueuedMessage {
   id: string;
@@ -70,7 +71,7 @@ export async function pendingTellsFrom(from: string, target: string): Promise<Qu
 }
 
 const sourceFrom = (source: MessageSource): string => ({
-  tell: 'Agent', wipeboard_notice: 'Wipeboard', owner: 'Owner', house: 'Ronin House',
+  tell: 'Agent', wipeboard_notice: 'Wipeboard', owner: 'Owner', house: 'Ronin House', jikan: 'Cron jobs',
 })[source];
 
 export async function enqueueMessage(target: string, text: string, source: MessageSource, from = sourceFrom(source)): Promise<QueuedMessage> {
@@ -183,14 +184,7 @@ export async function processMessageQueue(): Promise<void> {
   }
 }
 
+/** The queue's retry rhythm, on JIKAN's clock (src/jikan.ts): every 2 s, and once at boot. */
 export function startMessageQueue(): () => void {
-  let running = false;
-  const timer = setInterval(() => {
-    if (running) return;
-    running = true;
-    void processMessageQueue().finally(() => { running = false; });
-  }, 2_000);
-  timer.unref();
-  void processMessageQueue();
-  return () => clearInterval(timer);
+  return onClock({ name: 'message_queue', everyMs: 2_000, atBoot: 0, run: processMessageQueue });
 }

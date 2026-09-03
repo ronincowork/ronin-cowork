@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# tejun-jikan — your team's Cron jobs: what is scheduled, and scheduling one.
+#
+# Usage: tejun-jikan                                       the team's jobs, one per line
+#        tejun-jikan add --when "<timing>" [--to lead|<session>] <request...>
+#        tejun-jikan pause <id> | resume <id> | remove <id>
+#        tejun-jikan when "<timing>"                       prove timing words: the next three moments
+#        --team <t> when this session is on several teams, or none
+#
+# Timing: once 2026-09-04 08:00 · daily 08:00 · weekdays 08:00 · weekly mon 08:00 ·
+#         monthly 1 09:00 · hourly · every 30m · or a five-field cron line.
+#
+# A job is one request delivered to one session of the team — by name, or `lead` for
+# whoever leads it when the moment comes — through the ordinary message door, with the dial
+# honoured. Ronin's clock checks every minute. Nothing here births a session or a team.
+# Scheduling a request commits the owner's machine to future action: propose it and wait
+# for the yes before you add one (ACTIONS.md § schedule-request).
+#
+# THE LOGIC IS NOT HERE. src/jikan-cli.ts and src/jikan.ts own it, covered by the unit
+# floor (tests/jikan.test.ts) — the same arrangement as tejun-wipeboard.
+set -u
+SELF=${BASH_SOURCE[0]}
+while [ -L "$SELF" ]; do
+  link=$(readlink "$SELF")
+  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
+done
+HERE=$(cd "$(dirname "$SELF")/.." && pwd)
+cd "$HERE" || { echo "NO-REPO: cannot reach the Ronin tree"; exit 1; }
+exec npx tsx src/jikan-cli.ts "$@"

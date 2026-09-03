@@ -195,6 +195,14 @@ export const STORES: readonly Store[] = [
     when: 'first boot (the house board) or first board made',
   },
   {
+    id: 'jikan',
+    root: 'user',
+    rel: 'jikan',
+    what: "JIKAN — a team's scheduled requests, one .md per team; the always-on server checks them every minute and delivers what is due",
+    createdBy: "cowork's `src/jikan.ts`",
+    when: 'first request scheduled',
+  },
+  {
     id: 'campaigns',
     root: 'user',
     rel: 'campaigns',
