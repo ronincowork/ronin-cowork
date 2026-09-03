@@ -40,7 +40,7 @@ test('a tick fires what is due, marks a once done, and moves a repeat on', async
   const brief = await addJob('office', { request: '+brief:', when: 'weekdays 08:00', by: 'chief' }, now);
   const once = await addJob('office', { request: 'ring', to: 'nobody', when: 'once 2026-09-01 08:00' }, now);
   await assert.rejects(addJob('office', { request: '', when: 'hourly' }, now), /what the request is/);
-  await assert.rejects(addJob('office', { request: 'x', when: 'whenever' }, now), /Timing is/);
+  await assert.rejects(addJob('office', { request: 'x', when: 'whenever' }, now), /Choose a date and time/);
   assert.equal(brief.due, new Date(local(2026, 9, 1, 8, 0)).toISOString());
 
   assert.deepEqual(await tick(door), [], 'nothing due at 07:59');
@@ -59,6 +59,16 @@ test('a tick fires what is due, marks a once done, and moves a repeat on', async
   assert.equal((await listJobs('office')).find((j) => j.id === brief.id)?.due, new Date(local(2026, 9, 7, 8, 0)).toISOString());
 });
 
+test('a one-off tomorrow is due at the picked local time and cannot fire now', async () => {
+  const now = local(2026, 9, 3, 18, 3);
+  const picked = local(2026, 9, 4, 9, 0);
+  const job = await addJob('tomorrow', { request: 'morning check', when: 'once 2026-09-04 09:00' }, now);
+  assert.equal(job.due, new Date(picked).toISOString());
+  const door = { now: () => now, sessions: async () => [], deliver: async () => 'delivered' as const };
+  assert.deepEqual(await tick(door), []);
+  assert.equal((await listJobs('tomorrow'))[0]?.state, 'active');
+});
+
 test('paused holds, resume counts from now, now means the next tick, remove removes', async () => {
   let now = local(2026, 9, 10, 8, 0);
   const door = { now: () => now, sessions: async () => sessions, deliver: async () => 'delivered' as const };
@@ -72,6 +82,20 @@ test('paused holds, resume counts from now, now means the next tick, remove remo
   assert.equal(await removeJob('quiet', job.id), true);
   assert.equal(await removeJob('quiet', job.id), false);
   await assert.rejects(setJob('quiet', job.id, 'paused'), /No such job/);
+});
+
+test('expiry is stored, keeps recent outcomes, and moves a recurring job to done', async () => {
+  let now = local(2026, 9, 1, 7, 0);
+  const expires = new Date(local(2026, 9, 1, 8, 0)).toISOString();
+  const job = await addJob('office', { request: 'check', when: 'every 30m', expires }, now);
+  assert.equal(job.expires, expires);
+  now = local(2026, 9, 1, 8, 1);
+  const door = { now: () => now, sessions: async () => sessions, deliver: async () => 'delivered' as const };
+  assert.deepEqual((await tick(door)).map((row) => row.id), []);
+  const expired = (await listJobs('office')).find((row) => row.id === job.id)!;
+  assert.equal(expired.state, 'done');
+  assert.match(expired.last, / expired$/);
+  assert.deepEqual(expired.history, [expired.last]);
 });
 
 test.after(async () => { delete process.env.RONIN_JIKAN_DIR; await rm(root, { recursive: true, force: true }); });

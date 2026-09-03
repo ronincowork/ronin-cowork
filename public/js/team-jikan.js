@@ -1,192 +1,63 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE CRON JOBS TAB (JIKAN) — a team's scheduled requests, on the team commons.
- *
- * A job is one request, delivered to one session of this team — by name, or to whoever
- * leads it — at a moment or on a rhythm, by Ronin's own clock. The list is the server's
- * (`/api/teams/:team/jikan`, src/jikan.ts); this only draws it and sends the owner's
- * hand: add, pause, resume, run now, remove. Nothing here births anything. Same lifecycle
- * as the wipeboard slice: `setTeam` from the view's paint, a slow poll while entered.
- */
 import { t } from './lexicon.js';
 import { request } from './request.js';
+import { field, status } from './ui.js';
 
-const el = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+const absolute = (iso) => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+const local = (iso) => iso ? new Date(Date.parse(iso) - new Date(iso).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+const relative = (iso) => { if (!iso) return '—'; const ms = Date.parse(iso) - Date.now(); const unit = Math.abs(ms) < 3600000 ? 'minute' : Math.abs(ms) < 86400000 ? 'hour' : 'day'; const size = unit === 'minute' ? 60000 : unit === 'hour' ? 3600000 : 86400000; return new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }).format(Math.round(ms / size), unit); };
+export const whenPreviewText = (next) => t('team_jikan.next_three', 'Next: {runs}', { runs: next.map(absolute).join(' · ') || t('team_jikan.never', 'No future runs') });
+const kindOf = (job) => /^(once|at) /.test(job.when) ? 'one-off' : 'recurring';
+const STORE = 'ronin.team-jikan.table.v1';
 
-const when = (iso) => {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-};
+export function createTeamJikan(options = {}) {
+  const universal = options.universal === true;
+  const root = el('div', 'tj'); root.dataset.scope = universal ? 'all-teams' : 'team';
+  const head = el('div', 'tj-head');
+  const intro = el('p', 'tj-help', t('team_jikan.help', 'Cron jobs send a message to a team lead or named member at the time you choose.'));
+  const openButton = el('button', 'wk-action tj-new', t('team_jikan.new', 'New job')); openButton.type = 'button'; openButton.dataset.kind = 'primary';
+  head.append(intro, openButton);
 
-export function createTeamJikan() {
-  const root = el('div', 'tj');
-  const note = el('p', 'tw-note');
-  const form = el('form', 'tw-config-form tj-form');
-  const lists = el('div', 'tj-lists');
-  root.append(note, form, lists);
-  let team = '';
-  let members = [];
-  let jobs = [];
-  let entered = false;
-  let timer = null;
-  let inFlight = false;
-  const url = (tail = '') => `/api/teams/${encodeURIComponent(team)}/jikan${tail}`;
+  const form = el('form', 'tj-form'); form.hidden = true;
+  const formHead = el('div', 'tj-form-head'); const title = el('h3', 'tj-form-title', t('team_jikan.new', 'New job')); const close = el('button', 'wk-action tj-close', t('team_jikan.close', 'Close')); close.type = 'button'; formHead.append(title, close);
+  const requestControl = el('textarea', 'tj-control tj-request-input'); requestControl.rows = 3; requestControl.maxLength = 2000; requestControl.placeholder = t('team_jikan.request_placeholder', 'Write the message the agent should receive');
+  const requestField = field(requestControl, { label: t('team_jikan.request', 'Request'), sr: false }); requestField.say(t('team_jikan.request_help', 'Plain words, exactly as if you typed them to the agent. A macro such as +name: is optional.'));
+  const toControl = el('select', 'tj-control'); const toField = field(toControl, { label: t('team_jikan.to', 'To'), sr: false });
+  const formTeamControl = el('select', 'tj-control tj-form-team'); const formTeamField = field(formTeamControl, { label: t('team_jikan.team', 'Team'), sr: false }); formTeamField.el.hidden = !universal;
+  const choice = el('select', 'tj-control'); [['once','Once at a date and time'],['daily','Every day at'],['weekdays','Weekdays at'],['weekly','Weekly on a day at'],['every','Every N hours']].forEach(([v,n]) => choice.add(new Option(n,v)));
+  const choiceField = field(choice, { label: t('team_jikan.when', 'When'), sr: false });
+  const whenParts = el('div', 'tj-when-parts');
+  const date = el('input', 'tj-control'); date.type = 'date'; const time = el('input', 'tj-control'); time.type = 'time'; time.value = '09:00';
+  const day = el('select', 'tj-control'); ['mon','tue','wed','thu','fri','sat','sun'].forEach((v,i) => day.add(new Option(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][i],v)));
+  const hours = el('input', 'tj-control'); hours.type = 'number'; hours.min = '1'; hours.value = '2'; whenParts.append(date,day,time,hours);
+  const grammar = el('code','tj-grammar'); const preview = el('p','tj-preview');
+  const expiresControl = el('input','tj-control'); expiresControl.type='datetime-local'; const expiresField=field(expiresControl,{label:t('team_jikan.expires','Expires'),sr:false}); expiresField.say(t('team_jikan.expires_help','Optional. Recurring jobs stop after this date and time.'));
+  const formStatus=status('tj-status'); const save=el('button','wk-action',t('team_jikan.add','Schedule job')); save.type='submit'; save.dataset.kind='primary'; const formActions=el('div','tj-form-actions'); formActions.append(save,formStatus.el);
+  const fields=el('div','tj-fields'); fields.append(requestField.el,formTeamField.el,toField.el,choiceField.el,whenParts,grammar,preview,expiresField.el); form.append(formHead,fields,formActions);
 
-  /* ---- the add form: what is the request, who, when ---- */
-  const field = (label, control, hint) => {
-    const wrap = el('label', 'tw-config-field');
-    wrap.append(el('span', 'tw-config-label', label), control);
-    if (hint) wrap.append(el('span', 'tw-config-hint', hint));
-    return wrap;
-  };
-  const requestInput = el('input', 'wk-field-control');
-  requestInput.placeholder = t('team_jikan.request_placeholder', '+brief: — the words the agent will receive');
-  requestInput.maxLength = 2000;
-  const toSelect = el('select', 'wk-field-control');
-  const whenInput = el('input', 'wk-field-control');
-  whenInput.placeholder = t('team_jikan.when_placeholder', 'weekdays 08:00');
-  whenInput.maxLength = 120;
-  const whenPreview = el('span', 'tw-config-hint tj-preview');
-  const add = el('button', 'wk-action', t('team_jikan.add', 'Schedule it'));
-  add.type = 'submit';
-  add.dataset.kind = 'primary';
-  const status = el('span', 'tw-config-status');
-  const actions = el('div', 'tw-config-actions');
-  actions.append(add, status);
-  form.append(
-    el('p', 'tw-config-head', t('team_jikan.new', 'New job')),
-    field(t('team_jikan.request', 'What is the request?'), requestInput),
-    field(t('team_jikan.to', 'To'), toSelect),
-    whenPreview,
-    actions,
-  );
-
-  const paintTo = () => {
-    const current = toSelect.value;
-    toSelect.replaceChildren();
-    const lead = el('option', null, t('team_jikan.to_lead', 'the team lead, whoever that is at the time'));
-    lead.value = 'lead';
-    toSelect.append(lead);
-    for (const name of members) { const o = el('option', null, name); o.value = name; toSelect.append(o); }
-    toSelect.value = [...toSelect.options].some((o) => o.value === current) ? current : 'lead';
-  };
-
-  let previewTimer = null;
-  whenInput.addEventListener('input', () => {
-    clearTimeout(previewTimer);
-    const words = whenInput.value.trim();
-    if (!words) { whenPreview.textContent = ''; return; }
-    previewTimer = setTimeout(async () => {
-      const r = await request(`/api/jikan/when?words=${encodeURIComponent(words)}`);
-      if (whenInput.value.trim() !== words) return;
-      whenPreview.textContent = r.ok
-        ? t('team_jikan.when_preview', '{words} → next {next}', { words, next: (r.data.next || []).map(when).join(' · ') || t('team_jikan.never', 'never — that time has passed') })
-        : r.message;
-    }, 250);
-  });
-
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (!team) return;
-    status.textContent = t('team_jikan.saving', 'scheduling…');
-    add.disabled = true;
-    const r = await request(url(), { method: 'POST', json: { request: requestInput.value, to: toSelect.value, when: whenInput.value, by: 'owner' } });
-    add.disabled = false;
-    if (!r.ok) { status.textContent = r.message; return; }
-    status.textContent = t('team_jikan.scheduled', 'scheduled — next {next}', { next: when(r.data.job?.due) });
-    requestInput.value = ''; whenInput.value = ''; whenPreview.textContent = '';
-    await refresh();
-  });
-
-  /* ---- the lists: scheduled, and done ---- */
-  const action = (label, kind, fn) => {
-    const b = el('button', 'wk-action', label);
-    b.type = 'button';
-    b.dataset.size = 'compact';
-    if (kind) b.dataset.kind = kind;
-    b.addEventListener('click', async () => { b.disabled = true; await fn(); b.disabled = false; });
-    return b;
-  };
-  const verb = async (id, method, tail, json) => {
-    const r = await request(url(`/${encodeURIComponent(id)}${tail}`), json ? { method, json } : { method });
-    if (!r.ok) note.textContent = r.message;
-    await refresh();
-    return r;
-  };
-  /** `last` is `<iso> <outcome>`: the moment, then the word. */
-  const lastWord = (job) => {
-    if (!job.last) return t('team_jikan.not_yet', 'not yet');
-    const [at, ...rest] = job.last.split(' ');
-    const outcome = rest.join(' ');
-    const word = outcome === 'delivered' ? t('team_jikan.delivered', 'delivered') : outcome === 'queued' ? t('team_jikan.queued', 'queued — waiting to enter') : outcome;
-    return `${when(at)} · ${word}`;
-  };
-  const row = (job, done) => {
-    const tr = el('tr', 'tj-row');
-    tr.dataset.state = job.state;
-    const what = el('td', 'tj-request'); what.append(el('b', null, job.request));
-    what.append(el('span', 'tj-by', t('team_jikan.by', 'set by {by}', { by: job.by })));
-    const to = el('td', null, job.to === 'lead' ? t('team_jikan.lead', '人 lead') : job.to);
-    const timing = el('td', null, job.when);
-    const next = el('td', null, done ? '' : (job.state === 'paused' ? t('team_jikan.paused', 'paused') : when(job.due)));
-    const last = el('td', null, lastWord(job));
-    const acts = el('td', 'tj-actions');
-    if (!done) {
-      acts.append(job.state === 'paused'
-        ? action(t('team_jikan.resume', 'Resume'), null, () => verb(job.id, 'PUT', '', { state: 'active' }))
-        : action(t('team_jikan.pause', 'Pause'), null, () => verb(job.id, 'PUT', '', { state: 'paused' })));
-      acts.append(action(t('team_jikan.run_now', 'Run at next tick'), null, () => verb(job.id, 'PUT', '', { state: 'now' })));
-    }
-    acts.append(action(t('team_jikan.remove', 'Remove'), 'danger', () => verb(job.id, 'DELETE', '')));
-    tr.append(what, to, timing, next, last, acts);
-    return tr;
-  };
-  const table = (heading, rows, done) => {
-    const wrap = el('section', 'tj-section');
-    wrap.append(el('p', 'tw-config-head', heading));
-    if (!rows.length) { wrap.append(el('p', 'tw-note', done ? t('team_jikan.none_done', 'Nothing has run yet.') : t('team_jikan.none', 'Nothing scheduled. Add one above, or an agent can with tejun-jikan.'))); return wrap; }
-    const tbl = el('table', 'tj-table');
-    const head = el('tr');
-    for (const h of [t('team_jikan.col_request', 'Request'), t('team_jikan.col_to', 'To'), t('team_jikan.col_when', 'When'), done ? '' : t('team_jikan.col_next', 'Next'), t('team_jikan.col_last', 'Last'), '']) head.append(el('th', null, h));
-    tbl.append(head);
-    for (const job of rows) tbl.append(row(job, done));
-    wrap.append(tbl);
-    return wrap;
-  };
-  const paint = () => {
-    lists.replaceChildren(
-      table(t('team_jikan.scheduled_head', 'Scheduled'), jobs.filter((j) => j.state !== 'done'), false),
-      table(t('team_jikan.done_head', 'Done'), jobs.filter((j) => j.state === 'done'), true),
-    );
-  };
-
-  async function refresh() {
-    if (!team || inFlight) return;
-    inFlight = true;
-    try {
-      const r = await request(url(), { cache: 'no-store' });
-      if (!r.ok) { note.textContent = t('team_jikan.read_failed', 'Could not read the jobs — {message}', { message: r.message }); return; }
-      jobs = Array.isArray(r.data?.jobs) ? r.data.jobs : [];
-      note.textContent = t('team_jikan.help', 'A request delivered to one agent of this team, by name or to its lead, at a moment or on a rhythm. Ronin checks every minute and delivers through the message door — the dial is honoured, and a busy agent gets it queued. Nothing here starts an agent or a team.');
-      paint();
-    } finally {
-      inFlight = false;
-    }
-  }
-
-  return {
-    el: root,
-    setTeam: (name, memberNames = []) => {
-      const changed = name !== team;
-      team = name || '';
-      members = [...memberNames];
-      paintTo();
-      if (changed) { jobs = []; paint(); if (entered) void refresh(); }
-    },
-    mount: () => {},
-    enter: () => { entered = true; void refresh(); timer = window.setInterval(() => { void refresh(); }, 15000); },
-    leave: () => { entered = false; if (timer) { clearInterval(timer); timer = null; } },
-    destroy: () => { entered = false; if (timer) { clearInterval(timer); timer = null; } },
-  };
+  const filters=el('div','tj-filters'); const stateFilter=el('select','tj-control tj-filter-state'); [['all','All states'],['active','Scheduled'],['paused','Paused'],['done','Done']].forEach(([v,n])=>stateFilter.add(new Option(n,v))); const kindFilter=el('select','tj-control tj-filter-kind'); [['all','One-off and recurring'],['one-off','One-off'],['recurring','Recurring']].forEach(([v,n])=>kindFilter.add(new Option(n,v))); const teamFilter=el('select','tj-control tj-filter-team'); teamFilter.add(new Option('All teams','all')); teamFilter.hidden=!universal; const toFilter=el('select','tj-control tj-filter-to'); const textFilter=el('input','tj-control tj-filter-message'); textFilter.type='search'; textFilter.placeholder=t('team_jikan.filter_message','Filter messages'); filters.append(stateFilter,kindFilter,teamFilter,toFilter,textFilter);
+  const tableWrap=el('div','tj-table-wrap'); const empty=el('p','tj-empty',t('team_jikan.none','No jobs yet. Choose New job to schedule a message.')); const rootStatus=status('tj-root-status'); root.append(head,form,filters,tableWrap,empty,rootStatus.el);
+  let team='',members=[],jobs=[],entered=false,timer=null,inFlight=false,editing=''; let view={sort:'due',direction:'asc',state:'all',kind:'all',team:'all',to:'all',message:''}; try{view={...view,...JSON.parse(sessionStorage.getItem(STORE)||'{}')}}catch{}
+  const endpoint=(job,tail='')=>`/api/teams/${encodeURIComponent(job?.team||(universal?formTeamControl.value:team))}/jikan${tail}`;
+  const remember=()=>sessionStorage.setItem(STORE,JSON.stringify(view));
+  let preservedWhen='';
+  const words=()=>preservedWhen||(choice.value==='once'?(date.value&&time.value?`once ${date.value} ${time.value}`:''):choice.value==='daily'?`daily ${time.value}`:choice.value==='weekdays'?`weekdays ${time.value}`:choice.value==='weekly'?`weekly ${day.value} ${time.value}`:`every ${hours.value}h`);
+  let previewTimer;
+  const updateWhen=()=>{date.hidden=choice.value!=='once';day.hidden=choice.value!=='weekly';time.hidden=choice.value==='every';hours.hidden=choice.value!=='every';const value=words();grammar.textContent=value;clearTimeout(previewTimer);preview.textContent=value?t('team_jikan.checking','Checking next runs…'):'';if(value)previewTimer=setTimeout(async()=>{const r=await request(`/api/jikan/when?words=${encodeURIComponent(value)}`);if(words()===value)preview.textContent=r.ok?whenPreviewText(r.data.next||[]):r.message;},180)};
+  [choice,date,time,day,hours].forEach(n=>n.addEventListener('input',()=>{preservedWhen='';updateWhen()}));
+  const setOpen=(on,job=null)=>{form.hidden=!on;openButton.setAttribute('aria-expanded',String(on));editing=job?.id||'';title.textContent=job?.id?t('team_jikan.edit','Edit job'):t('team_jikan.new','New job');save.textContent=job?.id?t('team_jikan.save','Save changes'):t('team_jikan.add','Schedule job');formTeamControl.disabled=Boolean(job?.id);preservedWhen=job?.when||'';if(job){requestControl.value=job.request;toControl.value=job.to;formTeamControl.value=job.team||team;expiresControl.value=local(job.expires)}else{requestControl.value='';expiresControl.value=''}if(on){updateWhen();requestControl.focus()}};
+  openButton.addEventListener('click',()=>setOpen(form.hidden));close.addEventListener('click',()=>setOpen(false));form.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();setOpen(false);openButton.focus()}});
+  const paintRecipients=()=>{const current=toControl.value;toControl.replaceChildren(new Option(t('team_jikan.to_lead','Team lead (default)'),'lead'));members.forEach(n=>toControl.add(new Option(n,n)));toControl.value=[...toControl.options].some(o=>o.value===current)?current:'lead'};
+  form.addEventListener('submit',async e=>{e.preventDefault();formStatus.say(editing?'Saving changes…':'Scheduling…','busy');save.disabled=true;const json={request:requestControl.value,to:toControl.value,when:words(),expires:expiresControl.value?new Date(expiresControl.value).toISOString():''};const r=await request(editing?endpoint(null,`/${editing}`):endpoint(null),{method:editing?'PUT':'POST',json});save.disabled=false;if(!r.ok){formStatus.say(r.message,'bad');return}formStatus.say('Saved.','ok');setOpen(false);await refresh()});
+  const action=(label,fn,kind='')=>{const b=el('button','wk-action',label);b.type='button';b.dataset.size='compact';if(kind)b.dataset.kind=kind;b.addEventListener('click',async()=>{b.disabled=true;await fn();b.disabled=false});return b};
+  const mutate=async(job,json)=>{const r=await request(endpoint(job,`/${job.id}`),{method:'PUT',json});if(!r.ok)rootStatus.say(r.message,'bad');await refresh()};
+  const history=job=>{const d=el('details','tj-history');d.append(el('summary',null,job.last?job.last.slice(21):'Not run yet'));const ul=el('ul');(job.history||[]).slice().reverse().forEach(entry=>ul.append(el('li',null,`${absolute(entry.slice(0,24))} — ${entry.slice(25)}`)));d.append(ul);return d};
+  const col=(name,value)=>{const td=el('td',`tj-col tj-col-${name}`);td.dataset.column=name;if(value instanceof Node)td.append(value);else td.textContent=value;return td};
+  const headers=[['to','To'],['team','Team'],['due','Due'],['message','Message'],['kind','One-off / recurring'],['expires','Expires'],['state','State'],['last','Last outcome'],['by','Set by'],['actions','']];
+  const value=(j,k)=>k==='kind'?kindOf(j):k==='message'?j.request:k==='state'?(j.state==='active'?'scheduled':j.state):j[k]||'';
+  const paint=()=>{const configured=typeof options.teams==='function'?options.teams():[],teams=[...new Set([...configured,...jobs.map(j=>j.team||team)].filter(Boolean))].sort(),tos=[...new Set(jobs.map(j=>j.to))].sort();teamFilter.replaceChildren(new Option('All teams','all'),...teams.map(n=>new Option(n,n)));teamFilter.value=teams.includes(view.team)?view.team:'all';const pickedTeam=formTeamControl.value;formTeamControl.replaceChildren(...teams.map(n=>new Option(n,n)));formTeamControl.value=teams.includes(pickedTeam)?pickedTeam:(teams[0]||'');toFilter.replaceChildren(new Option('Anyone','all'),...tos.map(n=>new Option(n==='lead'?'Team lead':n,n)));toFilter.value=tos.includes(view.to)?view.to:'all';let rows=jobs.filter(j=>(view.state==='all'||j.state===view.state)&&(view.kind==='all'||kindOf(j)===view.kind)&&(!universal||view.team==='all'||(j.team||team)===view.team)&&(view.to==='all'||j.to===view.to)&&(!view.message||j.request.toLowerCase().includes(view.message.toLowerCase())));rows.sort((a,b)=>String(value(a,view.sort)).localeCompare(String(value(b,view.sort)))*(view.direction==='asc'?1:-1));const table=el('table','tj-table'),thead=el('thead'),hr=el('tr');headers.forEach(([key,label])=>{const th=el('th',`tj-col tj-col-${key}`);th.dataset.column=key;if(key!=='actions'){const b=el('button','tj-sort',label);b.type='button';b.dataset.sort=key;b.setAttribute('aria-sort',view.sort===key?(view.direction==='asc'?'ascending':'descending'):'none');b.addEventListener('click',()=>{view.direction=view.sort===key&&view.direction==='asc'?'desc':'asc';view.sort=key;remember();paint()});th.append(b)}hr.append(th)});thead.append(hr);table.append(thead);const body=el('tbody');rows.forEach(job=>{const kind=kindOf(job),tr=el('tr','tj-row');Object.assign(tr.dataset,{id:job.id,state:job.state,kind,to:job.to,team:job.team||team});const due=col('due',job.state==='paused'?'Paused':relative(job.due));due.title=`${absolute(job.due)} (${Intl.DateTimeFormat().resolvedOptions().timeZone})`;void request(`/api/jikan/when?words=${encodeURIComponent(job.when)}`).then(r=>{if(r.ok)due.title+=`\nNext runs:\n${(r.data.next||[]).map(absolute).join('\n')}`});const acts=el('div','tj-actions');if(job.state!=='done')acts.append(action(job.state==='paused'?'Resume':'Pause',()=>mutate(job,{state:job.state==='paused'?'active':'paused'})),action('Run next tick',()=>mutate(job,{state:'now'})));acts.append(action('Edit',()=>setOpen(true,job)),action('Duplicate',()=>setOpen(true,{...job,id:''})),action('Remove',async()=>{if(confirm(t('team_jikan.remove_confirm','Remove this job?'))){await request(endpoint(job,`/${job.id}`),{method:'DELETE'});await refresh()}},'danger'));const state=job.state==='active'?'Scheduled':job.state==='paused'?'Paused':'Done';tr.append(col('to',job.to==='lead'?'Team lead':job.to),col('team',job.team||team),due,col('message',job.request),col('kind',kind==='one-off'?'One-off':'Recurring'),col('expires',job.expires?absolute(job.expires):'—'),col('state',state),col('last',history(job)),col('by',job.by),col('actions',acts));body.append(tr)});table.append(body);tableWrap.replaceChildren(table);empty.hidden=rows.length>0;table.hidden=!rows.length;const scheduled=jobs.filter(j=>j.state==='active').length,paused=jobs.filter(j=>j.state==='paused').length;const tab=root.closest('.wk-channel-surface')?.querySelector('.wk-channel-service-tab[data-service="cron-jobs"]');if(tab){tab.dataset.count=`${scheduled} / ${paused}`;tab.title=`${scheduled} scheduled, ${paused} paused`}};
+  [stateFilter,kindFilter,teamFilter,toFilter,textFilter].forEach(n=>n.addEventListener(n===textFilter?'input':'change',()=>{view={...view,state:stateFilter.value,kind:kindFilter.value,team:teamFilter.value,to:toFilter.value,message:textFilter.value};remember();paint()}));stateFilter.value=view.state;kindFilter.value=view.kind;textFilter.value=view.message;
+  async function refresh(){if((!universal&&!team)||inFlight)return;inFlight=true;try{const r=await request(universal?'/api/jikan':endpoint(null),{cache:'no-store'});if(!r.ok){rootStatus.say(t('team_jikan.read_failed','Could not read the jobs — {message}',{message:r.message}),'bad');return}jobs=Array.isArray(r.data?.jobs)?r.data.jobs:[];rootStatus.say('');paint()}finally{inFlight=false}}
+  return {el:root,setTeam:(name,names=[])=>{const changed=name!==team;team=name||'';members=[...names];paintRecipients();if(changed){jobs=[];paint();if(entered)void refresh()}},mount:()=>{},enter:()=>{entered=true;void refresh();timer=setInterval(()=>void refresh(),15000)},leave:()=>{entered=false;if(timer){clearInterval(timer);timer=null}},destroy:()=>{entered=false;if(timer)clearInterval(timer)}};
 }

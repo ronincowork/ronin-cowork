@@ -2,7 +2,7 @@
 # tejun-jikan — your team's Cron jobs: what is scheduled, and scheduling one.
 #
 # Usage: tejun-jikan                                       the team's jobs, one per line
-#        tejun-jikan add --when "<timing>" [--to lead|<session>] <request...>
+#        tejun-jikan add --when "<timing>" --kind one-off|recurring [--expires <date-time>] [--to lead|<session>] <request...>
 #        tejun-jikan pause <id> | resume <id> | now <id> | remove <id>    now = due at the next tick
 #        tejun-jikan when "<timing>"                       prove timing words: the next three moments
 #        --team <t> when this session is on several teams, or none
