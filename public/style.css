@@ -489,16 +489,17 @@ body {
 .tj-grammar { color: var(--fg-strong); overflow-wrap: anywhere; }
 .tj-form-actions { justify-content: flex-start; }
 .tj-filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
-.tj-table-wrap { overflow-x: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); }
-.tj-table { width: 100%; border-collapse: collapse; font-size: var(--form-note); }
+.tj-table-wrap { min-width: 0; max-width: 100%; overflow-x: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); }
+.tj-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: var(--form-note); }
 .tj-table th { position: sticky; top: 0; z-index: 1; background: var(--raise); border-bottom: var(--edge-2) solid var(--line-2); text-align: left; }
 .tj-table td { border-bottom: var(--edge) solid var(--line); padding: var(--space-3); vertical-align: top; }
 .tj-sort { width: 100%; border: 0; background: transparent; color: var(--muted); padding: var(--space-3); font: inherit; font-weight: 600; text-align: left; cursor: pointer; white-space: nowrap; }
 .tj-sort[aria-sort='ascending']::after { content: ' ↑'; color: var(--accent); }
 .tj-sort[aria-sort='descending']::after { content: ' ↓'; color: var(--accent); }
 .tj-row[data-state='paused'] { color: var(--muted); }
-.tj-col-message { min-width: calc(var(--space-12) * 3); color: var(--fg-strong); white-space: pre-wrap; overflow-wrap: anywhere; }
-.tj-col-due, .tj-col-expires, .tj-col-kind, .tj-col-state, .tj-col-by { white-space: nowrap; }
+.tj-col-message { width: calc(var(--space-12) * 5); min-width: calc(var(--space-12) * 5); max-width: calc(var(--space-12) * 7); color: var(--fg-strong); white-space: pre-wrap; overflow-wrap: anywhere; }
+.tj-col-to, .tj-col-team, .tj-col-due, .tj-col-expires, .tj-col-kind, .tj-col-state, .tj-col-by { width: min-content; white-space: nowrap; }
+.tj-col-last { min-width: calc(var(--space-12) * 3); }
 .tj-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); min-width: calc(var(--space-12) * 3); }
 .tj-history summary { cursor: pointer; white-space: nowrap; }
 .tj-history ul { margin: var(--space-2) 0 0; padding-left: var(--space-5); min-width: calc(var(--space-12) * 3); }
