@@ -548,9 +548,9 @@ egress surface, and `egress_log` is what makes the claim checkable rather than a
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **AGERU** (上げる) | system_scope | the one outbound door: compose → review → send, and the log of every attempt **[planned]** | `co-working/user_repo/wip/buildouts/AGERU.md` |
-| **ageru_packet** | system_scope | one thing that leaves: five-key envelope + a `packet_kind`-specific body against a closed schema. Composed to disk, reviewed on disk, sent from those exact bytes — **never composed at send time** | `co-working/user_repo/wip/buildouts/AGERU.md` |
+| **ageru_packet** | system_scope | one thing that leaves: five-key envelope + a `packet_kind`-specific body against a closed schema. Machine-written packets are composed before their scheduled send; a human-written packet is composed from the disclosed form by its one explicit Send | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **packet_kind** | system_scope | which of the three: `tomodachi` (counts) · `kansou` (feedback) · `tejun` (a submitted macro). A fourth is a cowork change somebody has to argue for | `co-working/user_repo/wip/buildouts/AGERU.md` |
-| **kansou** (感想) | system_scope | the feedback packet — the_owner telling us something in their own words. ⚠R28 **[proposed]** | `co-working/user_repo/wip/buildouts/AGERU.md` § OPEN 1 |
+| **kansou** (感想) | system_scope | the feedback packet — the_owner telling us something in their own words. Its v1 body is closed: `message` plus optional `about`, `using_ronin_for`, `feedback_kind`, and `reply_email`; it never carries an install or entitlement id | `wip/handoffs/FEEDBACK_BUTTON.md` |
 | **ageru_outbox** | user_scope | the `ageru` store's outbox — a store row it must add when it is built (`docs/stores.md`), never a path of its own. Validated packets waiting on a human. Anyone who can write a file can queue one; **that is the socket**, per `RONIN_SERVICES.md` §3 | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **egress_log** | user_scope | every outbound attempt Ronin ever made, **model-provider calls included**. The ZDR evidence: two hostnames, greppable | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **ageru_receipt** | user_scope | what the collector said back, stored beside the sent bytes. Dedup for us, proof for them | `co-working/user_repo/wip/buildouts/AGERU.md` |
@@ -564,9 +564,10 @@ egress surface, and `egress_log` is what makes the claim checkable rather than a
 **The consent rule is one line, and it is load-bearing: only the machine-written packet gets a
 standing switch.** `tomodachi` is house nouns and counts, so it can be weekly and unattended.
 `kansou` and `tejun` carry human prose and are approved **one packet at a time, every time** —
-there is no "remember my choice" on either, by design.
+there is no "remember my choice" on either, by design. For `kansou`, the disclosed form is
+the review and its Send button is the approval; there is no standing switch or hidden send.
 
-**Identity is never shared across `packet_kind`s.** (A services install is the stated exception — see § SERVICES INSTALL.) `install id` (tomodachi) · reply contact
+**Identity is never shared across `packet_kind`s.** (A services install is the stated exception — see § SERVICES INSTALL.) `install id` (tomodachi) · reply email
 (kansou) · attribution handle (tejun) are three fields with three lifetimes and no join —
 because one feedback address joined to an install id retroactively de-anonymises every drop
 that install ever sent. This binds the collector, not just the client.
@@ -1147,12 +1148,10 @@ Recommend the rule be narrowed to say so in `TOOLS.md` itself.
    `scripts/proto-v2.mjs`, the DVR prototypes from the parked time-scrub work, were deleted
    2026-08-14 (owner's call; git holds them).
 
-**R28 · `kansou` (感想) or plain `feedback`?** The three `packet_kind`s want to be house
-nouns, and two already are (`tomodachi`, `tejun`), which is the case for `kansou`. Against it:
-the kind is a JSON string with no reading face, so the Japanese buys consistency in the one
-place nobody looks — and *feedback* is a word every user already has. **AGERU itself is
-settled** (the owner's own word, 2026-08-13); this is only the third kind's name.
-`co-working/user_repo/wip/buildouts/AGERU.md` § OPEN 1.
+**R28 · CLOSED — `kansou` is the packet kind; Feedback is its user-facing word.** The
+owner's 2026-09-02 cut ships the third AGERU kind under the already-proposed house noun while
+the button and form use the plain word a person already has. The JSON string has no reading
+face, so the two names do not compete.
 
 ---
 

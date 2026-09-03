@@ -1653,7 +1653,8 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.project_root:** Project root
 - **team_config.default:** Default
 - **team_config.branch:** Branch
-- **team_config.wipeboard:** Wipeboard
+- **team_config.repos:** Repos
+- **team_config.repos_help:** Repositories this Cowork works in; each new Agent gets a desk in each. Empty means the Project root alone. Hold Ctrl or ⌘ to pick several.
 - **team_config.references:** References
 - **team_config.references_help:** One URL or note per line.
 - **team_config.routines:** Routines
@@ -1778,3 +1779,31 @@ The catalog entry goes. {dir} is not touched.
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.
 - **customize.lexicons:** Lexicons
 - **customize.lexicons_blurb:** The words a surface uses — a wording or a language, one file each. Say only what changes; the rest falls through to the floor.
+- **feedback.button:** Feedback
+- **feedback.title:** Feedback
+- **feedback.message:** What would you like to tell us?
+- **feedback.message_placeholder:** Tell us anything. What do you like? What should we add or change?
+- **feedback.message_help:** Write as much or as little as you want. Everything below is optional.
+- **feedback.about:** A little about you
+- **feedback.about_developer:** Developer
+- **feedback.about_founder:** Founder
+- **feedback.about_researcher:** Researcher
+- **feedback.about_student:** Student
+- **feedback.using:** What do you use Ronin for?
+- **feedback.using_coding:** Coding
+- **feedback.using_research:** Research
+- **feedback.using_writing:** Writing
+- **feedback.using_operations:** Operations
+- **feedback.kind:** What kind of feedback is this?
+- **feedback.kind_like:** Something I like
+- **feedback.kind_idea:** An idea
+- **feedback.kind_problem:** Something is not working
+- **feedback.kind_question:** A question
+- **feedback.other:** Something else
+- **feedback.reply_email:** Reply email address (optional)
+- **feedback.reply_invalid:** Enter an email address or leave it blank.
+- **feedback.reply_help:** If you would like to hear from us, we may reply or invite you to the Ronin community. No spam. This address is never stored with this Ronin install’s identity.
+- **feedback.send:** Send
+- **feedback.sending:** Sending…
+- **feedback.sent:** Sent — thank you
+- **feedback.thank_you:** Thank you for helping us make Ronin better.

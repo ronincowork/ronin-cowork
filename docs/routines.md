@@ -115,7 +115,7 @@ same result feeds every delivery mechanism.
 For each enabled Routine, the unified birth transaction projects the manifest into the
 places where its behaviours actually work:
 
-- the manifest's declared startup reading is compiled into the Agent's one birth README;
+- the manifest's declared startup reading is compiled into the Agent's one birth README — `reading:` when the Routine is on, `reading_off:` when it is off, so the Agent knows what the owner is working without and where the switch is;
 - its macros and actions are offered and compile;
 - its command tools are findable by bare name;
 - its requested MCP connections are included when available;

@@ -2,6 +2,7 @@
 - **label:** Ronin Base
 - **blurb:** Ronin's ordinary macros, documents, work records and session coordination.
 - **reading:** routine/ronin_base/BASE_ABILITIES.md
+- **reading_off:** routine/ronin_base/OFF.md
 - **sops:** ronin_methodology, teams
 - **macros:** updateplan, show_file, forkit, buildout, team, wipeboard, tell, read, readwrite, evaluate, delete
 - **actions:** control-check, control-set, session-launch, read-letter, write-letter, list-doc, session-catchup, team-roster, session-upsert, team-upsert, team-page-read, team-page-draft, wipeboard-check, wipeboard-post, send-to-session, write-buildout-doc, step-through, compile-macro, read-work-record, propose-and-confirm, report-outcome, harakiri, status-probe

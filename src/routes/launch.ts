@@ -77,7 +77,7 @@ async function deskNote(r: { assignment?: unknown; routines?: Array<{ name: stri
   const a = await readArrangement(root.name, root.dir).catch(() => null);
   if (!a) return `no desk — ${root.name}'s RONIN_REPO could not be read`;
   if (a.source === 'absent') return `no desk — ${root.name} has no RONIN_REPO (add one: mode=reviewed working=dev stable=master desks=managed)`;
-  if (a.desks !== 'managed') return `no desk — ${root.name} is declared ${a.mode}, desks ${a.desks}`;
+  if (a.desks !== 'managed') return `no Worktree — ${root.name} uses its checkout at ${root.dir}; edit directly there`;
   return '';
 }
 
@@ -92,7 +92,7 @@ const RETIRED_LAUNCH_KEYS = new Set([
   'role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle', 'permissions', 'mcp',
 ]);
 const RETURNED_LAUNCH_KEYS = new Set([
-  'assignment', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
+  'assignment', 'work_locations', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
 ]);
 const SESSION_TYPES = new Set(['cowork_agent', 'bare_metal_agent', 'terminal']);
 const KINDS = new Set(['open', 'coding', 'work', 'personal', 'household', 'social', 'school']);

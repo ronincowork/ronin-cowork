@@ -18,6 +18,7 @@ import {
 } from '../activation/flow.js';
 import { publicState, readState, writeState } from '../activation/state.js';
 import { runUpdater } from '../update-run.js';
+import { buildKansou, sendKansou } from '../activation/kansou.js';
 
 /**
  * Begin installation, then WATCH FOR THE OUTCOME.
@@ -140,6 +141,20 @@ function fail(res: express.Response, e: unknown): void {
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 
 export function registerServicesActivation(app: express.Express): void {
+  app.post('/api/feedback', async (req, res) => {
+    try {
+      const packet = buildKansou((req.body as any)?.packet_id, (req.body as any)?.body);
+      res.status(201).json(await sendKansou(packet));
+    } catch (error) {
+      const invalid = error instanceof Error && ['feedback is empty', 'invalid feedback packet id', 'reply email is invalid'].includes(error.message);
+      const message = error instanceof Error && error.message === 'feedback is empty'
+        ? 'Write something or choose one of the optional answers.'
+        : error instanceof Error && error.message === 'reply email is invalid' ? 'Enter an email address or leave it blank.'
+        : invalid ? 'The feedback packet is not valid.'
+        : 'Your feedback was kept on this machine, but Ronin HQ could not be reached. Press Send to retry.';
+      res.status(invalid ? 400 : 503).json({ error: message });
+    }
+  });
   /** The card's whole state, including the egress record the owner is entitled to see. */
   app.get('/api/services/activation', async (_req, res) => {
     const state = await readState();

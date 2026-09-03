@@ -16,7 +16,7 @@ shelf**, because pasting a project's whole catalog is what made the packet unrea
 | `all/` | every session, always |
 | `<service>_connected/` (e.g. `gbrain_connected/`) | only when an enabled Routine declares that level and its connection is on |
 | `root/<project_root>/` | only sessions working in that directory |
-| `routine/<routine>/FILE.md` | only when an effective Routine's manifest explicitly names that file |
+| `routine/<routine>/FILE.md` | only when an effective Routine's manifest explicitly names that file — `reading:` when the Routine is on, `reading_off:` when it is off (the page that says what the owner is working without, and where the switch is) |
 
 The levels are **additive, not a hierarchy**. Root, connection and effective Routines are
 independent launch facts; their files compile into one birth README

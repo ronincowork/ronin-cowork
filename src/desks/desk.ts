@@ -25,10 +25,10 @@ import {
   worktreeAddExisting, worktreeAddNew, worktreeOf, worktreePrune, worktreeRemove, changedFiles, dirtyFiles, stampDeskIdentity,
 } from './git.js';
 import {
-  deriveAssignment, deskStatus, deskWorktree, lineFor, listDeskRecords, readDesk, removeDesk, updateDesk,
+  assignmentId, deskStatus, deskWorktree, lineFor, listDeskRecords, readDesk, removeDesk, updateDesk,
   writeDesk,
 } from './registry.js';
-import type { DeskNotice, DeskRecord, DeskStatus, RepoArrangement, TeamLine } from './schema.js';
+import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
 
 export class DeskRefused extends Error {}
 
@@ -98,10 +98,10 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   const hazard = await syncthingHazard(a.dir);
   if (hazard) throw new DeskRefused(hazard);
   const line = await ensureLine(a, input.team);
-  const derived = (await deriveAssignment({ session: input.session, team: input.team, project_root: input.repo }))
-    .desks.find((d) => d.repo === input.repo);
-  const branch = input.branch || derived?.branch;
-  if (!branch) throw new DeskRefused(`${a.repo}: could not derive a desk branch for ${input.session}`);
+  // An explicit open names the repository. The team roster determines which desks a
+  // launch opens automatically; it does not constrain later explicit opens. Repository
+  // arrangement, funnel protection and the Syncthing guard remain the safety gates.
+  const branch = input.branch || (input.team ? teamDeskBranch(input.team, input.session) : soloDeskBranch(input.session));
   if (isFunnel(a, line, branch)) throw new DeskRefused(`${branch} is the reviewed integration line. Open a managed desk so your work has a safe hand-in path.`);
 
   const existing = await readDesk(a.repo, branch);
@@ -120,7 +120,7 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
     ? { ...existing, session: input.session, team: input.team, assignment: input.assignment ?? existing.assignment, state: 'open', parked_at: undefined, worktree: mounted?.path ?? wtPath }
     : {
         repo: a.repo, root: a.repo, branch, worktree: mounted?.path ?? wtPath, line: line.branch, mode: a.mode,
-        session: input.session, team: input.team, assignment: input.assignment ?? derived?.assignment ?? '',
+        session: input.session, team: input.team, assignment: input.assignment ?? assignmentId(input.session, input.team),
         state: 'open', opened_at: new Date().toISOString(), pending: null, last_hand_in: '', blocked: '',
       };
   await writeDesk(rec);

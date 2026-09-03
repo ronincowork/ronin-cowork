@@ -5,7 +5,7 @@ import path from 'node:path';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { bootFiles, compileBirthReadmeAt, isShelfTeaching } from '../src/session-boot.js';
 import { storeDir } from '../src/stores.js';
-import { buildBrief, type SpawnForm } from '../src/spawn.js';
+import { buildBrief, routineReading, type SpawnForm } from '../src/spawn.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
 import { listMacros } from '../src/macros.js';
 
@@ -62,7 +62,7 @@ test('the universal shelf carries vocabulary and navigation, not optional abilit
     // universal set. A blank axis omits only its own level.
     const boot = await bootFiles('', false);
     const names = boot.map((file) => path.basename(file));
-    for (const required of ['SHELVES.md', 'KOTOBA_GLOSSARY.md']) {
+    for (const required of ['SHELVES.md', 'KOTOBA_GLOSSARY.md', 'RONIN_UTILITY.md']) {
       assert.ok(names.includes(required), `the universal boot shelf should contain ${required}`);
     }
     assert.ok(!names.includes('REQUIRED_ABILITIES.md'));
@@ -244,4 +244,23 @@ test('the stock shelf, the owner shelf and generated fragments are teaching; the
   assert.equal(isShelfTeaching(path.join(storeDir('session_boot'), 'routine', 'ronin_base', 'OWN.md')), true);
   assert.equal(isShelfTeaching(path.join(storeDir('session_boot'), 'root', 'proj', 'KOTOBA.md')), false);
   assert.equal(isShelfTeaching('/somewhere/else/ways/book.md'), false);
+});
+
+test('a Routine reads one way or the other: on delivers its page, off delivers the page that names the switch', async () => {
+  const routines = [
+    { enabled: true, reading: ['routine/a/ON.md'], reading_off: ['routine/a/OFF.md'] },
+    { enabled: false, reading: ['routine/b/ON.md'], reading_off: ['routine/b/OFF.md'] },
+  ];
+  assert.deepEqual(routineReading(routines), ['routine/a/ON.md', 'routine/b/OFF.md']);
+  const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+  for (const name of ['ronin_base', 'ronin_host', 'ronin_services', 'ronin_worktrees']) {
+    const manifest = await readFile(path.join(repo, 'ronin_catalogs', 'routines', `${name}.md`), 'utf8');
+    assert.match(manifest, new RegExp(`\\*\\*reading_off:\\*\\* routine/${name}/OFF\\.md`));
+    const off = await readFile(path.join(repo, 'ronin_session_boot', 'routine', name, 'OFF.md'), 'utf8');
+    assert.match(off, /working without/);
+    assert.match(off, /The switch:/);
+  }
+  const utility = await readFile(path.join(repo, 'docs', 'RONIN_UTILITY.md'), 'utf8');
+  assert.match(utility, /hold \*\*Shift\*\* \(\*\*Option\*\* on a Mac\) while dragging/);
+  assert.match(utility, /Feedback\*\* button, top right/);
 });
