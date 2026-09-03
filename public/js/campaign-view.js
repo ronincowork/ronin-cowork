@@ -83,7 +83,7 @@ function registerCampaignSurfaces() {
   // holds no entitlement, and its summary says the true state — installed but not activated,
   // or not installed — never "off". It opens the Installed tab: the one source of truth, with
   // the activation card (an email, a yes, a confirmation) on it until the entitlement lands.
-  add({ type: TYPES.services, header: 'surface', label: () => t('campaign_view.services_card', 'Ronin Services'), summary: (_tenant, e) => e.servicesWord(), variant: 'dotted', visible: (_tenant, e) => e.servicesEntitled() === false, create: ({ environment: e }) => {
+  add({ type: TYPES.services, header: 'channels', label: () => t('campaign_view.services_card', 'Ronin Services'), summary: (_tenant, e) => e.servicesWord(), variant: 'dotted', visible: (_tenant, e) => e.servicesEntitled() === false, create: ({ environment: e }) => {
     const surface = coworkCommons({ tabs: ['installed'], label: t('campaign_view.services_card', 'Ronin Services'), campaign: e.selected });
     return { el: surface.el, show: () => surface.select('installed') };
   } });
