@@ -16,7 +16,7 @@
  */
 import { listSessions } from './tmux.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from './desks/registry.js';
-import { closeDesk, discardDesk, DeskRefused, openDesk, parkedDesks, recoverDesk, syncDesk } from './desks/desk.js';
+import { closeDesk, discardDesk, openDesk, parkedDesks, recoverDesk, syncDesk } from './desks/desk.js';
 import { handIn, handInAssignment } from './desks/hand-in.js';
 import { notifyLeads, replyToHandIn, teamOfLine } from './desks/lead.js';
 import { acceptedSince, receiptById, receiptsForDesk, receiptsForLine } from './desks/receipts.js';
@@ -284,7 +284,6 @@ async function main(): Promise<void> {
         die(`unknown verb '${verb}'\n${USAGE}`, 2);
     }
   } catch (e) {
-    if (e instanceof DeskRefused) die(`WARNING: ${e.message}; no desk action was needed.`, 0);
     die(`STUCK: ${(e as Error).message}`, 5);
   }
 }

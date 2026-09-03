@@ -397,7 +397,7 @@ export function registerSessions(app: express.Express): void {
    * is not already on it. And a NEWLY-led session is handed the team-building SOP —
    * route 2 of its delivery, the same reading a default_lead_role launch gets at birth —
    * because leadership is designated, not derived, and whoever actually leads must get
-   * the reading whichever way they came to it. Delivery obeys the dial and a refusal is
+   * the reading whichever way they came to it. Delivery reports its result and
    * reported, not swallowed.
    */
   app.post('/api/sessions/:name/team_lead', async (req, res) => {
@@ -421,7 +421,7 @@ export function registerSessions(app: express.Express): void {
       const leads = await setLeads(name, wanted);
       await writeTeams(name, tags).catch(() => {});
       count('lead.set', { n: leads.length });
-      // Route 2 of the SOP: the newly-led get the reading, one message, dial obeyed.
+      // Route 2 of the SOP: the newly-led get the reading in one message.
       const fresh = leads.filter((t) => !before.includes(t));
       let delivered: string | null = null;
       if (fresh.length) {
@@ -503,10 +503,7 @@ export function registerSessions(app: express.Express): void {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    // Speed bump, not a wall (same-Unix-user agents can always reach tmux directly):
-    // the dial's job is to make access rules VISIBLE at the moment of posting. Refusals
-    // spell out what the poster IS allowed to do; a successful send echoes the dial so
-    // even permitted writers see what mode they posted under.
+    // Echo the stored Control value so the sender sees the session's preference.
     const control = await getControl(name);
     const raw = String(req.body?.text ?? '');
     if (!raw.trim()) return res.status(400).json({ error: 'Nothing to send.' });

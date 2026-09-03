@@ -152,11 +152,7 @@ function startProbe() {
   tmux(['kill-session', '-t', `=${PROBE}`]);
   // -d so it is never attached here; a plain shell is enough to paint.
   //
-  // STDERR IS KEPT for this one call, unlike every other tmux() here. Whatever refused the
-  // session — the box's session max (libexec/ronin-may-spawn), a dial, a dead server — is
-  // the only account of why the whole gate is about to stop, and throwing it away is how
-  // "is the tmux server up?" came to be printed at a server that was up (2026-08-17). The
-  // call site prints this verbatim rather than guessing.
+  // STDERR is kept so a failed probe reports tmux's own reason.
   try {
     execFileSync('tmux', ['new-session', '-d', '-s', PROBE, '-x', '120', '-y', '40'],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -164,17 +160,7 @@ function startProbe() {
     probeRefusal = String(e?.stderr ?? '').trim() || `tmux new-session failed: ${e?.message ?? e}`;
     return false;
   }
-  // Hidden from the owner's eye the way viewers are, and never writable by an agent.
-  //
-  // THIS LINE DOES NOT LAND whenever bin/shim is on the caller's PATH, which is how anyone
-  // on this box runs the gate (measured 2026-08-18): the shim refuses every @ronin-control
-  // write with "dial flips are owner-only", exit 4, and tmux() swallows it. Left as it is
-  // rather than routed around /usr/bin/tmux — that is exactly the deliberate, visible act
-  // the shim exists to make you take — and note that it would BREAK this gate if it worked:
-  // with the dial at `user` the shim would then refuse the gate's OWN send-keys below and
-  // the pane would never paint. So the probe is a plain session wearing the note on the
-  // next line, and this is the record of why. Making it genuinely owner-only is a change to
-  // Ronin's own session creation, not a bypass in a test script.
+  // Hidden from the owner's eye the way viewers are.
   tmux(['set-option', '-t', PROBE, '@ronin-control', 'user']);
   tmux(['set-option', '-t', PROBE, '@ronin_note', 'throwaway — the render gate, killed when it finishes']);
   for (let i = 0; i < 30; i++) tmux(['send-keys', '-t', PROBE, `echo ${BANNER} ${i}`, 'Enter']);
@@ -1181,27 +1167,12 @@ for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
   process.on(sig, () => process.exit(sig === 'SIGINT' ? 130 : 143));
 }
 probeAvailable = startProbe();
-if (!probeAvailable && !/REFUSED:\s*at the session max\b/i.test(String(probeRefusal))) {
-  // WHAT REFUSED IT, IN ITS OWN WORDS, AND THEN STOP. This used to say "could not create
-  // the gate probe session (is the tmux server up?)" and carry on running every probe
-  // below. Both halves were wrong on 2026-08-17: the tmux server was up, the box was at its
-  // session max, and ronin-may-spawn says so explicitly — but the text was a guess and it
-  // sent people hunting for a fault in the tree. With no probe session there is nothing for
-  // attachProbe to attach, so the tile stays empty, every control that `needs: 'session'`
-  // is correctly inert, and the journeys below time out clicking disabled buttons. Twenty
-  // failures describing a cause that is not the UI is worse than none.
-  //
-  // A session-cap refusal is handled below as a narrow live-pane SKIP while both browsers
-  // still prove the page. Every other refusal exits 1: a missing server, broken shim or
-  // unexplained tmux failure must not turn into an environmental skip.
+if (!probeAvailable) {
   console.error(
     '\nFAIL: the gate could not create its own probe session, so it never looked at the page.' +
     '\nWhat refused it:\n\n' + String(probeRefusal).replace(/^/gm, '  ') + '\n',
   );
   process.exit(1);
-}
-if (!probeAvailable) {
-  console.log(`  note — live-pane probe skipped: ${String(probeRefusal).trim()}`);
 }
 
 // ---- desktop ----

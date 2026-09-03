@@ -4,8 +4,7 @@ The mechanics under `tejun-desk`. What a session is told is
 `ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`. This page is the tool-side reference:
 what is recorded where, what each operation does to git, and what it refuses.
 
-> The current model is `docs/worktrees.md`; the network around it is
-> `docs/control-surface.md` beside it.
+> The current model is `docs/worktrees.md`.
 
 ## The words, used strictly
 

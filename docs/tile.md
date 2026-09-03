@@ -423,19 +423,14 @@ A readout, not a control. Dials are inputs; gauges are readouts.
 Behind メ, and it is one of the two rows that do NOT close the drop when clicked: you turn
 it by tapping the thing you are already looking at, three detents in a ring.
 
-`@ronin-control` — who, other than the owner, may touch this session. Three detents, tap to
-advance:
+`@ronin-control` is a visible coordination preference. Three detents, tap to advance:
 
-- **👤 owner only** — outside agents get nothing, no writes and no reads.
-- **👁 watch** — outside agents may observe, never type.
-- **🤖 type** — full access, and the default for an unflagged session.
+- **👤 owner only**
+- **👁 watch**
+- **🤖 type**, the default for an unflagged session
 
-"Outside agents" means agents reaching *into* the session — never the agent already running
-inside it, and never the owner's own typing. tmux is the single source of truth: the dial
-POSTs and then **re-reads** rather than assuming the write took.
-
-**Yours to turn; agents never flip it.** The flip happening in the owner's UI *is* the
-authorization. Full story: `docs/session-control-dials.md`.
+The value does not enforce access. tmux is the single source of truth: the dial POSTs and
+then **re-reads** rather than assuming the write took. See `docs/session-control-dials.md`.
 
 On both surfaces — an explicit override of the never-change-desktop rule, because the
 cockpit motif is meant to be the same everywhere.

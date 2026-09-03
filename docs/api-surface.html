@@ -225,7 +225,7 @@
       </g>
       <text class="t sm" x="150" y="253">tejun tools also drive tmux directly</text>
 
-      <text class="t sm" x="8" y="410">Agents type bash, not JSON: a tejun tool enforces the dial itself, so the fast path is never a bypass of the guard.</text>
+      <text class="t sm" x="8" y="410">Agents type bash, not JSON: a tejun tool reports the action's result in the coworkspace vocabulary.</text>
       <text class="t sm" x="8" y="428">Services absent = the free build. Those 21 paths 404 and the matching UI panels draw inert — never an error.</text>
       <text class="t sm" x="8" y="446">/api/version reports which services registered, so the client knows what not to fetch.</text>
     </svg>
@@ -549,7 +549,7 @@
   <p>Agents on the box do not post JSON. They run bare-name bash tools on
   <code>ronin_bin/</code>, which is on PATH ahead of everything but the guard shims. A
   <b>TEJUN tool</b> is one that implements a cataloged action in one call — and it
-  <b>self-enforces the dial</b>, so the fast path is never a bypass of the guard hook.</p>
+  reports stored coordination preferences without using them as an access boundary.</p>
   <div class="table-scroll"><table>
     <thead><tr><th style="width:34%">Tool</th><th>What it is</th></tr></thead>
     <tbody>

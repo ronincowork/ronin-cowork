@@ -4,7 +4,7 @@
  * Owner law, 2026-08-28: reviewing the team line and promoting it to `dev` is the lead's
  * PRIMARY job, so every team agent's hand-in must reach the lead directly, dial or no
  * dial. This is house machinery on the same footing as Koshi writing the marker and
- * `write_tegami --at`: the dial governs an agent DRIVING a session; the house telling the
+ * `write_tegami --at`: the stored Control value remains visible while the house tells the
  * lead that its job is waiting is not that. The sender is `libexec/ronin-house-send`,
  * which nobody types — `tejun-send` keeps its dial check, so no agent gains a bypass.
  *

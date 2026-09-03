@@ -126,7 +126,7 @@ key_of() {
 # RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
 # session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,
 # and ../ from the link is a store with no src/ or bin/ — measured 2026-09-02 (desk audit):
-# every tool built this way failed from a born session. Same loop as bin/shim/git.
+# resolve the shipped tool rather than the projection directory.
 SELF=${BASH_SOURCE[0]}
 while [ -L "$SELF" ]; do
   link=$(readlink "$SELF")
@@ -287,15 +287,7 @@ if [ -n "$TARGET" ] || [ -n "$ACTIVE" ]; then
     *[!0-9.]*|.*|*.|*.*.*) die "write_tegami: --at takes a position from 'read_tegami --rungs' — N or N.M — or 'none'." ;;
     '') die "write_tegami: --at takes a position from 'read_tegami --rungs' — N or N.M — or 'none'." ;;
   esac
-  # NO DIAL CHECK ON THIS PATH, deliberately — owner law, and it took me a wrong turn to
-  # see why. The dial governs who may DRIVE a session: type into it, change what it does.
-  # Pointing "at" does none of that. It writes one derived key that the session own next
-  # save clobbers freely, carrying nothing that must survive.
-  #
-  # Gating it would break the case that matters most: a session on 👁 read is watch-only,
-  # and watching is precisely when you want to see where it is. A dial that hid the
-  # readout for the sessions you are watching would be backwards.
-  #
+  # This writes one derived pointer. Control remains a displayed preference.
   # Every other cross-session action stays dial-gated. This one is not an action on the
   # session at all — it is an annotation on a file about it.
   MFILE="$SESSION_STORE/$(key_of "$TARGET")/tegami.md"

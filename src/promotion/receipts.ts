@@ -191,7 +191,7 @@ export function advanceState(r: PromotionReceipt, next: PromotionState): Promoti
 /**
  * Whether this receipt BLOCKS a new promotion of the same team: a coordinated promotion
  * that moved some refs and not others must be resumed or abandoned before anything else
- * touches those lines (docs/control-surface.md, strict gates). `advancing` counts too —
+ * touches those lines. `advancing` counts too —
  * a process that died mid-advance leaves exactly that state behind.
  */
 export const blocksTeam = (r: PromotionReceipt): boolean => r.state === 'advancing' || r.state === 'interrupted';

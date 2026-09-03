@@ -51,7 +51,7 @@ reader appears.
 > **Absent must mean a sensible default, never a hard stop and never a wrong answer.**
 
 An install that has never opened the settings must behave correctly. `sessions.max` absent
-is *no limit* — treating it as zero-allowed would make a fresh install refuse to start its
+is *no limit* — treating it as zero-allowed would make a fresh install unable to start its
 first session. `owner.name` absent is *this machine's user*, and `machine.name` absent is
 *the hostname*, because a config you must fill in before the product stops guessing at who
 you are is a config that ships wrong.
@@ -151,7 +151,7 @@ What survives, and what every reader must keep true:
 
 ## Traps this has already hit
 
-- **Bash reads the bus, not the file.** `libexec/ronin-may-spawn` and `ronin_bin/tejun-wipeboard`
+- **Shell tools read the bus, not the file.** `ronin_bin/tejun-wipeboard`
   never parse `ronin.json`. If a bash tool needs a setting, publish it.
 - **A setting in the wrong ROOT is lost, not just misplaced.** Koshi's outlet choices lived
   under `storeDir('session')` — the root uninstall deletes — for as long as they existed.

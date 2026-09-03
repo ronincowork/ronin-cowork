@@ -35,7 +35,7 @@ async function run(
   env: Record<string, string> = {},
 ): Promise<{ code: number; out: string }> {
   try {
-    const { stdout } = await pexec('npx', ['tsx', CLI, ...args], {
+    const { stdout, stderr } = await pexec('npx', ['tsx', CLI, ...args], {
       cwd: REPO,
       env: {
         ...process.env,
@@ -52,10 +52,10 @@ async function run(
         ...env,
       },
     });
-    return { code: 0, out: stdout };
+    return { code: 0, out: stderr + stdout };
   } catch (e) {
-    const err = e as { code?: number; stdout?: string };
-    return { code: err.code ?? 1, out: err.stdout ?? '' };
+    const err = e as { code?: number; stdout?: string; stderr?: string };
+    return { code: err.code ?? 1, out: (err.stderr ?? '') + (err.stdout ?? '') };
   }
 }
 
@@ -198,8 +198,8 @@ test('bare post with no team refuses plainly, and with two teams asks which', as
   assert.match(lone.out, /NO-TEAM/);
 
   const torn = await run('omega', ['post', 'which one?'], { RONIN_TEAMS: 'crew,squad' });
-  assert.equal(torn.code, 2);
-  assert.match(torn.out, /WHICH-TEAM: you are on crew, squad/);
+  assert.equal(torn.code, 0);
+  assert.match(torn.out, /WARNING: you are on crew, squad; posting to crew/);
 });
 
 test('QUIET BY DEFAULT — a bare post interrupts the lead alone', async () => {
@@ -262,13 +262,12 @@ test('--session leads the whole command, so the formless reads can use it too', 
   assert.match(check.out, /signed by the flag/, "gamma is on the board and had not read it");
 });
 
-test('an unknown flag is refused, never folded into what the board says', async () => {
+test('an unknown flag is reported and included in what the board says', async () => {
   const typo = await run('alpha', ['crew', 'post', '--too', 'beta', 'the rail is yours']);
-  assert.equal(typo.code, 2, 'refused, not posted');
-  assert.match(typo.out, /BAD-FLAG: '--too'/);
-  assert.match(typo.out, /--to, --session/, 'and it names the flags there are');
+  assert.equal(typo.code, 0);
+  assert.match(typo.out, /WARNING: '--too' is not a wipeboard flag/);
   const beta = await run('beta', []);
-  assert.doesNotMatch(beta.out, /the rail is yours/, 'nothing reached the board');
+  assert.match(beta.out, /--too beta the rail is yours/, 'the reported flag remains part of the post');
 });
 
 test('a blank --session is refused rather than signing as nobody', async () => {

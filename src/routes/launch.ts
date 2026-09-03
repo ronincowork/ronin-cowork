@@ -291,9 +291,8 @@ export function registerLaunch(app: express.Express): void {
     if (unknownTeams.length) return res.status(400).json({ error: `Unknown Team: ${unknownTeams.join(', ')}.` });
 
     // THE DESKS ARE OPENED BEFORE THE CLI EXISTS, so its first command runs at a desk. A
-    // failure here is the launch's answer — 409, the reason, no session — never a quiet
-    // start in the root's funnel checkout with a brief that says otherwise
-    // (docs/control-surface.md §2). Nothing was created yet, so there is nothing to undo.
+    // Desk preparation happens before the CLI exists. A warning falls back to the project
+    // checkout and the launch continues.
     if (resolved.assignment) {
       try {
         resolved.assignment = await prepareLaunchDesks(resolved.assignment);

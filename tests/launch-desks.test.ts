@@ -1,6 +1,6 @@
 /**
  * LAUNCH DESKS — a coding launch is born at a desk with every desk in its brief; every
- * other launch gets NO invented desk state (Fable 3, docs/control-surface.md §2).
+ * other launch gets no invented desk state.
  *
  * Pure: the derivation is Track 1's and is not exercised here; what is asserted is the
  * launch's own decisions — who wants a desk, what the brief says when there is one and
