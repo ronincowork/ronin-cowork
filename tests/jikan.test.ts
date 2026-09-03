@@ -59,6 +59,16 @@ test('a tick fires what is due, marks a once done, and moves a repeat on', async
   assert.equal((await listJobs('office')).find((j) => j.id === brief.id)?.due, new Date(local(2026, 9, 7, 8, 0)).toISOString());
 });
 
+test('a one-off tomorrow is due at the picked local time and cannot fire now', async () => {
+  const now = local(2026, 9, 3, 18, 3);
+  const picked = local(2026, 9, 4, 9, 0);
+  const job = await addJob('tomorrow', { request: 'morning check', when: 'once 2026-09-04 09:00' }, now);
+  assert.equal(job.due, new Date(picked).toISOString());
+  const door = { now: () => now, sessions: async () => [], deliver: async () => 'delivered' as const };
+  assert.deepEqual(await tick(door), []);
+  assert.equal((await listJobs('tomorrow'))[0]?.state, 'active');
+});
+
 test('paused holds, resume counts from now, now means the next tick, remove removes', async () => {
   let now = local(2026, 9, 10, 8, 0);
   const door = { now: () => now, sessions: async () => sessions, deliver: async () => 'delivered' as const };
