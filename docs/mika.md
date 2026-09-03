@@ -25,7 +25,6 @@ mechanical rather than a matter of taste:
 | `+include: the cowork repo` | the same — `include` and `exclude` are aliases for `project_root` |
 | `mika "<question>"` in any pane | the same, by hand |
 
-**＋ include stopped being a form on 2026-08-15.** It opened five text fields, and only one
 of them — the handle — was genuinely the owner's. `dir`, `read`, `match` and `remit` are
 facts the machine already holds, and the form asked the owner to go and look them up, on a
 phone, with autocapitalize off. The real intent is one bit: *this directory, yes.* Making

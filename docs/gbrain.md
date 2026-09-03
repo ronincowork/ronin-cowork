@@ -74,7 +74,6 @@ the owner's gbrain server and registering it with each CLI remains the gbrain `r
 The shared-access path has been proved: Claude and Codex sessions concurrently read and
 wrote one PGLite database through one HTTP server. The inverse claim has not. In particular,
 Codex merges `-c mcp_servers={}` with its user configuration rather than replacing the
-configured servers — **proven end-to-end 2026-08-23** when the owner's gbrain-off codex
 launch still tried to start the gbrain client. The row now uses
 `-c mcp_servers.gbrain.enabled=false`, verified via `codex mcp list` (gbrain reports
 `disabled`). The honest limit stays recorded: codex 0.148 has no global "no MCP at all"
@@ -171,7 +170,6 @@ storage ruling; auth/passkeys do not settle it by analogy, and neither does the 
 
 ## What leaves the machine — measured, not asserted
 
-Checked on the live process (2026-08-16): the server listens on `127.0.0.1` only — loopback,
 unreachable from any other machine — and its only established connection was a local
 session's own MCP client. **"OAuth 2.1" here is the local server checking local tokens, not
 a cloud login.** The complete gbrain egress ledger in this configuration: **GitHub at

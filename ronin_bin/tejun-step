@@ -9,15 +9,7 @@
 # remembers where you are and hands you the next lever — so no step gets skipped
 # because you forgot you hadn't done it.
 set -u
-# RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
-# session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,
-# and ../ from the link is a store with no src/ or bin/ — measured 2026-09-02 (desk audit):
-# resolve the shipped tool rather than the projection directory.
-SELF=${BASH_SOURCE[0]}
-while [ -L "$SELF" ]; do
-  link=$(readlink "$SELF")
-  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
-done
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 ROOT="$(cd "$(dirname "$SELF")/.." && pwd)"
 S=$(tmux display-message -p '#S' 2>/dev/null || true)
 [ -n "$S" ] || { echo "NOT-IN-TMUX: tejun-step tracks position on a tmux session." >&2; exit 2; }

@@ -56,7 +56,6 @@ who need opposite things, so it carries two separate pieces of writing:
   the macro. It opens with the rule the agent must not break (`forkit` starts *"Owner-invoked
   only — never fork on your own initiative"*), it names actions and params, and it assumes the
   house vocabulary. Served as `instruction` on `/api/macros`; the field was called
-  `description` until 2026-08-17, and that name is what invited a human surface to render it.
 - **`label:` and `blurb:` are what a PERSON reads** to decide whether they want the macro.
   Previewed macros use their executable `+name:` spelling as the concise button headline;
   the always-visible blurb explains what it does for somebody who has never heard of it. No
@@ -67,7 +66,6 @@ who need opposite things, so it carries two separate pieces of writing:
 **Both are required on every entry** — `check:catalogs` fails a stock entry missing either —
 and **no human surface may fall back to the instruction.** Showing *"Owner-invoked only —
 never fork on your own initiative"* to a person who tapped a button to find out what it does
-teaches them nothing; that fallback existed until 2026-08-17 and it was the exact overlap the
 owner is splitting. Every macro carries the pair even though the drop shows four, because the
 next surface is a library people browse to adopt macros from, and copy written for four
 entries would have to be written again for all of them.
@@ -136,7 +134,6 @@ is this session working on" and one that answers "what did it remember to mentio
 **Owner-invoked only — never fork on your own initiative.** If a fork seems right,
 PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead.
 Unannounced sessions are untrackable for the human until the UI reveals them. Spin the current conversation's active topic out into its own agent
-session, so the origin session stays on its track. (The breakout pattern, first performed manually 2026-08-05.)
 
 `name` is required, matching the settled launch contract. Every other launch input is
 optional. `tejun-fork` accepts instructions plus optional `team`, repeatable `behaviour`,

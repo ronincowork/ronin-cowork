@@ -1,7 +1,6 @@
 # desk_profiles — the owner's standing defaults, one file per profile
 
 > **DATA.** Nothing here executes. A **`desk_profile`** is a template of standing defaults
-> for the surfaces they work at (KOTOBA R38, 2026-08-27): which **skin** (look —
 > `SKINS.md`, tokens only, unchanged), which **theme**, which **lexicon** (the words — `lexicons/`), which
 > **campaign kind** the board opens on, the **Team page's default arrangement**, and the
 > RIREKI **detail level** a new tile shows. **A desk_profile is NOT a skin; each one HAS a

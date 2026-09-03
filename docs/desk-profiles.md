@@ -1,6 +1,5 @@
 # Desk profiles — the owner's standing defaults for the surfaces they work at
 
-A **desk_profile** (KOTOBA R38, revised 2026-08-30) is a template of defaults: which
 **skin** (the look — `SKINS.md`, tokens only, unchanged by this), which **theme**,
 which **lexicon** (the words — `docs/lexicons.md`), which **campaign kind** the board
 opens on, the **Team page's default arrangement**, and the RIREKI **detail level** a new
@@ -22,7 +21,6 @@ across browsers is not a browser's to keep, which is why this is not `localStora
 way the skin pick alone used to be.
 
 **The leaf and its route are unchanged; what moved is where the fact is stored.** Since
-2026-08-29 desk settings belong to a **campaign**. Applying a catalog profile copies all
 controlled values into `machine settings campaign record.desk`; the Campaign can then change any one of
 them. Reapplying a profile deliberately overwrites those values. The saved profile name
 is provenance, not a live reference, so later catalog edits cannot silently repaint an

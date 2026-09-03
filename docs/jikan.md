@@ -13,7 +13,6 @@ for a repeat. A missed beat is just missed. *Run at next tick* sets `due` to now
 here births a session or a team; a job whose session is gone leaves `refused: …` in `last`.
 
 ```text
-once 2026-09-04 08:00 · daily 08:00 · weekdays 08:00 · weekly mon 08:00 · monthly 1 09:00 · hourly · every 30m · 0 8 * * 1-5
 ```
 
 The list is one Markdown file per team in the `jikan` store — `## id` with `request`, `to`,

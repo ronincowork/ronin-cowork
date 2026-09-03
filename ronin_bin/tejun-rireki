@@ -18,15 +18,7 @@
 # labels the result as reconstruction — this does not pretend to.
 set -u
 
-# RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
-# session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,
-# and ../ from the link is a store with no src/ or bin/ — measured 2026-09-02 (desk audit):
-# resolve the shipped tool rather than the projection directory.
-SELF=${BASH_SOURCE[0]}
-while [ -L "$SELF" ]; do
-  link=$(readlink "$SELF")
-  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
-done
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 HERE=$(cd "$(dirname "$SELF")/.." && pwd)
 : "${RIREKI_DIR:=$("$HERE/bin/ronin-store" session)}"
 VIEWER_PREFIX='grid_'

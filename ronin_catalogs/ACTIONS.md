@@ -376,7 +376,6 @@ Rules, all of them about not trampling other people's writing:
 - **Never edit the `## Brief`.** It is the owner's statement of what the wipeboard is for.
 - **You do not enrol anyone**, including yourself. A board's membership IS the team —
   there is nothing to enrol, and no other kind of board to enrol onto (custom boards are
-  cut for now, owner 2026-08-24). You post; the roster is the team's.
 - **Read before posting** (`tejun-wipeboard`) so you answer what is there instead of
   talking past it.
 - Being on a wipeboard is not permission to touch a member: control-check as always.

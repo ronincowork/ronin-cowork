@@ -39,7 +39,6 @@ and it only holds while nothing carrying look is spelled anywhere else — so
 `scripts/check-css.mjs` gates every family, not just colour. A raw `8px` radius in a
 feature rule is the same defect as a raw `#131826`.
 
-The census that prompted this (2026-08-19): **eleven** border-radius values, **twelve**
 font-sizes including 10.5/11.5/12.5px, spacing on nearly every integer from 1 to 18, and
 **seven** font stacks doing the work of three roles. An agent could not get a colour wrong
 and could not get a radius right.
@@ -111,7 +110,6 @@ The roles, defined in `public/style.css`:
   identity ruling is the open hexagonal **hito** mark; using the same colour for heightened
   action connects “this needs you” to the house without making every Ronin surface kaki.
   Heightened surfaces read `--kaki`/`--kaki-lift` directly — the `--heighten-*` alias
-  family this page once described was defined but never read, and the 2026-09-02
   token audit deleted it rather than leave a dead semantic layer to mislead.
 - elevation: `--scrim`, `--shadow-menu`, `--shadow-sheet` — the whole vocabulary
 - terminal: the `--term-*` block — xterm's palette and the tape/composer surfaces,
@@ -131,7 +129,6 @@ colour and motion intensify only while the owner-triggered check or installation
 
 Two shells, same roles: `:root` is dark, `:root[data-theme='light']` remaps. **The
 default FOLLOWS THE DEVICE** (`prefers-color-scheme`, live — flip the Mac and Ronin
-flips with it, owner's ruling 2026-08-16), and the one control is the flip button in
 the ⚙ System sheet: flipping away from the device's mode pins the shell; flipping
 back to match re-arms following — no third control exists (`theme.js setTheme`).
 Per device (localStorage `tmuxgrid.theme`); `index.html` resolves the choice inline
@@ -140,7 +137,6 @@ before first paint. One resolved palette feeds CSS, xterm and the browser's
 same list. The browser gates pin `colorScheme: 'dark'` so the baselines are a choice,
 not the headless engine's default.
 
-**The terminal goes light with the shell** (2026-08-19). It used to stay dark on
 purpose — a terminal is read against a dark ground by convention and every TUI palette
 assumes it — and the owner overruled that: white-on-black is precisely what puts a
 non-terminal person off, so a light shell around a black pane has not gone light. The
@@ -159,7 +155,6 @@ scheme, two grounds. Two departures from stock, both forced by the paper:
   fault Solarized Light is known for. Here 7 is a mid grey and 15 is near-black, so
   bright white stays the strongest mark, which is the role the emitting code means.
 
-**The 256-colour cube follows the shell too** (2026-08-19). Sixteen named slots is only
 half a terminal palette; the other 240 are the xterm cube, and a program that addresses
 those was left painting for a ground that had gone. `theme.js` generates all 240
 arithmetically — no colour is spelled there — and pushes them as xterm's `extendedAnsi`,
@@ -193,7 +188,6 @@ It only works because 15 is the strongest mark in BOTH shells. Measured on this 
 So a pinned `-ansi` theme survives the flip only if it pins the one whose slot is legible on
 both grounds, and on this palette that is `dark-ansi` in either shell. `light-ansi` looks
 right until the first flip back and then loses the body text — caught on the owner's own box,
-2026-08-19. **Change 7/15 in either shell and that table has to be recomputed**; the
 consumer is a program this repo does not ship.
 
 ## Transport and failure
@@ -247,11 +241,9 @@ a `destroy()` owner at that moment, not speculatively.
 - **Sheet/dialog** — `ui.sheet` (`public/js/ui.js`): scrim + card, `role=dialog`,
   focus enters the first field (never on touch — the iOS keyboard), Tab is contained,
   Escape and the backdrop dismiss, and focus RETURNS to the opener. Consumers: Notes,
-  Tags, the session switcher, ⚙ System, and — since 2026-08-17, the last family to
   come across — the pad's ▦ panel and its ask-on-press prompt. The prompt is the one
   surface that overrides the touch rule and focuses its field anyway: it has nothing
   to read, it IS the field. Nothing hand-rolls a sheet any more.
-  **"Returns to the opener" is VERIFIED, not attempted (2026-08-18).** It used to be a
   `.focus()` guarded on `isConnected`, and neither half was the question: `.focus()` is a
   silent no-op on an element that cannot take focus, and a node inside a `display: none`
   parent is `isConnected === true`. A sheet raised from a control that then went hidden —
@@ -266,10 +258,8 @@ a `destroy()` owner at that moment, not speculatively.
   the hidden-opener ones. The browser's own mousedown focus rule runs after the dismissal
   handler and moves focus to the nearest focusable ancestor of what was pressed — the scrim
   is a bare `div`, so that is `<body>`, arriving right after the restore and undoing it.
-  Measured 2026-08-18: Escape returned the opener on every sheet on the page while a
   backdrop click returned `<body>` on every one of them, ⚙ System and the session switcher
   included. The pointer's default is cancelled, so the restore is the last word.
-- **Popover/menu** — **retired 2026-08-17.** `ui.popover` had one consumer, the き
   Commons menu, and that menu is gone (see Navigation). A primitive with no consumer is
   a corpse `check-dead` fails the build on, and parked code is not kept alive by an
   exemption — the tape is in git. The dismissal grammar it held is not repealed: the job
@@ -323,12 +313,10 @@ is what happens the moment a second surface needs them.
 
 The retired embedded Commons was the control-plane shell only; the roster and launcher were rooms
 like Wipeboard and Docs (`roster.js`, and a launcher module retired with the ＋ New board
-in 2026-08-31's forms settling).
 
 ⚙ Account is deliberately NOT a room: install-level facts (release, updates,
 appearance, log out) are page-level, so ONE control in the bar opens one sheet
 (`system.js`) — a room meant four copies, one per tile.
-It reads **Account** since 2026-08-17 and that is **a staging post, not the final
 shape**: the owner wants an Accounts tab in the Commons eventually, backed by SETTEI.
 Only the label moved — the fields such a room would hold (owner name, entitlement) are
 exactly what SETTEI has not settled, and an empty room is four empty copies of the
@@ -337,7 +325,6 @@ On touch the control relocates into the ニ sheet like the other bar verbs. The 
 tab strip scrolls at every width — a 4-up desktop tile is narrower than the row of
 rooms, and clipping the tail is how a tab goes quietly missing.
 
-**THE STRIP IS FOUR TABS (2026-08-18).** It held ten and two kinds of thing: four about
 SESSIONS and six about the INSTALL. Ten measured 871px against a 609px tile, and the
 ⚙ Configuration rename (67px → 107px) pushed even a 1920 display 10px over — so it scrolled
 at every width there was. Length was the symptom; the defect was that the six were drawn in
@@ -345,7 +332,6 @@ at every width there was. Length was the symptom; the defect was that the six we
 that line once, for the gear — *release, update, appearance and log out are the install's,
 not a tile's* — and the six were on the wrong side of it.
 
-They were the **`admin_desk`**'s from 2026-08-18, and since 2026-08-27 they are the
 **`cowork_commons`**'s (`js/cowork-commons.js`, `docs/cowork-space.md`) — a workspace
 surface with six tabs, never an overlay: ⚙ places it in the workspace you are in on the
 workbench, and shows it at full width as the `cowork` destination on the parked grid
@@ -377,7 +363,6 @@ anything. Selecting a pane also scrolls its tab back onto the strip — a room c
 entered from somewhere other than its own tab (⚙ Configuration from first-run, ▧ Docs from the
 tile's 📄), and the strip must not disagree with the pane.
 
-**The bar is one verb** — ⚙ Admin Desk (the cowork commons) since 2026-08-27. Commons,
 Keypad, Mika Assist, New and the 1·2·4 count all left the bar by the owner's word: the
 Commons is the tile's ⛩ and ⌃⇧C on the parked grid page, Mika is the `mika` tool, Keypad
 and Roster are tabs of the cowork commons, a new session is a workspace surface (＋ Add
@@ -395,7 +380,6 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
   The house help box and native browser title bubbles are disabled system-wide; `check-tips`
   drives hover and focus to hold that absence.
 - **A control that names itself on its face gets no pop-up.** The Commons room tabs and the
-  ⚡ macro cards both lost theirs on 2026-08-18. A macro card already prints its `label:` and
   `blurb:` in two always-visible lines, so the box repeated the answer and laid 300px of it
   over the cards underneath (owner: *"its dumb to have the hover description covering the
   button description"*). Where the text is still worth keeping it moves to `aria-label`,
@@ -415,7 +399,6 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
 - Escape closes the topmost transient surface, everywhere. A capture-phase Escape listener
   (the tile drops, the job menu) has to YIELD while a modal sheet is up over it, or being
   first in the propagation order quietly makes it topmost when it is not — メ's drop, which
-  since 2026-08-18 stays open behind 🏷 and 📝, checks for an open `ui.sheet` and stands
   down (`public/js/tilemore.js`, docs/tile.md).
 
 ## Structure gates
@@ -477,7 +460,6 @@ with a real P-256 key so the byte layout and the signature check are actually he
 No WebAuthn library was added: the browser hands back an already-decoded public key
 (`getPublicKey()`), which is the only part that would have wanted a CBOR parser.
 
-**WRITTEN BUT UNWITNESSED — read this before you touch any of it (2026-08-17).** The
 server half is held by tests: 14 of them, signing real P-256 assertions, so tampered,
 wrong-origin, cross-site, replayed and unverified assertions are each proven to fail.
 **The browser ceremony has never run.** No line of this has met a real

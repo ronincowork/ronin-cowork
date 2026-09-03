@@ -1,7 +1,6 @@
 # COWORK SPACE — the surface map
 
 **The page format is the `workbench`.** It was called "the team workspace" while the team was
-the only thing it showed; the name moved up a level on 2026-08-27 (owner: *"I've been
 calling it the team workspace. But to be honest, this is the cowork space"*) because the
 page is about to hold surfaces that are not about a team. `#/team/:name` is one address
 into it; the League will be another. This page is the one document to point at when two
@@ -52,7 +51,6 @@ Three kinds of thing, and only three, sit inside the bar:
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
 | **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ edit Agent title · View Work Record · output selector · @ · ⚡ · メ. The Torii is first, immediately before the readable title; the permanent session ID does not change. |
-| **team_commons** | one team | **commons strip** — a strong Team Commons identity followed by rectangular channel tabs | Docs (three compact rectangular shelf tabs: **Tracked** — what agents listed; **Plans** and **Docs** — the files under the places each project root names on its record, grouped by root, the team's repos first) · Wipeboard · Agent Message Queue · Team Configuration (Chat hidden until it is a thing — owner, 2026-08-28). Reached from the **Team commons card**, first on the roster |
 | **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). The Team roster now lives on the Cowork workbench. |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
 | *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default |
@@ -143,7 +141,6 @@ Campaign content remain editable.
 ## Retired
 
 The raw Sessions 1 / 2 / 4 grid and the `session_commons` embedded inside every Tile were
-removed on 2026-08-28. A terminal Tile is now only a terminal surface. Roster, Archives,
 New Session, Docs and Wipeboard live in the cowork-space surfaces named above.
 
 ## What is NOT a workspace surface

@@ -1,6 +1,5 @@
 # Agent install — how Ronin puts an agent CLI on the box
 
-What happens when someone ticks an agent that is not installed. Shipped 2026-08-20; the
 code is `src/agent-install.ts`, the commands are `src/agents.ts`, and the PATH half is
 `setup.sh`.
 

@@ -1645,7 +1645,6 @@ The catalog entry goes. {dir} is not touched.
 - **team_jikan.to_lead:** the team lead, whoever that is at the time
 - **team_jikan.when:** When
 - **team_jikan.when_placeholder:** weekdays 08:00
-- **team_jikan.when_help:** One time: once 2026-09-04 08:00. Repeating: daily 08:00 · weekdays 08:00 · weekly mon 08:00 · monthly 1 09:00 · hourly · every 30m · or a five-field cron line.
 - **team_jikan.when_preview:** {words} → next {next}
 - **team_jikan.never:** never — that time has passed
 - **team_jikan.add:** Schedule it

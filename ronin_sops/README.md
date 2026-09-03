@@ -67,7 +67,6 @@ An SOP declares its voice in its header, because the two failure modes are oppos
 
 Judge the voice by who acts in the body, not by what the header of the file beside it
 happened to say. The line was boilerplate on ten of these before the shelf was audited on
-2026-08-21, and four of them were relaying nothing.
 
 A rule an *action* cites is neither: `documents.md` sits in `ronin_library/` because the
 machinery fetches it and a compile inlines it, so no situation ever has to go looking.

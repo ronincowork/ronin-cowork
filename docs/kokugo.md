@@ -10,7 +10,6 @@ is short enough to read every time. The machinery it describes: `public/js/lexic
 (the helper), `ronin_catalogs/lexicons/` (the words, one file per lexicon), `docs/lexicons.md`
 (how the chain resolves), `docs/desk-profiles.md` (how a person picks one), and
 `npm run kokugo:table` (every key and every lexicon's word beside it — generated on demand,
-never edited and never committed, so no path here names it). The sweep that put every existing view through this door landed 2026-08-27.
 
 ## 1 · The helper
 

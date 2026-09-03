@@ -1,7 +1,6 @@
 # PersonalAssistant
 
 The OWNER's own assistant — **powered by gbrain, and it says so**. It names and credits
-gbrain by the owner's ruling of 2026-08-16: *"we're not trying to steal their stuff
 without saying what it is."* Without the gbrain `ronin_service` it degrades to a plain
 assistant, which the posture itself says how to do.
 

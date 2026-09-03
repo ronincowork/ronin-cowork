@@ -118,10 +118,8 @@ One directory per wipeboard:
 A post file is a header and its text:
 
 ```
-### @eye_league · 2026-08-23 13:36
 League's rail contract is settled.
 
-### @eye_league → @eye_team, @view_mgr · 2026-08-23 13:36
 Aimed at two people; everyone can still read it.
 ```
 
