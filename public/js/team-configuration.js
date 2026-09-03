@@ -60,9 +60,11 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const projectRoot = select(whereBody, t('where.born_in', 'Born in'), 'project_root', [{ value: '', label: t('team_config.default', 'Default') }, ...roots.map((root) => ({ value: root.name, label: root.name }))], roster.project_root);
     const worktreesLine = el('p', 'tw-config-note'); whereBody.append(worktreesLine);
     const repoRows = new Map(); const repoList = el('div', 'tw-where-repos'); whereBody.append(repoList); const storedBranches = bucket(roster.branches);
+    // One header row names the columns; the boxes below stay blank.
+    const head = el('div', 'tw-where-repo tw-where-head'); head.append(el('span'), el('span', null, t('where.col_repo', 'Repository')), el('span', null, t('where.col_branch', 'Branch — blank means as checked out'))); repoList.append(head);
     for (const root of roots.filter((root) => root.repo !== false)) {
       const row = el('label', 'tw-where-repo'); const tick = el('input'); tick.type = 'checkbox'; tick.checked = list(roster.repos).includes(root.name);
-      const branch = el('input', 'wk-field-control'); branch.type = 'text'; branch.placeholder = t('where.branch_placeholder', 'branch — blank means as checked out'); branch.value = storedBranches[root.name] || '';
+      const branch = el('input', 'wk-field-control'); branch.type = 'text'; branch.value = storedBranches[root.name] || '';
       row.append(tick, el('span', null, root.name), branch); repoList.append(row); repoRows.set(root.name, { tick, branch });
     }
     const tickedRepos = () => [...repoRows].filter(([, row]) => row.tick.checked).map(([name]) => name);
@@ -124,7 +126,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
       worktreesLine.textContent = on ? t('where.worktrees_on', 'Worktrees are on (see Routines): a ticked repository opens a desk for each new Agent at birth; branches are Ronin\'s.') : t('where.worktrees_off', 'Worktrees are off (see Routines): a ticked repository is where this Cowork works, on the branch you name, or as checked out.');
       for (const { branch } of repoRows.values()) branch.disabled = on;
       const ticked = tickedRepos();
-      whereSummary.textContent = t('where.summary', 'born in {root} · {repos}', { root: projectRoot.value || t('team_config.default', 'Default'), repos: ticked.length ? (on ? t('where.desks', 'desks in {list}', { list: ticked.join(', ') }) : t('where.checkouts', 'works in {list}', { list: ticked.join(', ') })) : t('where.none', 'no automatic desk') });
+      whereSummary.textContent = t('where.summary', 'born in {root} · {repos}', { root: projectRoot.value || t('team_config.default', 'Default'), repos: ticked.length ? (on ? t('where.desks', 'desks in {list}', { list: ticked.join(', ') }) : t('where.checkouts', 'works in {list}', { list: ticked.join(', ') })) : t('where.none', 'no auto desk') });
     };
     worktreesInput?.addEventListener('change', paintWhere); projectRoot.addEventListener('change', paintWhere); for (const { tick } of repoRows.values()) tick.addEventListener('change', paintWhere); paintWhere();
     form.append(el('p', 'tw-config-note tw-config-wide', t('team_config.next_form', 'These defaults land in the next Agent form that opens. Nothing live changes.')));

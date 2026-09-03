@@ -1597,12 +1597,13 @@ The catalog entry goes. {dir} is not touched.
 - **where.born_in:** Born in
 - **where.worktrees_on:** Worktrees are on (see Routines): a ticked repository opens a desk for each new Agent at birth; branches are Ronin's.
 - **where.worktrees_off:** Worktrees are off (see Routines): a ticked repository is where this Cowork works, on the branch you name, or as checked out.
-- **where.branch_placeholder:** branch — blank means as checked out
+- **where.col_repo:** Repository
+- **where.col_branch:** Branch — blank means as checked out
 - **where.label:** Where it works
 - **where.summary:** born in {root} · {repos}
 - **where.desks:** desks in {list}
 - **where.checkouts:** works in {list}
-- **where.none:** no automatic desk
+- **where.none:** no auto desk
 - **team_config.default:** Default
 - **team_config.references:** References
 - **team_config.references_help:** One URL or note per line.
