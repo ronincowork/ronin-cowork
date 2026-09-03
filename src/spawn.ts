@@ -232,7 +232,10 @@ export function buildBrief(
     );
   }
   // Concrete resolved locations precede the reading; managed rows also carry their line.
-  if (workLocations.length) parts.push(renderWorkLocations(workLocations));
+  if (workLocations.length) parts.push(renderWorkLocations(workLocations, roster?.branches ?? {}));
+  // WHERE IT IS BORN, one line, before the desks: the project root is the one fact every
+  // launch has, whatever else it was given (owner, 2026-09-02).
+  if (root) parts.push(`Born in ${root.name} at ${root.dir}.`);
   if (assignment?.desks.length) parts.push(renderDeskBlock(assignment));
   // THE BIRTH README POINTER. ResolveForm initially supplies the resolved sources; the
   // launch executor compiles them into one per-session README and replaces this sentence

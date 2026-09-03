@@ -68,6 +68,8 @@ test('a blank field is written as "—" and reads back as the blank it stands fo
   // next edit read those marks back as VALUES — a project_root named "—", refused at
   // launch. The mark is a rendering; the store must never return it as a fact.
   await createTeamRoster('bare', { objective: 'only this' });
+  const withBranches = await createTeamRoster('checkouts', { repos: ['cowork', 'koe'], branches: { koe: 'main', ignored: '' } });
+  assert.deepEqual((await readTeamRoster('checkouts'))?.branches, { koe: 'main' }, 'per-repo branches round-trip; blanks drop');
   const r = await writeTeamRoster('bare', { branch: 'dev' });
   assert.equal(r.project_root, '', 'an untouched blank stays blank after an edit');
   assert.equal(r.kind, 'open');
