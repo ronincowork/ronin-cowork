@@ -9,10 +9,15 @@ export const PROMOTION_IN_FLIGHT_MS = 20 * 60_000;
 
 export interface PromotionLock { id: string; team: string; at: string }
 
+export class PromotionBusy extends Error {
+  constructor(public readonly lock: PromotionLock, public readonly state: PromotionState) {
+    super(`BUSY: ${lock.team}'s ${lock.id} is ${state}`);
+  }
+}
+
 export async function acquirePromotionLock(lock: PromotionLock, dir = PROMOTION_LEDGER_DIR(), log: (line: string) => void = () => undefined, staleMs = PROMOTION_IN_FLIGHT_MS): Promise<void> {
   await mkdir(dir, { recursive: true });
   const file = path.join(dir, LOCK_NAME);
-  let announced = '';
   for (;;) {
     try {
       const handle = await open(file, 'wx');
@@ -33,9 +38,7 @@ export async function acquirePromotionLock(lock: PromotionLock, dir = PROMOTION_
     }
     const receipt = await readReceipt(held.id, dir);
     const state = receipt?.state ?? 'preparing';
-    const notice = `waiting: ${held.team}'s ${held.id} is ${state}`;
-    if (notice !== announced) { log(notice); announced = notice; }
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    throw new PromotionBusy(held, state);
   }
 }
 

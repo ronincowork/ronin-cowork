@@ -55,29 +55,14 @@ ln -s ~/code/thing/ARCHITECTURE.md "$(ronin-store session_boot)/root/thing/"
 ```
 
 A link whose target has gone simply stops appearing. Nothing needs cleaning up, and nothing
-goes stale — which is the entire point, and the reason `read:` is gone.
+goes stale.
 
-## What replaced `read:`, and why
+## Resolution
 
-A `project_root` used to carry `read:` — a comma-separated list of literal file paths,
-pasted into every brief for that root. Four things were wrong with it, and only the first
-is obvious:
-
-- **a path goes stale in silence.** Delete the file and every future session in that root is
-  told to read something that is not there. Nothing says so;
-- **it lived in a catalog**, so changing what a session reads meant editing a catalog line
-  rather than putting a file somewhere;
-- **there was exactly one level.** Nothing could apply to every session, or to every session
-  doing a particular kind of work;
-- **the owner had nowhere of their own** to add to it.
-
-A shelf answers all four with live files rather than stored absolute paths. Universal and
+The shelf resolves live files rather than stored absolute paths. Universal and
 root levels select their live directory contents; Routine manifests select exact shelf
 coordinates. A removed file simply stops appearing. `SESSION_MACROS.md` is rebuilt from
 the live catalog at that same instant.
-
-`read:` is deleted, not deprecated. Existing entries were converted to links on their
-root's shelf.
 
 ## Name collisions are real
 
