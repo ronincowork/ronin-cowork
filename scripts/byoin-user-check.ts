@@ -16,7 +16,6 @@ const exists = async (p: string) => !!(await stat(p).catch(() => null));
 const mdFiles = async (dir: string): Promise<string[]> =>
   (await readdir(dir).catch(() => [] as string[])).filter((f) => f.endsWith('.md'));
 
-
 async function probe(rel: string): Promise<Record<string, unknown> | null> {
   try {
     return (await import(rel)) as Record<string, unknown>;
@@ -27,7 +26,6 @@ async function probe(rel: string): Promise<Record<string, unknown> | null> {
 const REQUIRED: Record<string, { keys: string[]; unless?: (e: { get: (k: string) => string }) => boolean }> = {
   'MACROS.md': { keys: ['label', 'blurb'] },
 };
-
 
 async function checkCatalogFile(dir: string, file: string, label: string): Promise<void> {
   looked++;
@@ -57,8 +55,6 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
     }
   }
 }
-
-
 
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
   const defs = await probe('../src/resource-adapters.js');
@@ -104,8 +100,6 @@ async function checkShadowStore(id: string, stockDir: string): Promise<void> {
   };
   await walk(dir);
 }
-
-
 
 const catalogsDir = storeDir('catalogs');
 if (await exists(catalogsDir)) {

@@ -1,16 +1,3 @@
-/**
- * ronin-bundle — a template bundle in and out of this install, from the command line.
- *
- *   ronin-bundle pack <team> [--agents a,b] [--sops x] [--ways y] [--library z]
- *                            [--macros m] [--actions a] [--tools t] [--version v] [--out file]
- *   ronin-bundle plan <file.json>                what an install would do, nothing written
- *   ronin-bundle install <file.json> [--replace] the install, and its receipt
- *   ronin-bundle card <file.json> --url <rel>    the index card a library carries for it
- *
- * THE LOGIC IS NOT HERE. src/bundles.ts owns it and is covered by the unit floor
- * (tests/bundles.test.ts); this is the wrapper bin/ronin-bundle execs, the same arrangement
- * as tejun-desk. Every verdict is one line; exit 2 = bad arguments, 3 = refused.
- */
 import { readFile, writeFile } from 'node:fs/promises';
 import { installBundle, libraryCard, packBundle, parseBundle, planInstall, type PackRequest } from '../bundles.js';
 

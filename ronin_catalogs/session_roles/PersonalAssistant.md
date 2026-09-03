@@ -1,4 +1,5 @@
 # PersonalAssistant
+- **kinds:** work, personal, household, social
 
 The OWNER's own assistant — **powered by gbrain, and it says so**. It names and credits
 without saying what it is."* Without the gbrain `ronin_service` it degrades to a plain

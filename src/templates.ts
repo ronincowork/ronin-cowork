@@ -1,18 +1,3 @@
-/**
- * SAVE AS TEMPLATE — the one write the template catalog offers, now per shelf.
- *
- * A save is always NEW: the forms offer "Save as template" over a fresh definition and
- * "Save as new template" over an edited one, and neither writes over the box the owner
- * started from — shipped templates are edited on the campaign page, not here. So a name
- * that already resolves ON ITS SHELF, stock or user's, is refused rather than shadowed:
- * a quiet shadow would be an upgrade-proof copy the owner never asked for. The two
- * shelves are separate namespaces — an agent box and a cast may share a name.
- *
- * The file lands in the OWNER'S catalogs store (`<catalogs store>/templates/<shelf>/`),
- * which is what makes it survive upgrade and uninstall like every catalog of theirs, and
- * it is read back through the ordinary reader before success is reported — a definition
- * that does not read back is a tray that would render without it.
- */
 import { access, mkdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
@@ -37,8 +22,6 @@ const list = (value: unknown): string[] => Array.isArray(value)
   : [];
 const line = (key: string, value: string): string[] => (value ? [`- **${key}:** ${value}`] : []);
 
-/** A mandate arrives as the file's `reach · recruit · output` string OR as the wire
- *  object (`agentPicks()` output); either way the file stores the string form. */
 const mandateText = (value: unknown): string => {
   if (typeof value === 'string') return words(value);
   if (value && typeof value === 'object') {
@@ -69,11 +52,9 @@ export interface AgentTemplateSave extends TemplateBoxSave {
 
 export interface TeamTemplateSave extends TemplateBoxSave {
   objective?: unknown;
-  /** The cast — the ruled wire rows, exactly as `agentPicks()` produces them. */
   agents?: unknown;
 }
 
-/** The shared half: token, collision refusal, and the box lines every shelf carries. */
 async function openSave(
   shelf: 'agents' | 'teams',
   body: TemplateBoxSave,
@@ -172,12 +153,6 @@ export async function saveTeamTemplate(body: TeamTemplateSave): Promise<TeamTemp
   return back;
 }
 
-/**
- * REMOVE one of the owner's templates — a box a bundle installed, or one they saved.
- * Only the owner's file is ever touched: a shipped box has no file here to remove, and
- * deleting the owner's copy of a shadowed name brings the shipped box back (which the
- * answer says). Owner ruling 2026-09-03: what came from the library can go again.
- */
 export async function removeUserTemplate(shelf: 'agents' | 'teams', name: string): Promise<{ removed: string; shipped_back: boolean }> {
   const token = words(name, 64).toLowerCase();
   if (!isValidToken(token)) throw new Error('A template name is lowercase letters, digits, _ and -.');

@@ -9,9 +9,7 @@ export interface TemplateProvenanceInput {
   behaviours?: string[];
 }
 
-/** Compare, never apply: a preset is provenance only after its values reach the form. */
 export async function templateProvenance(form: TemplateProvenanceInput) {
-  // The launch's template token is an AGENT template — a cast never rides one launch.
   const templates = await listAgentTemplates();
   const template = templates.find((row) => row.name === form.template);
   return {
