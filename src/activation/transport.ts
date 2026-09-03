@@ -2,8 +2,7 @@ import { appendEgress } from './egress.js';
 
 const ALLOWED_HOST = process.env.RONIN_HQ_HOST ?? 'hq.ronincowork.com';
 
-export const LIBRARY_BASE = process.env.RONIN_LIBRARY_BASE ?? 'https://ronincowork.com/library/';
-const LIBRARY_HOST = new URL(LIBRARY_BASE).hostname;
+export const LIBRARY_BASE = process.env.RONIN_LIBRARY_BASE ?? `https://${ALLOWED_HOST}/library/`;
 
 const TIMEOUT_MS = 15_000;
 
@@ -22,13 +21,13 @@ function assertAllowed(url: URL): void {
   if (url.protocol !== 'https:' && url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') {
     throw new EgressRefused(`refusing plaintext egress to ${url.hostname}`);
   }
-  const allowed = [ALLOWED_HOST, LIBRARY_HOST, '127.0.0.1', 'localhost'];
-  if (!allowed.includes(url.hostname)) {
-    throw new EgressRefused(`${url.hostname} is not an allowlisted Ronin host`);
+  if (url.hostname !== ALLOWED_HOST && url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') {
+    throw new EgressRefused(`${url.hostname} is not the allowlisted Ronin host`);
   }
 }
 
-export async function fetchLibrary<T>(pathname: string): Promise<{ status: number; body: T | null; text: string }> {
+export async function fetchLibrary<T>(pathname: string, token: string): Promise<{ status: number; body: T | null; text: string }> {
+  if (!token) throw new EgressRefused('the template library is a Ronin Services feature; this box holds no entitlement');
   const base = new URL(LIBRARY_BASE);
   const url = new URL(pathname, base);
   assertAllowed(url);
@@ -41,7 +40,7 @@ export async function fetchLibrary<T>(pathname: string): Promise<{ status: numbe
   try {
     const res = await fetch(url, {
       method: 'GET',
-      headers: { accept: 'application/json', 'user-agent': 'ronin-cowork' },
+      headers: { accept: 'application/json', authorization: `Bearer ${token}`, 'user-agent': 'ronin-cowork' },
       signal: AbortSignal.timeout(TIMEOUT_MS),
       redirect: 'error',
     });

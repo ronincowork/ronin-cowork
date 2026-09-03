@@ -117,11 +117,15 @@ a bundle installs touches the install itself; an upgrade never sees it.
   entries: [{ catalog: MACROS.md|ACTIONS.md|TOOLS.md, name, text }] }   entry-merged
 ```
 
-**The template library** is the shelf of bundles on ronincowork.com
-(https://ronincowork.com/library/index.json, `ronin-library/1`), and the Campaign page's **Templates** card is the way in: *Check the
-library* reads the index — only when pressed, never on a timer — and pressing a bundle
-shows the **plan** before anything is written: each item, the shelf it lands on, and its
-outcome. Three rules an install obeys, all of them the house's already:
+**The template library** is the shelf Ronin keeps and grows — a **Ronin Services**
+feature (owner, 2026-09-03). ronincowork.com shows what is on it, descriptions only; the
+documents are served by Ronin HQ (`ronin-library/1`, https://hq.ronincowork.com/library/index.json) to an entitled box, and the
+Campaign page's **Templates** card is the way in: *Check the library* reads the index —
+only when pressed, never on a timer — and pressing a bundle shows **everything it holds**
+and the **plan** before anything is written: each item, the shelf it lands on, and its
+outcome. Without Services the shelf is there but opaque, the card says so and names the
+switch (Ronin Desk → Account → Ronin Services), and the handful that ship inside Ronin stay
+on the launch forms. Three rules an install obeys, all of them the house's already:
 
 - a copy identical to what ships is **skipped** — a shadow that changes nothing is an
   upgrade-proof copy nobody asked for;
@@ -129,8 +133,8 @@ outcome. Three rules an install obeys, all of them the house's already:
 - a tool never replaces one of Ronin's — a bundle may add a command, never take one.
 
 Every read of the library goes through the one allowlisted client (`src/activation/transport.ts`)
-and lands in the egress record like any other call. The index carries a `sha256` per bundle
-and the install refuses a document that does not match it.
+with the Services token, and lands in the egress record like any other call. The index
+carries a `sha256` per bundle and the install refuses a document that does not match it.
 
 **Yours, outward.** A team card's *Download as a bundle* (or `bin/ronin-bundle pack <team>`)
 builds the same document from this install — your copies only, since what ships is on every
