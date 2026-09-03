@@ -17,7 +17,9 @@ import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from '.
 const PROFILE = 'campaign';
 // No Ronin Desk here (owner, 2026-08-30): its tabs repeat what these surfaces are, and
 // the machine's own half — account, health — is the Admin Desk's.
-const TYPES = Object.freeze({ identity: 'campaign.identity', profile: 'campaign.desk-profile', roots: 'campaign.project-roots', defaults: 'campaign.agent-defaults', routines: 'campaign.routines', templates: 'campaign.templates', machine: 'campaign.machine', create: 'campaign.new' });
+// KEY ORDER IS THE SELECTOR'S ORDER (owner, 2026-09-03): Ronin Desk · Templates · Agent
+// defaults · Project roots lead, and they are the four the page opens on.
+const TYPES = Object.freeze({ machine: 'campaign.machine', templates: 'campaign.templates', defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', routines: 'campaign.routines', profile: 'campaign.desk-profile', create: 'campaign.new' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.templates, 'campaign.team-templates': TYPES.templates, 'campaign.session-roles': TYPES.templates, '@new-campaign': TYPES.create });
@@ -118,12 +120,12 @@ export function createCampaignView() {
     settei: () => setteiRead,
   };
   /**
-   * FIRST OPEN (owner, 2026-08-30): the page opens as the whole record — four settings
-   * up, one per workspace, at count 4. Applied ONCE per browser (`opened` in the view
-   * state), so a tab that remembered the two-seat days still gets four; after that the
-   * arrangement is the person's, and an emptied workspace stays empty.
+   * THE DEFAULT VIEW (owner, 2026-09-03): the page always loads four up — Ronin Desk,
+   * Templates, Agent defaults, Project roots — and every blank workspace takes its default
+   * on every entry. A surface the person placed elsewhere is left where they put it; only
+   * an empty seat is filled, and a surface already on the page is never placed twice.
    */
-  const FIRST_OPEN = Object.freeze({ workspace1: TYPES.identity, workspace2: TYPES.machine, workspace3: TYPES.roots, workspace4: TYPES.defaults });
+  const DEFAULT_VIEW = Object.freeze({ workspace1: TYPES.machine, workspace2: TYPES.templates, workspace3: TYPES.defaults, workspace4: TYPES.roots });
   const blank = (id) => { const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' }); surface.content.append(elem('p', 'cv-blank-word', t('team.workspace_blank', 'Workspace'))); return surface.el; };
   const save = () => ctx?.patchViewState('campaign', bench.snapshot());
   bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign', 'Campaign'), title: () => selected()?.title || t('campaign', 'Campaign'), shapeControl: document.getElementById('shapecycle'), onStateChange: save, onPlacement: save });
@@ -139,9 +141,9 @@ export function createCampaignView() {
       await Promise.all([loadCampaigns(), readRoots(), readSettei()]);
       if (!entered) return;
       for (const id of bench.ids) { const type = LEGACY[typed.seats[id]] || typed.seats[id]; if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id); }
+      bench.setCount(4);
+      for (const [id, type] of Object.entries(DEFAULT_VIEW)) if (bench.isDefault(id) && !bench.locations(type).length) bench.place(type, id);
       if (!context.viewState('campaign')?.opened) {
-        bench.setCount(4);
-        for (const [id, type] of Object.entries(FIRST_OPEN)) if (bench.isDefault(id) && !bench.locations(type).length) bench.place(type, id);
         bench.select('workspace1');
         ctx?.patchViewState('campaign', { opened: true });
       }
