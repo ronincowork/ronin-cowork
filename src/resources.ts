@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { storeDir } from './stores.js';
@@ -40,6 +40,112 @@ export const STOCK_DIR = path.join(__dirname, '..', 'ronin_catalogs');
  * key sections that way. Everything after a `---` footer line is notes, not catalog.
  */
 export type Origin = 'stock' | 'user';
+
+export interface ResolvedFile {
+  name: string;
+  relative: string;
+  path: string;
+  origin: Origin;
+  shadowed: boolean;
+  text: string;
+}
+
+export interface ResolveSpec {
+  stock: string;
+  store: string;
+  include?: (relative: string) => boolean;
+}
+
+async function layerFiles(dir: string): Promise<Map<string, { path: string; text: string }>> {
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return new Map();
+    throw error;
+  }
+  const files = new Map<string, { path: string; text: string }>();
+  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (!entry.isFile() || entry.name.startsWith('.')) continue;
+    const file = path.join(dir, entry.name);
+    try {
+      files.set(entry.name, { path: file, text: await readFile(file, 'utf8') });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+  }
+  return files;
+}
+
+export async function resolveFiles(spec: ResolveSpec): Promise<ResolvedFile[]> {
+  const [stock, user] = await Promise.all([layerFiles(spec.stock), layerFiles(storeDir(spec.store))]);
+  const names = [...new Set([...stock.keys(), ...user.keys()])].sort();
+  return names.flatMap((relative) => {
+    if (spec.include && !spec.include(relative)) return [];
+    const selected = user.get(relative) ?? stock.get(relative);
+    if (!selected) return [];
+    return [{
+      name: relative.replace(/\.[^.]+$/, ''),
+      relative,
+      path: selected.path,
+      text: selected.text,
+      origin: user.has(relative) ? 'user' as const : 'stock' as const,
+      shadowed: user.has(relative) && stock.has(relative),
+    }];
+  });
+}
+
+export interface SopRow {
+  name: string;
+  label: string;
+  blurb: string;
+  content: string;
+  origin: Origin;
+  shadowed: boolean;
+}
+
+export async function listSops(): Promise<SopRow[]> {
+  const files = await resolveFiles({
+    stock: path.join(__dirname, '..', 'ronin_sops'),
+    store: 'sops',
+    include: (name) => name.endsWith('.md') && name !== 'README.md',
+  });
+  return files.map((file) => {
+    const label = file.text.match(/^#\s+(.+)$/m)?.[1]?.trim() || file.name;
+    const blurb = file.text.split(/\n\s*\n/)
+      .map((part) => part.replace(/^>\s?/gm, '').replace(/\s+/g, ' ').trim())
+      .find((part) => part && !part.startsWith('#')) || '';
+    return { ...file, label, blurb, content: file.text };
+  }).sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
+}
+
+export interface WayRow {
+  name: string;
+  label: string;
+  blurb: string;
+  kinds: string[];
+  origin: Origin;
+  shadowed: boolean;
+}
+
+const WAY_KINDS = new Set(['coding', 'work', 'personal', 'household', 'social', 'school']);
+
+export async function listWays(): Promise<WayRow[]> {
+  const files = await resolveFiles({
+    stock: path.join(__dirname, '..', 'ways'),
+    store: 'ways',
+    include: (name) => name.endsWith('.md') && name !== 'README.md',
+  });
+  return files.map((file) => {
+    const label = file.text.match(/^#\s+(.+)$/m)?.[1]?.trim() || file.name;
+    const kinds = (file.text.match(/^-\s+\*\*kinds:\*\*\s*(.+)$/m)?.[1] ?? '')
+      .split(',').map((kind) => kind.trim()).filter((kind) => WAY_KINDS.has(kind));
+    const blurb = file.text.split(/\n\s*\n/)
+      .map((part) => part.replace(/^>\s?/gm, '').replace(/\s+/g, ' ').trim())
+      .find((part) => part && !part.startsWith('#') && !part.startsWith('- **')) || '';
+    return { ...file, label, kinds, blurb: blurb.slice(0, 200) };
+  }).sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
+}
 
 export interface CatalogSection {
   /** First word of the `## ` heading, backticks stripped — the merge key. */

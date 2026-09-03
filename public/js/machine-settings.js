@@ -268,7 +268,7 @@ export function buildMachineSettings(root, isShowing) {
       box.addEventListener('change', async () => {
         const next = wantedNow().filter((w) => !(w.kind === kind && w.name === name));
         if (box.checked) next.push({ kind, name });
-        await request('/api/machine-settings/wanted', { method: 'PUT', json: { wanted: next } });
+        await request('/api/machine-settings', { method: 'PATCH', json: { family: 'wanted', value: { wanted: next } } });
         await load({ quiet: true });
       });
       return box;
@@ -308,7 +308,7 @@ export function buildMachineSettings(root, isShowing) {
     gbField.say(t('settei.use_gbrain_hint', 'tick this if your agents use it'));
     gb.addEventListener('change', async () => {
       gbField.say(t('settei.saving', 'saving…'));
-      const r = await request('/api/machine-settings/gbrain', { method: 'PUT', json: { enabled: gb.checked } });
+      const r = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'gbrain', value: { enabled: gb.checked } } });
       gbField.say(r.ok ? t('settei.saved', 'saved') : r.message, !r.ok);
     });
     const gbRow = document.createElement('div');

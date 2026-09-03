@@ -1,0 +1,44 @@
+# Machine configuration
+
+Ronin keeps machine configuration in one document:
+
+```text
+$(bin/ronin-store config)/machine_settings.json
+```
+
+The document contains the machine, owner, session, agent, setup, and Campaign choices.
+Campaigns are keyed by their stable id inside `campaigns`. Authentication secrets and
+passkeys are never returned by the configuration API.
+
+`src/machine-settings.ts` owns normalization and the public record. It exports the only
+two configuration operations:
+
+```ts
+readMachineSettings()
+writeMachineSettings(family, value)
+```
+
+The read returns `{ set, observed, status, needed, schema }`. Only `set` is durable.
+Machine observations, derived status, and unmet needs are computed for each read.
+
+The HTTP surface has one route and one verb in each direction:
+
+```text
+GET   /api/machine-settings
+PATCH /api/machine-settings   { "family": "machine", "value": { "monitor": true } }
+```
+
+PATCH accepts a named family and its typed value. Unknown keys do not replace the
+document. The browser uses `public/js/machine-settings.js`; the setup and standing views
+interpret the schema through `public/js/machine-settings-schema.js`.
+
+Runtime environment variables override server values for the running process. They are
+not written into the document.
+
+## Stock and store resources
+
+`src/resources.ts` resolves shipped resources and the matching user store. A user file at
+the same relative path replaces the shipped file whole; new user files join the result.
+Every resolved item carries `origin` and `shadowed` state. Catalog sections, definitions,
+SOPs, ways, skins, lexicons, templates, session readings, and bundles use this resolution
+rule.

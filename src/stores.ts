@@ -203,14 +203,6 @@ export const STORES: readonly Store[] = [
     when: 'first request scheduled',
   },
   {
-    id: 'campaigns',
-    root: 'user',
-    rel: 'campaigns',
-    what: "one campaign_config per file — the durable record of a body of work: its title, description, desk_profile and state. It owns no lists; the records that belong to it point back with campaign_id",
-    createdBy: "cowork's `src/campaign-config.ts`",
-    when: 'first boot after this shipped — the initial Campaign is seeded from the install',
-  },
-  {
     id: 'team_rosters',
     root: 'user',
     rel: 'team_rosters',
@@ -262,7 +254,7 @@ export const STORES: readonly Store[] = [
     id: 'config',
     root: 'user',
     rel: 'config',
-    what: "the user's own settings — ronin.json, starting with the concurrency cap",
+    what: "the machine configuration document — machine_settings.json",
     createdBy: 'the owner saving a setting',
     when: 'first setting written',
   },

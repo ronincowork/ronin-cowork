@@ -59,11 +59,25 @@ import {
   readSetupSection,
   liveCount,
   readDesksSection,
+  completeSetup,
+  writeWantedSection,
+  writeAgentsSection,
+  writeGbrainSection,
+  writeMachineSection,
+  writeOwner,
+  writeDesksSection,
+  writeMax,
 } from './user-config.js';
 // THE CAMPAIGN'S OWN LEAVES. `set.campaign.{name,description}` and `set.desk.profile` keep
 // the shapes this record has always served, but the fact behind them is now the initial
 // campaign_config rather than a section of ronin.json — one writable Campaign record.
-import { readCampaignSection, readDeskSection } from './campaign-config.js';
+import {
+  readCampaignSection,
+  readDeskSection,
+  writeCampaignSection,
+  writeDeskSection,
+  populateHomeMachine,
+} from './campaign-config.js';
 const pexec = promisify(execFile);
 
 /** This node's tailnet address, measured once — see `routes()` for why it is needed. */
@@ -697,4 +711,100 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
     schema: { ...MACHINE_SETTINGS_SCHEMA, fields: [...MACHINE_SETTINGS_SCHEMA.fields,
       ...providerModelFields([...new Set((await listSessionLaunchSpecs()).map((s) => s.provider))])] },
   };
+}
+
+const editString = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
+export async function writeMachineSettings(
+  family: string,
+  body: Record<string, unknown>,
+): Promise<unknown> {
+  if (family === 'setup') {
+    await completeSetup();
+    return { ok: true };
+  }
+  if (family === 'bootstrap') {
+    const campaign = await populateHomeMachine(body);
+    await writeDesksSection({
+      new_project: body.routine_bundle === 'worktrees' || body.routine_bundle === 'services'
+        ? 'managed' : 'none',
+    });
+    return { ok: true, campaign_id: campaign.id };
+  }
+  if (family === 'campaign') {
+    await writeCampaignSection({
+      name: editString(body.name),
+      description: editString(body.description),
+    });
+    return { ok: true };
+  }
+  if (family === 'owner') return { name: await writeOwner(String(body.name ?? '').trim()) };
+  if (family === 'machine') {
+    await writeMachineSection({
+      name: editString(body.name),
+      where: editString(body.where),
+      monitor: typeof body.monitor === 'boolean' ? body.monitor : undefined,
+    });
+    return { ok: true };
+  }
+  if (family === 'desk') {
+    await writeDeskSection({ profile: editString(body.profile) ?? '' });
+    return { ok: true };
+  }
+  if (family === 'desks') {
+    await writeDesksSection({ new_project: editString(body.new_project) ?? 'managed' });
+    return { ok: true };
+  }
+  if (family === 'session-max') return { max: await writeMax(Number(body.max)) };
+  if (family === 'gbrain') {
+    await writeGbrainSection({ enabled: body.enabled === true });
+    return { ok: true };
+  }
+  if (family === 'wanted') {
+    const kinds = new Set(['agent', 'service', 'tool', 'key', 'set']);
+    const wanted = (Array.isArray(body.wanted) ? body.wanted : [])
+      .filter((item): item is { kind: string; name: string } => {
+        const row = item as Record<string, unknown>;
+        return kinds.has(String(row?.kind)) && typeof row?.name === 'string';
+      })
+      .map(({ kind, name }) => ({ kind, name }));
+    await writeWantedSection(wanted);
+    return { ok: true, wanted };
+  }
+  if (family === 'agents') {
+    const prior = await readAgentsSection();
+    const incomingSessions = (body.sessions ?? {}) as Record<string, unknown>;
+    const priorSessions = (prior.sessions ?? {}) as Record<string, unknown>;
+    const incomingDefault = (incomingSessions.default ?? {}) as Record<string, unknown>;
+    const priorByProvider = (priorSessions.by_provider ?? {}) as Record<string, unknown>;
+    const byProvider = { ...priorByProvider };
+    for (const [provider, model] of Object.entries(
+      (incomingSessions.by_provider ?? {}) as Record<string, unknown>,
+    )) byProvider[provider] = editString(model)?.trim() || null;
+    const jobs = { ...((prior.jobs ?? {}) as Record<string, unknown>) };
+    for (const [name, value] of Object.entries((body.jobs ?? {}) as Record<string, unknown>)) {
+      const job = (value ?? {}) as Record<string, unknown>;
+      jobs[name] = {
+        outlet: editString(job.outlet) ?? null,
+        provider: editString(job.provider) ?? null,
+        model: editString(job.model) ?? null,
+        key_env: editString(job.key_env) ?? null,
+      };
+    }
+    await writeAgentsSection({
+      sessions: body.sessions === undefined ? priorSessions : {
+        default: incomingSessions.default === undefined
+          ? (priorSessions.default ?? { provider: null, model: null })
+          : {
+              provider: editString(incomingDefault.provider) ?? null,
+              model: editString(incomingDefault.model) ?? null,
+            },
+        by_provider: byProvider,
+      },
+      jobs: body.jobs === undefined ? prior.jobs : jobs,
+    });
+    return { ok: true };
+  }
+  throw new Error(`no machine-settings family named '${family}'`);
 }

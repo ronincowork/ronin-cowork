@@ -114,7 +114,7 @@ export function toRequests(schema, values) {
 
   return [...byFamily.entries()].map(([fam, json]) => {
     const route = schema.families[fam];
-    return { family: fam, route: route.route, method: route.method, json };
+    return { family: fam, route: route.route, method: route.method, json: { family: fam, value: json } };
   });
 }
 
@@ -123,5 +123,5 @@ export function toRequest(schema, f, v) {
   const json = {};
   land(json, f.lands.key, shaped(f, v));
   const route = schema.families[f.lands.family];
-  return { route: route.route, method: route.method, json };
+  return { route: route.route, method: route.method, json: { family: f.lands.family, value: json } };
 }

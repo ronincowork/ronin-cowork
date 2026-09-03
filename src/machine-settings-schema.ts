@@ -239,12 +239,12 @@ export const MACHINE_SETTINGS_SCHEMA = {
   ],
 
   families: {
-    owner: { method: 'PUT', route: '/api/machine-settings/owner' },
-    wanted: { method: 'PUT', route: '/api/machine-settings/wanted' },
-    machine: { method: 'PUT', route: '/api/machine-settings/machine' },
-    agents: { method: 'PUT', route: '/api/machine-settings/agents' },
-    bootstrap: { method: 'PUT', route: '/api/machine-settings/bootstrap' },
-    'session-max': { method: 'PUT', route: '/api/session-max' },
+    owner: { method: 'PATCH', route: '/api/machine-settings' },
+    wanted: { method: 'PATCH', route: '/api/machine-settings' },
+    machine: { method: 'PATCH', route: '/api/machine-settings' },
+    agents: { method: 'PATCH', route: '/api/machine-settings' },
+    bootstrap: { method: 'PATCH', route: '/api/machine-settings' },
+    'session-max': { method: 'PATCH', route: '/api/machine-settings' },
   },
 
   /** The machine strip on the setup view — deliberately short: only the facts a later

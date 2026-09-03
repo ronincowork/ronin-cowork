@@ -80,8 +80,8 @@ export async function init() {
   // `/cowork-setup` is the deliberate way back in: one surface, one route, one name.
   {
     const wants = location.pathname === '/cowork-setup';
-    const s = wants ? null : await request('/api/machine-settings/setup');
-    if (wants || (s?.ok && s.data.pending === true)) {
+    const s = wants ? null : await request('/api/machine-settings');
+    if (wants || (s?.ok && s.data?.set?.setup?.pending === true)) {
       if (location.pathname !== '/cowork-setup') history.replaceState(null, '', '/cowork-setup');
       const host = document.createElement('div');
       document.body.replaceChildren(host);

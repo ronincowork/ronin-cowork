@@ -46,7 +46,7 @@ export const MAX_OPT = '@ronin-session-max';
 export const OWNER_OPT = '@ronin-owner';
 
 /** The file the owner's number lives in. `ronin-store config` gives bash the directory. */
-export const configPath = (): string => path.join(storeDir('config'), 'ronin.json');
+export const configPath = (): string => path.join(storeDir('config'), 'machine_settings.json');
 
 /**
  * NO LIMIT is 0, and it is also what a missing file means.
@@ -84,6 +84,21 @@ export async function readSection<T>(key: string, fallback: T): Promise<T> {
   const v = (await readDoc())[key];
   return v && typeof v === 'object' ? (v as T) : fallback;
 }
+
+export const writeSection = <T>(key: string, value: T): Promise<void> =>
+  updateConfig((doc) => {
+    doc[key] = value;
+  });
+
+export const updateSection = <T extends Record<string, unknown>>(
+  key: string,
+  mutate: (value: T) => T,
+): Promise<void> => updateConfig((doc) => {
+  const current = doc[key];
+  const value = current && typeof current === 'object' && !Array.isArray(current)
+    ? current as T : {} as T;
+  doc[key] = mutate(value);
+});
 
 /**
  * READ, MUTATE, WRITE — and every writer goes through here.
@@ -345,6 +360,11 @@ export const readAgentsSection = (): Promise<Record<string, unknown>> =>
 export const writeAgentsSection = (value: Record<string, unknown>): Promise<void> =>
   updateConfig((doc) => {
     doc.agents = value;
+  });
+
+export const writeGbrainSection = (value: Record<string, unknown>): Promise<void> =>
+  updateConfig((doc) => {
+    doc.gbrain = value;
   });
 
 /**

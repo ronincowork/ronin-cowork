@@ -146,17 +146,17 @@ export async function saveCampaign(id, fields) {
     return r;
   }
   if ('desk_profile' in fields) {
-    const r = await request('/api/machine-settings/desk', { method: 'PUT', json: { profile: text(fields.desk_profile) } });
+    const r = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'desk', value: { profile: text(fields.desk_profile) } } });
     if (!r.ok) return r;
   }
   if ('title' in fields || 'description' in fields) {
     const now = campaignById(id) || {};
-    const r = await request('/api/machine-settings/campaign', {
-      method: 'PUT',
-      json: {
+    const r = await request('/api/machine-settings', {
+      method: 'PATCH',
+      json: { family: 'campaign', value: {
         name: 'title' in fields ? text(fields.title) : now.title,
         description: 'description' in fields ? text(fields.description) : now.description,
-      },
+      } },
     });
     if (!r.ok) return r;
   }

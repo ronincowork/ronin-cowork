@@ -11,7 +11,7 @@ test('cowork_setup is the live two-stage companion page, not the legacy renderer
     'Campaign', 'This machine', 'You', 'Kind', 'Routine Bundles', 'Your agents',
     'How new sessions should start', 'Optional', 'When you save', 'Save and open RoninCoWork',
   ]) assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(source, /\/api\/settei/);
+  assert.match(source, /\/api\/machine-settings/);
   assert.match(source, /\/api\/agents/);
   assert.match(source, /\/api\/session-launch-specs/);
   assert.match(source, /toRequests\(schema, values\)/);
@@ -39,11 +39,13 @@ test('registry metadata writes the campaign bootstrap without a client field lis
       { id: 'intent', lands: { family: 'bootstrap', key: 'kind' } },
       { id: 'model', shape: 'provider-model', lands: { family: 'agents', key: 'sessions.default' }, setup_lands: { family: 'bootstrap', key: 'provider_model' } },
     ],
-    families: { bootstrap: { route: '/api/machine-settings/bootstrap', method: 'PUT' }, agents: { route: '/api/machine-settings/agents', method: 'PUT' } },
+    families: { bootstrap: { route: '/api/machine-settings', method: 'PATCH' }, agents: { route: '/api/machine-settings', method: 'PATCH' } },
   };
   const rows = toRequests(schema, { intent: 'coding', model: 'openai\tgpt-5' });
   assert.deepEqual(rows.find((row) => row.family === 'bootstrap')?.json, {
-    kind: 'coding', provider_model: { provider: 'openai', model: 'gpt-5' },
+    family: 'bootstrap', value: {
+      kind: 'coding', provider_model: { provider: 'openai', model: 'gpt-5' },
+    },
   });
 });
 

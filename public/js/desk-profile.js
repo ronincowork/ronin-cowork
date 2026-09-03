@@ -57,7 +57,7 @@ export async function loadDeskProfile() {
 
 /** Choose one (or '' for stock): settei's door, then re-read so every reader agrees. */
 export async function setDeskProfile(name) {
-  const r = await request('/api/machine-settings/desk', { method: 'PUT', json: { profile: String(name || '') } });
+  const r = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'desk', value: { profile: String(name || '') } } });
   if (!r.ok) return r;
   await loadDeskProfile();
   return r;

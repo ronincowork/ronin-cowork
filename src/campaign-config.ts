@@ -34,10 +34,7 @@
  * "which one is default" pointer would be exactly the second mutable record this file
  * exists to prevent. It is ordering and history, and no surface may read it as a default.
  */
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { storeDir } from './stores.js';
-import { readSection } from './user-config.js';
+import { readSection, updateSection } from './user-config.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
 import { completeRoutineChoices } from './routines.js';
 
@@ -100,16 +97,12 @@ export interface CampaignEdit {
   };
 }
 
-const dir = (): string => storeDir('campaigns');
-
 /**
  * A Campaign id obeys the same rule as a team name — lowercase, boring, typeable — and for
  * the same reason: it is a filename and a URL segment before it is anything else. The
  * pattern excludes `/`, `.` and whitespace, so no id can address a path outside the store.
  */
 export const isValidCampaignId = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
-
-export const campaignFile = (id: string): string => path.join(dir(), `${id}.json`);
 
 /**
  * A title becomes an id ONCE — at migration, and at create when the caller names no id.
@@ -305,13 +298,11 @@ function parse(id: string, raw: string): CampaignConfig | null {
 }
 
 async function writeRecord(c: CampaignConfig): Promise<CampaignConfig> {
-  await mkdir(dir(), { recursive: true });
-  const target = campaignFile(c.id);
-  const tmp = `${target}.${process.pid}.${Date.now()}.tmp`;
-  // The id is the filename and is not repeated in the body — one home for one fact.
   const { id: _id, ...body } = c;
-  await writeFile(tmp, JSON.stringify(body, null, 2) + '\n', 'utf8');
-  await rename(tmp, target);
+  await updateSection<Record<string, unknown>>('campaigns', (campaigns) => ({
+    ...campaigns,
+    [c.id]: body,
+  }));
   return c;
 }
 
@@ -334,7 +325,9 @@ async function completeAgentDefaults(value: unknown): Promise<AgentDefaults> {
 export async function readCampaign(id: string): Promise<CampaignConfig | null> {
   if (!isValidCampaignId(id)) return null;
   try {
-    const raw = await readFile(campaignFile(id), 'utf8');
+    const campaigns = await readSection<Record<string, unknown>>('campaigns', {});
+    if (!Object.hasOwn(campaigns, id)) return null;
+    const raw = JSON.stringify(campaigns[id]);
     const parsed = parse(id, raw);
     if (!parsed) return null;
     const doc = JSON.parse(raw) as Record<string, unknown>;
@@ -372,16 +365,10 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
  * resolver below needs to see an archived initial Campaign. One reader, two questions.
  */
 export async function listCampaigns(): Promise<CampaignConfig[]> {
-  let names: string[];
-  try {
-    names = await readdir(dir());
-  } catch {
-    return []; // no store yet — the ordinary state before the first boot that seeds one
-  }
+  const campaigns = await readSection<Record<string, unknown>>('campaigns', {});
   const out: CampaignConfig[] = [];
-  for (const f of names) {
-    if (!f.endsWith('.json') || f.startsWith('.')) continue;
-    const c = await readCampaign(f.replace(/\.json$/, ''));
+  for (const id of Object.keys(campaigns)) {
+    const c = await readCampaign(id);
     if (c) out.push(c);
   }
   return out.sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));

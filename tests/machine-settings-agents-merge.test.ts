@@ -43,10 +43,10 @@ const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
 /** One ⚙ row's save: the family body it lands, and nothing else — as toRequest builds it. */
 const save = (json: unknown) =>
-  fetch(`${base}/api/machine-settings/agents`, {
-    method: 'PUT',
+  fetch(`${base}/api/machine-settings`, {
+    method: 'PATCH',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(json),
+    body: JSON.stringify({ family: 'agents', value: json }),
   });
 
 type Sessions = {
