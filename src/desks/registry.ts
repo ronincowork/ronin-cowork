@@ -12,6 +12,7 @@ import {
 
 const desksDir = () => storeDir('desks');
 const worktreesDir = () => storeDir('worktrees');
+let writeSequence = 0;
 
 export const branchKey = (branch: string): string => branch.replace(/\//g, '%2F');
 
@@ -35,9 +36,13 @@ export function lineFor(a: RepoArrangement, team: string): TeamLine {
 
 async function writeJson(file: string, value: unknown): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true });
-  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
-  await writeFile(tmp, JSON.stringify(value, null, 2) + '\n');
-  await rename(tmp, file);
+  const tmp = `${file}.${process.pid}.${++writeSequence}.tmp`;
+  try {
+    await writeFile(tmp, JSON.stringify(value, null, 2) + '\n', { flag: 'wx' });
+    await rename(tmp, file);
+  } finally {
+    await unlink(tmp).catch(() => undefined);
+  }
 }
 
 async function readJson<T>(file: string): Promise<T | null> {
