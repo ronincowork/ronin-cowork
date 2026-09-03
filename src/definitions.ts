@@ -515,4 +515,10 @@ export async function writeRoleTasks(role: string, tasks: string[]): Promise<str
   return splitDefinitionList(back.get('session_roles'));
 }
 
-
+/**
+ * A Routine's reading rides its switch both ways: ON delivers `reading`, OFF delivers
+ * `reading_off` — the page that says what the owner is working without and where the
+ * switch is (owner, 2026-09-02). Every stock Routine therefore has a page in every packet.
+ */
+export const routineReading = (routines: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[]): string[] =>
+  routines.flatMap((routine) => (routine.enabled ? routine.reading : routine.reading_off));
