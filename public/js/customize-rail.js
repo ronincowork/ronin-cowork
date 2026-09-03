@@ -46,7 +46,7 @@ export function resources() {
       blurb: t('customize.actions_blurb', 'The cataloged procedures macros are made of.') },
     { id: 'tools', section: 'behavior', mark: '⚙', label: t('customize.tools', 'Tools'),
       capability: 'read-only', read: null,
-      why: t('customize.tools_why', 'TOOLS.md is a table, and the server has no table reader — the rule in docs/shadowing.md is implemented in ronin_bin/tejun and not in src/catalog.ts (prerequisite P1).'),
+      why: t('customize.tools_why', 'TOOLS.md is a table, and the server has no table reader — the rule in docs/shadowing.md is implemented in ronin_bin/tejun and not in src/resources.ts (prerequisite P1).'),
       blurb: t('customize.tools_blurb', 'The executables that implement actions. A markdown row cannot author one.') },
 
     { id: 'role-families', section: 'people', mark: '人', label: t('customize.role_families', 'Role families'),

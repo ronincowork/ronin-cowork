@@ -1,8 +1,7 @@
 
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../src/stores.js';
-import { splitSections, entryValue } from '../src/catalog.js';
+import { storeDir, splitSections, entryValue } from '../src/resources.js';
 
 let findings = 0;
 let looked = 0;

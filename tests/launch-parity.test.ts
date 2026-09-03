@@ -19,7 +19,7 @@
  * the READING LIST must be identical, field for field. A second launch path would have to
  * reproduce this table to pass, which is the point.
  *
- * No tmux, no socket: every store is redirected per the env contract in src/stores.ts.
+ * No tmux, no socket: every store is redirected per the env contract in src/resources.ts.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
