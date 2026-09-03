@@ -13,7 +13,7 @@
  * Nothing in the UI would report the loss — the row would simply be blank next time.
  *
  * The router is exercised for real over a loopback port; no tmux, no live box, and the
- * config store is redirected to a temp directory per the env contract in src/stores.ts.
+ * config store is redirected to a temp directory per the env contract in src/resources.ts.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';

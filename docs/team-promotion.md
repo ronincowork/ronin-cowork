@@ -17,8 +17,8 @@ needed.
 4. Advance each working line with compare-and-swap and refresh its mounted worktree.
 5. Return the `restarting` receipt id to an HTTP caller.
 6. Restart the live app and run deployment health checks unless `--no-restart` was used.
-   The returning operator resumes a fresh `restarting` receipt, records health, and closes
-   it as `complete`, `reverted`, or `unhealthy`.
+   The continuation records health and closes the receipt as `complete`, `reverted`, or
+   `unhealthy`. On boot, a fresh `restarting` receipt resumes at health.
 
 `--dry-run` builds the candidates and moves nothing. A line already contained in its
 working target needs no candidate.
@@ -26,7 +26,8 @@ working target needs no candidate.
 ## Recovery
 
 - `resume <id>` rebuilds interrupted candidates from current tips. For a `restarting`
-  receipt it runs restart and health, then records `complete`, `reverted`, or `unhealthy`.
+  receipt it refreshes the durable handoff, runs restart and health, then records
+  `complete`, `reverted`, or `unhealthy`.
 - `abandon <id> <reason>` closes an interrupted attempt without undoing references that
   already moved.
 - `revert <id>|last` builds and lands revert candidates, then restarts and checks health.
@@ -37,13 +38,11 @@ expected reference for each repository, each reference advance, restart and heal
 results, and recovery state. An interrupted receipt keeps partial movement visible until
 it is resumed or abandoned.
 
-**No lead, said out loud** (owner, 2026-09-03). Promotion is the lead's job. When nobody is
-marked 人 on the team, `ronin-promote` answers `NO-LEAD: team <t> has no team lead …` and
-builds no candidate: the agent that got that line tells the owner and asks for a lead to be
-marked on the Team page — a coordinator that writes no code does fine. Nothing forces the
-choice through a form, and nothing promotes silently in the lead's absence. A revert or a
-resume is Ronin's own recovery and needs no lead; `--anyway` is the owner saying "you do
-it". The hand-in says the same thing at its moment: accepted, waiting, ask for a lead.
+Promotion is the lead's job. When nobody is marked 人 on the team, `ronin-promote` answers
+`NO-LEAD: team <t> has no team lead …` and builds no candidate. The agent reports the gap
+and asks for a lead to be marked on the Team page. A revert or resume is recovery and needs
+no lead; `--anyway` authorizes the promotion. The hand-in reports accepted, waiting, or
+the missing lead.
 
 The release pull request is opened with:
 
@@ -56,6 +55,7 @@ The command opens or updates the pull request from the current working line. Git
 
 ## Verification
 
-`tests/promotion.test.ts` exercises candidate construction, compare-and-swap movement,
-interruption and resume, restart health, revert, and dry-run behavior against temporary
-repositories. `tests/promotion-receipts.test.ts` exercises receipt storage and state.
+`tests/promotion.test.ts` exercises candidate construction, box-wide serialization,
+stale-lock recovery, compare-and-swap movement, interruption and resume, restart health,
+revert, and dry-run behavior against temporary repositories.
+`tests/promotion-receipts.test.ts` exercises receipt storage and state.

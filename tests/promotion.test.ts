@@ -146,6 +146,26 @@ test('resume accepts a restarting receipt and records restart health', async () 
   assert.equal(resumed.receipt?.health?.passed, true);
 });
 
+test('explicit resume refreshes an old restarting receipt before handing it to boot recovery', async () => {
+  const cw = await fixture('resume-old-restart', 1);
+  const started = await P.promoteTeam({
+    team: 'resume-old-restart', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(),
+    deferRestart: async () => undefined, ...quiet,
+  });
+  const old = { ...started.receipt!, updated_at: '2000-01-01T00:00:00.000Z' };
+  await R.writeReceipt(old, LEDGER);
+  let handedOff = '';
+  const resumed = await P.resumePromotion({
+    id: old.id, by: 'lead', effects: fakes(), ledgerDir: LEDGER,
+    deferRestart: async (receipt) => { handedOff = receipt.id; },
+  });
+  assert.equal(resumed.ok, true);
+  assert.equal(handedOff, old.id);
+  assert(Date.parse(resumed.receipt!.updated_at) > Date.parse(old.updated_at));
+  assert.equal((await R.readReceipt(old.id, LEDGER))?.updated_at, resumed.receipt?.updated_at);
+  await P.finishPromotionRestart(resumed.receipt!, { effects: fakes(), ledgerDir: LEDGER });
+});
+
 test('promotions from different teams wait for one box-wide restart and health lock', async () => {
   const first = await fixture('box-lock-first', 1);
   const second = await fixture('box-lock-second', 1);

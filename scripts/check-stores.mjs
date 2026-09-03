@@ -11,7 +11,7 @@ let failed = 0;
 const fail = (msg) => { console.error(`  FAIL  ${msg}`); failed++; };
 const ok = (msg) => console.log(`  ok    ${msg}`);
 
-const { STORES, resolveStore, envName } = await tsImport('../src/stores.ts', import.meta.url);
+const { STORES, resolveStore, envName } = await tsImport('../src/resources.ts', import.meta.url);
 
 const ALL_KNOBS = [
   'RONIN_USER_ROOT',
@@ -76,7 +76,7 @@ for (const [label, env] of CASES) {
 
 const known = Object.keys(bashAll({ ...base(), HOME: FRESH }));
 const extra = known.filter((id) => !STORES.some((s) => s.id === id));
-if (extra.length) fail(`bin/ronin-store has rows src/stores.ts does not: ${extra.join(', ')}`);
+if (extra.length) fail(`bin/ronin-store has rows src/resources.ts does not: ${extra.join(', ')}`);
 else ok('both tables carry the same rows');
 
 for (const s of STORES) {

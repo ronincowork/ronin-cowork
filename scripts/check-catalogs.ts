@@ -1,7 +1,7 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { STOCK_DIR, splitSections, readEntries } from '../src/catalog.js';
+import { STOCK_DIR, splitSections, readEntries } from '../src/resources.js';
 import {
   listAgentTemplates,
   listRoleFamilies,
@@ -17,6 +17,7 @@ import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.
 import { findDefinition } from '../src/resource-adapters.js';
 import { listMacros } from '../src/macros.js';
 import { listSessionLaunchSpecs } from '../src/project-roots.js';
+import { resolveBehaviourBooks } from '../src/behaviours.js';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 let fails = 0;
@@ -199,16 +200,12 @@ async function templateBoxResolves(
   box: TemplateBox,
   routineNames: Set<string>,
 ): Promise<void> {
-  const shelfDirs: Record<string, string> = { sops: 'ronin_sops', ways: 'ways' };
   if (!box.blurb.trim()) fail(`${at}: missing blurb`);
   if (!box.art.trim()) fail(`${at}: missing art`);
   if (!box.kinds.length) fail(`${at}: names no valid kinds — nothing brings it forward`);
   for (const book of box.behaviours) {
-    const [shelf, name] = book.split(':');
-    const dir = shelfDirs[shelf];
-    if (!dir || !name) { fail(`${at}: behaviour "${book}" is not <shelf>:<name> on a known shelf`); continue; }
-    try { await stat(path.join(REPO, dir, `${name}.md`)); }
-    catch { fail(`${at}: behaviour names missing ${dir}/${name}.md`); }
+    const resolved = await resolveBehaviourBooks([book]);
+    if (!resolved.delivered.length) fail(`${at}: behaviour does not resolve "${book}"`);
   }
   for (const name of [...box.routines_on, ...box.routines_off]) {
     if (!routineNames.has(name)) fail(`${at}: routines switch names missing routine "${name}"`);

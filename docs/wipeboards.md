@@ -100,9 +100,9 @@ Address a post to whoever has to act on it; leave it open only when everyone has
 
 The notice a post fires is **a pointer, never a copy**: one line naming the wipeboard and
 the poster, telling the reader to run the one action. It carries no path, and never asks
-for a reply. **The dial is law** — a 👤/👁 session is on the wipeboard, may read it, and is
-never typed into; that refusal is reported, never worked around, and no dial is ever
-flipped to get a notice through. A member that was not notified still gets the post on its
+for a reply. It uses the same durable delivery queue as `tejun-send`: the notice is
+submitted now or remains visible for another attempt. Control stays stored and visible;
+it does not restrict delivery. A member that was not notified still gets the post on its
 next check.
 
 ## The layout
