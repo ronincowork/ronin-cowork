@@ -1,3 +1,10 @@
+/**
+ * The single pure Worktrees switching seam.
+ *
+ * Callers supply birth-scoped Agent capability and repository applicability already
+ * normalized by the repository boundary. This module performs no I/O and knows nothing
+ * about Routines, RONIN_REPO compatibility storage, sessions, Teams, or path derivation.
+ */
 export type WorktreesSetting = 'enabled' | 'disabled';
 
 export type WorktreesApplicabilitySource = 'RONIN_REPO' | 'absent';

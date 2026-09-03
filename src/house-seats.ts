@@ -1,12 +1,15 @@
+/** Server-owned launch mechanics that are not public launch fields or catalog roles. */
 import type { LaunchProfile } from './launch-profile.js';
 import { REPO_ROOT } from './resources.js';
 
 export type HouseSeat = 'mika';
 
+/** Resolve the only profile directory sentinel without putting a machine path in data. */
 export function profileDir(profile: LaunchProfile): string {
   return profile.dir === '{install}' ? REPO_ROOT : '';
 }
 
+/** Apply the fixed mechanics for a named house seat to an ordinary launch profile. */
 export function resolveHouseSeatProfile(seat: HouseSeat | undefined, profile: LaunchProfile): LaunchProfile {
   if (seat !== 'mika') return profile;
   const house = [{ layer: 'house' as const, source: 'src/house-seats.ts' }];

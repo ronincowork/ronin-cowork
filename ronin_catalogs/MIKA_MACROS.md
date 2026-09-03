@@ -27,7 +27,7 @@ does. The rows are cataloged actions, the only ones a macro may name.
 - **class:** mika_macro
 **Your default** — anything that is not one of the other three.
 
-`ronin_catalogs/lexicons/professional_en.md` for the house vocabulary, `docs/<surface>.md` for how a surface works,
+`KOTOBA.md` for what a word means, `docs/<surface>.md` for how a surface works,
 `ronin_catalogs/` for what exists.
 
 | # | Action | With |

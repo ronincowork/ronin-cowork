@@ -3,11 +3,13 @@ import { replyToHandIn } from '../desks/lead.js';
 import { receiptById } from '../desks/receipts.js';
 import type { RepoCandidate, RepoProof } from './receipts.js';
 
+/** Gate output is unstructured; only exact candidate paths count as attribution. */
 export function filesNamedByFailedGates(proof: RepoProof, candidateFiles: string[]): string[] {
   const detail = proof.gates.filter((g) => g.status === 'FAIL').map((g) => g.detail ?? '').join('\n');
   return candidateFiles.filter((file) => detail.includes(file));
 }
 
+/** Route by file ownership across receipt Git ranges. A gate naming no file is never guessed. */
 export async function routeProvingFailure(input: {
   team: string; lead: string; candidates: RepoCandidate[]; proofs: RepoProof[];
 }): Promise<string[]> {

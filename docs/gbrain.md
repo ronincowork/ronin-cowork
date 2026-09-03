@@ -202,6 +202,6 @@ and token lifecycle, and the per-CLI MCP wiring — that is the **gbrain `ronin_
 it exists: the toggle governs whatever the CLI's config carries, including nothing.
 
 Two boundaries hold everywhere: **the vocabulary** — *gbrain* is a proper name; the bare
-word *brain* stays retired (`ronin_catalogs/lexicons/professional_en.md`) — and **the door rule**: gbrain's integrations
+word *brain* stays retired (`KOTOBA.md`) — and **the door rule**: gbrain's integrations
 (email, calendar, voice) each open outbound connections, and each is proposed to the owner
 doors-first, one at a time, never as a bundle.

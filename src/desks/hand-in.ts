@@ -1,3 +1,21 @@
+/**
+ * HAND-IN — mechanical admission of a desk's committed range to its team line.
+ *
+ * The owner's word (2026-08-28): each session hands its submission in to the team's
+ * line. Not `git push` — nothing leaves the box — and not BYOIN: a hand-in checks only
+ * what is genuinely near-instant, the merge itself and conflict detection. The full
+ * repository check runs once, at team promotion (Track 2). What this file guarantees is
+ * that a line NEVER holds a half-merged state and NEVER moves except by a passed
+ * candidate's compare-and-swap:
+ *
+ *   1. serialize     one queue per line (`queue.ts`)
+ *   2. candidate     a detached throwaway worktree at the line's tip; merge the desk in
+ *   3. conflict      abort in the candidate; the line is untouched; reject with the files
+ *   4. advance       `update-ref <line> <candidate> <old>` — if the line moved, retry on the new tip
+ *   5. refresh       fast-forward the line's mounted worktree
+ *   6. receipt       one row appended, whatever happened
+ *   7. adopt         clean siblings take the line now; dirty ones are marked pending and told
+ */
 import { existsSync } from 'node:fs';
 import { arrangementOf } from './arrangement.js';
 import { adoptLine, lineDirty, refreshLine } from './desk.js';
@@ -9,6 +27,7 @@ import type { DeskNotice, HandInReceipt, HandInResult, RepoArrangement } from '.
 
 export interface HandInOutcome { receipt: HandInReceipt; notices: DeskNotice[] }
 
+/** A fresh candidate at `sha`: the previous one (a crashed run's, or last time's) is removed first. */
 async function freshCandidate(a: RepoArrangement, line: string, sha: string): Promise<string> {
   const wt = candidateWorktree(a.repo, line);
   if (existsSync(wt)) await worktreeRemove(a.dir, wt, true).catch(() => undefined);
@@ -17,6 +36,11 @@ async function freshCandidate(a: RepoArrangement, line: string, sha: string): Pr
   return wt;
 }
 
+/**
+ * Hand one desk in. Returns the receipt and the adoption notices; never throws for a
+ * conflict, a race or a refusal — those are receipts too, since they are attribution.
+ * Throws only when the desk is unknown.
+ */
 export async function handIn(repo: string, branch: string, opts: { maxRetries?: number } = {}): Promise<HandInOutcome> {
   const rec = await readDesk(repo, branch);
   if (!rec) throw new Error(`no desk recorded for ${repo}:${branch}`);
@@ -41,6 +65,7 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
   const out = await withLineLock(repo, line.branch, async (): Promise<HandInReceipt> => {
     const maxRetries = opts.maxRetries ?? 3;
     for (let attempt = 0; ; attempt++) {
+      // Checked again under the lock: the funnel worktree must be clean at the moment it is reset.
       const dirt = await lineDirty(line);
       if (dirt.length) {
         return appendReceipt(receipt({ result: 'refused', source_tip: st.tip, reason: `the reviewed integration line ${line.worktree} has unsaved files (${dirt.length}); diagnose and preserve them before hand-in`, conflict_files: dirt }));
@@ -61,6 +86,7 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
         await updateDesk(repo, branch, { last_hand_in: r.id });
         return r;
       }
+      // The line moved under us (a holder that crashed after its update-ref, or a foreign write).
       if (attempt >= maxRetries) {
         return appendReceipt(receipt({ result: 'stale', source_tip: tip, expected_old: old, candidate: candSha, reason: `line moved ${attempt + 1} times during hand-in; re-run` }));
       }
@@ -70,6 +96,7 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
 
   const notices: DeskNotice[] = [];
   if (out.result === 'accepted') {
+    // Downward adoption: every desk on this line, the handing-in desk included.
     for (const sib of await listDeskRecords({ repo })) {
       if (sib.line !== line.branch) continue;
       notices.push(await adoptLine(sib, a, rec.session));
@@ -78,6 +105,10 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
   return { receipt: out, notices };
 }
 
+/**
+ * The coordinated form — a hand-in per repo in the assignment, each mechanical, each on
+ * its own line. Nothing cross-repo is checked here; that is team promotion's.
+ */
 export async function handInAssignment(assignment: { desks: Array<{ repo: string; branch: string }> }): Promise<HandInOutcome[]> {
   const out: HandInOutcome[] = [];
   for (const d of assignment.desks) out.push(await handIn(d.repo, d.branch));

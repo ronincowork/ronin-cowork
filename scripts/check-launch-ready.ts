@@ -1,3 +1,26 @@
+/**
+ * THE ACCEPTANCE TEST — the machine typed nothing.
+ *
+ *   npx tsx scripts/check-launch-ready.ts
+ *
+ * Every installed vendor is launched into a directory it has never seen — which is what
+ * provokes a first-run trust dialog, the screen that started all of this — and three
+ * things are asserted about the session that comes back:
+ *
+ *   1. THE PROCESS IS THE VENDOR, not a shell. If a shell is in the tile then a machine
+ *      can type at it, and everything else here is decoration.
+ *   2. THE BRIEF IS ON ITS ARGV, so the agent was born already holding it. Nothing was
+ *      sent, because there was nothing to send it to.
+ *   3. A DEAD CLI STAYS READABLE. `remain-on-exit` means its last screen is frozen under
+ *      the session's own name instead of a live shell wearing it.
+ *
+ * It would have failed on the build that typed briefs: there, the pane's process was the
+ * login shell by construction and the brief arrived as keystrokes.
+ *
+ * NOT IN `npm run verify` — it needs a live tmux server and launches real agent CLIs, the
+ * same standing as `scripts/check-agent-installs.ts`. Run it when tmux.ts, launch.ts or a
+ * vendor's `initial` changes.
+ */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -24,11 +47,13 @@ async function walk(id: string, cmd: string) {
   try {
     const proc = await tmux('display-message', '-p', '-t', exactPane(name), '#{pane_current_command}');
     const start = await tmux('display-message', '-p', '-t', exactPane(name), '#{pane_start_command}');
+    // 1 · no shell in the tile
     if (/^(?:ba|z|k|da|fi)?sh$/.test(proc)) {
       fail(`${id} — the tile's process is \`${proc}\`. A shell in the tile is something a machine can type at.`);
     } else if (parked) {
       ok(`${id} — running \`${proc}\`, brief parked on the shelf (this vendor takes no initial prompt)`);
     } else if (!start.includes('RONIN-ACCEPTANCE')) {
+      // 2 · the brief rode argv
       fail(`${id} — the brief is not on the process's argv, so it was never handed over`);
     } else {
       ok(`${id} — the tile IS \`${proc}\`, and its brief was on the command line at birth`);
@@ -41,6 +66,7 @@ async function walk(id: string, cmd: string) {
 
 console.log('check-launch-ready: the machine typed nothing');
 
+/* 3 · a dead CLI stays readable, and takes nothing with it */
 {
   const name = 'launchready_dead';
   if (await sessionExists(name)) await killSessionTree(name);

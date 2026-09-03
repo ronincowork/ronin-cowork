@@ -1,9 +1,16 @@
+/**
+ * SESSION READINGS — a typed, read-only inventory of the boot-shelf levels.
+ *
+ * A leaf symlink is an explicit shelf entry and may be read; symlinked directories are
+ * refused so one link cannot turn this typed surface into an arbitrary directory browser.
+ * No resolved filesystem path crosses the API.
+ */
 import { lstat, readFile, readdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { storeDir } from './resources.js';
 import type { Origin } from './resources.js';
-import { renderSessionMacrosReading } from './birth-readme.js';
+import { renderGlossary, renderSessionMacrosReading } from './birth-readme.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STOCK = path.join(ROOT, 'ronin_session_boot');
@@ -82,11 +89,13 @@ async function filesIn(level: LevelDir): Promise<SessionReadingRow[]> {
         linked: entry.isSymbolicLink(),
       });
     } catch {
+      // Dangling, unreadable or vanished shelf entries do not reach a session either.
     }
   }
   return rows;
 }
 
+/** Every concrete live level, with owner files replacing stock by level + filename. */
 export async function listSessionReadings(): Promise<SessionReadingRow[]> {
   const [stockDirs, userDirs] = await Promise.all([levelDirs(STOCK, 'stock'), levelDirs(storeDir('session_boot'), 'user')]);
   const rows = new Map<string, SessionReadingRow>();
@@ -95,6 +104,13 @@ export async function listSessionReadings(): Promise<SessionReadingRow[]> {
       const prior = rows.get(row.name);
       rows.set(row.name, { ...row, shadowed: row.origin === 'user' && prior?.origin === 'stock' });
     }
+  }
+  // Generated last at birth, so it wins this filename here too. It is rendered in memory:
+  // inspecting Customize must not create the disposable boot cache.
+  // The glossary, likewise rendered in memory from the copy that won and the owner's desk words.
+  const glossaryRow = rows.get('all/KOTOBA_GLOSSARY.md');
+  if (glossaryRow) {
+    rows.set('all/KOTOBA_GLOSSARY.md', { ...glossaryRow, content: await renderGlossary(glossaryRow.content), blurb: `${glossaryRow.blurb} · rendered for the owner's desk profile` });
   }
   rows.set('all/SESSION_MACROS.md', {
     name: 'all/SESSION_MACROS.md',

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/** Focused rendered contract for the one Workbench and its current profiles/tenants. */
 import { defaultUrl, loadPlaywright } from './lib/ui-host.mjs';
 
 const playwright = await loadPlaywright();

@@ -1,3 +1,10 @@
+/**
+ * JIKAN over HTTP — the Cron jobs tab's door, per team, and the tick on the house clock.
+ *
+ * Read `src/jikan.ts` first. This wears it as routes and starts the tick with the house's
+ * real parts: tmux's session list, and the message queue (enqueue, then one safe attempt —
+ * exactly what `tejun-send` does). The unit floor replaces both with fakes.
+ */
 import type express from 'express';
 import { homedir } from 'node:os';
 import { addJob, isValidJobId, isValidTeam, listJobs, nextRun, parseWhen, removeJob, setJob, startJikan, type Door } from '../jikan.js';
@@ -13,6 +20,7 @@ export const houseDoor: Door = {
 };
 
 export function registerJikan(app: express.Express): void {
+  // Prove timing words before they are saved: the next three moments they mean.
   app.get('/api/jikan/when', (req, res) => {
     const spec = parseWhen(String(req.query?.words ?? '').slice(0, 120));
     if (!spec) return res.status(400).json({ error: 'Timing is `once 2026-09-04 08:00`, `daily 08:00`, `weekdays 08:00`, `weekly mon 08:00`, `monthly 1 09:00`, `hourly`, `every 30m`, or a five-field cron line.' });
@@ -37,6 +45,7 @@ export function registerJikan(app: express.Express): void {
     const b = (req.body ?? {}) as Record<string, unknown>;
     if (t) void answer(res, async () => ({ ok: true, job: await addJob(t, { request: b.request, to: b.to, when: b.when, by: 'owner' }) }));
   });
+  // `{ state: 'active' | 'paused' | 'now' }` — now means due at the next tick.
   app.put('/api/teams/:team/jikan/:id', (req, res) => {
     const t = team(req, res);
     const verb = String((req.body as { state?: unknown } | undefined)?.state ?? '');
@@ -47,4 +56,5 @@ export function registerJikan(app: express.Express): void {
   app.delete('/api/teams/:team/jikan/:id', (req, res) => { const t = team(req, res); if (t) void answer(res, async () => ({ ok: isValidJobId(String(req.params.id)) && await removeJob(t, String(req.params.id)) }), 500); });
 }
 
+/** The tick, on the house's parts. Called once from index.ts. */
 export const startHouseJikan = (): (() => void) => startJikan(houseDoor);

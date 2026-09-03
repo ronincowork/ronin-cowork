@@ -117,6 +117,7 @@ async function mergeConflicts(dir: string, left: string, right: string): Promise
   }
 }
 
+/** Read-only diagnosis. Writing the receipt is the only effect. */
 export async function diagnoseFunnel(spec: RepoSpec, by: string, outDir = ledgerDir()): Promise<FunnelRecoveryReceipt> {
   const target_sha = await revParse(spec.dir, `refs/heads/${spec.target}`);
   const line_sha = await revParse(spec.dir, `refs/heads/${spec.line}`);
@@ -159,6 +160,7 @@ async function currentMatches(r: FunnelRecoveryReceipt): Promise<string[]> {
   return changed;
 }
 
+/** Preserve the complete diagnosed dirty state on a named recovery branch, without using the funnel index. */
 export async function preserveFunnel(receiptId: string, outDir = ledgerDir()): Promise<FunnelRecoveryReceipt> {
   let r = await readFunnelReceipt(receiptId, outDir);
   if (!r) throw new Error(`no funnel recovery receipt ${receiptId}`);
@@ -190,6 +192,7 @@ export async function preserveFunnel(receiptId: string, outDir = ledgerDir()): P
   }
 }
 
+/** Explicit cleanup after preservation. Only diagnosed tracked paths are restored. */
 export async function clearFunnel(receiptId: string, outDir = ledgerDir()): Promise<FunnelRecoveryReceipt> {
   let r = await readFunnelReceipt(receiptId, outDir);
   if (!r) throw new Error(`no funnel recovery receipt ${receiptId}`);

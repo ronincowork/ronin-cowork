@@ -1,5 +1,4 @@
 # CutCode
-- **kinds:** coding
 
 Build from an approved plan doc. The plan is the contract, so this is the one task that
 does not acknowledge first — the go-ahead already happened when the plan was approved.
