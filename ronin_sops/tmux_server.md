@@ -11,7 +11,6 @@
 >
 > **Scope: THE SESSIONS AND THE SERVER THAT HOLDS THEM.** Its sibling is
 > `ronin_sops/remote_machine_health.md`, which owns the box — memory, swap, disk, the
-> kernel. Split on the owner's ruling, 2026-08-25: a session asking *is the box healthy* is
 > not asking the same question as one asking *is the session engine sane*, and one file
 > answering both made every answer longer than the question.
 
@@ -137,7 +136,6 @@ tmux ls -F '#{session_name} #{session_attached}' | awk '$1 ~ /^grid_/ && $2 == 0
 ```
 
 A viewer exists only to be attached, so **an unattached viewer is leftover by definition**.
-Since the tile socket gained a heartbeat (2026-08-25) a browser that goes away rudely — a
 closed lid, a backgrounded phone, a dropped connection — is detected and its viewer reaped
 within about a minute (measured: ping at 30s, terminate at 60s), so a handful is normal
 churn and **a steady pile is now worth reporting**: it means something orphaned them another way, usually Ronin killed mid-session

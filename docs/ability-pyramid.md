@@ -48,7 +48,6 @@ only that per-session README (`docs/session-boot.md`):
 | File | Static / generated | What it is |
 |---|---|---|
 | `KOTOBA_GLOSSARY.md` | static | the vocabulary — the same words meaning the same things |
-| `SHELVES.md` | generated rosters (ruled 2026-08-20; the current file is the static seed) | the map — which shelf answers which question, and what is on each. Prose is authored; the per-shelf rosters fill at birth from the resolved shelves, store included |
 | `SESSION_MACROS.md` | generated at each birth | the live `+macro:` roster from the resolved catalog, and the compile-first routing rule |
 
 Generated content exists because a checked-in list describes stock, not this machine, the

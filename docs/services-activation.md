@@ -39,7 +39,6 @@ caller reaching for `fetch` — a second call site is a second door nobody voted
 The client refuses plaintext, refuses any host but the allowlisted one, and refuses to follow
 a redirect off it.
 
-> This supersedes the 2026-08-17 ruling that the entitlement id would be pasted by hand from
 > the email. That ruling's stated reason was avoiding a new outbound destination — and this
 > design honours it by reusing AGERU's door. Pasting could not survive a closed tab and put a
 > credential through the clipboard; polling survives a phone click, a closed tab, and a

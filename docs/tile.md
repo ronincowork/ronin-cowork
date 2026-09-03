@@ -9,7 +9,6 @@ header is built in one place (`public/js/tilehead.js`) and every callback in it 
 on the tile.
 
 Construction order is load-bearing: `this.body` must exist before anything mounts into it.
-One line breaking that rule took the whole UI down on 2026-08-08. Views mount in DOM order:
 tape, then the commons panel, then xterm.
 
 ---
@@ -316,7 +315,6 @@ are, but maybe it just drops down horizontally."* Which is what it does — the 
 **the same nodes, appended somewhere else**, not a redrawing of them as menu rows.
 
 **メ is a reclaimed glyph, and this shape is not new.** It was the tile-head Commons button
-until 2026-08-17, when ⛩ took the Commons everywhere and freed it. On touch it has meant
 exactly this all along: `tiledrop.js` collapses the whole header into one bar row where メ
 is *this session*. Desktop is being brought into line with a design the phone already wore.
 The only difference is the shape — a pointer needs no word beside the icon, and a desktop
@@ -343,7 +341,6 @@ it; clicking a control inside closes it *if that control raises something the st
 cover*. The instruments (⛽ and 🎛, the `holds` rows whose value changes in place) leave it
 up, exactly as the phone gives the dial its `stay` mode.
 
-**And so do 🏷 and 📝** — the `modal` rows, since 2026-08-18. Their sheet sits over a
 full-viewport scrim at a z-index far above the strip, so there was never anything for the
 strip to cover; closing it only hid their own opener, and a `display: none` button cannot
 take focus back when the sheet closes. Focus fell to `<body>` and the next Tab restarted
@@ -357,7 +354,6 @@ A **click on the scrim** closes the drop as well, and that is the intended asymm
 rather than a leak: the scrim's click still reaches `document`, where it is an outside
 click for everything under it. The keyboard peels one layer per Escape (sheet, then drop);
 a pointer pressed on the scrim dismisses the stack it was pressed through. Measured
-2026-08-18 — Escape from 📝's sheet lands on 📝 with the drop still up, a backdrop click
 lands on メ with the drop closed, and neither lands on `<body>`.
 
 **Desktop only.** `collapseTileHead` hoists this header into the phone's app bar behind its
@@ -440,7 +436,6 @@ Behind メ, beside 📝 — the two things a session keeps in writing: the post-
 you, and the documents it is working in.
 
 One press lists **this session's** docs; one more opens the file, in place, over this tile.
-The owner's words (2026-08-18): *"If I wanted to look at a tile and say 'oh, I want to watch
 this tile's docs', it's not actually easy or intuitive to find them by going to the Commons,
 going to Docs, and then looking for their particular agent's tracked docs."* The ▧ Docs tab
 lists **every** session's docs grouped by session, so reaching one tile's meant leaving the
@@ -574,7 +569,6 @@ else printable, and sends it on Enter. The composer takes a native paste.
 
 **A phone never builds the workbench at all.** At an iPhone-class viewport (small AND
 coarse — `IS_PHONE` in `state.js`) `main.js` mounts the phone shell instead
-(`public/js/phone.js`, the MOBILE plan, owner 2026-09-01): pick the Cowork, pick the
 Agent, drive its tile. On the stage the tile's own head is hidden and the shell's slim
 bar replaces it — ‹ back, the Agent's title, and one メ sheet holding the head's own
 controls (Status, Work record, Output, Note, Control, Kill), **relocated, not cloned**,

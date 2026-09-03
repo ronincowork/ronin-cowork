@@ -4,7 +4,6 @@ The coding shelf. A session may RiffOnIt, DraftPlan, CutCode, ChaseBug or CheckW
 without becoming a different session — the session_role is the mutable axis, and this
 family is just where the coding kind of work is grouped.
 
-**A family is PRESENTATION, not structure** (R35, 2026-08-23). Nothing here rides a
 launch or a letter: each session_role carries its own launch constants, and a session's
 identity — where it has one — is contextual to its Team. This
 shelf groups the buttons, and doubles as a Build-Team template: building a developer

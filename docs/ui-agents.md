@@ -11,7 +11,6 @@ section rather than a rediscovery.
 
 1. **Does it address ANSI slots, the 256-colour cube, or hardcoded RGB?**
    Slots (0–15) follow Ronin's palette by name. The cube (16–255) follows it since
-   2026-08-19 — `theme.js` generates all 240 and pushes them as xterm's `extendedAnsi`.
    **Hardcoded RGB follows nothing** and cannot be reached; that agent keeps its own colours
    in whichever shell you are in.
 2. **Does it paint filled backgrounds?** A fill is the same palette as text, so it inverts
@@ -67,7 +66,6 @@ by any palette, so the choice is final for the life of the process.
 question truthfully, and the agent only asked once. If Codex ever gains a theme setting,
 pin it and the query stops mattering.
 
-**Handled by Ronin since 2026-08-19** for its CUBE output (`--term-cube`, `theme.js`
 `termCube()`) — which covers a Codex session that started in the dark and uses the cube,
 and does nothing for one that asked and went truecolor. The cube is
 generated arithmetically and mirrored in **CIE L\*** on the light shell, which is what makes

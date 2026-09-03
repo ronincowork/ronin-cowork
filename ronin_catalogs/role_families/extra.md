@@ -7,7 +7,6 @@ seat (`Atarashi`), and the plain terminal (`OpenShell`).
 renders in a flat tail that cannot fold, and a default that cannot fold defeats the
 shelves.
 
-**A family is PRESENTATION, not structure** (R35, 2026-08-23). `OpenShell`'s
 `agent: none` and its neighbours' ordinary defaults each live in their own definition
 now; the shelf holds nothing they could contradict.
 

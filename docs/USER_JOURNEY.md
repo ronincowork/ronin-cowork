@@ -172,7 +172,6 @@ path still need implementation against this design. There must be no intermediat
 ## Durable E2E evidence
 
 The Services activation and recurring Tomodachi paths were walked against the live public
-path on 2026-08-20. The activation completed through email verification on another device,
 polling returned the entitlement, the gated artifact installed, and Services remained
 discoverable after restart. The recurring send returned a durable receipt and an identical
 resend returned the same receipt without duplication.
