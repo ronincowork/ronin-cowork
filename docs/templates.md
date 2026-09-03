@@ -118,13 +118,13 @@ a bundle installs touches the install itself; an upgrade never sees it.
 ```
 
 **The template library** is the shelf Ronin keeps and grows — a **Ronin Services**
-feature. ronincowork.com shows what is on it, descriptions only; the
+feature (owner, 2026-09-03). ronincowork.com shows what is on it, descriptions only; the
 documents are served by Ronin HQ (`ronin-library/1`, https://hq.ronincowork.com/library/index.json) to an entitled box, and the
 Campaign page's **Templates** card is the way in: *Check the library* reads the index —
 only when pressed, never on a timer — and pressing a bundle shows **everything it holds**
 and the **plan** before anything is written: each item, the shelf it lands on, and its
 outcome. Without Services the shelf is there but opaque, the card says so and names the
-switch (Ronin Desk → Account → Ronin Services), and the handful that ship inside Ronin stay
+Ronin Services row on the Campaign page's Routines (an email and a confirmation), and the handful that ship inside Ronin stay
 on the launch forms. Three rules an install obeys, all of them the house's already:
 
 - a copy identical to what ships is **skipped** — a shadow that changes nothing is an

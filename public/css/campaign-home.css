@@ -172,6 +172,11 @@
   .cv-from { display: block; margin-top: var(--space-1); font-size: var(--text-2); color: var(--muted); }
 
   .cv-presets { display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
+  .cv-install { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+  .cv-install .cv-actions { justify-content: flex-start; align-items: center; }
+  .cv-install .cv-input { max-width: 28ch; }
+  .cv-sell summary { cursor: pointer; font-size: var(--text-2); color: var(--muted); }
+  .cv-sell ul { margin: var(--space-2) 0 0; padding-left: var(--space-6); font-size: var(--text-3); line-height: 1.5; color: var(--fg); }
   .cv-pills { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
   .cv-pill {
     display: inline-flex; align-items: center; gap: var(--space-2);

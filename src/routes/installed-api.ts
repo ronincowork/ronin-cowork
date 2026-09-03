@@ -7,8 +7,8 @@
  *   activated  — whether this box holds a Ronin Services entitlement (the activation
  *                record: an email, a confirmation, a token);
  *   switched   — whether a Routine is on for new Agents (the Campaign's map).
- * An install is not a switch. This route says all three, and the Installed tab on Ronin
- * Desk, the Templates card and the library door read it rather than guessing.
+ * An install is not a switch. This route says all three, and the Routines page (installs
+ * and switches together, owner 2026-09-03), the Templates card and the library door read it.
  */
 import type express from 'express';
 import { homedir } from 'node:os';
@@ -52,8 +52,8 @@ export async function installedAnswer(): Promise<InstalledAnswer> {
 export async function servicesStatusSentence(): Promise<string> {
   const a = await installedAnswer();
   if (a.services.activated) return 'Ronin Services is activated on this box.';
-  if (a.services.installed) return `Ronin Services is installed on this box (${a.services.parts.join(', ')}) but not activated: no entitlement yet. Check its status on Ronin Desk → Installed, where activation is an email and a confirmation.`;
-  return 'Ronin Services is not installed on this box. Ronin Desk → Installed shows what is.';
+  if (a.services.installed) return `Ronin Services is installed on this box (${a.services.parts.join(', ')}) but not activated: no entitlement yet. Activate it on the Campaign page → Routines, on the Ronin Services row: an email and a confirmation.`;
+  return 'Ronin Services is not installed on this box. The Campaign page → Routines, on the Ronin Services row, is where it starts: an email and a confirmation.';
 }
 
 export function registerInstalled(app: express.Express): void {

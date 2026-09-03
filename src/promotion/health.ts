@@ -10,8 +10,17 @@ const execFileP = promisify(execFile);
 
 export interface RestartResult { unit: string; at: string; ok: boolean; detail?: string }
 
+export async function serviceUnit(): Promise<string> {
+  try {
+    await execFileP('systemctl', ['--user', 'cat', 'ronin.service'], { timeout: 5_000 });
+    return 'ronin';
+  } catch {
+    return 'tmux-ronin';
+  }
+}
+
 export async function restartService(): Promise<RestartResult> {
-  const unit = 'ronin';
+  const unit = await serviceUnit();
   const at = new Date().toISOString();
   try {
     await execFileP('systemctl', ['--user', 'restart', unit], { timeout: 60_000 });

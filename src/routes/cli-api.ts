@@ -30,10 +30,19 @@ function execute(tool: string, args: string[], input: string | undefined, contex
   });
 }
 
+function continuePromotion(id: string): void {
+  const child = spawn(process.execPath, ['--import', 'tsx', path.join(REPO_ROOT, 'src', 'commands', 'promotion-finish.ts'), id], {
+    cwd: REPO_ROOT, env: process.env, detached: true, stdio: 'ignore',
+  });
+  child.unref();
+}
+
 export function registerCli(app: Express, options: {
   execute?: (tool: string, args: string[], input: string | undefined, context: Context) => Promise<Reply>;
+  continuePromotion?: (id: string) => void;
 } = {}): void {
   const run = options.execute ?? execute;
+  const follow = options.continuePromotion ?? continuePromotion;
   app.post('/api/cli/:tool', async (req, res) => {
     const tool = String(req.params.tool ?? '');
     if (!TOOLS.has(tool)) return res.status(404).json({ error: 'No such command.' });
@@ -41,6 +50,12 @@ export function registerCli(app: Express, options: {
     try {
       const reply = await run(tool, args, typeof req.body?.input === 'string' ? req.body.input : undefined, {
         session: String(req.body?.session ?? ''), pane: String(req.body?.pane ?? ''),
+      });
+      const match = reply.stderr.match(/^RONIN_PROMOTION_FOLLOWUP=(.+)$/m);
+      if (match) reply.stderr = reply.stderr.replace(/^RONIN_PROMOTION_FOLLOWUP=.+\n?/m, '');
+      res.once('finish', () => {
+        if (!match) return;
+        follow(match[1]);
       });
       res.json(reply);
     } catch (e) { res.status(500).json({ error: String((e as Error).message ?? e) }); }
