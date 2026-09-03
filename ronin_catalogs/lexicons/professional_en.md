@@ -270,6 +270,14 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.templates_teams:** Teams — projects
 - **campaign_view.templates_agents:** Agents — people
 - **campaign_view.templates_none:** Nothing on this shelf.
+- **campaign_view.templates_on_system:** On your system — what New Team and New Agent offer
+- **campaign_view.templates_on_system_help:** Shipped with Ronin, or installed from the library, or saved by you. Anything installed or saved can be removed again from its box.
+- **campaign_view.templates_shipped_with:** Shipped with Ronin
+- **campaign_view.templates_installed:** Installed from the library, or saved by you
+- **campaign_view.templates_remove:** Remove from my system
+- **campaign_view.templates_remove_sure:** Remove — press again to confirm
+- **campaign_view.templates_removed:** Removed {name} from your system. It is still on the library.
+- **campaign_view.templates_removed_back:** Removed {name}; the shipped one is back.
 - **campaign_view.templates_yours:** yours
 - **campaign_view.templates_yours_over:** yours, replacing ours
 - **campaign_view.templates_shipped:** shipped
@@ -279,8 +287,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.templates_books:** Reads
 - **campaign_view.templates_download:** Download as a bundle
 - **campaign_view.templates_download_help:** This template, with your copies of the books and Routines it names, as one file you could put on a library.
-- **campaign_view.library:** Template library
-- **campaign_view.library_help:** Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read, as one download. Nothing is fetched until you press, and the plan is shown before anything is written.
+- **campaign_view.library:** On the Ronin library — not on your system yet
+- **campaign_view.library_help:** Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press, the plan is shown before anything is written, and an installed one appears below, on your system.
 - **campaign_view.library_check:** Check the library
 - **campaign_view.library_checking:** Asking ronincowork.com for its library…
 - **campaign_view.library_source:** {n} bundles from {source}

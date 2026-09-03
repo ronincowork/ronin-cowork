@@ -79,6 +79,22 @@ export function createTemplatesSurface() {
   const paintKinds = () => kindHost.replaceChildren(kindTiles(kind, (key) => { kind = key; paintKinds(); paintLibrary(); paintShelves(); }));
 
   /* ---- a picked box opens its detail under the grids ---- */
+  /** One of the owner's boxes can go again; the second press is the yes. */
+  const removeAction = (shelf, row) => {
+    if (row.origin !== 'user') return null;
+    const b = createAction({ label: t('campaign_view.templates_remove', 'Remove from my system'), kind: 'danger' });
+    let armed = false;
+    b.el.addEventListener('click', async () => {
+      if (!armed) { armed = true; b.el.textContent = t('campaign_view.templates_remove_sure', 'Remove — press again to confirm'); return; }
+      b.setDisabled(true);
+      const r = await request(`/api/templates/${shelf}/${encodeURIComponent(row.name)}`, { method: 'DELETE' });
+      if (!r.ok) { b.setDisabled(false); armed = false; b.el.textContent = r.message; return; }
+      picked = '';
+      detail.replaceChildren(el('p', 'cv-note', r.data?.shipped_back ? t('campaign_view.templates_removed_back', 'Removed {name}; the shipped one is back.', { name: row.label || row.name }) : t('campaign_view.templates_removed', 'Removed {name} from your system. It is still on the library.', { name: row.label || row.name })));
+      void readShelves();
+    });
+    return b.el;
+  };
   const showTeam = (row) => {
     detail.replaceChildren(el('span', 'cv-eyebrow', `${row.art ? `${row.art} ` : ''}${row.label || row.name} · ${originWord(row)}`));
     if (row.objective) detail.append(el('p', 'cv-note', row.objective));
@@ -99,6 +115,8 @@ export function createTemplatesSurface() {
     link.download = `${row.name}.json`;
     link.title = t('campaign_view.templates_download_help', 'This template, with your copies of the books and Routines it names, as one file you could put on a library.');
     const actions = el('div', 'cv-actions');
+    const remove = removeAction('teams', row);
+    if (remove) actions.append(remove);
     actions.append(link);
     detail.append(actions);
   };
@@ -106,6 +124,8 @@ export function createTemplatesSurface() {
     detail.replaceChildren(el('span', 'cv-eyebrow', `${row.art ? `${row.art} ` : ''}${row.label || row.name} · ${originWord(row)}`));
     if (row.brief) detail.append(el('p', 'cv-note', row.brief));
     if (row.behaviours?.length) detail.append(el('p', 'cv-note', `${t('campaign_view.templates_books', 'Reads')}: ${row.behaviours.join(', ')}`));
+    const remove = removeAction('agents', row);
+    if (remove) { const actions = el('div', 'cv-actions'); actions.append(remove); detail.append(actions); }
   };
 
   const showPlan = async (card) => {
@@ -173,8 +193,8 @@ export function createTemplatesSurface() {
     },
   });
   libraryRoom.append(
-    el('span', 'cv-eyebrow', t('campaign_view.library', 'Template library')),
-    el('p', 'cv-note', t('campaign_view.library_help', 'Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read, as one download. Nothing is fetched until you press, and the plan is shown before anything is written.')),
+    el('span', 'cv-eyebrow', t('campaign_view.library', 'On the Ronin library — not on your system yet')),
+    el('p', 'cv-note', t('campaign_view.library_help', 'Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press, the plan is shown before anything is written, and an installed one appears below, on your system.')),
     createActionBar({ actions: [check] }).el,
     libraryNotice.el,
     libraryGrid,
@@ -183,16 +203,25 @@ export function createTemplatesSurface() {
 
   /* ---- the shelves on this machine, below ---- */
   const paintShelves = () => {
-    shelves.replaceChildren();
-    const group = (heading, rows, key, show) => {
+    shelves.replaceChildren(
+      el('span', 'cv-eyebrow', t('campaign_view.templates_on_system', 'On your system — what New Team and New Agent offer')),
+      el('p', 'cv-note', t('campaign_view.templates_on_system_help', 'Shipped with Ronin, or installed from the library, or saved by you. Anything installed or saved can be removed again from its box.')),
+    );
+    const grid = (rows, key, show) => {
+      const g = el('div', 'fs-tmplgrid');
+      for (const row of rows) g.append(templateBox(row.art || '▤', row.label || row.name, row.blurb || '', picked === `${key}:${row.name}`, () => { picked = `${key}:${row.name}`; paintLibrary(); paintShelves(); show(row); }));
+      return g;
+    };
+    const shelf = (heading, rows, key, show) => {
       shelves.append(el('span', 'cv-eyebrow', heading));
       if (!rows.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_none', 'Nothing on this shelf.'))); return; }
-      const grid = el('div', 'fs-tmplgrid');
-      for (const row of rows) grid.append(templateBox(row.art || '▤', row.label || row.name, row.blurb || '', picked === `${key}:${row.name}`, () => { picked = `${key}:${row.name}`; paintLibrary(); paintShelves(); show(row); }));
-      shelves.append(grid);
+      const shipped = rows.filter((row) => row.origin !== 'user');
+      const yours = rows.filter((row) => row.origin === 'user');
+      if (shipped.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_shipped_with', 'Shipped with Ronin')), grid(shipped, key, show)); }
+      if (yours.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_installed', 'Installed from the library, or saved by you')), grid(yours, key, show)); }
     };
-    group(t('campaign_view.templates_teams', 'Teams — projects'), byKind(teams), 'team', showTeam);
-    group(t('campaign_view.templates_agents', 'Agents — people'), byKind(agents), 'agent', showAgent);
+    shelf(t('campaign_view.templates_teams', 'Teams — projects'), byKind(teams), 'team', showTeam);
+    shelf(t('campaign_view.templates_agents', 'Agents — people'), byKind(agents), 'agent', showAgent);
   };
   const readShelves = async () => {
     const [tm, ag] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents')]);
