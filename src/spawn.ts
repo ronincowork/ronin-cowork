@@ -143,12 +143,7 @@ export interface Resolved {
   team: string;
   /** Never '' — a session must be born somewhere, and the resolver refuses otherwise. */
   project_root: string;
-  /**
-   * THE ASSIGNMENT — every repo desk this launch was given, or null: a manual launch, a
-   * plain terminal, a non-code role, a direct/undeclared repository, or the switch off.
-   * Null means the brief says nothing about desks and `dir` is the root's own directory.
-   * Derived here, OPENED by the route before the CLI starts (src/launch-desks.ts).
-   */
+  /** Managed repo desks, opened by the route before the CLI starts; null when none. */
   assignment: Assignment | null;
   /** The canonical capability × repository resolution, including direct checkouts. */
   work_locations: ResolvedWorktreesRepository[];
@@ -236,11 +231,7 @@ export function buildBrief(
         `(tejun-team ${form.team}), it has no durable roster, and its wipeboard is "${form.team}" (tejun-wipeboard ${form.team}).`,
     );
   }
-  // THE DESKS, concrete: every repo desk, its path, the line it hands in to, and the four
-  // words — before the reading, because it is the one fact about WHERE this session is
-  // that nothing else in the brief states. A launch with no assignment has no line here:
-  // a brief that mentions desks to a session standing in `dev` is the failure the control
-  // surface exists to prevent (src/launch-desks.ts).
+  // Concrete resolved locations precede the reading; managed rows also carry their line.
   if (workLocations.length) parts.push(renderWorkLocations(workLocations));
   if (assignment?.desks.length) parts.push(renderDeskBlock(assignment));
   // THE BIRTH README POINTER. ResolveForm initially supplies the resolved sources; the
@@ -559,9 +550,7 @@ export async function resolveForm(
       return true;
     });
   };
-  // THE NAME is settled before the desks, because a desk branch carries it.
   const name = wanted || slugName(profile.session_role || form.team || 'session', form.prompt ?? '', taken);
-  // Desks are derived here and opened by the route; most launches honestly return null.
   const worktrees = bareMetalAgent || sessionType === 'terminal'
     ? { assignment: null, repositories: [] }
     : await resolveLaunchDesks({

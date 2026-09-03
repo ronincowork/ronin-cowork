@@ -73,11 +73,6 @@ export async function resolveLaunchDesks(input: {
   return { assignment: { ...assignment, primary, desks }, repositories: resolution.repositories };
 }
 
-/** The desk the shell starts in. */
-export function primaryDesk(a: Assignment): RepoDesk {
-  return a.desks.find((d) => d.repo === a.primary) ?? a.desks[0]!;
-}
-
 /** The selected project root's resolved location; first row is the deterministic fallback. */
 export function primaryWorkLocation(repositories: ResolvedWorktreesRepository[], projectRoot: string): string {
   return repositories.find((repository) => repository.repo === projectRoot)?.location
