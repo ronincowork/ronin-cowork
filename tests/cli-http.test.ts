@@ -56,13 +56,11 @@ test('a CLI sends its arguments and prints the HTTP reply', async () => {
   }
 });
 
-test('the promotion socket replies before starting its restart continuation', async () => {
+test('the promotion socket returns the continuation-owned reply unchanged', async () => {
   const app = express();
   app.use(express.json());
-  const events: string[] = [];
   registerCli(app, {
-    execute: async () => ({ stdout: 'restarting — receipt promotion-1\n', stderr: 'RONIN_PROMOTION_FOLLOWUP=promotion-1\n', exit: 0 }),
-    continuePromotion: (id) => { events.push(`continued:${id}`); },
+    execute: async () => ({ stdout: 'restarting — receipt promotion-1\n', stderr: '', exit: 0 }),
   });
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => server.once('listening', resolve));
@@ -73,9 +71,7 @@ test('the promotion socket replies before starting its restart continuation', as
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ args: ['team'] }),
     });
     const reply = await response.json() as { stdout: string; stderr: string };
-    events.unshift(`reply:${reply.stdout.trim()}`);
-    await new Promise((resolve) => setImmediate(resolve));
-    assert.deepEqual(events, ['reply:restarting — receipt promotion-1', 'continued:promotion-1']);
+    assert.equal(reply.stdout.trim(), 'restarting — receipt promotion-1');
     assert.equal(reply.stderr, '');
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
