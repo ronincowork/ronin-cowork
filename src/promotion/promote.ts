@@ -1,7 +1,6 @@
 import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
-import { queuePromotionContinuation } from './continuation.js';
 import {
   acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, now, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
   type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate,
@@ -39,7 +38,7 @@ export interface PromoteOptions {
   resuming?: string;
   anyway?: boolean;
   /** Hand the durable restarting receipt to a continuation after the caller has replied. */
-  deferRestart?: (receipt: PromotionReceipt) => Promise<PromotionReceipt | void>;
+  deferRestart?: (receipt: PromotionReceipt) => Promise<void>;
 }
 
 export interface PromoteOutcome {
@@ -110,12 +109,8 @@ async function promoteTeamLocked(o: PromoteOptions, receiptId: string): Promise<
   await writeReceipt(r, ledger);
   const primary = active[0].c.dir;
   if (o.deferRestart) {
-    r = await o.deferRestart(r) ?? r;
+    await o.deferRestart(r);
     return { ok: true, receipt: r, nothing: false, message: `restarting — receipt ${r.id}; health follows the restart` };
-  }
-  if (fx === realEffects) {
-    r = await queuePromotionContinuation(r, ledger);
-    return { ok: true, receipt: r, nothing: false, message: `restarting — receipt ${r.id}; ${r.restart?.unit} owns restart and health` };
   }
   return finishPromotionRestart(r, { primary, ledgerDir: ledger, effects: fx, log, mode: o.mode });
 }
@@ -143,9 +138,6 @@ export async function finishPromotionRestart(
     r = advanceState(r, 'complete');
     await writeReceipt(r, ledger);
     await releasePromotionLock(r.revert_of ?? r.id, ledger);
-    if (r.kind === 'team_promotion') {
-      await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${r.repos.map((x) => `${x.repo} ${x.target}@${x.candidate.slice(0, 7)}`).join(', ')}; restart and health passed.`);
-    }
     return { ok: true, receipt: r, nothing: false, message: `complete — ${r.repos.map((x) => `${x.repo} ${x.target}@${x.candidate.slice(0, 7)}`).join(', ')}; the app is up` };
   }
 
@@ -171,6 +163,17 @@ export async function finishPromotionRestart(
   await releasePromotionLock(r.id, ledger);
   await fx.notify(primary, r.team, `from promotion: ${r.id} is UNHEALTHY — health failed after restart (${failedNames(health)}) and the revert did not land: ${rev.message}. The lead decides.`);
   return { ok: false, receipt: r, nothing: false, message: `health failed and the revert did not land: ${rev.message}` };
+}
+
+export async function resumePromotionRestarts(maxAgeMs = 5 * 60_000): Promise<void> {
+  const ledger = PROMOTION_LEDGER_DIR();
+  const now = Date.now();
+  for (const receipt of await listReceipts(undefined, ledger)) {
+    if (receipt.state !== 'restarting' || now - Date.parse(receipt.updated_at) > maxAgeMs) continue;
+    const current = await Promise.all(receipt.repos.map(targetAt));
+    if (current.some((tip, index) => tip !== receipt.repos[index].candidate)) continue;
+    await finishPromotionRestart(receipt, { ledgerDir: ledger, restartAlreadyRequested: true });
+  }
 }
 
 const failedNames = (h: HealthResult): string => h.checks.filter((c) => c.status === 'FAIL').map((c) => c.name).join(', ') || 'unknown';
@@ -210,7 +213,7 @@ export interface ResumeOptions {
   effects?: Effects;
   log?: (line: string) => void;
   restart?: boolean;
-  deferRestart?: (receipt: PromotionReceipt) => Promise<PromotionReceipt | void>;
+  deferRestart?: (receipt: PromotionReceipt) => Promise<void>;
 }
 
 export async function resumePromotion(o: ResumeOptions): Promise<PromoteOutcome> {
@@ -222,12 +225,8 @@ export async function resumePromotion(o: ResumeOptions): Promise<PromoteOutcome>
     if (o.deferRestart) {
       r = { ...r, updated_at: now() };
       await writeReceipt(r, ledger);
-      r = await o.deferRestart(r) ?? r;
+      await o.deferRestart(r);
       return { ok: true, receipt: r, nothing: false, message: `restarting — receipt ${r.id}; health follows the restart` };
-    }
-    if (!o.effects || o.effects === realEffects) {
-      r = await queuePromotionContinuation(r, ledger);
-      return { ok: true, receipt: r, nothing: false, message: `restarting — receipt ${r.id}; ${r.restart?.unit} owns restart and health` };
     }
     return finishPromotionRestart(r, { ledgerDir: ledger, effects: o.effects, log, mode: r.proofs[0]?.mode ?? 'full' });
   }

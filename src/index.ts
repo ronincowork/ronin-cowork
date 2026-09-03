@@ -52,6 +52,7 @@ import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
+import { resumePromotionRestarts } from './promotion/promote.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure } from './sockets.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 
@@ -332,6 +333,7 @@ server.listen(config.port, config.bind, async () => {
     `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
   );
   console.log(`[tmux-ronin] browser sockets accepted from: ${allowedOrigins().join(', ')}`);
+  void resumePromotionRestarts().catch((e) => console.error(`[tmux-ronin] promotion continuation failed: ${String((e as Error).message ?? e)}`));
 });
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {

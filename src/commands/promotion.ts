@@ -12,7 +12,6 @@ import { unpromotedAcceptedLines } from '../promotion/discovery.js';
 import { abandonPromotion, bisectLine, promoteTeam, resumePromotion, revertPromotion } from '../promotion/promote.js';
 import { lastGoodPromotion, listReceipts, publicPromotionReceipt, readReceipt, summarize, toChangeSet } from '../promotion/receipts.js';
 import { openPullRequest } from '../promotion/pr.js';
-import { promotionUnitProgress, queuePromotionContinuation } from '../promotion/continuation.js';
 import type { RepoSpec } from '../promotion/candidate.js';
 import type { ByoinMode } from '../promotion/promote.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
@@ -125,7 +124,7 @@ async function main(): Promise<void> {
       const id = rest[0]; if (!id) throw new Error('resume needs a receipt id');
       return report(await resumePromotion({
         id, by, log: say, restart: !flag('--no-restart'),
-        ...(!flag('--no-restart') ? { deferRestart: queuePromotionContinuation } : {}),
+        ...(process.env.RONIN_CLI_HTTP && !flag('--no-restart') ? { deferRestart: async (receipt) => { process.stderr.write(`RONIN_PROMOTION_FOLLOWUP=${receipt.id}\n`); } } : {}),
       }));
     }
     case 'abandon': {
@@ -179,10 +178,7 @@ async function main(): Promise<void> {
       if (!r) throw new Error(`no receipt ${id}`);
       if (flag('--pr-block')) say('```ronin-promotion-receipt\n' + JSON.stringify(publicPromotionReceipt(r)) + '\n```');
       else if (flag('--shared')) say(JSON.stringify(toChangeSet(r), null, 2));
-      else {
-        const progress = await promotionUnitProgress(r);
-        say(JSON.stringify({ ...r, ...(progress ? { unit_progress: progress } : {}) }, null, 2));
-      }
+      else say(JSON.stringify(r, null, 2));
       process.exit(0);
     }
     default: {
@@ -195,7 +191,7 @@ async function main(): Promise<void> {
       say(`team ${team}: ${specs.map((s) => `${s.repo} ${s.line} → ${s.target} (${s.dir})`).join(', ')}`);
       const out = await promoteTeam({
         team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), anyway: flag('--anyway'), log: say,
-        ...(!flag('--no-restart') ? { deferRestart: queuePromotionContinuation } : {}),
+        ...(process.env.RONIN_CLI_HTTP && !flag('--no-restart') ? { deferRestart: async (receipt) => { process.stderr.write(`RONIN_PROMOTION_FOLLOWUP=${receipt.id}\n`); } } : {}),
       });
       if (out.ok && out.receipt?.state === 'complete') {
         say('');

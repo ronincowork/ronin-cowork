@@ -166,7 +166,7 @@ test('explicit resume refreshes an old restarting receipt before handing it to b
   await P.finishPromotionRestart(resumed.receipt!, { effects: fakes(), ledgerDir: LEDGER });
 });
 
-test('promotions from different teams answer BUSY immediately with the active receipt state', async () => {
+test('promotions from different teams wait for one box-wide restart and health lock', async () => {
   const first = await fixture('box-lock-first', 1);
   const second = await fixture('box-lock-second', 1);
   const held = await P.promoteTeam({
@@ -175,12 +175,16 @@ test('promotions from different teams answer BUSY immediately with the active re
   });
   assert.equal(held.receipt?.state, 'restarting');
   const lines: string[] = [];
-  await assert.rejects(P.promoteTeam({
+  let finished = false;
+  const waiting = P.promoteTeam({
     team: 'beta', repos: [spec('second', second.dir)], by: 'lead', effects: fakes(), restart: false,
     ledgerDir: LEDGER, log: (line) => lines.push(line),
-  }), { message: `BUSY: alpha's ${held.receipt!.id} is restarting` });
+  }).then((out) => { finished = true; return out; });
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  assert.equal(finished, false);
+  assert(lines.includes(`waiting: alpha's ${held.receipt!.id} is restarting`));
   await P.finishPromotionRestart(held.receipt!, { effects: fakes(), ledgerDir: LEDGER });
-  assert.equal(lines.length, 0);
+  assert.equal((await waiting).ok, true);
 });
 
 test('a promotion reclaims a lock older than the in-flight window and says why', async () => {

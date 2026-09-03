@@ -3,8 +3,8 @@
 `bin/ronin-promote <team>` calls the operator's HTTP promotion surface, which admits a
 team line into its repository's working line, and prints the reply.
 Promotion coordinates candidate construction, reference movement, restart, and health.
-One box-wide lock covers that entire run across every team. A later promotion answers
-`BUSY`, names the active team, receipt, and state, and stops immediately.
+One box-wide lock covers that entire run across every team. A later promotion waits,
+names the active team, receipt, and state, then proceeds when health has been recorded.
 Locks older than the in-flight window are reclaimed with the reason shown.
 Repository verification is independent: run `npm run verify` when a repository verdict is
 needed.
@@ -15,11 +15,10 @@ needed.
 2. Build each candidate from the current working-line tip plus the team-line tip.
 3. Write a promotion receipt before moving a reference.
 4. Advance each working line with compare-and-swap and refresh its mounted worktree.
-5. Record `restarting` with the transient user unit that owns the continuation, then return
-   the receipt id to the caller.
-6. From the dev worktree, that unit restarts `ronin.service`, waits for `/api/health`, runs
-   the UI smoke, records health and the final state, releases the lock, and posts the outcome
-   to the Team wipeboard. It never touches `tmux-server.service`.
+5. Return the `restarting` receipt id to an HTTP caller.
+6. Restart the live app and run deployment health checks unless `--no-restart` was used.
+   The continuation records health and closes the receipt as `complete`, `reverted`, or
+   `unhealthy`. On boot, a fresh `restarting` receipt resumes at health.
 
 `--dry-run` builds the candidates and moves nothing. A line already contained in its
 working target needs no candidate.
@@ -27,12 +26,12 @@ working target needs no candidate.
 ## Recovery
 
 - `resume <id>` rebuilds interrupted candidates from current tips. For a `restarting`
-  receipt it re-runs the named transient unit.
+  receipt it refreshes the durable handoff, runs restart and health, then records
+  `complete`, `reverted`, or `unhealthy`.
 - `abandon <id> <reason>` closes an interrupted attempt without undoing references that
   already moved.
 - `revert <id>|last` builds and lands revert candidates, then restarts and checks health.
-- `receipts [team]` and `show <id>` inspect the durable state; `show` includes systemd's
-  current unit progress while a receipt is restarting.
+- `receipts [team]` and `show <id>` inspect the durable record.
 
 Promotion receipts live in the `promotion_ledger` store. They record the candidate and
 expected reference for each repository, each reference advance, restart and health
