@@ -15,7 +15,6 @@ import {
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
-// `output` is a LIST since 2026-09-01, and `no code` is a thing you SAY rather than the
 // absence of `code`: silence is not an instruction. Nothing validates the combination.
 const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 
@@ -41,10 +40,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   let loaded = false;
   const touched = { mandate: false, model: false, root: false, repos: false, books: false, launchMode: false };
 
-  /* THE LAUNCH BUTTON LIVES IN THE TILE HEADER (owner, 2026-09-01), quiet and compact
-   * like Save as template rather than a slab at the bottom of a long scroll — and it is
-   * DISABLED until a name is typed, which is the form teaching its own rule: the name is
-   * the only required field (SETTLING § 1, RULE TWO) and everything under it is optional. */
   const start = createAction({
     label: t('forms.launch', 'Launch'),
     size: 'compact',
@@ -60,7 +55,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   const offered = () => (draft.kind === 'open' ? templates : templates.filter((row) => row.kinds.includes(draft.kind)));
   const chosenTeam = () => (draft.teamMode === 'existing' ? draft.team : draft.teamMode === 'new' ? finalizeTeamName(draft.newTeam) : '');
 
-  // NO TEMPLATE | MANUAL SWITCHER (owner, 2026-09-01). The tray is a step like any other
   // and "Make your own" is the manual door; a mode switch above the form said it twice.
 
   /* ---- 1 · New session ---- */
@@ -212,7 +206,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       });
       return box;
     };
-    // NEW TEAM LEADS, AND IT IS THE DEFAULT (owner, 2026-08-31). The order is the order
     // of intent: most launches are the start of something, joining one is next, and a
     // rōnin is the ordinary remainder rather than the opening offer.
     ways3.append(
@@ -261,7 +254,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     (provider, model) => { draft.provider = provider; draft.model = model; touched.model = true; paintFoot(); },
     (label, control) => createField({ label, control }).el,
   );
-  // WHERE IT WORKS (owner, 2026-09-03): the shared control, seeded from the Team. Born in
   // is this launch's own; the ticks are the Team's desks until the person changes them,
   // and then the launch carries its own `repos`. Branches are the Team's and read-only here.
   const where = createWhereItWorks({ branchesEditable: false, onChange: () => { if (where.root !== draft.root) { draft.root = where.root; touched.root = true; } else { draft.repos = where.repos(); touched.repos = true; } paintFoot(); } });
@@ -330,22 +322,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       el('small', null, t('new_agent.worktrees_help', 'Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')),
     );
   }
-  /* ---- launch mode: the enum that replaces `permissions` ----
-   * Owner, 2026-09-01, and an enum rather than the boolean he first named: Ronin offers
-   * two launch selections and NEITHER is "safe". CONFIGURED appends nothing and leaves
-   * whatever the provider CLI already loads — Ronin claims nothing about it, including
-   * that it will ask. LIVE DANGEROUSLY appends that provider's own declared bypass flag
-   * (`--dangerously-skip-permissions` for Anthropic, `--dangerously-bypass-approvals-and-
-   * sandbox` for OpenAI). Default is live_dangerously: it preserves what Codex already
-   * does on this box and CHANGES Claude, which asks today.
-   *
-   * @dangerous_mode is cutting the delivery — project-roots parses the per-provider flag,
-   * spawn appends it, and asking for it where a provider declares none is REFUSED rather
-   * than quietly downgraded. Until that lands the route notes the key as ignored. The
-   * difference from `permissions`, which this replaces, is that `permissions` was designed
-   * to be delivered nowhere; this has an owner and a landing. Spellings are that session's
-   * P0 proposal, pending @sea_2_sea.
-   */
   const LAUNCH_MODES = () => [
     { key: 'configured', label: t('launch_mode.configured', 'Model provider configuration'),
       sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
@@ -359,18 +335,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; touched.launchMode = true; paintLaunchMode(); paintFoot(); }),
     );
   };
-  /* ---- gbrain connection: DERIVED, never a second switch ----
-   * The owner, 2026-09-01: "the gbrain control should basically be down in the behaviours.
-   * If you click it, it then gets turned on for the launch… we shouldn't have two places
-   * to turn gbrain on and off." He is right and it was already true before I added mine:
-   * `gbrain` is a ROUTINE and has always been in the routines list below.
-   *
-   * So there is no gbrain control. `gbrain_mode` is a consequence of the routine —
-   * connected when it resolves on, disconnected when it does not — which also keeps
-   * CASCADE § 5.1 intact: routines are previewed here with provenance and never flipped,
-   * so a launch's gbrain reach is decided by the campaign and the team, like everything
-   * else the cascade settles.
-   */
   const gbrainMode = () => ((seed?.routines || []).some((row) => row.name === 'gbrain' && row.on) ? 'connected' : 'disconnected');
   const shelvesHost = el('div');
   function paintShelves() {
@@ -464,7 +428,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   function paintActions() {
     // The button says what the press will DO: with the name blank there is no team to
     // create, so it must not promise one.
-    // ONE WORD FOR STARTING ANYTHING (owner, 2026-09-01), and the go colour when it can go.
     const ready = !!draft.name.trim();
     start.setDisabled(!ready);
     if (ready) start.el.dataset.kind = 'primary';
@@ -538,7 +501,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   async function doSave() {
     const token = draft.templateName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
     if (!token) return;
-    // THE AGENT SHELF (@template_shelves' split, 2026-09-01): agent-shaped and team-shaped
     // templates are two shelves with two doors. This form only ever reads or writes the
     // agent one — a cast belongs to a Team and means nothing to a single launch.
     const result = await request('/api/templates/agents', {
@@ -591,7 +553,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     }
     if (!touched.books && Array.isArray(value('behaviours'))) draft.books = [...value('behaviours')];
     // The campaign's, or the team's if one is joined — an editable value like every other
-    // default (lead, 2026-09-01: launch_mode cascades campaign to team to launch).
     if (!touched.launchMode && value('launch_mode')) draft.launchMode = value('launch_mode');
     if (!draft.kindTouched && team && value('kind')) draft.kind = value('kind');
     pair.paint();
@@ -631,7 +592,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     paintFoot();
   }
 
-  // THE PAYLOAD IS A SECTION HERE TOO (owner, 2026-09-01): what this press will send, with
   // a band of its own rather than trailing off the end of a long form.
   let payloadOpen = true;
   const payloadBand = createBand(
@@ -644,14 +604,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   // reading is the packet, and the button saves the packet.
   surface.content.append(form, notice.el, payloadBand.el, foot, actions.el);
 
-  /**
-   * THE ＋ NEW DOOR ARRIVES HERE NOW. `S.showNewSession(prompt)` — the bar's ＋, ⌃⇧N and
-   * the gbrain tab's "ask the assistant" — used to open `js/launcher.js` pre-filled as a
-   * `PersonalAssistant` launch. That board is retired and `session_role` with it, so the
-   * prompt lands as INSTRUCTIONS and the settled replacement for the role is ticked on
-   * the ways shelf: `ways:personal_assistant` (SETTLING § 1, the former session_roles
-   * become the `ways/` books). The hand still moves everything, as on any other seed.
-   */
   const PA_BOOK = 'ways:personal_assistant';
   const seedPrompt = (prompt) => {
     if (!prompt) return;

@@ -1,59 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE TILE HEADER — one table, and a loop that builds it.
- *
- * A control used to be defined in up to five places: its markup in an HTML string OR in
- * hand-written JS, its hover text next to whichever of those it was, its click in
- * `tile.js`'s constructor, and its inert rule in a fourth spot. Nothing held the set
- * together, so the set drifted — three controls never went inert because nobody had
- * written them a line, and adding a button meant remembering four unrelated edits.
- *
- * Now a control is ONE ROW of `HEADER`, and everything about it is on that row: where it
- * sits, what it looks like, what it says, what it does, and when it goes quiet. Adding
- * one is adding a row. Nothing can be half-wired, because there is no second place left
- * to forget.
- *
- * WHAT A ROW CAN SAY
- *   key      the name it is returned under, and what `tile.js` calls it
- *   cls      its class — also its handle for `tiledrop.js`, which RELOCATES these exact
- *            nodes into the phone's app bar rather than cloning them
- *   text     the glyph, for a plain button
- *   tag      for an element that is not a button (the session name)
- *   widget   for the four that are built by someone else and come back as {el, set}
- *   help     the accessible description (visual hover help is disabled). A function when
- *            it has to be computed at build time.
- *   on       the click. Given (tile, el) — the tile owns what any of it means.
- *   needs    what must be true for it to be live: 'session', or a service name. Absent
- *            means always live, which is a claim about the control, not an oversight.
- *   quiet    what to say while it is not. The reason, never the label repeated.
- *   holds    dormant help-box behaviour retained while the panel is disabled. For the two INSTRUMENTS
- *            whose value changes in place (the dial, the gauge): you turn the dial by
- *            clicking the thing you are hovering, so dismissing would destroy the reading
- *            at the moment it changed. Everything else OPENS something, and a help box
- *            left up would sit on top of the menu it just opened.
- *   read     for a control whose help is a READING rather than a fixed sentence — the
- *            groups it is in, whether it has a note, what job it is doing. Returns the
- *            live help and may paint the element; called on every refresh.
- *   hosts    this control DROPS the rows that follow it (メ, and only メ). Its widget
- *            returns a `menu` and a `close`; see `drop` and `tilemore.js`.
- *   drop     build me into the nearest preceding `hosts` control's menu instead of into
- *            the row. Everything else about the row is unchanged — the point is that the
- *            control is the SAME element wherever it is appended.
- *   modal    this control raises a MODAL sheet (`ui.sheet`), so メ's drop stays UP behind
- *            it. A `drop` row otherwise shuts the strip when clicked, so the panel it
- *            raised is not covered — but a modal sheet holds the whole viewport behind a
- *            scrim at a z-index far above the strip and CANNOT be covered by it. Closing
- *            bought nothing there and cost the opener: a control inside a `display:none`
- *            drop cannot take focus back when the sheet closes, so the keyboard fell to
- *            `<body>` and the next Tab restarted the page (measured 2026-08-18; ui.js
- *            `restore` now catches the general case, and this stops causing it). 📄 is the
- *            counter-example, and the reason this is a column rather than a rule: the docs
- *            pane is an in-tile surface the strip really would sit on top of, so 📄 still
- *            closes the drop.
- *
- * The order of the rows IS the order on screen, `grow` and all, so reading the table is
- * reading the header left to right — and then, past メ, left to right inside its drop.
- */
 import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
 import { clampTip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
@@ -100,7 +45,6 @@ const HEADER = () => {
 
   { grow: true },
 
-  // THE OUTPUT SELECTOR IS ON THE ROW, not in メ's drop (owner, 2026-08-26: "add the
   // rireki choices to the terminal header … I want to be able to switch between locked
   // and the different versions of unlocked to see how this looks"). Ugly for now by his
   // own word — a select with a word in it among glyph buttons — and the trade is that
@@ -113,7 +57,6 @@ const HEADER = () => {
     help: t('head.mention_help', 'Mention another session — choose a name to add it to the message box'),
     quiet: t('head.mention_quiet', 'Mentions — no session in this tile yet') },
 
-  // THE TEGAMI TORII IS GONE (owner's ruling 2026-08-17, reaffirmed after the objection
   // below was put to him). It opened `/tegami/raw` — the letter verbatim — and it was the
   // only client route to that endpoint. The objection: the shingo chip opens the PARSED
   // ladder, not the file, and shingo.js hides the chip entirely when there is no ladder,
@@ -131,7 +74,6 @@ const HEADER = () => {
     help: t('macros.button_title', "Macros — drop one into this session's input"),
     quiet: t('head.macros_quiet', 'Macros — no session in this tile yet') },
 
-  // メ — AND EVERY ROW BELOW IT IS INSIDE ITS DROP (owner's ruling 2026-08-17). Eight
   // controls ended this row and the session name has to remain readable; at four tiles up
   // there was not room for both. Three stay on top — ⛩ ⚡ メ — and the six that were
   // left drop out of メ in one horizontal strip, unchanged. See tilemore.js for the
@@ -240,7 +182,6 @@ export function buildTileHead(tile) {
   // header into the app bar behind its own メ — a control nested in a desktop drop
   // would have been lost by that hoist's snapshot. The hoist is gone: a phone never
   // builds this header at all (js/phone.js), and an iPad head with every drop row
-  // exposed inline was exactly the clutter the owner asked bundled (2026-09-01) —
   // gauge, dial, note and kill sat loose on the row.
   const coarse = isCoarse();
   let host = null; // the `hosts` row's widget, once it has been built
@@ -278,7 +219,6 @@ export function buildTileHead(tile) {
     // the `modal` rows (🏷 and 📝), and for a reason that is the same sentence read the
     // other way: their sheet is over a full-viewport scrim, so there is nothing for the
     // strip to cover, and shutting it took the OPENER out of the document's flow —
-    // `ui.sheet` then had nowhere to hand the keyboard back to (2026-08-18; see the
     // `modal` column in the header comment for the whole incident).
     // Skipped while the control is inert: you clicked a dimmed 🗑 to find out why, and
     // closing the drop under you is the opposite of an answer.
@@ -291,8 +231,6 @@ export function buildTileHead(tile) {
     if (row.hosts) host = made;
   }
   // COARSE ONLY: the Output select joins メ's strip too (owner's header cleanup,
-  // 2026-09-01). Its row sits BEFORE メ's in the table — the desktop keeps it on the
-  // row per the 2026-08-26 ruling — so the move happens here, after メ exists. The
   // same element, relocated: every handler and the syncOutput wiring come along, and
   // no close-on-click is added because a select is an instrument you adjust in place.
   if (coarse && host && out.outputEl) host.menu.prepend(out.outputEl.el ?? out.outputEl);

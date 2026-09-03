@@ -1,14 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * WHERE IT WORKS — one control, three forms (owner, 2026-09-03): Team Configuration, New
- * Team and New Agent all say the same thing the same way. The value line is the input
- * ("born in ronin_cowork · no auto desk"); click it and the selector drops down: Born in
- * (the project root, the folder every Agent starts in), the Worktrees reading, and one tick
- * per repository the team works in. With Worktrees on a tick opens a desk at birth and the
- * branch is Ronin's, so the Branch column does not exist; with Worktrees off the column
- * appears and a blank box means as checked out. Nothing ticked is the simple-job default.
- * The Worktrees switch itself lives under Routines; this control only reads it.
- */
 import { t } from './lexicon.js';
 
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };

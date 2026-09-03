@@ -8,7 +8,6 @@ import { WorkspaceKit } from './workspace-kit.js';
 const el = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
 const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 const list = (value) => Array.isArray(value) ? value : [];
-// `launch_mode` joins the dials and `permissions` leaves them (owner + lead, 2026-09-01).
 // The Campaign is the TOP of this cascade — campaign → team → launch — so the stock value
 // has to be settable somewhere, and this card is that somewhere.
 const CHOICES = Object.freeze({ reach: ['open', 'discuss', 'plan', 'execute'], recruit: ['open', 'nobody', 'propose agents', 'staff agents'], output: ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'], dial: ['user', 'read', 'write'], launch_mode: ['configured', 'live_dangerously'] });

@@ -1,20 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE COMPOSER — the unlocked tile's text entry, because it had none.
- *
- * Unlocked input has always gone through xterm's `onData` (typing parks in `pending`,
- * Enter sends the parcel). But a tape-fed tile hides xterm entirely — the transcript is
- * a div, not an emulator — so on the unlocked surface there was nothing on the page to
- * type INTO. Not a missing nicety: the missing input path.
- *
- * A real textarea, docked at the bottom, growing as you type. Enter sends; Shift+Enter
- * is a newline. The send reuses the parked-parcel rule exactly: one atomic send with the
- * carriage return glued on. Every send goes through Ronin, so every message is marked on
- * the tape and "since my last message" stays exact on this surface.
- *
- * Additive only: locked tiles never show it, and desktop unlocked previously had no
- * input at all, so nothing that worked before changes.
- */
 import { IS_TOUCH, S } from './state.js';
 import { CAN_RECORD, wireDictation } from './voice.js';
 import { t } from './lexicon.js';
@@ -171,15 +155,6 @@ export function buildComposer(body, hooks) {
     // reading the ladder while writing a reply to its gate is the normal case.
     if (IS_TOUCH) hooks.clearOverlays();
   });
-  /**
-   * Enter sends. Shift+Enter and OPTION+Enter both insert a line.
-   *
-   * Option+Enter is the muscle memory on a Mac — it is what the agent's own box in
-   * the pane takes — and it used to send, which loses the thought you were halfway
-   * through writing. A textarea has no default action for Alt+Enter, so the newline
-   * is inserted by hand at the caret; `setRangeText` is used rather than rebuilding
-   * `value` so the browser's own undo stack survives.
-   */
   ta.addEventListener('keydown', (e) => {
     // Esc clears OUR box, uniformly — whichever provider is in the pane, this box is
     // Ronin's. An already-empty box passes Esc through as a command key, exactly the

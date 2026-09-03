@@ -68,7 +68,6 @@ export function unassignedSessions() {
 }
 export function membersOfTeam(team) {
   if (team === UNASSIGNED) return unassignedSessions();
-  // The 人 pins to the top (owner, 2026-08-26); the rest by role, then name.
   const byRole = blankLast('session_role');
   return sessions().filter((s) => sessionBelongsToTeam(s, team))
     .map((session) => ({ ...session, team_lead: leadsTeam(session, team) }))

@@ -1,18 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * TEMPLATES — the Campaign's two shelves, and the library they grow from.
- *
- * The card on the Campaign page says Templates; until 2026-09-03 what opened was the
- * session roles. This is the surface the word meant: the team shelf (projects — a cast
- * that delivers a task), the agent shelf (people — one session's loadout), and under
- * them the TEMPLATE LIBRARY on ronincowork.com — bundles of a team, its people, and the
- * books, macros and tools they read, downloaded into the owner's own stores.
- *
- * Nothing is fetched from the site until the button is pressed (the update-check rule),
- * and nothing is written until the plan has been shown and Install pressed. The plan is
- * the server's (`/api/library/bundles/:name`); this only draws it. A file of the owner's
- * is written over only by the second, plainly worded button.
- */
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';

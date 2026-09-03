@@ -28,7 +28,7 @@ with its own config — the brain and any other MCP connectors are reachable —
 session's boot reading includes the connected shelf (`gbrain_connected/`), so it is born knowing how
 to use what it can reach. **Off**: the session launches with **no MCP servers at all** —
 not just the brain — and reads no connected shelf either; tools and know-how ride the one
-choice (owner, 2026-08-17). It cannot be flipped mid-session; that is a relaunch. An agent
+choice. It cannot be flipped mid-session; that is a relaunch. An agent
 never proposes off on its own initiative — only when the owner's words asked for it.
 
 **🎩 PersonalAssistant has no toggle: it is born connected** (`mcp: always`,
@@ -38,7 +38,7 @@ never proposes off on its own initiative — only when the owner's words asked f
 
 - **Query freely — with the right verb for this house's configuration.** `search` is the
   workhorse: with the local weights up it is semantic, not just keyword. **This gbrain is
-  a memory, not a thinker — by ruling (owner, 2026-08-18), it has no chat model**: the
+  a memory, not a thinker — by ruling, it has no chat model**: the
   synthesis is YOUR job from search results. `think` and `synthesize` will say "no LLM
   available" — expected, not a fault — and **`query` returns an empty list silently:
   never read that as "the brain knows nothing"; use `search`.**
@@ -66,7 +66,7 @@ keys, validates them, configures, smoke-tests. The house rules over that procedu
    run, report the smoke-test result. A refusal is an answer.
 4. **ngrok is special: it is an inbound door** — a public URL into this machine. It is
    never part of "setting up email"; it is its own proposal with its own yes.
-5. **Embeddings are local — a ruling, not a default** (owner, 2026-08-17). The gbrain
+5. **Embeddings are local — a ruling, not a default**. The gbrain
    service pulls in the local embed model itself; a gbrain that sends pages or queries
    to a hosted embedding provider is not a shape this house ships. A hosted provider
    would receive every page at index time and every query at search time — that door

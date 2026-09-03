@@ -1,7 +1,6 @@
 # JIKAN — the house's clock, and Cron jobs on it
 
-JIKAN (時間, "time") is the one clock every timed thing in the server rides (owner,
-2026-09-03): the message queue's retry, the sessions broadcast, the Tomodachi sweep and the
+JIKAN (時間, "time") is the one clock every timed thing in the server rides: the message queue's retry, the sessions broadcast, the Tomodachi sweep and the
 Cron jobs are each a tick on it — an interval that never overlaps itself and never throws
 out, in `src/jikan.ts`. Nothing else in `src/` sets a rhythm, so one fix fixes all.
 

@@ -40,8 +40,7 @@ you or the owner wants the check-ins.
 drop of every tile header. **No marking = not on the drop — the default**, and that is the
 whole of it: the drop is a TEACHING surface rather than an index, four big buttons a person
 who has never heard of a macro can read and go *"oh, I see, it does something I didn't know
-this could do"* (owner, 2026-08-17 — *"If we have too many, people just don't get
-educated"*). Opt-in, not opt-out, because this file holds a dozen entries and the drop holds
+this could do"*. Opt-in, not opt-out, because this file holds a dozen entries and the drop holds
 about four: under opt-out every macro added later would appear on the button until somebody
 noticed it there.
 **DISPLAY ONLY — an unpreviewed macro still runs**, typed by hand, bound to a keypad key, or
@@ -50,9 +49,7 @@ answers "is this on the button", not "does this exist".
 The card is drawn from the entry's `label:` and `blurb:` — which every entry carries, previewed
 or not, for the reason below.
 
-**TWO AUDIENCES, AND NEITHER STANDS IN FOR THE OTHER** (owner, 2026-08-17 — *"we need to
-split out the description and the agent instruction into two different things because they
-don't overlap, and the macro should carry both"*). Every entry here is read by two readers
+**TWO AUDIENCES, AND NEITHER STANDS IN FOR THE OTHER**. Every entry here is read by two readers
 who need opposite things, so it carries two separate pieces of writing:
 
 - **The prose under the heading is the AGENT'S INSTRUCTION** — what you read in order to RUN
@@ -160,7 +157,7 @@ There is no launch-role axis and no mandatory behaviour decision. Do not invent 
 do not stop to ask for one. Pass `--behaviour ways:<book>` only when the owner supplied it
 or the work itself needs that book's reading.
 
-**THREE WAYS TO ASK, AND SAYING NOTHING IS THE FIRST ONE** (owner, 2026-08-29). Say
+**THREE WAYS TO ASK, AND SAYING NOTHING IS THE FIRST ONE**. Say
 only as much as the owner actually said, and let the rest load lazily:
 
 | The owner said | You pass | What is born on |

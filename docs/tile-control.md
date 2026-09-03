@@ -40,7 +40,7 @@ way.
 
 ## The ＋ button opens blank
 
-＋ opens a new tab with `?tiles=,` — **two empty tiles** (owner, 2026-08-20), not a copy
+＋ opens a new tab with `?tiles=,` — **two empty tiles**, not a copy
 of the current tab. Without the directive the new tab would inherit the sessionStorage
 copy and read as a clone.
 

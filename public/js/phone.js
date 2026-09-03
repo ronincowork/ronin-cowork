@@ -1,24 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE PHONE SHELL — the coworkspace's front door on an iPhone-class screen.
- *
- * A phone never boots the workbench. The workbench is a drag-and-drop instrument
- * built for a wide pointer surface; squeezed through one breakpoint it became a
- * scroll-snapped stack of 80vh panels with the discovery column sandwiched between
- * two terminals, under a header carrying twelve desktop controls (the owner:
- * "clouded"). This shell replaces all of it with the three steps the owner asked
- * for (MOBILE plan, 2026-09-01):
- *
- *   1 · pick the Cowork      one column of team cards
- *   2 · pick the Agent       the team's members, with their live readings
- *   3 · drive it             full-bleed tile, composer + keys row docked at the bottom
- *
- * Hash-routed (#/m · #/m/t/<team> · #/m/s/<team>/<session>) so Safari's back button
- * and a PWA re-open both work. Everything underneath is REUSED, never rebuilt: the
- * Tile and its composer, the team controller's projections, the /events feed, the
- * lexicon. Desktop and iPad never load this path — main.js branches on IS_PHONE
- * before the workbench is created, and nothing here touches the desktop page.
- */
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
 import { guard } from './errors.js';
@@ -69,7 +49,6 @@ export async function buildPhone() {
   root.append(bar, main);
   document.body.append(root);
 
-  // The house mark rides the shell's own bar on the front door (owner, 2026-09-01:
   // "we should see the top header, the RoninCowork and the Torii"). RELOCATED from the
   // hidden desktop bar, not cloned — captured once, because a later paint detaches it
   // and getElementById would then find nothing. Tapping it is the way home (href="./").
@@ -117,11 +96,6 @@ export async function buildPhone() {
     main.replaceChildren(list);
   };
 
-  /* ---------- the launch card: a name, the words, and the Cowork's defaults ----------
-     The owner's rule (2026-09-01): birthing from a phone needs a name and instructions,
-     nothing else — no toolkit, no mandates, no routines. Everything unstated launches on
-     the Team's own defaults, resolved server-side exactly as Add Agent's quick launch
-     does (add-agent.js: "a caller that states one is guessing at the server's job"). */
   const launchCard = (team) => {
     const card = el('div', 'ph-launch');
     const open = el('button', 'ph-launch-open', '＋ ' + t('phone.launch_card', 'Launch New Agent'));

@@ -50,7 +50,7 @@ file happens to define every stock name.
 **Deliberately not shadowable:**
 
 - **MICHI and TEGAMI** — session data in the session store, not stock catalogs. There is
-  no shipped version to win over (owner's ruling, 2026-08-11).
+  no shipped version to win over.
 - **Your `PROJECT_ROOTS.md`** — already user scope. The shipped file keeps only the
   provider·model launch table, which is stock because every install needs session_launch_specs.
 - **`workspace_macro`** — machinery in `src/spawn.ts`, not a catalog. A markdown file

@@ -1,28 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * NEW TEAM — the drawn raise form, staged BESIDE the seven-field New Team card
- * (owner's staging rule, 2026-08-31): a new surface type, nothing removed, and the owner
- * decides when one retires the other. The drawn contract is ronin-lab
- * `concepts/new-team.html` at the condensed density; the record it writes is
- * `NEW_AGENT.md` § 7.2, whole — no `team_role`, no `repos`, both removed by the owner.
- *
- * TWO DOORS, differing only by the tray: Template offers the catalog and collapse-on-pick;
- * Manual asks the same steps and fills nothing in. Picking a template answers the steps
- * it carries and folds them — the number, the name and the answer stay on the row, and
- * the header opens it. `Make your own` collapses nothing, because it filled nothing in.
- *
- * WHERE THE ANSWERS COME FROM: `GET /api/launch-seed` with no team — the rōnin case, the
- * campaign's answers (CASCADE § 5.1). The form opens on them; a default LANDS and is then
- * yours. Routines are TWO-STATE and the map is complete (owner via the lead, 2026-08-31,
- * overturning the drawing's own three-state row): the form opens on the campaign's
- * current values, Save stores the team's complete map, and a campaign edit reaches only
- * the next team made. No inherit control, no reset-to-campaign, anywhere.
- *
- * RAISE NEVER FAILS for the ordinary states — no objective, no root, `open` on every
- * dial. The lead is an OFFER (a brief and a mandate, never a roster row): raising with
- * one is § 7.5's two idempotent doors — the record first, then a launch for every Agent
- * the Team is raised with, the marked one born as the 人 (`js/team-loader.js`).
- */
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { createWhereItWorks } from './where-it-works.js';
@@ -36,7 +12,6 @@ import {
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
-// A LIST since 2026-09-01, and `no code` is said rather than implied by absence.
 const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 const DIALS = ['user', 'read', 'write'];
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
@@ -67,9 +42,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   let busy = false;
   let loaded = false;
 
-  /* THE RAISE BUTTON LIVES IN THE TILE HEADER (owner, 2026-09-01), compact and quiet
-   * rather than a slab at the foot of a long scroll — asleep until a team name is typed,
-   * because the name is the only required field and everything under it is optional. */
   const raise = createAction({
     label: t('forms.launch', 'Launch'),
     size: 'compact',
@@ -79,7 +51,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const surface = createSurface({ label: t('new_team.title', 'New Team'), className: 'ntf-surface', actions: [raise] });
   const notice = createNotice();
 
-  // NO TEMPLATE | MANUAL SWITCHER (owner, 2026-09-01). The tray is a step like any other
   // and "Make your own" is the manual door; a mode switch above the form was a second way
   // to say the same thing.
 
@@ -98,7 +69,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.template = name;
     draft.expanded = {};
     const row = templateRow();
-    // MAKE YOUR OWN EMPTIES THE FORM (owner, 2026-09-01: "if you select a template and
     // then you go back to make your own, it leaves the template entries there… it should
     // clear the entries below"). Back to the campaign's own answers, not to nothing — the
     // seeded defaults are what an untouched form holds. Your name, title, kind and place
@@ -120,7 +90,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     for (const on of row.routines_on) if (on in draft.routines) draft.routines[on] = true;
     for (const off of row.routines_off) if (off in draft.routines) draft.routines[off] = false;
     if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); }
-    // THE CAST LANDS AS ROWS (@template_shelves' team shelf, 2026-09-01). A team template
     // carries `agents[]` in exactly the ruled wire shape `agentPicks()` produces, so it
     // reads straight into the editor — instructions becomes the row's assignment and
     // team_lead its mark, which is the same translation `agentPicks` does on the way out.
@@ -181,9 +150,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     paintFoot();
   });
   // No spelling rule under the field: the input enforces it as you type, so a sentence
-  // describing it only tells you what you can already see happening (owner, 2026-09-01).
   const nameField = createField({ label: t('new_team.name', 'Team name'), control: nameInput });
-  // THE TITLE IS DERIVED UNTIL YOU TOUCH IT (owner, 2026-09-01: "I believe it is
   // auto-populated. Then someone could change if they wanted."). Same rule as every other
   // seeded value on these forms: the default lands, the hand has the last word.
   let titleTouched = false;
@@ -218,9 +185,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   stepTop.body.append(topPair, kindHost);
 
   /* ---- step 3 · Objective ---- */
-  /* Owner, 2026-09-01: "this is just all extra stuff you can pass on to every agent in a
-     team." The objective is the half already DELIVERED — `src/spawn.ts` writes it into
-     every newborn's brief by name. */
   const stepObjective = createStep({ n: 3, key: 'objective', title: t('new_team.common', 'Common instructions'), onToggle: () => toggle('objective') });
   const objectiveInput = el('textarea');
   objectiveInput.rows = 3;
@@ -229,22 +193,16 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   stepObjective.body.append(createField({ label: t('team.objective', 'Objective'), control: objectiveInput }).el);
 
   /* ---- step 4 · Where ---- */
-  /* Owner, 2026-09-01: "combine the model provider and model with project root and branch
-     into one section because that's really what we're doing. We're saying open codecs in
-     the lab root… It will access whatever the fuck it wants." Where it OPENS, not where
-     it is confined. */
   const stepWhere = createStep({ n: 5, key: 'where', title: t('new_team.who_where', 'Who and where'), onToggle: () => toggle('where') });
   const pair = providerModelPair(
     () => ({ provider: draft.provider, model: draft.model }),
     (provider, model) => { draft.provider = provider; draft.model = model; paintFoot(); },
     (label, control) => createField({ label, control }).el,
   );
-  // WHERE IT WORKS (owner, 2026-09-03): the shared control — Born in, a tick per repository,
   // a Branch column only when Worktrees is off. The single team branch field is gone.
   const where = createWhereItWorks({ rootDefaultLabel: t('new_team.root_default', '— the box’s default —'), onChange: () => { draft.root = where.root; draft.repos = where.repos(); draft.branches = where.branches(); paintFoot(); } });
   const wherePair = el('div', 'fs-pair');
   wherePair.append(createField({ label: t('where.label', 'Where it works'), control: where.el }).el);
-  // NO WIPEBOARD FIELD (owner, 2026-09-01): "the wipeboard is automatically configured…
   // no one ever even sees the fucking name." The store already defaults it to the team's
   // own token, so the form asks nothing and sends nothing.
   stepWhere.body.append(pair.el, wherePair);
@@ -252,14 +210,12 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   /* ---- step 5 · Team kit ---- */
   const stepKit = createStep({ n: 6, key: 'kit', title: t('team_kit', 'Shared toolkit'), onToggle: () => toggle('kit') });
-  // NO MANDATE ON A TEAM (owner, 2026-09-01): "this is kind of a dumb thing for every
   // agent to inherit from its team. It's going to be very agent-specific anyway, and I
   // think open is the only natural thing." Reach, recruit and output stay `open` in the
   // record and are asked once, on the Agent, where they mean something.
   //
   // NO CONTROL DIAL EITHER: "I want to kill it visually, even if the plumbing is still
   // there." The record keeps its field; the form stops offering it.
-  // NO PERMISSIONS FIELD (owner, 2026-09-01: "permissions just look like something to
   // confuse a user because they have no idea what that is"). He is right, and it is worse
   // than confusing: it names the provider CLI's approval mode, every launch-table cell
   // already carries `--dangerously-bypass-approvals-and-sandbox` hardcoded, and nothing
@@ -280,10 +236,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; paintLaunchMode(); paintFoot(); }),
     );
   };
-  /* gbrain connection is DERIVED from the gbrain ROUTINE, never a second switch (owner,
-     2026-09-01: "we shouldn't have two places to turn gbrain on and off"). Here the
-     routine is genuinely clickable, so "click it and it's on for the launch" is literally
-     what happens — this reads its answer rather than asking again. */
   const gbrainMode = () => (routineOn('gbrain') ? 'connected' : 'disconnected');
   const routinesHead = el('p', 'fs-head', t('routines', 'Routines'));
   const worktreesMode = el('div', 'fs-worktrees-mode');
@@ -329,7 +281,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   }
   const booksHost = el('div');
   function paintBooks() {
-    // PICKED HERE, NOT BEHIND A DOOR (owner, 2026-09-01: "we should have the behaviours
     // here, and you can just choose it the same as you could in the agent form"). The same
     // two shelves New Agent offers, the same `<shelf>:<name>` addresses, one implementation
     // in form-steps.js. A team's books land in the next Agent form like every other default
@@ -364,14 +315,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     else draft.expanded[key] = true;
     paintFolds();
   }
-  // KIND BEFORE TEMPLATE (owner, 2026-08-31): the kind narrows the tray, so asking for a
   // template first offered all fifteen tiles and then quietly dropped the pick when a
   // later kind excluded it. New Agent already asked in this order; the two forms agree.
   // One list, read by the form's numbering AND by the Launch selector's outline.
-  /* THE TEAM'S OWN FACTS, THEN THE AGENT DEFAULTS (owner, 2026-09-01: "move the team lead
-     up to number 4… everything underneath is for defaults for agent launches in that
-     team"). Steps 1-4 are what this Team IS; 5-6 are what every Agent raised here starts
-     with, and the band between them says so. */
   const plan = () => ['top', 'template', 'objective', 'lead', 'where', 'kit'];
   const meta = {
     objective: () => draft.objective.slice(0, 40),
@@ -428,16 +374,13 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     save.setDisabled(!saveName.value.trim());
   });
   const save = createAction({ label: t('save_template', 'Save as template'), disabled: true, action: () => void doSave() });
-  // SAVE AS TEMPLATE SITS UNDER THE BLOCK IT SAVES (owner, 2026-09-01): "you're saving
   // that block as a configuration that you want to use over."
   const saveRow = createActionBar({ label: t('new_team.team_actions', 'Team actions'), className: 'ntf-actions' });
   saveRow.el.append(saveName, save.el);
-  // SAVE AS TEMPLATE GOES AT THE BOTTOM, UNDER THE PACKET (owner, 2026-09-01: "why is the
   // save template not at the bottom with the blurb that is the packet"). The reading IS
   // the thing being saved — what this Team amounts to — so the button that saves it sits
   // beneath it, not inside one of the steps that feeds it. Mounted at the surface below.
   function paintActions() {
-    // ONE WORD FOR STARTING ANYTHING (owner, 2026-09-01): "I want launch to be the
     // keyword everywhere for starting a new team and starting a new agent." Grey while
     // there is no name, kaki — the house's go colour — the moment there is one.
     const ready = !!finalizeTeamName(draft.name);
@@ -594,7 +537,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       if (value(key)) draft[key] = value(key);
     }
     if (value('output')) draft.output = [value('output')].flat().filter(Boolean);
-    // `permissions` LEAVES agent_defaults entirely (lead, 2026-09-01, carrying the owner):
     // § 7.2 is { provider, model, reach, recruit, output, dial, launch_mode }. Named on its
     // own because the seed's key is snake and the draft's is camel — folding it into the
     // loop above would have written `draft.launch_mode` and seeded nothing, forever.
@@ -634,7 +576,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.'),
     () => { defaultsOpen = !defaultsOpen; paint(); },
   );
-  // THE PAYLOAD IS A SECTION, NOT A TAIL (owner, 2026-09-01): "it's just sort of stuck down
   // there like a turd. It should be a proper section, new launch payload, and marked with
   // an orange banner to hide or expand." It is what this press will actually send, so it
   // gets a band of its own and folds like the defaults above it.

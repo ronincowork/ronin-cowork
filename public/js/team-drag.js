@@ -1,8 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE ROSTER'S DRAG — a member card dragged onto a workspace lands in that workspace.
- * Out of team-view.js on 2026-08-27 for the 700-line ceiling; the rule is unchanged.
- */
 export const DRAG_TYPE = 'text/x-ronin-session';
 /** A doc dragged off the ▧ Docs list: its short reference (`dir/name`), for a composer. */
 export const DOC_MIME = 'text/x-ronin-doc';

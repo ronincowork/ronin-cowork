@@ -1,13 +1,12 @@
 # Wipeboards — the team's board
 
-**The team board is the unit** (owner, 2026-08-24). Every team has a board — where its
+**The team board is the unit**. Every team has a board — where its
 sessions talk to each other instead of routing every message through the owner — and a
 session never has to be told it exists: the board is **assumed**. A "generalist" wipeboard
 over an arbitrary grouping outside a team is a possible second utility for later; it is
 deliberately not built, and none of its machinery remains.
 
-**It is not history.** A wipeboard is "just a means for communicating back and forth"
-(owner, 2026-08-23), and "once everyone has seen the message, there's really no need to
+**It is not history.** A wipeboard is "just a means for communicating back and forth", and "once everyone has seen the message, there's really no need to
 keep it". A post is **delivered and then reaped** — when every reader it was for has read
 it, or when it ages past the TTL. Nothing here is a record: RIREKI's tape holds what a
 tile printed, and a decision worth keeping belongs in a session's TEGAMI, a `docs/` page,
@@ -68,7 +67,7 @@ and advance only its own cursor.
 ## Writing, and who gets interrupted
 
 A post's audience decides **who is interrupted**, not who may read — and an agent's post
-is **quiet by default** (owner, 2026-08-24): most posts do not need the whole team pulled
+is **quiet by default**: most posts do not need the whole team pulled
 out of its work, so a bare post interrupts the lead alone, and widening is deliberate. The
 lead sees everything that hits the board; a leaderless team has nobody always-on; the
 poster is never sent their own post, lead or not.
@@ -81,7 +80,7 @@ poster is never sent their own post, lead or not.
 | `post --to none "…"` | nobody — it lands and waits to be found |
 
 The **owner's** line is the one exception, the other way: an owner post interrupts
-everyone, because "all agents should see that" (owner, 2026-08-23). The quiet default is
+everyone, because "all agents should see that". The quiet default is
 for agents.
 
 **Where the owner meets a board: the team page.** Opening a team shows its board as the
@@ -139,7 +138,7 @@ post, and a header whose audience will not parse means **everyone**, never nobod
 
 ## Reaping
 
-**One rule: the TTL** (owner, 2026-08-25). A post lives its 48 hours — whoever has read
+**One rule: the TTL**. A post lives its 48 hours — whoever has read
 it — then the machine retires it. Read-reaping was dropped the day the owner met a board
 everyone *else* had read: it looked empty to the one person who had not, which reads as
 broken, and it killed scrolling back over what the team had been saying. The board now
@@ -156,7 +155,7 @@ deletes another agent's post.
 
 ## The team owns the board, and membership is the team
 
-**A team roster's `wipeboard:` id is what identifies a board** (owner, 2026-08-23):
+**A team roster's `wipeboard:` id is what identifies a board**:
 *"Every team roster should have a whiteboard ID, and that whiteboard ID should match with
 a single whiteboard. I don't care what the names are."*
 
@@ -176,8 +175,7 @@ a single whiteboard. I don't care what the names are."*
   `docs/campaign-scope.md` § Wipeboards.
 - **Membership is the team's, derived at every read.** Tag a session into the team and it
   is on that team's board; untag it and it is off. The two cannot drift because they are
-  one fact. There is no other membership: **custom enrolment is cut** (owner, 2026-08-24 —
-  MVP is the team board; the `@ronin-wipeboards` option is no longer consulted anywhere).
+  one fact. There is no other membership: **custom enrolment is cut**.
 - **No create step for anyone.** The board is not something anyone makes; it is something
   the roster implies.
 - A session on several teams reads all their boards; posting bare asks which team it means.

@@ -67,7 +67,7 @@ curl -sS -X POST http://127.0.0.1:${PORT:-3006}/api/launch \
 **The axes, and what each may be left out of.** `project_root` is required and omitting it
 selects the top active root. `role_family` and `session_role` may each be blank, and blank is
 a real launch — but **an agent-launching fork must RESOLVE them deliberately rather than
-omit them by accident** (owner, 2026-08-22). The receipt names what was actually resolved;
+omit them by accident**. The receipt names what was actually resolved;
 read it back and report it.
 
 **THE MODEL — leave it out unless the owner named one.** Omit `cmd` and the launch is born
@@ -342,7 +342,7 @@ tejun-wipeboard post --to all "…"           # everyone — said on purpose
 tejun-wipeboard post --to none "…"          # nobody — it lands and waits to be found
 ```
 
-**Quiet by default** (owner, 2026-08-24): most posts do not need the whole team pulled out
+**Quiet by default**: most posts do not need the whole team pulled out
 of its work, so a bare post interrupts only the lead — the board stays efficient instead
 of becoming a spam machine. Widening is deliberate: name who has to act, or say
 `--to all` and mean it. The lead sees everything that hits the board; a leaderless team
@@ -430,7 +430,7 @@ funnel points. **Commit** coherent checkpoints privately as you go. At each DONE
 may prompt it, never perform it for you, and it is not `git push`. Run no repository-wide verification at a
 commit or a hand-in. An accepted hand-in, or a conflict, tells your team's lead by itself,
 regardless of the lead's dial — reviewing the team line and promoting it is the lead's
-primary job (owner law 2026-08-28) — so you never need to `tejun-send` the lead about a
+primary job — so you never need to `tejun-send` the lead about a
 hand-in, and a watch-only lead is not a reason to stop. If the team has no lead, the
 hand-in tells you so and the job is yours: review the line and `bin/ronin-promote <team>`
 when it is coherent; a conflict is yours to resolve (`tejun-desk sync`, fix, hand in).
@@ -454,8 +454,7 @@ the approval must be his hand).
 ```bash
 bin/ronin-promote pr <team>
 ```
-That is the whole action (owner, 2026-08-28: agents do not assemble `gh` commands or paste
-receipt blocks by hand). It reads the arrangement, takes the team's last complete
+That is the whole action. It reads the arrangement, takes the team's last complete
 promotion receipt, warns if the working line's head is not that receipt's candidate,
 pushes the working line, writes the body in the template's shape with
 the receipt fenced, and creates the PR — or updates the one already open, never a second.

@@ -7,7 +7,7 @@ templates/agents/<token>.md   ← a PERSON you assign: one session's loadout
 templates/teams/<token>.md    ← a PROJECT: the cast that delivers it, one marked lead
 ```
 
-Agents are people, teams are projects (owner, 2026-09-01): a box named like a job
+Agents are people, teams are projects: a box named like a job
 title — designer, bookkeeper, health checker — is an agent; a box named like a task —
 staff my codebase, health checks, dinner party — is a team.
 
