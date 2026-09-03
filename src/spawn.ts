@@ -553,14 +553,15 @@ export async function resolveForm(
     });
   };
   const name = wanted || slugName(profile.session_role || form.team || 'session', form.prompt ?? '', taken);
-  const worktrees = bareMetalAgent || sessionType === 'terminal'
+  const worktreesOn = routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled);
+  const worktrees = bareMetalAgent || sessionType === 'terminal' || !worktreesOn
     ? { assignment: null, repositories: [] }
     : await resolveLaunchDesks({
     session: name,
     team: form.team ?? '',
     project_root: root.name,
     agent,
-    control: routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
+    control: worktreesOn,
     desk: form.desk,
   });
   const assignment = worktrees.assignment;

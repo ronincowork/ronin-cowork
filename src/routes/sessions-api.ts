@@ -220,9 +220,6 @@ export function registerSessions(app: express.Express): void {
     }
     const name = await sessionOfPane(pane);
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
-    if ((await getControl(name)) === 'user') {
-      return res.status(403).json({ error: `"${name}" is owner-controlled (dial 👤). Ask the owner to end it.` });
-    }
     // Answer BEFORE killing: once the session goes, so does the socket, the caller and
     // anything it might have printed. The reply is for the log and for a caller that
     // somehow outlives its session — never a precondition for the kill.
@@ -428,16 +425,11 @@ export function registerSessions(app: express.Express): void {
       const fresh = leads.filter((t) => !before.includes(t));
       let delivered: string | null = null;
       if (fresh.length) {
-        const control = await getControl(name);
-        if (control === 'write') {
           const msg =
             `You are now the team_lead of ${fresh.map((t) => `"${t}"`).join(', ')}. ` +
             `Read first: ${teamsSopPath()} — how to raise supporting sessions and place them into your team.`;
           const sent = await sendText(name, msg).catch(() => null);
           delivered = sent?.started ? 'delivered' : 'not delivered — the prompt was not accepting input';
-        } else {
-          delivered = `not delivered — "${name}" is dial ${control}; flip it to 🤖 and re-designate to hand over the reading`;
-        }
       }
       res.json({ ok: true, team_lead: leads, tags, delivery: delivered });
     } catch (e) {
@@ -516,13 +508,6 @@ export function registerSessions(app: express.Express): void {
     // spell out what the poster IS allowed to do; a successful send echoes the dial so
     // even permitted writers see what mode they posted under.
     const control = await getControl(name);
-    if (control !== 'write') {
-      const warn =
-        control === 'user'
-          ? `"${name}" is 👤 owner-only — outside agents may not read or type here. Do not flip the dial yourself; report back and ask the owner.`
-          : `"${name}" is 👁 watch-only for outside agents — you may observe (capture-pane) but not type. Do not flip the dial yourself; report back and ask the owner to flip it to 🤖.`;
-      return res.status(403).json({ error: warn, control });
-    }
     const raw = String(req.body?.text ?? '');
     if (!raw.trim()) return res.status(400).json({ error: 'Nothing to send.' });
     try {

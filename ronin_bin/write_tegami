@@ -467,7 +467,10 @@ extra = sorted(set(d) - ALLOWED)
 if extra:
     blocked = [k for k in extra if k in NOT_YOURS]
     if blocked and len(blocked) == len(extra):
-        sys.exit("write_tegami: " + "\n\nwrite_tegami: ".join(NOT_YOURS[k] for k in blocked))
+        print("write_tegami: warning: " + ", ".join(blocked) + " are maintained by Ronin and were ignored.", file=sys.stderr)
+        for k in blocked: d.pop(k, None)
+        extra = []
+if extra:
     sys.exit("write_tegami: unknown key(s): " + ", ".join(extra) +
              "\n  A TEGAMI holds: objective, mandate, repos, ladder, and ladder_state when you are off it."
              "\n  (\"teams\" is machinery-derived; membership lives in your tags.)"

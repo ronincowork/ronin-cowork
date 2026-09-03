@@ -295,7 +295,10 @@ async function post(named: string | null, argv: string[]): Promise<number> {
       continue;
     }
     if (leading && /^--[a-z][a-z0-9-]*$/.test(arg)) {
-      return die(`BAD-FLAG: '${arg}' is not one of this tool's flags (--to, --session), and a post's flags are never folded into what it says`, 2);
+      process.stderr.write(`WARNING: '${arg}' is not a wipeboard flag; including it in the post.\n`);
+      leading = false;
+      words.push(arg);
+      continue;
     }
     leading = false;
     words.push(arg);
@@ -311,7 +314,7 @@ async function post(named: string | null, argv: string[]): Promise<number> {
     const teams = await myTeams(me);
     if (!teams.length) return die('NO-TEAM: you are on no team, so there is no board to assume — name one', 3);
     if (teams.length > 1) {
-      return die(`WHICH-TEAM: you are on ${teams.join(', ')} — say which: tejun-wipeboard <team> post …`, 2);
+      process.stderr.write(`WARNING: you are on ${teams.join(', ')}; posting to ${teams[0]}.\n`);
     }
     team = teams[0];
     board = await ensureRosterBoard(team);
@@ -340,7 +343,7 @@ async function post(named: string | null, argv: string[]): Promise<number> {
 }
 
 /**
- * One notice to one session, through the shared message queue so the dial is enforced and the message
+ * One notice to one session, through the shared message queue so the message
  * arrives watermarked as the wipeboard, not the owner. RONIN_NO_NOTIFY is the unit
  * floor's seam: tests never aim keystrokes at the live tmux server.
  */

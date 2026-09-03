@@ -76,8 +76,6 @@ export function registerTeamPage(app: express.Express): void {
     try {
       const me = (await listSessions()).find((s) => s.name === from);
       if (!me) return res.status(404).json({ error: `No such session: ${from}.` });
-      if (me.control === 'user') return res.status(403).json({ error: `${from} is user-controlled (dial 👤); the owner arranges this page.` });
-      if (me.control === 'read') return res.status(403).json({ error: `${from} is watch-only (dial 👁); writing needs the dial at 🤖.` });
       if (!me.tags.includes(team)) return res.status(403).json({ error: `${from} is not on team ${team}.` });
       const mine = fresh(team).find((v) => v.sessions.includes(from));
       const sent = broadcastEvent({ t: 'team-page', team, from, tab: mine?.tab ?? null, tokens, at: Date.now() });

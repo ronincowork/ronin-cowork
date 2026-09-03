@@ -20,10 +20,7 @@ try {
   if (source === 'tell') {
     const sender = from ?? 'Agent';
     const pending = await pendingTellsFrom(sender, target);
-    if (pending.length) {
-      console.error(`REFUSED: ${pending.length} unresolved tell(s) from '${sender}' to '${target}' already visible in Messages (${pending.map((item) => item.id).join(', ')}). Let them deliver or dismiss them before sending new wording.`);
-      process.exit(3);
-    }
+    if (pending.length) console.warn(`WARNING: ${pending.length} unresolved tell(s) from '${sender}' to '${target}' remain visible in Messages; sending this one too.`);
   }
   const item = await enqueueMessage(target, text, source, from);
   const retained = await attemptMessage(item.id, 'safe');

@@ -19,7 +19,7 @@
  *         v  Ronin, on boot and on every save
  *     @ronin-session-max            a tmux SERVER option — the bus
  *        /                \
- *   createSession()     libexec/ronin-may-spawn
+ *   createSession()
  *   (Ronin's own door)  (the shim's door, for agents driving tmux themselves)
  *
  * A spawn either goes through Ronin or it does not, and no single process sees both:

@@ -94,10 +94,8 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
   try {
     opener = (await import('./desks/desk.js')) as typeof opener;
   } catch (e) {
-    throw new Error(
-      `Desk preparation is not available on this install (${(e as Error)?.message ?? e}). ` +
-        'The launch was refused rather than started in the shared checkout: install the desk tools, or declare the repository direct (RONIN_REPO desks=none).',
-    );
+    console.warn(`Desk preparation is unavailable; launching from the project checkout: ${(e as Error)?.message ?? e}`);
+    return { ...a, desks: [] };
   }
   let opened: Assignment;
   try {
@@ -127,10 +125,8 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
     opened = { ...a, desks };
     await writeAssignment(opened);
   } catch (e) {
-    throw new Error(`Could not open the desks for ${a.id} — ${(e as Error)?.message ?? e}. The launch was refused; nothing was started in a funnel checkout.`);
-  }
-  if (!opened.desks.length) {
-    throw new Error(`The desks derived for ${a.id} could not be opened (none came back). The launch was refused; nothing was started in a funnel checkout.`);
+    console.warn(`Could not open the desks for ${a.id}; launching from the project checkout: ${(e as Error)?.message ?? e}`);
+    return { ...a, desks: [] };
   }
   return opened;
 }

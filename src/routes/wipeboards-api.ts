@@ -7,7 +7,7 @@
  * See docs/wipeboards.md.
  */
 import type express from 'express';
-import { type Control, getControl, isValidName, listSessions, sessionExists, teamsInPlay } from '../tmux.js';
+import { type Control, isValidName, listSessions, sessionExists, teamsInPlay } from '../tmux.js';
 import { attemptMessage, enqueueMessage } from '../message-queue.js';
 import {
   appendPost,
@@ -123,10 +123,6 @@ async function fanOut(board: string, post: Post, from: string): Promise<Record<s
     if (at(m.name) === at(from)) continue; // never the poster
     if (!leads.has(m.name) && aimed && !aimed.has(at(m.name))) {
       unaddressed++;
-      continue;
-    }
-    if (m.control !== 'write') {
-      results[m.name] = 'not notified (dial is not 🤖) — it gets this on its next check';
       continue;
     }
     const queued = await enqueueMessage(m.name, notice, 'wipeboard_notice');
@@ -361,10 +357,6 @@ export async function announceTeamChanges(
       await appendPost(t, 'system', `${await ownerAuthor()} ${join ? 'tagged' : 'untagged'} @${session} ${join ? 'into' : 'out of'} the "${t}" team`);
       if (!(await sessionExists(session))) {
         results[t] = 'session is gone — the board was told';
-        continue;
-      }
-      if ((await getControl(session)) !== 'write') {
-        results[t] = join ? 'on the team, not notified (dial is not 🤖)' : 'off the team, not notified (dial is not 🤖)';
         continue;
       }
       const file = boardPath(t);

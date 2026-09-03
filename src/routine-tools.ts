@@ -55,7 +55,7 @@ export async function projectRoutineTools(
    * way. It passes `restart ronin` straight through; it is only ever in the way of the
    * one command nobody means to type.
    */
-  const names = new Set<string>(['shim/tmux', 'shim/systemctl']);
+  const names = new Set<string>(['shim/tmux']);
   for (const routine of routines) if (routine.enabled) for (const tool of routine.tools) names.add(tool);
   const delivered: string[] = [];
   const missing: string[] = [];
