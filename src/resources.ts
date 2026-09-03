@@ -2,6 +2,8 @@ import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import type express from 'express';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.join(__dirname, '..');
@@ -79,11 +81,30 @@ export interface ResolveSpec {
   symlinks?: boolean;
 }
 
+const requestListings = new AsyncLocalStorage<Map<string, Promise<Map<string, { path: string; text: string }>>>>();
+
+export const resourceRequestCache: express.RequestHandler = (_req, _res, next) => {
+  requestListings.run(new Map(), next);
+};
+
 async function layerFiles(
   dir: string,
   symlinks: boolean,
 ): Promise<Map<string, { path: string; text: string }>> {
   if (!dir) return new Map();
+  const cache = requestListings.getStore();
+  const key = `${symlinks ? 'links' : 'files'}:${dir}`;
+  const found = cache?.get(key);
+  if (found) return found;
+  const pending = readLayerFiles(dir, symlinks);
+  cache?.set(key, pending);
+  return pending;
+}
+
+async function readLayerFiles(
+  dir: string,
+  symlinks: boolean,
+): Promise<Map<string, { path: string; text: string }>> {
   let entries;
   try {
     entries = await readdir(dir, { withFileTypes: true });

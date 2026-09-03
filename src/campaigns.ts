@@ -1,12 +1,9 @@
-import { readMachineSettings, writeMachineSettings } from './machine-settings.js';
+import { readMachineSettingsSection, writeMachineSettings } from './machine-settings.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
 import { completeRoutineChoices } from './routines.js';
 
 async function readCampaigns(): Promise<Record<string, unknown>> {
-  const record = await readMachineSettings();
-  const value = record.set.campaigns;
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value as Record<string, unknown> : {};
+  return readMachineSettingsSection<Record<string, unknown>>('campaigns', {});
 }
 
 async function writeCampaigns(campaigns: Record<string, unknown>): Promise<void> {
