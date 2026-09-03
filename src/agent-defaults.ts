@@ -1,4 +1,3 @@
-/** The Agent-form values a Campaign or Team may seed. One shape at both levels. */
 export type Reach = 'open' | 'discuss' | 'plan' | 'execute';
 export type Recruit = 'open' | 'nobody' | 'propose agents' | 'staff agents';
 export type Output = 'open' | 'a plan' | 'ideas' | 'code' | 'an artifact' | 'the team' | 'no code';
@@ -49,7 +48,6 @@ const books = (value: unknown): string[] => Array.isArray(value)
   ? value.map((entry) => text(entry, 160)).filter(Boolean)
   : [];
 
-/** Validate a user-editable record without making its store unreadable on bad input. */
 export function agentDefaults(value: unknown): AgentDefaults {
   const input = value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>

@@ -63,7 +63,7 @@ test('the universal shelf carries vocabulary and navigation, not optional abilit
     // universal set. A blank axis omits only its own level.
     const boot = await bootFiles('', false);
     const names = boot.map((file) => path.basename(file));
-    for (const required of ['SHELVES.md', 'KOTOBA_GLOSSARY.md', 'RONIN_UTILITY.md']) {
+    for (const required of ['README.md', 'professional_en.md']) {
       assert.ok(names.includes(required), `the universal boot shelf should contain ${required}`);
     }
     assert.ok(!names.includes('REQUIRED_ABILITIES.md'));
@@ -261,7 +261,7 @@ test('a Routine reads one way or the other: on delivers its page, off delivers t
     assert.match(off, /working without/);
     assert.match(off, /The switch:/);
   }
-  const utility = await readFile(path.join(repo, 'docs', 'RONIN_UTILITY.md'), 'utf8');
-  assert.match(utility, /hold \*\*Shift\*\* \(\*\*Option\*\* on a Mac\) while dragging/);
-  assert.match(utility, /Feedback\*\* button, top right/);
+  const utility = await readFile(path.join(repo, 'docs', 'README.md'), 'utf8');
+  assert.match(utility, /## Shelves/);
+  assert.match(utility, /## Coworkspace/);
 });

@@ -1,42 +1,17 @@
-/**
- * THE AGERU TRANSPORT — one allowlisted HTTPS client, and the house stays at two doors.
- *
- * Two addresses answer behind this one door: Ronin HQ (activation, Tomodachi) and the
- * public site's template library (a GET of a JSON index and a bundle, on a press). Same
- * client, same allowlist, same record — a second address is not a second door.
- *
- * `src/machine-settings.ts` states the law: "the house has exactly two [egress doors] (AGERU, and the
- * model provider)". Services activation and Tomodachi are two different CONTRACTS and two
- * different CONSENT EVENTS, but they are not two different doors — they share this client,
- * its allowlist, its TLS and timeouts, its redaction, its request ids, and the egress record
- * the owner can read.
- *
- * That is the whole reason this file exists rather than each caller reaching for fetch().
- * A second call site is a second door nobody voted for.
- */
 import { appendEgress } from './egress.js';
 
-/** The HQ host this client talks to. Not a default — a refusal for anything else. */
 const ALLOWED_HOST = process.env.RONIN_HQ_HOST ?? 'hq.ronincowork.com';
 
-/**
- * THE TEMPLATE LIBRARY is the second address behind the same door — the public site's
- * `library/` shelf of template bundles (src/bundles.ts). Same client, same allowlist
- * discipline, same egress record: a GET that only ever carries a path. It is never called
- * on a timer; the owner presses the button (the update-check rule, src/routes/update-api.ts).
- */
 export const LIBRARY_BASE = process.env.RONIN_LIBRARY_BASE ?? 'https://ronincowork.com/library/';
 const LIBRARY_HOST = new URL(LIBRARY_BASE).hostname;
 
 const TIMEOUT_MS = 15_000;
 
-/** A bundle is a few documents. Anything past this is not a bundle, whatever it claims. */
 const LIBRARY_MAX_BYTES = 4 * 1024 * 1024;
 
 export interface HqResponse<T> {
   status: number;
   body: T | null;
-  /** SHIWAKE's request id, so a problem here can be matched to a line in HQ's journal. */
   requestId: string | null;
   error: { code: string; message: string; retryable: boolean } | null;
 }
@@ -53,12 +28,6 @@ function assertAllowed(url: URL): void {
   }
 }
 
-/**
- * Read one document off the template library. GET only, no token, JSON in — and every
- * call, success or failure, lands in the egress record like an HQ call. The path is
- * resolved against LIBRARY_BASE and must stay under it: a bundle's `url` is data from a
- * remote index, and data does not get to choose a host.
- */
 export async function fetchLibrary<T>(pathname: string): Promise<{ status: number; body: T | null; text: string }> {
   const base = new URL(LIBRARY_BASE);
   const url = new URL(pathname, base);
@@ -103,13 +72,6 @@ export async function fetchLibrary<T>(pathname: string): Promise<{ status: numbe
   }
 }
 
-/**
- * Call Ronin HQ.
- *
- * The token never appears in a log line, a URL, or the egress record. The record says that
- * a call happened, to what, and how it ended — which is what an owner needs to see — and
- * nothing that would be worth stealing from it.
- */
 export async function callHq<T>(
   method: string,
   pathname: string,
@@ -150,13 +112,9 @@ export async function callHq<T>(
       error: !res.ok && parsed?.error ? parsed.error : null,
     };
   } catch (e) {
-    // A timeout or a DNS failure is not an error the owner needs a stack trace for; it is
-    // "HQ was not reachable", which the caller turns into a retry and a visible state.
     outcome = e instanceof EgressRefused ? 'refused-by-allowlist' : 'unreachable';
     throw e;
   } finally {
-    // ONE RECORD PER CALL, always — including the failures. An egress record that only logs
-    // successes is a record that hides exactly the calls someone would want to ask about.
     await appendEgress({
       at: new Date().toISOString(),
       host: url.hostname,

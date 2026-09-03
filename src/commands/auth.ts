@@ -1,20 +1,7 @@
-/**
- * The working half of `bin/ronin-passwd` — see that script for the front door.
- *
- *   tsx src/auth-cli.ts set        # prompt twice (no echo), write the record
- *   tsx src/auth-cli.ts clear      # remove the login (tailnet/Basic only again)
- *   tsx src/auth-cli.ts status     # is a password set?
- *
- * A password change rotates the signing secret, which ends every session at once —
- * that IS the revocation story (src/auth.ts). A RUNNING operator picks the change up
- * on its next request (the record is cached by machine_settings.json's mtime); enabling auth for
- * the FIRST time wants a restart only so the boot log states the new posture.
- */
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
 import { authStatus, clearPassword, setPassword } from '../auth.js';
 
-/** Prompt without echoing — a password on the scrollback outlives the shell. */
 function ask(question: string): Promise<string> {
   const muted = new Writable({
     write(_chunk, _enc, cb) {
