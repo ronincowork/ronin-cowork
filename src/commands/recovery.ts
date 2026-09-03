@@ -19,7 +19,7 @@
  * equivalent, typed once and then living in the scrollback forever. Spending it deletes
  * it (src/routes/passkey-api.ts).
  *
- * The code is printed and never stored: what goes in machine_settings.json is the same scrypt
+ * The code is printed and never stored: what goes in ronin.json is the same scrypt
  * record the password uses, minus the signing secret, because sessions are still signed
  * by auth's one secret and inventing a second would mean two revocation stories.
  */

@@ -30,7 +30,7 @@
  *
  * **Why this is not a KYOKAI breach.** The seam forbids core importing service code or
  * a service's dependencies (`scripts/check-kyokai.mjs`); it says nothing about a file.
- * And the file was already half ours: `src/resources.ts` declares the `session` store as
+ * And the file was already half ours: `src/stores.ts` declares the `session` store as
  * holding TEGAMI, `src/session-dir.ts` resolves the per-session directory as core "so a
  * service reaches its tenancy through this module rather than through another service's"
  * (the KYOKAI ruling, 2026-08-13), and `ronin_bin/read_tegami` + `ronin_bin/write_tegami`

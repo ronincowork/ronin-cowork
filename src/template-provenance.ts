@@ -1,5 +1,5 @@
 import { mandate, type Mandate } from './agent-defaults.js';
-import { listAgentTemplates } from './resource-adapters.js';
+import { listAgentTemplates } from './definitions.js';
 import type { StatedBy } from './launch-profile.js';
 
 export interface TemplateProvenanceInput {

@@ -1,7 +1,7 @@
 import { link, mkdir, readFile, readdir, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
-import { readOwner } from './machine-state.js';
+import { readOwner } from './user-config.js';
 import { storeDir } from './resources.js';
 
 /**

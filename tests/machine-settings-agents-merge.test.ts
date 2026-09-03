@@ -32,7 +32,7 @@ await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 await fs.mkdir(path.join(temp, 'catalogs'), { recursive: true });
 
 const { registerMachineSettings } = await import('../src/routes/machine-settings-api.js');
-const { readAgentsSection } = await import('../src/machine-state.js');
+const { readAgentsSection } = await import('../src/user-config.js');
 
 const app = express();
 app.use(express.json());

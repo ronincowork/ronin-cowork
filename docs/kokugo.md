@@ -147,7 +147,7 @@ page is rendered per session. Its keyed cells are `**word**<!--g:glossary.key-->
 words live in the lexicon under `glossary.*` (floor: the plain English the glossary
 carries); **no surface reads them** — the one consumer is the boot shelf, which renders
 the glossary at session birth from the active profile's resolved lexicon
-(`src/birth-readme.ts`, `renderGlossary`) with a header line saying which profile it was
+(`src/session-boot.ts`, `renderGlossary`) with a header line saying which profile it was
 rendered for. One-time, by ruling: a profile changed mid-session is not re-read.
 
 Adding a row to the glossary means marking its UI word and adding the `glossary.*` line

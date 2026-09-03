@@ -19,7 +19,7 @@
  * paints exactly as stock.
  */
 import { entryPairs, type Origin } from './resources.js';
-import { findDefinition, readDefinitions, type Definition } from './resource-adapters.js';
+import { findDefinition, readDefinitions, type Definition } from './definitions.js';
 import { readFile } from 'node:fs/promises';
 
 const FIELDS = new Set(['label', 'blurb', 'base', 'order', 'hidden']);

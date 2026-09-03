@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { agentDefaults } from '../src/agent-defaults.js';
 import { resolveLaunchSeed } from '../src/launch-seed.js';
-import type { CampaignConfig } from '../src/campaigns.js';
-import type { RoutineRow } from '../src/resource-adapters.js';
+import type { CampaignConfig } from '../src/campaign-config.js';
+import type { RoutineRow } from '../src/definitions.js';
 import type { TeamRoster } from '../src/team-rosters.js';
 
 const routine = (name: string): RoutineRow => ({

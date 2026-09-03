@@ -28,7 +28,7 @@ under a release directory would vanish at the next update with nothing on screen
 why. `~/.local` also needs no root, and is already where some agents' own installers put
 themselves.
 
-It is deliberately **not a store** — the table and its one rule are `src/resources.ts`. A
+It is deliberately **not a store** — the table and its one rule are `src/stores.ts`. A
 store is Ronin's own working state and an uninstall deletes it; an agent Ronin installed
 is the owner's tool, and an uninstall leaves it alone.
 
