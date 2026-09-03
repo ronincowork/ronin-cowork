@@ -9,7 +9,7 @@
  * The letter's `repos[]` is the second: an entry the registry has no row for (today's
  * shared checkout; a repo the session added by hand) is derived from git here. The
  * union is the session's desks. Nothing here asks an agent to keep a fact current, and
- * nothing here mutates a ref (docs/control-surface.md § 5).
+ * nothing here mutates a ref.
  *
  * The repository LOCATOR is the project-root catalog: a desk's `repo` is matched to a
  * root by remote or directory, and git is asked there. A repo no root knows is an

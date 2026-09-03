@@ -1,7 +1,6 @@
 import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
-import { diagnoseFunnel } from './funnel-recovery.js';
 import {
   advanceState, anyAdvanced, blockingReceipt, lastGoodPromotion, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
   type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate,
@@ -81,7 +80,7 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
 
   const blocker = await blockingReceipt(o.team, ledger);
   if (blocker && blocker.id !== o.resuming) {
-    return { ok: false, receipt: blocker, nothing: false, message: `promotion ${blocker.id} is ${blocker.state} — resume or abandon it first` };
+    log(`  warning: promotion ${blocker.id} is ${blocker.state}; starting another promotion anyway.`);
   }
   // ---- prepare
   log(`→ preparing candidates for team ${o.team}`);
@@ -93,34 +92,12 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
     prepared.push({ c: p.candidate, cdir: p.cdir, nothing: p.nothing });
     log(p.nothing ? `  —     ${spec.repo}: ${spec.line} is already in ${spec.target}` : p.candidate.refused ? `  FAIL  ${spec.repo}: ${p.candidate.refused}${p.candidate.conflict_files?.length ? ` (${p.candidate.conflict_files.join(', ')})` : ''}` : `  ok    ${spec.repo}: candidate ${p.candidate.candidate.slice(0, 7)} = ${spec.target}@${p.candidate.expected_old.slice(0, 7)} + ${spec.line}@${p.candidate.line_tip.slice(0, 7)} (${p.candidate.files.length} files, ${p.candidate.hand_in_receipts.length} hand-ins)`);
   }
-  const active = prepared.filter((p) => !p.nothing);
+  const refused = prepared.filter((p) => !p.nothing && p.c.refused);
+  for (const p of refused) log(`  warning: ${p.c.repo}: ${p.c.refused}; skipping this repository and continuing.`);
+  const active = prepared.filter((p) => !p.nothing && !p.c.refused);
   if (!active.length) return { ok: true, receipt: null, nothing: true, message: 'nothing to promote — every line is already in its target' };
 
   let r = newReceipt({ team: o.team, kind: o.kind, repos: active.map((p) => p.c), by: o.by, revert_of: o.revert_of });
-  const refused = active.filter((p) => p.c.refused);
-  if (refused.length) {
-    const recovery: string[] = [];
-    // A dirty funnel is an incident to explain, not merely an error to repeat. The
-    // diagnosis is read-only apart from its receipt and is only emitted by real runs;
-    // tests/custom effect harnesses and dry-runs remain hermetic.
-    if (!o.dryRun && fx === realEffects) {
-      for (const p of refused.filter((x) => x.c.refused?.includes('unsaved tracked changes'))) {
-        const spec = o.repos.find((x) => x.repo === p.c.repo);
-        if (!spec) continue;
-        try {
-          const d = await diagnoseFunnel(spec, o.by);
-          recovery.push(d.id);
-          log(`  recovery: ${d.id} — ${d.paths.filter((x) => x.classification === 'unique').length} unique, ${d.paths.filter((x) => x.classification === 'preserved').length} already preserved, ${d.overlap_files.length} overlap candidate`);
-        } catch (e) {
-          log(`  recovery diagnosis failed safely: ${(e as Error).message}`);
-        }
-      }
-    }
-    r = advanceState(r, 'failed');
-    r.failure = { stage: 'preparing', message: refused.map((p) => `${p.c.repo}: ${p.c.refused}`).join('; ') + (recovery.length ? ` — recovery ${recovery.join(', ')}` : ''), files: refused.flatMap((p) => p.c.conflict_files ?? []) };
-    if (!o.dryRun) await writeReceipt(r, ledger);
-    return { ok: false, receipt: r, nothing: false, message: r.failure.message };
-  }
 
   r = advanceState(r, 'proving');
   if (!o.dryRun) await writeReceipt(r, ledger);

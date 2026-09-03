@@ -1,7 +1,6 @@
 # Desk state — what the owner and the lead see, derived, never prose
 
-> The visible half of the control surface (`docs/control-surface.md`
-> § 5; the desk model is `docs/worktrees.md` there). The registry and hand-in have their own
+> The visible half of the desk model is in `docs/worktrees.md`. The registry and hand-in have their own
 > page (Track 1's); team promotion has its own (Track 2's). This page is only about what
 > is SHOWN, where, and where each fact comes from.
 

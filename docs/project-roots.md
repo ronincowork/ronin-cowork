@@ -191,7 +191,7 @@ master    released/reviewed line
 
 The repository says which arrangement it uses in `RONIN_REPO` at its root (`mode`, `working`,
 `stable`, `desks`); tools read that file and never infer the arrangement from the branch that
-happens to be checked out (`libexec/ronin-repo-mode`). `dev` and `master` are **funnel
+happens to be checked out. `dev` and `master` are **funnel
 points**: merged into, never edited in place, and the only two lines that reach the remote.
 The normal review PR is **`dev → master`**, and it carries the team-promotion receipt that
 proved the PR's head commit (`docs/release.md`). Do not push per-feature, per-agent, phase,
@@ -225,9 +225,7 @@ own branch and worktree, cut from its team's line
 **hand-in** publishes committed work to the team line; the lead's **team promotion** runs the
 one full repository BYOIN and admits the team's state to `dev`. A desk branch is never
 published to the remote and never opened as a PR. Until a repository's desks are enabled, its
-home checkout is shared: stage only your own paths and preserve every unrelated change there
-(the claim guard, `libexec/ronin-claim`, refuses a commit carrying files your session never
-staged).
+home checkout is shared: stage only your own paths and preserve every unrelated change there.
 
 For a new reviewed repository, agree whether the stable branch is `main` or `master`, create
 `dev` from it, make the stable branch the GitHub default, and enable automatic deletion of

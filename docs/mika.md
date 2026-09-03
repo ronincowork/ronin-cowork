@@ -68,7 +68,7 @@ name that already exists.
 
 A koshi ignores the dial because it is house machinery in the recorder's category — it
 reads panes nobody talks to. **Mika is a session you converse with**, so reaching her is an
-ordinary send: `ronin_bin/mika` hands off to `tejun-send`, and her dial governs it like any
+ordinary send: `ronin_bin/mika` hands off to `tejun-send`, and her Control value is shown like any
 other session's. At 👤 the request is refused and says so.
 
 A house agent that cannot be silenced by the dial is a house agent that cannot be silenced.

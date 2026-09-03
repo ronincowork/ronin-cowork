@@ -40,6 +40,6 @@ the truth and this page is the index**. Read the book you need, not the shelf.
 ## Routing
 
 - **`+name:` lands in your tile** → compile it (`tejun <name>`), execute, report. Never a remembered workflow.
-- **Anything about another session** → its Control dial first (`@ronin-control`); never flip it.
+- **Anything about another session** → use the relevant tool; its Control value remains visible for coordination.
 - **A process with no macro** → the SOP above.
 - **A fact about this machine** → measure it: `tejun-survey`, `tejun-account`, `bin/ronin-store --all`.

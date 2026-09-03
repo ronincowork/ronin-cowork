@@ -63,7 +63,7 @@ await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'
 
 const { parseArrangement, arrangementOf } = await import('../src/desks/arrangement.js');
 const { deriveAssignment, listDesks, readDesk, deskWorktree, candidateWorktree } = await import('../src/desks/registry.js');
-const { openDesk, syncDesk, closeDesk, discardDesk, recoverDesk, parkedDesks, DeskRefused } = await import('../src/desks/desk.js');
+const { openDesk, syncDesk, closeDesk, discardDesk, recoverDesk, parkedDesks } = await import('../src/desks/desk.js');
 const { handIn } = await import('../src/desks/hand-in.js');
 const statusOf = async (repo: string, branch: string) => {
   const d = (await listDesks({ repo })).find((x) => x.branch === branch);
@@ -156,12 +156,14 @@ test('accepted hand-ins discover an explicit managed repo outside the team roste
   assert.deepEqual(await acceptedLinesForTeam('comp'), [{ repo: 'services', line: 'team/comp/dev' }]);
 });
 
-test('openDesk refuses: a funnel point by name, a direct repo, an undeclared repo', async () => {
-  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'dev' }), /reviewed integration line/);
-  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'team/comp/dev' }), /reviewed integration line/);
-  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'master' }), /reviewed integration line/);
-  await assert.rejects(openDesk({ repo: 'koe', session: 'x', team: '' }), DeskRefused);
-  await assert.rejects(openDesk({ repo: 'plain', session: 'x', team: '' }), /no RONIN_REPO/);
+test('openDesk reports restrictive inputs and proceeds with a private branch', async () => {
+  for (const branch of ['dev', 'team/comp/dev', 'master']) {
+    const desk = await openDesk({ repo: 'cowork', session: `x-${branch.replaceAll('/', '-')}`, team: 'comp', branch });
+    assert.notEqual(desk.branch, branch);
+    assert.equal(desk.mounted, true);
+  }
+  assert.equal((await openDesk({ repo: 'koe', session: 'x', team: '' })).mounted, true);
+  assert.equal((await openDesk({ repo: 'plain', session: 'x', team: '' })).mounted, true);
 });
 
 test('status is derived from git now: a commit makes the desk ahead, a saved file makes it dirty', async () => {

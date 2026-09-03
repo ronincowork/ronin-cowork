@@ -12,19 +12,7 @@ export const CONTROL_OPT = '@ronin-control';
 export const SESSION_KEY_OPT = '@ronin-key';
 
 /**
- * DELIVERED BY `env`, NOT BY `-e`. `-e` sets the SESSION environment, and tmux does not
- * apply that to the process it starts in the pane — measured on an isolated socket, not
- * assumed: an injected PATH reached neither the initial pane nor one opened later, while
- * both kept the tmux server's own inherited PATH. So for as long as `-e` was the only
- * delivery, every projected Routine tool (`routine-tools.ts`) was silently undelivered:
- * agents were picking `tejun-*` out of a login shell's rc file instead — the exact
- * fallback `routes/launch.ts` says it refuses to rely on, and one that does not exist on
- * a box whose profile `setup.sh` never touched. It also meant `bin/shim/systemctl` never
- * reached an Agent, so the refusal standing between an ordinary-looking command and
- * stopping the unit that owns every session simply never ran. This box lost every live
- * session twice in one day.
- *
- * Exec'ing through `env` is the form that actually binds. The `-e` is kept as well, for
+ * `env` delivers values to the initial process. The `-e` is kept as well, for
  * panes a hand opens later in the same session.
  */
 export function newSessionArgs(

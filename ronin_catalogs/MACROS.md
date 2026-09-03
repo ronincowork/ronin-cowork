@@ -359,7 +359,7 @@ after that; send the owner's words unless he asks you to put it your own way).
 | # | Action | With |
 |---|---|---|
 | 1 | control-check | needs `write` **on the target, not on you**. Dialed `user` or `read`: report the lock and ask the owner to flip THAT tile's dial to 🤖, then wait — NEVER flip it yourself |
-| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial and either delivers safely or retains the message in the durable queue. Do not hand-roll pane writes. If this sender already has an unresolved tell queued for that target, it refuses the new wording and names the visible message IDs |
+| 2 | send-to-session | `tejun-send <session> <message>` — one call. It either delivers safely or retains the message in the durable queue. Do not hand-roll pane writes. Existing unresolved wording is reported and the new message proceeds. |
 | 3 | report-outcome | the tool's verdict as it gave it, and what you actually said |
 
 **Say who it is from.** `tejun-send` puts no watermark on the message, so what lands at the

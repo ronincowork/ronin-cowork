@@ -42,13 +42,13 @@ function fakeExec(state: { head: string; open: Array<{ number: number; url: stri
   };
 }
 
-test('refuses when the working line moved past the last complete promotion — promote first', async () => {
+test('warns and opens when the working line moved past the last complete promotion', async () => {
   const st = { head: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef', open: [], calls: [] as string[][] };
-  await assert.rejects(
-    openPullRequest({ repo: 'ronin_cowork', dir: '/x', working: 'dev', stable: 'master', receipt }, { exec: fakeExec(st), gh: 'gh' }),
-    /dev is at deadbeefdead but the last complete promotion .* proved 141cafdb768b — promote first/,
-  );
-  assert.ok(!st.calls.some((c) => c[0] === 'git' && c[1] === 'push'), 'nothing is pushed on refusal');
+  const warnings: string[] = [];
+  const out = await openPullRequest({ repo: 'ronin_cowork', dir: '/x', working: 'dev', stable: 'master', receipt }, { exec: fakeExec(st), gh: 'gh', log: (line) => warnings.push(line) });
+  assert.equal(out.action, 'created');
+  assert.match(warnings.join('\n'), /opening the PR anyway/);
+  assert.ok(st.calls.some((c) => c[0] === 'git' && c[1] === 'push'));
 });
 
 test('pushes the working line, then creates the PR; an open one is updated, never duplicated', async () => {

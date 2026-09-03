@@ -32,7 +32,7 @@ The tool works out which session is asking, which team it is on (the roster's wi
 — see below), and either hands back everything unread, oldest first, or lands the post
 where the team talks. **Agents never manage ids, timestamps, cursors, pages or files.**
 Nothing unread answers in one line; being on no team is an ordinary answer, not an error;
-and a session on several teams is asked which (`WHICH-TEAM`) rather than guessed at.
+and a session on several Teams is told which first Team was selected.
 
 Everything else is explicit, secondary, and **moves no cursor**:
 

@@ -1,7 +1,7 @@
 /**
  * DESK STATE — the mechanical facts about a session's desks, DERIVED, never prose.
  *
- * Fable 4 of the control surface (docs/control-surface.md § 5, docs/worktrees.md "Multi-desk
+ * The desk surface (docs/worktrees.md "Multi-desk
  * sessions"). A desk is repository-specific: one repo's branch and the worktree mounted
  * on it. The letter's `repos[]` names the desks a session is working at (`repo` +
  * `branch`, optionally `worktree` and `line` when a tool opened the desk); everything
@@ -21,7 +21,7 @@
  * HONEST ON A PLAIN CHECKOUT. A session on today's shared `dev` checkout has one
  * "desk" whose branch is `dev` with no team line: `line` is null, ahead/behind are
  * null, and the roll-up says `1 desk` and nothing about hand-ins. Manual terminals and
- * direct repositories get no invented desk state (docs/control-surface.md § C).
+ * direct repositories get no invented desk state.
  */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';

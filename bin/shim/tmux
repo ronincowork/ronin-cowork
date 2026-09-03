@@ -14,10 +14,12 @@ else
 fi
 
 for arg in "$@"; do
-  if [ "$arg" = kill-server ]; then
+  case "$arg" in
+  kill-ser|kill-serv|kill-serve|kill-server)
     echo "ronin: tmux kill-server is unavailable because it ends every session." >&2
     exit 4
-  fi
+    ;;
+  esac
 done
 
 exec "$REAL" "$@"

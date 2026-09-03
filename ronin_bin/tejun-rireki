@@ -21,7 +21,7 @@ set -u
 # RESOLVE PAST THE PROJECTED SYMLINK. A session's tools arrive as symlinks in the
 # session-commands store (src/routine-tools.ts); BASH_SOURCE is the link, not this file,
 # and ../ from the link is a store with no src/ or bin/ — measured 2026-09-02 (desk audit):
-# every tool built this way failed from a born session. Same loop as bin/shim/git.
+# resolve the shipped tool rather than the projection directory.
 SELF=${BASH_SOURCE[0]}
 while [ -L "$SELF" ]; do
   link=$(readlink "$SELF")
