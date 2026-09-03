@@ -20,17 +20,18 @@ import path from 'node:path';
 
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-campaign-scope-'));
 const rosters = path.join(root, 'team_rosters');
-const campaigns = path.join(root, 'campaigns');
+const config = path.join(root, 'config');
 const catalogs = path.join(root, 'catalogs');
 const wipeboards = path.join(root, 'wipeboards');
-for (const d of [rosters, campaigns, catalogs, wipeboards]) await fs.mkdir(d, { recursive: true });
+for (const d of [rosters, config, catalogs, wipeboards]) await fs.mkdir(d, { recursive: true });
 
 process.env.RONIN_TEAM_ROSTERS_DIR = rosters;
-process.env.RONIN_CAMPAIGNS_DIR = campaigns;
+process.env.RONIN_CONFIG_DIR = config;
 process.env.RONIN_CATALOGS_DIR = catalogs;
 process.env.RONIN_WIPEBOARDS_DIR = wipeboards;
+process.env.RONIN_CAMPAIGNS_DIR = path.join(root, 'campaigns');
 
-const { createCampaign, ensureInitialCampaign, initialCampaign } = await import('../src/campaign-config.js');
+const { createCampaign, ensureInitialCampaign, initialCampaign } = await import('../src/campaigns.js');
 const { createTeamRoster, listTeamRosters, readTeamRoster } = await import('../src/team-rosters.js');
 const {
   assertSameCampaignRoot,
@@ -91,11 +92,11 @@ test('a filter naming no Campaign means every Campaign', async () => {
   assert.equal(all('anything'), true);
 });
 
-test('an unmarked record still answers the filter for the initial Campaign', async () => {
+test('unmarked and unknown stamped records remain visible in the machine Campaign', async () => {
   const initial = await initialCampaignId();
   const keep = await campaignFilter([initial]);
   assert.equal(keep(''), true, 'legacy rows are visible in the Campaign they migrate into');
-  assert.equal(keep('somewhere-else'), false);
+  assert.equal(keep('somewhere-else'), true);
 });
 
 test('two Campaigns hold a Cowork of the same name, on two different boards', async () => {

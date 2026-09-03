@@ -1,25 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE HELP WORKSPACE — what each step means, beside the step you are on.
- *
- * The owner asked for it as the third card on the Launch bench (2026-09-01): "a third
- * kanban card in the middle, which is help or instructions… Let's say in workspace one I
- * have new team, and in workspace two I put the help form. I should be able to scroll up
- * and down the form, and the help should scroll up and down so I can see what the
- * descriptions are of different things." That is what this is for, and it is why the
- * Launch bench is the LONG form: it is the first-time surface, reached from the root page,
- * where a person is learning what Ronin can do rather than starting their fifth Agent.
- *
- * WHY THE HELP LIVES HERE AND NOT UNDER EACH FIELD. Every "optional" sentence and every
- * explanatory line was cut from the forms themselves at the owner's word — the form is for
- * answering, not for reading. The explanations did not stop being true; they moved to a
- * surface you open when you want them and close when you do not.
- *
- * HOW IT FOLLOWS THE FORM. It watches the form surface's own scroller and asks which step
- * is nearest its top, then marks that section current and brings it into view. No API on
- * the forms and no shared state: a step already carries `data-step`, which is the only
- * thing the two sides need to agree on.
- */
 import { t } from './lexicon.js';
 
 const el = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };

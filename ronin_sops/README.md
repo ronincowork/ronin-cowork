@@ -1,6 +1,6 @@
 # ronin_sops — how this house goes about things
 
-**test_protocols:** changed anything here? run `bin/ronin-byoin` and read the verdict — `docs/test-protocols.md` is the page.
+After changing this shelf, run `npm run verify`. User-store shadows are checked with `npm run byoin`.
 
 An **SOP** is the standard way this install approaches an area of work: source control,
 data, getting a thing deployed. **Not the only way and not the right way** — the way, so
@@ -18,7 +18,7 @@ prescriptive. **The difference is who fetches it:**
 | **`ronin_library/`** | the **machinery** — an action names it, `ronin_bin/tejun` inlines it at compile | mid-task, unasked | the agent, mid-step |
 
 **An action never leads to an SOP.** An SOP may point at an action — its `> Tool:` header
-does — and the arrow runs that way only (owner, 2026-08-15). The test when you are
+does — and the arrow runs that way only. The test when you are
 unsure: **if you can name the action that would cite it, it is library.** If the only
 answer is "someone would look it up when the topic came up", it is an SOP.
 
@@ -67,7 +67,6 @@ An SOP declares its voice in its header, because the two failure modes are oppos
 
 Judge the voice by who acts in the body, not by what the header of the file beside it
 happened to say. The line was boilerplate on ten of these before the shelf was audited on
-2026-08-21, and four of them were relaying nothing.
 
 A rule an *action* cites is neither: `documents.md` sits in `ronin_library/` because the
 machinery fetches it and a compile inlines it, so no situation ever has to go looking.

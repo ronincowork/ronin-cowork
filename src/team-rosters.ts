@@ -22,13 +22,13 @@
  */
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { entryValue, isKeyLine } from './catalog.js';
-import { storeDir } from './stores.js';
+import { entryValue, isKeyLine } from './resources.js';
+import { storeDir } from './resources.js';
 import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
 import { completeRoutineChoices } from './routines.js';
 
 async function completeRoutines(value: unknown): Promise<Record<string, boolean>> {
-  const { listRoutines } = await import('./definitions.js');
+  const { listRoutines } = await import('./resource-adapters.js');
   return completeRoutineChoices(await listRoutines(), value);
 }
 
@@ -64,6 +64,9 @@ export interface TeamRoster {
    *  Empty means the project_root's repository alone (docs/team-promotion.md). */
   repos: string[];
   branch: string;
+  /** Per-repository branches for a team working without Worktrees ({repo: branch}); absent
+   *  means as checked out. With Worktrees on the branch is Ronin's and this is not read. */
+  branches: Record<string, string>;
   /** The board underneath this team. Defaults to the team's own token. */
   wipeboard: string;
   state: 'active' | 'archived';
@@ -82,7 +85,7 @@ export const isCreatableTeamName = (s: string): boolean => isValidTeamName(s) &&
 
 /**
  * A Campaign id is a PATH SEGMENT here, so this is a guard before it is a validator.
- * `campaign_config` owns the canonical rule; what this file must guarantee is that an id
+ * `machine settings campaign record` owns the canonical rule; what this file must guarantee is that an id
  * arriving from a route can never climb out of the store — `..`, a slash or an absolute
  * path would write a roster anywhere on the box. Same shape as a team name, and the
  * narrowness is the point rather than a coincidence.
@@ -121,6 +124,14 @@ const BLANK = '—';
  * line can be hand-edited to claim another Campaign, and a record that claims one place
  * while sitting in another is exactly the drift the nesting exists to prevent.
  */
+/** A {string: string} map, anything else reads as empty. */
+function stringMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+    .filter(([key, entry]) => key.trim() && typeof entry === 'string' && entry.trim())
+    .map(([key, entry]) => [key.trim().slice(0, 128), (entry as string).trim().slice(0, 128)]));
+}
+
 function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
   const lines = raw.split('\n');
   const get = (k: string) => {
@@ -151,6 +162,7 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     project_root: get('project_root'),
     repos: strings(get('repos').split(','), 160),
     branch: get('branch'),
+    branches: stringMap(json('branches')),
     wipeboard: get('wipeboard') || name,
     state: /^archived$/i.test(get('state')) ? 'archived' : 'active',
     references: strings(json('references'), 500),
@@ -254,6 +266,7 @@ export interface RosterEdit {
   project_root?: string;
   repos?: string[];
   branch?: string;
+  branches?: Record<string, string>;
   wipeboard?: string;
   state?: 'active' | 'archived';
   references?: string[];
@@ -269,7 +282,7 @@ export interface RosterEdit {
  * once at create and never reachable through an edit.
  */
 const KEYS: (keyof RosterEdit)[] = [
-  'title', 'kind', 'objective', 'project_root', 'repos', 'branch', 'wipeboard', 'state',
+  'title', 'kind', 'objective', 'project_root', 'repos', 'branch', 'branches', 'wipeboard', 'state',
   'references', 'routines', 'behaviours', 'agent_defaults',
 ];
 
@@ -288,6 +301,7 @@ function render(name: string, r: TeamRoster): string {
     line('project_root', r.project_root),
     line('repos', r.repos.join(', ')),
     line('branch', r.branch),
+    line('branches', JSON.stringify(r.branches)),
     line('wipeboard', r.wipeboard || name),
     line('state', r.state),
     line('references', JSON.stringify(r.references)),
@@ -352,6 +366,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     project_root: edit.project_root ?? '',
     repos: edit.repos ?? [],
     branch: edit.branch ?? '',
+    branches: edit.branches ?? {},
     // An explicit token is the owner's and is taken as given; only the DEFAULT is allocated,
     // because the default is the only thing that could collide with another Campaign's
     // same-named Cowork.

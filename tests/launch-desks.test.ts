@@ -1,6 +1,6 @@
 /**
  * LAUNCH DESKS — a coding launch is born at a desk with every desk in its brief; every
- * other launch gets NO invented desk state (Fable 3, docs/control-surface.md §2).
+ * other launch gets no invented desk state.
  *
  * Pure: the derivation is Track 1's and is not exercised here; what is asserted is the
  * launch's own decisions — who wants a desk, what the brief says when there is one and
@@ -13,7 +13,7 @@ import path from 'node:path';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks } from '../src/launch-desks.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
-import { bootFiles } from '../src/session-boot.js';
+import { bootFiles } from '../src/birth-readme.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
 import type { Assignment } from '../src/desks/schema.js';
 
@@ -65,23 +65,26 @@ test('the 2x2 result tells an Agent the location for managed and direct reposito
   ] as const;
   const locations = renderWorkLocations([...repositories]);
   assert.doesNotMatch(locations, /cowork/, 'managed locations are already named by the desk block');
-  assert.match(locations, /lab  \/src\/lab  \(this repository does not use Worktrees; edit directly in this checkout\)/);
+  assert.match(locations, /lab  \/src\/lab  \(no Worktrees; edit directly in this checkout\)/);
+  assert.match(renderWorkLocations([...repositories], { lab: 'release' }), /lab  \/src\/lab  \(no Worktrees; edit directly in this checkout, on branch release\)/, "the team's branch for that repository rides the line");
   assert.equal(primaryWorkLocation([...repositories], 'lab'), '/src/lab');
   const brief = buildBrief(profile, undefined, { session_role: 'CutCode', prompt: 'Plan in lab.' }, undefined, [], null, assignment, [...repositories]);
   assert.match(brief, /Direct work locations:/);
-  assert.match(brief, /lab  \/src\/lab  \(this repository does not use Worktrees; edit directly in this checkout\)/);
+  assert.match(brief, /lab  \/src\/lab  \(no Worktrees; edit directly in this checkout\)/);
 });
 
 test('the brief carries every desk, the primary, the line, and the four words — or nothing at all', () => {
   const form: SpawnForm = { session_role: 'CutCode', prompt: 'Build it.' };
-  const brief = buildBrief(profile, undefined, form, undefined, [], null, assignment);
+  const root = { name: 'cowork', dir: '/w/cowork', match: [], remit: '' } as unknown as Parameters<typeof buildBrief>[1];
+  const brief = buildBrief(profile, root, form, undefined, [], null, assignment);
+  assert.match(brief, /^Born in cowork at \/w\/cowork\.$/m);
   assert.match(brief, /Your assignment has 2 desks:/);
   assert.match(brief, /cowork\s+\/w\/cowork\/team\/comp\/fable\s+→ team\/comp\/dev\s+\(you start here\)/);
   assert.match(brief, /services\s+\/w\/services\/team\/comp\/fable\s+→ team\/comp\/dev/);
   assert.match(brief, /Work only in a desk; the desk contract is in your README\./);
   assert.doesNotMatch(brief, /BYOIN/, 'the brief states desks, not the Git contract the README already carries');
 
-  const none = buildBrief(profile, undefined, form, undefined, [], null, null);
+  const none = buildBrief(profile, root, form, undefined, [], null, null);
   assert.doesNotMatch(none, /desk/i, 'a launch with no assignment is told nothing about desks');
 });
 

@@ -2,8 +2,8 @@
 
 > Current state, not a plan. The ⚙ Configuration tab renders both. Companion to
 > `docs/settei.md` (the one object these
-> lists live in). In code: `src/settei.ts` (`computeNeeded`), `src/settei-registry.ts`
-> (`requires`, the verbs), `public/js/settei.js` (the ⚙ ticks and the needed box),
+> lists live in). In code: `src/machine-settings.ts` (`computeNeeded`), `src/machine-settings-schema.ts`
+> (`requires`, the verbs), `public/js/machine-settings.js` (the ⚙ ticks and the needed box),
 > `ronin_session_boot/job/Atarashi/00_ATARASHI.md` (the seat that works the list).
 
 ## The one idea
@@ -17,15 +17,15 @@ looks, with no write anywhere. Met items do not exist.
 | | wanted | needed[] |
 |---|---|---|
 | what it is | the owner's typed intents | what those intents still lack |
-| provenance | **typed** — persists in `ronin.json` `wanted` | **derived** — exists only in the answer |
-| written by | `PUT /api/settei/wanted` (whole-list, through the one door) | nobody, ever |
+| provenance | **typed** — persists in `machine_settings.json` `wanted` | **derived** — exists only in the answer |
+| written by | `PATCH /api/machine-settings` (whole-list, through the one door) | nobody, ever |
 | cleared by | the owner unticking | reality changing |
 | read by | `computeNeeded`, the ⚙ ticks | the ⚙ needed box · the 新 seat at its own start |
 
 ## Where needed[] comes from — two feeders, one judge
 
 1. **The registry's `requires`** — a leaf may declare what a choice drags in
-   (`src/settei-registry.ts`). Each row has an `applies` check (does this choice
+   (`src/machine-settings-schema.ts`). Each row has an `applies` check (does this choice
    speak at all?) and a `met` check (is it satisfied?). Seeds today: services → the
    verified email; gbrain → enabled-but-not-installed surfaces as a task.
 2. **The want list** — every entry is itself a check the owner typed, judged the
@@ -71,7 +71,7 @@ exist. Adding a mechanical item later is one row, not a code path.
   time it opens; the strip carries the `owner` and `agent` remainder.
 - **"Start your setup session"** — beneath the box (and on ＋ New) whenever an agent
   CLI exists and the box is non-empty. One press seats 新 Atarashi with a one-line
-  pointer; **the seat reads `GET /api/settei` itself at start**, so it works the same
+  pointer; **the seat reads `GET /api/machine-settings` itself at start**, so it works the same
   fresh list you are looking at — nothing composed, parked, or stale.
 
 ## The rules

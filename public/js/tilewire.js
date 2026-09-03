@@ -1,28 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * TILEWIRE — the tile's socket, and nothing else.
- *
- * One WebSocket to `/pty`, its reconnect timer, and the protocol split: JSON control
- * messages one way, raw pane bytes the other. It sits BESIDE the two views rather than
- * inside either, because both are fed by it and neither should own it — locked rides
- * the attach mirror, unlocked rides the recorded stream, and the URL is the only place
- * that difference exists on this side.
- *
- * THE DROP RULE — the one deliberate behaviour change of the split.
- *
- * `send()` used to be `if (ws && ws.readyState === 1) ws.send(...)`: a keystroke typed
- * into a locked tile while the socket was down went nowhere, silently. A phone is
- * mid-reconnect all the time, so this was a real loss of typed input with nothing on
- * screen to say so — the composer had a `noconn` guard, the xterm path did not.
- *
- * Input now reports whether it was delivered, and the tile SHOWS the drop. It is
- * dropped, never queued: replaying keystrokes into a live shell after a reconnect is
- * send-keys roulette — the parked line lands in whatever has focus a minute later,
- * which is how you delete the wrong thing. Loud loss beats silent loss beats a
- * surprise. Housekeeping messages (resize, reach-upward) stay quiet: nobody typed
- * them, and a flash per resize while disconnected is noise, not news.
- */
-
 export class TileWire {
   /**
    * @param {{onStatus: (state: string) => void, onControl: (msg: object) => void,

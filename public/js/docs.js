@@ -5,37 +5,6 @@ import { homeData } from './home.js';
 import { t } from './lexicon.js';
 import { DOC_MIME } from './team-drag.js';
 
-/**
- * MDEDIT — the ▧ Docs tab: every session's listed docs, and a plain editor for one.
- *
- * Two states in one pane. The LIST is grouped by session and comes free with the
- * `/api/home` poll the roster already runs, so this tab fetches nothing of its own. The
- * EDITOR is a textarea over one file — no markdown rendering, no preview, no highlighting.
- *
- * THERE IS DELIBERATELY NO FILE BROWSER. The owner's rule: *"I don't want someone to build
- * that explorer piece."* A doc reaches this list because an agent ran
- * `write_tegami --doc <path>`, and a doc nobody listed is reached by asking the agent to
- * list it. That is the whole finding mechanism. See docs/mdedit.md.
- *
- * THE EDITOR HAS A SECOND DOOR — Docs in an Agent tile's メ menu opens ONE of that
- * Agent's tracked files in place (`js/tiledocs.js` → `tile-doc-view.js` → `open` below).
- * It enumerates only paths already listed in that Agent's work record; the rule above is
- * untouched, and desktop and phone relocate the same control rather than growing two.
- *
- * THE TEAM PAGE IS A THIRD DOOR SINCE 2026-08-25 — its Docs channel service mounts this
- * same pane (`js/team-view.js`) over the same `homeData`, narrowed by `only` to the
- * roster's members. One list mechanism, one editor, one rule; a Team never grows its own.
- *
- * @param only  optional predicate on a session name — keep it in the list, or not. Absent,
- *              every session that listed a doc is shown (the Commons).
- */
-/**
- * THREE PILLS (owner, 2026-08-28): TRACKED is the list above; PLANS and DOCS are the
- * files under the places each project_root names on its record (`plans:` / `docs:`,
- * src/routes/docs-api.ts), grouped by root — merged into one list, never mixed. Still no
- * file browser: only what a root's record names is listed. On the team page the team's
- * own repos come first and the rest start folded (`reposFirst`).
- */
 export function buildDocs(tile, root, isShowing, only = null, reposFirst = () => []) {
   let openPath = null; // null = the list is showing
   let dirty = false; // the owner has typed since the last load or save
@@ -81,7 +50,6 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   save.className = 'dc-save';
   save.textContent = t('docs.save', 'Save');
   save.disabled = true;
-  // THE ↗ AND THE FRAME ARE THE HTML HALF OF THE EDITOR (owner, 2026-08-26): a listed
   // `.html` is a page, not prose, so it renders in a frame where the textarea would be,
   // and ↗ opens the same URL in a tab of its own. Both hang off `/raw/<path>`, which serves
   // the file as itself — see the route in src/index.ts. Which of the two shows is CSS's
@@ -118,20 +86,12 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   show('list');
 
   const say = (text, bad) => note.say(text, bad ? 'bad' : '');
-  // KIIRO WHEN THERE IS SOMETHING TO SAVE (owner, 2026-08-28): the Save button and the ←
   // both go yellow the moment the text differs, so the way out is as easy to find as the
   // way to keep it. Cleared on save, on open, on back.
   const markDirty = (on) => { dirty = on; save.classList.toggle('attention', on); back.classList.toggle('attention', on); };
 
   /* ---------- opening and saving ---------- */
 
-  /**
-   * Open one file into the editor. Returned from `buildDocs` since 2026-08-18 so a caller
-   * can name a path instead of only entering the tab — 📄 on the tile header opens THIS
-   * session's docs directly (`js/tiledocs.js`, `commons.js`'s `openDoc`). The list is
-   * still the only thing that ENUMERATES; a caller must already hold the path, which is
-   * what keeps "no file browser" true in the widened interface.
-   */
   const open = async (path) => {
     // The guard ← has always had, now that ← is not the only way in. Arriving from the
     // tile can land on a doc while another is open and TYPED IN; without this, that
@@ -268,7 +228,6 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
           Object.assign(document.createElement('span'), { textContent: parts.slice(-2).join('/') }),
         );
         b.addEventListener('click', () => open(p));
-        // DRAG A DOC ONTO A TILE (owner, 2026-08-28): the row carries the SHORT reference —
         // the last directory and the name, what the row shows — and the tile's composer
         // takes it the way it takes a dropped @mention (js/composer.js). Not the absolute
         // path: a reference in a message is for reading, and the agent can find the file.

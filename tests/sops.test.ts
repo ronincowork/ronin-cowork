@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
-import { listSops } from '../src/sops.js';
+import { listSops } from '../src/resources.js';
 import { registerCatalogs } from '../src/routes/catalogs.js';
 import type express from 'express';
 

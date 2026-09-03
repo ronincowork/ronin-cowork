@@ -21,9 +21,9 @@ import {
   templateMandate,
   type AgentTemplateRow,
   type TeamTemplateRow,
-} from './definitions.js';
-import { storeDir } from './stores.js';
-import { STOCK_DIR } from './catalog.js';
+} from './resource-adapters.js';
+import { storeDir } from './resources.js';
+import { STOCK_DIR } from './resources.js';
 
 const STOCK_TEMPLATES = path.join(STOCK_DIR, 'templates');
 

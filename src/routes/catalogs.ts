@@ -9,12 +9,12 @@ import { homedir } from 'node:os';
 import type express from 'express';
 import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
-import { listSkins } from '../skins.js';
-import { listLexicons, resolveLexicon } from '../lexicons.js';
+import { listSkins } from '../skin-catalog.js';
+import { listLexicons, resolveLexicon } from '../lexicon-catalog.js';
 import { activeDeskProfileName, listDeskProfiles } from '../desk-profiles.js';
-import { initialCampaign } from '../campaign-config.js';
-import { listSops } from '../sops.js';
-import { listWays } from '../ways.js';
+import { initialCampaign } from '../campaigns.js';
+import { listSops } from '../resources.js';
+import { listWays } from '../resources.js';
 import { listActions } from '../actions.js';
 import { listSessionReadings } from '../session-readings.js';
 import { listAgentAvailability } from '../agents.js';
@@ -31,7 +31,7 @@ import {
 } from '../project-roots.js';
 import { campaignFilter, campaignResolver } from '../campaign-scope.js';
 import { arrangementProfile, assertArrangementProfileCurrent, readArrangement, setArrangementProfile, validateArrangementProfile } from '../desks/arrangement.js';
-import { readDesksSection } from '../user-config.js';
+import { readDesksSection } from '../machine-state.js';
 import {
   listSavedLaunches,
   saveLaunch,
@@ -40,7 +40,7 @@ import {
   isShadowable,
   isValidLaunchName,
   savedLaunchFields,
-} from '../catalog.js';
+} from '../resources.js';
 import {
   findDefinition,
   listAgentTemplates,
@@ -49,7 +49,7 @@ import {
   listSessionRoles,
   listTeamTemplates,
   writeRoleTasks,
-} from '../definitions.js';
+} from '../resource-adapters.js';
 import { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } from '../templates.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
 
@@ -118,7 +118,7 @@ export function registerCatalogs(app: express.Express): void {
 
   /* THE LOOK, as entries. A skin is a set of design tokens and nothing else — no selector,
    * no rule — so this route serves data the client sets as custom properties and could not
-   * turn into markup if it tried (src/skins.ts). Shadowable like any catalog: shipped
+   * turn into markup if it tried (src/skin-catalog.ts). Shadowable like any catalog: shipped
    * skins update with the repo, a skin of yours is yours and an upgrade cannot touch it. */
   app.get('/api/skins', async (_req, res) => {
     try {
@@ -183,7 +183,7 @@ export function registerCatalogs(app: express.Express): void {
       // THE ARRANGEMENT, apart from the branch that happens to be mounted at the root:
       // reviewed or direct, Worktrees or the checkout, read from the repo's
       // checked-in RONIN_REPO (absent = today's behaviour, reported as such — never
-      // guessed from the branch). docs/control-surface.md § 5, "Project-root Admin".
+      // guessed from the branch).
       const arrangements = await Promise.all(
         facts.map((f, i) => (f.repo ? readArrangement(roots[i].name, f.dir).catch(() => null) : Promise.resolve(null))),
       );
@@ -443,8 +443,7 @@ export function registerCatalogs(app: express.Express): void {
       res.status(400).json({ error: errMsg(e) });
     }
   });
-  // Remove one of the owner's templates (installed from the library, or saved). A shipped
-  // box is refused; removing the owner's copy of a shadowed name brings the shipped one back.
+  // Removing an owner's shadow lets the shipped template surface again.
   app.delete('/api/templates/:shelf/:name', async (req, res) => {
     const shelf = String(req.params.shelf);
     if (shelf !== 'agents' && shelf !== 'teams') return res.status(400).json({ error: 'A shelf is agents or teams.' });
@@ -477,7 +476,7 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   /* THE LEXICONS — the list, and one resolved flat through its `base:` chain
-   * (src/lexicons.ts). The client only ever asks for the flat one. */
+   * (src/lexicon-catalog.ts). The client only ever asks for the flat one. */
   app.get('/api/lexicons', async (_req, res) => {
     try {
       res.json(await listLexicons());

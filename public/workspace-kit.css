@@ -1,29 +1,17 @@
-/* Workspace Kit interaction primitives added after the frozen base sheet. */
+
 @layer app {
-  /* The boot veil moved to index.html's own head (2026-09-01): this sheet is injected
-     late by JS, so a veil here misses exactly the cold first paint it exists for. */
+
   .wk-action-bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
-  /* The blue moved from a band RING to the card PERIMETER (owner, 2026-09-02, second
-     cut: the ring inside the card's own border read as a double outline). The band
-     keeps only its blue bottom edge — the one line that ties every header across the
-     bench — and the surface card wears the define-line, utility-door style. */
+
   .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--cowork-head-line); background: var(--cowork-head-bg); color: var(--cowork-head-fg); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
   .wk-surface-header-title { min-width: 0; overflow: hidden; font-weight: var(--workbench-head-weight); text-overflow: ellipsis; white-space: nowrap; }
   .wk-surface-header-actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
-  /* THE BAND'S HEIGHT IS THE BAND'S, never a tenant's (owner, 2026-09-01: the Desk
-     profile band grew to 49px around its full-size Revert/Apply while every sibling
-     band stood 41px — "not the same header"). An action INSIDE a band always renders
-     compact, whatever size its markup asked for, so no surface can outgrow the row. */
+
   .wk-surface-header .wk-action { min-height: 0; padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
   .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
-  /* The PRIMARY action wears the brand (token audit ruling, 2026-09-02): kiiro is the
-     primary; kaki keeps identity/heightened surfaces (the Services check stays kakiiro
-     by its own ruling) and the pressed/selected edge language. */
+
   .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
-  /* ACTION WAITING (owner, 2026-09-01): a header action over a dirty surface goes bright
-     kiiro so it is unmissable. The fill is the kiiro PAIR (@tokens' ruling, same day):
-     --warn is the theme-tuned warning INK and never a fill. Clean surfaces keep the
-     resting look above. */
+
   .wk-action[data-attention='true'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); font-weight: 700; }
   .wk-action[data-kind='danger'] { border-color: var(--bad); color: var(--bad-soft); }
   .wk-action[data-size='compact'] { min-height: var(--space-11); padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
@@ -33,8 +21,7 @@
   .wk-metadata-key { color: var(--muted); }
   .wk-metadata-value { min-width: 0; margin: 0; color: var(--fg); overflow-wrap: anywhere; }
   .wk-surface:not([data-flush='true']) > .wk-surface-content { padding: var(--space-6); }
-  /* THE FIELD — name, control, and what it actually does, in that order; the validation
-     line is the control's own voice (saving…, saved, or why not). */
+
   .wk-field { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
   .wk-field-label { color: var(--fg-strong); font-weight: 600; }
   .wk-field-control { font: inherit; }
@@ -59,37 +46,29 @@
   .wk-workbench-cell[hidden] { display: none; }
   .wk-workbench-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
   .wk-workbench-cell.wk-workbench-selected { outline: var(--edge) solid var(--accent); outline-offset: calc(-1 * var(--edge)); }
-  /* The louder coarse-pointer selected frame lives in style.css (the coworkspace
-     touch block): this sheet is injected by JS with no cache-busting, and a stale
-     copy on a tablet is how an armed workspace went back to looking dead. */
+
   .wk-workbench-selector { display: flex; min-width: 0; min-height: 0; }
   .wk-workbench-selector > * { flex: 1 1 auto; min-width: 0; min-height: 0; }
   .wk-workbench-selector-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); overflow-y: auto; }
-  /* The selector is three shelves, not one mixed list. Blue names Workbench utilities
-     (Commons/roster and birth doors); kaki names the actual Teams or Agents between
-     them. Placement is visible in the workspaces and adds no pressed state here. */
+
   .wk-workbench-selector-cards .wk-selector-utility { border-color: var(--define-line); box-shadow: inset var(--edge-2) 0 var(--define-line); }
   .wk-workbench-selector-cards .wk-selector-entity { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
   .wk-workbench-selector-cards .wk-selector-utility + .wk-selector-entity,
   .wk-workbench-selector-cards .wk-selector-entity + .wk-selector-utility,
   .wk-workbench-selector-cards .wk-selector-group-after { margin-top: var(--space-5); }
-  /* Team agent cards are a short work reading, not a bag of badges. Each fact owns a
-     line: current coordinate, the agent's words, model, then live status and context. */
+
   .team-agent-card .wk-card-summary { color: var(--fg-strong); font-weight: 600; }
   .team-agent-card .wk-card-meta { display: grid; gap: var(--space-2); margin-top: 0; padding-top: var(--space-3); }
   .team-agent-card .wk-card-meta > span { display: block; min-width: 0; overflow-wrap: anywhere; }
   .team-agent-card .wk-card-meta > span:first-child { color: var(--fg); font-size: var(--text-3); line-height: 1.45; }
-  /* Splitters sit on the measured right edge of each visible column (inline `left`,
-     written by the frame) and are centred on it by the negative margin. */
+
   .wk-workbench-splitter { position: absolute; top: 0; bottom: 0; width: .625rem; margin-left: -.3125rem; cursor: col-resize; touch-action: none; z-index: 2; }
   .wk-workbench-splitter[hidden] { display: none; }
   .wk-workbench-splitter::after { content: ''; position: absolute; inset: 0 .25rem; border-radius: var(--radius-xs); background: var(--line-2); opacity: .45; }
   .wk-workbench-splitter:hover::after, .wk-workbench-splitter[data-dragging='true']::after, .wk-workbench-splitter:focus-visible::after { background: var(--aiiro); opacity: 1; }
-  /* THE LAYOUT MAP — the arrangement drawn small in the app bar: one switch per slot,
-     its width the slot's share; off is hidden. The ViewHost mounts it for any view that
-     exposes an arrangement, so this is Kit geometry and no feature sheet touches it. */
+
   .wk-view-map:empty { display: none; }
-  /* THE TAB NAME — a bar control, the map's height, wide enough for a phrase. */
+
   .wk-view-name:empty { display: none; }
   .wk-tab-name { width: 12rem; max-width: 30vw; height: 1.75rem; padding: 0 var(--space-3); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg-strong); font: inherit; font-size: var(--text-3); }
   .wk-tab-name::placeholder { color: var(--muted); }
@@ -100,9 +79,7 @@
   .wk-layout-map-slot[aria-checked='true'] { background: var(--aiiro); border-color: var(--aiiro); }
   .wk-layout-map-slot[data-dragging='true'] { opacity: .6; }
   .wk-layout-map-slot:focus-visible { outline: var(--edge) solid var(--focus-ring); outline-offset: 1px; }
-  /* COMPACT — a slot narrower than its declared threshold (the frame writes data-width
-     from measurement). Cards keep their heading and drop the rest: the owner's "when it's
-     very thin it just becomes the session name". */
+
   .wk-layout-surface[data-width='compact'] .wk-card { padding: var(--space-3); }
   .wk-layout-surface[data-width='compact'] .wk-card-summary, .wk-layout-surface[data-width='compact'] .wk-card-meta { display: none; }
   .wk-layout-surface[data-width='compact'] .wk-card-heading { font-size: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -24,7 +24,7 @@ globalThis.fetch = async (url, init = {}) => {
   return { ok: reply.ok, status: reply.status, json: async () => reply.body };
 };
 
-const { loadCampaigns, saveCampaign, createCampaign, campaignById, isSynthesized } = await import('../public/js/campaigns.js');
+const { loadCampaigns, saveCampaign, createCampaign, campaignById } = await import('../public/js/campaigns.js');
 
 const RECORD = { id: 'ronin', title: 'Ronin', description: 'Build it.', desk_profile: 'professional', state: 'active' };
 /** Put the module in "the store answered" mode, which is the only mode that writes to it. */
@@ -36,7 +36,6 @@ async function withStore() {
 
 test('a successful list is a real list, not the compatibility synthesis', async () => {
   await withStore();
-  assert.equal(isSynthesized(), false);
   assert.equal(campaignById('ronin').title, 'Ronin');
 });
 
@@ -81,17 +80,4 @@ test('creating posts to the collection and takes the stored record back', async 
   assert.equal(post.url, '/api/campaigns');
   assert.equal(r.ok, true);
   assert.equal(r.data.id, 'health');
-});
-
-test('no Campaign API at all synthesizes one, and then writes SETTEI instead', async () => {
-  reply = { ok: false, status: 404, body: {} };
-  await loadCampaigns();
-  assert.equal(isSynthesized(), true, 'an unreachable route is the compatibility window');
-  calls.length = 0;
-  reply = { ok: true, status: 200, body: {} };
-  await saveCampaign('ronin', { title: 'Renamed' });
-  // The record does not exist yet, so its fields go where they actually live today.
-  const write = calls.find((c) => c.method === 'PUT');
-  assert.equal(write.url, '/api/settei/campaign');
-  assert.ok(!calls.some((c) => c.url.startsWith('/api/campaigns/')), 'never writes a record the store does not have');
 });

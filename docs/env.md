@@ -1,8 +1,8 @@
 # The .env file — knobs and secrets, and why it is neither
 
-`ronin.json` holds what the owner *set*; `.env` configures the *process* and holds the
+`machine_settings.json` holds what the owner *set*; `.env` configures the *process* and holds the
 *values that must never leave it*. Different file, different rules, and the difference is
-the point of this document. The pair: `docs/user-config.md` is `ronin.json`'s contract;
+the point of this document. `docs/machine-settings.md` is `machine_settings.json`'s contract;
 this is `.env`'s. The unified representation over both is settei (`docs/settei.md`).
 
 **Everything in `.env` is one of two kinds:**
@@ -25,10 +25,9 @@ Copy `.env.example` to `.env` and edit; every value is optional with a sane defa
 | `GRID_USER` · `GRID_PASS` | unset | HTTP Basic gate, both required to enable. The owner's browser login is separate (`bin/ronin-passwd`); either satisfies the gate |
 | `RONIN_ALLOWED_ORIGINS` | unset | extra hostnames a browser may open a websocket from — only needed behind a non-Tailscale reverse proxy that rewrites `Host` |
 | `TMUX_WINDOW_SIZE` | `latest` | window-size policy for browser viewers beside another client (`latest` / `largest` / `smallest` / `manual`) |
-| `TMUX_MOUSE` | `off` | tmux mouse mode on the browser viewer sessions (`src/config.ts`). `off` since 2026-09-01: a wheel over a locked tile reaches the running app (Claude Code takes it as mouse reports); `on` hands the wheel to tmux copy-mode, which froze the shared pane for every viewer |
 | `RONIN_NEW_SESSION_DIR` | `$HOME` | where a picker-born session starts when no project root decides it |
 | `SCRIBE_URL` | `http://127.0.0.1:3004` | the dictation proxy |
-| `RONIN_USER_ROOT` · `RONIN_DATA_ROOT` | store defaults | relocate the two store roots (`src/stores.ts`) |
+| `RONIN_USER_ROOT` · `RONIN_DATA_ROOT` | store defaults | relocate the two store roots (`src/resources.ts`) |
 | `RONIN_<ID>_DIR` | per store | override a single store's directory |
 | `ANTHROPIC_API_KEY` · `OPENAI_API_KEY` and kin | unset | **provider credentials — the secrets.** Cowork itself never reads a value; a koshi outlet reads the variable its `keyEnv` *names*, and agent CLIs in panes read their standard variables |
 

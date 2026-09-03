@@ -1,4 +1,4 @@
-import { entryValue, isKeyLine, readCatalogSections, type Origin } from './catalog.js';
+import { entryValue, isKeyLine, readCatalogSections, type Origin } from './resources.js';
 
 export interface MacroParam {
   name: string;

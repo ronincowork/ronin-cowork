@@ -17,13 +17,6 @@ export function navigateWorkspace(context, target, options = {}) {
   return context.navigate(target.view, { ...options, param: text(target.param) });
 }
 
-/**
- * The Team destination's typed state. `arrangement` is the workbench's slot arrangement
- * (workspace-arrangement.js) as the view persisted it — normalized against the
- * declaration the view passes — or, once, migrated from the pre-arrangement shape the
- * shell's top-level state used to carry (`widths: {left, right}`, `surfaces: {...}`).
- * Per destination now; leg 2 keys it per team.
- */
 export function teamWorkspaceState(state = {}, viewState = null, declaration = null) {
   const view = viewState && typeof viewState === 'object' ? viewState : {};
   const stored = view.arrangement || null;

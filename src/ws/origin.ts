@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { config } from '../config.js';
+import { config } from '../machine-settings.js';
 
 /**
  * ORIGIN — is this websocket coming from Ronin's own page, or from someone else's?

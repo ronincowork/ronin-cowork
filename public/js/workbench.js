@@ -117,7 +117,6 @@ export function createWorkbench(options = {}) {
     shape.setAttribute('aria-label', shape.title);
   };
   const setCount = (value, quiet = false) => {
-    // A COARSE bench is pinned at two (owner, 2026-09-01): four 34px-controlled tiles
     // on a tablet is a layout nobody drives by finger, and the 2⇄4 button left the
     // touch bar with this pin (layout.js trimBarForTouch). Spelled locally — the Kit
     // keeps its own dependencies — and here rather than at the callers so a restored

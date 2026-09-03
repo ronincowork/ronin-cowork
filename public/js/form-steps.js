@@ -107,15 +107,6 @@ export function dialRow(title, values, current, onPick) {
   return dial;
 }
 
-/**
- * A mandate dial you can tick more than one of — the shape `output` took when the owner
- * ruled it a list (2026-09-01): "No code is different than code not being included… if we
- * send conflicting messages, that's on the user. We don't do too much control."
- *
- * So NOTHING here refuses a combination. `code` and `no code` together is a thing a person
- * may say, and the form's job is to carry it, not to argue: giving the controls, not
- * telling anyone how to drive.
- */
 export function dialRowMulti(title, values, chosen, onToggle) {
   const dial = el('div', 'fs-dial');
   dial.append(el('h4', null, title));
@@ -133,20 +124,10 @@ export function dialRowMulti(title, values, chosen, onToggle) {
   return dial;
 }
 
-/** The six kinds and the not-applicable box below them — `open` is dotted and set apart,
- *  never a seventh peer (owner, 2026-08-31). Labels ride the reserved `kind.*` keys. */
 /**
  * A row of pick-one tiles, each with its name and what it means. The Team step on New
  * Agent drew these first; Launch mode uses the same shape because it is the same kind of
  * question — a small closed set where the consequence of each answer needs saying.
- */
-/**
- * THE BEHAVIOUR SHELVES — the house's SOPs and the ways of working, each book a tick.
- *
- * A book is addressed `<shelf>:<name>` so the two shelves cannot collide, and that address
- * is what rides the launch and the roster. New Agent drew this; the Team form asks the
- * same question and now asks it the same way (owner, 2026-09-01: "we should have the
- * behaviours here, and you can just choose it the same as you could in the agent form").
  */
 export function bookShelves(shelves, chosen, onToggle) {
   const host = el('div');
@@ -252,7 +233,6 @@ export function templateTray(rows, current, onPick) {
   for (const row of rows) {
     grid.append(box(row.art, row.label, row.blurb, current === row.name, () => onPick(row.name)));
   }
-  // A HANDFUL SHIPS; THE REST ARE ON THE LIBRARY (owner, 2026-09-03). The tray says where,
   // in words, and offers no door of its own: the download happens on the Campaign page.
   const wrap = el('div');
   wrap.append(grid, el('p', 'fs-tmplnote', t('forms.library_note', 'More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.')));

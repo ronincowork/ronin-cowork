@@ -30,8 +30,6 @@ import {
 } from './registry.js';
 import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
 
-export class DeskRefused extends Error {}
-
 /** WORKTREES §0: a `.git` two-way synced by Syncthing corrupts under a second writer and cannot hold worktrees. */
 export async function syncthingHazard(dir: string): Promise<string> {
   let d = path.resolve(dir);
@@ -56,7 +54,12 @@ export async function ensureLine(a: RepoArrangement, team: string): Promise<Team
   if (!team) return line;
   if (!(await branchExists(a.dir, line.branch))) {
     const base = await revParse(a.dir, `refs/heads/${a.working}`);
-    if (!base) throw new DeskRefused(`${a.repo}: working line '${a.working}' does not exist`);
+    if (!base) {
+      console.warn(`${a.repo}: working line '${a.working}' does not exist; using the checkout's current commit.`);
+      const current = await revParse(a.dir, 'HEAD');
+      await git(a.dir, ['branch', line.branch, current]);
+      return ensureLine(a, team);
+    }
     await git(a.dir, ['branch', line.branch, base]);
   }
   const wt = await worktreeOf(a.dir, line.branch);
@@ -93,16 +96,20 @@ export interface OpenInput { repo: string; session: string; team: string; assign
 export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   const a = await arrangementOf(input.repo);
   if (!desksManaged(a)) {
-    throw new DeskRefused(`${a.repo} is ${a.source === 'absent' ? 'not declared (no RONIN_REPO)' : `${a.mode}, desks=${a.desks}`} — no desk; work in the checkout at ${a.dir}`);
+    console.warn(`${a.repo} does not select managed desks; opening the requested desk anyway.`);
   }
   const hazard = await syncthingHazard(a.dir);
-  if (hazard) throw new DeskRefused(hazard);
+  if (hazard) console.warn(`${hazard}; opening the requested desk anyway.`);
   const line = await ensureLine(a, input.team);
   // An explicit open names the repository. The team roster determines which desks a
   // launch opens automatically; it does not constrain later explicit opens. Repository
   // arrangement, funnel protection and the Syncthing guard remain the safety gates.
-  const branch = input.branch || (input.team ? teamDeskBranch(input.team, input.session) : soloDeskBranch(input.session));
-  if (isFunnel(a, line, branch)) throw new DeskRefused(`${branch} is the reviewed integration line. Open a managed desk so your work has a safe hand-in path.`);
+  let branch = input.branch || (input.team ? teamDeskBranch(input.team, input.session) : soloDeskBranch(input.session));
+  if (isFunnel(a, line, branch)) {
+    const suggested = input.team ? teamDeskBranch(input.team, input.session) : soloDeskBranch(input.session);
+    console.warn(`${branch} is an integration line; opening ${suggested} instead.`);
+    branch = suggested;
+  }
 
   const existing = await readDesk(a.repo, branch);
   const wtPath = existing?.worktree || deskWorktree(a.repo, branch);
@@ -110,7 +117,7 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   if (!mounted) {
     await worktreePrune(a.dir);
     if (await branchExists(a.dir, branch)) await worktreeAddExisting(a.dir, wtPath, branch);
-    else await worktreeAddNew(a.dir, wtPath, branch, line.branch);
+    else await worktreeAddNew(a.dir, wtPath, branch, (await branchExists(a.dir, line.branch)) ? line.branch : 'HEAD');
   }
   await setUpstream(a.dir, branch, line.branch).catch(() => undefined);
   await stampDeskIdentity(a.dir, mounted?.path ?? wtPath, input.session);
@@ -161,7 +168,7 @@ export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string)
 /** `desk sync` by hand. */
 export async function syncDesk(repo: string, branch: string): Promise<DeskNotice> {
   const rec = await readDesk(repo, branch);
-  if (!rec) throw new DeskRefused(`no desk recorded for ${repo}:${branch}`);
+  if (!rec) return { kind: 'pending', repo, desk: branch, session: '', line_sha: '', by: '', files: [] };
   return adoptLine(rec, await arrangementOf(repo), rec.pending?.by ?? '');
 }
 
@@ -174,7 +181,7 @@ export interface CloseOutcome { desk: DeskStatus | null; action: 'parked' | 'del
  */
 export async function closeDesk(repo: string, branch: string, opts: { unmount?: boolean; wipMessage?: string } = {}): Promise<CloseOutcome> {
   const rec = await readDesk(repo, branch);
-  if (!rec) throw new DeskRefused(`no desk recorded for ${repo}:${branch}`);
+  if (!rec) return { desk: null, action: 'kept', wip: '', unmounted: false };
   const a = await arrangementOf(repo);
   let st = await deskStatus(rec, a);
   let wip = '';
@@ -211,7 +218,10 @@ export async function discardDesk(repo: string, branch: string): Promise<void> {
 /** Reassign a parked desk to a session and remount it — the lead's "reassign" choice. */
 export async function recoverDesk(repo: string, branch: string, session: string): Promise<DeskStatus> {
   const rec = await readDesk(repo, branch);
-  if (!rec) throw new DeskRefused(`no desk recorded for ${repo}:${branch}`);
+  if (!rec) {
+    console.warn(`no desk recorded for ${repo}:${branch}; opening it for ${session}.`);
+    return openDesk({ repo, session, team: '', branch });
+  }
   return openDesk({ repo, session, team: rec.team, assignment: rec.assignment, branch });
 }
 

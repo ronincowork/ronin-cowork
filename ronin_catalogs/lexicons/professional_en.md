@@ -1655,7 +1655,6 @@ The catalog entry goes. {dir} is not touched.
 - **team_jikan.to_lead:** the team lead, whoever that is at the time
 - **team_jikan.when:** When
 - **team_jikan.when_placeholder:** weekdays 08:00
-- **team_jikan.when_help:** One time: once 2026-09-04 08:00. Repeating: daily 08:00 · weekdays 08:00 · weekly mon 08:00 · monthly 1 09:00 · hourly · every 30m · or a five-field cron line.
 - **team_jikan.when_preview:** {words} → next {next}
 - **team_jikan.never:** never — that time has passed
 - **team_jikan.add:** Schedule it
@@ -1702,11 +1701,17 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.kind_social:** Social
 - **team_config.kind_school:** School
 - **team_config.objective:** Purpose
-- **team_config.project_root:** Project root
+- **where.born_in:** Born in
+- **where.worktrees_on:** Worktrees are on (see Routines): a ticked repository opens a desk for each new Agent at birth; branches are Ronin's.
+- **where.worktrees_off:** Worktrees are off (see Routines): a ticked repository is where this Cowork works, on the branch you name, or as checked out.
+- **where.col_repo:** Repository
+- **where.col_branch:** Branch
+- **where.label:** Where it works
+- **where.summary:** born in {root} · {repos}
+- **where.desks:** desks in {list}
+- **where.checkouts:** works in {list}
+- **where.none:** no auto desk
 - **team_config.default:** Default
-- **team_config.branch:** Branch
-- **team_config.repos:** Repos
-- **team_config.repos_help:** Repositories this Cowork works in; each new Agent gets a desk in each. Empty means the Project root alone. Hold Ctrl or ⌘ to pick several.
 - **team_config.references:** References
 - **team_config.references_help:** One URL or note per line.
 - **team_config.routines:** Routines

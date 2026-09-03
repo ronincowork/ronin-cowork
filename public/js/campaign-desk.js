@@ -1,15 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE CAMPAIGN'S DESK (owner, 2026-08-30). A desk_profile is a PRESET — a template of
- * the desk's components: skin, theme, Output, lexicon, kind, arrangement. Applying one
- * copies every component into the Campaign (`campaign_config.desk`); after that each
- * component is the Campaign's own and any one may be changed alone. So the surface is
- * the components, laid out as choices with the explanation beside each, and above them
- * the presets as pills with one Apply.
- *
- * Nothing here dereferences a catalog profile as a live source: the pill row reads the
- * catalog to OFFER a preset; the choices read `desk`, which the server copied.
- */
 import { t } from './lexicon.js';
 import { deskProfiles } from './desk-profile.js';
 import { saveCampaign } from './campaigns.js';
@@ -82,7 +71,6 @@ export function createDeskProfileSurface(campaign) {
     { value: 'school', label: t('kind.school', 'school') },
   ];
   const label = t('cowork.tab_profile', 'Desk profile');
-  // ONE Apply, in the surface header (owner, 2026-09-01) — the buried in-body button is
   // gone. Revert beside it drops the draft. Both act on closures defined below.
   const applyAct = createAction({ label: t('campaign_view.apply', 'Apply'), kind: 'primary', disabled: true, action: () => void apply() });
   const revertAct = createAction({ label: t('campaign_view.revert', 'Revert'), disabled: true, action: () => revert() });
@@ -91,14 +79,6 @@ export function createDeskProfileSurface(campaign) {
   surface.content.append(body);
   let skins = [];
 
-  /* THE WHOLE SURFACE IS STAGED (owner, 2026-09-01: "step back and think about this
-     holistically… it should be much cleaner than it is"). Two models on one surface was
-     the smell: preset pills staged-then-Apply while every settings row saved instantly,
-     wearing and repainting mid-edit — the screen flipped theme and the pills jumped
-     before Apply was ever pressed. Now ONE draft is seeded from the record; every
-     control, preset pills included, edits the draft only; nothing saves or wears
-     mid-edit. One Apply in the surface header commits it all in one write; Revert
-     drops the draft. */
   let picked = ''; // the preset staged into the draft, not yet applied
   let draft = {}; // the staged desk — what every control below edits
   const FIELDS = ['skin', 'theme', 'theme_mobile', 'rireki_view', 'lexicon'];
@@ -176,7 +156,6 @@ export function createDeskProfileSurface(campaign) {
         t('campaign_view.skin_help', 'The look — colours, corners, faces.'), (v) => { draft.skin = v; arm(); }),
       choice(t('campaign_view.theme', 'Theme'), THEMES(), draft.theme || 'automatic',
         t('campaign_view.theme_help', 'Light or dark for pointer surfaces; Automatic is the house default — light.'), (v) => { draft.theme = v === 'automatic' ? '' : v; arm(); }),
-      // The touch surfaces' own answer (owner, 2026-09-01): an iPad can be light while
       // the desktop is dark, and both are the Campaign's word — no per-device fiddling.
       choice(t('campaign_view.theme_mobile', 'Theme (mobile)'), THEMES(), draft.theme_mobile || 'automatic',
         t('campaign_view.theme_mobile_help', 'Light or dark for touch surfaces — iPad and phone; Automatic is the house default — light.'), (v) => { draft.theme_mobile = v === 'automatic' ? '' : v; arm(); }),
@@ -185,7 +164,6 @@ export function createDeskProfileSurface(campaign) {
       choice(t('campaign_view.lexicon', 'Lexicon'), [{ value: draft.lexicon || '', label: draft.lexicon || t('settei.none_set', '— none set —') }], draft.lexicon || '',
         t('campaign_view.lexicon_help', 'The words. Held to one lexicon for now, so nothing on this page is offered.'), null),
       // team_arrangement is in the record but not offered: the Workbench remembers its own
-      // arrangement per route now, so a profile-level default is vestigial (owner, 2026-08-30).
       notice.el,
     );
   }

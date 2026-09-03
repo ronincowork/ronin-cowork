@@ -7,36 +7,6 @@ import { activeProfile, deskProfiles, loadDeskProfile, setDeskProfile } from './
 import { t } from './lexicon.js';
 import { S } from './state.js';
 
-/**
- * ⚙ SYSTEM — what this install is: the desk profile, the updater, and the way out.
- *
- * IT HAS BEEN IN THREE PLACES, and the third is the one that was right. It began as a
- * Commons room, which meant four copies — one per tile — for facts that are the INSTALL's,
- * not a tile's (owner, 2026-08-16: a gear per tile makes no sense). So it became a
- * page-level `ui.sheet` off the bar's ⚙. That fixed the copies and cost it the room: a
- * sheet is a small box, and this content wants a pane.
- *
- * Since 2026-08-18 it is neither. These three groups hang in the **admin_desk** (js/cowork-commons.js)
- * under "This app", below the six rooms about the install — one tile, opened where you ask
- * for it, with a full pane to draw in. The line the 2026-08-16 ruling drew was right; what
- * was missing was a surface on the correct side of it. `buildSystemPanel` returns elements
- * now, not a sheet, and the ⚙ that used to open the sheet opens the desk.
- *
- * TWO MECHANICAL BUTTONS AND NOTHING AUTOMATIC. "Check for updates" is the one
- * moment this client causes an outbound ask (the server asks the release feed —
- * never on a timer, never at boot); "Update to vX" runs the same bin/ronin-update a
- * terminal would. The dial doctrine, applied to the install: show what changed,
- * never act unasked.
- *
- * THE UPDATE'S COMPLETION SIGNAL IS /api/version CHANGING. The updater gates the
- * candidate, swaps a symlink and restarts the operator (docs/release.md); this page
- * simply polls until a new release string answers — the restart drops the poll for a
- * few seconds and that is the swap happening, not a failure. Sessions live in a unit
- * the update never touches.
- *
- * On a CHECKOUT (release:null) the run button stays off: a source tree is updated by
- * git, not by unpacking a release over it — the readout says so instead of guessing.
- */
 /* ---------- passkeys ----------
  * REGISTRATION LIVES BEHIND THE GATE AND THAT IS THE DESIGN, NOT AN ACCIDENT. You add a
  * passkey by first proving you are already the owner; the login page can only SPEND one.
@@ -188,43 +158,19 @@ function buildPasskeyBlock() {
   return { el, refresh };
 }
 
-/**
- * THE APP'S OWN THREE, and they are NOT a sheet any more (2026-08-18).
- *
- * This was `buildSystemSheet()` — one `ui.sheet` holding appearance, the updater and the
- * way out, opened by ⚙ on the bar. It is the same content, returned as three ELEMENTS for
- * the admin_desk to hang in its nav ("This app", under the six install rooms). The owner's
- * reason is the one this file always had: install-level facts do not belong in a tile —
- * and a desk is the tile that is not about a session, so now they have somewhere to sit
- * that is neither a sheet nor four copies.
- *
- * RE-PARENTED, NOT REWRITTEN, on purpose. `check`, `run`, `runSvc` and `renderId` share one
- * closure over `version`/`latest`/`svcLatest`, and the updater and log-out are the two
- * things in this client I can least afford to get subtly wrong. So the elements are grouped
- * differently and every line of logic below is untouched: `row` split into the release's
- * buttons and the account's, and `open()` became `enter()` without its `dlg.open()`.
- */
 export function buildSystemPanel() {
 
   const idBlock = document.createElement('div');
   idBlock.className = 'sys-id';
 
-  // APPEARANCE LEFT THIS ROOM (CAMPAIGN_WORKBENCH, SETTEI audit, 2026-08-30): the skin
   // and the light/dark choices are the Campaign's desk — components on the #/campaign
   // Desk profile surface — and a choice has one home, not two. "Dark on the Mac, light
-  // on the iPad" is the Campaign's word too since 2026-09-01: Theme and Theme (mobile)
   // are two Machine Settings rows, one per surface kind. The desk profile picker
   // stays: it is the same leaf ⚙ always wrote.
   // ⚙ THE MACHINE — the detail behind the header gauge, drawn only when the machine
   // service is installed. Null when it is not: no empty box explaining its own absence.
   const machineBlock = buildMachinePanel();
 
-  /* THE DESK PROFILE PICKER (R38) — its own desk row since 2026-08-27 (see `profile`
-   * below); it was drawn above the skins because it is the wider question: a
-   * profile HAS a skin, and picking one puts that skin up, loads its words, and sets
-   * what a new tile shows. Same shape as the skin rows — a row per profile, blurb and
-   * `origin` — and the choice is settei's leaf, so every browser agrees. "Stock" is the
-   * row for no profile at all: the ordinary state, never an error. */
   const profBlock = document.createElement('div');
   profBlock.className = 'sys-skins';
   const profLab = document.createElement('span');
@@ -271,7 +217,6 @@ export function buildSystemPanel() {
   const runBtn = button(t('desk.update', 'Update'), { cls: 'sys-run' });
   runBtn.disabled = true;
   runBtn.hidden = true;
-  // THE SERVICES BUTTON — the owner's ruling (2026-08-16): ungated, click it and it
   // does it. Same updater underneath (--services): fetch, verify, CONTRACT CHECK
   // against the running cowork, into the store, into the tree, restart. It appears
   // only when the check names an installable services release.
@@ -309,7 +254,6 @@ export function buildSystemPanel() {
     g.append(...kids.filter(Boolean));
     return g;
   };
-  // THE DESK PROFILE IS ITS OWN ROW (owner, 2026-08-27): a profile is the wider question
   // — it HAS a skin — and a person hunting it should find it in the desk's nav.
   const profile = group(profBlock);
   // The machine sits with the release block — both answer "what is this install running

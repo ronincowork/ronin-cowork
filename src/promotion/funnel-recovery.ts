@@ -1,6 +1,6 @@
 import { cp, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 import { AUTOMATION_IDENTITY, changedFiles, git, GitError, gitOut, revParse, worktreeAddDetached, worktreeRemove } from '../desks/git.js';
 import type { RepoSpec } from './candidate.js';
 

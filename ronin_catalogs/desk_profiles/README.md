@@ -1,7 +1,6 @@
 # desk_profiles — the owner's standing defaults, one file per profile
 
 > **DATA.** Nothing here executes. A **`desk_profile`** is a template of standing defaults
-> for the surfaces they work at (KOTOBA R38, 2026-08-27): which **skin** (look —
 > `SKINS.md`, tokens only, unchanged), which **theme**, which **lexicon** (the words — `lexicons/`), which
 > **campaign kind** the board opens on, the **Team page's default arrangement**, and the
 > RIREKI **detail level** a new tile shows. **A desk_profile is NOT a skin; each one HAS a
@@ -22,5 +21,5 @@ prose. Fields, all optional — a blank field means "as stock":
 
 **Yours and ours.** A file of the same name in your catalogs store replaces ours **whole**;
 a new name adds a profile; `- **hidden:** yes` withdraws one of ours (`docs/shadowing.md`).
-Five ship: `terminal` · `vibe_code` · `professional` · `home` · `league` — League the gamer one, goofy on purpose (owner, 2026-08-27). No profile chosen is the
+Five ship: `terminal` · `vibe_code` · `professional` · `home` · `league` — League the gamer one, goofy on purpose. No profile chosen is the
 ordinary state of every install older than this file, and it renders exactly as stock.

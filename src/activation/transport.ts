@@ -5,7 +5,7 @@
  * library (a GET of an index and a bundle, on a press, with the Services token). Same
  * client, same allowlist, same record.
  *
- * `src/settei.ts` states the law: "the house has exactly two [egress doors] (AGERU, and the
+ * `src/machine-settings.ts` states the law: "the house has exactly two [egress doors] (AGERU, and the
  * model provider)". Services activation and Tomodachi are two different CONTRACTS and two
  * different CONSENT EVENTS, but they are not two different doors — they share this client,
  * its allowlist, its TLS and timeouts, its redaction, its request ids, and the egress record

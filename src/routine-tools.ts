@@ -1,8 +1,8 @@
 /** Build the command lookup projected into one Cowork Agent at birth. */
 import { access, mkdir, rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
-import { REPO_ROOT } from './config.js';
-import { storeDir } from './stores.js';
+import { REPO_ROOT } from './resources.js';
+import { storeDir } from './resources.js';
 import type { ResolvedRoutine } from './routines.js';
 
 export interface RoutineToolProjection {
@@ -55,7 +55,7 @@ export async function projectRoutineTools(
    * way. It passes `restart ronin` straight through; it is only ever in the way of the
    * one command nobody means to type.
    */
-  const names = new Set<string>(['shim/tmux', 'shim/systemctl']);
+  const names = new Set<string>(['shim/tmux']);
   for (const routine of routines) if (routine.enabled) for (const tool of routine.tools) names.add(tool);
   const delivered: string[] = [];
   const missing: string[] = [];

@@ -21,7 +21,7 @@
  * So Ronin installs where the agents' own installers already install. Two consequences
  * follow and both are the point: an agent Ronin installed is indistinguishable from one
  * the owner installed by hand, and uninstalling Ronin leaves them alone — they are the
- * owner's tools, not Ronin's state. That is also why this is NOT a store (src/stores.ts):
+ * owner's tools, not Ronin's state. That is also why this is NOT a store (src/resources.ts):
  * a store is a place Ronin keeps its own working state and an uninstall deletes it. This
  * is the same class as `~/.claude/settings.json` — somebody else's directory that setup.sh
  * legitimately writes into.
@@ -48,7 +48,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { AGENTS, listAgentAvailability } from './agents.js';
-import { REPO_ROOT } from './config.js';
+import { REPO_ROOT } from './resources.js';
 import { runCommand } from './send.js';
 import { collectBirthLines, emitSessionWillBorn } from './sockets.js';
 import { createSession, killSessionTree, sessionExists } from './tmux.js';
@@ -149,7 +149,7 @@ const sessionFor = (name: string): string => `install_${name}`;
  * `kind` is the registry's own verb, so the day the services bundle becomes mechanical it
  * is one branch here and no change at any caller. Today only `agent` is mechanical, and
  * anything else is refused out loud rather than silently dropped: `met_by` already said
- * which items belong here (src/settei-registry.ts), so an item arriving that does not is
+ * which items belong here (src/machine-settings-schema.ts), so an item arriving that does not is
  * worth saying.
  */
 export async function dispatchInstall(items: InstallItem[]): Promise<InstallStarted[]> {

@@ -1,38 +1,4 @@
 /* Team-page-lifetime orchestration over the existing Workspace Kit terminal host. */
-/**
- * HOT, WARM, COLD — what a member's terminal costs, and when (owner-driven, 2026-08-25).
- *
- * Every streaming tile is real weight on BOTH ends: a websocket, a tmux viewer session
- * and a live `tmux attach` process on a pty server-side, and an xterm parsing the stream
- * client-side. The first cut of this pool mounted one per member on page entry — seven
- * streams for a seven-member team, six of them into hidden boxes — and the page crawled.
- * The second cut mounted lazily but kept every hidden tile streaming forever.
- *
- * This is the third cut, and the tiers are the design:
- *
- *   HOT    the visible member. Streaming, rendered, focused on request.
- *   WARM   hidden but still streaming. WARMTH IS DURABLE (owner, 2026-08-25): a tile
- *          you opened stays hot until the cap forces the coldest out — four locked
- *          streams is a cost the owner has already accepted ("we have four tiles on a
- *          working page that work just fine"). No timer ever parks a shown tile.
- *   COLD   a seat. Costs nothing anywhere. First show — or a re-show after parking —
- *          pays one reattach, and tmux repaints the live screen immediately.
- *
- *   PINNED members are never parked by anything but membership loss or page exit —
- *   "the team manager is always hot, regardless" (owner). Pins count toward the cap.
- *
- *   streamCap bounds HOT+WARM together (owner: 4). At the cap the least-recently-shown
- *   unpinned warm tile parks; nothing is ever destroyed for the cap, so no member loses
- *   their seat. Destruction remains what it always was: membership loss and page exit.
- *
- *   prewarm(name) starts a member streaming hidden — the hover flourish: by the time
- *   the click lands, the tile is already painted. A prewarm is the coldest thing in the
- *   LRU, never steals a warm slot at the cap, and a short grace collects one that is
- *   never clicked — the ONLY thing the clock is still for.
- *
- * Timers are injectable so the unit floor can run the clock by hand.
- */
-
 export function createWarmTerminalPool({
   createHost,
   container,
@@ -68,8 +34,6 @@ export function createWarmTerminalPool({
     unlist(name);
   };
 
-  /** An unclaimed PREWARM earns its keep for one grace period, then parks. Shown tiles
-   *  never ride this clock — warmth is durable (owner, 2026-08-25). */
   const armGrace = (name) => {
     const entry = entries.get(name);
     if (!entry) return;
@@ -148,10 +112,6 @@ export function createWarmTerminalPool({
     return true;
   };
 
-  /** Mount a member hidden and keep it that way — the pinned lead's entry state
-   *  (owner, 2026-08-25: "the team manager is always hot, regardless", which means hot
-   *  from page entry, not merely hot-once-clicked). Unlike a prewarm it rides no grace
-   *  and counts as recently shown. No-op when already streaming or on stage. */
   const keepHot = (name) => {
     const entry = entries.get(name);
     if (!entry || streaming(entry) || name === active) return false;

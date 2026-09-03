@@ -33,9 +33,9 @@ import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveBehaviourBooks } from './behaviours.js';
-import { STOCK_DIR, isShadowable, readCatalogSections, seedUserCatalog, splitSections } from './catalog.js';
-import { findDefinition, readDefinitions } from './definitions.js';
-import { storeDir } from './stores.js';
+import { STOCK_DIR, isShadowable, readCatalogSections, seedUserCatalog, splitSections } from './resources.js';
+import { findDefinition, readDefinitions } from './resource-adapters.js';
+import { storeDir } from './resources.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 

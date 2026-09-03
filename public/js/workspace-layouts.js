@@ -82,7 +82,6 @@ export function createWorkbenchLayout(options = {}) {
   let state = normalizeArrangement(options.state, declaration);
   let columns = [];
 
-  // A SLOT HOLDS EXACTLY ONE THING (owner, 2026-08-25: "it's there or it's not there;
   // there is no hidden"). place() trades what a slot holds for what you hand it and
   // returns what came out. The frame keeps nothing else in the box.
   const slotContent = (name) => wrappers.get(name)?.querySelector(':scope > .wk-workbench-slot-content') ?? null;
@@ -171,7 +170,6 @@ export function createWorkbenchLayout(options = {}) {
     // A pull of N pixels is a change of N pixels to the outer column, from the width it
     // had when the pointer went down. Shares are of the COLUMNS' content (padding and
     // gaps excluded); measuring from the grid's box or a neighbour's edge instead left
-    // one side six to ten pixels off per hundred — measured, 2026-08-25.
     let grip = null;
     const drag = (clientX) => {
       if (!grip) return;

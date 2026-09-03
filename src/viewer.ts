@@ -14,7 +14,7 @@
  */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { config } from './config.js';
+import { config } from './machine-settings.js';
 import { exactPane, exactSession, killSession } from './tmux.js';
 
 const pexec = promisify(execFile);

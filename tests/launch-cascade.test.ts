@@ -15,7 +15,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveLaunchProfile } from '../src/launch-profile.js';
-import type { Definition } from '../src/definitions.js';
+import type { Definition } from '../src/resource-adapters.js';
 
 /**
  * A definition made of exactly the fields named — the point being that a key ABSENT from

@@ -3,25 +3,6 @@ import { request } from './request.js';
 import { serviceMissing } from './state.js';
 import { t } from './lexicon.js';
 
-/**
- * RAM_RPM — the box's working reading, in the header.
- *
- * A TACHOMETER, NOT AN ALARM (owner, 2026-08-24). It is always visible and mostly
- * ignored, which is the point: you learn what normal looks like without being told, so
- * the abnormal registers on its own. An always-loud readout becomes wallpaper in a day
- * and stops being information — so this is quiet by default and only earns attention
- * when the headroom is genuinely short.
- *
- * ONCE A MINUTE, AND ONLY WHEN WATCHED. Memory pressure builds over minutes, not
- * frames; a faster poll would buy nothing and wake the browser for it. A backgrounded
- * tab polls not at all — a Ronin left open in a tab for a week should not appear in
- * anyone's battery report — and reads once immediately on return so the first glance
- * after switching back is current rather than a minute stale.
- *
- * It cannot catch a sudden spike, and is not meant to: a runaway allocation can take a
- * box down inside one interval. Swap is what survives that. This is for noticing the
- * slow squeeze that precedes it.
- */
 const POLL_MS = 60_000;
 
 /** Headroom, not usage: the share of memory a new allocation could still get. */
@@ -53,7 +34,6 @@ export function mountRamRpm() {
   if (!el) return;
   // THE SWITCH, client half. Machine administration is a SERVICES capability, so on the
   // free build there is no /api/machine to ask — draw nothing rather than fetch into a
-  // 404 once a minute forever. `S.services` is filled from /api/version before this runs.
   if (serviceMissing('machine')) return;
 
   let timer = null;

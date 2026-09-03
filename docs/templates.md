@@ -9,7 +9,7 @@ owner's own distinction:
 > template. If you have a kind of team-oriented requirement with multiple agents
 > coordinating to deliver on a task, that would be a team template."
 
-The short rule (the owner's, 2026-09-01): **agents are people, teams are projects.**
+The short rule: **agents are people, teams are projects.**
 
 **An agent template is a person you'd assign** — one session's loadout: the reading,
 tools, mandate and starting brief. A system administrator you spin up when Ronin is
@@ -85,7 +85,7 @@ your agent, as above), not from a launch form.
 ## The shipped handful, and the library
 
 A handful ships — one or two a kind, so every launch form has something on the tray — and
-**the Ronin library on ronincowork.com is where the rest live** (owner, 2026-09-03). Four
+**the Ronin library on ronincowork.com is where the rest live**. Four
 projects: **Staff My Codebase** 🎬 for code, **Morning Brief** ☕ for work, **Health &
 Fitness** 🏃 for yourself, **Dinner Party** 🕯 for the house; and five people: the Personal
 Assistant 📇 (gbrain on, born into its own team), the System Administrator 🔧, the Office

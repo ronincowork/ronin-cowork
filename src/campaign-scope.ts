@@ -2,7 +2,7 @@
  * CAMPAIGN SCOPE — the compatibility read, the cross-Campaign refusals, and the migration
  * that stamps what existed before Campaigns did.
  *
- * `ronin-lab/wip/buildouts/CAMPAIGN_SCOPING.md` is the plan. `src/campaign-config.ts` owns
+ * `ronin-lab/wip/buildouts/CAMPAIGN_SCOPING.md` is the plan. `src/campaigns.ts` owns
  * the Campaign RECORD and is its only writer; this file owns the other half — the
  * `campaign_id` that every durable object and every live Agent points back with, and the
  * rules that keep those pointers honest.
@@ -26,7 +26,7 @@
  */
 import { access, mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { initialCampaign } from './campaign-config.js';
+import { initialCampaign, listCampaigns } from './campaigns.js';
 import { listProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { listTeamRosters, teamRosterFile } from './team-rosters.js';
 import { getCampaign, listSessions, setCampaign } from './tmux.js';
@@ -75,7 +75,8 @@ export async function campaignFilter(wanted: readonly string[]): Promise<(stored
   const resolve = await campaignResolver();
   if (!wanted.length) return () => true;
   const set = new Set(wanted);
-  return (stored: string) => set.has(resolve(stored));
+  const known = new Set((await listCampaigns()).map((campaign) => campaign.id));
+  return (stored: string) => Boolean(stored && !known.has(stored)) || set.has(resolve(stored));
 }
 
 /* --------------------------------------------------------------- the refusals */

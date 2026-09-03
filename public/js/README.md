@@ -16,7 +16,6 @@ are served straight from `node_modules` and load before the module graph runs.
 
 ## Why it is split at all
 
-Until 2026-08-08 this was one 4,287-line `app.js`. That day one line in the wrong place —
 `this.body.appendChild(...)` nineteen lines before `this.body` was assigned — threw in a
 constructor, killed `build()`, and left a page that rendered its static header and did
 nothing. It took hours to find and survived two reverts, because the bug was older than
@@ -28,11 +27,9 @@ See `co-working/user_repo/wip/buildouts/` history and `CLAUDE.md` for the full a
 
 Forty-four modules, 8,916 lines. Counts below are `wc -l`, measured against the tree.
 
-The platform row (request/ui/panes/theme) landed 2026-08-16 with the UI/UX
 professionalisation pass: transport, dialog behaviour, the pane registry and the theme
 became shared contracts instead of per-feature re-inventions, and the retired Commons gave its
 two resident rooms — the roster and the launcher — their own modules. `roster.js` is still
-one of them; the launcher module went with the ＋ New board (2026-08-31), and New Agent is
 where a session is born now. `docs/ui.md` is the written contract those modules enforce.
 
 | Module | Lines | What it owns |
@@ -87,7 +84,6 @@ where a session is born now. `docs/ui.md` is the written contract those modules 
 
 The rule is nothing over 700 lines — and it is MECHANICAL now (`check-modules` fails the
 build), because the written-only version was crossed within a week of being written.
-`tile.js` was, at 1,270, and was split on 2026-08-13 to
 the shape the owner ruled: a tile is one CELL of the coworkspace — header, dials, a mount
 point — that composes Locked or one of five record-fed Outputs, with the socket beside them.
 
@@ -100,7 +96,6 @@ whichever view is showing. Read `tile.js` and you should see composition, not ma
 
 The server has the same rule with a gate behind it (`scripts/check-src.mjs`, 700 lines and
 a ratchet). The client's gate is `check-modules` — the same 700, mechanically enforced
-since 2026-08-16.
 
 The three keypad modules are described in one place and nowhere else:
 [`co-working/user_repo/README/KEYPAD_README.md`](../../co-working/user_repo/README/KEYPAD_README.md).
@@ -158,8 +153,6 @@ working UI stays up. That human look is currently the only render check that exi
 
 The phone surface is the one that matters most for a client change: its compact Output
 selector can choose the live terminal or any record-fed view supplied by Ronin Services.
-It is where 2026-08-08 went dark first. Nothing on this box exercises it.
 
 `npm run smoke` is the *other* test — it checks the pipe with no browser. It passed the
-entire time the screen was blank on 2026-08-08, so it is necessary and not sufficient.
 Never conclude the UI works from it alone.

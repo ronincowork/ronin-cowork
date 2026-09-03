@@ -1,4 +1,4 @@
-/* Team destination — feature composition only; Workspace Kit owns its foundation. */
+
 @layer app {
   .tw-cards[hidden], .tw-config[hidden] { display: none; }
 
@@ -17,20 +17,16 @@
   .team-template-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4); border: var(--edge) solid var(--line); border-radius: var(--radius-sm); background: var(--raise); }
   .team-template-actions { display: flex; gap: var(--space-2); }
   .team-template-note, .team-template-empty { color: var(--muted); }
-  /* THE TEAM COMMONS CARD — first in the roster, thinner than a session's (owner, 2026-08-28) */
+
   .tw-commons-card { padding-top: var(--space-2); padding-bottom: var(--space-2); }
-  /* a seat with a card over it — the drop will land here */
+
   .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
-  /* a blank workspace: the band, then bare ground the size of the seat. It is a nested
-     wk-surface, whose border, corners and panel background made "empty" read as a small
-     floating card inside the workspace (owner, 2026-09-01); the seat's own surface is
-     the one rectangle, so the blank paints nothing of its own. */
+
   .tw-blank { height: 100%; border: 0; border-radius: 0; background: transparent; }
   .tw-blank-word { margin: auto; font-size: var(--text-3); color: var(--muted); }
-  /* the new-session surface: T on the left of its head, then the name; the launcher below */
+
   .tw-new-body { flex: 1; min-height: 0; overflow-y: auto; }
-  /* the launcher's pane shows only inside `.home[data-pane='new']` by the commons' rule; in a
-     workspace it is the whole surface, so it shows here (owner, 2026-08-27: "nothing showed") */
+
   .tw-new-body .home-null { display: flex; }
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
@@ -39,52 +35,69 @@
   .home-grp-actions.tile-head { min-height: 0; padding: 0; border: 0; background: transparent; flex-wrap: nowrap; }
   .tw-config { display: flex; flex-direction: column; gap: var(--space-10); padding: var(--space-6) var(--space-7); overflow-y: auto; }
   .tw-config-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
-  .tw-config-field, .tw-config-reading { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); font-size: var(--text-3); }
-  .tw-config-field:nth-child(3) { grid-column: 1 / -1; }
+  .tw-config-field, .tw-config-reading { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); }
+  .tw-config-field:has(textarea) { grid-column: 1 / -1; }
   .tw-config-field input, .tw-config-field textarea { width: 100%; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3); font: inherit; }
   .tw-config-field textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
-  .tw-config-field select[multiple] { width: 100%; box-sizing: border-box; font: inherit; }
+  .tw-where { position: relative; }
+
+  .tw-where summary { position: relative; display: block; cursor: pointer; list-style: none; padding-right: calc(var(--space-4) + var(--space-7)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tw-where summary::after { content: '▾'; position: absolute; right: var(--space-4); top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .tw-where summary::-webkit-details-marker { display: none; }
+  .tw-where[open] summary { border-color: var(--define-line); }
+  .tw-where-body { position: absolute; z-index: 5; top: calc(100% + var(--space-2)); left: 0; min-width: 100%; width: max-content; max-width: min(90vw, calc(var(--space-12) * 12)); display: grid; gap: var(--space-4); padding: var(--space-4); background: var(--bg-2); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); }
+  .tw-where-repos { display: grid; gap: var(--space-2); }
+  .tw-where-repo { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: center; color: var(--fg); }
+  .tw-where-head { color: var(--muted); }
+  .tw-where-desks .tw-where-repo { grid-template-columns: auto minmax(0, 1fr); }
+  .tw-where-desks .tw-where-repo input[type='text'], .tw-where-desks .tw-where-head span:last-child { display: none; }
   .tw-config-reading output { color: var(--fg-strong); padding: var(--space-3) 0; }
   .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .tw-config-status, .tw-config-empty { color: var(--muted); }
   .tw-config-wide { grid-column: 1 / -1; }
-  .tw-config-note { margin: 0; color: var(--muted); font-size: var(--text-3); line-height: 1.5; }
+  .tw-config-note { margin: 0; color: var(--muted); line-height: 1.5; }
   .tw-routines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); border: var(--edge) solid var(--line); border-radius: var(--radius-sm); padding: var(--space-4); }
   .tw-routines legend { color: var(--fg-strong); font-weight: 600; padding: 0 var(--space-2); }
   .tw-routines > .tw-config-note { grid-column: 1 / -1; }
   .tw-worktrees-mode { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--space-1); border-left: var(--edge-2) solid var(--kiiro); background: color-mix(in srgb, var(--panel) 90%, var(--kiiro)); padding: var(--space-3) var(--space-4); }
-  .tw-worktrees-mode b { color: var(--muted); font-size: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
-  .tw-worktrees-mode strong { color: var(--fg-strong); font-size: var(--text-3); }
-  .tw-worktrees-mode small { color: var(--muted); font-size: var(--text-2); line-height: 1.4; }
+  .tw-worktrees-mode b { color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .tw-worktrees-mode strong { color: var(--fg-strong); }
+  .tw-worktrees-mode small { color: var(--muted); line-height: 1.4; }
   .tw-routine { display: flex; align-items: flex-start; gap: var(--space-3); }
   .tw-routine input { accent-color: var(--accent); margin-top: var(--space-1); }
   .tw-routine span { display: flex; flex-direction: column; gap: var(--space-1); }
   .tw-routine small, .tw-config-field small { color: var(--muted); line-height: 1.4; }
+
+  .tw-config, .league-team-edit-content { font-size: var(--form-input); }
+  .tw-routines legend, .league-team-roster-title { font-size: var(--form-head); }
+  .tw-config-field > span, .tw-config-reading > span, .tw-where-head, .tw-worktrees-mode b { font-size: var(--form-key); }
+  .tw-config-field input, .tw-config-field textarea, .tw-config-field select, .tw-where summary, .tw-where-repo input, .tw-config-reading output, .tw-routine b, .tw-worktrees-mode strong, .tw-config-check span, .league-team-member-words strong, .league-team-add select, .tw-config-actions { font-size: var(--form-input); }
+  .tw-config-note, .tw-config-field small, .tw-routine small, .tw-worktrees-mode small, .tw-config-status, .league-team-member-words span, .league-team-empty { font-size: var(--form-note); }
   .tw-config-check { display: flex; align-items: center; gap: var(--space-3); color: var(--fg-strong); }
   .tw-config-check input { accent-color: var(--accent); }
 
-  /* A Team dropped into the Cowork bench becomes a quiet roster, not an admin form. */
-  .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); font-size: var(--text-3); }
+
+  .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); }
   .league-team-roster, .league-team-config { flex: 0 0 auto; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
-  .league-team-roster-title { margin: 0 0 var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); color: var(--fg-strong); font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .league-team-roster-title { margin: 0 0 var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); color: var(--fg-strong); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
   .league-team-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); border-bottom: var(--edge) solid var(--line); padding: var(--space-2) 0; }
   .league-team-member-identity { display: flex; align-items: center; min-width: 0; gap: var(--space-3); }
   .league-team-member-mark { width: var(--space-6); color: var(--kaki); font-size: var(--text-5); line-height: 1; text-align: center; }
   .league-team-member-words { display: flex; flex-direction: column; min-width: 0; gap: var(--space-1); line-height: 1.1; }
-  .league-team-member-words strong { overflow: hidden; color: var(--fg-strong); font-size: var(--text-5); font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
-  .league-team-member-words span, .league-team-empty { color: var(--muted); font-size: var(--text-2); }
+  .league-team-member-words strong { overflow: hidden; color: var(--fg-strong); font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
+  .league-team-member-words span, .league-team-empty { color: var(--muted); }
   .league-team-member-actions { flex-wrap: nowrap; gap: var(--space-2); }
   .league-team-empty { margin: 0; border-bottom: var(--edge) solid var(--line); padding: var(--space-5) 0; }
   .league-team-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); margin-top: var(--space-5); }
   .league-team-add select { min-width: 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
 
-  /* -- the docs slice: mdedit's own pane (.home-docs, style.css), given the surface's height -- */
+
   .tw-docs { display: flex; height: 100%; }
   .tw-docs .dc-empty { color: var(--fg-strong); font-size: var(--text-4); }
   .tw-docs .dc-work-record-note { margin-top: var(--space-2); border-top: var(--edge) solid var(--line); padding-top: var(--space-4); color: var(--fg); }
 
-  /* -- the wipeboard slice: the thread, and the owner's line under it -- */
+
   .twb { display: flex; flex-direction: column; min-height: 0; height: 100%; }
   .twb-thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); }
   .twb-post { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-3); }
@@ -96,21 +109,15 @@
   .twb-compose { display: flex; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-top: var(--edge) solid var(--line-2); }
   .twb-compose textarea { flex: 1 1 auto; resize: vertical; }
 
-  /* ── ADD AGENT TO TEAM — the in-Team quick launch (js/add-agent.js), staged beside the
-     ＋ New Agent board. One rectangle for every clickable thing, as the drawing has it:
-     ronin-lab `concepts/add-agent-to-team.html`. ── */
-  /* No rule reaches into the Kit's own content box — the form carries its own layout. */
-  /* The FORM sizes itself, not the surface: a size on the surface root is inherited by the
-     Workspace Kit header too, which shrank this card's own title. Same lesson as
-     `.ntf-form` in css/launch-forms.css. */
+
+
+
   .aa-form { display: flex; flex-direction: column; gap: var(--space-6); margin-bottom: var(--space-7); font-size: var(--text-3); }
   .aa-control { box-sizing: border-box; width: 100%; min-width: 0; }
-  /* Inputs and native selects share one measured row. `--space-11` alone is only 28px
-     in this density and clips the select's text; the field also needs its vertical inset. */
+
   .aa-short-control { height: calc(var(--space-11) + (2 * var(--space-2))); }
   .aa-form textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
-  /* Name left, provider + model right (owner, 2026-08-31) — the columns drop to one when
-     the surface is narrow; the minimum is tokens, never a raw measurement. */
+
   .aa-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 6), 1fr)); gap: var(--space-6); align-items: start; }
   .aa-col { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
   .aa-col[hidden] { display: none; }
@@ -129,14 +136,13 @@
   .aa-alternative { margin: 0 0 var(--space-4); color: var(--muted); font-size: var(--text-2); }
   .aa-alternative a { color: var(--accent); }
   .aa-box { width: var(--space-7); height: var(--space-7); border: var(--edge) solid var(--line-3); background: var(--panel); }
-  /* What the Team fixed, at the FOOT: none of it is changeable here, so it does not sit
-     above the fields that are. */
+
   .aa-fixed { display: grid; grid-template-columns: calc(var(--space-12) * 2.5) minmax(0, 1fr); gap: var(--space-2) var(--space-5); align-items: baseline; margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-6); }
   .aa-fixed dt { color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .06em; }
   .aa-fixed dd { margin: 0; color: var(--fg-strong); font-size: var(--text-2); min-width: 0; }
   .aa-from { color: var(--muted); font-size: var(--text-1); margin-left: var(--space-3); }
 
-  /* JIKAN — the Cron jobs tab (team-jikan.js): the add form, then the scheduled and done lists. */
+
   .tj { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5); }
   .tj-form { gap: var(--space-4); }
   .tj-preview { color: var(--muted); }

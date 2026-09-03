@@ -14,7 +14,7 @@ test('ways merge owner books over stock whole-file and append new names', async 
     '# My Way\n- **kinds:** work, household, no_such_kind\n\nNew.\n',
   );
   try {
-    const { listWays } = await import('../src/ways.js');
+    const { listWays } = await import('../src/resources.js');
     const rows = await listWays();
     const cut = rows.find((row) => row.name === 'cut_code');
     assert.deepEqual(cut, { name: 'cut_code', label: 'My Cut', blurb: 'Mine.', kinds: [], origin: 'user', shadowed: true });

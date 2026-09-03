@@ -8,9 +8,9 @@
 import { lstat, readFile, readdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { storeDir } from './stores.js';
-import type { Origin } from './catalog.js';
-import { renderGlossary, renderSessionMacrosReading } from './session-boot.js';
+import { storeDir } from './resources.js';
+import type { Origin } from './resources.js';
+import { renderGlossary, renderSessionMacrosReading } from './birth-readme.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STOCK = path.join(ROOT, 'ronin_session_boot');

@@ -16,7 +16,7 @@
 import { onClock } from '../jikan.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 import { callHq } from './transport.js';
 import { getEntitlementToken } from './secrets.js';
 

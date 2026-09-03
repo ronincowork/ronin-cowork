@@ -28,7 +28,7 @@ that door. Free Cowork must be able to request Services without Services being p
 
 ## The house still has two egress doors
 
-`src/settei.ts` states the law: the house has exactly two doors — AGERU, and the model
+`src/machine-settings.ts` states the law: the house has exactly two doors — AGERU, and the model
 provider. **Activation does not add a third.**
 
 Activation and Tomodachi are two different *contracts* and two different *consent events*, but
@@ -39,7 +39,6 @@ caller reaching for `fetch` — a second call site is a second door nobody voted
 The client refuses plaintext, refuses any host but the allowlisted one, and refuses to follow
 a redirect off it.
 
-> This supersedes the 2026-08-17 ruling that the entitlement id would be pasted by hand from
 > the email. That ruling's stated reason was avoiding a new outbound destination — and this
 > design honours it by reusing AGERU's door. Pasting could not survive a closed tab and put a
 > credential through the clipboard; polling survives a phone click, a closed tab, and a
@@ -69,8 +68,8 @@ masked address, accepted terms version, activation stage, `entitlement_id`, and 
 time. The secret store owns the bearer token. SETTEI derives its Services and subscription
 lines from that aggregate and cannot write entitlement facts.
 
-Older builds exposed `PUT /api/settei/services` and stored
-`ronin.json.services.{entitlement,email,verified,terms}` for a superseded flow where the owner
+Older builds exposed `PATCH /api/machine-settings` and stored
+`machine_settings.json.services.{entitlement,email,verified,terms}` for a superseded flow where the owner
 pasted a code from an email. That data was never verified and is not migrated into the real
 activation record. Upgraded installs may retain those inert keys, but no entitlement, status,
 installer, or telemetry path trusts them. A real entitlement enters Cowork only through the

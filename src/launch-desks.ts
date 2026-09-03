@@ -46,9 +46,11 @@ export async function resolveLaunchDesks(input: {
   agent: boolean;
   control: boolean;
   desk?: DeskChoice;
+  /** This launch's own repositories, overriding the Team's ticks (src/spawn.ts SpawnForm). */
+  repos?: string[];
 }): Promise<LaunchWorktrees> {
   if (!input.agent) return { assignment: null, repositories: [] };
-  const assignment = await deriveAssignment({ session: input.session, team: input.team, project_root: input.project_root });
+  const assignment = await deriveAssignment({ session: input.session, team: input.team, project_root: input.project_root, repos: input.repos });
   const repositories = await Promise.all(assignment.desks.map(async (candidate) => {
     const arrangement = await arrangementOf(candidate.repo);
     return arrangementWorktreesInput(arrangement, {
@@ -94,10 +96,8 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
   try {
     opener = (await import('./desks/desk.js')) as typeof opener;
   } catch (e) {
-    throw new Error(
-      `Desk preparation is not available on this install (${(e as Error)?.message ?? e}). ` +
-        'The launch was refused rather than started in the shared checkout: install the desk tools, or declare the repository direct (RONIN_REPO desks=none).',
-    );
+    console.warn(`Desk preparation is unavailable; launching from the project checkout: ${(e as Error)?.message ?? e}`);
+    return { ...a, desks: [] };
   }
   let opened: Assignment;
   try {
@@ -127,10 +127,8 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
     opened = { ...a, desks };
     await writeAssignment(opened);
   } catch (e) {
-    throw new Error(`Could not open the desks for ${a.id} — ${(e as Error)?.message ?? e}. The launch was refused; nothing was started in a funnel checkout.`);
-  }
-  if (!opened.desks.length) {
-    throw new Error(`The desks derived for ${a.id} could not be opened (none came back). The launch was refused; nothing was started in a funnel checkout.`);
+    console.warn(`Could not open the desks for ${a.id}; launching from the project checkout: ${(e as Error)?.message ?? e}`);
+    return { ...a, desks: [] };
   }
   return opened;
 }
@@ -152,12 +150,14 @@ export function renderDeskBlock(a: Assignment): string {
 }
 
 /** Every repository gets one resolved working location from the canonical 2x2. */
-export function renderWorkLocations(repositories: ResolvedWorktreesRepository[]): string {
+export function renderWorkLocations(repositories: ResolvedWorktreesRepository[], branches: Readonly<Record<string, string>> = {}): string {
   const direct = repositories.filter((repository) => repository.mode === 'direct');
   if (!direct.length) return '';
   return [
     'Direct work locations:',
-    ...direct.map((repository) =>
-      `  ${repository.repo}  ${repository.location}  (this repository does not use Worktrees; edit directly in this checkout)`),
+    ...direct.map((repository) => {
+      const branch = branches[repository.repo];
+      return `  ${repository.repo}  ${repository.location}  (no Worktrees; edit directly in this checkout${branch ? `, on branch ${branch}` : ''})`;
+    }),
   ].join('\n');
 }

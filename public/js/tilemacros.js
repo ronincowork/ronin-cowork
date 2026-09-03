@@ -6,45 +6,6 @@ import { closeTileMore, fitDropToTile } from './tilemore.js';
 import { addProvMark } from './provenance.js';
 import { t } from './lexicon.js';
 
-/**
- * The ⚡ button on a TILE header: the fast path for session_macros.
- *
- * It PREFILLS and stops — `+forkit: ` lands in the input you are typing in, mid
- * sentence, and you add your own words before sending. It never runs anything.
- * That is the whole point: the text it inserts is text you could have typed, so
- * after a few uses you type it yourself, including from a pane or a phone where
- * no menu exists. A menu that executed would hide the syntax forever.
- *
- * Prefill needs no server capability — every surface already has a way to put
- * characters somewhere without submitting them:
- *   compose overlay open  -> append into the textarea (touch types here)
- *   unlocked tile         -> append to the parked buffer, shown in the strip
- *   locked tile           -> sendRaw(), which is `{t:'i'}` with no Enter
- *
- * A TEACHING SURFACE SINCE 2026-08-17, and that is what the shape below is about.
- * The drop used to be every macro in the catalog, one dense `+name:` row each, the
- * explanation on hover. The owner: *"it's just very ugly… I would rather have four
- * macros and have larger buttons. These should be headlines, and the boxes are big
- * enough that you can actually describe in them what that means, so people can then
- * go, 'Oh, I see.'"* So three things changed together and none of them stands alone:
- *
- *   - FOUR, not thirteen. `preview: yes` in the catalog entry is the only way onto
- *     this drop (src/macros.ts). *"If we have too many, people just don't get
- *     educated."* Nothing is hidden from an agent — every macro still runs.
- *   - NO `+name:` ON THE FACE. The headline is the catalog's `label:`, plain words.
- *     The invocation moved to the help box, which is where the syntax is still
- *     learnable without being what you read first.
- *   - THE BODY COPY IS ALWAYS VISIBLE, never on hover. The owner confirmed it
- *     directly, and he reads Ronin on a phone, where hover does not exist.
- *
- * A CATALOG ENTRY IS WRITTEN TWICE, FOR TWO READERS (owner, 2026-08-17). The prose under
- * a `## name` heading in MACROS.md is the AGENT'S instruction — it opens with the rule the
- * agent must not break — and `label:`/`blurb:` are the PERSON'S copy. This file renders only
- * the second pair. It never renders `instruction`, not even as a fallback; see render().
- *
- * The reference — the whole instruction, every macro, the ones not previewed
- * included — is `ronin_catalogs/MACROS.md`.
- */
 /** Catalog blurbs are markdown, and a card renders none of it — `**bold**` and
  *  backticks arrive as literal punctuation. Strip the syntax, keep the words. */
 const plain = (s) =>
@@ -69,7 +30,6 @@ export function buildTileMacros(tile) {
   // when there is nowhere to put it (no session showing) so the click can say so
   // instead of silently doing nothing.
   const prefill = (text) => {
-    // Touch types in the tile's composer — the one box on the phone. This used to
     // append into the compose OVERLAY's textarea, which was a different box from the
     // one under your thumb, so a macro you picked appeared somewhere you were not
     // looking. The overlay is gone; there is one place text can land.
@@ -135,7 +95,6 @@ export function buildTileMacros(tile) {
       addProvMark(nm, m);
       // Body copy, ALWAYS VISIBLE, and it is `blurb:` or it is nothing.
       //
-      // NO FALLBACK TO `instruction` (owner, 2026-08-17 — *"we need to split out the
       // description and the agent instruction into two different things because they don't
       // overlap"*). Until today this line read `m.blurb || plain(m.description)`, so a
       // previewed entry with no blurb showed the agent's own instruction to a person:
@@ -154,7 +113,6 @@ export function buildTileMacros(tile) {
       row.append(nm, why);
       // THE INVOCATION IS THE ACCESSIBLE NAME, and it is deliberately not a `title`.
       //
-      // It was one until 2026-08-18 — off the face by the owner's ruling, kept learnable in
       // the help box. But a card ALREADY says what it does, in two always-visible lines
       // (`nm` and `why`), so the box repeated the answer and then laid 300px of it across
       // the cards underneath. Owner: *"its dumb to have the hover description covering the
@@ -196,37 +154,15 @@ export function buildTileMacros(tile) {
     if (!shown.length) menu.textContent = t('macros.none_previewed', 'no macros previewed — see MACROS.md');
   };
 
-  /**
-   * THE TILE CLIPS, so the drop must know how tall its tile is.
-   *
-   * `.tile` is `overflow: hidden` and this menu hangs off `.tile-head` inside it, so a
-   * drop taller than the room below the header is not "overflowing" — it is CUT, with no
-   * scrollbar and no sign that anything is missing. Measured 2026-08-17 at four tiles up:
-   * the fourth card lost its bottom half, which is the exact failure a teaching surface
-   * cannot survive. The 2×2 wrap in style.css keeps it short enough in the ordinary case;
-   * this is the guarantee, for a short tile, a long blurb, or a fifth previewed macro.
-   *
-   * No CSS length can say it — `60vh` is the window, `100%` is the header's own 35px, and
-   * `cqh` needs size containment the tile deliberately does not have. So it is measured,
-   * at OPEN time rather than once: the grid count, the window and the phone's keyboard all
-   * resize a tile under a menu that is not showing.
-   *
-   * THE MEASUREMENT MOVED to `tilemore.js` on 2026-08-18, when 📄 became the second drop off
-   * this header needing the same guarantee (`tiledocs.js`). The reasoning stays here, where
-   * the failure was measured; the arithmetic is shared, because two copies of one number
-   * are one edit away from disagreeing.
-   */
   const fitToTile = () => fitDropToTile(btn, menu);
 
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = menu.classList.contains('open');
-    // メ sits immediately to ⚡'s right since 2026-08-17 and its drop anchors to the same
     // corner of the same header, so leaving it up puts two panels on one spot. Through
     // `closeTileMore` rather than a `.tmore.open` class sweep: four tiles build four メ
     // buttons and each carries its own `aria-expanded`, which a class sweep leaves lying.
     closeTileMore();
-    // 📄's doc list anchors to that same corner (2026-08-18) — same sweep, same reason.
     document.querySelectorAll('.tmac.open, .tdocs.open').forEach((m) => m.classList.remove('open'));
     if (open) return;
     render();

@@ -8,7 +8,7 @@ export function createCampaignIdentity(onChange) {
   window.addEventListener('ronin:campaign-change', changed);
   return {
     name: () => name,
-    load: async () => { const r = await request('/api/settei'); if (r.ok) accept(r.data?.set?.campaign?.name); },
+    load: async () => { const r = await request('/api/machine-settings'); if (r.ok) accept(r.data?.set?.campaign?.name); },
     destroy: () => window.removeEventListener('ronin:campaign-change', changed),
   };
 }

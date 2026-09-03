@@ -24,7 +24,7 @@ contracts remain available, but they are not prerequisites for installing or usi
 | How do I customize Ronin without editing shipped files? | [Customize](customize.md) and [shadowing](shadowing.md) |
 | What is a template, and how does my agent keep mine? | [Templates](templates.md) |
 | What has Ronin connected to? | [Services activation and the egress record](services-activation.md) |
-| How do I inspect configuration and the running copy? | [User configuration](user-config.md) and `bin/ronin-doctor` |
+| How do I inspect configuration and the running copy? | [Machine configuration](machine-settings.md) and `bin/ronin-doctor` |
 
 ## If you are changing Ronin itself
 
@@ -33,7 +33,30 @@ implementation contract.
 
 | Question | Route |
 |---|---|
-| KOTOBA, the glossary, KOKUGO, the lexicons, the table — which one do I want, and what keeps them true? | [Vocabulary map](vocabulary-map.md) |
- [Test protocols](test-protocols.md) define when scoped checks and
-full repository verification belong. [The API surface](api-surface.html) maps routes,
-websockets, sockets, and commands.
+| How do I verify a repository change? | Run `npm run verify`; run Playwright suites explicitly when diagnosing the rendered UI. |
+
+## Shelves
+
+| Shelf | Contains |
+|---|---|
+| `ronin_session_boot/` | the reading assembled for a new session |
+| `ronin_catalogs/` | actions, tools, macros, project roots, definitions and presentation resources |
+| `ronin_library/` | pages compiled into action instructions |
+| `ronin_sops/` | situation-specific operating guidance |
+| `ronin_bin/` | executable tools listed in `ronin_catalogs/TOOLS.md` |
+
+The owner's stores shadow shipped resources file-for-file. `bin/ronin-store --all` lists
+their resolved locations. A macro is compiled with `tejun <name>`; a machine fact is
+measured with `tejun-survey`, `tejun-account`, or the relevant tool.
+
+## Coworkspace
+
+The home page opens Machine Settings, Coworks, or New Project. The bar opens the Campaign,
+the current Cowork, a quick new session, the cowork commons, and the two-or-four workspace
+layout. On a phone, choose the Cowork, choose the Agent, then use its full-screen tile.
+
+A terminal tile provides the live terminal, composer, output view, Control value, and work
+record. Team commons provides Docs, Wipeboard, Agent Message Queue, and Team Configuration.
+Cowork commons provides account, appearance, release, voice, Services, project-root, and
+archive controls. Campaign commons provides Campaign configuration, roots, Coworks,
+templates, and Routines.

@@ -45,7 +45,7 @@ test('429 is retryable — it is the server asking for later, not saying no', ()
 import { readFile } from 'node:fs/promises';
 
 test('no client reads a property the request contract does not publish', async () => {
-  const files = ['services-card.js', 'services-activation.js', 'cowork-setup.js', 'settei.js'];
+  const files = ['services-card.js', 'services-activation.js', 'cowork-setup.js', 'machine-settings.js'];
   for (const f of files) {
     const src = await readFile(new URL('../public/js/' + f, import.meta.url), 'utf8');
     // `shapeResult` publishes ok | status | data | kind | message | retryable. Anything

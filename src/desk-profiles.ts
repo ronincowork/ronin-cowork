@@ -11,11 +11,11 @@
  * state of every install older than the catalog, and it means "as stock" everywhere;
  * nothing here invents a default profile.
  */
-import { type Origin } from './catalog.js';
-import { readDefinitions, type Definition } from './definitions.js';
+import { type Origin } from './resources.js';
+import { readDefinitions, type Definition } from './resource-adapters.js';
 // The profile is the CAMPAIGN's (its vocabulary, skin and offered templates), so the
-// chosen name comes from the initial campaign_config, not from ronin.json. Same shape.
-import { readDeskSection } from './campaign-config.js';
+// chosen name comes from the initial machine settings campaign record, not from machine_settings.json. Same shape.
+import { readDeskSection } from './campaigns.js';
 
 export interface DeskProfileInfo {
   name: string;

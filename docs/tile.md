@@ -9,7 +9,6 @@ header is built in one place (`public/js/tilehead.js`) and every callback in it 
 on the tile.
 
 Construction order is load-bearing: `this.body` must exist before anything mounts into it.
-One line breaking that rule took the whole UI down on 2026-08-08. Views mount in DOM order:
 tape, then the commons panel, then xterm.
 
 ---
@@ -127,8 +126,7 @@ Built order (`public/js/tilehead.js`):
                                                   └─ 🔒 🏷 ⛽ 🎛 📄 📝 🗑
 ```
 
-**Three on top, the rest behind メ** (owner's ruling 2026-08-17; six then, seven since 📄
-landed on 2026-08-18). The row used to end in
+**Three on top, the rest behind メ**. The row used to end in
 eight controls against a picker that has to fit a session name, and at four tiles up
 there was not room for both — measured at a 629px tile, the eight left the spacer 23px
 short before the picker started giving up characters. So ⛩ Commons and ⚡ Macros stay,
@@ -229,7 +227,7 @@ session, because it is the way to GET one. **A way in, not a close:** the sessio
 streaming behind the panel and ✕ on the tab strip comes back to it. Stopping viewing is the
 blank option in the picker; killing is 🗑.
 
-**The torii means this, and only this, everywhere** (owner's ruling 2026-08-17). It was メ
+**The torii means this, and only this, everywhere**. It was メ
 here and き in the bar for the same act, while ⛩ on this same header meant something else
 entirely — the letter. One glyph for two things and two glyphs for one thing. Both moved in
 the same pass, so the mark never had a period of meaning both.
@@ -262,7 +260,7 @@ A macro marked `send:` is the exception — it fires and presses Enter for you, 
 says `sent — wait Ns before sending it again` in place of its description rather than
 silently swallowing an impatient second tap.
 
-**FOUR CARDS, AND THE DROP IS A TEACHING SURFACE (owner's ruling, 2026-08-17).** It was
+**FOUR CARDS, AND THE DROP IS A TEACHING SURFACE.** It was
 every macro in the catalog, one `+name:` row each, the explanation on hover. The owner:
 *"I would rather have four macros and have larger buttons… These should be headlines, and
 the boxes are big enough that you can actually describe in them what that means, so people
@@ -280,7 +278,7 @@ can then go, 'Oh, I see.'"* Three consequences, and none of them is cosmetic:
   on hover. Confirmed directly by the owner, who also has a phone, where hover does not
   exist. This is body copy inside the button and deliberately independent of `tips.js`.
 
-**TWO AUDIENCES, AND NO FALLBACK BETWEEN THEM (owner's ruling, 2026-08-17).** *"We need to
+**TWO AUDIENCES, AND NO FALLBACK BETWEEN THEM.** *"We need to
 split out the description and the agent instruction into two different things because they
 don't overlap, and the macro should carry both."* A catalog entry is written twice:
 
@@ -317,7 +315,6 @@ are, but maybe it just drops down horizontally."* Which is what it does — the 
 **the same nodes, appended somewhere else**, not a redrawing of them as menu rows.
 
 **メ is a reclaimed glyph, and this shape is not new.** It was the tile-head Commons button
-until 2026-08-17, when ⛩ took the Commons everywhere and freed it. On touch it has meant
 exactly this all along: `tiledrop.js` collapses the whole header into one bar row where メ
 is *this session*. Desktop is being brought into line with a design the phone already wore.
 The only difference is the shape — a pointer needs no word beside the icon, and a desktop
@@ -344,7 +341,6 @@ it; clicking a control inside closes it *if that control raises something the st
 cover*. The instruments (⛽ and 🎛, the `holds` rows whose value changes in place) leave it
 up, exactly as the phone gives the dial its `stay` mode.
 
-**And so do 🏷 and 📝** — the `modal` rows, since 2026-08-18. Their sheet sits over a
 full-viewport scrim at a z-index far above the strip, so there was never anything for the
 strip to cover; closing it only hid their own opener, and a `display: none` button cannot
 take focus back when the sheet closes. Focus fell to `<body>` and the next Tab restarted
@@ -358,7 +354,6 @@ A **click on the scrim** closes the drop as well, and that is the intended asymm
 rather than a leak: the scrim's click still reaches `document`, where it is an outside
 click for everything under it. The keyboard peels one layer per Escape (sheet, then drop);
 a pointer pressed on the scrim dismisses the stack it was pressed through. Measured
-2026-08-18 — Escape from 📝's sheet lands on 📝 with the drop still up, a backdrop click
 lands on メ with the drop closed, and neither lands on `<body>`.
 
 **Desktop only.** `collapseTileHead` hoists this header into the phone's app bar behind its
@@ -423,19 +418,14 @@ A readout, not a control. Dials are inputs; gauges are readouts.
 Behind メ, and it is one of the two rows that do NOT close the drop when clicked: you turn
 it by tapping the thing you are already looking at, three detents in a ring.
 
-`@ronin-control` — who, other than the owner, may touch this session. Three detents, tap to
-advance:
+`@ronin-control` is a visible coordination preference. Three detents, tap to advance:
 
-- **👤 owner only** — outside agents get nothing, no writes and no reads.
-- **👁 watch** — outside agents may observe, never type.
-- **🤖 type** — full access, and the default for an unflagged session.
+- **👤 owner only**
+- **👁 watch**
+- **🤖 type**, the default for an unflagged session
 
-"Outside agents" means agents reaching *into* the session — never the agent already running
-inside it, and never the owner's own typing. tmux is the single source of truth: the dial
-POSTs and then **re-reads** rather than assuming the write took.
-
-**Yours to turn; agents never flip it.** The flip happening in the owner's UI *is* the
-authorization. Full story: `docs/session-control-dials.md`.
+The value does not enforce access. tmux is the single source of truth: the dial POSTs and
+then **re-reads** rather than assuming the write took. See `docs/session-control-dials.md`.
 
 On both surfaces — an explicit override of the never-change-desktop rule, because the
 cockpit motif is meant to be the same everywhere.
@@ -446,7 +436,6 @@ Behind メ, beside 📝 — the two things a session keeps in writing: the post-
 you, and the documents it is working in.
 
 One press lists **this session's** docs; one more opens the file, in place, over this tile.
-The owner's words (2026-08-18): *"If I wanted to look at a tile and say 'oh, I want to watch
 this tile's docs', it's not actually easy or intuitive to find them by going to the Commons,
 going to Docs, and then looking for their particular agent's tracked docs."* The ▧ Docs tab
 lists **every** session's docs grouped by session, so reaching one tile's meant leaving the
@@ -580,7 +569,6 @@ else printable, and sends it on Enter. The composer takes a native paste.
 
 **A phone never builds the workbench at all.** At an iPhone-class viewport (small AND
 coarse — `IS_PHONE` in `state.js`) `main.js` mounts the phone shell instead
-(`public/js/phone.js`, the MOBILE plan, owner 2026-09-01): pick the Cowork, pick the
 Agent, drive its tile. On the stage the tile's own head is hidden and the shell's slim
 bar replaces it — ‹ back, the Agent's title, and one メ sheet holding the head's own
 controls (Status, Work record, Output, Note, Control, Kill), **relocated, not cloned**,

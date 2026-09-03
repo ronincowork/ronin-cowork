@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { savedLaunchFields } from '../src/catalog.js';
+import { savedLaunchFields } from '../src/resources.js';
 
 test('saved-launch write shape admits only live fields', () => {
   const cases = [

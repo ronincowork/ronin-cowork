@@ -4,9 +4,9 @@ import { createServer } from 'node:http';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
-import { config, authEnabled, assertBindIsSafe } from './config.js';
+import { config, authEnabled, assertBindIsSafe } from './machine-settings.js';
 import {
   COOKIE,
   SESSION_TTL_MS,
@@ -22,7 +22,7 @@ import {
 } from './auth.js';
 import { cleanupViewers, listSessions } from './tmux.js';
 import { publishRoninUrl } from './operator-url.js';
-import { publishMax, publishOwner } from './user-config.js';
+import { publishMax, publishOwner } from './machine-state.js';
 import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
@@ -33,17 +33,18 @@ import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
 import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
-import { registerSettei } from './routes/settei-api.js';
+import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
-import { ensureInitialCampaign } from './campaign-config.js';
+import { ensureInitialCampaign } from './campaigns.js';
 import { migrateCampaignScope } from './campaign-scope.js';
-import { stampFreshInstall } from './user-config.js';
+import { stampFreshInstall } from './machine-state.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerLibrary } from './routes/library-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
 import { registerMessages } from './routes/messages-api.js';
+import { registerCli } from './routes/cli-api.js';
 import { startMessageQueue } from './message-queue.js';
 import { seedHouseBoard } from './wipeboards.js';
 import { handleEvents, startSessionsBroadcast } from './ws/events.js';
@@ -60,9 +61,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const NM = path.join(ROOT, 'node_modules');
+const isEntryPoint = !!process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+const isBoxInstance = isEntryPoint && process.env.RONIN_TEST_RUNNER !== '1';
 
 const app = express();
 app.use(express.json());
+const cliToken = randomBytes(32).toString('base64url');
 
 // --- optional HTTP Basic auth (gates everything, including the websocket) ---
 /**
@@ -102,6 +106,7 @@ function checkBasic(header?: string): boolean {
  * keeps that state loopback/tailnet-only.
  */
 function checkAuth(headers: { authorization?: string; cookie?: string }): boolean {
+  if (headers.authorization?.startsWith('Bearer ') && sameSecret(headers.authorization.slice(7), cliToken)) return true;
   if (!authEnabled && !passwordAuthEnabled()) return true;
   if (checkBasic(headers.authorization)) return true;
   const rec = authRecord();
@@ -115,12 +120,12 @@ function checkAuth(headers: { authorization?: string; cookie?: string }): boolea
  *
  * No `secure: true`, deliberately: this same server is reached over plain HTTP on the
  * tailnet IP as well as HTTPS through `tailscale serve`, and a Secure cookie would make
- * the HTTP address impossible to log into. The tailnet is the wall (src/config.ts);
+ * the HTTP address impossible to log into. The tailnet is the wall (src/machine-settings.ts);
  * the flag would be theatre there and a lockout here.
  *
  * Returns FALSE when there is no password record to sign with, and callers must respect
  * that rather than assume it (2026-08-17): `ronin-passwd clear` can remove the record
- * while registered passkeys remain in ronin.json, and the first version of this returned
+ * while registered passkeys remain in machine_settings.json, and the first version of this returned
  * void — so a passkey login answered `{ok:true}`, set no cookie, and bounced the owner
  * straight back to /login with nothing to explain it. A door that reports success and
  * does not open is worse than one that refuses.
@@ -263,21 +268,21 @@ registerTeamPage(app); // /api/teams/:team/page — the team page's view, and dr
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
 registerLibrary(app); // /api/library* — the template library: index and bundles off the site on a press, install into the owner's stores — src/routes/library-api.ts
-registerSettei(app); // /api/settei — the install record, and writes BY NAME only — src/routes/settei-api.ts
+registerMachineSettings(app); // /api/machine-settings — the install record, and writes BY NAME only — src/routes/machine-settings-api.ts
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
 startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
-// A box being born says so, ONCE, and only when ronin.json does not exist yet. Absence of
-// the key means an install older than the key, which must stay quiet — src/user-config.ts.
+// A box being born says so, ONCE, and only when machine_settings.json does not exist yet. Absence of
+// the key means an install older than the key, which must stay quiet — src/machine-settings.ts.
 void stampFreshInstall();
 
 // THE INITIAL CAMPAIGN — seeded once, from the campaign name, description and desk_profile
-// this install already had. Idempotent by existence: a box with any campaign_config,
+// this install already had. Idempotent by existence: a box with any machine settings campaign record,
 // archived ones included, has already migrated and this touches nothing. Best-effort like
 // the stamp above — a store we cannot write is a different failure, and throwing here would
-// cost the whole boot — src/campaign-config.ts.
+// cost the whole boot — src/campaigns.ts.
 // THE SCOPE MIGRATION runs behind the seed and in the same spirit: additive, idempotent,
 // and only ever stamping a record that carries no Campaign. It re-homes unmarked
 // team_rosters under the initial Campaign, marks project_roots and saved templates, and
@@ -338,6 +343,7 @@ void resumeInstallWatch();
 registerSessions(app); // per-session: kill/harakiri, meta, dials, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
 registerMessages(app); // /api/messages* — durable inbound session delivery
+registerCli(app); // /api/cli/:tool — command-line faces of operator verbs
 startMessageQueue();
 
 
@@ -472,6 +478,7 @@ server.on('upgrade', (req, socket, head) => {
 // FIRST, before any side effect: an unguarded door is not a thing to discover late.
 // This runs ahead of cleanupViewers() deliberately — a refused boot must not have
 // killed anyone's viewer sessions on its way out.
+async function startBox(): Promise<void> {
 try {
   assertBindIsSafe(passwordAuthEnabled());
 } catch (e) {
@@ -493,17 +500,18 @@ void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed 
 
 // The session max onto the same bus. The tmux server outlives Ronin, but a tmux server
 // restarted without us would lose the option — so it is republished on every boot, and
-// `libexec/ronin-may-spawn` reads a missing option as "no limit" rather than as zero.
 void publishMax();
 void publishOwner();
 
 server.listen(config.port, config.bind, async () => {
   // Publish only after the listener has actually bound. Publishing before listen allowed
   // a failed or test operator to advertise an address that never became live.
-  try {
-    await publishRoninUrl(`http://${config.bind}:${config.port}`);
-  } catch (e) {
-    console.error(`[tmux-ronin] could not publish @ronin-url: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
+  if (isBoxInstance) {
+    try {
+      await publishRoninUrl(`http://${config.bind}:${config.port}`, cliToken);
+    } catch (e) {
+      console.error(`[tmux-ronin] could not publish @ronin-url: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
+    }
   }
   console.log(
     `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
@@ -530,3 +538,6 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     void Promise.allSettled([cleanupViewers()]).finally(() => process.exit(0));
   });
 }
+}
+
+if (isEntryPoint) await startBox();

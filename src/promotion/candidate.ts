@@ -1,6 +1,6 @@
 import { access, symlink } from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from '../stores.js';
+import { storeDir } from '../resources.js';
 import { changedFiles, git, gitOut, isAncestor, mergeInto, revParse, worktreeAddDetached, worktreeList, casRef } from '../desks/git.js';
 import { acceptedSince } from '../desks/receipts.js';
 import type { RepoCandidate } from './receipts.js';

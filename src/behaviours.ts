@@ -1,9 +1,9 @@
 /** Resolve the two behaviour shelves into literal birth-reading files. */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { listSops } from './sops.js';
-import { storeDir } from './stores.js';
-import { listWays } from './ways.js';
+import { listSops } from './resources.js';
+import { storeDir } from './resources.js';
+import { listWays } from './resources.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 

@@ -19,7 +19,7 @@ test('receipt match requires the exact repo, candidate, successful state and com
   assert.equal(receiptAllowsRestart([{ ...receipt('/repo'), advances: [] }], '/repo', SHA), '');
 });
 
-test('reviewed dev refuses without a receipt and accepts the explicit owner override', async () => {
+test('reviewed dev reports whether a receipt or explicit override is present', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-restart-'));
   const ledger = path.join(dir, 'ledger');
   await fs.mkdir(ledger);

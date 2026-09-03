@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import { exactPane } from './tmux.js';
-import { storeDir } from './stores.js';
+import { storeDir } from './resources.js';
 
 const pexec = promisify(execFile);
 
@@ -12,7 +12,7 @@ const pexec = promisify(execFile);
  * CORE, deliberately: the `session` store holds every tenant's files — RIREKI's tape,
  * MICHI's letter, Koshi's koshi.json — and the KYOKAI ruling (owner, 2026-08-13) is
  * that resolving it is nobody's private property: a service reaches its tenancy through
- * this module rather than through another service's. `src/stores.ts` decides where the
+ * this module rather than through another service's. `src/resources.ts` decides where the
  * store is; this module only derives the per-session key and directory.
  *
  * The exported names keep their history (`RIREKI_DIR` — the recorder got here first);

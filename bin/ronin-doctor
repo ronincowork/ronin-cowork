@@ -389,38 +389,6 @@ else
   find_ "cannot push to origin — dev and master cannot be published from this box until credentials are provisioned (gh auth login, or an SSH deploy key)"
 fi
 
-# The repository's declared arrangement, and what kind of checkout this is. Nothing here
-# is inferred from the branch that happens to be open: RONIN_REPO declares, git measures.
-if [ -x "$ROOT/libexec/ronin-repo-mode" ]; then
-  rm_arr="$("$ROOT/libexec/ronin-repo-mode" arrangement 2>/dev/null)"
-  rm_desks="$("$ROOT/libexec/ronin-repo-mode" desks 2>/dev/null)"
-  rm_chk="$("$ROOT/libexec/ronin-repo-mode" checkout 2>/dev/null)"
-  rm_claim="$("$ROOT/libexec/ronin-repo-mode" claim 2>/dev/null)"
-  case "$rm_arr" in
-    reviewed) ok "RONIN_REPO: reviewed $("$ROOT/libexec/ronin-repo-mode" working) → $("$ROOT/libexec/ronin-repo-mode" stable), desks $rm_desks; this checkout is the ${rm_chk} (claim guard $rm_claim)" ;;
-    direct)   ok "RONIN_REPO: direct, publishes $("$ROOT/libexec/ronin-repo-mode" stable); this checkout is the ${rm_chk} (claim guard $rm_claim)" ;;
-    *)        note "no RONIN_REPO — the arrangement is undeclared, so tools treat this as a shared checkout (claim guard $rm_claim) and never invent a desk; declare it (ronin_sops/github.md)" ;;
-  esac
-  # And every project root on this box — the file is the one gate for desks (owner,
-  # 2026-08-29), so "which of my projects get desks, and why" is answered here, per root.
-  if [ -x "$ROOT/bin/ronin-store" ]; then
-    roots_md="$("$ROOT/bin/ronin-store" catalogs 2>/dev/null)/PROJECT_ROOTS.md"
-    if [ -f "$roots_md" ]; then
-      awk '/^## /{name=$2} /^- \*\*dir:\*\*/{sub(/^- \*\*dir:\*\* */,""); print name "\t" $0}' "$roots_md" | while IFS=$'\t' read -r r_name r_dir; do
-        r_dir="${r_dir/#\~/$HOME}"
-        [ -d "$r_dir" ] || { note "project root $r_name: $r_dir is not a directory"; continue; }
-        [ -e "$r_dir/.git" ] || continue
-        r_arr="$(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" arrangement 2>/dev/null)"
-        case "$r_arr" in
-          reviewed) ok "project root $r_name: desks $(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" desks) — reviewed $(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" working) → $(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" stable)" ;;
-          direct)   ok "project root $r_name: no desks — declared direct on $(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" stable)" ;;
-          *)        note "project root $r_name: no desks — $r_dir has no RONIN_REPO; coding sessions start in the checkout. Add the file (ronin-cowork/RONIN_REPO is the model) to give it desks" ;;
-        esac
-      done
-    fi
-  fi
-fi
-
 # Syncthing and .git — the precondition found on 2026-08-28 (WORKTREES.md §0). A checkout
 # whose .git is two-way synced is corrupted by the second machine's older copy coming
 # back, and worktree metadata holds absolute paths, so managed desks cannot coexist with
@@ -439,17 +407,6 @@ else
   find_ "the repository is inside a Syncthing share ($st_dir) and .git is NOT in its .stignore — two peers writing .git corrupts it and no managed desk can be opened here; add a '.git' line to $st_dir/.stignore on every machine (WORKTREES.md §0, ronin_sops/syncthing.md)"
 fi
 
-# The git guard shim, like the tmux one above: inert guards are invisible.
-gshim_want="$ROOT/bin/shim/git"
-gshim_have="$(command -v git || true)"
-if [ "$(readlink -f "$gshim_have" 2>/dev/null)" = "$(readlink -f "$gshim_want")" ]; then
-  ok "git resolves to the guard shim (the claim guard can see what this session stages)"
-elif [ "$(env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -lc 'readlink -f "$(command -v git)"' 2>/dev/null)" = "$(readlink -f "$gshim_want")" ]; then
-  note "git resolves to ${gshim_have:-nothing} in THIS shell, but a fresh login shell gets the guard shim — this pane predates the last ./setup.sh"
-else
-  find_ "git resolves to ${gshim_have:-nothing}, not bin/shim/git — in a shared checkout the claim guard cannot record what a session stages; re-run ./setup.sh"
-fi
-
 # The guards and Ronin's tools on PATH (setup.sh appends the block; a shell must have
 # re-read its rc since). Inert guards are invisible — that is why doctor asks.
 shim_want="$ROOT/bin/shim/tmux"
@@ -459,7 +416,7 @@ if [ "$(readlink -f "$shim_have" 2>/dev/null)" = "$(readlink -f "$shim_want")" ]
 elif [ "$(env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -lc 'readlink -f "$(command -v tmux)"' 2>/dev/null)" = "$(readlink -f "$shim_want")" ]; then
   note "tmux resolves to ${shim_have:-nothing} in THIS shell, but a fresh login shell gets the guard shim — this pane predates the last ./setup.sh. New sessions are guarded"
 else
-  find_ "tmux resolves to ${shim_have:-nothing}, not bin/shim/tmux, and a fresh login shell does not get it either — the dial guard is inert; re-run ./setup.sh"
+  find_ "tmux resolves to ${shim_have:-nothing}, not bin/shim/tmux, and a fresh login shell does not get it either; re-run ./setup.sh"
 fi
 # TWO DIFFERENT FAULTS WEAR ONE SYMPTOM, and only one of them is anybody's to fix.
 # "Not on PATH here" can mean the rc files never got the block — a real finding — or that

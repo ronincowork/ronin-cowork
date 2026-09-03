@@ -6,7 +6,6 @@
 > the implementation record of the team's use of it.
 
 This is the current README for the Team destination. It records what is landed on `dev`
-as of 2026-08-26, which contracts Team consumes, what was verified, and the exact place to
 resume. It is not a speculative redesign brief. The history of how it got here — the
 rulings, the measurements, the traps — is `wip/buildouts/TEAM_WORKBENCH.md`.
 
@@ -33,7 +32,6 @@ workspace shell, or control system. Specifically:
 ## Destination boundary
 
 `#/team/:name` is the terminal-bearing cowork-space destination. The former raw Sessions
-1 / 2 / 4 grid was retired on 2026-08-28. Team still builds Tiles lazily and destroys every
 one on leave so no transport survives outside the entered destination.
 
 ## `#/team/:name` user flow
@@ -161,7 +159,6 @@ select `.wk-*` internals or restyle `.tile-head`.
 ## Existing Tile and header contract
 
 A workspace's terminal is obtained only through
-`createTerminalTileHost({ mode: 'full' })` (the C flip was retired 2026-08-28). Full mode
 instantiates the existing `Tile` unchanged — picker, SHINGO ladder, role mark, branch
 reading, ⛩, @, ⚡, メ, output selector, dials, terminal, tape, composer — and appends the
 given actions to its own head row. Team never reaches into Tile DOM.
@@ -194,13 +191,11 @@ The tab strip carries **T** at its right end through `createChannelSurface({ act
 
 A tile's head, the commons' tab strip and the roster's head share one depth, the
 `--row-head` token in `style.css` (41px). **C** on a tile head is sized by the head's own
-button rule, like ⛩ @ ⚡ メ; C and T were retired on 2026-08-28 — the team commons is a roster card.
 A tile head wraps rather than clips when its workspace is squeezed, so the picker stays
 readable and every control — C included — stays reachable at the workspace floor.
 
 ## Verified behavior and commands
 
-The chain through 2026-08-25/26 (all on `dev`, PR #34): `e291c6d` slot arrangement and
 the layout map · `dfc627f`/`8d1758b`/`085426b` discrete workspaces, C/T, KISS ·
 `08c6813` end-to-end review · `272428c` roster readings · `4b42d44` 人 from the tile,
 keyboard · `5acb840` `tejun-teampage` · `a6819eb` the roster in its view · `041206a`

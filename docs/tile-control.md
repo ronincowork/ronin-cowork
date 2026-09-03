@@ -1,6 +1,5 @@
 # Tile control — a tab owns its tiles, and a URL can direct them
 
-What decides which sessions the grid shows, per browser tab. Shipped 2026-08-20; the
 code is `public/js/state.js` (`saveState`/`loadState`) and the ＋ button in
 `public/js/layout.js`.
 
@@ -12,7 +11,6 @@ code is `public/js/state.js` (`saveState`/`loadState`) and the ＋ button in
    from any tab.
 
 Every save writes both storages: sessionStorage as this tab's truth, localStorage as the
-seed for future tabs. Before 2026-08-20 localStorage was the *whole* state, shared by
 every tab — last writer won, and refreshing one tab loaded whatever another tab had saved.
 That is the failure this design removes: **a refresh returns the same tab's own tiles.**
 
@@ -40,7 +38,7 @@ way.
 
 ## The ＋ button opens blank
 
-＋ opens a new tab with `?tiles=,` — **two empty tiles** (owner, 2026-08-20), not a copy
+＋ opens a new tab with `?tiles=,` — **two empty tiles**, not a copy
 of the current tab. Without the directive the new tab would inherit the sessionStorage
 copy and read as a clone.
 

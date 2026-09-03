@@ -1,11 +1,10 @@
 # PersonalAssistant
 
 The OWNER's own assistant — **powered by gbrain, and it says so**. It names and credits
-gbrain by the owner's ruling of 2026-08-16: *"we're not trying to steal their stuff
 without saying what it is."* Without the gbrain `ronin_service` it degrades to a plain
 assistant, which the posture itself says how to do.
 
-**`mcp: always` is a LOCK, not a default** (owner, 2026-08-17): born connected, the launch
+**`mcp: always` is a LOCK, not a default**: born connected, the launch
 toggle is not offered, and a launch asking for MCP off is refused. An assistant defined by
 its brain must not be launchable without the door to it. (The gbrain service being absent
 is a different, legal state — that degrades the posture; the lock is about refusing to
@@ -13,7 +12,7 @@ close the door on purpose.)
 
 It assists the OWNER; Ronin's own business is `MikaAssist`, and the two do not trade jobs.
 
-**A TASK, in the `assistant` family** (owner, 2026-08-22). It spent a day as a `role_family`,
+**A TASK, in the `assistant` family**. It spent a day as a `role_family`,
 which said the seat was an identity rather than work. Every former session_job is a task:
 the ROLE is the shelf a task sits on, and `assistant` is the shelf this one has always
 been on.

@@ -44,8 +44,8 @@
  */
 import { execFileSync } from 'node:child_process';
 import { createHash, createPublicKey, randomBytes, verify as cryptoVerify } from 'node:crypto';
-import { readSection, updatePasskeysSection } from './user-config.js';
-import { config } from './config.js';
+import { readCredential, writeCredential } from './credential-store.js';
+import { config } from './machine-settings.js';
 import type { AuthRecord } from './auth.js';
 
 /* ------------------------------------------------------------------ the shapes */
@@ -63,7 +63,7 @@ export interface PasskeyCredential {
   createdAt: string;
 }
 
-/** The `passkeys` section of ronin.json. Deliberately NOT nested inside `auth`:
+/** The passkey credential record is separate from `auth`:
  *  `setPassword` replaces that whole section, and a password change must not silently
  *  delete the owner's registered devices. */
 export interface PasskeyStore {
@@ -290,10 +290,10 @@ export function verifyRegistration(
   return { ok: true };
 }
 
-/* ------------------------------------------------------ the store, off ronin.json */
+/* ------------------------------------------------------ the credential store */
 
 export const readPasskeys = (): Promise<PasskeyStore> =>
-  readSection<PasskeyStore>('passkeys', { credentials: [] });
+  readCredential<PasskeyStore>('passkeys', { credentials: [] });
 
 /** Read, mutate, write — one funnel, so no caller can drop the recovery code while
  *  saving a credential (or the reverse). Same lesson user-config's updateConfig records. */
@@ -301,7 +301,7 @@ async function editPasskeys(mutate: (s: PasskeyStore) => void): Promise<PasskeyS
   const s = await readPasskeys();
   s.credentials ??= [];
   mutate(s);
-  await updatePasskeysSection(s.credentials.length || s.recovery ? (s as unknown as Record<string, unknown>) : null);
+  await writeCredential('passkeys', s.credentials.length || s.recovery ? s : null);
   return s;
 }
 

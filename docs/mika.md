@@ -25,7 +25,6 @@ mechanical rather than a matter of taste:
 | `+include: the cowork repo` | the same — `include` and `exclude` are aliases for `project_root` |
 | `mika "<question>"` in any pane | the same, by hand |
 
-**＋ include stopped being a form on 2026-08-15.** It opened five text fields, and only one
 of them — the handle — was genuinely the owner's. `dir`, `read`, `match` and `remit` are
 facts the machine already holds, and the form asked the owner to go and look them up, on a
 phone, with autocapitalize off. The real intent is one bit: *this directory, yes.* Making
@@ -45,7 +44,7 @@ flag is a filter one of them eventually gets written without.
 
 **She shows the change as what it will become and waits for a yes.** Then the yes goes
 through the machinery that already exists: `POST /api/project-roots`, `POST /api/launch`,
-`PUT /api/settei/owner`. No second write path and no new refusal rules — which is also the honest
+`PATCH /api/machine-settings`. No second write path and no new refusal rules — which is also the honest
 answer to "an agent wrote to my catalog". It did not. It drafted, and you said yes.
 
 The action is `propose-and-confirm` (`ronin_catalogs/ACTIONS.md`), and any macro that
@@ -68,7 +67,7 @@ name that already exists.
 
 A koshi ignores the dial because it is house machinery in the recorder's category — it
 reads panes nobody talks to. **Mika is a session you converse with**, so reaching her is an
-ordinary send: `ronin_bin/mika` hands off to `tejun-send`, and her dial governs it like any
+ordinary send: `ronin_bin/mika` hands off to `tejun-send`, and her Control value is shown like any
 other session's. At 👤 the request is refused and says so.
 
 A house agent that cannot be silenced by the dial is a house agent that cannot be silenced.

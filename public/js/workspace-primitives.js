@@ -68,7 +68,6 @@ function createCard(options = {}) {
   const summary = node('p', 'wk-card-summary', options.summary ?? '');
   const metadata = node('div', 'wk-card-meta');
   el.append(heading, summary, metadata);
-  // The mark rides the heading's own line, before the name (owner, 2026-08-26: "the
   // hito and the team name should be same line"), not a line of its own above it.
   if (options.mark != null) heading.prepend(node('span', 'wk-card-mark', options.mark));
   for (const value of options.metadata || []) metadata.append(node('span', null, value));
@@ -123,15 +122,6 @@ function createReservedSurface(label = 'Reserved') {
 
 const CHANNEL_SERVICES = ['chat', 'wipeboard', 'docs', 'team-configuration'];
 
-/**
- * Geometry and replacement-tab behavior only. Chat intentionally starts as empty space.
- *
- * THE SERVICE LIST IS THE CALLER'S since 2026-08-27: `options.channels` is an ordered
- * `[{ id, label }]`, and absent it is the team commons' four (CHANNEL_SERVICES, labels
- * below). The cowork_commons is a second surface on this same primitive with six tabs of
- * its own (js/cowork-commons.js, docs/cowork-space.md) — one strip, one look, one set of
- * rules, and no second frame. The default tab is the first in the list.
- */
 function createChannelSurface(options = {}) {
   const surface = createSurface({ label: options.label || t('workspace.channels', 'Team channels'), header: false });
   surface.el.classList.add('wk-channel-surface');
@@ -172,7 +162,6 @@ function createChannelSurface(options = {}) {
     tabs.append(button);
     surface.content.append(service);
   }
-  // Consumer actions ride the strip's LEFT end since 2026-08-27 (owner: C and T "all the
   // way to the left") — the same row, no new one.
   if (Array.isArray(options.actions) && options.actions.length) {
     for (const action of [...options.actions].reverse()) if (action instanceof Node) tabs.prepend(action);
@@ -384,7 +373,6 @@ function createLayoutMap(arrangement) {
   const el = node('div', 'wk-layout-map');
   el.setAttribute('role', 'group');
   el.setAttribute('aria-label', t('workspace.columns', 'Workspace columns'));
-  // No tooltips and no focus-grab on touch (owner, 2026-09-01): a tap on a map slot
   // popped the help box over the page ("Roster — click to show, drag to move"), which
   // on a screen with no hover is noise standing where the result should be. Spelled
   // locally rather than imported — the Kit keeps its own dependencies.

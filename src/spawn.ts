@@ -1,15 +1,15 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { mergeSessionDefaults, resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
-import { REPO_ROOT } from './config.js';
-import { bootFiles, ensureShelf } from './session-boot.js';
+import { REPO_ROOT } from './resources.js';
+import { bootFiles, ensureShelf } from './birth-readme.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
-import { readAgentsSection, readDesksSection } from './user-config.js';
-import { storeDir } from './stores.js';
-import { findDefinition, listRoutines } from './definitions.js';
+import { readAgentsSection, readDesksSection } from './machine-state.js';
+import { storeDir } from './resources.js';
+import { findDefinition, listRoutines, routineReading } from './resource-adapters.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
-import { readCampaign } from './campaign-config.js';
+import { readCampaign } from './campaigns.js';
 import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { ResolvedWorktreesRepository } from './worktrees-resolution.js';
 import type { Assignment } from './desks/schema.js';
@@ -20,8 +20,6 @@ import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
 import { templateProvenance } from './template-provenance.js';
 import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
-export const routineReading = (routines: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[]): string[] =>
-  routines.flatMap((routine) => (routine.enabled ? routine.reading : routine.reading_off));
 /**
  * The mechanical executor: a filled form in, a briefed session out.
  *
@@ -126,6 +124,8 @@ export interface SpawnForm {
    * `own` asks for one regardless, `none` refuses one. Ignored for a plain terminal.
    */
   desk?: DeskChoice;
+  /** Repositories this launch works in; absent uses the Team's selection. */
+  repos?: string[];
 }
 
 /** What the form resolves to once sentinels are filled from the catalogs. */
@@ -232,11 +232,13 @@ export function buildBrief(
     );
   }
   // Concrete resolved locations precede the reading; managed rows also carry their line.
-  if (workLocations.length) parts.push(renderWorkLocations(workLocations));
+  if (workLocations.length) parts.push(renderWorkLocations(workLocations, roster?.branches ?? {}));
+  // The project root is named for every launch, before any managed desks.
+  if (root) parts.push(`Born in ${root.name} at ${root.dir}.`);
   if (assignment?.desks.length) parts.push(renderDeskBlock(assignment));
   // THE BIRTH README POINTER. ResolveForm initially supplies the resolved sources; the
   // launch executor compiles them into one per-session README and replaces this sentence
-  // before building provider argv. See src/session-boot.ts and routes/launch.ts.
+  // before building provider argv. See src/birth-readme.ts and routes/launch.ts.
   const reading = [...boot, ...(form.seed ?? [])].filter(Boolean);
   if (reading.length) parts.push(`Read first: ${reading.join(', ')}.`);
   const prompt = form.prompt?.trim() ?? '';
@@ -551,15 +553,17 @@ export async function resolveForm(
     });
   };
   const name = wanted || slugName(profile.session_role || form.team || 'session', form.prompt ?? '', taken);
-  const worktrees = bareMetalAgent || sessionType === 'terminal'
+  const worktreesOn = routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled);
+  const worktrees = bareMetalAgent || sessionType === 'terminal' || !worktreesOn
     ? { assignment: null, repositories: [] }
     : await resolveLaunchDesks({
     session: name,
     team: form.team ?? '',
     project_root: root.name,
     agent,
-    control: routines.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
+    control: worktreesOn,
     desk: form.desk,
+    repos: form.repos,
   });
   const assignment = worktrees.assignment;
   const enabledReading = routineReading(routines);
@@ -592,9 +596,7 @@ export async function resolveForm(
     // The profile's own `dir:` WINS over the project_root's, because it is a constant of
     // the launch — the same category as its dial, and a launch must not be able to leave
     // it to chance. Exactly one definition carries one (`mikaassist`, `{install}`): she
-    // works on Ronin's own business, so she starts where Ronin's documents are whatever
-    // root was picked. Otherwise the 2x2 resolution wins: managed root → its Worktree;
-    // direct root → its ordinary checkout.
+    // works on Ronin's own business. Otherwise the 2x2 location wins.
     dir: profileDir(profile) || primaryWorkLocation(worktrees.repositories, root.name) || root.dir || '',
     assignment,
     work_locations: worktrees.repositories,
@@ -655,7 +657,7 @@ export async function resolveForm(
     stated_by: {
       name: form.name ? explicit : system,
       dir: profile.dir ? profile.stated_by.dir : assignment ? system : rootSource,
-      assignment: form.desk ? explicit : system,
+      assignment: form.desk || form.repos ? explicit : system,
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
       session_type: explicit,

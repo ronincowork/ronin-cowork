@@ -204,13 +204,6 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
     );
   }
 
-  /* ---- THE DESK IS NOT AN ASKED QUESTION (owner, 2026-08-31, folding the earlier
-     control): the routine selection IS the decision, so this row is a CONSEQUENCE LINE —
-     it says which of the two states the resolved routines give, and offers no switch.
-     Allocation stays lazy either way: the Routine is the Agent-side capability, while
-     each Project Root independently allows Worktrees or requires the checkout.
-     `desk: own | none` survives on the launch body as an unadvertised escape hatch; no
-     form surfaces it, and this one no longer sends it. ---- */
   const deskLine = el('div', 'aa-deskline');
   const deskMode = el('strong');
   const deskWhy = el('small');
@@ -318,7 +311,6 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
     start.setDisabled(false);
     // WHY A DESK REQUEST PRODUCED NOTHING, in the receipt's own line — rendered so the
     // worktree control cannot quietly do nothing ("off by absence" is never silent,
-    // owner 2026-08-29). Empty means a desk was opened, or none was asked for.
     const deskNote = result.data?.receipt?.desk_note || '';
     const leadNote = handoff.ok ? '' : t('add_agent.lead_swap_failed', 'Started {name} as Team Lead, but could not clear Team Lead from: {names}.', {
       name: born,

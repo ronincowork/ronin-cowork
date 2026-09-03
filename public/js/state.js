@@ -11,35 +11,11 @@ export const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontou
 // workbench, and gets its keys from the composer's keys row like every coarse tile.
 export const IS_PHONE = window.matchMedia('(max-width: 680px) and (pointer: coarse)').matches;
 
-/**
- * WHICH KEY FORCES A SELECTION IN A LOCKED TILE — and it is not the same key everywhere.
- *
- * A locked tile is a live TUI, and when the app in it holds mouse tracking (Claude
- * Code's does), a plain drag becomes mouse escapes the APP eats: it highlights or
- * scrolls, nothing reaches the laptop's clipboard, and it looks like it worked, which
- * is the trap. (Until 2026-09-01 tmux itself also ate the drag — viewers ran `mouse
- * on` and copy-mode copied to the host's paste buffer; that path is retired with the
- * mouse-off default in src/config.ts.)
- *
- * xterm decides whether to select locally instead, and its rule (5.5.0,
- * `SelectionService.shouldForceSelection`) is:
- *
- *     isMac ? altKey && macOptionClickForcesSelection : shiftKey
- *
- * So Mac is Option and EVERYTHING ELSE IS SHIFT. Ronin said "Option" everywhere and never
- * said "Shift" once, which left a Windows or Linux laptop with no path at all.
- *
- * The platform test is xterm's own list against `navigator.platform`, deliberately copied
- * rather than improved: if this ever disagrees with xterm we name the wrong key, which is
- * worse than the silence it replaces. `navigator.platform` is deprecated and is still what
- * xterm reads — the day it changes, this changes with it.
- */
 export const IS_MAC = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'].includes(navigator.platform);
 /** The modifier's name, for anything that has to SAY it. */
 export const SELECT_MOD = IS_MAC ? '⌥ Option' : '⇧ Shift';
 /** Did this mouse event carry it? Mirrors xterm's rule above. */
 export const forcesSelection = (e) => (IS_MAC ? e.altKey : e.shiftKey);
-// SGR mouse-wheel sequences. With viewer mouse off (2026-09-01) tmux passes these to
 // the running app AS INPUT, so every sender must first ask termview.mouseTracking() —
 // injected at an app that is not listening, they land as typed escape bytes (the
 // owner's "scroll locked" agents nobody had touched).
@@ -84,7 +60,6 @@ export const S = {
 
 // Which service owns which optional commons pane. A pane not listed is core and always
 // on. The tab strip consults this (and the bar's Commons menu did, until it went on
-// 2026-08-17), same as the lock button consults streamOff: absent service = the surface
 // is visible but opaque-and-inert.
 const PANE_SERVICE = { hotwords: 'koe', stats: 'counting', koshi: 'koshi', gbrain: 'gbrain' };
 /**
@@ -119,7 +94,6 @@ export const tiles = [];
 // the phone always reads the tape and the lock button is hidden there entirely.
 //
 // LOCK IS A PROPERTY OF A TILE, and `S.locked` is only the default a new one is born
-// with. It used to be one global that every tile read, so flipping it reconnected all
 // four at once — a surprise and a reconnect storm, when you only ever mean the pane you
 // are looking at. Each Tile owns `this.locked`; the header button acts on the active
 // tile and mirrors its state, and each tile head carries the same switch.
@@ -131,16 +105,6 @@ export const tiles = [];
 // It is now `--term-*` tokens in style.css, read back by js/theme.js `termTheme()`:
 // one spelling, and xterm derives from it.
 
-/* ---------- failure containment ----------
- * On 2026-08-08 one bad line in Tile's constructor took the ENTIRE UI down: the
- * throw killed build(), build() killed init(), and init() never wired a handler.
- * The static header still rendered, so the page looked fine and did nothing —
- * the worst possible failure, and the reason it took hours to locate.
- *
- * Two rules from that day, and they are the point of this block:
- *   1. Every failure is VISIBLE. A silent blank page is never acceptable.
- *   2. No single tile or step can take the whole page down.
- */
 export function saveState() {
   S.workspace?.patchState({
     focusedSession: S.active?.session || '',
@@ -148,32 +112,6 @@ export function saveState() {
   syncTitle();
 }
 
-/**
- * THE BROWSER TAB WEARS THE FIRST TILE'S SESSION (owner, 2026-08-18).
- *
- * `index.html` shipped `<title>tmux ronin</title>` and nothing ever changed it, so an owner
- * running four Ronin tabs had four tabs called the same thing — ⌘-tab was a guess and so was
- * the tab strip. That is the whole complaint, and it had a one-line cause.
- *
- * THE FIRST TILE ONLY, not all four joined. Four names in a browser tab is a string no tab
- * strip is wide enough to show; the browser truncates from the END, so the first tile is the
- * part that survives at any width — which makes it the only part worth putting there. The
- * owner picked this himself: "should we just have the first tile be the tab name? That would
- * be enough."
- *
- * `· Ronin` rides behind it so a tab is still identifiably Ronin among a window full of other
- * things. It is the half that gets truncated away when the strip is tight, which is the right
- * way round. That half is workspace.js's `tabTitle()` and is not spelled here; this file
- * only ever supplies the session, and the mark is the favicon, not a character.
- *
- * NOTHING IS STORED. The title is derived on every save, so there is no state to restore, go
- * stale, or fight another tab over — and a refresh cannot lose it.
- *
- * It hangs off saveState() rather than growing its own call sites because saveState already
- * runs at exactly the three moments the answer can change: a tile connects, a tile lets go,
- * and the layout changes (tile.js ×3, viewport.js ×1). A second set of hooks would be a
- * second thing to keep in sync with the first.
- */
 function syncTitle() {
   const first = tiles[0] && tiles[0].session;
   // AppShell is the one title owner. The direct write survives only as a pre-Kit fallback

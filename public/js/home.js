@@ -55,20 +55,6 @@ export async function loadProjects() {
   tiles.forEach((tile) => tile.renderHome?.());
 }
 
-/* ---------- the launcher board: session_role × team × project_root ----------
- * A `role_family` is PRESENTATION (R35, 2026-08-23): it groups the session_role buttons
- * into shelves and seeds a Build-Team template, and contributes nothing to the launch.
- * Both catalogs are read live — ronin_catalogs/role_families/ for the shelves,
- * ronin_catalogs/session_roles/ for the buttons — never hardcoded here.
- *
- * WHAT THE LAUNCH IS ACTUALLY BORN WITH IS NOT ON THESE ROWS. A dial, a permissions
- * mode, whether the brain is on — those come from the resolved profile
- * (`/api/launch-profile?session_role=…`), asked when the pick changes rather than
- * re-implemented here: one cascade, in one language, in src/launch-profile.ts.
- *
- * The user picks project_root, session_launch_spec and team; the server assembles the
- * brief and performs the spawn.
- */
 export let familyData = null; // /api/role-families — the shelves
 export let roleData = null; // /api/session-roles — the buttons
 

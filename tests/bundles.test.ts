@@ -16,10 +16,10 @@ process.env.RONIN_USER_ROOT = path.join(root, 'user');
 process.env.RONIN_DATA_ROOT = path.join(root, 'data');
 const { installBundle, packBundle, parseBundle, parseLibraryIndex, planInstall, libraryCard, bundleHolds, BUNDLE_FORMAT, LIBRARY_FORMAT } =
   await import('../src/bundles.js');
-const { listTeamTemplates, listRoutines } = await import('../src/definitions.js');
+const { listTeamTemplates, listRoutines } = await import('../src/resource-adapters.js');
 const { resolveBehaviourBooks } = await import('../src/behaviours.js');
-const { STOCK_DIR } = await import('../src/catalog.js');
-const { storeDir } = await import('../src/stores.js');
+const { STOCK_DIR } = await import('../src/resources.js');
+const { storeDir } = await import('../src/resources.js');
 
 const TEAM = `# Weekly Review
 - **label:** Weekly Review

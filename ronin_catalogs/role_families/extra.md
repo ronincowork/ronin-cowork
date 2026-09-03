@@ -5,9 +5,8 @@ seat (`Atarashi`), and the plain terminal (`OpenShell`).
 
 **Every stock session_role is on a shelf, and that is deliberate**: an unshelved role
 renders in a flat tail that cannot fold, and a default that cannot fold defeats the
-shelves (owner, 2026-08-21, on seeing exactly that).
+shelves.
 
-**A family is PRESENTATION, not structure** (R35, 2026-08-23). `OpenShell`'s
 `agent: none` and its neighbours' ordinary defaults each live in their own definition
 now; the shelf holds nothing they could contradict.
 

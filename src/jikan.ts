@@ -18,8 +18,8 @@
 import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { entryValue, splitSections } from './catalog.js';
-import { storeDir } from './stores.js';
+import { entryValue, splitSections } from './resources.js';
+import { storeDir } from './resources.js';
 
 /* ---------- the clock ---------- */
 

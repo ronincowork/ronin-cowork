@@ -50,7 +50,7 @@ import {
 export type IssueSession = (res: express.Response) => boolean;
 
 /** `ronin-passwd clear` removes the signing secret but leaves registered passkeys in
- *  ronin.json, so every door here can find itself with a valid credential and nothing
+ *  machine_settings.json, so every door here can find itself with a valid credential and nothing
  *  to mint a session from. It is a real state and it gets a real sentence. */
 const NO_RECORD = 'No password is set on this install, so a session cannot be issued — see bin/ronin-passwd.';
 

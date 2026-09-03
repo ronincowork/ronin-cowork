@@ -8,15 +8,9 @@ it.** Two deliberate acts stand between an edit and the grid — the tag, and th
 
 ## Cutting a release (the producing half)
 
-1. Work reaches `dev` by **team promotion** — the lead's admission of a team line, which
-   runs the first full repository BYOIN on the exact candidate and leaves `dev` carrying a
-   promotion receipt for its exact SHA (`docs/test-protocols.md`, docs/worktrees.md). A PR
-   `dev → master` carries that receipt in its body (a ```ronin-promotion-receipt block);
-   CI (`.github/workflows/verify.yml`) verifies the receipt names and proves the PR's
-   head commit — `scripts/verify-promotion-receipt.mjs` — and only then reruns the
-   second full repository BYOIN (`--repo`) on the exact PR head. CI is not the first full
-   check, and a
-   PR without a receipt fails.
+1. Work reaches `dev` by **team promotion**, which constructs the candidate, advances the
+   working reference by compare-and-swap, restarts the app, and checks deployment health.
+   A `dev → master` pull request runs `npm run verify` in GitHub.
 2. A person merges. Master moving is a record of what is releasable, not a release.
 3. A person fetches and checks out `master`, confirms it is current, then pushes a tag
    `vX.Y.Z` on that commit. That is the release act. The release workflow
@@ -35,8 +29,8 @@ The build is a **stamp, a prune and a tarball** — there is no compiler in this
   `release`, `commit`, `built`, `contract`) lands at the root. That file is the
   install's identity: `/api/version` answers `release` from it, and `bin/ronin-doctor`
   compares release strings instead of inferring from commits.
-- `.github/` is pruned (the repo's CI, not the install's). `scripts/` and `tests/`
-  ship deliberately: an install can run its own byoin_checks.
+- `.github/` is pruned because it belongs to the repository rather than the install.
+  `scripts/` and `tests/` ship with the artifact.
 - `node_modules` do not travel (~74 MB; the pty module is a per-platform native
   binary). `npm install` runs at install time instead.
 - Output: `ronin-cowork-vX.Y.Z.tar.gz` + `SHA256SUMS`. Same commit in, same bytes out

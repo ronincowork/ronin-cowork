@@ -28,7 +28,7 @@ import {
   setTags,
 } from '../tmux.js';
 import { launchArgv, newProviderSession } from '../agents.js';
-import { AtSessionMax, liveCount, readAgentsSection, readDesksSection, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
+import { AtSessionMax, liveCount, readAgentsSection, readDesksSection, readMax, readOwner, writeMax, writeOwner } from '../machine-state.js';
 import { resolveForm, type SpawnForm } from '../spawn.js';
 import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
@@ -47,11 +47,11 @@ import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
 import { initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
-import { readCampaign } from '../campaign-config.js';
-import { listRoutines } from '../definitions.js';
+import { readCampaign } from '../campaigns.js';
+import { listRoutines } from '../resource-adapters.js';
 import { resolveLaunchSeed } from '../launch-seed.js';
 import type { SessionsDefaults } from '../launch-command.js';
-import { compileBirthReadmeAt, isShelfTeaching } from '../session-boot.js';
+import { compileBirthReadmeAt, isShelfTeaching } from '../birth-readme.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 
@@ -84,7 +84,7 @@ async function deskNote(r: { assignment?: unknown; routines?: Array<{ name: stri
 const LAUNCH_KEYS = new Set([
   'session_type', 'session_role', 'team', 'team_lead', 'instructions', 'prompt', 'name',
   'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'gbrain_mode', 'launch_mode',
-  'tags', 'seed', 'inject', 'reference', 'desk',
+  'tags', 'seed', 'inject', 'reference', 'desk', 'repos',
   'kind', 'behaviours', 'routines',
   'template',
 ]);
@@ -125,6 +125,10 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.desk !== undefined && body.desk !== 'own' && body.desk !== 'none') drop('desk');
   if (body.gbrain_mode !== undefined && body.gbrain_mode !== 'connected' && body.gbrain_mode !== 'disconnected') drop('gbrain_mode');
   if (body.launch_mode !== undefined && body.launch_mode !== 'configured' && body.launch_mode !== 'live_dangerously') drop('launch_mode');
+  // `repos` is this launch's own answer to which team repositories open as desks — a list
+  // of project_root names, cowork_agent only; absent means the Team's ticks.
+  if (body.repos !== undefined && (!Array.isArray(body.repos) || body.repos.some((r: unknown) => typeof r !== 'string'))) drop('repos');
+  if (body.repos !== undefined && sessionType !== 'cowork_agent') drop('repos');
   if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
   if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
   if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
@@ -291,15 +295,19 @@ export function registerLaunch(app: express.Express): void {
     if (unknownTeams.length) return res.status(400).json({ error: `Unknown Team: ${unknownTeams.join(', ')}.` });
 
     // THE DESKS ARE OPENED BEFORE THE CLI EXISTS, so its first command runs at a desk. A
-    // failure here is the launch's answer — 409, the reason, no session — never a quiet
-    // start in the root's funnel checkout with a brief that says otherwise
-    // (docs/control-surface.md §2). Nothing was created yet, so there is nothing to undo.
+    // Desk preparation happens before the CLI exists. A warning falls back to the project
+    // checkout and the launch continues.
     if (resolved.assignment) {
       try {
         resolved.assignment = await prepareLaunchDesks(resolved.assignment);
+        if (!resolved.assignment.desks.length) {
+          resolved.assignment = null;
+          resolved.dir = (await listProjectRoots()).find((root) => root.name === resolved.project_root)?.dir ?? resolved.dir;
+        }
       } catch (e) {
-        void appendLaunchLedger(form, resolved, false);
-        return res.status(409).json({ error: String((e as Error)?.message ?? e) });
+        console.warn(`[launch] desk preparation warning: ${String((e as Error)?.message ?? e)}`);
+        resolved.assignment = null;
+        resolved.dir = (await listProjectRoots()).find((root) => root.name === resolved.project_root)?.dir ?? resolved.dir;
       }
     }
 
@@ -615,8 +623,8 @@ export function registerLaunch(app: express.Express): void {
     }
   });
 
-  // The owner's name is WRITTEN through the settei door (`PUT /api/settei/owner`,
-  // routes/settei-api.ts) — its only writers were the setup surfaces, so it folded in
+  // The owner's name is WRITTEN through the settei door (`PUT /api/machine-settings/owner`,
+  // routes/machine-settings-api.ts) — its only writers were the setup surfaces, so it folded in
   // (2026-08-18). The read stays here beside the fallback rule it documents.
 
   app.put('/api/session-max', async (req, res) => {

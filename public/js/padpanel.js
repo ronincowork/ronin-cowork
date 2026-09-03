@@ -7,25 +7,6 @@ import { S } from './state.js';
 import { WL_COMBOS, WL_ENCODER, WL_JOYSTICK, WL_RONIN_KEYMAP, wlConnect, wlDownload, wlWriteFile } from './weblink.js';
 import { t } from './lexicon.js';
 
-/**
- * ASK-ON-PRESS — the prompt an `ask: true` binding pops so ONE physical key can carry
- * a different argument every time (⚡ buildout, then ⚡ buildout: mika, …). The popped
- * window IS the macro's args field: the macro name, a box, Enter.
- *
- * On ui.sheet since 2026-08-17, and every half it was missing is a half the primitive
- * already carried. It had no dialog semantics at all — no role, no name,
- * nothing for a screen reader to announce. Tab walked straight out of the card into
- * the page behind the scrim. And `close()` ended in `inp.blur()`, which parks keyboard
- * focus on <body>, so the next Tab restarted the page from the top — the exact bug
- * js/ui.js's header names. Escape was bound on the INPUT's keydown, so it stopped
- * working the moment focus left the box; the primitive answers on the sheet root and
- * keeps a document-level fallback for a sheet opened by pointer.
- *
- * IT IS BUILT AFTER buildPadPanel (js/layout.js) AND THAT ORDER IS LOAD-BEARING: both
- * surfaces are .ui-sheet at the same z-index, and a physical ask-key pressed while the
- * ▦ panel is open must pop the prompt OVER the board, not under it. Equal z-index means
- * DOM order decides, and DOM order here is build order.
- */
 export function buildPadAsk() {
   let cur = null; // the binding being asked about
   const dlg = sheet({ id: 'padask', cls: 'pa-card', label: t('pad.ask_sheet', 'Macro arguments'), onClose: () => (cur = null) });
@@ -72,27 +53,6 @@ export function buildPadAsk() {
   S.padAsk = { open, isOpen: dlg.isOpen };
 }
 
-/**
- * Work Louder pad panel (▦ in the top bar): a picture of the Creator Micro 2.
- * A physical press lights the matching on-screen key and fires its binding —
- * panel open or not (the panel is the picture + binder, not the engine).
- * Tap an on-screen key to bind it: macro, args, target session.
- *
- * This block used to end "same modal pattern as the macro panel". The macro panel
- * became buildSessionPicker and moved onto ui.sheet, so that sentence pointed at a
- * pattern that no longer existed — the worst kind of comment, one that reads as a
- * cross-reference and leads nowhere. Since 2026-08-17 both pad surfaces are ui.sheet
- * consumers and the pattern is spelled in ONE place, js/ui.js. What went with the
- * hand-rolled version: a document-level Escape listener added at build and never
- * removed, no dialog semantics, and a Tab that walked out through the scrim.
- *
- * THE BINDING EDITOR STAYS AN IN-CARD DISCLOSURE (.pad-edit / .open), deliberately.
- * It is not a dialog: you tap a key, the key stays lit `.editing` under your finger
- * while you pick what it does, and a second scrim over the board would hide the one
- * thing you are pointing at. It is inside the card, so the primitive's Tab trap and
- * Escape already cover it, and its controls come and go from the trap by themselves
- * (ui.js's tabbable() skips anything display:none).
- */
 export function buildPadPanel() {
   const dlg = sheet({
     id: 'padsheet',
@@ -100,7 +60,6 @@ export function buildPadPanel() {
     label: t('pad.sheet', 'Work Louder pad'),
     // The panel's teardown hangs HERE, not on the Close button, because Escape and a
     // backdrop tap now close through the primitive and they are the two routes that
-    // used to skip it. Dismissing with Esc must still drop the WebHID connection.
     onClose: () => {
       closeEditor();
       stopCapture();
@@ -490,7 +449,6 @@ export function buildPadPanel() {
     }
   });
 
-  // Restore: push a previously downloaded backup file back onto the pad, verbatim.
   restoreBtn.addEventListener('click', () => restoreInp.click());
   restoreInp.addEventListener('change', async () => {
     const f = restoreInp.files && restoreInp.files[0];
@@ -532,6 +490,5 @@ export function buildPadPanel() {
   // old bubble-phase listener behave, kept by construction rather than by luck.
   closeBtn.addEventListener('click', close);
   // `card` and `render` are for the cowork commons, which mounts the card INLINE on its
-  // Keypad tab (owner, 2026-08-27) and overrides open/isOpen to mean that tab.
   S.padPanel = { open, close, isOpen, hit, capturing, capture, stopCapture, card: dlg.card, render: renderCaps };
 }

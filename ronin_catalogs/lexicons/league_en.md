@@ -1,6 +1,6 @@
 # league_en
 
-The gamer's words — goofy on purpose (owner, 2026-08-27). What is not said here falls
+The gamer's words — goofy on purpose. What is not said here falls
 through to `professional_en`.
 
 - **label:** League

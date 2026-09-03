@@ -18,8 +18,11 @@ only the owner changes a dial, and a refusal is an answer, not a retry. `tejun-p
 <session>` shows its recent live pane. `tejun-send <session> <message...>` delivers one
 message; open with `from @<your session>:` since the tool adds no watermark, report
 `DELIVERED` or `QUEUED`, and do not relay replies.
+Use `tejun-send` for one session, with no board in between.
 
 **Your team's board** already exists if you are on a team:
+
+Use the wipeboard for team-wide messages: rules, collisions, line state, and anything everyone must see.
 
 ```bash
 tejun-wipeboard                  # everything you have not read

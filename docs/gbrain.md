@@ -12,7 +12,7 @@ self-wiring entity graph, and synthesized answers with citations. One server pro
 the database; every session with MCP on can reach it; the CLI against the same database is
 refused while the server runs (single-writer, by design — theirs).
 
-The picture the house uses (owner, 2026-08-17): **gbrain is a filing cabinet and a
+The picture the house uses: **gbrain is a filing cabinet and a
 librarian** — but on a Ronin install the honest version is blunter. Nobody hand-files
 markdown. Every writer this machine has is an agent over MCP (`put_page`, `capture`,
 `remember`), and those writes land in **the librarian's own drawers — the database —
@@ -28,7 +28,7 @@ first, the cabinet with it — and the uninstall keeps both, and says so.
 ## What gbrain needs from outside itself — and what Ronin's use actually requires
 
 gbrain carries no model of its own. What it needs depends on which of its two products
-you run, and **Ronin runs the first** (owner's ruling, 2026-08-18):
+you run, and **Ronin runs the first**:
 
 | the product | outside tools needed | Ronin's status |
 |---|---|---|
@@ -60,9 +60,9 @@ absent.
 | piece | what | where |
 |---|---|---|
 | **the toggle** | New Agent: **gbrain on** (the CLI's own config applies) / **gbrain off** (no MCP servers at all, every other connector included). The label says gbrain by the owner's ruling. Per launch; relaunch to change. The Codex exception is recorded below | `src/spawn.ts` |
-| **`mcp:` (the cascading key)** | **which way the toggle opens for a resolved launch — off for every ordinary one** (owner, 2026-08-22): the brain is something the owner turns ON for the launch that wants it. `on` opens it on; `always` opens it on and withdraws the choice (the `PersonalAssistant` session_role carries the lock). It is the definition's own key, resolved against the system default. A default, not a lock — the form and an explicit `mcp:` in the launch body both override it; only `always` refuses | `ronin_catalogs/session_roles/` · `src/launch-profile.ts` · `src/spawn.ts` |
+| **`mcp:` (the cascading key)** | **which way the toggle opens for a resolved launch — off for every ordinary one**: the brain is something the owner turns ON for the launch that wants it. `on` opens it on; `always` opens it on and withdraws the choice (the `PersonalAssistant` session_role carries the lock). It is the definition's own key, resolved against the system default. A default, not a lock — the form and an explicit `mcp:` in the launch body both override it; only `always` refuses | `ronin_catalogs/session_roles/` · `src/launch-profile.ts` · `src/spawn.ts` |
 | **`gbrain_disconnected:`** | the launch-table key holding a provider's declared tokens for `gbrain_mode: disconnected`. A launch that asks for disconnected and finds none declared is refused; a profile merely defaulting disconnected degrades to connected and the receipt says so. OpenAI disables gbrain specifically. Anthropic's coarse token disables **ALL MCP** for that launch | `ronin_catalogs/PROJECT_ROOTS.md` · `src/project-roots.ts` |
-| **`credit:`** | a definition key — one markdown link, text and href — rendered on the opened launch form as a real anchor (*powered by gbrain ↗*). The credit is the FACE's — the `session_role`'s own, with the shelf's as presentation fallback. Never inside the kind button: an anchor in a button is nested-interactive, which the axe gate fails | `ronin_catalogs/session_roles/` · `src/definitions.ts` |
+| **`credit:`** | a definition key — one markdown link, text and href — rendered on the opened launch form as a real anchor (*powered by gbrain ↗*). The credit is the FACE's — the `session_role`'s own, with the shelf's as presentation fallback. Never inside the kind button: an anchor in a button is nested-interactive, which the axe gate fails | `ronin_catalogs/session_roles/` · `src/resource-adapters.ts` |
 
 ### Review finding — connected is not provisioned, and off is not yet proved
 
@@ -74,7 +74,6 @@ the owner's gbrain server and registering it with each CLI remains the gbrain `r
 The shared-access path has been proved: Claude and Codex sessions concurrently read and
 wrote one PGLite database through one HTTP server. The inverse claim has not. In particular,
 Codex merges `-c mcp_servers={}` with its user configuration rather than replacing the
-configured servers — **proven end-to-end 2026-08-23** when the owner's gbrain-off codex
 launch still tried to start the gbrain client. The row now uses
 `-c mcp_servers.gbrain.enabled=false`, verified via `codex mcp list` (gbrain reports
 `disabled`). The honest limit stays recorded: codex 0.148 has no global "no MCP at all"
@@ -121,7 +120,7 @@ Two families, and they differ in exactly one thing that matters here:
 | **egress** | **a standing door: every page at index, every query at search** | **none — embedding happens on the machine** |
 | cost | an API key and a bill | disk and CPU for a small model |
 
-**The decided posture (owner, re-ruled 2026-08-17): opting into gbrain installs and uses
+**The decided posture: opting into gbrain installs and uses
 local embeddings. BM25-only keyless operation is the degraded posture when that local unit
 is unavailable. Ronin offers no hosted embedding-provider option.**
 Known sharp edges when enabling local: pin the embedding dimensions explicitly, and
@@ -129,7 +128,7 @@ Known sharp edges when enabling local: pin the embedding dimensions explicitly, 
 
 ## The gbrain commons_tab
 
-**When gbrain is not installed, the tab is one button** (owner's ask, 2026-08-17):
+**When gbrain is not installed, the tab is one button**:
 **Load gbrain** — a single press runs the service's own installer (weights, gbrain
 pinned, the cabinet, the server, tokens, wiring, shelves), streaming its log into the
 tab until the panel below takes over. The button exists only while `installed` is
@@ -171,7 +170,6 @@ storage ruling; auth/passkeys do not settle it by analogy, and neither does the 
 
 ## What leaves the machine — measured, not asserted
 
-Checked on the live process (2026-08-16): the server listens on `127.0.0.1` only — loopback,
 unreachable from any other machine — and its only established connection was a local
 session's own MCP client. **"OAuth 2.1" here is the local server checking local tokens, not
 a cloud login.** The complete gbrain egress ledger in this configuration: **GitHub at

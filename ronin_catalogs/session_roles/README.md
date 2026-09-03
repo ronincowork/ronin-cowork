@@ -36,7 +36,7 @@ Absence means inherit. An explicit `off` is a value, not an absence. `mcp: alway
 `posture`, `opening` and `ack` **inapplicable**, and a definition that states one
 alongside it is refused rather than half-honored.
 
-**A session_role never states a model** (owner, 2026-08-29). No `model:` field, no bias:
+**A session_role never states a model**. No `model:` field, no bias:
 a session launches on the owner's default (⚙ Configuration) unless the launch names a
 model or a cmd.
 
