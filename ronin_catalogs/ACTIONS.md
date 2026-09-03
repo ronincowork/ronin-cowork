@@ -460,6 +460,9 @@ primary job (owner law 2026-08-28) — so you never need to `tejun-send` the lea
 hand-in, and a watch-only lead is not a reason to stop. If the team has no lead, the
 hand-in tells you so and the job is yours: review the line and `bin/ronin-promote <team>`
 when it is coherent; a conflict is yours to resolve (`tejun-desk sync`, fix, hand in).
+**Look before you prove:** a promotion runs the one full BYOIN, and two proving on one box
+at once trample each other, so `ronin-promote` answers `BUSY: …` when any team's promotion
+is on the fly. That is not a fault: wait for it to finish, then run again.
 Nothing waits on a lead that was never set. If your brief lists no desk (manual launch, plain terminal, a
 repository under direct publishing) you have none: commit to that repository's declared
 line as its own instructions say, and invent no desk state. Verify per the doc, with
@@ -681,8 +684,9 @@ door. It commits the owner's machine to future action, so it is a **propose-and-
 say the request, who gets it and when, in the tile, and add it only on the owner's yes —
 never on your own initiative, and never for another team. `tejun-jikan when "<timing>"`
 proves the timing words before you propose them; `tejun-jikan` lists what is already
-there so you do not schedule a thing twice. Nothing on the clock births a session or a
-team: a job whose session is gone is refused and left standing for the owner to see.
+there so you do not schedule a thing twice. A job is a ping: a missed beat is missed, and
+nothing on the clock births a session or a team — a job whose session is gone is refused
+and left standing for the owner to see.
 
 ## report-outcome
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.

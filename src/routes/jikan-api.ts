@@ -1,110 +1,60 @@
 /**
- * JIKAN over HTTP — the Cron jobs tab's door, per team, and the clock that runs the lists.
+ * JIKAN over HTTP — the Cron jobs tab's door, per team, and the tick on the house clock.
  *
- * Read `src/jikan.ts` first: the list is the owner's file and every job is delivered
- * through the ordinary message door. This file only wears it as routes, and starts the
- * one clock with the house's real parts — tmux's session list, and the message queue —
- * which the unit floor replaces with fakes.
+ * Read `src/jikan.ts` first. This wears it as routes and starts the tick with the house's
+ * real parts: tmux's session list, and the message queue (enqueue, then one safe attempt —
+ * exactly what `tejun-send` does). The unit floor replaces both with fakes.
  */
 import type express from 'express';
 import { homedir } from 'node:os';
-import { addJob, clockFace, describeWhen, editJob, isValidTeam, listJobs, nextRun, parseWhen, removeJob, runJob, startJikan, type Clock, type Job } from '../jikan.js';
+import { addJob, isValidJobId, isValidTeam, listJobs, nextRun, parseWhen, removeJob, setJob, startJikan, type Door } from '../jikan.js';
 import { attemptMessage, enqueueMessage } from '../message-queue.js';
 import { listSessions } from '../tmux.js';
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
-/** The clock's real parts. Delivery is exactly what `tejun-send` does: enqueue, then one safe attempt. */
-export const houseClock: Clock = {
+export const houseDoor: Door = {
   now: () => Date.now(),
   sessions: async () => (await listSessions()).map((s) => ({ name: s.name, tags: s.tags, leads: s.leads })),
-  deliver: async (target, text, from) => {
-    const item = await enqueueMessage(target, text, 'jikan', from);
-    const retained = await attemptMessage(item.id, 'safe');
-    return retained ? 'queued' : 'delivered';
-  },
+  deliver: async (target, text) => ((await attemptMessage((await enqueueMessage(target, text, 'jikan')).id, 'safe')) ? 'queued' : 'delivered'),
 };
-
-const face = (job: Job) => ({ ...job, when_words: describeWhen(job.when) });
 
 export function registerJikan(app: express.Express): void {
   // Prove timing words before they are saved: the next three moments they mean.
   app.get('/api/jikan/when', (req, res) => {
-    const words = String(req.query?.words ?? '').trim().slice(0, 120);
-    const spec = parseWhen(words);
+    const spec = parseWhen(String(req.query?.words ?? '').slice(0, 120));
     if (!spec) return res.status(400).json({ error: 'Timing is `once 2026-09-04 08:00`, `daily 08:00`, `weekdays 08:00`, `weekly mon 08:00`, `monthly 1 09:00`, `hourly`, `every 30m`, or a five-field cron line.' });
     const next: string[] = [];
-    let t = Date.now();
-    for (let i = 0; i < 3; i++) {
-      const n = nextRun(spec, t, t);
-      if (n === null) break;
-      next.push(new Date(n).toISOString());
-      t = n;
-    }
-    res.json({ words: describeWhen(words), next });
+    for (let t = Date.now(), i = 0; i < 3; i++) { const n = nextRun(spec, t); if (n === null) break; next.push(new Date(n).toISOString()); t = n; }
+    res.json({ next });
   });
 
   const team = (req: express.Request, res: express.Response): string | null => {
     const name = String(req.params.team ?? '');
-    if (!isValidTeam(name)) { res.status(400).json({ error: 'A team name is lowercase letters, digits, _ and -.' }); return null; }
-    return name;
+    if (isValidTeam(name)) return name;
+    res.status(400).json({ error: 'A team name is lowercase letters, digits, _ and -.' });
+    return null;
+  };
+  const answer = async (res: express.Response, work: () => Promise<unknown>, status = 400) => {
+    try { res.json(await work()); } catch (e) { res.status(status).json({ error: errMsg(e) }); }
   };
 
-  app.get('/api/teams/:team/jikan', async (req, res) => {
-    const name = team(req, res);
-    if (!name) return;
-    try {
-      res.json({ team: name, jobs: (await listJobs(name)).map(face), now: new Date().toISOString(), clock: clockFace().find((t) => t.name === 'jikan') ?? null });
-    } catch (e) {
-      res.status(500).json({ error: errMsg(e) });
-    }
+  app.get('/api/teams/:team/jikan', (req, res) => { const t = team(req, res); if (t) void answer(res, async () => ({ team: t, jobs: await listJobs(t) }), 500); });
+  app.post('/api/teams/:team/jikan', (req, res) => {
+    const t = team(req, res);
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    if (t) void answer(res, async () => ({ ok: true, job: await addJob(t, { request: b.request, to: b.to, when: b.when, by: 'owner' }) }));
   });
-
-  app.post('/api/teams/:team/jikan', async (req, res) => {
-    const name = team(req, res);
-    if (!name) return;
-    try {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      res.json({ ok: true, job: face(await addJob(name, { request: body.request, to: body.to, when: body.when, by: body.by ?? 'owner' })) });
-    } catch (e) {
-      res.status(400).json({ error: errMsg(e) });
-    }
+  // `{ state: 'active' | 'paused' | 'now' }` — now means due at the next tick.
+  app.put('/api/teams/:team/jikan/:id', (req, res) => {
+    const t = team(req, res);
+    const verb = String((req.body as { state?: unknown } | undefined)?.state ?? '');
+    if (!t) return;
+    if (!isValidJobId(String(req.params.id)) || !['active', 'paused', 'now'].includes(verb)) return res.status(400).json({ error: 'Send { state: active | paused | now }.' });
+    void answer(res, async () => ({ ok: true, job: await setJob(t, String(req.params.id), verb as 'active' | 'paused' | 'now') }));
   });
-
-  app.put('/api/teams/:team/jikan/:id', async (req, res) => {
-    const name = team(req, res);
-    if (!name) return;
-    try {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const edit: Record<string, unknown> = {};
-      for (const key of ['request', 'to', 'when', 'state']) if (body[key] !== undefined) edit[key] = body[key];
-      res.json({ ok: true, job: face(await editJob(name, String(req.params.id), edit)) });
-    } catch (e) {
-      res.status(400).json({ error: errMsg(e) });
-    }
-  });
-
-  app.delete('/api/teams/:team/jikan/:id', async (req, res) => {
-    const name = team(req, res);
-    if (!name) return;
-    try {
-      res.json({ ok: await removeJob(name, String(req.params.id)) });
-    } catch (e) {
-      res.status(500).json({ error: errMsg(e) });
-    }
-  });
-
-  // Run now — the same firing the clock would do, on a press; the outcome is the answer.
-  app.post('/api/teams/:team/jikan/:id/run', async (req, res) => {
-    const name = team(req, res);
-    if (!name) return;
-    try {
-      res.json({ ok: true, outcome: await runJob(name, String(req.params.id), houseClock) });
-    } catch (e) {
-      res.status(400).json({ error: errMsg(e) });
-    }
-  });
+  app.delete('/api/teams/:team/jikan/:id', (req, res) => { const t = team(req, res); if (t) void answer(res, async () => ({ ok: isValidJobId(String(req.params.id)) && await removeJob(t, String(req.params.id)) }), 500); });
 }
 
-/** The clock, on the house's parts. Called once from index.ts. */
-export const startHouseJikan = (): (() => void) => startJikan(houseClock);
+/** The tick, on the house's parts. Called once from index.ts. */
+export const startHouseJikan = (): (() => void) => startJikan(houseDoor);

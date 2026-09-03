@@ -3,16 +3,16 @@
 #
 # Usage: tejun-jikan                                       the team's jobs, one per line
 #        tejun-jikan add --when "<timing>" [--to lead|<session>] <request...>
-#        tejun-jikan pause <id> | resume <id> | remove <id>
+#        tejun-jikan pause <id> | resume <id> | now <id> | remove <id>    now = due at the next tick
 #        tejun-jikan when "<timing>"                       prove timing words: the next three moments
 #        --team <t> when this session is on several teams, or none
 #
 # Timing: once 2026-09-04 08:00 · daily 08:00 · weekdays 08:00 · weekly mon 08:00 ·
 #         monthly 1 09:00 · hourly · every 30m · or a five-field cron line.
 #
-# A job is one request delivered to one session of the team — by name, or `lead` for
-# whoever leads it when the moment comes — through the ordinary message door, with the dial
-# honoured. Ronin's clock checks every minute. Nothing here births a session or a team.
+# A job is a ping: one request delivered to one session of the team — by name, or `lead` —
+# through the ordinary message door, with the dial honoured. Ronin's clock checks every
+# minute for anything due; a missed beat is missed. Nothing here births a session or a team.
 # Scheduling a request commits the owner's machine to future action: propose it and wait
 # for the yes before you add one (ACTIONS.md § schedule-request).
 #

@@ -141,5 +141,6 @@ export async function listReceipts(limit = 20): Promise<Receipt[]> {
 export function startTomodachiSender(everyMs = 3_600_000): () => void {
   // On JIKAN's clock (src/jikan.ts): the hourly sweep, and one sweep shortly after
   // boot for the machine that was off when a packet was written.
-  return onClock({ name: 'tomodachi', everyMs, atBoot: 60_000, run: async () => { await sendDuePackets(); } });
+  setTimeout(() => { void sendDuePackets(); }, 60_000).unref();
+  return onClock('tomodachi', everyMs, async () => { await sendDuePackets(); });
 }

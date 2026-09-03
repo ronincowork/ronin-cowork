@@ -21,7 +21,8 @@ import { storeDir } from './stores.js';
  * ronin-promote — the lead's door from a team line into `dev`. `bin/ronin-promote` is the
  * bash face; this is the whole of it.
  *
- *   ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--repo name=dir …]
+ *   ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--anyway] [--repo name=dir …]
+ *     BUSY when another team's promotion is on the fly: wait, then run again. --anyway proves regardless.
  *   ronin-promote resume <receipt-id> [--no-restart]
  *   ronin-promote abandon <receipt-id> <reason…>
  *   ronin-promote revert <receipt-id|last> [--mode …]
@@ -107,7 +108,7 @@ function report(out: { ok: boolean; message: string; receipt: { id: string; stat
 async function main(): Promise<void> {
   const [cmd, ...rest] = positional;
   if (!cmd || flag('--help')) {
-    say('usage: ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--repo name=dir]');
+    say('usage: ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--anyway] [--repo name=dir]');
     say('       ronin-promote pr <team>          open or update the dev → master PR from the last complete receipt');
     say('       ronin-promote funnel diagnose <team> [--repo name] | show|preserve|clear <receipt-id>');
     say('       ronin-promote resume|abandon|revert|bisect|receipts|show …   (bin/ronin-promote --help for the whole list)');
@@ -202,7 +203,7 @@ async function main(): Promise<void> {
       const team = cmd;
       const specs = await reposForTeam(team);
       say(`team ${team}: ${specs.map((s) => `${s.repo} ${s.line} → ${s.target} (${s.dir})`).join(', ')}`);
-      const out = await promoteTeam({ team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), log: say });
+      const out = await promoteTeam({ team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), anyway: flag('--anyway'), log: say });
       if (out.ok && out.receipt?.state === 'complete') {
         say('');
         say('to open the dev → master pull request from this receipt, when it is time:');

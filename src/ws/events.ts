@@ -37,7 +37,7 @@ export function broadcastEvent(msg: Record<string, unknown>): number {
 /** The 2s membership poll, on JIKAN's clock (src/jikan.ts). Called once at boot — a timer is a choice index.ts makes, not an import side effect. */
 export function startSessionsBroadcast(): void {
   let lastSessionNames = '';
-  onClock({ name: 'sessions_broadcast', everyMs: 2000, run: async () => {
+  onClock('sessions_broadcast', 2000, async () => {
     if (eventClients.size === 0) return;
     await listSessions()
       .then(withAxes)
@@ -59,5 +59,5 @@ export function startSessionsBroadcast(): void {
         for (const ws of eventClients) if (ws.readyState === ws.OPEN) ws.send(msg);
       })
       .catch(() => {});
-  } });
+  });
 }
