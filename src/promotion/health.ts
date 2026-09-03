@@ -10,6 +10,17 @@ const execFileP = promisify(execFile);
 
 export interface RestartResult { unit: string; at: string; ok: boolean; detail?: string }
 
+export async function serviceStartedAfter(at: string): Promise<boolean> {
+  try {
+    const { stdout } = await execFileP('systemctl', ['--user', 'show', 'ronin.service', '--property=ActiveEnterTimestamp', '--value'], { timeout: 5_000 });
+    const started = Date.parse(stdout.trim());
+    const advanced = Date.parse(at);
+    return Number.isFinite(started) && Number.isFinite(advanced) && started > advanced;
+  } catch {
+    return false;
+  }
+}
+
 export async function restartService(): Promise<RestartResult> {
   const unit = 'ronin';
   const at = new Date().toISOString();
