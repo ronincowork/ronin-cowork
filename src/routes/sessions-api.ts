@@ -1,9 +1,3 @@
-/**
- * PER-SESSION ROUTES — everything addressed to one live session by name: end it, tag
- * it, dial it, read its gauge, its ladder, its tape state, and type into it. The
- * session list itself and the launchers live in routes/launch.ts; wipeboards in
- * routes/wipeboards-api.ts.
- */
 import fs from 'node:fs';
 import type express from 'express';
 import {
@@ -61,8 +55,6 @@ import {
 } from '../session-archive.js';
 
 export function registerSessions(app: express.Express): void {
-  // `tags` are the Teams the session was on when archived — the Rehydrate Archived
-  // surface groups by them. Names only; nothing else of the record is public.
   const publicArchive = ({ id, name, archived_at, agent, tags }: ArchivedSession) => ({ id, name, archived_at, agent, tags });
   app.get('/api/archived-sessions', async (_req, res) => {
     try {
@@ -79,7 +71,6 @@ export function registerSessions(app: express.Express): void {
       const key = await sessionKey(name);
       const runtime = await sessionRuntime(name);
       const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
-      // Refuse before writing or stopping anything: an archive that cannot resume is a delete.
       if (!provider) return res.status(409).json({ error: `Could not identify a resumable ${runtime.agent || 'agent'} conversation.` });
       const archived: ArchivedSession = {
         version: 1,
@@ -156,10 +147,6 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  // The work record, read on demand — core's own file, parsed by core's own reader
-  // (src/tegami-read.ts). Registered AFTER mountServiceRoutes, so an installed michi's
-  // identical route answers first and keeps the live layer; this one is what makes
-  // View Work Record answer on a plain install (owner, 2026-09-02).
   app.get('/api/sessions/:name/tegami', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -174,10 +161,6 @@ export function registerSessions(app: express.Express): void {
   app.delete('/api/sessions/:name', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    // Resolve the key BEFORE the kill, while `name` still means this session — the same
-    // ordering rule killSessionTree already follows for removeHandoff. Afterwards the name
-    // is a corpse, and asking tmux about a corpse gets you a NEIGHBOUR's answer (exit 0),
-    // so the rm below would have taken a live session's directory: tape, render and letter.
     const key = await sessionKey(name);
     await killSessionTree(name);
     emitSessionEnd(name, key); // rireki deletes the tape: no graveyard, eventually is fine
@@ -198,21 +181,6 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  /**
-   * harakiri — a session ends ITSELF, and Ronin is what ends it.
-   *
-   * The caller hands over one thing: the pane it is sitting in. It does not name a
-   * session, does not sweep viewers, does not run `kill-session`. Ronin resolves the pane
-   * to its real (non-viewer) session, checks the dial, and calls the same killSessionTree
-   * the UI's delete button uses. So there is ONE implementation of the kill in this
-   * codebase, and an agent asking to die is blind to how dying works — the counterpart of
-   * commons spawning, which is likewise mechanical Ronin code rather than an agent running
-   * tmux steps.
-   *
-   * Self-inflicted by construction: the only session you can end is the one your own pane
-   * belongs to. Ending someone ELSE's session is a different, deliberate act — DELETE
-   * /api/sessions/:name, i.e. the trash button — and is not reachable from here.
-   */
   app.post('/api/harakiri', async (req, res) => {
     const pane = String(req.body?.pane ?? '').trim();
     if (!/^%\d+$/.test(pane)) {
@@ -220,22 +188,12 @@ export function registerSessions(app: express.Express): void {
     }
     const name = await sessionOfPane(pane);
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
-    // Answer BEFORE killing: once the session goes, so does the socket, the caller and
-    // anything it might have printed. The reply is for the log and for a caller that
-    // somehow outlives its session — never a precondition for the kill.
     res.json({ ok: true, session: name });
     console.log(`[ronin] harakiri: ${name} (pane ${pane})`);
     count('ended', { name, end: 'harakiri' });
     setTimeout(() => void killSessionTree(name), 50);
   });
 
-  /**
-   * The project_root a session serves — one value, the owner's hand.
-   *
-   * Sessions born outside the launcher (a human running `tmux new-session`) carry
-   * nothing, and that is reported as untagged rather than guessed at. Ronin may SUGGEST
-   * one from the working directory; only this call applies it.
-   */
   app.get('/api/sessions/:name/project-root', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -249,7 +207,6 @@ export function registerSessions(app: express.Express): void {
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     const root = String(req.body?.project_root ?? '').trim();
     if (root && !isValidRootName(root)) return res.status(400).json({ error: 'Invalid project_root handle.' });
-    // An Agent may serve only a Project root in its own Campaign.
     try {
       await assertSameCampaignRoot(await getCampaign(name), root);
     } catch (e) {
@@ -265,7 +222,6 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  // Per-session "post-it" note, stored on the tmux session itself (see tmux.ts).
   app.get('/api/sessions/:name/note', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -286,15 +242,11 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  // The Agent's stored tags are its one Team-membership record. The public door speaks
-  // Teams only; every value is a validated Team id, never a free-form label.
   const saveMembership = async (name: string, wanted: unknown) => {
     const list = (Array.isArray(wanted) ? wanted.map(String) : String(wanted ?? '').split(',')).slice(0, 16);
     const valid = new Set((await listTeamRosters()).filter((team) => team.state !== 'archived').map((team) => team.name));
     const unknown = list.filter((team) => !valid.has(team));
     if (unknown.length) throw new Error(`Unknown Team: ${unknown.join(', ')}.`);
-    // A COWORK AND ITS AGENTS ARE ONE CAMPAIGN'S. Refused rather than silently corrected:
-    // quietly rewriting the caller's intent is how a scoping bug becomes invisible.
     await assertSameCampaignTeams(name, list);
     const before = await getTags(name), teams = await setTags(name, list);
     const leads = await getLeads(name), keptLeads = leads.filter((team) => teams.includes(team));
@@ -321,17 +273,6 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  /**
-   * THE RETIRED AXES, refused by name — three generations of one door, each pointing at
-   * what replaced it, because a caller on old vocabulary deserves better than the blank
-   * 404 a typo gets. 410 is the honest code: these doors existed, and they are gone.
-   *
-   *   session_job    split on 2026-08-22 into a role axis and a task axis;
-   *   family_role    the immutable session axis that split created — DISMANTLED on
-   *                  2026-08-23 (R35): identity moved off the session onto the TEAM's
-   *                  roster, contextual per team, never a session attribute;
-   *   session_task   renamed `session_role` in the same ruling.
-   */
   for (const retired of ['session_job', 'family_role', 'session_task', 'session_role', 'role_family', 'team_role', 'campaign_kind', 'lifecycle']) {
     app.all(`/api/sessions/:name/${retired}`, (req, res) => {
       res.status(410).json({
@@ -342,14 +283,6 @@ export function registerSessions(app: express.Express): void {
     });
   }
 
-  /**
-   * EVERY LIVE TEAM, with members and leads. Derived from the sessions each call — there
-   * is no membership registry to drift out of date, and the roster never holds one.
-   *
-   * The `leaders` map is BACK (R35, 2026-08-23, un-retiring the 人): who coordinates a
-   * team is the hand-set `@ronin-lead` designation, never derived from what a session
-   * is doing — the secretary can be team lead. `/api/groups` is the retired spelling.
-   */
   app.get('/api/teams', async (_req, res) => {
     try {
       const teams: Record<string, string[]> = {};
@@ -364,11 +297,6 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  /**
-   * ONE TEAM'S LIVE HALF — the members with what a view needs per card: dial and lead
-   * flag. The durable half is /api/team-rosters/:name; a team can be
-   * real in either half alone (a roster with no live members, a tag with no roster).
-   */
   app.get('/api/teams/:name/live', async (req, res) => {
     const { name } = req.params;
     try {
@@ -388,18 +316,6 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  /**
-   * THE 人 — designate (or clear) the teams this session LEADS. Owner-shaped but not
-   * owner-gated: membership and leadership are deliberately rule-free (owner,
-   * 2026-08-23 — "little to absolutely no rules; put it there, see what happens").
-   *
-   * LEADING IMPLIES MEMBERSHIP: designating a lead tags the session into the team if it
-   * is not already on it. And a NEWLY-led session is handed the team-building SOP —
-   * route 2 of its delivery, the same reading a default_lead_role launch gets at birth —
-   * because leadership is designated, not derived, and whoever actually leads must get
-   * the reading whichever way they came to it. Delivery reports its result and
-   * reported, not swallowed.
-   */
   app.post('/api/sessions/:name/team_lead', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -421,7 +337,6 @@ export function registerSessions(app: express.Express): void {
       const leads = await setLeads(name, wanted);
       await writeTeams(name, tags).catch(() => {});
       count('lead.set', { n: leads.length });
-      // Route 2 of the SOP: the newly-led get the reading in one message.
       const fresh = leads.filter((t) => !before.includes(t));
       let delivered: string | null = null;
       if (fresh.length) {
@@ -444,15 +359,6 @@ export function registerSessions(app: express.Express): void {
     res.json({ team_lead: await getLeads(name) });
   });
 
-  // Control dial (@ronin-control): user / read / write — who may drive this session.
-  // Reading is open (that's control-check); FLIPPING is owner-only, enforced in ONE
-  // place: the host-side ronin-session-guard hook denies agents any dial flip (tmux or
-  // HTTP) before the command runs. The endpoint itself stays open — it is the owner's
-  // path (the browser dial), and a server-side owner check only ever managed to lock
-  // out the owner (Glen KISS mandate, 2026-08-06: one enforcement point, one open
-  // owner path — don't re-add cleverness here).
-  // The RIREKI dial + tape-head routes and the TEGAMI read routes are mounted by
-  // their services through the ROUTES socket (rireki-api.ts, michi-api.ts).
   app.get('/api/sessions/:name/control', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -477,18 +383,12 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  // Context gauge readout: how full the session's context window is, scraped from the
-  // pane's visible tail (the CLI publishes the number into its own status line — Claude
-  // via ~/.claude/statusline-ronin.sh, Codex natively). Terminal view only, per the
-  // permanent boundary: pane text, never agent internals. Patterns live in src/ctx.ts.
   app.get('/api/sessions/:name/ctx', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     try {
       const reading = await readCtxLine(name); // { ctx, model } — one capture, both readings
-      // TOMODACHI's context gauge rides this read; at close the pane is gone, so the last
-      // value seen while alive is the only one there will ever be. No sampler, no interval.
       count('ctx', { name, ctx: (reading as { ctx: number | null }).ctx, model: (reading as { model?: string | null }).model ?? null });
       res.json(reading);
     } catch (e) {
@@ -496,20 +396,14 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  // Compose target selector: type into ANY session, not just the connected tile.
-  // Reliability per co-working/user_repo/wip/RECIPES.md R1/R2: separate Enter, lost-Enter retry,
-  // confirm-started — all inside sendText().
   app.post('/api/sessions/:name/send', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    // Echo the stored Control value so the sender sees the session's preference.
     const control = await getControl(name);
     const raw = String(req.body?.text ?? '');
     if (!raw.trim()) return res.status(400).json({ error: 'Nothing to send.' });
     try {
-      // A lookup macro is answered here and delivered as its own answer; everything
-      // else goes through verbatim, exactly as before.
       const expanded = await expandLookup(raw);
       const text = expanded ?? raw;
       const item = await enqueueMessage(name, text, 'owner');

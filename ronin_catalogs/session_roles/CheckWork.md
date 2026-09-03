@@ -1,4 +1,5 @@
 # CheckWork
+- **kinds:** coding, work
 
 Read-only findings work — a session's output, or a sweep of the code. Both targets are the
 same posture, differing only in what the prompt points at.

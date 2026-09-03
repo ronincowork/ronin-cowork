@@ -1,59 +1,4 @@
 #!/usr/bin/env node
-/**
- * check-css — one palette, spelled once; primitives and tokens no rule may patch;
- * a contrast floor under both themes.
- *
- *   node scripts/check-css.mjs                    # gate public/style.css
- *   node scripts/check-css.mjs public-staging     # gate a staged client instead
- *
- * The 2026-08-15 census found 154 raw-colour occurrences (87 distinct) beside a
- * 15-token layer — a palette that could only drift, because nothing held it. The
- * 2026-08-16 migration took the count to zero; this gate is what keeps it there.
- * The allowlist is EMPTY and stays empty.
- *
- * ON @layer, honestly: `@layer vendor, foundations, ui, app` makes LATER layers win,
- * so the cascade enforces exactly one direction — every Ronin rule beats xterm.css.
- * It does NOT stop an app rule from patching a ui primitive or redefining a token;
- * app is the strongest layer, which is what lets a consumer size its own card. The
- * first cut of this file claimed otherwise (caught in review, 2026-08-16). The rule
- * "app does not restyle primitive internals or foundation tokens" is real and it is
- * enforced HERE, by checks 4 and 5 — a gate, not the cascade.
- *
- * Six checks:
- *
- *   1. RAW COLOUR ONLY IN A TOKEN DEFINITION. A hex, rgb()/rgba()/hsl() or named CSS
- *      colour may appear only on a custom-property line (`--name: …`); every other
- *      declaration reaches colour through var() or color-mix() over one.
- *   2. THE LAYER ORDER IS DECLARED, ONCE, FIRST — `@layer vendor, foundations, ui,
- *      app;` before any rule, so vendor stays weakest by construction.
- *   3. THE TERMINAL TOKENS EXIST — js/theme.js reads --term-* by name into xterm; a
- *      deleted token would silently become an empty string in a live terminal theme.
- *   4. THE APP LAYER DOES NOT SELECT PRIMITIVE INTERNALS — no `.ui-*`, `#toast` or
- *      `.helpbox` selector inside @layer app. A consumer styles its OWN class on the
- *      card (`.ns-card`), never the primitive's hooks.
- *   5. THE APP LAYER DOES NOT REDEFINE A FOUNDATION TOKEN — feature-scoped tokens
- *      (`--k-*`, the gauge's `--g1..3`) are legal; shadowing `--bg` is not.
- *   6. THE LOOK IS SPELLED ONCE, not just the colour. Same rule as check 1, widened on
- *      2026-08-19 to the families that carry the look: `border-radius`, `font-size`,
- *      `font`/`font-family`, spacing (`padding`/`margin`/`gap`), border widths and
- *      transition/animation timing. The census that prompted it found eleven radii,
- *      twelve font-sizes including half-pixels, spacing on nearly every integer 1–18,
- *      and SEVEN font stacks doing the work of three roles.
- *
- *      WHY A GATE AND NOT A STYLE GUIDE. The owner's ask is that editing the token block
- *      re-skins the whole app — "change everything by giving a simple instruction to
- *      update the design tokens". That is only true while nothing carrying look is
- *      spelled anywhere else, and a rule nothing enforces is a rule that decays with the
- *      next feature. `0` is always legal (the absence of a value is not a value), and a
- *      one-off MEASUREMENT is legal once it is named — `--tape-clearance`, `--ptr-len`,
- *      `--fr-gutter` — because a `--name:` line is the one legal home for a raw value.
- *      That is the escape hatch, and it costs you a name and a reason.
- *   7. THE CONTRAST FLOOR HOLDS, BOTH THEMES — WCAG ratios computed from the token
- *      definitions themselves. Floors are set from the measured 2026-08-16 palette
- *      (weakest passing pair, small margin) so a regression fails while the current
- *      look stands. `--dim` is excluded on purpose: it is the zero-state colour,
- *      decorative by definition (docs/ui.md).
- */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -69,11 +14,9 @@ const featurePaths = fs.existsSync(featureDir)
   : [];
 const shippedPaths = [cssPath, path.join(PUB, 'workspace-kit.css'), ...featurePaths];
 
-// strip comments; keep line structure so reports carry real line numbers
 const noComments = css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
 const lines = noComments.split('\n');
 
-/** The body of a brace-balanced block starting at the first `{` after `marker`. */
 function block(source, marker) {
   const at = source.indexOf(marker);
   if (at === -1) return '';
@@ -88,7 +31,6 @@ function block(source, marker) {
   return source.slice(start, i - 1);
 }
 
-// --- shipped stylesheet governance ---
 const index = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
 const linkedStyles = [...index.matchAll(/<link\s+[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/g)].map((match) => match[1]);
 const rootFeatureSheets = fs.readdirSync(PUB).filter((file) => file.endsWith('.css') && !['style.css', 'workspace-kit.css'].includes(file));
@@ -150,7 +92,6 @@ for (const file of featurePaths) {
   }
 }
 
-// --- 1. raw colours outside token definitions ---
 const NAMED =
   /\b(?:aliceblue|antiquewhite|aqua|black|blue|brown|coral|crimson|cyan|darkgray|darkgrey|dimgray|dimgrey|fuchsia|gainsboro|gold|gray|grey|green|indigo|ivory|khaki|lavender|lime|linen|magenta|maroon|navy|olive|orange|orchid|pink|plum|purple|red|salmon|silver|snow|tan|teal|tomato|violet|wheat|white|yellow)\b/;
 lines.forEach((line, i) => {
@@ -169,9 +110,6 @@ lines.forEach((line, i) => {
   }
 });
 
-// --- 6. the look is spelled once: shape, space, type, voice, edge, motion ---
-// Same shape as check 1 — a raw value is legal only on a `--token:` line. Kept high-precision:
-// only these properties, only bare px/ms literals, and `0` always passes.
 const LOOK = [
   [/^\s*border-radius\s*:/, /(?<![\w.-])\d+(?:\.\d+)?px\b/, 'radius', '--radius-*'],
   [/^\s*font-size\s*:/, /(?<![\w.-])\d+(?:\.\d+)?px\b/, 'font-size', '--text-*'],
@@ -192,19 +130,16 @@ lines.forEach((line, i) => {
   }
 });
 
-// --- 2. the layer order, declared before any rule ---
 const firstRule = noComments.search(/^[^@\s/][^\n]*\{|^@media|^@layer\s+\w+\s*\{/m);
 const decl = noComments.indexOf('@layer vendor, foundations, ui, app;');
 if (decl === -1) problems.push('style.css does not declare `@layer vendor, foundations, ui, app;`');
 else if (firstRule !== -1 && decl > firstRule) problems.push('the @layer order declaration must come before any rule');
 
-// --- 3. the terminal tokens js/theme.js reads must exist ---
 const themeJs = fs.readFileSync(path.join(PUB, 'js', 'theme.js'), 'utf8');
 for (const m of themeJs.matchAll(/v\('(--term-[\w-]+)'\)/g)) {
   if (!css.includes(`${m[1]}:`)) problems.push(`js/theme.js reads ${m[1]}, which style.css never defines`);
 }
 
-// --- 4 & 5. the app layer keeps its hands off the primitives and the tokens ---
 const appBody = block(noComments, '@layer app');
 const foundationsBody = block(noComments, '@layer foundations');
 if (!appBody || !foundationsBody) {
@@ -212,7 +147,6 @@ if (!appBody || !foundationsBody) {
 } else {
   const appOffset = noComments.indexOf(appBody);
   const lineOf = (idx) => noComments.slice(0, appOffset + idx).split('\n').length;
-  // selectors are the text between a } (or block start) and the next {
   for (const m of appBody.matchAll(/(^|[}{;])([^{}]*?)\{/g)) {
     const sel = m[2].trim();
     if (!sel || sel.startsWith('@')) continue;
@@ -228,14 +162,6 @@ if (!appBody || !foundationsBody) {
   }
 }
 
-// --- every var() names a token something defines ---
-// A custom property consumed with no fallback and no definition anywhere in the
-// shipped sheets is silently invalid at computed-value time: the browser drops the
-// declaration and nobody hears it. The 2026-09-01 token audit found SEVEN such names
-// live in the sheet (--fg-dim, --fg-faint, --line-faint, --bg-input, --surface,
-// --accent-soft, --ok-soft) — weeks of quietly missing paint. A var() WITH a
-// fallback is a declared optional (the gauge's --g1..3, written from JS) and stays
-// legal.
 const definedTokens = new Set();
 const strippedSheets = new Map();
 for (const file of shippedPaths) {
@@ -251,7 +177,6 @@ for (const [file, text] of strippedSheets) {
   });
 }
 
-// --- 6. the contrast floor, computed from the tokens, both themes ---
 function tokensOf(body) {
   return Object.fromEntries([...body.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
 }
@@ -259,10 +184,6 @@ const rootBody = block(foundationsBody, ':root');
 const lightBody = block(foundationsBody, ":root[data-theme='light']");
 const darkTokens = tokensOf(rootBody);
 const lightTokens = { ...darkTokens, ...tokensOf(lightBody) };
-// A pair colour may be spelled as hex, as var(--other), or as color-mix(in srgb, …)
-// over resolvable colours — the derived-token case (--kiiro-tint) that put the band
-// beyond the gate's reach until 2026-09-01. Anything else (rgb()/shadows) stays null:
-// not a text-pair colour.
 function rgbOf(value, toks, depth = 0) {
   if (!value || depth > 4) return null;
   value = value.trim();
@@ -274,8 +195,6 @@ function rgbOf(value, toks, depth = 0) {
   }
   const ref = /^var\((--[\w-]+)\)$/.exec(value);
   if (ref) return rgbOf(toks[ref[1]] ?? '', toks, depth + 1);
-  // `in srgb` interpolates the gamma-encoded channels, so a plain weighted blend is
-  // exact. Only the two-colour, percentage-on-first form the stylesheet uses.
   const mix = /^color-mix\(in srgb,\s*(.+?)\s+([\d.]+)%,\s*([^,]+?)\)$/.exec(value);
   if (mix) {
     const a = rgbOf(mix[1], toks, depth + 1);
@@ -299,7 +218,6 @@ function ratio(fg, bg, toks) {
   if (a === null || b === null) return null;
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
-// [fg, bg, floor] — floors from the measured palette (see the header).
 const FLOOR = [
   ['--fg', '--bg', 7], ['--fg', '--bg-2', 7], ['--fg', '--panel', 7], ['--fg', '--raise', 7], ['--fg', '--well', 7],
   ['--fg-strong', '--panel', 7], ['--fg-strong', '--raise', 7], ['--fg-strong', '--well', 7],
@@ -309,11 +227,8 @@ const FLOOR = [
   ['--on-accent', '--accent', 4.5], ['--on-strong', '--action', 4.5],
   ['--on-strong', '--kaki', 3], // the メ fill — 21px bold, large-text tier
   ['--bad-fg', '--bad-ground', 7], ['--affirm-fg', '--affirm-bg', 7],
-  // The workbench band — the family that kept losing kiiro or its ink to a retune.
   ['--cowork-head-fg', '--cowork-head-bg', 7], ['--cowork-head-muted', '--cowork-head-bg', 4.5],
   ['--cowork-head-attention', '--cowork-head-bg', 4.5],
-  // Brand fills are kaki (owner ruling 2026-09-02: the hito persimmon is the brand);
-  // the --on-strong/--kaki pair above already holds their floor.
   ['--term-fg', '--term-bg', 7], ['--term-tape-fg', '--term-tape-bg', 7], ['--term-input-fg', '--term-well', 7],
 ];
 for (const [name, toks] of [['dark', darkTokens], ['light', lightTokens]]) {
