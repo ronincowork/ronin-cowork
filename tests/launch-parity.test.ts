@@ -489,19 +489,19 @@ test('kind and behaviours resolve at birth, with unusable books ignored rather t
 
 test('a selected template names unchanged preset values without reapplying edited ones', async () => {
   const preset = await resolveForm(commonsForm({
-    template: 'technical_writer',
-    prompt: 'Be my technical writer — write what things are and how they work, for a reader who was not in the room.',
-    mandate: { reach: 'execute', recruit: 'nobody', output: 'an artifact' },
-    behaviours: ['sops:github'],
+    template: 'office_manager',
+    prompt: 'Be my office manager — handle the daily grind: inbox, calendar, paperwork.',
+    mandate: { reach: 'execute', recruit: 'nobody', output: 'open' },
+    behaviours: ['sops:accounts'],
   }), new Set());
-  assert.deepEqual(preset.stated_by.template, [{ layer: 'template', source: 'technical_writer' }]);
+  assert.deepEqual(preset.stated_by.template, [{ layer: 'template', source: 'office_manager' }]);
   assert.equal(preset.stated_by.brief[0]?.layer, 'template');
-  assert.deepEqual(preset.stated_by.mandate, [{ layer: 'template', source: 'technical_writer' }]);
-  assert.deepEqual(preset.stated_by.behaviours, [{ layer: 'template', source: 'technical_writer' }]);
+  assert.deepEqual(preset.stated_by.mandate, [{ layer: 'template', source: 'office_manager' }]);
+  assert.deepEqual(preset.stated_by.behaviours, [{ layer: 'template', source: 'office_manager' }]);
 
   const edited = await resolveForm(commonsForm({
-    template: 'technical_writer',
-    prompt: 'Write only the API page.',
+    template: 'office_manager',
+    prompt: 'Handle only the calendar.',
     mandate: { reach: 'plan', recruit: 'nobody', output: 'an artifact' },
     behaviours: [],
   }), new Set());

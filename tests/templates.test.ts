@@ -16,7 +16,7 @@ const previous = process.env.RONIN_CATALOGS_DIR;
 process.env.RONIN_CATALOGS_DIR = temp;
 const { listAgentTemplates, listTeamTemplates, parseTemplateAgents, templateMandate } =
   await import('../src/definitions.js');
-const { saveAgentTemplate, saveTeamTemplate } = await import('../src/templates.js');
+const { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } = await import('../src/templates.js');
 
 test('the shipped agent shelf surfaces loadouts, and no team answers', async () => {
   const rows = await listAgentTemplates();
@@ -26,8 +26,8 @@ test('the shipped agent shelf surfaces loadouts, and no team answers', async () 
   assert.deepEqual(assistant?.mandate, { reach: 'execute', recruit: 'nobody', output: ['open'] });
   assert.equal(assistant?.team_mode, 'new', 'the assistant is born into its own team');
   assert.deepEqual(assistant?.routines_on, ['gbrain']);
-  const check = rows.find((row) => row.name === 'health_checker');
-  assert.deepEqual(check?.mandate?.output, ['an artifact', 'no code']);
+  const sysadmin = rows.find((row) => row.name === 'system_administrator');
+  assert.deepEqual(sysadmin?.mandate, { reach: 'execute', recruit: 'nobody', output: ['open'] });
   // Tray order is the stated order:, so the assistant leads the shelf — and every box
   // is a PERSON (agents are people, teams are projects; the owner's rule).
   assert.equal(rows[0]?.name, 'personal_assistant');
@@ -123,6 +123,21 @@ test('a save is always new — an existing name on ITS shelf is refused; shelves
   // dinner_party is a TEAM box; the agents shelf has no such name, so this save lands.
   const twin = await saveAgentTemplate({ name: 'dinner_party', blurb: 'One cook.', brief: 'Cook it all yourself.' });
   assert.equal(twin.origin, 'user');
+});
+
+test('remove takes only the owner\'s file, and says when a shipped box comes back', async () => {
+  await saveAgentTemplate({ name: 'gone_soon', label: 'Gone Soon', brief: 'x' });
+  assert.deepEqual(await removeUserTemplate('agents', 'gone_soon'), { removed: 'gone_soon', shipped_back: false });
+  assert.ok(!(await listAgentTemplates()).some((row) => row.name === 'gone_soon'));
+  await assert.rejects(removeUserTemplate('agents', 'gone_soon'), /not one of yours/);
+  await assert.rejects(removeUserTemplate('teams', 'staff_my_codebase'), /not one of yours/, 'a shipped box has no file of the owner\'s to remove');
+  // The owner's copy of a shipped name: removing it brings ours back.
+  const dir = path.join(temp, 'templates', 'teams');
+  await (await import('node:fs/promises')).mkdir(dir, { recursive: true });
+  await (await import('node:fs/promises')).writeFile(path.join(dir, 'staff_my_codebase.md'), '# Mine\n- **label:** Mine\n');
+  assert.equal((await listTeamTemplates()).find((row) => row.name === 'staff_my_codebase')?.label, 'Mine');
+  assert.deepEqual(await removeUserTemplate('teams', 'staff_my_codebase'), { removed: 'staff_my_codebase', shipped_back: true });
+  assert.equal((await listTeamTemplates()).find((row) => row.name === 'staff_my_codebase')?.label, 'Staff My Codebase');
 });
 
 test.after(async () => {

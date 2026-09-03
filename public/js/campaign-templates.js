@@ -16,12 +16,13 @@
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
+import { kindTiles, templateBox } from './form-steps.js';
 
 const el = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
 /** `{ teams: 2, sops: 1 }` → "2 teams · 1 SOP" in the person's words. Every key is spelled
  *  out so check-lexicon can see it; a templated key would be invisible to the floor check. */
-export function holdsWords(holds) {
+function holdsWords(holds) {
   const word = {
     teams: (n) => (n === 1 ? t('campaign_view.library_hold_team', 'team') : t('campaign_view.library_hold_teams', 'teams')),
     agents: (n) => (n === 1 ? t('campaign_view.library_hold_agent', 'agent') : t('campaign_view.library_hold_agents', 'agents')),
@@ -55,27 +56,47 @@ function verdictWord(v) {
 }
 
 export function createTemplatesSurface() {
-  const { createSurface, createCard, createAction, createActionBar, createNotice } = WorkspaceKit.primitives;
+  const { createSurface, createAction, createActionBar, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('league.templates', 'Templates'), className: 'cv-surface' });
   const body = el('div', 'cv-body');
   surface.content.append(body);
+  let kind = 'open';
   let teams = [];
   let agents = [];
   let library = null; // { source, bundles } after the press; null before
-  const shelves = el('div', 'cv-body');
-  const detail = el('div', 'cv-body');
+  let picked = '';    // the box whose detail is open: `library:<name>` · `team:<name>` · `agent:<name>`
+  const kindHost = el('div');
   const libraryRoom = el('div', 'cv-body');
   const libraryNotice = createNotice({});
-  const libraryCards = el('div', 'cv-cards');
-  const planRoom = el('div', 'cv-body');
-  body.append(el('p', 'cv-note', t('campaign_view.templates_help', 'A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. Both shelves are plain files: the ones you save, and the ones a bundle installs, live in your own stores.')));
-  body.append(shelves, detail, libraryRoom);
+  const libraryGrid = el('div', 'fs-tmplgrid');
+  const detail = el('div', 'cv-body');
+  const shelves = el('div', 'cv-body');
+  body.append(el('p', 'cv-note', t('campaign_view.templates_help', 'A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. A handful ship inside Ronin; the rest are on the library.')));
+  body.append(kindHost, libraryRoom, detail, shelves);
 
+  const byKind = (rows) => (kind === 'open' ? rows : rows.filter((row) => (row.kinds || []).includes(kind)));
   const originWord = (row) => (row.origin === 'user' ? (row.shadowed ? t('campaign_view.templates_yours_over', 'yours, replacing ours') : t('campaign_view.templates_yours', 'yours')) : t('campaign_view.templates_shipped', 'shipped'));
+  const paintKinds = () => kindHost.replaceChildren(kindTiles(kind, (key) => { kind = key; paintKinds(); paintLibrary(); paintShelves(); }));
 
+  /* ---- a picked box opens its detail under the grids ---- */
+  /** One of the owner's boxes can go again; the second press is the yes. */
+  const removeAction = (shelf, row) => {
+    if (row.origin !== 'user') return null;
+    const b = createAction({ label: t('campaign_view.templates_remove', 'Remove from my system'), kind: 'danger' });
+    let armed = false;
+    b.el.addEventListener('click', async () => {
+      if (!armed) { armed = true; b.el.textContent = t('campaign_view.templates_remove_sure', 'Remove — press again to confirm'); return; }
+      b.setDisabled(true);
+      const r = await request(`/api/templates/${shelf}/${encodeURIComponent(row.name)}`, { method: 'DELETE' });
+      if (!r.ok) { b.setDisabled(false); armed = false; b.el.textContent = r.message; return; }
+      picked = '';
+      detail.replaceChildren(el('p', 'cv-note', r.data?.shipped_back ? t('campaign_view.templates_removed_back', 'Removed {name}; the shipped one is back.', { name: row.label || row.name }) : t('campaign_view.templates_removed', 'Removed {name} from your system. It is still on the library.', { name: row.label || row.name })));
+      void readShelves();
+    });
+    return b.el;
+  };
   const showTeam = (row) => {
-    detail.replaceChildren();
-    detail.append(el('span', 'cv-eyebrow', row.label || row.name));
+    detail.replaceChildren(el('span', 'cv-eyebrow', `${row.art ? `${row.art} ` : ''}${row.label || row.name} · ${originWord(row)}`));
     if (row.objective) detail.append(el('p', 'cv-note', row.objective));
     const table = el('table', 'cv-table');
     const head = el('tr');
@@ -94,43 +115,29 @@ export function createTemplatesSurface() {
     link.download = `${row.name}.json`;
     link.title = t('campaign_view.templates_download_help', 'This template, with your copies of the books and Routines it names, as one file you could put on a library.');
     const actions = el('div', 'cv-actions');
+    const remove = removeAction('teams', row);
+    if (remove) actions.append(remove);
     actions.append(link);
     detail.append(actions);
   };
-
-  const paintShelves = () => {
-    shelves.replaceChildren();
-    const group = (heading, rows, isTeam) => {
-      shelves.append(el('span', 'cv-eyebrow', heading));
-      if (!rows.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_none', 'Nothing on this shelf.'))); return; }
-      const grid = el('div', 'cv-cards');
-      for (const row of rows) {
-        const metadata = [originWord(row)];
-        if (isTeam) metadata.push(t('campaign_view.templates_agents_n', '{n} agents', { n: (row.agents || []).length }));
-        if (row.kinds?.length) metadata.push(row.kinds.join(', '));
-        grid.append(createCard({ heading: row.label || row.name, summary: row.blurb || '', mark: row.art || null, metadata, action: isTeam ? () => showTeam(row) : undefined }).el);
-      }
-      shelves.append(grid);
-    };
-    group(t('campaign_view.templates_teams', 'Teams — projects'), teams, true);
-    group(t('campaign_view.templates_agents', 'Agents — people'), agents, false);
-  };
-
-  const readShelves = async () => {
-    const [tm, ag] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents')]);
-    teams = tm.ok && Array.isArray(tm.data) ? tm.data : [];
-    agents = ag.ok && Array.isArray(ag.data) ? ag.data : [];
-    paintShelves();
+  const showAgent = (row) => {
+    detail.replaceChildren(el('span', 'cv-eyebrow', `${row.art ? `${row.art} ` : ''}${row.label || row.name} · ${originWord(row)}`));
+    if (row.brief) detail.append(el('p', 'cv-note', row.brief));
+    if (row.behaviours?.length) detail.append(el('p', 'cv-note', `${t('campaign_view.templates_books', 'Reads')}: ${row.behaviours.join(', ')}`));
+    const remove = removeAction('agents', row);
+    if (remove) { const actions = el('div', 'cv-actions'); actions.append(remove); detail.append(actions); }
   };
 
   const showPlan = async (card) => {
-    planRoom.replaceChildren(el('p', 'cv-note', t('campaign_view.library_reading', 'Reading {name} from the library…', { name: card.label || card.name })));
+    detail.replaceChildren(el('p', 'cv-note', t('campaign_view.library_reading', 'Reading {name} from the library…', { name: card.label || card.name })));
     const r = await request(`/api/library/bundles/${encodeURIComponent(card.name)}`, { cache: 'no-store' });
-    planRoom.replaceChildren();
-    if (!r.ok) { planRoom.append(el('p', 'cv-note', r.message)); return; }
+    if (picked !== `library:${card.name}`) return;
+    detail.replaceChildren();
+    if (!r.ok) { detail.append(el('p', 'cv-note', r.message)); return; }
     const plan = Array.isArray(r.data?.plan) ? r.data.plan : [];
-    planRoom.append(el('span', 'cv-eyebrow', `${card.art ? `${card.art} ` : ''}${card.label || card.name}`));
-    planRoom.append(el('p', 'cv-note', t('campaign_view.library_plan_help', 'What installing this bundle writes into your stores, and what it leaves alone.')));
+    detail.append(el('span', 'cv-eyebrow', `${card.art ? `${card.art} ` : ''}${card.label || card.name} · ${holdsWords(card.holds)}`));
+    if (card.blurb) detail.append(el('p', 'cv-note', card.blurb));
+    detail.append(el('p', 'cv-note', t('campaign_view.library_plan_help', 'What installing this bundle writes into your stores, and what it leaves alone.')));
     const table = el('table', 'cv-table');
     const head = el('tr');
     head.append(el('th', null, t('campaign_view.library_plan_store', 'Shelf')), el('th', null, t('campaign_view.library_plan_item', 'Item')), el('th', null, t('campaign_view.library_plan_verdict', 'Outcome')));
@@ -141,9 +148,9 @@ export function createTemplatesSurface() {
       tr.append(el('td', null, item.store), name, el('td', null, `${verdictWord(item.verdict)}${item.why ? ` — ${item.why}` : ''}`));
       table.append(tr);
     }
-    planRoom.append(table);
+    detail.append(table);
     const executables = plan.filter((i) => i.executable && i.verdict !== 'refused').length;
-    if (executables) planRoom.append(el('p', 'cv-note', t('campaign_view.library_executables', 'This bundle installs {n} executable tools onto your Agents’ PATH. Read them before you rely on them.', { n: executables })));
+    if (executables) detail.append(el('p', 'cv-note', t('campaign_view.library_executables', 'This bundle installs {n} executable tools onto your Agents’ PATH. Read them before you rely on them.', { n: executables })));
     const writes = plan.filter((i) => i.verdict === 'new' || i.verdict === 'shadows-shipped').length;
     const replaces = plan.filter((i) => i.verdict === 'replaces-yours').length;
     const result = createNotice({});
@@ -158,21 +165,19 @@ export function createTemplatesSurface() {
     const bar = createActionBar({ label: t('campaign_view.library_install', 'Install') });
     bar.append(createAction({ label: writes ? t('campaign_view.library_install_n', 'Install ({n})', { n: writes }) : t('campaign_view.library_nothing_to_write', 'Nothing new to install'), kind: 'primary', disabled: !writes, action: () => install(false) }));
     if (replaces) bar.append(createAction({ label: t('campaign_view.library_install_replace', 'Install, replacing my {n}', { n: replaces }), action: () => install(true) }));
-    planRoom.append(bar.el, result.el);
+    detail.append(bar.el, result.el);
   };
 
+  /* ---- the library, first ---- */
   const paintLibrary = () => {
-    libraryCards.replaceChildren();
+    libraryGrid.replaceChildren();
     if (!library) return;
-    if (!library.bundles.length) { libraryNotice.set('info', t('campaign_view.library_none', 'The library lists no bundles yet.')); return; }
-    for (const card of library.bundles) {
-      const metadata = [holdsWords(card.holds)];
-      if (card.version) metadata.push(card.version);
-      if (card.kinds?.length) metadata.push(card.kinds.join(', '));
-      libraryCards.append(createCard({ heading: card.label || card.name, summary: card.blurb || '', mark: card.art || null, metadata, action: () => { void showPlan(card); } }).el);
+    const rows = byKind(library.bundles);
+    if (!rows.length) { libraryNotice.set('info', library.bundles.length ? t('campaign_view.library_none_kind', 'Nothing of this kind on the library.') : t('campaign_view.library_none', 'The library lists no bundles yet.')); return; }
+    for (const card of rows) {
+      libraryGrid.append(templateBox(card.art || '▤', card.label || card.name, card.blurb || '', picked === `library:${card.name}`, () => { picked = `library:${card.name}`; paintLibrary(); paintShelves(); void showPlan(card); }));
     }
   };
-
   const check = createAction({
     label: t('campaign_view.library_check', 'Check the library'),
     kind: 'primary',
@@ -188,17 +193,45 @@ export function createTemplatesSurface() {
     },
   });
   libraryRoom.append(
-    el('span', 'cv-eyebrow', t('campaign_view.library', 'Template library')),
-    el('p', 'cv-note', t('campaign_view.library_help', 'Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read, as one download. Nothing is fetched until you press, and the plan is shown before anything is written.')),
+    el('span', 'cv-eyebrow', t('campaign_view.library', 'On the Ronin library — not on your system yet')),
+    el('p', 'cv-note', t('campaign_view.library_help', 'Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press, the plan is shown before anything is written, and an installed one appears below, on your system.')),
     createActionBar({ actions: [check] }).el,
     libraryNotice.el,
-    libraryCards,
-    planRoom,
+    libraryGrid,
   );
   libraryNotice.set('', '');
 
+  /* ---- the shelves on this machine, below ---- */
+  const paintShelves = () => {
+    shelves.replaceChildren(
+      el('span', 'cv-eyebrow', t('campaign_view.templates_on_system', 'On your system — what New Team and New Agent offer')),
+      el('p', 'cv-note', t('campaign_view.templates_on_system_help', 'Shipped with Ronin, or installed from the library, or saved by you. Anything installed or saved can be removed again from its box.')),
+    );
+    const grid = (rows, key, show) => {
+      const g = el('div', 'fs-tmplgrid');
+      for (const row of rows) g.append(templateBox(row.art || '▤', row.label || row.name, row.blurb || '', picked === `${key}:${row.name}`, () => { picked = `${key}:${row.name}`; paintLibrary(); paintShelves(); show(row); }));
+      return g;
+    };
+    const shelf = (heading, rows, key, show) => {
+      shelves.append(el('span', 'cv-eyebrow', heading));
+      if (!rows.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_none', 'Nothing on this shelf.'))); return; }
+      const shipped = rows.filter((row) => row.origin !== 'user');
+      const yours = rows.filter((row) => row.origin === 'user');
+      if (shipped.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_shipped_with', 'Shipped with Ronin')), grid(shipped, key, show)); }
+      if (yours.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_installed', 'Installed from the library, or saved by you')), grid(yours, key, show)); }
+    };
+    shelf(t('campaign_view.templates_teams', 'Teams — projects'), byKind(teams), 'team', showTeam);
+    shelf(t('campaign_view.templates_agents', 'Agents — people'), byKind(agents), 'agent', showAgent);
+  };
+  const readShelves = async () => {
+    const [tm, ag] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents')]);
+    teams = tm.ok && Array.isArray(tm.data) ? tm.data : [];
+    agents = ag.ok && Array.isArray(ag.data) ? ag.data : [];
+    paintShelves();
+  };
+
   return {
     el: surface.el,
-    enter: () => { paintShelves(); void readShelves(); },
+    enter: () => { paintKinds(); paintLibrary(); paintShelves(); void readShelves(); },
   };
 }

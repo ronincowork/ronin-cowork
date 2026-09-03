@@ -264,14 +264,20 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.col_model:** Preferred model
 - **campaign_view.col_default:** Default
 - **campaign_view.no_launch_table:** No launch table on this install.
-- **campaign_view.roles:** Session roles
-- **campaign_view.roles_summary:** What a launch here offers an Agent to be.
-- **campaign_view.roles_help:** What a launch here offers an Agent to be. Team casts and agent loadouts are on the Templates card.
 - **campaign_view.templates_summary:** Team casts, agent loadouts, and the library to download more from.
-- **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. Both shelves are plain files: the ones you save, and the ones a bundle installs, live in your own stores.
+- **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. A handful ship inside Ronin; the rest are on the library.
+- **campaign_view.library_none_kind:** Nothing of this kind on the library.
 - **campaign_view.templates_teams:** Teams — projects
 - **campaign_view.templates_agents:** Agents — people
 - **campaign_view.templates_none:** Nothing on this shelf.
+- **campaign_view.templates_on_system:** On your system — what New Team and New Agent offer
+- **campaign_view.templates_on_system_help:** Shipped with Ronin, or installed from the library, or saved by you. Anything installed or saved can be removed again from its box.
+- **campaign_view.templates_shipped_with:** Shipped with Ronin
+- **campaign_view.templates_installed:** Installed from the library, or saved by you
+- **campaign_view.templates_remove:** Remove from my system
+- **campaign_view.templates_remove_sure:** Remove — press again to confirm
+- **campaign_view.templates_removed:** Removed {name} from your system. It is still on the library.
+- **campaign_view.templates_removed_back:** Removed {name}; the shipped one is back.
 - **campaign_view.templates_yours:** yours
 - **campaign_view.templates_yours_over:** yours, replacing ours
 - **campaign_view.templates_shipped:** shipped
@@ -281,8 +287,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.templates_books:** Reads
 - **campaign_view.templates_download:** Download as a bundle
 - **campaign_view.templates_download_help:** This template, with your copies of the books and Routines it names, as one file you could put on a library.
-- **campaign_view.library:** Template library
-- **campaign_view.library_help:** Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read, as one download. Nothing is fetched until you press, and the plan is shown before anything is written.
+- **campaign_view.library:** On the Ronin library — not on your system yet
+- **campaign_view.library_help:** Bundles on ronincowork.com: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press, the plan is shown before anything is written, and an installed one appears below, on your system.
 - **campaign_view.library_check:** Check the library
 - **campaign_view.library_checking:** Asking ronincowork.com for its library…
 - **campaign_view.library_source:** {n} bundles from {source}
@@ -323,8 +329,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.verdict_same_shipped:** already shipped — skipped
 - **campaign_view.verdict_same_yours:** already yours — skipped
 - **campaign_view.verdict_refused:** refused — a bundle never replaces one of Ronin’s tools
-- **campaign_view.roles_none:** No session roles on this install.
-- **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
 - **campaign_view.routines_help:** Choose what new Cowork Agents start with. This Campaign answer seeds new Teams; a Team may replace it, and New Agent shows the resolved answer. Nothing already running changes.
 - **campaign_view.worktrees_routine_help:** Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
@@ -537,8 +541,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
 - **forms.own:** Make your own
 - **forms.own_blurb:** Fresh and empty. Fill it in yourself.
-- **forms.library:** From the Ronin library
-- **forms.library_blurb:** Published bundles, pulled in and run. Not yet built.
+- **forms.library_note:** More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.
 - **forms.default:** default
 - **forms.provider:** model provider
 - **forms.model:** model
@@ -1693,7 +1696,7 @@ The catalog entry goes. {dir} is not touched.
 - **where.worktrees_on:** Worktrees are on (see Routines): a ticked repository opens a desk for each new Agent at birth; branches are Ronin's.
 - **where.worktrees_off:** Worktrees are off (see Routines): a ticked repository is where this Cowork works, on the branch you name, or as checked out.
 - **where.col_repo:** Repository
-- **where.col_branch:** Branch — blank means as checked out
+- **where.col_branch:** Branch
 - **where.label:** Where it works
 - **where.summary:** born in {root} · {repos}
 - **where.desks:** desks in {list}
