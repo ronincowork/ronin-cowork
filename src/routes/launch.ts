@@ -43,6 +43,26 @@ import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentenc
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 
+export function createWindowedLoader<T>(
+  load: () => Promise<T>,
+  windowMs: number,
+  now: () => number = Date.now,
+): () => Promise<T> {
+  let window = -1;
+  let shared: Promise<T> | null = null;
+  return () => {
+    const current = Math.floor(now() / windowMs);
+    if (!shared || current !== window) {
+      window = current;
+      shared = load().catch((error) => {
+        shared = null;
+        throw error;
+      });
+    }
+    return shared;
+  };
+}
+
 async function birthCampaign(team: string, explicit = ''): Promise<string> {
   if (explicit) return explicit;
   const roster = team ? await readTeamRoster(team).catch(() => null) : null;
@@ -141,6 +161,29 @@ export function mikaLaunchBody(input: unknown): Record<string, unknown> {
 }
 
 export function registerLaunch(app: express.Express): void {
+  const loadHome = createWindowedLoader(async () => {
+    const list = await withAxes(await listSessions());
+    return Promise.all(
+      list.map(async (s) => {
+        const [pane, contributed, tegami] = await Promise.all([
+          capturePane(s.name, 0).then((text) => ({
+            status: classifyStatus(text),
+            ctx: scanContext(text),
+            model: scanModel(text),
+          })).catch(() => ({ status: null, ctx: null, model: null })),
+          collectRowFields(s.name),
+          readTegami(s.name),
+        ]);
+        return {
+          ...s,
+          ...pane,
+          ...contributed,
+          ...(tegami ? { tegami } : {}),
+        };
+      }),
+    );
+  }, 2_000);
+
   app.get('/api/launch-seed', async (req, res) => {
     try {
       const campaign_id = String(req.query.campaign_id ?? '').trim() || await initialCampaignId();
@@ -448,27 +491,7 @@ export function registerLaunch(app: express.Express): void {
 
   app.get('/api/home', async (_req, res) => {
     try {
-      const list = await withAxes(await listSessions());
-      const out = await Promise.all(
-        list.map(async (s) => {
-          const [pane, contributed, tegami] = await Promise.all([
-            capturePane(s.name, 0).then((text) => ({
-              status: classifyStatus(text),
-              ctx: scanContext(text),
-              model: scanModel(text),
-            })).catch(() => ({ status: null, ctx: null, model: null })),
-            collectRowFields(s.name),
-            readTegami(s.name),
-          ]);
-          return {
-            ...s,
-            ...pane,
-            ...contributed,
-            ...(tegami ? { tegami } : {}),
-          };
-        }),
-      );
-      res.json(out);
+      res.json(await loadHome());
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
