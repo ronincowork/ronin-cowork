@@ -20,7 +20,6 @@ function harness(log: string[]): EndingDispositionOps {
   return {
     prompt: async (target) => { log.push(`prompt:${target}`); return { queued: true, id: 'm1' }; },
     close: async (d) => { log.push(`close:${d.branch}`); },
-    handoff: async (d, owners) => { log.push(`handoff:${d.branch}:${owners.join(',')}`); },
     quarantineAndRemove: async (d) => { log.push(`quarantine:${d.branch}`); log.push(`remove:${d.branch}`); return { id: `q-${d.branch}` }; },
     discard: async (d) => { log.push(`discard:${d.branch}`); return { receipt_id: `x-${d.branch}` }; },
     event: async (type, d) => { log.push(`event:${type}:${d.branch}`); },
@@ -35,14 +34,17 @@ test('Prompt Agent queues exact named work only to reachable owners', async () =
   assert.deepEqual(log, ['prompt:ending', 'event:closeout_prompted:a']);
 });
 
-test('Ignore closes settled desks, hands co-owned work on, and quarantines last-owner work before removal', async () => {
+test('Ignore closes settled desks and quarantines all unresolved work without an automatic handoff', async () => {
   const log: string[] = [];
   const settled = fact('settled', { unresolved: false, contained: true, changes: { staged: [], unstaged: [], untracked: [] }, unique_commits: [] });
   const shared = fact('shared', { owners: ['ending', 'successor'], living_owners: ['ending', 'successor'], last_living_owner: false });
   const result = await ignoreEnding(preflight([settled, shared, fact('last')]), harness(log));
   assert.deepEqual(result.closed, ['r:settled']);
-  assert.deepEqual(result.handed_off, [{ desk: 'r:shared', owners: ['successor'] }]);
-  assert.deepEqual(result.quarantined, [{ desk: 'r:last', quarantine_id: 'q-last' }]);
+  assert.deepEqual(result.quarantined, [
+    { desk: 'r:shared', quarantine_id: 'q-shared' },
+    { desk: 'r:last', quarantine_id: 'q-last' },
+  ]);
+  assert.equal(log.some((line) => line.startsWith('handoff:')), false);
   assert.ok(log.indexOf('quarantine:last') < log.indexOf('remove:last'));
 });
 

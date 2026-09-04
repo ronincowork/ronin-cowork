@@ -1,9 +1,6 @@
 import { existsSync } from 'node:fs';
-import { readdir, rmdir } from 'node:fs/promises';
-import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { listProjectRoots } from '../project-roots.js';
-import { storeDir } from '../resources.js';
 import { listSessions } from '../tmux.js';
 import { arrangementOf, desksManaged } from './arrangement.js';
 import { branchExists, deleteBranch, isAncestor, revParse, worktreeOf } from './git.js';
@@ -12,23 +9,6 @@ import { listDeskRecords, removeDesk } from './registry.js';
 import { applySettlement, settlementPlan, type ResidueObservation, type SettlementItem } from './settlement.js';
 
 interface Collected { observation: ResidueObservation; repo: string; apply: () => Promise<void> }
-
-async function emptyLeaves(root: string): Promise<string[]> {
-  const out: string[] = [];
-  async function walk(dir: string): Promise<boolean> {
-    let entries;
-    try { entries = await readdir(dir, { withFileTypes: true }); } catch { return false; }
-    let empty = entries.length === 0;
-    for (const entry of entries) {
-      if (!entry.isDirectory()) { empty = false; continue; }
-      if (!(await walk(path.join(dir, entry.name)))) empty = false;
-    }
-    if (empty && dir !== root) out.push(dir);
-    return empty;
-  }
-  await walk(root);
-  return out;
-}
 
 export async function collectSettlementResidue(): Promise<Collected[]> {
   const collected: Collected[] = [];
@@ -59,16 +39,6 @@ export async function collectSettlementResidue(): Promise<Collected[]> {
         contained_in_working: contained, contains_unique_commits: !contained,
       },
       apply: async () => { await deleteBranch(arrangement.dir, rec.branch); await removeDesk(rec.repo, rec.branch); },
-    });
-  }
-  const worktrees = storeDir('worktrees');
-  for (const dir of await emptyLeaves(worktrees)) {
-    const relative = path.relative(worktrees, dir);
-    const repo = relative.split(path.sep).find((part) => part && part !== '.candidates') ?? '_house';
-    collected.push({
-      repo,
-      observation: { id: dir, kind: relative.startsWith('.candidates') ? 'candidate' : 'directory', managed: true, empty: true, exists: false },
-      apply: () => rmdir(dir),
     });
   }
   return collected;

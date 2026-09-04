@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { arrangementOf } from './arrangement.js';
-import { closeDesk, discardDesk, handoffDesk } from './desk.js';
+import { closeDesk, discardDesk } from './desk.js';
 import { ignoreEnding, promptOwners, type EndingDispositionOps, type EndingDispositionResult } from './ending-disposition.js';
 import { inspectEnding, type EndingDeskInput, type EndingPreflight, type EndingRequest, type EndingScope } from './ending.js';
 import { appendManagedEvent, withManagedTransaction } from './lifecycle-ledger.js';
@@ -80,7 +80,6 @@ function runtimeOps(preflight: EndingPreflight): EndingDispositionOps {
       const outcome = await closeDesk(fact.repo, fact.branch);
       if (outcome.action !== 'closed') throw new Error(`could not close ${fact.repo}:${fact.branch}: ${outcome.reason}`);
     },
-    async handoff(fact, owners) { await handoffDesk(fact.repo, fact.branch, owners); },
     async quarantineAndRemove(fact) {
       const transaction_id = `quarantine_${randomUUID()}`;
       return withManagedTransaction({
@@ -117,17 +116,10 @@ function runtimeOps(preflight: EndingPreflight): EndingDispositionOps {
   };
 }
 
-export async function promptEnding(preflight: EndingPreflight): Promise<{ result: EndingDispositionResult; preflight: EndingPreflight }> {
-  const result = await promptOwners(preflight, runtimeOps(preflight));
-  const refreshed = await preflightAgain(preflight);
-  return { result, preflight: refreshed };
+export async function promptEnding(preflight: EndingPreflight): Promise<EndingDispositionResult> {
+  return promptOwners(preflight, runtimeOps(preflight));
 }
 
 export async function ignoreEndingRequest(preflight: EndingPreflight): Promise<EndingDispositionResult> {
   return ignoreEnding(preflight, runtimeOps(preflight));
 }
-
-const preflightAgain = (value: EndingPreflight): Promise<EndingPreflight> =>
-  value.scope === 'team'
-    ? inspectTeamEnding(value.subject)
-    : inspectSessionEnding(value.subject, value.requested_action as Exclude<EndingRequest, 'retire'>);

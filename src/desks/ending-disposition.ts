@@ -3,7 +3,6 @@ import { closeoutMessage, type EndingDeskFact, type EndingPreflight } from './en
 export interface EndingDispositionOps {
   prompt(target: string, message: string): Promise<{ queued: boolean; id?: string }>;
   close(fact: EndingDeskFact): Promise<void>;
-  handoff(fact: EndingDeskFact, owners: string[]): Promise<void>;
   quarantineAndRemove(fact: EndingDeskFact): Promise<{ id: string; manifest?: string }>;
   discard?(fact: EndingDeskFact, confirmation: string): Promise<{ receipt_id: string }>;
   event?(type: 'closeout_prompted' | 'handed_off' | 'quarantined' | 'discarded' | 'desk_closed', fact: EndingDeskFact, detail: Record<string, unknown>): Promise<void>;
@@ -12,13 +11,12 @@ export interface EndingDispositionOps {
 export interface EndingDispositionResult {
   prompted: Array<{ target: string; queued: boolean; id?: string }>;
   closed: string[];
-  handed_off: Array<{ desk: string; owners: string[] }>;
   quarantined: Array<{ desk: string; quarantine_id: string }>;
   discarded: Array<{ desk: string; receipt_id: string }>;
 }
 
 const deskName = (fact: EndingDeskFact): string => `${fact.repo}:${fact.branch}`;
-const emptyResult = (): EndingDispositionResult => ({ prompted: [], closed: [], handed_off: [], quarantined: [], discarded: [] });
+const emptyResult = (): EndingDispositionResult => ({ prompted: [], closed: [], quarantined: [], discarded: [] });
 
 export async function promptOwners(preflight: EndingPreflight, ops: EndingDispositionOps): Promise<EndingDispositionResult> {
   const result = emptyResult();
@@ -39,13 +37,6 @@ export async function ignoreEnding(preflight: EndingPreflight, ops: EndingDispos
       await ops.close(fact);
       await ops.event?.('desk_closed', fact, { result: 'contained' });
       result.closed.push(deskName(fact));
-      continue;
-    }
-    const successors = fact.living_owners.filter((owner) => owner !== preflight.subject);
-    if (preflight.scope === 'session' && successors.length) {
-      await ops.handoff(fact, successors);
-      await ops.event?.('handed_off', fact, { from: preflight.subject, to: successors });
-      result.handed_off.push({ desk: deskName(fact), owners: successors });
       continue;
     }
     const custody = await ops.quarantineAndRemove(fact); // one transaction: durable custody, then removal
