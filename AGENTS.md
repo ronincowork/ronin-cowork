@@ -11,6 +11,10 @@ contracts or make a contributor follow the installation journey.
   [`docs/README.md`](docs/README.md).
 - Developing this repository: run `npm run verify` for the TypeScript and behavior-test
   verdict. Playwright suites are explicit diagnostic commands.
+- Talking to tmux from the server: every call goes through the control-mode client
+  (`src/tmux-client.ts`); programs that are not tmux start through the spawn broker
+  (`src/spawn-broker.ts`). [`docs/tmux-connection.md`](docs/tmux-connection.md) says why
+  and what the tests refuse.
 
 Desk work follows the desk contract handed to you at birth
 (`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`): **commit** preserves,
