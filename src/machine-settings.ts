@@ -2,8 +2,7 @@ import os from 'node:os';
 import { readFile } from 'node:fs/promises';
 import { access, mkdir, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { execFile, execFileSync } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFileSync } from 'node:child_process';
 import { MACHINE_SETTINGS_SCHEMA, providerModelFields, type ProviderModelField } from './machine-settings-schema.js';
 import { repositoryNeeds } from './repository-needs.js';
 import { secureUrl } from './passkey.js';
@@ -14,12 +13,12 @@ import { listProjectRoots, listSessionLaunchSpecs } from './project-roots.js';
 import { storeDir } from './resources.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import { execFile as brokerExecFile } from './spawn-broker.js';
+import { tmux } from './tmux-client.js';
 import {
   publicState,
   readState as readServicesActivation,
   type ActivationState,
 } from './activation/state.js';
-const pexec = promisify(execFile);
 const MACHINE_SETTINGS_FILE = () => path.join(storeDir('config'), 'machine_settings.json');
 const MAX_OPT = '@ronin-session-max';
 const OWNER_OPT = '@ronin-owner';
@@ -146,7 +145,7 @@ async function readMax(): Promise<number> {
   return cleanMax((await readSection<Record<string, unknown>>('sessions', {})).max);
 }
 async function publishMax(value = 0): Promise<void> {
-  await pexec('tmux', ['set-option', '-s', MAX_OPT, String(value)]).catch(() => {});
+  await tmux.run(['set-option', '-s', MAX_OPT, String(value)]).catch(() => {});
 }
 async function writeMax(max: number): Promise<number> {
   const value = cleanMax(max);
@@ -162,7 +161,7 @@ async function readOwner(): Promise<string> {
   return typeof name === 'string' && name.trim() ? name.trim() : machineUser();
 }
 async function publishOwner(value: string): Promise<void> {
-  await pexec('tmux', ['set-option', '-s', OWNER_OPT, value]).catch(() => {});
+  await tmux.run(['set-option', '-s', OWNER_OPT, value]).catch(() => {});
 }
 async function writeOwner(name: string): Promise<string> {
   const value = String(name ?? '').trim().slice(0, 64) || machineUser();
@@ -197,7 +196,7 @@ const completeSetup = () => updateDocument((document) => {
 });
 async function liveCount(): Promise<number> {
   try {
-    const { stdout } = await pexec('tmux', ['list-sessions', '-F', '#{session_name}']);
+    const stdout = await tmux.run(['list-sessions', '-F', '#{session_name}']);
     return stdout.split('\n').filter((name) => name && !name.startsWith('grid_')).length;
   } catch { return 0; }
 }
