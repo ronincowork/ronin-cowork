@@ -184,6 +184,31 @@ test('the client recreates grid_ctl and returns to up after backoff', async () =
   assert.deepEqual(execs[0]?.args, ['new-session', '-d', '-s', 'grid_ctl', 'exec sleep 2147483647']);
 });
 
+// A server option is memory of the tmux server that held it. When the server is replaced
+// under a running operator, the client reconnects perfectly and the option is simply gone
+// (2026-09-04 13:56: every agent tool refused for an afternoon against an HTTP 200). The
+// first `up` and a later one are different moments, and only the client can tell.
+test('a reconnect fires onReconnect; the first connect does not', async () => {
+  const { client, children } = fixture();
+  let reconnects = 0;
+  const off = client.onReconnect(() => { reconnects += 1; });
+  const first = client.run(['display-message', '-p', 'ready']);
+  const child = await childAt(children);
+  await written(child);
+  child.send('%begin 1 1 0', 'ready', '%end 1 1 0');
+  await first;
+  assert.equal(client.state(), 'up');
+  assert.equal(reconnects, 0, 'the first connect is not a reconnect');
+  child.emit('exit', 1, null);
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(client.state(), 'up');
+  assert.equal(reconnects, 1);
+  off();
+  (await childAt(children, 1)).emit('exit', 1, null);
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(reconnects, 1, 'an unsubscribed handler stays quiet');
+});
+
 test('a changed tmux socket environment retires the old connection', async () => {
   const before = process.env.TMUX_TMPDIR;
   const { client, children } = fixture();

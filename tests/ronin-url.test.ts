@@ -8,10 +8,10 @@ import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '..');
 const resolver = path.join(root, 'ronin_bin', 'ronin-url');
 
-function fakeTmux(value: string): { dir: string; env: NodeJS.ProcessEnv } {
+function fakeTmux(value: string, instance = 'test'): { dir: string; env: NodeJS.ProcessEnv } {
   const dir = mkdtempSync(path.join(tmpdir(), 'ronin-url-'));
   const tmux = path.join(dir, 'tmux');
-  const descriptor = value ? JSON.stringify({ version: 1, url: value, token: 'test-token', instance: 'test' }) : '';
+  const descriptor = value ? JSON.stringify({ version: 1, url: value, token: 'test-token', instance }) : '';
   writeFileSync(tmux, `#!/usr/bin/env bash\nprintf '%s\\n' ${JSON.stringify(descriptor)}\n`);
   chmodSync(tmux, 0o755);
   return { dir, env: { ...process.env, PATH: `${dir}:${process.env.PATH ?? ''}` } };
@@ -57,6 +57,30 @@ test('ronin-url refuses and teaches when no address can be resolved', () => {
     assert.match(r.stderr, /RONIN_URL/);
   } finally {
     rmSync(f.dir, { recursive: true, force: true });
+  }
+});
+
+// The option lives on the tmux server, which outlives the operator by design. Once a
+// collision exits 78 and the unit stays down, the last good address would sit on the bus
+// forever, and this tool's honest refusal would become a connection-refused nobody can
+// explain. The instance names the pid that published it; a dead pid is the refusal.
+test('ronin-url refuses when the published instance names a dead operator', () => {
+  const dead = spawnSync('true').pid!; // exited and reaped: nothing wears this pid now
+  const f = fakeTmux('http://100.101.235.17:3006', `${dead}:1756990000000`);
+  try {
+    const r = spawnSync(resolver, [], { encoding: 'utf8', env: { ...f.env, RONIN_URL: '' } });
+    assert.equal(r.status, 4);
+    assert.equal(r.stdout, '');
+    assert.match(r.stderr, /Ronin may not be running/);
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true });
+  }
+  // And a live pid is not refused — the check must tell the two apart, not refuse both.
+  const live = fakeTmux('http://100.101.235.17:3006', `${process.pid}:1756990000000`);
+  try {
+    assert.equal(execFileSync(resolver, [], { encoding: 'utf8', env: { ...live.env, RONIN_URL: '' } }), 'http://100.101.235.17:3006\n');
+  } finally {
+    rmSync(live.dir, { recursive: true, force: true });
   }
 });
 

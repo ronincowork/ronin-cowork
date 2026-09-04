@@ -84,3 +84,44 @@ test('the banner draws the url it is given, inside a frame that closes', () => {
   // 人 is double-width; a frame that does not measure it is a frame with a ragged edge.
   assert.equal([...top].length, [...bottom].length);
 });
+
+// BIND_DETERMINISM: the address Ronin binds is a recorded fact, not a value re-derived
+// from a subprocess on every boot. The next three tests pin the two halves of that ruling
+// that a refactor would most quietly undo — the order of resolution, and whose word in
+// .env is final.
+function tailnetBox(ip: string, env: string) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ronin-bind-'));
+  // `tailscale ip -4` answers with the tailnet address; anything else is silent.
+  fs.writeFileSync(path.join(dir, 'tailscale'), `#!/bin/sh\n[ "$1" = ip ] && printf '%s\\n' '${ip}'\nexit 0\n`, { mode: 0o755 });
+  fs.writeFileSync(path.join(dir, '.env'), env);
+  return dir;
+}
+
+test('ronin_bind prefers the address recorded in .env over the tailscale probe', () => {
+  const probe = tailnetBox('100.72.224.3', 'PORT=3006\n');
+  assert.equal(call(probe, 'ronin_bind_full', probe), '100.72.224.3 tailscale', 'unrecorded: the probe is what it would have said');
+  const recorded = tailnetBox('100.72.224.3', 'PORT=3006\nBIND=10.9.8.7\n');
+  assert.equal(call(recorded, 'ronin_bind_full', recorded), '10.9.8.7 env');
+  const bare = tailnetBox('', 'PORT=3006\n');
+  assert.equal(call(bare, 'ronin_bind_full', bare), '127.0.0.1 loopback');
+});
+
+test('a hand-set BIND is left byte-identical by setup, however often it reruns', () => {
+  const env = '# mine\nPORT=3006\nBIND=0.0.0.0   # behind my proxy\nGRID_USER=me\n';
+  const dir = tailnetBox('100.72.224.3', env);
+  const out = call(dir, 'ronin_record_bind', dir);
+  assert.match(out, /BIND: 0\.0\.0\.0 .*left as it is/);
+  assert.equal(fs.readFileSync(path.join(dir, '.env'), 'utf8'), env);
+});
+
+test('an unrecorded .env gets the resolved address once; a rerun does not add a second', () => {
+  const env = 'PORT=3006\n#BIND=100.x.y.z\n';
+  const dir = tailnetBox('100.72.224.3', env);
+  assert.match(call(dir, 'ronin_record_bind', dir), /recorded 100\.72\.224\.3 in \.env/);
+  const once = fs.readFileSync(path.join(dir, '.env'), 'utf8');
+  assert.ok(once.startsWith(env), 'the owner\'s lines are untouched');
+  assert.equal(once.match(/^BIND=/gm)?.length, 1);
+  assert.equal(call(dir, 'ronin_bind', dir), '100.72.224.3');
+  call(dir, 'ronin_record_bind', dir);
+  assert.equal(fs.readFileSync(path.join(dir, '.env'), 'utf8'), once);
+});

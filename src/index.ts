@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
-import { config, authEnabled, assertBindIsSafe } from './machine-settings.js';
+import { config, authEnabled, assertBindIsSafe, bindSource } from './machine-settings.js';
 import {
   COOKIE,
   SESSION_TTL_MS,
@@ -21,7 +21,8 @@ import {
   verifyRecord,
 } from './auth.js';
 import { cleanupViewers, listSessions } from './tmux.js';
-import { publishRoninUrl } from './operator-url.js';
+import { publishRoninUrl, republishRoninUrl, clearRoninUrl, OPERATOR_CONNECTION_OPT } from './operator-url.js';
+import { addressRefusal, EXIT_ADDRESS_UNUSABLE } from './bind-refusal.js';
 import { publishMax, publishOwner } from './machine-state.js';
 import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
@@ -289,6 +290,19 @@ app.get('/raw/*', (req, res) => {
 });
 
 const server = createServer(app);
+// A listen failure is one message and exit 78 (EX_CONFIG): deploy/ronin.service names that
+// status in RestartPreventExitStatus, because an address that is occupied or gone from
+// this box does not come back on its own, and Restart=always would otherwise reprint the
+// same diagnostic every RestartSec seconds for as long as the box is up. Registered here,
+// beside the server it belongs to, so there is exactly one of these.
+server.on('error', (e: NodeJS.ErrnoException) => {
+  const lines = addressRefusal({
+    bind: config.bind, port: config.port, envPath: path.join(ROOT, '.env'),
+    bindSource, code: e.code, message: e.message,
+  });
+  for (const line of lines) console.error(`[tmux-ronin] ${line}`);
+  process.exit(EXIT_ADDRESS_UNUSABLE);
+});
 const wss = new WebSocketServer({
   noServer: true,
   perMessageDeflate: {
@@ -348,12 +362,30 @@ void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed 
 void publishMax();
 void publishOwner();
 
+// An address that was worked out rather than recorded can differ on the next start with
+// nothing said. Say it now, while somebody is watching, and name the cure.
+if (bindSource !== 'env') {
+  console.warn(
+    `[tmux-ronin] BIND is not recorded in ${path.join(ROOT, '.env')} — this address was worked out just now (${bindSource}). ` +
+    'A later start may resolve a different one and answer somewhere else without warning. Run ./setup.sh to write it down.',
+  );
+}
+
 server.listen(config.port, config.bind, async () => {
   if (isBoxInstance) {
     try {
       await publishRoninUrl(`http://${config.bind}:${config.port}`, cliToken);
+      // The option is memory of one tmux server. When the client reconnects onto a
+      // replacement — the old one killed under us — the address is gone from the bus while
+      // this process is still listening, and every agent tool says "Ronin may not be
+      // running" against an HTTP 200. Put it back the moment the client is up again.
+      tmuxClient.onReconnect(() => {
+        void republishRoninUrl().catch((e) => {
+          console.error(`[tmux-ronin] could not republish ${OPERATOR_CONNECTION_OPT} after tmux reconnect: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until Ronin restarts.`);
+        });
+      });
     } catch (e) {
-      console.error(`[tmux-ronin] could not publish @ronin-url: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
+      console.error(`[tmux-ronin] could not publish ${OPERATOR_CONNECTION_OPT}: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
     }
   }
   console.log(
@@ -367,7 +399,7 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     stopBootHooks();
     stopSpawnBroker();
     setTimeout(() => process.exit(0), 2000).unref();
-    void Promise.allSettled([cleanupViewers()]).finally(() => process.exit(0));
+    void Promise.allSettled([cleanupViewers(), clearRoninUrl()]).finally(() => process.exit(0));
   });
 }
 }

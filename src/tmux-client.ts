@@ -18,6 +18,10 @@ export interface TmuxClient {
   connect(): Promise<void>;
   run(args: readonly string[], opts?: { timeoutMs?: number }): Promise<string>;
   on(kind: Notification['kind'], handler: (notification: Notification) => void): () => void;
+  /** Runs each time the control connection comes back up — a reconnect, never the first
+   *  connect. Anything that lived on the old tmux server (a server option, a
+   *  subscription) is gone at that moment and has to be put back by whoever owns it. */
+  onReconnect(handler: () => void): () => void;
   state(): ClientState;
 }
 
@@ -118,6 +122,7 @@ export class ControlTmuxClient implements TmuxClient {
   private connectionEnvironment = '';
   private stoppedProcess = new WeakSet<object>();
   private readonly handlers = new Map<string, Set<(notification: Notification) => void>>();
+  private readonly reconnectHandlers = new Set<() => void>();
   private activityRequested = false;
   private controlEnabled = false;
   private hasBeenUp = false;
@@ -419,12 +424,33 @@ export class ControlTmuxClient implements TmuxClient {
     child.stderr[method]?.();
   }
 
+  onReconnect(handler: () => void): () => void {
+    this.reconnectHandlers.add(handler);
+    return () => {
+      this.reconnectHandlers.delete(handler);
+    };
+  }
+
   private setState(state: ClientState): void {
     if (this.currentState === state) return;
     this.currentState = state;
     if (state === 'up') {
-      if (this.hasBeenUp) this.deps.log(`[tmux-client] ${state}`);
+      // The first `up` is a connect; every later one is a reconnect, quite possibly onto
+      // a different tmux server than the one that went down (ensureHolder starts a new
+      // one when none answers). The two look identical from here, which is exactly why
+      // the distinction is made here and nowhere else.
+      const reconnect = this.hasBeenUp;
       this.hasBeenUp = true;
+      if (reconnect) {
+        this.deps.log(`[tmux-client] ${state}`);
+        for (const handler of this.reconnectHandlers) {
+          try {
+            handler();
+          } catch (error) {
+            this.deps.log(`[tmux-client] reconnect handler failed: ${String(error)}`);
+          }
+        }
+      }
     } else if (this.hasBeenUp) {
       this.deps.log(`[tmux-client] ${state}`);
     }
