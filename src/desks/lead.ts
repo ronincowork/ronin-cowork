@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { execFile as brokerExecFile } from '../spawn-broker.js';
 
 const run = promisify(execFile);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -72,7 +73,7 @@ export async function replyToHandIn(input: {
   if (!leads.includes(input.from)) throw new Error(`${input.from} is not a lead of ${input.team}`);
   const msg = replyMessage(input.receiptId, input.from, input.message);
   try {
-    const { stdout } = await run(path.join(REPO, 'libexec', 'ronin-house-send'), [input.to, msg]);
+    const { stdout } = await brokerExecFile(path.join(REPO, 'libexec', 'ronin-house-send'), [input.to, msg]);
     return { to: input.to, how: 'house-send', detail: stdout.trim() };
   } catch (e) {
     const err = e as { stdout?: string; message?: string };
@@ -97,7 +98,7 @@ export async function notifyLeads(n: LeadNotice): Promise<Delivery[]> {
   const out: Delivery[] = [];
   for (const lead of leads) {
     try {
-      const { stdout } = await run(path.join(REPO, 'libexec', 'ronin-house-send'), [lead, msg]);
+      const { stdout } = await brokerExecFile(path.join(REPO, 'libexec', 'ronin-house-send'), [lead, msg]);
       out.push({ to: lead, how: 'house-send', detail: stdout.trim() });
     } catch (e) {
       const err = e as { stdout?: string; message?: string };
@@ -109,7 +110,7 @@ export async function notifyLeads(n: LeadNotice): Promise<Delivery[]> {
 
 async function wipeboard(team: string, msg: string, to: string): Promise<string> {
   try {
-    const { stdout } = await run(path.join(REPO, 'ronin_bin', 'tejun-wipeboard'), [team, 'post', '--to', to, msg]);
+    const { stdout } = await brokerExecFile(path.join(REPO, 'ronin_bin', 'tejun-wipeboard'), [team, 'post', '--to', to, msg]);
     return stdout.trim().split('\n')[0] ?? 'posted';
   } catch (e) {
     const err = e as { stdout?: string; message?: string };

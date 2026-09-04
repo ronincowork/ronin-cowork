@@ -50,6 +50,7 @@ export async function ensureTmuxServer(
   } catch {
   }
   try {
+    // This call ends our cgroup; it must not wait for a broker child that dies with us.
     await exec('systemctl', ['--user', 'restart', 'tmux-server.service']);
     console.log('[ronin] no tmux server — started tmux-server.service (keeps it out of our cgroup)');
   } catch {

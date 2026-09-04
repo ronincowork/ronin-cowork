@@ -1,10 +1,8 @@
 import { mkdir, readdir, realpath, stat } from 'node:fs/promises';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile as execFileP } from './spawn-broker.js';
 import os from 'node:os';
 import path from 'node:path';
 
-const execFileP = promisify(execFile);
 const HOME = path.resolve(os.homedir());
 const NAME = /^[^/\\\0]{1,120}$/;
 
@@ -55,4 +53,3 @@ export async function createFolder(parentRaw: string, nameRaw: string, initGit =
   }
   return { dir, git: initGit };
 }
-

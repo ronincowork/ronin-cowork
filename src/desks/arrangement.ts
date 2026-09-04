@@ -1,9 +1,7 @@
 import { access, readFile, rename, unlink, writeFile } from 'node:fs/promises';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import path from 'node:path';
+import { execFile as run } from '../spawn-broker.js';
 
-const run = promisify(execFile);
 import { listProjectRoots, type ProjectRootInfo } from '../project-roots.js';
 import type {
   WorktreesManagedCandidate,
