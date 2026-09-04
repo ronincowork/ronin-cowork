@@ -170,8 +170,10 @@ anyone changing the code below.
   an Agent assignment, no jurisdiction over a checkout repository's git.
 - **One rolling `dev → master` PR.** A promotion makes sure one exists; later promotions
   join it and are each named in its evidence.
-- **Desk runtime is isolated.** A desk gets its own dependency install, not a symlink into
-  the primary checkout; `npm ci` in a desk must not be able to reach the operator.
+- **Desk runtime is its own by default.** A Ronin-created desk gets its own visible
+  dependency location, shown in status, instead of a hidden symlink into the primary
+  checkout. That removes the surprising coupling that emptied the operator's install on
+  2026-09-04 without limiting what an Agent may do in its desk.
 
 Today's leftover refs, registry rows and folders across the repositories are deliberately
 untouched: they are the fixture the audit and settle tools are proven against. Nothing is
