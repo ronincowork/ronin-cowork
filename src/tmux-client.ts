@@ -17,11 +17,13 @@ export interface TmuxClient {
 }
 
 interface ControlProcess {
-  stdin: Pick<NodeJS.WritableStream, 'write'>;
-  stdout: NodeJS.ReadableStream;
-  stderr: NodeJS.ReadableStream;
+  stdin: Pick<NodeJS.WritableStream, 'write'> & { ref?(): void; unref?(): void };
+  stdout: NodeJS.ReadableStream & { ref?(): void; unref?(): void };
+  stderr: NodeJS.ReadableStream & { ref?(): void; unref?(): void };
   once(event: 'exit' | 'error', handler: (...args: unknown[]) => void): this;
   kill(signal?: NodeJS.Signals): boolean;
+  ref?(): void;
+  unref?(): void;
 }
 
 interface Dependencies {
@@ -105,6 +107,7 @@ export class ControlTmuxClient implements TmuxClient {
   private connecting: Promise<void> | undefined;
   private reconnectTimer: NodeJS.Timeout | undefined;
   private reconnectAttempt = 0;
+  private activeRequests = 0;
   private stoppedProcess = new WeakSet<object>();
   private readonly handlers = new Map<string, Set<(notification: Notification) => void>>();
 
@@ -126,9 +129,14 @@ export class ControlTmuxClient implements TmuxClient {
   run(args: readonly string[], opts: { timeoutMs?: number } = {}): Promise<string> {
     const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return Promise.reject(new Error('timeoutMs must be positive.'));
+    this.activeRequests += 1;
+    this.syncProcessRefs();
     const task = this.queue.then(() => this.runSerialized(args, timeoutMs));
     this.queue = task.then(() => undefined, () => undefined);
-    return task;
+    return task.finally(() => {
+      this.activeRequests -= 1;
+      this.syncProcessRefs();
+    });
   }
 
   private async runSerialized(args: readonly string[], timeoutMs: number): Promise<string> {
@@ -186,6 +194,7 @@ export class ControlTmuxClient implements TmuxClient {
       });
       this.reconnectAttempt = 0;
       this.setState('up');
+      this.syncProcessRefs();
     } catch (error) {
       this.setState('fallback');
       this.scheduleReconnect();
@@ -329,6 +338,16 @@ export class ControlTmuxClient implements TmuxClient {
       void this.connect().catch(() => undefined);
     }, delay);
     this.reconnectTimer.unref?.();
+  }
+
+  private syncProcessRefs(): void {
+    const child = this.process;
+    if (!child) return;
+    const method = this.activeRequests > 0 || this.startup ? 'ref' : 'unref';
+    child[method]?.();
+    child.stdin[method]?.();
+    child.stdout[method]?.();
+    child.stderr[method]?.();
   }
 
   private setState(state: ClientState): void {
