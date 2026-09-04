@@ -343,6 +343,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.svc_restart_off:** Switched off, but still running in this copy of Ronin until it restarts.
 - **campaign_view.svc_restart_on:** Switched on, but not running in this copy of Ronin: restart Ronin to start it.
 - **campaign_view.svc_installed:** Installed on this machine: {parts}. The switch on the right turns it on for new Agents.
+- **campaign_view.svc_parked:** Parked parts: {parts}.
 - **campaign_view.svc_pill_installed:** Installed
 - **campaign_view.svc_pill_activated:** Installed · activated
 - **campaign_view.svc_pill_absent:** Not installed
@@ -360,7 +361,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.sell_head:** What Ronin Services adds
 - **campaign_view.sell_library:** The template library — teams and agents Ronin keeps and grows, with the procedures, macros and tools they read, installed with one press.
 - **campaign_view.sell_assistant:** A background assistant that keeps every agent’s work record and instructions current, so the roster and the tile say what each agent is doing.
-- **campaign_view.sell_transcripts:** The locked terminal becomes streaming text — a durable record that can be re-rendered as a transcript, read on a phone, summarised, or turned to voice.
+- **campaign_view.sell_transcripts:** Readable transcripts are not in this beta; the recorder is off while it is refactored.
 - **campaign_view.sell_voice:** Text to voice, and voice in — hear a report read back; speak to an agent from the tile.
 - **campaign_view.sell_hotwords:** Hotwords — teach dictation the words it mishears, once, for every session.
 - **campaign_view.sell_memory:** Unified team memory — what a session learns is kept for the team and recalled at birth.

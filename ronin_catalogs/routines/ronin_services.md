@@ -1,12 +1,12 @@
 # Ronin Services
 - **label:** Ronin Services
-- **blurb:** The part of Ronin we run for you: the template library, readable transcripts, live status from Koshi, voice and Hotwords — one optional Routine.
+- **blurb:** The part of Ronin we run for you: the template library, live status from Koshi, voice and Hotwords — one optional Routine. Readable transcripts are not in this beta.
 - **reading:** routine/ronin_services/SERVICES_ABILITIES.md
 - **reading_off:** routine/ronin_services/OFF.md
 - **sops:** —
 - **macros:** —
 - **actions:** —
-- **tools:** tejun-rireki, mika
+- **tools:** mika
 - **mcp:** —
 - **parts:** counting, koe, koshi, koshi_weights, michi, rireki
 - **requires:** ronin_base

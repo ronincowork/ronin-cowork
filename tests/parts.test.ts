@@ -28,6 +28,19 @@ test('Services on loads everything on disk', () => {
   assert.deepEqual(plan.parked, []);
 });
 
+test('PARKED.md parks a part with its reason regardless of the Routine switch', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'parts-parked-'));
+  await mkdir(path.join(dir, 'rireki'));
+  await writeFile(path.join(dir, 'rireki', 'register.ts'), '');
+  await writeFile(path.join(dir, 'rireki', 'PARKED.md'), 'RIREKI is off in this beta: not ready, to be refactored\n\nDetails.\n');
+  const parts = discoverParts(dir);
+  assert.equal(parts[0].parked, 'RIREKI is off in this beta: not ready, to be refactored');
+  assert.deepEqual(partsToLoad(parts, routines, { ronin_services: true }), {
+    load: [],
+    parked: [{ name: 'rireki', reason: 'RIREKI is off in this beta: not ready, to be refactored' }],
+  });
+});
+
 test('an absent or malformed switch map reads as off — the recorder never runs by accident', () => {
   for (const switches of [undefined, null, {}, [], 'on', { ronin_services: 'yes' }]) {
     const plan = partsToLoad(onDisk, routines, switches);
