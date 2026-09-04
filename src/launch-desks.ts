@@ -100,7 +100,7 @@ export function renderDeskBlock(a: Assignment): string {
   return [
     `Your assignment has ${n} desk${n === 1 ? '' : 's'}:`,
     ...rows,
-    'Work only in a desk; the desk contract is in your README.',
+    'Get, update, and hand in through tejun-desk; your Worktrees Routine is the contract.',
   ].join('\n');
 }
 
@@ -111,7 +111,7 @@ export function renderWorkLocations(repositories: ResolvedWorktreesRepository[],
     'Direct work locations:',
     ...direct.map((repository) => {
       const branch = branches[repository.repo];
-      return `  ${repository.repo}  ${repository.location}  (no Worktrees; edit directly in this checkout${branch ? `, on branch ${branch}` : ''})`;
+      return `  ${repository.repo}  ${repository.location}  (ordinary Git checkout; no managed desk or desk record${branch ? `, on branch ${branch}` : ''})`;
     }),
   ].join('\n');
 }

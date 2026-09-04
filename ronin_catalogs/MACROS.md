@@ -233,7 +233,7 @@ desk. No PR: that is the release process's, from `dev`. On `leg`, stop and wait.
 ## land
 - **class:** session_macro.workflow
 - **label:** Finish up, then close this session
-- **blurb:** Writes the work down where it will last — a README beside the code, every desk handed in or parked, one line in the index of finished work — and then ends the session for good. Use it when the work is done: the pane closes and there is nothing to come back to.
+- **blurb:** Writes the work down where it will last — a README beside the code, every finished desk handed in and closed, one line in the index of finished work — and then ends the session for good.
 **Land YOURSELF.** No args: finish the work of THIS session, leave the record, end
 this session. The buildout doc you were working from is your own wip;
 if you truly can't tell what you were building, ask — don't guess.
@@ -242,12 +242,12 @@ which does not exist yet. Don't improvise it.)
 
 | # | Action | With |
 |---|---|---|
-| 1 | land-work | persistent README where the code lives; DELETE the wip buildout doc; close every desk — hand in what is coherent, park the rest |
+| 1 | land-work | persistent README where the code lives; DELETE the wip buildout doc; hand in the assignment, then close every finished desk |
 | 2 | land-manifest | ONE line appended to the manifest (location per the documents SOP) — an index entry, not history |
-| 3 | report-outcome | README path, what was handed in and what was parked, manifest line — BEFORE you end |
-| 4 | harakiri | end this session — last act, after every desk is handed in or parked and reported |
+| 3 | report-outcome | README path, what was handed in and closed, manifest line — BEFORE you end |
+| 4 | harakiri | end this session — last act, after every finished desk is handed in, closed and reported |
 
-Report to the owner (before step 4): the README path, the hand-in receipts and any parked
+Report to the owner (before step 4): the README path, the hand-in receipts and closed
 desk, the manifest line. No PR is opened here: `dev → master` belongs to the release process.
 Sessions are disposable: nothing of value may live only in a pane.
 
