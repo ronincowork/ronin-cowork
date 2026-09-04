@@ -1,66 +1,56 @@
-# RONIN WORKTREES — private desks, when a repository allows them
+## RONIN WORKTREES — get, update, and hand in
 
-This Routine equips you for managed worktrees and hand-in. It does not promise a desk:
-both the Agent and the repository must have Worktrees on.
+This Routine equips an Agent for managed worktrees when both the repository and the Agent
+choose them. It does not turn every checkout into a managed desk.
 
-**Your brief names no desk.** Work in the project root's ordinary checkout under the
-repository's own instructions. Do not invent a desk, branch, hand-in target or managed
-workflow because this Routine is on; the launch receipt says why no desk was opened.
-The Agent capability does not override the repository: when the brief says a repository
-does not use Worktrees, edit directly in the checkout it names. Do not request a desk for
-that repository; there is no missing desk to resolve.
-`ronin-repo-init <project-root>` is only for a Configuration task that explicitly asks for a
-local Git repository. Routine selection alone is never permission to initialize one.
+**Your brief names no desk.** Work in the named checkout under the repository and owner's
+ordinary Git instructions. There is no lease, selected branch, hand-in target, or managed
+lifecycle record, and the absence of a desk is not an error. Do not initialize a repository
+or invent managed machinery merely because this Routine is present.
 
-**Your brief names a desk.** Then the rest of this page is your working agreement. Your
-team's other repositories are territory, not desks: `tejun-desk open <repo>` opens one, cut
-from the team's line, when the work takes you there. A
-**desk** is that repository's private branch and the worktree mounted on it, opened before
-your CLI started. The desks — repo, path, branch, the team line each hands in to — are the
-block in your brief and the `repos[]` on your letter.
+**Your brief names a desk.** Work there. A multi-repository assignment may have one desk
+per repository. If work takes you to another managed repository, get its desk with
+`tejun-desk open <repo>`. Before a write, compare `tejun-desk status --assignment` with
+the brief. If they disagree, put the exact discrepancy on the team wipeboard and wait for
+the corrected status; do not create the missing branch or worktree yourself.
 
-## Four words, used strictly
+### The three verbs
 
-| Word | Means | Is not |
+| Verb | Tool | Meaning |
 |---|---|---|
-| **commit** | a checkpoint on your desk's private branch. Ordinary `git commit`. Nothing propagates | a publication |
-| **hand-in** | you hand your committed range to your team's line (`team/<team>/dev`). Mechanical admission merges and detects conflicts | `git push`; repository verification |
-| **team promotion** | the lead admits the team's line to `dev`; `dev` is live and restarts | yours to run |
-| **git push** | Git's word only: remote publication. Desk branches have no remote and are never pushed | how work reaches the team |
+| **get a worktree** | `tejun-desk open <repo[:branch]>` | Create or remount a private desk from current local `dev`; report its exact base, team line, path, owner, and dependency location. |
+| **update it** | `tejun-desk sync <repo[:branch]>` | Merge what local `dev` has accepted. `status` reports distance from `dev`; 20 commits behind is information, never a block. |
+| **hand it in** | `tejun-desk hand-in <repo[:branch]>` | Give the committed desk delta to the team's review line. The isolated candidate includes current local `dev`, accepted team delta, then desk delta. |
 
-Never say bare *push* about your own work. **Commit preserves. Hand-in publishes.** Commit
-as often as you like; nothing leaves the desk until you hand in, and no commit triggers a
-gate or a test run.
+`tejun-desk status` reports saved and unsaved files, distance from local `dev` and the team
+line, pending updates, the last receipt, exact base, and dependency location. Read it when
+something surprises you; `tejun-desk receipts` shows what hand-in recorded.
 
-## What you do
+### The four boundaries
 
-- **Work in the desk.** A multi-repo assignment has one desk per repository, each at its
-  own path. `dev` and `team/<team>/dev` are merged into and never written into. A managed
-  desk's dependencies are a private copy, not the live operator checkout's `node_modules`,
-  so installing or removing packages in the desk cannot alter the running operator.
-- **Stop and ask the team lead when the desk is missing or contradictory.** Before your
-  first repository write, compare `tejun-desk status --assignment` with the desk block in
-  your brief. `NO-DESK` after a desk was promised, a mismatched path or branch, or a
-  checkout on `dev` or a team line are blockers: change nothing, post the exact mismatch
-  with `tejun-wipeboard post "…"`, and resume only in the worktree the corrected status
-  reports — never by making a branch or worktree yourself.
-- **Commit coherent checkpoints, privately.** Scoped tests are part of the work, not a
-  boundary protocol.
-- **Hand in when the work is coherent for the team** — at a DONE leg, and before you
-  close: `tejun-desk hand-in` (one desk) or `tejun-desk hand-in --assignment` (every desk).
-  A conflict is contained in a candidate worktree, the line is untouched, and you are told
-  the two sides; the lead adjudicates.
-- **Verify with scoped evidence.** Run the smallest relevant typecheck, behavior test, or
-  explicit Playwright diagnostic for what you changed. Do not run `npm run verify`; the
-  Team Lead owns that full repository verdict at promotion.
-- **Never `git push`.** Nothing of yours has a remote.
-- **Adopt what your siblings handed in.** When the team line moves you are told. A clean
-  desk is brought current at once; a dirty desk gets a **pending** update, taken at your
-  next commit or `tejun-desk sync`. If the incoming change overlaps files you have dirty,
-  the notice names them and shows the diff — read it before you go on.
-- **Closing a desk is explicit.** `tejun-desk park` captures unsaved files in a `WIP:`
-  commit and leaves the desk parked for the lead. Nothing you did not hand in is
-  published by closing, and nothing is deleted.
+- **Commit** is an ordinary checkpoint on the private desk. It publishes nothing.
+- **Hand-in** admits committed work to the team review line. It is not repository-wide
+  verification and it never runs `git push`.
+- **Team promotion** is the lead's act: verify the review line and admit it to local `dev`.
+- **Git push** means remote publication only. Desk and team branches stay local.
 
-`tejun-desk status` answers, per desk: saved/dirty, commits ahead, pending team update,
-last accepted hand-in, blocked reason. Read that row, not `git branch`, when you report.
+Commit coherent checkpoints and run the smallest relevant test. The Team Lead owns full
+repository verification at promotion. A hand-in conflict stays in its isolated candidate
+and names the files; the desk remains live for resolution. An empty update and policy
+facts are ordinary output, not new gates.
+
+Right after `ACCEPTED`, the tool says whether the desk is level with its line, names any
+unsaved or untracked files excluded from hand-in, lists this session's other level idle
+desks, and says whether promotion is due. `status` provides the same facts on request.
+
+### Finish the assignment
+
+Closing a desk and ending a session are separate acts. At final handoff, hand in the
+assignment and then close every finished desk. Do not retain an idle, level desk merely
+because the session may receive later work: the session remains alive at the project root,
+and the next assignment gets a fresh desk from current local `dev`. Hand-in itself does
+not close a desk.
+
+The house owns cleanup of candidates, locks, staging, temporary refs, and other managed
+scratch state. It never consumes a live desk during hand-in, and cleanup is not an Agent
+pruning chore.
