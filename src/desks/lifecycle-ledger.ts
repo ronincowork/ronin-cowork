@@ -24,6 +24,8 @@ export interface ManagedObject {
   path?: string;
   owner_sessions?: string[];
   owner_team?: string;
+  /** Complete compatibility row when this object projects an existing mutable store. */
+  data?: Record<string, unknown>;
 }
 
 export interface ManagedEvent {
