@@ -33,32 +33,83 @@ test('unit preflight accepts marked and narrow legacy units but refuses a foreig
   await fs.rm(root, { recursive: true, force: true });
 });
 
-test('adoption records the original exit-empty value once and uninstall restores it', async () => {
+test('adoption leases exit-empty once, ignores $TMUX, and uninstall restores or keeps as the evidence says', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-adopt-'));
   const fake = path.join(root, 'tmux');
+  // A fake server: its pid and start identity are this process's own, so the helper's
+  // liveness check reads a real /proc entry. A pane's $TMUX must never reach it.
   await fs.writeFile(fake, `#!/bin/sh
+[ -z "$TMUX" ] || { echo 'the helper followed $TMUX' >&2; exit 99; }
 case "$1" in
   list-sessions) exit 0 ;;
-  display-message) case "$*" in *socket_path*) echo /tmp/fake.sock;; *) echo "$FAKE_PID";; esac ;;
+  display-message) case "$*" in *socket_path*) echo /tmp/fake.sock;; *version*) echo 3.2a;; *) echo "$FAKE_PID";; esac ;;
   show-options) cat "$FAKE_VALUE" ;;
   set-option) printf '%s' "$4" > "$FAKE_VALUE"; printf '%s' "$4" >> "$FAKE_WRITES" ;;
-  -V) echo 'tmux 3.2a' ;;
+  -V) echo 'tmux 3.7c' ;;
 esac
 `);
   await fs.chmod(fake, 0o755);
   const value = path.join(root, 'value');
   const writes = path.join(root, 'writes');
+  const lease = path.join(root, 'machine', 'tmux-adoption');
   await fs.writeFile(value, 'on'); await fs.writeFile(writes, '');
-  const env = { ...process.env, FAKE_PID: String(process.pid), FAKE_VALUE: value, FAKE_WRITES: writes };
+  const env = { ...process.env, TMUX: '/tmp/tmux-0/default,1,0', FAKE_PID: String(process.pid), FAKE_VALUE: value, FAKE_WRITES: writes };
   const adopt = () => exec('bash', ['-c', `. "${helper}"; TMUX_BIN="$1"; ronin_adopt_tmux "$2"`, 'test', fake, root], { env });
-  await adopt();
-  assert.match(await fs.readFile(path.join(root, 'machine', 'tmux-adoption'), 'utf8'), /^prior=on$/m);
+  const restore = () => exec('bash', ['-c', `. "${helper}"; ronin_restore_tmux "$2" "$1"`, 'test', fake, root], { env });
+
+  const first = await adopt();
+  assert.match(first.stdout, /adopted \(pid \d+\)/);
+  assert.match(first.stdout, /server is tmux 3\.2a and Ronin's client is tmux 3\.7c/, 'version skew is disclosed');
+  assert.match(await fs.readFile(lease, 'utf8'), /^prior=on$/m);
   assert.equal(await fs.readFile(value, 'utf8'), 'off');
   await adopt();
-  assert.match(await fs.readFile(path.join(root, 'machine', 'tmux-adoption'), 'utf8'), /^prior=on$/m, 'rerun keeps the first prior value');
-  await exec('bash', ['-c', `. "${helper}"; ronin_restore_tmux "$2" "$1"`, 'test', fake, root], { env });
+  assert.match(await fs.readFile(lease, 'utf8'), /^prior=on$/m, 'rerun keeps the first prior value');
+
+  // the owner changed it after adoption: uninstall keeps their value and the lease
+  await fs.writeFile(value, 'on');
+  assert.match((await restore()).stdout, /kept tmux exit-empty=on/);
   assert.equal(await fs.readFile(value, 'utf8'), 'on');
-  await assert.rejects(fs.access(path.join(root, 'machine', 'tmux-adoption')));
+  await fs.access(lease);
+
+  // the adopted server was replaced: uninstall touches nothing and says so
+  await fs.writeFile(value, 'off');
+  const replaced = { ...env, FAKE_PID: '1' };
+  const skipped = await exec('bash', ['-c', `. "${helper}"; ronin_restore_tmux "$2" "$1"`, 'test', fake, root], { env: replaced });
+  assert.match(skipped.stdout, /server has changed/);
+  assert.equal(await fs.readFile(value, 'utf8'), 'off');
+
+  // ordinary uninstall: restored, lease gone
+  assert.match((await restore()).stdout, /restored tmux exit-empty=on/);
+  assert.equal(await fs.readFile(value, 'utf8'), 'on');
+  await assert.rejects(fs.access(lease));
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test('a lease whose server is gone (a reboot) is replaced on rerun, never a reason to refuse setup', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-release-'));
+  const fake = path.join(root, 'tmux');
+  await fs.writeFile(fake, `#!/bin/sh
+case "$1" in
+  list-sessions) exit 0 ;;
+  display-message) case "$*" in *socket_path*) echo /tmp/fake.sock;; *version*) echo 3.6;; *) echo "$FAKE_PID";; esac ;;
+  show-options) cat "$FAKE_VALUE" ;;
+  set-option) printf '%s' "$4" > "$FAKE_VALUE" ;;
+  -V) echo 'tmux 3.6' ;;
+esac
+`);
+  await fs.chmod(fake, 0o755);
+  const value = path.join(root, 'value');
+  const lease = path.join(root, 'machine', 'tmux-adoption');
+  await fs.mkdir(path.dirname(lease), { recursive: true });
+  // recorded at adoption: a pid that cannot be alive with that start identity any more
+  await fs.writeFile(lease, 'v=1\npid=2147483646\nstart=1\nsocket=/tmp/fake.sock\nprior=on\napplied=off\n');
+  await fs.writeFile(value, 'off'); // the new server: Ronin's own unit started it with the conf
+  const env = { ...process.env, FAKE_PID: String(process.pid), FAKE_VALUE: value };
+  const rerun = await exec('bash', ['-c', `. "${helper}"; TMUX_BIN="$1"; ronin_adopt_tmux "$2"`, 'test', fake, root], { env });
+  assert.match(rerun.stdout, /no longer exists; recording the current one/);
+  const fresh = await fs.readFile(lease, 'utf8');
+  assert.match(fresh, new RegExp(`^pid=${process.pid}$`, 'm'));
+  assert.match(fresh, /^prior=off$/m, 'the new server is recorded as found, not with the dead one\'s value');
   await fs.rm(root, { recursive: true, force: true });
 });
 

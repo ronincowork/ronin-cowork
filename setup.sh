@@ -59,6 +59,8 @@ fi
 # --- coexistence preflight: before dependency, rc, option, or unit mutations ---
 # shellcheck source=libexec/ronin-coexist.sh
 . "$REPO_DIR/libexec/ronin-coexist.sh"
+# Adoption is disclosed, not asked: it reaches the terminal as well as the log.
+ronin_say() { echo "$*"; [ -n "${RONIN_VERBOSE:-}" ] || out "$*"; }
 PREFLIGHT_UNIT_DIR="$HOME/.config/systemd/user"
 if [ "$(uname -s)" = Linux ]; then
   ronin_preflight_units "$PREFLIGHT_UNIT_DIR"

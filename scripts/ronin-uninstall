@@ -28,8 +28,13 @@ COEXIST="$USER_ROOT/current/libexec/ronin-coexist.sh"
 if [ -f "$COEXIST" ]; then
   # shellcheck source=libexec/ronin-coexist.sh
   . "$COEXIST"
-  TMUX_BIN=$(command -v tmux 2>/dev/null || true)
+  TMUX_BIN="$USER_ROOT/current/vendor/tmux"
+  [ -x "$TMUX_BIN" ] || TMUX_BIN=$(command -v tmux 2>/dev/null || true)
   [ -n "$TMUX_BIN" ] && ronin_restore_tmux "$DATA_ROOT" "$TMUX_BIN" || true
+else
+  # A release older than the helper wrote no provenance marker and leased nothing: its
+  # units are the ones it rendered by name, and there is no recorded setting to restore.
+  ronin_unit_owned() { return 0; }
 fi
 
 # --- units ---

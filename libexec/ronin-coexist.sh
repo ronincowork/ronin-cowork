@@ -1,5 +1,20 @@
 #!/bin/sh
 # Shared install/uninstall primitives for living beside an existing tmux server.
+# Design: ronin-lab wip/buildouts/TMUX_COEXISTENCE.md. Errors go to stderr; what the
+# person must hear goes through ronin_say, which the caller may redirect.
+
+ronin_say() { printf '%s\n' "$*"; }
+
+# Every tmux command goes through this. $TMUX outranks TMUX_TMPDIR in tmux's own client, so
+# from inside a tile a rig that set a private TMUX_TMPDIR still reached the live server and
+# killed it (records/TMUX_KILL_20260904.md, the third time). Ronin's server is the default
+# socket, or the one TMUX_TMPDIR names: the same rule the runtime attach and the test
+# runner follow. A pane's own $TMUX is never the address of anything this file does.
+ronin_tmux() { env -u TMUX -u TMUX_PANE "$TMUX_BIN" "$@"; }
+
+ronin_pid_alive() { # pid, start identity — is the recorded process still that process?
+  [ -n "$1" ] && [ -n "$2" ] && [ "$(ronin_tmux_start_id "$1")" = "$2" ]
+}
 
 ronin_unit_owned() { # file, kind
   file=$1 kind=$2
@@ -38,7 +53,7 @@ ronin_tmux_start_id() { # pid
 
 ronin_tmux_probe() {
   probe_err="${TMPDIR:-/tmp}/ronin-tmux-probe.$$"
-  if "$TMUX_BIN" list-sessions >/dev/null 2>"$probe_err"; then
+  if ronin_tmux list-sessions >/dev/null 2>"$probe_err"; then
     rm -f "$probe_err"
     return 0
   fi
@@ -59,12 +74,12 @@ ronin_adopt_tmux() { # state root
     return "$probe_rc"
   fi
 
-  pid=$("$TMUX_BIN" display-message -p '#{pid}' 2>/dev/null | tr -d '\r\n')
-  socket=$("$TMUX_BIN" display-message -p '#{socket_path}' 2>/dev/null | tr -d '\r\n')
+  pid=$(ronin_tmux display-message -p '#{pid}' 2>/dev/null | tr -d '\r\n')
+  socket=$(ronin_tmux display-message -p '#{socket_path}' 2>/dev/null | tr -d '\r\n')
   [ -n "$socket" ] || socket="${TMUX_TMPDIR:-${TMPDIR:-/tmp}/tmux-$(id -u)}/default"
   start=$(ronin_tmux_start_id "$pid")
-  prior=$("$TMUX_BIN" show-options -s -v exit-empty 2>/dev/null | tr -d '\r\n')
-  server_version=$("$TMUX_BIN" display-message -p '#{version}' 2>/dev/null | tr -d '\r\n')
+  prior=$(ronin_tmux show-options -s -v exit-empty 2>/dev/null | tr -d '\r\n')
+  server_version=$(ronin_tmux display-message -p '#{version}' 2>/dev/null | tr -d '\r\n')
   case "$pid:$prior" in [0-9]*:on|[0-9]*:off) ;; *)
     printf 'ERROR: live tmux server did not report a usable pid and exit-empty value.\n' >&2; return 2 ;;
   esac
@@ -76,18 +91,30 @@ ronin_adopt_tmux() { # state root
     old_start=$(sed -n 's/^start=//p' "$lease")
     old_socket=$(sed -n 's/^socket=//p' "$lease")
     if [ "$old_pid" != "$pid" ] || [ "$old_start" != "$start" ] || [ "$old_socket" != "$socket" ]; then
-      printf 'ERROR: the recorded adopted tmux server was replaced; refusing to overwrite its prior setting. Remove %s only after reviewing it.\n' "$lease" >&2
-      return 2
+      if ronin_pid_alive "$old_pid" "$old_start"; then
+        # The recorded server still runs but is not the one on this socket: unknown, unchanged.
+        printf 'ERROR: the tmux server recorded in %s (pid %s) is still running but is not the server on %s; leaving both alone. Review the lease before rerunning.\n' "$lease" "$old_pid" "$socket" >&2
+        return 2
+      fi
+      # The adopted server is gone (a reboot, most often) and its setting died with it: the
+      # old lease has nothing left to restore. The server now here is a new adoption.
+      ronin_say "==> the tmux server recorded at adoption (pid $old_pid) no longer exists; recording the current one instead"
+      rm -f "$lease"
     fi
-  else
+  fi
+  if [ ! -f "$lease" ]; then
     mkdir -p "$lease_dir"
     umask 077
     lease_tmp="$lease.tmp.$$"
     printf 'v=1\npid=%s\nstart=%s\nsocket=%s\nprior=%s\napplied=off\n' "$pid" "$start" "$socket" "$prior" > "$lease_tmp"
     mv "$lease_tmp" "$lease"
   fi
-  "$TMUX_BIN" set-option -s exit-empty off
-  printf '==> existing tmux server adopted (pid %s, server %s; client %s); sessions stay in the shared server, exit-empty is leased off and restored on uninstall\n' "$pid" "${server_version:-unknown}" "$("$TMUX_BIN" -V 2>/dev/null)"
+  ronin_tmux set-option -s exit-empty off
+  client_version=$(ronin_tmux -V 2>/dev/null)
+  ronin_say "==> existing tmux server adopted (pid $pid): your sessions stay where they are, in the shared server; exit-empty is leased off (was $prior) and restored on uninstall"
+  if [ -n "$server_version" ] && [ "tmux $server_version" != "$client_version" ]; then
+    ronin_say "    the running server is tmux $server_version and Ronin's client is $client_version; the server's behaviour is the one tiles get"
+  fi
 }
 
 ronin_restore_tmux() { # state root, tmux binary
@@ -99,22 +126,22 @@ ronin_restore_tmux() { # state root, tmux binary
     if [ "$rc" -eq 1 ]; then rm -f "$lease"; return 0; fi
     return "$rc"
   fi
-  pid=$("$TMUX_BIN" display-message -p '#{pid}' 2>/dev/null | tr -d '\r\n')
-  socket=$("$TMUX_BIN" display-message -p '#{socket_path}' 2>/dev/null | tr -d '\r\n')
+  pid=$(ronin_tmux display-message -p '#{pid}' 2>/dev/null | tr -d '\r\n')
+  socket=$(ronin_tmux display-message -p '#{socket_path}' 2>/dev/null | tr -d '\r\n')
   [ -n "$socket" ] || socket="${TMUX_TMPDIR:-${TMPDIR:-/tmp}/tmux-$(id -u)}/default"
   start=$(ronin_tmux_start_id "$pid")
   old_pid=$(sed -n 's/^pid=//p' "$lease"); old_start=$(sed -n 's/^start=//p' "$lease")
   old_socket=$(sed -n 's/^socket=//p' "$lease"); prior=$(sed -n 's/^prior=//p' "$lease")
   if [ "$pid" != "$old_pid" ] || [ "$start" != "$old_start" ] || [ "$socket" != "$old_socket" ]; then
-    printf 'kept tmux exit-empty: the server has changed since Ronin adopted it\n'; return 0
+    ronin_say 'kept tmux exit-empty: the server has changed since Ronin adopted it'; return 0
   fi
-  current=$("$TMUX_BIN" show-options -s -v exit-empty 2>/dev/null | tr -d '\r\n')
+  current=$(ronin_tmux show-options -s -v exit-empty 2>/dev/null | tr -d '\r\n')
   if [ "$current" != off ]; then
-    printf 'kept tmux exit-empty=%s: it changed after Ronin adopted the server\n' "$current"; return 0
+    ronin_say "kept tmux exit-empty=$current: it changed after Ronin adopted the server"; return 0
   fi
-  "$TMUX_BIN" set-option -s exit-empty "$prior" 2>/dev/null || true
+  ronin_tmux set-option -s exit-empty "$prior" 2>/dev/null || true
   rm -f "$lease"
-  printf 'restored tmux exit-empty=%s\n' "$prior"
+  ronin_say "restored tmux exit-empty=$prior"
 }
 
 ronin_preflight_port() { # repo, node
