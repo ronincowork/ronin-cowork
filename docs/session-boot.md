@@ -87,6 +87,9 @@ could not be made.**
 
 ## What ships
 
+The contract for the compiled document itself — the one-read budget, the order, the closing
+line, the receipt — is [`docs/birth-packet.md`](birth-packet.md).
+
 **The packet says where it ends, and the brief says how big it is.** The compiled README's
 last line is `— end of packet for <session> —`. The brief's `Read first:` sentence names the
 path, the line count, the size, that one read delivers it, and that line; when a packet is
