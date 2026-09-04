@@ -109,6 +109,9 @@ export async function deskStatus(rec: DeskRecord, a: RepoArrangement): Promise<D
   const mounted = !!wt && existsSync(wt.path);
   const dirty_files = mounted ? await dirtyFiles(wt!.path).catch(() => []) : [];
   const { ahead, behind } = tip && line_tip ? await aheadBehind(dir, tip, line_tip) : { ahead: 0, behind: 0 };
+  const working_tip = await revParse(dir, `refs/heads/${a.working}`);
+  const workingDistance = tip && working_tip ? await aheadBehind(dir, tip, working_tip) : { ahead: 0, behind: 0 };
+  const lineWorkingDistance = line_tip && working_tip ? await aheadBehind(dir, line_tip, working_tip) : { ahead: 0, behind: 0 };
   let blocked = rec.blocked;
   if (!blocked && !tip) blocked = 'branch is gone';
   else if (!blocked && rec.state === 'open' && !mounted) blocked = 'worktree is not mounted — desk open remounts it';
@@ -122,6 +125,13 @@ export async function deskStatus(rec: DeskRecord, a: RepoArrangement): Promise<D
     dirty_files,
     ahead,
     behind,
+    owners: rec.owners?.length ? rec.owners : [rec.session],
+    working: a.working,
+    working_tip,
+    ahead_of_working: workingDistance.ahead,
+    behind_working: workingDistance.behind,
+    line_ahead_of_working: lineWorkingDistance.ahead,
+    line_behind_working: lineWorkingDistance.behind,
     blocked,
   };
 }
@@ -136,7 +146,9 @@ export async function listDesks(filter: { repo?: string; session?: string; team?
       try {
         a = await arrangementOf(rec.repo);
       } catch {
-        out.push({ ...rec, mounted: false, tip: '', line_tip: '', dirty: false, dirty_files: [], ahead: 0, behind: 0, blocked: `project_root '${rec.repo}' is no longer in the catalog` });
+        out.push({ ...rec, mounted: false, tip: '', line_tip: '', dirty: false, dirty_files: [], ahead: 0, behind: 0,
+          working: '', working_tip: '', ahead_of_working: 0, behind_working: 0, line_ahead_of_working: 0, line_behind_working: 0,
+          blocked: `project_root '${rec.repo}' is no longer in the catalog` });
         continue;
       }
       arrangements.set(rec.repo, a);
