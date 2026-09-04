@@ -289,16 +289,7 @@ app.get('/raw/*', (req, res) => {
 });
 
 const server = createServer(app);
-export const PORT_UNAVAILABLE_EXIT = 78;
-
-server.on('error', (error: NodeJS.ErrnoException) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`[tmux-ronin] ${config.bind}:${config.port} is already in use — set PORT or BIND in .env, then restart ronin.service.`);
-    process.exit(PORT_UNAVAILABLE_EXIT);
-  }
-  console.error(`[tmux-ronin] HTTP server failed: ${error.message}`);
-  process.exit(1);
-});
+export const PORT_UNAVAILABLE_EXIT = 78; // EX_CONFIG; deploy/ronin.service names it
 const wss = new WebSocketServer({
   noServer: true,
   perMessageDeflate: {
@@ -357,6 +348,19 @@ void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed 
 
 void publishMax();
 void publishOwner();
+
+// TMUX_COEXISTENCE, "Listener conflicts stop the unit": one line, exit 78, and
+// deploy/ronin.service's RestartPreventExitStatus=78 keeps systemd from retrying it.
+// The team/loader/port desk carries a fuller handler (src/bind-refusal.ts) at this same
+// spot; whichever lands second resolves to one handler.
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`[tmux-ronin] ${config.bind}:${config.port} is already in use — set PORT or BIND in .env, then restart ronin.service.`);
+    process.exit(PORT_UNAVAILABLE_EXIT);
+  }
+  console.error(`[tmux-ronin] HTTP server failed: ${error.message}`);
+  process.exit(1);
+});
 
 server.listen(config.port, config.bind, async () => {
   if (isBoxInstance) {
