@@ -33,3 +33,28 @@ export function classifyStatus(text: string): SessionStatus | null {
   for (const p of STATUS_PATTERNS) if (p.re.test(tail)) return p.status;
   return null;
 }
+
+export function createActivityCache<T>(load: (session: string) => Promise<T>) {
+  const settled = new Map<string, { activity: number; value: T }>();
+  const pending = new Map<string, { activity: number; value: Promise<T> }>();
+
+  return async (session: string, activity: number): Promise<T> => {
+    const previous = settled.get(session);
+    if (previous?.activity === activity) return previous.value;
+
+    const underway = pending.get(session);
+    if (underway?.activity === activity) return underway.value;
+
+    const value = load(session).then((result) => {
+      settled.set(session, { activity, value: result });
+      return result;
+    }).catch((error) => {
+      if (previous) return previous.value;
+      throw error;
+    }).finally(() => {
+      if (pending.get(session)?.activity === activity) pending.delete(session);
+    });
+    pending.set(session, { activity, value });
+    return value;
+  };
+}

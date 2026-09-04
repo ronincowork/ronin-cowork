@@ -1,8 +1,7 @@
-import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { promisify } from 'node:util';
+import { execFile } from './spawn-broker.js';
 
-const pexec = promisify(execFile);
+const pexec = execFile;
 
 export type InitialPrompt = 'positional' | 'none';
 

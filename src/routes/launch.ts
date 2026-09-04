@@ -22,7 +22,7 @@ import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
 import { routineChoices } from '../routines.js';
-import { classifyStatus, type SessionStatus } from '../status.js';
+import { classifyStatus, createActivityCache, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
@@ -161,16 +161,20 @@ export function mikaLaunchBody(input: unknown): Record<string, unknown> {
 }
 
 export function registerLaunch(app: express.Express): void {
+  const loadPaneStatus = createActivityCache(async (name: string) => {
+    const text = await capturePane(name, 0);
+    return {
+      status: classifyStatus(text),
+      ctx: scanContext(text),
+      model: scanModel(text),
+    };
+  });
   const loadHome = createWindowedLoader(async () => {
     const list = await withAxes(await listSessions());
     return Promise.all(
       list.map(async (s) => {
         const [pane, contributed, tegami] = await Promise.all([
-          capturePane(s.name, 0).then((text) => ({
-            status: classifyStatus(text),
-            ctx: scanContext(text),
-            model: scanModel(text),
-          })).catch(() => ({ status: null, ctx: null, model: null })),
+          loadPaneStatus(s.name, s.activity).catch(() => ({ status: null, ctx: null, model: null })),
           collectRowFields(s.name),
           readTegami(s.name),
         ]);

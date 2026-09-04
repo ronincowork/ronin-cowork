@@ -1,8 +1,6 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { envWithoutGitLocation } from '../tegami.js';
+import { execFile as execFileP } from '../spawn-broker.js';
 
-const execFileP = promisify(execFile);
 
 export const AUTOMATION_IDENTITY = ['-c', 'user.name=Ronin Promote', '-c', 'user.email=promote@ronin.local'] as const;
 

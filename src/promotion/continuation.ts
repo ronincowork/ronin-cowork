@@ -1,10 +1,7 @@
-import { execFile } from 'node:child_process';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import { REPO_ROOT } from '../resources.js';
 import { now, writeReceipt, type PromotionReceipt } from './receipts.js';
-
-const execFileP = promisify(execFile);
+import { execFile as execFileP } from '../spawn-broker.js';
 
 export function promotionUnitName(id: string): string {
   return `ronin-promote-${id.replace(/[^a-zA-Z0-9_.-]/g, '-')}`;

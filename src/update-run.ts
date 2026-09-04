@@ -1,6 +1,7 @@
-import { execFile, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { REPO_ROOT } from './resources.js';
+import { execFile } from './spawn-broker.js';
 
 const UPDATER = join(REPO_ROOT, 'bin', 'ronin-update');
 
@@ -12,19 +13,19 @@ export interface Started {
 
 export function runUpdater(pkg: Package): Promise<Started> {
   const args = pkg === 'services' ? [UPDATER, '--services'] : [UPDATER];
-  return new Promise((resolve, reject) => {
-    execFile('systemd-run', [
+  return execFile('systemd-run', [
       '--user', '--collect', `--unit=ronin-update-${Date.now()}`,
       ...args,
-    ], { timeout: 10000 }, (err) => {
-      if (!err) return resolve({ via: 'systemd-run' });
+    ], { timeout: 10000 }).then(
+    () => ({ via: 'systemd-run' as const }),
+    () => {
       try {
         const child = spawn(args[0]!, args.slice(1), { detached: true, stdio: 'ignore' });
         child.unref();
-        resolve({ via: 'detached' });
+        return { via: 'detached' as const };
       } catch (e) {
-        reject(e);
+        throw e;
       }
-    });
-  });
+    },
+  );
 }

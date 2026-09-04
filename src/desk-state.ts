@@ -1,9 +1,6 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile } from './spawn-broker.js';
 import { envWithoutGitLocation, type TegamiCheckout } from './tegami.js';
 import type { DeskStatus, PendingUpdate } from './desks/schema.js';
-
-const exec = promisify(execFile);
 
 export type DeskReadout = 'open' | 'parked' | 'unknown';
 
@@ -56,7 +53,7 @@ export const shortRepo = (repo: string): string =>
   String(repo || '').replace(/\.git$/, '').split('/').filter(Boolean).pop() || repo;
 
 async function git(dir: string, args: string[]): Promise<string> {
-  const { stdout } = await exec('git', ['-C', dir, ...args], { timeout: 4_000, env: envWithoutGitLocation() });
+  const { stdout } = await execFile('git', ['-C', dir, ...args], { timeout: 4_000, env: envWithoutGitLocation() });
   return stdout.trim();
 }
 

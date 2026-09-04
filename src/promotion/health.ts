@@ -1,12 +1,9 @@
-import { execFile } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
+import { execFile as execFileP } from '../spawn-broker.js';
 import { tailnetIp } from '../machine-settings.js';
 import { envWithoutGitLocation } from '../tegami.js';
 import type { GateResult, HealthResult } from './receipts.js';
-
-const execFileP = promisify(execFile);
 
 export interface RestartResult { unit: string; at: string; ok: boolean; detail?: string }
 

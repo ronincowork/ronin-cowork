@@ -1,12 +1,10 @@
 import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile as execFileP } from './spawn-broker.js';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import { storeDir } from './resources.js';
 
-const execFileP = promisify(execFile);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
