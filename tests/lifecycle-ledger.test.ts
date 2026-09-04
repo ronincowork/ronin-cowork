@@ -4,8 +4,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  appendManagedEvent, beginManagedTransaction, managedLedgerFile, projectManagedLifecycle,
-  readManagedEvents, readManagedLedger, withManagedTransaction, type ManagedEventInput,
+  appendManagedEvent, beginManagedTransaction, compatibilityProjectionDocuments, managedLedgerFile, projectManagedLifecycle,
+  readManagedEvents, readManagedLedger, recoverInterruptedTransactions, withManagedTransaction, type ManagedEventInput,
 } from '../src/desks/lifecycle-ledger.js';
 
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-lifecycle-ledger-'));
@@ -55,6 +55,10 @@ test('projection rebuild is deterministic for desks, assignments, receipts, prom
   assert.equal(first.promotions.length, 1);
   assert.deepEqual(first.quarantines.map((item) => item.id), ['q1']);
   assert.deepEqual(first.pending, []);
+  assert.deepEqual(compatibilityProjectionDocuments(first), {
+    registry: [], assignments: first.assignments, receipts: first.receipts, promotions: first.promotions,
+    quarantines: first.quarantines, settlements: first.settlements,
+  });
 });
 
 test('a torn append stays as evidence and recovery reaches one coherent terminal outcome', async () => {
@@ -80,4 +84,22 @@ test('callback transaction keeps short mutation between durable start and termin
   assert.equal(value, 42);
   assert.deepEqual(observed, ['mutated']);
   assert.deepEqual((await readManagedEvents({ repo: 'cowork', root: local, strict: true })).events.map((event) => event.result), ['started', 'accepted']);
+});
+
+test('startup recovery records only callback-proved disposition and is idempotent', async () => {
+  const local = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-lifecycle-recovery-'));
+  await beginManagedTransaction(base('cowork', 'tx-pending', 'hand_in_started', 'started'), { root: local });
+  let calls = 0;
+  const first = await recoverInterruptedTransactions('cowork', async (pending) => {
+    calls++;
+    assert.equal(pending.transaction_id, 'tx-pending');
+    return { result: 'rolled_back', detail: { observed: 'line unchanged' } };
+  }, { root: local });
+  const second = await recoverInterruptedTransactions('cowork', async () => {
+    calls++;
+    return { result: 'needs_attention', detail: {} };
+  }, { root: local });
+  assert.equal(calls, 1);
+  assert.equal(first[0]!.type, 'recovered');
+  assert.deepEqual(second, []);
 });

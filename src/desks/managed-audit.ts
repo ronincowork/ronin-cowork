@@ -35,12 +35,14 @@ export interface ObservedManagedRef {
   kind: 'desk' | 'team_line' | 'candidate' | 'quarantine' | 'publish' | 'other';
   contained_in_dev: boolean;
   remote?: boolean;
+  base_sha?: string;
+  transaction_id?: string;
 }
 
 export interface ObservedRelease {
   dev_sha: string;
   stable_sha: string;
-  open_pr: null | { base: string; head: string; state: 'open' | 'closed' };
+  open_prs: Array<{ base: string; head: string; state: 'open' | 'closed' }>;
   working: string;
   stable: string;
 }
@@ -53,7 +55,8 @@ export interface ManagedRepositoryObservation {
   managed_paths: string[];
   desks: ObservedManagedDesk[];
   refs: ObservedManagedRef[];
-  live_sessions: string[];
+  /** Living owners from the durable session registry recorded at birth, never tmux presence. */
+  live_sessions_from_registry: string[];
   publish_refs: string[];
   release: ObservedRelease;
 }
@@ -87,6 +90,7 @@ export function auditManagedState(input: ManagedAuditInput): ManagedAuditResult 
   for (const repo of input.repositories) {
     if (repo.mode === 'checkout') { excluded++; continue; }
     const observed = new Map(repo.desks.map((desk) => [desk.id, desk]));
+    const activeTeams = new Set(input.projection.desks.flatMap((desk) => desk.owner_team ? [desk.owner_team] : []));
 
     for (const [id, desk] of projectedDesks) {
       if (objectRepo(id) && objectRepo(id) !== repo.repo) continue;
@@ -101,22 +105,36 @@ export function auditManagedState(input: ManagedAuditInput): ManagedAuditResult 
     for (const desk of repo.desks) {
       if (!projectedDesks.has(desk.id) && !quarantined.has(desk.id)) findings.push(finding('agreement', 'unrecorded_managed_desk', repo.repo, desk.id, 'managed worktree exists without an active or quarantined ledger object'));
     }
+    const projectedPaths = new Set(input.projection.desks.flatMap((desk) => desk.path ? [desk.path] : []));
+    for (const managedPath of repo.managed_paths) {
+      if (!projectedPaths.has(managedPath) && !repo.desks.some((desk) => desk.path === managedPath)) {
+        findings.push(finding('agreement', 'unrecorded_managed_path', repo.repo, managedPath, 'managed root contains a path absent from ledger and observed desks'));
+      }
+    }
 
     const activeRefs = new Set(repo.desks.map((desk) => desk.branch));
     const quarantineRefs = new Set(repo.refs.filter((ref) => ref.kind === 'quarantine').map((ref) => ref.name));
     for (const ref of repo.refs) {
       if (ref.kind === 'other') continue;
+      const lineTeam = /^team\/([^/]+)\/dev$/.exec(ref.name)?.[1] ?? '';
       const accounted = activeRefs.has(ref.name) || quarantineRefs.has(ref.name)
         || (ref.kind === 'publish' && repo.publish_refs.includes(ref.name))
-        || ref.kind === 'team_line' || (ref.kind === 'candidate' && pendingRepos.has(repo.repo));
+        || (ref.kind === 'team_line' && activeTeams.has(lineTeam))
+        || (ref.kind === 'candidate' && pendingRepos.has(repo.repo));
       if (!accounted) findings.push(finding('accounted_refs', 'unaccounted_managed_ref', repo.repo, ref.name, `${ref.name}@${ref.sha} is neither active, retirement-due, quarantined nor released`));
       if (ref.remote && (ref.kind === 'desk' || ref.kind === 'team_line' || ref.kind === 'candidate' || ref.kind === 'quarantine')) {
         findings.push(finding('publish_boundary', 'private_ref_published', repo.repo, ref.name, 'a Ronin private ref exists on the remote'));
       }
+      if (ref.contained_in_dev && !accounted && (ref.kind === 'desk' || ref.kind === 'team_line' || ref.kind === 'candidate')) {
+        findings.push(finding('lifecycle_closure', 'contained_managed_ref', repo.repo, ref.name, 'obsolete managed ref is contained in dev and due for settlement'));
+      }
+      if (ref.kind === 'candidate' && ref.base_sha && ref.base_sha !== repo.dev_tip) {
+        findings.push(finding('current_construction', 'candidate_base_not_current_dev', repo.repo, ref.name, `candidate base ${ref.base_sha} is not current dev ${repo.dev_tip}`));
+      }
     }
 
     for (const desk of repo.desks) {
-      const allDead = desk.owners.length === 0 || desk.owners.every((owner) => !repo.live_sessions.includes(owner));
+      const allDead = desk.owners.length === 0 || desk.owners.every((owner) => !repo.live_sessions_from_registry.includes(owner));
       if (desk.contained_in_dev && allDead) {
         findings.push(finding('lifecycle_closure', 'contained_dead_desk', repo.repo, desk.id, 'non-live desk is contained in dev and due for settlement'));
       }
@@ -131,10 +149,13 @@ export function auditManagedState(input: ManagedAuditInput): ManagedAuditResult 
     }
 
     const release = repo.release;
-    const represented = release.dev_sha === release.stable_sha || !!release.open_pr
-      && release.open_pr.state === 'open' && release.open_pr.head === release.working
-      && release.open_pr.base === release.stable;
-    if (!represented) findings.push(finding('release_represented', 'release_not_represented', repo.repo, release.working, `dev ${release.dev_sha} differs from stable ${release.stable_sha} without one open ${release.working} → ${release.stable} PR`));
+    const matching = release.open_prs.filter((pr) => pr.state === 'open' && pr.head === release.working && pr.base === release.stable);
+    if (release.dev_sha !== release.stable_sha) {
+      if (!matching.length) findings.push(finding('release_represented', 'release_not_represented', repo.repo, release.working, `dev ${release.dev_sha} differs from stable ${release.stable_sha} without an open ${release.working} → ${release.stable} PR`));
+      else if (matching.length !== 1 || release.open_prs.filter((pr) => pr.state === 'open').length !== 1) {
+        findings.push(finding('release_represented', 'multiple_release_prs', repo.repo, release.working, 'release state is represented by more than one open pull request'));
+      }
+    }
   }
 
   const errors = findings.filter((item) => item.severity === 'error');
