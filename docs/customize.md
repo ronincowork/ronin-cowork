@@ -162,6 +162,8 @@ Read-only is a capability, not an error. It ends with an honest change path, nev
 
 Guided handoff is also first-class. Seedable catalogs create the owner's catalog and return its path. Definition directories explain the store location and point the agent at their README. The flow never invents a path or uses the generic file API.
 
+After editing a shadow, run `bin/ronin-doctor`; its user-customization section reports any definition the reader would drop.
+
 ## Limits
 
 1. Tools lacks a complete read surface.

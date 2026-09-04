@@ -154,13 +154,11 @@ around the gap in a feature and do not create a parallel kit “temporarily.”
 The test contract is `docs/test-protocols.md`:
 
 ```sh
-bin/ronin-byoin --gates   # repository checks; browser checks explicitly skip
-bin/ronin-byoin --ui      # repository checks plus browser and visual evidence
-bin/ronin-byoin           # installed-box verification and machine readouts
+npm run byoin             # user-customization guard-rail check
 ```
 
 Ordinary Kit legs use direct dogfood and scoped diagnostic evidence, not BYOIN. One
-designated integrator runs the appropriate mode once on the exact release candidate.
+designated integrator runs the check once on the exact release candidate.
 `scripts/check-workspace-kit.mjs` rejects feature-local Team projections, terminal hosts,
 primitive copies and layout drift. `scripts/check-css.mjs` guards CSS. Staging
 `scripts/smoke-ui.mjs` owns dev-only workspace/skin evidence; default live smoke must not
