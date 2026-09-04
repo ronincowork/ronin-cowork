@@ -48,7 +48,9 @@ gate or a test run.
   close: `tejun-desk hand-in` (one desk) or `tejun-desk hand-in --assignment` (every desk).
   A conflict is contained in a candidate worktree, the line is untouched, and you are told
   the two sides; the lead adjudicates.
-- **Verify when evidence is needed.** `npm run verify` typechecks and runs behavior tests.
+- **Verify with scoped evidence.** Run the smallest relevant typecheck, behavior test, or
+  explicit Playwright diagnostic for what you changed. Do not run `npm run verify`; the
+  Team Lead owns that full repository verdict at promotion.
 - **Never `git push`.** Nothing of yours has a remote.
 - **Adopt what your siblings handed in.** When the team line moves you are told. A clean
   desk is brought current at once; a dirty desk gets a **pending** update, taken at your
