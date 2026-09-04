@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { exactSession, exactPane, isValidName, parseTags } from '../src/tmux.js';
 import { newSessionArgs } from '../src/session-args.js';
+import { isStaleViewerSession } from '../src/viewer.js';
 
 const sourceRoot = fileURLToPath(new URL('../src/', import.meta.url));
 
@@ -76,6 +77,12 @@ test('parseTags cleans, dedupes and sorts — tags are addresses, so they stay b
 test('parseTags drops what an agent could not type as an address', () => {
   assert.deepEqual(parseTags('ok, has space, -lead, , x'.trim()), ['ok', 'x']);
   assert.deepEqual(parseTags('a'.repeat(33)), []); // over the 32-char cap
+});
+
+test('startup viewer cleanup preserves the control holder by exact name', () => {
+  assert.equal(isStaleViewerSession('grid_ctl'), false);
+  assert.equal(isStaleViewerSession('grid_alpha_dead_1'), true);
+  assert.equal(isStaleViewerSession('alpha'), false);
 });
 
 /**

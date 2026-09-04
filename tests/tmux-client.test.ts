@@ -45,6 +45,7 @@ function fixture(options: { fallback?: string } = {}) {
     setTimer: (handler, delayMs) => setTimeout(handler, delayMs === 200 ? 1 : delayMs),
     log: () => undefined,
   });
+  void client.connect();
   return { client, children, execs };
 }
 
@@ -120,20 +121,41 @@ test('a mismatched frame number tears down the connection before retry fallback'
   assert.deepEqual(execs.at(-1)?.args, ['list-sessions']);
 });
 
-test('an initial attach failure falls through to execFile', async () => {
+test('the default client path uses execFile without attaching control mode', async () => {
   const execs: string[][] = [];
-  let calls = 0;
+  let controlSpawns = 0;
+  const logs: string[] = [];
   const client = new ControlTmuxClient({
     exec: async (_file, args) => {
       execs.push([...args]);
-      if (++calls <= 2) throw new Error('server unavailable');
       return 'fallback result';
     },
-    log: () => undefined,
+    spawnControl: () => { controlSpawns += 1; return new FakeControl() as never; },
+    log: (line) => logs.push(line),
   });
   assert.equal(await client.run(['list-sessions']), 'fallback result');
   assert.equal(client.state(), 'fallback');
+  assert.equal(controlSpawns, 0);
+  assert.deepEqual(logs, []);
   assert.deepEqual(execs.at(-1), ['list-sessions']);
+});
+
+test('connect explicitly opts a server process into one control attachment', async () => {
+  const children: FakeControl[] = [];
+  const client = new ControlTmuxClient({
+    exec: async () => '',
+    spawnControl: () => {
+      const child = new FakeControl();
+      children.push(child);
+      queueMicrotask(() => child.send('%begin 1 0 0', '%end 1 0 0'));
+      return child as never;
+    },
+    log: () => undefined,
+  });
+  await client.connect();
+  await client.connect();
+  assert.equal(children.length, 1);
+  assert.equal(client.state(), 'up');
 });
 
 test('%exit retries an in-flight command once through execFile fallback', async () => {
@@ -196,6 +218,18 @@ test('a timeout kills the wedged pipe and is not replayed', async () => {
   assert.equal(execs.filter((call) => call.args[0] === 'wait-for').length, 0);
 });
 
+test('an EPIPE-style stdin error becomes connection loss and retry fallback', async () => {
+  const { client, children, execs } = fixture({ fallback: 'after epipe' });
+  const result = client.run(['display-message', '-p', 'value']);
+  const child = await childAt(children);
+  await written(child);
+  child.stdin.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }));
+  assert.equal(await result, 'after epipe');
+  assert.equal(client.state(), 'fallback');
+  assert.equal(child.killed, true);
+  assert.deepEqual(execs.at(-1)?.args, ['display-message', '-p', 'value']);
+});
+
 test('%output octal escapes decode without eating ordinary backslashes', async () => {
   assert.equal(decodeTmuxOutput('a\\040b\\134c\\011d\\n'), 'a b\\c\td\\n');
   const { client, children } = fixture();
@@ -233,8 +267,9 @@ test('an importing process exits after its command leaves the control connection
     "const output = await tmux.run(['display-message', '-p', 'x']);",
     "if (output !== 'x') throw new Error(`unexpected output: ${output}`);",
   ].join(' ');
-  const { stdout } = await promisify(execFile)(process.execPath, [
+  const { stdout, stderr } = await promisify(execFile)(process.execPath, [
     '--import', 'tsx', '--input-type=module', '-e', source,
   ], { cwd: process.cwd(), timeout: 2_000, encoding: 'utf8' });
-  assert.match(stdout, /\[tmux-client\] up/);
+  assert.equal(stdout, '');
+  assert.equal(stderr, '');
 });
