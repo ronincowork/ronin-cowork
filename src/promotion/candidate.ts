@@ -1,9 +1,10 @@
-import { access, symlink } from 'node:fs/promises';
+import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../resources.js';
 import { changedFiles, git, gitOut, isAncestor, mergeInto, revParse, worktreeAddDetached, worktreeList, casRef } from '../desks/git.js';
 import { acceptedSince } from '../desks/receipts.js';
 import type { RepoCandidate } from './receipts.js';
+import { materializeNodeModules } from '../worktree-runtime.js';
 
 export interface RepoSpec {
   repo: string;
@@ -36,15 +37,8 @@ export async function resetCandidate(spec: RepoSpec, sha: string, cdir = candida
     await git(spec.dir, ['worktree', 'prune']).catch(() => undefined);
     await worktreeAddDetached(spec.dir, cdir, sha);
   }
-  await shareNodeModules(spec.dir, cdir);
+  await materializeNodeModules(spec.dir, cdir);
   return cdir;
-}
-
-async function shareNodeModules(from: string, to: string): Promise<void> {
-  const src = path.join(from, 'node_modules');
-  const dst = path.join(to, 'node_modules');
-  if (!(await exists(src)) || (await exists(dst))) return;
-  await symlink(src, dst).catch(() => undefined);
 }
 
 export interface PrepareResult {

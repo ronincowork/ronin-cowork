@@ -34,6 +34,8 @@
 # arguments, 4 refused (unknown role, box full, birth-only flag on a live name…),
 # 5 Ronin unreachable.
 set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
 die() { printf '%s\n' "$1" >&2; exit "${2:-4}"; }
 # WHICH SESSION AM I — asked of tmux, never guessed (the same resolver every tejun uses).
 me() {
@@ -76,7 +78,7 @@ while [ $# -gt 0 ]; do
 done
 ME=$(me 2>/dev/null || true)
 
-url=$(ronin-url) || exit $?
+url=$("$TOOL_DIR/ronin-url") || exit $?
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
 api() { curl -sS -m 60 "${AUTH[@]+"${AUTH[@]}"}" -H 'content-type: application/json' "$@" 2>/dev/null; }

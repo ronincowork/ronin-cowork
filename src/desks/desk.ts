@@ -1,4 +1,4 @@
-import { access, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { arrangementOf, desksManaged } from './arrangement.js';
@@ -11,6 +11,7 @@ import {
   writeDesk,
 } from './registry.js';
 import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
+import { materializeNodeModules } from '../worktree-runtime.js';
 
 export async function syncthingHazard(dir: string): Promise<string> {
   let d = path.resolve(dir);
@@ -52,19 +53,6 @@ export async function ensureLine(a: RepoArrangement, team: string): Promise<Team
   return line;
 }
 
-async function linkNodeModules(a: RepoArrangement, wt: string): Promise<void> {
-  const src = path.join(a.dir, 'node_modules');
-  const dst = path.join(wt, 'node_modules');
-  try {
-    await access(src);
-  } catch {
-    return;
-  }
-  if (existsSync(dst)) return;
-  const { symlink } = await import('node:fs/promises');
-  await symlink(src, dst, 'dir').catch(() => undefined);
-}
-
 export interface OpenInput { repo: string; session: string; team: string; assignment?: string; branch?: string }
 
 export async function openDesk(input: OpenInput): Promise<DeskStatus> {
@@ -92,7 +80,7 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   }
   await setUpstream(a.dir, branch, line.branch).catch(() => undefined);
   await stampDeskIdentity(a.dir, mounted?.path ?? wtPath, input.session);
-  await linkNodeModules(a, mounted?.path ?? wtPath);
+  await materializeNodeModules(a.dir, mounted?.path ?? wtPath);
 
   const rec: DeskRecord = existing
     ? { ...existing, session: input.session, team: input.team, assignment: input.assignment ?? existing.assignment, state: 'open', parked_at: undefined, worktree: mounted?.path ?? wtPath }

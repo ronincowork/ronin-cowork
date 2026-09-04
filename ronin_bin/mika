@@ -29,6 +29,8 @@
 # through the same endpoints the UI uses. Same rule as tejun-harakiri: one implementation
 # of the dangerous thing, never a second copy in bash that drifts from it.
 set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
 
 JOBS="system_help project_root new_session system_config session_boot"
 
@@ -46,7 +48,7 @@ case " $JOBS " in
 esac
 request="$*"
 
-url=$(ronin-url) || exit $?
+url=$("$TOOL_DIR/ronin-url") || exit $?
 
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
@@ -72,7 +74,7 @@ if tmux has-session -t mika 2>/dev/null; then
   # suggested reply at the prompt — the kind you press Tab to accept — in dim text, and
   # there is almost always one sitting there. A check that could not tell dim from typed
   # would refuse every send forever.
-  exec tejun-send mika "$msg"
+  exec "$TOOL_DIR/tejun-send" mika "$msg"
 fi
 
 # Not up. Her dedicated server door owns the house-only birth mechanics.
