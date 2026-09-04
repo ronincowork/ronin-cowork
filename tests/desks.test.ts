@@ -9,8 +9,8 @@
  *     conflict leaves it untouched, nothing-to-hand-in is a refusal with a receipt;
  *   - accepted team state flows down: a clean sibling adopts now, a dirty one is marked
  *     pending with the overlap and its files are not touched;
- *   - close never loses work: unsaved files become a WIP commit, an unintegrated tip is
- *     parked, only an integrated one is deleted; discard is explicit;
+ *   - close never loses work: dirty or unique work remains open and named, while a clean
+ *     integrated desk is removed; handoff changes explicit custody; discard is explicit;
  *   - two hand-ins at once serialize and both land; a crashed holder's lock is reclaimed;
  *     a stale expected ref never advances.
  */
@@ -63,7 +63,7 @@ await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'
 
 const { parseArrangement, arrangementOf } = await import('../src/desks/arrangement.js');
 const { deriveAssignment, listDesks, readDesk, deskWorktree, candidateWorktree } = await import('../src/desks/registry.js');
-const { openDesk, syncDesk, closeDesk, discardDesk, recoverDesk, parkedDesks } = await import('../src/desks/desk.js');
+const { openDesk, syncDesk, closeDesk, discardDesk, handoffDesk } = await import('../src/desks/desk.js');
 const { handIn } = await import('../src/desks/hand-in.js');
 const statusOf = async (repo: string, branch: string) => {
   const d = (await listDesks({ repo })).find((x) => x.branch === branch);
@@ -73,6 +73,7 @@ const statusOf = async (repo: string, branch: string) => {
 const { receiptsForLine, receiptsForDesk, acceptedSince, acceptedLinesForTeam } = await import('../src/desks/receipts.js');
 const { casRef, revParse } = await import('../src/desks/git.js');
 const { lockDir, withLineLock, queueHolder } = await import('../src/desks/queue.js');
+const { readManagedEvents } = await import('../src/desks/lifecycle-ledger.js');
 const { createTeamRoster } = await import('../src/team-rosters.js');
 
 await createTeamRoster('comp', { objective: 'desks', project_root: 'cowork', branch: '' });
@@ -275,39 +276,46 @@ test('handIn conflict: contained in the candidate, the line untouched, the desk 
   assert.ok(accepted.length >= 3);
 });
 
-test('closeDesk: unsaved files become WIP, an unintegrated tip parks (branch kept), an integrated desk is deleted; discard is explicit', async () => {
+test('closeDesk keeps unresolved work named, closes only after hand-in, and records lifecycle closure', async () => {
   const wispr = deskWorktree('cowork', 'team/comp/wispr');
   await syncDesk('cowork', 'team/comp/wispr');
   await fs.writeFile(path.join(wispr, 'draft.txt'), 'half done\n');
   await commitFile(wispr, 'd.txt', 'committed, not handed in\n');
   await fs.writeFile(path.join(wispr, 'draft2.txt'), 'still typing\n');
-  const out = await closeDesk('cowork', 'team/comp/wispr', { unmount: true });
-  assert.equal(out.action, 'parked');
-  assert.ok(out.wip, 'a WIP commit captured the unsaved files');
-  assert.equal(out.unmounted, true);
-  assert.ok(!existsSync(wispr));
+  const out = await closeDesk('cowork', 'team/comp/wispr');
+  assert.equal(out.action, 'kept');
+  assert.match(out.reason, /draft2\.txt/);
+  assert.ok(existsSync(wispr));
+  assert.equal(await fs.readFile(path.join(wispr, 'draft2.txt'), 'utf8'), 'still typing\n');
   assert.ok(sh(cowork, ['rev-parse', 'team/comp/wispr']), 'the branch is kept');
-  const parked = await parkedDesks({ repo: 'cowork' });
-  assert.deepEqual(parked.map((d) => [d.branch, d.session, d.mounted, d.ahead >= 2]), [['team/comp/wispr', 'wispr', false, true]]);
-  // Recover: reassign to another session, remounted, WIP and commit intact.
-  const back = await recoverDesk('cowork', 'team/comp/wispr', 'wispr2');
-  assert.equal(back.mounted, true);
-  assert.equal(back.session, 'wispr2');
-  assert.equal(back.state, 'open');
-  assert.ok(existsSync(path.join(back.worktree, 'draft2.txt')));
-  assert.equal((await parkedDesks({ repo: 'cowork' })).length, 0);
+  await commitFile(wispr, 'draft2.txt', 'still typing\n', 'finish drafts');
   // Hand it in; now close deletes it because the tip is on the line.
   assert.equal((await handIn('cowork', 'team/comp/wispr')).receipt.result, 'accepted');
   const gone = await closeDesk('cowork', 'team/comp/wispr');
-  assert.equal(gone.action, 'deleted');
+  assert.equal(gone.action, 'closed');
   assert.equal(await readDesk('cowork', 'team/comp/wispr'), null);
   assert.throws(() => sh(cowork, ['rev-parse', '--verify', '-q', 'refs/heads/team/comp/wispr']));
+  const lifecycle = await readManagedEvents({ repo: 'cowork' });
+  assert.equal(lifecycle.events.at(-1)?.type, 'desk_closed');
+  assert.equal(lifecycle.events.at(-1)?.result, 'contained');
   // Discard: the only path that deletes an unintegrated tip, and the caller asked.
   const doomed = await openDesk({ repo: 'cowork', session: 'doomed', team: 'comp' });
   await commitFile(doomed.worktree, 'never.txt', 'never handed in\n');
   await discardDesk('cowork', 'team/comp/doomed');
   assert.equal(await readDesk('cowork', 'team/comp/doomed'), null);
   assert.throws(() => sh(cowork, ['rev-parse', '--verify', '-q', 'refs/heads/team/comp/doomed']));
+});
+
+test('handoff replaces explicit owners without moving the branch or worktree', async () => {
+  const desk = await openDesk({ repo: 'cowork', session: 'custodian', team: 'comp' });
+  const next = await handoffDesk('cowork', desk.branch, ['successor', 'coowner', 'successor']);
+  assert.deepEqual(next.owners, ['successor', 'coowner']);
+  assert.equal(next.session, 'successor');
+  assert.equal(next.worktree, desk.worktree);
+  assert.equal(next.tip, desk.tip);
+  const lifecycle = await readManagedEvents({ repo: 'cowork' });
+  assert.equal(lifecycle.events.at(-1)?.type, 'handed_off');
+  assert.deepEqual(lifecycle.events.at(-1)?.objects[0]?.owner_sessions, ['successor', 'coowner']);
 });
 
 test('race: two hand-ins at once serialize on the line and both land; the ledger has both accepted, in order', async () => {

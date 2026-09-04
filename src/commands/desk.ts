@@ -1,12 +1,18 @@
 import { listSessions } from '../tmux.js';
 import { tmux } from '../tmux-client.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from '../desks/registry.js';
-import { closeDesk, discardDesk, openDesk, parkedDesks, recoverDesk, syncDesk } from '../desks/desk.js';
+import { closeDesk, discardDesk, handoffDesk, openDesk, syncDesk } from '../desks/desk.js';
 import { handIn, handInAssignment } from '../desks/hand-in.js';
 import { notifyLeads, replyToHandIn, teamOfLine } from '../desks/lead.js';
 import { acceptedSince, receiptById, receiptsForDesk, receiptsForLine } from '../desks/receipts.js';
 import { queueHolder } from '../desks/queue.js';
 import { deskId, type DeskNotice, type DeskStatus, type HandInReceipt } from '../desks/schema.js';
+import { matchesRepoBranchSelector, parseRepoBranchSelector } from '../desks/selector.js';
+import { inspectEnding } from '../desks/ending.js';
+import { writeDiscardReceipt } from '../desks/quarantine.js';
+import { arrangementOf } from '../desks/arrangement.js';
+import { randomUUID } from 'node:crypto';
+import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
 
 const out = (s = '') => process.stdout.write(s + '\n');
 function die(verdict: string, code: number): never {
@@ -59,10 +65,9 @@ const USAGE = `usage: tejun-desk status [--session s | --team t | --repo r]
        tejun-desk open <repo> [--team t] [--session s]
        tejun-desk hand-in [<repo>] [--assignment]
        tejun-desk sync [<repo>]
-       tejun-desk park [<repo>] [--unmount]
-       tejun-desk parked [--team t] [--repo r]
-       tejun-desk recover <repo> <branch> [--session s]
-       tejun-desk discard <repo> <branch> --yes
+       tejun-desk close [<repo[:branch]>]
+       tejun-desk handoff <repo[:branch]> --to <session[,session]>
+       tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"
        tejun-desk reply <repo> <receipt id> <message…>
        tejun-desk receipts [<repo>] [--line [--accepted | --since <line sha>] | --id <receipt id>]`;
 
@@ -93,15 +98,17 @@ function receiptLine(r: HandInReceipt): string {
   return `${r.at}  ${r.result.toUpperCase().padEnd(8)}  ${r.repo}:${r.desk}  ${r.source_tip.slice(0, 10)} onto ${r.expected_old.slice(0, 10)}  ${tail}  [${r.id}]`;
 }
 
-async function mine(session: string, repo: string): Promise<DeskStatus[]> {
-  const all = await listDesks({ session, ...(repo ? { repo } : {}) });
-  return all.filter((d) => d.state === 'open');
+async function mine(session: string, selected: string): Promise<DeskStatus[]> {
+  const all = (await listDesks()).filter((d) => d.state === 'open' && (d.owners?.length ? d.owners : [d.session]).includes(session));
+  if (!selected) return all;
+  const selector = parseRepoBranchSelector(selected);
+  return all.filter((desk) => matchesRepoBranchSelector(desk, selector));
 }
 
-async function pickOne(session: string, repo: string, verb: string): Promise<DeskStatus> {
-  const desks = await mine(session, repo);
-  if (!desks.length) die(repo ? `NO-DESK: ${session} has no open desk on ${repo}` : `NO-DESK: ${session} has no open desk`, 3);
-  if (desks.length > 1) die(`WHICH-REPO: ${session} has desks on ${desks.map((d) => d.repo).join(', ')} — name one (tejun-desk ${verb} <repo>)`, 2);
+async function pickOne(session: string, selected: string, verb: string): Promise<DeskStatus> {
+  const desks = await mine(session, selected);
+  if (!desks.length) die(selected ? `NO-DESK: ${session} has no open desk matching ${selected}` : `NO-DESK: ${session} has no open desk`, 3);
+  if (desks.length > 1) die(`WHICH-DESK: ${session} has ${desks.map(deskId).join(', ')} — name one (tejun-desk ${verb} <repo:branch>)`, 2);
   return desks[0]!;
 }
 
@@ -168,39 +175,57 @@ async function main(): Promise<void> {
         out(noticeLine(n));
         process.exit(n.kind === 'adopted' ? 0 : 4);
       }
-      case 'park': {
+      case 'close': {
         if (!session) die('NO-SESSION: not inside a session and no --session', 3);
-        const targets = positional[0] ? [await pickOne(session, positional[0], 'park')] : await mine(session, '');
+        const targets = positional[0] ? [await pickOne(session, positional[0], 'close')] : await mine(session, '');
         if (!targets.length) die(`NO-DESK: ${session} has no open desk`, 3);
+        let kept = false;
         for (const d of targets) {
-          const o = await closeDesk(d.repo, d.branch, { unmount: !!flags.get('unmount') });
-          out(`${o.action.toUpperCase()} ${deskId(d)}${o.wip ? ` — unsaved files kept as WIP ${o.wip.slice(0, 10)}` : ''}${o.desk ? ` — ${o.desk.ahead} commit(s) ahead, not handed in; the lead sees it` : ' — tip already on the line'}${o.unmounted && o.action === 'parked' ? ' (worktree unmounted, branch kept)' : ''}`);
+          const o = await closeDesk(d.repo, d.branch);
+          kept ||= o.action === 'kept';
+          out(`${o.action.toUpperCase()} ${deskId(d)} — ${o.reason}`);
         }
-        return;
+        process.exit(kept ? 4 : 0);
       }
-      case 'parked': {
-        const desks = await parkedDesks({ ...(str(flags.get('team')) ? { team: str(flags.get('team')) } : {}), ...(str(flags.get('repo')) ? { repo: str(flags.get('repo')) } : {}) });
-        if (!desks.length) die('NONE parked', 0);
-        out(`${desks.length} parked desk(s) — hand in · inspect · reassign (tejun-desk recover) · discard (tejun-desk discard --yes)`);
-        for (const d of desks) out(`${row(d)}  since ${d.parked_at ?? '?'} by ${d.session}`);
-        return;
-      }
-      case 'recover': {
-        const [repo, branch] = positional;
-        if (!repo || !branch) die(USAGE, 2);
-        const to = str(flags.get('session')) || session;
-        if (!to) die('NO-SESSION: say --session <name> to reassign to', 3);
-        const d = await recoverDesk(repo, branch, to);
-        out(`RECOVERED ${deskId(d)} → ${to} at ${d.worktree}`);
+      case 'handoff': {
+        if (!session || !positional[0]) die(USAGE, 2);
+        const d = await pickOne(session, positional[0], 'handoff');
+        const to = str(flags.get('to')).split(',').map((value) => value.trim()).filter(Boolean);
+        if (!to.length) die('NO-SUCCESSOR: say --to <session[,session]>', 2);
+        const next = await handoffDesk(d.repo, d.branch, to);
+        out(`HANDED-OFF ${deskId(d)} → ${to.join(', ')} at ${next.worktree}`);
         out(row(d));
         return;
       }
       case 'discard': {
-        const [repo, branch] = positional;
-        if (!repo || !branch) die(USAGE, 2);
-        if (!flags.get('yes')) die(`REFUSED: discard deletes ${repo}:${branch} and every commit only it holds — say --yes`, 4);
-        await discardDesk(repo, branch);
-        out(`DISCARDED ${repo}:${branch}`);
+        if (!session || !positional[0]) die(USAGE, 2);
+        const d = await pickOne(session, positional[0], 'discard');
+        const confirmation = str(flags.get('confirm'));
+        const expected = `DISCARD ${deskId(d)}`;
+        if (confirmation !== expected) die(`CONFIRM: discard deletes ${deskId(d)} and every commit only it holds — say --confirm "${expected}"`, 4);
+        const a = await arrangementOf(d.repo);
+        const facts = await inspectEnding({
+          scope: 'session', subject: session, requested_action: 'delete',
+          desks: [{ ...d, repo_dir: a.dir, owners: d.owners?.length ? d.owners : [d.session] }],
+          ownerReachable: () => false,
+        });
+        const fact = facts.desks[0]!;
+        const files = [...new Set([...fact.changes.staged, ...fact.changes.unstaged, ...fact.changes.untracked])];
+        const transaction_id = `discard_${randomUUID()}`;
+        const receipt = await withManagedTransaction({
+          repo: d.repo, transaction_id, type: 'ending_inspected', result: 'started', session, team: d.team,
+          refs: [{ name: d.branch, before: d.tip, after: '' }], commits: fact.unique_commits.map((sha) => ({ role: 'discarded', sha })),
+          objects: [{ kind: 'desk', id: deskId(d), path: d.worktree, owner_sessions: d.owners, owner_team: d.team }],
+          detail: { operation: 'discard', files },
+        }, async (transaction) => {
+          const saved = await writeDiscardReceipt({ confirmation, repo: d.repo, branch: d.branch, owners: d.owners ?? [d.session], commits: fact.unique_commits, files });
+          await discardDesk(d.repo, d.branch);
+          await transaction.finish('discarded', 'discarded', {
+            objects: [{ kind: 'receipt', id: saved.id }, { kind: 'desk', id: deskId(d) }], detail: { receipt_id: saved.id, confirmation, files },
+          });
+          return saved;
+        });
+        out(`DISCARDED ${deskId(d)} — receipt ${receipt.id}`);
         return;
       }
       case 'reply': {

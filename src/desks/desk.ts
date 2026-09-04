@@ -1,9 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { arrangementOf, desksManaged } from './arrangement.js';
 import {
-  branchExists, commitAll, deleteBranch, resetHardTo, git, isAncestor, mergeInto, revParse, setUpstream,
+  branchExists, deleteBranch, resetHardTo, git, isAncestor, mergeInto, revParse, setUpstream,
   worktreeAddExisting, worktreeAddNew, worktreeOf, worktreePrune, worktreeRemove, changedFiles, dirtyFiles, stampDeskIdentity,
 } from './git.js';
 import {
@@ -12,6 +13,7 @@ import {
 } from './registry.js';
 import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
 import { materializeNodeModules } from '../worktree-runtime.js';
+import { withManagedTransaction } from './lifecycle-ledger.js';
 
 export async function syncthingHazard(dir: string): Promise<string> {
   let d = path.resolve(dir);
@@ -123,32 +125,56 @@ export async function syncDesk(repo: string, branch: string): Promise<DeskNotice
   return adoptLine(rec, await arrangementOf(repo), rec.pending?.by ?? '');
 }
 
-export interface CloseOutcome { desk: DeskStatus | null; action: 'parked' | 'deleted' | 'kept'; wip: string; unmounted: boolean }
+export interface CloseOutcome { desk: DeskStatus | null; action: 'closed' | 'kept'; reason: string }
 
-export async function closeDesk(repo: string, branch: string, opts: { unmount?: boolean; wipMessage?: string } = {}): Promise<CloseOutcome> {
+export async function closeDesk(repo: string, branch: string): Promise<CloseOutcome> {
   const rec = await readDesk(repo, branch);
-  if (!rec) return { desk: null, action: 'kept', wip: '', unmounted: false };
+  if (!rec) return { desk: null, action: 'kept', reason: 'no desk is recorded' };
   const a = await arrangementOf(repo);
-  let st = await deskStatus(rec, a);
-  let wip = '';
-  if (st.mounted && st.dirty) {
-    wip = await commitAll(st.worktree, opts.wipMessage || `WIP: ${rec.session} closed ${branch} with unsaved files`);
-    st = await deskStatus(rec, a);
-  }
+  const st = await deskStatus(rec, a);
+  if (st.dirty) return { desk: st, action: 'kept', reason: `unsaved files: ${st.dirty_files.join(', ')}` };
   const integrated = !!st.tip && !!st.line_tip && (await isAncestor(a.dir, st.tip, st.line_tip));
-  if (integrated) {
-    if (st.mounted) await worktreeRemove(a.dir, st.worktree, false).catch(() => worktreeRemove(a.dir, st.worktree, true));
+  if (!integrated) return { desk: st, action: 'kept', reason: `${st.ahead} commit(s) are not on ${st.line}` };
+  const transaction_id = `close_${randomUUID()}`;
+  return withManagedTransaction({
+    repo, transaction_id, type: 'ending_inspected', result: 'started', session: rec.session, team: rec.team,
+    refs: [{ name: branch, before: st.tip, after: '' }], commits: [{ role: 'desk_tip', sha: st.tip }],
+    objects: [
+      { kind: 'desk', id: `${repo}:${branch}`, path: st.worktree, owner_sessions: rec.owners?.length ? rec.owners : [rec.session], owner_team: rec.team },
+      { kind: 'assignment', id: rec.assignment, owner_sessions: rec.owners?.length ? rec.owners : [rec.session], owner_team: rec.team },
+      { kind: 'worktree', id: `${repo}:${branch}`, path: st.worktree },
+    ], detail: { operation: 'close', contained_in: st.line },
+  }, async (transaction) => {
+    if (st.mounted) await worktreeRemove(a.dir, st.worktree, false);
     await deleteBranch(a.dir, branch);
     await removeDesk(repo, branch);
-    return { desk: null, action: 'deleted', wip, unmounted: true };
-  }
-  let unmounted = false;
-  if (opts.unmount && st.mounted) {
-    await worktreeRemove(a.dir, st.worktree, false);
-    unmounted = true;
-  }
-  const parked = await updateDesk(repo, branch, { state: 'parked', parked_at: new Date().toISOString() });
-  return { desk: await deskStatus(parked, a), action: 'parked', wip, unmounted };
+    await transaction.finish('desk_closed', 'contained', { detail: { contained_in: st.line } });
+    return { desk: null, action: 'closed', reason: `tip is contained in ${st.line}` };
+  });
+}
+
+export async function handoffDesk(repo: string, branch: string, successors: string[]): Promise<DeskStatus> {
+  const rec = await readDesk(repo, branch);
+  if (!rec) throw new Error(`no desk recorded for ${repo}:${branch}`);
+  const owners = [...new Set(successors.map((owner) => owner.trim()).filter(Boolean))];
+  if (!owners.length) throw new Error('handoff requires at least one successor owner');
+  const prior = rec.owners?.length ? rec.owners : [rec.session];
+  const transaction_id = `handoff_${randomUUID()}`;
+  return withManagedTransaction({
+    repo, transaction_id, type: 'ending_inspected', result: 'started', session: rec.session, team: rec.team,
+    refs: [], commits: [],
+    objects: [{ kind: 'desk', id: `${repo}:${branch}`, path: rec.worktree, owner_sessions: prior, owner_team: rec.team }],
+    detail: { operation: 'handoff', from: prior, to: owners },
+  }, async (transaction) => {
+    const next = await updateDesk(repo, branch, {
+      owners, session: owners[0]!, successor_session: owners[0], handed_off_at: new Date().toISOString(),
+    });
+    await transaction.finish('handed_off', 'handed_off', {
+      objects: [{ kind: 'desk', id: `${repo}:${branch}`, path: next.worktree, owner_sessions: owners, owner_team: next.team }],
+      detail: { from: prior, to: owners },
+    });
+    return deskStatus(next, await arrangementOf(repo));
+  });
 }
 
 export async function discardDesk(repo: string, branch: string): Promise<void> {
