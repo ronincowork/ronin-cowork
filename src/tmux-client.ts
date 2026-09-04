@@ -165,6 +165,10 @@ export class ControlTmuxClient implements TmuxClient {
   }
 
   private async runSerialized(args: readonly string[], timeoutMs: number): Promise<string> {
+    // tmux's parser ends a command at a newline and a quoted string cannot span lines, so
+    // an argument holding one — a birth's brief, handed to new-session as argv — cannot
+    // travel over the control line. That one call takes the process path, state unchanged.
+    if (args.some((arg) => arg.includes('\n') || arg.includes('\r'))) return this.deps.exec('tmux', args, timeoutMs);
     commandLine(args); // Validate before opening a connection or invoking the fallback.
     if (!this.controlEnabled) return this.fallback(args, timeoutMs);
     this.followTmuxEnvironment();
