@@ -1,32 +1,16 @@
 import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { closeTestServer, openTestServer } from './helpers/testserver.js';
 
-const exec = promisify(execFile);
-
-/** A private tmux server gives queue tests a real, test-owned recipient and birth key. */
+/** A test-owned tmux server gives queue tests a real recipient and birth key. The product
+ *  reaches it because the helper puts the server's `tmux` wrapper first on PATH. */
 async function liveTarget(t: TestContext, name: string): Promise<string> {
-  const tmuxRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-target-'));
-  const before = { tmux: process.env.TMUX, pane: process.env.TMUX_PANE, tmpdir: process.env.TMUX_TMPDIR };
-  const env = { ...process.env, TMUX_TMPDIR: tmuxRoot };
-  delete env.TMUX;
-  delete env.TMUX_PANE;
-  await exec('/usr/bin/tmux', ['new-session', '-d', '-s', name], { env });
-  process.env.TMUX_TMPDIR = tmuxRoot;
-  delete process.env.TMUX;
-  delete process.env.TMUX_PANE;
-  t.after(async () => {
-    await exec('/usr/bin/tmux', ['kill-server'], { env }).catch(() => {});
-    await fs.rm(tmuxRoot, { recursive: true, force: true });
-    for (const [key, value] of Object.entries(before)) {
-      const envKey = key === 'tmux' ? 'TMUX' : key === 'pane' ? 'TMUX_PANE' : 'TMUX_TMPDIR';
-      if (value === undefined) delete process.env[envKey]; else process.env[envKey] = value;
-    }
-  });
+  const server = await openTestServer(`mq_${name}`, { onPath: true });
+  t.after(() => closeTestServer(server));
+  await server.run('new-session', '-d', '-s', name);
   return name;
 }
 

@@ -1,25 +1,25 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { closeTestServer, openTestServer } from './helpers/testserver.js';
 
 /* The start-only file may keep the server alive, but coexistence means it must preserve
- * the owner's key tables. Tile input is suppressed in src/viewer.ts, not by global unbinds. */
+ * the owner's key tables. Tile input is suppressed in src/viewer.ts, not by global unbinds.
+ * A test server started FROM deploy/tmux-server.conf, under a HOME with no ~/.tmux.conf so
+ * the assertions are about our file alone. */
 
-const exec = promisify(execFile);
-const TMUX = '/usr/bin/tmux';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const root = await fs.mkdtemp('/tmp/rc-');
-const env = { ...process.env, TMUX_TMPDIR: root } as Record<string, string>;
-delete env.TMUX; delete env.TMUX_PANE; delete env.HOME_TMUX_CONF;
-const tmux = (...args: string[]) => exec(TMUX, args, { env }).then((r) => r.stdout.trim());
-// A HOME with no ~/.tmux.conf, so the assertions are about our file alone.
-env.HOME = root;
-await exec(TMUX, ['-f', path.join(repo, 'deploy', 'tmux-server.conf'), 'start-server'], { env });
+const home = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-conf-home-'));
+const server = await openTestServer('server_conf', { conf: path.join(repo, 'deploy', 'tmux-server.conf'), env: { HOME: home } });
+const tmux = server.run;
 await tmux('new-session', '-d', '-s', 'probe');
+after(async () => {
+  await closeTestServer(server);
+  await fs.rm(home, { recursive: true, force: true });
+});
 
 test('the tile\'s own copy-mode commands work on this server and leave every key table byte-identical', async () => {
   const tables = async () => {
@@ -44,9 +44,4 @@ test('the start-only config does not rewrite global key tables', async () => {
 
 test('the server unit setting the file exists for is still there', async () => {
   assert.equal(await tmux('show-options', '-s', '-v', 'exit-empty'), 'off');
-});
-
-test.after(async () => {
-  await tmux('kill-server').catch(() => {});
-  await fs.rm(root, { recursive: true, force: true });
 });

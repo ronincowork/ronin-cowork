@@ -41,7 +41,20 @@ const inheritedTmux = process.env.TMUX
       return [option, read.status === 0 ? read.stdout : null];
     }))
   : null;
-const testEnv = { ...process.env, BIND: process.env.BIND || '127.0.0.1', TMPDIR: runRoot, TMUX_TMPDIR: tmuxRoot, RONIN_TEST_RUNNER: '1', TSX_DISABLE_CACHE: '1' };
+// The live server's identity before the run, read through this pane's own $TMUX. A run
+// that replaces it names itself below instead of needing an afternoon of forensics.
+const livePid = () => {
+  if (!process.env.TMUX) return null;
+  const read = spawnSync('tmux', ['display-message', '-p', '#{pid}'], { encoding: 'utf8' });
+  return read.status === 0 ? read.stdout.trim() : null;
+};
+const liveBefore = livePid();
+// Test servers (tests/helpers/testserver.ts → ronin-testserver) live under this run's own
+// root, so what a run opens is the run's to close, and a leftover is this run's leak.
+// Short and under /tmp on purpose: a Unix socket path is capped at 107 bytes, and a
+// session's TMPDIR can be long enough to push `<root>/<name>/tmux-<uid>/<name>` past it.
+const serversRoot = fs.mkdtempSync('/tmp/ronin-testserver-');
+const testEnv = { ...process.env, BIND: process.env.BIND || '127.0.0.1', TMPDIR: runRoot, TMUX_TMPDIR: tmuxRoot, RONIN_TESTSERVER_ROOT: serversRoot, RONIN_TEST_RUNNER: '1', TSX_DISABLE_CACHE: '1' };
 delete testEnv.TMUX;
 delete testEnv.TMUX_PANE;
 const r = spawnSync('node', ['--import', 'tsx', '--import', './tests/fixture-teardown.mjs', '--test', '--test-concurrency=1', ...files], {
@@ -59,6 +72,27 @@ if (inheritedTmux) {
     }
   }
 }
+const liveAfter = livePid();
+if (liveBefore && liveAfter !== liveBefore) {
+  console.error(`FAILED — this run replaced the tmux server (was ${liveBefore}, now ${liveAfter ?? 'none'}). A test reached the live server; every scratch server must come from tests/helpers/testserver.ts.`);
+  process.exitCode = 1;
+}
+const openServers = [];
+if (fs.existsSync(serversRoot)) {
+  for (const name of fs.readdirSync(serversRoot)) {
+    const wrapper = path.join(serversRoot, name, 'tmux');
+    if (!fs.existsSync(wrapper)) continue;
+    const alive = spawnSync(wrapper, ['display-message', '-p', '#{pid}'], { encoding: 'utf8' });
+    if (alive.status !== 0) continue;
+    openServers.push(`${name} (pid ${alive.stdout.trim()})`);
+    spawnSync(wrapper, ['kill-server']); // the run's own server; its root goes with the run root
+  }
+}
+if (openServers.length) {
+  console.error(`FAILED — ${openServers.length} test server(s) left open: ${openServers.join(', ')}. Each test closes what it opened (closeTestServer). The runner closed these as a backstop.`);
+  process.exitCode = 1;
+}
+fs.rmSync(serversRoot, { recursive: true, force: true });
 fs.rmSync(tmuxRoot, { recursive: true, force: true });
 const leaked = fs.readdirSync(runRoot);
 fs.rmSync(runRoot, { recursive: true, force: true });
