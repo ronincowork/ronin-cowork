@@ -254,18 +254,18 @@ Sessions are disposable: nothing of value may live only in a pane.
 ## delete
 - **class:** session_macro.workflow
 - **label:** Throw this session away
-- **blurb:** Ends the session and keeps nothing — no write-up, no pull request, no index entry, no way back. For sessions that produced nothing worth saving. It refuses and tells you if there is unsaved work, which is the case for finishing up properly instead.
+- **blurb:** Ends the session without a write-up. Its ending preflight names managed work and offers Prompt Agent or Ignore; Ignore preserves unresolved work in visible quarantine custody.
 **End THIS session quietly — nothing recorded.** For sessions that produced no
 artifact worth keeping: evaluations, catch-ups, questions, scratch work. No README,
 no manifest line, no PR. It just goes away.
 
 | # | Action | With |
 |---|---|---|
-| 1 | check-clean | unsaved files, commits not handed in, or an unsaved artifact at any desk → STOP: that is a `land`, not a `delete` |
+| 1 | check-clean | inspect every desk; unresolved named work goes through Prompt Agent or Ignore/quarantine |
 | 2 | report-outcome | one line: what you were, that nothing was kept |
 | 3 | harakiri | end this session |
 
-Contrast with `land`: land RECORDS (README + manifest + hand-in/park) then dies; delete just dies.
+Contrast with `land`: land records the result and hands work in; delete has no write-up, but its ending preflight still preserves explicit custody.
 
 ## team
 - **class:** session_macro.lookup

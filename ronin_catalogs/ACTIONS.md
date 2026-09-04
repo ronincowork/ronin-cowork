@@ -561,14 +561,14 @@ handled exit; the live desk is never consumed.
 nothing cross-repo is checked here.
 > Tool: `tejun-desk hand-in [<repo[:branch]>] [--assignment]`
 
-## desk-park — close a desk without losing or publishing anything
+## desk-close — close a finished desk independently of its session
 `action_kind: mechanical` — run it, don't deliberate.
-Unsaved files become a `WIP:` commit on the desk's own branch. A desk with commits ahead
-of its line is PARKED — branch kept, worktree optionally unmounted, recorded with owner,
-ahead count and time — and listed for the lead, who chooses hand in · inspect · reassign
-· discard. A desk whose tip is already on the line is deleted. Nothing else deletes;
-`discard --yes` is the one explicit path that removes an unintegrated tip.
-> Tool: `tejun-desk park [<repo>] [--unmount]` · `tejun-desk parked` · `tejun-desk recover <repo> <branch> --session <s>` · `tejun-desk discard <repo> <branch> --yes`
+Close removes a clean desk whose tip is already on its line. Dirty files or commits not on
+the line remain in the live desk and are named; close never turns them into an automatic
+WIP commit. `handoff` transfers explicit ownership without moving the branch or worktree.
+Intentional discard alone deletes unresolved work and requires the exact confirmation;
+its durable receipt names the commits and files before deletion.
+> Tool: `tejun-desk close [<repo[:branch]>]` · `tejun-desk handoff <repo[:branch]> --to <session[,session]>` · `tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"`
 
 ## check-clean
 `action_kind: mechanical` — run it, don't deliberate.
@@ -578,11 +578,12 @@ of your assignment**, not just the one your shell is in.
 tejun-desk status                    # per desk: dirty · ahead (not handed in) · pending update · blocked
 git status --short && git log --oneline -3   # no desk: the checkout you are in
 ```
-Every desk saved, handed in and accepted (or parked on purpose) → safe to end. Unsaved
-files, commits ahead of the team line not yet handed in, a refused hand-in awaiting the
-lead, or an artifact the owner would want kept → **STOP and say so**: that case is a
-`land`, not a `delete`. Remote publication is not session cleanliness — "pushed" is not
-the question at a desk. Judgement, not just git: a written doc or finding that exists
+Every desk saved, handed in, accepted and closed → the ending proceeds directly. Unsaved
+files, commits ahead of the team line, a pending transaction, or an artifact the owner
+would want kept are named in the ending preflight. Choose **Prompt Agent(s)** to queue the
+exact closeout work and refresh the warning, or **Ignore** to proceed with visible quarantine
+custody. Intentional discard is separate and requires its exact receipt confirmation.
+Remote publication is not session cleanliness — "pushed" is not the question at a desk. Judgement, not just git: a written doc or finding that exists
 only in your pane also counts as unsaved.
 
 ## read-work-record
