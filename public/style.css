@@ -181,13 +181,12 @@
   --bar-brand-track: -0.005em;
 
   /* Workbench scope headers; the individual Team keeps the established kaki family. */
-  --scope-graphite: #3a4560;
+  --scope-graphite: #3b3d42;
   --scope-campaign-head-bg: color-mix(in srgb, var(--scope-graphite) 24%, var(--bg-2));
   --scope-teams-head-bg: color-mix(in srgb, var(--aiiro) 24%, var(--bg-2));
   --scope-head-line: color-mix(in srgb, var(--define-line) 72%, var(--line));
   --scope-head-fg: var(--fg-strong);
   --scope-head-muted: var(--muted-2);
-  --scope-island-bg: var(--kaki);
 
 
   --edge: 1px;
@@ -300,7 +299,6 @@
   --cowork-surface-head-edge: var(--space-1);
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
-  --scope-island-bg: var(--scope-graphite);
 }
 :root[data-scope='teams'] {
   --cowork-head-bg: var(--scope-teams-head-bg);
@@ -308,7 +306,6 @@
   --cowork-surface-head-edge: var(--space-1);
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
-  --scope-island-bg: var(--aiiro);
 }
 
 
@@ -394,14 +391,13 @@ body {
 .ui-bar-place {
   position: absolute;
   z-index: 2;
-  top: 100%;
+  top: 0;
   left: 50%;
   min-width: 7rem;
   max-width: min(40vw, 24rem);
-  padding: var(--space-3) var(--space-7);
-  border-radius: var(--radius-pill);
-  background: var(--scope-island-bg);
-  box-shadow: 0 0 0 var(--space-2) var(--bg), var(--shadow-menu);
+  padding: var(--space-3) var(--space-7) var(--space-4);
+  border-radius: 0 0 var(--radius-pill) var(--radius-pill);
+  background: #090a0c;
   color: var(--on-strong);
   font-size: var(--bar-value-size);
   font-style: normal;
@@ -410,7 +406,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transform: translate(-50%, -32%);
+  transform: translateX(-50%);
 }
 .ui-bar-place[hidden] { display: none; }
 

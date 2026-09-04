@@ -97,18 +97,18 @@ Rules that make them peers:
 
 ### The bar's navigation
 
-The left side keeps the RoninCowork brand and a Teams door. A solid-colour island hangs
-from the middle of the neutral bar and names the active Workbench scope:
+The left side keeps the RoninCowork brand and a Teams door. A neutral island is cut into
+the top edge of the screen and names the active Workbench scope:
 
 ```text
 RoninCowork  •  Teams              Teams                         <verbs>
 RoninCowork  •  Teams            Sea Settle                      <verbs>
 ```
 
-The root landing and Machine Settings have no island. Campaign uses a graphite island,
-Teams uses aiiro, and one Team uses kaki with only its readable name. The island's solid
-colour deliberately differs from the tint on the Workbench headers below it. It is a place
-reading, never a button. Doors consume the shared
+The root landing and Machine Settings have no island. Campaign reads *Campaign*, Teams
+reads *Teams*, and one Team uses only its readable name. The neutral island does not carry
+the scope colour: graphite, aiiro and kaki belong to the Workbench headers below it. It is
+a place reading, never a button. Doors consume the shared
 `.ui-bar-nav` primitive and the place consumes `.ui-bar-place` from `docs/ui.md`; a
 feature must not restyle either. `js/workspace-header.js` writes the place; nothing
 else does.

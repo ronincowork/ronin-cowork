@@ -30,8 +30,8 @@ declared first:
 - **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the central
   `#attention-flash`, and the help box.
 - **ui** also owns the app-bar navigation set: `.ui-bar-nav` is a clickable label,
-  `.ui-bar-value` is the plain loaded value beside it, and `.ui-bar-place` is the one
-  italic reading centred in the bar that says which page the doors led to. Native button
+  `.ui-bar-value` is the plain loaded value beside it, and `.ui-bar-place` is the neutral
+  island cut into the top edge that names which Workbench the doors led to. Native button
   chrome and feature-local bar styling are forbidden.
 - **app** — every composition and feature rule, in source order.
 
