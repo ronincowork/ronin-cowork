@@ -1,8 +1,9 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile } from 'node:fs/promises';
+import { tmux } from './tmux-client.js';
 
-const pexec = promisify(execFile);
+const execAsync = promisify(execFile);
 
 const cgroupOf = async (pid: string): Promise<string> =>
   (await readFile(`/proc/${pid}/cgroup`, 'utf8')).trim();
@@ -12,7 +13,7 @@ export async function checkTmuxServerCgroup(): Promise<boolean> {
   try {
     const mine = await cgroupOf('self');
     if (!mine.includes('.service')) return false; // not run as a systemd unit — nothing kills us as a group
-    const { stdout } = await pexec('tmux', ['display-message', '-p', '#{pid}']);
+    const stdout = await tmux.run(['display-message', '-p', '#{pid}']);
     const pid = stdout.trim();
     if (!/^\d+$/.test(pid)) return false;
     if ((await cgroupOf(pid)) !== mine) return false;
@@ -37,10 +38,11 @@ export async function checkTmuxServerCgroup(): Promise<boolean> {
 }
 
 type HostExec = (file: string, args: string[]) => Promise<unknown>;
+const hostExec: HostExec = (file, args) => file === 'tmux' ? tmux.run(args) : execAsync(file, args);
 
 export async function ensureTmuxServer(
   env: NodeJS.ProcessEnv = process.env,
-  exec: HostExec = pexec,
+  exec: HostExec = hostExec,
 ): Promise<void> {
   if (process.platform !== 'linux') return;
   if (env.TMUX || env.TMUX_TMPDIR) return;
