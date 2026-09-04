@@ -5,9 +5,18 @@ import { casRef, mergeInto, revParse, worktreeAddDetached, worktreePrune, worktr
 import { withLineLock } from './queue.js';
 import { candidateWorktree, deskStatus, lineFor, listDeskRecords, readDesk, updateDesk } from './registry.js';
 import { appendReceipt, newReceiptId } from './receipts.js';
-import type { DeskNotice, HandInReceipt, HandInResult, RepoArrangement } from './schema.js';
+import type { DeskNotice, DeskStatus, HandInReceipt, HandInResult, RepoArrangement } from './schema.js';
 
-export interface HandInOutcome { receipt: HandInReceipt; notices: DeskNotice[] }
+export interface HandInTidy {
+  desk: DeskStatus | null;
+  unsaved_files: string[];
+  other_level_desks: Array<{ repo: string; branch: string }>;
+  promotion_due: boolean;
+}
+
+export interface HandInOutcome { receipt: HandInReceipt; notices: DeskNotice[]; tidy: HandInTidy }
+
+const emptyTidy = (): HandInTidy => ({ desk: null, unsaved_files: [], other_level_desks: [], promotion_due: false });
 
 async function freshCandidate(a: RepoArrangement, line: string, sha: string): Promise<string> {
   const wt = candidateWorktree(a.repo, line);
@@ -29,42 +38,47 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
   });
 
   const st = await deskStatus(rec, a);
-  if (!st.tip) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: 'desk branch is gone' })), notices: [] };
-  if (st.ahead === 0) {
-    return { receipt: await appendReceipt(receipt({ result: 'refused', source_tip: st.tip, reason: 'nothing to hand in — the desk is not ahead of its line' })), notices: [] };
-  }
-  const funnelDirt = await lineDirty(line);
-  if (funnelDirt.length) {
-    return { receipt: await appendReceipt(receipt({ result: 'refused', source_tip: st.tip, reason: `the reviewed integration line ${line.worktree} has unsaved files (${funnelDirt.length}); diagnose and preserve them before hand-in`, conflict_files: funnelDirt })), notices: [] };
-  }
+  if (!st.tip) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: 'desk branch is gone' })), notices: [], tidy: emptyTidy() };
 
   const out = await withLineLock(repo, line.branch, async (): Promise<HandInReceipt> => {
-    const maxRetries = opts.maxRetries ?? 3;
-    for (let attempt = 0; ; attempt++) {
-      const dirt = await lineDirty(line);
-      if (dirt.length) {
-        return appendReceipt(receipt({ result: 'refused', source_tip: st.tip, reason: `the reviewed integration line ${line.worktree} has unsaved files (${dirt.length}); diagnose and preserve them before hand-in`, conflict_files: dirt }));
+    try {
+      const maxRetries = opts.maxRetries ?? 3;
+      for (let attempt = 0; ; attempt++) {
+        const preexistingLineDirt = await lineDirty(line);
+        const old = await revParse(a.dir, `refs/heads/${line.branch}`);
+        const tip = await revParse(a.dir, `refs/heads/${branch}`);
+        const working = await revParse(a.dir, `refs/heads/${a.working}`);
+        const cand = await freshCandidate(a, line.branch, working);
+        const accepted = await mergeInto(cand, line.branch, `Add accepted ${line.branch} delta to current ${a.working}`);
+        if (!accepted.ok) {
+          return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old,
+            reason: `accepted team delta conflicts with current ${a.working}`, conflict_files: accepted.conflicts }));
+        }
+        const incoming = await mergeInto(cand, branch, `Hand in ${branch} to ${line.branch} (${rec.session})`);
+        if (!incoming.ok) {
+          await updateDesk(repo, branch, { blocked: `hand-in conflicts with current ${a.working} plus ${line.branch} on ${incoming.conflicts.length} file(s) — update the desk and resolve` });
+          return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old, conflict_files: incoming.conflicts }));
+        }
+        const candSha = await revParse(cand, 'HEAD');
+        if (await casRef(a.dir, line.branch, candSha, old)) {
+          const refreshed = preexistingLineDirt.length ? false : await refreshLine(line);
+          await updateDesk(repo, branch, { blocked: '', pending: null });
+          const reason = preexistingLineDirt.length
+            ? `line advanced; its worktree has unsaved files (${preexistingLineDirt.join(', ')}) and was left untouched`
+            : refreshed ? '' : `line advanced; its worktree ${line.worktree} did not fast-forward`;
+          const r = await appendReceipt(receipt({ result: 'accepted', source_tip: tip, expected_old: old, candidate: candSha, line_sha: candSha, reason }));
+          await updateDesk(repo, branch, { last_hand_in: r.id });
+          return r;
+        }
+        if (attempt >= maxRetries) {
+          return appendReceipt(receipt({ result: 'stale', source_tip: tip, expected_old: old, candidate: candSha, reason: `line moved ${attempt + 1} times during hand-in; re-run` }));
+        }
+        await appendReceipt(receipt({ result: 'stale', source_tip: tip, expected_old: old, candidate: candSha, reason: 'line moved; rebuilt on the new tip' }));
       }
-      const old = await revParse(a.dir, `refs/heads/${line.branch}`);
-      const tip = await revParse(a.dir, `refs/heads/${branch}`);
-      const cand = await freshCandidate(a, line.branch, old);
-      const m = await mergeInto(cand, branch, `Hand in ${branch} to ${line.branch} (${rec.session})`);
-      if (!m.ok) {
-        await updateDesk(repo, branch, { blocked: `hand-in conflicts with ${line.branch} on ${m.conflicts.length} file(s) — the lead adjudicates; adopt the line into the desk and resolve` });
-        return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old, conflict_files: m.conflicts }));
-      }
-      const candSha = await revParse(cand, 'HEAD');
-      if (await casRef(a.dir, line.branch, candSha, old)) {
-        const refreshed = await refreshLine(line);
-        await updateDesk(repo, branch, { blocked: '', pending: null });
-        const r = await appendReceipt(receipt({ result: 'accepted', source_tip: tip, expected_old: old, candidate: candSha, line_sha: candSha, reason: refreshed ? '' : `line advanced; its worktree ${line.worktree} did not fast-forward` }));
-        await updateDesk(repo, branch, { last_hand_in: r.id });
-        return r;
-      }
-      if (attempt >= maxRetries) {
-        return appendReceipt(receipt({ result: 'stale', source_tip: tip, expected_old: old, candidate: candSha, reason: `line moved ${attempt + 1} times during hand-in; re-run` }));
-      }
-      await appendReceipt(receipt({ result: 'stale', source_tip: tip, expected_old: old, candidate: candSha, reason: 'line moved; rebuilt on the new tip' }));
+    } finally {
+      const candidate = candidateWorktree(a.repo, line.branch);
+      if (existsSync(candidate)) await worktreeRemove(a.dir, candidate, true).catch(() => undefined);
+      await worktreePrune(a.dir).catch(() => undefined);
     }
   });
 
@@ -75,7 +89,24 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
       notices.push(await adoptLine(sib, a, rec.session));
     }
   }
-  return { receipt: out, notices };
+  if (out.result !== 'accepted') return { receipt: out, notices, tidy: emptyTidy() };
+  const current = await readDesk(repo, branch);
+  const currentStatus = current ? await deskStatus(current, a) : null;
+  const otherLevel: Array<{ repo: string; branch: string }> = [];
+  for (const other of await listDeskRecords({ session: rec.session })) {
+    if (other.repo === repo && other.branch === branch) continue;
+    const otherArrangement = await arrangementOf(other.repo);
+    const otherStatus = await deskStatus(other, otherArrangement);
+    if (otherStatus.state === 'open' && !otherStatus.dirty && otherStatus.ahead === 0) {
+      otherLevel.push({ repo: other.repo, branch: other.branch });
+    }
+  }
+  return { receipt: out, notices, tidy: {
+    desk: currentStatus,
+    unsaved_files: currentStatus?.dirty_files ?? [],
+    other_level_desks: otherLevel,
+    promotion_due: (currentStatus?.line_ahead_of_working ?? 0) > 0,
+  } };
 }
 
 export async function handInAssignment(assignment: { desks: Array<{ repo: string; branch: string }> }): Promise<HandInOutcome[]> {

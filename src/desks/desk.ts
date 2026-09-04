@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { arrangementOf, desksManaged } from './arrangement.js';
 import {
-  branchExists, commitAll, deleteBranch, resetHardTo, git, isAncestor, mergeInto, revParse, setUpstream,
+  aheadBehind, branchExists, commitAll, deleteBranch, resetHardTo, git, isAncestor, mergeInto, revParse, setUpstream,
   worktreeAddExisting, worktreeAddNew, worktreeOf, worktreePrune, worktreeRemove, changedFiles, dirtyFiles, stampDeskIdentity,
 } from './git.js';
 import {
@@ -71,34 +71,39 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   }
 
   const existing = await readDesk(a.repo, branch);
+  const workingBase = await revParse(a.dir, `refs/heads/${a.working}`) || await revParse(a.dir, 'HEAD');
   const wtPath = existing?.worktree || deskWorktree(a.repo, branch);
   const mounted = await worktreeOf(a.dir, branch);
   if (!mounted) {
     await worktreePrune(a.dir);
     if (await branchExists(a.dir, branch)) await worktreeAddExisting(a.dir, wtPath, branch);
-    else await worktreeAddNew(a.dir, wtPath, branch, (await branchExists(a.dir, line.branch)) ? line.branch : 'HEAD');
+    else await worktreeAddNew(a.dir, wtPath, branch, workingBase);
   }
   await setUpstream(a.dir, branch, line.branch).catch(() => undefined);
   await stampDeskIdentity(a.dir, mounted?.path ?? wtPath, input.session);
   await materializeNodeModules(a.dir, mounted?.path ?? wtPath);
 
   const rec: DeskRecord = existing
-    ? { ...existing, session: input.session, team: input.team, assignment: input.assignment ?? existing.assignment, state: 'open', parked_at: undefined, worktree: mounted?.path ?? wtPath }
+    ? { ...existing, session: input.session, team: input.team, assignment: input.assignment ?? existing.assignment, state: 'open', parked_at: undefined, worktree: mounted?.path ?? wtPath,
+        owners: existing.owners?.length ? existing.owners : [input.session], dependency_location: existing.dependency_location ?? path.join(mounted?.path ?? wtPath, 'node_modules') }
     : {
         repo: a.repo, root: a.repo, branch, worktree: mounted?.path ?? wtPath, line: line.branch, mode: a.mode,
         session: input.session, team: input.team, assignment: input.assignment ?? assignmentId(input.session, input.team),
         state: 'open', opened_at: new Date().toISOString(), pending: null, last_hand_in: '', blocked: '',
+        base_sha: workingBase,
+        dependency_location: path.join(mounted?.path ?? wtPath, 'node_modules'), owners: [input.session],
       };
   await writeDesk(rec);
   return deskStatus(rec, a);
 }
 
-export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string): Promise<DeskNotice> {
+export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string, source = rec.line): Promise<DeskNotice> {
   const st = await deskStatus(rec, a);
-  const line_sha = st.line_tip;
+  const line_sha = await revParse(a.dir, `refs/heads/${source}`);
   const base: DeskNotice = { kind: 'adopted', repo: rec.repo, desk: rec.branch, session: rec.session, line_sha, by, files: [] };
   if (!line_sha || !st.tip) return { ...base, kind: 'pending' };
-  if (st.behind === 0) {
+  const sourceDistance = await aheadBehind(a.dir, st.tip, line_sha);
+  if (sourceDistance.behind === 0) {
     if (rec.pending) await updateDesk(rec.repo, rec.branch, { pending: null });
     return base;
   }
@@ -108,7 +113,7 @@ export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string)
     await updateDesk(rec.repo, rec.branch, { pending: { line_sha, by, at: new Date().toISOString(), overlap } });
     return { ...base, kind: overlap.length ? 'pending_overlap' : 'pending', files: overlap };
   }
-  const m = await mergeInto(st.worktree, rec.line, `Adopt ${rec.line} into ${rec.branch}`);
+  const m = await mergeInto(st.worktree, source, `Update ${rec.branch} from ${source}`);
   if (!m.ok) {
     await updateDesk(rec.repo, rec.branch, { pending: { line_sha, by, at: new Date().toISOString(), overlap: m.conflicts } });
     return { ...base, kind: 'conflict', files: m.conflicts };
@@ -120,7 +125,8 @@ export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string)
 export async function syncDesk(repo: string, branch: string): Promise<DeskNotice> {
   const rec = await readDesk(repo, branch);
   if (!rec) return { kind: 'pending', repo, desk: branch, session: '', line_sha: '', by: '', files: [] };
-  return adoptLine(rec, await arrangementOf(repo), rec.pending?.by ?? '');
+  const a = await arrangementOf(repo);
+  return adoptLine(rec, a, rec.pending?.by ?? '', a.working);
 }
 
 export interface CloseOutcome { desk: DeskStatus | null; action: 'parked' | 'deleted' | 'kept'; wip: string; unmounted: boolean }

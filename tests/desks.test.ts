@@ -3,10 +3,10 @@
  * directory. No tmux, no socket, no live store: every store is pointed at a temp dir by
  * its canonical override, and the "repositories" are made here. What this proves:
  *
- *   - a desk opens from its team line at once, upstream set, recorded; funnel points and
+ *   - a desk opens from current local dev at once, with its exact base recorded; funnel points and
  *     direct repos are refused by name; a repo with no RONIN_REPO gets no desk;
  *   - hand-in is mechanical admission: the line advances by compare-and-swap only, a
- *     conflict leaves it untouched, nothing-to-hand-in is a refusal with a receipt;
+ *     conflict leaves it untouched, and policy-only conditions remain ordinary output;
  *   - accepted team state flows down: a clean sibling adopts now, a dirty one is marked
  *     pending with the overlap and its files are not touched;
  *   - close never loses work: unsaved files become a WIP commit, an unintegrated tip is
@@ -49,6 +49,7 @@ async function makeRepo(name: string, roninRepo: string | null): Promise<string>
 
 const cowork = await makeRepo('cowork', 'mode=reviewed\nworking=dev\nstable=master\ndesks=managed\n');
 const services = await makeRepo('services', 'mode=reviewed\n');
+const lagged = await makeRepo('lagged', 'mode=reviewed\nworking=dev\nstable=master\ndesks=managed\n');
 const koe = await makeRepo('koe', 'mode=direct\nstable=main\n');
 const plain = await makeRepo('plain', null);
 
@@ -57,6 +58,7 @@ await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'
   '# roots', '',
   '## cowork', `- **dir:** ${cowork}`, '- **remit:** the free build', '',
   '## services', `- **dir:** ${services}`, '- **remit:** the paid layer', '',
+  '## lagged', `- **dir:** ${lagged}`, '- **remit:** stale team line fixture', '',
   '## koe', `- **dir:** ${koe}`, '- **remit:** direct main', '',
   '## plain', `- **dir:** ${plain}`, '- **remit:** undeclared', '',
 ].join('\n'));
@@ -122,12 +124,17 @@ test('deriveAssignment: a team desks only its ticked repositories; nothing ticke
   assert.deepEqual(absent.desks.map((d) => d.repo), ['plain'], 'candidate planning preserves an absent profile for resolver normalization');
 });
 
-test('openDesk: cut from the team line, mounted, upstream set, recorded; the line itself is created and mounted', async () => {
+test('openDesk: cut from current local dev, mounted, exact base recorded; the team line is review-only', async () => {
   const st = await openDesk({ repo: 'cowork', session: 'fable', team: 'comp' });
   assert.equal(st.branch, 'team/comp/fable');
   assert.equal(st.line, 'team/comp/dev');
   assert.equal(st.mounted, true);
   assert.equal(st.worktree, deskWorktree('cowork', 'team/comp/fable'));
+  assert.equal(st.base_sha, sh(cowork, ['rev-parse', 'dev']));
+  assert.equal(st.working, 'dev');
+  assert.equal(st.behind_working, 0);
+  assert.equal(st.dependency_location, path.join(st.worktree, 'node_modules'));
+  assert.deepEqual(st.owners, ['fable']);
   assert.ok(existsSync(path.join(st.worktree, 'README.md')));
   assert.equal(sh(cowork, ['rev-parse', '--abbrev-ref', 'team/comp/fable@{upstream}']), 'team/comp/dev');
   assert.ok(existsSync(path.join(deskWorktree('cowork', 'team/comp/dev'), 'README.md')), 'the line has a mounted worktree');
@@ -141,6 +148,20 @@ test('openDesk: cut from the team line, mounted, upstream set, recorded; the lin
   // Idempotent.
   const again = await openDesk({ repo: 'cowork', session: 'fable', team: 'comp' });
   assert.equal(again.worktree, st.worktree);
+});
+
+test('open and hand-in use current local dev even when the team line is 100 commits behind', async () => {
+  sh(lagged, ['branch', 'team/old/dev', 'dev']);
+  for (let i = 0; i < 100; i++) await commitFile(lagged, `accepted/${i}.txt`, `${i}\n`);
+  const desk = await openDesk({ repo: 'lagged', session: 'fresh', team: 'old' });
+  assert.equal(desk.base_sha, sh(lagged, ['rev-parse', 'dev']));
+  assert.equal(desk.behind_working, 0);
+  assert.equal(desk.ahead, 100, 'line distance is information, not the desk base');
+  await commitFile(desk.worktree, 'incoming.txt', 'desk delta\n');
+  const { receipt } = await handIn('lagged', desk.branch);
+  assert.equal(receipt.result, 'accepted', receipt.reason);
+  assert.ok(existsSync(path.join(deskWorktree('lagged', 'team/old/dev'), 'accepted/99.txt')));
+  assert.ok(existsSync(path.join(deskWorktree('lagged', 'team/old/dev'), 'incoming.txt')));
 });
 
 test('openDesk: an explicit managed repo need not already be on the team roster', async () => {
@@ -185,7 +206,9 @@ test('status is derived from git now: a commit makes the desk ahead, a saved fil
 
 test('handIn: the line advances by compare-and-swap to the candidate, its worktree fast-forwards, a receipt is appended', async () => {
   const before = sh(cowork, ['rev-parse', 'team/comp/dev']);
-  const { receipt, notices } = await handIn('cowork', 'team/comp/fable');
+  await fs.writeFile(path.join(deskWorktree('cowork', 'team/comp/fable'), 'loose-one.txt'), 'one\n');
+  await fs.writeFile(path.join(deskWorktree('cowork', 'team/comp/fable'), 'loose-two.txt'), 'two\n');
+  const { receipt, notices, tidy } = await handIn('cowork', 'team/comp/fable');
   assert.equal(receipt.result, 'accepted', receipt.reason);
   assert.equal(receipt.expected_old, before);
   const after = sh(cowork, ['rev-parse', 'team/comp/dev']);
@@ -201,13 +224,18 @@ test('handIn: the line advances by compare-and-swap to the candidate, its worktr
   const ledger = await receiptsForLine('cowork', 'team/comp/dev');
   assert.equal(ledger.at(-1)?.id, receipt.id);
   assert.equal((await receiptsForDesk('cowork', 'team/comp/fable')).length, 1);
+  assert.deepEqual(tidy.unsaved_files, ['loose-one.txt', 'loose-two.txt']);
+  assert.equal(tidy.desk?.ahead, 0);
+  assert.equal(tidy.promotion_due, true);
+  await fs.unlink(path.join(deskWorktree('cowork', 'team/comp/fable'), 'loose-one.txt'));
+  await fs.unlink(path.join(deskWorktree('cowork', 'team/comp/fable'), 'loose-two.txt'));
+  assert.equal(existsSync(candidateWorktree('cowork', 'team/comp/dev')), false, 'accepted hand-in cleans its candidate');
 });
 
-test('handIn with nothing ahead is a refusal with a receipt, and moves nothing', async () => {
+test('handIn with no new desk delta is an accepted ordinary result and moves no work', async () => {
   const before = sh(cowork, ['rev-parse', 'team/comp/dev']);
   const { receipt } = await handIn('cowork', 'team/comp/fable');
-  assert.equal(receipt.result, 'refused');
-  assert.match(receipt.reason, /nothing to hand in/);
+  assert.equal(receipt.result, 'accepted');
   assert.equal(sh(cowork, ['rev-parse', 'team/comp/dev']), before);
 });
 
@@ -230,18 +258,18 @@ test('downward adoption: a clean sibling takes the line now; a dirty sibling is 
   assert.equal((await statusOf('cowork', 'team/comp/wispr')).behind, 0);
   assert.ok(existsSync(path.join(clean.worktree, 'b.txt')), 'the clean sibling has the new file');
   const rk = await statusOf('cowork', 'team/comp/rireki');
-  assert.equal(rk.behind, 2, 'the dirty sibling did not move');
+  assert.ok(rk.behind > 0, 'the dirty sibling did not move');
   assert.equal(await fs.readFile(path.join(dirty.worktree, 'a.txt'), 'utf8'), 'rireki unsaved\n', 'its unsaved file is untouched');
   assert.ok(!existsSync(path.join(dirty.worktree, 'b.txt')));
   assert.equal(rk.pending?.line_sha, receipt.line_sha);
   assert.deepEqual(rk.pending?.overlap, ['a.txt']);
   // At its next safe boundary — here, an explicit sync after it commits — it adopts.
-  sh(dirty.worktree, ['checkout', '--', 'a.txt']);
+  await fs.unlink(path.join(dirty.worktree, 'a.txt'));
   await commitFile(dirty.worktree, 'own.txt', 'rireki own\n');
   const n = await syncDesk('cowork', 'team/comp/rireki');
   assert.equal(n.kind, 'adopted');
   const rk2 = await statusOf('cowork', 'team/comp/rireki');
-  assert.equal(rk2.behind, 0);
+  assert.equal(rk2.behind_working, 0, 'manual update follows local dev, not the team line');
   assert.equal(rk2.pending, null);
 });
 
@@ -259,9 +287,9 @@ test('handIn conflict: contained in the candidate, the line untouched, the desk 
   assert.equal(sh(cowork, ['rev-parse', 'team/comp/dev']), before, 'the line did not move');
   assert.deepEqual(notices, []);
   const st = await statusOf('cowork', 'team/comp/fable');
-  assert.match(st.blocked, /conflicts with team\/comp\/dev on 1 file/);
+  assert.match(st.blocked, /conflicts with current dev plus team\/comp\/dev on 1 file/);
   const cand = candidateWorktree('cowork', 'team/comp/dev');
-  assert.equal(sh(cand, ['status', '--porcelain']), '', 'the candidate is left clean (merge aborted)');
+  assert.equal(existsSync(cand), false, 'the conflicted candidate is cleaned after evidence is recorded');
   // The lead adjudicates: resolve in the desk, hand in again; the block clears.
   await fs.writeFile(path.join(fable, 'c.txt'), 'fable\n');
   try { sh(fable, ['merge', '--no-edit', 'team/comp/dev']); } catch { /* conflict expected */ }
@@ -372,6 +400,7 @@ test('compare-and-swap: a stale expected ref never advances the line', async () 
 
 test('crash mid-hand-in: a candidate left behind by a crashed run is rebuilt, not reused', async () => {
   const cand = candidateWorktree('cowork', 'team/comp/dev');
+  sh(cowork, ['worktree', 'add', '--detach', cand, 'dev']);
   await fs.writeFile(path.join(cand, 'leftover.txt'), 'from a crashed run\n');
   const r = await openDesk({ repo: 'cowork', session: 'after', team: 'comp' });
   await commitFile(r.worktree, 'after.txt', 'after the crash\n');
@@ -379,4 +408,5 @@ test('crash mid-hand-in: a candidate left behind by a crashed run is rebuilt, no
   assert.equal(receipt.result, 'accepted', receipt.reason);
   assert.ok(!existsSync(path.join(cand, 'leftover.txt')), 'the candidate was rebuilt fresh');
   assert.ok(!existsSync(path.join(deskWorktree('cowork', 'team/comp/dev'), 'leftover.txt')), 'and nothing of it reached the line');
+  assert.equal(existsSync(cand), false, 'handled success cleans inherited candidate scratch');
 });
