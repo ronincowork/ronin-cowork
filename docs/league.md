@@ -1,17 +1,17 @@
-# Campaign cowork view
+# Teams collection view
 
-The Cowork workbench exists at `#/cowork`, rendered by
+The Teams workbench exists at `#/cowork`, rendered by
 `createCoworkView({ kind: 'cowork' })` in `public/js/cowork-view.js`.
 
 It uses the shared `workbench` format: the same workspaces, two/four shape,
 discovery column, placement, drag/drop,
 recall, sizing and lifecycle as `kind: 'team'`. Its selector exposes one Team roster,
-Coworks, New Team and New Agent. The roster is the detailed grouped Agent list formerly
+Teams, New Team and New Agent. The roster is the detailed grouped Agent list formerly
 shown on the Ronin Desk: role, SHINGO, status, context, desk state and model stay aligned
 in each row. Selecting an Agent connects it in the active workspace; dropping an Agent on
 a Team heading adds that membership through the canonical Teams API.
 
-The Campaign selector groups its cards into collapsible Views, Coworks and New sections.
+The Campaign selector groups its cards into collapsible Views, Teams and New sections.
 Ronin Desk is not offered here; its card and shared workspace surface live in the Campaign
 workbench at `#/campaign`.
 

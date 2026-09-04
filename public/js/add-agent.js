@@ -225,7 +225,7 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
     if (control === null) return;
     const effective = worktreesOverride ?? control;
     deskMode.textContent = effective
-      ? t('add_agent.worktrees_on', 'Own worktree where the Project Root allows it')
+      ? t('add_agent.worktrees_on', 'Own worktree where the Workspace folder allows it')
       : t('add_agent.worktrees_off', 'Use the project checkout and its branches');
     deskWhy.textContent = t('add_agent.worktrees_help', 'Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.');
     deskToggle.textContent = effective

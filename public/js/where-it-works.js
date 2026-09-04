@@ -41,7 +41,7 @@ export function createWhereItWorks(o = {}) {
     const on = state.worktreesOn;
     line.textContent = on
       ? t('where.worktrees_on', 'Worktrees are on (see Routines): a ticked repository opens a desk for each new Agent at birth; branches are Ronin\'s.')
-      : t('where.worktrees_off', 'Worktrees are off (see Routines): a ticked repository is where this Cowork works, on the branch you name, or as checked out.');
+      : t('where.worktrees_off', 'Worktrees are off (see Routines): a ticked repository is where this Team works, on the branch you name, or as checked out.');
     list.classList.toggle('tw-where-desks', on);
     for (const { branch } of rows.values()) branch.disabled = on;
     const names = ticked();

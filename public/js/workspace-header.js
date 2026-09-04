@@ -35,7 +35,7 @@ export function installWorkspaceHeader(workspace) {
       const teamPage = active?.id === 'team' && active.param;
       const coworksPage = active?.id === 'cowork';
       if (teamPage) {
-        place.textContent = t('bar.place_team', 'Your team: {team}', { team: readable(active.param) });
+        place.textContent = t('bar.place_team', 'Teams / {team}', { team: readable(active.param) });
         place.title = '';
       } else if (coworksPage) {
         place.textContent = t('bar.place_teams', 'Teams');

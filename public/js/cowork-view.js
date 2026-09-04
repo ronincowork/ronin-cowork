@@ -593,13 +593,13 @@ export function createCoworkView(options = {}) {
     // The owner's per-tab name distinguishes several Workbench tabs. Coworks defaults to
     // its page name; a Team defaults to the Team name. createWorkspace adds Ronin.
     title: ({ param, viewState }) => {
-      const fallback = campaign ? t('campaign.coworks', 'Coworks') : (param || t('team.team', 'Team'));
+      const fallback = campaign ? t('campaign.coworks', 'Teams') : (param || t('team.team', 'Team'));
       const name = viewState?.(viewKey)?.tabName;
       return name ? { bare: `${name} · ${fallback}` } : fallback;
     },
     tabName: {
       get: () => ctx?.viewState(viewKey)?.tabName || '',
-      placeholder: () => campaign ? t('campaign.coworks', 'Coworks') : team || t('team.team', 'Team'),
+      placeholder: () => campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team'),
       set: (value) => { ctx?.patchViewState(viewKey, { tabName: String(value || '').trim() }); },
     },
     placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),

@@ -371,7 +371,7 @@ export function buildStats(root) {
       ['sessions', t('pane.sessions', '⌂ Roster')],
       ['new', t('pane.new', '＋ New session')],
       ['wipe', t('pane.wipe', '▤ Wipeboard')],
-      ['proj', t('stats.tab_proj', '▣ Project root')],
+      ['proj', t('stats.tab_proj', '▣ Workspace folder')],
       ['stats', t('stats.tab_stats', '▦ Stats')],
     ]) {
       add(label, String(tabsSeen[id] || 0), !tabsSeen[id]);

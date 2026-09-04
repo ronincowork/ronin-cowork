@@ -23,7 +23,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.template:** template
 - **add_agent.no_template:** No template
 - **add_agent.worktrees_mode:** Agent work mode
-- **add_agent.worktrees_on:** Own worktree where the Project Root allows it
+- **add_agent.worktrees_on:** Own worktree where the Workspace folder allows it
 - **add_agent.worktrees_off:** Use the project checkout and its branches
 - **add_agent.worktrees_help:** Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **add_agent.worktrees_choose_checkout:** Change to checkout mode
@@ -48,9 +48,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign.commons:** Campaign commons
 - **campaign.view:** Campaign view
 - **campaign.commons_short:** Commons
-- **campaign.cowork_view:** Cowork View
-- **campaign.coworks:** Coworks
-- **campaign.cowork:** Cowork
+- **campaign.cowork_view:** Teams View
+- **campaign.coworks:** Teams
+- **campaign.cowork:** Team
 - **campaign.new:** New Campaign
 - **campaign.create:** Create Campaign
 - **campaign.none:** No Campaigns yet.
@@ -190,18 +190,18 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.desk_summary:** This Ronin install, its owner and its workspace configuration.
 - **campaign_view.profile_summary:** The words, the skin and the templates this Campaign opens on.
 - **campaign_view.roots_summary:** The folders this Campaign is allowed to work in.
-- **campaign_view.templates_summary:** The Cowork templates this Campaign offers.
-- **campaign_view.new_summary:** Set the stage. It creates no Cowork and launches no Agent.
+- **campaign_view.templates_summary:** The Team templates this Campaign offers.
+- **campaign_view.new_summary:** Set the stage. It creates no Team and launches no Agent.
 - **campaign_view.none_selected:** No Campaign selected.
 - **campaign_view.no_profiles:** No desk profiles on this install.
 - **campaign_view.no_description:** No description yet.
 - **campaign_view.no_profile:** As stock — none chosen.
 - **campaign_view.roots_n:** {n} roots
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
-- **campaign_view.new_project_worktrees:** Worktrees for new project roots
+- **campaign_view.new_project_worktrees:** Worktrees for new workspace folders
 - **campaign_view.new_project_worktrees_yes:** Allow Ronin Worktrees
 - **campaign_view.new_project_worktrees_no:** Use the checkout
-- **campaign_view.new_project_worktrees_help:** Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for roots added later; change an existing repository on its Project Root card below.
+- **campaign_view.new_project_worktrees_help:** Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for folders added later; change an existing repository on its Workspace folder card below.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
 - **campaign_view.head:** Campaign: {name}
@@ -226,7 +226,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.with_services:** Ronin Services
 - **campaign_view.services_title:** Arrives with Ronin Services.
 - **campaign_view.kind:** Kind
-- **campaign_view.kind_help:** The default kind of work for a new Cowork or project here. Nothing reads it yet.
+- **campaign_view.kind_help:** The default kind of work for a new Team or project here. Nothing reads it yet.
 - **campaign_view.lexicon:** Lexicon
 - **campaign_view.lexicon_help:** The words. Held to one lexicon for now, so nothing on this page is offered.
 - **campaign_view.id:** Id
@@ -370,8 +370,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
 - **campaign_view.rt_worktrees:** Ronin worktrees
-- **campaign_view.rt_worktrees_what:** Agent work mode: private branch and worktree where a Project Root allows Worktrees; direct work in the checkout and its branches everywhere else.
-- **campaign_view.rt_by_repo:** per repository — see Project roots
+- **campaign_view.rt_worktrees_what:** Agent work mode: private branch and worktree where a Workspace folder allows Worktrees; direct work in the checkout and its branches everywhere else.
+- **campaign_view.rt_by_repo:** per repository — see Workspace folders
 - **campaign_view.rt_gbrain:** gbrain
 - **campaign_view.rt_gbrain_what:** The shared memory service: its reading and its MCP tools for sessions born with it connected.
 - **campaign_view.rt_koshi:** Koshi
@@ -386,7 +386,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 - **campaign_home.machine_settings:** Machine Settings
 - **campaign_home.campaign_is:** Admin Desk configuration
-- **campaign_home.coworks_is:** Coworking space for Agents
+- **campaign_home.coworks_is:** Your Teams and Agents
 - **campaign_home.launch:** New Project
 - **campaign_home.launch_is:** Start a new Team or Agent
 - **campaign_home.version:** v1.3
@@ -489,7 +489,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.group_capacity:** capacity
 - **settei.group_projects:** projects · {n}
 - **settei.dir_gone:** ✕ {dir} is gone
-- **settei.projects_link:** Edit these in ▣ Project root — this room only shows them.
+- **settei.projects_link:** Edit these in ▣ Workspace folders — this room only shows them.
 - **settei.group_models:** how work gets a model
 - **settei.key_set:** ✓ set
 - **settei.key_not_set:** not set
@@ -527,7 +527,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.promotion:** Promotion
 - **team.parked_desks:** Parked desks
 - **team.wipeboard:** Wipeboard
-- **team.project_root:** Project root
+- **team.project_root:** Workspace folder
 - **team.command:** Command
 - **team.control:** Control
 - **team.mcp:** MCP
@@ -550,7 +550,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
 - **new_team.worktrees_mode:** Agent work mode
-- **new_team.worktrees_on:** Own worktree where the Project Root allows it
+- **new_team.worktrees_on:** Own worktree where the Workspace folder allows it
 - **new_team.worktrees_off:** Use the project checkout and its branches
 - **new_team.worktrees_help:** Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **new_team.kit_meta:** {routines} routines · {books} books
@@ -621,7 +621,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.routines_bare:** no floor, no routines
 - **new_agent.blank_note:** A blank field is an answer, not a gap.
 - **new_agent.worktrees_mode:** Agent work mode
-- **new_agent.worktrees_on:** Own worktree where the Project Root allows it
+- **new_agent.worktrees_on:** Own worktree where the Workspace folder allows it
 - **new_agent.worktrees_off:** Use the project checkout and its branches
 - **new_agent.worktrees_help:** Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 
@@ -921,8 +921,8 @@ The pad's current config downloads as a backup first.
 ## wipeboard — the kind note
 
 ## roots — projectroots.js (the ▣ Project roots tab)
-- **roots.add:** ＋ Add a project root
-- **roots.add_hint:** A directory on this machine that Agents here may work in.
+- **roots.add:** ＋ Add workspace folder
+- **roots.add_hint:** An existing directory on this machine where Agents may work.
 - **roots.add_save:** Add
 - **roots.read_failed:** could not read the catalog — {message}
 - **roots.save:** save
@@ -935,7 +935,7 @@ The pad's current config downloads as a backup first.
 
 The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
-- **roots.empty:** No project roots yet — add one below.
+- **roots.empty:** No workspace folders yet — add one below.
 - **roots.loading:** loading…
 - **roots.chip_worktrees:** Repository: Worktrees allowed
 - **roots.chip_checkout:** Repository: use checkout
@@ -955,13 +955,13 @@ The catalog entry goes. {dir} is not touched.
 - **docs.pill_tracked:** Tracked
 - **docs.pill_plans:** Plans
 - **docs.pill_docs:** Docs
-- **docs.shelf_empty:** Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans).
+- **docs.shelf_empty:** Nothing on this shelf — a workspace folder names its places on its record (Workspace folders → docs / plans).
 - **roots.f_docs:** docs
 - **roots.f_docs_hint:** Where this root keeps its documentation — directories or files, relative to the directory
 - **roots.f_plans:** plans
 - **roots.f_plans_hint:** Where this root keeps its build-out plans
-- **roots.group_root:** Project Root
-- **roots.group_root_help:** The directory Ronin may offer to Agents and the words used to find it.
+- **roots.group_root:** Workspace folder
+- **roots.group_root_help:** An existing directory on this machine where Agents may work.
 - **roots.group_repository:** Repository workflow
 - **roots.group_repository_help:** Publishing describes where accepted commits go. Worktrees separately decides whether this repository participates in Ronin’s managed worktree workflow.
 - **roots.f_mode:** publishing
@@ -999,15 +999,15 @@ The catalog entry goes. {dir} is not touched.
 - **roots.chip_no_remote:** repo, no remote
 - **roots.chip_no_remote_title:** A git repo with no origin
 - **roots.chip_no_repo:** no repo
-- **roots.chip_no_repo_title:** Not a git repo — legal, a project_root need not be one
+- **roots.chip_no_repo_title:** Not a git repo — a workspace folder does not need to be one
 - **roots.sessions_one:** {n} session
 - **roots.sessions_many:** {n} sessions
 - **roots.unarchive:** unarchive
 - **roots.archive:** archive
 - **roots.unarchive_title:** Put it back on the new-session picker.
 - **roots.archive_title:** Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched.
-- **roots.count_one:** {n} project_root
-- **roots.count_many:** {n} project_roots
+- **roots.count_one:** {n} workspace folder
+- **roots.count_many:** {n} workspace folders
 - **roots.count_archived:** {n} archived
 - **roots.untagged_one:** {n} untagged session
 - **roots.untagged_many:** {n} untagged sessions
@@ -1080,7 +1080,7 @@ The catalog entry goes. {dir} is not touched.
 - **setup.bundle_base:** Ronin Base
 - **setup.bundle_base_copy:** Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.
 - **setup.bundle_worktrees:** Ronin Worktrees
-- **setup.bundle_worktrees_copy:** Gives Agents the private-worktree mode. They use it only in Project Roots that allow Ronin Worktrees; other repositories use their checkout and branches.
+- **setup.bundle_worktrees_copy:** Gives Agents the private-worktree mode. They use it only in Workspace folders that allow Ronin Worktrees; other repositories use their checkout and branches.
 - **setup.bundle_services:** Services
 - **setup.bundle_services_copy:** Adds your Services to every agent — voice, transcripts, machine care.
 - **setup.desk_profile:** Desk profile
@@ -1270,7 +1270,7 @@ The catalog entry goes. {dir} is not touched.
 - **pane.wipe:** ▤ Wipeboard
 - **pane.docs:** ▧ Docs
 - **pane.settei:** Configuration
-- **pane.proj:** Project roots
+- **pane.proj:** Workspace folders
 - **pane.hotwords:** Hotwords
 - **pane.koshi:** Koshi
 - **pane.gbrain:** gbrain
@@ -1282,7 +1282,7 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_themes:** Themes
 - **cowork.tab_account:** Account
 - **cowork.tab_profile:** Desk profile
-- **cowork.tab_roots:** Project roots
+- **cowork.tab_roots:** Workspace folders
 - **cowork.tab_help:** Help desk
 - **cowork.tab_keypad:** Keypad
 - **cowork.tab_messages:** Messages
@@ -1328,7 +1328,7 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.h_log_out:** Log out
 - **cowork.h_mika:** Mika Assist
 - **cowork.mika_button:** ミ Ask Mika
-- **cowork.mika_text:** Ask about Ronin itself — how it works, project roots, starting a session, changing a setting. She starts if she is not up.
+- **cowork.mika_text:** Ask about Ronin itself — how it works, workspace folders, starting a session, changing a setting. She starts if she is not up.
 - **cowork.keypad_missing:** The keypad did not build on this page.
 
 ## desk — the install group heading
@@ -1357,7 +1357,7 @@ The catalog entry goes. {dir} is not touched.
 - **ladder.current_action:** Current action
 - **ladder.worktrees:** Worktrees
 - **ladder.branch:** Branch
-- **ladder.coworks:** Coworks
+- **ladder.coworks:** Teams
 - **ladder.tracked_documents:** Tracked documents
 - **ladder.docs_none:** No tracked documents.
 - **ladder.progress:** Progress
@@ -1510,7 +1510,7 @@ The catalog entry goes. {dir} is not touched.
 - **bar.shape_four:** Four workspaces — click for two
 - **bar.place_teams:** Teams
 - **bar.place_teams_title:** See all of your teams here
-- **bar.place_team:** Your team: {team}
+- **bar.place_team:** Teams / {team}
 
 ## me — tiledrop.js (the メ sheet)
 - **me.status:** Status
@@ -1533,13 +1533,13 @@ The catalog entry goes. {dir} is not touched.
 - **composer.clear_title:** Clear this box
 
 ## phone — phone.js (the phone shell: Coworks, a Cowork's Agents, one Agent's tile)
-- **phone.coworks:** Cowork: Teams
+- **phone.coworks:** Teams
 - **phone.launch_card:** Launch New Agent
-- **phone.launch_defaults:** Everything else launches on this Cowork's defaults.
-- **phone.no_coworks:** No Coworks yet.
+- **phone.launch_defaults:** Everything else launches with this Team's defaults.
+- **phone.no_coworks:** No Teams yet.
 - **phone.agents_one:** 1 Agent
 - **phone.agents_many:** {n} Agents
-- **phone.no_agents:** No Agents on this Cowork yet.
+- **phone.no_agents:** No Agents on this Team yet.
 - **phone.back:** Back
 - **phone.me_title:** This Agent — status, work record, note, control, kill
 
@@ -1594,7 +1594,7 @@ The catalog entry goes. {dir} is not touched.
 ## stats — the tooltip, foot and UI rows
 - **stats.mek_seg:** launched {birth} · died {end} — {n}
 - **stats.foot:** Counted on this machine — no code, no prompts, no names. See README/STATS.md.
-- **stats.tab_proj:** ▣ Project root
+- **stats.tab_proj:** ▣ Workspace folder
 - **stats.tab_stats:** ▦ Stats
 - **stats.dials_changed:** dials changed
 - **stats.desktop_touch:** desktop : touch
@@ -1643,7 +1643,7 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_remit_hint:** The one line you pick it from in a list
 - **roots.f_remit_placeholder:** what this is
 - **roots.f_match:** match
-- **roots.f_match_hint:** Words that suggest this project_root from free-form intent
+- **roots.f_match_hint:** Words that suggest this workspace folder from free-form intent
 - **roots.f_match_placeholder:** comma separated
 
 ## pad — cell tooltips and idle lines
@@ -1719,9 +1719,9 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_team_configuration:** Team Configuration
 - **workspace.channel_agent_message_queue:** Agent Message Queue
 - **workspace.channel_cron_jobs:** Cron jobs
-- **team_config.no_roster:** This Cowork has no saved roster.
+- **team_config.no_roster:** This Team has no saved record.
 - **team_config.loading:** Loading Team Configuration…
-- **team_config.cowork_id:** Cowork ID
+- **team_config.cowork_id:** Team ID
 - **team_config.title:** Readable title
 - **team_config.kind:** Kind
 - **team_config.kind_coding:** Coding
@@ -1733,7 +1733,7 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.objective:** Purpose
 - **where.born_in:** Born in
 - **where.worktrees_on:** Worktrees are on (see Routines): a ticked repository opens a desk for each new Agent at birth; branches are Ronin's.
-- **where.worktrees_off:** Worktrees are off (see Routines): a ticked repository is where this Cowork works, on the branch you name, or as checked out.
+- **where.worktrees_off:** Worktrees are off (see Routines): a ticked repository is where this Team works, on the branch you name, or as checked out.
 - **where.col_repo:** Repository
 - **where.col_branch:** Branch
 - **where.label:** Where it works
@@ -1747,7 +1747,7 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.routines:** Routines
 - **team_config.routines_help:** This complete on/off map is the Team’s own and is inherited by new Agents. It replaces the Campaign defaults; existing Agents do not change.
 - **team_config.worktrees_mode:** Agent work mode
-- **team_config.worktrees_on:** Own worktree where the Project Root allows it
+- **team_config.worktrees_on:** Own worktree where the Workspace folder allows it
 - **team_config.worktrees_off:** Use the project checkout and its branches
 - **team_config.worktrees_help:** Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **team_config.kit_floor_alone:** the floor alone — no Routine is on
@@ -1804,15 +1804,15 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.cowork_setup:** cowork setup
 - **glossary.locked:** Locked / Unlocked
 - **glossary.roster:** the roster
-- **glossary.team_roster:** Cowork record
+- **glossary.team_roster:** Team record
 - **glossary.team_lead:** team lead · 人
 - **glossary.wipeboard:** wipeboard
 - **glossary.cron_jobs:** Cron jobs
 - **glossary.docs:** the Docs tab
 - **glossary.configuration:** Configuration
 - **glossary.hotwords:** Hotwords
-- **glossary.project_root:** project root
-- **glossary.team:** Cowork
+- **glossary.project_root:** workspace folder
+- **glossary.team:** Team
 - **glossary.note:** Note
 - **glossary.work_record:** work record
 - **glossary.memory:** memory

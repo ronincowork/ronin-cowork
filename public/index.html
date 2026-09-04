@@ -148,8 +148,13 @@
         <span class="brand-word">RoninCowork</span>
       </a>
       <span id="coworkssep" class="ui-bar-separator" aria-hidden="true" hidden>•</span>
-      <a id="coworksbtn" class="ui-bar-nav" href="#/cowork" hidden>Coworks</a>
+      <a id="coworksbtn" class="ui-bar-nav" href="#/cowork" data-t="campaign.coworks" hidden>Teams</a>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
+      <!-- THE PLACE — one italic reading centred in the grow gap so a first-time visitor
+           can tell the two Workbench pages apart: "Teams" on the collection page and
+           "Teams / <name>" on a Team page. It used to be the Team's name beside
+           the Teams door, where it read as one more door. js/workspace-header.js writes
+           it; nothing else does. -->
       <span class="grow"><span id="viewplace" class="ui-bar-place" hidden></span></span>
       <span id="viewname" class="wk-view-name"></span>
       <span id="viewmap" class="wk-view-map"></span>

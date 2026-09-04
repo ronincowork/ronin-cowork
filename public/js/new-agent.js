@@ -317,7 +317,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     where.setWorktrees(!!worktreesOn);
     worktreesMode.replaceChildren(
       el('b', null, t('new_agent.worktrees_mode', 'Agent work mode')),
-      el('strong', null, worktreesOn ? t('new_agent.worktrees_on', 'Own worktree where the Project Root allows it')
+      el('strong', null, worktreesOn ? t('new_agent.worktrees_on', 'Own worktree where the Workspace folder allows it')
         : t('new_agent.worktrees_off', 'Use the project checkout and its branches')),
       el('small', null, t('new_agent.worktrees_help', 'Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')),
     );

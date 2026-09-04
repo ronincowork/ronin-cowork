@@ -5,9 +5,10 @@ stock English. Mechanically it is a language — a wording (*Home* says *occasio
 campaign) and a translation (*Français*) are the same kind of file, and that is the point
 names a skin (`docs/desk-profiles.md`).
 
-`Cowork` is the owner-facing lexicon word for the canonical `team` / `team_roster`
-layer. It introduces no `cowork` record: APIs, durable files and agent-facing machinery
-continue to say Team. `Team Commons` is the deliberate exception and is always explicit.
+`Team` is the owner-facing lexicon word for the canonical `team` / `team_roster` layer.
+`Cowork` remains the product brand and may be ordinary verb/adjective prose; it introduces
+no saved `cowork` object. APIs, durable files and agent-facing machinery continue to use
+their exact internal terms. `Team Commons` is always explicit.
 
 ## The catalog
 

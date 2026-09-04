@@ -203,7 +203,7 @@ export function coworkCommons(options = {}) {
     mikaBtn.type = 'button';
     mikaBtn.addEventListener('click', () => atTile((tile) => void askMika(tile)));
     mikaBox.append(
-      node('p', 'cc-p', t('cowork.mika_text', 'Ask about Ronin itself — how it works, project roots, starting a session, changing a setting. She starts if she is not up.')),
+      node('p', 'cc-p', t('cowork.mika_text', 'Ask about Ronin itself — how it works, workspace folders, starting a session, changing a setting. She starts if she is not up.')),
       mikaBtn,
     );
     // RESERVED, like the team commons' Chat: geometry promised, no transcript, no composer,
@@ -254,7 +254,7 @@ export function coworkCommons(options = {}) {
     { id: 'health', label: t('cowork.tab_health', 'Desk') },
     { id: 'account', label: t('cowork.tab_account', 'Account') },
     { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
-    { id: 'roots', label: t('cowork.tab_roots', 'Project roots') },
+    { id: 'roots', label: t('cowork.tab_roots', 'Workspace folders') },
     { id: 'archives', label: t('cowork.tab_archives', 'Archived') },
     { id: 'messages', label: t('cowork.tab_messages', 'Messages') },
     { id: 'help', label: t('cowork.tab_help', 'Help desk') },

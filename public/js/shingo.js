@@ -133,7 +133,7 @@ export function buildLadder(letter, deskEntry = null) {
   }
 
   if ((letter.teams ?? []).length) {
-    const context = section(t('ladder.coworks', 'Coworks'), 'sl-context');
+    const context = section(t('ladder.coworks', 'Teams'), 'sl-context');
     for (const entry of letter.teams ?? []) {
       const team = document.createElement('p');
       team.textContent = entry.team;

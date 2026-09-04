@@ -60,7 +60,7 @@ export function buildProjectRoots(root, isShowing) {
       f.appendChild(box);
       return box;
     };
-    const rootFields = group(t('roots.group_root', 'Project Root'), t('roots.group_root_help', 'The directory Ronin may offer to Agents and the words used to find it.'));
+    const rootFields = group(t('roots.group_root', 'Workspace folder'), t('roots.group_root_help', 'An existing directory on this machine where Agents may work.'));
     const mk = (label, key, value, hint, ph, host = rootFields) => {
       const wrap = document.createElement('label');
       wrap.className = 'pr-f';
@@ -84,7 +84,8 @@ export function buildProjectRoots(root, isShowing) {
     mk(t('roots.f_handle', 'handle'), 'name', existing.name, t('roots.f_handle_hint', 'The short name — this IS the shortcut'), 'ronin').disabled = !creating;
     const dirInput = mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Any absolute path, at any depth'), '~/work/api');
     mk(t('roots.f_remit', 'remit'), 'remit', existing.remit, t('roots.f_remit_hint', 'The one line you pick it from in a list'), t('roots.f_remit_placeholder', 'what this is'));
-    mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this project_root from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
+    mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this workspace folder from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
+    // THE DOC SHELVES (owner, 2026-08-28) — where the ▧ Docs tab's Docs and Plans pills look.
     mk(t('roots.f_docs', 'docs'), 'docs', (existing.docs || []).join(', '), t('roots.f_docs_hint', 'Where this root keeps its documentation — directories or files, relative to the directory'), 'docs, README.md');
     mk(t('roots.f_plans', 'plans'), 'plans', (existing.plans || []).join(', '), t('roots.f_plans_hint', 'Where this root keeps its build-out plans'), 'wip/buildouts, wip/handoffs');
 
@@ -284,7 +285,7 @@ export function buildProjectRoots(root, isShowing) {
     } else {
       // A project_root need not be a project_repo. `~/lab` is one; this is a
       // legal shape, not a warning.
-      chip(t('roots.chip_no_repo', 'no repo'), 'muted', t('roots.chip_no_repo_title', 'Not a git repo — legal, a project_root need not be one'));
+      chip(t('roots.chip_no_repo', 'no repo'), 'muted', t('roots.chip_no_repo_title', 'Not a git repo — a workspace folder does not need to be one'));
     }
     if (r.sessions) chip(r.sessions === 1 ? t('roots.sessions_one', '{n} session', { n: r.sessions }) : t('roots.sessions_many', '{n} sessions', { n: r.sessions }), 'muted');
     if (r.remit) {
@@ -352,10 +353,10 @@ export function buildProjectRoots(root, isShowing) {
     const archived = roots.filter((r) => r.archived).length;
     const live = roots.length - archived;
     count.textContent =
-      (live === 1 ? t('roots.count_one', '{n} project_root', { n: live }) : t('roots.count_many', '{n} project_roots', { n: live })) +
+      (live === 1 ? t('roots.count_one', '{n} workspace folder', { n: live }) : t('roots.count_many', '{n} workspace folders', { n: live })) +
       (archived ? ' · ' + t('roots.count_archived', '{n} archived', { n: archived }) : '') +
       (data.untagged ? ' · ' + (data.untagged === 1 ? t('roots.untagged_one', '{n} untagged session', { n: data.untagged }) : t('roots.untagged_many', '{n} untagged sessions', { n: data.untagged })) : '');
-    if (!roots.length) say(t('roots.empty', 'No project roots yet — add one below.'));
+    if (!roots.length) say(t('roots.empty', 'No workspace folders yet — add one below.'));
     for (const r of roots) list.appendChild(block(r));
     list.appendChild(addCard());
   }
@@ -368,12 +369,12 @@ export function buildProjectRoots(root, isShowing) {
       const top = document.createElement('div');
       top.className = 'pr-top';
       const h = document.createElement('b');
-      h.textContent = t('roots.add', '＋ Add a project root');
+      h.textContent = t('roots.add', '＋ Add workspace folder');
       top.append(h);
       b.append(top, form({ name: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true));
       return b;
     }
-    const open = createAction({ label: t('roots.add', '＋ Add a project root'), title: t('roots.add_hint', 'A directory on this machine that Agents here may work in.') }).el;
+    const open = createAction({ label: t('roots.add', '＋ Add workspace folder'), title: t('roots.add_hint', 'An existing directory on this machine where Agents may work.') }).el;
     open.addEventListener('click', () => { editing = NEW; render(); });
     b.append(open);
     return b;

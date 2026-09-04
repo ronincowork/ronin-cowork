@@ -33,7 +33,7 @@ export function completeTeamRoutineMap(catalog, stored) {
 
 export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   host.replaceChildren();
-  if (!roster?.durable) { host.append(el('p', 'tw-config-empty', t('team_config.no_roster', 'This Cowork has no saved roster.'))); return; }
+  if (!roster?.durable) { host.append(el('p', 'tw-config-empty', t('team_config.no_roster', 'This Team has no saved record.'))); return; }
   const loading = el('p', 'tw-config-empty', t('team_config.loading', 'Loading Team Configuration…')); host.append(loading);
 
   // The form is painted even into a host that is not in the document: the caller renders
@@ -45,7 +45,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const specs = specResult.ok && Array.isArray(specResult.data) ? specResult.data : [];
     const roots = rootResult.ok && Array.isArray(rootResult.data?.roots) ? rootResult.data.roots.filter((root) => !root.archived) : [];
     const defaults = bucket(roster.agent_defaults); const behaviour = bucket(roster.behaviours);
-    const form = el('form', 'tw-config-form'); reading(form, t('team_config.cowork_id', 'Cowork ID'), roster.name, t('settei.none_set', '— none set —'));
+    const form = el('form', 'tw-config-form'); reading(form, t('team_config.cowork_id', 'Team ID'), roster.name, t('settei.none_set', '— none set —'));
     const title = field(form, t('team_config.title', 'Readable title'), 'title', roster.title);
     // WHERE IT WORKS — the shared control (js/where-it-works.js); the key above it like every field.
     const whereField = el('div', 'tw-config-field'); whereField.append(el('span', null, t('where.label', 'Where it works')));
@@ -71,7 +71,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
       const on = routineInputs.get('ronin_worktrees')?.checked === true;
       worktreesMode.replaceChildren(
         el('b', null, t('team_config.worktrees_mode', 'Agent work mode')),
-        el('strong', null, on ? t('team_config.worktrees_on', 'Own worktree where the Project Root allows it') : t('team_config.worktrees_off', 'Use the project checkout and its branches')),
+        el('strong', null, on ? t('team_config.worktrees_on', 'Own worktree where the Workspace folder allows it') : t('team_config.worktrees_off', 'Use the project checkout and its branches')),
         el('small', null, t('team_config.worktrees_help', 'Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')),
       );
     };
