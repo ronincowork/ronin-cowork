@@ -52,6 +52,10 @@ async function toolPath(): Promise<string> {
     const candidate = path.join(dir, 'ronin-testserver');
     if (await fs.access(candidate).then(() => true, () => false)) return candidate;
   }
+  // CI has no owner tools store. Keep a test-only copy beside this helper so the
+  // same isolation contract is exercised on a clean checkout.
+  const fixture = path.join(import.meta.dirname, 'ronin-testserver');
+  if (await fs.access(fixture).then(() => true, () => false)) return fixture;
   const stored = path.join(storeDir('tools'), 'ronin-testserver');
   if (await fs.access(stored).then(() => true, () => false)) return stored;
   throw new Error(

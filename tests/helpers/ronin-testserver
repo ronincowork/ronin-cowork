@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# Test-only mirror of the Ronin Host Routine's owner tool. GitHub runners do not
+# have an owner tools store, but must exercise the identical isolated-server path.
+set -u
+
+usage() {
+  printf 'usage: ronin-testserver open <name> [--conf <file>]\n       ronin-testserver close <name>\n       ronin-testserver list\n' >&2
+  exit 2
+}
+
+base=${RONIN_TESTSERVER_ROOT:-/tmp/ronin-testserver}
+tmux_bin=/usr/bin/tmux
+action=${1:-}
+name=${2:-}
+
+valid_name() { [[ $1 =~ ^[A-Za-z0-9_-]{1,32}$ ]]; }
+server_pid() { "$1" display-message -p '#{pid}' 2>/dev/null; }
+live_pid() { "$tmux_bin" display-message -p '#{pid}' 2>/dev/null || true; }
+
+case "$action" in
+  open)
+    valid_name "$name" || usage
+    [ -x "$tmux_bin" ] || { printf 'ronin-testserver: %s is absent\n' "$tmux_bin" >&2; exit 1; }
+    root="$base/$name"
+    wrapper="$root/tmux"
+    conf="$root/start.conf"
+    mkdir -p "$root"
+    cat >"$wrapper" <<EOF
+#!/bin/sh
+exec env -u TMUX -u TMUX_PANE TMUX_TMPDIR='$root' '$tmux_bin' -L '$name' "\$@"
+EOF
+    chmod 755 "$wrapper"
+    if pid=$(server_pid "$wrapper"); then
+      state='already open'
+    else
+      state='open'
+      if [ "${3:-}" = --conf ]; then
+        [ $# -eq 4 ] && [ -f "${4:-}" ] || usage
+        conf=$4
+      elif [ $# -ne 2 ]; then
+        usage
+      else
+        printf 'set-option -s exit-empty off\n' >"$conf"
+      fi
+      "$wrapper" -f "$conf" start-server
+      pid=$(server_pid "$wrapper") || { printf 'ronin-testserver: %s did not start\n' "$name" >&2; exit 1; }
+    fi
+    printf 'TESTSERVER %s (%s)\n' "$name" "$state"
+    printf '  tmux     %s\n' "$wrapper"
+    printf '  socket   %s\n' "$root/tmux-$(id -u)/$name"
+    printf '  pid      %s\n' "$pid"
+    printf '  live     %s  (not this one; nothing here can reach it)\n' "$(live_pid || true)"
+    ;;
+  close)
+    valid_name "$name" || usage
+    [ $# -eq 2 ] || usage
+    root="$base/$name"
+    wrapper="$root/tmux"
+    if [ ! -x "$wrapper" ] || ! pid=$(server_pid "$wrapper"); then
+      printf 'already closed: %s\n' "$name"
+      [ ! -e "$root" ] || rm -r -- "$root"
+      exit 0
+    fi
+    live=$(live_pid)
+    if [ -n "$live" ] && [ "$pid" = "$live" ]; then
+      printf 'REFUSING: %s resolves to the live server\n' "$name" >&2
+      exit 4
+    fi
+    "$wrapper" kill-server
+    rm -r -- "$root"
+    printf 'CLOSED %s (pid %s)\n' "$name" "$pid"
+    ;;
+  list)
+    [ $# -eq 1 ] || usage
+    [ -d "$base" ] || exit 0
+    shopt -s nullglob
+    for root in "$base"/*; do
+      [ -d "$root" ] || continue
+      name=${root##*/}
+      wrapper="$root/tmux"
+      if [ -x "$wrapper" ] && pid=$(server_pid "$wrapper"); then
+        printf '%s pid %s\n' "$name" "$pid"
+      else
+        printf '%s dead\n' "$name"
+      fi
+    done
+    ;;
+  *) usage ;;
+esac
