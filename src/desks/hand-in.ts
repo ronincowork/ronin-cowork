@@ -78,7 +78,6 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
     } finally {
       const candidate = candidateWorktree(a.repo, line.branch);
       if (existsSync(candidate)) await worktreeRemove(a.dir, candidate, true).catch(() => undefined);
-      await worktreePrune(a.dir).catch(() => undefined);
     }
   });
 
@@ -92,19 +91,10 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
   if (out.result !== 'accepted') return { receipt: out, notices, tidy: emptyTidy() };
   const current = await readDesk(repo, branch);
   const currentStatus = current ? await deskStatus(current, a) : null;
-  const otherLevel: Array<{ repo: string; branch: string }> = [];
-  for (const other of await listDeskRecords({ session: rec.session })) {
-    if (other.repo === repo && other.branch === branch) continue;
-    const otherArrangement = await arrangementOf(other.repo);
-    const otherStatus = await deskStatus(other, otherArrangement);
-    if (otherStatus.state === 'open' && !otherStatus.dirty && otherStatus.ahead === 0) {
-      otherLevel.push({ repo: other.repo, branch: other.branch });
-    }
-  }
   return { receipt: out, notices, tidy: {
     desk: currentStatus,
     unsaved_files: currentStatus?.dirty_files ?? [],
-    other_level_desks: otherLevel,
+    other_level_desks: [],
     promotion_due: (currentStatus?.line_ahead_of_working ?? 0) > 0,
   } };
 }

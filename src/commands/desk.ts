@@ -3,7 +3,7 @@ import { tmux } from '../tmux-client.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from '../desks/registry.js';
 import { closeDesk, discardDesk, handoffDesk, openDesk, syncDesk } from '../desks/desk.js';
 import { handIn, handInAssignment } from '../desks/hand-in.js';
-import { notifyLeads, replyToHandIn, teamOfLine } from '../desks/lead.js';
+import { findLeads, replyToHandIn, selfMessage, teamOfLine } from '../desks/lead.js';
 import { acceptedSince, receiptById, receiptsForDesk, receiptsForLine } from '../desks/receipts.js';
 import { queueHolder } from '../desks/queue.js';
 import { deskId, type DeskNotice, type DeskStatus, type HandInReceipt } from '../desks/schema.js';
@@ -169,16 +169,11 @@ async function main(): Promise<void> {
           if (receipt.result === 'accepted' && tidy.desk) {
             out(`  desk is ${tidy.desk.ahead === 0 ? 'level with the line' : `${tidy.desk.ahead} commit(s) ahead of the line`}`);
             out(tidy.unsaved_files.length ? `  not handed in: ${tidy.unsaved_files.join(', ')}` : '  no unsaved or untracked files');
-            if (tidy.other_level_desks.length) out(`  other level, idle desks you can close: ${tidy.other_level_desks.map(deskId).join(', ')}`);
-            out(tidy.promotion_due ? '  promotion due; the lead is being told' : '  team line is level with local dev');
           }
           if (receipt.result !== 'accepted') worst = 4;
           const team = teamOfLine(d.line);
-          const outcome = receipt.result === 'accepted' ? 'accepted' : receipt.conflict_files.length ? 'conflict' : null;
-          if (team && outcome) {
-            for (const dlv of await notifyLeads({ team, line: d.line, session, receiptId: receipt.id, result: outcome, lineSha: receipt.line_sha, files: receipt.conflict_files })) {
-              out(dlv.how === 'self' ? `  ${dlv.detail}` : `  lead ${dlv.to}: ${dlv.how === 'house-send' ? 'told' : 'not reachable at the tile — posted on the team wipeboard'} — ${dlv.detail}`);
-            }
+          if (team && receipt.result === 'accepted' && !(await findLeads(team)).length) {
+            out(`  ${selfMessage({ team, line: d.line, session, receiptId: receipt.id, result: 'accepted', lineSha: receipt.line_sha })}`);
           }
         }
         process.exit(worst);

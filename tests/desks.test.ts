@@ -226,6 +226,7 @@ test('handIn: the line advances by compare-and-swap to the candidate, its worktr
   assert.equal(ledger.at(-1)?.id, receipt.id);
   assert.equal((await receiptsForDesk('cowork', 'team/comp/fable')).length, 1);
   assert.deepEqual(tidy.unsaved_files, ['loose-one.txt', 'loose-two.txt']);
+  assert.deepEqual(tidy.other_level_desks, [], 'hand-in does not inspect other desks for advice');
   assert.equal(tidy.desk?.ahead, 0);
   assert.equal(tidy.promotion_due, true);
   await fs.unlink(path.join(deskWorktree('cowork', 'team/comp/fable'), 'loose-one.txt'));

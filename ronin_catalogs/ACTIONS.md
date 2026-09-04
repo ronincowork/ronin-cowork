@@ -427,10 +427,8 @@ your brief and on your letter (`repos[]`); never edit `dev` or a team line, whic
 funnel points. **Commit** coherent checkpoints privately as you go. At each DONE leg,
 **offer a hand-in** — `tejun-desk hand-in` when the work is coherent for the team; a leg
 may prompt it, never perform it for you, and it is not `git push`. Run no repository-wide verification at a
-commit or a hand-in. An accepted hand-in, or a conflict, tells your team's lead by itself,
-regardless of the lead's dial — reviewing the team line and promoting it is the lead's
-primary job — so you never need to `tejun-send` the lead about a
-hand-in, and a watch-only lead is not a reason to stop. If the team has no lead, the
+commit or a hand-in. Reviewing the team line and promoting it is the lead's job; hand-in
+does not send messages on your behalf. If the team has no lead, the
 hand-in tells you: “this didn't work for promotion: team <team> has no lead; ask the owner
 to mark one on the Team page.” A conflict at hand-in is still yours to
 resolve (`tejun-desk sync`, fix, hand in).
