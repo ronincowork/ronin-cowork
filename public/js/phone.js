@@ -74,7 +74,7 @@ export async function buildPhone() {
     if (route.screen === 'agents') paintAgents();
   };
 
-  /* ---------- screen 1 · the Coworks ---------- */
+  /* ---------- screen 1 · the Teams ---------- */
   const paintTeams = () => {
     bar.replaceChildren(...barContent(...(brand ? [brand] : []), el('span', 'ph-title', t('phone.coworks', 'Teams'))));
     const list = el('div', 'ph-list');

@@ -382,7 +382,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.rt_absent:** not installed
 - **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad.
 
-## campaign_home — campaign-home.js (the root arrival: Machine Settings, Coworks, Launch)
+## campaign_home — campaign-home.js (the root arrival: Machine Settings, Teams, Launch)
 
 - **campaign_home.machine_settings:** Machine Settings
 - **campaign_home.campaign_is:** Admin Desk configuration
@@ -920,7 +920,7 @@ The pad's current config downloads as a backup first.
 
 ## wipeboard — the kind note
 
-## roots — projectroots.js (the ▣ Project roots tab)
+## roots — projectroots.js (the ▣ Workspace folders tab)
 - **roots.add:** ＋ Add workspace folder
 - **roots.add_hint:** An existing directory on this machine where Agents may work.
 - **roots.add_save:** Add
@@ -1532,7 +1532,7 @@ The catalog entry goes. {dir} is not touched.
 ## composer — the ✕ clear
 - **composer.clear_title:** Clear this box
 
-## phone — phone.js (the phone shell: Coworks, a Cowork's Agents, one Agent's tile)
+## phone — phone.js (the phone shell: Teams, a Team's Agents, one Agent's tile)
 - **phone.coworks:** Teams
 - **phone.launch_card:** Launch New Agent
 - **phone.launch_defaults:** Everything else launches with this Team's defaults.

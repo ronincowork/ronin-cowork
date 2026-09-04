@@ -9,7 +9,7 @@ const text = (value) => (typeof value === 'string' ? value : '');
 
 export const defaultWorkspaceState = () => ({
   version: WORKSPACE_STATE_VERSION,
-  // Coworks, Agents. The Cowork collection is one of the three doors, not the landing.
+  // Teams and Agents. The Teams collection is one of the three doors, not the landing.
   view: 'home',
   team: '',
   teamMode: 'team',

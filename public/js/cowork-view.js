@@ -590,7 +590,7 @@ export function createCoworkView(options = {}) {
     el: root, glyph: campaign ? '⛩' : '人',
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: bench.arrangement,
-    // The owner's per-tab name distinguishes several Workbench tabs. Coworks defaults to
+    // The owner's per-tab name distinguishes several Workbench tabs. Teams defaults to
     // its page name; a Team defaults to the Team name. createWorkspace adds Ronin.
     title: ({ param, viewState }) => {
       const fallback = campaign ? t('campaign.coworks', 'Teams') : (param || t('team.team', 'Team'));
