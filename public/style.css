@@ -177,6 +177,8 @@
   --bar-nav-size: var(--text-7);
   --bar-value-fg: var(--bar-nav-fg);
   --bar-value-size: var(--bar-nav-size);
+  --bar-place-bg: #090a0c;
+  --bar-place-fg: var(--on-strong);
   --bar-brand-mark-h: 27px;
   --bar-brand-track: -0.005em;
 
@@ -396,9 +398,9 @@ body {
   min-width: 7rem;
   max-width: min(40vw, 24rem);
   padding: var(--space-3) var(--space-7) var(--space-4);
-  border-radius: 0 0 var(--radius-pill) var(--radius-pill);
-  background: #090a0c;
-  color: var(--on-strong);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: var(--bar-place-bg);
+  color: var(--bar-place-fg);
   font-size: var(--bar-value-size);
   font-style: normal;
   font-weight: 600;

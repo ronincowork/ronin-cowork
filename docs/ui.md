@@ -31,7 +31,8 @@ declared first:
   `#attention-flash`, and the help box.
 - **ui** also owns the app-bar navigation set: `.ui-bar-nav` is a clickable label,
   `.ui-bar-value` is the plain loaded value beside it, and `.ui-bar-place` is the neutral
-  island cut into the top edge that names which Workbench the doors led to. Native button
+  island cut into the top edge that names which Workbench the doors led to. Its visible
+  lower corners use the Workspace Kit surface radius (`--radius-lg`). Native button
   chrome and feature-local bar styling are forbidden.
 - **app** — every composition and feature rule, in source order.
 
