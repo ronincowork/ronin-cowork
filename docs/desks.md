@@ -117,10 +117,10 @@ designated lead — the receipt records who ran it — so nothing is ever tied u
 
 > **Park is retired.**
 > A desk is handed in or closed; a desk always has a living owner; ending a session checks
-> for desks it solely owns. This section describes the code as it still is until the
-> lab's DESK_OWNERSHIP build-out lands: `park`, `parkedDesks` and
-> `recoverDesk` go; `close` off the line takes `--yes` and receipts the loss; hand-off
-> and add-owner replace recover.
+> for desks it solely owns. This section describes the code as it still is until leg 5 of
+> the lab's worktree lifecycle plan lands (`ronin-lab/plans/WORKTREE_LIFECYCLE.md` §10):
+> `park`, `parkedDesks` and `recoverDesk` go; `close` off the line takes `--yes` and
+> receipts the loss; hand-off and add-owner replace recover.
 
 `closeDesk(repo, branch, {unmount})`: unsaved files → a `WIP:` commit on the desk; if the
 tip is already reachable from the line the worktree is removed, the branch deleted and the
