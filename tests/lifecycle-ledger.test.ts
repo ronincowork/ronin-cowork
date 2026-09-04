@@ -103,3 +103,11 @@ test('startup recovery records only callback-proved disposition and is idempoten
   assert.equal(first[0]!.type, 'recovered');
   assert.deepEqual(second, []);
 });
+
+test('observations inside a transaction do not falsely close its pending recovery state', () => {
+  const events = [
+    { ...base('cowork', 'tx-observed', 'hand_in_started', 'started'), schema: 1 as const, event_id: 'one', sequence: 1, predecessor: '', at: '2026-09-04T00:00:00Z' },
+    { ...base('cowork', 'tx-observed', 'sync_observed', 'observed'), schema: 1 as const, event_id: 'two', sequence: 2, predecessor: 'one', at: '2026-09-04T00:00:01Z' },
+  ];
+  assert.deepEqual(projectManagedLifecycle(events).pending.map((item) => item.transaction_id), ['tx-observed']);
+});
