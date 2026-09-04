@@ -2,6 +2,7 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir, splitSections, entryValue } from '../src/resources.js';
+import { readDefinitions, type DefinitionKind } from '../src/resource-adapters.js';
 
 let findings = 0;
 let looked = 0;
@@ -15,13 +16,6 @@ const exists = async (p: string) => !!(await stat(p).catch(() => null));
 const mdFiles = async (dir: string): Promise<string[]> =>
   (await readdir(dir).catch(() => [] as string[])).filter((f) => f.endsWith('.md'));
 
-async function probe(rel: string): Promise<Record<string, unknown> | null> {
-  try {
-    return (await import(rel)) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
 const REQUIRED: Record<string, { keys: string[]; unless?: (e: { get: (k: string) => string }) => boolean }> = {
   'MACROS.md': { keys: ['label', 'blurb'] },
 };
@@ -56,25 +50,28 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
 }
 
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
-  const defs = await probe('../src/resource-adapters.js');
-  if (defs && typeof defs.listSessionRoles === 'function') {
-    for (const kind of ['session_roles', 'role_families'] as const) {
-      const dir = path.join(catalogsDir, kind);
-      if (!(await exists(dir))) continue;
-      const listed = (await (kind === 'session_roles'
-        ? (defs.listSessionRoles as () => Promise<{ name: string }[]>)()
-        : (defs.listRoleFamilies as () => Promise<{ name: string }[]>)()
-      ).catch(() => [] as { name: string }[])).map((r) => r.name.toLowerCase());
-      for (const f of await mdFiles(dir)) {
-        if (f.toLowerCase() === 'readme.md') continue;
-        looked++;
-        const name = f.replace(/\.md$/, '');
-        if (!listed.includes(name.toLowerCase()))
-          find(
-            `${kind}/${f} (yours): "${name}" does not surface from the ${kind} reader — half-written, or dropped by a filter`,
-            `read ronin_catalogs/${kind}/README.md for the required fields, or delete the file if it is abandoned`,
-          );
-      }
+  const kinds: DefinitionKind[] = [
+    'routines', 'lexicons', 'desk_profiles', 'templates/agents', 'templates/teams',
+  ];
+  for (const kind of kinds) {
+    const dir = path.join(catalogsDir, kind);
+    if (!(await exists(dir))) continue;
+    const listed = new Set((await readDefinitions(kind)).map((row) => row.name.toLowerCase()));
+    for (const file of await mdFiles(dir)) {
+      if (file.toLowerCase() === 'readme.md') continue;
+      looked++;
+      const name = file.replace(/\.md$/, '');
+      const lines = (await readFile(path.join(dir, file), 'utf8')).split('\n');
+      if (/^yes$/i.test(entryValue(lines, 'hidden'))) continue;
+      if (listed.has(name.toLowerCase())) continue;
+      const shipped = `ronin_catalogs/${kind}/${file}`;
+      const remedy = await exists(path.join(process.cwd(), shipped))
+        ? `copy ${shipped} into your catalogs store and edit that complete definition, or delete your shadow to restore the shipped one`
+        : `copy a complete definition from ronin_catalogs/${kind}/ and rename it, or delete this abandoned file`;
+      find(
+        `${kind}/${file} (yours): "${name}" does not surface — the reader requires at least one \`- **key:** value\` line`,
+        remedy,
+      );
     }
   }
 }

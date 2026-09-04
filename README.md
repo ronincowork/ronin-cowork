@@ -179,7 +179,7 @@ system knowledge.
 
 Requires a Unix-like host (Linux, macOS, WSL) with tmux; the browser client is any OS.
 The tmux server runs in its own unit and owns the sessions — restarting or replacing
-Ronin never touches running work. `bin/ronin-byoin` runs every check and gives one
+Ronin never touches running work. `npm run byoin` runs the user-customization check and gives one
 verdict; `bin/ronin-uninstall` reverses the install and leaves your own files behind.
 
 ## License
