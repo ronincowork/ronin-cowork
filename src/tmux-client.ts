@@ -3,11 +3,14 @@ import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'node:child
 export type ClientState = 'up' | 'reconnecting' | 'fallback';
 
 export interface Notification {
-  kind: `%${string}`;
+  kind: string;
+  rawKind: `%${string}`;
   line: string;
   args: string[];
   paneId?: string;
   output?: string;
+  subscription?: string;
+  value?: string;
 }
 
 export interface TmuxClient {
@@ -52,6 +55,8 @@ interface StartupReply {
 const HOLDER = 'grid_ctl';
 const DEFAULT_TIMEOUT_MS = 5_000;
 const BACKOFF_MS = [200, 1_000, 5_000] as const;
+const ACTIVITY_SUBSCRIPTION = 'activity::#{S:#{session_name}:#{window_activity},}';
+const tmuxEnvironment = (): string => `${process.env.TMUX ?? ''}\0${process.env.TMUX_TMPDIR ?? ''}`;
 
 class ConnectionLostError extends Error {}
 
@@ -108,8 +113,10 @@ export class ControlTmuxClient implements TmuxClient {
   private reconnectTimer: NodeJS.Timeout | undefined;
   private reconnectAttempt = 0;
   private activeRequests = 0;
+  private connectionEnvironment = '';
   private stoppedProcess = new WeakSet<object>();
   private readonly handlers = new Map<string, Set<(notification: Notification) => void>>();
+  private activityRequested = false;
 
   constructor(dependencies: Partial<Dependencies> = {}) {
     this.deps = { ...DEFAULT_DEPENDENCIES, ...dependencies };
@@ -123,6 +130,14 @@ export class ControlTmuxClient implements TmuxClient {
     const handlers = this.handlers.get(kind) ?? new Set();
     handlers.add(handler);
     this.handlers.set(kind, handlers);
+    if ((kind === 'subscription' || kind === '%subscription-changed') && !this.activityRequested) {
+      this.activityRequested = true;
+      if (this.process && this.currentState === 'up') {
+        void this.run(['refresh-client', '-B', ACTIVITY_SUBSCRIPTION]).catch(() => undefined);
+      } else {
+        void this.connect().catch(() => undefined);
+      }
+    }
     return () => handlers.delete(handler);
   }
 
@@ -141,6 +156,7 @@ export class ControlTmuxClient implements TmuxClient {
 
   private async runSerialized(args: readonly string[], timeoutMs: number): Promise<string> {
     commandLine(args); // Validate before opening a connection or invoking the fallback.
+    this.followTmuxEnvironment();
     if (!this.process && !this.connecting && !this.reconnectTimer) {
       await this.connect().catch(() => undefined);
     }
@@ -179,6 +195,7 @@ export class ControlTmuxClient implements TmuxClient {
       await this.ensureHolder();
       const child = this.deps.spawnControl();
       this.process = child;
+      this.connectionEnvironment = tmuxEnvironment();
       this.buffer = '';
       child.stdout.on('data', (chunk) => this.read(chunk));
       child.stdout.once('end', () => this.connectionEnded(child, 'EOF'));
@@ -194,8 +211,12 @@ export class ControlTmuxClient implements TmuxClient {
       });
       this.reconnectAttempt = 0;
       this.setState('up');
+      if (this.activityRequested) {
+        await this.controlRun(['refresh-client', '-B', ACTIVITY_SUBSCRIPTION], DEFAULT_TIMEOUT_MS);
+      }
       this.syncProcessRefs();
     } catch (error) {
+      if (this.process) this.dropConnection(this.process, `connection setup failed: ${String(error)}`);
       this.setState('fallback');
       this.scheduleReconnect();
       throw error;
@@ -282,14 +303,24 @@ export class ControlTmuxClient implements TmuxClient {
   }
 
   private emitNotification(line: string): void {
-    const [kind, ...args] = line.split(' ');
-    if (!kind) return;
-    const notification: Notification = { kind: kind as `%${string}`, line, args };
-    if (kind === '%output' && args.length) {
+    const [rawKind, ...args] = line.split(' ');
+    if (!rawKind) return;
+    const kind = rawKind === '%subscription-changed' ? 'subscription' : rawKind.slice(1);
+    const notification: Notification = { kind, rawKind: rawKind as `%${string}`, line, args };
+    if (rawKind === '%output' && args.length) {
       notification.paneId = args[0];
-      notification.output = decodeTmuxOutput(line.slice(kind.length + 1 + args[0]!.length + 1));
+      notification.output = decodeTmuxOutput(line.slice(rawKind.length + 1 + args[0]!.length + 1));
     }
-    for (const handler of this.handlers.get(kind) ?? []) {
+    if (rawKind === '%subscription-changed') {
+      notification.subscription = args[0];
+      const divider = line.indexOf(' : ');
+      notification.value = divider === -1 ? '' : line.slice(divider + 3);
+    }
+    const listeners = new Set([
+      ...(this.handlers.get(kind) ?? []),
+      ...(this.handlers.get(rawKind) ?? []),
+    ]);
+    for (const handler of listeners) {
       try {
         handler(notification);
       } catch (error) {
@@ -338,6 +369,24 @@ export class ControlTmuxClient implements TmuxClient {
       void this.connect().catch(() => undefined);
     }, delay);
     this.reconnectTimer.unref?.();
+  }
+
+  private followTmuxEnvironment(): void {
+    if (!this.connectionEnvironment || this.connectionEnvironment === tmuxEnvironment()) return;
+    if (this.reconnectTimer) {
+      this.deps.clearTimer(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+    const child = this.process;
+    if (child) {
+      this.stoppedProcess.add(child as object);
+      this.process = undefined;
+      this.buffer = '';
+      child.kill();
+    }
+    this.connectionEnvironment = '';
+    this.reconnectAttempt = 0;
+    this.setState('fallback');
   }
 
   private syncProcessRefs(): void {
