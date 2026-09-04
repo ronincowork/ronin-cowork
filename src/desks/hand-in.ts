@@ -5,7 +5,6 @@ import { casRef, mergeInto, revParse, worktreeAddDetached, worktreePrune, worktr
 import { withLineLock } from './queue.js';
 import { candidateWorktree, deskStatus, lineFor, listDeskRecords, readDesk, updateDesk } from './registry.js';
 import { appendReceipt, newReceiptId } from './receipts.js';
-import { findLeads } from './lead.js';
 import type { DeskNotice, DeskStatus, HandInReceipt, HandInResult, RepoArrangement } from './schema.js';
 
 export interface HandInTidy {
@@ -27,7 +26,7 @@ async function freshCandidate(a: RepoArrangement, line: string, sha: string): Pr
   return wt;
 }
 
-export async function handIn(repo: string, branch: string, opts: { maxRetries?: number; findLeads?: (team: string) => Promise<string[]> } = {}): Promise<HandInOutcome> {
+export async function handIn(repo: string, branch: string, opts: { maxRetries?: number } = {}): Promise<HandInOutcome> {
   const rec = await readDesk(repo, branch);
   if (!rec) throw new Error(`no desk recorded for ${repo}:${branch}`);
   const a = await arrangementOf(repo);
@@ -40,10 +39,6 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
 
   const st = await deskStatus(rec, a);
   if (!st.tip) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: 'desk branch is gone' })), notices: [], tidy: emptyTidy() };
-  if (rec.team && !(await (opts.findLeads ?? findLeads)(rec.team)).length) {
-    return { receipt: await appendReceipt(receipt({ result: 'refused', source_tip: st.tip,
-      reason: `team ${rec.team} has no designated lead — ask the owner to assign one, then retry this hand-in` })), notices: [], tidy: emptyTidy() };
-  }
 
   const out = await withLineLock(repo, line.branch, async (): Promise<HandInReceipt> => {
     try {

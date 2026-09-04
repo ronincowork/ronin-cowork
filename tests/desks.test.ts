@@ -66,9 +66,7 @@ await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'
 const { parseArrangement, arrangementOf } = await import('../src/desks/arrangement.js');
 const { deriveAssignment, listDesks, readDesk, deskWorktree, candidateWorktree } = await import('../src/desks/registry.js');
 const { openDesk, syncDesk, closeDesk, discardDesk, recoverDesk, parkedDesks } = await import('../src/desks/desk.js');
-const { handIn: rawHandIn } = await import('../src/desks/hand-in.js');
-const handIn = (repo: string, branch: string, opts: { maxRetries?: number } = {}) =>
-  rawHandIn(repo, branch, { ...opts, findLeads: async () => ['lead'] });
+const { handIn } = await import('../src/desks/hand-in.js');
 const statusOf = async (repo: string, branch: string) => {
   const d = (await listDesks({ repo })).find((x) => x.branch === branch);
   if (!d) throw new Error(`no desk ${repo}:${branch}`);
@@ -173,17 +171,6 @@ test('openDesk: an explicit managed repo need not already be on the team roster'
   assert.equal(st.assignment, 'extra@comp');
   assert.equal(st.mounted, true);
   assert.equal(sh(services, ['rev-parse', '--abbrev-ref', 'team/comp/extra@{upstream}']), 'team/comp/dev');
-});
-
-test('hand-in without a designated lead creates no candidate and moves no ref', async () => {
-  const desk = await openDesk({ repo: 'services', session: 'leaderless', team: 'none' });
-  await commitFile(desk.worktree, 'waiting.txt', 'wait for a lead\n');
-  const before = sh(services, ['rev-parse', 'team/none/dev']);
-  const { receipt } = await rawHandIn('services', desk.branch, { findLeads: async () => [] });
-  assert.equal(receipt.result, 'refused');
-  assert.match(receipt.reason, /no designated lead/);
-  assert.equal(sh(services, ['rev-parse', 'team/none/dev']), before);
-  assert.equal(existsSync(candidateWorktree('services', 'team/none/dev')), false);
 });
 
 test('accepted hand-ins discover an explicit managed repo outside the team roster', async () => {

@@ -39,9 +39,6 @@ repository verification at promotion. A hand-in conflict stays in its isolated c
 and names the files; the desk remains live for resolution. An empty update and policy
 facts are ordinary output, not new gates.
 
-Hand-in requires a designated Team Lead. Without one, it creates no candidate and moves
-no ref; ask the owner to assign a lead, then retry the same hand-in.
-
 Right after `ACCEPTED`, the tool says whether the desk is level with its line, names any
 unsaved or untracked files excluded from hand-in, lists this session's other level idle
 desks, and says whether promotion is due. `status` provides the same facts on request.
