@@ -591,7 +591,7 @@ export function createCoworkView(options = {}) {
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: bench.arrangement,
     // The owner's per-tab name distinguishes several Workbench tabs. Teams defaults to
-    // its page name; a Team defaults to the Team name. createWorkspace adds Ronin.
+    // its page name; a Team defaults to the Team name. The favicon carries the house.
     title: ({ param, viewState }) => {
       const fallback = campaign ? t('campaign.coworks', 'Teams') : (param || t('team.team', 'Team'));
       const name = viewState?.(viewKey)?.tabName;

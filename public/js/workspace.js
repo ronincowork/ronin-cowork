@@ -108,10 +108,9 @@ export function hashFor(view, param = '') {
  * registered id and an element are structural. Lifecycle failures are contained to the
  * destination and reported without taking the compatibility Sessions view down.
  */
-const HOUSE = 'Ronin';
 export const tabTitle = (what) => {
   if (what && typeof what === 'object' && what.bare) return String(what.bare);
-  return what ? `${what} · ${HOUSE}` : HOUSE;
+  return what ? String(what) : '';
 };
 
 export function createWorkspace(host, options = {}) {

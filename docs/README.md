@@ -21,6 +21,7 @@ contracts remain available, but they are not prerequisites for installing or usi
 | How do I add or change a Workspace Folder? | [Workspace folders](project-roots.md) |
 | How do parallel Agents avoid colliding in the same files? | [Ronin Worktrees](worktrees.md) |
 | How do session Control settings work? | [Session Control](session-control-dials.md) |
+| What does a new Agent read at birth, and why does it fit one read? | [The birth packet](birth-packet.md) |
 | How do I customize Ronin without editing shipped files? | [Customize](customize.md) and [shadowing](shadowing.md) |
 | What is a template, and how does my agent keep mine? | [Templates](templates.md) |
 | What has Ronin connected to? | [Services activation and the egress record](services-activation.md) |

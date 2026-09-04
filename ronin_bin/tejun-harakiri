@@ -13,6 +13,8 @@
 # There is no output on success: the session — and this process with it — is gone.
 # That silence IS the proof. Never report "session ended" without running this.
 set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
 
 case "${1:-}" in
   '') ;;
@@ -30,7 +32,7 @@ esac
 pane="${TMUX_PANE:-$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)}"
 [ -n "$pane" ] || { echo "NOT-IN-TMUX: no session to end (are you inside a tmux pane?)" >&2; exit 2; }
 
-url=$(ronin-url) || exit $?
+url=$("$TOOL_DIR/ronin-url") || exit $?
 
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")

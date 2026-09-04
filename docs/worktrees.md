@@ -135,6 +135,50 @@ receipts` to inspect publication history. `tejun-desk discard --yes` is the expl
 that abandons an unintegrated desk. Funnel recovery is separate: dirty integration
 worktrees are preserved to named recovery refs and receipts before cleanup.
 
+## Where this is going (ruled 2026-09-04)
+
+The owner's model for how worktrees stay clean as sessions are born and retire. The plan
+and its build order are in the lab (`ronin-lab/plans/WORKTREE_LIFECYCLE.md`, with the
+two-mode architecture in `plans/REPOSITORY_WORK_MODES.md`); the public explanation is the
+*Checkouts and Worktrees* explainer on ronincowork.com. This section is the short form for
+anyone changing the code below.
+
+- **Two truths per repository.** Local `working` (`dev`) is the sole authority for accepted
+  code: everyone promotes to it, everyone cuts from it. Remote `stable` (`master`) is
+  released code and moves only by pull request. Remote `dev` is pass-through for the PR and
+  nothing reads it back. Local `master` does not exist on the box; nothing read it.
+- **Everything else is on loan.** Team lines are ephemeral queues: reset to `dev` after
+  every promotion, deleted when the team retires, never on a timer. Desk branches are
+  private checkpoints. Candidates are throwaway. Each has an owner, a recorded base, and a
+  place it hands in to.
+- **An Agent sees three verbs.** Get a worktree (`open`, cut from local `dev`, never from a
+  team line), update it (`sync`, merges local `dev`; `status` reports lag, and 20 commits
+  behind is a notification, not a block), hand it in (`hand-in`; the candidate is built from
+  current `dev` plus the team delta plus the desk delta, so the line is brought current by
+  the hand-in itself). Birth, retirement, ledgers and audits never appear in a brief beyond
+  "hand in or close before you go".
+- **Honey, not sticks.** No refusals on Agents beyond what git itself cannot do (a
+  conflict, a lost compare-and-swap). Where a check remains it tells and does not block.
+- **The house closes what it opens.** `open` records what it creates; hand-in removes its
+  candidate; promotion resets the team line and settles desks made redundant by it; session
+  close settles that desk; team retirement settles the line; startup finishes an
+  interrupted transaction from the ledger. No cleanup chores for Agents or the owner.
+- **The house also absorbs junk it did not make.** `ronin-desk-audit` (read-only, six
+  invariants, exit code) and `ronin-desk-settle --dry-run | --yes` (the reconciler: settles
+  contained refs, rows with no worktree, folders with no row, abandoned candidates; lists
+  anything with unique commits and never deletes it unasked). House-run and owner-run, never
+  an Agent assignment, no jurisdiction over a checkout repository's git.
+- **One rolling `dev → master` PR.** A promotion makes sure one exists; later promotions
+  join it and are each named in its evidence.
+- **Desk runtime is its own by default.** A Ronin-created desk gets its own visible
+  dependency location, shown in status, instead of a hidden symlink into the primary
+  checkout. That removes the surprising coupling that emptied the operator's install on
+  2026-09-04 without limiting what an Agent may do in its desk.
+
+Today's leftover refs, registry rows and folders across the repositories are deliberately
+untouched: they are the fixture the audit and settle tools are proven against. Nothing is
+pruned by hand.
+
 ## Invariants for contributors
 
 - Resolve Agent capability and repository applicability once; consumers dispatch from the

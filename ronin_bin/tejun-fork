@@ -3,6 +3,8 @@
 # Usage: tejun-fork [instructions] --name n [--team t] [--behaviour ways:book]…
 #                   [--provider p] [--model m] [--dial user|read|write]
 set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
 die() { printf 'REFUSED: %s\n' "$1" >&2; exit "${2:-4}"; }
 me() {
   local win session sid
@@ -52,7 +54,7 @@ if e["BEHAVIOURS"]: b["behaviours"] = e["BEHAVIOURS"].splitlines()
 print(json.dumps(b))
 PY
 ) || die 'could not compose launch request' 2
-URL=$(ronin-url) || exit $?
+URL=$("$TOOL_DIR/ronin-url") || exit $?
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
 OUT=$(mktemp /tmp/tejun-fork.XXXXXX) || exit 2
