@@ -199,6 +199,16 @@
   .cv-defaults-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
   .cv-default-field { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); font-size: var(--text-3); }
   .cv-default-label { color: var(--fg-strong); font-weight: 600; }
+  .cv-multi { position: relative; }
+  .cv-multi > summary { list-style-position: inside; cursor: pointer; color: var(--fg); }
+  .cv-multi-menu {
+    position: absolute; z-index: 2; inset: calc(100% + var(--space-1)) 0 auto;
+    display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3);
+    border: var(--edge) solid var(--line-2); border-radius: var(--cv-cup); background: var(--well);
+    box-shadow: var(--shadow-menu); color: var(--fg);
+  }
+  .cv-multi-option { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; }
+  .cv-multi-option input { accent-color: var(--accent); }
   .cv-default-field textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
   .cv-default-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .cv-state { font-size: var(--text-3); color: var(--muted); }
