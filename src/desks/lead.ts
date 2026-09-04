@@ -83,7 +83,7 @@ export async function replyToHandIn(input: {
 
 export function selfMessage(n: LeadNotice): string {
   if (n.result === 'accepted') {
-    return `no lead is set for ${n.team}: the hand-in is accepted and waits on the line, but promotion is the lead's job and nobody is marked 人. Tell the owner: "${n.team} has no team lead — please mark one on the Team page (a coordinator that writes no code does fine)." Until then bin/ronin-promote ${n.team} answers NO-LEAD.`;
+    return `no lead is set for ${n.team}: hand-in must not move the team line until the owner marks a lead 人. Tell the owner: "${n.team} has no team lead — please mark one on the Team page." Then retry the same hand-in.`;
   }
   return `no lead is set for ${n.team}, so the conflict${n.files?.length ? ` on ${n.files.join(', ')}` : ''} is yours to resolve: tejun-desk sync, resolve the marked files at your desk, commit, hand in again.`;
 }
