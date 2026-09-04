@@ -31,6 +31,7 @@ process.env.RONIN_TEAM_ROSTERS_DIR = path.join(tmp, 'rosters');
 
 const sh = (dir: string, args: string[]) =>
   execFileSync('git', ['-C', dir, ...args], { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
+const realGit = execFileSync('which', ['git']).toString().trim();
 
 async function makeRepo(name: string, roninRepo: string | null): Promise<string> {
   const dir = path.join(tmp, name);
@@ -415,11 +416,22 @@ test('crash mid-hand-in: a candidate left behind by a crashed run is rebuilt, no
   const cand = candidateWorktree('cowork', 'team/comp/dev');
   sh(cowork, ['worktree', 'add', '--detach', cand, 'dev']);
   await fs.writeFile(path.join(cand, 'leftover.txt'), 'from a crashed run\n');
+  const gitTrace = path.join(tmp, 'hand-in-git.log');
+  const gitBin = path.join(tmp, 'trace-git');
+  await fs.mkdir(gitBin, { recursive: true });
+  await fs.writeFile(path.join(gitBin, 'git'), `#!/bin/sh\nprintf '%s\\n' "$*" >> "$RONIN_GIT_TRACE"\nexec '${realGit}' "$@"\n`, { mode: 0o755 });
   const r = await openDesk({ repo: 'cowork', session: 'after', team: 'comp' });
   await commitFile(r.worktree, 'after.txt', 'after the crash\n');
-  const { receipt } = await handIn('cowork', 'team/comp/after');
+  const oldPath = process.env.PATH;
+  process.env.PATH = `${gitBin}:${oldPath}`;
+  process.env.RONIN_GIT_TRACE = gitTrace;
+  const { receipt } = await handIn('cowork', 'team/comp/after').finally(() => {
+    process.env.PATH = oldPath;
+    delete process.env.RONIN_GIT_TRACE;
+  });
   assert.equal(receipt.result, 'accepted', receipt.reason);
   assert.ok(!existsSync(path.join(cand, 'leftover.txt')), 'the candidate was rebuilt fresh');
   assert.ok(!existsSync(path.join(deskWorktree('cowork', 'team/comp/dev'), 'leftover.txt')), 'and nothing of it reached the line');
   assert.equal(existsSync(cand), false, 'handled success cleans inherited candidate scratch');
+  assert.doesNotMatch(await fs.readFile(gitTrace, 'utf8'), /(?:^|\n)-C .* worktree prune(?:\n|$)/, 'hand-in never invokes repo-wide worktree prune');
 });

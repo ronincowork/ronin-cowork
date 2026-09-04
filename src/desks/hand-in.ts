@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { arrangementOf } from './arrangement.js';
 import { lineDirty, refreshLine } from './desk.js';
-import { casRef, mergeInto, revParse, worktreeAddDetached, worktreePrune, worktreeRemove } from './git.js';
+import { casRef, mergeInto, revParse, worktreeAddDetached, worktreeRemove } from './git.js';
 import { withLineLock } from './queue.js';
 import { candidateWorktree, deskStatus, lineFor, readDesk, updateDesk } from './registry.js';
 import { appendReceipt, newReceiptId } from './receipts.js';
@@ -21,7 +21,6 @@ const emptyTidy = (): HandInTidy => ({ desk: null, unsaved_files: [], other_leve
 async function freshCandidate(a: RepoArrangement, line: string, sha: string): Promise<string> {
   const wt = candidateWorktree(a.repo, line);
   if (existsSync(wt)) await worktreeRemove(a.dir, wt, true).catch(() => undefined);
-  await worktreePrune(a.dir);
   await worktreeAddDetached(a.dir, wt, sha);
   return wt;
 }
