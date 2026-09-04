@@ -4,8 +4,7 @@ export interface EndingDispositionOps {
   prompt(target: string, message: string): Promise<{ queued: boolean; id?: string }>;
   close(fact: EndingDeskFact): Promise<void>;
   handoff(fact: EndingDeskFact, owners: string[]): Promise<void>;
-  quarantine(fact: EndingDeskFact): Promise<{ id: string; manifest?: string }>;
-  removeActive(fact: EndingDeskFact): Promise<void>;
+  quarantineAndRemove(fact: EndingDeskFact): Promise<{ id: string; manifest?: string }>;
   discard?(fact: EndingDeskFact, confirmation: string): Promise<{ receipt_id: string }>;
   event?(type: 'closeout_prompted' | 'handed_off' | 'quarantined' | 'discarded' | 'desk_closed', fact: EndingDeskFact, detail: Record<string, unknown>): Promise<void>;
 }
@@ -49,9 +48,7 @@ export async function ignoreEnding(preflight: EndingPreflight, ops: EndingDispos
       result.handed_off.push({ desk: deskName(fact), owners: successors });
       continue;
     }
-    const custody = await ops.quarantine(fact);
-    await ops.event?.('quarantined', fact, { quarantine_id: custody.id, manifest: custody.manifest ?? '' });
-    await ops.removeActive(fact); // custody must be durable before active machinery disappears
+    const custody = await ops.quarantineAndRemove(fact); // one transaction: durable custody, then removal
     result.quarantined.push({ desk: deskName(fact), quarantine_id: custody.id });
   }
   return result;

@@ -14,6 +14,7 @@ export interface EndingDeskInput {
   line_tip: string;
   owners: string[];
   team: string;
+  assignment?: string;
   pending_transaction?: string;
   last_hand_in?: string;
 }

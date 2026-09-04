@@ -21,8 +21,7 @@ function harness(log: string[]): EndingDispositionOps {
     prompt: async (target) => { log.push(`prompt:${target}`); return { queued: true, id: 'm1' }; },
     close: async (d) => { log.push(`close:${d.branch}`); },
     handoff: async (d, owners) => { log.push(`handoff:${d.branch}:${owners.join(',')}`); },
-    quarantine: async (d) => { log.push(`quarantine:${d.branch}`); return { id: `q-${d.branch}` }; },
-    removeActive: async (d) => { log.push(`remove:${d.branch}`); },
+    quarantineAndRemove: async (d) => { log.push(`quarantine:${d.branch}`); log.push(`remove:${d.branch}`); return { id: `q-${d.branch}` }; },
     discard: async (d) => { log.push(`discard:${d.branch}`); return { receipt_id: `x-${d.branch}` }; },
     event: async (type, d) => { log.push(`event:${type}:${d.branch}`); },
   };
@@ -50,7 +49,7 @@ test('Ignore closes settled desks, hands co-owned work on, and quarantines last-
 test('a failed quarantine never removes active machinery', async () => {
   const log: string[] = [];
   const ops = harness(log);
-  ops.quarantine = async () => { log.push('quarantine:failed'); throw new Error('disk full'); };
+  ops.quarantineAndRemove = async () => { log.push('quarantine:failed'); throw new Error('disk full'); };
   await assert.rejects(ignoreEnding(preflight([fact('last')]), ops), /disk full/);
   assert.equal(log.some((line) => line.startsWith('remove:')), false);
 });
