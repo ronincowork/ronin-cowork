@@ -59,3 +59,7 @@ is a name a user learns. Everything not listed here is ordinary English and need
 | `desk_profile` | **desk profile**<!--g:glossary.desk_profile--> | The owner's standing defaults: skin, words, layout. |
 | harakiri | **harakiri**<!--g:glossary.harakiri--> | A session ends itself. |
 | `@ronin_note` | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
+| desk | **desk** | A managed private branch and worktree, leased to one or more sessions. |
+| hand-in | **hand in** | Admit committed desk work to the team's local review line. Never say “push.” |
+| commit | **commit** | A private checkpoint on a managed desk; it publishes nothing. |
+| push | **Git push** | Remote Git publication only; never the name for hand-in or promotion. |

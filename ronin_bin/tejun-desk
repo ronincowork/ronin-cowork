@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# tejun-desk — your desks: open, status, sync, hand in, close, hand off.
+# tejun-desk — your managed worktrees: get, update, hand in, close, and inspect status.
 #
 # Usage: tejun-desk status [--session s | --team t | --repo r]   per desk: clean/dirty · ahead · pending · blocked
-#        tejun-desk open <repo> [--team t]                       a desk on that repo, cut from your team's line
-#        tejun-desk hand-in [<repo>] [--assignment]              hand your committed range in to the team line
-#        tejun-desk sync [<repo>]                                adopt the current team line into your desk
+#        tejun-desk open <repo[:branch]> [--team t]              get a desk from current local dev
+#        tejun-desk hand-in [<repo[:branch]>] [--assignment]     hand your committed delta to the team line
+#        tejun-desk sync [<repo[:branch]>]                       update the desk from current local dev
 #        tejun-desk close [<repo[:branch]>]                      remove a clean desk whose tip is on its line
 #        tejun-desk handoff <repo[:branch]> --to <session[,session]>  transfer explicit custody
 #        tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"  intentional deletion with receipt

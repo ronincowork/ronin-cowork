@@ -65,12 +65,12 @@ test('the 2x2 result tells an Agent the location for managed and direct reposito
   ] as const;
   const locations = renderWorkLocations([...repositories]);
   assert.doesNotMatch(locations, /cowork/, 'managed locations are already named by the desk block');
-  assert.match(locations, /lab  \/src\/lab  \(no Worktrees; edit directly in this checkout\)/);
-  assert.match(renderWorkLocations([...repositories], { lab: 'release' }), /lab  \/src\/lab  \(no Worktrees; edit directly in this checkout, on branch release\)/, "the team's branch for that repository rides the line");
+  assert.match(locations, /lab  \/src\/lab  \(ordinary Git checkout; no managed desk or desk record\)/);
+  assert.match(renderWorkLocations([...repositories], { lab: 'release' }), /lab  \/src\/lab  \(ordinary Git checkout; no managed desk or desk record, on branch release\)/, "the team's branch for that repository rides the line");
   assert.equal(primaryWorkLocation([...repositories], 'lab'), '/src/lab');
   const brief = buildBrief(profile, undefined, { session_role: 'CutCode', prompt: 'Plan in lab.' }, undefined, [], null, assignment, [...repositories]);
   assert.match(brief, /Direct work locations:/);
-  assert.match(brief, /lab  \/src\/lab  \(no Worktrees; edit directly in this checkout\)/);
+  assert.match(brief, /lab  \/src\/lab  \(ordinary Git checkout; no managed desk or desk record\)/);
 });
 
 test('the brief carries every desk, the primary, the line, and the four words — or nothing at all', () => {
@@ -81,7 +81,7 @@ test('the brief carries every desk, the primary, the line, and the four words �
   assert.match(brief, /Your assignment has 2 desks:/);
   assert.match(brief, /cowork\s+\/w\/cowork\/team\/comp\/fable\s+→ team\/comp\/dev\s+\(you start here\)/);
   assert.match(brief, /services\s+\/w\/services\/team\/comp\/fable\s+→ team\/comp\/dev/);
-  assert.match(brief, /Work only in a desk; the desk contract is in your README\./);
+  assert.match(brief, /Get, update, and hand in through tejun-desk; your Worktrees Routine is the contract\./);
   assert.doesNotMatch(brief, /BYOIN/, 'the brief states desks, not the Git contract the README already carries');
 
   const none = buildBrief(profile, root, form, undefined, [], null, null);
@@ -104,9 +104,9 @@ test('the desk contract is the Worktrees Routine\'s page: no Routine, no desk re
     assert.ok(!names.some((f) => f.includes('DESK_CONTRACT')), 'there is no separate desk contract');
     const contract = await readFile(withRoutine.find((f) => path.basename(f) === 'WORKTREES.md')!, 'utf8');
     assert.match(contract, /Your brief names no desk/);
-    assert.match(contract, /Stop and ask the team lead when the desk is missing or contradictory/);
+    assert.match(contract, /If they disagree, put the exact discrepancy on the team wipeboard/);
     assert.match(contract, /tejun-desk status --assignment/);
-    assert.match(contract, /never by making a branch or worktree yourself/);
+    assert.match(contract, /do not create the missing branch or worktree yourself/);
   } finally {
     if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR; else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
     if (oldCatalogs === undefined) delete process.env.RONIN_CATALOGS_DIR; else process.env.RONIN_CATALOGS_DIR = oldCatalogs;
