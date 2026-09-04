@@ -22,15 +22,38 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 OS="$(uname -s)"
 . "$ROOT/libexec/ronin-temp-hygiene.sh"
+# Sourced HERE rather than beside the install-steps section: the unit comparison and the
+# operator-freshness check below both ask it what manages the operator, and both used to
+# run before it was loaded — which is how the freshness check came to read MainPID out of
+# systemd on a box that has launchd.
+# shellcheck source=../libexec/ronin-machine.sh
+[ -r "$ROOT/libexec/ronin-machine.sh" ] && . "$ROOT/libexec/ronin-machine.sh"
 
 # The operator unit is ronin.service; a box that has not re-run setup.sh since the
-# 2026-08-19 rename still runs it as tmux-ronin.service. Diagnose whichever is there.
-RONIN_UNIT="ronin"
-if command -v systemctl >/dev/null 2>&1; then
-  systemctl --user cat ronin.service >/dev/null 2>&1 || RONIN_UNIT="tmux-ronin"
-fi
+# 2026-08-19 rename still runs it as tmux-ronin.service; a Mac runs the com.ronin
+# launchd agent. Diagnose whichever is there.
+# The `|| echo ronin` keeps the old literal default for the one case the guarded
+# source above allows: an install whose libexec/ is missing or unreadable.
+RONIN_UNIT="$(machine_operator_unit 2>/dev/null || echo ronin)"
 
 FINDINGS=0
+# How long has a pid been up, in seconds? Linux `ps` answers directly with etimes;
+# macOS `ps` has no such column and gives etime as [[dd-]hh:]mm:ss, so parse that
+# rather than let the operator-freshness check quietly skip itself on a Mac.
+proc_age_seconds() {
+  local e
+  e="$(ps -o etimes= -p "$1" 2>/dev/null | tr -d ' ')"
+  if [ -n "$e" ]; then printf '%s' "$e"; return 0; fi
+  e="$(ps -o etime= -p "$1" 2>/dev/null | tr -d ' ')"
+  [ -n "$e" ] || return 1
+  printf '%s' "$e" | awk -F'[-:]' '{
+    if (NF == 4)      print (($1 * 24 + $2) * 60 + $3) * 60 + $4;
+    else if (NF == 3) print (($1 * 60) + $2) * 60 + $3;
+    else if (NF == 2) print ($1 * 60) + $2;
+    else              print $1;
+  }'
+}
+
 sect() { echo "→ $1"; }
 ok()   { echo "  ok   — $1"; }
 note() { echo "  note — $1"; }
@@ -150,6 +173,19 @@ elif [ "$OS" = "Darwin" ]; then
     find_ "installed com.ronin.plist is not the one in deploy/ — run ./setup.sh, then launchctl unload/load -w $inst"
   else
     ok "com.ronin.plist matches deploy/"
+  fi
+  # A matching file is not a running service, and on macOS the two come apart by
+  # DESIGN: setup.sh renders the agent and only PRINTS the `launchctl load` line, so
+  # "the plist is correct" is the expected state of a Mac where Ronin has never once
+  # started. Doctor used to stop at the file and call that clean.
+  if [ -f "$inst" ]; then
+    if ! machine_operator_loaded; then
+      find_ "com.ronin.plist is rendered but never loaded — launchd does not know about it. Run: launchctl load -w $inst"
+    elif [ -z "$(machine_operator_pid)" ]; then
+      find_ "the com.ronin agent is loaded but not running — launchctl list shows no pid. Check: launchctl print gui/$(id -u)/$RONIN_UNIT"
+    else
+      ok "the com.ronin agent is loaded and running (pid $(machine_operator_pid))"
+    fi
   fi
 else
   note "no systemd or launchd here — nothing installed to compare"
@@ -307,9 +343,11 @@ elif [ -n "$op_commit" ] && [ "$op_commit" != "unknown" ]; then
 else
   [ "$HEALTH_UP" = 1 ] &&
     note "operator answers /api/health but not /api/version — it predates the stamp; its next restart carries it"
-  pid="$(systemctl --user show "$RONIN_UNIT" -p MainPID --value 2>/dev/null)"
-  if [ -n "${pid:-}" ] && [ "$pid" != "0" ] && [ -d "/proc/$pid" ]; then
-    etimes="$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ')"
+  pid="$(machine_operator_pid)"
+  # `kill -0`, not /proc: this same freshness check has to work on a Mac, which has
+  # neither /proc nor MainPID. Sending no signal, only asking whether it could.
+  if [ -n "${pid:-}" ] && kill -0 "$pid" 2>/dev/null; then
+    etimes="$(proc_age_seconds "$pid")"
     started=$(( $(date +%s) - ${etimes:-0} ))
     last_commit="$(git log -1 --format=%ct -- src/ package.json 2>/dev/null)"
     if [ -n "$last_commit" ] && [ "$last_commit" -gt "$started" ]; then
@@ -518,8 +556,6 @@ fi
 # browser lives is a mistake this tree has already made once.
 # shellcheck source=../libexec/ronin-banner.sh
 [ -r "$ROOT/libexec/ronin-banner.sh" ] && . "$ROOT/libexec/ronin-banner.sh"
-# shellcheck source=../libexec/ronin-machine.sh
-[ -r "$ROOT/libexec/ronin-machine.sh" ] && . "$ROOT/libexec/ronin-machine.sh"
 
 sect "the install steps"
 

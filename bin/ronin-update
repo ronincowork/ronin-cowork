@@ -55,10 +55,14 @@ SVC_SLUG="${RONIN_SERVICES_REPO:-ronincowork/ronin-releases}"
 fail() { echo "✗ $1" >&2; exit 1; }
 say()  { echo "→ $1"; }
 
-# The operator unit is ronin.service; a box that has not re-run setup.sh since the
-# 2026-08-19 rename still runs it as tmux-ronin.service. Talk to whichever exists.
-RONIN_UNIT="ronin"
-systemctl --user cat ronin.service >/dev/null 2>&1 || RONIN_UNIT="tmux-ronin"
+# What manages the operator here, what it is called, and how it is restarted — asked of
+# the box, once, in libexec/ronin-machine.sh. This file used to ask `systemctl` directly
+# and read its absence as an answer: on macOS that named the operator `tmux-ronin` (a
+# unit no Mac has ever had) and then reported every update as "the unit serves
+# elsewhere", so the release landed, current moved, and the old code kept serving.
+# shellcheck source=libexec/ronin-machine.sh
+. "$SELF/libexec/ronin-machine.sh"
+RONIN_UNIT="$(machine_operator_unit)"
 
 # --- arguments ---
 MODE="install"; WANT=""; FILE=""; HOME_DIR=""; JSON=0; PACKAGE="cowork"
@@ -214,9 +218,36 @@ fi
 # --- the serving question: does THIS home's current serve the unit? ---
 unit_serves_home() {
   local wd
-  wd="$(systemctl --user show "$RONIN_UNIT" -p WorkingDirectory --value 2>/dev/null || true)"
+  # LOADED first. On macOS the two facts come apart: setup.sh renders the agent and only
+  # prints the `launchctl load` line, so a plist naming this very tree can sit there with
+  # launchd knowing nothing about it. Restarting that job fails with "Could not find
+  # service"; the honest answer is that it was never loaded, which why_not_restarted says.
+  # On systemd this changes nothing — a unit with a WorkingDirectory is a unit systemd
+  # can `cat`.
+  machine_operator_loaded || return 1
+  wd="$(machine_operator_workdir)"
   [ -n "$wd" ] && [ -e "$HOME_DIR/current" ] &&
     [ "$(readlink -f "$wd" 2>/dev/null)" = "$(readlink -f "$HOME_DIR/current")" ]
+}
+
+# Why nothing was restarted. There are four reasons and they want four different acts
+# from the reader; printing "the unit serves elsewhere" for all of them sent a Mac owner
+# to docs/release.md to chase a cutover that was not happening, when the truth was that
+# the launchd agent had simply never been loaded.
+why_not_restarted() {
+  local kind wd
+  kind="$(machine_service_kind)"
+  wd="$(machine_operator_workdir)"
+  if [ "$kind" = none ]; then
+    echo "  no systemd or launchd on this box — start it by hand: (cd $HOME_DIR/current && npm start)"
+  elif ! machine_operator_loaded; then
+    echo "  the operator is not loaded with $kind yet — run: (cd $HOME_DIR/current && ./setup.sh)"
+  elif [ -z "$wd" ]; then
+    echo "  $kind reports no working directory for $RONIN_UNIT — cannot tell what it serves."
+    echo "  Restart it by hand once you have: $(machine_operator_restart_action)"
+  else
+    echo "  this box's operator serves $wd, not $HOME_DIR/current (cutover pending? docs/release.md)."
+  fi
 }
 
 # The render check, byoin's contract exactly (bin/ronin-byoin): exit 0 = rendered
@@ -237,8 +268,19 @@ render_check() { # $1=tree $2=url $3=what; returns 1 only on a REAL failure
 }
 
 restart_and_gate() {
-  say "restarting Ronin (sessions live in tmux-server.service — untouched)"
-  systemctl --user restart "$RONIN_UNIT" || fail "restart failed — systemctl --user status $RONIN_UNIT"
+  local act
+  act="$(machine_operator_restart_action)"
+  [ -n "$act" ] ||
+    fail "no service manager here to restart $RONIN_UNIT with — start it by hand: (cd $HOME_DIR/current && npm start)"
+  if [ "$(machine_service_kind)" = systemd ]; then
+    say "restarting Ronin (sessions live in tmux-server.service — untouched)"
+  else
+    # macOS has no tmux-server counterpart to deploy/tmux-server.service: the operator
+    # starts the tmux server itself. The server daemonizes out of the job, so it should
+    # outlive this, but nothing here has proved that — do not promise it.
+    say "restarting Ronin ($act)"
+  fi
+  sh -c "$act" || fail "restart failed — try: $act"
   local port bind url
   port="$(sed -n 's/^PORT=//p' "$HOME_DIR/.env" 2>/dev/null | head -1)"
   bind="$(sed -n 's/^BIND=//p' "$HOME_DIR/.env" 2>/dev/null | head -1)"
@@ -263,7 +305,8 @@ if [ "$MODE" = "rollback" ]; then
   ln -sfn "$prev" "$HOME_DIR/current"
   ln -sfn "$cur"  "$HOME_DIR/previous"   # roll forward is another --rollback
   if unit_serves_home; then restart_and_gate; else
-    say "swapped; this home is not what the unit serves, so nothing was restarted"
+    say "swapped, but nothing was restarted:"
+    why_not_restarted
   fi
   echo "✓ current is $(installed_release)"
   exit 0
@@ -364,7 +407,8 @@ if [ "$PACKAGE" = "services" ]; then
     restart_and_gate
     echo "✓ services $VER is live — /api/version lists the roster"
   else
-    echo "✓ services $VER installed — this home is not what the unit serves; restart the operator that is (docs/release.md)"
+    echo "✓ services $VER installed at $HOME_DIR/current — but nothing was restarted:"
+    why_not_restarted
   fi
   exit 0
 fi
@@ -448,8 +492,9 @@ say "swapped: current -> releases/$VER${CUR:+ (previous -> $CUR)}"
 
 # --- the unit route, the one a restart cannot carry ---
 if [ -n "$CUR" ] && ! diff -rq "$HOME_DIR/$CUR/deploy" "$TARGET/deploy" >/dev/null 2>&1; then
-  echo "⚠ deploy/ changed between $CUR and $VER — the unit files are COPIES in systemd;"
-  echo "  run: (cd $HOME_DIR/current && ./setup.sh) to re-render them. A restart alone cannot."
+  echo "⚠ deploy/ changed between $CUR and $VER — the installed units are COPIES (systemd"
+  echo "  units, or the launchd agent in ~/Library/LaunchAgents); run:"
+  echo "  (cd $HOME_DIR/current && ./setup.sh) to re-render them. A restart alone cannot."
 fi
 
 # --- restart what serves, or say why not ---
@@ -464,7 +509,7 @@ elif [ -z "$CUR" ]; then
     echo "  Cutover from a checkout-serving box is a deliberate act: docs/release.md."
   fi
 else
-  echo "✓ $VER is installed and current — but the unit serves elsewhere, so nothing restarted."
-  echo "  This box's operator is not this home's (cutover pending? docs/release.md)."
+  echo "✓ $VER is installed and current — but nothing was restarted, so it is NOT live yet:"
+  why_not_restarted
 fi
 exit 0
