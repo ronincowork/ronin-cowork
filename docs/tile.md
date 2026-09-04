@@ -66,13 +66,16 @@ The tile composes one or the other. Neither knows the other exists.
 **🔒 Locked — `public/js/termview.js`.** The untouched `tmux attach` mirror. xterm.js, an
 emulator, because the stream is a live screen full of positioning. Scrollback stays
 server-side, so scrolling round-trips through tmux copy-mode. This works and RIREKI does not
-touch it. Copy-mode is confined to scrolling by the tmux server's own configuration
-(`deploy/tmux-server.conf`, the file every install's tmux-server unit starts with): the
-wheel enters it with the position indicator hidden and leaves it at the bottom, and every
-jump, search, goto and repeat key is unbound in both copy-mode key tables, so typing while
-scrolled up does nothing until the view is back at the bottom or Escape is pressed. Scroll,
-page, arrow and cancel keys are untouched. `tests/tmux-server-conf.test.ts` starts a server
-from that file and pins it.
+touch it. The tile drives copy-mode itself (`src/viewer.ts`): a wheel over the tile enters
+it with explicit commands aimed at the tile's pane — position indicator hidden, exit at the
+bottom — and scrolls it the same way, never through the server's key tables. While the pane
+is in copy-mode, ordinary typing from the tile is dropped so it cannot invoke the server
+owner's copy-mode bindings (jump, search, goto…); Escape leaves, and page and arrow keys
+still move. The server's own bindings are untouched, because the tmux server is shared with
+whatever else the owner runs there, and copy-mode is pane state: someone attached to the
+same session sees it while the tile is scrolled. `tests/tmux-server-conf.test.ts` pins that
+the start-only config rewrites no key table, and that the tile's commands leave every table
+byte-identical.
 
 **🔓 Unlocked — `public/js/tapeview.js`.** RIREKI's client-side render. **It holds no tmux
 connection** — no attach, no viewer session, no pipe; tmux does not know this view exists.

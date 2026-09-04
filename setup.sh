@@ -56,6 +56,24 @@ else
   echo "    tailscale: not found (optional — it is what gives this box an HTTPS address)"
 fi
 
+# --- coexistence preflight: before dependency, rc, option, or unit mutations ---
+# shellcheck source=libexec/ronin-coexist.sh
+. "$REPO_DIR/libexec/ronin-coexist.sh"
+# Adoption is disclosed, not asked: it reaches the terminal as well as the log.
+ronin_say() { echo "$*"; [ -n "${RONIN_VERBOSE:-}" ] || out "$*"; }
+PREFLIGHT_UNIT_DIR="$HOME/.config/systemd/user"
+if [ "$(uname -s)" = Linux ]; then
+  ronin_preflight_units "$PREFLIGHT_UNIT_DIR"
+fi
+# The address to test is the one the install will bind: .env if recorded, else the same
+# resolution ronin_record_bind writes down later in this script (libexec/ronin-banner.sh).
+# shellcheck source=libexec/ronin-banner.sh
+. "$REPO_DIR/libexec/ronin-banner.sh"
+RONIN_PREFLIGHT_BIND="${BIND:-$(ronin_bind "$REPO_DIR")}"
+export RONIN_PREFLIGHT_BIND
+ronin_preflight_port "$REPO_DIR" "$NODE_BIN"
+ronin_adopt_tmux "$("$REPO_DIR/bin/ronin-store" --root data)"
+
 # --- install deps (checkout only: a bundle arrives with finished node_modules) ---
 if [ "$BUNDLED" = 1 ]; then
   echo "==> node_modules: vendored in the release — nothing to install"
@@ -74,6 +92,15 @@ fi
 # keys, and a ronin_machine's premise is many concurrent agent sessions under one Unix
 # user: group-readable there means readable by every session on the box.
 chmod 600 .env 2>/dev/null || true
+
+# --- BIND, decided once and written down ---
+# Straight after .env exists and before anything asks for the address: the preflight, the
+# banner, the serve mapping and the first start all take it from the file from here on.
+# The reasoning, and the rule that an owner's own BIND outranks ours, live with the
+# function in libexec/ronin-banner.sh.
+# shellcheck source=libexec/ronin-banner.sh
+. "$REPO_DIR/libexec/ronin-banner.sh"
+ronin_record_bind "$REPO_DIR"
 
 # --- Claude Code settings Ronin needs (two keys, one merge) ---
 # Ronin sets exactly TWO keys in Claude Code's own settings — `statusLine`, without which the
@@ -488,21 +515,23 @@ else
   echo "==> No systemd/launchd detected. Start manually with: npm start"
 fi
 
-# Work out this server's URLs so you don't have to guess them.
-IP=""; FQDN=""
-if command -v tailscale >/dev/null; then
-  IP="$(tailscale ip -4 2>/dev/null | head -1 || true)"
+# Work out this server's URLs so you don't have to guess them. The address is the
+# recorded one, not a fresh probe: what .env says is what the socket will bind, so it is
+# what the banner prints and what `tailscale serve` is mapped at. Loopback is a door on
+# this box only — nothing to serve, no tailnet name to print.
+IP="$(ronin_bind "$REPO_DIR")"; FQDN=""
+[ "$IP" = 127.0.0.1 ] && IP=""
+if [ -n "$IP" ] && command -v tailscale >/dev/null; then
   FQDN="$(tailscale status --json 2>/dev/null | "$NODE_DIR/node" -e \
     'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write((JSON.parse(d).Self.DNSName||"").replace(/\.$/,""))}catch{}})' 2>/dev/null || true)"
 fi
 
 
-# The box, and the address it names, are shared with bin/ronin-welcome, so redrawing
-# it after `tailscale serve` runs cannot drift from what was printed here. One
-# implementation of "which door is open", and it asks the machine rather than
-# assuming: serve needs a sudo this script does not have.
-# shellcheck source=libexec/ronin-banner.sh
-. "$REPO_DIR/libexec/ronin-banner.sh"
+# The box, and the address it names, are shared with bin/ronin-welcome (the banner
+# library, sourced above at the .env block), so redrawing it after `tailscale serve`
+# runs cannot drift from what was printed here. One implementation of "which door is
+# open", and it asks the machine rather than assuming: serve needs a sudo this script
+# does not have.
 # ONE definition of each question about the box, shared with bin/ronin-doctor: what
 # setup OFFERS and what doctor FINDS MISSING must be the same test, or a person is told
 # two different things about one machine.

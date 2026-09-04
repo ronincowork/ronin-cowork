@@ -29,10 +29,13 @@ if [ "$restart" = 1 ]; then
 
   echo "→ restarting Ronin"
   node scripts/guard-dev-restart.mjs "$ROOT" || fail "dev has no promotion receipt — nothing was restarted."
-  # ronin.service, or tmux-ronin.service on a box that predates the 2026-08-19 rename
-  RONIN_UNIT="ronin"
-  systemctl --user cat ronin.service >/dev/null 2>&1 || RONIN_UNIT="tmux-ronin"
-  systemctl --user restart "$RONIN_UNIT" || fail "restart failed"
+  # ronin.service, tmux-ronin.service on a box that predates the 2026-08-19 rename, or
+  # the com.ronin launchd agent on macOS — one answer, in libexec/ronin-machine.sh.
+  # shellcheck source=libexec/ronin-machine.sh
+  . "$ROOT/libexec/ronin-machine.sh"
+  RESTART="$(machine_operator_restart_action)"
+  [ -n "$RESTART" ] || fail "no systemd or launchd here to restart the operator with — nothing was restarted."
+  sh -c "$RESTART" || fail "restart failed — try: $RESTART"
 fi
 
 echo "→ gating the rendered page"

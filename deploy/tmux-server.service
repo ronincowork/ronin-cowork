@@ -1,3 +1,4 @@
+# X-Ronin-Unit: ronin-cowork/v1
 # systemd --user unit for the TMUX SERVER ITSELF — not for ronin.
 #
 # Why this unit exists (read before deleting it):
@@ -31,9 +32,8 @@ RemainAfterExit=yes
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 # Starts the server if there isn't one; a no-op if there already is.
 ExecStart=__TMUX_BIN__ -f __REPO_DIR__/deploy/tmux-server.conf start-server
-# Apply exit-empty to a server that was already running (the -f config only ran for
-# a server this unit started). Leading '-' so a missing server is not a failure.
-ExecStartPost=-__TMUX_BIN__ set-option -s exit-empty off
+# An adopted server's exit-empty lease is applied and recorded by setup.sh. This unit
+# mutates no server it did not start; the -f config owns the start-only case.
 
 [Install]
 WantedBy=default.target

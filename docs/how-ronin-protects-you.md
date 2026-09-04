@@ -19,7 +19,7 @@ observe, and use **unknown** when safe evidence cannot settle a question.
 | verified release bytes | `grep -n 'SHA256SUMS\|MISMATCH' scripts/get-ronin bin/ronin-update` | checksum fetched and mismatch refused |
 | open-package license | `head -3 LICENSE` and `test -f NOTICE` | Apache License 2.0 and NOTICE |
 | unprivileged services | `systemctl --user list-units 'ronin*' 'tmux-server*'` | user units, no application root service |
-| separate tmux ownership | `bin/ronin-doctor` plus ordinary `tmux list-sessions` | Ronin and pre-existing tmux work remain distinct |
+| shared tmux preservation | `bin/ronin-doctor` plus ordinary `tmux list-sessions` | Ronin joins the default server; existing sessions remain, while the operator stays outside the server's cgroup |
 | safe bind rule | `grep -n assertBindIsSafe src/machine-settings.ts` | unauthenticated public bind is refused |
 | actual listening address | `ronin_pid=$(systemctl --user show ronin.service -p MainPID --value); ss -ltnp | grep "pid=$ronin_pid,"` | socket owned by the Ronin unit's nonzero PID; absent or ambiguous correlation is `unknown` |
 | websocket origin check | `grep -n originAllowed src/index.ts src/ws/origin.ts` | a page Ronin did not serve is refused |

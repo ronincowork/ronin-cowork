@@ -15,6 +15,10 @@ contracts or make a contributor follow the installation journey.
   (`src/tmux-client.ts`); programs that are not tmux start through the spawn broker
   (`src/spawn-broker.ts`). [`docs/tmux-connection.md`](docs/tmux-connection.md) says why
   and what the tests refuse.
+- Need a tmux server that is not the live one? `ronin-testserver open <name>`, use the
+  `tmux` path it prints for every command, `ronin-testserver close <name>` when done —
+  nothing else; in a test, `tests/helpers/testserver.ts` does the same. A server you did
+  not get that way is one you may not touch.
 
 Desk work follows the desk contract handed to you at birth
 (`ronin_session_boot/routine/ronin_worktrees/WORKTREES.md`): **commit** preserves,

@@ -14,7 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { exactSession, exactPane, isValidName, parseTags } from '../src/tmux.js';
 import { newSessionArgs } from '../src/session-args.js';
-import { isStaleViewerSession } from '../src/viewer.js';
+import { isStaleViewerSession, tileInputAction } from '../src/viewer.js';
 
 const sourceRoot = fileURLToPath(new URL('../src/', import.meta.url));
 
@@ -79,10 +79,38 @@ test('parseTags drops what an agent could not type as an address', () => {
   assert.deepEqual(parseTags('a'.repeat(33)), []); // over the 32-char cap
 });
 
-test('startup viewer cleanup preserves the control holder by exact name', () => {
-  assert.equal(isStaleViewerSession('grid_ctl'), false);
-  assert.equal(isStaleViewerSession('grid_alpha_dead_1'), true);
-  assert.equal(isStaleViewerSession('alpha'), false);
+test('startup viewer cleanup requires this installation ownership, not a prefix', () => {
+  assert.equal(isStaleViewerSession('grid_ctl', 'ours', 'ours'), false);
+  assert.equal(isStaleViewerSession('grid_alpha_dead_1', 'ours', 'ours'), true);
+  assert.equal(isStaleViewerSession('grid_foreign', '', 'ours'), false);
+  assert.equal(isStaleViewerSession('grid_other_install', 'theirs', 'ours'), false);
+  assert.equal(isStaleViewerSession('alpha', 'ours', 'ours'), false);
+});
+
+test('the tile drives copy mode itself and is quiet inside it, so server bindings go unused', () => {
+  const idle = { inMode: false, appWantsMouse: false };
+  const scrolled = { inMode: true, appWantsMouse: false };
+  const app = { inMode: false, appWantsMouse: true };
+  const wheelUp = '\x1b[<64;1;1M';
+  const wheelDown = '\x1b[<65;1;1M';
+  // a wheel enters and scrolls through explicit commands, never the root table's WheelUpPane
+  assert.equal(tileInputAction(idle, wheelUp), 'enter-scroll-up');
+  assert.equal(tileInputAction(idle, wheelDown), 'write'); // nothing to scroll back from
+  assert.equal(tileInputAction(scrolled, wheelUp), 'scroll-up');
+  assert.equal(tileInputAction(scrolled, wheelDown), 'scroll-down');
+  // a program that asked for the mouse gets the wheel itself
+  assert.equal(tileInputAction(app, wheelUp), 'write');
+  // scrolled up: typing is dropped (f, g, n… are jump/search prompts on a stock server)
+  assert.equal(tileInputAction(scrolled, 'f'), 'drop');
+  assert.equal(tileInputAction(scrolled, 'hello'), 'drop');
+  assert.equal(tileInputAction(scrolled, '\x03'), 'drop');
+  // Escape leaves through an explicit cancel, whatever the vi/emacs table binds it to
+  assert.equal(tileInputAction(scrolled, '\x1b'), 'cancel');
+  // the navigation keys still move
+  for (const key of ['\x1b[A', '\x1b[B', '\x1b[5~', '\x1b[6~']) assert.equal(tileInputAction(scrolled, key), 'write');
+  // at the bottom, everything is typing
+  assert.equal(tileInputAction(idle, 'hello'), 'write');
+  assert.equal(tileInputAction(idle, '\x1b'), 'write');
 });
 
 /**

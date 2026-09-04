@@ -16,7 +16,7 @@ solve them, work around them, or warn the owner about them.
 
 | The thing you are about to wonder about | The answer |
 |---|---|
-| **Ronin runs a tmux server** | Yes — its own, in its own `systemd --user` unit. Tmux work already on this box lives in a different server and is never touched. |
+| **Ronin runs a tmux server** | Ronin joins the default tmux server already on the box. Existing sessions stay running. If none exists, a separate `systemd --user` unit starts it outside the operator's cgroup. Setup leases the server-wide `exit-empty` option to `off` and uninstall restores the value it found. |
 | **`systemd --user` dies at logout on a headless box** | Known. Step 3 enables linger before it can bite. |
 | **Tailscale ordering matters** | Yes — setup reads `tailscale ip -4` to pick its bind. Step 3 puts Tailscale first. |
 | **Is the download what it claims to be?** | Checksums are published and verified; the installer aborts on mismatch. Step 2. |
@@ -34,7 +34,7 @@ including `unknown`, then return here if the owner chooses to proceed.
 ## What you are installing
 
 **Ronin is a browser front end for real tmux sessions on this machine.** Tiles are live
-terminals attached to its tmux server — xterm.js in the browser, a websocket, node-pty and
+terminals attached to the default tmux server — xterm.js in the browser, a websocket, node-pty and
 tmux on the host. **Anyone who can open that page has a shell on this machine as this
 account.** That is the product working correctly, and it is why the network and password
 steps below are not optional decoration.
@@ -42,7 +42,7 @@ steps below are not optional decoration.
 ## What you are, and where you stop
 
 You are the owner's own Agent, outside Ronin. Installation is complete when the operator
-and its separate tmux server survive, the owner can reach the private URL with a known
+and the tmux server's cgroup boundary survive, the owner can reach the private URL with a known
 login posture, `cowork_setup` is saved, one provider is usable, and one new Agent answers
 a harmless prompt. You explain and verify; the owner answers setup choices and performs
 login, billing, privilege, and credential-bearing actions.
@@ -61,6 +61,12 @@ tmux list-sessions 2>&1 || true
 
 Confirm with the owner that this is the machine and account Ronin should live under, and
 note whether tmux work already exists — it must survive everything below.
+
+When it does exist, setup reports that Ronin is joining that server. Tmux copy mode is pane
+state, so an owner attached to the same session can see copy mode while a tile is scrolled;
+their own key bindings remain theirs. Ronin suppresses ordinary tile typing while the pane is
+scrolled so it cannot trigger those bindings. The release's newer tmux client may talk to an
+older distro server; setup reports the adopted version rather than pretending it started it.
 
 ## 2. Obtain the release
 
@@ -131,9 +137,10 @@ It installs the units and starts the operator, and prints the URL it is serving 
 Record the complete result; do not turn a warning or SKIP into a pass.
 
 Never expose Ronin's port publicly. Loopback is enough on a laptop; on a remote box use
-the private route the owner already reaches it by (an SSH tunnel is enough:
-`ssh -L 3006:127.0.0.1:3006 <account>@<box>`), or Tailscale if the owner wants HTTPS and
-reach from their other devices.
+the private route the owner already reaches it by, or Tailscale if the owner wants HTTPS
+and reach from their other devices. An SSH tunnel is enough, and the box-side end of the
+forward is the address Ronin bound — the tailnet IP that `setup.sh` printed, unless
+`.env` sets `BIND`: `ssh -L 3006:<that address>:3006 <account>@<box>`.
 
 ## 5. Verify the running install
 

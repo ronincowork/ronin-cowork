@@ -157,8 +157,10 @@ one harmless successful Agent exchange. An installed Agent CLI is not proof that
 provider is authenticated.
 
 If the box is remote, reach the URL over the private route you already use — an SSH
-tunnel is enough (`ssh -L 3006:127.0.0.1:3006 you@yourbox`, then open
-`http://127.0.0.1:3006`). Never expose the port publicly.
+tunnel is enough. The box-side end of the forward is the address Ronin bound, which
+`setup.sh` printed: the tailnet IP unless `.env` sets `BIND`. With that address,
+`ssh -L 3006:<it>:3006 you@yourbox` puts Ronin on `http://127.0.0.1:3006` on your own
+machine. Never expose the port publicly.
 
 Already have an Agent on that machine (Claude Code or Codex)? Hand it `docs/install.md`;
 the Agent stays through first-use proof. Using an Agent is optional, not a requirement.
@@ -178,8 +180,9 @@ system knowledge.
 ```
 
 Requires a Unix-like host (Linux, macOS, WSL) with tmux; the browser client is any OS.
-The tmux server runs in its own unit and owns the sessions — restarting or replacing
-Ronin never touches running work. `npm run byoin` runs the user-customization check and gives one
+Ronin joins the default tmux server, beside whatever sessions already live there; when no
+server exists, Ronin starts one in its own unit. Restarting or replacing Ronin never touches
+running work. `npm run byoin` runs the user-customization check and gives one
 verdict; `bin/ronin-uninstall` reverses the install and leaves your own files behind.
 
 ## License

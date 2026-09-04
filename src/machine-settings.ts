@@ -210,9 +210,26 @@ export function tailnetIp(): string {
   }
 }
 
+/** Where `config.bind` came from. `env` is a recorded decision; the other two are guesses
+ *  made afresh on this boot, and can differ from the last one without anybody saying so. */
+export type BindSource = 'env' | 'tailscale' | 'loopback';
+
+function resolveBind(): { bind: string; source: BindSource } {
+  const recorded = process.env.BIND?.trim();
+  if (recorded) return { bind: recorded, source: 'env' };
+  // setup.sh records BIND in .env precisely so this branch is not reached on an installed
+  // box. Reaching it means .env has no BIND — a hand-made install, or the owner deleted
+  // the line to go back to probing — so the address is whatever tailscale says today.
+  const probed = tailnetIp();
+  return { bind: probed, source: probed === '127.0.0.1' ? 'loopback' : 'tailscale' };
+}
+
+const resolvedBind = resolveBind();
+export const bindSource: BindSource = resolvedBind.source;
+
 export const config = {
   port: Number(process.env.PORT ?? 3006),
-  bind: process.env.BIND?.trim() || tailnetIp(),
+  bind: resolvedBind.bind,
   user: process.env.GRID_USER ?? '',
   pass: process.env.GRID_PASS ?? '',
   windowSize: process.env.TMUX_WINDOW_SIZE?.trim() || 'latest',

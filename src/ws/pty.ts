@@ -6,9 +6,12 @@ import {
   createViewer,
   exactSession,
   isValidName,
+  applyTileInput,
   jumpToBottom,
   killSession,
+  paneMouseState,
   sessionExists,
+  tileInputAction,
 } from '../tmux.js';
 import { getStreamHandler } from '../sockets.js';
 
@@ -51,6 +54,7 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
   });
 
   let closed = false;
+  let inputQueue = Promise.resolve();
   let beat: ReturnType<typeof setInterval> | undefined;
   const cleanup = () => {
     if (closed) return;
@@ -88,7 +92,13 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
       return;
     }
     if (msg.t === 'i' && typeof msg.d === 'string') {
-      term.write(msg.d);
+      const data = msg.d;
+      // One tmux round trip per message, in order: the shared pane's mode decides whether
+      // this is typing, a scroll the tile drives itself, or noise to keep out of copy mode.
+      inputQueue = inputQueue.then(async () => {
+        const action = tileInputAction(await paneMouseState(viewer), data);
+        await applyTileInput(viewer, action, (d) => term.write(d), data);
+      }).catch(() => {});
     } else if (msg.t === 'r') {
       cols = clampDim(msg.c, cols);
       rows = clampDim(msg.r, rows);

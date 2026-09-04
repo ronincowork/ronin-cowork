@@ -11,6 +11,16 @@ command is the shell-facing view of the same record; it is not another source of
 Wrappers locate shipped helpers from their own resolved file path, including through the
 session-command symlinks, so `PATH` is only command discovery—not an internal dependency.
 
+Command discovery is fixed separately at Agent birth. The launch route resolves that
+Agent's enabled Routines, projects only their entitled commands as symlinks into that
+Agent's own directory of the session-commands store, and prepends that directory to the
+environment given directly to tmux and the Agent process. Ordinary non-interactive
+descendants inherit it; they do not source `.bashrc`, `.profile`, or another owner shell
+file. An Agent born with Ronin Base off therefore does not receive Base commands such as
+`write_tegami`, `tejun-fork`, or `ronin-url`. Changing a Team or Campaign default later
+does not mutate a running Agent's birth environment; recreate that Agent to give it the
+newly enabled tools.
+
 `RONIN_URL` is an explicit development/test override. `RONIN_CLI_TOKEN` supplies the
 matching override credential; otherwise the descriptor's credential is used. With no
 override and no valid versioned descriptor, commands refuse clearly instead of guessing a
