@@ -270,7 +270,7 @@ export function createCoworkView(options = {}) {
     tenant: { kind: campaign ? 'cowork' : 'team', team: () => team }, environment,
     defaultNode: (id) => seats[id].surface.el,
     label: campaign ? t('campaign', 'Campaign') : t('team.roster_title', 'Team Roster'),
-    title: () => campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : team ? t('team.roster_of', 'Roster: {team}', { team: readableTeam(team) }) : t('team.roster_title', 'Team Roster'),
+    title: () => campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : t('team.roster_title', 'Roster'),
     actions: [rosterNote], shapeControl: shapeBtn, deferSelector: true,
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,
@@ -520,7 +520,7 @@ export function createCoworkView(options = {}) {
     };
   };
   function renderCards(members) {
-    if (rosterTitle) rosterTitle.textContent = campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : team ? t('team.roster_of', 'Roster: {team}', { team: readableTeam(team) }) : t('team.roster_title', 'Team Roster');
+    if (rosterTitle) rosterTitle.textContent = campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : t('team.roster_title', 'Roster');
     bench.refreshSelector();
   }
 
@@ -576,7 +576,7 @@ export function createCoworkView(options = {}) {
     if (!entered || team !== name) return; // the destination moved while this was in flight
     loaded = name;
     setBarLabel();
-    rosterTitle.textContent = t('team.roster_of', 'Roster: {team}', { team: readableTeam(name) });
+    rosterTitle.textContent = t('team.roster_title', 'Roster');
     if (!result.live.ok) {
       renderCards([]);
       renderConfig(null, []);

@@ -179,21 +179,13 @@
   --bar-brand-mark-h: 27px;
   --bar-brand-track: -0.005em;
 
-  /* Header scope: dark mode carries a strong tint without competing with terminals. */
-  --bar-scope-campaign: var(--line-3);
-  --bar-scope-teams: var(--aiiro);
-  --bar-scope-team: var(--kaki);
-  --bar-scope-color: var(--bar-scope-campaign);
-  --bar-scope-bg: color-mix(in srgb, var(--bar-scope-color) 24%, var(--bg-2));
-  --bar-scope-line: color-mix(in srgb, var(--bar-scope-color) 72%, var(--line));
-  --bar-scope-fg: var(--fg-strong);
-  --bar-scope-muted: var(--muted-2);
-  --bar-bg: var(--bg-2);
-  --bar-line: var(--line);
-  --bar-brand-fg: var(--fg);
-  --bar-brand-strong: var(--fg-strong);
-  --bar-brand-mark: var(--kaki);
-  --bar-muted: var(--muted);
+  /* Workbench scope headers; the individual Team keeps the established kaki family. */
+  --scope-graphite: #3a4560;
+  --scope-campaign-head-bg: color-mix(in srgb, var(--scope-graphite) 24%, var(--bg-2));
+  --scope-teams-head-bg: color-mix(in srgb, var(--aiiro) 24%, var(--bg-2));
+  --scope-head-line: color-mix(in srgb, var(--define-line) 72%, var(--line));
+  --scope-head-fg: var(--fg-strong);
+  --scope-head-muted: var(--muted-2);
 
 
   --edge: 1px;
@@ -254,11 +246,12 @@
   --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
   --kaki-lift: #a34e2f;
 
-  /* Light mode uses the selected full-fill treatment. */
-  --bar-scope-bg: var(--bar-scope-color);
-  --bar-scope-line: color-mix(in srgb, var(--bar-scope-color) 78%, #000);
-  --bar-scope-fg: var(--on-strong);
-  --bar-scope-muted: color-mix(in srgb, var(--on-strong) 78%, transparent);
+  /* Light mode uses the selected full-fill treatment for collection scopes. */
+  --scope-campaign-head-bg: var(--scope-graphite);
+  --scope-teams-head-bg: var(--aiiro);
+  --scope-head-line: color-mix(in srgb, var(--scope-graphite) 78%, #000);
+  --scope-head-fg: var(--on-strong);
+  --scope-head-muted: color-mix(in srgb, var(--on-strong) 78%, transparent);
 
 
 
@@ -299,18 +292,17 @@
   --term-input-fg: #2c2e36;
 }
 
-:root[data-scope='campaign'] { --bar-scope-color: var(--bar-scope-campaign); }
-:root[data-scope='teams'] { --bar-scope-color: var(--bar-scope-teams); }
-:root[data-scope='team'] { --bar-scope-color: var(--bar-scope-team); }
-:root[data-scope] {
-  --bar-nav-fg: var(--bar-scope-fg);
-  --bar-value-fg: var(--bar-scope-fg);
-  --bar-bg: var(--bar-scope-bg);
-  --bar-line: var(--bar-scope-line);
-  --bar-brand-fg: var(--bar-scope-fg);
-  --bar-brand-strong: var(--bar-scope-fg);
-  --bar-brand-mark: var(--bar-scope-muted);
-  --bar-muted: var(--bar-scope-muted);
+:root[data-scope='campaign'] {
+  --cowork-head-bg: var(--scope-campaign-head-bg);
+  --cowork-head-line: var(--scope-head-line);
+  --cowork-head-fg: var(--scope-head-fg);
+  --cowork-head-muted: var(--scope-head-muted);
+}
+:root[data-scope='teams'] {
+  --cowork-head-bg: var(--scope-teams-head-bg);
+  --cowork-head-line: var(--aiiro);
+  --cowork-head-fg: var(--scope-head-fg);
+  --cowork-head-muted: var(--scope-head-muted);
 }
 
 
@@ -391,7 +383,7 @@ body {
   font-size: var(--bar-value-size);
   white-space: nowrap;
 }
-.ui-bar-separator { color: var(--bar-muted); }
+.ui-bar-separator { color: var(--muted); }
 
 .ui-bar-place {
   color: var(--bar-value-fg);
@@ -600,8 +592,8 @@ body {
   gap: var(--space-5);
   padding: var(--space-4) var(--space-6);
   padding-top: max(var(--space-4), env(safe-area-inset-top));
-  background: var(--bar-bg);
-  border-bottom: var(--edge) solid var(--bar-line);
+  background: var(--bg-2);
+  border-bottom: var(--edge) solid var(--line);
   user-select: none;
   flex: 0 0 auto;
 }
@@ -612,10 +604,10 @@ body {
   height: 24px;
   margin-left: var(--space-1);
   padding: 0;
-  border: var(--edge) solid var(--bar-line);
+  border: var(--edge) solid var(--line-2);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--bar-muted);
+  color: var(--muted);
   font-family: inherit;
   font-size: var(--text-4);
   line-height: 1;
@@ -635,19 +627,19 @@ body {
   font-weight: 600;
   letter-spacing: 0.3px;
   padding: 0;
-  color: var(--bar-brand-fg);
+  color: var(--fg);
   text-decoration: none;
 }
 #bar .brand-mark { display: block; width: auto; height: var(--bar-brand-mark-h); }
 #bar .brand-word {
-  color: var(--bar-brand-strong);
+  color: var(--fg-strong);
   font-size: var(--text-9);
   font-weight: 600;
   letter-spacing: var(--bar-brand-track);
 }
 #bar .brand-home,
 #bar .brand-home:hover,
-#bar .brand-home:active { color: var(--bar-brand-mark); }
+#bar .brand-home:active { color: var(--kaki); }
 #bar .brand:active {
   color: var(--accent);
 }
@@ -656,7 +648,7 @@ body {
     color: var(--accent);
   }
 }
-#bar .bar-cowork-name { color: var(--bar-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#bar .bar-cowork-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bar .grow {
   flex: 1;
   display: flex;
@@ -669,8 +661,8 @@ body {
   display: inline-flex;
   align-items: center;
   background: transparent;
-  color: var(--bar-muted);
-  border: var(--edge) solid var(--bar-line);
+  color: var(--muted);
+  border: var(--edge) solid var(--line);
   border-radius: var(--radius-md);
   height: 30px;
   padding: 0 var(--space-5);

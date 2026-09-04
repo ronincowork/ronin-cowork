@@ -64,12 +64,12 @@ and could not get a radius right.
 | elevation | `--scrim` `--shadow-menu` `--shadow-sheet` | |
 | bar navigation | `--bar-nav-bg/fg/hover/focus` · `--bar-value-fg` | the shared clickable label and its non-clickable context value |
 
-The application bar also names the active customer-facing scope from one owner,
-`workspace-header.js`: Campaign and launch use graphite, the Teams collection uses aiiro,
-and an individual Team uses kaki. Dark mode mixes 24% of that scope colour into the bar
-ground so terminal chrome remains dominant; light mode uses the scope colour as a solid
-fill with the strong inverse foreground. Routes set no colour themselves, and the root
-landing clears the scope treatment.
+The Workbench's workspace and selector headers name the active customer-facing scope from
+one owner, `workspace-header.js`; the application bar stays neutral. Campaign and launch
+use graphite, the Teams collection uses aiiro, and an individual Team keeps the established
+`--cowork-head-*` kaki-orange family. Dark mode mixes 24% of collection scope colour into
+the header ground; light mode uses a solid fill. Routes set no colour themselves, and the
+root landing clears the scope treatment.
 
 These are **theme-independent** and defined once: a square corner is square in both shells.
 Only the colour roles are redefined under `:root[data-theme='light']`.

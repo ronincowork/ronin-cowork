@@ -667,7 +667,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Team commons
 - **team.commons_summary:** See Docs / Wipeboard / Agent Message Queue / Team Configuration
-- **team.roster_of:** Roster: {team}
+- **team.roster_of:** Roster
 - **team.workspace_blank:** Workspace
 - **team.workspace_empty:** empty
 - **team.new_session:** New session
@@ -1510,7 +1510,7 @@ The catalog entry goes. {dir} is not touched.
 - **bar.shape_four:** Four workspaces — click for two
 - **bar.place_teams:** Teams
 - **bar.place_teams_title:** See all of your teams here
-- **bar.place_team:** Teams / {team}
+- **bar.place_team:** Team: {team}
 
 ## me — tiledrop.js (the メ sheet)
 - **me.status:** Status
