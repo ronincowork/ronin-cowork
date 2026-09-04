@@ -1,0 +1,341 @@
+import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+
+export type ClientState = 'up' | 'reconnecting' | 'fallback';
+
+export interface Notification {
+  kind: `%${string}`;
+  line: string;
+  args: string[];
+  paneId?: string;
+  output?: string;
+}
+
+export interface TmuxClient {
+  run(args: readonly string[], opts?: { timeoutMs?: number }): Promise<string>;
+  on(kind: Notification['kind'], handler: (notification: Notification) => void): () => void;
+  state(): ClientState;
+}
+
+interface ControlProcess {
+  stdin: Pick<NodeJS.WritableStream, 'write'>;
+  stdout: NodeJS.ReadableStream;
+  stderr: NodeJS.ReadableStream;
+  once(event: 'exit' | 'error', handler: (...args: unknown[]) => void): this;
+  kill(signal?: NodeJS.Signals): boolean;
+}
+
+interface Dependencies {
+  exec(file: string, args: readonly string[], timeoutMs: number): Promise<string>;
+  spawnControl(): ControlProcess;
+  setTimer(handler: () => void, delayMs: number): NodeJS.Timeout;
+  clearTimer(timer: NodeJS.Timeout): void;
+  log(message: string): void;
+}
+
+interface Reply {
+  id: string;
+  lines: string[];
+  resolve(value: string): void;
+  reject(error: Error): void;
+  timer: NodeJS.Timeout;
+}
+
+interface StartupReply {
+  id: string;
+  resolve(): void;
+  reject(error: Error): void;
+  timer: NodeJS.Timeout;
+}
+
+const HOLDER = 'grid_ctl';
+const DEFAULT_TIMEOUT_MS = 5_000;
+const BACKOFF_MS = [200, 1_000, 5_000] as const;
+
+class ConnectionLostError extends Error {}
+
+export function quoteTmuxArg(arg: string): string {
+  if (arg === ';') return ';';
+  return `'${arg.replaceAll("'", "'\\''")}'`;
+}
+
+export function commandLine(args: readonly string[]): string {
+  if (!args.length) throw new Error('A tmux command must not be empty.');
+  if (args.some((arg) => arg.includes('\n') || arg.includes('\r'))) {
+    throw new Error('Tmux command arguments must not contain newlines.');
+  }
+  return args.map(quoteTmuxArg).join(' ');
+}
+
+export function decodeTmuxOutput(value: string): string {
+  return value.replace(/\\([0-7]{3})/g, (_match, octal: string) =>
+    String.fromCharCode(Number.parseInt(octal, 8)));
+}
+
+function defaultExec(file: string, args: readonly string[], timeoutMs: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile(file, [...args], { encoding: 'utf8', timeout: timeoutMs }, (error, stdout, stderr) => {
+      if (error) {
+        const text = String(stderr || error.message).replace(/\r?\n$/, '');
+        reject(new Error(text));
+      } else {
+        resolve(String(stdout).replace(/\r?\n$/, ''));
+      }
+    });
+  });
+}
+
+const DEFAULT_DEPENDENCIES: Dependencies = {
+  exec: defaultExec,
+  spawnControl: () => spawn('tmux', ['-C', 'attach-session', '-t', `=${HOLDER}`], {
+    stdio: ['pipe', 'pipe', 'pipe'],
+  }) as ChildProcessWithoutNullStreams,
+  setTimer: (handler, delayMs) => setTimeout(handler, delayMs),
+  clearTimer: (timer) => clearTimeout(timer),
+  log: (message) => console.info(message),
+};
+
+export class ControlTmuxClient implements TmuxClient {
+  private readonly deps: Dependencies;
+  private currentState: ClientState = 'fallback';
+  private process: ControlProcess | undefined;
+  private buffer = '';
+  private reply: Reply | undefined;
+  private startup: StartupReply | undefined;
+  private queue: Promise<void> = Promise.resolve();
+  private connecting: Promise<void> | undefined;
+  private reconnectTimer: NodeJS.Timeout | undefined;
+  private reconnectAttempt = 0;
+  private stoppedProcess = new WeakSet<object>();
+  private readonly handlers = new Map<string, Set<(notification: Notification) => void>>();
+
+  constructor(dependencies: Partial<Dependencies> = {}) {
+    this.deps = { ...DEFAULT_DEPENDENCIES, ...dependencies };
+  }
+
+  state(): ClientState {
+    return this.currentState;
+  }
+
+  on(kind: Notification['kind'], handler: (notification: Notification) => void): () => void {
+    const handlers = this.handlers.get(kind) ?? new Set();
+    handlers.add(handler);
+    this.handlers.set(kind, handlers);
+    return () => handlers.delete(handler);
+  }
+
+  run(args: readonly string[], opts: { timeoutMs?: number } = {}): Promise<string> {
+    const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return Promise.reject(new Error('timeoutMs must be positive.'));
+    const task = this.queue.then(() => this.runSerialized(args, timeoutMs));
+    this.queue = task.then(() => undefined, () => undefined);
+    return task;
+  }
+
+  private async runSerialized(args: readonly string[], timeoutMs: number): Promise<string> {
+    commandLine(args); // Validate before opening a connection or invoking the fallback.
+    if (!this.process && !this.connecting && !this.reconnectTimer) {
+      await this.connect().catch(() => undefined);
+    }
+    if (!this.process || this.currentState !== 'up') return this.fallback(args, timeoutMs);
+    try {
+      return await this.controlRun(args, timeoutMs);
+    } catch (error) {
+      // A command whose connection vanished is safe to retry once through whichever
+      // path is now healthy. Timeouts and tmux command errors are never replayed.
+      if (error instanceof ConnectionLostError) {
+        if (this.process && this.currentState === 'up') return this.controlRun(args, timeoutMs);
+        return this.fallback(args, timeoutMs);
+      }
+      throw error;
+    }
+  }
+
+  private fallback(args: readonly string[], timeoutMs: number): Promise<string> {
+    this.setState('fallback');
+    return this.deps.exec('tmux', args, timeoutMs);
+  }
+
+  private async connect(): Promise<void> {
+    if (this.connecting) return this.connecting;
+    this.connecting = this.openConnection();
+    try {
+      await this.connecting;
+    } finally {
+      this.connecting = undefined;
+    }
+  }
+
+  private async openConnection(): Promise<void> {
+    this.setState('reconnecting');
+    try {
+      await this.ensureHolder();
+      const child = this.deps.spawnControl();
+      this.process = child;
+      this.buffer = '';
+      child.stdout.on('data', (chunk) => this.read(chunk));
+      child.stdout.once('end', () => this.connectionEnded(child, 'EOF'));
+      child.once('exit', (...args) => this.connectionEnded(child, `exit ${String(args[0] ?? '')}`.trim()));
+      child.once('error', (...args) => this.connectionEnded(child, String(args[0] ?? 'error')));
+      await new Promise<void>((resolve, reject) => {
+        const timer = this.deps.setTimer(() => {
+          reject(new Error('tmux control attach timed out'));
+          this.startup = undefined;
+          this.dropConnection(child, 'attach timeout');
+        }, DEFAULT_TIMEOUT_MS);
+        this.startup = { id: '', resolve, reject, timer };
+      });
+      this.reconnectAttempt = 0;
+      this.setState('up');
+    } catch (error) {
+      this.setState('fallback');
+      this.scheduleReconnect();
+      throw error;
+    }
+  }
+
+  private async ensureHolder(): Promise<void> {
+    try {
+      await this.deps.exec('tmux', ['new-session', '-d', '-s', HOLDER, 'exec sleep 2147483647'], DEFAULT_TIMEOUT_MS);
+    } catch {
+      // `new-session` returning nonzero is expected when another process already made it.
+      await this.deps.exec('tmux', ['has-session', '-t', `=${HOLDER}`], DEFAULT_TIMEOUT_MS);
+    }
+  }
+
+  private controlRun(args: readonly string[], timeoutMs: number): Promise<string> {
+    const child = this.process;
+    if (!child) return Promise.reject(new ConnectionLostError('tmux control connection is down'));
+    return new Promise((resolve, reject) => {
+      const timer = this.deps.setTimer(() => {
+        reject(new Error(`tmux command timed out after ${timeoutMs} ms`));
+        this.reply = undefined;
+        this.dropConnection(child, 'command timeout');
+      }, timeoutMs);
+      this.reply = { id: '', lines: [], resolve, reject, timer };
+      child.stdin.write(`${commandLine(args)}\n`, (error?: Error | null) => {
+        if (error && this.reply) this.dropConnection(child, error.message);
+      });
+    });
+  }
+
+  private read(chunk: unknown): void {
+    this.buffer += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
+    for (;;) {
+      const newline = this.buffer.indexOf('\n');
+      if (newline === -1) return;
+      const line = this.buffer.slice(0, newline).replace(/\r$/, '');
+      this.buffer = this.buffer.slice(newline + 1);
+      this.readLine(line);
+    }
+  }
+
+  private readLine(line: string): void {
+    if (line.startsWith('%begin ')) {
+      const id = line.split(/\s+/)[2] ?? '';
+      if (this.startup && !this.startup.id) {
+        this.startup.id = id;
+        return;
+      }
+      if (!this.reply || this.reply.id) return this.protocolFailure(`unexpected ${line}`);
+      this.reply.id = id;
+      return;
+    }
+    if (line.startsWith('%end ') || line.startsWith('%error ')) {
+      const id = line.split(/\s+/)[2] ?? '';
+      if (this.startup) {
+        if (!this.startup.id || this.startup.id !== id) return this.protocolFailure(`unmatched startup ${line}`);
+        const startup = this.startup;
+        this.startup = undefined;
+        this.deps.clearTimer(startup.timer);
+        if (line.startsWith('%error ')) startup.reject(new Error('tmux control attach failed'));
+        else startup.resolve();
+        return;
+      }
+      const reply = this.reply;
+      if (!reply || !reply.id || reply.id !== id) return this.protocolFailure(`unmatched ${line}`);
+      this.reply = undefined;
+      this.deps.clearTimer(reply.timer);
+      const text = reply.lines.join('\n');
+      if (line.startsWith('%error ')) reply.reject(new Error(text));
+      else reply.resolve(text);
+      return;
+    }
+    if (line === '%exit' || line.startsWith('%exit ')) {
+      if (this.process) this.dropConnection(this.process, line.slice(6).trim() || 'tmux exited');
+      return;
+    }
+    if (this.reply?.id) {
+      this.reply.lines.push(line);
+      return;
+    }
+    if (this.startup?.id) return;
+    if (line.startsWith('%')) this.emitNotification(line);
+  }
+
+  private emitNotification(line: string): void {
+    const [kind, ...args] = line.split(' ');
+    if (!kind) return;
+    const notification: Notification = { kind: kind as `%${string}`, line, args };
+    if (kind === '%output' && args.length) {
+      notification.paneId = args[0];
+      notification.output = decodeTmuxOutput(line.slice(kind.length + 1 + args[0]!.length + 1));
+    }
+    for (const handler of this.handlers.get(kind) ?? []) {
+      try {
+        handler(notification);
+      } catch (error) {
+        this.deps.log(`[tmux-client] notification handler failed: ${String(error)}`);
+      }
+    }
+  }
+
+  private protocolFailure(reason: string): void {
+    if (this.process) this.dropConnection(this.process, `tmux control protocol: ${reason}`);
+  }
+
+  private dropConnection(child: ControlProcess, reason: string): void {
+    this.connectionEnded(child, reason);
+    child.kill();
+  }
+
+  private connectionEnded(child: ControlProcess, reason: string): void {
+    if (this.stoppedProcess.has(child as object)) return;
+    this.stoppedProcess.add(child as object);
+    if (this.process !== child) return;
+    this.process = undefined;
+    this.buffer = '';
+    const reply = this.reply;
+    this.reply = undefined;
+    const startup = this.startup;
+    this.startup = undefined;
+    if (startup) {
+      this.deps.clearTimer(startup.timer);
+      startup.reject(new ConnectionLostError(`tmux control connection lost during attach: ${reason}`));
+    }
+    if (reply) {
+      this.deps.clearTimer(reply.timer);
+      reply.reject(new ConnectionLostError(`tmux control connection lost: ${reason}`));
+    }
+    this.setState('fallback');
+    this.scheduleReconnect();
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) return;
+    const delay = BACKOFF_MS[Math.min(this.reconnectAttempt, BACKOFF_MS.length - 1)]!;
+    this.reconnectAttempt += 1;
+    this.reconnectTimer = this.deps.setTimer(() => {
+      this.reconnectTimer = undefined;
+      void this.connect().catch(() => undefined);
+    }, delay);
+    this.reconnectTimer.unref?.();
+  }
+
+  private setState(state: ClientState): void {
+    if (this.currentState === state) return;
+    this.currentState = state;
+    this.deps.log(`[tmux-client] ${state}`);
+  }
+}
+
+export const tmux: TmuxClient = new ControlTmuxClient();
