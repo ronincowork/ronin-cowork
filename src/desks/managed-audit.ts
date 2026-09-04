@@ -83,27 +83,29 @@ export function auditManagedState(input: ManagedAuditInput): ManagedAuditResult 
   const findings: AuditFinding[] = input.ledger.issues.map((issue) =>
     finding('agreement', `ledger_${issue.code}`, issue.repo, `line ${issue.line}`, issue.detail));
   let excluded = 0;
-  const projectedDesks = new Map(input.projection.desks.map((desk) => [desk.id, desk]));
-  const quarantined = new Set(input.projection.quarantines.map((item) => item.id));
+  const projectedDesks = new Map(input.projection.desks.map((desk) => [`${desk.repo ?? objectRepo(desk.id)}\0${desk.id}`, desk]));
+  const quarantined = new Set(input.projection.quarantines.map((item) => `${item.repo ?? objectRepo(item.id)}\0${item.id}`));
   const pendingRepos = new Set(input.projection.pending.map((item) => item.repo));
 
   for (const repo of input.repositories) {
     if (repo.mode === 'checkout') { excluded++; continue; }
-    const observed = new Map(repo.desks.map((desk) => [desk.id, desk]));
-    const activeTeams = new Set(input.projection.desks.flatMap((desk) => desk.owner_team ? [desk.owner_team] : []));
+    const observed = new Map(repo.desks.map((desk) => [`${repo.repo}\0${desk.id}`, desk]));
+    const activeTeams = new Set(input.projection.desks.flatMap((desk) => (desk.repo ?? objectRepo(desk.id)) === repo.repo && desk.owner_team ? [desk.owner_team] : []));
 
-    for (const [id, desk] of projectedDesks) {
-      if (objectRepo(id) && objectRepo(id) !== repo.repo) continue;
-      const actual = observed.get(id);
+    for (const [key, desk] of projectedDesks) {
+      const projectedRepo = desk.repo ?? objectRepo(desk.id);
+      if (projectedRepo && projectedRepo !== repo.repo) continue;
+      const actual = observed.get(key);
       if (!actual) {
-        findings.push(finding('agreement', 'projected_desk_missing', repo.repo, id, 'ledger says the desk is active but no managed worktree observation matches it'));
+        findings.push(finding('agreement', 'projected_desk_missing', repo.repo, desk.id, 'ledger says the desk is active but no managed worktree observation matches it'));
         continue;
       }
-      if (desk.path && desk.path !== actual.path) findings.push(finding('agreement', 'managed_path_mismatch', repo.repo, id, `ledger path ${desk.path} differs from ${actual.path}`));
-      if (!actual.mounted || !repo.managed_paths.includes(actual.path)) findings.push(finding('agreement', 'worktree_not_registered', repo.repo, id, `${actual.path} is not a registered managed path`));
+      if (desk.path && desk.path !== actual.path) findings.push(finding('agreement', 'managed_path_mismatch', repo.repo, desk.id, `ledger path ${desk.path} differs from ${actual.path}`));
+      if (!actual.mounted || !repo.managed_paths.includes(actual.path)) findings.push(finding('agreement', 'worktree_not_registered', repo.repo, desk.id, `${actual.path} is not a registered managed path`));
     }
     for (const desk of repo.desks) {
-      if (!projectedDesks.has(desk.id) && !quarantined.has(desk.id)) findings.push(finding('agreement', 'unrecorded_managed_desk', repo.repo, desk.id, 'managed worktree exists without an active or quarantined ledger object'));
+      const key = `${repo.repo}\0${desk.id}`;
+      if (!projectedDesks.has(key) && !quarantined.has(key)) findings.push(finding('agreement', 'unrecorded_managed_desk', repo.repo, desk.id, 'managed worktree exists without an active or quarantined ledger object'));
     }
     const projectedPaths = new Set(input.projection.desks.flatMap((desk) => desk.path ? [desk.path] : []));
     for (const managedPath of repo.managed_paths) {
@@ -138,7 +140,7 @@ export function auditManagedState(input: ManagedAuditInput): ManagedAuditResult 
       if (desk.contained_in_dev && allDead) {
         findings.push(finding('lifecycle_closure', 'contained_dead_desk', repo.repo, desk.id, 'non-live desk is contained in dev and due for settlement'));
       }
-      if (allDead && (desk.dirty_files.length > 0 || !desk.contained_in_dev) && !quarantined.has(desk.id)) {
+      if (allDead && (desk.dirty_files.length > 0 || !desk.contained_in_dev) && !quarantined.has(`${repo.repo}\0${desk.id}`)) {
         findings.push(finding('no_orphaned_edits', 'dead_owner_unique_work', repo.repo, desk.id, `dead owners leave ${desk.dirty_files.length} dirty file(s) or commits outside dev without visible custody`));
       }
       if (!desk.constructed_from_current_dev) {

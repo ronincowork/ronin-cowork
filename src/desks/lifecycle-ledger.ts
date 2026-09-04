@@ -21,6 +21,7 @@ export interface ManagedObject {
   kind: 'desk' | 'assignment' | 'receipt' | 'promotion' | 'candidate' | 'team_line'
     | 'quarantine' | 'settlement' | 'worktree' | 'release_pr';
   id: string;
+  repo?: string;
   path?: string;
   owner_sessions?: string[];
   owner_team?: string;
@@ -308,7 +309,11 @@ export interface CompatibilityProjectionDocuments {
   settlements: ManagedEvent[];
 }
 
-const terminal = (event: ManagedEvent): boolean => event.result !== 'started' && event.type !== 'hand_in_started';
+const TERMINAL_RESULTS = new Set<ManagedResult>([
+  'accepted', 'conflicted', 'completed', 'failed', 'refused', 'rolled_back', 'quarantined',
+  'needs_attention', 'contained', 'handed_off', 'discarded',
+]);
+const terminal = (event: ManagedEvent): boolean => TERMINAL_RESULTS.has(event.result);
 export function projectManagedLifecycle(events: readonly ManagedEvent[]): LifecycleProjection {
   const desks = new Map<string, ManagedObject>();
   const assignments = new Map<string, ManagedObject>();
@@ -321,19 +326,21 @@ export function projectManagedLifecycle(events: readonly ManagedEvent[]): Lifecy
     if (event.result === 'started' || event.type === 'hand_in_started') pending.set(event.transaction_id, event);
     else if (terminal(event)) pending.delete(event.transaction_id);
     for (const object of event.objects) {
+      const projected = { ...structuredClone(object), repo: object.repo ?? event.repo };
+      const key = `${event.repo}\0${object.id}`;
       if (object.kind === 'desk') {
-        if (event.type === 'desk_closed' || event.type === 'discarded' || event.type === 'quarantined') desks.delete(object.id);
-        else desks.set(object.id, structuredClone(object));
+        if (event.type === 'desk_closed' || event.type === 'discarded' || event.type === 'quarantined') desks.delete(key);
+        else desks.set(key, projected);
       } else if (object.kind === 'assignment') {
-        if (event.type === 'desk_closed' || event.type === 'team_retired' || event.type === 'discarded' || event.type === 'quarantined') assignments.delete(object.id);
-        else assignments.set(object.id, structuredClone(object));
-      } else if (object.kind === 'quarantine') quarantines.set(object.id, structuredClone(object));
+        if (event.type === 'desk_closed' || event.type === 'team_retired' || event.type === 'discarded' || event.type === 'quarantined') assignments.delete(key);
+        else assignments.set(key, projected);
+      } else if (object.kind === 'quarantine') quarantines.set(key, projected);
     }
     if (event.type.startsWith('hand_in_')) receipts.push(event);
     if (event.type === 'promoted' || event.type === 'published') promotions.push(event);
     if (event.type === 'settled' || event.type === 'recovered') settlements.push(event);
   }
-  const values = (map: Map<string, ManagedObject>) => [...map.values()].sort((a, b) => a.id.localeCompare(b.id));
+  const values = (map: Map<string, ManagedObject>) => [...map.values()].sort((a, b) => (a.repo ?? '').localeCompare(b.repo ?? '') || a.id.localeCompare(b.id));
   return { desks: values(desks), assignments: values(assignments), receipts, promotions, quarantines: values(quarantines), settlements, pending: [...pending].map(([transaction_id, event]) => ({ transaction_id, repo: event.repo, event })).sort((a, b) => a.transaction_id.localeCompare(b.transaction_id)) };
 }
 
