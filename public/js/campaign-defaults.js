@@ -28,6 +28,24 @@ const selectOf = (values, selected) => {
   for (const value of values) select.add(new Option(optionLabel(value), value));
   select.value = values.includes(selected) ? selected : values[0]; return select;
 };
+const multiSelectOf = (values, selected) => {
+  const chosen = list(selected).filter((value) => values.includes(value));
+  const details = el('details', 'cv-multi');
+  const summary = el('summary', 'cv-input');
+  const menu = el('div', 'cv-multi-menu');
+  const refresh = () => {
+    const labels = [...menu.querySelectorAll('input:checked')].map((input) => optionLabel(input.value));
+    summary.textContent = labels.join(', ') || optionLabel(values[0]);
+  };
+  for (const value of values) {
+    const input = el('input'); input.type = 'checkbox'; input.value = value; input.checked = chosen.includes(value);
+    input.addEventListener('change', refresh);
+    const option = el('label', 'cv-multi-option'); option.append(input, el('span', null, optionLabel(value))); menu.append(option);
+  }
+  details.append(summary, menu); refresh();
+  details.values = () => [...menu.querySelectorAll('input:checked')].map((input) => input.value);
+  return details;
+};
 
 export function createAgentDefaultsSurface(campaign) {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
@@ -58,19 +76,16 @@ export function createAgentDefaultsSurface(campaign) {
     labeled(form, t('campaign_view.col_model', 'Preferred model'), model);
     const controls = {};
   const fieldLabels = { reach: t('campaign_view.default_reach', 'Reach'), recruit: t('campaign_view.default_recruit', 'Recruit'), output: t('campaign_view.default_output', 'Output'), dial: t('campaign_view.default_dial', 'Control'), launch_mode: t('launch_mode.head', 'launch mode') };
-    for (const [name, values] of Object.entries(CHOICES)) controls[name] = labeled(form, fieldLabels[name], selectOf(values, current[name]));
-    // `output` is a LIST in the record, so the top of the cascade has to be able to state
-    // one — a single-pick here could only ever seed a one-item list.
-    controls.output.multiple = true;
-    controls.output.size = 4;
-    for (const option of controls.output.options) option.selected = list(current.output).includes(option.value);
+    for (const [name, values] of Object.entries(CHOICES)) {
+      controls[name] = labeled(form, fieldLabels[name], name === 'output' ? multiSelectOf(values, current.output) : selectOf(values, current[name]));
+    }
     const behaviours = el('textarea', 'cv-input'); behaviours.value = list(current.behaviours).join('\n');
     labeled(form, t('campaign_view.default_behaviours', 'Behaviours'), behaviours, t('campaign_view.behaviours_help', 'One shelf:name book per line.'));
     const actions = el('div', 'cv-default-actions');
     const save = el('button', 'cv-save', t('panels.save', 'Save')); save.type = 'submit'; actions.append(notice.el, save); form.append(actions); body.append(form);
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); save.disabled = true; notice.set('info', t('campaign.saving', 'saving…'));
-      const next = { ...current, provider: provider.value, model: model.value, reach: controls.reach.value, recruit: controls.recruit.value, output: [...controls.output.selectedOptions].map((option) => option.value), dial: controls.dial.value, launch_mode: controls.launch_mode.value, behaviours: behaviours.value.split('\n').map((value) => value.trim()).filter(Boolean) };
+      const next = { ...current, provider: provider.value, model: model.value, reach: controls.reach.value, recruit: controls.recruit.value, output: controls.output.values(), dial: controls.dial.value, launch_mode: controls.launch_mode.value, behaviours: behaviours.value.split('\n').map((value) => value.trim()).filter(Boolean) };
       const result = await saveCampaign(row.id, { config: { agent_defaults: next } });
       notice.set(result.ok ? 'success' : 'failed', result.ok ? t('settei.saved', 'saved') : result.message); save.disabled = false;
       if (result.ok) paint();
