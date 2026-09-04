@@ -1,10 +1,7 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import path from 'node:path';
 import { exactPane } from './tmux.js';
+import { tmux } from './tmux-client.js';
 import { storeDir } from './resources.js';
-
-const pexec = promisify(execFile);
 
 export const RIREKI_DIR = storeDir('session');
 
@@ -24,7 +21,7 @@ export async function sessionKey(name: string): Promise<string> {
 
   const ask = (async () => {
     try {
-      const { stdout } = await pexec('tmux', [
+      const stdout = await tmux.run([
         'display-message',
         '-p',
         '-t',
