@@ -700,14 +700,10 @@ Harakiri is self-inflicted, by construction. Ending a session that is not yours 
 test session you spun up in a previous life, a leftover scratch pane — is a separate,
 deliberate act, done knowingly and named as itself:
 
-```
-curl -sS -X DELETE "$(tmux show-option -s -qv @ronin-url)/api/sessions/<name>"
-```
-
-Same Ronin code path, same viewer sweep; the difference is that you are choosing a
-victim, so it is never automatic and never part of a recipe. Check the dial first
-(`@ronin-control: user` → it is the owner's, ask), and tell the owner what you ended.
-The owner's own path for this is the trash button in the Ronin UI.
+Use the trash button in the Ronin UI. It follows the authenticated operator connection
+and the same viewer sweep as every other owner action; do not reconstruct the operator URL
+or credentials with a raw `curl` command. Check the dial first (`@ronin-control: user` →
+it is the owner's, ask), and tell the owner what you ended.
 
 ## status-probe
 `action_kind: mechanical` — run it, don't deliberate.
