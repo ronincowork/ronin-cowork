@@ -22,6 +22,7 @@ await fs.writeFile(path.join(worktree, 'staged.txt'), 'staged\n'); sh(worktree, 
 await fs.writeFile(path.join(worktree, 'loose.txt'), 'loose\n');
 
 const { inspectEnding, closeoutMessage, parsePorcelainZ } = await import('../src/desks/ending.js');
+const { isTeamLineEndingFact } = await import('../src/desks/ending-runtime.js');
 const { quarantineDesk, readQuarantine, writeDiscardReceipt } = await import('../src/desks/quarantine.js');
 
 test('porcelain parser keeps staged, unstaged, and untracked names separate', () => {
@@ -30,12 +31,21 @@ test('porcelain parser keeps staged, unstaged, and untracked names separate', ()
   });
 });
 
+test('an unassigned session desk is never classified as a team-line fact', () => {
+  const common = {
+    repo: 'r', branch: 'team/t/session', line: 'team/t/dev', repo_dir: '/r', worktree: '/w', mounted: false,
+    tip: 'tip', line_tip: 'line', owners: ['session'], team: 't',
+  };
+  assert.equal(isTeamLineEndingFact({ ...common, kind: 'desk' }), false);
+  assert.equal(isTeamLineEndingFact({ ...common, kind: 'team_line' }), true);
+});
+
 test('ending preflight names sole-owner work and prompts only reachable owners', async () => {
   const tip = sh(repo, ['rev-parse', 'team/t/a']);
   const line_tip = sh(repo, ['rev-parse', 'dev']);
   const preflight = await inspectEnding({
     scope: 'session', subject: 'a', requested_action: 'archive',
-    desks: [{ repo: 'r', branch: 'team/t/a', line: 'dev', repo_dir: repo, worktree, mounted: true,
+    desks: [{ kind: 'desk', repo: 'r', branch: 'team/t/a', line: 'dev', repo_dir: repo, worktree, mounted: true,
       tip, line_tip, owners: ['a', 'dead'], team: 't' }],
     ownerReachable: (owner) => owner === 'a',
   });
@@ -49,7 +59,7 @@ test('ending preflight names sole-owner work and prompts only reachable owners',
 test('Ignore custody writes patches, untracked files, manifest, and an explicit ref', async () => {
   const preflight = await inspectEnding({
     scope: 'session', subject: 'a', requested_action: 'delete',
-    desks: [{ repo: 'r', branch: 'team/t/a', line: 'dev', repo_dir: repo, worktree, mounted: true,
+    desks: [{ kind: 'desk', repo: 'r', branch: 'team/t/a', line: 'dev', repo_dir: repo, worktree, mounted: true,
       tip: sh(repo, ['rev-parse', 'team/t/a']), line_tip: sh(repo, ['rev-parse', 'dev']), owners: ['a'], team: 't' }],
     ownerReachable: () => false,
   });

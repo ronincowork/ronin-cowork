@@ -4,6 +4,7 @@ export type EndingScope = 'session' | 'team';
 export type EndingRequest = 'archive' | 'delete' | 'hard_delete' | 'retire';
 
 export interface EndingDeskInput {
+  kind: 'desk' | 'team_line';
   repo: string;
   branch: string;
   line: string;

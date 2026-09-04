@@ -31,6 +31,19 @@ test('archive/delete omission proceeds through quarantine custody and never prom
   assert.equal(decision.response, undefined);
 });
 
+test('team retirement omission proceeds through the same quarantine custody decision', async () => {
+  const teamEnding: EndingPreflight = { ...ending, scope: 'team', subject: 'worktree-fix', requested_action: 'retire' };
+  const calls: string[] = [];
+  const custody = { prompted: [], closed: ['r:team/worktree-fix/dev'], quarantined: [], discarded: [] };
+  const decision = await resolveEndingRequest(teamEnding, 'inspect', {
+    prompt: async () => { calls.push('prompt'); return custody; },
+    quarantine: async () => { calls.push('quarantine'); return custody; },
+  });
+  assert.equal(decision.proceed, true);
+  assert.deepEqual(calls, ['quarantine']);
+  assert.equal(decision.acknowledgement?.acknowledged, true);
+});
+
 test('Prompt reports its one chosen message action without hiding or re-running the warning', () => {
   const prompted = { prompted: [{ target: 'scribe', queued: true, id: 'm1' }], closed: [], quarantined: [], discarded: [] };
   const response = endingWarningResponse(ending, prompted);

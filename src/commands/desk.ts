@@ -218,7 +218,7 @@ async function main(): Promise<void> {
         const a = await arrangementOf(d.repo);
         const facts = await inspectEnding({
           scope: 'session', subject: session, requested_action: 'delete',
-          desks: [{ ...d, repo_dir: a.dir, owners: d.owners?.length ? d.owners : [d.session] }], ownerReachable: () => false,
+          desks: [{ ...d, kind: 'desk', repo_dir: a.dir, owners: d.owners?.length ? d.owners : [d.session] }], ownerReachable: () => false,
         });
         const fact = facts.desks[0]!;
         const files = [...new Set([...fact.changes.staged, ...fact.changes.unstaged, ...fact.changes.untracked])];

@@ -23,6 +23,7 @@ async function teamLineInputs(team: string, owners: string[]): Promise<EndingDes
     const branch = teamLineBranch(team);
     const wt = await worktreeOf(arrangement.dir, branch);
     out.push({
+      kind: 'team_line',
       repo, branch, line: arrangement.working, repo_dir: arrangement.dir,
       worktree: wt?.path ?? '', mounted: !!wt,
       tip: await revParse(arrangement.dir, `refs/heads/${branch}`),
@@ -42,6 +43,7 @@ async function preflight(scope: EndingScope, subject: string, requested_action: 
   const teamOwners = sessions.filter((session) => session.tags.includes(subject) && !!session.key).map((session) => session.name);
   const inputs: EndingDeskInput[] = await Promise.all(desks.map(async (desk) => ({
     ...desk,
+    kind: 'desk' as const,
     repo_dir: (await arrangementOf(desk.repo)).dir,
     owners: desk.owners?.length ? desk.owners : [desk.session],
   })));
@@ -58,6 +60,10 @@ export const inspectSessionEnding = (session: string, requested_action: Exclude<
 
 export const inspectTeamEnding = (team: string): Promise<EndingPreflight> => preflight('team', team, 'retire');
 
+export function isTeamLineEndingFact(fact: EndingDeskInput): boolean {
+  return fact.kind === 'team_line';
+}
+
 function runtimeOps(preflight: EndingPreflight): EndingDispositionOps {
   return {
     async prompt(target, message) {
@@ -66,7 +72,7 @@ function runtimeOps(preflight: EndingPreflight): EndingDispositionOps {
       return { queued: retained !== null, id: queued.id };
     },
     async close(fact) {
-      if (!fact.assignment) {
+      if (isTeamLineEndingFact(fact)) {
         await withManagedTransaction({
           repo: fact.repo, transaction_id: `close_${randomUUID()}`, type: 'ending_inspected', result: 'started', session: '', team: fact.team,
           refs: [{ name: fact.branch, before: fact.tip, after: '' }], commits: [{ role: 'team_line_tip', sha: fact.tip }],
