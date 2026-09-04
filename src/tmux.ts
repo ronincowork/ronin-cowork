@@ -1,5 +1,3 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { config } from './machine-settings.js';
 import { ensureTmuxServer } from './host-guard.js';
 import { removeHandoff } from './handoff.js';
@@ -7,8 +5,7 @@ import { assertUnderMax } from './machine-state.js';
 import { CONTROL_OPT, RIREKI_OPT, newSessionArgs } from './session-args.js';
 export type { Control } from './session-args.js';
 import type { Control } from './session-args.js';
-
-const pexec = promisify(execFile);
+import { tmux } from './tmux-client.js';
 
 export interface SessionInfo {
   name: string;
@@ -62,7 +59,7 @@ function noServer(err: unknown): boolean {
 
 export async function sessionDir(name: string): Promise<string> {
   try {
-    const { stdout } = await pexec('tmux', ['display-message', '-t', exactPane(name), '-p', '#{pane_current_path}']);
+    const stdout = await tmux.run(['display-message', '-t', exactPane(name), '-p', '#{pane_current_path}']);
     return stdout.trim();
   } catch {
     return '';
@@ -71,7 +68,7 @@ export async function sessionDir(name: string): Promise<string> {
 
 export async function listSessions(): Promise<SessionInfo[]> {
   try {
-    const { stdout } = await pexec('tmux', [
+    const stdout = await tmux.run([
       'list-sessions',
       '-F',
       `#{session_name}\t#{${TITLE_OPT}}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}\t#{${RIREKI_OPT}}\t#{window_activity}`,
@@ -108,7 +105,7 @@ export async function listSessions(): Promise<SessionInfo[]> {
 
 export async function sessionExists(name: string): Promise<boolean> {
   try {
-    await pexec('tmux', ['has-session', '-t', `=${name}`]);
+    await tmux.run(['has-session', '-t', `=${name}`]);
     return true;
   } catch {
     return false;
@@ -118,8 +115,8 @@ export async function sessionExists(name: string): Promise<boolean> {
 export async function setSessionTitle(name: string, title: string): Promise<void> {
   const clean = title.trim();
   if (clean.length > 80 || /[\r\n\t]/.test(clean)) throw new Error('Agent title must be one line of 80 characters or fewer.');
-  if (clean) await pexec('tmux', ['set-option', '-t', exactPane(name), TITLE_OPT, clean]);
-  else await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', TITLE_OPT]).catch(() => {});
+  if (clean) await tmux.run(['set-option', '-t', exactPane(name), TITLE_OPT, clean]);
+  else await tmux.run(['set-option', '-t', exactPane(name), '-u', TITLE_OPT]).catch(() => {});
 }
 
 export interface CreateOpts {
@@ -145,10 +142,10 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
     rireki: opts.rireki,
   });
   try {
-    await pexec('tmux', build(true));
+    await tmux.run(build(true));
   } catch (err) {
     if (cwd) {
-      await pexec('tmux', build(false));
+      await tmux.run(build(false));
     } else {
       throw err;
     }
@@ -157,7 +154,7 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
 
 export async function killSession(name: string): Promise<void> {
   try {
-    await pexec('tmux', ['kill-session', '-t', exactSession(name)]);
+    await tmux.run(['kill-session', '-t', exactSession(name)]);
   } catch {
   }
 }
@@ -165,7 +162,7 @@ export async function killSession(name: string): Promise<void> {
 async function groupedSessionTargets(name: string): Promise<Set<string>> {
   const targets = new Set<string>([name]);
   try {
-    const { stdout } = await pexec('tmux', ['list-sessions', '-F', '#{session_name}\t#{session_group}']);
+    const stdout = await tmux.run(['list-sessions', '-F', '#{session_name}\t#{session_group}']);
     const rows = stdout.split('\n').filter(Boolean).map((line) => {
       const [sname, group] = line.split('\t');
       return { sname, group: group || '' };
@@ -191,7 +188,7 @@ export async function stopSessionTree(name: string): Promise<void> {
 }
 
 export async function sessionRuntime(name: string): Promise<{ cwd: string; pid: number; command: string; agent: string }> {
-  const { stdout } = await pexec('tmux', [
+  const stdout = await tmux.run([
     'display-message', '-p', '-t', exactPane(name),
     `#{pane_current_path}\t#{pane_pid}\t#{pane_start_command}\t#{${AGENT_OPT}}`,
   ]);
@@ -200,12 +197,12 @@ export async function sessionRuntime(name: string): Promise<{ cwd: string; pid: 
 }
 
 export async function setSessionKey(name: string, key: string): Promise<void> {
-  await pexec('tmux', ['set-option', '-t', exactPane(name), '@ronin-key', key]);
+  await tmux.run(['set-option', '-t', exactPane(name), '@ronin-key', key]);
 }
 
 export async function sessionOfPane(paneId: string): Promise<string | null> {
   try {
-    const { stdout } = await pexec('tmux', ['list-panes', '-a', '-F', '#{pane_id}\t#{session_name}']);
+    const stdout = await tmux.run(['list-panes', '-a', '-F', '#{pane_id}\t#{session_name}']);
     const owners = stdout
       .split('\n')
       .filter(Boolean)
@@ -221,7 +218,7 @@ export async function sessionOfPane(paneId: string): Promise<string | null> {
 
 export async function getNote(name: string): Promise<string> {
   try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', NOTE_OPT]);
+    const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', NOTE_OPT]);
     return stdout.replace(/\n$/, ''); // show-options appends one trailing newline
   } catch {
     return '';
@@ -230,15 +227,15 @@ export async function getNote(name: string): Promise<string> {
 
 export async function setNote(name: string, text: string): Promise<void> {
   if (text.trim()) {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), NOTE_OPT, text]);
+    await tmux.run(['set-option', '-t', exactPane(name), NOTE_OPT, text]);
   } else {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', NOTE_OPT]).catch(() => {});
+    await tmux.run(['set-option', '-t', exactPane(name), '-u', NOTE_OPT]).catch(() => {});
   }
 }
 
 export async function getTags(name: string): Promise<string[]> {
   try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', TAGS_OPT]);
+    const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', TAGS_OPT]);
     return parseTags(stdout);
   } catch {
     return [];
@@ -248,16 +245,16 @@ export async function getTags(name: string): Promise<string[]> {
 export async function setTags(name: string, tags: string[]): Promise<string[]> {
   const clean = parseTags(tags.join(','));
   if (clean.length) {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), TAGS_OPT, clean.join(',')]);
+    await tmux.run(['set-option', '-t', exactPane(name), TAGS_OPT, clean.join(',')]);
   } else {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', TAGS_OPT]).catch(() => {});
+    await tmux.run(['set-option', '-t', exactPane(name), '-u', TAGS_OPT]).catch(() => {});
   }
   return clean;
 }
 
 export async function getLeads(name: string): Promise<string[]> {
   try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', LEAD_OPT]);
+    const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', LEAD_OPT]);
     return parseTags(stdout);
   } catch {
     return [];
@@ -267,9 +264,9 @@ export async function getLeads(name: string): Promise<string[]> {
 export async function setLeads(name: string, teams: string[]): Promise<string[]> {
   const clean = parseTags(teams.join(','));
   if (clean.length) {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), LEAD_OPT, clean.join(',')]);
+    await tmux.run(['set-option', '-t', exactPane(name), LEAD_OPT, clean.join(',')]);
   } else {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', LEAD_OPT]).catch(() => {});
+    await tmux.run(['set-option', '-t', exactPane(name), '-u', LEAD_OPT]).catch(() => {});
   }
   return clean;
 }
@@ -282,7 +279,7 @@ const WIPEBOARDS_OPT = '@ronin-wipeboards';
 
 export async function getWipeboards(name: string): Promise<string[]> {
   try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', WIPEBOARDS_OPT]);
+    const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', WIPEBOARDS_OPT]);
     return parseTags(stdout);
   } catch {
     return [];
@@ -292,9 +289,9 @@ export async function getWipeboards(name: string): Promise<string[]> {
 export async function setWipeboards(name: string, boards: string[]): Promise<string[]> {
   const clean = parseTags(boards.join(','));
   if (clean.length) {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), WIPEBOARDS_OPT, clean.join(',')]);
+    await tmux.run(['set-option', '-t', exactPane(name), WIPEBOARDS_OPT, clean.join(',')]);
   } else {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', WIPEBOARDS_OPT]).catch(() => {});
+    await tmux.run(['set-option', '-t', exactPane(name), '-u', WIPEBOARDS_OPT]).catch(() => {});
   }
   return clean;
 }
@@ -303,7 +300,7 @@ const PROJECT_ROOT_OPT = '@ronin-project_root';
 
 export async function getProjectRoot(name: string): Promise<string> {
   try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', PROJECT_ROOT_OPT]);
+    const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', PROJECT_ROOT_OPT]);
     return stdout.trim();
   } catch {
     return '';
@@ -313,9 +310,9 @@ export async function getProjectRoot(name: string): Promise<string> {
 export async function setProjectRoot(name: string, root: string): Promise<string> {
   const clean = root.trim();
   if (clean) {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), PROJECT_ROOT_OPT, clean]);
+    await tmux.run(['set-option', '-t', exactPane(name), PROJECT_ROOT_OPT, clean]);
   } else {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', PROJECT_ROOT_OPT]).catch(() => {});
+    await tmux.run(['set-option', '-t', exactPane(name), '-u', PROJECT_ROOT_OPT]).catch(() => {});
   }
   return clean;
 }
@@ -324,7 +321,7 @@ const CAMPAIGN_OPT = '@ronin-campaign';
 
 export async function getCampaign(name: string): Promise<string> {
   try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', CAMPAIGN_OPT]);
+    const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', CAMPAIGN_OPT]);
     return stdout.trim();
   } catch {
     return '';
@@ -334,16 +331,16 @@ export async function getCampaign(name: string): Promise<string> {
 export async function setCampaign(name: string, campaign: string): Promise<string> {
   const clean = campaign.trim();
   if (clean) {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), CAMPAIGN_OPT, clean]);
+    await tmux.run(['set-option', '-t', exactPane(name), CAMPAIGN_OPT, clean]);
   } else {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', CAMPAIGN_OPT]).catch(() => {});
+    await tmux.run(['set-option', '-t', exactPane(name), '-u', CAMPAIGN_OPT]).catch(() => {});
   }
   return clean;
 }
 
 export async function projectRootsOfSessions(): Promise<Record<string, string>> {
   try {
-    const { stdout } = await pexec('tmux', ['list-sessions', '-F', `#{session_name}\t#{${PROJECT_ROOT_OPT}}`]);
+    const stdout = await tmux.run(['list-sessions', '-F', `#{session_name}\t#{${PROJECT_ROOT_OPT}}`]);
     const out: Record<string, string> = {};
     for (const line of stdout.split('\n').filter(Boolean)) {
       const [name, root] = line.split('\t');
@@ -360,17 +357,17 @@ const PROVIDER_SESSION_OPT = '@ronin-provider-session';
 
 export async function setLaunchStamp(name: string, agent: string): Promise<void> {
   if (!agent.trim()) return;
-  await pexec('tmux', ['set-option', '-t', exactPane(name), AGENT_OPT, agent.trim()]).catch(() => {});
+  await tmux.run(['set-option', '-t', exactPane(name), AGENT_OPT, agent.trim()]).catch(() => {});
 }
 
 export async function setProviderSessionId(name: string, id: string): Promise<void> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid provider session id.');
-  await pexec('tmux', ['set-option', '-t', exactPane(name), PROVIDER_SESSION_OPT, id]);
+  await tmux.run(['set-option', '-t', exactPane(name), PROVIDER_SESSION_OPT, id]);
 }
 
 export async function getProviderSessionId(name: string): Promise<string> {
   try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', PROVIDER_SESSION_OPT]);
+    const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', PROVIDER_SESSION_OPT]);
     const id = stdout.trim();
     return /^[0-9a-f-]{36}$/i.test(id) ? id : '';
   } catch {
@@ -380,7 +377,7 @@ export async function getProviderSessionId(name: string): Promise<string> {
 
 export async function getControl(name: string): Promise<Control> {
   try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', CONTROL_OPT]);
+    const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', CONTROL_OPT]);
     const v = stdout.trim();
     return v === 'user' || v === 'read' ? v : 'write';
   } catch {
@@ -389,7 +386,7 @@ export async function getControl(name: string): Promise<Control> {
 }
 
 export async function setControl(name: string, control: Control): Promise<void> {
-  await pexec('tmux', ['set-option', '-t', exactPane(name), CONTROL_OPT, control]);
+  await tmux.run(['set-option', '-t', exactPane(name), CONTROL_OPT, control]);
 }
 
 export { capturePane, cleanupViewers, createViewer, jumpToBottom, sendRawKeys } from './viewer.js';
