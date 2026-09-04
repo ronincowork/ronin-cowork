@@ -7,6 +7,7 @@
 - **macros:** —
 - **actions:** survey-machine, survey-secrets, survey-account, restart-ronin
 - **tools:** tejun-survey, tejun-account, tejun-secrets, tejun-machine-restart
+- **parts:** —
 - **mcp:** —
 - **requires:** ronin_base
 - **bundles:** services

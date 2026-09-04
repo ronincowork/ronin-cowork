@@ -1,6 +1,6 @@
 # RONIN SERVICES — what this Agent is working without
 
-Ronin Services is **off** for this Agent, so the owner is running on the free floor. What that costs them, and when to point them at the switch:
+Ronin Services is **off** for this Agent, so the owner is running on the free floor. When it is off for the Campaign, none of its parts run in the Ronin server either — no recorder, no tapes, no transcripts, tiles are Locked only; the files stay installed and the switch takes effect when Ronin restarts. What that costs them, and when to point them at the switch:
 
 - **Catch-up reads the pane, not the record.** Without RIREKI's durable session record there is no `tejun-rireki`; another session is read only through a live pane capture, and nothing survives a closed tile or a restart.
 - **The terminal on a phone is the raw one.** Locked view over a separate input box, laggy on a slow link. Services render the tape client-side: lower latency, especially on mobile, a proper scrolling view, and copy-paste that behaves.

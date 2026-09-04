@@ -17,7 +17,8 @@ import { readState } from '../activation/state.js';
 import { initialCampaign } from '../campaigns.js';
 import { listRoutines } from '../resource-adapters.js';
 import { routineChoices } from '../routines.js';
-import { listServices } from '../sockets.js';
+import { listParkedServices, listServices } from '../sockets.js';
+import { discoverParts, partClaims } from '../parts.js';
 import { roninIdentity } from './version.js';
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
@@ -25,9 +26,15 @@ const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(hom
 export interface InstalledAnswer {
   cowork: { release: string | null; commit: string; dirty: boolean | null; startedAt: string };
   services: {
-    /** Parts registered in this process: koshi, koe, michi, gbrain, counting, machine … */
+    /** Parts on this machine — on disk, whether or not they run: koshi, koe, michi, gbrain, counting, machine, rireki … */
     parts: string[];
+    /** Parts this server loaded and runs. */
+    loaded: string[];
+    /** Parts on disk this server did not load: the Routine that claims them was off at start. */
+    parked: { name: string; routine: string }[];
     installed: boolean;
+    /** The switch and the running copy disagree — the switch takes effect at the next restart. */
+    restart_needed: boolean;
     activated: boolean;
     stage: string;
     /** The Campaign's default switch for the Ronin Services Routine. */
@@ -40,10 +47,16 @@ export interface InstalledAnswer {
 export async function installedAnswer(): Promise<InstalledAnswer> {
   const [state, entitled, campaign, routines] = await Promise.all([readState().catch(() => null), isEntitled().catch(() => false), initialCampaign().catch(() => null), listRoutines()]);
   const map = routineChoices(campaign?.config?.agent_defaults?.routines ?? {});
-  const parts = listServices();
+  const loaded = listServices();
+  const parked = listParkedServices();
+  const parts = [...new Set([...discoverParts().map((part) => part.name), ...loaded, ...parked.map((part) => part.name)])].sort();
+  const claims = partClaims(routines);
+  const switchedOn = map.ronin_services === true;
+  // The running copy read the switch at start; if the switch moved since, only a restart honours it.
+  const restartNeeded = parts.some((part) => claims.get(part) === 'ronin_services' && (switchedOn ? !loaded.includes(part) : loaded.includes(part)));
   return {
     cowork: roninIdentity(),
-    services: { parts, installed: parts.length > 0, activated: entitled, stage: state?.stage ?? 'not_requested', switched_on: map.ronin_services === true },
+    services: { parts, loaded, parked, installed: parts.length > 0, activated: entitled, stage: state?.stage ?? 'not_requested', switched_on: switchedOn, restart_needed: restartNeeded },
     routines: routines.map((r) => ({ name: r.name, label: r.label, blurb: r.blurb, on: map[r.name] === true })),
   };
 }

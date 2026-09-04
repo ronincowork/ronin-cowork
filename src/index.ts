@@ -52,7 +52,10 @@ import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
-import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure } from './sockets.js';
+import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { discoverParts, partsToLoad } from './parts.js';
+import { initialCampaign } from './campaigns.js';
+import { listRoutines } from './resource-adapters.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 import { resourceRequestCache } from './resources.js';
 import { compressResponse } from './http-performance.js';
@@ -208,21 +211,26 @@ void ensureInitialCampaign()
   .catch(() => {});
 
 const services: ServiceRegistration[] = [];
-const SERVICES_DIR = path.join(__dirname, 'services');
-if (fs.existsSync(SERVICES_DIR)) {
-  for (const dir of fs.readdirSync(SERVICES_DIR).sort()) {
-    const entry = ['register.js', 'register.ts']
-      .map((f) => path.join(SERVICES_DIR, dir, f))
-      .find((p) => fs.existsSync(p));
-    if (!entry) continue; // not a service (a stray file, a README)
-    try {
-      const mod = await import(pathToFileURL(entry).href);
-      if (typeof mod.register !== 'function') throw new Error('no register() export');
-      services.push({ name: typeof mod.name === 'string' ? mod.name : dir, register: mod.register });
-    } catch (e) {
-      console.error(`[services] ${dir} failed to load and is OFF: ${(e as Error).message}`);
-      noteServiceFailure(dir, (e as Error).message);
-    }
+// The parts on disk are the install; the Campaign's Routine switches say which of them run.
+// A part claimed by a Routine that is off is parked: not imported, no timers, no routes,
+// no recorder — as if not installed, files in place (src/parts.ts). Read once, at start.
+const plan = partsToLoad(
+  discoverParts(),
+  await listRoutines().catch(() => []),
+  (await initialCampaign().catch(() => null))?.config?.agent_defaults?.routines ?? {},
+);
+for (const parked of plan.parked) {
+  console.log(`[services] ${parked.name} is parked: ${parked.routine} is off for this Campaign (restart after switching it on)`);
+  noteServiceParked(parked.name, parked.routine);
+}
+for (const { name: dir, entry } of plan.load) {
+  try {
+    const mod = await import(pathToFileURL(entry).href);
+    if (typeof mod.register !== 'function') throw new Error('no register() export');
+    services.push({ name: typeof mod.name === 'string' ? mod.name : dir, register: mod.register });
+  } catch (e) {
+    console.error(`[services] ${dir} failed to load and is OFF: ${(e as Error).message}`);
+    noteServiceFailure(dir, (e as Error).message);
   }
 }
 for (const s of services) {

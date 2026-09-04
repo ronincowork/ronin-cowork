@@ -8,6 +8,7 @@
 - **actions:** —
 - **tools:** tejun-rireki, mika
 - **mcp:** —
+- **parts:** counting, koe, koshi, koshi_weights, michi, rireki
 - **requires:** ronin_base
 - **bundles:** services
 - **order:** 30

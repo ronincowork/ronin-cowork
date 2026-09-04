@@ -8,7 +8,7 @@ import type { TeamRoster } from '../src/team-rosters.js';
 
 const routine = (name: string): RoutineRow => ({
   name, label: name, blurb: '', origin: 'stock', shadowed: false,
-  reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [], requires: [],
+  reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [], parts: [], requires: [],
 });
 const campaign = {
   id: 'home_machine',

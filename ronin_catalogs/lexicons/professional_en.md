@@ -339,6 +339,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.routines_help:** What is installed on this machine, and what new Cowork Agents start with. The switches seed new Teams; a Team may replace them, and New Agent shows the resolved answer. Nothing already running changes.
 - **campaign_view.svc_activated:** Activated with Ronin HQ: the template library and the hosted parts are yours.
 - **campaign_view.svc_not_activated:** Not activated with Ronin HQ. Activation is optional and separate from the switch: it unlocks the hosted parts — the template library first — with an email and a confirmation.
+- **campaign_view.svc_off_running:** Off: none of it runs — no recording, no transcripts, tiles are Locked only. Files stay in place.
+- **campaign_view.svc_restart_off:** Switched off, but still running in this copy of Ronin until it restarts.
+- **campaign_view.svc_restart_on:** Switched on, but not running in this copy of Ronin: restart Ronin to start it.
 - **campaign_view.svc_installed:** Installed on this machine: {parts}. The switch on the right turns it on for new Agents.
 - **campaign_view.svc_pill_installed:** Installed
 - **campaign_view.svc_pill_activated:** Installed · activated
