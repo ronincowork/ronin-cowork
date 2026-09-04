@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter, once } from 'node:events';
 import { PassThrough } from 'node:stream';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import {
   ControlTmuxClient,
   commandLine,
@@ -180,4 +182,16 @@ test('%output octal escapes decode without eating ordinary backslashes', async (
   await result;
   assert.equal(seen?.paneId, '%8');
   assert.equal(seen?.output, 'hello world\r\n');
+});
+
+test('an importing process exits after its command leaves the control connection idle', async () => {
+  const source = [
+    "import { tmux } from './src/tmux-client.ts';",
+    "const output = await tmux.run(['display-message', '-p', 'x']);",
+    "if (output !== 'x') throw new Error(`unexpected output: ${output}`);",
+  ].join(' ');
+  const { stdout } = await promisify(execFile)(process.execPath, [
+    '--import', 'tsx', '--input-type=module', '-e', source,
+  ], { cwd: process.cwd(), timeout: 2_000, encoding: 'utf8' });
+  assert.match(stdout, /\[tmux-client\] up/);
 });
