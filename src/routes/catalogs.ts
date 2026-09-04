@@ -23,7 +23,7 @@ import {
   isValidRootName,
   type RootField,
 } from '../project-roots.js';
-import { campaignFilter, campaignResolver } from '../campaign-scope.js';
+import { campaignResolver, machineCampaignId } from '../campaign-scope.js';
 import { arrangementProfile, assertArrangementProfileCurrent, readArrangement, setArrangementProfile, validateArrangementProfile } from '../desks/arrangement.js';
 import { readDesksSection } from '../machine-state.js';
 import {
@@ -46,10 +46,11 @@ import {
 } from '../resource-adapters.js';
 import { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } from '../templates.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
+import { browseFolders, createFolder } from '../folder-browser.js';
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
-const ROOT_FIELDS: RootField[] = ['dir', 'memory', 'match', 'remit'];
+const ROOT_FIELDS: RootField[] = ['dir', 'memory', 'match', 'remit', 'docs', 'plans', 'campaign_id'];
 const bodyFields = (body: unknown) => {
   const out: Partial<Record<RootField, string>> = {};
   for (const k of ROOT_FIELDS) {
@@ -62,6 +63,25 @@ const bodyFields = (body: unknown) => {
 };
 
 export function registerCatalogs(app: express.Express): void {
+  app.get('/api/folders', async (req, res) => {
+    try {
+      res.json(await browseFolders(String(req.query.dir ?? ''), {
+        hidden: req.query.hidden === 'yes',
+        query: String(req.query.q ?? ''),
+      }));
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
+    }
+  });
+
+  app.post('/api/folders', async (req, res) => {
+    try {
+      res.json(await createFolder(String(req.body?.parent ?? ''), String(req.body?.name ?? ''), req.body?.init_git === true));
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
+    }
+  });
+
   app.get('/api/session-readings', async (_req, res) => {
     try {
       res.json(await listSessionReadings());
@@ -113,11 +133,12 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/project-roots', async (req, res) => {
     try {
       const resolve = await campaignResolver();
-      const wanted = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
-      const keep = await campaignFilter(wanted);
+      const named = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
+      const wanted = named.length ? named : [await machineCampaignId()].filter(Boolean);
+      const wantedSet = new Set(wanted);
       res.json(
         (await listProjectRoots())
-          .filter((r) => !r.archived && keep(r.campaign_id))
+          .filter((r) => !r.archived && wantedSet.has(resolve(r.campaign_id)))
           .map((r) => ({ ...r, campaign_id: resolve(r.campaign_id) })),
       );
     } catch (e) {
@@ -125,9 +146,13 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
-  app.get('/api/project-roots/detail', async (_req, res) => {
+  app.get('/api/project-roots/detail', async (req, res) => {
     try {
-      const [roots, bySession] = await Promise.all([listProjectRoots(), projectRootsOfSessions()]);
+      const resolve = await campaignResolver();
+      const named = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
+      const wanted = new Set(named.length ? named : [await machineCampaignId()].filter(Boolean));
+      const [allRoots, bySession] = await Promise.all([listProjectRoots(), projectRootsOfSessions()]);
+      const roots = allRoots.filter((root) => wanted.has(resolve(root.campaign_id)));
       const facts = await Promise.all(roots.map((r) => repoFacts(r)));
       const arrangements = await Promise.all(
         facts.map((f, i) => (f.repo ? readArrangement(roots[i].name, f.dir).catch(() => null) : Promise.resolve(null))),

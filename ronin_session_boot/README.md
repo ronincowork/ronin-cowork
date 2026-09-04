@@ -37,12 +37,15 @@ README beside a session's letter is the only document the newborn is asked to op
 
 ## What ships
 
-Three universal sources and one generated fragment:
+Three universal sources and two generated fragments, compiled in reading order — Routine
+contracts first, the glossary last — and held to a one-read budget by
+`tests/session-boot.test.ts` (a 121 KB packet was born on 2026-09-03 when a UI string
+table was shelved as vocabulary; nothing objected, because no test read the real shelf):
 
-- `all/ronin_catalogs/lexicons/professional_en.md` — the house vocabulary, so every session means the same things
-  by the same words.
 - `all/README.md` — the map of where everything is, and what is on each shelf.
-- `all/README.md` — where everything is in the coworkspace and how the owner drives it.
+- `all/RONIN_UTILITY.md` — where everything is in the coworkspace and how the owner drives it.
+- `all/KOTOBA_GLOSSARY.md` — the house names and the plain word to say for each, rendered at
+  birth with the owner's desk words.
 - `SESSION_MACROS.md` is a template, not read directly. At birth Ronin fills its active
   macro section from the resolved `MACROS.md` catalog (`preview: yes`) and includes it in
   the compiled README.

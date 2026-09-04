@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { status } from './ui.js';
 import { LIGHT, pm, initialOf, toRequests } from './machine-settings-schema.js';
 import { t } from './lexicon.js';
+import { createFolderPicker } from './folder-picker.js';
 
 const el = (tag, cls, text) => {
   const node = document.createElement(tag);
@@ -143,15 +144,20 @@ export async function buildCoworkSetup(host, onDone) {
   ownerField.input.value = initialOf(fieldById(schema, 'ownerName'), ctx) || record.status?.owner_name || '';
   youFields.append(ownerField.wrap); youCard.append(youFields); form.append(youCard);
 
+  const folderCard = card(4, t('setup.workspace_folder', 'Your first workspace folder'), t('setup.workspace_folder_lede', 'Choose where an Agent should start. You can skip this and add one later.'));
+  folderCard.querySelector('h2').append(el('span', 'cs-optional', t('setup.optional', 'Optional')));
+  const folderPicker = createFolderPicker({ onChange: updateReviewSoon });
+  folderCard.append(folderPicker.el); form.append(folderCard);
+
   const kindDef = fieldById(schema, 'mainIntent');
-  const kindCard = card(4, t('setup.kind', 'Kind'), t('setup.kind_lede', 'What do you want to use this app for?'));
+  const kindCard = card(5, t('setup.kind', 'Kind'), t('setup.kind_lede', 'What do you want to use this app for?'));
   const kindField = choiceField('cs-kind', kindDef?.choices || [], initialOf(kindDef, ctx) || 'open'); kindCard.append(kindField.wrap); form.append(kindCard);
 
   const bundleDef = fieldById(schema, 'routineBundle');
-  const bundleCard = card(5, t('setup.routine_bundles', 'Routine Bundles'), t('setup.routine_bundles_lede', 'Choose how much Ronin hands to each new Agent.'));
+  const bundleCard = card(6, t('setup.routine_bundles', 'Routine Bundles'), t('setup.routine_bundles_lede', 'Choose how much Ronin hands to each new Agent.'));
   const bundleField = choiceField('cs-routine-bundle', bundleDef?.choices || [], initialOf(bundleDef, ctx) || 'control'); bundleCard.append(bundleField.wrap); form.append(bundleCard);
 
-  const agentsCard = card(6, t('setup.agents', 'Your agents'), t('setup.agents_lede', 'Agents already found here are ready. Select any others you want RoninCoWork to add.'));
+  const agentsCard = card(7, t('setup.agents', 'Your agents'), t('setup.agents_lede', 'Agents already found here are ready. Select any others you want RoninCoWork to add.'));
   const agentGrid = el('div', 'cs-agents'); const agentHead = el('div', 'cs-agent-head');
   for (const text of ['', t('setup.col_agent', 'Agent'), t('setup.col_when_saved', 'When you save'), t('setup.col_status', 'Status')]) agentHead.append(el('span', null, text));
   agentGrid.append(agentHead); const wantAgents = new Map();
@@ -172,7 +178,7 @@ export async function buildCoworkSetup(host, onDone) {
   }
   agentsCard.append(agentGrid); form.append(agentsCard);
 
-  const defaults = card(7, t('setup.defaults', 'How new sessions should start'), t('setup.defaults_lede', 'This is only the default. You can choose something different each time.'));
+  const defaults = card(8, t('setup.defaults', 'How new sessions should start'), t('setup.defaults_lede', 'This is only the default. You can choose something different each time.'));
   const defaultFields = el('div', 'cs-fields');
   const modelField = selectField('cs-model', t('setup.model', 'Start new sessions with'), t('setup.model_hint', 'These are the runnable models in Ronin’s launch catalog. A saved choice wins when one exists.'));
   const mikaField = selectField('cs-mika', t('setup.mika', 'Mika uses'), t('setup.mika_hint', 'The same runnable launch catalog supplies this list. A light model is recommended for Mika.'));
@@ -192,7 +198,7 @@ export async function buildCoworkSetup(host, onDone) {
   for (const cap of caps) capField.select.add(new Option(cap === 0 ? t('setup.cap_none', 'No limit — allow any number') : cap === sessionEstimate ? t('setup.cap_estimate', '{n} — Ronin estimate for this {ram} GB machine', { n: cap, ram }) : t('setup.cap_n', '{n} agent sessions', { n: cap }), String(cap)));
   capField.select.value = String(savedCap); defaultFields.append(modelField.wrap, deskProfileField.wrap, mikaField.wrap, capField.wrap); defaults.append(defaultFields); form.append(defaults);
 
-  const servicesCard = card(8, t('settei.ronin_services', 'Ronin Services'), t('setup.services_lede', 'Extra capabilities for your coworkspace, in beta today. Base RoninCoWork works fully without them.'));
+  const servicesCard = card(9, t('settei.ronin_services', 'Ronin Services'), t('setup.services_lede', 'Extra capabilities for your coworkspace, in beta today. Base RoninCoWork works fully without them.'));
   servicesCard.querySelector('h2').append(el('span', 'cs-optional', t('setup.optional', 'Optional')));
   const intro = el('div', 'cs-service-intro'); intro.append(el('strong', null, t('setup.services_intro_strong', 'Keep the work on your machine, add the view around it.') + ' '), document.createTextNode(t('setup.services_intro', 'Services add live agent plans, readable transcripts, voice, usage history, and long-term memory. It is early days for this side. Sharing your email is optional — it registers your interest, keeps you part of the Ronin community as it grows, and what is ready reaches you as it lands.')));
   servicesCard.append(intro); const features = el('div', 'cs-features');
@@ -220,7 +226,7 @@ export async function buildCoworkSetup(host, onDone) {
 
   reviewShell.append(stage('', t('setup.review_stage', 'When you save'))); const review = el('div', 'cs-review'); const reviewHead = el('div', 'cs-review-head');
   reviewHead.append(el('p', null, t('setup.review_lede', 'Review what RoninCoWork will do.'))); review.append(reviewHead); const list = el('ul', 'cs-review-list'); review.append(list);
-  const rr = { campaign: reviewRow(t('setup.campaign', 'Campaign')), machine: reviewRow(t('setup.machine_name', 'Coworkspace name')), owner: reviewRow(t('setup.review_owner', 'Ronin will call you')), kind: reviewRow(t('setup.kind', 'Kind')), routines: reviewRow(t('setup.routine_bundles', 'Routine Bundles')), ready: reviewRow(t('setup.review_ready', 'Ready agents · detected')), add: reviewRow(t('setup.review_add', 'RoninCoWork will install · consequence')), model: reviewRow(t('setup.review_model', 'New sessions start with')), mika: reviewRow(t('setup.mika', 'Mika uses')), cap: reviewRow(t('setup.cap', 'Maximum agent sessions')), services: reviewRow(t('settei.ronin_services', 'Ronin Services')), gbrain: reviewRow(t('setup.review_gbrain', 'gbrain memory')) };
+  const rr = { campaign: reviewRow(t('setup.campaign', 'Campaign')), machine: reviewRow(t('setup.machine_name', 'Coworkspace name')), owner: reviewRow(t('setup.review_owner', 'Ronin will call you')), folder: reviewRow(t('setup.workspace_folder', 'Workspace folder')), kind: reviewRow(t('setup.kind', 'Kind')), routines: reviewRow(t('setup.routine_bundles', 'Routine Bundles')), ready: reviewRow(t('setup.review_ready', 'Ready agents · detected')), add: reviewRow(t('setup.review_add', 'RoninCoWork will install · consequence')), model: reviewRow(t('setup.review_model', 'New sessions start with')), mika: reviewRow(t('setup.mika', 'Mika uses')), cap: reviewRow(t('setup.cap', 'Maximum agent sessions')), services: reviewRow(t('settei.ronin_services', 'Ronin Services')), gbrain: reviewRow(t('setup.review_gbrain', 'gbrain memory')) };
   Object.values(rr).forEach((row) => list.append(row.li)); rr.add.li.hidden = true;
   const reviewFoot = el('div', 'cs-review-foot'); const save = el('button', 'cs-save', t('setup.save', 'Save and open RoninCoWork')); save.type = 'button';
   const line = status('cs-status'); reviewFoot.append(save, el('p', 'cs-save-note', t('setup.save_note', 'You can change these choices later.')), line.el); review.append(reviewFoot); reviewShell.append(review);
@@ -230,6 +236,7 @@ export async function buildCoworkSetup(host, onDone) {
     rr.campaign.out.textContent = campaignName.input.value.trim() || 'Ronin Home';
     rr.machine.out.textContent = machineField.input.value.trim() || t('setup.use_value', 'Use {value}', { value: machine.host || t('setup.the_hostname', 'the hostname') });
     rr.owner.out.textContent = ownerField.input.value.trim() || t('setup.use_value', 'Use {value}', { value: machine.user || t('setup.the_machine_user', 'the machine user') });
+    rr.folder.out.textContent = folderPicker.value() || t('setup.folder_skipped', 'Skip for now — add one from Campaign later');
     rr.ready.out.textContent = agents.filter((a) => a.installed).map((a) => a.label).join(', ') || t('setup.none_detected', 'None detected');
     rr.add.li.hidden = additions.length === 0; rr.add.out.textContent = additions.length ? t('setup.install_in_tiles', '{agents} — install in visible tiles', { agents: additions.join(', ') }) : '';
     rr.model.out.textContent = modelField.select.selectedOptions[0]?.textContent || t('setup.no_model', 'No runnable model detected'); rr.mika.out.textContent = mikaField.select.selectedOptions[0]?.textContent || t('setup.no_model', 'No runnable model detected'); rr.cap.out.textContent = capField.select.selectedOptions[0]?.textContent || '';
@@ -238,6 +245,7 @@ export async function buildCoworkSetup(host, onDone) {
     rr.kind.out.textContent = titleCase(kindField.value());
     rr.routines.out.textContent = titleCase(bundleField.value());
   };
+  function updateReviewSoon() { setTimeout(() => typeof updateReview === 'function' && updateReview(), 0); }
   for (const control of shell.querySelectorAll('input, select')) control.addEventListener('input', updateReview);
   wantServices.addEventListener('change', () => { if (!wantServices.checked) { wantGbrain.checked = false; if (bundleField.value() === 'services') bundleField.inputs.find((input) => input.value === 'control').checked = true; } bundleField.wrap.classList.toggle('services-on', wantServices.checked); updateReview(); });
   bundleField.wrap.classList.toggle('services-on', wantServices.checked);
@@ -250,6 +258,21 @@ export async function buildCoworkSetup(host, onDone) {
     // 409 is an answer only from the project POST — the project already exists from a
     // previous Save. Any other family answering 409 is a problem worth showing.
     for (const req of toRequests(schema, values)) { const result = await request(req.route, { method: req.method, json: req.json }); if (!result.ok && !(result.status === 409 && req.family === 'project')) problems.push(result.message || req.route); }
+    const workspaceDir = folderPicker.value();
+    if (workspaceDir) {
+      const inspected = await request(`/api/project-roots/inspect?dir=${encodeURIComponent(workspaceDir)}`, { cache: 'no-store' });
+      if (!inspected.ok) problems.push(inspected.message);
+      else {
+        const name = workspaceDir.split('/').filter(Boolean).pop().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'workspace';
+        const payload = { name, dir: workspaceDir, campaign_id: 'home_machine' };
+        if (inspected.data.repo) {
+          const before = inspected.data.repo_profile || { mode: 'direct', working: '', stable: inspected.data.repo.branch || 'main', worktrees: 'disabled' };
+          Object.assign(payload, { before, profile: before, confirmed: true });
+        }
+        const added = await request('/api/project-roots', { method: 'POST', json: payload });
+        if (!added.ok && added.status !== 409) problems.push(added.message);
+      }
+    }
     const gbrainResult = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'gbrain', value: { enabled: wantServices.checked && wantGbrain.checked } } }); if (!gbrainResult.ok) problems.push(gbrainResult.message);
     if (!activationExists && wantServices.checked) { const result = await request('/api/services/activation', { method: 'POST', json: { email: emailField.input.value.trim() } }); if (!result.ok && result.status === 400) problems.push(result.message); else if (!result.ok) installNote = ' ' + t('setup.note_activation', 'Services activation needs attention in the workspace.'); }
     if (problems.length) { line.say(problems[0], 'bad'); save.disabled = false; return; }

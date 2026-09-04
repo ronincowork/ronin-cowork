@@ -30,8 +30,9 @@ declared first:
 - **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the central
   `#attention-flash`, and the help box.
 - **ui** also owns the app-bar navigation set: `.ui-bar-nav` is a clickable label,
-  `.ui-bar-value` is the plain loaded value beside it, and `.ui-bar-place` is the one
-  italic reading centred in the bar that says which page the doors led to. Native button
+  `.ui-bar-value` is the plain loaded value beside it, and `.ui-bar-place` is the neutral
+  island cut into the top edge that names which Workbench the doors led to. Its visible
+  lower corners use the Workspace Kit surface radius (`--radius-lg`). Native button
   chrome and feature-local bar styling are forbidden.
 - **app** — every composition and feature rule, in source order.
 
@@ -63,6 +64,13 @@ and could not get a radius right.
 | motion | `--motion-quick/settle/slow/hint`, `--ease` `--ease-out` | four speeds; nothing animates for decoration |
 | elevation | `--scrim` `--shadow-menu` `--shadow-sheet` | |
 | bar navigation | `--bar-nav-bg/fg/hover/focus` · `--bar-value-fg` | the shared clickable label and its non-clickable context value |
+
+The Workbench's workspace and selector headers name the active customer-facing scope from
+one owner, `workspace-header.js`; the application bar stays neutral. Campaign and launch
+use graphite, the Teams collection uses aiiro, and an individual Team keeps the established
+`--cowork-head-*` kaki-orange family. Dark mode mixes 24% of collection scope colour into
+the header ground; light mode uses a solid fill. Routes set no colour themselves, and the
+root landing clears the scope treatment.
 
 These are **theme-independent** and defined once: a square corner is square in both shells.
 Only the colour roles are redefined under `:root[data-theme='light']`.

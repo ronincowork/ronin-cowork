@@ -1,6 +1,5 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { addJob, listJobs, nextRun, parseWhen, removeJob, setJob } from '../jikan.js';
+import { tmux } from '../tmux-client.js';
 
 const USAGE = `usage: tejun-jikan [--team t]
        tejun-jikan add --when "<timing>" --kind one-off|recurring [--expires <date-time>] [--to lead|<session>] [--team t] <request...>
@@ -13,7 +12,7 @@ async function whoami(): Promise<{ name: string; teams: string[] }> {
   const pane = process.env.TMUX_PANE;
   if (!pane && !name) return { name: '', teams: [] };
   try {
-    const { stdout } = await promisify(execFile)('tmux', ['list-panes', '-a', '-F', '#{pane_id}\t#{session_name}\t#{@ronin-tags}']);
+    const stdout = await tmux.run(['list-panes', '-a', '-F', '#{pane_id}\t#{session_name}\t#{@ronin-tags}']);
     for (const line of stdout.split('\n')) {
       const [id, session, tags] = line.split('\t');
       if ((pane && id === pane) || (name && session === name)) return { name: session, teams: (tags ?? '').split(',').map((t) => t.trim()).filter(Boolean) };

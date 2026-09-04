@@ -5,9 +5,10 @@ stock English. Mechanically it is a language — a wording (*Home* says *occasio
 campaign) and a translation (*Français*) are the same kind of file, and that is the point
 names a skin (`docs/desk-profiles.md`).
 
-`Cowork` is the owner-facing lexicon word for the canonical `team` / `team_roster`
-layer. It introduces no `cowork` record: APIs, durable files and agent-facing machinery
-continue to say Team. `Team Commons` is the deliberate exception and is always explicit.
+`Team` is the owner-facing lexicon word for the canonical `team` / `team_roster` layer.
+`Cowork` remains the product brand and may be ordinary verb/adjective prose; it introduces
+no saved `cowork` object. APIs, durable files and agent-facing machinery continue to use
+their exact internal terms. `Team Commons` is always explicit.
 
 ## The catalog
 
@@ -21,8 +22,8 @@ at a time, with no code).
 
 prefixed key names a catalog entry's label by its token (`kind.household`,
 `role.DraftPlan`, `behaviour.<t>`); a `glossary.*` key is a word an agent
-says to a person for a house term. The boot shelf reads
-`ronin_catalogs/lexicons/professional_en.md` directly at session birth. A key may carry
+says to a person for a house term; the boot shelf renders `KOTOBA_GLOSSARY.md` from those
+keys at session birth — the lexicon itself is never birth reading. A key may carry
 dots; `isKeyLine` in `src/resources.ts` accepts them.
 
 ## The chain, one rule

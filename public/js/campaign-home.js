@@ -13,7 +13,7 @@ const el = (tag, cls, text) => {
 function DOORS() {
   return [
     { key: 'campaign', route: 'campaign', glyph: 'gear', name: t('campaign_home.machine_settings', 'Machine Settings'), is: t('campaign_home.campaign_is', 'Admin Desk configuration') },
-    { key: 'coworks', route: 'cowork', glyph: '人人', name: t('campaign.coworks', 'Coworks'), is: t('campaign_home.coworks_is', 'Coworking space for Agents') },
+    { key: 'coworks', route: 'cowork', glyph: '人人', name: t('campaign.coworks', 'Teams'), is: t('campaign_home.coworks_is', 'Your Teams and Agents') },
     { key: 'launch', route: 'launch', glyph: '人', name: t('campaign_home.launch', 'New Project'), is: t('campaign_home.launch_is', 'Start a new Team or Agent') },
   ];
 }

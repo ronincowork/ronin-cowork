@@ -20,17 +20,17 @@ If this guide and KOTOBA disagree, flag the difference. Do not invent a replacem
 
 ## Library, profile, tenant
 
-There are no Campaign, Cowork or Team versions of the Workbench.
+There are no Campaign, Teams-collection or Team versions of the Workbench.
 
 - `Workbench.library` is the one reusable catalog of surface types.
 - `Workbench.profile(name)` lists which library types the selector may expose.
-- The tenant says what is being screened: a Campaign, Cowork, Team, Agent or Session.
+- The tenant says what is being screened: a Campaign, Teams collection, Team, Agent or Session.
 - Tenant data filters or parameterizes a library type; it never changes the frame.
 
 | Tenant context | What a profile may expose from the library |
 |---|---|
 | Campaign | Campaign settings and Campaign-level resources |
-| Cowork | Coworks, Agents, shared resources, and creation surfaces available in the selected Campaign context |
+| Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
 | Team | that Team's Agents, Team commons, and launch surface |
 
 Adding another tenant or profile adds no layout implementation. Adding another surface

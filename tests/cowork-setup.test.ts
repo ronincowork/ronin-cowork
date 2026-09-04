@@ -15,7 +15,10 @@ test('cowork_setup is the live two-stage companion page, not the legacy renderer
   assert.match(source, /\/api\/agents/);
   assert.match(source, /\/api\/session-launch-specs/);
   assert.match(source, /toRequests\(schema, values\)/);
-  assert.doesNotMatch(source, /Start your first project|\/api\/project-roots\/inspect/);
+  assert.match(source, /Your first workspace folder/);
+  assert.match(source, /createFolderPicker/);
+  assert.match(source, /\/api\/project-roots\/inspect/);
+  assert.match(source, /folder_skipped/);
 });
 
 test('the two setup asks are registry rows and the renderer carries no client field list', async () => {

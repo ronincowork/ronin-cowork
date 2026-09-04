@@ -270,7 +270,7 @@ export function createCoworkView(options = {}) {
     tenant: { kind: campaign ? 'cowork' : 'team', team: () => team }, environment,
     defaultNode: (id) => seats[id].surface.el,
     label: campaign ? t('campaign', 'Campaign') : t('team.roster_title', 'Team Roster'),
-    title: () => campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : team ? t('team.roster_of', 'Roster: {team}', { team: readableTeam(team) }) : t('team.roster_title', 'Team Roster'),
+    title: () => campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : t('team.roster_title', 'Roster'),
     actions: [rosterNote], shapeControl: shapeBtn, deferSelector: true,
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,
@@ -520,7 +520,7 @@ export function createCoworkView(options = {}) {
     };
   };
   function renderCards(members) {
-    if (rosterTitle) rosterTitle.textContent = campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : team ? t('team.roster_of', 'Roster: {team}', { team: readableTeam(team) }) : t('team.roster_title', 'Team Roster');
+    if (rosterTitle) rosterTitle.textContent = campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : t('team.roster_title', 'Roster');
     bench.refreshSelector();
   }
 
@@ -576,7 +576,7 @@ export function createCoworkView(options = {}) {
     if (!entered || team !== name) return; // the destination moved while this was in flight
     loaded = name;
     setBarLabel();
-    rosterTitle.textContent = t('team.roster_of', 'Roster: {team}', { team: readableTeam(name) });
+    rosterTitle.textContent = t('team.roster_title', 'Roster');
     if (!result.live.ok) {
       renderCards([]);
       renderConfig(null, []);
@@ -590,16 +590,16 @@ export function createCoworkView(options = {}) {
     el: root, glyph: campaign ? '⛩' : '人',
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: bench.arrangement,
-    // The owner's per-tab name distinguishes several Workbench tabs. Coworks defaults to
-    // its page name; a Team defaults to the Team name. createWorkspace adds Ronin.
+    // The owner's per-tab name distinguishes several Workbench tabs. Teams defaults to
+    // its page name; a Team defaults to the Team name. The favicon carries the house.
     title: ({ param, viewState }) => {
-      const fallback = campaign ? t('campaign.coworks', 'Coworks') : (param || t('team.team', 'Team'));
+      const fallback = campaign ? t('campaign.coworks', 'Teams') : (param || t('team.team', 'Team'));
       const name = viewState?.(viewKey)?.tabName;
       return name ? { bare: `${name} · ${fallback}` } : fallback;
     },
     tabName: {
       get: () => ctx?.viewState(viewKey)?.tabName || '',
-      placeholder: () => campaign ? t('campaign.coworks', 'Coworks') : team || t('team.team', 'Team'),
+      placeholder: () => campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team'),
       set: (value) => { ctx?.patchViewState(viewKey, { tabName: String(value || '').trim() }); },
     },
     placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),

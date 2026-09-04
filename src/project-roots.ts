@@ -1,12 +1,10 @@
 import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile as execFileP } from './spawn-broker.js';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import { storeDir } from './resources.js';
 
-const execFileP = promisify(execFile);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -270,6 +268,7 @@ export interface RootFacts {
   dir: string;
   exists: boolean;
   repo?: { remote: string; branch: string };
+  project_context?: string[];
 }
 
 const git = async (dir: string, args: string[]) => {
@@ -285,6 +284,10 @@ export async function repoFacts(root: ProjectRootInfo): Promise<RootFacts> {
   } catch {
     return out;
   }
+  const contextCandidates = ['AGENTS.md', 'CLAUDE.md', '.claude/CLAUDE.md', '.claude/settings.json', '.codex/config.toml'];
+  out.project_context = (await Promise.all(contextCandidates.map(async (candidate) =>
+    stat(path.join(dir, candidate)).then(() => candidate, () => ''),
+  ))).filter(Boolean);
   try {
     if ((await git(dir, ['rev-parse', '--show-toplevel'])) !== dir) return out;
     out.repo = {

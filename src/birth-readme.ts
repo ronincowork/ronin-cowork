@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { storeDir } from './resources.js';
 import { resolveFiles } from './resources.js';
 import { listMacros } from './macros.js';
+import { activeDeskProfileName, listDeskProfiles } from './desk-profiles.js';
+import { resolveLexicon } from './lexicon-catalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -12,6 +14,63 @@ const STOCK = path.join(__dirname, '..', 'ronin_session_boot');
 const SESSION_MACROS_TEMPLATE = path.join(STOCK, 'SESSION_MACROS.md');
 
 export type Level = 'all' | 'root' | 'role' | 'routine';
+
+/** The glossary's filename on the universal shelf; the owner may shadow it by name. */
+const GLOSSARY = 'KOTOBA_GLOSSARY.md';
+
+/**
+ * THE ONE-READ BUDGET. A newborn is handed one path and reads it with its own CLI's file
+ * tool, and every supported CLI caps what one read delivers: Codex ~10k tokens of shell
+ * output, Claude Code 30,000 chars of shell output and 25,000 tokens per Read — and both
+ * models open a file in a first window of about 250 lines. Measured 2026-09-04 (Codex
+ * 0.151.0, Claude Code 2.1.260) after a 121 KB packet cost a session its instructions.
+ * The compiled packet must fit the smallest of those, so one read is the whole packet;
+ * `tests/session-boot.test.ts` holds the real stock shelf to it. Bytes are the hard cap.
+ * Lines are the habit: the fullest stock birth compiles to ~420 lines with the Routine
+ * contracts inside the first 250, and the ceiling stops the next shelf addition from
+ * quietly pushing them out again.
+ */
+export const PACKET_BUDGET = { bytes: 30_000, lines: 450 } as const;
+
+/** The packet's last line. A newborn that can quote it has seen the whole packet. */
+export function packetEndLine(session: string): string {
+  return `— end of packet for ${session} —`;
+}
+
+/** What the brief and the birth receipt say about a compiled packet. */
+export interface PacketReport {
+  path: string;
+  bytes: number;
+  lines: number;
+  sections: number;
+  terminator: string;
+  over_budget: boolean;
+}
+
+export async function describePacket(readmePath: string, session: string): Promise<PacketReport> {
+  const text = await readFile(readmePath, 'utf8');
+  const bytes = Buffer.byteLength(text, 'utf8');
+  const lines = text.split('\n').length;
+  return {
+    path: readmePath,
+    bytes,
+    lines,
+    sections: (text.match(/^## /gm) ?? []).length,
+    terminator: packetEndLine(session),
+    over_budget: bytes > PACKET_BUDGET.bytes || lines > PACKET_BUDGET.lines,
+  };
+}
+
+/**
+ * THE READING PROTOCOL, in the brief. One sentence the newborn can verify: how long the
+ * packet is, that one read delivers it, and the line it ends with. An over-budget packet
+ * says so and asks for parts — the compiler has already warned the operator log.
+ */
+export function readFirstSentence(packet: PacketReport): string {
+  const kb = Math.max(1, Math.round(packet.bytes / 1024));
+  const head = `Read first: ${packet.path} — ${packet.lines} lines, ${kb} KB, ${packet.over_budget ? 'over the one-read budget: read it in parts, in order, until you reach' : 'one read; it ends with'} the line "${packet.terminator}".`;
+  return `${head} Do not act before you have seen that line.`;
+}
 
 const userShelf = () => storeDir('session_boot');
 
@@ -31,6 +90,61 @@ export async function renderSessionMacrosReading(allowed?: ReadonlySet<string>):
   if (!pattern.test(template)) throw new Error('SESSION_MACROS.md has no generated-section markers.');
 
   return template.replace(pattern, `${start}\n${rendered}\n${end}`);
+}
+
+/**
+ * THE GLOSSARY, RENDERED FOR THE OWNER'S DESK (KOKUGO, owner's ruling 2026-08-27).
+ *
+ * KOTOBA_GLOSSARY.md tells a session which word to SAY to a person for a house term the
+ * tools and docs use (TEGAMI, TEJUN, the wipeboard …). Those words are keys in the lexicon
+ * under `glossary.*`, and no surface reads them — their one consumer is this render. Each
+ * keyed cell is marked in the template as `**word**<!--g:glossary.key-->`; the active desk
+ * profile's resolved lexicon replaces the word, and the marker is dropped so the session
+ * reads a plain page. Stock (no profile, or a lexicon that does not answer) renders the
+ * template's own words — the floor's floor, as everywhere else.
+ *
+ * ONE-TIME, BY RULING: rendered at birth, never re-read. A profile changed mid-session is
+ * the owner's own problem.
+ */
+const GLOSSARY_MARK = /\*\*([^*\n]+)\*\*<!--g:([\w.-]+)-->/g;
+const GLOSSARY_HEAD_START = '<!-- RENDERED_FOR:START -->';
+const GLOSSARY_HEAD_END = '<!-- RENDERED_FOR:END -->';
+
+export async function renderGlossaryReading(templatePath: string): Promise<string> {
+  return renderGlossary(await readFile(templatePath, 'utf8'));
+}
+
+/** The render itself, from template text — the inventory renders in memory from what it read. */
+export async function renderGlossary(template: string): Promise<string> {
+  let words: Record<string, string> = {};
+  let line = 'Rendered for the stock desk — no desk profile is chosen, so these are the plain words.';
+  try {
+    const name = await activeDeskProfileName();
+    const profile = name ? (await listDeskProfiles()).find((p) => p.name === name) : undefined;
+    const lexicon = profile?.lexicon ? await resolveLexicon(profile.lexicon) : undefined;
+    if (profile && lexicon) {
+      words = lexicon.words;
+      line = `Rendered for the owner's desk profile \`${profile.name}\` (${profile.label}) · lexicon \`${lexicon.name}\` — **these are the words the owner sees on screen and the words to use with them.** House names stay ours.`;
+    } else if (profile) {
+      line = `Rendered for the owner's desk profile \`${profile.name}\` — its lexicon did not answer, so these are the plain words.`;
+    }
+  } catch {
+    // A lexicon that cannot be read is stock; a session must never fail to launch over words.
+  }
+  const body = template.replace(GLOSSARY_MARK, (_m, literal: string, key: string) => `**${words[key] || literal}**`);
+  const head = new RegExp(`${GLOSSARY_HEAD_START}[\\s\\S]*?${GLOSSARY_HEAD_END}`);
+  return head.test(body) ? body.replace(head, `${GLOSSARY_HEAD_START}\n> ${line}\n${GLOSSARY_HEAD_END}`) : body;
+}
+
+async function glossaryReading(templatePath: string, session = ''): Promise<string> {
+  const text = await renderGlossaryReading(templatePath);
+  const dir = session ? path.join(storeDir('session_boot_cache'), 'sessions', session) : storeDir('session_boot_cache');
+  const target = path.join(dir, GLOSSARY);
+  const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;
+  await mkdir(dir, { recursive: true });
+  await writeFile(temp, text);
+  await rename(temp, target);
+  return target;
 }
 
 async function sessionMacrosReading(allowed?: ReadonlySet<string>, session = ''): Promise<string> {
@@ -92,13 +206,21 @@ export async function bootFiles(
   session = '',
 ): Promise<string[]> {
   const user = userShelf();
+  const universal = await levelFiles(path.join(STOCK, 'all'), path.join(user, 'all'));
+  const isGlossary = (file: string) => path.basename(file) === GLOSSARY;
+  // READING ORDER. What a session must OBEY comes first — the Routine contracts (fork
+  // versus spawn, the desk, never `git push`) — then the maps, then the owner's root shelf,
+  // then the live macro roster, and the glossary last: it is reference, and the least
+  // costly thing to miss. A newborn that reads only its first window reads the rules.
+  // (Owner's ruling 2026-09-04, after a lexicon inlined ahead of the contracts pushed
+  // them past line 1,997 of a 121 KB packet.)
   const selected = [
-    ...await levelFiles(path.join(STOCK, 'all'), path.join(user, 'all')),
+    ...await declaredFiles(routineReading, mcpOn),
+    ...universal.filter((file) => !isGlossary(file)),
     ...(projectRoot
       ? (await resolveFiles({ stock: '', user: path.join(user, 'root', projectRoot), symlinks: true }))
         .map((file) => file.path)
       : []),
-    ...await declaredFiles(routineReading, mcpOn),
   ];
   const seen = new Set<string>();
   const files: string[] = [];
@@ -109,6 +231,7 @@ export async function bootFiles(
     files.push(file);
   }
   files.push(await sessionMacrosReading(routineMacros, session));
+  for (const template of universal.filter(isGlossary)) files.push(await glossaryReading(template, session));
   return files;
 }
 
@@ -182,11 +305,20 @@ export async function compileBirthReadmeAt(
     );
   }
   for (const section of sections) lines.push('', '---', '', section.body);
-  lines.push('');
+  // The last line names itself, so a newborn that quotes it has read to the end.
+  lines.push('', '---', '', packetEndLine(session), '');
+  const packet = lines.join('\n');
+  const size = { bytes: Buffer.byteLength(packet, 'utf8'), lines: lines.length };
+  if (size.bytes > PACKET_BUDGET.bytes || size.lines > PACKET_BUDGET.lines) {
+    // Over the one-read budget: the newborn's CLI will cut it and the newborn will not
+    // know what it missed. Said here, in the operator log, until the compiler can say it
+    // in the packet and the receipt (plans: BIRTH_PACKET, leg 3).
+    console.warn(`[birth] ${session}: the compiled README is ${size.bytes} bytes / ${size.lines} lines, over the one-read budget of ${PACKET_BUDGET.bytes} / ${PACKET_BUDGET.lines}; a single read will not deliver it whole.`);
+  }
   await mkdir(dir, { recursive: true });
   const target = path.join(dir, 'README.md');
   const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(temp, lines.join('\n'), 'utf8');
+  await writeFile(temp, packet, 'utf8');
   await rename(temp, target);
   return target;
 }

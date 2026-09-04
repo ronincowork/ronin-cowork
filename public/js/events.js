@@ -45,6 +45,7 @@ export function onSessionsEvent(list) {
 /* Chip: "a session appeared" — one tap to open, dismisses itself. */
 export let chipEl = null;
 export let chipTimer = null;
+const BIRTH_CHIP_HOLD_MS = 7500;
 export function showBirthChip(name) {
   if (!chipEl) {
     chipEl = document.createElement('div');
@@ -67,7 +68,7 @@ export function showBirthChip(name) {
   chipEl.append(label, openBtn, x);
   chipEl.classList.add('show');
   clearTimeout(chipTimer);
-  chipTimer = setTimeout(hideChip, 15000);
+  chipTimer = setTimeout(hideChip, BIRTH_CHIP_HOLD_MS);
 }
 export function hideChip() {
   if (chipEl) chipEl.classList.remove('show');

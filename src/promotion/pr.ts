@@ -1,14 +1,11 @@
-import { execFile } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { promisify } from 'node:util';
+import { execFile } from '../spawn-broker.js';
 import { publicPromotionReceipt, type PromotionReceipt } from './receipts.js';
 
-const run = promisify(execFile);
-
 export type Exec = (cmd: string, args: string[], cwd?: string) => Promise<string>;
-export const defaultExec: Exec = async (cmd, args, cwd) => (await run(cmd, args, { cwd, maxBuffer: 8 << 20 })).stdout;
+export const defaultExec: Exec = async (cmd, args, cwd) => (await execFile(cmd, args, { cwd, maxBuffer: 8 << 20 })).stdout;
 
 export interface PrInput {
   repo: string;

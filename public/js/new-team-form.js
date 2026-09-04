@@ -247,7 +247,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     worktreesMode.replaceChildren(
       el('b', null, t('new_team.worktrees_mode', 'Agent work mode')),
       el('strong', null, worktreesOn
-        ? t('new_team.worktrees_on', 'Own worktree where the Project Root allows it')
+        ? t('new_team.worktrees_on', 'Own worktree where the Workspace folder allows it')
         : t('new_team.worktrees_off', 'Use the project checkout and its branches')),
       el('small', null, t('new_team.worktrees_help', 'Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.')),
     );

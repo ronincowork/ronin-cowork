@@ -4,8 +4,9 @@ import { status } from './ui.js';
 import { loadProjects } from './home.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
+import { createFolderPicker } from './folder-picker.js';
 
-export function buildProjectRoots(root, isShowing) {
+export function buildProjectRoots(root, isShowing, campaignId = () => '') {
   const { createAction } = WorkspaceKit.primitives;
   const NEW = '\0new'; // `editing` when the add card's form is open — no root has this handle
   let data = null; // { roots: [...], untagged: n }
@@ -15,15 +16,13 @@ export function buildProjectRoots(root, isShowing) {
   head.className = 'pr-head';
   const count = document.createElement('span');
   count.className = 'pr-count';
-  head.append(count);
-
-  const guide = document.createElement('p');
-  guide.className = 'pr-guide';
-  guide.textContent = t('roots.worktrees_guide', 'For Ronin Worktrees to run, both must be on: the repo needs Worktrees on, and the Agent needs Worktrees on. This page controls the repo.');
+  const openAdd = createAction({ label: t('roots.add', '＋ Add workspace folder'), kind: 'primary', title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') }).el;
+  openAdd.addEventListener('click', () => { editing = NEW; render(); });
+  head.append(openAdd, count);
 
   const list = document.createElement('div');
   list.className = 'pr-list';
-  root.append(head, guide, list);
+  root.append(head, list);
 
   const say = (msg, bad) => {
     list.innerHTML = '';
@@ -60,7 +59,7 @@ export function buildProjectRoots(root, isShowing) {
       f.appendChild(box);
       return box;
     };
-    const rootFields = group(t('roots.group_root', 'Project Root'), t('roots.group_root_help', 'The directory Ronin may offer to Agents and the words used to find it.'));
+    const rootFields = group(t('roots.group_root', 'Workspace folder'), t('roots.group_root_help', 'An existing directory on this machine where Agents may work.'));
     const mk = (label, key, value, hint, ph, host = rootFields) => {
       const wrap = document.createElement('label');
       wrap.className = 'pr-f';
@@ -82,9 +81,18 @@ export function buildProjectRoots(root, isShowing) {
     // The handle is shown, never edited: renaming is a catalog edit by hand, not a form
     // field. It is here because a block with no name on it is unreadable.
     mk(t('roots.f_handle', 'handle'), 'name', existing.name, t('roots.f_handle_hint', 'The short name — this IS the shortcut'), 'ronin').disabled = !creating;
-    const dirInput = mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Any absolute path, at any depth'), '~/work/api');
+    const dirInput = mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Where the Agent starts and discovers project instructions.'), '');
+    if (creating) {
+      dirInput.closest('label').hidden = true;
+      const picker = createFolderPicker({ value: existing.dir, onChange: (dir) => {
+        dirInput.value = dir;
+        dirInput.dispatchEvent(new Event('change'));
+      } });
+      rootFields.append(picker.el);
+    }
     mk(t('roots.f_remit', 'remit'), 'remit', existing.remit, t('roots.f_remit_hint', 'The one line you pick it from in a list'), t('roots.f_remit_placeholder', 'what this is'));
-    mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this project_root from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
+    mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this workspace folder from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
+    // THE DOC SHELVES (owner, 2026-08-28) — where the ▧ Docs tab's Docs and Plans pills look.
     mk(t('roots.f_docs', 'docs'), 'docs', (existing.docs || []).join(', '), t('roots.f_docs_hint', 'Where this root keeps its documentation — directories or files, relative to the directory'), 'docs, README.md');
     mk(t('roots.f_plans', 'plans'), 'plans', (existing.plans || []).join(', '), t('roots.f_plans_hint', 'Where this root keeps its build-out plans'), 'wip/buildouts, wip/handoffs');
 
@@ -99,7 +107,8 @@ export function buildProjectRoots(root, isShowing) {
         stable: existing.arrangement?.source === 'absent' ? '' : (existing.arrangement?.stable || ''),
         worktrees: existing.repo_profile?.worktrees || 'disabled',
       };
-      const repoFields = group(t('roots.group_repository', 'Repository workflow'), t('roots.group_repository_help', 'Publishing describes where accepted commits go. Worktrees separately decides whether this repository participates in Ronin’s managed worktree workflow.'));
+      const repoFields = group(t('roots.group_repository', 'Advanced repository workflow'), t('roots.group_repository_help', 'Optional Git publishing and Worktrees choices. An ordinary folder needs none of these.'));
+      repoFields.classList.add('pr-group-advanced');
       const pick = (label, value, options, hint, host = repoFields) => {
         const wrap = document.createElement('label'); wrap.className = 'pr-f';
         const l = document.createElement('span'); l.textContent = label; l.title = hint;
@@ -113,10 +122,6 @@ export function buildProjectRoots(root, isShowing) {
       const stable = mk(t('roots.f_stable', 'stable'), 'repo-stable', before.stable || existing.facts?.repo?.branch || 'main', t('roots.f_stable_hint', 'The published branch. You choose its name.'), 'main', repoFields);
       working.removeAttribute('data-key'); stable.removeAttribute('data-key');
       const worktrees = pick(t('roots.f_worktrees', 'Worktrees'), creating ? seedWorktrees : before.worktrees, [['enabled', t('roots.worktrees_enabled', 'Use Ronin Worktrees')], ['disabled', t('roots.worktrees_disabled', 'Use the checkout')]], t('roots.f_worktrees_hint', 'Worktrees keep each Agent’s file changes in a separate working folder and branch. Both the Agent and repo must have Worktrees on.'));
-      const worktreesNote = document.createElement('p');
-      worktreesNote.className = 'pr-worktrees-note';
-      worktreesNote.textContent = t('roots.worktrees_two_gates', 'This controls the repo. Worktrees use a managed hand-in and Team-lead merge process.');
-      repoFields.append(worktreesNote);
       const preview = document.createElement('p');
       preview.className = 'pr-flow';
       repoFields.append(preview);
@@ -197,7 +202,7 @@ export function buildProjectRoots(root, isShowing) {
       save.disabled = true;
       err.say('');
       const r = creating
-        ? await request('/api/project-roots', { method: 'POST', json: { ...body, name, ...(proposedProfile ? { before: profileFields.before, profile: proposedProfile, confirmed: true } : {}) } })
+        ? await request('/api/project-roots', { method: 'POST', json: { ...body, name, campaign_id: campaignId(), ...(proposedProfile ? { before: profileFields.before, profile: proposedProfile, confirmed: true } : {}) } })
         : await request('/api/project-roots/' + encodeURIComponent(name), { method: 'PUT', json: body });
       if (!r.ok) {
         err.say(r.message, 'bad');
@@ -248,7 +253,6 @@ export function buildProjectRoots(root, isShowing) {
       if (title) c.title = title;
       facts.appendChild(c);
     };
-    let worktreesState = null;
     if (r.archived) {
       chip(t('roots.chip_archived', 'archived'), 'muted', t('roots.chip_archived_title', 'Off the new-session picker. Still here, and still launchable by name.'));
     }
@@ -270,21 +274,13 @@ export function buildProjectRoots(root, isShowing) {
           a.mode === 'reviewed'
             ? t('roots.chip_reviewed_title', 'Reviewed: work moves through {working}, then review reaches {stable}. The branch mounted here is incidental.', { working: a.working || 'dev', stable: a.stable || 'master' })
             : t('roots.chip_direct_title', 'Direct: commits land on {stable} itself.', { stable: a.stable || 'main' }));
-        worktreesState = document.createElement('p');
-        worktreesState.className = 'pr-worktrees-state';
-        worktreesState.textContent = enabled
-          ? t('roots.state_worktrees', 'Repo: Worktrees on. Agent must also have Worktrees on.')
-          : t('roots.state_checkout', 'This repository uses its checkout. That repository choice wins even if an Agent has the Ronin Worktrees Routine.');
       } else if (a) {
         chip(t('roots.chip_shared', 'Repository: use checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.'));
-        worktreesState = document.createElement('p');
-        worktreesState.className = 'pr-worktrees-state';
-        worktreesState.textContent = t('roots.state_undeclared', 'No repository profile is declared, so Agents use the checkout. Edit this root to allow Ronin Worktrees.');
       }
     } else {
       // A project_root need not be a project_repo. `~/lab` is one; this is a
       // legal shape, not a warning.
-      chip(t('roots.chip_no_repo', 'no repo'), 'muted', t('roots.chip_no_repo_title', 'Not a git repo — legal, a project_root need not be one'));
+      chip(t('roots.chip_no_repo', 'no repo'), 'muted', t('roots.chip_no_repo_title', 'Not a git repo — a workspace folder does not need to be one'));
     }
     if (r.sessions) chip(r.sessions === 1 ? t('roots.sessions_one', '{n} session', { n: r.sessions }) : t('roots.sessions_many', '{n} sessions', { n: r.sessions }), 'muted');
     if (r.remit) {
@@ -339,7 +335,6 @@ export function buildProjectRoots(root, isShowing) {
 
     b.prepend(top);
     b.append(facts);
-    if (worktreesState) b.append(worktreesState);
     b.append(acts);
     if (editing === r.name) b.appendChild(form(r));
     return b;
@@ -352,12 +347,11 @@ export function buildProjectRoots(root, isShowing) {
     const archived = roots.filter((r) => r.archived).length;
     const live = roots.length - archived;
     count.textContent =
-      (live === 1 ? t('roots.count_one', '{n} project_root', { n: live }) : t('roots.count_many', '{n} project_roots', { n: live })) +
-      (archived ? ' · ' + t('roots.count_archived', '{n} archived', { n: archived }) : '') +
-      (data.untagged ? ' · ' + (data.untagged === 1 ? t('roots.untagged_one', '{n} untagged session', { n: data.untagged }) : t('roots.untagged_many', '{n} untagged sessions', { n: data.untagged })) : '');
-    if (!roots.length) say(t('roots.empty', 'No project roots yet — add one below.'));
+      (live === 1 ? t('roots.count_one', '{n} workspace folder', { n: live }) : t('roots.count_many', '{n} workspace folders', { n: live })) +
+      (archived ? ' · ' + t('roots.count_archived', '{n} archived', { n: archived }) : '');
+    if (!roots.length) list.appendChild(document.createElement('div')).textContent = t('roots.empty', 'No workspace folders yet. Choose or create the first one above.');
+    if (editing === NEW) list.appendChild(addCard());
     for (const r of roots) list.appendChild(block(r));
-    list.appendChild(addCard());
   }
 
   /** The last card in the list: the same shape as a root, and the place a new one is typed. */
@@ -368,14 +362,11 @@ export function buildProjectRoots(root, isShowing) {
       const top = document.createElement('div');
       top.className = 'pr-top';
       const h = document.createElement('b');
-      h.textContent = t('roots.add', '＋ Add a project root');
+      h.textContent = t('roots.add', '＋ Add workspace folder');
       top.append(h);
       b.append(top, form({ name: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true));
       return b;
     }
-    const open = createAction({ label: t('roots.add', '＋ Add a project root'), title: t('roots.add_hint', 'A directory on this machine that Agents here may work in.') }).el;
-    open.addEventListener('click', () => { editing = NEW; render(); });
-    b.append(open);
     return b;
   }
 

@@ -18,12 +18,14 @@ contracts remain available, but they are not prerequisites for installing or usi
 | Question | Route |
 |---|---|
 | How do I find and arrange work? | [Workbench](workbench.md) |
-| How do I add or change a project root? | [Project roots](project-roots.md) |
+| How do I add or change a Workspace Folder? | [Workspace folders](project-roots.md) |
 | How do parallel Agents avoid colliding in the same files? | [Ronin Worktrees](worktrees.md) |
 | How do session Control settings work? | [Session Control](session-control-dials.md) |
+| What does a new Agent read at birth, and why does it fit one read? | [The birth packet](birth-packet.md) |
 | How do I customize Ronin without editing shipped files? | [Customize](customize.md) and [shadowing](shadowing.md) |
 | What is a template, and how does my agent keep mine? | [Templates](templates.md) |
 | What has Ronin connected to? | [Services activation and the egress record](services-activation.md) |
+| How do command tools find the running operator? | [Live operator connection](operator-connection.md) |
 | How do I inspect configuration and the running copy? | [Machine configuration](machine-settings.md) and `bin/ronin-doctor` |
 
 ## If you are changing Ronin itself
@@ -33,7 +35,7 @@ implementation contract.
 
 | Question | Route |
 |---|---|
-| How do I verify a repository change? | Run `npm run verify`; run Playwright suites explicitly when diagnosing the rendered UI. |
+| How do I verify a repository change? | Ordinary Agents run focused checks for what they changed. The Team Lead alone runs `npm run verify` for the full repository verdict at promotion. Run Playwright suites explicitly when diagnosing the rendered UI. |
 
 ## Shelves
 
@@ -50,6 +52,9 @@ their resolved locations. A macro is compiled with `tejun <name>`; a machine fac
 measured with `tejun-survey`, `tejun-account`, or the relevant tool.
 
 ## Coworkspace
+
+The Agent's page for this is [RONIN_UTILITY](RONIN_UTILITY.md): the pages, the three
+workbenches and their surfaces, the tile head's buttons, Locked and Unlocked, copy and paste.
 
 The home page opens Machine Settings, Coworks, or New Project. The bar opens the Campaign,
 the current Cowork, a quick new session, the cowork commons, and the two-or-four workspace

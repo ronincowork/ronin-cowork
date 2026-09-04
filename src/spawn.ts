@@ -89,7 +89,8 @@ export interface Resolved {
 const ACK_RULE =
   'Before doing anything else: report back in your own words what you understand this job to be, ' +
   'what you will NOT do (no code, no builds, no commits until the owner says go), and anything ' +
-  'that is unclear or looks wrong. Then wait for the owner.';
+  'that is unclear or looks wrong. Quote the last line of the document you were told to read first — ' +
+  'it names itself — so the owner can see the whole packet reached you. Then wait for the owner.';
 
 export function buildBrief(
   profile: LaunchProfile,

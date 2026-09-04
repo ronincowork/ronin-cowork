@@ -49,14 +49,19 @@ import { registerCli } from './routes/cli-api.js';
 import { startMessageQueue } from './message-queue.js';
 import { seedHouseBoard } from './wipeboards.js';
 import { handleEvents, startSessionsBroadcast } from './ws/events.js';
+import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
-import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure } from './sockets.js';
+import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { discoverParts, partsToLoad } from './parts.js';
+import { initialCampaign } from './campaigns.js';
+import { listRoutines } from './resource-adapters.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 import { resourceRequestCache } from './resources.js';
 import { compressResponse } from './http-performance.js';
 import { roninIdentity } from './routes/version.js';
+import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -66,6 +71,7 @@ const isEntryPoint = !!process.argv[1] && pathToFileURL(path.resolve(process.arg
 const isBoxInstance = isEntryPoint
   && process.env.NODE_ENV === 'production'
   && process.env.RONIN_TEST_RUNNER !== '1';
+if (isEntryPoint) startSpawnBroker(); // before routes, services, caches, and server state make this process large
 
 const app = express();
 app.use(compressResponse);
@@ -208,21 +214,26 @@ void ensureInitialCampaign()
   .catch(() => {});
 
 const services: ServiceRegistration[] = [];
-const SERVICES_DIR = path.join(__dirname, 'services');
-if (fs.existsSync(SERVICES_DIR)) {
-  for (const dir of fs.readdirSync(SERVICES_DIR).sort()) {
-    const entry = ['register.js', 'register.ts']
-      .map((f) => path.join(SERVICES_DIR, dir, f))
-      .find((p) => fs.existsSync(p));
-    if (!entry) continue; // not a service (a stray file, a README)
-    try {
-      const mod = await import(pathToFileURL(entry).href);
-      if (typeof mod.register !== 'function') throw new Error('no register() export');
-      services.push({ name: typeof mod.name === 'string' ? mod.name : dir, register: mod.register });
-    } catch (e) {
-      console.error(`[services] ${dir} failed to load and is OFF: ${(e as Error).message}`);
-      noteServiceFailure(dir, (e as Error).message);
-    }
+// The parts on disk are the install; the Campaign's Routine switches say which of them run.
+// A part claimed by a Routine that is off is parked: not imported, no timers, no routes,
+// no recorder — as if not installed, files in place (src/parts.ts). Read once, at start.
+const plan = partsToLoad(
+  discoverParts(),
+  await listRoutines().catch(() => []),
+  (await initialCampaign().catch(() => null))?.config?.agent_defaults?.routines ?? {},
+);
+for (const parked of plan.parked) {
+  console.log(`[services] ${parked.name} is parked: ${parked.reason ?? `${parked.routine} is off for this Campaign (restart after switching it on)`}`);
+  noteServiceParked(parked.name, parked.routine, parked.reason);
+}
+for (const { name: dir, entry } of plan.load) {
+  try {
+    const mod = await import(pathToFileURL(entry).href);
+    if (typeof mod.register !== 'function') throw new Error('no register() export');
+    services.push({ name: typeof mod.name === 'string' ? mod.name : dir, register: mod.register });
+  } catch (e) {
+    console.error(`[services] ${dir} failed to load and is OFF: ${(e as Error).message}`);
+    noteServiceFailure(dir, (e as Error).message);
   }
 }
 for (const s of services) {
@@ -327,6 +338,7 @@ try {
 }
 
 await checkTmuxServerCgroup(); // loud if our own restart would kill every session
+await tmuxClient.connect(); // only the long-lived server opts into control mode
 const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
@@ -353,6 +365,7 @@ server.listen(config.port, config.bind, async () => {
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopBootHooks();
+    stopSpawnBroker();
     setTimeout(() => process.exit(0), 2000).unref();
     void Promise.allSettled([cleanupViewers()]).finally(() => process.exit(0));
   });

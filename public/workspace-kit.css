@@ -3,7 +3,7 @@
 
   .wk-action-bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
 
-  .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--cowork-head-line); background: var(--cowork-head-bg); color: var(--cowork-head-fg); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+  .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--cowork-surface-head-edge) solid var(--cowork-head-line); background: var(--cowork-head-bg); color: var(--cowork-head-fg); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
   .wk-surface-header-title { min-width: 0; overflow: hidden; font-weight: var(--workbench-head-weight); text-overflow: ellipsis; white-space: nowrap; }
   .wk-surface-header-actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
 

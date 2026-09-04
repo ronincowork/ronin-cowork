@@ -73,6 +73,14 @@ export function noteService(name: string): void {
 export function listServices(): string[] {
   return [...serviceNames];
 }
+const parkedServices = new Map<string, { routine?: string; reason?: string }>();
+/** A part on disk that this server did not load: self-parked, or its Routine was off at start. */
+export function noteServiceParked(name: string, routine?: string, reason?: string): void {
+  parkedServices.set(name, { ...(routine ? { routine } : {}), ...(reason ? { reason } : {}) });
+}
+export function listParkedServices(): { name: string; routine?: string; reason?: string }[] {
+  return [...parkedServices].map(([name, detail]) => ({ name, ...detail }));
+}
 const serviceFailures = new Map<string, string>();
 export function noteServiceFailure(name: string, reason: string): void {
   serviceFailures.set(name, reason);

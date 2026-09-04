@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { bootFiles, compileBirthReadmeAt, isShelfTeaching } from '../src/birth-readme.js';
+import { PACKET_BUDGET, bootFiles, compileBirthReadmeAt, describePacket, isShelfTeaching, packetEndLine, readFirstSentence } from '../src/birth-readme.js';
 import { storeDir } from '../src/resources.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { routineReading } from '../src/resource-adapters.js';
@@ -63,14 +63,78 @@ test('the universal shelf carries vocabulary and navigation, not optional abilit
     // universal set. A blank axis omits only its own level.
     const boot = await bootFiles('', false);
     const names = boot.map((file) => path.basename(file));
-    for (const required of ['README.md', 'professional_en.md']) {
+    for (const required of ['README.md', 'RONIN_UTILITY.md', 'KOTOBA_GLOSSARY.md']) {
       assert.ok(names.includes(required), `the universal boot shelf should contain ${required}`);
     }
+    // The UI string table is not vocabulary: 105 KB of `key: string` inlined here is what
+    // pushed every contract past the line a newborn's CLI stops reading at (2026-09-03).
+    assert.ok(!names.includes('professional_en.md'), 'the lexicon is not birth reading');
     assert.ok(!names.includes('REQUIRED_ABILITIES.md'));
     assert.ok(!names.some((name) => name.includes('TEST_PROTOCOLS')));
   } finally {
     if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
     else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
+    await rm(temp, { recursive: true, force: true });
+  }
+});
+
+test('the real stock shelf compiles to one read: contracts first, glossary last, under the one-read budget', async () => {
+  // Every CLI a newborn may be caps a single read (Codex ~10k tokens of shell output;
+  // Claude Code 30,000 chars per Bash call, 25,000 tokens per Read) and both models open a
+  // file in a window of ~250 lines. The compiled packet is the whole of what a newborn is
+  // told to read, so it has to fit — with the rules in the first window and the reference
+  // last. This runs on the STOCK shelf as shipped, not a fixture: the fixture test below
+  // passed the whole time a 121 KB packet was being born.
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
+  const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+  const oldShelf = process.env.RONIN_SESSION_BOOT_DIR;
+  process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
+  process.env.RONIN_SESSION_BOOT_DIR = path.join(temp, 'shelf');
+  try {
+    // The largest stock birth: every Routine on, MCP on.
+    const boot = await bootFiles('', true, [
+      'routine/ronin_base/BASE_ABILITIES.md',
+      'routine/ronin_worktrees/WORKTREES.md',
+      'routine/ronin_services/SERVICES_ABILITIES.md',
+      'routine/ronin_host/HOST_ABILITIES.md',
+    ], undefined, 'newborn');
+    const target = await compileBirthReadmeAt(path.join(temp, 'session'), boot, 'newborn', isShelfTeaching);
+    const text = await readFile(target, 'utf8');
+    const bytes = Buffer.byteLength(text, 'utf8');
+    const lines = text.split('\n').length;
+    assert.ok(bytes <= PACKET_BUDGET.bytes, `the packet is ${bytes} bytes; one read delivers at most ${PACKET_BUDGET.bytes}`);
+    assert.ok(lines <= PACKET_BUDGET.lines, `the packet is ${lines} lines; the budget is ${PACKET_BUDGET.lines}`);
+    assert.doesNotMatch(text, /^## professional_en/m, 'the UI string table is not in the packet');
+
+    const at = (re: RegExp) => { const i = text.search(re); assert.ok(i >= 0, `${re} is in the packet`); return i; };
+    const contracts = at(/^## BASE ABILITIES/m);
+    const desk = at(/^## RONIN WORKTREES/m);
+    const map = at(/^## Ronin documentation/m);
+    const glossary = at(/^## KOTOBA_GLOSSARY/m);
+    assert.ok(contracts < map && desk < map, 'the Routine contracts come before the documentation map');
+    assert.ok(glossary > at(/^## SESSION_MACROS/m), 'the glossary is last');
+    assert.equal(text.lastIndexOf('\n## '), text.lastIndexOf('\n## KOTOBA_GLOSSARY'), 'nothing follows the glossary');
+    // The two rules a newborn most often breaks sit inside the first window it opens.
+    const firstWindow = text.split('\n').slice(0, 250).join('\n');
+    assert.match(firstWindow, /Fork versus spawn/);
+    assert.match(firstWindow, /Never `git push`/);
+    // The glossary arrived rendered: markers gone, header rewritten.
+    assert.doesNotMatch(text, /<!--g:/);
+    assert.match(text, /Rendered for/);
+    // The packet ends by naming itself, and the brief's sentence says so, with the size.
+    assert.equal(text.trimEnd().split('\n').pop(), packetEndLine('newborn'));
+    const packet = await describePacket(target, 'newborn');
+    assert.equal(packet.bytes, bytes);
+    assert.equal(packet.lines, lines);
+    assert.equal(packet.over_budget, false);
+    assert.ok(packet.sections >= 7, `${packet.sections} sections`);
+    const sentence = readFirstSentence(packet);
+    assert.match(sentence, new RegExp(`^Read first: ${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} — ${lines} lines, \\d+ KB, one read; it ends with the line "${packetEndLine('newborn')}"\\. Do not act before you have seen that line\\.$`));
+  } finally {
+    if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+    else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
+    if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;
+    else process.env.RONIN_SESSION_BOOT_DIR = oldShelf;
     await rm(temp, { recursive: true, force: true });
   }
 });
@@ -91,8 +155,9 @@ test('Routine reading teaches only the selected capability; test policy stays wi
   assert.match(base, /read_tegami/);
   assert.match(base, /tejun-wipeboard/);
   assert.doesNotMatch(base, /tejun-rireki/);
-  assert.match(services, /tejun-rireki <session> since/);
-  assert.match(services, /Fall back to `tejun-peek` only when the record says there is no tape/);
+  assert.match(services, /Readable transcripts are not in this beta/);
+  assert.match(services, /there is no durable tape and no `tejun-rireki`/);
+  assert.match(services, /Read another live session with\s+`tejun-peek`/);
   assert.match(services, /Koshi\*\* is Ronin's assisted administrative behavior/);
   assert.match(services, /Voice\*\* turns the owner's speech into text/);
   assert.match(services, /Hotwords\*\* are the owner's dictation\s+glossary/);
@@ -234,6 +299,24 @@ test('resolved sources compile into one session README: teaching inlined once, r
     assert.equal(text.match(/## Second guide/g)?.length, 1);
     assert.doesNotMatch(text, /a row\n/);
     assert.ok(text.split('\n').length < 40, 'a compiled packet of short guides stays a page');
+    assert.equal(text.trimEnd().split('\n').pop(), packetEndLine('new-agent'), 'the packet ends by naming itself');
+  } finally {
+    await rm(temp, { recursive: true, force: true });
+  }
+});
+
+test('an over-budget packet is described as such, and the brief asks for it in parts', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-readme-test-'));
+  try {
+    const big = path.join(temp, 'BIG.md');
+    await writeFile(big, '# A shelf file nobody curated\n\n' + 'a line of teaching that goes on and on and on\n'.repeat(1200));
+    const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [big], 'heavy');
+    const packet = await describePacket(target, 'heavy');
+    assert.ok(packet.bytes > PACKET_BUDGET.bytes && packet.over_budget, `${packet.bytes} bytes is over budget`);
+    const sentence = readFirstSentence(packet);
+    assert.match(sentence, /over the one-read budget: read it in parts, in order, until you reach the line/);
+    assert.match(sentence, /Do not act before you have seen that line\.$/);
+    assert.equal((await readFile(target, 'utf8')).trimEnd().split('\n').pop(), packetEndLine('heavy'));
   } finally {
     await rm(temp, { recursive: true, force: true });
   }
@@ -261,7 +344,13 @@ test('a Routine reads one way or the other: on delivers its page, off delivers t
     assert.match(off, /working without/);
     assert.match(off, /The switch:/);
   }
-  const utility = await readFile(path.join(repo, 'docs', 'README.md'), 'utf8');
-  assert.match(utility, /## Shelves/);
-  assert.match(utility, /## Coworkspace/);
+  const index = await readFile(path.join(repo, 'docs', 'README.md'), 'utf8');
+  assert.match(index, /## Shelves/);
+  assert.match(index, /## Coworkspace/);
+  // The coworkspace page a newborn is handed: the surfaces, the head, copy and the lock.
+  const utility = await readFile(path.join(repo, 'docs', 'RONIN_UTILITY.md'), 'utf8');
+  assert.match(utility, /hold \*\*Shift\*\* while dragging \(\*\*Option\*\* on a Mac\)/);
+  assert.match(utility, /Campaign discovery workbench[\s\S]*Cowork workbench[\s\S]*Team workbench/);
+  assert.match(utility, /🔒 Locked\*\* is the attached live terminal/);
+  assert.match(utility, /\*\*メ\*\* \| the drop/);
 });

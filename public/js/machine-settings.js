@@ -211,7 +211,7 @@ export function buildMachineSettings(root, isShowing) {
     }
     const link = document.createElement('div');
     link.className = 'st-row st-link';
-    link.textContent = t('settei.projects_link', 'Edit these in ▣ Project root — this room only shows them.');
+    link.textContent = t('settei.projects_link', 'Edit these in ▣ Workspace folders — this room only shows them.');
     body.appendChild(link);
 
     /* how work gets a model */

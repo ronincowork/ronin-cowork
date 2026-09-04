@@ -35,7 +35,9 @@ gate or a test run.
 ## What you do
 
 - **Work in the desk.** A multi-repo assignment has one desk per repository, each at its
-  own path. `dev` and `team/<team>/dev` are merged into and never written into.
+  own path. `dev` and `team/<team>/dev` are merged into and never written into. A managed
+  desk's dependencies are a private copy, not the live operator checkout's `node_modules`,
+  so installing or removing packages in the desk cannot alter the running operator.
 - **Stop and ask the team lead when the desk is missing or contradictory.** Before your
   first repository write, compare `tejun-desk status --assignment` with the desk block in
   your brief. `NO-DESK` after a desk was promised, a mismatched path or branch, or a
@@ -48,7 +50,9 @@ gate or a test run.
   close: `tejun-desk hand-in` (one desk) or `tejun-desk hand-in --assignment` (every desk).
   A conflict is contained in a candidate worktree, the line is untouched, and you are told
   the two sides; the lead adjudicates.
-- **Verify when evidence is needed.** `npm run verify` typechecks and runs behavior tests.
+- **Verify with scoped evidence.** Run the smallest relevant typecheck, behavior test, or
+  explicit Playwright diagnostic for what you changed. Do not run `npm run verify`; the
+  Team Lead owns that full repository verdict at promotion.
 - **Never `git push`.** Nothing of yours has a remote.
 - **Adopt what your siblings handed in.** When the team line moves you are told. A clean
   desk is brought current at once; a dirty desk gets a **pending** update, taken at your

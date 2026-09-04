@@ -26,8 +26,10 @@ remainder by roughly 700 MB per agent session and rounds down. It is an estimate
 meaning of **No limit**.
 
 Folder inspection is local and read-only. `GET /api/project-roots/inspect?dir=…` reports
-whether the directory exists and its top-level Git remote and branch. It creates nothing,
-makes no network request, and does not replace the project-root write on Save.
+whether the directory exists, its top-level Git remote and branch, and recognized project
+instructions. The optional **Your first workspace folder** card uses the same host-side chooser
+as the Campaign Workbench. It can select an existing directory or create one named child after
+showing the exact destination. `Start Git version history` initializes only a local repository.
 
 ## Interaction contract
 
@@ -37,7 +39,8 @@ makes no network request, and does not replace the project-root write on Save.
 - Services and gbrain remain optional; base Cowork is complete without them.
 - Selecting Services discloses the activation request and requires an email. Save requests
   activation but does not block entry to Cowork while email confirmation is pending.
-- The first project name and existing working folder are required. Purpose is optional.
+- The first Workspace Folder is optional. The review names the selected Agent starting folder or
+  says that the owner chose to add one later from the Campaign Workbench.
 - Save validates the visible form, writes through the existing SETTEI/project/activation
   APIs, dispatches selected installs, launches the setup seat when runnable, and opens Cowork.
 

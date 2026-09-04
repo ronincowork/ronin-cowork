@@ -195,7 +195,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   const render = (rows) => {
     list.innerHTML = '';
     if (!rows.length) {
-      if (shelf !== 'tracked') empty(t('docs.shelf_empty', 'Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans).'));
+      if (shelf !== 'tracked') empty(t('docs.shelf_empty', 'Nothing on this shelf — a workspace folder names its places on its record (Workspace folders → docs / plans).'));
       else empty(only ? t('docs.empty_team', 'No tracked documents.') : t('docs.empty', 'No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>'));
       return;
     }

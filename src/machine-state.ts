@@ -1,9 +1,6 @@
 import os from 'node:os';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { readMachineSettingsDocument, readMachineSettingsSection, writeMachineSettings } from './machine-settings.js';
-
-const pexec = promisify(execFile);
+import { tmux } from './tmux-client.js';
 
 export const MAX_OPT = '@ronin-session-max';
 
@@ -65,7 +62,7 @@ export async function writeMax(max: number): Promise<number> {
 export async function publishMax(max?: number): Promise<void> {
   const value = max ?? (await readMax());
   try {
-    await pexec('tmux', ['set-option', '-s', MAX_OPT, String(value)]);
+    await tmux.run(['set-option', '-s', MAX_OPT, String(value)]);
   } catch {
   }
 }
@@ -181,14 +178,14 @@ export const completeSetup = (): Promise<void> =>
 export async function publishOwner(name?: string): Promise<void> {
   const value = name ?? (await readOwner());
   try {
-    await pexec('tmux', ['set-option', '-s', OWNER_OPT, value]);
+    await tmux.run(['set-option', '-s', OWNER_OPT, value]);
   } catch {
   }
 }
 
 export async function liveCount(): Promise<number> {
   try {
-    const { stdout } = await pexec('tmux', ['list-sessions', '-F', '#{session_name}']);
+    const stdout = await tmux.run(['list-sessions', '-F', '#{session_name}']);
     return stdout.split('\n').filter((n) => n && !n.startsWith('grid_')).length;
   } catch {
     return 0; // no server: nothing is running, so nothing is at the limit

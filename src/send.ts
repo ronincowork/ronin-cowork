@@ -1,9 +1,7 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { exactPane } from './tmux.js';
+import { tmux } from './tmux-client.js';
 import { classifyStatus } from './status.js';
 
-const pexec = promisify(execFile);
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export interface PromptRead {
@@ -70,8 +68,8 @@ export interface PaneIO {
 }
 
 const typeText = (name: string, text: string) =>
-  pexec('tmux', ['send-keys', '-t', exactPane(name), '-l', '--', text]);
-const pressEnter = (name: string) => pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
+  tmux.run(['send-keys', '-t', exactPane(name), '-l', '--', text]);
+const pressEnter = (name: string) => tmux.run(['send-keys', '-t', exactPane(name), 'Enter']);
 const paneIO = (name: string): PaneIO => ({
   read: () => capturePane(name),
   type: (text) => typeText(name, text).then(() => undefined),
@@ -130,10 +128,7 @@ export async function deliverForce(name: string, text: string, timeoutMs = 10_00
 }
 
 async function capturePane(name: string): Promise<string> {
-  const { stdout } = await pexec('tmux', ['capture-pane', '-p', '-e', '-t', exactPane(name)], {
-    maxBuffer: 4 * 1024 * 1024,
-  });
-  return stdout;
+  return tmux.run(['capture-pane', '-p', '-e', '-t', exactPane(name)]);
 }
 
 export async function sendText(
@@ -145,6 +140,6 @@ export async function sendText(
 }
 
 export async function runCommand(name: string, cmd: string): Promise<void> {
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), '-l', '--', cmd]);
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
+  await tmux.run(['send-keys', '-t', exactPane(name), '-l', '--', cmd]);
+  await tmux.run(['send-keys', '-t', exactPane(name), 'Enter']);
 }

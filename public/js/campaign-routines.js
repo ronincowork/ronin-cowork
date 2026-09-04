@@ -34,7 +34,7 @@ function servicesSell() {
   return [
     t('campaign_view.sell_library', 'The template library — teams and agents Ronin keeps and grows, with the procedures, macros and tools they read, installed with one press.'),
     t('campaign_view.sell_assistant', 'A background assistant that keeps every agent’s work record and instructions current, so the roster and the tile say what each agent is doing.'),
-    t('campaign_view.sell_transcripts', 'The locked terminal becomes streaming text — a durable record that can be re-rendered as a transcript, read on a phone, summarised, or turned to voice.'),
+    t('campaign_view.sell_transcripts', 'Readable transcripts are not in this beta; the recorder is off while it is refactored.'),
     t('campaign_view.sell_voice', 'Text to voice, and voice in — hear a report read back; speak to an agent from the tile.'),
     t('campaign_view.sell_hotwords', 'Hotwords — teach dictation the words it mishears, once, for every session.'),
     t('campaign_view.sell_memory', 'Unified team memory — what a session learns is kept for the team and recalled at birth.'),
@@ -44,7 +44,7 @@ function servicesSell() {
 
 export function createRoutinesSurface(campaign) {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
-  const surface = createSurface({ label: t('campaign_view.routines', 'Routines'), className: 'cv-surface' });
+  const surface = createSurface({ label: t('campaign_view.routines', 'Routines and Installs'), className: 'cv-surface' });
   const body = el('div', 'cv-body');
   surface.content.append(body);
   let catalog = [];
@@ -83,6 +83,21 @@ export function createRoutinesSurface(campaign) {
     block.append(el('p', 'cv-choice-why', parts.length
       ? t('campaign_view.svc_installed', 'Installed on this machine: {parts}. The switch on the right turns it on for new Agents.', { parts: parts.join(', ') })
       : t('campaign_view.svc_absent', 'Not installed on this machine.')));
+    const parked = installed?.services?.parked || [];
+    if (parked.length) block.append(el('p', 'cv-choice-why', t('campaign_view.svc_parked', 'Parked parts: {parts}.', {
+      parts: parked.map((part) => {
+        const reason = String(part.reason || `${part.routine || 'Routine'} is off`)
+          .replace(new RegExp(`^${part.name} is `, 'i'), '')
+          .replace(/, to be refactored$/i, '');
+        return `${part.name} — ${reason}`;
+      }).join('; '),
+    })));
+    // The running copy: the parts load at start, by the switch. Off means none of it runs —
+    // no recorder, no tapes, Locked tiles only — until the switch is on and Ronin restarts.
+    if (installed?.services?.restart_needed) block.append(el('p', 'cv-choice-why cv-restart', installed.services.switched_on
+      ? t('campaign_view.svc_restart_on', 'Switched on, but not running in this copy of Ronin: restart Ronin to start it.')
+      : t('campaign_view.svc_restart_off', 'Switched off, but still running in this copy of Ronin until it restarts.')));
+    else if (parts.length && !installed?.services?.switched_on) block.append(el('p', 'cv-choice-why', t('campaign_view.svc_off_running', 'Off: none of it runs — no recording, no transcripts, tiles are Locked only. Files stay in place.')));
     block.append(el('p', 'cv-choice-why', activated
       ? t('campaign_view.svc_activated', 'Activated with Ronin HQ: the template library and the hosted parts are yours.')
       : t('campaign_view.svc_not_activated', 'Not activated with Ronin HQ. Activation is optional and separate from the switch: it unlocks the hosted parts — the template library first — with an email and a confirmation.')));

@@ -56,6 +56,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/events.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/feedback.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/form-steps.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/folder-picker.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/gbrain.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/home.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/hotwords.js" />
@@ -148,8 +149,11 @@
         <span class="brand-word">RoninCowork</span>
       </a>
       <span id="coworkssep" class="ui-bar-separator" aria-hidden="true" hidden>•</span>
-      <a id="coworksbtn" class="ui-bar-nav" href="#/cowork" hidden>Coworks</a>
+      <a id="coworksbtn" class="ui-bar-nav" href="#/cowork" data-t="campaign.coworks" hidden>Teams</a>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
+      <!-- THE PLACE — the reading inside the centred, neutral island cut into the top
+           edge of the screen, visually separate from the Workbench headers.
+           js/workspace-header.js writes it; nothing else does. -->
       <span class="grow"><span id="viewplace" class="ui-bar-place" hidden></span></span>
       <span id="viewname" class="wk-view-name"></span>
       <span id="viewmap" class="wk-view-map"></span>

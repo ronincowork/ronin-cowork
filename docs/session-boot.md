@@ -87,13 +87,33 @@ could not be made.**
 
 ## What ships
 
-Two universal shelf files and one generated fragment:
+The contract for the compiled document itself — the one-read budget, the order, the closing
+line, the receipt — is [`docs/birth-packet.md`](birth-packet.md).
 
-- **`all/ronin_catalogs/lexicons/professional_en.md`** — the house vocabulary, so every session means the same
-  things by the same words.
+**The packet says where it ends, and the brief says how big it is.** The compiled README's
+last line is `— end of packet for <session> —`. The brief's `Read first:` sentence names the
+path, the line count, the size, that one read delivers it, and that line; when a packet is
+over the one-read budget the sentence says so and asks for it in parts, in order, until that
+line. The birth receipt carries a `packet` block — path, bytes, lines, sections, terminator,
+`over_budget` — so the record says what left; the ACK rule asks the newborn to quote the
+terminator, so the tape says what arrived. Measured 2026-09-04: Codex delivers ~10k tokens
+per shell read, Claude Code 30,000 chars per Bash call and 25,000 tokens per Read, and both
+open a file in a first window of ~250 lines — which is why the contracts come first.
+
+Three universal shelf files and two generated fragments, compiled in reading order —
+Routine contracts first, the maps, the macro roster, the glossary last — and held to the
+one-read budget (`PACKET_BUDGET` in `src/birth-readme.ts`) by `tests/session-boot.test.ts`
+on the real shelf:
+
 - **`all/README.md`** — the map of where everything is **and what is on each shelf**. Each roster
   sits beside the `ls` that resolves the live truth, stores included, and the directory
   wins whenever the two disagree.
+- **`all/RONIN_UTILITY.md`** — the coworkspace for an Agent: the pages, the three
+  workbenches and their surfaces, the tile head's buttons, Locked and Unlocked, copy and paste.
+- **`all/KOTOBA_GLOSSARY.md`** — the house names (TEGAMI, TEJUN, the wipeboard …) and the
+  plain word to say for each, so no Japanese leaks from the tools to the person. Rendered at
+  birth with the owner's desk words (`renderGlossary`; `docs/kokugo.md` §8) and compiled
+  **last**: reference, not rules.
 - **`SESSION_MACROS.md`** — a stock template whose active section is generated at birth
   from the resolved `MACROS.md` catalog. The entries marked `preview: yes` are both what the
   tile button shows and what the new session reads. The generated copy is disposable data

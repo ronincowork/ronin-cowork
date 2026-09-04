@@ -6,6 +6,7 @@
 - **macros:** —
 - **actions:** recall-memories, remember-lesson
 - **tools:** tejun-recall, tejun-remember
+- **parts:** —
 - **mcp:** gbrain
 - **requires:** ronin_base
 - **bundles:** services

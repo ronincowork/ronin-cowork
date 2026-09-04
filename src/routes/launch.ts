@@ -22,7 +22,7 @@ import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
 import { routineChoices } from '../routines.js';
-import { classifyStatus, type SessionStatus } from '../status.js';
+import { classifyStatus, createActivityCache, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
@@ -33,15 +33,35 @@ import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFiel
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
-import { initialCampaignId } from '../campaign-scope.js';
+import { campaignResolver, initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { readCampaign } from '../campaigns.js';
 import { listRoutines } from '../resource-adapters.js';
 import { resolveLaunchSeed } from '../launch-seed.js';
 import type { SessionsDefaults } from '../launch-command.js';
-import { compileBirthReadmeAt, isShelfTeaching } from '../birth-readme.js';
+import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentence, type PacketReport } from '../birth-readme.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
+
+export function createWindowedLoader<T>(
+  load: () => Promise<T>,
+  windowMs: number,
+  now: () => number = Date.now,
+): () => Promise<T> {
+  let window = -1;
+  let shared: Promise<T> | null = null;
+  return () => {
+    const current = Math.floor(now() / windowMs);
+    if (!shared || current !== window) {
+      window = current;
+      shared = load().catch((error) => {
+        shared = null;
+        throw error;
+      });
+    }
+    return shared;
+  };
+}
 
 async function birthCampaign(team: string, explicit = ''): Promise<string> {
   if (explicit) return explicit;
@@ -141,6 +161,33 @@ export function mikaLaunchBody(input: unknown): Record<string, unknown> {
 }
 
 export function registerLaunch(app: express.Express): void {
+  const loadPaneStatus = createActivityCache(async (name: string) => {
+    const text = await capturePane(name, 0);
+    return {
+      status: classifyStatus(text),
+      ctx: scanContext(text),
+      model: scanModel(text),
+    };
+  });
+  const loadHome = createWindowedLoader(async () => {
+    const list = await withAxes(await listSessions());
+    return Promise.all(
+      list.map(async (s) => {
+        const [pane, contributed, tegami] = await Promise.all([
+          loadPaneStatus(s.name, s.activity).catch(() => ({ status: null, ctx: null, model: null })),
+          collectRowFields(s.name),
+          readTegami(s.name),
+        ]);
+        return {
+          ...s,
+          ...pane,
+          ...contributed,
+          ...(tegami ? { tegami } : {}),
+        };
+      }),
+    );
+  }, 2_000);
+
   app.get('/api/launch-seed', async (req, res) => {
     try {
       const campaign_id = String(req.query.campaign_id ?? '').trim() || await initialCampaignId();
@@ -150,13 +197,15 @@ export function registerLaunch(app: express.Express): void {
       if (team && !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(team)) {
         return res.status(400).json({ error: `A team name is lowercase letters, digits, _ and -: "${team}".` });
       }
-      const [roster, roots, agents, routines, desks] = await Promise.all([
+      const [roster, allRoots, agents, routines, desks, resolveCampaign] = await Promise.all([
         team ? readTeamRoster(team, campaign_id).then((found) => found ?? readTeamRoster(team, '')) : Promise.resolve(null),
         listProjectRoots(),
         readAgentsSection(),
         listRoutines(),
         readDesksSection(),
+        campaignResolver(),
       ]);
+      const roots = allRoots.filter((root) => resolveCampaign(root.campaign_id) === campaign_id);
       if (team && !roster) return res.status(404).json({ error: `Unknown Team "${team}" in Campaign "${campaign_id}".` });
       const { resolved_routines: _resolved, ...seed } = resolveLaunchSeed({
         campaign,
@@ -226,6 +275,7 @@ export function registerLaunch(app: express.Express): void {
     let routineTools: RoutineToolProjection | null = null;
     let birthKey = '';
     let birthDir = '';
+    let packet: PacketReport | undefined;
     let runtimeBorn = false;
     try {
       const live = await listSessions();
@@ -269,7 +319,8 @@ export function registerLaunch(app: express.Express): void {
           await rm(birthDir, { recursive: true, force: true });
           return res.status(500).json({ error: 'The birth reading was compiled, but its brief did not contain the resolved source list.' });
         }
-        resolved.brief = resolved.brief.replace(sourceSentence, `Read first: ${readme}.`);
+        packet = await describePacket(readme, resolved.name);
+        resolved.brief = resolved.brief.replace(sourceSentence, readFirstSentence(packet));
         resolved.birth_reading = [readme];
       } catch (e) {
         if (birthDir) await rm(birthDir, { recursive: true, force: true });
@@ -299,6 +350,11 @@ export function registerLaunch(app: express.Express): void {
         env: routineTools ? { PATH: routineTools.path } : undefined,
         control: resolved.agent ? 'user' : undefined,
         key: birthKey || undefined,
+        // The Services switch as resolved for THIS Agent at birth (campaign < team < form):
+        // off means RIREKI never records it. Set here and never again — nothing cascades
+        // onto a running session (owner, 2026-09-04). A terminal has no Routines and keeps
+        // the recorder's own default.
+        rireki: resolved.routines.length ? resolved.routines.some((routine) => routine.name === 'ronin_services' && routine.enabled) : undefined,
       });
       runtimeBorn = true;
       if (birthKey) rememberSessionKey(resolved.name, birthKey);
@@ -377,6 +433,10 @@ export function registerLaunch(app: express.Express): void {
         ...(resolved.session_type === 'cowork_agent'
           ? { boot: { state: 'open', brief: launch.parked ? 'parked' : 'argv' } }
           : {}),
+        // What the newborn was handed to read: size, section count, the line it ends with,
+        // and whether one read delivers it. The receipt says what left; the tape says what
+        // arrived (the ACK asks the newborn to quote the terminator).
+        ...(packet ? { packet } : {}),
         desks: resolved.assignment?.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line })) ?? [],
         desk_note: await deskNote(resolved),
         routines: resolved.routines.map((routine) => {
@@ -435,27 +495,7 @@ export function registerLaunch(app: express.Express): void {
 
   app.get('/api/home', async (_req, res) => {
     try {
-      const list = await withAxes(await listSessions());
-      const out = await Promise.all(
-        list.map(async (s) => {
-          const [pane, contributed, tegami] = await Promise.all([
-            capturePane(s.name, 0).then((text) => ({
-              status: classifyStatus(text),
-              ctx: scanContext(text),
-              model: scanModel(text),
-            })).catch(() => ({ status: null, ctx: null, model: null })),
-            collectRowFields(s.name),
-            readTegami(s.name),
-          ]);
-          return {
-            ...s,
-            ...pane,
-            ...contributed,
-            ...(tegami ? { tegami } : {}),
-          };
-        }),
-      );
-      res.json(out);
+      res.json(await loadHome());
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }

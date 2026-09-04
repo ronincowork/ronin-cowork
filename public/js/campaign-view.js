@@ -53,34 +53,34 @@ function registerCampaignSurfaces() {
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: TYPES.identity, header: 'surface', label: () => t('campaign', 'Campaign'), summary: (_tenant, e) => currently.identity(e), create: ({ environment: e }) => { const surface = createCampaignIdentitySurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
   add({ type: TYPES.profile, header: 'surface', label: () => t('cowork.tab_profile', 'Desk profile'), summary: (_tenant, e) => currently.profile(e), create: ({ environment: e }) => { const surface = createDeskProfileSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
-  add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Project roots'), summary: (_tenant, e) => currently.roots(e), create: ({ environment: e }) => {
-    const surface = WorkspaceKit.primitives.createSurface({ label: t('cowork.tab_roots', 'Project roots'), className: 'cv-surface' });
+  add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Workspace folders'), summary: (_tenant, e) => currently.roots(e), create: ({ environment: e }) => {
+    const surface = WorkspaceKit.primitives.createSurface({ label: t('cowork.tab_roots', 'Workspace folders'), className: 'cv-surface' });
     // This is only the repository-side seed for roots added later. Agent capability is
     // selected independently by the Campaign/Team Routines surface; existing roots keep
     // the answer in their own repository profile below.
-    const newDesks = elem('div', 'cv-body');
+    const newDesks = elem('div', 'cv-body cv-worktrees-default');
     const paintNewDesks = (current) => newDesks.replaceChildren(choice(
-      t('campaign_view.new_project_worktrees', 'Worktrees for new project roots'),
+      t('campaign_view.new_project_worktrees', 'Worktrees for new workspace folders'),
       [{ value: 'managed', label: t('campaign_view.new_project_worktrees_yes', 'Allow Ronin Worktrees') }, { value: 'none', label: t('campaign_view.new_project_worktrees_no', 'Use the checkout') }],
       current,
-      t('campaign_view.new_project_worktrees_help', 'Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for roots added later; change an existing repository on its Project Root card below.'),
+      t('campaign_view.new_project_worktrees_help', 'New repository folders use this default. Worktrees run only when both the folder and the Agent allow them.'),
       async (v) => { const r = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'desks', value: { new_project: v } } }); paintNewDesks(r.ok ? v : current); },
     ));
     const host = elem('div', 'desk-pane desk-proj show');
-    surface.content.append(newDesks, host);
-    const room = buildProjectRoots(host, () => e.entered() && host.isConnected, null);
+    surface.content.append(host, newDesks);
+    const room = buildProjectRoots(host, () => e.entered() && host.isConnected, () => e.selected()?.id || '');
     return { el: surface.el, show: () => { room.enter(); void request('/api/machine-settings').then((r) => paintNewDesks(r.ok && r.data?.set?.desks?.new_project === 'none' ? 'none' : 'managed')); } };
   } });
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
   // CONTROL_BUNDLES build-out for the bundle model behind it.
-  add({ type: TYPES.routines, header: 'surface', label: () => t('campaign_view.routines', 'Routines'), summary: (_tenant, e) => routinesSummary(e.selected()), create: ({ environment: e }) => { const surface = createRoutinesSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
+  add({ type: TYPES.routines, header: 'surface', label: () => t('campaign_view.routines', 'Routines and Installs'), summary: (_tenant, e) => routinesSummary(e.selected()), create: ({ environment: e }) => { const surface = createRoutinesSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.
   add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'Themes · Account · Archived · Messages · Help desk · Keypad · Desk.'), create: ({ environment: e }) => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk'), campaign: e.selected }); return e.progressive({ el: surface.el, show: () => surface.select(surface.current() || 'themes') }); } });
   // — teams and agents — in the forms' own boxes, by kind. The session-roles card that once
   add({ type: TYPES.templates, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.templates_summary', 'Team casts, agent loadouts, and the library to download more from.'), create: () => { const surface = createTemplatesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
-  if (MULTIPLE_CAMPAIGNS_ENABLED) add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
+  if (MULTIPLE_CAMPAIGNS_ENABLED) add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Team and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
   // New Campaign is not registered while multiple Campaigns are off.
   // Desk profile remains registered so a remembered workspace can still restore it, but
   // its beta card is hidden from discovery. Themes now have their stable home in Ronin Desk.
@@ -96,15 +96,23 @@ export function createCampaignView() {
   const { teamWorkspaceState } = WorkspaceKit.contract;
   let ctx = null, entered = false, bench = null;
   let loadGeneration = 0;
+  let campaignRead = false; // the Campaign record has arrived for this entry
   let rootsHere = null; // null until /api/project-roots/detail has answered once this entry
   let setteiRead = null; // the SETTEI record, for the subset rule on Agent defaults
   const campaignSurfaces = new Set();
   const progressive = (surface) => {
     const coordinated = progressiveSurface({
       loading: () => WorkspaceKit.primitives.setSurfaceState(surface.el, 'loading', t('campaign_view.loading', 'Loading Campaign…')),
-      paint: (...args) => surface.show?.(...args),
+      // The wrapper set the loading state, so the wrapper clears it: a surface whose show()
+      // does not touch its own state — the Ronin Desk's tab select — stayed on "Loading
+      // Campaign…" over a painted body (live, 2026-09-04).
+      paint: (...args) => { WorkspaceKit.primitives.setSurfaceState(surface.el, null, ''); return surface.show?.(...args); },
     });
     campaignSurfaces.add(coordinated);
+    // A surface placed AFTER the Campaign arrived — a card clicked or dragged onto an
+    // open page — is created here, past the one settle() in enter(). Settle it now, or it
+    // says "Loading Campaign…" until the page is left and re-entered (owner, 2026-09-04).
+    if (campaignRead) coordinated.settle();
     return { ...surface, show: coordinated.show };
   };
   const selected = () => campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
@@ -139,6 +147,7 @@ export function createCampaignView() {
     enter: async (context) => {
       ctx = context; entered = true;
       const generation = ++loadGeneration;
+      campaignRead = false;
       for (const surface of campaignSurfaces) surface.begin();
       const typed = teamWorkspaceState(context.state, context.viewState('campaign'), bench.declaration);
       bench.enter({ ...typed, ...context.viewState('campaign') });
@@ -153,6 +162,7 @@ export function createCampaignView() {
       const refresh = () => { if (entered) bench.refreshSelector(); };
       void loadCampaigns().then(() => {
         if (!entered || generation !== loadGeneration) return;
+        campaignRead = true;
         for (const surface of campaignSurfaces) surface.settle();
         refresh();
       });

@@ -63,7 +63,7 @@ where a session is born now. `docs/ui.md` is the written contract those modules 
 | `dvr.js` | 37 | `dvrStep` — the unlocked input rule, pure (tested: `tests/dvr.test.js`) |
 | `ansi.js` | 12 | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
 | `tiledrop.js` | 95 | `isCoarse`, `makeDrop` — the coarse-pointer sheet primitives (the hoisted phone header is gone; the phone has its own shell) |
-| `phone.js` | 215 | THE PHONE SHELL — an iPhone-class screen never boots the workbench: Coworks → Agents → the stage, hash-routed (`#/m/…`) |
+| `phone.js` | 215 | THE PHONE SHELL — an iPhone-class screen never boots the workbench: Teams → Agents → the stage, hash-routed (`#/m/…`) |
 | `keysrow.js` | 61 | `buildKeysRow` — Esc/^C/Tab/arrows/⤓ docked on every coarse tile's composer |
 | `tilemacros.js` | 231 | `buildTileMacros` — the ⚡ button on a tile head; the `preview:` macros as teaching cards, prefills `+name: `, never runs |
 | `tilementions.js` | — | `buildTileMentions` — the @ button on a tile head; click or drag a live session name into the composer |

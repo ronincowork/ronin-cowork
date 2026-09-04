@@ -154,6 +154,7 @@ export class Tile {
   refreshSessionName() {
     this.sessionName.textContent = readableSession(this.session);
     this.sessionName.title = this.session || '';
+    this.syncOutput(); // the roster row carries this session's Services answer
     this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();
@@ -406,7 +407,7 @@ export class Tile {
   setOutput(value) {
     const previous = this.output;
     const allowed = new Set(['locked', 'terminal_mirror', 'detailed', 'condensed', 'cherry_pick', 'agent_summary']);
-    this.output = S.streamOff || !allowed.has(value) ? 'locked' : value;
+    this.output = this.servicesOff() || !allowed.has(value) ? 'locked' : value;
     this.locked = this.output === 'locked';
     S.output = this.output;
     S.locked = this.locked;
@@ -422,19 +423,35 @@ export class Tile {
     saveState();
   }
 
+  /**
+   * Ronin Services, for THIS session: the answer it was born with, carried on its roster
+   * row as RIREKI's dial. Off means the recorder never ran on it — no tape, no unlocked
+   * view — so the tile treats it exactly as a box with no record part (owner, 2026-09-04).
+   * Unknown (no row yet, a session made by hand) reads as on, like an operator that
+   * predates the field.
+   */
+  servicesOff() {
+    if (S.streamOff) return true;
+    const row = this.session ? S.sessions.find((r) => r.name === this.session) : null;
+    return row?.rireki === false;
+  }
+
   syncOutput() {
     // The widget comes back as {el} like every built control — resolve it the same way
     // syncTileHead does, so this works whichever shape landed on the key.
     const sel = this.outputEl?.el ?? this.outputEl;
     if (!sel || !sel.options) return;
+    const off = this.servicesOff();
+    if (off && this.output !== 'locked') { this.setOutput('locked'); return; }
     sel.value = this.output;
     // Without Services there is nothing to choose — every unlocked source is RIREKI's,
     // so a one-option dropdown is noise and the control disappears whole (owner,
-    sel.hidden = !!S.streamOff;
+    sel.hidden = off;
     for (const option of [...sel.options])
       if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
     sel.title = S.streamOff
       ? t('output.title_locked', 'Output — Locked only. Ronin Services is not installed.')
+      : off ? t('output.title_off', 'Output — Locked only. Ronin Services is off for this Agent.')
       : t('output.title_choose', 'Output — choose the live terminal or a RIREKI view');
   }
 
@@ -515,6 +532,14 @@ export class Tile {
 
   connect(session) {
     this.session = session;
+    // The Services answer is per session. A tile that held an unlocked view for one Agent
+    // and now shows one born with Services off comes down to Locked before the wire opens
+    // — set directly, not through setOutput, which would reopen the wire mid-connect.
+    if (this.servicesOff() && this.output !== 'locked') {
+      this.output = 'locked'; this.locked = true; S.output = 'locked'; S.locked = true;
+      if (this.tape) this.tape.setMode('locked');
+    }
+    this.syncOutput();
     this.sessionName.textContent = readableSession(session);
     this.sessionName.title = session;
     this.syncHeader();

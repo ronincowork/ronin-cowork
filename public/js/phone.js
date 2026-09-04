@@ -74,9 +74,9 @@ export async function buildPhone() {
     if (route.screen === 'agents') paintAgents();
   };
 
-  /* ---------- screen 1 · the Coworks ---------- */
+  /* ---------- screen 1 · the Teams ---------- */
   const paintTeams = () => {
-    bar.replaceChildren(...barContent(...(brand ? [brand] : []), el('span', 'ph-title', t('phone.coworks', 'Cowork: Teams'))));
+    bar.replaceChildren(...barContent(...(brand ? [brand] : []), el('span', 'ph-title', t('phone.coworks', 'Teams'))));
     const list = el('div', 'ph-list');
     const teams = teamsFromState().filter((team) => !team.holding || unassignedSessions().length);
     for (const team of teams) {
@@ -92,7 +92,7 @@ export async function buildPhone() {
       if (team.objective) card.append(el('div', 'ph-card-sub', team.objective));
       list.append(card);
     }
-    if (!teams.length) list.append(el('div', 'ph-empty', t('phone.no_coworks', 'No Coworks yet.')));
+    if (!teams.length) list.append(el('div', 'ph-empty', t('phone.no_coworks', 'No Teams yet.')));
     main.replaceChildren(list);
   };
 
@@ -124,7 +124,7 @@ export async function buildPhone() {
     words.autocapitalize = 'off';
     words.spellcheck = false;
     words.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
-    const note = el('p', 'ph-launch-note', t('phone.launch_defaults', "Everything else launches on this Cowork's defaults."));
+    const note = el('p', 'ph-launch-note', t('phone.launch_defaults', "Everything else launches with this Team's defaults."));
     const state = el('p', 'ph-launch-state');
     state.hidden = true;
     const go = el('button', 'ph-launch-go', t('add_agent.start', 'Start'));
@@ -206,7 +206,7 @@ export async function buildPhone() {
       if (sub) card.append(el('div', 'ph-card-sub', sub));
       list.append(card);
     }
-    if (!list.children.length) list.append(el('div', 'ph-empty', t('phone.no_agents', 'No Agents on this Cowork yet.')));
+    if (!list.children.length) list.append(el('div', 'ph-empty', t('phone.no_agents', 'No Agents on this Team yet.')));
     list.append(launchCard(team));
     main.replaceChildren(list);
   };
@@ -238,7 +238,7 @@ export async function buildPhone() {
     tile.setFooter(tile.ctxPct ?? null, tile.ctxModel || '');
     sheet.addRow(node('workRecordBtn'), t('me.ladder', 'Work record'));
     // No Services, no choice: the Output row only exists where an unlocked view does.
-    if (!S.streamOff) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
+    if (!tile.servicesOff()) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
     sheet.addRow(node('docsBtn'), t('me.docs', 'Docs'));
     sheet.addRow(node('noteBtn'), t('me.note', 'Note'));
     sheet.addRow(node('dial'), t('me.control', 'Control'), 'stay');

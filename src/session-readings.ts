@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { storeDir } from './resources.js';
 import type { Origin } from './resources.js';
-import { renderSessionMacrosReading } from './birth-readme.js';
+import { renderGlossary, renderSessionMacrosReading } from './birth-readme.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STOCK = path.join(ROOT, 'ronin_session_boot');
@@ -106,5 +106,10 @@ export async function listSessionReadings(): Promise<SessionReadingRow[]> {
     shadowed: false,
     linked: false,
   });
+  // The glossary, likewise rendered in memory from the copy that won and the owner's desk words.
+  const glossaryRow = rows.get('all/KOTOBA_GLOSSARY.md');
+  if (glossaryRow) {
+    rows.set('all/KOTOBA_GLOSSARY.md', { ...glossaryRow, content: await renderGlossary(glossaryRow.content), blurb: `${glossaryRow.blurb} · rendered for the owner's desk profile` });
+  }
   return [...rows.values()].sort((a, b) => a.level.localeCompare(b.level) || a.label.localeCompare(b.label));
 }

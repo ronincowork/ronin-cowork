@@ -6,7 +6,7 @@ import { listRoutines } from '../src/resource-adapters.js';
 
 const row = (name: string): RoutineRow => ({
   name, label: name, blurb: '', origin: 'stock', shadowed: false,
-  reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [],
+  reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [], parts: [],
   requires: [],
 });
 const catalog = [row('ronin_base'), row('ronin_worktrees'), row('gbrain')];

@@ -1,9 +1,22 @@
 import { onClock } from '../jikan.js';
 import { type WebSocket } from 'ws';
 import { listSessions } from '../tmux.js';
+import { tmux, type TmuxClient } from '../tmux-client.js';
 import { withAxes } from '../tegami.js';
 
 const eventClients = new Set<WebSocket>();
+let lastSessionNames = '';
+let sessionsRefresh: Promise<void> | undefined;
+
+const SESSION_NOTIFICATIONS = [
+  'sessions-changed',
+  'session-renamed',
+  'window-add',
+  'window-close',
+  'unlinked-window-add',
+  'unlinked-window-close',
+  'unlinked-window-renamed',
+] as const;
 
 export function handleEvents(ws: WebSocket): void {
   eventClients.add(ws);
@@ -25,19 +38,33 @@ export function broadcastEvent(msg: Record<string, unknown>): number {
   return sent;
 }
 
+async function refreshSessions(force: boolean): Promise<void> {
+  if (eventClients.size === 0) return;
+  if (sessionsRefresh) return sessionsRefresh;
+  sessionsRefresh = listSessions()
+    .then(withAxes)
+    .then((list) => {
+      const names = list.map((session) => `${session.name}\t${session.tags.join(',')}\t${session.leads.join(',')}`).join('\n');
+      if (!force && names === lastSessionNames) return;
+      lastSessionNames = names;
+      broadcastEvent({ t: 'sessions', list });
+    })
+    .catch(() => {})
+    .finally(() => { sessionsRefresh = undefined; });
+  return sessionsRefresh;
+}
+
+export function wireTmuxNotifications(client: Pick<TmuxClient, 'on'>, refresh: () => void): () => void {
+  const unsubscribes = SESSION_NOTIFICATIONS.map((kind) => client.on(kind, refresh));
+  // Registering this listener also installs tmux's one per-client `activity`
+  // subscription. B4 consumes its parsed values after A3 lands.
+  unsubscribes.push(client.on('subscription', () => undefined));
+  return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+}
+
 export function startSessionsBroadcast(): void {
-  let lastSessionNames = '';
+  wireTmuxNotifications(tmux, () => { void refreshSessions(true); });
   onClock('sessions_broadcast', 2000, async () => {
-    if (eventClients.size === 0) return;
-    await listSessions()
-      .then(withAxes)
-      .then((list) => {
-        const names = list.map((s) => `${s.name}\t${s.tags.join(',')}\t${s.leads.join(',')}`).join('\n');
-        if (names === lastSessionNames) return;
-        lastSessionNames = names;
-        const msg = JSON.stringify({ t: 'sessions', list });
-        for (const ws of eventClients) if (ws.readyState === ws.OPEN) ws.send(msg);
-      })
-      .catch(() => {});
+    await refreshSessions(false);
   });
 }

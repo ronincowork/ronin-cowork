@@ -8,7 +8,7 @@ import type { TeamRoster } from '../src/team-rosters.js';
 
 const routine = (name: string): RoutineRow => ({
   name, label: name, blurb: '', origin: 'stock', shadowed: false,
-  reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [], requires: [],
+  reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [], parts: [], requires: [],
 });
 const campaign = {
   id: 'home_machine',
@@ -38,6 +38,14 @@ test('rōnin seed reads Campaign and reports the frozen residue', () => {
   assert.equal(seed.seeds.model.stated_by[0]?.layer, 'campaign');
   assert.deepEqual(seed.still_asked, ['session_type', 'name', 'instructions']);
   assert.equal(seed.routines.find((r) => r.name === 'gbrain')?.on, true);
+});
+
+test('rōnin seed chooses only from the Campaign-scoped roots supplied by its route', () => {
+  const seed = resolveLaunchSeed({
+    ...sources(null),
+    roots: [{ name: 'home-machine-root', dir: '/home-machine', archived: false, campaign_id: 'home_machine' }],
+  });
+  assert.equal(seed.seeds.project_root.value, 'home-machine-root');
 });
 
 test('Team seed reads its complete map with no live Campaign inherit', () => {

@@ -8,10 +8,10 @@ people need the same word for a part of it. **Every noun here is a KOTOBA row** 
 COWORKSPACE) and a `glossary.*` word the owner's desk profile renders; add a term here and
 you add it there in the same commit.
 
-Campaign, Cowork and Team are discovery boundaries, not different formats. Each has one
+Campaign, Teams collection and Team are discovery boundaries, not different formats. Each has one
 discovery column whose cards are limited to that scope; every one uses the same surrounding
 workspaces, surface placement, drag/drop, arrangement and recall. Say *Campaign discovery
-workbench*, *Cowork workbench* or *Team workbench* when the distinction
+workbench*, *Teams workbench* or *Team workbench* when the distinction
 matters—never “two-workspace Campaign surface.”
 
 ## The map
@@ -23,7 +23,7 @@ matters—never “two-workspace Campaign surface.”
 │      workspace 1      │   selector column    │              workspace 2                 │
 │                       │      (the roster)    │                                          │
 │  ┌ surface head ────┐ │  ┌ column head ────┐ │  ┌ surface head ──────────────────────┐  │
-│  │ terminal_tile:   │ │  │ Roster: team    │ │  │ team_commons: tab strip            │  │
+│  │ terminal_tile:   │ │  │ Roster          │ │  │ team_commons: tab strip            │  │
 │  │ tile head        │ │  │ ▸ Team commons  │ │  │ cowork_commons: tab strip          │  │
 │  └──────────────────┘ │  └─────────────────┘ │  └────────────────────────────────────┘  │
 │                       │  member cards…       │                                          │
@@ -44,24 +44,24 @@ Three kinds of thing, and only three, sit inside the bar:
 |---|---|---|
 | **workspace** | a cell that holds exactly one `workspace_surface` at a time; remembers what it holds per tab | two or four (`workspace1`–`workspace4`; 3 under 1, 4 under 2); the Kit's layout map shows, hides and reorders the three columns |
 | **selector column** | a column that PICKS what goes into a workspace; it never holds a surface itself | one today — the **roster**: the Team commons card first (thin), then the members as cards, then ＋ Add team member; click seats one in the selected workspace, drag onto any cell; the 人 pinned hot in workspace 1 |
-| **top header** | the bar: `Ronin <Campaign>` and `Coworks <Cowork or blank>` label/value navigation, the tab's editable view name, layout map, ⚙ and shape | one |
+| **top header** | the neutral bar: RoninCowork, a centred scope island, the tab's editable view name, layout map, ⚙ and shape | one |
 
 ## The workspace surfaces — peers, each able to occupy a workspace
 
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
 | **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ edit Agent title · View Work Record · output selector · @ · ⚡ · メ. The Torii is first, immediately before the readable title; the permanent session ID does not change. |
-| **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). The Team roster now lives on the Cowork workbench. |
+| **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Workspace folders · Archived · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). The Team roster now lives on the Teams workbench. |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
 | *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default |
-| `campaign_commons` | this campaign | Campaign Commons strip | Campaign · Project roots · Team roster · Templates |
+| `campaign_commons` | this campaign | Campaign Commons strip | Campaign · Workspace folders · Team roster · Templates |
 
 Rules that make them peers:
 
 - **No flip on any head**: the team commons is the FIRST CARD of the
   roster, thinner than a session's, and goes into a workspace like one — click for the
   selected cell, drag onto any cell. The SHINGO light signal sits at the far RIGHT of a
-  tile head; the connection dot is gone. The selector column's head reads *Roster: <team>*.
+  tile head; the connection dot is gone. The selector column's head reads simply *Roster*.
 - **A cell owns selection and drops, whatever it holds**: a card dropped on
   any workspace clobbers what is there — session, commons, launcher, anything to come.
   Nothing per surface: `cowork-view.js` keeps ONE registry (`SURFACES`: token · element ·
@@ -80,7 +80,7 @@ Rules that make them peers:
 ## The names, once
 
 - **workbench** — the format: one discovery column offers surfaces to the
-  surrounding workspaces. Campaign, Cowork and Team name only what that column can discover.
+  surrounding workspaces. Campaign, Teams and Team name only what that column can discover.
   This replaces `cowork_space`, which collided with both Cowork and `coworkspace`.
 - **workspace** — a slot. Say *workspace 1*, *workspace 2*. A workspace is not a surface.
 - **workspace_surface** — the genus: what a workspace holds. Say *a surface*.
@@ -97,18 +97,19 @@ Rules that make them peers:
 
 ### The bar's navigation
 
-The left side is doors, not a breadcrumb; the middle is one reading:
+The left side keeps the RoninCowork brand and a Teams door. A neutral island is cut into
+the top edge of the screen and names the active Workbench scope:
 
 ```text
-Ronin  •  Coworks                 Teams                        <verbs>
-Ronin  •  Coworks           Your team: Sea Settle              <verbs>
+RoninCowork  •  Teams              Teams                         <verbs>
+RoninCowork  •  Teams            Sea Settle                      <verbs>
 ```
 
-`Ronin` and `Coworks` are the only doors, and the root landing shows only Ronin. The
-Team's name used to sit beside the Coworks door, where a first-time visitor read it as
-one more door and could not tell the all-Teams page from one Team's page. It now sits centred in the bar as **the place**: *Teams* on the Coworks page
-(its tooltip says "See all of your teams here"), *Your team: <name>* on a Team page,
-italic so it reads as information and never as a button. Doors consume the shared
+The root landing and Machine Settings have no island. Campaign reads *Campaign*, Teams
+reads *Teams*, and one Team uses only its readable name. The neutral island does not carry
+the scope colour: graphite, aiiro and kaki belong to the Workbench headers below it. It is
+a place reading, never a button, and uses the same `--radius-lg` lower corners as the
+Workspace Kit surfaces. Doors consume the shared
 `.ui-bar-nav` primitive and the place consumes `.ui-bar-place` from `docs/ui.md`; a
 feature must not restyle either. `js/workspace-header.js` writes the place; nothing
 else does.
@@ -116,8 +117,10 @@ else does.
 ### The root landing
 
 The bare `/` route is the landing, not a remembered workspace and not a Campaign editor.
-It has three direct doors: Machine Settings, Coworks and New Project. Machine Settings
-opens the one Campaign page; Coworks opens the coworkspace; New Project opens launch.
+It has three direct doors: **Machine Settings**, **Teams**, and **New Project**. Teams opens
+the collection of Teams and Agents. New Project starts a new Team or Agent; it does not add
+or edit Workspace Folders. The live owner is `public/js/campaign-home.js`.
+
 There is no Campaign picker, default star, archive action or New Campaign footer.
 
 The live owner is `public/js/campaign-home.js`.

@@ -1,13 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile } from './spawn-broker.js';
 import { RIREKI_DIR, sessionKey } from './session-dir.js';
 import { readTeamRoster } from './team-rosters.js';
 import type { SessionInfo } from './tmux.js';
 import { mandate, type Mandate } from './agent-defaults.js';
-
-const exec = promisify(execFile);
 
 export interface TegamiCheckout {
   repo: string;
@@ -30,7 +27,7 @@ export function envWithoutGitLocation(from: NodeJS.ProcessEnv = process.env): No
 
 export async function checkoutAt(dir: string): Promise<TegamiCheckout> {
   const git = async (...args: string[]) =>
-    (await exec('git', ['-C', dir, ...args], {
+    (await execFile('git', ['-C', dir, ...args], {
       timeout: 2_000, env: envWithoutGitLocation(),
     })).stdout.trim();
   try {

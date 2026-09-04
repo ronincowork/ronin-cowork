@@ -96,6 +96,8 @@ export interface RoutineRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | '
   actions: string[];
   tools: string[];
   mcp: string[];
+  /** Services parts this Routine runs inside the server; loaded only while its switch is on. */
+  parts: string[];
   requires: string[];
   bundles: string[];
 }
@@ -147,6 +149,7 @@ export async function listRoutines(): Promise<RoutineRow[]> {
     actions: splitDefinitionList(d.get('actions')),
     tools: splitDefinitionList(d.get('tools')),
     mcp: splitDefinitionList(d.get('mcp')),
+    parts: splitDefinitionList(d.get('parts')),
     requires: splitDefinitionList(d.get('requires')),
     bundles: splitDefinitionList(d.get('bundles')).filter((bundle) =>
       (ROUTINE_BUNDLES as readonly string[]).includes(bundle)),

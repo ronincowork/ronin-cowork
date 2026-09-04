@@ -25,12 +25,13 @@ owner directory to the shipped catalog.
 
 ## The invariant
 
-A project root records an **existing directory**. It does not create, clone, move, delete, or
-manage that directory, and it does not create a GitHub repository. Those filesystem/repository
-steps happen first; inclusion in Ronin happens second.
+A Workspace Folder records an **existing directory**. The Campaign surface can create that one
+directory, with the owner's confirmation, immediately before including it. It never clones,
+moves, or deletes a directory and never creates a GitHub repository. Starting Git version history
+is an optional local action; publishing to a remote remains a separate workflow.
 
 ```text
-project/repository exists on disk
+folder exists on disk (selected, or explicitly created)
           ↓
 POST /api/project-roots includes it in Ronin
           ↓
@@ -40,6 +41,12 @@ Admin Desk and ＋ New show the project
 ```
 
 ## SOP A — include an existing directory
+
+The ordinary browser path uses the host-side folder chooser: navigate from Home, search the
+current folder, reveal hidden folders deliberately, then choose a directory. The chooser reports
+whether it is a Git repository and names recognized project instructions such as `AGENTS.md` or
+`CLAUDE.md`, because the chosen directory is where a new Agent starts. Typing an absolute path is
+kept out of the ordinary flow.
 
 ### 1. Inspect; do not infer
 

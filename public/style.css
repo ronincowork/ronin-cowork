@@ -48,6 +48,7 @@
   --cowork-head-attention: var(--kiiro);
 
   --cowork-head-line: var(--define-line);
+  --cowork-surface-head-edge: var(--edge);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -176,8 +177,18 @@
   --bar-nav-size: var(--text-7);
   --bar-value-fg: var(--bar-nav-fg);
   --bar-value-size: var(--bar-nav-size);
+  --bar-place-bg: #090a0c;
+  --bar-place-fg: var(--on-strong);
   --bar-brand-mark-h: 27px;
   --bar-brand-track: -0.005em;
+
+  /* Workbench scope headers; the individual Team keeps the established kaki family. */
+  --scope-graphite: #3b3d42;
+  --scope-campaign-head-bg: color-mix(in srgb, var(--scope-graphite) 24%, var(--bg-2));
+  --scope-teams-head-bg: color-mix(in srgb, var(--aiiro) 24%, var(--bg-2));
+  --scope-head-line: color-mix(in srgb, var(--define-line) 72%, var(--line));
+  --scope-head-fg: var(--fg-strong);
+  --scope-head-muted: var(--muted-2);
 
 
   --edge: 1px;
@@ -238,6 +249,13 @@
   --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
   --kaki-lift: #a34e2f;
 
+  /* Light mode uses the selected full-fill treatment for collection scopes. */
+  --scope-campaign-head-bg: var(--scope-graphite);
+  --scope-teams-head-bg: var(--aiiro);
+  --scope-head-line: color-mix(in srgb, var(--scope-graphite) 78%, #000);
+  --scope-head-fg: var(--on-strong);
+  --scope-head-muted: color-mix(in srgb, var(--on-strong) 78%, transparent);
+
 
 
   --term-cube: invert;
@@ -275,6 +293,21 @@
   --term-well: #ffffff;
   --term-input-line: #c8c2b2;
   --term-input-fg: #2c2e36;
+}
+
+:root[data-scope='campaign'] {
+  --cowork-head-bg: var(--scope-campaign-head-bg);
+  --cowork-head-line: var(--scope-graphite);
+  --cowork-surface-head-edge: var(--space-1);
+  --cowork-head-fg: var(--scope-head-fg);
+  --cowork-head-muted: var(--scope-head-muted);
+}
+:root[data-scope='teams'] {
+  --cowork-head-bg: var(--scope-teams-head-bg);
+  --cowork-head-line: var(--aiiro);
+  --cowork-surface-head-edge: var(--space-1);
+  --cowork-head-fg: var(--scope-head-fg);
+  --cowork-head-muted: var(--scope-head-muted);
 }
 
 
@@ -358,14 +391,26 @@ body {
 .ui-bar-separator { color: var(--muted); }
 
 .ui-bar-place {
-  color: var(--bar-value-fg);
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 50%;
+  min-width: 7rem;
+  max-width: min(40vw, 24rem);
+  padding: var(--space-3) var(--space-7) var(--space-4);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: var(--bar-place-bg);
+  color: var(--bar-place-fg);
   font-size: var(--bar-value-size);
-  font-style: italic;
+  font-style: normal;
+  font-weight: 600;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
+  transform: translateX(-50%);
 }
+.ui-bar-place[hidden] { display: none; }
 
 .ui-sheet {
   display: none;
@@ -569,7 +614,6 @@ body {
   user-select: none;
   flex: 0 0 auto;
 }
-
 
 #bar .newtab {
   appearance: none;
@@ -2687,6 +2731,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  flex-wrap: wrap;
 }
 .pr-count {
   color: var(--muted-2);
@@ -2709,6 +2754,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+.cv-worktrees-default {
+  margin-top: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--edge) solid var(--line-2);
 }
 .pr-block {
   border: var(--edge) solid var(--line-2);
@@ -2787,6 +2837,27 @@ body {
   flex-direction: column;
   gap: var(--space-3);
 }
+.folder-picker { display: flex; flex-direction: column; gap: var(--space-3); }
+.folder-chosen { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); }
+.folder-chosen span { color: var(--muted-2); font-size: var(--text-2); }
+.folder-chosen code { color: var(--fg-strong); overflow-wrap: anywhere; }
+.folder-controls { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.folder-controls button, .folder-crumbs button, .folder-row button, .folder-create button { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--panel); color: var(--fg); padding: var(--space-2) var(--space-3); cursor: pointer; }
+.folder-controls input[type='search'] { flex: 1; min-width: 150px; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3); }
+.folder-hidden { display: flex; align-items: center; gap: var(--space-2); color: var(--muted-2); font-size: var(--text-2); }
+.folder-crumbs { display: flex; align-items: center; gap: var(--space-1); flex-wrap: wrap; color: var(--muted); }
+.folder-list { max-height: 260px; overflow-y: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); }
+.folder-row { display: flex; gap: var(--space-2); align-items: center; padding: var(--space-2); border-bottom: var(--edge) solid var(--line-2); }
+.folder-row:last-child { border-bottom: 0; }
+.folder-open { flex: 1; text-align: left; border-color: transparent !important; }
+.folder-choose { color: var(--kaki) !important; }
+.folder-empty, .folder-loading { display: block; padding: var(--space-4); color: var(--muted-2); }
+.folder-create { border: var(--edge) dashed var(--line-2); border-radius: var(--radius-xs); padding: var(--space-3); }
+.folder-create summary { cursor: pointer; color: var(--fg-strong); }
+.folder-create-row { display: grid; grid-template-columns: minmax(140px, 1fr) auto auto; gap: var(--space-3); align-items: center; margin-top: var(--space-3); }
+.folder-create-row > input[type='text'] { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3); }
+.folder-create-row label { display: flex; align-items: center; gap: var(--space-2); color: var(--muted-2); font-size: var(--text-2); }
+@media (max-width: 560px) { .folder-create-row { grid-template-columns: 1fr; } }
 .pr-group {
   min-width: 0;
   margin: 0;
@@ -3881,10 +3952,21 @@ button.wb-door:hover b {
   border-radius: var(--radius-lg);
   font-size: var(--text-4);
   box-shadow: var(--shadow-sheet);
-  transition: transform var(--motion-settle) var(--ease);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform var(--motion-settle) var(--ease),
+    opacity 0s var(--motion-settle),
+    visibility 0s var(--motion-settle);
 }
 #chip.show {
   transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    transform var(--motion-settle) var(--ease),
+    opacity 0s,
+    visibility 0s;
 }
 #chip button {
   background: transparent;
@@ -5777,7 +5859,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='stale'] > .wk-state { color: var(--warn); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
 
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--cowork-head-line); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--cowork-surface-head-edge) solid var(--cowork-head-line); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
 .wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--cowork-head-fg); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
 .wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--cowork-head-muted); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); box-shadow: inset 0 calc(-1 * var(--space-1)) 0 var(--accent); }

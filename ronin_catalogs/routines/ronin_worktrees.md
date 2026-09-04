@@ -7,6 +7,7 @@
 - **macros:** cutcode, land
 - **actions:** cut-code, open-pr, land-work, land-manifest, desk-open, desk-status, desk-sync, hand-in, desk-park, check-clean, repository-initialize
 - **tools:** tejun-desk, ronin-repo-init
+- **parts:** —
 - **mcp:** —
 - **requires:** ronin_base
 - **bundles:** worktrees, services

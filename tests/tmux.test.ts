@@ -9,8 +9,38 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { exactSession, exactPane, isValidName, parseTags } from '../src/tmux.js';
 import { newSessionArgs } from '../src/session-args.js';
+import { isStaleViewerSession } from '../src/viewer.js';
+
+const sourceRoot = fileURLToPath(new URL('../src/', import.meta.url));
+
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const file = path.join(dir, entry.name);
+    return entry.isDirectory() ? sourceFiles(file) : /\.[jt]s$/.test(entry.name) ? [file] : [];
+  });
+}
+
+test('tmux process calls are confined to the control client and real attach path', () => {
+  const violations: string[] = [];
+  const direct = /\b(?:execFile|spawn)\s*\(\s*['"]tmux['"]|promisify\s*\(\s*execFile\s*\)\s*\(\s*['"]tmux['"]/g;
+  for (const file of sourceFiles(sourceRoot)) {
+    const relative = path.relative(sourceRoot, file);
+    if (relative === 'tmux-client.ts') continue;
+    const source = readFileSync(file, 'utf8');
+    for (const match of source.matchAll(direct)) {
+      const tail = source.slice(match.index, match.index + 100);
+      if (relative === path.join('ws', 'pty.ts') && /spawn\s*\(\s*['"]tmux['"]\s*,\s*\[\s*['"]attach['"]/.test(tail)) continue;
+      const line = source.slice(0, match.index).split('\n').length;
+      violations.push(`${relative}:${line}`);
+    }
+  }
+  assert.deepEqual(violations, []);
+});
 
 test('exactSession pins the name as an identity, never a pattern', () => {
   assert.equal(exactSession('beta'), '=beta');
@@ -47,6 +77,12 @@ test('parseTags cleans, dedupes and sorts — tags are addresses, so they stay b
 test('parseTags drops what an agent could not type as an address', () => {
   assert.deepEqual(parseTags('ok, has space, -lead, , x'.trim()), ['ok', 'x']);
   assert.deepEqual(parseTags('a'.repeat(33)), []); // over the 32-char cap
+});
+
+test('startup viewer cleanup preserves the control holder by exact name', () => {
+  assert.equal(isStaleViewerSession('grid_ctl'), false);
+  assert.equal(isStaleViewerSession('grid_alpha_dead_1'), true);
+  assert.equal(isStaleViewerSession('alpha'), false);
 });
 
 /**
@@ -96,4 +132,19 @@ test('a supplied session record key is stamped in the same tmux birth transactio
   const key = a.indexOf('@ronin-key');
   assert.notEqual(key, -1);
   assert.deepEqual(a.slice(key - 3, key + 2), ['set-option', '-t', 'beta', '@ronin-key', 'beta-unique-key']);
+});
+
+test('Ronin Services off at birth sets RIREKI\'s dial in the same tmux birth transaction', () => {
+  // The recorder\'s sweep arms a pipe on every pane it finds without one. Setting the dial
+  // after new-session would leave a window for a first segment; in the chain there is none.
+  const a = newSessionArgs('beta', { argv: ['claude'], key: 'beta-key', rireki: false });
+  const i = a.indexOf('@ronin-rireki');
+  assert.notEqual(i, -1);
+  assert.equal(a[i + 1], 'off');
+  assert.deepEqual(a.slice(i - 4, i), [';', 'set-option', '-t', 'beta']);
+});
+
+test('Ronin Services on, or unstated, leaves RIREKI\'s dial alone — the recorder\'s own default', () => {
+  assert.equal(newSessionArgs('beta', { argv: ['claude'], rireki: true }).includes('@ronin-rireki'), false);
+  assert.equal(newSessionArgs('beta', { argv: ['claude'] }).includes('@ronin-rireki'), false);
 });

@@ -18,6 +18,7 @@ Routine definition.
 - **actions:** name, ...
 - **tools:** bare-command, ...
 - **mcp:** connection-name, ...
+- **parts:** service-part, ...
 - **requires:** routine-name, ...
 - **bundles:** base, worktrees, services
 - **order:** 10
@@ -28,7 +29,11 @@ boot-shelf coordinates, delivered when the Routine is on; `reading_off` entries 
 same kind of coordinate, delivered when it is OFF — the page that says what the owner is
 working without and where the switch is; SOP names omit `.md`; macro/action/tool names use their catalog
 tokens. An MCP name is the connection identity the launch adapter resolves, never command
-flags embedded in Markdown.
+flags embedded in Markdown. A `parts` name is a Services part — a directory under
+`src/services/` — that this Routine runs inside the Ronin server: the server loads a claimed
+part only while the Routine's Campaign switch is on, at start. Off means the part does not
+run: as if it were not installed, with its files left in place (owner, 2026-09-04). A part
+no Routine claims always loads.
 
 Every referenced stock item must exist. The manifest owns membership: do not also add a
 `routine:` field to each macro or tool. Campaign and Team configuration store only their
