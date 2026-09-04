@@ -95,6 +95,8 @@ test('commands serialize and notifications are delivered between reply blocks', 
   child.send('%begin 1 2 0', 'SECOND', '%end 1 2 0');
   assert.equal(await second, 'SECOND');
   assert.equal(notifications.length, 1);
+  assert.equal(notifications[0]!.kind, 'sessions-changed');
+  assert.equal(notifications[0]!.rawKind, '%sessions-changed');
   assert.equal(notifications[0]!.line, '%sessions-changed');
 });
 
@@ -160,6 +162,30 @@ test('the client recreates grid_ctl and returns to up after backoff', async () =
   assert.deepEqual(execs[0]?.args, ['new-session', '-d', '-s', 'grid_ctl', 'exec sleep 2147483647']);
 });
 
+test('a changed tmux socket environment retires the old connection', async () => {
+  const before = process.env.TMUX_TMPDIR;
+  const { client, children } = fixture();
+  try {
+    process.env.TMUX_TMPDIR = '/tmp/tmux-client-first';
+    const first = client.run(['display-message', '-p', 'first']);
+    const firstChild = await childAt(children);
+    await written(firstChild);
+    firstChild.send('%begin 1 1 0', 'first', '%end 1 1 0');
+    assert.equal(await first, 'first');
+
+    process.env.TMUX_TMPDIR = '/tmp/tmux-client-second';
+    const second = client.run(['display-message', '-p', 'second']);
+    const secondChild = await childAt(children, 1);
+    assert.equal(firstChild.killed, true);
+    await written(secondChild);
+    secondChild.send('%begin 2 2 0', 'second', '%end 2 2 0');
+    assert.equal(await second, 'second');
+  } finally {
+    if (before === undefined) delete process.env.TMUX_TMPDIR;
+    else process.env.TMUX_TMPDIR = before;
+  }
+});
+
 test('a timeout kills the wedged pipe and is not replayed', async () => {
   const { client, children, execs } = fixture();
   const result = client.run(['wait-for', 'never'], { timeoutMs: 5 });
@@ -182,6 +208,23 @@ test('%output octal escapes decode without eating ordinary backslashes', async (
   await result;
   assert.equal(seen?.paneId, '%8');
   assert.equal(seen?.output, 'hello world\r\n');
+});
+
+test("on('subscription') installs the activity session loop and parses its values", async () => {
+  const { client, children } = fixture();
+  let seen: Notification | undefined;
+  client.on('subscription', (notification) => { seen = notification; });
+  const child = await childAt(children);
+  assert.equal(
+    await written(child),
+    "'refresh-client' '-B' 'activity::#{S:#{session_name}:#{window_activity},}'\n",
+  );
+  child.send('%begin 3 1 0', '%end 3 1 0');
+  await new Promise((resolve) => setImmediate(resolve));
+  child.send('%subscription-changed activity $1 @1 0 %1 : alpha:123,beta:456');
+  assert.equal(seen?.kind, 'subscription');
+  assert.equal(seen?.subscription, 'activity');
+  assert.equal(seen?.value, 'alpha:123,beta:456');
 });
 
 test('an importing process exits after its command leaves the control connection idle', async () => {
