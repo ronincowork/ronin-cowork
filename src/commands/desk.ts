@@ -1,4 +1,5 @@
 import { listSessions } from '../tmux.js';
+import { tmux } from '../tmux-client.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from '../desks/registry.js';
 import { closeDesk, discardDesk, openDesk, parkedDesks, recoverDesk, syncDesk } from '../desks/desk.js';
 import { handIn, handInAssignment } from '../desks/hand-in.js';
@@ -17,10 +18,8 @@ async function whoami(): Promise<string> {
   if (process.env.RONIN_SESSION) return process.env.RONIN_SESSION;
   const pane = process.env.TMUX_PANE;
   if (!pane) return '';
-  const { execFile } = await import('node:child_process');
-  const { promisify } = await import('node:util');
   try {
-    const { stdout } = await promisify(execFile)('tmux', ['list-panes', '-a', '-F', '#{pane_id}\t#{session_name}']);
+    const stdout = await tmux.run(['list-panes', '-a', '-F', '#{pane_id}\t#{session_name}']);
     for (const line of stdout.split('\n')) {
       const [id, name] = line.split('\t');
       if (id === pane && name && !name.startsWith('grid_')) return name;
