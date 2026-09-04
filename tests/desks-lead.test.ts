@@ -41,15 +41,11 @@ test('the lead is told what happened and what to do, in one line', () => {
   assert.match(bad, /adjudicate/);
 });
 
-test('with no lead, the hand-in stands, promotion waits, and the hander is told to ask the owner for a lead (2026-09-03)', () => {
+test('with no lead, the reply is one plain sentence', () => {
   const ok = selfMessage({ team: 'ronin_comps', line: 'team/ronin_comps/dev', session: 'comp_fable', receiptId: 'hi_1', result: 'accepted' });
-  assert.match(ok, /no lead is set for ronin_comps/);
-  assert.match(ok, /promotion is the lead's job and nobody is marked 人/);
-  assert.match(ok, /please mark one on the Team page/);
-  assert.match(ok, /bin\/ronin-promote ronin_comps answers NO-LEAD/);
+  assert.equal(ok, "this didn't work for promotion: team ronin_comps has no lead; ask the owner to mark one on the Team page.");
   const bad = selfMessage({ team: 'ronin_comps', line: 'team/ronin_comps/dev', session: 'comp_fable', receiptId: 'hi_2', result: 'conflict', files: ['a.ts'] });
-  assert.match(bad, /conflict on a\.ts is yours to resolve/);
-  assert.match(bad, /tejun-desk sync/);
+  assert.equal(bad, ok);
 });
 
 test('a lead reply is visibly bound to its hand-in receipt', () => {

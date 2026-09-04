@@ -82,17 +82,13 @@ export async function replyToHandIn(input: {
 }
 
 export function selfMessage(n: LeadNotice): string {
-  if (n.result === 'accepted') {
-    return `no lead is set for ${n.team}: the hand-in is accepted and waits on the line, but promotion is the lead's job and nobody is marked 人. Tell the owner: "${n.team} has no team lead — please mark one on the Team page (a coordinator that writes no code does fine)." Until then bin/ronin-promote ${n.team} answers NO-LEAD.`;
-  }
-  return `no lead is set for ${n.team}, so the conflict${n.files?.length ? ` on ${n.files.join(', ')}` : ''} is yours to resolve: tejun-desk sync, resolve the marked files at your desk, commit, hand in again.`;
+  return `this didn't work for promotion: team ${n.team} has no lead; ask the owner to mark one on the Team page.`;
 }
 
 export async function notifyLeads(n: LeadNotice): Promise<Delivery[]> {
   const leads = await findLeads(n.team);
   const msg = leadMessage(n);
   if (!leads.length) {
-    await wipeboard(n.team, `${n.session} holds the lead's job for ${n.receiptId} — ${msg}`, 'none');
     return [{ to: n.session, how: 'self', detail: selfMessage(n) }];
   }
   const out: Delivery[] = [];

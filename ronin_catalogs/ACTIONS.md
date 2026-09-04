@@ -431,10 +431,8 @@ commit or a hand-in. An accepted hand-in, or a conflict, tells your team's lead 
 regardless of the lead's dial — reviewing the team line and promoting it is the lead's
 primary job — so you never need to `tejun-send` the lead about a
 hand-in, and a watch-only lead is not a reason to stop. If the team has no lead, the
-hand-in tells you so and **promotion waits**: tell the owner, in words, that the team has
-no team lead and ask them to mark one on the Team page — a coordinator that writes no
-code does fine (owner, 2026-09-03). `bin/ronin-promote <team>` answers `NO-LEAD` until
-then; never promote around it on your own. A conflict at hand-in is still yours to
+hand-in tells you: “this didn't work for promotion: team <team> has no lead; ask the owner
+to mark one on the Team page.” A conflict at hand-in is still yours to
 resolve (`tejun-desk sync`, fix, hand in).
 If your brief lists no desk (manual launch, plain terminal, a
 repository under direct publishing) you have none: ordinary Git in the named checkout is
