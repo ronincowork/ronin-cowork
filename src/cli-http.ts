@@ -1,13 +1,10 @@
 import 'dotenv/config';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const pexec = promisify(execFile);
+import { tmux } from './tmux-client.js';
 
 export interface CliReply { stdout: string; stderr: string; exit: number }
 
 async function option(name: string): Promise<string> {
-  try { return (await pexec('tmux', ['show-option', '-s', '-qv', name])).stdout.trim(); }
+  try { return (await tmux.run(['show-option', '-s', '-qv', name])).trim(); }
   catch { return ''; }
 }
 
