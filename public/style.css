@@ -48,6 +48,7 @@
   --cowork-head-attention: var(--kiiro);
 
   --cowork-head-line: var(--define-line);
+  --cowork-surface-head-edge: var(--edge);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -294,13 +295,15 @@
 
 :root[data-scope='campaign'] {
   --cowork-head-bg: var(--scope-campaign-head-bg);
-  --cowork-head-line: var(--scope-head-line);
+  --cowork-head-line: var(--scope-graphite);
+  --cowork-surface-head-edge: var(--space-1);
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
 }
 :root[data-scope='teams'] {
   --cowork-head-bg: var(--scope-teams-head-bg);
   --cowork-head-line: var(--aiiro);
+  --cowork-surface-head-edge: var(--space-1);
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
 }
@@ -5804,7 +5807,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='stale'] > .wk-state { color: var(--warn); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
 
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--cowork-head-line); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--cowork-surface-head-edge) solid var(--cowork-head-line); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
 .wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--cowork-head-fg); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
 .wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--cowork-head-muted); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); box-shadow: inset 0 calc(-1 * var(--space-1)) 0 var(--accent); }

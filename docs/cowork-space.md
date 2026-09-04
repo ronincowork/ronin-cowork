@@ -97,18 +97,18 @@ Rules that make them peers:
 
 ### The bar's navigation
 
-The left side keeps the RoninCowork brand and a Teams door; the middle is one place reading:
+The left side keeps the RoninCowork brand and a Teams door. On one Team, the middle names
+that place; the Teams collection does not repeat the door label:
 
 ```text
-RoninCowork  •  Teams              Teams                         <verbs>
+RoninCowork  •  Teams                                            <verbs>
 RoninCowork  •  Teams          Team: Sea Settle                  <verbs>
 ```
 
 The root landing shows only RoninCowork. The Team's name used to sit beside the collection
 door, where a first-time visitor read it as one more door and could not tell the all-Teams
-page from one Team's page. It now sits centred in the bar as **the place**: *Teams* on the
-collection page (its tooltip says "See all of your teams here"), and *Team: <name>* on a
-Team page, italic so it reads as information and never as a button. Doors consume the shared
+page from one Team's page. It now sits centred in the bar as **the place** only on a Team
+page: *Team: <name>*, italic so it reads as information and never as a button. Doors consume the shared
 `.ui-bar-nav` primitive and the place consumes `.ui-bar-place` from `docs/ui.md`; a
 feature must not restyle either. `js/workspace-header.js` writes the place; nothing
 else does.

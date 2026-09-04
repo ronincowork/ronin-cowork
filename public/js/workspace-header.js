@@ -17,8 +17,8 @@ export function installWorkspaceHeader(workspace) {
   const ronin = document.getElementById('brandbtn');
   const separator = document.getElementById('coworkssep');
   const coworkers = document.getElementById('coworksbtn');
-  // THE PLACE reading, centred in the bar's middle. The left is doors only; this says
-  // which Workbench page the doors led to, in words a first-time visitor has.
+  // THE PLACE reading, centred in the bar's middle, distinguishes one Team from the
+  // Teams collection. The collection needs no repeat of its door label.
   const place = document.getElementById('viewplace');
 
   const root = () => {
@@ -44,15 +44,14 @@ export function installWorkspaceHeader(workspace) {
     if (coworkers) coworkers.hidden = landing;
     if (place) {
       const teamPage = active?.id === 'team' && active.param;
-      const coworksPage = active?.id === 'cowork';
       if (teamPage) {
         place.textContent = t('bar.place_team', 'Team: {team}', { team: readable(active.param) });
         place.title = '';
-      } else if (coworksPage) {
-        place.textContent = t('bar.place_teams', 'Teams');
-        place.title = t('bar.place_teams_title', 'See all of your teams here');
+      } else {
+        place.textContent = '';
+        place.title = '';
       }
-      place.hidden = !(teamPage || coworksPage);
+      place.hidden = !teamPage;
     }
   };
   refresh();
