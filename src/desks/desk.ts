@@ -1,17 +1,19 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { arrangementOf, desksManaged } from './arrangement.js';
 import {
-  branchExists, commitAll, deleteBranch, resetHardTo, git, isAncestor, mergeInto, revParse, setUpstream,
+  aheadBehind, branchExists, deleteBranch, resetHardTo, git, isAncestor, mergeInto, revParse, setUpstream,
   worktreeAddExisting, worktreeAddNew, worktreeOf, worktreePrune, worktreeRemove, changedFiles, dirtyFiles, stampDeskIdentity,
 } from './git.js';
 import {
-  assignmentId, deskStatus, deskWorktree, lineFor, listDeskRecords, readDesk, removeDesk, updateDesk,
+  assignmentId, deskStatus, deskWorktree, lineFor, readDesk, removeDesk, updateDesk,
   writeDesk,
 } from './registry.js';
 import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
 import { materializeNodeModules } from '../worktree-runtime.js';
+import { withManagedTransaction } from './lifecycle-ledger.js';
 
 export async function syncthingHazard(dir: string): Promise<string> {
   let d = path.resolve(dir);
@@ -71,34 +73,39 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   }
 
   const existing = await readDesk(a.repo, branch);
+  const workingBase = await revParse(a.dir, `refs/heads/${a.working}`) || await revParse(a.dir, 'HEAD');
   const wtPath = existing?.worktree || deskWorktree(a.repo, branch);
   const mounted = await worktreeOf(a.dir, branch);
   if (!mounted) {
     await worktreePrune(a.dir);
     if (await branchExists(a.dir, branch)) await worktreeAddExisting(a.dir, wtPath, branch);
-    else await worktreeAddNew(a.dir, wtPath, branch, (await branchExists(a.dir, line.branch)) ? line.branch : 'HEAD');
+    else await worktreeAddNew(a.dir, wtPath, branch, workingBase);
   }
   await setUpstream(a.dir, branch, line.branch).catch(() => undefined);
   await stampDeskIdentity(a.dir, mounted?.path ?? wtPath, input.session);
   await materializeNodeModules(a.dir, mounted?.path ?? wtPath);
 
   const rec: DeskRecord = existing
-    ? { ...existing, session: input.session, team: input.team, assignment: input.assignment ?? existing.assignment, state: 'open', parked_at: undefined, worktree: mounted?.path ?? wtPath }
+    ? { ...existing, session: input.session, team: input.team, assignment: input.assignment ?? existing.assignment, state: 'open', parked_at: undefined, worktree: mounted?.path ?? wtPath,
+        owners: existing.owners?.length ? existing.owners : [input.session], dependency_location: existing.dependency_location ?? path.join(mounted?.path ?? wtPath, 'node_modules') }
     : {
         repo: a.repo, root: a.repo, branch, worktree: mounted?.path ?? wtPath, line: line.branch, mode: a.mode,
         session: input.session, team: input.team, assignment: input.assignment ?? assignmentId(input.session, input.team),
         state: 'open', opened_at: new Date().toISOString(), pending: null, last_hand_in: '', blocked: '',
+        base_sha: workingBase,
+        dependency_location: path.join(mounted?.path ?? wtPath, 'node_modules'), owners: [input.session],
       };
   await writeDesk(rec);
   return deskStatus(rec, a);
 }
 
-export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string): Promise<DeskNotice> {
+export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string, source = rec.line): Promise<DeskNotice> {
   const st = await deskStatus(rec, a);
-  const line_sha = st.line_tip;
+  const line_sha = await revParse(a.dir, `refs/heads/${source}`);
   const base: DeskNotice = { kind: 'adopted', repo: rec.repo, desk: rec.branch, session: rec.session, line_sha, by, files: [] };
   if (!line_sha || !st.tip) return { ...base, kind: 'pending' };
-  if (st.behind === 0) {
+  const sourceDistance = await aheadBehind(a.dir, st.tip, line_sha);
+  if (sourceDistance.behind === 0) {
     if (rec.pending) await updateDesk(rec.repo, rec.branch, { pending: null });
     return base;
   }
@@ -108,7 +115,7 @@ export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string)
     await updateDesk(rec.repo, rec.branch, { pending: { line_sha, by, at: new Date().toISOString(), overlap } });
     return { ...base, kind: overlap.length ? 'pending_overlap' : 'pending', files: overlap };
   }
-  const m = await mergeInto(st.worktree, rec.line, `Adopt ${rec.line} into ${rec.branch}`);
+  const m = await mergeInto(st.worktree, source, `Update ${rec.branch} from ${source}`);
   if (!m.ok) {
     await updateDesk(rec.repo, rec.branch, { pending: { line_sha, by, at: new Date().toISOString(), overlap: m.conflicts } });
     return { ...base, kind: 'conflict', files: m.conflicts };
@@ -120,35 +127,54 @@ export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string)
 export async function syncDesk(repo: string, branch: string): Promise<DeskNotice> {
   const rec = await readDesk(repo, branch);
   if (!rec) return { kind: 'pending', repo, desk: branch, session: '', line_sha: '', by: '', files: [] };
-  return adoptLine(rec, await arrangementOf(repo), rec.pending?.by ?? '');
+  const a = await arrangementOf(repo);
+  return adoptLine(rec, a, rec.pending?.by ?? '', a.working);
 }
 
-export interface CloseOutcome { desk: DeskStatus | null; action: 'parked' | 'deleted' | 'kept'; wip: string; unmounted: boolean }
+export interface CloseOutcome { desk: DeskStatus | null; action: 'closed' | 'kept'; reason: string }
 
-export async function closeDesk(repo: string, branch: string, opts: { unmount?: boolean; wipMessage?: string } = {}): Promise<CloseOutcome> {
+export async function closeDesk(repo: string, branch: string): Promise<CloseOutcome> {
   const rec = await readDesk(repo, branch);
-  if (!rec) return { desk: null, action: 'kept', wip: '', unmounted: false };
+  if (!rec) return { desk: null, action: 'kept', reason: 'no desk is recorded' };
   const a = await arrangementOf(repo);
-  let st = await deskStatus(rec, a);
-  let wip = '';
-  if (st.mounted && st.dirty) {
-    wip = await commitAll(st.worktree, opts.wipMessage || `WIP: ${rec.session} closed ${branch} with unsaved files`);
-    st = await deskStatus(rec, a);
-  }
+  const st = await deskStatus(rec, a);
+  if (st.dirty) return { desk: st, action: 'kept', reason: `unsaved files: ${st.dirty_files.join(', ')}` };
   const integrated = !!st.tip && !!st.line_tip && (await isAncestor(a.dir, st.tip, st.line_tip));
-  if (integrated) {
-    if (st.mounted) await worktreeRemove(a.dir, st.worktree, false).catch(() => worktreeRemove(a.dir, st.worktree, true));
+  if (!integrated) return { desk: st, action: 'kept', reason: `${st.ahead} commit(s) are not on ${st.line}` };
+  return withManagedTransaction({
+    repo, transaction_id: `close_${randomUUID()}`, type: 'ending_inspected', result: 'started', session: rec.session, team: rec.team,
+    refs: [{ name: branch, before: st.tip, after: '' }], commits: [{ role: 'desk_tip', sha: st.tip }],
+    objects: [
+      { kind: 'desk', id: `${repo}:${branch}`, path: st.worktree, owner_sessions: rec.owners?.length ? rec.owners : [rec.session], owner_team: rec.team },
+      { kind: 'assignment', id: rec.assignment, owner_sessions: rec.owners?.length ? rec.owners : [rec.session], owner_team: rec.team },
+      { kind: 'worktree', id: `${repo}:${branch}`, path: st.worktree },
+    ], detail: { operation: 'close', contained_in: st.line },
+  }, async (transaction) => {
+    if (st.mounted) await worktreeRemove(a.dir, st.worktree, false);
     await deleteBranch(a.dir, branch);
     await removeDesk(repo, branch);
-    return { desk: null, action: 'deleted', wip, unmounted: true };
-  }
-  let unmounted = false;
-  if (opts.unmount && st.mounted) {
-    await worktreeRemove(a.dir, st.worktree, false);
-    unmounted = true;
-  }
-  const parked = await updateDesk(repo, branch, { state: 'parked', parked_at: new Date().toISOString() });
-  return { desk: await deskStatus(parked, a), action: 'parked', wip, unmounted };
+    await transaction.finish('desk_closed', 'contained', { detail: { contained_in: st.line } });
+    return { desk: null, action: 'closed', reason: `tip is contained in ${st.line}` };
+  });
+}
+
+export async function handoffDesk(repo: string, branch: string, successors: string[]): Promise<DeskStatus> {
+  const rec = await readDesk(repo, branch);
+  if (!rec) throw new Error(`no desk recorded for ${repo}:${branch}`);
+  const owners = [...new Set(successors.map((owner) => owner.trim()).filter(Boolean))];
+  if (!owners.length) throw new Error('handoff requires at least one successor owner');
+  const prior = rec.owners?.length ? rec.owners : [rec.session];
+  return withManagedTransaction({
+    repo, transaction_id: `handoff_${randomUUID()}`, type: 'ending_inspected', result: 'started', session: rec.session, team: rec.team,
+    refs: [], commits: [], objects: [{ kind: 'desk', id: `${repo}:${branch}`, path: rec.worktree, owner_sessions: prior, owner_team: rec.team }],
+    detail: { operation: 'handoff', from: prior, to: owners },
+  }, async (transaction) => {
+    const next = await updateDesk(repo, branch, { owners, session: owners[0]!, successor_session: owners[0], handed_off_at: new Date().toISOString() });
+    await transaction.finish('handed_off', 'handed_off', {
+      objects: [{ kind: 'desk', id: `${repo}:${branch}`, path: next.worktree, owner_sessions: owners, owner_team: next.team }], detail: { from: prior, to: owners },
+    });
+    return deskStatus(next, await arrangementOf(repo));
+  });
 }
 
 export async function discardDesk(repo: string, branch: string): Promise<void> {
@@ -158,22 +184,6 @@ export async function discardDesk(repo: string, branch: string): Promise<void> {
   if (wt) await worktreeRemove(a.dir, wt.path, true);
   if (await branchExists(a.dir, branch)) await deleteBranch(a.dir, branch);
   if (rec) await removeDesk(repo, branch);
-}
-
-export async function recoverDesk(repo: string, branch: string, session: string): Promise<DeskStatus> {
-  const rec = await readDesk(repo, branch);
-  if (!rec) {
-    console.warn(`no desk recorded for ${repo}:${branch}; opening it for ${session}.`);
-    return openDesk({ repo, session, team: '', branch });
-  }
-  return openDesk({ repo, session, team: rec.team, assignment: rec.assignment, branch });
-}
-
-export async function parkedDesks(filter: { repo?: string; team?: string } = {}): Promise<DeskStatus[]> {
-  const recs = (await listDeskRecords(filter)).filter((r) => r.state === 'parked');
-  const out: DeskStatus[] = [];
-  for (const r of recs) out.push(await deskStatus(r, await arrangementOf(r.repo)));
-  return out;
 }
 
 export const refreshLine = (line: TeamLine): Promise<boolean> =>

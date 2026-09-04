@@ -5,8 +5,7 @@
 > **Voice: relay.** Written for the agent to walk a person through, not to follow itself.
 
 Most of what goes wrong here is not knowing what state you are in. The standard is small
-commits, one declared publishing arrangement, and work that is never invisible — either
-handed in to a shared line or recorded as a parked desk. Establish the repository's
+commits, one declared publishing arrangement, and work that is never invisible. Establish the repository's
 arrangement before changing it; do not infer policy merely from whichever branch happens
 to be checked out. **A repository declares it in `RONIN_REPO` at its root** (mode, working
 line, stable line, whether managed desks apply); a repository with no such file is an
@@ -28,13 +27,14 @@ is the same arrangement. The working line and every team line are **funnel point
 merged into, never written into. Nobody's shell sits in one to edit.
 
 - **A session works at a desk** — its own branch (`team/<team>/<session>`, or
-  `solo/<session>` for a rōnin) and the worktree mounted on it, cut from the team's line
+  `solo/<session>` for a rōnin) and the worktree mounted on it, cut from current local `dev`
   and opened by the launch before the agent started. One desk per repository the
   assignment touches. The lead included: a lead who edits code opens a desk.
 - **Commit is private.** Ordinary `git commit` on the desk, as often as coherent;
   nothing propagates and no gate runs.
 - **Hand-in publishes to the team.** `tejun-desk hand-in` admits the desk's committed
-  range to `team/<team>/dev` — serialized, built in a candidate worktree, the line
+  range to `team/<team>/dev` — serialized, built from current local `dev`, accepted team
+  delta, then desk delta in a candidate worktree, the line
   advanced atomically or not at all, a receipt appended. Mechanical admission only: a
   conflict is rejected with both sides and the lead adjudicates; no full BYOIN runs here.
   A rōnin's `solo/<session>` hands in straight to the working line, so that hand-in *is*
@@ -46,9 +46,9 @@ merged into, never written into. Nobody's shell sits in one to edit.
   remote. A desk branch has no upstream on the remote and is never pushed; the PR from
   working to stable is opened by the release process, never by an ordinary session, and
   never merged by an agent.
-- **Desk close is explicit.** It offers to preserve unsaved files in a private `WIP:`
-  commit or to leave the desk mounted for recovery; session loss never silently commits,
-  hands in, or publishes work. Unintegrated committed work is parked and remains visible.
+- **Desk close is explicit and separate from hand-in.** At final handoff, hand in the
+  assignment and close every finished desk. The live session remains at the project root;
+  later work gets a fresh desk from current local `dev`.
 
 The stable branch is the reviewed/released line. The working line is the repository-wide
 pool. A pull request is the owner's gate between them. The gate, not whether the stable
@@ -143,12 +143,12 @@ example).
    and why; the diff already says how. Under the reviewed arrangement a commit is private
    to your desk; it publishes nothing.
 3. **Nothing sleeps unseen.** Reviewed: hand in coherent work to your team line at each
-   DONE leg and before you close; what you do not hand in is parked, visibly, never lost
-   and never silently published. Direct: push every day — a commit on one machine is not a
+   DONE leg; at final handoff, hand in the assignment and close finished desks. Direct:
+   push every day — a commit on one machine is not a
    backup.
 4. **Work where the arrangement puts you** — at your desk under review (never in `dev` or
    a team line), or on the stable branch under direct publishing. A desk has one owner and
-   one assignment and is closed explicitly: handed in, parked, reassigned or discarded.
+   one assignment and is closed explicitly after hand-in, handed off, quarantined or deliberately discarded.
 5. **A pull request is how you show someone** — the diff with a place to talk about it.
    It is the reviewed arrangement's gate from the working line to the stable line, opened
    by the release process — not ceremony imposed where direct publishing was chosen, and

@@ -233,7 +233,7 @@ desk. No PR: that is the release process's, from `dev`. On `leg`, stop and wait.
 ## land
 - **class:** session_macro.workflow
 - **label:** Finish up, then close this session
-- **blurb:** Writes the work down where it will last — a README beside the code, every desk handed in or parked, one line in the index of finished work — and then ends the session for good. Use it when the work is done: the pane closes and there is nothing to come back to.
+- **blurb:** Writes the work down where it will last — a README beside the code, every finished desk handed in and closed, one line in the index of finished work — and then ends the session for good.
 **Land YOURSELF.** No args: finish the work of THIS session, leave the record, end
 this session. The buildout doc you were working from is your own wip;
 if you truly can't tell what you were building, ask — don't guess.
@@ -242,30 +242,30 @@ which does not exist yet. Don't improvise it.)
 
 | # | Action | With |
 |---|---|---|
-| 1 | land-work | persistent README where the code lives; DELETE the wip buildout doc; close every desk — hand in what is coherent, park the rest |
+| 1 | land-work | persistent README where the code lives; DELETE the wip buildout doc; hand in the assignment, then close every finished desk |
 | 2 | land-manifest | ONE line appended to the manifest (location per the documents SOP) — an index entry, not history |
-| 3 | report-outcome | README path, what was handed in and what was parked, manifest line — BEFORE you end |
-| 4 | harakiri | end this session — last act, after every desk is handed in or parked and reported |
+| 3 | report-outcome | README path, what was handed in and closed, manifest line — BEFORE you end |
+| 4 | harakiri | end this session — last act, after every finished desk is handed in, closed and reported |
 
-Report to the owner (before step 4): the README path, the hand-in receipts and any parked
+Report to the owner (before step 4): the README path, the hand-in receipts and closed
 desk, the manifest line. No PR is opened here: `dev → master` belongs to the release process.
 Sessions are disposable: nothing of value may live only in a pane.
 
 ## delete
 - **class:** session_macro.workflow
 - **label:** Throw this session away
-- **blurb:** Ends the session and keeps nothing — no write-up, no pull request, no index entry, no way back. For sessions that produced nothing worth saving. It refuses and tells you if there is unsaved work, which is the case for finishing up properly instead.
+- **blurb:** Ends the session without a write-up. Its ending preflight names managed work and offers Prompt Agent or Ignore; Ignore preserves unresolved work in visible quarantine custody.
 **End THIS session quietly — nothing recorded.** For sessions that produced no
 artifact worth keeping: evaluations, catch-ups, questions, scratch work. No README,
 no manifest line, no PR. It just goes away.
 
 | # | Action | With |
 |---|---|---|
-| 1 | check-clean | unsaved files, commits not handed in, or an unsaved artifact at any desk → STOP: that is a `land`, not a `delete` |
+| 1 | check-clean | inspect every desk; unresolved named work goes through Prompt Agent or Ignore/quarantine |
 | 2 | report-outcome | one line: what you were, that nothing was kept |
 | 3 | harakiri | end this session |
 
-Contrast with `land`: land RECORDS (README + manifest + hand-in/park) then dies; delete just dies.
+Contrast with `land`: land records the result and hands work in; delete has no write-up, but its ending preflight still preserves explicit custody.
 
 ## team
 - **class:** session_macro.lookup

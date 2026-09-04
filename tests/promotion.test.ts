@@ -15,6 +15,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -75,6 +76,8 @@ const quiet = { ledgerDir: LEDGER, log: () => undefined };
 
 test('happy path: candidate = dev + line, CAS advance, mounted dev refreshed', async () => {
   const cw = await fixture('cowork');
+  const containedDesk = path.join(root, 'wt', `happy-desk-${Math.random().toString(36).slice(2, 6)}`);
+  sh(cw.dir, 'worktree', 'add', '-q', containedDesk, '-b', 'team/comp/happy-desk', cw.line[0]);
   const out = await P.promoteTeam({ team: 'happy', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(), restart: false, ...quiet });
   assert.equal(out.ok, true, out.message);
   const r = out.receipt!;
@@ -89,6 +92,10 @@ test('happy path: candidate = dev + line, CAS advance, mounted dev refreshed', a
   assert.equal(sh(cw.dir, 'rev-parse', 'HEAD'), c.candidate, 'the mounted worktree followed');
   assert.equal(await fs.readFile(path.join(cw.dir, 'hand-in-2.txt'), 'utf8'), 'cowork 2\n', 'the files followed too');
   assert.equal(sh(cw.dir, 'status', '--porcelain'), '', 'and it is clean');
+  assert.equal(sh(cw.dir, 'rev-parse', 'team/comp/dev'), cw.line[1], 'promotion leaves the team line where hand-in put it');
+  assert.equal(existsSync(containedDesk), true, 'promotion leaves a contained desk mounted');
+  assert.equal(sh(cw.dir, 'rev-parse', 'team/comp/happy-desk'), cw.line[0], 'promotion leaves the contained desk branch unchanged');
+  assert.equal(existsSync(C.candidateDir('cowork', 'dev')), false, 'promotion removes only its own candidate worktree');
   assert.deepEqual(r.proofs, []);
   assert.deepEqual(r.advances[0], { ...r.advances[0], repo: 'cowork', to: c.candidate, status: 'done' });
   assert.equal(r.reverted_by, undefined);

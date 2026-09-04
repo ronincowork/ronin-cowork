@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
-# tejun-desk — your desks: open, status, sync, hand in, park, recover.
+# tejun-desk — your managed worktrees: get, update, hand in, close, and inspect status.
 #
 # Usage: tejun-desk status [--session s | --team t | --repo r]   per desk: clean/dirty · ahead · pending · blocked
-#        tejun-desk open <repo> [--team t]                       a desk on that repo, cut from your team's line
-#        tejun-desk hand-in [<repo>] [--assignment]              hand your committed range in to the team line
-#        tejun-desk sync [<repo>]                                adopt the current team line into your desk
-#        tejun-desk park [<repo>] [--unmount]                    close: WIP-commit unsaved, park what is ahead
-#        tejun-desk parked [--team t]                            the lead's list: gone sessions' work
-#        tejun-desk recover <repo> <branch> [--session s]        remount a parked desk for a session
-#        tejun-desk discard <repo> <branch> --yes                delete an unintegrated tip — explicit, only ever this way
+#        tejun-desk open <repo[:branch]> [--team t]              get a desk from current local dev
+#        tejun-desk hand-in [<repo[:branch]>] [--assignment]     hand your committed delta to the team line
+#        tejun-desk sync [<repo[:branch]>]                       update the desk from current local dev
+#        tejun-desk close [<repo[:branch]>]                      remove a clean desk whose tip is on its line
+#        tejun-desk handoff <repo[:branch]> --to <session[,session]>  transfer explicit custody
+#        tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"  intentional deletion with receipt
 #        tejun-desk receipts [<repo>] [--line [--accepted|--since <sha>] | --id <id>]   the ledger: your desk, the line, one receipt
 #
 # COMMIT PRESERVES. HAND-IN PUBLISHES (owner, 2026-08-28). A hand-in is mechanical
 # admission to your team's line — merge and conflict detection only, no BYOIN, no `git
 # push`; the line moves atomically or not at all, and a receipt is appended either way.
-# Accepted team state flows down: a clean sibling adopts now, a dirty one is told and
-# marked pending, its files untouched. Nothing here deletes an unintegrated tip except
-# `discard --yes`.
+# Sibling desks change only when their Agents explicitly run `tejun-desk sync`.
+# Nothing here deletes an unintegrated tip except
+# an exact confirmed discard with a durable receipt.
 #
 # src/desk-cli.ts calls the operator HTTP surface and prints its reply.
 set -u

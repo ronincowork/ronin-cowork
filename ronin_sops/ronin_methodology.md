@@ -120,9 +120,9 @@ it. It opens no pull request. A launch whose brief lists no desk (manual, plain 
 direct repository, non-code job) has none: it commits to the repository's declared line as
 that repository's own instructions say, and invents no desk state.
 
-Accepted team state flows back down: a clean sibling desk adopts it at once; a dirty one
-is told — with the files and the diff when they overlap — and adopts at its next commit or
-`tejun-desk sync`. Read the notice before you go on; it is the cross-purposes catch.
+Accepted state reaches a desk when its Agent chooses `tejun-desk sync`, which merges
+current local `dev`. Status reports the distance; 20 commits behind is a notice, not a
+block. Read pending and overlap notices before you go on.
 
 The final review is one pull request from `dev` to the stable line, opened by the release
 process with the promotion receipt, never by an ordinary session, and never merged by an
@@ -139,11 +139,10 @@ essential knowledge in a pane or in `wip/`:
   what exists and how it works now (`land-work`);
 - add the single manifest pointer when the project uses a manifest — `land-manifest` is
   one line, an index entry and not a history;
-- close every desk explicitly: hand in what is coherent (`tejun-desk hand-in`), and park
-  the rest (`tejun-desk park` — a `WIP:` commit, branch kept, listed for the lead to hand
-  in, inspect, reassign or discard). Closing never publishes silently and never deletes;
-  under direct publishing, commit and push instead;
-- report the paths, what was handed in, what was parked, and the manifest line **before**
+- close every finished desk explicitly after `tejun-desk hand-in --assignment`; hand-in
+  does not close one, and the live session stays ready at the project root for later work;
+  under direct publishing, use ordinary Git instead;
+- report the paths, what was handed in, what was closed, and the manifest line **before**
   `harakiri`, not after.
 
 The standing document is not a retrospective. Decisions that still constrain the system

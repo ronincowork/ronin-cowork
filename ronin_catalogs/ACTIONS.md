@@ -427,18 +427,14 @@ your brief and on your letter (`repos[]`); never edit `dev` or a team line, whic
 funnel points. **Commit** coherent checkpoints privately as you go. At each DONE leg,
 **offer a hand-in** — `tejun-desk hand-in` when the work is coherent for the team; a leg
 may prompt it, never perform it for you, and it is not `git push`. Run no repository-wide verification at a
-commit or a hand-in. An accepted hand-in, or a conflict, tells your team's lead by itself,
-regardless of the lead's dial — reviewing the team line and promoting it is the lead's
-primary job — so you never need to `tejun-send` the lead about a
-hand-in, and a watch-only lead is not a reason to stop. If the team has no lead, the
-hand-in tells you so and **promotion waits**: tell the owner, in words, that the team has
-no team lead and ask them to mark one on the Team page — a coordinator that writes no
-code does fine (owner, 2026-09-03). `bin/ronin-promote <team>` answers `NO-LEAD` until
-then; never promote around it on your own. A conflict at hand-in is still yours to
+commit or a hand-in. Reviewing the team line and promoting it is the lead's job; hand-in
+does not send messages on your behalf. If the team has no lead, the
+hand-in tells you: “this didn't work for promotion: team <team> has no lead; ask the owner
+to mark one on the Team page.” A conflict at hand-in is still yours to
 resolve (`tejun-desk sync`, fix, hand in).
 If your brief lists no desk (manual launch, plain terminal, a
-repository under direct publishing) you have none: commit to that repository's declared
-line as its own instructions say, and invent no desk state. Verify per the doc, with
+repository under direct publishing) you have none: ordinary Git in the named checkout is
+correct; follow the repository and owner instructions and invent no desk state. Verify per the doc, with
 scoped evidence, before reporting.
 
 ## open-pr
@@ -471,10 +467,9 @@ Close out finished work so nothing transient survives.
 1. Write/refresh a **persistent README** where the code lives (not in wip/) —
    what it is, how to run it, the decisions worth keeping.
 2. **Delete** the build-out doc — it has served its purpose (the documents library page's first landing question).
-3. **Close every desk explicitly.** Hand in what is coherent (`tejun-desk hand-in`,
-   or `--assignment` for every repo at once); park what is not (`tejun-desk park` — a
-   `WIP:` commit, branch kept, listed for the lead to hand in, inspect, reassign or
-   discard). Closing never publishes silently and never deletes. No desk (direct
+3. **Close every finished desk explicitly.** Hand in the assignment (`tejun-desk hand-in
+   --assignment`), then close each finished desk. Hand-in does not close a desk, and the
+   live session remains ready at the project root for a later fresh desk. No desk (direct
    publishing, shared checkout): commit and push the declared line instead.
 
 ## land-manifest — ONE LINE. READ THIS TWICE.
@@ -518,56 +513,58 @@ RUN a macro — one call, no hunting through docs, nothing to narrate. A macro n
 an action that does not exist **does not compile** (exit 3), so an undefined step is
 impossible by construction rather than caught by review.
 
-## desk-open — a desk on a repository, cut from your team's line
+## desk-open — get a worktree from current local dev
 `action_kind: mechanical` — run it, don't deliberate.
 A desk is one repository's branch and worktree opened together (`team/<team>/<session>`,
-mounted under the `worktrees` store), cut from the team's line (`team/<team>/dev`) with
-that line as upstream, and recorded in the desk registry. It opens at once — no clock, no
-approval. Refused by name: a funnel point (`dev`, `team/<t>/dev`, the stable line), a
-repository declared `direct` or with no `RONIN_REPO`, and a checkout whose `.git` sits in
-a Syncthing share that does not ignore it. A coding launch opens every desk in the
+mounted under the `worktrees` store), cut from the repository's current local working
+line (`dev` for Ronin) and recorded with its exact base, review line, owner and dependency
+location. It opens at once — no clock or approval. Funnel-point requests are reported and
+replaced with a private branch. A coding launch opens every desk in the
 assignment before the CLI starts; a session opens one by hand only for a repository its
 brief did not list.
-> Tool: `tejun-desk open <repo> [--team t]`
+> Tool: `tejun-desk open <repo[:branch]> [--team t]`
 
 ## desk-status — what is true about each desk, now
 `action_kind: mechanical` — run it, don't deliberate.
 Per desk, derived from git at the moment of asking and never from prose: clean or dirty
-(and which files), commits ahead of the line (committed, not handed in), behind, a
+(and which files), distance from both local `dev` and the team line, a 20-commit update
+notice that never blocks, a
 pending team update (who moved the line, which of your unsaved files it overlaps), the
 last accepted hand-in, and a standing block (a conflict awaiting the lead). Parked desks
 show as such. Remote publication is not desk cleanliness and does not appear here.
-> Tool: `tejun-desk status [--session s | --team t | --repo r]`
+> Tool: `tejun-desk status [<repo[:branch]>] [--session s | --team t | --repo r]`
 
-## desk-sync — adopt the current team line into your desk
+## desk-sync — update a desk from current local dev
 `action_kind: mechanical` — run it, don't deliberate.
-Merge the team line into the desk. Runs by itself on a clean desk after every accepted
-hand-in; on a dirty desk it records the update as pending and touches nothing, so run it
-by hand at your next safe boundary (after a commit). A conflict between your commits and
-the line is left in place — it is contained at your hand-in — and reported with the files.
-> Tool: `tejun-desk sync [<repo>]`
+Merge what local `dev` has accepted into the desk. On a dirty desk it records the update
+as pending and touches nothing. An empty update is an ordinary success; a conflict is
+reported with the files. The Agent chooses when to update.
+> Tool: `tejun-desk sync [<repo[:branch]>]`
 
 ## hand-in — hand your committed range in to the team line
 `action_kind: mechanical` — run it, don't deliberate.
-Mechanical admission, serialized per line: a throwaway candidate is built at the line's
-tip, your desk is merged into it, and the line advances by compare-and-swap to the
+Mechanical admission, serialized per line: a throwaway candidate is built from current
+local `dev`, then accepted team delta and desk delta are merged, and the line advances by compare-and-swap to the
 candidate — or not at all. A conflict is contained in the candidate; the hand-in is
 rejected with the two sides and the files, your desk is marked blocked, and the lead
 adjudicates. No repository-wide verification runs here and nothing reaches the remote: that is team
-promotion, the lead's act. One receipt is appended per attempt, accepted or not. After an
-accepted hand-in every sibling desk on the line adopts it (clean) or is told (dirty).
+promotion, the lead's act. One receipt is appended per attempt, accepted or not. Sibling
+desks remain untouched until their Agents explicitly run `tejun-desk sync`.
+`ACCEPTED` immediately reports the desk's level, excluded unsaved/untracked files, other
+level idle desks, and whether promotion is due. Candidate scratch is removed on every
+handled exit; the live desk is never consumed.
 `--assignment` hands in every desk in your assignment, each to its own repo's line;
 nothing cross-repo is checked here.
-> Tool: `tejun-desk hand-in [<repo>] [--assignment]`
+> Tool: `tejun-desk hand-in [<repo[:branch]>] [--assignment]`
 
-## desk-park — close a desk without losing or publishing anything
+## desk-close — close a finished desk independently of its session
 `action_kind: mechanical` — run it, don't deliberate.
-Unsaved files become a `WIP:` commit on the desk's own branch. A desk with commits ahead
-of its line is PARKED — branch kept, worktree optionally unmounted, recorded with owner,
-ahead count and time — and listed for the lead, who chooses hand in · inspect · reassign
-· discard. A desk whose tip is already on the line is deleted. Nothing else deletes;
-`discard --yes` is the one explicit path that removes an unintegrated tip.
-> Tool: `tejun-desk park [<repo>] [--unmount]` · `tejun-desk parked` · `tejun-desk recover <repo> <branch> --session <s>` · `tejun-desk discard <repo> <branch> --yes`
+Close removes a clean desk whose tip is already on its line. Dirty files or commits not on
+the line remain in the live desk and are named; close never turns them into an automatic
+WIP commit. `handoff` transfers explicit ownership without moving the branch or worktree.
+Intentional discard alone deletes unresolved work and requires the exact confirmation;
+its durable receipt names the commits and files before deletion.
+> Tool: `tejun-desk close [<repo[:branch]>]` · `tejun-desk handoff <repo[:branch]> --to <session[,session]>` · `tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"`
 
 ## check-clean
 `action_kind: mechanical` — run it, don't deliberate.
@@ -577,11 +574,12 @@ of your assignment**, not just the one your shell is in.
 tejun-desk status                    # per desk: dirty · ahead (not handed in) · pending update · blocked
 git status --short && git log --oneline -3   # no desk: the checkout you are in
 ```
-Every desk saved, handed in and accepted (or parked on purpose) → safe to end. Unsaved
-files, commits ahead of the team line not yet handed in, a refused hand-in awaiting the
-lead, or an artifact the owner would want kept → **STOP and say so**: that case is a
-`land`, not a `delete`. Remote publication is not session cleanliness — "pushed" is not
-the question at a desk. Judgement, not just git: a written doc or finding that exists
+Every desk saved, handed in, accepted and closed → the ending proceeds directly. Unsaved
+files, commits ahead of the team line, a pending transaction, or an artifact the owner
+would want kept are named in the ending preflight. Choose **Prompt Agent(s)** to queue the
+exact closeout work and refresh the warning, or **Ignore** to proceed with visible quarantine
+custody. Intentional discard is separate and requires its exact receipt confirmation.
+Remote publication is not session cleanliness — "pushed" is not the question at a desk. Judgement, not just git: a written doc or finding that exists
 only in your pane also counts as unsaved.
 
 ## read-work-record

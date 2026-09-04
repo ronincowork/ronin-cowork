@@ -1,7 +1,6 @@
 import type express from 'express';
 import {
   createTeamRoster,
-  deleteTeamRoster,
   isCreatableTeamName,
   listTeamRosters,
   readTeamRoster,
@@ -10,10 +9,11 @@ import {
 } from '../team-rosters.js';
 import { boardExists } from '../wipeboards.js';
 import { count } from '../counts.js';
-import { getLeads, getTags, listSessions, setLeads, setTags } from '../tmux.js';
+import { getTags, listSessions, setTags } from '../tmux.js';
 import { writeTeams } from '../tegami.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { assertSameCampaignRoot, campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
+import { retireTeam } from '../team-retire.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -150,17 +150,11 @@ export function registerTeams(app: express.Express): void {
 
   app.delete('/api/team-rosters/:name', async (req, res) => {
     try {
-      await deleteTeamRoster(req.params.name);
-      for (const session of await listSessions()) {
-        if (!session.tags.includes(req.params.name)) continue;
-        const teams = await setTags(session.name, session.tags.filter((team) => team !== req.params.name));
-        const leads = await getLeads(session.name);
-        if (leads.includes(req.params.name)) await setLeads(session.name, leads.filter((team) => team !== req.params.name));
-        await writeTeams(session.name, teams).catch(() => {});
-        await announceTeamChanges(session.name, session.tags, teams).catch(() => {});
-      }
+      const disposition = String(req.body?.worktree_disposition ?? 'inspect').trim().toLowerCase();
+      const result = await retireTeam(req.params.name, disposition === 'prompt' || disposition === 'ignore' ? disposition : 'inspect');
+      if (result.ok !== true) return res.json(result);
       count('team.dissolve');
-      res.json({ ok: true });
+      res.json(result);
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
