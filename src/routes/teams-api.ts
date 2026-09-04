@@ -14,6 +14,8 @@ import { writeTeams } from '../tegami.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { assertSameCampaignRoot, campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
 import { retireTeam } from '../team-retire.js';
+import { readCampaign } from '../campaigns.js';
+import { teamAgentDefaults } from '../agent-defaults.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -104,6 +106,21 @@ export function registerTeams(app: express.Express): void {
     try {
       const campaign_id = await campaignOf(req.body?.campaign_id);
       const edit = editOf(req.body);
+      const campaign = await readCampaign(campaign_id);
+      if (!campaign) throw new Error(`Unknown Campaign: ${campaign_id || '(none)'}.`);
+      const inherited = campaign.config.agent_defaults;
+      // Every team-creation entrance reaches this door. Some, such as New Agent's
+      // abbreviated "A new team" path, state only identity. Materialize the Campaign
+      // layer here so an omitted browser field cannot become a complete map of `false`.
+      // Values the caller did state remain the final word.
+      edit.routines = { ...inherited.routines, ...(edit.routines ?? {}) };
+      if (edit.behaviours === undefined) {
+        edit.behaviours = { books: [...inherited.behaviours], required: false };
+      }
+      edit.agent_defaults = {
+        ...teamAgentDefaults(inherited),
+        ...(edit.agent_defaults ?? {}),
+      };
       await assertSameCampaignRoot(campaign_id, edit.project_root ?? '');
       let template;
       const token = String(req.body?.template ?? '').trim();
@@ -112,15 +129,6 @@ export function registerTeams(app: express.Express): void {
         const box = (await listAgentTemplates()).find((row) => row.name === token);
         if (!box) template = { source: token, ignored: 'not an agent template on this box' };
         else {
-          if (edit.routines === undefined) {
-            const { readCampaign } = await import('../campaigns.js');
-            const stored = (await readCampaign(campaign_id))?.config?.agent_defaults as
-              { routines?: Record<string, boolean> } | undefined;
-            const { listRoutines } = await import('../resource-adapters.js');
-            edit.routines = stored?.routines
-              ? { ...stored.routines }
-              : Object.fromEntries((await listRoutines()).map((row) => [row.name, row.bundles.includes('base')]));
-          }
           for (const on of box.routines_on) edit.routines[on] = true;
           for (const off of box.routines_off) edit.routines[off] = false;
           template = { source: token, routines_on: box.routines_on, routines_off: box.routines_off };
