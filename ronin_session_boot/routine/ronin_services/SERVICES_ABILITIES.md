@@ -1,11 +1,9 @@
-# RONIN SERVICES ABILITIES — the durable record, Koshi, Voice
+# RONIN SERVICES ABILITIES — Koshi and Voice
 
-**Reading another session** starts with the durable record, not the pane:
-`tejun-rireki <session> since` gives everything since the owner's last message;
-`tejun-rireki <session> text` the recent tape. It answers with no tile open and with Ronin
-stopped. Fall back to `tejun-peek` only when the record says there is no tape, and say that
-you did. If `tejun-rireki` is absent, report that Services was not delivered; never call a
-pane capture durable, and never read service stores directly.
+**Readable transcripts are not in this beta.** The recorder is off while it is refactored,
+so there is no durable tape and no `tejun-rireki`. Read another live session with
+`tejun-peek`, say that you used the live view, and never call a pane capture durable or read
+service stores directly.
 
 **Koshi** is Ronin's assisted administrative behavior: Ronin's own agents doing the house's
 internal jobs. You do not run it; the owner meets it as the Koshi tab.

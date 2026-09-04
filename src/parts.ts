@@ -20,7 +20,7 @@ import { routineChoices } from './routines.js';
 
 export const SERVICES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'services');
 
-export interface PartOnDisk { name: string; entry: string }
+export interface PartOnDisk { name: string; entry: string; parked?: string }
 
 /** Every part present on disk, in name order. Not what runs — see `partsToLoad`. */
 export function discoverParts(dir = SERVICES_DIR): PartOnDisk[] {
@@ -28,15 +28,19 @@ export function discoverParts(dir = SERVICES_DIR): PartOnDisk[] {
   const out: PartOnDisk[] = [];
   for (const name of fs.readdirSync(dir).sort()) {
     const entry = ['register.js', 'register.ts'].map((f) => path.join(dir, name, f)).find((p) => fs.existsSync(p));
-    if (entry) out.push({ name, entry }); // a stray file or a README is not a part
+    if (entry) {
+      const marker = path.join(dir, name, 'PARKED.md');
+      const parked = fs.existsSync(marker) ? fs.readFileSync(marker, 'utf8').split(/\r?\n/).find((line) => line.trim())?.trim() : undefined;
+      out.push({ name, entry, ...(parked ? { parked } : {}) }); // a stray file or a README is not a part
+    }
   }
   return out;
 }
 
-export interface PartsPlan<T extends { name: string }> {
+export interface PartsPlan<T extends { name: string; parked?: string }> {
   load: T[];
-  /** Claimed by a Routine whose switch is off: on disk, not run. */
-  parked: { name: string; routine: string }[];
+  /** Self-declared parked, or claimed by a Routine whose switch is off: on disk, not run. */
+  parked: { name: string; routine?: string; reason?: string }[];
 }
 
 /** Which Routine claims each part; the first claim wins, in catalog order. */
@@ -47,7 +51,7 @@ export function partClaims(routines: Pick<RoutineRow, 'name' | 'parts'>[]): Map<
 }
 
 /** The rule: a claimed part loads only while its Routine's switch is on; an unclaimed part always loads. */
-export function partsToLoad<T extends { name: string }>(
+export function partsToLoad<T extends { name: string; parked?: string }>(
   parts: T[],
   routines: Pick<RoutineRow, 'name' | 'parts'>[],
   switches: unknown,
@@ -57,7 +61,8 @@ export function partsToLoad<T extends { name: string }>(
   const plan: PartsPlan<T> = { load: [], parked: [] };
   for (const part of parts) {
     const routine = claims.get(part.name);
-    if (routine && on[routine] !== true) plan.parked.push({ name: part.name, routine });
+    if (part.parked) plan.parked.push({ name: part.name, reason: part.parked });
+    else if (routine && on[routine] !== true) plan.parked.push({ name: part.name, routine });
     else plan.load.push(part);
   }
   return plan;

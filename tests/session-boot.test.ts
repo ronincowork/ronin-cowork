@@ -155,8 +155,9 @@ test('Routine reading teaches only the selected capability; test policy stays wi
   assert.match(base, /read_tegami/);
   assert.match(base, /tejun-wipeboard/);
   assert.doesNotMatch(base, /tejun-rireki/);
-  assert.match(services, /tejun-rireki <session> since/);
-  assert.match(services, /Fall back to `tejun-peek` only when the record says there is no tape/);
+  assert.match(services, /Readable transcripts are not in this beta/);
+  assert.match(services, /there is no durable tape and no `tejun-rireki`/);
+  assert.match(services, /Read another live session with\s+`tejun-peek`/);
   assert.match(services, /Koshi\*\* is Ronin's assisted administrative behavior/);
   assert.match(services, /Voice\*\* turns the owner's speech into text/);
   assert.match(services, /Hotwords\*\* are the owner's dictation\s+glossary/);

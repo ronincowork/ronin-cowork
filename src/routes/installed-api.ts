@@ -31,7 +31,7 @@ export interface InstalledAnswer {
     /** Parts this server loaded and runs. */
     loaded: string[];
     /** Parts on disk this server did not load: the Routine that claims them was off at start. */
-    parked: { name: string; routine: string }[];
+    parked: { name: string; routine?: string; reason?: string }[];
     installed: boolean;
     /** The switch and the running copy disagree — the switch takes effect at the next restart. */
     restart_needed: boolean;
@@ -53,7 +53,8 @@ export async function installedAnswer(): Promise<InstalledAnswer> {
   const claims = partClaims(routines);
   const switchedOn = map.ronin_services === true;
   // The running copy read the switch at start; if the switch moved since, only a restart honours it.
-  const restartNeeded = parts.some((part) => claims.get(part) === 'ronin_services' && (switchedOn ? !loaded.includes(part) : loaded.includes(part)));
+  const permanentlyParked = new Set(parked.filter((part) => part.reason).map((part) => part.name));
+  const restartNeeded = parts.some((part) => !permanentlyParked.has(part) && claims.get(part) === 'ronin_services' && (switchedOn ? !loaded.includes(part) : loaded.includes(part)));
   return {
     cowork: roninIdentity(),
     services: { parts, loaded, parked, installed: parts.length > 0, activated: entitled, stage: state?.stage ?? 'not_requested', switched_on: switchedOn, restart_needed: restartNeeded },
