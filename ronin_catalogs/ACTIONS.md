@@ -548,8 +548,8 @@ local `dev`, then accepted team delta and desk delta are merged, and the line ad
 candidate — or not at all. A conflict is contained in the candidate; the hand-in is
 rejected with the two sides and the files, your desk is marked blocked, and the lead
 adjudicates. No repository-wide verification runs here and nothing reaches the remote: that is team
-promotion, the lead's act. One receipt is appended per attempt, accepted or not. After an
-accepted hand-in every sibling desk on the line adopts it (clean) or is told (dirty).
+promotion, the lead's act. One receipt is appended per attempt, accepted or not. Sibling
+desks remain untouched until their Agents explicitly run `tejun-desk sync`.
 `ACCEPTED` immediately reports the desk's level, excluded unsaved/untracked files, other
 level idle desks, and whether promotion is due. Candidate scratch is removed on every
 handled exit; the live desk is never consumed.

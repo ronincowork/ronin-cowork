@@ -13,8 +13,8 @@
 # COMMIT PRESERVES. HAND-IN PUBLISHES (owner, 2026-08-28). A hand-in is mechanical
 # admission to your team's line — merge and conflict detection only, no BYOIN, no `git
 # push`; the line moves atomically or not at all, and a receipt is appended either way.
-# Accepted team state flows down: a clean sibling adopts now, a dirty one is told and
-# marked pending, its files untouched. Nothing here deletes an unintegrated tip except
+# Sibling desks change only when their Agents explicitly run `tejun-desk sync`.
+# Nothing here deletes an unintegrated tip except
 # an exact confirmed discard with a durable receipt.
 #
 # src/desk-cli.ts calls the operator HTTP surface and prints its reply.

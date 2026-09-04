@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs';
 import { arrangementOf } from './arrangement.js';
-import { adoptLine, lineDirty, refreshLine } from './desk.js';
+import { lineDirty, refreshLine } from './desk.js';
 import { casRef, mergeInto, revParse, worktreeAddDetached, worktreePrune, worktreeRemove } from './git.js';
 import { withLineLock } from './queue.js';
-import { candidateWorktree, deskStatus, lineFor, listDeskRecords, readDesk, updateDesk } from './registry.js';
+import { candidateWorktree, deskStatus, lineFor, readDesk, updateDesk } from './registry.js';
 import { appendReceipt, newReceiptId } from './receipts.js';
 import type { DeskNotice, DeskStatus, HandInReceipt, HandInResult, RepoArrangement } from './schema.js';
 
@@ -82,12 +82,6 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
   });
 
   const notices: DeskNotice[] = [];
-  if (out.result === 'accepted') {
-    for (const sib of await listDeskRecords({ repo })) {
-      if (sib.line !== line.branch) continue;
-      notices.push(await adoptLine(sib, a, rec.session));
-    }
-  }
   if (out.result !== 'accepted') return { receipt: out, notices, tidy: emptyTidy() };
   const current = await readDesk(repo, branch);
   const currentStatus = current ? await deskStatus(current, a) : null;

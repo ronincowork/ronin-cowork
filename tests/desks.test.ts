@@ -221,7 +221,7 @@ test('handIn: the line advances by compare-and-swap to the candidate, its worktr
   const st = await statusOf('cowork', 'team/comp/fable');
   assert.equal(st.ahead, 0);
   assert.equal(st.last_hand_in, receipt.id);
-  assert.equal(notices.find((n) => n.desk === 'team/comp/fable')?.kind, 'adopted');
+  assert.deepEqual(notices, [], 'hand-in does not update even the called desk from the team line');
   const ledger = await receiptsForLine('cowork', 'team/comp/dev');
   assert.equal(ledger.at(-1)?.id, receipt.id);
   assert.equal((await receiptsForDesk('cowork', 'team/comp/fable')).length, 1);
@@ -241,31 +241,35 @@ test('handIn with no new desk delta is an accepted ordinary result and moves no 
   assert.equal(sh(cowork, ['rev-parse', 'team/comp/dev']), before);
 });
 
-test('downward adoption: a clean sibling takes the line now; a dirty sibling is marked pending with the overlap and is not touched', async () => {
+test('hand-in leaves every sibling untouched; each catches up only through explicit sync from dev', async () => {
   const clean = await openDesk({ repo: 'cowork', session: 'wispr', team: 'comp' });
   const dirty = await openDesk({ repo: 'cowork', session: 'rireki', team: 'comp' });
   assert.equal(clean.ahead, 0);
   // rireki has an unsaved edit to a.txt — the same file fable is about to change on the line.
   await fs.writeFile(path.join(dirty.worktree, 'a.txt'), 'rireki unsaved\n');
   await fs.writeFile(path.join(dirty.worktree, 'own.txt'), 'rireki own\n');
+  const cleanBefore = sh(clean.worktree, ['rev-parse', 'HEAD']);
+  const dirtyBefore = sh(dirty.worktree, ['rev-parse', 'HEAD']);
   await commitFile(deskWorktree('cowork', 'team/comp/fable'), 'a.txt', 'fable 2\n');
   await commitFile(deskWorktree('cowork', 'team/comp/fable'), 'b.txt', 'fable b\n');
   const { receipt, notices } = await handIn('cowork', 'team/comp/fable');
   assert.equal(receipt.result, 'accepted', receipt.reason);
-  const byDesk = Object.fromEntries(notices.map((n) => [n.desk, n]));
-  assert.equal(byDesk['team/comp/wispr'].kind, 'adopted');
-  assert.equal(byDesk['team/comp/rireki'].kind, 'pending_overlap');
-  assert.deepEqual(byDesk['team/comp/rireki'].files, ['a.txt']);
-  assert.equal(byDesk['team/comp/rireki'].by, 'fable');
-  assert.equal((await statusOf('cowork', 'team/comp/wispr')).behind, 0);
-  assert.ok(existsSync(path.join(clean.worktree, 'b.txt')), 'the clean sibling has the new file');
+  assert.deepEqual(notices, []);
+  assert.equal(sh(clean.worktree, ['rev-parse', 'HEAD']), cleanBefore);
+  assert.equal(sh(dirty.worktree, ['rev-parse', 'HEAD']), dirtyBefore);
+  assert.ok(!existsSync(path.join(clean.worktree, 'b.txt')), 'hand-in did not write the clean sibling');
   const rk = await statusOf('cowork', 'team/comp/rireki');
-  assert.ok(rk.behind > 0, 'the dirty sibling did not move');
   assert.equal(await fs.readFile(path.join(dirty.worktree, 'a.txt'), 'utf8'), 'rireki unsaved\n', 'its unsaved file is untouched');
   assert.ok(!existsSync(path.join(dirty.worktree, 'b.txt')));
-  assert.equal(rk.pending?.line_sha, receipt.line_sha);
-  assert.deepEqual(rk.pending?.overlap, ['a.txt']);
-  // At its next safe boundary — here, an explicit sync after it commits — it adopts.
+  assert.equal(rk.pending, null, 'hand-in did not even write a pending marker on the sibling');
+
+  // Promotion accepts the queue onto dev. Only explicit sync now changes either sibling.
+  sh(cowork, ['reset', '--hard', receipt.line_sha]);
+  assert.equal((await syncDesk('cowork', 'team/comp/wispr')).kind, 'adopted');
+  assert.ok(existsSync(path.join(clean.worktree, 'b.txt')));
+  const pending = await syncDesk('cowork', 'team/comp/rireki');
+  assert.equal(pending.kind, 'pending_overlap');
+  assert.deepEqual(pending.files, ['a.txt']);
   await fs.unlink(path.join(dirty.worktree, 'a.txt'));
   await commitFile(dirty.worktree, 'own.txt', 'rireki own\n');
   const n = await syncDesk('cowork', 'team/comp/rireki');
