@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, copyFile, lstat, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, copyFile, lstat, readFile, readlink, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../resources.js';
-import { git, gitOut } from './git.js';
+import { git } from './git.js';
 import { parsePorcelainZ, type EndingChanges, type EndingDeskFact } from './ending.js';
 
 export interface QuarantineManifest {
@@ -21,6 +21,7 @@ export interface QuarantineManifest {
   staged_patch: string;
   unstaged_patch: string;
   untracked_root: string;
+  untracked_entries: Array<{ path: string; kind: 'file' | 'symlink'; mode: number; link?: string }>;
 }
 
 export interface DiscardReceipt {
@@ -45,17 +46,29 @@ async function atomicJson(file: string, value: unknown): Promise<void> {
   await rename(tmp, file);
 }
 
-async function copyUntracked(worktree: string, files: string[], destination: string): Promise<void> {
+async function copyUntracked(
+  worktree: string,
+  files: string[],
+  destination: string,
+): Promise<Array<{ path: string; kind: 'file' | 'symlink'; mode: number; link?: string }>> {
+  const entries: Array<{ path: string; kind: 'file' | 'symlink'; mode: number; link?: string }> = [];
   for (const relative of files) {
     const source = path.resolve(worktree, relative);
     const base = path.resolve(worktree) + path.sep;
     if (!source.startsWith(base)) throw new Error(`untracked path escapes worktree: ${relative}`);
     const st = await lstat(source);
-    if (!st.isFile() || st.isSymbolicLink()) throw new Error(`quarantine only copies regular untracked files: ${relative}`);
+    if (st.isSymbolicLink()) {
+      entries.push({ path: relative, kind: 'symlink', mode: st.mode, link: await readlink(source) });
+      continue;
+    }
+    if (!st.isFile()) throw new Error(`quarantine cannot capture special untracked file: ${relative}`);
     const target = path.join(destination, relative);
     await mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
     await copyFile(source, target);
+    await chmod(target, st.mode);
+    entries.push({ path: relative, kind: 'file', mode: st.mode });
   }
+  return entries;
 }
 
 export async function quarantineDesk(fact: EndingDeskFact, id = `q_${Date.now()}_${randomUUID().slice(0, 8)}`): Promise<QuarantineManifest> {
@@ -70,10 +83,11 @@ export async function quarantineDesk(fact: EndingDeskFact, id = `q_${Date.now()}
     if (quarantine_ref) await git(fact.repo_dir, ['update-ref', quarantine_ref, fact.tip]);
     const staged_patch = path.join(dir, 'staged.patch');
     const unstaged_patch = path.join(dir, 'unstaged.patch');
+    let untracked_entries: QuarantineManifest['untracked_entries'] = [];
     if (fact.mounted) {
-      await writeFile(staged_patch, await gitOut(fact.worktree, ['diff', '--cached', '--binary']), { mode: 0o600 });
-      await writeFile(unstaged_patch, await gitOut(fact.worktree, ['diff', '--binary']), { mode: 0o600 });
-      await copyUntracked(fact.worktree, changes.untracked, path.join(dir, 'untracked'));
+      await writeFile(staged_patch, (await git(fact.worktree, ['diff', '--cached', '--binary'])).stdout, { mode: 0o600 });
+      await writeFile(unstaged_patch, (await git(fact.worktree, ['diff', '--binary'])).stdout, { mode: 0o600 });
+      untracked_entries = await copyUntracked(fact.worktree, changes.untracked, path.join(dir, 'untracked'));
     } else {
       await writeFile(staged_patch, '', { mode: 0o600 });
       await writeFile(unstaged_patch, '', { mode: 0o600 });
@@ -83,7 +97,7 @@ export async function quarantineDesk(fact: EndingDeskFact, id = `q_${Date.now()}
       line: fact.line, owners: fact.owners, team: fact.team, tip: fact.tip, line_tip: fact.line_tip,
       quarantine_ref, changes,
       staged_patch: path.relative(dir, staged_patch), unstaged_patch: path.relative(dir, unstaged_patch),
-      untracked_root: 'untracked',
+      untracked_root: 'untracked', untracked_entries,
     };
     await atomicJson(path.join(dir, 'manifest.json'), manifest);
     return manifest;
