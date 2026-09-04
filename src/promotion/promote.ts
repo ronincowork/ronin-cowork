@@ -1,4 +1,4 @@
-import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
+import { AUTOMATION_IDENTITY, git, gitOut, revParse, worktreeRemove } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { healthCheck, notifyTeam, restartService, serviceStartedAfter } from './health.js';
 import { queuePromotionContinuation } from './continuation.js';
@@ -23,6 +23,12 @@ export const realEffects: Effects = {
   notify: notifyTeam,
   handInsFor: ledgerHandIns,
 };
+
+async function removeOwnCandidates(receipt: PromotionReceipt): Promise<void> {
+  for (const repo of receipt.repos) {
+    await worktreeRemove(repo.dir, candidateDir(repo.repo, repo.target), true).catch(() => undefined);
+  }
+}
 
 export interface PromoteOptions {
   team: string;
@@ -104,6 +110,7 @@ async function promoteTeamLocked(o: PromoteOptions, receiptId: string): Promise<
   if (o.restart === false) {
     r = advanceState(r, 'complete');
     await writeReceipt(r, ledger);
+    await removeOwnCandidates(r);
     return { ok: true, receipt: r, nothing: false, message: `complete — ${r.repos.map((x) => `${x.repo} ${x.target}@${x.candidate.slice(0, 7)}`).join(', ')} (no restart requested)` };
   }
   r = advanceState(r, 'restarting');
@@ -144,6 +151,7 @@ export async function finishPromotionRestart(
   if (health.passed) {
     r = advanceState(r, 'complete');
     await writeReceipt(r, ledger);
+    await removeOwnCandidates(r);
     await releasePromotionLock(r.revert_of ?? r.id, ledger);
     if (r.kind === 'team_promotion') {
       await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${r.repos.map((x) => `${x.repo} ${x.target}@${x.candidate.slice(0, 7)}`).join(', ')}; restart and health passed.`);
