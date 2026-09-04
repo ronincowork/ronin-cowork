@@ -173,7 +173,7 @@ async function main(): Promise<void> {
           const outcome = receipt.result === 'accepted' ? 'accepted' : receipt.conflict_files.length ? 'conflict' : null;
           if (team && outcome) {
             for (const dlv of await notifyLeads({ team, line: d.line, session, receiptId: receipt.id, result: outcome, lineSha: receipt.line_sha, files: receipt.conflict_files })) {
-              out(dlv.how === 'self' ? `  YOU ARE THE LEAD FOR THIS ONE — ${dlv.detail}` : `  lead ${dlv.to}: ${dlv.how === 'house-send' ? 'told' : 'not reachable at the tile — posted on the team wipeboard'} — ${dlv.detail}`);
+              out(dlv.how === 'self' ? `  ${dlv.detail}` : `  lead ${dlv.to}: ${dlv.how === 'house-send' ? 'told' : 'not reachable at the tile — posted on the team wipeboard'} — ${dlv.detail}`);
             }
           }
         }
