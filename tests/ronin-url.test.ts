@@ -110,3 +110,27 @@ test('the retired loopback operator URL is absent from production code', () => {
     }
   }
 });
+
+// The box-side end of an SSH forward is resolved ON THE BOX, where config.bind defaults
+// to the tailnet IP (src/machine-settings.ts), not loopback. A document that hardcodes
+// 127.0.0.1 there sends the reader to an address nothing listens on. The laptop-side end
+// of the same forward IS 127.0.0.1 — which is why this matches the forward shape and not
+// the bare URL, and why the production-code test above cannot simply widen to the docs.
+test('no document forwards an SSH tunnel to loopback on the box', () => {
+  const files = [path.join(root, 'README.md')];
+  const visit = (at: string): void => {
+    for (const entry of readdirSync(at, { withFileTypes: true })) {
+      const target = path.join(at, entry.name);
+      if (entry.isDirectory()) visit(target);
+      else if (entry.isFile() && entry.name.endsWith('.md')) files.push(target);
+    }
+  };
+  visit(path.join(root, 'docs'));
+  for (const file of files) {
+    assert.doesNotMatch(
+      readFileSync(file, 'utf8'),
+      /-L\s*\d+:(?:127\.0\.0\.1|localhost):\d+/,
+      path.relative(root, file),
+    );
+  }
+});

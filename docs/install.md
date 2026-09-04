@@ -131,9 +131,10 @@ It installs the units and starts the operator, and prints the URL it is serving 
 Record the complete result; do not turn a warning or SKIP into a pass.
 
 Never expose Ronin's port publicly. Loopback is enough on a laptop; on a remote box use
-the private route the owner already reaches it by (an SSH tunnel is enough:
-`ssh -L 3006:127.0.0.1:3006 <account>@<box>`), or Tailscale if the owner wants HTTPS and
-reach from their other devices.
+the private route the owner already reaches it by, or Tailscale if the owner wants HTTPS
+and reach from their other devices. An SSH tunnel is enough, and the box-side end of the
+forward is the address Ronin bound — the tailnet IP that `setup.sh` printed, unless
+`.env` sets `BIND`: `ssh -L 3006:<that address>:3006 <account>@<box>`.
 
 ## 5. Verify the running install
 
