@@ -35,7 +35,6 @@ implementation contract.
 | Question | Route |
 |---|---|
 | How do I verify a repository change? | Run `npm run verify`; run Playwright suites explicitly when diagnosing the rendered UI. |
-| How does the server talk to tmux, start programs, and switch Services parts on and off? | [The tmux connection, the spawn broker, and parked parts](tmux-connection.md) |
 
 ## Shelves
 
