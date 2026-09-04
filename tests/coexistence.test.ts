@@ -128,9 +128,14 @@ test('setup port preflight rejects an unrelated listener with exit 78', async ()
   await fs.rm(root, { recursive: true, force: true });
 });
 
-test('runtime names EADDRINUSE and maps it to the non-restarting status', async () => {
-  const source = await fs.readFile(path.join(repo, 'src', 'index.ts'), 'utf8');
-  assert.match(source, /error\.code === 'EADDRINUSE'/);
-  assert.match(source, /process\.exit\(PORT_UNAVAILABLE_EXIT\)/);
-  assert.match(source, /PORT_UNAVAILABLE_EXIT = 78/);
+test('the unit refuses to retry exactly the status the runtime exits with on an unusable address', async () => {
+  // The handler itself lives with the port work (src/bind-refusal.ts, tested there); this
+  // pins the two halves of one contract to the same number.
+  const refusal = await fs.readFile(path.join(repo, 'src', 'bind-refusal.ts'), 'utf8');
+  const unit = await fs.readFile(path.join(repo, 'deploy', 'ronin.service'), 'utf8');
+  const exit = /EXIT_ADDRESS_UNUSABLE = (\d+)/.exec(refusal)?.[1];
+  assert.equal(exit, '78');
+  assert.match(unit, new RegExp(`^RestartPreventExitStatus=${exit}$`, 'm'));
+  const index = await fs.readFile(path.join(repo, 'src', 'index.ts'), 'utf8');
+  assert.equal(index.match(/server\.on\('error'/g)?.length, 1, 'one listener error handler, not two');
 });

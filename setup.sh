@@ -65,10 +65,11 @@ PREFLIGHT_UNIT_DIR="$HOME/.config/systemd/user"
 if [ "$(uname -s)" = Linux ]; then
   ronin_preflight_units "$PREFLIGHT_UNIT_DIR"
 fi
-RONIN_PREFLIGHT_BIND="${BIND:-}"
-if [ -z "$RONIN_PREFLIGHT_BIND" ] && command -v tailscale >/dev/null 2>&1; then
-  RONIN_PREFLIGHT_BIND="$(tailscale ip -4 2>/dev/null | head -1 || true)"
-fi
+# The address to test is the one the install will bind: .env if recorded, else the same
+# resolution ronin_record_bind writes down later in this script (libexec/ronin-banner.sh).
+# shellcheck source=libexec/ronin-banner.sh
+. "$REPO_DIR/libexec/ronin-banner.sh"
+RONIN_PREFLIGHT_BIND="${BIND:-$(ronin_bind "$REPO_DIR")}"
 export RONIN_PREFLIGHT_BIND
 ronin_preflight_port "$REPO_DIR" "$NODE_BIN"
 ronin_adopt_tmux "${RONIN_DATA_ROOT:-$HOME/.ronin}"
