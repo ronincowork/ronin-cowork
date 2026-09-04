@@ -99,7 +99,12 @@ export async function createViewer(target: string, tag: string): Promise<string>
   const safe = target.replace(/[^A-Za-z0-9_-]/g, '');
   const viewer = `${config.viewerPrefix}${safe}_${tag}_${++viewerCounter}`;
   await tmux.run(['new-session', '-d', '-s', viewer, '-t', exactSession(target)]);
-  await tmux.run(['set-option', '-t', exactSession(viewer), VIEWER_OPT, viewerOwner()]);
+  // tmux 3.6 rejects a bare `=name` session target here ("no such session: =name") while
+  // accepting the `=name:` pane form every other set-option in this codebase already uses.
+  // When this threw, the viewer was created but never marked: cleanupViewers() could then
+  // never recognise it as ours, destroy-unattached off kept it forever, and the tile's
+  // failed attach retried — leaking an immortal grid_* session per retry (2026-09-04: 536).
+  await tmux.run(['set-option', '-t', exactPane(viewer), VIEWER_OPT, viewerOwner()]);
   await tmux.run(['set-option', '-t', exactPane(viewer), 'window-size', config.windowSize]).catch(() => {});
   await tmux.run(['set-option', '-t', exactPane(viewer), 'destroy-unattached', 'off']).catch(() => {});
   await tmux.run(['set-option', '-t', exactPane(viewer), 'mouse', config.mouse]).catch(() => {});
