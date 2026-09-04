@@ -326,6 +326,16 @@ dirty="$(git status --porcelain -- src/ package.json 2>/dev/null | wc -l | tr -d
 [ "$dirty" != "0" ] &&
   note "src/ has $dirty uncommitted edit(s) the operator is not running — live on the next restart"
 
+# ---- 5b. owner customization -------------------------------------------------------
+# The checker reads only owner-authored stores and reports how malformed shadows fail
+# to surface. Doctor carries its verdict as one finding; it never edits those files.
+sect "user customization shadows"
+if npm run byoin; then
+  ok "owner customization surfaces through its readers"
+else
+  find_ "an owner customization is malformed — follow the remedy from npm run byoin above"
+fi
+
 # ---- 6. this machine ---------------------------------------------------------------
 # Provisioning gaps are machine facts, not repo faults: doctor is where they surface.
 sect "machine provisioning"
