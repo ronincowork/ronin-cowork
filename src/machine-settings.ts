@@ -13,6 +13,7 @@ import { roninIdentity } from './routes/version.js';
 import { listProjectRoots, listSessionLaunchSpecs } from './project-roots.js';
 import { storeDir } from './resources.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
+import { execFile as brokerExecFile } from './spawn-broker.js';
 import {
   publicState,
   readState as readServicesActivation,
@@ -288,7 +289,7 @@ async function osName(): Promise<string> {
 async function machineFacts(): Promise<Record<string, unknown>> {
   let virt: string | null = null;
   try {
-    const { stdout } = await pexec('systemd-detect-virt', [], { timeout: 1500 });
+    const { stdout } = await brokerExecFile('systemd-detect-virt', [], { timeout: 1500 });
     virt = stdout.trim() || null;
   } catch (e) {
     const out = (e as { stdout?: string })?.stdout?.trim();

@@ -60,6 +60,7 @@ import type { ServiceRegistration } from './sockets-contract.js';
 import { resourceRequestCache } from './resources.js';
 import { compressResponse } from './http-performance.js';
 import { roninIdentity } from './routes/version.js';
+import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -69,6 +70,7 @@ const isEntryPoint = !!process.argv[1] && pathToFileURL(path.resolve(process.arg
 const isBoxInstance = isEntryPoint
   && process.env.NODE_ENV === 'production'
   && process.env.RONIN_TEST_RUNNER !== '1';
+if (isEntryPoint) startSpawnBroker(); // before routes, services, caches, and server state make this process large
 
 const app = express();
 app.use(compressResponse);
@@ -361,6 +363,7 @@ server.listen(config.port, config.bind, async () => {
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopBootHooks();
+    stopSpawnBroker();
     setTimeout(() => process.exit(0), 2000).unref();
     void Promise.allSettled([cleanupViewers()]).finally(() => process.exit(0));
   });
