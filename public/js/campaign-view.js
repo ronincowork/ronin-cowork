@@ -58,17 +58,17 @@ function registerCampaignSurfaces() {
     // This is only the repository-side seed for roots added later. Agent capability is
     // selected independently by the Campaign/Team Routines surface; existing roots keep
     // the answer in their own repository profile below.
-    const newDesks = elem('div', 'cv-body');
+    const newDesks = elem('div', 'cv-body cv-worktrees-default');
     const paintNewDesks = (current) => newDesks.replaceChildren(choice(
       t('campaign_view.new_project_worktrees', 'Worktrees for new workspace folders'),
       [{ value: 'managed', label: t('campaign_view.new_project_worktrees_yes', 'Allow Ronin Worktrees') }, { value: 'none', label: t('campaign_view.new_project_worktrees_no', 'Use the checkout') }],
       current,
-      t('campaign_view.new_project_worktrees_help', 'Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for folders added later; change an existing repository on its Workspace folder card below.'),
+      t('campaign_view.new_project_worktrees_help', 'New repository folders use this default. Worktrees run only when both the folder and the Agent allow them.'),
       async (v) => { const r = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'desks', value: { new_project: v } } }); paintNewDesks(r.ok ? v : current); },
     ));
     const host = elem('div', 'desk-pane desk-proj show');
-    surface.content.append(newDesks, host);
-    const room = buildProjectRoots(host, () => e.entered() && host.isConnected, null);
+    surface.content.append(host, newDesks);
+    const room = buildProjectRoots(host, () => e.entered() && host.isConnected, () => e.selected()?.id || '');
     return { el: surface.el, show: () => { room.enter(); void request('/api/machine-settings').then((r) => paintNewDesks(r.ok && r.data?.set?.desks?.new_project === 'none' ? 'none' : 'managed')); } };
   } });
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });

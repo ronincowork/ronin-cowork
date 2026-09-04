@@ -922,7 +922,7 @@ The pad's current config downloads as a backup first.
 
 ## roots — projectroots.js (the ▣ Workspace folders tab)
 - **roots.add:** ＋ Add workspace folder
-- **roots.add_hint:** An existing directory on this machine where Agents may work.
+- **roots.add_hint:** Choose or create a folder on this machine where Agents should start.
 - **roots.add_save:** Add
 - **roots.read_failed:** could not read the catalog — {message}
 - **roots.save:** save
@@ -935,7 +935,7 @@ The pad's current config downloads as a backup first.
 
 The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
-- **roots.empty:** No workspace folders yet — add one below.
+- **roots.empty:** No workspace folders yet. Choose or create the first one above.
 - **roots.loading:** loading…
 - **roots.chip_worktrees:** Repository: Worktrees allowed
 - **roots.chip_checkout:** Repository: use checkout
@@ -962,8 +962,8 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_plans_hint:** Where this root keeps its build-out plans
 - **roots.group_root:** Workspace folder
 - **roots.group_root_help:** An existing directory on this machine where Agents may work.
-- **roots.group_repository:** Repository workflow
-- **roots.group_repository_help:** Publishing describes where accepted commits go. Worktrees separately decides whether this repository participates in Ronin’s managed worktree workflow.
+- **roots.group_repository:** Advanced repository workflow
+- **roots.group_repository_help:** Optional Git publishing and Worktrees choices. An ordinary folder needs none of these.
 - **roots.f_mode:** publishing
 - **roots.f_mode_hint:** Reviewed uses a working branch and a final PR to stable. Direct publishes on stable itself.
 - **roots.mode_reviewed:** reviewed release
@@ -983,6 +983,29 @@ The catalog entry goes. {dir} is not touched.
 - **roots.flow_checkout:** Every Agent uses this checkout, even when the Agent has Worktrees on.
 - **roots.flow_preview:** Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.
 - **roots.profile_confirm:** Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.
+- **folders.selected:** Selected folder
+- **folders.none_selected:** None selected
+- **folders.start_context:** This is where the Agent will start.
+- **folders.up:** ← Up
+- **folders.home:** Home
+- **folders.search:** Find a folder here
+- **folders.hidden:** Show hidden folders
+- **folders.new:** ＋ New folder here
+- **folders.new_name:** Folder name
+- **folders.git:** Start Git version history
+- **folders.create:** Create and select
+- **folders.inspecting:** Checking the starting context…
+- **folders.git_found:** Git repository
+- **folders.ordinary:** Ordinary folder
+- **folders.context_found:** Project instructions: {files}
+- **folders.context_none:** No recognized project instructions here; the Agent can still start here.
+- **folders.loading:** Reading folders…
+- **folders.choose:** Choose
+- **folders.empty:** No matching folders here.
+- **folders.new_in:** ＋ New folder in {name}
+- **folders.name_needed:** Give the new folder a name.
+- **folders.create_confirm:** Create this folder on the Ronin machine?\n\n{target}
+- **folders.creating:** Creating…
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document
 - **docs.discard_confirm:** Discard unsaved changes?
@@ -1068,6 +1091,9 @@ The catalog entry goes. {dir} is not touched.
 - **setup.machine:** This machine
 - **setup.you:** You
 - **setup.you_lede:** The name Ronin and your Agents use when they address you.
+- **setup.workspace_folder:** Your first workspace folder
+- **setup.workspace_folder_lede:** Choose where an Agent should start. You can skip this and add one later.
+- **setup.folder_skipped:** Skip for now — add one from Campaign later
 - **setup.kind:** Kind
 - **setup.kind_lede:** What do you want to use this app for?
 - **setup.routine_bundles:** Routine Bundles

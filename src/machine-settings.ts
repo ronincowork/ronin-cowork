@@ -684,6 +684,15 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
   const status = await computeStatus(set, observed);
   const needed = computeNeeded(set, observed);
   needed.push(...repositoryNeeds(set, status));
+  const setupFinished = Boolean((set.setup as { completed_at?: string } | undefined)?.completed_at);
+  if (setupFinished && !(await listProjectRoots()).some((root) => !root.archived)) {
+    needed.push({
+      leaf: 'workspace_folder',
+      needs: 'a workspace folder where Agents can start',
+      how: 'ask where the owner keeps their work, then use the Workspace Folder chooser to select or create it',
+      met_by: 'agent',
+    });
+  }
   return {
     set,
     observed,

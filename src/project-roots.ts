@@ -270,6 +270,7 @@ export interface RootFacts {
   dir: string;
   exists: boolean;
   repo?: { remote: string; branch: string };
+  project_context?: string[];
 }
 
 const git = async (dir: string, args: string[]) => {
@@ -285,6 +286,10 @@ export async function repoFacts(root: ProjectRootInfo): Promise<RootFacts> {
   } catch {
     return out;
   }
+  const contextCandidates = ['AGENTS.md', 'CLAUDE.md', '.claude/CLAUDE.md', '.claude/settings.json', '.codex/config.toml'];
+  out.project_context = (await Promise.all(contextCandidates.map(async (candidate) =>
+    stat(path.join(dir, candidate)).then(() => candidate, () => ''),
+  ))).filter(Boolean);
   try {
     if ((await git(dir, ['rev-parse', '--show-toplevel'])) !== dir) return out;
     out.repo = {

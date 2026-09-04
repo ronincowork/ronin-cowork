@@ -21,6 +21,12 @@ no message that launched you to carry it — a list composed at Save would be st
 the time you read it; this read cannot be. (How to verify the install itself:
 `install.md`, beside this file.)
 
+When `needed[]` asks for a Workspace Folder, speak in ordinary folder terms. Ask where the
+owner keeps the work they want Agents to help with, then use Ronin's folder chooser to select
+an existing folder or create one with their confirmation. Explain that this is where an Agent
+starts and discovers project instructions. Git history is optional; publishing a repository
+is a separate later choice.
+
 ## The agent's own settings — one step, and it is not on the form
 
 A form cannot edit another program's config file, so this step is yours.

@@ -46,10 +46,11 @@ import {
 } from '../resource-adapters.js';
 import { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } from '../templates.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
+import { browseFolders, createFolder } from '../folder-browser.js';
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
-const ROOT_FIELDS: RootField[] = ['dir', 'memory', 'match', 'remit'];
+const ROOT_FIELDS: RootField[] = ['dir', 'memory', 'match', 'remit', 'docs', 'plans', 'campaign_id'];
 const bodyFields = (body: unknown) => {
   const out: Partial<Record<RootField, string>> = {};
   for (const k of ROOT_FIELDS) {
@@ -62,6 +63,25 @@ const bodyFields = (body: unknown) => {
 };
 
 export function registerCatalogs(app: express.Express): void {
+  app.get('/api/folders', async (req, res) => {
+    try {
+      res.json(await browseFolders(String(req.query.dir ?? ''), {
+        hidden: req.query.hidden === 'yes',
+        query: String(req.query.q ?? ''),
+      }));
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
+    }
+  });
+
+  app.post('/api/folders', async (req, res) => {
+    try {
+      res.json(await createFolder(String(req.body?.parent ?? ''), String(req.body?.name ?? ''), req.body?.init_git === true));
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
+    }
+  });
+
   app.get('/api/session-readings', async (_req, res) => {
     try {
       res.json(await listSessionReadings());
