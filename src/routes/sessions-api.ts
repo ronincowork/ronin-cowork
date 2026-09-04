@@ -55,26 +55,24 @@ import {
 } from '../session-archive.js';
 import { ignoreEndingRequest, inspectSessionEnding, promptEnding } from '../desks/ending-runtime.js';
 import type { EndingRequest } from '../desks/ending.js';
+import { resolveEndingRequest } from '../desks/ending-response.js';
+
+interface PreparedEnding { proceed: boolean; acknowledgement?: Record<string, unknown> }
 
 async function prepareSessionEnding(
   req: express.Request,
   res: express.Response,
   name: string,
   requested_action: Exclude<EndingRequest, 'retire'>,
-): Promise<boolean> {
+): Promise<PreparedEnding> {
   const preflight = await inspectSessionEnding(name, requested_action);
-  if (!preflight.unresolved.length) return true;
   const disposition = String(req.body?.worktree_disposition ?? '').trim().toLowerCase();
-  if (disposition === 'prompt') {
-    res.json({ ok: false, requires_disposition: true, ...(await promptEnding(preflight)) });
-    return false;
-  }
-  if (disposition === 'ignore') {
-    await ignoreEndingRequest(preflight);
-    return true;
-  }
-  res.json({ ok: false, requires_disposition: true, ending: preflight, actions: ['prompt', 'ignore'] });
-  return false;
+  const decision = await resolveEndingRequest(preflight, disposition, {
+    prompt: () => promptEnding(preflight),
+    quarantine: () => ignoreEndingRequest(preflight),
+  });
+  if (decision.response) res.json(decision.response);
+  return { proceed: decision.proceed, acknowledgement: decision.acknowledgement };
 }
 
 export function registerSessions(app: express.Express): void {
@@ -91,7 +89,8 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     try {
-      if (!(await prepareSessionEnding(req, res, name, 'archive'))) return;
+      const prepared = await prepareSessionEnding(req, res, name, 'archive');
+      if (!prepared.proceed) return;
       const key = await sessionKey(name);
       const runtime = await sessionRuntime(name);
       const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
@@ -120,7 +119,7 @@ export function registerSessions(app: express.Express): void {
         throw e;
       }
       count('ended', { name, end: 'archived' });
-      res.json({ ok: true, archived: publicArchive(archived) });
+      res.json({ ok: true, archived: publicArchive(archived), ...(prepared.acknowledgement ? { worktree_acknowledgement: prepared.acknowledgement } : {}) });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
@@ -161,11 +160,12 @@ export function registerSessions(app: express.Express): void {
   app.delete('/api/archived-sessions/:id', async (req, res) => {
     try {
       const archived = await readArchive(req.params.id);
-      if (!(await prepareSessionEnding(req, res, archived.name, 'hard_delete'))) return;
+      const prepared = await prepareSessionEnding(req, res, archived.name, 'hard_delete');
+      if (!prepared.proceed) return;
       emitSessionEnd(archived.name, archived.key);
       await fs.promises.rm(sessionRecordDir(archived.key), { recursive: true, force: true });
       await removeArchive(archived.id);
-      res.json({ ok: true });
+      res.json({ ok: true, ...(prepared.acknowledgement ? { worktree_acknowledgement: prepared.acknowledgement } : {}) });
     } catch (e) {
       const code = (e as NodeJS.ErrnoException)?.code;
       res.status(code === 'ENOENT' ? 404 : 500).json({ error: code === 'ENOENT' ? 'No such archive.' : String((e as Error)?.message ?? e) });
@@ -186,12 +186,13 @@ export function registerSessions(app: express.Express): void {
   app.delete('/api/sessions/:name', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await prepareSessionEnding(req, res, name, 'delete'))) return;
+    const prepared = await prepareSessionEnding(req, res, name, 'delete');
+    if (!prepared.proceed) return;
     const key = await sessionKey(name);
     await killSessionTree(name);
     emitSessionEnd(name, key); // rireki deletes the tape: no graveyard, eventually is fine
     count('ended', { name, end: 'deleted' });
-    res.json({ ok: true });
+    res.json({ ok: true, ...(prepared.acknowledgement ? { worktree_acknowledgement: prepared.acknowledgement } : {}) });
   });
 
   app.put('/api/sessions/:name/title', async (req, res) => {
