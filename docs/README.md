@@ -25,6 +25,7 @@ contracts remain available, but they are not prerequisites for installing or usi
 | How do I customize Ronin without editing shipped files? | [Customize](customize.md) and [shadowing](shadowing.md) |
 | What is a template, and how does my agent keep mine? | [Templates](templates.md) |
 | What has Ronin connected to? | [Services activation and the egress record](services-activation.md) |
+| How do command tools find the running operator? | [Live operator connection](operator-connection.md) |
 | How do I inspect configuration and the running copy? | [Machine configuration](machine-settings.md) and `bin/ronin-doctor` |
 
 ## If you are changing Ronin itself

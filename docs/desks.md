@@ -63,8 +63,10 @@ name any managed repository; the roster only determines which desks birth opens
 automatically. Otherwise: the team line is created
 from the working line if missing and mounted at its worktree; the desk branch is cut from
 the line (or an existing branch remounted — a parked desk, or a leftover, which is adopted
-rather than lost); upstream is set to the line; `node_modules` is linked from the home
-checkout when present; the row is written. Idempotent. A coding launch calls
+rather than lost); upstream is set to the line; when the home checkout has `node_modules`,
+Ronin copies it into a real, private directory in the desk (never a symlink to the live
+operator install); the row is written. A remounted desk keeps its existing private
+dependency directory. A coding launch calls
 `resolveLaunchDesks()` to derive candidate coordinates, normalize each repository, and
 dispatch once through `resolveWorktrees()`. `prepareLaunchDesks()` then opens only the
 resolved managed rows through `openDesk()` and writes the assignment before the CLI is

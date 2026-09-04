@@ -35,7 +35,9 @@ gate or a test run.
 ## What you do
 
 - **Work in the desk.** A multi-repo assignment has one desk per repository, each at its
-  own path. `dev` and `team/<team>/dev` are merged into and never written into.
+  own path. `dev` and `team/<team>/dev` are merged into and never written into. A managed
+  desk's dependencies are a private copy, not the live operator checkout's `node_modules`,
+  so installing or removing packages in the desk cannot alter the running operator.
 - **Stop and ask the team lead when the desk is missing or contradictory.** Before your
   first repository write, compare `tejun-desk status --assignment` with the desk block in
   your brief. `NO-DESK` after a desk was promised, a mismatched path or branch, or a
