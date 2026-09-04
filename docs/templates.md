@@ -124,7 +124,7 @@ Campaign page's **Templates** card is the way in: *Check the library* reads the 
 only when pressed, never on a timer — and pressing a bundle shows **everything it holds**
 and the **plan** before anything is written: each item, the shelf it lands on, and its
 outcome. Without Services the shelf is there but opaque, the card says so and names the
-Ronin Services row on the Campaign page's Routines (an email and a confirmation), and the handful that ship inside Ronin stay
+Ronin Services row on the Campaign page's Routines and Installs (an email and a confirmation), and the handful that ship inside Ronin stay
 on the launch forms. Three rules an install obeys, all of them the house's already:
 
 - a copy identical to what ships is **skipped** — a shadow that changes nothing is an

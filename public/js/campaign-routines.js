@@ -44,7 +44,7 @@ function servicesSell() {
 
 export function createRoutinesSurface(campaign) {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
-  const surface = createSurface({ label: t('campaign_view.routines', 'Routines'), className: 'cv-surface' });
+  const surface = createSurface({ label: t('campaign_view.routines', 'Routines and Installs'), className: 'cv-surface' });
   const body = el('div', 'cv-body');
   surface.content.append(body);
   let catalog = [];

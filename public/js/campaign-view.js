@@ -73,7 +73,7 @@ function registerCampaignSurfaces() {
   } });
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
   // CONTROL_BUNDLES build-out for the bundle model behind it.
-  add({ type: TYPES.routines, header: 'surface', label: () => t('campaign_view.routines', 'Routines'), summary: (_tenant, e) => routinesSummary(e.selected()), create: ({ environment: e }) => { const surface = createRoutinesSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
+  add({ type: TYPES.routines, header: 'surface', label: () => t('campaign_view.routines', 'Routines and Installs'), summary: (_tenant, e) => routinesSummary(e.selected()), create: ({ environment: e }) => { const surface = createRoutinesSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.

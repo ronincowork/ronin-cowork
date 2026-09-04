@@ -52,8 +52,8 @@ export async function installedAnswer(): Promise<InstalledAnswer> {
 export async function servicesStatusSentence(): Promise<string> {
   const a = await installedAnswer();
   if (a.services.activated) return 'Ronin Services is activated on this box.';
-  if (a.services.installed) return `Ronin Services is installed on this box (${a.services.parts.join(', ')}) but not activated: no entitlement yet. Activate it on the Campaign page → Routines, on the Ronin Services row: an email and a confirmation.`;
-  return 'Ronin Services is not installed on this box. The Campaign page → Routines, on the Ronin Services row, is where it starts: an email and a confirmation.';
+  if (a.services.installed) return `Ronin Services is installed on this box (${a.services.parts.join(', ')}) but not activated: no entitlement yet. Activate it on the Campaign page → Routines and Installs, on the Ronin Services row: an email and a confirmation.`;
+  return 'Ronin Services is not installed on this box. The Campaign page → Routines and Installs, on the Ronin Services row, is where it starts: an email and a confirmation.';
 }
 
 export function registerInstalled(app: express.Express): void {

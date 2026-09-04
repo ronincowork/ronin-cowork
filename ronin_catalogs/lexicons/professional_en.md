@@ -335,7 +335,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.verdict_same_shipped:** already shipped — skipped
 - **campaign_view.verdict_same_yours:** already yours — skipped
 - **campaign_view.verdict_refused:** refused — a bundle never replaces one of Ronin’s tools
-- **campaign_view.routines:** Routines
+- **campaign_view.routines:** Routines and Installs
 - **campaign_view.routines_help:** What is installed on this machine, and what new Cowork Agents start with. The switches seed new Teams; a Team may replace them, and New Agent shows the resolved answer. Nothing already running changes.
 - **campaign_view.svc_activated:** Activated with Ronin HQ: the template library and the hosted parts are yours.
 - **campaign_view.svc_not_activated:** Not activated with Ronin HQ. Activation is optional and separate from the switch: it unlocks the hosted parts — the template library first — with an email and a confirmation.
