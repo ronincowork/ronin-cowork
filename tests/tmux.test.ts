@@ -9,8 +9,37 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { exactSession, exactPane, isValidName, parseTags } from '../src/tmux.js';
 import { newSessionArgs } from '../src/session-args.js';
+
+const sourceRoot = fileURLToPath(new URL('../src/', import.meta.url));
+
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const file = path.join(dir, entry.name);
+    return entry.isDirectory() ? sourceFiles(file) : /\.[jt]s$/.test(entry.name) ? [file] : [];
+  });
+}
+
+test('tmux process calls are confined to the control client and real attach path', () => {
+  const violations: string[] = [];
+  const direct = /\b(?:execFile|spawn)\s*\(\s*['"]tmux['"]|promisify\s*\(\s*execFile\s*\)\s*\(\s*['"]tmux['"]/g;
+  for (const file of sourceFiles(sourceRoot)) {
+    const relative = path.relative(sourceRoot, file);
+    if (relative === 'tmux-client.ts') continue;
+    const source = readFileSync(file, 'utf8');
+    for (const match of source.matchAll(direct)) {
+      const tail = source.slice(match.index, match.index + 100);
+      if (relative === path.join('ws', 'pty.ts') && /spawn\s*\(\s*['"]tmux['"]\s*,\s*\[\s*['"]attach['"]/.test(tail)) continue;
+      const line = source.slice(0, match.index).split('\n').length;
+      violations.push(`${relative}:${line}`);
+    }
+  }
+  assert.deepEqual(violations, []);
+});
 
 test('exactSession pins the name as an identity, never a pattern', () => {
   assert.equal(exactSession('beta'), '=beta');
