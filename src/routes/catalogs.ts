@@ -23,7 +23,7 @@ import {
   isValidRootName,
   type RootField,
 } from '../project-roots.js';
-import { campaignFilter, campaignResolver } from '../campaign-scope.js';
+import { campaignResolver, machineCampaignId } from '../campaign-scope.js';
 import { arrangementProfile, assertArrangementProfileCurrent, readArrangement, setArrangementProfile, validateArrangementProfile } from '../desks/arrangement.js';
 import { readDesksSection } from '../machine-state.js';
 import {
@@ -113,11 +113,12 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/project-roots', async (req, res) => {
     try {
       const resolve = await campaignResolver();
-      const wanted = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
-      const keep = await campaignFilter(wanted);
+      const named = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
+      const wanted = named.length ? named : [await machineCampaignId()].filter(Boolean);
+      const wantedSet = new Set(wanted);
       res.json(
         (await listProjectRoots())
-          .filter((r) => !r.archived && keep(r.campaign_id))
+          .filter((r) => !r.archived && wantedSet.has(resolve(r.campaign_id)))
           .map((r) => ({ ...r, campaign_id: resolve(r.campaign_id) })),
       );
     } catch (e) {
@@ -125,9 +126,13 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
-  app.get('/api/project-roots/detail', async (_req, res) => {
+  app.get('/api/project-roots/detail', async (req, res) => {
     try {
-      const [roots, bySession] = await Promise.all([listProjectRoots(), projectRootsOfSessions()]);
+      const resolve = await campaignResolver();
+      const named = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
+      const wanted = new Set(named.length ? named : [await machineCampaignId()].filter(Boolean));
+      const [allRoots, bySession] = await Promise.all([listProjectRoots(), projectRootsOfSessions()]);
+      const roots = allRoots.filter((root) => wanted.has(resolve(root.campaign_id)));
       const facts = await Promise.all(roots.map((r) => repoFacts(r)));
       const arrangements = await Promise.all(
         facts.map((f, i) => (f.repo ? readArrangement(roots[i].name, f.dir).catch(() => null) : Promise.resolve(null))),

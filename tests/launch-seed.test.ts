@@ -40,6 +40,14 @@ test('rōnin seed reads Campaign and reports the frozen residue', () => {
   assert.equal(seed.routines.find((r) => r.name === 'gbrain')?.on, true);
 });
 
+test('rōnin seed chooses only from the Campaign-scoped roots supplied by its route', () => {
+  const seed = resolveLaunchSeed({
+    ...sources(null),
+    roots: [{ name: 'home-machine-root', dir: '/home-machine', archived: false, campaign_id: 'home_machine' }],
+  });
+  assert.equal(seed.seeds.project_root.value, 'home-machine-root');
+});
+
 test('Team seed reads its complete map with no live Campaign inherit', () => {
   const seed = resolveLaunchSeed(sources(team));
   assert.equal(seed.seeds.dial.value, 'read');

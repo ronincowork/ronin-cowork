@@ -33,7 +33,7 @@ import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFiel
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
-import { initialCampaignId } from '../campaign-scope.js';
+import { campaignResolver, initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { readCampaign } from '../campaigns.js';
 import { listRoutines } from '../resource-adapters.js';
@@ -150,13 +150,15 @@ export function registerLaunch(app: express.Express): void {
       if (team && !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(team)) {
         return res.status(400).json({ error: `A team name is lowercase letters, digits, _ and -: "${team}".` });
       }
-      const [roster, roots, agents, routines, desks] = await Promise.all([
+      const [roster, allRoots, agents, routines, desks, resolveCampaign] = await Promise.all([
         team ? readTeamRoster(team, campaign_id).then((found) => found ?? readTeamRoster(team, '')) : Promise.resolve(null),
         listProjectRoots(),
         readAgentsSection(),
         listRoutines(),
         readDesksSection(),
+        campaignResolver(),
       ]);
+      const roots = allRoots.filter((root) => resolveCampaign(root.campaign_id) === campaign_id);
       if (team && !roster) return res.status(404).json({ error: `Unknown Team "${team}" in Campaign "${campaign_id}".` });
       const { resolved_routines: _resolved, ...seed } = resolveLaunchSeed({
         campaign,
