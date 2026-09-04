@@ -51,6 +51,9 @@ measured with `tejun-survey`, `tejun-account`, or the relevant tool.
 
 ## Coworkspace
 
+The Agent's page for this is [RONIN_UTILITY](RONIN_UTILITY.md): the pages, the three
+workbenches and their surfaces, the tile head's buttons, Locked and Unlocked, copy and paste.
+
 The home page opens Machine Settings, Coworks, or New Project. The bar opens the Campaign,
 the current Cowork, a quick new session, the cowork commons, and the two-or-four workspace
 layout. On a phone, choose the Cowork, choose the Agent, then use its full-screen tile.

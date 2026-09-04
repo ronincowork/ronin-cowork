@@ -87,13 +87,20 @@ could not be made.**
 
 ## What ships
 
-Two universal shelf files and one generated fragment:
+Three universal shelf files and two generated fragments, compiled in reading order —
+Routine contracts first, the maps, the macro roster, the glossary last — and held to the
+one-read budget (`PACKET_BUDGET` in `src/birth-readme.ts`) by `tests/session-boot.test.ts`
+on the real shelf:
 
-- **`all/ronin_catalogs/lexicons/professional_en.md`** — the house vocabulary, so every session means the same
-  things by the same words.
 - **`all/README.md`** — the map of where everything is **and what is on each shelf**. Each roster
   sits beside the `ls` that resolves the live truth, stores included, and the directory
   wins whenever the two disagree.
+- **`all/RONIN_UTILITY.md`** — the coworkspace for an Agent: the pages, the three
+  workbenches and their surfaces, the tile head's buttons, Locked and Unlocked, copy and paste.
+- **`all/KOTOBA_GLOSSARY.md`** — the house names (TEGAMI, TEJUN, the wipeboard …) and the
+  plain word to say for each, so no Japanese leaks from the tools to the person. Rendered at
+  birth with the owner's desk words (`renderGlossary`; `docs/kokugo.md` §8) and compiled
+  **last**: reference, not rules.
 - **`SESSION_MACROS.md`** — a stock template whose active section is generated at birth
   from the resolved `MACROS.md` catalog. The entries marked `preview: yes` are both what the
   tile button shows and what the new session reads. The generated copy is disposable data
