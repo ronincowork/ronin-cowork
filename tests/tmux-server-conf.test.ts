@@ -6,10 +6,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/* A SERVER STARTED FROM deploy/tmux-server.conf — the file the tmux-server unit uses on
- * every install — scrolls a tile through copy-mode with the indicator hidden and has no
- * jump / search / goto / repeat key inside copy-mode (owner, 2026-09-02: "it's like the
- * scroll mode wants to jump to different sections"). Isolated server, short socket root. */
+/* The start-only file may keep the server alive, but coexistence means it must preserve
+ * the owner's key tables. Tile input is suppressed in src/viewer.ts, not by global unbinds. */
 
 const exec = promisify(execFile);
 const TMUX = '/usr/bin/tmux';
@@ -23,25 +21,9 @@ env.HOME = root;
 await exec(TMUX, ['-f', path.join(repo, 'deploy', 'tmux-server.conf'), 'start-server'], { env });
 await tmux('new-session', '-d', '-s', 'probe');
 
-test('the wheel enters copy-mode with the indicator hidden and exit-at-bottom kept', async () => {
-  const wheel = await tmux('list-keys', '-T', 'root').then((s) => s.split('\n').find((l) => /WheelUpPane/.test(l)) ?? '');
-  assert.match(wheel, /copy-mode -eH/, wheel);
-});
-
-test('no jump, search, goto or repeat key remains in either copy-mode table', async () => {
-  for (const table of ['copy-mode', 'copy-mode-vi']) {
-    const keys = await tmux('list-keys', '-T', table);
-    assert.doesNotMatch(keys, /jump|search|goto-line|\(repeat\)/, `${table} still binds a prompt`);
-  }
-});
-
-test('the keys that scroll are untouched', async () => {
-  const keys = await tmux('list-keys', '-T', 'copy-mode');
-  for (const cmd of ['scroll-up', 'scroll-down', 'page-up', 'page-down', 'cursor-up', 'cursor-down', 'cancel']) {
-    assert.match(keys, new RegExp(`-X ${cmd}\\b`), `copy-mode lost ${cmd}`);
-  }
-  assert.match(keys, /WheelUpPane/, 'wheel scrolls inside copy-mode');
-  assert.match(keys, /WheelDownPane/, 'wheel scrolls inside copy-mode');
+test('the start-only config does not rewrite global key tables', async () => {
+  const source = await fs.readFile(path.join(repo, 'deploy', 'tmux-server.conf'), 'utf8');
+  assert.doesNotMatch(source, /^(?:bind-key|unbind-key)\b/m);
 });
 
 test('the server unit setting the file exists for is still there', async () => {

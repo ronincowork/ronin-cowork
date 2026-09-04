@@ -389,4 +389,4 @@ export async function setControl(name: string, control: Control): Promise<void> 
   await tmux.run(['set-option', '-t', exactPane(name), CONTROL_OPT, control]);
 }
 
-export { capturePane, cleanupViewers, createViewer, jumpToBottom, sendRawKeys } from './viewer.js';
+export { capturePane, cleanupViewers, createViewer, jumpToBottom, paneInMode, sendRawKeys, tileInputAllowed } from './viewer.js';

@@ -14,7 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { exactSession, exactPane, isValidName, parseTags } from '../src/tmux.js';
 import { newSessionArgs } from '../src/session-args.js';
-import { isStaleViewerSession } from '../src/viewer.js';
+import { isStaleViewerSession, tileInputAllowed } from '../src/viewer.js';
 
 const sourceRoot = fileURLToPath(new URL('../src/', import.meta.url));
 
@@ -79,10 +79,20 @@ test('parseTags drops what an agent could not type as an address', () => {
   assert.deepEqual(parseTags('a'.repeat(33)), []); // over the 32-char cap
 });
 
-test('startup viewer cleanup preserves the control holder by exact name', () => {
-  assert.equal(isStaleViewerSession('grid_ctl'), false);
-  assert.equal(isStaleViewerSession('grid_alpha_dead_1'), true);
-  assert.equal(isStaleViewerSession('alpha'), false);
+test('startup viewer cleanup requires this installation ownership, not a prefix', () => {
+  assert.equal(isStaleViewerSession('grid_ctl', 'ours', 'ours'), false);
+  assert.equal(isStaleViewerSession('grid_alpha_dead_1', 'ours', 'ours'), true);
+  assert.equal(isStaleViewerSession('grid_foreign', '', 'ours'), false);
+  assert.equal(isStaleViewerSession('grid_other_install', 'theirs', 'ours'), false);
+  assert.equal(isStaleViewerSession('alpha', 'ours', 'ours'), false);
+});
+
+test('tile input is quiet in shared-pane copy mode without changing server bindings', () => {
+  assert.equal(tileInputAllowed(true, 'f'), false);
+  assert.equal(tileInputAllowed(true, 'hello'), false);
+  assert.equal(tileInputAllowed(true, '\x1b'), true);
+  assert.equal(tileInputAllowed(true, '\x1b[A'), true);
+  assert.equal(tileInputAllowed(false, 'hello'), true);
 });
 
 /**

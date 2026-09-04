@@ -5,8 +5,8 @@
 #   … | sh -s -- --purge      also delete the install home and data stores
 #
 # Without --purge this removes the machinery (units, PATH blocks, the theme edit) and
-# leaves the data (~/ronin, ~/.ronin) with a line saying how to delete it. Stopping
-# tmux-server ends every tmux session it owns — this is an uninstall, and it says so.
+# leaves the data (~/ronin, ~/.ronin) with a line saying how to delete it. The tmux
+# server is shared and survives: RefuseManualStop=yes deliberately rejects the unit stop.
 set -eu
 
 PURGE=0
@@ -23,18 +23,35 @@ if [ -x "$RS" ]; then
 fi
 say() { printf '%s\n' "$*"; }
 
+# Restore the one server-wide value setup leased before removing the code that knows how.
+COEXIST="$USER_ROOT/current/libexec/ronin-coexist.sh"
+if [ -f "$COEXIST" ]; then
+  # shellcheck source=libexec/ronin-coexist.sh
+  . "$COEXIST"
+  TMUX_BIN=$(command -v tmux 2>/dev/null || true)
+  [ -n "$TMUX_BIN" ] && ronin_restore_tmux "$DATA_ROOT" "$TMUX_BIN" || true
+fi
+
 # --- units ---
 if command -v systemctl >/dev/null 2>&1; then
   for u in ronin tmux-ronin tmux-server; do
-    if systemctl --user cat "$u.service" >/dev/null 2>&1; then
+    unit_file="$HOME/.config/systemd/user/$u.service"
+    [ -e "$unit_file" ] || continue
+    kind=$u; [ "$kind" = tmux-ronin ] && kind=ronin
+    if ! ronin_unit_owned "$unit_file" "$kind"; then
+      say "kept foreign unit $unit_file"
+      continue
+    fi
+    if [ "$u" = tmux-server ]; then
+      say "removing tmux-server.service without stopping the shared server"
+      systemctl --user disable "$u.service" >/dev/null 2>&1 || true
+    else
       say "stopping $u.service"
       systemctl --user disable --now "$u.service" >/dev/null 2>&1 || true
-      rm -f "$HOME/.config/systemd/user/$u.service"
     fi
+    rm -f "$unit_file"
+    rm -f "$HOME/.config/systemd/user/default.target.wants/$u.service" 2>/dev/null || true
   done
-  rm -f "$HOME/.config/systemd/user/default.target.wants/ronin.service" \
-        "$HOME/.config/systemd/user/default.target.wants/tmux-ronin.service" \
-        "$HOME/.config/systemd/user/default.target.wants/tmux-server.service" 2>/dev/null || true
   systemctl --user daemon-reload 2>/dev/null || true
 fi
 if [ "$(uname -s)" = "Darwin" ] && [ -f "$HOME/Library/LaunchAgents/com.ronin.plist" ]; then

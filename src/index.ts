@@ -289,6 +289,16 @@ app.get('/raw/*', (req, res) => {
 });
 
 const server = createServer(app);
+export const PORT_UNAVAILABLE_EXIT = 78;
+
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`[tmux-ronin] ${config.bind}:${config.port} is already in use — set PORT or BIND in .env, then restart ronin.service.`);
+    process.exit(PORT_UNAVAILABLE_EXIT);
+  }
+  console.error(`[tmux-ronin] HTTP server failed: ${error.message}`);
+  process.exit(1);
+});
 const wss = new WebSocketServer({
   noServer: true,
   perMessageDeflate: {

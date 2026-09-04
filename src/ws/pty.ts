@@ -8,7 +8,9 @@ import {
   isValidName,
   jumpToBottom,
   killSession,
+  paneInMode,
   sessionExists,
+  tileInputAllowed,
 } from '../tmux.js';
 import { getStreamHandler } from '../sockets.js';
 
@@ -51,6 +53,7 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
   });
 
   let closed = false;
+  let inputQueue = Promise.resolve();
   let beat: ReturnType<typeof setInterval> | undefined;
   const cleanup = () => {
     if (closed) return;
@@ -88,7 +91,10 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
       return;
     }
     if (msg.t === 'i' && typeof msg.d === 'string') {
-      term.write(msg.d);
+      const data = msg.d;
+      inputQueue = inputQueue.then(async () => {
+        if (tileInputAllowed(await paneInMode(viewer), data)) term.write(data);
+      }).catch(() => {});
     } else if (msg.t === 'r') {
       cols = clampDim(msg.c, cols);
       rows = clampDim(msg.r, rows);

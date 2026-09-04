@@ -56,6 +56,21 @@ else
   echo "    tailscale: not found (optional — it is what gives this box an HTTPS address)"
 fi
 
+# --- coexistence preflight: before dependency, rc, option, or unit mutations ---
+# shellcheck source=libexec/ronin-coexist.sh
+. "$REPO_DIR/libexec/ronin-coexist.sh"
+PREFLIGHT_UNIT_DIR="$HOME/.config/systemd/user"
+if [ "$(uname -s)" = Linux ]; then
+  ronin_preflight_units "$PREFLIGHT_UNIT_DIR"
+fi
+RONIN_PREFLIGHT_BIND="${BIND:-}"
+if [ -z "$RONIN_PREFLIGHT_BIND" ] && command -v tailscale >/dev/null 2>&1; then
+  RONIN_PREFLIGHT_BIND="$(tailscale ip -4 2>/dev/null | head -1 || true)"
+fi
+export RONIN_PREFLIGHT_BIND
+ronin_preflight_port "$REPO_DIR" "$NODE_BIN"
+ronin_adopt_tmux "${RONIN_DATA_ROOT:-$HOME/.ronin}"
+
 # --- install deps (checkout only: a bundle arrives with finished node_modules) ---
 if [ "$BUNDLED" = 1 ]; then
   echo "==> node_modules: vendored in the release — nothing to install"
