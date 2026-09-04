@@ -96,6 +96,7 @@ export function createCampaignView() {
   const { teamWorkspaceState } = WorkspaceKit.contract;
   let ctx = null, entered = false, bench = null;
   let loadGeneration = 0;
+  let campaignRead = false; // the Campaign record has arrived for this entry
   let rootsHere = null; // null until /api/project-roots/detail has answered once this entry
   let setteiRead = null; // the SETTEI record, for the subset rule on Agent defaults
   const campaignSurfaces = new Set();
@@ -105,6 +106,10 @@ export function createCampaignView() {
       paint: (...args) => surface.show?.(...args),
     });
     campaignSurfaces.add(coordinated);
+    // A surface placed AFTER the Campaign arrived — a card clicked or dragged onto an
+    // open page — is created here, past the one settle() in enter(). Settle it now, or it
+    // says "Loading Campaign…" until the page is left and re-entered (owner, 2026-09-04).
+    if (campaignRead) coordinated.settle();
     return { ...surface, show: coordinated.show };
   };
   const selected = () => campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
@@ -139,6 +144,7 @@ export function createCampaignView() {
     enter: async (context) => {
       ctx = context; entered = true;
       const generation = ++loadGeneration;
+      campaignRead = false;
       for (const surface of campaignSurfaces) surface.begin();
       const typed = teamWorkspaceState(context.state, context.viewState('campaign'), bench.declaration);
       bench.enter({ ...typed, ...context.viewState('campaign') });
@@ -153,6 +159,7 @@ export function createCampaignView() {
       const refresh = () => { if (entered) bench.refreshSelector(); };
       void loadCampaigns().then(() => {
         if (!entered || generation !== loadGeneration) return;
+        campaignRead = true;
         for (const surface of campaignSurfaces) surface.settle();
         refresh();
       });

@@ -24,3 +24,9 @@ test('the fixed Campaign identity does not render its id', async () => {
   assert.match(source, /const id = MULTIPLE_CAMPAIGNS_ENABLED/);
   assert.match(source, /if \(id\) id\.control\.value/);
 });
+
+test('a Campaign surface placed after the Campaign read is settled at creation, not left loading', async () => {
+  const source = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
+  assert.match(source, /campaignRead = true;\s*\n\s*for \(const surface of campaignSurfaces\) surface\.settle\(\);/);
+  assert.match(source, /campaignSurfaces\.add\(coordinated\);[\s\S]*?if \(campaignRead\) coordinated\.settle\(\);/);
+});

@@ -43,3 +43,16 @@ test('the Campaign shell stays loading and repaints every shown surface after a 
     'Routines: Ronin Home',
   ]);
 });
+
+test('a surface created after the Campaign arrived paints at once — it is settled before it is shown', () => {
+  // The workbench creates a surface when it is PLACED. A card clicked onto an open page is
+  // created past the one settle() of enter(); the Campaign page settles it at creation.
+  const state = { text: '' };
+  const surface = progressiveSurface({
+    loading: () => { state.text = 'Loading Campaign…'; },
+    paint: () => { state.text = 'Routines and Installs: Ronin Home'; },
+  });
+  surface.settle();
+  surface.show();
+  assert.equal(state.text, 'Routines and Installs: Ronin Home');
+});
