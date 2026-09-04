@@ -39,9 +39,9 @@ repository verification at promotion. A hand-in conflict stays in its isolated c
 and names the files; the desk remains live for resolution. An empty update and policy
 facts are ordinary output, not new gates.
 
-Right after `ACCEPTED`, the tool says whether the desk is level with its line, names any
-unsaved or untracked files excluded from hand-in, lists this session's other level idle
-desks, and says whether promotion is due. `status` provides the same facts on request.
+Right after `ACCEPTED`, the tool says whether the called desk is level with its line and
+names any unsaved or untracked files excluded from hand-in. `status` provides the same
+facts on request.
 
 ### Finish the assignment
 
