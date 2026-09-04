@@ -187,6 +187,7 @@
   --scope-head-line: color-mix(in srgb, var(--define-line) 72%, var(--line));
   --scope-head-fg: var(--fg-strong);
   --scope-head-muted: var(--muted-2);
+  --scope-island-bg: var(--kaki);
 
 
   --edge: 1px;
@@ -299,6 +300,7 @@
   --cowork-surface-head-edge: var(--space-1);
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
+  --scope-island-bg: var(--scope-graphite);
 }
 :root[data-scope='teams'] {
   --cowork-head-bg: var(--scope-teams-head-bg);
@@ -306,6 +308,7 @@
   --cowork-surface-head-edge: var(--space-1);
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
+  --scope-island-bg: var(--aiiro);
 }
 
 
@@ -389,14 +392,27 @@ body {
 .ui-bar-separator { color: var(--muted); }
 
 .ui-bar-place {
-  color: var(--bar-value-fg);
+  position: absolute;
+  z-index: 2;
+  top: 100%;
+  left: 50%;
+  min-width: 7rem;
+  max-width: min(40vw, 24rem);
+  padding: var(--space-3) var(--space-7);
+  border-radius: var(--radius-pill);
+  background: var(--scope-island-bg);
+  box-shadow: 0 0 0 var(--space-2) var(--bg), var(--shadow-menu);
+  color: var(--on-strong);
   font-size: var(--bar-value-size);
-  font-style: italic;
+  font-style: normal;
+  font-weight: 600;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
+  transform: translate(-50%, -32%);
 }
+.ui-bar-place[hidden] { display: none; }
 
 .ui-sheet {
   display: none;

@@ -17,8 +17,8 @@ export function installWorkspaceHeader(workspace) {
   const ronin = document.getElementById('brandbtn');
   const separator = document.getElementById('coworkssep');
   const coworkers = document.getElementById('coworksbtn');
-  // THE PLACE reading, centred in the bar's middle, distinguishes one Team from the
-  // Teams collection. The collection needs no repeat of its door label.
+  // THE PLACE is the label inside the centred scope island. Its solid colour stands
+  // apart from the tinted Workbench headers below it.
   const place = document.getElementById('viewplace');
 
   const root = () => {
@@ -45,13 +45,19 @@ export function installWorkspaceHeader(workspace) {
     if (place) {
       const teamPage = active?.id === 'team' && active.param;
       if (teamPage) {
-        place.textContent = t('bar.place_team', 'Team: {team}', { team: readable(active.param) });
+        place.textContent = t('bar.place_team', '{team}', { team: readable(active.param) });
+        place.title = '';
+      } else if (active?.id === 'cowork') {
+        place.textContent = t('bar.place_teams', 'Teams');
+        place.title = '';
+      } else if (active?.id === 'campaign' || active?.id === 'launch') {
+        place.textContent = t('campaign', 'Campaign');
         place.title = '';
       } else {
         place.textContent = '';
         place.title = '';
       }
-      place.hidden = !teamPage;
+      place.hidden = !place.textContent;
     }
   };
   refresh();

@@ -44,7 +44,7 @@ Three kinds of thing, and only three, sit inside the bar:
 |---|---|---|
 | **workspace** | a cell that holds exactly one `workspace_surface` at a time; remembers what it holds per tab | two or four (`workspace1`–`workspace4`; 3 under 1, 4 under 2); the Kit's layout map shows, hides and reorders the three columns |
 | **selector column** | a column that PICKS what goes into a workspace; it never holds a surface itself | one today — the **roster**: the Team commons card first (thin), then the members as cards, then ＋ Add team member; click seats one in the selected workspace, drag onto any cell; the 人 pinned hot in workspace 1 |
-| **top header** | the neutral bar: RoninCowork, a **Team: name** place reading when inside one Team, the tab's editable view name, layout map, ⚙ and shape | one |
+| **top header** | the neutral bar: RoninCowork, a centred scope island, the tab's editable view name, layout map, ⚙ and shape | one |
 
 ## The workspace surfaces — peers, each able to occupy a workspace
 
@@ -97,18 +97,18 @@ Rules that make them peers:
 
 ### The bar's navigation
 
-The left side keeps the RoninCowork brand and a Teams door. On one Team, the middle names
-that place; the Teams collection does not repeat the door label:
+The left side keeps the RoninCowork brand and a Teams door. A solid-colour island hangs
+from the middle of the neutral bar and names the active Workbench scope:
 
 ```text
-RoninCowork  •  Teams                                            <verbs>
-RoninCowork  •  Teams          Team: Sea Settle                  <verbs>
+RoninCowork  •  Teams              Teams                         <verbs>
+RoninCowork  •  Teams            Sea Settle                      <verbs>
 ```
 
-The root landing shows only RoninCowork. The Team's name used to sit beside the collection
-door, where a first-time visitor read it as one more door and could not tell the all-Teams
-page from one Team's page. It now sits centred in the bar as **the place** only on a Team
-page: *Team: <name>*, italic so it reads as information and never as a button. Doors consume the shared
+The root landing and Machine Settings have no island. Campaign uses a graphite island,
+Teams uses aiiro, and one Team uses kaki with only its readable name. The island's solid
+colour deliberately differs from the tint on the Workbench headers below it. It is a place
+reading, never a button. Doors consume the shared
 `.ui-bar-nav` primitive and the place consumes `.ui-bar-place` from `docs/ui.md`; a
 feature must not restyle either. `js/workspace-header.js` writes the place; nothing
 else does.
