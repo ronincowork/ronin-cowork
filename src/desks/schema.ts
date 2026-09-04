@@ -34,6 +34,14 @@ export interface RepoDesk {
   state: DeskState;
   opened_at: string;
   parked_at?: string;
+  /** Exact working-line tip from which this desk was first created. */
+  base_sha?: string;
+  /** The desk-local dependency tree, when the repository has one. */
+  dependency_location?: string;
+  /** Living or resumable sessions which own this desk. Old rows default to session. */
+  owners?: string[];
+  handed_off_at?: string;
+  successor_session?: string;
 }
 
 export interface PendingUpdate {
@@ -57,6 +65,12 @@ export interface DeskStatus extends DeskRecord {
   dirty_files: string[];
   ahead: number;
   behind: number;
+  working: string;
+  working_tip: string;
+  ahead_of_working: number;
+  behind_working: number;
+  line_ahead_of_working: number;
+  line_behind_working: number;
 }
 
 export interface Assignment {
