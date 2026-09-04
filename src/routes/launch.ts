@@ -39,7 +39,7 @@ import { readCampaign } from '../campaigns.js';
 import { listRoutines } from '../resource-adapters.js';
 import { resolveLaunchSeed } from '../launch-seed.js';
 import type { SessionsDefaults } from '../launch-command.js';
-import { compileBirthReadmeAt, isShelfTeaching } from '../birth-readme.js';
+import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentence, type PacketReport } from '../birth-readme.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 
@@ -228,6 +228,7 @@ export function registerLaunch(app: express.Express): void {
     let routineTools: RoutineToolProjection | null = null;
     let birthKey = '';
     let birthDir = '';
+    let packet: PacketReport | undefined;
     let runtimeBorn = false;
     try {
       const live = await listSessions();
@@ -271,7 +272,8 @@ export function registerLaunch(app: express.Express): void {
           await rm(birthDir, { recursive: true, force: true });
           return res.status(500).json({ error: 'The birth reading was compiled, but its brief did not contain the resolved source list.' });
         }
-        resolved.brief = resolved.brief.replace(sourceSentence, `Read first: ${readme}.`);
+        packet = await describePacket(readme, resolved.name);
+        resolved.brief = resolved.brief.replace(sourceSentence, readFirstSentence(packet));
         resolved.birth_reading = [readme];
       } catch (e) {
         if (birthDir) await rm(birthDir, { recursive: true, force: true });
@@ -379,6 +381,10 @@ export function registerLaunch(app: express.Express): void {
         ...(resolved.session_type === 'cowork_agent'
           ? { boot: { state: 'open', brief: launch.parked ? 'parked' : 'argv' } }
           : {}),
+        // What the newborn was handed to read: size, section count, the line it ends with,
+        // and whether one read delivers it. The receipt says what left; the tape says what
+        // arrived (the ACK asks the newborn to quote the terminator).
+        ...(packet ? { packet } : {}),
         desks: resolved.assignment?.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line })) ?? [],
         desk_note: await deskNote(resolved),
         routines: resolved.routines.map((routine) => {
