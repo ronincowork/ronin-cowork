@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { tmux } from './tmux-client.js';
-import { OPERATOR_CONNECTION_OPT, type OperatorConnection } from './operator-url.js';
+import { OPERATOR_CONNECTION_OPT, instanceIsAlive, type OperatorConnection } from './operator-url.js';
 
 export interface CliReply { stdout: string; stderr: string; exit: number }
 
@@ -16,6 +16,11 @@ export async function operatorConnection(): Promise<OperatorConnection> {
   let connection: Partial<OperatorConnection> = {};
   try { connection = JSON.parse(raw) as Partial<OperatorConnection>; } catch { /* refusal below */ }
   if (connection.version !== 1 || typeof connection.url !== 'string' || !connection.url.trim()) {
+    throw new Error("Ronin's live operator connection could not be resolved. Ronin may not be running.\nStart Ronin, or set RONIN_URL for a development/test target.");
+  }
+  // A published address outlives the operator that published it: same refusal, because
+  // from the caller's side "no address" and "the address of something gone" are one fact.
+  if (!instanceIsAlive(String(connection.instance ?? ''))) {
     throw new Error("Ronin's live operator connection could not be resolved. Ronin may not be running.\nStart Ronin, or set RONIN_URL for a development/test target.");
   }
   return { version: 1, url: connection.url.trim(), token: typeof connection.token === 'string' ? connection.token : '', instance: String(connection.instance ?? '') };

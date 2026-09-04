@@ -8,6 +8,8 @@
 # with a sudo the installer never has.
 #
 #   ronin_port   <root>            echoes the port this install actually serves
+#   ronin_bind   <root>            echoes the address this install binds
+#   ronin_record_bind <root>       writes that address into .env, once, and says so
 #   ronin_open_url <root> <port>   echoes the address that is live RIGHT NOW
 #   ronin_banner <root> <url>      draws the box, on stdout
 #
@@ -24,6 +26,66 @@ ronin_port() {
     [ -n "$port" ] && break
   done
   printf '%s' "${port:-3006}"
+}
+
+# The bind address, resolved once and the same way for everyone who asks. .env wins,
+# because a recorded address is a fact and a probe is a guess; then the tailnet address;
+# then loopback.
+#
+# UNLIKE ronin_port THIS DOES NOT READ .env.example. The example ships BIND commented out
+# on purpose — an unset BIND is a real answer ("work it out"), not a missing one, and a
+# default lifted from the example would put an address in the file that nobody chose.
+#
+# ronin_bind_full prints "<address> <source>" because the source is the interesting half
+# for an installer, and a function cannot hand it back any other way: every caller reads
+# these through $( ), a subshell, so a variable set in here would never reach them.
+ronin_bind_full() {
+  local root="$1" bind=""
+  if [ -f "$root/.env" ]; then
+    bind="$(sed -n 's/^[[:space:]]*BIND=\([^[:space:]#]*\).*/\1/p' "$root/.env" 2>/dev/null | head -1)"
+  fi
+  if [ -n "$bind" ]; then printf '%s env' "$bind"; return 0; fi
+  if command -v tailscale >/dev/null 2>&1; then
+    bind="$(tailscale ip -4 2>/dev/null | head -1 || true)"
+  fi
+  if [ -n "$bind" ]; then printf '%s tailscale' "$bind"; return 0; fi
+  printf '127.0.0.1 loopback'
+}
+
+# Just the address, for the callers that only need somewhere to point.
+ronin_bind() { ronin_bind_full "$1" | cut -d' ' -f1; }
+
+# Write the resolved address into .env so that later starts bind a recorded fact instead
+# of re-asking `tailscale ip -4`, which fails in four ways that all look the same from
+# here — not installed, not up, not logged in, or merely slow while the box is still
+# coming up — and every one of them silently lands Ronin on 127.0.0.1: a different
+# address from the one this install prints, maps with `tailscale serve`, and hands to the
+# agent tools. Nothing announces the move, so the first anyone knows of it is a door that
+# will not open.
+#
+# WE ONLY EVER FILL IN A BLANK. An owner who wrote their own BIND outranks this, and a
+# re-run must leave their file byte-for-byte alone.
+ronin_record_bind() {
+  local root="$1" addr="" src=""
+  read -r addr src <<<"$(ronin_bind_full "$root")"
+  if [ "$src" = env ]; then
+    echo "==> BIND: $addr (already in .env — left as it is)"
+    return 0
+  fi
+  {
+    echo ""
+    echo "# The address Ronin binds. Recorded by setup.sh on $(date +%Y-%m-%d) so that a later"
+    echo "# start cannot quietly answer somewhere else. Delete this line to go back to working"
+    echo "# it out from \`tailscale ip -4\` on every start."
+    echo "BIND=$addr"
+  } >> "$root/.env"
+  if [ "$src" = tailscale ]; then
+    echo "==> BIND: recorded $addr in .env (this box's tailnet address)"
+  else
+    echo "==> BIND: recorded 127.0.0.1 in .env — no tailnet address to be had, so Ronin will"
+    echo "    answer on this box only. Install or sign in to tailscale, delete that BIND line"
+    echo "    and re-run to reach it from your other devices."
+  fi
 }
 
 # A serve mapping counts only if it points at THIS install. `tailscale serve

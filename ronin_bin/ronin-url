@@ -15,19 +15,33 @@ raw=""
 if command -v tmux >/dev/null 2>&1; then
   raw=$(tmux show-option -s -qv @ronin-operator 2>/dev/null || true)
 fi
-url=$(RAW="$raw" python3 - <<'PY' 2>/dev/null || true
+# The instance rides along with the url: "<pid>:<started>". A stopped operator leaves its
+# address behind — the option lives on the tmux server, which outlives it by design — and
+# handing that address to a caller turns this tool's honest refusal into a connection
+# refused that nobody can explain. A pid on this box is free to check. Two lines out, so
+# neither field has to be escaped.
+both=$(RAW="$raw" python3 - <<'PY' 2>/dev/null || true
 import json, os
 try:
     value = json.loads(os.environ.get("RAW", ""))
     if value.get("version") == 1 and isinstance(value.get("url"), str):
         print(value["url"].strip())
+        print(str(value.get("instance") or ""))
 except Exception:
     pass
 PY
 )
+url=$(printf '%s\n' "$both" | sed -n 1p)
+pid=$(printf '%s\n' "$both" | sed -n 2p | cut -d: -f1)
+
+# Unknown beats wrong: an instance we cannot read (an older operator published it) counts
+# as alive rather than refused. A recycled pid is the one false positive, and it leaves
+# the caller exactly where they stood before this check existed.
 if [ -n "$url" ]; then
-  printf '%s\n' "$url"
-  exit 0
+  case "$pid" in
+    '' | *[!0-9]*) printf '%s\n' "$url"; exit 0 ;;
+    *) if kill -0 "$pid" 2>/dev/null; then printf '%s\n' "$url"; exit 0; fi ;;
+  esac
 fi
 
 cat >&2 <<'EOF'
