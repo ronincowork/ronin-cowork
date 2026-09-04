@@ -3952,10 +3952,21 @@ button.wb-door:hover b {
   border-radius: var(--radius-lg);
   font-size: var(--text-4);
   box-shadow: var(--shadow-sheet);
-  transition: transform var(--motion-settle) var(--ease);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform var(--motion-settle) var(--ease),
+    opacity 0s var(--motion-settle),
+    visibility 0s var(--motion-settle);
 }
 #chip.show {
   transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    transform var(--motion-settle) var(--ease),
+    opacity 0s,
+    visibility 0s;
 }
 #chip button {
   background: transparent;
