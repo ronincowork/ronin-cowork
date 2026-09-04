@@ -1,6 +1,6 @@
 import { config } from './machine-settings.js';
 import { exactPane, exactSession, killSession } from './tmux.js';
-import { tmux } from './tmux-client.js';
+import { TMUX_CONTROL_HOLDER, tmux } from './tmux-client.js';
 
 export async function jumpToBottom(name: string): Promise<void> {
   await tmux.run(['send-keys', '-t', exactPane(name), '-X', 'cancel']).catch(() => {});
@@ -38,7 +38,10 @@ export async function cleanupViewers(): Promise<number> {
   } catch {
     return 0;
   }
-  const stale = stdout.split('\n').filter((n) => n.startsWith(config.viewerPrefix));
+  const stale = stdout.split('\n').filter(isStaleViewerSession);
   for (const n of stale) await killSession(n);
   return stale.length;
 }
+
+export const isStaleViewerSession = (name: string): boolean =>
+  name !== TMUX_CONTROL_HOLDER && name.startsWith(config.viewerPrefix);

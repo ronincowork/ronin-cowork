@@ -14,13 +14,15 @@ export interface Notification {
 }
 
 export interface TmuxClient {
+  /** Opt into the persistent control connection. Long-lived server processes only. */
+  connect(): Promise<void>;
   run(args: readonly string[], opts?: { timeoutMs?: number }): Promise<string>;
   on(kind: Notification['kind'], handler: (notification: Notification) => void): () => void;
   state(): ClientState;
 }
 
 interface ControlProcess {
-  stdin: Pick<NodeJS.WritableStream, 'write'> & { ref?(): void; unref?(): void };
+  stdin: Pick<NodeJS.WritableStream, 'write' | 'on'> & { ref?(): void; unref?(): void };
   stdout: NodeJS.ReadableStream & { ref?(): void; unref?(): void };
   stderr: NodeJS.ReadableStream & { ref?(): void; unref?(): void };
   once(event: 'exit' | 'error', handler: (...args: unknown[]) => void): this;
@@ -52,7 +54,7 @@ interface StartupReply {
   timer: NodeJS.Timeout;
 }
 
-const HOLDER = 'grid_ctl';
+export const TMUX_CONTROL_HOLDER = 'grid_ctl';
 const DEFAULT_TIMEOUT_MS = 5_000;
 const BACKOFF_MS = [200, 1_000, 5_000] as const;
 const ACTIVITY_SUBSCRIPTION = 'activity::#{S:#{session_name}:#{window_activity},}';
@@ -93,12 +95,12 @@ function defaultExec(file: string, args: readonly string[], timeoutMs: number): 
 
 const DEFAULT_DEPENDENCIES: Dependencies = {
   exec: defaultExec,
-  spawnControl: () => spawn('tmux', ['-C', 'attach-session', '-t', `=${HOLDER}`], {
+  spawnControl: () => spawn('tmux', ['-C', 'attach-session', '-t', `=${TMUX_CONTROL_HOLDER}`], {
     stdio: ['pipe', 'pipe', 'pipe'],
   }) as ChildProcessWithoutNullStreams,
   setTimer: (handler, delayMs) => setTimeout(handler, delayMs),
   clearTimer: (timer) => clearTimeout(timer),
-  log: (message) => console.info(message),
+  log: (message) => console.error(message),
 };
 
 export class ControlTmuxClient implements TmuxClient {
@@ -117,6 +119,8 @@ export class ControlTmuxClient implements TmuxClient {
   private stoppedProcess = new WeakSet<object>();
   private readonly handlers = new Map<string, Set<(notification: Notification) => void>>();
   private activityRequested = false;
+  private controlEnabled = false;
+  private hasBeenUp = false;
 
   constructor(dependencies: Partial<Dependencies> = {}) {
     this.deps = { ...DEFAULT_DEPENDENCIES, ...dependencies };
@@ -124,6 +128,12 @@ export class ControlTmuxClient implements TmuxClient {
 
   state(): ClientState {
     return this.currentState;
+  }
+
+  async connect(): Promise<void> {
+    this.controlEnabled = true;
+    if (this.process && this.currentState === 'up') return;
+    await this.ensureConnected();
   }
 
   on(kind: Notification['kind'], handler: (notification: Notification) => void): () => void {
@@ -135,7 +145,7 @@ export class ControlTmuxClient implements TmuxClient {
       if (this.process && this.currentState === 'up') {
         void this.run(['refresh-client', '-B', ACTIVITY_SUBSCRIPTION]).catch(() => undefined);
       } else {
-        void this.connect().catch(() => undefined);
+        void this.ensureConnected().catch(() => undefined);
       }
     }
     return () => handlers.delete(handler);
@@ -156,9 +166,11 @@ export class ControlTmuxClient implements TmuxClient {
 
   private async runSerialized(args: readonly string[], timeoutMs: number): Promise<string> {
     commandLine(args); // Validate before opening a connection or invoking the fallback.
+    if (!this.controlEnabled) return this.fallback(args, timeoutMs);
     this.followTmuxEnvironment();
+    if (this.connecting) await this.connecting.catch(() => undefined);
     if (!this.process && !this.connecting && !this.reconnectTimer) {
-      await this.connect().catch(() => undefined);
+      await this.ensureConnected().catch(() => undefined);
     }
     if (!this.process || this.currentState !== 'up') return this.fallback(args, timeoutMs);
     try {
@@ -179,7 +191,8 @@ export class ControlTmuxClient implements TmuxClient {
     return this.deps.exec('tmux', args, timeoutMs);
   }
 
-  private async connect(): Promise<void> {
+  private async ensureConnected(): Promise<void> {
+    if (this.process && this.currentState === 'up') return;
     if (this.connecting) return this.connecting;
     this.connecting = this.openConnection();
     try {
@@ -201,6 +214,9 @@ export class ControlTmuxClient implements TmuxClient {
       child.stdout.once('end', () => this.connectionEnded(child, 'EOF'));
       child.once('exit', (...args) => this.connectionEnded(child, `exit ${String(args[0] ?? '')}`.trim()));
       child.once('error', (...args) => this.connectionEnded(child, String(args[0] ?? 'error')));
+      for (const stream of [child.stdin, child.stdout, child.stderr]) {
+        stream.on('error', (error) => this.dropConnection(child, `stream error: ${String(error)}`));
+      }
       await new Promise<void>((resolve, reject) => {
         const timer = this.deps.setTimer(() => {
           reject(new Error('tmux control attach timed out'));
@@ -225,10 +241,10 @@ export class ControlTmuxClient implements TmuxClient {
 
   private async ensureHolder(): Promise<void> {
     try {
-      await this.deps.exec('tmux', ['new-session', '-d', '-s', HOLDER, 'exec sleep 2147483647'], DEFAULT_TIMEOUT_MS);
+      await this.deps.exec('tmux', ['new-session', '-d', '-s', TMUX_CONTROL_HOLDER, 'exec sleep 2147483647'], DEFAULT_TIMEOUT_MS);
     } catch {
       // `new-session` returning nonzero is expected when another process already made it.
-      await this.deps.exec('tmux', ['has-session', '-t', `=${HOLDER}`], DEFAULT_TIMEOUT_MS);
+      await this.deps.exec('tmux', ['has-session', '-t', `=${TMUX_CONTROL_HOLDER}`], DEFAULT_TIMEOUT_MS);
     }
   }
 
@@ -366,7 +382,7 @@ export class ControlTmuxClient implements TmuxClient {
     this.reconnectAttempt += 1;
     this.reconnectTimer = this.deps.setTimer(() => {
       this.reconnectTimer = undefined;
-      void this.connect().catch(() => undefined);
+      void this.ensureConnected().catch(() => undefined);
     }, delay);
     this.reconnectTimer.unref?.();
   }
@@ -402,7 +418,12 @@ export class ControlTmuxClient implements TmuxClient {
   private setState(state: ClientState): void {
     if (this.currentState === state) return;
     this.currentState = state;
-    this.deps.log(`[tmux-client] ${state}`);
+    if (state === 'up') {
+      if (this.hasBeenUp) this.deps.log(`[tmux-client] ${state}`);
+      this.hasBeenUp = true;
+    } else if (this.hasBeenUp) {
+      this.deps.log(`[tmux-client] ${state}`);
+    }
   }
 }
 
