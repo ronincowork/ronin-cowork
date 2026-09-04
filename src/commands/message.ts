@@ -1,7 +1,6 @@
 import { deliverMessage, MessageRefused, pendingTellsFrom, type MessageSource } from '../message-queue.js';
 import { isValidName } from '../tmux.js';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { tmux } from '../tmux-client.js';
 
 const args = process.argv.slice(2);
 const sources = new Set<MessageSource>(['tell', 'wipeboard_notice', 'owner', 'house', 'jikan']);
@@ -13,8 +12,8 @@ if (!isValidName(target) || !text) {
   process.exit(2);
 }
 const from = source === 'tell' && process.env.TMUX_PANE
-  ? await promisify(execFile)('tmux', ['display-message', '-p', '-t', process.env.TMUX_PANE, '#S'])
-      .then(({ stdout }) => stdout.trim() || 'Agent').catch(() => 'Agent')
+  ? await tmux.run(['display-message', '-p', '-t', process.env.TMUX_PANE, '#S'])
+      .then((stdout) => stdout.trim() || 'Agent').catch(() => 'Agent')
   : undefined;
 try {
   if (source === 'tell') {
