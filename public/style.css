@@ -179,6 +179,22 @@
   --bar-brand-mark-h: 27px;
   --bar-brand-track: -0.005em;
 
+  /* Header scope: dark mode carries a strong tint without competing with terminals. */
+  --bar-scope-campaign: var(--line-3);
+  --bar-scope-teams: var(--aiiro);
+  --bar-scope-team: var(--kaki);
+  --bar-scope-color: var(--bar-scope-campaign);
+  --bar-scope-bg: color-mix(in srgb, var(--bar-scope-color) 24%, var(--bg-2));
+  --bar-scope-line: color-mix(in srgb, var(--bar-scope-color) 72%, var(--line));
+  --bar-scope-fg: var(--fg-strong);
+  --bar-scope-muted: var(--muted-2);
+  --bar-bg: var(--bg-2);
+  --bar-line: var(--line);
+  --bar-brand-fg: var(--fg);
+  --bar-brand-strong: var(--fg-strong);
+  --bar-brand-mark: var(--kaki);
+  --bar-muted: var(--muted);
+
 
   --edge: 1px;
   --edge-2: 2px;
@@ -238,6 +254,12 @@
   --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
   --kaki-lift: #a34e2f;
 
+  /* Light mode uses the selected full-fill treatment. */
+  --bar-scope-bg: var(--bar-scope-color);
+  --bar-scope-line: color-mix(in srgb, var(--bar-scope-color) 78%, #000);
+  --bar-scope-fg: var(--on-strong);
+  --bar-scope-muted: color-mix(in srgb, var(--on-strong) 78%, transparent);
+
 
 
   --term-cube: invert;
@@ -275,6 +297,20 @@
   --term-well: #ffffff;
   --term-input-line: #c8c2b2;
   --term-input-fg: #2c2e36;
+}
+
+:root[data-scope='campaign'] { --bar-scope-color: var(--bar-scope-campaign); }
+:root[data-scope='teams'] { --bar-scope-color: var(--bar-scope-teams); }
+:root[data-scope='team'] { --bar-scope-color: var(--bar-scope-team); }
+:root[data-scope] {
+  --bar-nav-fg: var(--bar-scope-fg);
+  --bar-value-fg: var(--bar-scope-fg);
+  --bar-bg: var(--bar-scope-bg);
+  --bar-line: var(--bar-scope-line);
+  --bar-brand-fg: var(--bar-scope-fg);
+  --bar-brand-strong: var(--bar-scope-fg);
+  --bar-brand-mark: var(--bar-scope-muted);
+  --bar-muted: var(--bar-scope-muted);
 }
 
 
@@ -355,7 +391,7 @@ body {
   font-size: var(--bar-value-size);
   white-space: nowrap;
 }
-.ui-bar-separator { color: var(--muted); }
+.ui-bar-separator { color: var(--bar-muted); }
 
 .ui-bar-place {
   color: var(--bar-value-fg);
@@ -564,12 +600,11 @@ body {
   gap: var(--space-5);
   padding: var(--space-4) var(--space-6);
   padding-top: max(var(--space-4), env(safe-area-inset-top));
-  background: var(--bg-2);
-  border-bottom: var(--edge) solid var(--line);
+  background: var(--bar-bg);
+  border-bottom: var(--edge) solid var(--bar-line);
   user-select: none;
   flex: 0 0 auto;
 }
-
 
 #bar .newtab {
   appearance: none;
@@ -577,10 +612,10 @@ body {
   height: 24px;
   margin-left: var(--space-1);
   padding: 0;
-  border: var(--edge) solid var(--line-2);
+  border: var(--edge) solid var(--bar-line);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--muted);
+  color: var(--bar-muted);
   font-family: inherit;
   font-size: var(--text-4);
   line-height: 1;
@@ -600,19 +635,19 @@ body {
   font-weight: 600;
   letter-spacing: 0.3px;
   padding: 0;
-  color: var(--fg);
+  color: var(--bar-brand-fg);
   text-decoration: none;
 }
 #bar .brand-mark { display: block; width: auto; height: var(--bar-brand-mark-h); }
 #bar .brand-word {
-  color: var(--fg-strong);
+  color: var(--bar-brand-strong);
   font-size: var(--text-9);
   font-weight: 600;
   letter-spacing: var(--bar-brand-track);
 }
 #bar .brand-home,
 #bar .brand-home:hover,
-#bar .brand-home:active { color: var(--kaki); }
+#bar .brand-home:active { color: var(--bar-brand-mark); }
 #bar .brand:active {
   color: var(--accent);
 }
@@ -621,7 +656,7 @@ body {
     color: var(--accent);
   }
 }
-#bar .bar-cowork-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#bar .bar-cowork-name { color: var(--bar-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bar .grow {
   flex: 1;
   display: flex;
@@ -634,8 +669,8 @@ body {
   display: inline-flex;
   align-items: center;
   background: transparent;
-  color: var(--muted);
-  border: var(--edge) solid var(--line);
+  color: var(--bar-muted);
+  border: var(--edge) solid var(--bar-line);
   border-radius: var(--radius-md);
   height: 30px;
   padding: 0 var(--space-5);
