@@ -53,6 +53,29 @@ import {
   writeArchive,
   type ArchivedSession,
 } from '../session-archive.js';
+import { ignoreEndingRequest, inspectSessionEnding, promptEnding } from '../desks/ending-runtime.js';
+import type { EndingRequest } from '../desks/ending.js';
+
+async function prepareSessionEnding(
+  req: express.Request,
+  res: express.Response,
+  name: string,
+  requested_action: Exclude<EndingRequest, 'retire'>,
+): Promise<boolean> {
+  const preflight = await inspectSessionEnding(name, requested_action);
+  if (!preflight.unresolved.length) return true;
+  const disposition = String(req.body?.worktree_disposition ?? '').trim().toLowerCase();
+  if (disposition === 'prompt') {
+    res.json({ ok: false, requires_disposition: true, ...(await promptEnding(preflight)) });
+    return false;
+  }
+  if (disposition === 'ignore') {
+    await ignoreEndingRequest(preflight);
+    return true;
+  }
+  res.json({ ok: false, requires_disposition: true, ending: preflight, actions: ['prompt', 'ignore'] });
+  return false;
+}
 
 export function registerSessions(app: express.Express): void {
   const publicArchive = ({ id, name, archived_at, agent, tags }: ArchivedSession) => ({ id, name, archived_at, agent, tags });
@@ -68,6 +91,7 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     try {
+      if (!(await prepareSessionEnding(req, res, name, 'archive'))) return;
       const key = await sessionKey(name);
       const runtime = await sessionRuntime(name);
       const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
@@ -137,6 +161,7 @@ export function registerSessions(app: express.Express): void {
   app.delete('/api/archived-sessions/:id', async (req, res) => {
     try {
       const archived = await readArchive(req.params.id);
+      if (!(await prepareSessionEnding(req, res, archived.name, 'hard_delete'))) return;
       emitSessionEnd(archived.name, archived.key);
       await fs.promises.rm(sessionRecordDir(archived.key), { recursive: true, force: true });
       await removeArchive(archived.id);
@@ -161,6 +186,7 @@ export function registerSessions(app: express.Express): void {
   app.delete('/api/sessions/:name', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await prepareSessionEnding(req, res, name, 'delete'))) return;
     const key = await sessionKey(name);
     await killSessionTree(name);
     emitSessionEnd(name, key); // rireki deletes the tape: no graveyard, eventually is fine

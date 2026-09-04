@@ -14,6 +14,7 @@ import { getLeads, getTags, listSessions, setLeads, setTags } from '../tmux.js';
 import { writeTeams } from '../tegami.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { assertSameCampaignRoot, campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
+import { ignoreEndingRequest, inspectTeamEnding, promptEnding } from '../desks/ending-runtime.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -150,6 +151,17 @@ export function registerTeams(app: express.Express): void {
 
   app.delete('/api/team-rosters/:name', async (req, res) => {
     try {
+      const ending = await inspectTeamEnding(req.params.name);
+      if (ending.unresolved.length) {
+        const disposition = String(req.body?.worktree_disposition ?? '').trim().toLowerCase();
+        if (disposition === 'prompt') {
+          return res.json({ ok: false, requires_disposition: true, ...(await promptEnding(ending)) });
+        }
+        if (disposition !== 'ignore') {
+          return res.json({ ok: false, requires_disposition: true, ending, actions: ['prompt', 'ignore'] });
+        }
+        await ignoreEndingRequest(ending);
+      }
       await deleteTeamRoster(req.params.name);
       for (const session of await listSessions()) {
         if (!session.tags.includes(req.params.name)) continue;
