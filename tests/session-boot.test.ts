@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { PACKET_BUDGET, bootFiles, compileBirthReadmeAt, isShelfTeaching } from '../src/birth-readme.js';
+import { PACKET_BUDGET, bootFiles, compileBirthReadmeAt, describePacket, isShelfTeaching, packetEndLine, readFirstSentence } from '../src/birth-readme.js';
 import { storeDir } from '../src/resources.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { routineReading } from '../src/resource-adapters.js';
@@ -121,6 +121,15 @@ test('the real stock shelf compiles to one read: contracts first, glossary last,
     // The glossary arrived rendered: markers gone, header rewritten.
     assert.doesNotMatch(text, /<!--g:/);
     assert.match(text, /Rendered for/);
+    // The packet ends by naming itself, and the brief's sentence says so, with the size.
+    assert.equal(text.trimEnd().split('\n').pop(), packetEndLine('newborn'));
+    const packet = await describePacket(target, 'newborn');
+    assert.equal(packet.bytes, bytes);
+    assert.equal(packet.lines, lines);
+    assert.equal(packet.over_budget, false);
+    assert.ok(packet.sections >= 7, `${packet.sections} sections`);
+    const sentence = readFirstSentence(packet);
+    assert.match(sentence, new RegExp(`^Read first: ${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} — ${lines} lines, \\d+ KB, one read; it ends with the line "${packetEndLine('newborn')}"\\. Do not act before you have seen that line\\.$`));
   } finally {
     if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
     else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
@@ -289,6 +298,24 @@ test('resolved sources compile into one session README: teaching inlined once, r
     assert.equal(text.match(/## Second guide/g)?.length, 1);
     assert.doesNotMatch(text, /a row\n/);
     assert.ok(text.split('\n').length < 40, 'a compiled packet of short guides stays a page');
+    assert.equal(text.trimEnd().split('\n').pop(), packetEndLine('new-agent'), 'the packet ends by naming itself');
+  } finally {
+    await rm(temp, { recursive: true, force: true });
+  }
+});
+
+test('an over-budget packet is described as such, and the brief asks for it in parts', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-readme-test-'));
+  try {
+    const big = path.join(temp, 'BIG.md');
+    await writeFile(big, '# A shelf file nobody curated\n\n' + 'a line of teaching that goes on and on and on\n'.repeat(1200));
+    const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [big], 'heavy');
+    const packet = await describePacket(target, 'heavy');
+    assert.ok(packet.bytes > PACKET_BUDGET.bytes && packet.over_budget, `${packet.bytes} bytes is over budget`);
+    const sentence = readFirstSentence(packet);
+    assert.match(sentence, /over the one-read budget: read it in parts, in order, until you reach the line/);
+    assert.match(sentence, /Do not act before you have seen that line\.$/);
+    assert.equal((await readFile(target, 'utf8')).trimEnd().split('\n').pop(), packetEndLine('heavy'));
   } finally {
     await rm(temp, { recursive: true, force: true });
   }

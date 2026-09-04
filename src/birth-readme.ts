@@ -32,6 +32,46 @@ const GLOSSARY = 'KOTOBA_GLOSSARY.md';
  */
 export const PACKET_BUDGET = { bytes: 30_000, lines: 450 } as const;
 
+/** The packet's last line. A newborn that can quote it has seen the whole packet. */
+export function packetEndLine(session: string): string {
+  return `— end of packet for ${session} —`;
+}
+
+/** What the brief and the birth receipt say about a compiled packet. */
+export interface PacketReport {
+  path: string;
+  bytes: number;
+  lines: number;
+  sections: number;
+  terminator: string;
+  over_budget: boolean;
+}
+
+export async function describePacket(readmePath: string, session: string): Promise<PacketReport> {
+  const text = await readFile(readmePath, 'utf8');
+  const bytes = Buffer.byteLength(text, 'utf8');
+  const lines = text.split('\n').length;
+  return {
+    path: readmePath,
+    bytes,
+    lines,
+    sections: (text.match(/^## /gm) ?? []).length,
+    terminator: packetEndLine(session),
+    over_budget: bytes > PACKET_BUDGET.bytes || lines > PACKET_BUDGET.lines,
+  };
+}
+
+/**
+ * THE READING PROTOCOL, in the brief. One sentence the newborn can verify: how long the
+ * packet is, that one read delivers it, and the line it ends with. An over-budget packet
+ * says so and asks for parts — the compiler has already warned the operator log.
+ */
+export function readFirstSentence(packet: PacketReport): string {
+  const kb = Math.max(1, Math.round(packet.bytes / 1024));
+  const head = `Read first: ${packet.path} — ${packet.lines} lines, ${kb} KB, ${packet.over_budget ? 'over the one-read budget: read it in parts, in order, until you reach' : 'one read; it ends with'} the line "${packet.terminator}".`;
+  return `${head} Do not act before you have seen that line.`;
+}
+
 const userShelf = () => storeDir('session_boot');
 
 export async function renderSessionMacrosReading(allowed?: ReadonlySet<string>): Promise<string> {
@@ -265,7 +305,8 @@ export async function compileBirthReadmeAt(
     );
   }
   for (const section of sections) lines.push('', '---', '', section.body);
-  lines.push('');
+  // The last line names itself, so a newborn that quotes it has read to the end.
+  lines.push('', '---', '', packetEndLine(session), '');
   const packet = lines.join('\n');
   const size = { bytes: Buffer.byteLength(packet, 'utf8'), lines: lines.length };
   if (size.bytes > PACKET_BUDGET.bytes || size.lines > PACKET_BUDGET.lines) {

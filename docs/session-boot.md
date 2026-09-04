@@ -87,6 +87,16 @@ could not be made.**
 
 ## What ships
 
+**The packet says where it ends, and the brief says how big it is.** The compiled README's
+last line is `— end of packet for <session> —`. The brief's `Read first:` sentence names the
+path, the line count, the size, that one read delivers it, and that line; when a packet is
+over the one-read budget the sentence says so and asks for it in parts, in order, until that
+line. The birth receipt carries a `packet` block — path, bytes, lines, sections, terminator,
+`over_budget` — so the record says what left; the ACK rule asks the newborn to quote the
+terminator, so the tape says what arrived. Measured 2026-09-04: Codex delivers ~10k tokens
+per shell read, Claude Code 30,000 chars per Bash call and 25,000 tokens per Read, and both
+open a file in a first window of ~250 lines — which is why the contracts come first.
+
 Three universal shelf files and two generated fragments, compiled in reading order —
 Routine contracts first, the maps, the macro roster, the glossary last — and held to the
 one-read budget (`PACKET_BUDGET` in `src/birth-readme.ts`) by `tests/session-boot.test.ts`
