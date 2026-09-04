@@ -297,6 +297,15 @@ export interface LifecycleProjection {
   pending: Array<{ transaction_id: string; repo: string; event: ManagedEvent }>;
 }
 
+export interface CompatibilityProjectionDocuments {
+  registry: ManagedObject[];
+  assignments: ManagedObject[];
+  receipts: ManagedEvent[];
+  promotions: ManagedEvent[];
+  quarantines: ManagedObject[];
+  settlements: ManagedEvent[];
+}
+
 const terminal = (event: ManagedEvent): boolean => event.result !== 'started' && event.type !== 'hand_in_started';
 export function projectManagedLifecycle(events: readonly ManagedEvent[]): LifecycleProjection {
   const desks = new Map<string, ManagedObject>();
@@ -324,4 +333,57 @@ export function projectManagedLifecycle(events: readonly ManagedEvent[]): Lifecy
   }
   const values = (map: Map<string, ManagedObject>) => [...map.values()].sort((a, b) => a.id.localeCompare(b.id));
   return { desks: values(desks), assignments: values(assignments), receipts, promotions, quarantines: values(quarantines), settlements, pending: [...pending].map(([transaction_id, event]) => ({ transaction_id, repo: event.repo, event })).sort((a, b) => a.transaction_id.localeCompare(b.transaction_id)) };
+}
+
+/** Canonical, JSON-serializable documents for legacy stores. Callers own where and when
+ * to atomically materialize them while migration is in progress. */
+export function compatibilityProjectionDocuments(projection: LifecycleProjection): CompatibilityProjectionDocuments {
+  return {
+    registry: structuredClone(projection.desks),
+    assignments: structuredClone(projection.assignments),
+    receipts: structuredClone(projection.receipts),
+    promotions: structuredClone(projection.promotions),
+    quarantines: structuredClone(projection.quarantines),
+    settlements: structuredClone(projection.settlements),
+  };
+}
+
+export interface RecoveryDisposition {
+  result: 'completed' | 'rolled_back' | 'quarantined' | 'needs_attention';
+  refs?: ManagedRefChange[];
+  commits?: ManagedCommit[];
+  objects?: ManagedObject[];
+  detail: Record<string, unknown>;
+}
+
+/** Startup recovery records only a disposition proved by its workflow callback. It does
+ * not infer, move or remove managed objects itself. Re-reading under the repository lock
+ * makes concurrent recovery idempotent. */
+export async function recoverInterruptedTransactions(
+  repo: string,
+  recover: (pending: { transaction_id: string; repo: string; event: ManagedEvent }) => Promise<RecoveryDisposition>,
+  options: LedgerOptions = {},
+): Promise<ManagedEvent[]> {
+  const root = options.root ?? lifecycleRoot();
+  return withManagedRepoLock(repo, async () => {
+    const read = await readManagedEvents({ repo, root });
+    const pending = projectManagedLifecycle(read.events).pending;
+    const recorded: ManagedEvent[] = [];
+    for (const item of pending) {
+      const disposition = await recover(item);
+      recorded.push(await appendUnlocked({
+        repo,
+        transaction_id: item.transaction_id,
+        type: 'recovered',
+        result: disposition.result,
+        session: item.event.session,
+        team: item.event.team,
+        refs: disposition.refs ?? [],
+        commits: disposition.commits ?? [],
+        objects: disposition.objects ?? [],
+        detail: disposition.detail,
+      }, root));
+    }
+    return recorded;
+  }, { ...options, root });
 }
