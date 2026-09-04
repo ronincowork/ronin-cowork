@@ -30,3 +30,10 @@ test('a Campaign surface placed after the Campaign read is settled at creation, 
   assert.match(source, /campaignRead = true;\s*\n\s*for \(const surface of campaignSurfaces\) surface\.settle\(\);/);
   assert.match(source, /campaignSurfaces\.add\(coordinated\);[\s\S]*?if \(campaignRead\) coordinated\.settle\(\);/);
 });
+
+test('the Campaign page clears the loading state it set before it paints a surface', async () => {
+  // The Ronin Desk surface's show() is a tab select that never touches surface state; the
+  // wrapper that said "Loading Campaign…" is the one that must take it back.
+  const source = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
+  assert.match(source, /paint: \(\.\.\.args\) => \{ WorkspaceKit\.primitives\.setSurfaceState\(surface\.el, null, ''\); return surface\.show\?\.\(\.\.\.args\); \}/);
+});

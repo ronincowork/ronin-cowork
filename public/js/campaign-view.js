@@ -103,7 +103,10 @@ export function createCampaignView() {
   const progressive = (surface) => {
     const coordinated = progressiveSurface({
       loading: () => WorkspaceKit.primitives.setSurfaceState(surface.el, 'loading', t('campaign_view.loading', 'Loading Campaign…')),
-      paint: (...args) => surface.show?.(...args),
+      // The wrapper set the loading state, so the wrapper clears it: a surface whose show()
+      // does not touch its own state — the Ronin Desk's tab select — stayed on "Loading
+      // Campaign…" over a painted body (live, 2026-09-04).
+      paint: (...args) => { WorkspaceKit.primitives.setSurfaceState(surface.el, null, ''); return surface.show?.(...args); },
     });
     campaignSurfaces.add(coordinated);
     // A surface placed AFTER the Campaign arrived — a card clicked or dragged onto an
