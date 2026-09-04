@@ -1,4 +1,4 @@
-## RONIN WORKTREES — get, update, and hand in
+# RONIN WORKTREES — get, update, and hand in
 
 This Routine equips an Agent for managed worktrees when both the repository and the Agent
 choose them. It does not turn every checkout into a managed desk.
@@ -30,7 +30,7 @@ something surprises you; `tejun-desk receipts` shows what hand-in recorded.
 
 - **Commit** is an ordinary checkpoint on the private desk. It publishes nothing.
 - **Hand-in** admits committed work to the team review line. It is not repository-wide
-  verification and it never runs `git push`.
+  verification. Never `git push`.
 - **Team promotion** is the lead's act: verify the review line and admit it to local `dev`.
 - **Git push** means remote publication only. Desk and team branches stay local.
 
