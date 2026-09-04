@@ -7,6 +7,7 @@ import { notifyLeads, replyToHandIn, teamOfLine } from '../desks/lead.js';
 import { acceptedSince, receiptById, receiptsForDesk, receiptsForLine } from '../desks/receipts.js';
 import { queueHolder } from '../desks/queue.js';
 import { deskId, type DeskNotice, type DeskStatus, type HandInReceipt } from '../desks/schema.js';
+import { matchesRepoBranchSelector, parseRepoBranchSelector } from '../desks/selector.js';
 
 const out = (s = '') => process.stdout.write(s + '\n');
 function die(verdict: string, code: number): never {
@@ -55,10 +56,10 @@ function parse(argv: string[]): Args {
 
 const str = (v: string | true | undefined): string => (typeof v === 'string' ? v : '');
 
-const USAGE = `usage: tejun-desk status [--session s | --team t | --repo r]
-       tejun-desk open <repo> [--team t] [--session s]
-       tejun-desk hand-in [<repo>] [--assignment]
-       tejun-desk sync [<repo>]
+const USAGE = `usage: tejun-desk status [<repo[:branch]>] [--session s | --team t | --repo r]
+       tejun-desk open <repo[:branch]> [--team t] [--session s]
+       tejun-desk hand-in [<repo[:branch]>] [--assignment]
+       tejun-desk sync [<repo[:branch]>]
        tejun-desk park [<repo>] [--unmount]
        tejun-desk parked [--team t] [--repo r]
        tejun-desk recover <repo> <branch> [--session s]
@@ -68,15 +69,18 @@ const USAGE = `usage: tejun-desk status [--session s | --team t | --repo r]
 
 function row(d: DeskStatus): string {
   const bits = [
-    d.state === 'parked' ? 'PARKED' : d.dirty ? `dirty ${d.dirty_files.length}` : 'clean',
+    d.state === 'parked' ? 'PARKED' : d.dirty ? `dirty: ${d.dirty_files.join(', ')}` : 'clean',
     `ahead ${d.ahead}`,
     d.behind ? `behind ${d.behind}` : '',
+    `${d.behind_working} behind ${d.working}`,
+    d.behind_working >= 20 ? `NOTICE: update available (${d.behind_working} commits)` : '',
+    d.line_ahead_of_working ? `${d.line} is ${d.line_ahead_of_working} ahead of ${d.working}; promotion due` : '',
     d.pending ? `pending update (by ${d.pending.by}${d.pending.overlap.length ? `, overlaps ${d.pending.overlap.join(', ')}` : ''})` : '',
     d.last_hand_in ? `last hand-in ${d.last_hand_in}` : 'never handed in',
     d.blocked ? `BLOCKED: ${d.blocked}` : '',
     d.mounted ? '' : 'unmounted',
   ].filter(Boolean);
-  return `${deskId(d)} → ${d.line}  ${bits.join(' · ')}  ${d.worktree}`;
+  return `${deskId(d)} → ${d.line}  ${bits.join(' · ')}  base ${d.base_sha?.slice(0, 10) || '?'} · dependencies ${d.dependency_location || 'none'}  ${d.worktree}`;
 }
 
 function noticeLine(n: DeskNotice): string {
@@ -93,15 +97,16 @@ function receiptLine(r: HandInReceipt): string {
   return `${r.at}  ${r.result.toUpperCase().padEnd(8)}  ${r.repo}:${r.desk}  ${r.source_tip.slice(0, 10)} onto ${r.expected_old.slice(0, 10)}  ${tail}  [${r.id}]`;
 }
 
-async function mine(session: string, repo: string): Promise<DeskStatus[]> {
-  const all = await listDesks({ session, ...(repo ? { repo } : {}) });
-  return all.filter((d) => d.state === 'open');
+async function mine(session: string, value: string): Promise<DeskStatus[]> {
+  const selector = parseRepoBranchSelector(value);
+  const all = await listDesks({ session, ...(selector.repo ? { repo: selector.repo } : {}) });
+  return all.filter((d) => d.state === 'open' && matchesRepoBranchSelector(d, selector));
 }
 
-async function pickOne(session: string, repo: string, verb: string): Promise<DeskStatus> {
-  const desks = await mine(session, repo);
-  if (!desks.length) die(repo ? `NO-DESK: ${session} has no open desk on ${repo}` : `NO-DESK: ${session} has no open desk`, 3);
-  if (desks.length > 1) die(`WHICH-REPO: ${session} has desks on ${desks.map((d) => d.repo).join(', ')} — name one (tejun-desk ${verb} <repo>)`, 2);
+async function pickOne(session: string, value: string, verb: string): Promise<DeskStatus> {
+  const desks = await mine(session, value);
+  if (!desks.length) die(value ? `NO-DESK: ${session} has no open desk matching ${value}` : `NO-DESK: ${session} has no open desk`, 3);
+  if (desks.length > 1) die(`WHICH-DESK: ${session} has ${desks.map((d) => deskId(d)).join(', ')} — name repo:branch (tejun-desk ${verb} <repo:branch>)`, 2);
   return desks[0]!;
 }
 
@@ -115,10 +120,16 @@ async function main(): Promise<void> {
         const filter = str(flags.get('team')) ? { team: str(flags.get('team')) }
           : str(flags.get('repo')) ? { repo: str(flags.get('repo')) }
           : session ? { session } : {};
-        const desks = await listDesks(filter);
+        let desks = await listDesks(filter);
+        if (positional[0]) {
+          const selector = parseRepoBranchSelector(positional[0]);
+          desks = desks.filter((d) => matchesRepoBranchSelector(d, selector));
+        }
         if (!desks.length) die(session || Object.keys(filter).length ? `NO-DESK: nothing recorded for ${JSON.stringify(filter)}` : 'NO-DESK: no desks recorded on this box', 0);
         out(`${desks.length} desk(s)`);
         for (const d of desks) out(row(d));
+        const levelIdle = desks.filter((d) => d.state === 'open' && !d.dirty && d.ahead === 0);
+        if (levelIdle.length) out(`  level, idle desks you can close: ${levelIdle.map(deskId).join(', ')}`);
         for (const key of new Set(desks.map((d) => `${d.repo}\t${d.line}`))) {
           const [repo, line] = key.split('\t') as [string, string];
           const h = await queueHolder(repo, line);
@@ -127,12 +138,14 @@ async function main(): Promise<void> {
         return;
       }
       case 'open': {
-        const repo = positional[0];
-        if (!repo) die(USAGE, 2);
+        const selector = parseRepoBranchSelector(positional[0] ?? '');
+        if (!selector.repo) die(USAGE, 2);
         if (!session) die('NO-SESSION: not inside a session and no --session', 3);
         const team = str(flags.get('team')) || (await myTeams(session))[0] || '';
-        const d = await openDesk({ repo, session, team, assignment: assignmentId(session, team) });
-        out(`OPENED ${deskId(d)} → ${d.line} at ${d.worktree}`);
+        const d = await openDesk({ repo: selector.repo, branch: selector.branch || undefined, session, team, assignment: assignmentId(session, team) });
+        out(`OPENED ${deskId(d)} from ${d.working} at ${d.base_sha?.slice(0, 10) || d.working_tip.slice(0, 10)} → ${d.line}`);
+        out(`  worktree ${d.worktree}`);
+        out(`  dependencies ${d.dependency_location || 'none'}`);
         out(row(d));
         return;
       }
@@ -140,15 +153,21 @@ async function main(): Promise<void> {
         if (!session) die('NO-SESSION: not inside a session and no --session', 3);
         let targets: DeskStatus[];
         if (flags.get('assignment')) {
-          targets = await mine(session, '');
+          targets = await mine(session, positional[0] ?? '');
           if (!targets.length) die(`NO-DESK: ${session} has no open desk`, 3);
         } else targets = [await pickOne(session, positional[0] ?? '', 'hand-in')];
         let worst = 0;
         const outcomes = flags.get('assignment') ? await handInAssignment({ desks: targets }) : [await handIn(targets[0]!.repo, targets[0]!.branch)];
-        for (const [i, { receipt, notices }] of outcomes.entries()) {
+        for (const [i, { receipt, notices, tidy }] of outcomes.entries()) {
           const d = targets[i]!;
           out(`${receipt.result.toUpperCase()} ${deskId(d)} → ${d.line}${receipt.result === 'accepted' ? ` now ${receipt.line_sha.slice(0, 10)}` : ''}${receipt.reason ? ` — ${receipt.reason}` : ''}${receipt.conflict_files.length ? ` — files: ${receipt.conflict_files.join(', ')}` : ''}  [${receipt.id}]`);
           for (const n of notices) if (n.kind !== 'adopted' || n.desk === d.branch) out(noticeLine(n));
+          if (receipt.result === 'accepted' && tidy.desk) {
+            out(`  desk is ${tidy.desk.ahead === 0 ? 'level with the line' : `${tidy.desk.ahead} commit(s) ahead of the line`}`);
+            out(tidy.unsaved_files.length ? `  not handed in: ${tidy.unsaved_files.join(', ')}` : '  no unsaved or untracked files');
+            if (tidy.other_level_desks.length) out(`  other level, idle desks you can close: ${tidy.other_level_desks.map(deskId).join(', ')}`);
+            out(tidy.promotion_due ? '  promotion due; the lead is being told' : '  team line is level with local dev');
+          }
           if (receipt.result !== 'accepted') worst = 4;
           const team = teamOfLine(d.line);
           const outcome = receipt.result === 'accepted' ? 'accepted' : receipt.conflict_files.length ? 'conflict' : null;
