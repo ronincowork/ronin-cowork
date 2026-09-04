@@ -23,6 +23,7 @@ export interface SessionInfo {
   key: string;
   agent: string;
   campaign_id: string;
+  activity: number;
   /** RIREKI's dial: false when the session was born with Ronin Services off — no tape, no unlocked views. */
   rireki: boolean;
 }
@@ -73,13 +74,13 @@ export async function listSessions(): Promise<SessionInfo[]> {
     const { stdout } = await pexec('tmux', [
       'list-sessions',
       '-F',
-      `#{session_name}\t#{${TITLE_OPT}}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}\t#{${RIREKI_OPT}}`,
+      `#{session_name}\t#{${TITLE_OPT}}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}\t#{${RIREKI_OPT}}\t#{window_activity}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, title, windows, attached, created, hasNote, tags, leads, control, key, agent, campaign, rireki] = line.split('\t');
+        const [name, title, windows, attached, created, hasNote, tags, leads, control, key, agent, campaign, rireki, activity] = line.split('\t');
         return {
           name,
           title: title?.trim() || '',
@@ -94,6 +95,7 @@ export async function listSessions(): Promise<SessionInfo[]> {
           agent: agent?.trim() || '',
           campaign_id: campaign?.trim() || '',
           rireki: rireki?.trim() !== 'off',
+          activity: Number(activity) || 0,
         };
       })
       .filter((s) => !s.name.startsWith(config.viewerPrefix))
