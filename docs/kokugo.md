@@ -141,7 +141,7 @@ reads these attributes as keys the client reads.
 ## 8 · The glossary room — what an agent says to a person
 
 The house names (TEGAMI, TEJUN, RIREKI …) never reach a person's face, and tools and docs
-use them freely with agents. `ronin_catalogs/lexicons/professional_en.md` is where a session learns which word to
+use them freely with agents. `KOTOBA_GLOSSARY.md` is where a session learns which word to
 SAY for each — and since the desk profile decides what the person is looking at, that
 page is rendered per session. Its keyed cells are `**word**<!--g:glossary.key-->`; the
 words live in the lexicon under `glossary.*` (floor: the plain English the glossary
