@@ -29,6 +29,8 @@
 # every tab on your team. Verdicts: ARRANGED · NO-TEAM · NO-PAGE · UNREACHABLE.
 # Exit 0 arranged/read, 2 bad draft, 3 no session/team, 5 unreachable.
 set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
 
 die() { printf '%s\n' "$*" >&2; exit "${2:-3}"; }
 
@@ -65,7 +67,7 @@ if [ -z "$TEAM" ]; then
   [ "$n" -eq 1 ] || echo "WARNING: $ME is on several teams ($tags); using $TEAM." >&2
 fi
 
-url=$(ronin-url) || exit $?
+url=$("$TOOL_DIR/ronin-url") || exit $?
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
 api() { curl -sS -m 20 "${AUTH[@]+"${AUTH[@]}"}" "$@" 2>/dev/null; }

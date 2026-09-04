@@ -11,10 +11,20 @@ if [ -n "${RONIN_URL:-}" ]; then
   exit 0
 fi
 
-url=""
+raw=""
 if command -v tmux >/dev/null 2>&1; then
-  url=$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)
+  raw=$(tmux show-option -s -qv @ronin-operator 2>/dev/null || true)
 fi
+url=$(RAW="$raw" python3 - <<'PY' 2>/dev/null || true
+import json, os
+try:
+    value = json.loads(os.environ.get("RAW", ""))
+    if value.get("version") == 1 and isinstance(value.get("url"), str):
+        print(value["url"].strip())
+except Exception:
+    pass
+PY
+)
 if [ -n "$url" ]; then
   printf '%s\n' "$url"
   exit 0

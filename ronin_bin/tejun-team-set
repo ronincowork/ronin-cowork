@@ -17,6 +17,8 @@
 # Verdicts: CREATED <team> · UPDATED <team> — then `added: …` / `not live: …` when --add
 # was given. Exit 0 done, 2 bad arguments, 4 refused, 5 Ronin unreachable.
 set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
 die() { printf '%s\n' "$1" >&2; exit "${2:-4}"; }
 
 NAME="${1:-}"
@@ -37,7 +39,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-url=$(ronin-url) || exit $?
+url=$("$TOOL_DIR/ronin-url") || exit $?
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
 

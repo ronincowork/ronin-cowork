@@ -11,7 +11,8 @@ const resolver = path.join(root, 'ronin_bin', 'ronin-url');
 function fakeTmux(value: string): { dir: string; env: NodeJS.ProcessEnv } {
   const dir = mkdtempSync(path.join(tmpdir(), 'ronin-url-'));
   const tmux = path.join(dir, 'tmux');
-  writeFileSync(tmux, `#!/usr/bin/env bash\nprintf '%s\\n' ${JSON.stringify(value)}\n`);
+  const descriptor = value ? JSON.stringify({ version: 1, url: value, token: 'test-token', instance: 'test' }) : '';
+  writeFileSync(tmux, `#!/usr/bin/env bash\nprintf '%s\\n' ${JSON.stringify(descriptor)}\n`);
   chmodSync(tmux, 0o755);
   return { dir, env: { ...process.env, PATH: `${dir}:${process.env.PATH ?? ''}` } };
 }
@@ -76,10 +77,20 @@ test('every agent-facing API caller uses the one resolver and carries no address
   ]);
   for (const name of callers) {
     const body = readFileSync(path.join(bin, name), 'utf8');
-    assert.match(body, /\burl=\$\(ronin-url\)|\bURL=\$\(ronin-url\)/, name);
+    assert.match(body, /\burl=\$\("\$TOOL_DIR\/ronin-url"\)|\bURL=\$\("\$TOOL_DIR\/ronin-url"\)/, name);
     assert.doesNotMatch(body, /https?:\/\//, name);
     assert.doesNotMatch(body, /@ronin-url/, name);
   }
+});
+
+test('absolute tejun-fork invocation resolves its sibling with no Ronin PATH entries', () => {
+  const r = spawnSync(path.join(root, 'ronin_bin', 'tejun-fork'), ['--name', 'path-proof'], {
+    encoding: 'utf8',
+    env: { PATH: '/usr/bin:/bin', RONIN_URL: 'http://127.0.0.1:9' },
+  });
+  assert.equal(r.status, 5);
+  assert.doesNotMatch(r.stderr, /ronin-url: command not found/);
+  assert.match(r.stderr, /Ronin did not answer/);
 });
 
 test('the retired loopback operator URL is absent from production code', () => {
