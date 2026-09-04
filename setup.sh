@@ -72,7 +72,7 @@ fi
 RONIN_PREFLIGHT_BIND="${BIND:-$(ronin_bind "$REPO_DIR")}"
 export RONIN_PREFLIGHT_BIND
 ronin_preflight_port "$REPO_DIR" "$NODE_BIN"
-ronin_adopt_tmux "${RONIN_DATA_ROOT:-$HOME/.ronin}"
+ronin_adopt_tmux "$("$REPO_DIR/bin/ronin-store" --root data)"
 
 # --- install deps (checkout only: a bundle arrives with finished node_modules) ---
 if [ "$BUNDLED" = 1 ]; then
