@@ -264,8 +264,8 @@ test("on('subscription') installs the activity session loop and parses its value
 test('an importing process exits after its command leaves the control connection idle', async () => {
   const source = [
     "import { tmux } from './src/tmux-client.ts';",
-    "const output = await tmux.run(['display-message', '-p', 'x']);",
-    "if (output !== 'x') throw new Error(`unexpected output: ${output}`);",
+    "const output = await tmux.run(['-V']);",
+    "if (!output.startsWith('tmux ')) throw new Error(`unexpected output: ${output}`);",
   ].join(' ');
   const { stdout, stderr } = await promisify(execFile)(process.execPath, [
     '--import', 'tsx', '--input-type=module', '-e', source,

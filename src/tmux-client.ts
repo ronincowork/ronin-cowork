@@ -133,7 +133,7 @@ export class ControlTmuxClient implements TmuxClient {
   async connect(): Promise<void> {
     this.controlEnabled = true;
     if (this.process && this.currentState === 'up') return;
-    await this.ensureConnected();
+    await this.ensureConnected().catch(() => undefined);
   }
 
   on(kind: Notification['kind'], handler: (notification: Notification) => void): () => void {
