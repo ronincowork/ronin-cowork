@@ -97,3 +97,18 @@ test('a supplied session record key is stamped in the same tmux birth transactio
   assert.notEqual(key, -1);
   assert.deepEqual(a.slice(key - 3, key + 2), ['set-option', '-t', 'beta', '@ronin-key', 'beta-unique-key']);
 });
+
+test('Ronin Services off at birth sets RIREKI\'s dial in the same tmux birth transaction', () => {
+  // The recorder\'s sweep arms a pipe on every pane it finds without one. Setting the dial
+  // after new-session would leave a window for a first segment; in the chain there is none.
+  const a = newSessionArgs('beta', { argv: ['claude'], key: 'beta-key', rireki: false });
+  const i = a.indexOf('@ronin-rireki');
+  assert.notEqual(i, -1);
+  assert.equal(a[i + 1], 'off');
+  assert.deepEqual(a.slice(i - 4, i), [';', 'set-option', '-t', 'beta']);
+});
+
+test('Ronin Services on, or unstated, leaves RIREKI\'s dial alone — the recorder\'s own default', () => {
+  assert.equal(newSessionArgs('beta', { argv: ['claude'], rireki: true }).includes('@ronin-rireki'), false);
+  assert.equal(newSessionArgs('beta', { argv: ['claude'] }).includes('@ronin-rireki'), false);
+});

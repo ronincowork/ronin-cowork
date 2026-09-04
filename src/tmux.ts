@@ -4,7 +4,7 @@ import { config } from './machine-settings.js';
 import { ensureTmuxServer } from './host-guard.js';
 import { removeHandoff } from './handoff.js';
 import { assertUnderMax } from './machine-state.js';
-import { CONTROL_OPT, newSessionArgs } from './session-args.js';
+import { CONTROL_OPT, RIREKI_OPT, newSessionArgs } from './session-args.js';
 export type { Control } from './session-args.js';
 import type { Control } from './session-args.js';
 
@@ -23,6 +23,8 @@ export interface SessionInfo {
   key: string;
   agent: string;
   campaign_id: string;
+  /** RIREKI's dial: false when the session was born with Ronin Services off — no tape, no unlocked views. */
+  rireki: boolean;
 }
 
 const NOTE_OPT = '@ronin_note';
@@ -71,13 +73,13 @@ export async function listSessions(): Promise<SessionInfo[]> {
     const { stdout } = await pexec('tmux', [
       'list-sessions',
       '-F',
-      `#{session_name}\t#{${TITLE_OPT}}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}`,
+      `#{session_name}\t#{${TITLE_OPT}}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}\t#{${RIREKI_OPT}}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, title, windows, attached, created, hasNote, tags, leads, control, key, agent, campaign] = line.split('\t');
+        const [name, title, windows, attached, created, hasNote, tags, leads, control, key, agent, campaign, rireki] = line.split('\t');
         return {
           name,
           title: title?.trim() || '',
@@ -91,6 +93,7 @@ export async function listSessions(): Promise<SessionInfo[]> {
           key: key?.trim() || `${name}-${Number(created) || 0}`,
           agent: agent?.trim() || '',
           campaign_id: campaign?.trim() || '',
+          rireki: rireki?.trim() !== 'off',
         };
       })
       .filter((s) => !s.name.startsWith(config.viewerPrefix))
@@ -124,6 +127,7 @@ export interface CreateOpts {
   argv?: readonly string[];
   env?: Readonly<Record<string, string>>;
   key?: string;
+  rireki?: boolean;
 }
 
 export async function createSession(name: string, dir?: string, opts: CreateOpts = {}): Promise<void> {
@@ -136,6 +140,7 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
     argv: opts.argv,
     control: opts.control,
     key: opts.key,
+    rireki: opts.rireki,
   });
   try {
     await pexec('tmux', build(true));

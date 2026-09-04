@@ -1629,6 +1629,7 @@ The catalog entry goes. {dir} is not touched.
 
 ## tile — the prompt, the ended line, the picker tooltips
 - **tile.session_ended:** session ended.
+- **output.title_off:** Output — Locked only. Ronin Services is off for this Agent.
 - **output.title_locked:** Output — Locked only. Ronin Services is not installed.
 - **output.title_choose:** Output — choose the live terminal or a RIREKI view
 

@@ -303,6 +303,11 @@ export function registerLaunch(app: express.Express): void {
         env: routineTools ? { PATH: routineTools.path } : undefined,
         control: resolved.agent ? 'user' : undefined,
         key: birthKey || undefined,
+        // The Services switch as resolved for THIS Agent at birth (campaign < team < form):
+        // off means RIREKI never records it. Set here and never again — nothing cascades
+        // onto a running session (owner, 2026-09-04). A terminal has no Routines and keeps
+        // the recorder's own default.
+        rireki: resolved.routines.length ? resolved.routines.some((routine) => routine.name === 'ronin_services' && routine.enabled) : undefined,
       });
       runtimeBorn = true;
       if (birthKey) rememberSessionKey(resolved.name, birthKey);
