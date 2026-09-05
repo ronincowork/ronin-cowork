@@ -38,6 +38,14 @@ async function runtimeBand(browser, count) {
       roots: [],
     }),
   }));
+  await page.route('**/api/setup/registration', (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'optional', submitted_at: null, communication: { newsletter: false, release_updates: false, follow_up: [], no_communication: true } }),
+    });
+  });
   await page.goto(`${URL_.replace(/#.*$/, '')}#/home`, { waitUntil: 'networkidle' });
   await page.waitForSelector('[data-workspace-view="home"]:not([hidden]) .ch-door');
   const doors = await page.locator('.ch-door').evaluateAll((nodes) => nodes.map((node) => ({
@@ -112,6 +120,19 @@ async function setupPass(browser, options) {
         const kaki = getComputedStyle(document.documentElement).getPropertyValue('--kaki').trim();
         return { background: style.backgroundColor, border: style.borderColor, kaki, mark: !!node.querySelector('.wk-launch-mark') };
       })(),
+      register: (() => {
+        const form = active?.querySelector('.setup-register-form');
+        const details = form?.querySelector('.setup-register-disclosure');
+        const action = [...(form?.querySelectorAll('button') || [])].find((node) => node.textContent?.trim() === 'Register');
+        const style = action ? getComputedStyle(action) : null;
+        return {
+          visibleInputs: [...(form?.querySelectorAll('input,select,textarea') || [])].filter((node) => node.getClientRects().length > 0).map((node) => node.name),
+          detailsOpen: details?.open === true,
+          detailFields: [...(details?.querySelectorAll('input,select,textarea') || [])].map((node) => node.name),
+          identityVisible: (active?.querySelector('.setup-registration-identity')?.getClientRects().length || 0) > 0,
+          action: style ? { background: style.backgroundColor, border: style.borderColor } : null,
+        };
+      })(),
       legacyPhone: !!document.getElementById('phone'),
       overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) > innerWidth + 1,
     };
@@ -132,13 +153,25 @@ async function setupPass(browser, options) {
   else bad(`${label}: provider group metadata is absent or selectable`);
   const stoneWidths = state.stoneBoxes.map((box) => Math.round(box.width));
   const equalStones = new Set(stoneWidths).size === 1;
+  const squareStones = state.stoneBoxes.every((box) => Math.abs(box.width - box.height) <= 2);
   const staggered = state.stoneBoxes.length > 2 && new Set(state.stoneBoxes.map((box) => Math.round(box.top))).size > 1;
-  if (equalStones && staggered) ok(`${label}: seven preset stones are equal and staggered`);
+  if (equalStones && squareStones && staggered) ok(`${label}: seven preset stones are equal, square, and staggered`);
   else bad(`${label}: preset stone geometry mismatch ${JSON.stringify(state.stoneBoxes)}`);
   if (!options.ready || (state.launch?.mark && state.launch.border !== state.launch.background)) ok(`${label}: Launch is gated or uses its mark and a neutral background with distinct outline`);
   else bad(`${label}: Launch treatment mismatch ${JSON.stringify(state.launch)}`);
   if (!state.feedback) ok(`${label}: Setup header has no Feedback control`);
   else bad(`${label}: Setup header still exposes Feedback`);
+  const registerOK = JSON.stringify(state.register?.visibleInputs) === JSON.stringify(['email'])
+    && state.register?.detailsOpen === false
+    && JSON.stringify(state.register?.detailFields) === JSON.stringify(['purpose', 'kind', 'user_type', 'own_words'])
+    && state.register?.identityVisible === false
+    && state.register?.action?.background !== state.register?.action?.border;
+  if (registerOK) ok(`${label}: Register is progressive, preserves all detail fields, hides pending identity, and uses a neutral outlined action`);
+  else bad(`${label}: Register progressive disclosure mismatch ${JSON.stringify(state.register)}`);
+  await page.locator('.setup-register-disclosure > summary').first().click();
+  const openRegisterFields = await page.locator('.setup-register-form input:visible,.setup-register-form select:visible,.setup-register-form textarea:visible').evaluateAll((nodes) => nodes.map((node) => node.name));
+  if (JSON.stringify(openRegisterFields) === JSON.stringify(['email', 'purpose', 'kind', 'user_type', 'own_words'])) ok(`${label}: opening Registration details reveals the exact preserved fields`);
+  else bad(`${label}: opened Registration fields mismatch ${JSON.stringify(openRegisterFields)}`);
   if (!state.legacyPhone && !state.overflow) ok(`${label}: responsive workbench fits without the retired phone shell`);
   else bad(`${label}: responsive layout mismatch ${JSON.stringify({ legacyPhone: state.legacyPhone, overflow: state.overflow })}`);
 
@@ -166,6 +199,34 @@ async function setupPass(browser, options) {
       : selected.every((entry) => entry.flashing && entry.iterations === '2');
     if (JSON.stringify(persistent) === JSON.stringify(hover) && motionOK) ok(`${label}: blocked selection persists and has the ruled two-flash/reduced-motion presentation`);
     else bad(`${label}: blocked selection presentation mismatch ${JSON.stringify(selected)}`);
+    const blockedDetail = await page.locator('.sp-detail').evaluate((detail) => {
+      const visible = (node) => !!node && node.getClientRects().length > 0;
+      const buttons = [...detail.querySelectorAll('button')];
+      const launch = buttons.find((node) => node.textContent?.trim() === 'Launch');
+      const customize = buttons.find((node) => node.textContent?.trim() === 'Customize');
+      const gate = detail.querySelector('.sp-gate');
+      const link = gate?.querySelector('button');
+      const selectedDestination = detail.querySelector('.sp-destination');
+      const restingDestinations = document.querySelectorAll('.sp-grid .sp-slot small');
+      return {
+        message: visible(detail.querySelector('textarea')),
+        specialized: visible(detail.querySelector('.sp-controls')),
+        customize: visible(customize),
+        launch: { visible: visible(launch), disabled: launch?.disabled === true, label: launch?.textContent?.trim(), mark: !!launch?.querySelector('.wk-launch-mark') },
+        held: visible(detail.querySelector('.sp-held')) && detail.querySelector('.sp-held')?.textContent?.trim() === 'Held',
+        disclosure: visible(gate?.querySelector('p')),
+        link: visible(link),
+        linkContentWidth: !!link && !!gate && link.getBoundingClientRect().width < gate.getBoundingClientRect().width,
+        destination: visible(selectedDestination) ? selectedDestination.textContent?.trim() : '',
+        restingDestinations: restingDestinations.length,
+      };
+    });
+    const blockedOK = blockedDetail.message && blockedDetail.specialized && blockedDetail.customize
+      && blockedDetail.launch.visible && blockedDetail.launch.disabled && blockedDetail.launch.label === 'Launch' && blockedDetail.launch.mark
+      && blockedDetail.held && blockedDetail.disclosure && blockedDetail.link && blockedDetail.linkContentWidth
+      && blockedDetail.destination === 'Ronin Lab' && blockedDetail.restingDestinations === 0;
+    if (blockedOK) ok(`${label}: blocked detail retains controls, exact disabled Launch, adjacent Held/disclosure/link, and selected-only destination`);
+    else bad(`${label}: blocked detail contract mismatch ${JSON.stringify(blockedDetail)}`);
   }
 
   const before = await page.evaluate(() => performance.timeOrigin);
@@ -189,6 +250,73 @@ async function setupPass(browser, options) {
   await ctx.close();
 }
 
+async function customizePass(browser, source, activation = 'pointer') {
+  const ctx = await context(browser);
+  const page = await ctx.newPage();
+  const launches = [];
+  ctx.on('request', (request) => {
+    if (request.method() === 'POST' && /\/api\/(launch|team-rosters)(?:$|\?)/.test(request.url())) launches.push(request.url());
+  });
+  await page.route('**/api/setup/runtime', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ activated_count: 1, activated_band: 'one', providers: [{ id: 'anthropic', label: 'Claude', installed: true, activated: true, state: 'activated' }], roots: [], gbrain: { active: true }, services: { active: true } }) }));
+  await page.goto(`${URL_.replace(/#.*$/, '')}#/${source}`, { waitUntil: 'networkidle' });
+  if (source === 'cowork') {
+    await page.locator('.wk-workbench-selector-cards .wk-card').filter({ hasText: 'Presets' }).first().click();
+    await page.waitForSelector('[data-workbench-surface="setup.presets"] .sp-slot');
+  } else await page.waitForSelector('[data-workspace-view="setup"]:not([hidden]) .sp-slot');
+  const message = `${source} exact Customize message`;
+  await page.locator('.sp-detail textarea').fill(message);
+  const before = await page.evaluate(() => ({ url: location.href, state: sessionStorage.getItem('ronin.workspace.v2') }));
+  const popupPromise = page.waitForEvent('popup');
+  const customize = page.locator('.sp-detail button').filter({ hasText: /^Customize$/ });
+  if (activation === 'keyboard') { await customize.focus(); await page.keyboard.press('Enter'); }
+  else await customize.click();
+  const popup = await popupPromise;
+  await popup.waitForLoadState('networkidle');
+  await popup.waitForSelector('[data-workspace-view="launch"]:not([hidden])');
+  const destination = await popup.evaluate(() => ({
+    url: location.href,
+    seed: JSON.parse(sessionStorage.getItem('ronin.workspace.v2') || '{}')?.views?.launch?.customize,
+    surface: document.querySelector('[data-workspace-view="launch"]:not([hidden]) [data-workbench-surface]')?.getAttribute('data-workbench-surface'),
+    selectedTemplate: document.querySelector('[data-workspace-view="launch"]:not([hidden]) .fs-tmpl[aria-pressed="true"] b')?.textContent?.trim(),
+    message: document.querySelector('[data-workspace-view="launch"]:not([hidden]) textarea')?.value,
+  }));
+  const after = await page.evaluate(() => ({ url: location.href, state: sessionStorage.getItem('ronin.workspace.v2') }));
+  const exact = before.url === after.url && before.state === after.state && ctx.pages().length === 2
+    && /#\/launch$/.test(destination.url) && destination.surface === 'launch.team'
+    && destination.selectedTemplate === 'Bare Metal' && destination.message === message
+    && destination.seed == null && launches.length === 0;
+  if (exact) ok(`${source} ${activation}: Customize opens one exact preloaded Team configuration tab, restores source byte-for-byte, clears seed, and launches nothing`);
+  else bad(`${source} ${activation}: Customize new-tab contract mismatch ${JSON.stringify({ before, after, pages: ctx.pages().length, destination, launches })}`);
+  if (source === 'setup' && activation === 'pointer') {
+    const interactiveBoundary = await page.evaluate(() => {
+      const cell = document.querySelector('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-cell[data-workspace="workspace2"]');
+      const cases = [
+        ['button', {}], ['input', {}], ['select', {}], ['textarea', {}],
+        ['a', { href: '#boundary' }], ['summary', {}], ['div', { contenteditable: 'true' }],
+        ...['button', 'checkbox', 'combobox', 'link', 'listbox', 'menuitem', 'menuitemcheckbox', 'menuitemradio', 'option', 'radio', 'slider', 'spinbutton', 'switch', 'tab', 'textbox']
+          .map((role) => ['div', { role }]),
+      ];
+      return cases.map(([tag, attrs]) => {
+        const target = document.createElement(tag);
+        for (const [name, value] of Object.entries(attrs)) target.setAttribute(name, value);
+        cell?.append(target);
+        target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        const selected = JSON.parse(sessionStorage.getItem('ronin.workspace.v2') || '{}')?.views?.setup?.selected;
+        target.remove();
+        return { tag, attrs, selected };
+      });
+    });
+    const escaped = interactiveBoundary.filter(({ selected }) => selected !== 'workspace1');
+    if (!escaped.length) ok('setup: native, link, summary, contenteditable, and standard ARIA interactive descendants preserve WS1');
+    else bad(`setup: interactive descendant boundary selected WS2 ${JSON.stringify(escaped)}`);
+    await page.locator('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-cell[data-workspace="workspace2"]').click({ position: { x: 2, y: 2 } });
+    const groundSelected = await page.evaluate(() => JSON.parse(sessionStorage.getItem('ronin.workspace.v2') || '{}')?.views?.setup?.selected);
+    if (groundSelected === 'workspace2') ok('setup: bare WS2 ground still selects WS2');
+    else bad(`setup: bare WS2 ground selection failed (${groundSelected})`);
+  }
+  await ctx.close();
+}
+
 const browser = await playwright.chromium.launch({ headless: true });
 try {
   for (const count of [0, 1, 2]) await runtimeBand(browser, count);
@@ -198,6 +326,10 @@ try {
   await setupPass(browser, { phone: false, theme: 'dark', reducedMotion: 'reduce' });
   await setupPass(browser, { phone: true, theme: 'light', reducedMotion: 'no-preference' });
   await setupPass(browser, { phone: true, theme: 'dark', reducedMotion: 'reduce' });
+  await customizePass(browser, 'setup', 'pointer');
+  await customizePass(browser, 'setup', 'keyboard');
+  await customizePass(browser, 'cowork', 'pointer');
+  await customizePass(browser, 'cowork', 'keyboard');
 } finally {
   await browser.close();
 }
