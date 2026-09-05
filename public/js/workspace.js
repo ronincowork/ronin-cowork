@@ -228,6 +228,8 @@ export function createWorkspace(host, options = {}) {
     if (changed) invoke(id, 'enter', () => next.enter?.(context));
     if (active?.view !== next) showMap(id, next);
     showName(id, next);
+    const feedback = document.getElementById('feedbackaction');
+    if (feedback) feedback.hidden = next.hideFeedback === true;
     active = { id, view: next, param };
     state.view = id;
     if (id === 'team') state.team = param;

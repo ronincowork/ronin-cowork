@@ -35,12 +35,13 @@ test('Setup and Settings share the machine-settings island without a right heade
 });
 
 test('launch actions reuse the nin mark, never the Team Roster torii, and open tabs', async () => {
-  const [primitives, roster, workspace, agent, team, add] = await Promise.all([
-    source('js/workspace-primitives.js'), source('js/team-roster-surface.js'),
+  const [primitives, kit, roster, workspace, agent, team, add] = await Promise.all([
+    source('js/workspace-primitives.js'), source('workspace-kit.css'), source('js/team-roster-surface.js'),
     source('js/workspace.js'), source('js/new-agent.js'), source('js/new-team-form.js'),
     source('js/add-agent.js'),
   ]);
   assert.match(primitives, /brand\/nin-mark\.svg/);
+  assert.match(kit, /\.wk-action\[data-launch='true'\] \{ border-color: var\(--kaki\); background: var\(--raise\);/);
   assert.match(roster, /launch: true/);
   assert.doesNotMatch(roster, /'torii', '⛩'/);
   assert.match(workspace, /window\.open\(url\.href, '_blank', 'noopener'\)/);
@@ -56,7 +57,7 @@ test('edited Cowork and Team workbench labels become the exact tab title', async
   assert.match(cowork, /patchViewState\(viewKey, \{ tabName:/);
 });
 
-test('the existing workbench can pin Setup workspace 1 and aim selector cards at workspace 2', async () => {
+test('the existing workbench can pin a Setup workspace and aim selector cards at the selected work surface', async () => {
   const workbench = await source('js/workbench.js');
   assert.match(workbench, /fixedWorkspaces\[id\].*fixedWorkspaces\[id\] !== type/);
   assert.match(workbench, /options\.selectorWorkspace \|\| selected/);
@@ -68,8 +69,12 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
     source('js/setup-view.js'), source('js/main.js'), source('js/cowork-view.js'),
   ]);
   assert.match(setup, /registerSetupSurfaces\(\);[\s\S]*registerPresetsSurface\(\);/);
-  assert.match(setup, /fixedWorkspaces: \{ workspace1: PRESETS_TYPE \}/);
-  assert.match(setup, /selectorWorkspace: 'workspace2'/);
+  assert.match(setup, /fixedWorkspaces: \{ workspace2: PRESETS_TYPE \}/);
+  assert.match(setup, /selectorWorkspace: 'workspace1'/);
+  assert.match(setup, /bench\.arrangement\.move\('selector', 0\)/);
+  assert.match(setup, /hideFeedback: true/);
+  assert.match(setup, /mountProviderSetupSession/);
+  assert.match(setup, /createTerminalTileHost\(\{ mode: 'full' \}\)/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.register, SETUP_SURFACE_TYPES\.providers, SETUP_SURFACE_TYPES\.roots/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.services, SETUP_SURFACE_TYPES\.gbrain, SETUP_SURFACE_TYPES\.templates/);
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
