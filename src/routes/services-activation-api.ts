@@ -9,6 +9,7 @@ import { publicState, readState, writeState } from '../activation/state.js';
 import { runUpdater } from '../update-run.js';
 import { buildKansou, sendKansou } from '../activation/kansou.js';
 import { registrationAnswer, submitRegistration, updateCommunication } from '../activation/registration.js';
+import { deleteRegistration } from '../activation/registration.js';
 
 async function startInstall(): Promise<void> {
   try {
@@ -109,6 +110,32 @@ export function registerServicesActivation(app: express.Express): void {
     }
   });
 
+  app.post('/api/setup/registration/recovery', async (req, res) => {
+    const action = str((req.body as { action?: unknown })?.action);
+    try {
+      if (action === 'check') await poll();
+      else if (action === 'resend') await resend();
+      else if (action === 'change_address') {
+        const email = str((req.body as { email?: unknown })?.email);
+        if (!email) { res.status(400).json({ error: 'An email address is required.' }); return; }
+        await submitRegistration({ ...(req.body ?? {}), email });
+        await changeAddress(email);
+      } else { res.status(400).json({ error: 'Recovery action must be check, resend, or change_address.' }); return; }
+      res.json(await registrationAnswer());
+    } catch (error) { fail(res, error); }
+  });
+
+  app.delete('/api/setup/registration', async (_req, res) => {
+    try {
+      const activation = await readState();
+      if (!['verified', 'installed'].includes(activation.stage)) await cancel().catch(() => {});
+      await deleteRegistration();
+      res.json(await registrationAnswer());
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Registration was not deleted.' });
+    }
+  });
+
   app.post('/api/feedback', async (req, res) => {
     try {
       const packet = buildKansou((req.body as any)?.packet_id, (req.body as any)?.body);
@@ -134,11 +161,8 @@ export function registerServicesActivation(app: express.Express): void {
   });
 
   app.post('/api/services/activation', async (req, res) => {
-    const email = str((req.body as { email?: unknown })?.email);
-    if (!email) { res.status(400).json({ error: 'An email address is required.' }); return; }
-    try {
-      res.json(publicState(await request(email)));
-    } catch (e) { fail(res, e); }
+    void req;
+    res.status(410).json({ error: 'Services activation now begins with registration at /api/setup/registration.' });
   });
 
   app.post('/api/services/activation/poll', async (_req, res) => {
@@ -150,23 +174,16 @@ export function registerServicesActivation(app: express.Express): void {
   });
 
   app.post('/api/services/activation/resend', async (_req, res) => {
-    try {
-      res.json(publicState(await resend()));
-    } catch (e) { fail(res, e); }
+    res.status(410).json({ error: 'Registration recovery moved to /api/setup/registration/recovery.' });
   });
 
   app.delete('/api/services/activation', async (_req, res) => {
-    try {
-      res.json(publicState(await cancel()));
-    } catch (e) { fail(res, e); }
+    res.status(410).json({ error: 'Registration deletion moved to /api/setup/registration.' });
   });
 
   app.post('/api/services/activation/address', async (req, res) => {
-    const email = str((req.body as { email?: unknown })?.email);
-    if (!email) { res.status(400).json({ error: 'An email address is required.' }); return; }
-    try {
-      res.json(publicState(await changeAddress(email)));
-    } catch (e) { fail(res, e); }
+    void req;
+    res.status(410).json({ error: 'Registration recovery moved to /api/setup/registration/recovery.' });
   });
 
   app.post('/api/services/tomodachi/send', async (_req, res) => {
