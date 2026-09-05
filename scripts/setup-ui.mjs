@@ -12,6 +12,15 @@ fs.mkdirSync(ARTIFACTS, { recursive: true });
 const failures = [];
 const ok = (message) => console.log(`  ok   — ${message}`);
 const bad = (message) => { failures.push(message); console.log(`  FAIL — ${message}`); };
+const PRESET_COPY = [
+  ['Bare Metal', 'Start one to four agents, each in its own tile. Lock and load.'],
+  ['Code Stack Eval', 'Point a team at a codebase and get its read on the stack.'],
+  ['Develop a New Project', 'A lead plus feature agents, each in its own worktree.'],
+  ['Personal Assistant', 'One assistant that remembers. Alone, or a lead that hires help.'],
+  ['Home Health', 'Head coach, nutritionist, race guide. Drop or add roles.'],
+  ['Grokbot Morning Briefing', 'Grok writes you a briefing on a schedule you set.'],
+  ['Agent + Editable Doc', 'One coding agent beside a document you both edit.'],
+];
 
 async function context(browser, { phone = false, theme = 'light', reducedMotion = 'no-preference' } = {}) {
   const ctx = await browser.newContext({
@@ -111,7 +120,14 @@ async function setupPass(browser, options) {
       providerGroup: active?.querySelector('[data-setup-requirement-target="setup.providers"]')?.matches('.wk-selector-group') === true,
       stoneBoxes: [...(active?.querySelectorAll('.sp-slot') || [])].map((node) => {
         const box = node.getBoundingClientRect();
-        return { width: box.width, height: box.height, top: box.top };
+        const copy = node.querySelector('.sp-slot-copy');
+        const copyBox = copy?.getBoundingClientRect();
+        return {
+          width: box.width, height: box.height, top: box.top,
+          label: node.querySelector('b')?.textContent?.trim(), copy: copy?.textContent?.trim(),
+          accessible: node.innerText.trim(), glyphHidden: node.querySelector('.sp-glyph')?.getAttribute('aria-hidden'),
+          copyFits: !!copyBox && copy.scrollWidth <= copy.clientWidth + 1 && copyBox.right <= box.right + 1 && copyBox.bottom <= box.bottom + 1,
+        };
       }),
       launch: (() => {
         const node = [...(active?.querySelectorAll('button') || [])].find((item) => item.textContent?.trim() === 'Launch');
@@ -157,6 +173,11 @@ async function setupPass(browser, options) {
   const staggered = state.stoneBoxes.length > 2 && new Set(state.stoneBoxes.map((box) => Math.round(box.top))).size > 1;
   if (equalStones && squareStones && staggered) ok(`${label}: seven preset stones are equal, square, and staggered`);
   else bad(`${label}: preset stone geometry mismatch ${JSON.stringify(state.stoneBoxes)}`);
+  const exactCopy = state.stoneBoxes.map(({ label, copy }) => [label, copy]);
+  const accessibleCopy = state.stoneBoxes.every((stone) => stone.glyphHidden === 'true' && stone.accessible.includes(stone.label) && stone.accessible.includes(stone.copy));
+  const wrappedWithoutOverflow = state.stoneBoxes.every((stone) => stone.copyFits);
+  if (JSON.stringify(exactCopy) === JSON.stringify(PRESET_COPY) && accessibleCopy && wrappedWithoutOverflow) ok(`${label}: seven exact approved one-liners are readable, contained, and accessible on resting stones`);
+  else bad(`${label}: resting-stone content/a11y/overflow mismatch ${JSON.stringify({ exactCopy, accessibleCopy, wrappedWithoutOverflow })}`);
   if (!options.ready || (state.launch?.mark && state.launch.border !== state.launch.background)) ok(`${label}: Launch is gated or uses its mark and a neutral background with distinct outline`);
   else bad(`${label}: Launch treatment mismatch ${JSON.stringify(state.launch)}`);
   if (!state.feedback) ok(`${label}: Setup header has no Feedback control`);
@@ -207,7 +228,7 @@ async function setupPass(browser, options) {
       const gate = detail.querySelector('.sp-gate');
       const link = gate?.querySelector('button');
       const selectedDestination = detail.querySelector('.sp-destination');
-      const restingDestinations = document.querySelectorAll('.sp-grid .sp-slot small');
+      const restingDestinations = document.querySelectorAll('.sp-grid .sp-slot .sp-destination');
       return {
         message: visible(detail.querySelector('textarea')),
         specialized: visible(detail.querySelector('.sp-controls')),
@@ -317,6 +338,52 @@ async function customizePass(browser, source, activation = 'pointer') {
   await ctx.close();
 }
 
+async function presetContentPass(browser) {
+  const ctx = await context(browser);
+  const page = await ctx.newPage();
+  await page.route('**/api/setup/runtime', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({
+      activated_count: 1, activated_band: 'one',
+      providers: [{ id: 'anthropic', label: 'Claude', installed: true, activated: true, state: 'activated' }],
+      roots: [{ id: 'ronin_project_1', name: 'ronin_project_1', label: 'Ronin Project 1' }],
+      gbrain: { installed: true, active: true }, services: { installed: true, active: true },
+    }),
+  }));
+  await page.goto(`${URL_.replace(/#.*$/, '')}#/setup`, { waitUntil: 'networkidle' });
+  const expectedGroups = [
+    ['Choose the model for each session'], ['Which project'],
+    ['Which project', 'Split the work · each feature agent gets its own worktree'], ['Launch as'],
+    ['Tell each agent what you want'], ['When', 'Deliver to', 'Start active'],
+    ['Which folder', 'Which document'],
+  ];
+  const results = [];
+  for (let index = 0; index < PRESET_COPY.length; index += 1) {
+    await page.locator('.sp-slot').nth(index).click();
+    results.push(await page.locator('.sp-detail').evaluate((detail) => ({
+      title: detail.querySelector('h3')?.textContent?.trim(),
+      copy: detail.querySelector('.sp-description')?.textContent?.trim(),
+      labels: [...detail.querySelectorAll('.sp-controls .sp-control-label,.sp-controls .sp-field')].map((node) => node.childNodes[0]?.textContent?.trim()).filter(Boolean),
+      healthAsks: detail.querySelectorAll('.sp-row-ask input[aria-label^="Ask for "]').length,
+      healthProviders: detail.querySelectorAll('.sp-row-ask select').length,
+    })));
+  }
+  const copyOK = results.every((row, index) => row.title === PRESET_COPY[index][0] && row.copy === PRESET_COPY[index][1]);
+  const groupsOK = results.every((row, index) => expectedGroups[index].every((label) => row.labels.includes(label)));
+  const healthOK = results[4]?.healthAsks === 3 && results[4]?.healthProviders === 0;
+  const glyphs = await page.locator('.sp-slot .sp-glyph').evaluateAll((nodes) => nodes.map((node) => ({
+    text: node.textContent?.trim(), viewBox: node.querySelector('svg')?.getAttribute('viewBox'),
+    stroke: node.querySelector('svg')?.getAttribute('stroke'), width: node.querySelector('svg')?.getAttribute('stroke-width'),
+    cap: node.querySelector('svg')?.getAttribute('stroke-linecap'), rects: node.querySelectorAll('rect').length,
+    path: node.querySelector('path')?.getAttribute('d') || '',
+  })));
+  const glyphOK = glyphs.length === 7 && glyphs.every((glyph, index) => index === 3
+    ? glyph.text === '人'
+    : glyph.viewBox === '0 0 32 32' && glyph.stroke === 'currentColor' && glyph.width === '2' && glyph.cap === 'square');
+  if (copyOK && groupsOK && healthOK && glyphOK) ok('all seven selected details repeat exact copy and expose the approved component and glyph contracts');
+  else bad(`preset selected-detail/component/glyph mismatch ${JSON.stringify({ results, glyphs, copyOK, groupsOK, healthOK, glyphOK })}`);
+  await ctx.close();
+}
+
 const browser = await playwright.chromium.launch({ headless: true });
 try {
   for (const count of [0, 1, 2]) await runtimeBand(browser, count);
@@ -326,6 +393,7 @@ try {
   await setupPass(browser, { phone: false, theme: 'dark', reducedMotion: 'reduce' });
   await setupPass(browser, { phone: true, theme: 'light', reducedMotion: 'no-preference' });
   await setupPass(browser, { phone: true, theme: 'dark', reducedMotion: 'reduce' });
+  await presetContentPass(browser);
   await customizePass(browser, 'setup', 'pointer');
   await customizePass(browser, 'setup', 'keyboard');
   await customizePass(browser, 'cowork', 'pointer');
