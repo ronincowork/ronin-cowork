@@ -82,16 +82,22 @@ test('provider discovery is catalog-driven and a keyed surface resolves only its
   assert.equal(providerFromRuntime(runtime, 'openai')?.label, 'Codex');
 });
 
-test('native login mounts only the explicit runtime attachment', async () => {
+test('native login mounts only the attachment published by the real setup runtime', async () => {
   const { mountProviderAttachment } = await import('../public/js/setup-provider-state.js');
+  const { setupRuntimeAnswer } = await import('../src/setup-runtime.js');
   const calls: unknown[] = [];
   const environment = { mountProviderSetupSession: (input: unknown) => { calls.push(input); return { destroy() {} }; } };
   const host = {};
-  assert.equal(mountProviderAttachment(environment, host, { id: 'openai', attachment: null }, 'workspace1', () => {}), null);
-  const mounted = mountProviderAttachment(environment, host, { id: 'openai', attachment: { type: 'session', key: 'provider_setup_openai' } }, 'workspace1', () => {});
+  const availability = [{
+    id: 'claude', label: 'Claude Code', from: 'Anthropic', get: '', parked: '', cmd: 'claude', installed: true, path: '/bin/claude',
+  }];
+  const closed = await setupRuntimeAnswer({}, { exists: async () => false }, availability);
+  assert.equal(mountProviderAttachment(environment, host, closed.providers[0], 'workspace1', () => {}), null);
+  const open = await setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude' }, availability);
+  const mounted = mountProviderAttachment(environment, host, open.providers[0], 'workspace1', () => {});
   assert.ok(mounted);
   assert.equal(calls.length, 1);
-  assert.deepEqual((calls[0] as { session: string; workspace: string }).session, 'provider_setup_openai');
+  assert.deepEqual((calls[0] as { session: string; workspace: string }).session, 'provider_setup_claude');
   assert.deepEqual((calls[0] as { session: string; workspace: string }).workspace, 'workspace1');
 });
 
