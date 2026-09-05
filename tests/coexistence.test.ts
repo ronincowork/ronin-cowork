@@ -33,6 +33,45 @@ test('unit preflight accepts marked and narrow legacy units but refuses a foreig
   await fs.rm(root, { recursive: true, force: true });
 });
 
+test('all setup preflight refusals say their reason on fd 3', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-preflight-'));
+  const unitDir = path.join(root, 'units'); await fs.mkdir(unitDir);
+  await fs.writeFile(path.join(unitDir, 'ronin.service'), '[Service]\nExecStart=/usr/bin/something-else\n');
+
+  const fd3 = async (name: string, body: string, args: string[] = [], env = process.env) => {
+    const spoken = path.join(root, `${name}.fd3`);
+    await assert.rejects(exec('bash', ['-c', `exec 3>"$1"; . "${helper}"; ronin_say(){ printf '%s\\n' "$*" >&3; }; ${body}`, 'test', spoken, ...args], { env }));
+    return fs.readFile(spoken, 'utf8');
+  };
+
+  assert.match(await fd3('unit', 'ronin_preflight_units "$2"', [unitDir]), /not a recognized Ronin unit; nothing was overwritten/);
+
+  const bin = path.join(root, 'bin'); await fs.mkdir(bin);
+  const systemctl = path.join(bin, 'systemctl'); await fs.writeFile(systemctl, '#!/bin/sh\nexit 1\n'); await fs.chmod(systemctl, 0o755);
+  const server = net.createServer(); await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  const portRoot = path.join(root, 'port'); await fs.mkdir(portRoot);
+  await fs.writeFile(path.join(portRoot, '.env'), `PORT=${address.port}\nBIND=127.0.0.1\n`);
+  const portWords = await fd3('port', 'ronin_preflight_port "$2" "$3"', [portRoot, process.execPath], { ...process.env, PATH: `${bin}:${process.env.PATH}` });
+  assert.match(portWords, new RegExp(`127\\.0\\.0\\.1:${address.port} is already in use — set PORT or BIND in \\.env`));
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+
+  const fake = path.join(root, 'tmux');
+  await fs.writeFile(fake, `#!/bin/sh
+case "$1" in
+  list-sessions) exit 0 ;;
+  display-message) case "$*" in *socket_path*) echo /tmp/current.sock;; *version*) echo 3.7c;; *) echo "$TEST_PID";; esac ;;
+  show-options) echo on ;;
+  -V) echo 'tmux 3.7c' ;;
+esac
+`);
+  await fs.chmod(fake, 0o755);
+  const state = path.join(root, 'state'); await fs.mkdir(path.join(state, 'machine'), { recursive: true });
+  const leaseWords = await fd3('lease', 'TMUX_BIN="$2"; start=$(ronin_tmux_start_id "$TEST_PID"); printf "v=1\\npid=%s\\nstart=%s\\nsocket=/tmp/other.sock\\nprior=on\\napplied=off\\n" "$TEST_PID" "$start" > "$3/machine/tmux-adoption"; ronin_adopt_tmux "$3"', [fake, state], { ...process.env, TEST_PID: String(process.pid) });
+  assert.match(leaseWords, /is still running but is not the server on \/tmp\/current\.sock; leaving both alone/);
+  await fs.rm(root, { recursive: true, force: true });
+});
+
 test('adoption leases exit-empty once, ignores $TMUX, and uninstall restores or keeps as the evidence says', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-adopt-'));
   const fake = path.join(root, 'tmux');
