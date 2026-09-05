@@ -61,7 +61,7 @@ export function createLaunchView() {
     team: (workspace) => {
       if (!teamBySeat[workspace]) {
         teamBySeat[workspace] = createNewTeamFormView(WorkspaceKit, {
-          created: async (name) => { await refreshTeams(); ctx?.navigate('team', { param: name }); },
+          created: async () => { await refreshTeams(); bench.refreshSelector(); },
         });
       }
       return seated(teamBySeat[workspace]);
