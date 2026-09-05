@@ -494,7 +494,7 @@ if unit_serves_home; then
   restart_and_gate
   echo "✓ $VER is live — /api/version answers it"
 elif [ -z "$CUR" ]; then
-  echo "✓ $VER is installed at $HOME_DIR/current — FIRST install on this home."
+  echo "✓ $VER is installed at $HOME_DIR/current — FIRST install on this home: current did not point at an earlier release here."
   # Only for a hand-run update; get-ronin execs setup.sh itself.
   if [ -z "${RONIN_FROM_GET:-}" ]; then
     echo "  To make it serve: (cd $HOME_DIR/current && ./setup.sh)   # units, PATH, start"

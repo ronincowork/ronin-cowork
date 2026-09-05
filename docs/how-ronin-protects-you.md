@@ -15,20 +15,29 @@ observe, and use **unknown** when safe evidence cannot settle a question.
 
 | Check | Evidence | Healthy observation |
 |---|---|---|
-| short installer, no root | `wc -l scripts/get-ronin` and `grep -n sudo scripts/get-ronin` | readable script; no privileged command |
-| verified release bytes | `grep -n 'SHA256SUMS\|MISMATCH' scripts/get-ronin bin/ronin-update` | checksum fetched and mismatch refused |
+| readable bootstrap, no root | `cat scripts/get-ronin` and `grep -n sudo scripts/get-ronin` | short script readable in one screen; no privileged command |
+| setup privilege boundary | `grep -n sudo setup.sh` | comments and one block printed for the owner; setup never invokes `sudo` |
+| verified, unsigned release bytes | `grep -n 'SHA256SUMS\|MISMATCH' scripts/get-ronin bin/ronin-update` | bytes match the published manifest and mismatch is refused; this does not prove who published both files, and signing is planned |
 | open-package license | `head -3 LICENSE` and `test -f NOTICE` | Apache License 2.0 and NOTICE |
 | unprivileged services | `systemctl --user list-units 'ronin*' 'tmux-server*'` | user units, no application root service |
 | shared tmux preservation | `bin/ronin-doctor` plus ordinary `tmux list-sessions` | Ronin joins the default server; existing sessions remain, while the operator stays outside the server's cgroup |
+| adopted tmux unit state | `systemctl --user --no-pager status tmux-server.service` | `active (exited)` is expected after adoption because the unit did not start that server |
+| guarded tmux command | `ls bin/shim && cat bin/shim/tmux` | a short readable shell script passes commands to real tmux and refuses only `kill-server`, which ends every session |
 | safe bind rule | `grep -n assertBindIsSafe src/machine-settings.ts` | unauthenticated public bind is refused |
-| actual listening address | `ronin_pid=$(systemctl --user show ronin.service -p MainPID --value); ss -ltnp | grep "pid=$ronin_pid,"` | socket owned by the Ronin unit's nonzero PID; absent or ambiguous correlation is `unknown` |
+| actual listening process | `p=$(ss -ltnp \| sed -n 's/.*:3006 .*pid=\([0-9]*\),.*/\1/p' \| head -1); cat /proc/$p/cgroup` | socket holder's cgroup ends in `ronin.service`; absent or ambiguous evidence is `unknown` because `MainPID` is only the npm wrapper |
+| release-layout secret mode | `stat -L -c %a current/.env` (Linux) or `stat -L -f %Lp current/.env` (Mac) | `current/.env` is a symlink and its target reads `600`; the link's own apparent `777` is not the file mode |
+| Claude Code settings | `python3 hostside/claude-settings.py --check` and `sed -n '110,165p' bin/ronin-uninstall` | `statusLine` enables the gauge; only unset/default themes become `dark-ansi`; owner choices stay; uninstall removes only its unchanged statusLine and leaves theme |
+| prior clean uninstall | `journalctl --user -u ronin.service --no-pager -n 20` plus `bin/ronin-doctor` | history may remain while files and units are absent; `FIRST install on this home` means no earlier current release in that home |
+| release-directory git noise | `journalctl --user -u ronin.service --no-pager -n 50` and `curl -fsS http://127.0.0.1:3006/api/version` | `fatal: not a git repository` alone is known cosmetic output from a release directory; health/version still identify the running release |
+| linger and chosen bind | `bin/ronin-doctor` | `ok — linger is on — the coworkspace survives logout`; for tailnet-without-password, `ok — auth is off, but the bind is this machine's tailnet address` |
+| disclosed login posture | `bin/ronin-welcome` and the closing setup frame | explicitly says password or no password and names the private URL; no-password means the tailnet access rules are the wall |
 | websocket origin check | `grep -n originAllowed src/index.ts src/ws/origin.ts` | a page Ronin did not serve is refused |
 | Ronin egress | `grep -RIn 'ALLOWED_HOST\|EgressRefused\|fetch(' src` | activation transport is allowlisted; investigate every other call site |
 | actual egress record | `cat "$(bin/ronin-store session)/../egress.jsonl"` | absent/empty on a fresh install of the open `ronin-cowork` package, or entries the owner can account for |
 | removal | `test -x bin/ronin-uninstall` | uninstall command present |
 
-A failed row is a finding, not paperwork. The actual listening address is more important
-than the configured intention.
+A failed row is a finding, not paperwork. The actual listener's cgroup and address are
+more important than the configured intention.
 
 ## Six questions for a deeper assessment
 
