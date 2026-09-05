@@ -115,13 +115,20 @@ target line, builds in a disposable candidate worktree, and advances the line wi
 compare-and-swap only after admission succeeds. Receipts record the source, candidate,
 resulting line, and contributing session.
 
-When a team line advances, clean sibling desks adopt it immediately. Dirty siblings retain
-their files and receive a pending update; they adopt at their next safe boundary or explicit
-`tejun-desk sync`. The handing-in desk also adopts the accepted team state.
+A hand-in moves the line and nothing else: no desk, the handing-in one included, is
+merged or rewritten by it. A desk takes in accepted work only when its session runs
+`tejun-desk sync`, which merges local `dev`; the team line is never merged into a desk.
+After `ACCEPTED` the desk is level with the line because its tip is a parent of the line's
+new merge commit, not because the desk moved. The tool then tells the team lead itself,
+in the lead's tile (or on the team wipeboard when the tile cannot take it); a team with no
+lead gets one sentence back saying nobody was told.
 
 Team promotion builds the combined candidate, advances `dev` by compare-and-swap,
 restarts the live service, and performs deployment health checks. Failed post-restart
-health triggers the promotion recovery path and remains visible in its receipt.
+health triggers the promotion recovery path and remains visible in its receipt. When it
+completes, promotion posts the moved line on the team wipeboard and tells each session
+whose hand-in rode in, in its tile, which receipts are now on `dev` and that the desk may
+be closed. A desk is finished when that notice arrives, not when its hand-in is accepted.
 
 ## Desk lifecycle and recovery
 
@@ -160,8 +167,9 @@ anyone changing the code below.
 - **Honey, not sticks.** No refusals on Agents beyond what git itself cannot do (a
   conflict, a lost compare-and-swap). Where a check remains it tells and does not block.
 - **The house closes what it opens.** `open` records what it creates; hand-in removes its
-  candidate; promotion resets the team line and settles desks made redundant by it; session
-  close settles that desk; team retirement settles the line; startup finishes an
+  candidate; promotion removes its own candidate and leaves the team line and desks as
+  they are (the next hand-in carries the line current, and a desk is closed by its session
+  once promotion has told it); team retirement settles the line; startup finishes an
   interrupted transaction from the ledger. No cleanup chores for Agents or the owner.
 - **The house also absorbs junk it did not make.** `ronin-desk-audit` (read-only, six
   invariants, exit code) and `ronin-desk-settle --dry-run | --yes` (the reconciler: settles
