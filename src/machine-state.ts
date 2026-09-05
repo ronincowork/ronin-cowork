@@ -172,7 +172,8 @@ export async function stampFreshInstall(): Promise<void> {
 
 export const completeSetup = (): Promise<void> =>
   updateConfig((doc) => {
-    doc.setup = { completed_at: new Date().toISOString() };
+    const setup = ((doc.setup ?? {}) as Record<string, unknown>) || {};
+    doc.setup = { ...setup, pending: false, completed_at: new Date().toISOString() };
   });
 
 export async function publishOwner(name?: string): Promise<void> {

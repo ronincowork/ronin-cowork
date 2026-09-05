@@ -53,6 +53,7 @@ export function createWorkbench(options = {}) {
   if (!profile || !Array.isArray(profile.types)) throw new Error(`unknown Workbench.profile: ${options.profile || '(blank)'}`);
   if (typeof options.defaultNode !== 'function') throw new Error('a workbench needs a defaultNode(workspace) factory');
   const tenant = options.tenant && typeof options.tenant === 'object' ? options.tenant : Object.freeze({ kind: 'none' });
+  const fixedWorkspaces = options.fixedWorkspaces && typeof options.fixedWorkspaces === 'object' ? options.fixedWorkspaces : {};
 
   const defaults = {}, cells = {}, columns = { workspace1: node('div', 'wk-workbench-column'), workspace2: node('div', 'wk-workbench-column') };
   const instances = new Map(), instanceNodes = new WeakMap();
@@ -153,6 +154,7 @@ export function createWorkbench(options = {}) {
   const restoreDefault = (id) => placeNode(id, defaults[id]);
 
   const allowed = () => profile.types.flatMap((type) => {
+    if (typeof options.selectorFilter === 'function' && !options.selectorFilter(type)) return [];
     const definition = WorkbenchLibrary.get(type);
     if (!definition || definition.visible?.(tenant, options.environment) === false) return [];
     const discovered = definition.discover?.(tenant, options.environment);
@@ -181,6 +183,7 @@ export function createWorkbench(options = {}) {
   const resourceAt = (id) => holding(id)?.dataset?.workbenchResource || '';
   const locations = (type, resource = '') => WORKBENCH_IDS.filter((id) => typeAt(id) === type && (!resource || resourceAt(id) === resource));
   const place = (type, id = selected, detail = {}) => {
+    if (fixedWorkspaces[id] && fixedWorkspaces[id] !== type) return false;
     const value = instance(type, id, detail);
     if (!value || !placeNode(id, value.el)) return false;
     value.el.dataset.workbenchSurface = type;
@@ -204,7 +207,7 @@ export function createWorkbench(options = {}) {
       // A selector card is a door, not a status lamp. The workspace itself already shows
       // what is placed there; painting every matching door as pressed made one of two
       // visible Agents look selected and the other not as seats changed underneath it.
-      const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: () => place(definition.type, selected, detail) });
+      const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: () => place(definition.type, options.selectorWorkspace || selected, detail) });
       // A readable title is display text, not identity. Consumers such as the render gate
       // address an offered resource by its fixed key even after its title is edited.
       if (detail.key) card.el.dataset.workbenchOfferResource = detail.key;
