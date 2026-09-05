@@ -9,6 +9,14 @@ const LOWER = new Set(['workspace3', 'workspace4']);
 const COLUMN_OF = Object.freeze({ workspace1: 'workspace1', workspace3: 'workspace1', workspace2: 'workspace2', workspace4: 'workspace2' });
 const SURFACE_DRAG = 'application/x-ronin-workbench-surface';
 const HEADER_KINDS = new Set(['surface', 'channels', 'terminal']);
+const INTERACTIVE_DESCENDANT = [
+  'a[href]', 'area[href]', 'button', 'input', 'select', 'textarea', 'summary',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[role="button"]', '[role="checkbox"]', '[role="combobox"]', '[role="link"]',
+  '[role="listbox"]', '[role="menuitem"]', '[role="menuitemcheckbox"]',
+  '[role="menuitemradio"]', '[role="option"]', '[role="radio"]', '[role="slider"]',
+  '[role="spinbutton"]', '[role="switch"]', '[role="tab"]', '[role="textbox"]',
+].join(',');
 
 const node = (tag, cls = '') => {
   const out = document.createElement(tag);
@@ -80,7 +88,10 @@ export function createWorkbench(options = {}) {
     const cell = node('div', 'wk-workbench-cell');
     cell.dataset.workspace = id;
     cell.append(made);
-    cell.addEventListener('pointerdown', () => select(id), true);
+    cell.addEventListener('pointerdown', (event) => {
+      if (event.target instanceof Element && event.target.closest(INTERACTIVE_DESCENDANT)) return;
+      select(id);
+    }, true);
     cell.addEventListener('dragover', (event) => { if (event.dataTransfer?.types.includes(SURFACE_DRAG)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } });
     cell.addEventListener('drop', (event) => {
       const raw = event.dataTransfer?.getData(SURFACE_DRAG);

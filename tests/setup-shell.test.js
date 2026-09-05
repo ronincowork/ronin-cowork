@@ -66,6 +66,9 @@ test('the existing workbench can pin a Setup workspace and aim selector cards at
   assert.match(workbench, /dataset\.setupRequirementTarget = key/);
   assert.match(workbench, /is-requirement-marked/);
   assert.match(workbench, /is-requirement-flashing/);
+  assert.match(workbench, /INTERACTIVE_DESCENDANT/);
+  assert.match(workbench, /event\.target instanceof Element && event\.target\.closest\(INTERACTIVE_DESCENDANT\)/);
+  assert.match(workbench, /cell\.addEventListener\('pointerdown',[\s\S]*select\(id\);[\s\S]*}, true\)/);
 });
 
 test('the fourth Setup workbench registers real lane surfaces in ruled order', async () => {
