@@ -13,7 +13,7 @@
  * tile's own 🏷 opens.
  */
 import { request } from './request.js';
-import { homeData, homeFault, statusLabel, taskIcon } from './home.js';
+import { homeData, homeFault, statusLabel } from './home.js';
 import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
 import { t } from './lexicon.js';
@@ -162,25 +162,15 @@ export function buildRoster(tile, host, options = {}) {
       r.classList.remove('dragging');
       for (const heading of host.querySelectorAll('.home-grp.drop-ready')) heading.classList.remove('drop-ready');
     });
-    // The session's MARK. 人 when the session LEADS a team — the hand-set designation,
-    // read off `leads`, the same fact the team surfaces draw — otherwise the icon of the
-    // session_role in its LETTER. The owner asked for the 人 here (2026-09-05): the role
-    // icon alone left the cell blank on every row, because sessions seldom write a
-    // session_role, and the one fact the owner reads a roster for is who leads what.
-    //
-    // The role stays READ-ONLY here, and that is the point: the session writes its own
-    // session_role with write_tegami as it migrates, so the roster shows what the session
-    // says it is doing. A click-to-change on this glyph would put the owner's hand on a
-    // field the letter hands to the agent — and then two writers would race over one
-    // line. Blank until something is true; nothing is guessed on the session's behalf.
+    // The session's MARK: 人 when the session LEADS a team — the hand-set designation,
+    // read off `leads`, the same fact the team cards draw — and nothing otherwise.
+    // Owner's ruling, 2026-09-05: no session roles anywhere; a session that leads
+    // nothing has no mark, because there is nothing true to draw.
     const jb = document.createElement('span');
     const leads = s.leads?.length ? t('roster.leads', '人 leads {teams}', { teams: s.leads.join(', ') }) : '';
-    const job = taskIcon(s);
-    const mark = leads ? '人' : job;
-    jb.className = 'home-job' + (mark ? '' : ' off') + (leads ? ' lead' : '');
-    jb.dataset.job = s.session_role || ''; // so style can reach one mark — see style.css
-    jb.textContent = mark;
-    jb.title = [leads, s.session_role].filter(Boolean).join(' · ') || t('roster.no_role_yet', 'has not said what it is doing yet');
+    jb.className = 'home-job' + (leads ? ' lead' : ' off');
+    jb.textContent = leads ? '人' : '';
+    jb.title = leads;
     r.appendChild(jb);
     // shove the readings rightwards is gone with the flex row it existed to stretch —
     // pushing things apart is what made every row's landmarks land somewhere different.
