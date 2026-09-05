@@ -2,7 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../resources.js';
 import { isEntitled } from './flow.js';
-import { maskEmail, readState as readActivation } from './state.js';
+import { clearClaimSecret, clearEntitlementToken } from './secrets.js';
+import { maskEmail, readState as readActivation, writeState as writeActivation } from './state.js';
 
 export type RegistrationStatus = 'optional' | 'pending' | 'registered';
 
@@ -66,6 +67,20 @@ async function writeRegistration(next: RegistrationRecord): Promise<Registration
   await fs.writeFile(tmp, `${JSON.stringify(next, null, 2)}\n`, { mode: 0o600 });
   await fs.rename(tmp, target);
   return next;
+}
+
+export async function deleteRegistration(): Promise<void> {
+  await Promise.all([
+    fs.rm(file(), { force: true }),
+    clearClaimSecret(),
+    clearEntitlementToken(),
+  ]);
+  await writeActivation({
+    stage: 'not_requested', email_masked: null, activation_id: null,
+    entitlement_id: null, terms_version: null, requested_at: null, verified_at: null,
+    expires_at: null, resend_available_at: null, error_at_stage: null,
+    error_message: null,
+  });
 }
 
 export async function submitRegistration(input: Record<string, unknown>): Promise<RegistrationRecord> {

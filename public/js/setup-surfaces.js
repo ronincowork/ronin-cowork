@@ -2,9 +2,11 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { servicesCard } from './services-card.js';
 import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
+import { mountProviderAttachment, providerFromRuntime, providerOffers } from './setup-provider-state.js';
+
+export { mountProviderAttachment, providerFromRuntime, providerOffers } from './setup-provider-state.js';
 
 export const SETUP_SURFACE_TYPES = Object.freeze({
   register: 'setup.register', providers: 'setup.providers', roots: 'setup.roots',
@@ -74,6 +76,7 @@ function createRegisterSurface(context) {
   const checks = Object.fromEntries(['newsletter', 'release_updates', 'no_communication'].map((name) => [name, input(name, 'checkbox')]));
   const followUps = Object.fromEntries(['product_research', 'interviews', 'support'].map((name) => [name, input(name, 'checkbox')]));
   const prefNotice = el('p', 'setup-notice');
+  const recovery = el('div', 'setup-registration-recovery');
   prefs.append(
     field(t('setup_surface.newsletter', 'Newsletter'), checks.newsletter),
     field(t('setup_surface.release_updates', 'Code and release updates'), checks.release_updates),
@@ -98,42 +101,83 @@ function createRegisterSurface(context) {
     prefs.hidden = !current?.submitted_at;
     if (current?.communication) for (const key of Object.keys(checks)) checks[key].checked = current.communication[key] === true;
     for (const [key, box] of Object.entries(followUps)) box.checked = current?.communication?.follow_up?.includes(key) === true;
+    recovery.replaceChildren();
+    if (current?.status === 'pending') {
+      recovery.append(
+        action(t('setup_surface.check_registration', 'Check confirmation'), 'primary', async () => {
+          const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'check' } });
+          notice.textContent = result.ok ? t('setup_surface.registration_checked', 'Registration status updated.') : result.message;
+          if (result.ok) { current = result.data; paint(); }
+        }),
+        action(t('setup_surface.resend_registration', 'Resend confirmation'), '', async () => {
+          const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'resend' } });
+          notice.textContent = result.ok ? t('setup_surface.registration_resent', 'Confirmation resent.') : result.message;
+        }),
+        action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
+          const next = window.prompt(t('setup_surface.new_registration_email', 'Send registration confirmation to:'));
+          if (!next?.trim()) return;
+          const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'change_address', email: next.trim(), purpose: current.purpose, kind: current.kind, user_type: current.user_type, own_words: current.own_words } });
+          notice.textContent = result.ok ? t('setup_surface.registration_address_changed', 'Registration email changed; check the new address.') : result.message;
+          if (result.ok) { current = result.data; paint(); }
+        }),
+      );
+    }
+    if (current?.submitted_at) recovery.append(action(t('setup_surface.delete_registration', 'Delete registration'), 'danger', async () => {
+      if (!window.confirm(t('setup_surface.delete_registration_confirm', 'Delete this registration and its Services entitlement from this machine? Communication preferences will also be removed.'))) return;
+      const result = await request('/api/setup/registration', { method: 'DELETE' });
+      notice.textContent = result.ok ? t('setup_surface.registration_deleted', 'Registration deleted. Local Ronin remains available.') : result.message;
+      if (result.ok) { current = result.data; paint(); }
+    }));
     notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
   };
-  body.append(identity, form, prefs); out.content.append(body);
+  body.append(identity, form, prefs, recovery); out.content.append(body);
   return { el: out.el, show: async () => { const result = await request('/api/setup/registration', { cache: 'no-store' }); current = result.ok ? result.data : null; paint(); } };
 }
 
-function createProvidersSurface(context) {
-  const out = surface(t('setup_surface.providers', 'Model providers'));
+function createProviderSurface(context) {
+  const providerKey = String(context.detail?.provider || context.detail?.key || '');
+  const out = surface(context.detail?.label || t('setup_surface.provider', 'Model provider'));
   const body = el('div', 'setup-surface-body setup-provider-list'); out.content.append(body);
+  let mounted = null;
+  const disposeMount = (destroy = true) => {
+    if (!mounted) return;
+    if (destroy) mounted.destroy?.(); else mounted.park?.();
+    mounted = null;
+  };
   const paint = async () => {
     const result = await request('/api/setup/runtime', { cache: 'no-store' });
+    disposeMount();
     body.replaceChildren();
     if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); return; }
-    const rows = Array.isArray(result.data?.providers) ? result.data.providers : [];
-    for (const provider of rows) {
-      const row = el('section', 'setup-provider');
-      row.append(el('h3', '', provider.label || provider.id), el('p', 'setup-state', provider.state || (provider.activated ? 'activated' : provider.installed ? 'needs sign-in' : 'not installed')));
-      if (!provider.installed) {
-        if (provider.installable) row.append(el('p', 'setup-fine', provider.from || provider.install), action(t('setup_surface.install', 'Install'), 'primary', async () => {
-          const installed = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
-          if (!installed.ok) row.append(el('p', 'setup-notice bad', installed.message));
-          else await paint();
-        }));
-        else row.append(el('p', 'setup-fine', provider.blocked || t('setup_surface.manual_install', 'This provider requires a user-run install step.')));
-      } else if (!provider.activated && !provider.login_open) {
-        row.append(el('p', 'setup-fine', t('setup_surface.provider_disclosure', 'The provider may ask for credentials, an API key, a subscription, device login, or trust approval.')),
-          action(t('setup_surface.sign_in', 'Open sign-in'), 'primary', async () => { await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} }); await paint(); }));
-      } else if (provider.login_open) {
-        row.append(action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); }),
-          action(t('setup_surface.close', 'Close'), '', async () => { await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); }));
-      } else row.append(el('p', 'setup-good', t('setup_surface.activated', 'Activated')));
-      body.append(row);
-    }
-    notifySummary(SETUP_SURFACE_TYPES.providers, `${Number(result.data?.activated_count || 0)} activated`, context.workbench);
+    context.environment.setupRuntime = result.data;
+    const provider = providerFromRuntime(result.data, providerKey);
+    context.workbench?.refreshSelector?.();
+    if (!provider) { body.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return; }
+    const row = el('section', 'setup-provider');
+    row.dataset.provider = provider.id;
+    row.append(el('h3', '', provider.label || provider.id), el('p', 'setup-state', provider.state || 'absent'));
+    if (!provider.installed) {
+      if (provider.installable) row.append(el('p', 'setup-fine', provider.from || provider.install), action(t('setup_surface.install', 'Install'), 'primary', async () => {
+        const installed = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
+        if (!installed.ok) row.append(el('p', 'setup-notice bad', installed.message));
+        else await paint();
+      }));
+      else row.append(el('p', 'setup-fine', provider.blocked || t('setup_surface.manual_install', 'This provider requires a user-run install step.')));
+    } else if (!provider.activated && !provider.login_open) {
+      row.append(el('p', 'setup-fine', t('setup_surface.provider_disclosure', 'The provider may ask for credentials, an API key, a subscription, device login, or trust approval.')),
+        action(t('setup_surface.sign_in', 'Open sign-in'), 'primary', async () => { await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} }); await paint(); }));
+    } else if (provider.login_open) {
+      const terminal = el('div', 'setup-provider-terminal');
+      row.append(terminal,
+        action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); }),
+        action(t('setup_surface.close', 'Close'), '', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); }));
+      mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
+      if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
+    } else row.append(el('p', 'setup-good', t('setup_surface.activated', 'Activated')));
+    body.append(row);
+    notifySummary(SETUP_SURFACE_TYPES.providers, provider.state || 'absent', context.workbench);
   };
-  return { el: out.el, show: paint };
+  return { el: out.el, show: paint, destroy: () => disposeMount() };
 }
 
 function createRootsSurface(context) {
@@ -151,24 +195,33 @@ function createServicesSurface(context) {
     use: t('setup_surface.services_how', 'Register, confirm your email, install Services, then choose whether new Agents use the Services Routine.'),
   }));
   const body = el('div', 'setup-surface-body'); out.content.append(body);
-  let card = null;
-  const onChange = async (activation) => {
-    const installed = await request('/api/installed', { cache: 'no-store' });
-    const facts = installed.ok ? installed.data?.services : null;
-    notifySummary(SETUP_SURFACE_TYPES.services, facts?.switched_on ? 'active' : facts?.activated ? 'activated' : facts?.installed ? 'installed' : activation?.entitled ? 'entitled' : 'not active', context.workbench);
-  };
   const show = async () => {
-    const registration = await request('/api/setup/registration', { cache: 'no-store' });
+    const [registration, installed] = await Promise.all([
+      request('/api/setup/registration', { cache: 'no-store' }),
+      request('/api/installed', { cache: 'no-store' }),
+    ]);
+    body.replaceChildren();
     if (!registration.ok || registration.data?.status === 'optional') {
-      card?.stop?.(); card = null;
-      body.replaceChildren(el('p', 'setup-notice', t('setup_surface.register_first', 'Register first to request Services entitlement. Registration remains optional for local Ronin.')));
+      body.append(el('p', 'setup-notice', t('setup_surface.register_first', 'Register first to request Services entitlement. Registration remains optional for local Ronin.')));
       notifySummary(SETUP_SURFACE_TYPES.services, 'registration optional', context.workbench);
       return;
     }
-    if (!card) { body.replaceChildren(); card = servicesCard(body, onChange); }
-    else await card.reload?.();
+    const facts = installed.ok ? installed.data?.services : {};
+    const state = el('dl', 'setup-services-state');
+    for (const [label, value] of [
+      [t('setup_surface.entitled', 'Entitled'), registration.data?.services_entitled],
+      [t('setup_surface.installed', 'Installed'), facts?.installed],
+      [t('setup_surface.activated', 'Activated'), facts?.activated],
+      [t('setup_surface.switched_on', 'Switched on'), facts?.switched_on],
+    ]) state.append(el('dt', '', label), el('dd', '', value ? 'Yes' : 'No'));
+    body.append(state);
+    if (registration.data?.services_entitled && !facts?.installed) body.append(action(t('services.install_now', 'Install Services now'), 'primary', async () => {
+      const result = await request('/api/services/install', { method: 'POST', json: {} });
+      if (!result.ok) body.append(el('p', 'setup-notice bad', result.message)); else await show();
+    }));
+    notifySummary(SETUP_SURFACE_TYPES.services, facts?.switched_on ? 'active' : facts?.activated ? 'activated' : facts?.installed ? 'installed' : registration.data?.services_entitled ? 'entitled' : 'not active', context.workbench);
   };
-  return { el: out.el, show, destroy: () => card?.stop?.() };
+  return { el: out.el, show };
 }
 
 function createGbrainSurface(context) {
@@ -236,7 +289,13 @@ export function setupSurfaceDefinitions() {
   const definition = (type, label, create) => ({ type, header: 'surface', label: () => label, summary: () => summaries.get(type), create: (context) => create(context) });
   return [
     definition(SETUP_SURFACE_TYPES.register, t('setup_surface.register', 'Register'), createRegisterSurface),
-    definition(SETUP_SURFACE_TYPES.providers, t('setup_surface.providers', 'Model providers'), createProvidersSurface),
+    {
+      type: SETUP_SURFACE_TYPES.providers,
+      header: 'surface',
+      label: () => t('setup_surface.provider', 'Model provider'),
+      discover: (_tenant, environment) => providerOffers(environment?.setupRuntime),
+      create: (context) => createProviderSurface(context),
+    },
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace folders'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.services, t('settei.ronin_services', 'Ronin Services'), createServicesSurface),
     definition(SETUP_SURFACE_TYPES.gbrain, t('pane.gbrain', 'gbrain'), createGbrainSurface),
