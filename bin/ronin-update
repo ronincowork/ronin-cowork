@@ -274,8 +274,12 @@ restart_and_gate() {
     curl -fsS -m 2 -o /dev/null "${url}api/health" 2>/dev/null && break
     sleep 1
   done
-  render_check "$HOME_DIR/current" "$url" "the live page" ||
+  local render_rc
+  if render_check "$HOME_DIR/current" "$url" "the live page"; then render_rc=0; else render_rc=$?; fi
+  if [ "$render_rc" = 1 ]; then
+    printf '%s\n' "$RENDER_DETAILS" | sed 's/^/  /'
     fail "the LIVE page failed its gate after the swap — roll back: bin/ronin-update --rollback"
+  fi
 }
 
 # --- rollback: the previous unpacked release, by symlink ---
@@ -463,8 +467,11 @@ done
 ANSWER="$(curl -fsS -m 3 "http://127.0.0.1:$SCRATCH/api/version" 2>/dev/null || true)"
 echo "$ANSWER" | grep -q "\"release\":\"$VER\"" ||
   fail "the candidate does not answer release $VER (got: ${ANSWER:-nothing}) — nothing was swapped"
-render_check "$TARGET" "http://127.0.0.1:$SCRATCH/" "the candidate ($VER)" ||
+if render_check "$TARGET" "http://127.0.0.1:$SCRATCH/" "the candidate ($VER)"; then render_rc=0; else render_rc=$?; fi
+if [ "$render_rc" = 1 ]; then
+  printf '%s\n' "$RENDER_DETAILS" | sed 's/^/  /'
   fail "the CANDIDATE failed its render gate — nothing was swapped; the serving release never moved"
+fi
 kill_tree "$CANDIDATE_PID"
 wait "$CANDIDATE_PID" 2>/dev/null || true
 CANDIDATE_PID=""
