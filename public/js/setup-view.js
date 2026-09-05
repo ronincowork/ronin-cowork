@@ -89,6 +89,7 @@ export function createSetupView() {
     title: () => t('setup.title', 'Ronin Setup'),
     fixedWorkspaces: { workspace2: PRESETS_TYPE },
     selectorWorkspace: 'workspace1',
+    selectorCurrent: true,
     selectorFilter: (type) => type !== PRESETS_TYPE,
     onStateChange: save,
     onPlacement: save,

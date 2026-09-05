@@ -208,6 +208,11 @@ export function createWorkbench(options = {}) {
       // what is placed there; painting every matching door as pressed made one of two
       // visible Agents look selected and the other not as seats changed underneath it.
       const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: () => place(definition.type, options.selectorWorkspace || selected, detail) });
+      if (options.selectorCurrent) {
+        const target = options.selectorWorkspace || selected;
+        const current = typeAt(target) === definition.type && resourceAt(target) === String(detail.key || '');
+        if (current) card.el.setAttribute('aria-current', 'page');
+      }
       // A readable title is display text, not identity. Consumers such as the render gate
       // address an offered resource by its fixed key even after its title is edited.
       if (detail.key) card.el.dataset.workbenchOfferResource = detail.key;

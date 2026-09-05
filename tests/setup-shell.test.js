@@ -62,6 +62,7 @@ test('the existing workbench can pin a Setup workspace and aim selector cards at
   assert.match(workbench, /fixedWorkspaces\[id\].*fixedWorkspaces\[id\] !== type/);
   assert.match(workbench, /options\.selectorWorkspace \|\| selected/);
   assert.match(workbench, /options\.selectorFilter/);
+  assert.match(workbench, /options\.selectorCurrent/);
 });
 
 test('the fourth Setup workbench registers real lane surfaces in ruled order', async () => {
@@ -71,6 +72,7 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /registerSetupSurfaces\(\);[\s\S]*registerPresetsSurface\(\);/);
   assert.match(setup, /fixedWorkspaces: \{ workspace2: PRESETS_TYPE \}/);
   assert.match(setup, /selectorWorkspace: 'workspace1'/);
+  assert.match(setup, /selectorCurrent: true/);
   assert.match(setup, /bench\.arrangement\.move\('selector', 0\)/);
   assert.match(setup, /hideFeedback: true/);
   assert.match(setup, /mountProviderSetupSession/);
