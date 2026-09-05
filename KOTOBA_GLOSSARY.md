@@ -31,6 +31,10 @@ is a name a user learns. Everything not listed here is ordinary English and need
 | You will see | Say | What it is |
 |---|---|---|
 | `coworkspace` | **the coworkspace**<!--g:glossary.coworkspace--> | The whole UI. |
+| root destination | **Ronin Home** | The root page whose browser title uses this exact name. |
+| root layout | **Three Blocks** | The sparse Settings, Teams, and New Project pattern on Ronin Home. |
+| Setup workbench | **Ronin Setup** | Machine Settings focused on getting Ronin ready to launch. |
+| Campaign workbench | **Ronin Settings** | Machine Settings focused on the existing Campaign configuration. |
 | tile | **tile**<!--g:glossary.tile--> | One cell showing one session. Never "pane". |
 | `workspace` | **workspace**<!--g:glossary.workspace--> | One slot of the coworkspace. It holds a tile or a commons. |
 | `campaign_commons` | **the commons**<!--g:glossary.campaign_commons--> | The campaign's shared surface. |
