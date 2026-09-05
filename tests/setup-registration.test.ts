@@ -71,13 +71,18 @@ test('setup surface definitions keep all six ruled ids and gates only Library an
 });
 
 test('provider discovery is catalog-driven and a keyed surface resolves only its provider', async () => {
-  const { providerOffers, providerFromRuntime } = await import('../public/js/setup-provider-state.js');
+  const { SETUP_REQUIREMENT_TARGETS, providerOffers, providerFromRuntime, setupRequirementClass } = await import('../public/js/setup-provider-state.js');
   const providers = [
     ['anthropic', 'Claude'], ['openai', 'Codex'], ['hermes', 'Hermes'],
     ['grok', 'Grok'], ['gemini', 'Gemini'], ['future_cli', 'Future CLI'],
   ].map(([id, label], index) => ({ id, label, state: index ? 'installed' : 'activated' }));
   const runtime = { providers };
   assert.deepEqual(providerOffers(runtime).map((offer) => offer.label), providers.map((provider) => provider.label));
+  assert.deepEqual(providerOffers(runtime).map((offer) => offer.targetKey), providers.map((provider) => `setup.provider:${provider.id}`));
+  assert.equal(SETUP_REQUIREMENT_TARGETS.providers, 'setup.providers');
+  assert.equal(SETUP_REQUIREMENT_TARGETS.gbrain, 'setup.gbrain');
+  assert.equal(SETUP_REQUIREMENT_TARGETS.services, 'setup.services');
+  assert.equal(setupRequirementClass('setup.provider:future_cli'), 'setup-requirement-setup-provider-future_cli');
   assert.equal(providerFromRuntime(runtime, 'future_cli')?.label, 'Future CLI');
   assert.equal(providerFromRuntime(runtime, 'openai')?.label, 'Codex');
 });
@@ -99,6 +104,14 @@ test('native login mounts only the attachment published by the real setup runtim
   assert.equal(calls.length, 1);
   assert.deepEqual((calls[0] as { session: string; workspace: string }).session, 'provider_setup_claude');
   assert.deepEqual((calls[0] as { session: string; workspace: string }).workspace, 'workspace1');
+});
+
+test('selector definitions expose non-selectable provider group and exact dependency targets', async () => {
+  const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+  assert.match(source, /targetKey: SETUP_REQUIREMENT_TARGETS\.providers/);
+  assert.match(source, /createServicesSurface, SETUP_REQUIREMENT_TARGETS\.services/);
+  assert.match(source, /createGbrainSurface, SETUP_REQUIREMENT_TARGETS\.gbrain/);
+  assert.doesNotMatch(source, /key:\s*SETUP_REQUIREMENT_TARGETS\.providers/, 'provider group remains metadata, never an aggregate selectable offer');
 });
 
 test('legacy Services mutation entry points explicitly retire to registration', async () => {
