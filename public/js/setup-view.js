@@ -13,6 +13,14 @@ const ORDER = Object.freeze([
   SETUP_SURFACE_TYPES.services, SETUP_SURFACE_TYPES.gbrain, SETUP_SURFACE_TYPES.templates,
 ]);
 
+const emptyRequirementState = () => ({ hovered: [], open: [], flash: [], flashCycle: 0 });
+const requirementState = (next = {}) => ({
+  hovered: [...new Set(Array.isArray(next.hovered) ? next.hovered.map(String) : [])],
+  open: [...new Set(Array.isArray(next.open) ? next.open.map(String) : [])],
+  flash: [...new Set(Array.isArray(next.flash) ? next.flash.map(String) : [])],
+  flashCycle: Number.isFinite(next.flashCycle) ? Number(next.flashCycle) : 0,
+});
+
 export function registerSetupWorkbench() {
   registerSetupSurfaces();
   registerPresetsSurface();
@@ -35,6 +43,7 @@ export function createSetupView() {
     launch: launchPresetPlan,
     launchUrl: presetLaunchUrl,
     reserveLaunchTab: reserveWorkspaceTab,
+    setSetupRequirementState: (next) => environment.setSetupRequirementState(next),
     navigateToSurface: (type, detail = {}) => {
       bench?.place(type, 'workspace1', detail);
       bench?.select('workspace1');
@@ -46,6 +55,11 @@ export function createSetupView() {
     showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
     openTemplateMaker: () => ctx?.navigate('launch'),
     setupRuntime: null,
+    setupRequirementState: emptyRequirementState(),
+    setSetupRequirementState: (next) => {
+      environment.setupRequirementState = requirementState(next);
+      bench?.refreshSelector();
+    },
     mountProviderSetupSession: ({ host, provider, session, workspace, onClosed } = {}) => {
       if (!(host instanceof Node) || !session) return null;
       const terminal = WorkspaceKit.adapters.createTerminalTileHost({ mode: 'full' });
@@ -107,7 +121,7 @@ export function createSetupView() {
       bench.refreshSelector();
       save();
     },
-    leave: () => bench.leave(),
+    leave: () => { environment.setSetupRequirementState(); bench.leave(); },
     destroy: () => { for (const host of providerHosts) host.destroy(); providerHosts.clear(); bench.leave(); ctx = null; },
   };
 }

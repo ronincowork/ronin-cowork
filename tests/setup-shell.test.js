@@ -76,6 +76,8 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /mountProviderSetupSession/);
   assert.match(setup, /createTerminalTileHost\(\{ mode: 'full' \}\)/);
   assert.match(setup, /environment\.setupRuntime = runtime\.ok \? runtime\.data : \{ providers: \[\] \};[\s\S]*bench\.refreshSelector\(\);[\s\S]*const stored/);
+  assert.match(setup, /setSetupRequirementState: \(next\) => \{[\s\S]*environment\.setupRequirementState = requirementState\(next\);[\s\S]*bench\?\.refreshSelector\(\)/);
+  assert.match(setup, /setSetupRequirementState: \(next\) => environment\.setSetupRequirementState\(next\)/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.register, SETUP_SURFACE_TYPES\.providers, SETUP_SURFACE_TYPES\.roots/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.services, SETUP_SURFACE_TYPES\.gbrain, SETUP_SURFACE_TYPES\.templates/);
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
