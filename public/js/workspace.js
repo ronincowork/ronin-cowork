@@ -230,6 +230,8 @@ export function createWorkspace(host, options = {}) {
     showName(id, next);
     const feedback = document.getElementById('feedbackaction');
     if (feedback) feedback.hidden = next.hideFeedback === true;
+    const shapeControl = document.getElementById('shapecycle');
+    if (shapeControl) shapeControl.hidden = next.hideShapeControl === true;
     active = { id, view: next, param };
     state.view = id;
     if (id === 'team') state.team = param;

@@ -63,6 +63,9 @@ test('the existing workbench can pin a Setup workspace and aim selector cards at
   assert.match(workbench, /options\.selectorWorkspace \|\| selected/);
   assert.match(workbench, /options\.selectorFilter/);
   assert.match(workbench, /options\.selectorCurrent/);
+  assert.match(workbench, /dataset\.setupRequirementTarget = key/);
+  assert.match(workbench, /is-requirement-marked/);
+  assert.match(workbench, /is-requirement-flashing/);
 });
 
 test('the fourth Setup workbench registers real lane surfaces in ruled order', async () => {
@@ -75,6 +78,7 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /selectorCurrent: true/);
   assert.match(setup, /bench\.arrangement\.move\('selector', 0\)/);
   assert.match(setup, /hideFeedback: true/);
+  assert.match(setup, /hideShapeControl: true/);
   assert.match(setup, /mountProviderSetupSession/);
   assert.match(setup, /createTerminalTileHost\(\{ mode: 'full' \}\)/);
   assert.match(setup, /environment\.setupRuntime = runtime\.ok \? runtime\.data : \{ providers: \[\] \};[\s\S]*bench\.refreshSelector\(\);[\s\S]*const stored/);

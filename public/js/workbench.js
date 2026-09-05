@@ -200,10 +200,31 @@ export function createWorkbench(options = {}) {
   const refreshSelector = () => {
     if (selectorTitle) selectorTitle.textContent = options.title?.(tenant) || options.label || profile.name;
     selectorCards.replaceChildren();
+    const requirementState = options.environment?.setupRequirementState || {};
+    const requirementHas = (field, key) => Boolean(key) && Array.isArray(requirementState[field]) && requirementState[field].some((entry) => String(entry) === key);
+    const presentRequirement = (element, key, targetClass = '') => {
+      key = String(key || '');
+      if (!key) return;
+      element.dataset.setupRequirementTarget = key;
+      if (targetClass) element.classList.add(...String(targetClass).split(/\s+/).filter(Boolean));
+      element.classList.toggle('is-requirement-marked', requirementHas('hovered', key) || requirementHas('open', key));
+      element.classList.toggle('is-requirement-flashing', requirementHas('flash', key) && Number(requirementState.flashCycle) > 0);
+      if (Number(requirementState.flashCycle) > 0) element.dataset.requirementFlashCycle = String(requirementState.flashCycle);
+    };
+    const renderedGroups = new Set();
     for (const { definition, offer } of allowed()) {
       const label = offer.label ?? (typeof definition.label === 'function' ? definition.label(tenant, options.environment) : definition.label || definition.type);
       const summary = offer.summary ?? (typeof definition.summary === 'function' ? definition.summary(tenant, options.environment) : definition.summary || '');
       const detail = { ...offer, key: offer.key || '' };
+      const groupKey = String(definition.targetKey || '');
+      const offerKey = String(offer.targetKey || groupKey);
+      if (offer.targetKey && groupKey && offerKey !== groupKey && !renderedGroups.has(groupKey)) {
+        const group = node('div', 'wk-selector-group');
+        group.textContent = typeof definition.label === 'function' ? definition.label(tenant, options.environment) : definition.label || definition.type;
+        presentRequirement(group, groupKey, definition.targetClass);
+        selectorCards.append(group);
+        renderedGroups.add(groupKey);
+      }
       // A selector card is a door, not a status lamp. The workspace itself already shows
       // what is placed there; painting every matching door as pressed made one of two
       // visible Agents look selected and the other not as seats changed underneath it.
@@ -216,9 +237,10 @@ export function createWorkbench(options = {}) {
       // A readable title is display text, not identity. Consumers such as the render gate
       // address an offered resource by its fixed key even after its title is edited.
       if (detail.key) card.el.dataset.workbenchOfferResource = detail.key;
-      for (const cls of [definition.className, offer.className]) {
+      for (const cls of [definition.className, offer.className, offer.targetClass]) {
         if (cls) card.el.classList.add(...String(cls).split(/\s+/).filter(Boolean));
       }
+      presentRequirement(card.el, offerKey, offer.targetClass || definition.targetClass);
       if (offer.onPointerEnter) card.el.addEventListener('pointerenter', offer.onPointerEnter);
       if (offer.onPointerLeave) card.el.addEventListener('pointerleave', offer.onPointerLeave);
       card.el.draggable = true;

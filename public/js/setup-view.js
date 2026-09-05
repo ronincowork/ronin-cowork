@@ -98,6 +98,7 @@ export function createSetupView() {
     el: bench.host,
     glyph: '人',
     hideFeedback: true,
+    hideShapeControl: true,
     title: () => t('setup.title', 'Ronin Setup'),
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {
