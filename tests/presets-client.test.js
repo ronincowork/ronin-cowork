@@ -2,9 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-class FakeNode { constructor() { this.dataset = {}; } append() {} }
+class FakeNode {
+  constructor(tag = '') { this.tagName = tag.toUpperCase(); this.dataset = {}; this.children = []; this.listeners = {}; this.attributes = {}; this._text = ''; this.disabled = false; }
+  append(...nodes) { this.children.push(...nodes.flat().filter(Boolean)); }
+  replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
+  add(node) { this.append(node); }
+  click() { if (!this.disabled) for (const callback of this.listeners.click || []) callback({ currentTarget: this }); }
+  querySelector(selector) {
+    const cls = selector.match(/\.([a-z0-9_-]+)$/i)?.[1];
+    return this.walk().find((node) => cls && node.className?.split(' ').includes(cls)) || null;
+  }
+  *walk() { for (const child of this.children) { if (!(child instanceof FakeNode)) continue; yield child; yield* child.walk(); } }
+  get options() { return this.children.filter((node) => node.tagName === 'OPTION'); }
+  get textContent() { return this._text + this.children.map((node) => node?.textContent || '').join(''); }
+  set textContent(value) { this._text = String(value || ''); this.children = []; }
+}
 globalThis.Node = FakeNode;
-globalThis.document = { createElement: () => new FakeNode(), querySelector: () => null, head: { append() {} } };
+globalThis.document = { createElement: (tag) => new FakeNode(tag), querySelector: () => null, head: { append() {} } };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
 const presets = await import('../public/js/presets.js');
@@ -126,4 +142,30 @@ test('blocked detail retains ordinary controls and a native held Launch contract
   assert.match(source, /actions\.append\(el\('span', 'sp-held', 'Held'\)\)/);
   assert.match(source, /headingCopy\.append\([\s\S]*slot\.destination/);
   assert.doesNotMatch(source, /button\.append\([^\n]*slot\.destination/);
+});
+
+test('Customize calls only its adapter with exact template and User Message', async () => {
+  const customizations = [];
+  let launches = 0;
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({
+      templates: [],
+      runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] },
+    }),
+    loadPresetSlots: () => null,
+    customize: (payload) => customizations.push(payload),
+    launch: async () => { launches += 1; return { ok: false }; },
+  } });
+  await surface.enter();
+  const nodes = [...surface.el.walk()];
+  const message = nodes.find((node) => node.tagName === 'TEXTAREA');
+  const customize = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Customize');
+  message.value = 'Keep the caller honest';
+  customize.click();
+  assert.equal(launches, 0);
+  assert.deepEqual(customizations, [{
+    template: { shelf: 'teams', name: 'bare_metal' },
+    workspace: 'workspace2',
+    user_message: 'Keep the caller honest',
+  }]);
 });
