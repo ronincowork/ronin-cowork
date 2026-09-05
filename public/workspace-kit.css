@@ -17,6 +17,7 @@
   .wk-action[data-attention='true'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); font-weight: 700; }
   .wk-action[data-kind='danger'] { border-color: var(--bad); color: var(--bad-soft); }
   .wk-action[data-size='compact'] { min-height: var(--space-11); padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
+  .wk-surface-header .wk-action[data-size='compact'] { min-height: 0; }
   .wk-action[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki); }
   .wk-action:disabled { opacity: .5; cursor: default; }
   .wk-metadata { display: grid; grid-template-columns: minmax(7rem, auto) minmax(0, 1fr); gap: var(--space-3) var(--space-5); margin: 0; }
