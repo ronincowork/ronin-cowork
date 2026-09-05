@@ -7,12 +7,12 @@ export const PRESETS_TYPE = 'setup.presets';
 export const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
 
 export const HOUSE_PRESETS = Object.freeze([
-  { handle: 'bare_metal', shelf: 'teams', label: 'Bare Metal', art: '◫', destination: 'Ronin Lab' },
-  { handle: 'staff_my_codebase', shelf: 'teams', label: 'Code Stack Eval', art: '🎬', destination: 'Ronin Project 1' },
+  { handle: 'bare_metal', shelf: 'teams', label: 'Bare Metal', art: '◇', destination: 'Ronin Lab' },
+  { handle: 'staff_my_codebase', shelf: 'teams', label: 'Code Stack Eval', art: '⌗', destination: 'Ronin Project 1' },
   { handle: 'develop_new_project', shelf: 'teams', label: 'Develop a New Project', art: '⌘', destination: 'Ronin Project 1' },
-  { handle: 'personal_assistant', shelf: 'agents', label: 'Personal Assistant', art: '📇', destination: 'Ronin Lab' },
-  { handle: 'health_and_fitness', shelf: 'teams', label: 'Home Health', art: '🏃', destination: 'Ronin Lab' },
-  { handle: 'morning_brief', shelf: 'teams', label: 'Grokbot Morning Briefing', art: '☕', destination: 'Ronin Lab' },
+  { handle: 'personal_assistant', shelf: 'agents', label: 'Personal Assistant', art: '○', destination: 'Ronin Lab' },
+  { handle: 'health_and_fitness', shelf: 'teams', label: 'Home Health', art: '△', destination: 'Ronin Lab' },
+  { handle: 'morning_brief', shelf: 'teams', label: 'Grokbot Morning Briefing', art: '☼', destination: 'Ronin Lab' },
   { handle: 'agent_editable_doc', shelf: 'agents', label: 'Agent + Editable Doc', art: '▧', destination: 'Ronin Lab' },
 ]);
 
@@ -232,7 +232,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       const gate = presetReadiness(slot.handle, runtime);
       button.dataset.gated = String(!gate.ready);
       if (!gate.ready) button.title = gate.reason;
-      button.append(el('i', '', slot.art || '▤'), el('b', '', slot.label || slot.handle), el('small', '', slot.destination || ''));
+      button.append(el('i', '', slot.art || '▤'), el('b', '', slot.label || slot.handle));
       if (!gate.ready) {
         button.addEventListener('mouseenter', () => requirementState.preview(gate.targets));
         button.addEventListener('mouseleave', () => requirementState.clearPreview());
@@ -248,7 +248,10 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
 
   const paintDetail = () => {
     detail.replaceChildren(); const slot = current(); if (!slot) return;
-    const heading = el('div', 'sp-heading'); heading.append(el('h3', '', slot.label || slot.handle));
+    const heading = el('div', 'sp-heading');
+    const headingCopy = el('div', 'sp-heading-copy');
+    headingCopy.append(el('h3', '', slot.label || slot.handle), el('small', 'sp-destination', slot.destination || ''));
+    heading.append(headingCopy);
     const change = el('details', 'sp-change'), summary = el('summary', '', '⚙ change preset'); change.append(summary);
     const picker = el('select');
     for (const row of available()) picker.append(option(`${row.shelf}:${row.handle}`, row.label || row.handle));
@@ -258,17 +261,17 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     change.append(picker, restore); heading.append(change); detail.append(heading);
     const gate = presetReadiness(slot.handle, runtime);
     requirementState.syncOpen(gate.ready ? [] : gate.targets);
+    const message = el('textarea'); message.rows = 4; message.placeholder = 'What should this launch begin with?'; detail.append(field('User Message', message));
+    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime); detail.append(fixed); }
     if (!gate.ready) {
       const blocked = el('div', 'sp-gate');
       blocked.append(el('p', '', gate.reason));
       const link = el('button', 'wk-action', gate.surface === 'setup.providers' ? 'Open model provider setup' : gate.surface === 'setup.gbrain' ? 'Open gbrain setup' : 'Open Ronin Services setup');
       link.type = 'button'; link.addEventListener('click', () => environment.navigateToSurface?.(gate.surface, gate.detail));
-      blocked.append(link); detail.append(blocked); return;
+      blocked.append(link); detail.append(blocked);
     }
-    const message = el('textarea'); message.rows = 4; message.placeholder = 'What should this launch begin with?'; detail.append(field('User Message', message));
-    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime); detail.append(fixed); }
     const customize = createAction({ label: 'Customize', action: () => environment.customize?.({ template: { shelf: slot.shelf, name: slot.handle }, workspace: 'workspace2', user_message: message.value }) });
-    const launch = createAction({ label: 'Launch', kind: 'primary', action: async () => {
+    const launchNow = async () => {
       if (typeof environment.launch !== 'function') return notice.set('failed', 'Launch is not available yet.');
       const tab = environment.reserveLaunchTab?.() || window.open('about:blank', '_blank');
       launch.setDisabled(true); notice.set('info', 'Launching…');
@@ -280,8 +283,10 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       if (tab && url) { tab.opener = null; tab.location.href = url; }
       else if (url) window.open(url, '_blank', 'noopener');
       notice.set('success', 'Launched in a new tab.');
-    } });
+    };
+    const launch = createAction({ label: 'Launch', kind: 'primary', disabled: !gate.ready, ...(gate.ready ? { action: launchNow } : {}) });
     const actions = createActionBar({ label: 'Preset actions', actions: [customize, launch] }); detail.append(actions.el);
+    if (!gate.ready) actions.append(el('span', 'sp-held', 'Held'));
   };
 
   const enter = async () => {

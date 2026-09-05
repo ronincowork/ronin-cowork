@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 class FakeNode { constructor() { this.dataset = {}; } append() {} }
 globalThis.Node = FakeNode;
@@ -115,4 +116,14 @@ test('each blocked selection increments flashCycle and ready selection clears ma
   assert.deepEqual(state.syncOpen(['setup.gbrain']).open, ['setup.gbrain']);
   assert.equal(state.select(['setup.gbrain']).flashCycle, 2);
   assert.deepEqual(state.select([]), { hovered: [], open: [], flash: [], flashCycle: 2 });
+});
+
+test('blocked detail retains ordinary controls and a native held Launch contract', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /detail\.append\(blocked\);\s*return/);
+  assert.match(source, /label: 'Launch', kind: 'primary', disabled: !gate\.ready/);
+  assert.match(source, /gate\.ready \? \{ action: launchNow \} : \{\}/);
+  assert.match(source, /actions\.append\(el\('span', 'sp-held', 'Held'\)\)/);
+  assert.match(source, /headingCopy\.append\([\s\S]*slot\.destination/);
+  assert.doesNotMatch(source, /button\.append\([^\n]*slot\.destination/);
 });
