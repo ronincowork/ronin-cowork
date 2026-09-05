@@ -22,7 +22,7 @@ export const defaultWorkspaceState = () => ({
   campaignSelection: null,
   // Each destination owns one namespace inside this tab. Empty objects and null drafts
   // are valid; the shell stores state but never interprets a feature's workflow.
-  views: { home: {}, cowork: {}, campaign: {}, launch: {}, 'new-team': { draft: null } },
+  views: { home: {}, cowork: {}, campaign: {}, setup: {}, launch: {}, 'new-team': { draft: null } },
   returnTo: null,
 });
 
@@ -101,6 +101,27 @@ export function routeFromHash(hash = location.hash) {
 
 export function hashFor(view, param = '') {
   return '#/' + [view, param].filter(Boolean).map(encodeURIComponent).join('/');
+}
+
+/** Open one destination as another workbench tab while leaving this page in place. */
+export function reserveWorkspaceTab() {
+  const tab = window.open('about:blank', '_blank');
+  if (tab) tab.opener = null;
+  return tab;
+}
+
+export function closeWorkspaceTab(tab) {
+  try { tab?.close(); } catch (_) { /* a blocked popup needs no cleanup */ }
+}
+
+export function openWorkspaceTab(view, param = '', reserved = null) {
+  const url = new URL(location.href);
+  url.hash = hashFor(view, param);
+  if (reserved) {
+    reserved.location.replace(url.href);
+    return reserved;
+  }
+  return window.open(url.href, '_blank', 'noopener');
 }
 
 /**

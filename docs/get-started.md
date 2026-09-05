@@ -1,7 +1,8 @@
 # Get started — from the private URL to one working Agent
 
-This guide is for an outside Agent helping the owner after installation. Stay beside the
-user through `cowork_setup`, establish one provider, prove one harmless exchange, and then
+This guide is for an outside Agent helping the owner after installation. The ordinary
+route is now [Ronin Setup](setup-workbench.md); `cowork_setup` remains the explicit legacy
+first-run route. Stay beside the user, establish one provider, prove one harmless exchange, and then
 hand off. Do not answer owner choices, enter credentials, or promise post-Save behavior the
 screen does not show.
 
@@ -11,7 +12,9 @@ Report the URL together with its access posture: the actual bind, whether Ronin 
 enabled, and who can reach the tailnet or tunnel. If those facts are not known, return to
 [the install checks](install.md#5-verify-the-running-install).
 
-Prepare the owner for one page with two parts:
+On the ordinary route, prepare the owner for the two-workspace Setup workbench: Presets is
+pinned beside Register, providers, Workspace folders, Services, gbrain, and Templates.
+If the explicit `/cowork-setup` route is being used, prepare the owner for one page with two parts:
 
 - **Shape the coworkspace:** owner and machine names, Agents, default models, maximum Agent
   sessions, and optional Services or gbrain choices.
@@ -51,9 +54,10 @@ only the tiles and states actually rendered on this machine.
 
 ## Establish one provider
 
-Do not configure every provider. Choose one Agent the owner wants and continue with
-[Provider sign-in](provider-sign-in.md). An installed CLI is not authenticated evidence;
-the first launch is the universal proof when no safe status command exists.
+Do not configure every provider. In **Ronin Setup → Model providers**, choose one Agent the
+owner wants and continue with [Provider sign-in](provider-sign-in.md). An installed CLI is
+not activation. After the owner completes its native flow, **Done / Close** records the
+explicit activation step; **Close** does not. A real launch remains the end-to-end proof.
 
 ## Prove one working Agent
 

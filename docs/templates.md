@@ -11,6 +11,12 @@ owner's own distinction:
 
 The short rule: **agents are people, teams are projects.**
 
+Ronin Setup's Presets surface is a browser launch shelf over these ordinary templates.
+Every slot supplies User Message, Customize, and hito-in-hexagon **Launch**, opening the
+result in a new tab. Seven shipped template handles receive fixed extra controls and
+initial seating. Replacing one with any other template removes that special treatment and
+uses the unchanged ordinary launch path; no presentation field is added to template files.
+
 **An agent template is a person you'd assign** — one session's loadout: the reading,
 tools, mandate and starting brief. A system administrator you spin up when Ronin is
 acting crazy; a health checker for your own application; a front-end developer; a
