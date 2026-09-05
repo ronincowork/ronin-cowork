@@ -597,7 +597,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   return {
     el: surface.el,
-    enter: async () => {
+    enter: async (detail = {}) => {
       paint();
       const [seeded, tray, catalog, rootRows, sopRows, wayRows] = await Promise.all([
         request('/api/launch-seed'),
@@ -616,6 +616,11 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       // The seed lands only while the form is untouched — re-entering an open draft
       // must not overwrite the owner's hand.
       if (!loaded) { applySeed(); loaded = true; }
+      if (typeof detail?.template === 'string' && detail.template) applyTemplate(detail.template);
+      if (typeof detail?.prompt === 'string' && detail.prompt.trim()) {
+        draft.objective = detail.prompt.trim();
+        objectiveInput.value = draft.objective;
+      }
       paint();
     },
   };

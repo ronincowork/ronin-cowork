@@ -3,7 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
 import { PRESETS_TYPE, createPresetsSurface, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
-import { reserveWorkspaceTab } from './workspace.js';
+import { openWorkspaceStateTab, reserveWorkspaceTab } from './workspace.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
@@ -39,7 +39,7 @@ export function createSetupView() {
     return surface.el;
   };
   const presetEnvironment = () => ({
-    customize: () => ctx?.navigate('launch'),
+    customize: ({ template, user_message } = {}) => openWorkspaceStateTab(ctx, 'launch', { customize: { template, user_message: String(user_message || '') } }),
     launch: launchPresetPlan,
     launchUrl: presetLaunchUrl,
     reserveLaunchTab: reserveWorkspaceTab,

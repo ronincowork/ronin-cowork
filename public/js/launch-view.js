@@ -54,7 +54,7 @@ export function createLaunchView() {
 
   const seated = (view) => ({
     el: view.el,
-    show: () => { if (!started.has(view)) { started.add(view); void view.enter(); } },
+    show: (detail) => { if (!started.has(view)) { started.add(view); void view.enter(detail); } },
   });
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(TYPES.team, workspace)),
@@ -104,6 +104,7 @@ export function createLaunchView() {
     enter: async (context) => {
       ctx = context;
       const stored = context.viewState('launch') || {};
+      const customize = stored.customize && typeof stored.customize === 'object' ? stored.customize : null;
       bench.enter(stored);
       await refreshTeams();
       let placed = false;
@@ -111,6 +112,13 @@ export function createLaunchView() {
         const type = typeof held === 'object' ? held.type : held;
         if (!Object.values(TYPES).includes(type)) continue;
         bench.place(type, workspace);
+        placed = true;
+      }
+      if (customize?.template?.name && ['teams', 'agents'].includes(customize.template.shelf)) {
+        const type = customize.template.shelf === 'agents' ? TYPES.agent : TYPES.team;
+        bench.place(type, 'workspace1', { template: customize.template.name, prompt: String(customize.user_message || '') });
+        bench.select('workspace1');
+        context.patchViewState('launch', { customize: null });
         placed = true;
       }
       // Arriving from the root page with nothing remembered: the Agent form, since that

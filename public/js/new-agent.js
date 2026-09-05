@@ -638,6 +638,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       teams = teamRows.ok && Array.isArray(teamRows.data) ? teamRows.data.filter((row) => row.state !== 'archived') : [];
       roots = rootRows.ok && Array.isArray(rootRows.data) ? rootRows.data : [];
       if (!loaded) { await loadSeed(); loaded = true; }
+      if (typeof detail?.template === 'string' && detail.template) applyTemplate(detail.template);
       seedPrompt(typeof detail?.prompt === 'string' ? detail.prompt.trim() : '');
       paint();
     },

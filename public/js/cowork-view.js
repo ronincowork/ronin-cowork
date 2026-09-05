@@ -17,7 +17,7 @@ import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { openWorkspaceStateTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { PRESETS_TYPE, createPresetsSurface, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { refreshDesks } from './desks.js';
@@ -262,7 +262,7 @@ export function createCoworkView(options = {}) {
     newAgent: (id) => ({ el: newAgentBySeat[id].el, show: (detail) => void newAgentBySeat[id].enter(detail) }),
     addAgent: (id) => ({ el: addAgentBySeat[id].el, show: () => addAgentBySeat[id].enter() }),
     presets: (id) => createPresetsSurface({ environment: {
-      customize: () => ctx?.navigate('launch'),
+      customize: ({ template, user_message } = {}) => openWorkspaceStateTab(ctx, 'launch', { customize: { template, user_message: String(user_message || '') } }),
       launch: launchPresetPlan,
       launchUrl: presetLaunchUrl,
       reserveLaunchTab: reserveWorkspaceTab,

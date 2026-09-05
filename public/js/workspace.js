@@ -124,6 +124,18 @@ export function openWorkspaceTab(view, param = '', reserved = null) {
   return window.open(url.href, '_blank', 'noopener');
 }
 
+/** Seed one destination namespace into the browser's cloned tab state, then restore source state. */
+export function openWorkspaceStateTab(context, view, viewPatch, param = '') {
+  if (!context?.patchViewState || !context?.viewState || !viewPatch || typeof viewPatch !== 'object') return null;
+  const previous = context.viewState(view) || {};
+  const restore = Object.fromEntries(Object.keys(viewPatch).map((key) => [key, previous[key]]));
+  context.patchViewState(view, viewPatch);
+  const tab = reserveWorkspaceTab();
+  context.patchViewState(view, restore);
+  if (!tab) return null;
+  return openWorkspaceTab(view, param, tab);
+}
+
 /**
  * The one ViewHost owner. Views may be empty and may carry no classification; only a
  * registered id and an element are structural. Lifecycle failures are contained to the

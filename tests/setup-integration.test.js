@@ -58,12 +58,22 @@ test('every core seating case uses only real receipt objects and missing objects
   assert.equal(presets.seatingPlan('ordinary_replacement', { sessions: [{ name: 'real' }] }), null);
 });
 
-test('the integrated Setup/Cowork adapters reserve a new tab and use the ordinary launch routes', async () => {
-  const [setup, cowork, launch, workspace] = await Promise.all([
+test('the integrated Setup/Cowork adapters hand Customize to a new tab and use the ordinary launch routes', async () => {
+  const [setup, cowork, launch, workspace, launchView, agentForm, teamForm] = await Promise.all([
     source('setup-view.js'), source('cowork-view.js'), source('preset-launch.js'), source('workspace.js'),
+    source('launch-view.js'), source('new-agent.js'), source('new-team-form.js'),
   ]);
   assert.match(setup, /reserveLaunchTab: reserveWorkspaceTab/);
   assert.match(cowork, /reserveLaunchTab: reserveWorkspaceTab/);
+  for (const adapter of [setup, cowork]) {
+    assert.match(adapter, /customize: \(\{ template, user_message \} = \{\}\) => openWorkspaceStateTab\(ctx, 'launch'/);
+    assert.doesNotMatch(adapter, /customize: \(\) => ctx\?\.navigate\('launch'\)/);
+  }
+  assert.match(workspace, /context\.patchViewState\(view, viewPatch\);[\s\S]*reserveWorkspaceTab\(\);[\s\S]*context\.patchViewState\(view, restore\);[\s\S]*openWorkspaceTab\(view, param, tab\)/);
+  assert.match(launchView, /customize\.template\.shelf === 'agents' \? TYPES\.agent : TYPES\.team/);
+  assert.match(launchView, /template: customize\.template\.name, prompt: String\(customize\.user_message/);
+  assert.match(agentForm, /applyTemplate\(detail\.template\)/);
+  assert.match(teamForm, /applyTemplate\(detail\.template\)/);
   assert.match(launch, /request\('\/api\/launch'/);
   assert.match(launch, /request\('\/api\/team-rosters'/);
   assert.match(workspace, /window\.open\(url\.href, '_blank', 'noopener'\)/);
