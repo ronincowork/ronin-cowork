@@ -242,7 +242,7 @@ which does not exist yet. Don't improvise it.)
 
 | # | Action | With |
 |---|---|---|
-| 1 | land-work | persistent README where the code lives; DELETE the wip buildout doc; hand in the assignment, then close every finished desk |
+| 1 | land-work | persistent README where the code lives; DELETE the wip buildout doc; hand in the assignment, then close every desk whose hand-in promotion has reached you; a desk still waiting on the review line stays open |
 | 2 | land-manifest | ONE line appended to the manifest (location per the documents SOP) — an index entry, not history |
 | 3 | report-outcome | README path, what was handed in and closed, manifest line — BEFORE you end |
 | 4 | harakiri | end this session — last act, after every finished desk is handed in, closed and reported |
