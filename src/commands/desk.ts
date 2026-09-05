@@ -3,7 +3,7 @@ import { tmux } from '../tmux-client.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from '../desks/registry.js';
 import { closeDesk, discardDesk, handoffDesk, openDesk, syncDesk } from '../desks/desk.js';
 import { handIn, handInAssignment } from '../desks/hand-in.js';
-import { findLeads, replyToHandIn, selfMessage, teamOfLine } from '../desks/lead.js';
+import { notifyLeads, replyToHandIn, teamOfLine } from '../desks/lead.js';
 import { acceptedSince, receiptById, receiptsForDesk, receiptsForLine } from '../desks/receipts.js';
 import { queueHolder } from '../desks/queue.js';
 import { deskId, type DeskNotice, type DeskStatus, type HandInReceipt } from '../desks/schema.js';
@@ -172,9 +172,15 @@ async function main(): Promise<void> {
             out(`  NEXT: line moved; run tejun-desk status ${deskId(d)}; if it reports a dev update, run tejun-desk sync ${deskId(d)}; contact the lead with tejun-send <lead>`);
           }
           if (receipt.result !== 'accepted') worst = 4;
+          // The tool finds the lead and tells them (owner, 2026-09-05: the session neither
+          // knows nor checks who the lead is). A team with no lead gets the one plain
+          // sentence back instead, because then nobody was told.
           const team = teamOfLine(d.line);
-          if (team && receipt.result === 'accepted' && !(await findLeads(team)).length) {
-            out(`  ${selfMessage({ team, line: d.line, session, receiptId: receipt.id, result: 'accepted', lineSha: receipt.line_sha })}`);
+          const outcome = receipt.result === 'accepted' ? 'accepted' : receipt.result === 'conflict' ? 'conflict' : null;
+          if (team && outcome) {
+            for (const dlv of await notifyLeads({ team, line: d.line, session, receiptId: receipt.id, result: outcome, lineSha: receipt.line_sha, files: receipt.conflict_files })) {
+              out(dlv.how === 'self' ? `  ${dlv.detail}` : `  lead ${dlv.to}: ${dlv.how === 'house-send' ? 'told' : 'not reachable at the tile — posted on the team wipeboard'} — ${dlv.detail}`);
+            }
           }
         }
         process.exit(worst);

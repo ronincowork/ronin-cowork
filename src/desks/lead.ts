@@ -62,6 +62,14 @@ export function leadMessage(n: LeadNotice): string {
 
 export type Delivery = { to: string; how: 'house-send' | 'wipeboard' | 'self'; detail: string };
 
+/** One house notice into a session's tile, dial or no dial (libexec/ronin-house-send).
+ *  Resolves to the sender's first line on delivery; rejects with its stdout when the
+ *  tile could not take it, so a caller can choose its own fallback. */
+export async function houseSend(to: string, message: string): Promise<string> {
+  const { stdout } = await brokerExecFile(path.join(REPO, 'libexec', 'ronin-house-send'), [to, message]);
+  return stdout.trim();
+}
+
 export function replyMessage(receiptId: string, lead: string, message: string): string {
   return `lead reply on hand-in ${receiptId} from ${lead}: ${message}`;
 }
@@ -73,8 +81,7 @@ export async function replyToHandIn(input: {
   if (!leads.includes(input.from)) throw new Error(`${input.from} is not a lead of ${input.team}`);
   const msg = replyMessage(input.receiptId, input.from, input.message);
   try {
-    const { stdout } = await brokerExecFile(path.join(REPO, 'libexec', 'ronin-house-send'), [input.to, msg]);
-    return { to: input.to, how: 'house-send', detail: stdout.trim() };
+    return { to: input.to, how: 'house-send', detail: await houseSend(input.to, msg) };
   } catch (e) {
     const err = e as { stdout?: string; message?: string };
     return { to: input.to, how: 'wipeboard', detail: `${(err.stdout ?? err.message ?? '').trim()} → ${await wipeboard(input.team, msg, input.to)}` };
@@ -94,8 +101,7 @@ export async function notifyLeads(n: LeadNotice): Promise<Delivery[]> {
   const out: Delivery[] = [];
   for (const lead of leads) {
     try {
-      const { stdout } = await brokerExecFile(path.join(REPO, 'libexec', 'ronin-house-send'), [lead, msg]);
-      out.push({ to: lead, how: 'house-send', detail: stdout.trim() });
+      out.push({ to: lead, how: 'house-send', detail: await houseSend(lead, msg) });
     } catch (e) {
       const err = e as { stdout?: string; message?: string };
       out.push({ to: lead, how: 'wipeboard', detail: `${(err.stdout ?? err.message ?? '').trim()} → ${await wipeboard(n.team, msg, lead)}` });
