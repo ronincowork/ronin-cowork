@@ -58,14 +58,19 @@ function createRegisterSurface(context) {
   for (const [value, label] of [['', 'Choose…'], ['individual', 'Individual'], ['team', 'Team'], ['builder', 'Builder'], ['exploring', 'Exploring']]) userType.add(new Option(label, value));
   const own = el('textarea'); own.name = 'own_words'; own.rows = 3;
   const identity = el('div', 'setup-registration-identity');
-  const form = el('form', 'setup-form');
+  const form = el('form', 'setup-form setup-register-form');
+  const registrationDetails = el('details', 'setup-register-disclosure');
+  const registrationFields = el('div', 'setup-register-disclosure-body');
+  registrationDetails.append(el('summary', '', t('setup_surface.registration_details', 'Registration details')), registrationFields);
+  registrationFields.append(
+    field(t('setup_surface.purpose', 'Purpose'), purpose), field(t('setup_surface.kind', 'Kind'), kind),
+    field(t('setup_surface.user_type', 'Type of user'), userType), field(t('setup_surface.own_words', 'Anything else (optional)'), own),
+  );
   form.append(
     el('p', 'setup-lede', t('setup_surface.register_lede', 'Optional. Registration unlocks access to Ronin Services; local Ronin keeps working without it.')),
-    field(t('setup_surface.email', 'Email'), email), field(t('setup_surface.purpose', 'Purpose'), purpose),
-    field(t('setup_surface.kind', 'Kind'), kind), field(t('setup_surface.user_type', 'Type of user'), userType),
-    field(t('setup_surface.own_words', 'Anything else (optional)'), own),
-    el('p', 'setup-fine', t('setup_surface.consent_exact', 'Submitting sends these registration details for email confirmation. It does not activate or switch on Services and does not subscribe you to communication.')),
-    action(t('setup_surface.register_action', 'Register'), 'primary', async () => {
+    field(t('setup_surface.email', 'Email'), email), registrationDetails,
+    el('p', 'setup-fine', t('setup_surface.consent_exact', 'Email confirmation grants Services access; communication choices remain separate.')),
+    action(t('setup_surface.register_action', 'Register'), '', async () => {
       notice.textContent = t('setup_surface.saving', 'Saving…');
       const result = await request('/api/setup/registration', { method: 'POST', json: { email: email.value, purpose: purpose.value, kind: kind.value, user_type: userType.value, own_words: own.value } });
       notice.textContent = result.ok ? t('setup_surface.confirm_email', 'Registration saved. Confirm the email to receive Services entitlement.') : result.message;
@@ -77,6 +82,10 @@ function createRegisterSurface(context) {
   const followUps = Object.fromEntries(['product_research', 'interviews', 'support'].map((name) => [name, input(name, 'checkbox')]));
   const prefNotice = el('p', 'setup-notice');
   const recovery = el('div', 'setup-registration-recovery');
+  const preferencesDisclosure = el('details', 'setup-register-disclosure setup-preferences-disclosure');
+  preferencesDisclosure.append(el('summary', '', t('setup_surface.communication_preferences', 'Communication preferences')), prefs);
+  const recoveryDisclosure = el('details', 'setup-register-disclosure setup-recovery-disclosure');
+  recoveryDisclosure.append(el('summary', '', t('setup_surface.registration_options', 'Registration options')), recovery);
   prefs.append(
     field(t('setup_surface.newsletter', 'Newsletter'), checks.newsletter),
     field(t('setup_surface.release_updates', 'Code and release updates'), checks.release_updates),
@@ -94,11 +103,12 @@ function createRegisterSurface(context) {
   checks.no_communication.addEventListener('change', () => { if (checks.no_communication.checked) { checks.newsletter.checked = false; checks.release_updates.checked = false; for (const box of Object.values(followUps)) box.checked = false; } });
   const paint = () => {
     const registered = current?.status === 'registered';
-    identity.hidden = !current?.submitted_at;
-    identity.replaceChildren(el('strong', '', registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.registration_pending', 'Registration pending')),
-      el('span', '', [current?.email_masked, current?.purpose, current?.kind, current?.user_type].filter(Boolean).join(' · ')));
+    identity.hidden = !(registered && current?.submitted_at);
+    identity.replaceChildren(el('strong', '', t('setup_surface.registered', 'Registered')),
+      el('span', '', [current?.email_masked, current?.purpose].filter(Boolean).join(' · ')));
     form.hidden = Boolean(current?.submitted_at);
-    prefs.hidden = !current?.submitted_at;
+    preferencesDisclosure.hidden = !current?.submitted_at;
+    recoveryDisclosure.hidden = !current?.submitted_at;
     if (current?.communication) for (const key of Object.keys(checks)) checks[key].checked = current.communication[key] === true;
     for (const [key, box] of Object.entries(followUps)) box.checked = current?.communication?.follow_up?.includes(key) === true;
     recovery.replaceChildren();
@@ -130,7 +140,7 @@ function createRegisterSurface(context) {
     }));
     notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
   };
-  body.append(identity, form, prefs, recovery); out.content.append(body);
+  body.append(identity, form, preferencesDisclosure, recoveryDisclosure); out.content.append(body);
   return { el: out.el, show: async () => { const result = await request('/api/setup/registration', { cache: 'no-store' }); current = result.ok ? result.data : null; paint(); } };
 }
 
