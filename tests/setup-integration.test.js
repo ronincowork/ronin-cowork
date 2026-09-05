@@ -31,7 +31,9 @@ test('all seven initial controls preserve the ruled destinations and teaching ch
   assert.equal(presets.initialControls('staff_my_codebase').root, 'ronin_project_1');
   assert.deepEqual(presets.initialControls('develop_new_project'), { root: 'ronin_project_1', features: ['frontend', 'backend'] });
   assert.deepEqual(presets.initialControls('personal_assistant'), { assistant_mode: 'single', specialists: '' });
-  assert.deepEqual(presets.initialControls('health_and_fitness', 'claude').roles.map((row) => row.name), ['head_coach', 'nutritionist', 'race_and_event_guide']);
+  assert.deepEqual(presets.initialControls('health_and_fitness', 'claude').roles, [
+    { name: 'head_coach', ask: '' }, { name: 'nutritionist', ask: '' }, { name: 'race_and_event_guide', ask: '' },
+  ]);
   assert.deepEqual(presets.initialControls('morning_brief'), { grok: 'grok', schedule: 'every day at 8am', delivery: 'team lead', active: true });
   assert.deepEqual(presets.initialControls('agent_editable_doc'), { root: 'ronin_lab', document: 'README.md' });
 });

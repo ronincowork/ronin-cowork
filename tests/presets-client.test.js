@@ -20,7 +20,7 @@ class FakeNode {
   set textContent(value) { this._text = String(value || ''); this.children = []; }
 }
 globalThis.Node = FakeNode;
-globalThis.document = { createElement: (tag) => new FakeNode(tag), querySelector: () => null, head: { append() {} } };
+globalThis.document = { createElement: (tag) => new FakeNode(tag), createElementNS: (_ns, tag) => new FakeNode(tag), querySelector: () => null, head: { append() {} } };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
 const presets = await import('../public/js/presets.js');
@@ -32,6 +32,27 @@ test('the seven house slots are fixed core handles', () => {
     'health_and_fitness', 'morning_brief', 'agent_editable_doc',
   ]);
   assert.ok(presets.HOUSE_PRESETS.every((row) => presets.isCorePreset(row.handle)));
+});
+
+test('the seven approved resting-stone lines are verbatim and every stone has a glyph', () => {
+  assert.deepEqual(presets.HOUSE_PRESETS.map(({ handle, description }) => [handle, description]), [
+    ['bare_metal', 'Start one to four agents, each in its own tile. Lock and load.'],
+    ['staff_my_codebase', 'Point a team at a codebase and get its read on the stack.'],
+    ['develop_new_project', 'A lead plus feature agents, each in its own worktree.'],
+    ['personal_assistant', 'One assistant that remembers. Alone, or a lead that hires help.'],
+    ['health_and_fitness', 'Head coach, nutritionist, race guide. Drop or add roles.'],
+    ['morning_brief', 'Grok writes you a briefing on a schedule you set.'],
+    ['agent_editable_doc', 'One coding agent beside a document you both edit.'],
+  ]);
+  assert.deepEqual(presets.HOUSE_PRESETS.map((row) => row.glyph), [
+    { rects: [[4, 9, 10, 14], [18, 9, 10, 14]] },
+    { path: 'M5 7h22 M5 13h22 M5 19h22 M5 25h14' },
+    { path: 'M8 28V4 M8 12h6c4 0 4-4 10-4h3 M8 20h6c4 0 4 4 10 4h3' },
+    { text: '人' },
+    { path: 'M3 17h6l3-8 5 14 3-6h9' },
+    { path: 'M6 22a10 10 0 0 1 20 0 M2 26h28 M16 5v3 M7 10l2 2 M25 10l-2 2' },
+    { rects: [[9, 4, 16, 24]], path: 'M13 12h8 M13 17h8 M13 22h5' },
+  ]);
 });
 
 test('a non-core replacement receives only universal actions and ordinary launch', () => {

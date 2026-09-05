@@ -7,13 +7,13 @@ export const PRESETS_TYPE = 'setup.presets';
 export const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
 
 export const HOUSE_PRESETS = Object.freeze([
-  { handle: 'bare_metal', shelf: 'teams', label: 'Bare Metal', art: '◇', destination: 'Ronin Lab' },
-  { handle: 'staff_my_codebase', shelf: 'teams', label: 'Code Stack Eval', art: '⌗', destination: 'Ronin Project 1' },
-  { handle: 'develop_new_project', shelf: 'teams', label: 'Develop a New Project', art: '⌘', destination: 'Ronin Project 1' },
-  { handle: 'personal_assistant', shelf: 'agents', label: 'Personal Assistant', art: '○', destination: 'Ronin Lab' },
-  { handle: 'health_and_fitness', shelf: 'teams', label: 'Home Health', art: '△', destination: 'Ronin Lab' },
-  { handle: 'morning_brief', shelf: 'teams', label: 'Grokbot Morning Briefing', art: '☼', destination: 'Ronin Lab' },
-  { handle: 'agent_editable_doc', shelf: 'agents', label: 'Agent + Editable Doc', art: '▧', destination: 'Ronin Lab' },
+  { handle: 'bare_metal', shelf: 'teams', label: 'Bare Metal', description: 'Start one to four agents, each in its own tile. Lock and load.', glyph: { rects: [[4, 9, 10, 14], [18, 9, 10, 14]] }, destination: 'Ronin Lab' },
+  { handle: 'staff_my_codebase', shelf: 'teams', label: 'Code Stack Eval', description: 'Point a team at a codebase and get its read on the stack.', glyph: { path: 'M5 7h22 M5 13h22 M5 19h22 M5 25h14' }, destination: 'Ronin Project 1' },
+  { handle: 'develop_new_project', shelf: 'teams', label: 'Develop a New Project', description: 'A lead plus feature agents, each in its own worktree.', glyph: { path: 'M8 28V4 M8 12h6c4 0 4-4 10-4h3 M8 20h6c4 0 4 4 10 4h3' }, destination: 'Ronin Project 1' },
+  { handle: 'personal_assistant', shelf: 'agents', label: 'Personal Assistant', description: 'One assistant that remembers. Alone, or a lead that hires help.', glyph: { text: '人' }, destination: 'Ronin Lab' },
+  { handle: 'health_and_fitness', shelf: 'teams', label: 'Home Health', description: 'Head coach, nutritionist, race guide. Drop or add roles.', glyph: { path: 'M3 17h6l3-8 5 14 3-6h9' }, destination: 'Ronin Lab' },
+  { handle: 'morning_brief', shelf: 'teams', label: 'Grokbot Morning Briefing', description: 'Grok writes you a briefing on a schedule you set.', glyph: { path: 'M6 22a10 10 0 0 1 20 0 M2 26h28 M16 5v3 M7 10l2 2 M25 10l-2 2' }, destination: 'Ronin Lab' },
+  { handle: 'agent_editable_doc', shelf: 'agents', label: 'Agent + Editable Doc', description: 'One coding agent beside a document you both edit.', glyph: { rects: [[9, 4, 16, 24]], path: 'M13 12h8 M13 17h8 M13 22h5' }, destination: 'Ronin Lab' },
 ]);
 
 const treatment = (controls, launchShape, seats) => Object.freeze({ controls: Object.freeze(controls), launchShape, seats });
@@ -125,7 +125,7 @@ export function initialControls(handle, defaultProvider = '') {
     case 'staff_my_codebase': return { root: 'ronin_project_1' };
     case 'develop_new_project': return { root: 'ronin_project_1', features: ['frontend', 'backend'] };
     case 'personal_assistant': return { assistant_mode: 'single', specialists: '' };
-    case 'health_and_fitness': return { roles: ['head_coach', 'nutritionist', 'race_and_event_guide'].map((name) => ({ name, provider: defaultProvider })) };
+    case 'health_and_fitness': return { roles: ['head_coach', 'nutritionist', 'race_and_event_guide'].map((name) => ({ name, ask: '' })) };
     case 'morning_brief': return { grok: 'grok', schedule: 'every day at 8am', delivery: 'team lead', active: true };
     case 'agent_editable_doc': return { root: 'ronin_lab', document: 'README.md' };
     default: return {};
@@ -143,13 +143,13 @@ export function buildLaunchPlan(slot, message, controls) {
   };
 }
 
-function renderRootControls(host, state, roots) {
+function renderRootControls(host, state, roots, label = 'Which project') {
   const select = el('select');
   for (const root of roots) select.append(option(root.name || root.id, root.label || root.name || root.id));
   if (!select.options.length) select.append(option(state.root || 'ronin_project_1', state.root || 'Ronin Project 1'));
   select.value = state.root;
   select.addEventListener('change', () => { state.root = select.value; });
-  host.append(field('Workspace folder', select));
+  host.append(field(label, select));
 }
 
 function renderRows(host, state, key, providers, addLabel) {
@@ -176,12 +176,35 @@ function renderRows(host, state, key, providers, addLabel) {
   paint(); host.append(rows);
 }
 
+function renderAskRows(host, state, key, addLabel) {
+  const rows = el('div', 'sp-rows');
+  const paint = () => {
+    rows.replaceChildren();
+    state[key].forEach((row, index) => {
+      if (typeof row === 'string') row = state[key][index] = { name: row, ask: '' };
+      const line = el('div', 'sp-row sp-row-ask');
+      const name = input(row.name); name.setAttribute('aria-label', `${addLabel} ${index + 1}`);
+      name.addEventListener('input', () => { row.name = slug(name.value); });
+      const ask = input(row.ask); ask.placeholder = 'What should this agent do?'; ask.setAttribute('aria-label', `Ask for ${row.name}`);
+      ask.addEventListener('input', () => { row.ask = ask.value; });
+      const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
+      remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });
+      line.append(name, ask, remove); rows.append(line);
+    });
+    const add = el('button', 'fs-door', `＋ Add ${addLabel}`); add.type = 'button';
+    add.addEventListener('click', () => { state[key].push({ name: `${slug(addLabel)}_${state[key].length + 1}`, ask: '' }); paint(); });
+    rows.append(add);
+  };
+  paint(); host.append(rows);
+}
+
 function renderSpecialControls(host, handle, state, runtime) {
   const providers = runtime.providers || [], roots = runtime.roots || [];
-  if (['staff_my_codebase', 'develop_new_project', 'agent_editable_doc'].includes(handle)) renderRootControls(host, state, roots);
-  if (handle === 'bare_metal') renderRows(host, state, 'sessions', providers, 'Session');
-  if (handle === 'develop_new_project') renderRows(host, state, 'features', providers, 'Feature Agent');
-  if (handle === 'health_and_fitness') renderRows(host, state, 'roles', providers, 'Health role');
+  if (['staff_my_codebase', 'develop_new_project'].includes(handle)) renderRootControls(host, state, roots, 'Which project');
+  if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder');
+  if (handle === 'bare_metal') { host.append(el('p', 'sp-control-label', 'Choose the model for each session')); renderRows(host, state, 'sessions', providers, 'Session'); }
+  if (handle === 'develop_new_project') { host.append(el('p', 'sp-control-label', 'Split the work · each feature agent gets its own worktree')); renderRows(host, state, 'features', providers, 'Feature Agent'); }
+  if (handle === 'health_and_fitness') { host.append(el('p', 'sp-control-label', 'Tell each agent what you want')); renderAskRows(host, state, 'roles', 'Health role'); }
   if (handle === 'personal_assistant') {
     const select = el('select');
     select.append(option('single', 'Single Assistant (instant)'), option('lead', 'Team Lead without recruiting'), option('recruit', 'Team Lead that recruits specialists'));
@@ -191,10 +214,25 @@ function renderSpecialControls(host, handle, state, runtime) {
     host.append(field('Launch as', select), field('Specialist help', specialists), el('p', 'sp-dependency', 'Requires gbrain.'));
   }
   if (handle === 'morning_brief') {
-    for (const [key, label] of [['schedule', 'Cadence'], ['delivery', 'Delivery target']]) { const control = input(state[key]); control.addEventListener('input', () => { state[key] = control.value; }); host.append(field(label, control)); }
+    for (const [key, label] of [['schedule', 'When'], ['delivery', 'Deliver to']]) { const control = input(state[key]); control.addEventListener('input', () => { state[key] = control.value; }); host.append(field(label, control)); }
     const active = input('', 'checkbox'); active.checked = state.active; active.addEventListener('change', () => { state.active = active.checked; }); host.append(field('Start active', active));
   }
-  if (handle === 'agent_editable_doc') { const doc = input(state.document); doc.addEventListener('input', () => { state.document = doc.value; }); host.append(field('Document path', doc)); }
+  if (handle === 'agent_editable_doc') { const doc = input(state.document); doc.addEventListener('input', () => { state.document = doc.value; }); host.append(field('Which document', doc)); }
+}
+
+function presetGlyph(slot) {
+  const wrap = el('i', 'sp-glyph');
+  wrap.setAttribute('aria-hidden', 'true');
+  if (slot.glyph?.text) { wrap.textContent = slot.glyph.text; return wrap; }
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  for (const [name, value] of [['viewBox', '0 0 32 32'], ['fill', 'none'], ['stroke', 'currentColor'], ['stroke-width', '2'], ['stroke-linecap', 'square'], ['aria-hidden', 'true'], ['focusable', 'false']]) svg.setAttribute(name, value);
+  for (const [x, y, width, height] of slot.glyph?.rects || []) {
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    for (const [name, value] of Object.entries({ x, y, width, height })) rect.setAttribute(name, String(value));
+    svg.append(rect);
+  }
+  if (slot.glyph?.path) { const path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); path.setAttribute('d', slot.glyph.path); svg.append(path); }
+  wrap.append(svg); return wrap;
 }
 
 function storedSlots(environment) {
@@ -232,7 +270,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       const gate = presetReadiness(slot.handle, runtime);
       button.dataset.gated = String(!gate.ready);
       if (!gate.ready) button.title = gate.reason;
-      button.append(el('i', '', slot.art || '▤'), el('b', '', slot.label || slot.handle));
+      button.append(presetGlyph(slot), el('b', '', slot.label || slot.handle), el('small', 'sp-slot-copy', slot.description || ''));
       if (!gate.ready) {
         button.addEventListener('mouseenter', () => requirementState.preview(gate.targets));
         button.addEventListener('mouseleave', () => requirementState.clearPreview());
@@ -250,7 +288,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     detail.replaceChildren(); const slot = current(); if (!slot) return;
     const heading = el('div', 'sp-heading');
     const headingCopy = el('div', 'sp-heading-copy');
-    headingCopy.append(el('h3', '', slot.label || slot.handle), el('small', 'sp-destination', slot.destination || ''));
+    headingCopy.append(el('h3', '', slot.label || slot.handle), el('p', 'sp-description', slot.description || ''), el('small', 'sp-destination', slot.destination || ''));
     heading.append(headingCopy);
     const change = el('details', 'sp-change'), summary = el('summary', '', '⚙ change preset'); change.append(summary);
     const picker = el('select');
