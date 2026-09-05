@@ -55,3 +55,10 @@ test('edited Cowork and Team workbench labels become the exact tab title', async
   assert.match(cowork, /return name \? \{ bare: name \} : fallback/);
   assert.match(cowork, /patchViewState\(viewKey, \{ tabName:/);
 });
+
+test('the existing workbench can pin Setup workspace 1 and aim selector cards at workspace 2', async () => {
+  const workbench = await source('js/workbench.js');
+  assert.match(workbench, /fixedWorkspaces\[id\].*fixedWorkspaces\[id\] !== type/);
+  assert.match(workbench, /options\.selectorWorkspace \|\| selected/);
+  assert.match(workbench, /options\.selectorFilter/);
+});
