@@ -4,6 +4,7 @@
 # person must hear goes through ronin_say, which the caller may redirect.
 
 ronin_say() { printf '%s\n' "$*"; }
+ronin_refuse() { printf '%s\n' "$*" >&2; ronin_say "$*"; }
 
 # Every tmux command goes through this. $TMUX outranks TMUX_TMPDIR in tmux's own client, so
 # from inside a tile a rig that set a private TMUX_TMPDIR still reached the live server and
@@ -36,7 +37,7 @@ ronin_preflight_units() { # destination directory
   for kind in tmux-server ronin; do
     file="$unit_dir/$kind.service"
     if ! ronin_unit_owned "$file" "$kind"; then
-      printf 'ERROR: %s already exists and is not a recognized Ronin unit; nothing was overwritten.\n' "$file" >&2
+      ronin_refuse "ERROR: $file already exists and is not a recognized Ronin unit; nothing was overwritten."
       return 1
     fi
   done
@@ -62,7 +63,7 @@ ronin_tmux_probe() {
   rm -f "$probe_err"
   case "$probe_rc:$probe_text" in
     1:*'No such file or directory)'|1:'no server running on '*) return 1 ;;
-    *) printf 'ERROR: could not determine whether tmux is running: %s\n' "${probe_text:-exit $probe_rc}" >&2; return 2 ;;
+    *) ronin_refuse "ERROR: could not determine whether tmux is running: ${probe_text:-exit $probe_rc}"; return 2 ;;
   esac
 }
 
@@ -81,7 +82,7 @@ ronin_adopt_tmux() { # state root
   prior=$(ronin_tmux show-options -s -v exit-empty 2>/dev/null | tr -d '\r\n')
   server_version=$(ronin_tmux display-message -p '#{version}' 2>/dev/null | tr -d '\r\n')
   case "$pid:$prior" in [0-9]*:on|[0-9]*:off) ;; *)
-    printf 'ERROR: live tmux server did not report a usable pid and exit-empty value.\n' >&2; return 2 ;;
+    ronin_refuse 'ERROR: live tmux server did not report a usable pid and exit-empty value.'; return 2 ;;
   esac
 
   lease_dir="$state_root/machine"
@@ -93,7 +94,7 @@ ronin_adopt_tmux() { # state root
     if [ "$old_pid" != "$pid" ] || [ "$old_start" != "$start" ] || [ "$old_socket" != "$socket" ]; then
       if ronin_pid_alive "$old_pid" "$old_start"; then
         # The recorded server still runs but is not the one on this socket: unknown, unchanged.
-        printf 'ERROR: the tmux server recorded in %s (pid %s) is still running but is not the server on %s; leaving both alone. Review the lease before rerunning.\n' "$lease" "$old_pid" "$socket" >&2
+        ronin_refuse "ERROR: the tmux server recorded in $lease (pid $old_pid) is still running but is not the server on $socket; leaving both alone. Review the lease before rerunning."
         return 2
       fi
       # The adopted server is gone (a reboot, most often) and its setting died with it: the
@@ -149,10 +150,17 @@ ronin_preflight_port() { # repo, node
   if command -v systemctl >/dev/null 2>&1 && systemctl --user is-active --quiet ronin.service 2>/dev/null; then
     return 0 # the runtime handler is authoritative during a controlled upgrade restart
   fi
-  "$node" -e '
+  port_error=""
+  if port_error=$("$node" -e '
     const fs=require("fs"),net=require("net"); let p=3006,b=process.env.RONIN_PREFLIGHT_BIND||"127.0.0.1";
     try { for(const raw of fs.readFileSync(process.argv[1],"utf8").split(/\r?\n/)){ const m=raw.match(/^\s*(PORT|BIND)\s*=\s*(.*?)\s*$/); if(!m)continue; let v=m[2]; const q=v.charCodeAt(0); if((q===34||q===39)&&v.charCodeAt(v.length-1)===q)v=v.slice(1,-1); if(m[1]==="PORT")p=Number(v); else if(v)b=v; } } catch{}
     if(!Number.isInteger(p)||p<1||p>65535){console.error(`PORT=${p} is invalid — set a port from 1 to 65535 in .env.`);process.exit(78)}
     const s=net.createServer(); s.once("error",e=>{if(e.code==="EADDRINUSE"){console.error(`${b}:${p} is already in use — set PORT or BIND in .env before installing Ronin.`);process.exit(78)} throw e}); s.listen(p,b,()=>s.close());
-  ' "$repo/.env"
+  ' "$repo/.env" 2>&1); then
+    return 0
+  else
+    port_rc=$?
+    [ -z "$port_error" ] || ronin_refuse "$port_error"
+    return "$port_rc"
+  fi
 }
