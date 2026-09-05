@@ -4,9 +4,9 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
-import { mountProviderAttachment, providerFromRuntime, providerOffers } from './setup-provider-state.js';
+import { SETUP_REQUIREMENT_TARGETS, mountProviderAttachment, providerFromRuntime, providerOffers, setupRequirementClass } from './setup-provider-state.js';
 
-export { mountProviderAttachment, providerFromRuntime, providerOffers } from './setup-provider-state.js';
+export { SETUP_REQUIREMENT_TARGETS, mountProviderAttachment, providerFromRuntime, providerOffers, setupRequirementClass, setupRequirementPresentation } from './setup-provider-state.js';
 
 export const SETUP_SURFACE_TYPES = Object.freeze({
   register: 'setup.register', providers: 'setup.providers', roots: 'setup.roots',
@@ -286,19 +286,24 @@ function createTemplatesSetupSurface(context) {
 }
 
 export function setupSurfaceDefinitions() {
-  const definition = (type, label, create) => ({ type, header: 'surface', label: () => label, summary: () => summaries.get(type), create: (context) => create(context) });
+  const definition = (type, label, create, targetKey = '') => ({
+    type, header: 'surface', label: () => label, summary: () => summaries.get(type), create: (context) => create(context),
+    ...(targetKey ? { targetKey, targetClass: setupRequirementClass(targetKey) } : {}),
+  });
   return [
     definition(SETUP_SURFACE_TYPES.register, t('setup_surface.register', 'Register'), createRegisterSurface),
     {
       type: SETUP_SURFACE_TYPES.providers,
       header: 'surface',
       label: () => t('setup_surface.provider', 'Model provider'),
+      targetKey: SETUP_REQUIREMENT_TARGETS.providers,
+      targetClass: setupRequirementClass(SETUP_REQUIREMENT_TARGETS.providers),
       discover: (_tenant, environment) => providerOffers(environment?.setupRuntime),
       create: (context) => createProviderSurface(context),
     },
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace folders'), createRootsSurface),
-    definition(SETUP_SURFACE_TYPES.services, t('settei.ronin_services', 'Ronin Services'), createServicesSurface),
-    definition(SETUP_SURFACE_TYPES.gbrain, t('pane.gbrain', 'gbrain'), createGbrainSurface),
+    definition(SETUP_SURFACE_TYPES.services, t('settei.ronin_services', 'Ronin Services'), createServicesSurface, SETUP_REQUIREMENT_TARGETS.services),
+    definition(SETUP_SURFACE_TYPES.gbrain, t('pane.gbrain', 'gbrain'), createGbrainSurface, SETUP_REQUIREMENT_TARGETS.gbrain),
     definition(SETUP_SURFACE_TYPES.templates, t('league.templates', 'Templates'), createTemplatesSetupSurface),
   ];
 }
