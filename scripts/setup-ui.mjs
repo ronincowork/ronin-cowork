@@ -57,13 +57,29 @@ async function runtimeBand(browser, count) {
 }
 
 async function setupPass(browser, options) {
-  const label = `${options.phone ? 'phone' : 'desktop'} ${options.theme} ${options.reducedMotion}`;
+  const label = `${options.phone ? 'phone' : 'desktop'} ${options.theme} ${options.reducedMotion} ${options.providerCount ?? 2}-providers${options.ready ? '-ready' : '-blocked'}`;
   const ctx = await context(browser, options);
   const page = await ctx.newPage();
+  const providerRows = [
+    { id: 'anthropic', label: 'Claude', state: options.ready ? 'activated' : 'installable', installable: !options.ready, installed: options.ready, activated: !!options.ready },
+    { id: 'openai', label: 'Codex', state: 'installed', installed: true, activated: false },
+  ].slice(0, options.providerCount ?? 2);
   const errors = [];
   const failed = [];
   page.on('pageerror', (error) => errors.push(String(error)));
   page.on('requestfailed', (request) => failed.push(`${request.url()} ${request.failure()?.errorText || ''}`));
+  await page.route('**/api/setup/runtime', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      activated_count: options.ready ? 1 : 0,
+      activated_band: options.ready ? 'one' : 'zero',
+      providers: providerRows,
+      roots: [],
+      gbrain: { installed: false, active: false },
+      services: { installed: false, active: false },
+    }),
+  }));
   await page.goto(`${URL_.replace(/#.*$/, '')}#/setup`, { waitUntil: 'networkidle' });
   await page.waitForSelector('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-layout');
   const state = await page.evaluate(() => {
@@ -76,21 +92,81 @@ async function setupPass(browser, options) {
         id: node.dataset.workspace,
         surface: node.firstElementChild?.dataset.workbenchSurface || '',
       })),
+      columns: [...(active?.querySelectorAll('.wk-workbench-layout > [data-surface]:not([hidden])') || [])].map((node) => node.getAttribute('data-surface')),
       selectors: [...(active?.querySelectorAll('.wk-workbench-selector-cards .wk-card-heading') || [])].map((node) => node.textContent?.trim()),
+      providerCards: [...(active?.querySelectorAll('.wk-workbench-selector-cards [data-workbench-offer-resource]') || [])].map((node) => ({
+        key: node.getAttribute('data-workbench-offer-resource'),
+        label: node.querySelector('.wk-card-heading')?.textContent?.trim(),
+      })),
       presets: active?.querySelectorAll('.sp-slot').length || 0,
+      feedback: [...(document.querySelectorAll('button, a') || [])].some((node) => node.textContent?.trim() === 'Feedback' && node.getClientRects().length > 0),
+      providerGroup: active?.querySelector('[data-setup-requirement-target="setup.providers"]')?.matches('.wk-selector-group') === true,
+      stoneBoxes: [...(active?.querySelectorAll('.sp-slot') || [])].map((node) => {
+        const box = node.getBoundingClientRect();
+        return { width: box.width, height: box.height, top: box.top };
+      }),
+      launch: (() => {
+        const node = [...(active?.querySelectorAll('button') || [])].find((item) => item.textContent?.trim() === 'Launch');
+        if (!node) return null;
+        const style = getComputedStyle(node);
+        const kaki = getComputedStyle(document.documentElement).getPropertyValue('--kaki').trim();
+        return { background: style.backgroundColor, border: style.borderColor, kaki, mark: !!node.querySelector('.wk-launch-mark') };
+      })(),
       legacyPhone: !!document.getElementById('phone'),
       overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) > innerWidth + 1,
     };
   });
   if (state.profile === 'setup' && state.title === 'Ronin Setup' && state.island === 'Ronin Setup') ok(`${label}: title, island, and fourth-workbench profile agree`);
   else bad(`${label}: identity mismatch ${JSON.stringify(state)}`);
-  if (state.workspaces.length === 2 && state.workspaces[0]?.surface === 'setup.presets' && state.workspaces[1]?.surface === 'setup.register') ok(`${label}: Presets is pinned in WS1 and Register opens in WS2`);
+  if (state.workspaces.length === 2 && state.workspaces[0]?.surface === 'setup.register' && state.workspaces[1]?.surface === 'setup.presets') ok(`${label}: Register opens in WS1 and Presets is pinned in WS2`);
   else bad(`${label}: initial seating mismatch ${JSON.stringify(state.workspaces)}`);
-  const expected = ['Register', 'Model providers', 'Workspace folders', 'Ronin Services', 'gbrain', 'Templates'];
+  if (state.columns[0] === 'selector') ok(`${label}: selector is the left column`);
+  else bad(`${label}: selector is not left ${JSON.stringify(state.columns)}`);
+  const expected = ['Register', ...providerRows.map((row) => row.label), 'Workspace folders', 'Ronin Services', 'gbrain', 'Templates'];
   if (JSON.stringify(state.selectors) === JSON.stringify(expected) && state.presets === 7) ok(`${label}: selector order and seven presets are complete`);
   else bad(`${label}: selector/preset mismatch ${JSON.stringify({ selectors: state.selectors, presets: state.presets })}`);
+  const expectedProviderCards = providerRows.map((row) => ({ key: row.id, label: row.label }));
+  if (JSON.stringify(state.providerCards) === JSON.stringify(expectedProviderCards)) ok(`${label}: ${providerRows.length} Runtime provider rows render exactly ${providerRows.length} individual cards`);
+  else bad(`${label}: Runtime provider rows/cards mismatch ${JSON.stringify({ expectedProviderCards, actual: state.providerCards })}`);
+  if (providerRows.length === 0 || state.providerGroup) ok(`${label}: provider group is metadata only when provider cards exist`);
+  else bad(`${label}: provider group metadata is absent or selectable`);
+  const stoneWidths = state.stoneBoxes.map((box) => Math.round(box.width));
+  const equalStones = new Set(stoneWidths).size === 1;
+  const staggered = state.stoneBoxes.length > 2 && new Set(state.stoneBoxes.map((box) => Math.round(box.top))).size > 1;
+  if (equalStones && staggered) ok(`${label}: seven preset stones are equal and staggered`);
+  else bad(`${label}: preset stone geometry mismatch ${JSON.stringify(state.stoneBoxes)}`);
+  if (!options.ready || (state.launch?.mark && state.launch.border !== state.launch.background)) ok(`${label}: Launch is gated or uses its mark and a neutral background with distinct outline`);
+  else bad(`${label}: Launch treatment mismatch ${JSON.stringify(state.launch)}`);
+  if (!state.feedback) ok(`${label}: Setup header has no Feedback control`);
+  else bad(`${label}: Setup header still exposes Feedback`);
   if (!state.legacyPhone && !state.overflow) ok(`${label}: responsive workbench fits without the retired phone shell`);
   else bad(`${label}: responsive layout mismatch ${JSON.stringify({ legacyPhone: state.legacyPhone, overflow: state.overflow })}`);
+
+  if (providerRows.length && !options.ready) {
+    const stone = page.locator('.sp-slot').filter({ hasText: 'Bare Metal' }).first();
+    const targets = page.locator('[data-setup-requirement-target]');
+    await stone.hover();
+    const hover = await targets.evaluateAll((nodes) => nodes.filter((node) => node.classList.contains('is-requirement-marked')).map((node) => node.getAttribute('data-setup-requirement-target')));
+    if (JSON.stringify(hover) === JSON.stringify(['setup.providers', 'setup.provider:anthropic'])) ok(`${label}: blocked hover marks the exact provider heading and first activatable card persimmon`);
+    else bad(`${label}: blocked hover target mismatch ${JSON.stringify(hover)}`);
+    await stone.focus();
+    const focus = await targets.evaluateAll((nodes) => nodes.filter((node) => node.classList.contains('is-requirement-marked')).map((node) => node.getAttribute('data-setup-requirement-target')));
+    if (JSON.stringify(focus) === JSON.stringify(hover)) ok(`${label}: keyboard focus matches pointer hover`);
+    else bad(`${label}: keyboard target mismatch ${JSON.stringify(focus)}`);
+    await stone.click();
+    const selected = await targets.evaluateAll((nodes) => nodes.filter((node) => node.classList.contains('is-requirement-marked')).map((node) => ({
+      key: node.getAttribute('data-setup-requirement-target'),
+      flashing: node.classList.contains('is-requirement-flashing'),
+      iterations: getComputedStyle(node).animationIterationCount,
+      animation: getComputedStyle(node).animationName,
+    })));
+    const persistent = selected.map((entry) => entry.key);
+    const motionOK = options.reducedMotion === 'reduce'
+      ? selected.every((entry) => entry.animation === 'none')
+      : selected.every((entry) => entry.flashing && entry.iterations === '2');
+    if (JSON.stringify(persistent) === JSON.stringify(hover) && motionOK) ok(`${label}: blocked selection persists and has the ruled two-flash/reduced-motion presentation`);
+    else bad(`${label}: blocked selection presentation mismatch ${JSON.stringify(selected)}`);
+  }
 
   const before = await page.evaluate(() => performance.timeOrigin);
   await page.locator('.ui-bar-place-toggle').click();
@@ -116,7 +192,9 @@ async function setupPass(browser, options) {
 const browser = await playwright.chromium.launch({ headless: true });
 try {
   for (const count of [0, 1, 2]) await runtimeBand(browser, count);
-  await setupPass(browser, { phone: false, theme: 'light', reducedMotion: 'no-preference' });
+  await setupPass(browser, { phone: false, theme: 'light', reducedMotion: 'no-preference', providerCount: 0 });
+  await setupPass(browser, { phone: false, theme: 'light', reducedMotion: 'no-preference', providerCount: 2 });
+  await setupPass(browser, { phone: false, theme: 'light', reducedMotion: 'no-preference', providerCount: 1, ready: true });
   await setupPass(browser, { phone: false, theme: 'dark', reducedMotion: 'reduce' });
   await setupPass(browser, { phone: true, theme: 'light', reducedMotion: 'no-preference' });
   await setupPass(browser, { phone: true, theme: 'dark', reducedMotion: 'reduce' });
