@@ -1,0 +1,251 @@
+/* Selector-driven workspace-2 surfaces for the Ronin Setup workbench. */
+import { WorkspaceKit } from './workspace-kit.js';
+import { request } from './request.js';
+import { t } from './lexicon.js';
+import { servicesCard } from './services-card.js';
+import { buildGbrain } from './gbrain.js';
+import { buildProjectRoots } from './projectroots.js';
+
+export const SETUP_SURFACE_TYPES = Object.freeze({
+  register: 'setup.register', providers: 'setup.providers', roots: 'setup.roots',
+  services: 'setup.services', gbrain: 'setup.gbrain', templates: 'setup.templates',
+});
+
+const summaries = new Map([
+  [SETUP_SURFACE_TYPES.register, 'optional'],
+  [SETUP_SURFACE_TYPES.providers, 'not installed'],
+  [SETUP_SURFACE_TYPES.roots, '2 folders'],
+  [SETUP_SURFACE_TYPES.services, 'not active'],
+  [SETUP_SURFACE_TYPES.gbrain, 'not installed'],
+  [SETUP_SURFACE_TYPES.templates, '0 loaded'],
+]);
+const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
+const notifySummary = (type, value, workbench) => { summaries.set(type, value); workbench?.refreshSelector?.(); };
+const surface = (label, className = '') => WorkspaceKit.primitives.createSurface({ label, className: `setup-surface ${className}`.trim() });
+const action = (label, kind, onClick) => {
+  const made = WorkspaceKit.primitives.createAction({ label, kind, action: onClick });
+  return made.el ?? made;
+};
+
+/** The only furniture shared by Services, gbrain, and Templates. */
+export function setupExplainer({ usedFor, requires, use }) {
+  const details = el('details', 'setup-explainer');
+  const summary = el('summary', '', t('setup_surface.about', 'About this'));
+  const body = el('div', 'setup-explainer-body');
+  for (const [heading, copy] of [
+    [t('setup_surface.used_for', 'What this is used for'), usedFor],
+    [t('setup_surface.requires', 'What is required'), requires],
+    [t('setup_surface.how', 'How to use it'), use],
+  ]) body.append(el('h3', '', heading), el('p', '', copy));
+  details.append(summary, body);
+  return details;
+}
+
+function createRegisterSurface(context) {
+  const out = surface(t('setup_surface.register', 'Register'));
+  const body = el('div', 'setup-surface-body');
+  const notice = el('p', 'setup-notice');
+  let current = null;
+  const field = (label, control) => { const wrap = el('label', 'setup-field'); wrap.append(el('span', '', label), control); return wrap; };
+  const input = (name, type = 'text') => { const node = el('input'); node.name = name; node.type = type; return node; };
+  const email = input('email', 'email'); email.placeholder = 'you@example.com';
+  const purpose = input('purpose'); purpose.placeholder = t('setup_surface.purpose_hint', 'What would you like Ronin to help with?');
+  const kind = el('select'); kind.name = 'kind';
+  for (const [value, label] of [['', 'Choose…'], ['work', 'Work'], ['personal', 'Personal'], ['learning', 'Learning'], ['other', 'Something else']]) kind.add(new Option(label, value));
+  const userType = el('select'); userType.name = 'user_type';
+  for (const [value, label] of [['', 'Choose…'], ['individual', 'Individual'], ['team', 'Team'], ['builder', 'Builder'], ['exploring', 'Exploring']]) userType.add(new Option(label, value));
+  const own = el('textarea'); own.name = 'own_words'; own.rows = 3;
+  const identity = el('div', 'setup-registration-identity');
+  const form = el('form', 'setup-form');
+  form.append(
+    el('p', 'setup-lede', t('setup_surface.register_lede', 'Optional. Registration unlocks access to Ronin Services; local Ronin keeps working without it.')),
+    field(t('setup_surface.email', 'Email'), email), field(t('setup_surface.purpose', 'Purpose'), purpose),
+    field(t('setup_surface.kind', 'Kind'), kind), field(t('setup_surface.user_type', 'Type of user'), userType),
+    field(t('setup_surface.own_words', 'Anything else (optional)'), own),
+    el('p', 'setup-fine', t('setup_surface.consent_exact', 'Submitting sends these registration details for email confirmation. It does not activate or switch on Services and does not subscribe you to communication.')),
+    action(t('setup_surface.register_action', 'Register'), 'primary', async () => {
+      notice.textContent = t('setup_surface.saving', 'Saving…');
+      const result = await request('/api/setup/registration', { method: 'POST', json: { email: email.value, purpose: purpose.value, kind: kind.value, user_type: userType.value, own_words: own.value } });
+      notice.textContent = result.ok ? t('setup_surface.confirm_email', 'Registration saved. Confirm the email to receive Services entitlement.') : result.message;
+      if (result.ok) { current = result.data; paint(); }
+    }), notice,
+  );
+  const prefs = el('form', 'setup-form setup-preferences');
+  const checks = Object.fromEntries(['newsletter', 'release_updates', 'no_communication'].map((name) => [name, input(name, 'checkbox')]));
+  const followUps = Object.fromEntries(['product_research', 'interviews', 'support'].map((name) => [name, input(name, 'checkbox')]));
+  const prefNotice = el('p', 'setup-notice');
+  prefs.append(
+    field(t('setup_surface.newsletter', 'Newsletter'), checks.newsletter),
+    field(t('setup_surface.release_updates', 'Code and release updates'), checks.release_updates),
+    el('strong', '', t('setup_surface.follow_up', 'Allowed follow-up')),
+    field(t('setup_surface.follow_product', 'Product research'), followUps.product_research),
+    field(t('setup_surface.follow_interviews', 'Interviews'), followUps.interviews),
+    field(t('setup_surface.follow_support', 'Support'), followUps.support),
+    field(t('setup_surface.no_communication', 'No communication'), checks.no_communication),
+    action(t('setup_surface.update_preferences', 'Update preferences'), 'primary', async () => {
+      const result = await request('/api/setup/registration/communication', { method: 'PATCH', json: { newsletter: checks.newsletter.checked, release_updates: checks.release_updates.checked, no_communication: checks.no_communication.checked, follow_up: Object.entries(followUps).filter(([, box]) => box.checked).map(([name]) => name) } });
+      prefNotice.textContent = result.ok ? t('setup_surface.preferences_saved', 'Preferences updated.') : result.message;
+      if (result.ok) { current = result.data; paint(); }
+    }), prefNotice,
+  );
+  checks.no_communication.addEventListener('change', () => { if (checks.no_communication.checked) { checks.newsletter.checked = false; checks.release_updates.checked = false; for (const box of Object.values(followUps)) box.checked = false; } });
+  const paint = () => {
+    const registered = current?.status === 'registered';
+    identity.hidden = !current?.submitted_at;
+    identity.replaceChildren(el('strong', '', registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.registration_pending', 'Registration pending')),
+      el('span', '', [current?.email_masked, current?.purpose, current?.kind, current?.user_type].filter(Boolean).join(' · ')));
+    form.hidden = Boolean(current?.submitted_at);
+    prefs.hidden = !current?.submitted_at;
+    if (current?.communication) for (const key of Object.keys(checks)) checks[key].checked = current.communication[key] === true;
+    for (const [key, box] of Object.entries(followUps)) box.checked = current?.communication?.follow_up?.includes(key) === true;
+    notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
+  };
+  body.append(identity, form, prefs); out.content.append(body);
+  return { el: out.el, show: async () => { const result = await request('/api/setup/registration', { cache: 'no-store' }); current = result.ok ? result.data : null; paint(); } };
+}
+
+function createProvidersSurface(context) {
+  const out = surface(t('setup_surface.providers', 'Model providers'));
+  const body = el('div', 'setup-surface-body setup-provider-list'); out.content.append(body);
+  const paint = async () => {
+    const result = await request('/api/setup/runtime', { cache: 'no-store' });
+    body.replaceChildren();
+    if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); return; }
+    const rows = Array.isArray(result.data?.providers) ? result.data.providers : [];
+    for (const provider of rows) {
+      const row = el('section', 'setup-provider');
+      row.append(el('h3', '', provider.label || provider.id), el('p', 'setup-state', provider.state || (provider.activated ? 'activated' : provider.installed ? 'needs sign-in' : 'not installed')));
+      if (!provider.installed) {
+        if (provider.installable) row.append(el('p', 'setup-fine', provider.from || provider.install), action(t('setup_surface.install', 'Install'), 'primary', async () => {
+          const installed = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
+          if (!installed.ok) row.append(el('p', 'setup-notice bad', installed.message));
+          else await paint();
+        }));
+        else row.append(el('p', 'setup-fine', provider.blocked || t('setup_surface.manual_install', 'This provider requires a user-run install step.')));
+      } else if (!provider.activated && !provider.login_open) {
+        row.append(el('p', 'setup-fine', t('setup_surface.provider_disclosure', 'The provider may ask for credentials, an API key, a subscription, device login, or trust approval.')),
+          action(t('setup_surface.sign_in', 'Open sign-in'), 'primary', async () => { await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} }); await paint(); }));
+      } else if (provider.login_open) {
+        row.append(action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); }),
+          action(t('setup_surface.close', 'Close'), '', async () => { await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); }));
+      } else row.append(el('p', 'setup-good', t('setup_surface.activated', 'Activated')));
+      body.append(row);
+    }
+    notifySummary(SETUP_SURFACE_TYPES.providers, `${Number(result.data?.activated_count || 0)} activated`, context.workbench);
+  };
+  return { el: out.el, show: paint };
+}
+
+function createRootsSurface(context) {
+  const out = surface(t('setup_surface.roots', 'Workspace folders'));
+  const host = el('div', 'desk-pane desk-proj show'); out.content.append(host);
+  const room = buildProjectRoots(host, () => host.isConnected, () => context.tenant?.campaign || '');
+  return { el: out.el, show: () => { room.enter(); notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench); } };
+}
+
+function createServicesSurface(context) {
+  const out = surface(t('settei.ronin_services', 'Ronin Services'));
+  out.content.append(setupExplainer({
+    usedFor: t('setup_surface.services_used', 'Readable work records, voice, usage history, memory, and the Ronin Library.'),
+    requires: t('setup_surface.services_requires', 'A registered identity grants entitlement. Installation, activation, and the switch are separate states.'),
+    use: t('setup_surface.services_how', 'Register, confirm your email, install Services, then choose whether new Agents use the Services Routine.'),
+  }));
+  const body = el('div', 'setup-surface-body'); out.content.append(body);
+  let card = null;
+  const onChange = async (activation) => {
+    const installed = await request('/api/installed', { cache: 'no-store' });
+    const facts = installed.ok ? installed.data?.services : null;
+    notifySummary(SETUP_SURFACE_TYPES.services, facts?.switched_on ? 'active' : facts?.activated ? 'activated' : facts?.installed ? 'installed' : activation?.entitled ? 'entitled' : 'not active', context.workbench);
+  };
+  const show = async () => {
+    const registration = await request('/api/setup/registration', { cache: 'no-store' });
+    if (!registration.ok || registration.data?.status === 'optional') {
+      card?.stop?.(); card = null;
+      body.replaceChildren(el('p', 'setup-notice', t('setup_surface.register_first', 'Register first to request Services entitlement. Registration remains optional for local Ronin.')));
+      notifySummary(SETUP_SURFACE_TYPES.services, 'registration optional', context.workbench);
+      return;
+    }
+    if (!card) { body.replaceChildren(); card = servicesCard(body, onChange); }
+    else await card.reload?.();
+  };
+  return { el: out.el, show, destroy: () => card?.stop?.() };
+}
+
+function createGbrainSurface(context) {
+  const out = surface(t('pane.gbrain', 'gbrain'));
+  out.content.append(setupExplainer({
+    usedFor: t('setup_surface.gbrain_used', 'Shared, searchable knowledge for connected Agents.'),
+    requires: t('setup_surface.gbrain_requires', 'gbrain plus its local embedding model; no separate chat-model key is required by Ronin.'),
+    use: t('setup_surface.gbrain_how', 'Load gbrain, check its local process and search state, then enable its Routine for the Agents that should use it.'),
+  }));
+  const host = el('div', 'setup-surface-body'); out.content.append(host);
+  const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt));
+  return { el: out.el, show: () => { room.enter?.(); notifySummary(SETUP_SURFACE_TYPES.gbrain, 'state shown', context.workbench); } };
+}
+
+function createTemplatesSetupSurface(context) {
+  const out = surface(t('league.templates', 'Templates'));
+  out.content.append(setupExplainer({
+    usedFor: t('setup_surface.templates_used', 'Load a ready-made Agent or Team, or keep and share one of your own.'),
+    requires: t('setup_surface.templates_requires', 'Loaded templates and making your own work locally. Ronin Library and Share Yours require Services entitlement.'),
+    use: t('setup_surface.templates_how', 'Choose one of the four modes below; nothing is downloaded or shared until you press the corresponding action.'),
+  }));
+  const body = el('div', 'setup-surface-body'); const nav = el('div', 'setup-template-modes'); const room = el('div', 'setup-template-room');
+  out.content.append(body); body.append(nav, room);
+  let mode = 'loaded'; let entitled = false; let teams = []; let agents = [];
+  const modes = [['loaded', 'Loaded Templates'], ['make', 'Make Your Own Template'], ['library', 'Ronin Library'], ['share', 'Share Yours']];
+  const paint = async () => {
+    nav.replaceChildren(); room.replaceChildren();
+    for (const [key, label] of modes) {
+      const button = el('button', 'setup-mode', label); button.type = 'button'; button.setAttribute('aria-pressed', String(mode === key));
+      button.addEventListener('click', () => { mode = key; void paint(); }); nav.append(button);
+    }
+    if (mode === 'loaded') {
+      room.append(el('h3', '', t('setup_surface.loaded', 'Loaded Templates')));
+      const rows = [...teams.map((x) => ({ ...x, shape: 'Team' })), ...agents.map((x) => ({ ...x, shape: 'Agent' }))];
+      if (!rows.length) room.append(el('p', 'setup-fine', t('setup_surface.none_loaded', 'No templates are loaded.')));
+      for (const row of rows) room.append(el('button', 'setup-template-card', `${row.label || row.name} · ${row.shape}`));
+    } else if (mode === 'make') {
+      room.append(el('h3', '', t('setup_surface.make', 'Make Your Own Template')), el('p', 'setup-fine', t('setup_surface.make_help', 'Start with the ordinary Agent or Team form, then save your choices as a template.')),
+        action(t('setup_surface.make_agent', 'Make Agent template'), 'primary', () => context.environment?.openTemplateMaker?.('agent')),
+        action(t('setup_surface.make_team', 'Make Team template'), '', () => context.environment?.openTemplateMaker?.('team')));
+    } else if (!entitled) {
+      room.append(el('h3', '', mode === 'library' ? 'Ronin Library' : 'Share Yours'), el('p', 'setup-notice warning', t('setup_surface.services_gate', 'Registration with Services entitlement is required for this mode. Local templates remain available.')));
+    } else if (mode === 'library') {
+      room.append(el('h3', '', 'Ronin Library'));
+      const result = await request('/api/library', { cache: 'no-store' });
+      if (!result.ok) room.append(el('p', 'setup-notice bad', result.message));
+      else for (const row of result.data?.bundles || []) room.append(el('button', 'setup-template-card', row.label || row.name));
+    } else {
+      room.append(el('h3', '', 'Share Yours'), el('p', 'setup-fine', t('setup_surface.share_help', 'Choose a loaded template and review the complete bundle before sharing it.')));
+      for (const row of [...teams, ...agents]) room.append(el('button', 'setup-template-card', row.label || row.name));
+    }
+  };
+  const show = async () => {
+    const [teamResult, agentResult, registration] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents'), request('/api/setup/registration')]);
+    teams = teamResult.ok && Array.isArray(teamResult.data) ? teamResult.data : [];
+    agents = agentResult.ok && Array.isArray(agentResult.data) ? agentResult.data : [];
+    entitled = registration.ok && registration.data?.services_entitled === true;
+    notifySummary(SETUP_SURFACE_TYPES.templates, `${teams.length + agents.length} loaded`, context.workbench);
+    await paint();
+  };
+  return { el: out.el, show };
+}
+
+export function setupSurfaceDefinitions() {
+  const definition = (type, label, create) => ({ type, header: 'surface', label: () => label, summary: () => summaries.get(type), create: (context) => create(context) });
+  return [
+    definition(SETUP_SURFACE_TYPES.register, t('setup_surface.register', 'Register'), createRegisterSurface),
+    definition(SETUP_SURFACE_TYPES.providers, t('setup_surface.providers', 'Model providers'), createProvidersSurface),
+    definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace folders'), createRootsSurface),
+    definition(SETUP_SURFACE_TYPES.services, t('settei.ronin_services', 'Ronin Services'), createServicesSurface),
+    definition(SETUP_SURFACE_TYPES.gbrain, t('pane.gbrain', 'gbrain'), createGbrainSurface),
+    definition(SETUP_SURFACE_TYPES.templates, t('league.templates', 'Templates'), createTemplatesSetupSurface),
+  ];
+}
+
+export function registerSetupSurfaces() {
+  const library = WorkspaceKit.workbench.library;
+  for (const definition of setupSurfaceDefinitions()) if (!library.has(definition.type)) library.register(definition);
+  return SETUP_SURFACE_TYPES;
+}
