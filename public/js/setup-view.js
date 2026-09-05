@@ -91,6 +91,9 @@ export function createSetupView() {
         const runtime = await request('/api/setup/runtime', { cache: 'no-store' });
         environment.setupRuntime = runtime.ok ? runtime.data : { providers: [] };
       }
+      // Provider cards are catalog discovery, not a client fallback list. Publish the
+      // shared runtime truth before restoring a keyed provider resource into WS1.
+      bench.refreshSelector();
       const stored = context.viewState('setup') || {};
       bench.enter({ ...stored, count: 2 });
       bench.setCount(2);
