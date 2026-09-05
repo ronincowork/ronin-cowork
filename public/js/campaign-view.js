@@ -138,10 +138,10 @@ export function createCampaignView() {
   const DEFAULT_VIEW = Object.freeze({ workspace1: TYPES.machine, workspace2: TYPES.templates, workspace3: TYPES.defaults, workspace4: TYPES.roots });
   const blank = (id) => { const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' }); surface.content.append(elem('p', 'cv-blank-word', t('team.workspace_blank', 'Workspace'))); return surface.el; };
   const save = () => ctx?.patchViewState('campaign', bench.snapshot());
-  bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign', 'Campaign'), title: () => selected()?.title || t('campaign', 'Campaign'), shapeControl: document.getElementById('shapecycle'), onStateChange: save, onPlacement: save });
+  bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign.settings_title', 'Ronin Settings'), title: () => t('campaign.settings_title', 'Ronin Settings'), shapeControl: document.getElementById('shapecycle'), onStateChange: save, onPlacement: save });
   return {
     el: bench.host, glyph: '⛩', arrangement: bench.arrangement,
-    title: () => selected()?.title || t('campaign', 'Campaign'),
+    title: () => t('campaign.settings_title', 'Ronin Settings'),
     placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {

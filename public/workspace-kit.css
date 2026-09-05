@@ -9,6 +9,8 @@
 
   .wk-surface-header .wk-action { min-height: 0; padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
   .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
+  .wk-action[data-launch='true'] { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); }
+  .wk-launch-mark { width: 1.25em; height: 1.25em; flex: 0 0 auto; }
 
   .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
 
