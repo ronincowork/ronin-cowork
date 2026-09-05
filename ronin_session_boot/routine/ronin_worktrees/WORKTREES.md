@@ -45,11 +45,15 @@ facts on request.
 
 ### Finish the assignment
 
-Closing a desk and ending a session are separate acts. At final handoff, hand in the
-assignment and then close every finished desk. Do not retain an idle, level desk merely
-because the session may receive later work: the session remains alive at the project root,
-and the next assignment gets a fresh desk from current local `dev`. Hand-in itself does
-not close a desk.
+Closing a desk and ending a session are separate acts. A desk is finished when its
+hand-in has been promoted, not when it has been accepted. At final handoff, hand in the
+assignment and keep the desk until promotion tells you the hand-in is on local `dev`;
+then close it. Promotion tells you itself, in your tile and on the team wipeboard; you
+do not ask and you do not poll. While a hand-in waits on the review line, a correction
+the lead asks for is a commit and a second hand-in on the same desk. Do not retain a
+promoted, level desk merely because the session may receive later work: the session
+remains alive at the project root, and the next assignment gets a fresh desk from current
+local `dev`. Hand-in itself does not close a desk.
 
 The house owns cleanup of candidates, locks, staging, temporary refs, and other managed
 scratch state. It never consumes a live desk during hand-in, and cleanup is not an Agent

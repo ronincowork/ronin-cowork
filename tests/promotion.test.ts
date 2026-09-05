@@ -111,6 +111,25 @@ test('happy path: candidate = dev + line, CAS advance, mounted dev refreshed', a
   assert.equal(again.receipt, null, 'nothing to promote writes no receipt');
 });
 
+test('a complete promotion tells each contributing session once and posts the moved line once', async () => {
+  const cw = await fixture('cowork', 2);
+  const told: Array<[string, string]> = [];
+  const notices: string[] = [];
+  const fx = fakes({
+    handInsFor: async () => ({ ids: ['hi_1', 'hi_2'], sessions: ['comp_fable'] }),
+    tell: async (session, text) => { told.push([session, text]); return 'queued'; },
+    notify: async (_d, _t, text) => { notices.push(text); return 'posted'; },
+  });
+  const out = await P.promoteTeam({ team: 'comp', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fx, ...quiet });
+  assert.equal(out.receipt?.state, 'complete');
+  assert.equal(notices.length, 1, 'one board post');
+  assert.match(notices[0]!, /team\/comp\/dev promoted to dev@[0-9a-f]{7}/);
+  assert.equal(told.length, 1, 'one tile notice per contributing session');
+  assert.equal(told[0]![0], 'comp_fable');
+  assert.match(told[0]![1], /your hand-in is on dev/);
+  assert.match(told[0]![1], /tejun-desk close/);
+});
+
 test('HTTP promotion replies with the restarting receipt before post-restart health completes it', async () => {
   const cw = await fixture('http-restart', 1);
   let handedOff = '';

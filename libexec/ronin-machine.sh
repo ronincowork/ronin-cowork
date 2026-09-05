@@ -52,8 +52,7 @@ machine_swap_offerable() {
 # The swapfile line itself, in ONE place. Both the offer and the remedy quote this, so
 # they cannot drift into two slightly different commands.
 machine_swap_action() {
-  printf '%s' 'fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
-  echo "/swapfile none swap sw 0 0" >> /etc/fstab'
+  printf '%s' 'fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo "/swapfile none swap sw 0 0" >> /etc/fstab'
 }
 
 # Does the user manager stay up after logout? Without it every --user service stops.

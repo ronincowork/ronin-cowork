@@ -45,12 +45,61 @@ export const cascadeProvider = (rows, provider, previous = '') => rows.map((row)
   provider: !row.provider || row.provider === previous ? provider : row.provider,
 }));
 export const presetActions = (handle) => ['user_message', 'customize', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
+export function firstActivatableProvider(runtime = {}) {
+  return (Array.isArray(runtime.providers) ? runtime.providers : []).find((provider) => {
+    if (!provider?.id || provider.activated === true || provider.blocked) return false;
+    return provider.installed === true || provider.installable === true || provider.login_open === true
+      || ['installable', 'installed', 'login_open'].includes(provider.state);
+  }) || null;
+}
+export function presetRequirementTargets(handle, runtime = {}) {
+  const targets = [];
+  if (Number(runtime.activated_count || 0) < 1) {
+    targets.push('setup.providers');
+    const provider = firstActivatableProvider(runtime);
+    if (provider) targets.push(`setup.provider:${provider.id}`);
+  }
+  if (handle === 'personal_assistant' && runtime.gbrain?.active !== true) targets.push('setup.gbrain');
+  if (handle === 'morning_brief' && runtime.services?.active !== true) targets.push('setup.services');
+  return targets;
+}
+export function createPresetRequirementState(setter = () => {}) {
+  let state = { hovered: [], open: [], flash: [], flashCycle: 0 };
+  const keys = (targets) => [...new Set((Array.isArray(targets) ? targets : []).filter((target) => typeof target === 'string' && target))];
+  const publish = (patch = {}) => {
+    state = { ...state, ...patch };
+    const next = {
+      hovered: [...state.hovered], open: [...state.open], flash: [...state.flash],
+      flashCycle: state.flashCycle,
+    };
+    setter(next);
+    return next;
+  };
+  return {
+    preview: (targets) => publish({ hovered: keys(targets) }),
+    clearPreview: () => publish({ hovered: [] }),
+    select: (targets) => {
+      const selected = keys(targets);
+      return publish({
+        hovered: [], open: selected, flash: selected,
+        flashCycle: selected.length ? state.flashCycle + 1 : state.flashCycle,
+      });
+    },
+    syncOpen: (targets) => {
+      const opened = keys(targets);
+      return publish({ open: opened, ...(opened.length ? {} : { flash: [] }) });
+    },
+    snapshot: () => ({ ...state, hovered: [...state.hovered], open: [...state.open], flash: [...state.flash] }),
+  };
+}
 export function presetReadiness(handle, runtime = {}) {
   const provider = Number(runtime.activated_count || 0) > 0;
-  if (!provider) return { ready: false, reason: 'Activate one model provider before launching a preset.', surface: 'setup.providers', detail: { provider: runtime.providers?.find((row) => !row.activated)?.id || runtime.providers?.[0]?.id || '' } };
-  if (handle === 'personal_assistant' && runtime.gbrain?.active !== true) return { ready: false, reason: 'Personal Assistant requires gbrain to be active.', surface: 'setup.gbrain', detail: {} };
-  if (handle === 'morning_brief' && runtime.services?.active !== true) return { ready: false, reason: 'Grokbot Morning Briefing requires Ronin Services to be active.', surface: 'setup.services', detail: {} };
-  return { ready: true, reason: '', surface: '', detail: {} };
+  const targets = presetRequirementTargets(handle, runtime);
+  const activatable = firstActivatableProvider(runtime);
+  if (!provider) return { ready: false, reason: 'Activate one model provider before launching a preset.', surface: 'setup.providers', detail: { provider: activatable?.id || '' }, targets };
+  if (handle === 'personal_assistant' && runtime.gbrain?.active !== true) return { ready: false, reason: 'Personal Assistant requires gbrain to be active.', surface: 'setup.gbrain', detail: {}, targets };
+  if (handle === 'morning_brief' && runtime.services?.active !== true) return { ready: false, reason: 'Grokbot Morning Briefing requires Ronin Services to be active.', surface: 'setup.services', detail: {}, targets };
+  return { ready: true, reason: '', surface: '', detail: {}, targets: [] };
 }
 export function seatingPlan(handle, receipt = {}) {
   const fixed = CORE_PRESET_TREATMENTS[handle];
@@ -165,6 +214,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   let templates = [], runtime = { providers: [], roots: [] }, selected = 0;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
   const controls = new Map();
+  const requirementState = createPresetRequirementState((next) => environment.setSetupRequirementState?.(next));
 
   const available = () => templates.map((row) => ({ ...row, shelf: row.shelf || (row.agents ? 'teams' : 'agents'), handle: row.name }));
   const save = () => saveSlots(environment, slots.map(({ handle, shelf }) => ({ handle, shelf })));
@@ -183,7 +233,16 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       button.dataset.gated = String(!gate.ready);
       if (!gate.ready) button.title = gate.reason;
       button.append(el('i', '', slot.art || '▤'), el('b', '', slot.label || slot.handle), el('small', '', slot.destination || ''));
-      button.addEventListener('click', () => { selected = index; paintGrid(); paintDetail(); }); grid.append(button);
+      if (!gate.ready) {
+        button.addEventListener('mouseenter', () => requirementState.preview(gate.targets));
+        button.addEventListener('mouseleave', () => requirementState.clearPreview());
+        button.addEventListener('focus', () => requirementState.preview(gate.targets));
+        button.addEventListener('blur', () => requirementState.clearPreview());
+      }
+      button.addEventListener('click', () => {
+        selected = index; requirementState.select(gate.ready ? [] : gate.targets);
+        paintGrid(); paintDetail();
+      }); grid.append(button);
     });
   };
 
@@ -198,6 +257,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     const restore = el('button', 'wk-action', 'Restore house default'); restore.type = 'button'; restore.addEventListener('click', () => { slots[selected] = { ...HOUSE_PRESETS[selected] }; save(); paintGrid(); paintDetail(); });
     change.append(picker, restore); heading.append(change); detail.append(heading);
     const gate = presetReadiness(slot.handle, runtime);
+    requirementState.syncOpen(gate.ready ? [] : gate.targets);
     if (!gate.ready) {
       const blocked = el('div', 'sp-gate');
       blocked.append(el('p', '', gate.reason));
