@@ -7,6 +7,8 @@ import { rootDir } from './resources.js';
 import { execFile as run } from './spawn-broker.js';
 import { collectBirthLines } from './sockets.js';
 import { createSession, killSessionTree, sessionExists, setLaunchStamp, setTags } from './tmux.js';
+import { addJob, isValidTeam, listJobs, setJob, type Job } from './jikan.js';
+import type { InstalledAnswer } from './routes/installed-api.js';
 
 export const PROVIDER_SETUP_TEAM = 'provider_setup';
 export const INSTALLED_ROOTS = [
@@ -29,7 +31,7 @@ export interface SetupProviderState {
   login_open: boolean;
   activated: boolean;
   activated_at: string | null;
-  session: string;
+  attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
   state: 'absent' | 'installable' | 'installed' | 'login_open' | 'activated';
 }
 
@@ -38,6 +40,8 @@ export interface SetupRuntimeAnswer {
   activated_count: number;
   activated_band: 'zero' | 'one' | 'two_plus';
   roots: Array<{ name: string; label: string; dir: string }>;
+  gbrain: { installed: boolean; active: boolean };
+  services: { installed: boolean; activated: boolean; switched_on: boolean; active: boolean };
 }
 
 export interface ProviderSessionOps {
@@ -74,6 +78,7 @@ export async function setupRuntimeAnswer(
   section: SetupSection,
   ops: Pick<ProviderSessionOps, 'exists'> = defaultSessionOps,
   availability?: Availability,
+  installed?: InstalledAnswer,
 ): Promise<SetupRuntimeAnswer> {
   const available = availability ?? await listAgentAvailability();
   const providers = await Promise.all(available.map(async (agent): Promise<SetupProviderState> => {
@@ -93,7 +98,7 @@ export async function setupRuntimeAnswer(
       login_open: loginOpen,
       activated,
       activated_at: completed,
-      session,
+      attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true } : null,
       state: activated ? 'activated' : loginOpen ? 'login_open' : agent.installed ? 'installed' : agent.get ? 'installable' : 'absent',
     };
   }));
@@ -104,6 +109,16 @@ export async function setupRuntimeAnswer(
     activated_count,
     activated_band: activated_count === 0 ? 'zero' : activated_count === 1 ? 'one' : 'two_plus',
     roots: roots.map(({ name, label, dir }) => ({ name, label, dir })),
+    gbrain: {
+      installed: installed?.services.parts.includes('gbrain') ?? false,
+      active: installed?.services.loaded.includes('gbrain') ?? false,
+    },
+    services: {
+      installed: installed?.services.installed ?? false,
+      activated: installed?.services.activated ?? false,
+      switched_on: installed?.services.switched_on ?? false,
+      active: Boolean(installed?.services.installed && installed.services.activated && installed.services.switched_on && installed.services.loaded.length),
+    },
   };
 }
 
@@ -204,4 +219,26 @@ export async function ensureInstalledRoots(): Promise<Array<{ name: string; labe
     installed.push({ name: root.name, label: root.label, dir });
   }
   return installed;
+}
+
+export interface MorningBriefScheduleDraft {
+  team: unknown;
+  request: unknown;
+  when: unknown;
+  to?: unknown;
+  active?: unknown;
+}
+
+export async function createMorningBriefSchedule(draft: MorningBriefScheduleDraft): Promise<{ team: string; job: Job }> {
+  const team = typeof draft.team === 'string' ? draft.team.trim() : '';
+  const rawTo = typeof draft.to === 'string' ? draft.to.trim() : '';
+  const to = rawTo.toLowerCase() === 'team lead' || !rawTo ? 'lead' : rawTo;
+  let job = await addJob(team, { request: draft.request, when: draft.when, to, by: 'owner' });
+  if (draft.active === false) job = await setJob(team, job.id, 'paused');
+  return { team, job };
+}
+
+export async function morningBriefSchedules(team: string): Promise<{ team: string; schedules: Job[] }> {
+  if (!isValidTeam(team)) throw new Error('A team name is lowercase letters, digits, _ and -.');
+  return { team, schedules: await listJobs(team) };
 }

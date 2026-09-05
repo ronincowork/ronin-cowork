@@ -11,6 +11,8 @@ process.env.RONIN_CATALOGS_DIR = path.join(box, 'ronin', 'catalogs');
 
 const runtime = await import('../src/setup-runtime.js');
 const roots = await import('../src/project-roots.js');
+const arrangements = await import('../src/desks/arrangement.js');
+const launchDesks = await import('../src/launch-desks.js');
 
 const available = (installed: string[]) => [
   { id: 'claude', label: 'Claude Code', from: 'Anthropic', get: 'install claude', parked: '', cmd: 'claude', installed: installed.includes('claude'), path: installed.includes('claude') ? '/bin/claude' : '' },
@@ -29,6 +31,11 @@ test('provider facts distinguish absent, installable, installed, login open, act
 
   const login = await runtime.setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude' }, available(['claude']));
   assert.equal(login.providers[0]?.state, 'login_open');
+  assert.deepEqual(login.providers[0]?.attachment, {
+    type: 'session', key: 'provider_setup_claude', team: 'provider_setup', temporary: true,
+  });
+  assert.equal(login.providers[1]?.attachment, null);
+  assert.equal('session' in login.providers[0]!, false, 'attachment is the sole public setup-session identity');
 
   const one = await runtime.setupRuntimeAnswer(
     { providers: { claude: { activated_at: '2026-09-05T00:00:00.000Z' } } }, closed, available(['claude']),
@@ -42,6 +49,25 @@ test('provider facts distinguish absent, installable, installed, login open, act
   );
   assert.equal(two.activated_count, 2);
   assert.equal(two.activated_band, 'two_plus');
+});
+
+test('runtime dependency facts distinguish installed from active gbrain and Services', async () => {
+  const installed = {
+    cowork: { release: null, commit: 'abc', dirty: false, startedAt: 'now' },
+    services: {
+      parts: ['gbrain', 'koe'], loaded: ['gbrain'], parked: [], installed: true,
+      restart_needed: false, activated: true, stage: 'active', switched_on: true,
+    },
+    routines: [],
+  };
+  const answer = await runtime.setupRuntimeAnswer({}, { exists: async () => false }, available([]), installed);
+  assert.deepEqual(answer.gbrain, { installed: true, active: true });
+  assert.deepEqual(answer.services, { installed: true, activated: true, switched_on: true, active: true });
+  const parked = await runtime.setupRuntimeAnswer({}, { exists: async () => false }, available([]), {
+    ...installed, services: { ...installed.services, loaded: [], switched_on: false },
+  });
+  assert.deepEqual(parked.gbrain, { installed: true, active: false });
+  assert.equal(parked.services.active, false);
 });
 
 test('login opens only an installed provider and an open login is not activation', async () => {
@@ -97,6 +123,39 @@ test('installed roots are distinct registered repositories with READMEs and firs
   const project = made.find((root) => root.name === 'ronin_project_1')!;
   assert.match(await readFile(path.join(project.dir, 'RONIN_REPO'), 'utf8'), /mode=reviewed[\s\S]*working=dev[\s\S]*stable=main[\s\S]*desks=managed/);
   assert.doesNotThrow(() => execFileSync('git', ['-C', project.dir, 'show-ref', '--verify', '--quiet', 'refs/heads/dev']));
+
+  const arrangement = await arrangements.arrangementOf('ronin_project_1');
+  assert.deepEqual(
+    { mode: arrangement.mode, working: arrangement.working, stable: arrangement.stable, desks: arrangement.desks },
+    { mode: 'reviewed', working: 'dev', stable: 'main', desks: 'managed' },
+  );
+  const launch = await launchDesks.resolveLaunchDesks({
+    session: 'develop_project_proof', team: 'develop_project', project_root: 'ronin_project_1', agent: true, control: true,
+  });
+  assert.equal(launch.assignment?.project_root, 'ronin_project_1');
+  assert.equal(launch.assignment?.primary, 'ronin_project_1');
+  assert.equal(launch.assignment?.desks[0]?.line, 'team/develop_project/dev');
+  assert.equal(launch.repositories[0]?.repo, 'ronin_project_1');
+  assert.equal(launch.repositories[0]?.mode, 'managed');
+  assert.equal(launch.repositories[0]?.managed?.worktree, launch.assignment?.desks[0]?.worktree);
+});
+
+test('Morning Brief scheduling creates real JIKAN state and normalizes lead/paused controls', async () => {
+  const active = await runtime.createMorningBriefSchedule({
+    team: 'morning_brief', request: 'Prepare the morning brief.', when: 'daily 08:00', to: 'team lead', active: true,
+  });
+  assert.equal(active.team, 'morning_brief');
+  assert.equal(active.job.to, 'lead');
+  assert.equal(active.job.state, 'active');
+  assert.ok(active.job.due);
+
+  const paused = await runtime.createMorningBriefSchedule({
+    team: 'morning_brief', request: 'Prepare a second brief.', when: 'daily 09:00', to: 'lead', active: false,
+  });
+  assert.equal(paused.job.state, 'paused');
+  assert.equal(paused.job.due, '');
+  const read = await runtime.morningBriefSchedules('morning_brief');
+  assert.deepEqual(read.schedules.map((job) => job.id), [active.job.id, paused.job.id]);
 });
 
 test.after(async () => { await rm(box, { recursive: true, force: true }); });

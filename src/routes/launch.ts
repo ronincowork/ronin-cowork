@@ -438,6 +438,7 @@ export function registerLaunch(app: express.Express): void {
         // arrived (the ACK asks the newborn to quote the terminator).
         ...(packet ? { packet } : {}),
         desks: resolved.assignment?.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line })) ?? [],
+        work_locations: resolved.work_locations,
         desk_note: await deskNote(resolved),
         routines: resolved.routines.map((routine) => {
           const services = new Set(listServices());

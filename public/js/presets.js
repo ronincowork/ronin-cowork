@@ -45,6 +45,13 @@ export const cascadeProvider = (rows, provider, previous = '') => rows.map((row)
   provider: !row.provider || row.provider === previous ? provider : row.provider,
 }));
 export const presetActions = (handle) => ['user_message', 'customize', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
+export function presetReadiness(handle, runtime = {}) {
+  const provider = Number(runtime.activated_count || 0) > 0;
+  if (!provider) return { ready: false, reason: 'Activate one model provider before launching a preset.', surface: 'setup.providers', detail: { provider: runtime.providers?.find((row) => !row.activated)?.id || runtime.providers?.[0]?.id || '' } };
+  if (handle === 'personal_assistant' && runtime.gbrain?.active !== true) return { ready: false, reason: 'Personal Assistant requires gbrain to be active.', surface: 'setup.gbrain', detail: {} };
+  if (handle === 'morning_brief' && runtime.services?.active !== true) return { ready: false, reason: 'Grokbot Morning Briefing requires Ronin Services to be active.', surface: 'setup.services', detail: {} };
+  return { ready: true, reason: '', surface: '', detail: {} };
+}
 export function seatingPlan(handle, receipt = {}) {
   const fixed = CORE_PRESET_TREATMENTS[handle];
   if (!fixed) return null;
@@ -172,6 +179,9 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     grid.replaceChildren();
     slots.forEach((slot, index) => {
       const button = el('button', 'sp-slot'); button.type = 'button'; button.setAttribute('aria-pressed', String(index === selected));
+      const gate = presetReadiness(slot.handle, runtime);
+      button.dataset.gated = String(!gate.ready);
+      if (!gate.ready) button.title = gate.reason;
       button.append(el('i', '', slot.art || '▤'), el('b', '', slot.label || slot.handle), el('small', '', slot.destination || ''));
       button.addEventListener('click', () => { selected = index; paintGrid(); paintDetail(); }); grid.append(button);
     });
@@ -187,6 +197,14 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     picker.addEventListener('change', () => { const [shelf, handle] = picker.value.split(':'); const row = available().find((item) => item.shelf === shelf && item.handle === handle); slots[selected] = row || { shelf, handle, label: handle }; save(); paintGrid(); paintDetail(); });
     const restore = el('button', 'wk-action', 'Restore house default'); restore.type = 'button'; restore.addEventListener('click', () => { slots[selected] = { ...HOUSE_PRESETS[selected] }; save(); paintGrid(); paintDetail(); });
     change.append(picker, restore); heading.append(change); detail.append(heading);
+    const gate = presetReadiness(slot.handle, runtime);
+    if (!gate.ready) {
+      const blocked = el('div', 'sp-gate');
+      blocked.append(el('p', '', gate.reason));
+      const link = el('button', 'wk-action', gate.surface === 'setup.providers' ? 'Open model provider setup' : gate.surface === 'setup.gbrain' ? 'Open gbrain setup' : 'Open Ronin Services setup');
+      link.type = 'button'; link.addEventListener('click', () => environment.navigateToSurface?.(gate.surface, gate.detail));
+      blocked.append(link); detail.append(blocked); return;
+    }
     const message = el('textarea'); message.rows = 4; message.placeholder = 'What should this launch begin with?'; detail.append(field('User Message', message));
     if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime); detail.append(fixed); }
     const customize = createAction({ label: 'Customize', action: () => environment.customize?.({ template: { shelf: slot.shelf, name: slot.handle }, workspace: 'workspace2', user_message: message.value }) });
