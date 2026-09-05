@@ -119,6 +119,15 @@ test('selector definitions expose non-selectable provider group and exact depend
   assert.doesNotMatch(source, /key:\s*SETUP_REQUIREMENT_TARGETS\.providers/, 'provider group remains metadata, never an aggregate selectable offer');
 });
 
+test('Register keeps required fields behind concise disclosure and uses a neutral action', async () => {
+  const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+  for (const name of ['email', 'purpose', 'kind', 'user_type', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
+  assert.match(source, /setup-register-disclosure/);
+  assert.match(source, /Communication preferences/);
+  assert.match(source, /register_action'[\s\S]*?'Register'\), '', async/);
+  assert.doesNotMatch(source, /registration_pending'[\s\S]*?Registration pending/);
+});
+
 test('legacy Services mutation entry points explicitly retire to registration', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8');
   assert.match(source, /app\.post\('\/api\/services\/activation'[\s\S]*status\(410\)/);
