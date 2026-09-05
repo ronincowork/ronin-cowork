@@ -62,3 +62,16 @@ test('the existing workbench can pin Setup workspace 1 and aim selector cards at
   assert.match(workbench, /options\.selectorWorkspace \|\| selected/);
   assert.match(workbench, /options\.selectorFilter/);
 });
+
+test('the fourth Setup workbench registers real lane surfaces in ruled order', async () => {
+  const [setup, main, cowork] = await Promise.all([
+    source('js/setup-view.js'), source('js/main.js'), source('js/cowork-view.js'),
+  ]);
+  assert.match(setup, /registerSetupSurfaces\(\);[\s\S]*registerPresetsSurface\(\);/);
+  assert.match(setup, /fixedWorkspaces: \{ workspace1: PRESETS_TYPE \}/);
+  assert.match(setup, /selectorWorkspace: 'workspace2'/);
+  assert.match(setup, /SETUP_SURFACE_TYPES\.register, SETUP_SURFACE_TYPES\.providers, SETUP_SURFACE_TYPES\.roots/);
+  assert.match(setup, /SETUP_SURFACE_TYPES\.services, SETUP_SURFACE_TYPES\.gbrain, SETUP_SURFACE_TYPES\.templates/);
+  assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
+  assert.match(cowork, /PRESETS_TYPE/);
+});

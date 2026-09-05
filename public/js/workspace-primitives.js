@@ -83,7 +83,8 @@ function createCard(options = {}) {
 function createAction(options = {}) {
   const el = node('button', `wk-action${options.className ? ` ${options.className}` : ''}`);
   el.type = 'button';
-  if (options.launch) {
+  const isLaunch = options.launch || options.label === t('forms.launch', 'Launch');
+  if (isLaunch) {
     el.dataset.launch = 'true';
     const mark = document.createElement('img');
     mark.className = 'wk-launch-mark';

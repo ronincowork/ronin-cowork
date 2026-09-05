@@ -17,7 +17,9 @@ import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { openWorkspaceTab } from './workspace.js';
+import { openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { PRESETS_TYPE, createPresetsSurface, registerPresetsSurface } from './presets.js';
+import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { refreshDesks } from './desks.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
@@ -67,6 +69,7 @@ const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 
 function registerWorkbenchCatalog() {
   registerFeedbackSurface();
+  registerPresetsSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: WB_TYPES.commons, header: 'channels', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Team commons'), summary: () => t('team.commons_summary', 'See Docs / Wipeboard / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
@@ -84,7 +87,7 @@ function registerWorkbenchCatalog() {
   add({ type: WB_TYPES.newAgent, header: 'surface', className: 'wk-selector-utility', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment }) => environment.newAgent(workspace) });
   add({ type: WB_TYPES.archives, header: 'surface', className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
   add({ type: WB_TYPES.team, header: 'surface', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
-  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, FEEDBACK_TYPE]);
+  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, PRESETS_TYPE, FEEDBACK_TYPE]);
   // THE TEAM BENCH HAS ONE SHORTCUT: Add Agent to Team. It always births a Cowork Agent;
   // terminal and bare-metal choices stay on the full launch page.
   profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.terminal, WB_TYPES.addAgent, FEEDBACK_TYPE]);
@@ -258,6 +261,12 @@ export function createCoworkView(options = {}) {
     newTeamForm: (id) => ({ el: newTeamFormBySeat[id].el, show: () => void newTeamFormBySeat[id].enter() }),
     newAgent: (id) => ({ el: newAgentBySeat[id].el, show: (detail) => void newAgentBySeat[id].enter(detail) }),
     addAgent: (id) => ({ el: addAgentBySeat[id].el, show: () => addAgentBySeat[id].enter() }),
+    presets: (id) => createPresetsSurface({ environment: {
+      customize: () => ctx?.navigate('launch'),
+      launch: launchPresetPlan,
+      launchUrl: presetLaunchUrl,
+      reserveLaunchTab: reserveWorkspaceTab,
+    }, workspace: id }),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
