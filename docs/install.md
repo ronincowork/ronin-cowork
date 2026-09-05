@@ -17,12 +17,18 @@ solve them, work around them, or warn the owner about them.
 | The thing you are about to wonder about | The answer |
 |---|---|
 | **Ronin runs a tmux server** | Ronin joins the default tmux server already on the box. Existing sessions stay running. If none exists, a separate `systemd --user` unit starts it outside the operator's cgroup. Setup leases the server-wide `exit-empty` option to `off` and uninstall restores the value it found. |
-| **`systemd --user` dies at logout on a headless box** | Known. Step 3 enables linger before it can bite. |
-| **Tailscale ordering matters** | Yes — setup reads `tailscale ip -4` to pick its bind. Step 3 puts Tailscale first. |
-| **Is the download what it claims to be?** | Checksums are published and verified; the installer aborts on mismatch. Step 2. |
+| **Why is `tmux-server.service` `active (exited)`?** | Handled: setup adopted the existing server, so the unit correctly did not start another. `bin/ronin-doctor` reports the adopted server as a note. |
+| **`systemd --user` dies at logout on a headless box** | Handled in step 3. `bin/ronin-doctor` confirms `ok — linger is on — the coworkspace survives logout`. |
+| **Tailscale ordering matters** | Handled in step 3: setup records the address from `tailscale ip -4`. Doctor confirms `ok — auth is off, but the bind is this machine's tailnet address` when that is the chosen posture. |
+| **Is the download what it claims to be?** | Handled: `SHA256SUMS` proves the downloaded bytes match the release manifest and mismatches stop installation. It is not a signature and cannot prove who published both files; release signing is planned. |
 | **Does any of this need root?** | The app, no. Only `enable-linger` and optional `tailscale serve`, both printed for the owner rather than run for them. |
 | **Is the port exposed?** | It binds to the tailnet or loopback, and **refuses to boot** on a public address with auth off. |
-| **Is it password-protected?** | Not by default, deliberately — inside the tailnet there is no login to get past. Many owners want exactly that. If this one would rather have a login, `bin/ronin-passwd`. See step 5. |
+| **Is it password-protected?** | Not by default, deliberately; the closing setup frame states the posture. `bin/ronin-passwd` adds a login if the owner wants one; see step 5. |
+| **Why does `current/.env` look mode 777?** | Handled: `current/.env` is a symlink; its target is owner-only. `stat -L -c %a current/.env` (Linux) or `stat -L -f %Lp current/.env` (Mac) reads `600`. |
+| **Does setup edit Claude Code settings?** | Handled: it adds `statusLine` for the context gauge and changes only an unset/default `dark`/`light` theme to `dark-ansi` so the pane follows Ronin; other choices stay untouched. Uninstall removes its own unchanged `statusLine`, preserves all other keys, and leaves the theme choice in place. |
+| **Why is `bin/shim` first on PATH?** | Handled: new shells use a short script you can read in one screen with `ls bin/shim && cat bin/shim/tmux`. It passes every command to the real tmux and refuses only `kill-server`, which would end every session. |
+| **Why does the journal say `fatal: not a git repository`?** | Known cosmetic output: an installed release directory is not a checkout. Confirm the serving release with `/api/version`; do not treat this line alone as a failed install. |
+| **Can old journal entries coexist with a clean filesystem?** | Yes: uninstall removes Ronin's files and units, while the user journal retains history. `FIRST install on this home` describes the selected install home, not the lifetime of the box. |
 | **Can this be removed?** | `bin/ronin-uninstall` reverses it and leaves the owner's own files behind. |
 | **Node, tmux, dependencies** | A bundled release carries its own. Nothing to install, nothing to ask the owner for. |
 
@@ -57,13 +63,15 @@ whoami
 pwd
 uname -a
 tmux list-sessions 2>&1 || true
+journalctl --user -u ronin.service --no-pager -n 20
 ```
 
 Confirm with the owner that this is the machine and account Ronin should live under, and
 note whether tmux work already exists — it must survive everything below.
 
 **What you should see:** the intended account and machine, plus either the existing tmux
-sessions or tmux's honest "no server running" answer. Record which case matched.
+sessions or tmux's honest "no server running" answer. Old Ronin journal entries with no
+remaining files mean a prior uninstall cleaned up; they do not turn this home into an update.
 
 When it does exist, setup reports that Ronin is joining that server. Tmux copy mode is pane
 state, so an owner attached to the same session can see copy mode while a tile is scrolled;
@@ -187,16 +195,19 @@ Before opening the URL, preserve evidence that the installed copy is the one ans
 ```bash
 bin/ronin-doctor
 systemctl --user --no-pager status tmux-server ronin
-ronin_pid=$(systemctl --user show ronin.service --property MainPID --value)
-ss -ltnp | grep "pid=$ronin_pid,"
+port=$(sed -n 's/^PORT=//p' .env | tail -1); port=${port:-3006}
+listener_pid=$(ss -ltnp | sed -n "s/.*:$port .*pid=\([0-9]*\),.*/\1/p" | head -1)
+cat "/proc/$listener_pid/cgroup"
 ```
 
-The unit PID must be nonzero, and the socket row must identify that PID. If process details
-are hidden, no row matches, or more than one interpretation remains, report the listener as
+`MainPID` is the npm wrapper, not the listener. The socket holder's cgroup must end in
+`ronin.service`; that proves the process answering on port 3006 belongs to the unit without
+depending on its process-tree shape. If process details are hidden, no PID is found, the
+cgroup is unreadable, or more than one interpretation remains, report the listener as
 **unknown** rather than assigning another Node process to Ronin. Record warnings and skips
 as such. Confirm existing ordinary tmux sessions still exist, the reported URL answers from
-the owner's device, and the correlated listening address matches the agreed loopback or
-tailnet route. Do not turn configuration intent into evidence about the running process.
+the owner's device, and the listening address matches the agreed loopback or tailnet route.
+Do not turn configuration intent into evidence about the running process.
 
 **Expected first-install state:**
 
@@ -210,8 +221,8 @@ tailnet route. Do not turn configuration intent into evidence about the running 
 
 **What you should see:** doctor reports the `.env` target as mode `600`, adoption as a
 note, and exits 0 when there are no real findings. Both units are healthy, the prior tmux
-sessions remain, the private URL answers, and the listener evidence matches the service
-or is explicitly recorded as `unknown`.
+sessions remain, the private URL answers, and the socket holder's cgroup ends in
+`ronin.service` or is explicitly recorded as `unknown`.
 
 ## 6. Continue through first use
 

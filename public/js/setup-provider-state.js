@@ -8,6 +8,19 @@ export const SETUP_REQUIREMENT_TARGETS = Object.freeze({
 
 export const setupRequirementClass = (key) => `setup-requirement-${String(key).replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '')}`;
 
+export function setupRequirementPresentation(key, state = {}) {
+  const targetKey = String(key || '');
+  const has = (field) => Array.isArray(state[field]) && state[field].some((entry) => String(entry) === targetKey);
+  const flashCycle = Number.isFinite(state.flashCycle) ? Number(state.flashCycle) : 0;
+  return {
+    targetKey,
+    targetClass: setupRequirementClass(targetKey),
+    marked: has('hovered') || has('open'),
+    flashing: flashCycle > 0 && has('flash'),
+    flashCycle,
+  };
+}
+
 export function providerOffers(runtime) {
   const providers = Array.isArray(runtime?.providers) ? runtime.providers : [];
   return providers.filter((provider) => provider?.id).map((provider) => {

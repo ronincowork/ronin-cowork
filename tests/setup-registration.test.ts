@@ -71,7 +71,7 @@ test('setup surface definitions keep all six ruled ids and gates only Library an
 });
 
 test('provider discovery is catalog-driven and a keyed surface resolves only its provider', async () => {
-  const { SETUP_REQUIREMENT_TARGETS, providerOffers, providerFromRuntime, setupRequirementClass } = await import('../public/js/setup-provider-state.js');
+  const { SETUP_REQUIREMENT_TARGETS, providerOffers, providerFromRuntime, setupRequirementClass, setupRequirementPresentation } = await import('../public/js/setup-provider-state.js');
   const providers = [
     ['anthropic', 'Claude'], ['openai', 'Codex'], ['hermes', 'Hermes'],
     ['grok', 'Grok'], ['gemini', 'Gemini'], ['future_cli', 'Future CLI'],
@@ -83,6 +83,11 @@ test('provider discovery is catalog-driven and a keyed surface resolves only its
   assert.equal(SETUP_REQUIREMENT_TARGETS.gbrain, 'setup.gbrain');
   assert.equal(SETUP_REQUIREMENT_TARGETS.services, 'setup.services');
   assert.equal(setupRequirementClass('setup.provider:future_cli'), 'setup-requirement-setup-provider-future_cli');
+  assert.deepEqual(setupRequirementPresentation('setup.provider:openai', {
+    hovered: ['setup.provider:open'], open: ['setup.provider:openai'], flash: ['setup.provider:openai'], flashCycle: 2,
+  }), {
+    targetKey: 'setup.provider:openai', targetClass: 'setup-requirement-setup-provider-openai', marked: true, flashing: true, flashCycle: 2,
+  }, 'target matching is exact, not prefix-based');
   assert.equal(providerFromRuntime(runtime, 'future_cli')?.label, 'Future CLI');
   assert.equal(providerFromRuntime(runtime, 'openai')?.label, 'Codex');
 });

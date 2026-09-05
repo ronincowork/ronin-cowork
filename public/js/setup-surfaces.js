@@ -6,7 +6,7 @@ import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
 import { SETUP_REQUIREMENT_TARGETS, mountProviderAttachment, providerFromRuntime, providerOffers, setupRequirementClass } from './setup-provider-state.js';
 
-export { SETUP_REQUIREMENT_TARGETS, mountProviderAttachment, providerFromRuntime, providerOffers, setupRequirementClass } from './setup-provider-state.js';
+export { SETUP_REQUIREMENT_TARGETS, mountProviderAttachment, providerFromRuntime, providerOffers, setupRequirementClass, setupRequirementPresentation } from './setup-provider-state.js';
 
 export const SETUP_SURFACE_TYPES = Object.freeze({
   register: 'setup.register', providers: 'setup.providers', roots: 'setup.roots',

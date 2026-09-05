@@ -67,3 +67,52 @@ test('every preset gates on a provider and named presets add their dependencies'
   assert.equal(presets.presetReadiness('morning_brief', { activated_count: 1, services: { active: false } }).surface, 'setup.services');
   assert.equal(presets.presetReadiness('morning_brief', { activated_count: 1, services: { active: true } }).ready, true);
 });
+
+test('requirement targets use the first activatable provider and never invent an id', () => {
+  const runtime = {
+    activated_count: 0,
+    providers: [
+      { id: 'blocked', state: 'absent', blocked: 'Install this provider yourself.' },
+      { id: 'claude', state: 'installable', installable: true },
+      { id: 'codex', state: 'installed', installed: true },
+    ],
+    gbrain: { active: false },
+  };
+  assert.deepEqual(presets.presetRequirementTargets('bare_metal', runtime), [
+    'setup.providers', 'setup.provider:claude',
+  ]);
+  assert.deepEqual(presets.presetRequirementTargets('personal_assistant', runtime), [
+    'setup.providers', 'setup.provider:claude', 'setup.gbrain',
+  ]);
+  assert.deepEqual(presets.presetRequirementTargets('bare_metal', {
+    activated_count: 0,
+    providers: [{ id: 'codex', state: 'absent', blocked: 'Unavailable here.' }],
+  }), ['setup.providers']);
+  assert.deepEqual(presets.presetRequirementTargets('bare_metal', { activated_count: 0 }), ['setup.providers']);
+});
+
+test('hover and keyboard focus share preview state while open marks persist', () => {
+  const emitted = [];
+  const state = presets.createPresetRequirementState((next) => emitted.push(next));
+  const targets = ['setup.providers', 'setup.provider:claude', 'setup.provider:claude'];
+  assert.deepEqual(state.preview(targets).hovered, ['setup.providers', 'setup.provider:claude']);
+  assert.deepEqual(state.select(targets), {
+    hovered: [],
+    open: ['setup.providers', 'setup.provider:claude'],
+    flash: ['setup.providers', 'setup.provider:claude'],
+    flashCycle: 1,
+  });
+  state.preview(['setup.gbrain']);
+  const afterBlur = state.clearPreview();
+  assert.deepEqual(afterBlur.hovered, []);
+  assert.deepEqual(afterBlur.open, ['setup.providers', 'setup.provider:claude']);
+  assert.equal(emitted.length, 4);
+});
+
+test('each blocked selection increments flashCycle and ready selection clears marking', () => {
+  const state = presets.createPresetRequirementState();
+  assert.equal(state.select(['setup.gbrain']).flashCycle, 1);
+  assert.deepEqual(state.syncOpen(['setup.gbrain']).open, ['setup.gbrain']);
+  assert.equal(state.select(['setup.gbrain']).flashCycle, 2);
+  assert.deepEqual(state.select([]), { hovered: [], open: [], flash: [], flashCycle: 2 });
+});

@@ -13,12 +13,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-say() {
-  case "$1" in
-    "render check skipped"*) echo "RONIN GATE: SKIP — $1" ;;
-    *)                        echo "RONIN GATE: PASS — $1" ;;
-  esac
-}
+say() { :; } # render_check requires a progress reporter; this gate grades by return code below.
 # shellcheck source=ronin-render-check.sh
 . "$ROOT/libexec/ronin-render-check.sh"
 PORT="${PORT:-3006}"
@@ -41,9 +36,13 @@ if [ -z "${ready:-}" ]; then
   exit 0
 fi
 
-if render_check "$ROOT" "$URL" "$URL"; then
-  :
-else
-  echo "RONIN GATE: FAIL — $URL is serving a broken UI"
-fi
+if render_check "$ROOT" "$URL" "$URL"; then rc=0; else rc=$?; fi
+case "$rc" in
+  0) echo "RONIN GATE: PASS — $URL — ${RENDER_VERDICT:-rendered}" ;;
+  2) echo "RONIN GATE: SKIP — $RENDER_REPORT" ;;
+  *)
+    echo "RONIN GATE: FAIL — $URL is serving a broken UI"
+    printf '%s\n' "$RENDER_DETAILS" | sed 's/^/RONIN GATE: /'
+    ;;
+esac
 exit 0

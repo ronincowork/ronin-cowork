@@ -120,9 +120,9 @@ ronin_open_url() {
   printf '%s' "$url"
 }
 
-ronin_banner() { # <root> <url>
-  local root="$1" url="$2"
-  local title=" RONIN COWORK " ver="" mark="人"
+ronin_banner() { # <root> <url> [change line...]
+  local root="$1" url="$2"; shift 2
+  local title=" RONIN COWORK " ver="" mark="人" grid_pass="" posture=""
   [ -f "$root/VERSION" ] && ver="$(sed -n 's/^release=//p' "$root/VERSION" 2>/dev/null || true)"
   [ -n "$ver" ] && ver=" $ver "
 
@@ -131,10 +131,21 @@ ronin_banner() { # <root> <url>
   # some terminals and two in others.
   local l1="$mark   You're in. Thanks for joining us."
   local l2="Your agents have a room now — open the door:"
+  if [ -f "$root/.env" ]; then
+    grid_pass="$(sed -n 's/^[[:space:]]*GRID_PASS=[[:space:]]*//p' "$root/.env" 2>/dev/null | head -1)"
+  fi
+  if [ -z "$grid_pass" ]; then
+    posture="No password: anyone your tailnet lets reach this has a shell here. bin/ronin-passwd adds one."
+  fi
   local w1=$(( ${#l1} + 1 )) w=0
   [ "$w1" -gt "$w" ] && w=$w1
   [ ${#l2} -gt "$w" ] && w=${#l2}
   [ ${#url} -gt "$w" ] && w=${#url}
+  [ ${#posture} -gt "$w" ] && w=${#posture}
+  local detail
+  for detail in "$@"; do
+    [ ${#detail} -gt "$w" ] && w=${#detail}
+  done
   # A frame that cannot hold its own chrome is a broken frame.
   local chrome=$(( ${#title} + ${#ver} + 4 ))
   local inner=$(( w + 6 )); [ "$chrome" -gt "$inner" ] && inner=$chrome
@@ -153,6 +164,13 @@ ronin_banner() { # <root> <url>
     printf '  │   \033[1m%s\033[0m%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
   else
     printf '  │   %s%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
+  fi
+  [ -z "$posture" ] || printf '  │   %s%*s│\n' "$posture" $(( inner - 3 - ${#posture} )) ""
+  if [ "$#" -gt 0 ]; then
+    printf '  ├%s┤\n' "$bar"
+    for detail in "$@"; do
+      printf '  │   %s%*s│\n' "$detail" $(( inner - 3 - ${#detail} )) ""
+    done
   fi
   printf '  │%*s│\n' "$inner" ""
   printf '  ╰%s╯\n\n' "$bar"
