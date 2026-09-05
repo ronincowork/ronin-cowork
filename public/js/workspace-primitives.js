@@ -81,8 +81,18 @@ function createCard(options = {}) {
 }
 
 function createAction(options = {}) {
-  const el = node('button', `wk-action${options.className ? ` ${options.className}` : ''}`, options.label ?? '');
+  const el = node('button', `wk-action${options.className ? ` ${options.className}` : ''}`);
   el.type = 'button';
+  if (options.launch) {
+    el.dataset.launch = 'true';
+    const mark = document.createElement('img');
+    mark.className = 'wk-launch-mark';
+    mark.src = 'brand/nin-mark.svg';
+    mark.alt = '';
+    el.append(mark, node('span', null, options.label ?? ''));
+  } else {
+    el.textContent = options.label ?? '';
+  }
   if (options.title) el.title = options.title;
   if (options.kind) el.dataset.kind = options.kind;
   if (options.size) el.dataset.size = options.size;

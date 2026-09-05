@@ -103,6 +103,27 @@ export function hashFor(view, param = '') {
   return '#/' + [view, param].filter(Boolean).map(encodeURIComponent).join('/');
 }
 
+/** Open one destination as another workbench tab while leaving this page in place. */
+export function reserveWorkspaceTab() {
+  const tab = window.open('about:blank', '_blank');
+  if (tab) tab.opener = null;
+  return tab;
+}
+
+export function closeWorkspaceTab(tab) {
+  try { tab?.close(); } catch (_) { /* a blocked popup needs no cleanup */ }
+}
+
+export function openWorkspaceTab(view, param = '', reserved = null) {
+  const url = new URL(location.href);
+  url.hash = hashFor(view, param);
+  if (reserved) {
+    reserved.location.replace(url.href);
+    return reserved;
+  }
+  return window.open(url.href, '_blank', 'noopener');
+}
+
 /**
  * The one ViewHost owner. Views may be empty and may carry no classification; only a
  * registered id and an element are structural. Lifecycle failures are contained to the

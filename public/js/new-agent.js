@@ -12,6 +12,7 @@ import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-
 import {
   createBand, createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
+import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -42,6 +43,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   const start = createAction({
     label: t('forms.launch', 'Launch'),
+    launch: true,
     size: 'compact',
     disabled: true,
     action: () => void doStart(),
@@ -440,6 +442,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   async function doStart() {
     if (busy) return;
+    const launchTab = reserveWorkspaceTab();
     const name = draft.name.trim();
     busy = true;
     start.setDisabled(true);
@@ -450,6 +453,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     if (draft.teamMode === 'new' && !team) team = '';
     if (draft.teamMode === 'new' && isCowork() && team) {
       if (!isValidTeamName(team)) {
+        closeWorkspaceTab(launchTab);
         busy = false;
         start.setDisabled(false);
         notice.set('failed', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
@@ -460,6 +464,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         json: { name: team, kind: draft.kind, ...(draft.template ? { template: draft.template } : {}) },
       });
       if (!made.ok) {
+        closeWorkspaceTab(launchTab);
         busy = false;
         start.setDisabled(false);
         notice.set('failed', made.message);
@@ -488,6 +493,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     busy = false;
     start.setDisabled(false);
     if (!result.ok) {
+      closeWorkspaceTab(launchTab);
       notice.set('failed', result.message);
       return;
     }
@@ -495,7 +501,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     const deskNote = result.data?.receipt?.desk_note || '';
     if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
     else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
-    if (born && !deskNote) connect?.(born);
+    openWorkspaceTab(team ? 'team' : 'cowork', team, launchTab);
   }
 
   async function doSave() {

@@ -17,6 +17,7 @@ import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
+import { openWorkspaceTab } from './workspace.js';
 import { refreshDesks } from './desks.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
@@ -224,12 +225,12 @@ export function createCoworkView(options = {}) {
   // its roster exists, so the form that made it hands the workspace over to it and goes
   // back to empty. Staffing happens from inside the Team, through Add Agent.
   const newTeamFormBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => {
-    const view = createNewTeamFormView(WorkspaceKit, { created: async (name) => { await refreshTeams(); bench.place(WB_TYPES.team, id, { key: name, label: readableTeam(name) }); } });
+    const view = createNewTeamFormView(WorkspaceKit, { created: async () => { await refreshTeams(); bench.refreshSelector(); } });
     return [id, { el: view.el, enter: () => view.enter() }];
   })) : {};
   // The drawn New Agent, per seat: a birth returns to the workspace whose form made it.
   const newAgentBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => {
-    const view = createNewAgentView(WorkspaceKit, { connect: (name) => connectSession(name, id) });
+    const view = createNewAgentView(WorkspaceKit, {});
     // The detail rides through: `S.showNewSession(prompt)` seeds the form's Instructions.
     return [id, { el: view.el, enter: (detail) => view.enter(detail) }];
   })) : {};
@@ -446,14 +447,14 @@ export function createCoworkView(options = {}) {
   // reading is absent. RIREKI's cherry-pick or summary joins the row when the service
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the /api/home row
-  const leagueTeamSurfaces = new Map(), openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
+  const leagueTeamSurfaces = new Map(), openTeam = (name) => openWorkspaceTab('team', name);
   const createLeagueTeamSurface = (name, id) => {
     const cacheKey = `${id}\0${name}`;
     if (leagueTeamSurfaces.has(cacheKey)) {
       const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached;
     }
     const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name), team = teamByName(name);
-    const launch = createAction({ label: t('league.launch_team', 'Launch'), size: 'compact', action: () => openTeam(name) });
+    const launch = createAction({ label: t('league.launch_team', 'Launch'), launch: true, size: 'compact', action: () => openTeam(name) });
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
     const surface = createSurface({ label, className: 'league-team-edit', actions: name === UNASSIGNED ? [launch] : [launch, remove] });
     surface.content.classList.add('league-team-edit-content');
@@ -595,7 +596,7 @@ export function createCoworkView(options = {}) {
     title: ({ param, viewState }) => {
       const fallback = campaign ? t('campaign.coworks', 'Teams') : (param || t('team.team', 'Team'));
       const name = viewState?.(viewKey)?.tabName;
-      return name ? { bare: `${name} · ${fallback}` } : fallback;
+      return name ? { bare: name } : fallback;
     },
     tabName: {
       get: () => ctx?.viewState(viewKey)?.tabName || '',

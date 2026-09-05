@@ -102,7 +102,9 @@ export async function init() {
 
   // workbench: it gets the three-step drill-down — Cowork, Agent, tile-with-keys —
   // and none of the chrome below. iPad (coarse but wide) and desktop continue as ever.
-  if (IS_PHONE) {
+  // The four workbenches now use their existing narrow responsive layout on phones too.
+  // Keep the retired phone drill-down reachable only from its explicit legacy route.
+  if (IS_PHONE && location.hash.startsWith('#/m')) {
     await buildPhone();
     reveal();
     return;
@@ -114,7 +116,9 @@ export async function init() {
   const workspace = createWorkspace(viewhost, {
     onError: (where, error) => showFailure(`workspace ${where}`, error),
     // The bar's slots for the tab name and the layout map; the ViewHost fills them per active view.
-    nameSlot: document.getElementById('viewname'),
+    // The dynamic island owns the workbench label editor. The former right-header
+    // field is gone; this changes a tab/workbench label only, never a Team or Agent.
+    nameSlot: document.getElementById('viewplace'),
     mapSlot: document.getElementById('viewmap'),
     onNavigate: () => refreshWorkspaceHeader(),
   });
