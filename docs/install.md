@@ -195,7 +195,8 @@ Before opening the URL, preserve evidence that the installed copy is the one ans
 ```bash
 bin/ronin-doctor
 systemctl --user --no-pager status tmux-server ronin
-listener_pid=$(ss -ltnp | sed -n 's/.*:3006 .*pid=\([0-9]*\),.*/\1/p' | head -1)
+port=$(sed -n 's/^PORT=//p' current/.env | tail -1); port=${port:-3006}
+listener_pid=$(ss -ltnp | sed -n "s/.*:$port .*pid=\([0-9]*\),.*/\1/p" | head -1)
 cat "/proc/$listener_pid/cgroup"
 ```
 
