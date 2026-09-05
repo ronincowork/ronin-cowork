@@ -162,24 +162,25 @@ export function buildRoster(tile, host, options = {}) {
       r.classList.remove('dragging');
       for (const heading of host.querySelectorAll('.home-grp.drop-ready')) heading.classList.remove('drop-ready');
     });
-    // The session's MARK: the icon of the session_role in its LETTER, on every row.
-    // The coordinator is a separate fact now — the 人 is BACK (R35): a team's lead is
-    // the hand-set designation on the session, never derived from this mark, and the
-    // teams surfaces read it off `leads`. The mark says what the session is DOING.
+    // The session's MARK. 人 when the session LEADS a team — the hand-set designation,
+    // read off `leads`, the same fact the team surfaces draw — otherwise the icon of the
+    // session_role in its LETTER. The owner asked for the 人 here (2026-09-05): the role
+    // icon alone left the cell blank on every row, because sessions seldom write a
+    // session_role, and the one fact the owner reads a roster for is who leads what.
     //
-    // READ-ONLY here, and that is the point: the session writes its own session_role
-    // with write_tegami as it migrates, so the roster shows what the session says it is
-    // doing. A click-to-change on this glyph would put the owner's hand on a field the
-    // letter hands to the agent — and then two writers would race over one line.
-    // Blank until the session has written its letter; nothing is guessed on its behalf.
+    // The role stays READ-ONLY here, and that is the point: the session writes its own
+    // session_role with write_tegami as it migrates, so the roster shows what the session
+    // says it is doing. A click-to-change on this glyph would put the owner's hand on a
+    // field the letter hands to the agent — and then two writers would race over one
+    // line. Blank until something is true; nothing is guessed on the session's behalf.
     const jb = document.createElement('span');
-    const mark = taskIcon(s);
-    jb.className = 'home-job' + (mark ? '' : ' off');
+    const leads = s.leads?.length ? t('roster.leads', '人 leads {teams}', { teams: s.leads.join(', ') }) : '';
+    const job = taskIcon(s);
+    const mark = leads ? '人' : job;
+    jb.className = 'home-job' + (mark ? '' : ' off') + (leads ? ' lead' : '');
     jb.dataset.job = s.session_role || ''; // so style can reach one mark — see style.css
     jb.textContent = mark;
-    jb.title = mark
-      ? [s.session_role, s.leads?.length ? t('roster.leads', '人 leads {teams}', { teams: s.leads.join(', ') }) : ''].filter(Boolean).join(' · ')
-      : t('roster.no_role_yet', 'has not said what it is doing yet');
+    jb.title = [leads, s.session_role].filter(Boolean).join(' · ') || t('roster.no_role_yet', 'has not said what it is doing yet');
     r.appendChild(jb);
     // shove the readings rightwards is gone with the flex row it existed to stretch —
     // pushing things apart is what made every row's landmarks land somewhere different.

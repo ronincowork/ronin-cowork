@@ -12,7 +12,11 @@ export const CTX_PATTERNS: CtxPattern[] = [
 ];
 
 export const MODEL_PATTERNS: RegExp[] = [
-  /⛽ ctx \d+(?:\.\d+)?% · ([^\n·]{1,24}?)\s*$/,
+  // The model is the text after " · ", up to the end of the line OR the first run of two
+  // or more spaces. Claude Code pads its status line and may right-align other text on
+  // the same row (seen on dohyo, 2026-09-05: `⛽ ctx 36% · Fable 5.1      /rc`), and an
+  // end-of-line-only anchor read nothing for exactly the sessions that had the line.
+  /⛽ ctx \d+(?:\.\d+)?% · ([^\n·]{1,24}?)(?:\s{2,}.*)?\s*$/,
   /·\s*(gpt-[\w.-]{1,20})\s*$/i,
   /^\s*(gpt-[\w.-]{1,24})(?:\s+\w+)?\s+·/i,
 ];
