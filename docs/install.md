@@ -62,6 +62,9 @@ tmux list-sessions 2>&1 || true
 Confirm with the owner that this is the machine and account Ronin should live under, and
 note whether tmux work already exists — it must survive everything below.
 
+**What you should see:** the intended account and machine, plus either the existing tmux
+sessions or tmux's honest "no server running" answer. Record which case matched.
+
 When it does exist, setup reports that Ronin is joining that server. Tmux copy mode is pane
 state, so an owner attached to the same session can see copy mode while a tile is scrolled;
 their own key bindings remain theirs. Ronin suppresses ordinary tile typing while the pane is
@@ -89,6 +92,10 @@ bin/ronin-update --home <install-home>
 
 The updater fetches the latest release, verifies its checksum, unpacks it under
 `<install-home>/releases/`, and points `<install-home>/current` at it.
+
+**What you should see:** a verified release under `releases/`, with `current` pointing to
+it. A first install says `FIRST install on this home`; an update names the old and new
+release. A checksum refusal is a failure, not a warning.
 
 ## 3. Make the machine ready
 
@@ -120,6 +127,10 @@ tailscale ip -4        # an address here, before you run setup
 If the owner is not using Tailscale, that is a fine answer — loopback plus an SSH tunnel
 works. Establish which it is now, not after.
 
+**What you should see:** linger is `yes` on a headless Linux box, and either
+`tailscale ip -4` prints the agreed private address or the owner has deliberately chosen
+loopback. On macOS, linger does not apply.
+
 ## 4. Set up and serve
 
 A bundled release (it has a vendor directory — every release from the dependency bundle
@@ -134,7 +145,13 @@ cd <install-home>/current && ./setup.sh
 ```
 
 It installs the units and starts the operator, and prints the URL it is serving on.
-Record the complete result; do not turn a warning or SKIP into a pass.
+Record the complete result; do not turn a warning or SKIP into a pass, and do not turn a
+SKIP into a failure. A SKIP names what could not run, why, and what evidence stands in.
+
+**What you should see:** setup names whether it started or adopted the default tmux
+server, reports every outside-the-home change or refusal, starts the operator, and prints
+the agreed private URL. With no headless browser, the journal says the render check was
+skipped because boot and version are the proof; it does not call the UI broken.
 
 Never expose Ronin's port publicly. Loopback is enough on a laptop; on a remote box use
 the private route the owner already reaches it by, or Tailscale if the owner wants HTTPS
@@ -181,6 +198,21 @@ as such. Confirm existing ordinary tmux sessions still exist, the reported URL a
 the owner's device, and the correlated listening address matches the agreed loopback or
 tailnet route. Do not turn configuration intent into evidence about the running process.
 
+**Expected first-install state:**
+
+- an existing default tmux server is adopted outside any Ronin unit;
+- `tmux-server.service` may read `active (exited)` after adoption because it did not start
+  or take ownership of that server;
+- the pane that ran setup predates the service and its current PATH may therefore be old;
+- `current/.env` is a symlink, while its target is owner-only mode `600`;
+- `bin/ronin-doctor` exits non-zero only when it prints a `FIND`; notes and skips do not
+  make a healthy install fail.
+
+**What you should see:** doctor reports the `.env` target as mode `600`, adoption as a
+note, and exits 0 when there are no real findings. Both units are healthy, the prior tmux
+sessions remain, the private URL answers, and the listener evidence matches the service
+or is explicitly recorded as `unknown`.
+
 ## 6. Continue through first use
 
 Help the owner open the printed URL on their own device. A fresh install enters
@@ -192,3 +224,18 @@ Stay available as a plain terminal for diagnosis. Do not fill the form in parall
 provider dialogs, or infer success from an installed CLI or a launched process. Hand off
 only after the Agent visibly responds, or report the exact blocking state and safe next
 action.
+
+**What you should see:** `cowork_setup` saves, one provider is usable, and a newly created
+Agent visibly answers one harmless prompt. Anything not exercised stays "not tested."
+
+Use this handover template:
+
+```text
+Installed: <release and install home>
+Changed outside the install home: <each disclosed path/unit/lease, or none>
+Checks passed: <doctor, units, listener/private route, existing tmux sessions, first Agent>
+Matched expected first-install state: <items from the list above>
+Deviated from expected: <exact observation and safe next action, or none>
+Not tested: <checks not actually exercised>
+Login posture: <tailnet-only or password enabled>
+```

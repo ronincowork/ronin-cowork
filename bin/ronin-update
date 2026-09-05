@@ -62,6 +62,8 @@ say()  { echo "→ $1"; }
 # elsewhere", so the release landed, current moved, and the old code kept serving.
 # shellcheck source=libexec/ronin-machine.sh
 . "$SELF/libexec/ronin-machine.sh"
+# shellcheck source=../libexec/ronin-render-check.sh
+. "$SELF/libexec/ronin-render-check.sh"
 RONIN_UNIT="$(machine_operator_unit)"
 
 # --- arguments ---
@@ -247,23 +249,6 @@ why_not_restarted() {
     echo "  Restart it by hand once you have: $(machine_operator_restart_action)"
   else
     echo "  this box's operator serves $wd, not $HOME_DIR/current (cutover pending? docs/release.md)."
-  fi
-}
-
-# The render check, byoin's contract exactly (bin/ronin-byoin): exit 0 = rendered
-# and looked at; exit 2 = NO HEADLESS BROWSER here, an honest SKIP with its reason —
-# a laptop installing for the first time has no Playwright and must not be refused
-# for it; anything else = the page is actually broken.
-render_check() { # $1=tree $2=url $3=what; returns 1 only on a REAL failure
-  local out rc=0
-  out="$(cd "$1" && node scripts/smoke-ui.mjs "$2" 2>&1)" || rc=$?
-  if [ "$rc" = 0 ]; then
-    say "$3 gated: the page renders"
-  elif [ "$rc" = 2 ]; then
-    say "render check skipped — no headless browser here; the boot and version answer are the proof (docs/host-tools.md)"
-  else
-    printf '%s\n' "$out" | tail -12 | sed 's/^/  /'
-    return 1
   fi
 }
 
