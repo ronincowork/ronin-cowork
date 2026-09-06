@@ -54,13 +54,12 @@ if e["BEHAVIOURS"]: b["behaviours"] = e["BEHAVIOURS"].splitlines()
 print(json.dumps(b))
 PY
 ) || die 'could not compose launch request' 2
-URL=$("$TOOL_DIR/ronin-url") || exit $?
-AUTH=()
-[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
 OUT=$(mktemp /tmp/tejun-fork.XXXXXX) || exit 2
-CODE=$(curl -sS -m 120 "${AUTH[@]+"${AUTH[@]}"}" -o "$OUT" -w '%{http_code}' \
-  -H 'content-type: application/json' -X POST --data "$BODY" "$URL/api/session") || {
-  rm -f "$OUT"; die "Ronin did not answer at $URL" 5;
+CODE=$(curl -sS -m 120 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -o "$OUT" -w '%{http_code}' \
+  -H 'content-type: application/json' -X POST --data "$BODY" "$url/api/session") || {
+  rm -f "$OUT"; die "Ronin did not answer at $url" 5;
 }
 python3 - "$CODE" "$OUT" <<'PY'
 import json, sys

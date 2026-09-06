@@ -101,8 +101,12 @@ function seedShell(
 > The owner opens them from the ▧ Docs tab in commons, so **a doc you did not list is a
 > doc they cannot reach without asking you for the path.**
 >
-> Your own words go in "objective" and "title". Read it with \`read_tegami\`; where the file
-> lives is Ronin's business. The words: reading-list/TEGAMI.md in the Ronin repo.
+> Your own words go in "objective" and "title". Read it with \`read_tegami\`. **Change one
+> field with one call**: \`write_tegami --objective "<sentence>"\` · \`--phase "<title>"\` ·
+> \`--leg N "<title>"\` · \`--done N.M\` · \`--gate "<what you wait for>"\` · \`--rung N\`,
+> \`--leg N.M\` to retitle · \`--drop N[.M]\` · \`--repo <repo>:<branch>\`. Verbs combine in one
+> call. \`write_tegami < block.json\` replaces the whole authored block. Where the file lives
+> is Ronin's business.
 
 \`\`\`json
 { "objective": "",

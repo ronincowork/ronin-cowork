@@ -46,8 +46,8 @@ export const STORES: readonly Store[] = [
 ];
 const storesById = new Map(STORES.map((row) => [row.id, row]));
 export const envName = (id: string): string => `RONIN_${id.toUpperCase()}_DIR`;
-export function rootDir(root: RootId): string {
-  const override = root === 'user' ? process.env.RONIN_USER_ROOT : process.env.RONIN_DATA_ROOT;
+export function rootDir(root: RootId, env: NodeJS.ProcessEnv = process.env): string {
+  const override = root === 'user' ? env.RONIN_USER_ROOT : env.RONIN_DATA_ROOT;
   return override?.trim() || path.join(os.homedir(), ROOT_REL[root]);
 }
 export function resolveStore(id: string): { dir: string; source: StoreSource } {

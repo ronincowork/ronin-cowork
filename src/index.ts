@@ -21,7 +21,7 @@ import {
   verifyRecord,
 } from './auth.js';
 import { cleanupViewers, listSessions } from './tmux.js';
-import { publishRoninUrl, republishRoninUrl, clearRoninUrl, OPERATOR_CONNECTION_OPT } from './operator-url.js';
+import { bindOperatorSocket, isOperatorPeer, operatorSocketPath, SiblingAlive, type BoundOperatorSocket } from './operator-socket.js';
 import { addressRefusal, EXIT_ADDRESS_UNUSABLE } from './bind-refusal.js';
 import { publishMax, publishOwner } from './machine-state.js';
 import { registerCatalogs } from './routes/catalogs.js';
@@ -143,7 +143,8 @@ app.post('/api/logout', (_req, res) => {
 app.use('/brand', express.static(path.join(PUBLIC, 'brand')));
 
 app.use((req, res, next) => {
-  if (checkAuth(req.headers)) return next();
+  // A peer on the operator's own socket is the user: the 0600 mode was the credential.
+  if (isOperatorPeer(req) || checkAuth(req.headers)) return next();
   if (passwordAuthEnabled() && req.method === 'GET' && req.accepts(['json', 'html']) === 'html') {
     return res.redirect('/login');
   }
@@ -375,21 +376,22 @@ if (bindSource !== 'env') {
   );
 }
 
+let operatorSocket: BoundOperatorSocket | undefined;
 server.listen(config.port, config.bind, async () => {
   if (isBoxInstance) {
+    // The agent tools' door: a Unix socket in the data root, bound by the box instance
+    // only. A second Ronin answering there is a collision, and like an occupied port it
+    // exits 78 so the unit stops instead of retrying into the same wall every RestartSec.
     try {
-      await publishRoninUrl(`http://${config.bind}:${config.port}`, cliToken);
-      // The option is memory of one tmux server. When the client reconnects onto a
-      // replacement — the old one killed under us — the address is gone from the bus while
-      // this process is still listening, and every agent tool says "Ronin may not be
-      // running" against an HTTP 200. Put it back the moment the client is up again.
-      tmuxClient.onReconnect(() => {
-        void republishRoninUrl().catch((e) => {
-          console.error(`[tmux-ronin] could not republish ${OPERATOR_CONNECTION_OPT} after tmux reconnect: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until Ronin restarts.`);
-        });
-      });
+      operatorSocket = await bindOperatorSocket(app, operatorSocketPath());
+      console.log(`[tmux-ronin] agent tools answer at ${operatorSocket.path}`);
     } catch (e) {
-      console.error(`[tmux-ronin] could not publish ${OPERATOR_CONNECTION_OPT}: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
+      if (e instanceof SiblingAlive) {
+        console.error(`[tmux-ronin] ${e.message}, so this Ronin did not start.`);
+        console.error('[tmux-ronin] Stop the other one, or give this one its own RONIN_DATA_ROOT, then: systemctl --user restart ronin');
+        process.exit(EXIT_ADDRESS_UNUSABLE);
+      }
+      console.error(`[tmux-ronin] could not bind ${operatorSocketPath()}: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
     }
   }
   console.log(
@@ -403,7 +405,9 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     stopBootHooks();
     stopSpawnBroker();
     setTimeout(() => process.exit(0), 2000).unref();
-    void Promise.allSettled([cleanupViewers(), clearRoninUrl()]).finally(() => process.exit(0));
+    // Only the socket this process bound comes down with it. Nothing shared is touched:
+    // a dev run or a test stopping here must leave the live operator exactly as it found it.
+    void Promise.allSettled([cleanupViewers(), operatorSocket?.close() ?? Promise.resolve()]).finally(() => process.exit(0));
   });
 }
 }

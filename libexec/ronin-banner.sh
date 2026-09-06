@@ -120,9 +120,50 @@ ronin_open_url() {
   printf '%s' "$url"
 }
 
+# THE FRAME FITS AN 80-COLUMN TERMINAL. Every inner line is wrapped here to at most
+# RONIN_FRAME_TEXT columns, and the frame around it is fixed: two columns of indent, the
+# left edge, two of padding, the text, two of padding, the right edge — 72 + 8 = 80. A
+# caller hands in whole sentences and paths and the frame does the fitting; it never
+# refuses a long line and never lets one push the right edge off the screen.
+RONIN_FRAME_TEXT=72
+
+# A path with $HOME spelled out is what pushed the first frame to 103 columns. Callers
+# print paths through this so the person reads ~/ronin/current, which is also how they
+# would type it.
+ronin_tilde() {
+  case "$1" in
+    "$HOME")   printf '~' ;;
+    "$HOME"/*) printf '~%s' "${1#"$HOME"}" ;;
+    *)         printf '%s' "$1" ;;
+  esac
+}
+
+# Wrap one frame line to at most $2 columns, on the last space that fits. A line shaped
+# "Label        · text" continues under its text column, so the label column stays a
+# column; any other line continues under its own leading whitespace. A run with no
+# space in it (a long path) is cut where it must be, never dropped.
+ronin_wrap() {
+  local text="$1" width="$2" indent="" rest chunk cut after
+  case "$text" in
+    *" · "*) after="${text#* · }"; indent="$(printf '%*s' $(( ${#text} - ${#after} )) '')" ;;
+    *)       indent="${text%%[! ]*}" ;;
+  esac
+  rest="$text"
+  while [ ${#rest} -gt "$width" ]; do
+    chunk="${rest:0:$(( width + 1 ))}"
+    cut="${chunk% *}"
+    if [ ${#cut} -eq ${#chunk} ] || [ ${#cut} -le ${#indent} ]; then cut="${rest:0:$width}"; fi
+    printf '%s\n' "${cut%"${cut##*[! ]}"}"
+    rest="${rest:${#cut}}"
+    rest="${rest#"${rest%%[! ]*}"}"
+    rest="$indent$rest"
+  done
+  printf '%s\n' "$rest"
+}
+
 ronin_banner() { # <root> <url> [change line...]
   local root="$1" url="$2"; shift 2
-  local title=" RONIN COWORK " ver="" mark="人" grid_pass="" posture=""
+  local title=" RONIN COWORK " ver="" mark="人" grid_pass="" text="$RONIN_FRAME_TEXT"
   [ -f "$root/VERSION" ] && ver="$(sed -n 's/^release=//p' "$root/VERSION" 2>/dev/null || true)"
   [ -n "$ver" ] && ver=" $ver "
 
@@ -134,21 +175,35 @@ ronin_banner() { # <root> <url> [change line...]
   if [ -f "$root/.env" ]; then
     grid_pass="$(sed -n 's/^[[:space:]]*GRID_PASS=[[:space:]]*//p' "$root/.env" 2>/dev/null | head -1)"
   fi
+  # The posture is two sentences on two lines: the fact, then the remedy. One line held
+  # both at 88 columns and broke every 80-column terminal it met.
+  local posture=()
   if [ -z "$grid_pass" ]; then
-    posture="No password: anyone your tailnet lets reach this has a shell here. bin/ronin-passwd adds one."
+    posture=("No password: anyone your tailnet lets reach this has a shell here."
+             "bin/ronin-passwd adds one.")
   fi
+  # Everything after the greeting is wrapped to the text width before it is measured,
+  # so the widest line the frame can hold is the widest line it will ever draw.
+  local body=() details=() line
+  while IFS= read -r line; do body+=("$line"); done < <(ronin_wrap "$l2" "$text")
+  local url_at=${#body[@]}
+  while IFS= read -r line; do body+=("$line"); done < <(ronin_wrap "$url" "$text")
+  for line in ${posture[@]+"${posture[@]}"}; do
+    while IFS= read -r l; do body+=("$l"); done < <(ronin_wrap "$line" "$text")
+  done
+  local l detail
+  for detail in "$@"; do
+    while IFS= read -r l; do details+=("$l"); done < <(ronin_wrap "$detail" "$text")
+  done
+
   local w1=$(( ${#l1} + 1 )) w=0
   [ "$w1" -gt "$w" ] && w=$w1
-  [ ${#l2} -gt "$w" ] && w=${#l2}
-  [ ${#url} -gt "$w" ] && w=${#url}
-  [ ${#posture} -gt "$w" ] && w=${#posture}
-  local detail
-  for detail in "$@"; do
-    [ ${#detail} -gt "$w" ] && w=${#detail}
+  for line in "${body[@]}" ${details[@]+"${details[@]}"}; do
+    [ ${#line} -gt "$w" ] && w=${#line}
   done
   # A frame that cannot hold its own chrome is a broken frame.
   local chrome=$(( ${#title} + ${#ver} + 4 ))
-  local inner=$(( w + 6 )); [ "$chrome" -gt "$inner" ] && inner=$chrome
+  local inner=$(( w + 4 )); [ "$chrome" -gt "$inner" ] && inner=$chrome
 
   local i fill="" dashes=$(( inner - ${#title} - ${#ver} - 2 ))
   for ((i = 0; i < dashes; i++)); do fill="$fill─"; done
@@ -156,20 +211,22 @@ ronin_banner() { # <root> <url> [change line...]
 
   printf '\n  ╭─%s%s%s─╮\n' "$title" "$fill" "$ver"
   printf '  │%*s│\n' "$inner" ""
-  printf '  │   %s%*s│\n' "$l1" $(( inner - 3 - w1 )) ""
+  printf '  │  %s%*s│\n' "$l1" $(( inner - 2 - w1 )) ""
   printf '  │%*s│\n' "$inner" ""
-  printf '  │   %s%*s│\n' "$l2" $(( inner - 3 - ${#l2} )) ""
-  # Bold only for a tty, so a piped transcript stays clean.
-  if [ -t 1 ]; then
-    printf '  │   \033[1m%s\033[0m%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
-  else
-    printf '  │   %s%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
-  fi
-  [ -z "$posture" ] || printf '  │   %s%*s│\n' "$posture" $(( inner - 3 - ${#posture} )) ""
-  if [ "$#" -gt 0 ]; then
+  i=0
+  for line in "${body[@]}"; do
+    # Bold only for a tty, so a piped transcript stays clean.
+    if [ "$i" -eq "$url_at" ] && [ -t 1 ]; then
+      printf '  │  \033[1m%s\033[0m%*s│\n' "$line" $(( inner - 2 - ${#line} )) ""
+    else
+      printf '  │  %s%*s│\n' "$line" $(( inner - 2 - ${#line} )) ""
+    fi
+    i=$(( i + 1 ))
+  done
+  if [ ${#details[@]} -gt 0 ]; then
     printf '  ├%s┤\n' "$bar"
-    for detail in "$@"; do
-      printf '  │   %s%*s│\n' "$detail" $(( inner - 3 - ${#detail} )) ""
+    for line in "${details[@]}"; do
+      printf '  │  %s%*s│\n' "$line" $(( inner - 2 - ${#line} )) ""
     done
   fi
   printf '  │%*s│\n' "$inner" ""

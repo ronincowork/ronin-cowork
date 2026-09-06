@@ -597,40 +597,7 @@ if [ "$OS" = "Linux" ] && machine_swap_offerable; then
   WANT_SWAP=1
 fi
 
-if [ "$NSTEPS" = 1 ]; then
-  out "  One more step. Copy and paste this, and you're good to go:"
-elif [ "$NSTEPS" -gt 1 ]; then
-  out "  One more step. Copy and paste this whole block — it asks for your password once:"
-fi
-if [ "$NSTEPS" -gt 0 ]; then
-  out ""
-  # Each action reports independently inside ONE sudo. There is deliberately no `set -e`:
-  # one failure must report itself and must not silently skip the remaining actions.
-  out "      sudo bash -c '"
-  s=0
-  while [ "$s" -lt "$NSTEPS" ]; do
-    out "        if { ${STEP_ACT[$s]}; }; then printf \"%s\\n\" \"✓ ${STEP_OK[$s]}\"; else printf \"%s\\n\" \"✗ ${STEP_FAIL[$s]} — Ronin is still at $OPEN_URL\"; fi"
-    s=$(( s + 1 ))
-  done
-  out "      '"
-  out ""
-  if [ -n "${WANT_SWAP:-}" ]; then
-    out "  (The swapfile part is insurance: this box has no swap, so if memory ever fills,"
-    out "   the kernel kills a session instead of slowing down. It is a one-time setup —"
-    out "   the /etc/fstab line brings it back automatically on every reboot.)"
-    out ""
-  fi
-  if [ -n "$WANT_SERVE" ] && [ -n "${FQDN:-}" ]; then
-    out "  When that's done, your door is:"
-    out ""
-    out "      https://$FQDN:8443"
-  else
-    out "  When that's done, run  ronin-welcome  to see your address."
-  fi
-  out ""
-fi
-
-# Printed instructions above are the contract. On a local graphical desktop this is
+# The frame and the paste printed below are the contract. On a local graphical desktop this is
 # merely a convenience: wait for /api/health to answer 200, then ask the OS to open
 # the page. SSH/headless detection and opener failures are non-fatal in the helper.
 # Linux only, deliberately: macOS renders the launchd agent but the user loads it by
@@ -655,21 +622,23 @@ if [ "$OS" = "Linux" ]; then
   fi
 fi
 
-# Last on purpose: one composed result gives the person the address to copy and every
-# persistent touch outside the install home. This is presentation, not another setup log.
+# The frame comes first: one composed result gives the person the address to copy and
+# every persistent touch outside the install home. This is presentation, not another
+# setup log. Paths are printed with ~ and every line fits an 80-column terminal, which
+# the frame itself guarantees (libexec/ronin-banner.sh, RONIN_FRAME_TEXT).
 USER_STORE_ROOT="$("$REPO_DIR/bin/ronin-store" --root user)"
 DATA_STORE_ROOT="$("$REPO_DIR/bin/ronin-store" --root data)"
 RC_SUMMARY=""
 for f in "$RC" ${RC_ALSO:+"$RC_ALSO"}; do
   [ -n "$f" ] && [ -f "$f" ] || continue
   if grep -qF "$SHIM_BEGIN" "$f" 2>/dev/null || grep -qF "$AGENT_BEGIN" "$f" 2>/dev/null; then
-    case " $RC_SUMMARY " in *" $f "*) ;; *) RC_SUMMARY="${RC_SUMMARY:+$RC_SUMMARY, }$f" ;; esac
+    case " $RC_SUMMARY " in *" $f "*) ;; *) RC_SUMMARY="${RC_SUMMARY:+$RC_SUMMARY, }$(ronin_tilde "$f")" ;; esac
   fi
 done
 RESULT_LINES=(
-  "WHAT RONIN CHANGED OUTSIDE $REPO_DIR"
-  "Claude Code  · ~/.claude/settings.json: statusLine registered when unclaimed."
-  "               Unset, dark, or light themes become dark-ansi; owner-set values stay."
+  "WHAT CHANGED OUTSIDE $(ronin_tilde "$REPO_DIR")"
+  "Claude Code  · ~/.claude/settings.json: statusLine, when unclaimed;"
+  "               theme dark-ansi if unset, dark or light; others stay."
 )
 if [ -n "$RC_SUMMARY" ]; then
   RESULT_LINES+=("Shell PATH   · $RC_SUMMARY" "               shim first; Ronin tools next; ~/.local/bin last.")
@@ -677,24 +646,61 @@ else
   RESULT_LINES+=("Shell PATH   · no rc file changed; use the manual line printed above.")
 fi
 RESULT_LINES+=(
-  "tmux command · $SHIM_DIR/tmux"
+  "tmux command · $(ronin_tilde "$SHIM_DIR")/tmux"
   "               refuses 'tmux kill-server' because it ends every session."
-  "Stores       · user: $USER_STORE_ROOT"
-  "               data: $DATA_STORE_ROOT"
+  "Stores       · user: $(ronin_tilde "$USER_STORE_ROOT")"
+  "               data: $(ronin_tilde "$DATA_STORE_ROOT")"
 )
 if [ "$OS" = Linux ] && command -v systemctl >/dev/null 2>&1; then
-  RESULT_LINES+=("Autostart    · $HOME/.config/systemd/user/{tmux-server,ronin}.service")
+  RESULT_LINES+=("Autostart    · ~/.config/systemd/user/{tmux-server,ronin}.service")
 elif [ "$OS" = Darwin ]; then
-  RESULT_LINES+=("Autostart    · $HOME/Library/LaunchAgents/com.ronin.plist (load command above)")
+  RESULT_LINES+=("Autostart    · ~/Library/LaunchAgents/com.ronin.plist (load line above)")
 else
   RESULT_LINES+=("Autostart    · no unit or plist written on this platform.")
 fi
 TMUX_LEASE="$DATA_STORE_ROOT/machine/tmux-adoption"
 if [ -f "$TMUX_LEASE" ]; then
   TMUX_PRIOR="$(sed -n 's/^prior=//p' "$TMUX_LEASE" 2>/dev/null | head -1)"
-  RESULT_LINES+=("tmux lease   · exit-empty is off; prior ${TMUX_PRIOR:-unknown}; uninstall restores it." "               $TMUX_LEASE")
+  RESULT_LINES+=("tmux lease   · exit-empty is off; prior ${TMUX_PRIOR:-unknown}; uninstall restores it." "               $(ronin_tilde "$TMUX_LEASE")")
 else
   RESULT_LINES+=("tmux lease   · none; no existing default tmux server was changed.")
 fi
-RESULT_LINES+=("Network bind · $RECORDED_BIND in $REPO_DIR/.env (source: $RECORDED_BIND_SOURCE)")
+RESULT_LINES+=("Network bind · $RECORDED_BIND in $(ronin_tilde "$REPO_DIR")/.env" "               source: $RECORDED_BIND_SOURCE")
 ronin_banner "$REPO_DIR" "$OPEN_URL" "${RESULT_LINES[@]}" >&3
+
+# LAST ON PURPOSE: the one thing they still have to do is the last thing on the screen.
+# The frame above has said where Ronin is and what changed; this says what is left.
+if [ "$NSTEPS" = 1 ]; then
+  out "  One more step. Copy and paste this, and you're good to go:"
+elif [ "$NSTEPS" -gt 1 ]; then
+  out "  One more step. Copy and paste this whole block — it asks for your password once:"
+fi
+if [ "$NSTEPS" -gt 0 ]; then
+  out ""
+  # Each action reports on its own line inside ONE sudo: the action, then a check mark
+  # with what happened, or a cross with what did not and where Ronin still answers.
+  # One plain line per action, readable at a glance, and deliberately no `set -e`: the
+  # actions are independent, so one failing reports itself and never skips the rest.
+  out "      sudo bash -c '"
+  s=0
+  while [ "$s" -lt "$NSTEPS" ]; do
+    out "        ${STEP_ACT[$s]} && echo \"✓ ${STEP_OK[$s]}\" || echo \"✗ ${STEP_FAIL[$s]} — Ronin is still at $OPEN_URL\""
+    s=$(( s + 1 ))
+  done
+  out "      '"
+  out ""
+  if [ -n "${WANT_SWAP:-}" ]; then
+    out "  (The swapfile part is insurance: this box has no swap, so if memory ever fills,"
+    out "   the kernel kills a session instead of slowing down. It is a one-time setup —"
+    out "   the /etc/fstab line brings it back automatically on every reboot.)"
+    out ""
+  fi
+  if [ -n "$WANT_SERVE" ] && [ -n "${FQDN:-}" ]; then
+    out "  When that's done, your door is:"
+    out ""
+    out "      https://$FQDN:8443"
+  else
+    out "  When that's done, run  ronin-welcome  to see your address."
+  fi
+  out ""
+fi

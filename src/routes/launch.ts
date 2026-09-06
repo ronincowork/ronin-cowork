@@ -42,6 +42,17 @@ import type { SessionsDefaults } from '../launch-command.js';
 import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentence, type PacketReport } from '../birth-readme.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
+import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
+
+/** The environment a newborn is handed beyond what the pane inherits: its projected
+ *  command PATH, and the operator socket that launched it. Undefined when there is nothing
+ *  to say, so `new-session` gets no empty `-e`. */
+export function birthEnv(toolPath?: string, socket?: string): Record<string, string> | undefined {
+  const env: Record<string, string> = {};
+  if (toolPath) env.PATH = toolPath;
+  if (socket) env[OPERATOR_SOCKET_ENV] = socket;
+  return Object.keys(env).length ? env : undefined;
+}
 
 export function createWindowedLoader<T>(
   load: () => Promise<T>,
@@ -347,7 +358,10 @@ export function registerLaunch(app: express.Express): void {
         agent: resolved.agent,
         exempt: resolved.capExempt,
         argv: launch.argv,
-        env: routineTools ? { PATH: routineTools.path } : undefined,
+        // Told at birth, the way tmux tells every shell where its server is: the socket
+        // this operator bound. A process that bound none (a dev run) says nothing, and the
+        // newborn's tools use the default path.
+        env: birthEnv(routineTools?.path, boundOperatorSocket()),
         control: resolved.agent ? 'user' : undefined,
         key: birthKey || undefined,
         // The Services switch as resolved for THIS Agent at birth (campaign < team < form):

@@ -179,11 +179,19 @@ no letter yet, which is the ordinary state of a session that has not written one
 Your letter is the one file that outlives your pane, so it is written for whoever
 reads it next — the owner in the tile, or the session that inherits the work.
 ```bash
-write_tegami <<'JSON'           # replaces YOUR ladder; the block and nothing else
-{ "objective": "...", "role_family": "...", "session_role": "...", "ladder": [ … ] }
+write_tegami --objective "<one sentence>"          # one field, one call — the usual way
+write_tegami --phase "<title>"  --leg 2 "<title>"   # grow the ladder: a rung, then its legs
+write_tegami --done 2.1 --active 2.2                # mark a step; --status N[.M] for any status
+write_tegami --gate "<what you are waiting for>"    # append a gate where the work stops
+write_tegami --rung 3 "<title>" --leg 3.1 "<title>" # retitle · --drop N[.M] removes
+write_tegami --repo <repo>:<branch>                 # a checkout row · --unrepo takes it off
+write_tegami <<'JSON'           # or replace the whole authored block at once
+{ "objective": "...", "ladder": [ … ] }
 JSON
 write_tegami --session <name> --at 2.3    # another session's position, ONLY the position
 ```
+Verbs combine in one call and apply in order. Each runs through the same validator as
+the block form, so `at`, `docs` and `teams` are carried through untouched.
 - **Bring it in line with what you have actually done** — a ladder that flatters is
   worse than none, because the owner steers by it.
 - **An undetermined rung is not rendered.** A short honest ladder beats an invented one.
