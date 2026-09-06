@@ -53,6 +53,7 @@ import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
+import { DocumentPathError, legacyDocumentPath, readDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { discoverParts, partsToLoad } from './parts.js';
@@ -258,11 +259,16 @@ startMessageQueue();
 
 app.get('/api/file', async (req, res) => {
   const file = String(req.query.path ?? '');
-  if (!file.startsWith('/')) return res.status(400).json({ error: 'An absolute path is required.' });
   try {
-    const text = await fs.promises.readFile(file, 'utf8');
-    res.json({ path: file, text });
+    if (req.query.root) {
+      const safe = await readDocumentFile(req.query.root, file);
+      return res.json(safe);
+    }
+    const legacy = legacyDocumentPath(file);
+    const text = await fs.promises.readFile(legacy, 'utf8');
+    res.json({ path: legacy, text });
   } catch (e) {
+    if (e instanceof DocumentPathError) return res.status(e.status).json({ error: e.message });
     const code = (e as NodeJS.ErrnoException)?.code;
     if (code === 'ENOENT' || code === 'EISDIR') return res.status(404).json({ error: 'No such file.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
@@ -271,13 +277,17 @@ app.get('/api/file', async (req, res) => {
 
 app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, res) => {
   const file = String(req.query.path ?? '');
-  if (!file.startsWith('/')) return res.status(400).json({ error: 'An absolute path is required.' });
   const text = typeof req.body === 'string' ? req.body : '';
   try {
-    await fs.promises.access(file);
-    await fs.promises.writeFile(file, text, 'utf8');
+    if (req.query.root) await saveDocumentFile(req.query.root, file, text);
+    else {
+      const legacy = legacyDocumentPath(file);
+      await fs.promises.access(legacy);
+      await fs.promises.writeFile(legacy, text, 'utf8');
+    }
     res.json({ ok: true, bytes: Buffer.byteLength(text) });
   } catch (e) {
+    if (e instanceof DocumentPathError) return res.status(e.status).json({ error: e.message });
     const code = (e as NodeJS.ErrnoException)?.code;
     if (code === 'ENOENT') return res.status(404).json({ error: 'No such file — it moved or was deleted.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
