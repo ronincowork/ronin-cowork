@@ -19,19 +19,23 @@ export interface FolderListing {
   home: string;
   dir: string;
   parent: string | null;
-  folders: Array<{ name: string; dir: string }>;
+  folders: Array<{ name: string; dir: string; kind: 'repository' | 'folder'; repository: boolean }>;
 }
 
 export async function browseFolders(raw: string, options: { hidden?: boolean; query?: string } = {}): Promise<FolderListing> {
   const dir = await safeDirectory(raw || HOME);
   const query = String(options.query ?? '').trim().toLocaleLowerCase().slice(0, 80);
   const entries = await readdir(dir, { withFileTypes: true });
-  const folders = entries
+  const visible = entries
     .filter((entry) => entry.isDirectory() && (options.hidden || !entry.name.startsWith('.')))
     .filter((entry) => !query || entry.name.toLocaleLowerCase().includes(query))
     .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(0, 200)
-    .map((entry) => ({ name: entry.name, dir: path.join(dir, entry.name) }));
+    .slice(0, 200);
+  const folders = await Promise.all(visible.map(async (entry) => {
+    const entryDir = path.join(dir, entry.name);
+    const repository = await stat(path.join(entryDir, '.git')).then(() => true, () => false);
+    return { name: entry.name, dir: entryDir, kind: repository ? 'repository' as const : 'folder' as const, repository };
+  }));
   return { home: HOME, dir, parent: dir === HOME ? null : path.dirname(dir), folders };
 }
 
