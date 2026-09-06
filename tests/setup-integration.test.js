@@ -86,6 +86,9 @@ test('the integrated Setup/Cowork adapters hand Customize to a new tab and use t
   assert.match(cowork, /profiles\.define\(WB_PROFILES\.cowork, \[[^\]]*WB_TYPES\.document[^\]]*\]\)/);
   assert.match(cowork, /type: WB_TYPES\.document[^\n]*discover: \(\) => \[\]/);
   assert.doesNotMatch(cowork, /profiles\.define\(WB_PROFILES\.team, \[[^\]]*WB_TYPES\.document/);
+  assert.match(cowork, /surfaceIn\(id\) \? snapshot\?\.seats\?\.\[id\] : seats\[id\]\.pool\.active/);
+  const docs = await source('docs.js');
+  assert.match(docs, /WorkspacePrimitives\.createSurface\(\{ label:[^\n]*className: 'workspace-document' \}\)/);
 });
 
 test('Agent + Editable Doc carries only a registered root and root-relative path into the existing editor seat', () => {

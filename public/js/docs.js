@@ -4,6 +4,7 @@ import { status } from './ui.js';
 import { homeData } from './home.js';
 import { t } from './lexicon.js';
 import { DOC_MIME } from './team-drag.js';
+import { WorkspacePrimitives } from './workspace-primitives.js';
 
 export function buildDocs(tile, root, isShowing, only = null, reposFirst = () => []) {
   let openPath = null; // normalized target, or null while the list is showing
@@ -324,10 +325,12 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
 
 /** Seat the one existing Docs editor directly as a workbench resource. */
 export function createDocumentWorkspaceAdapter({ root, path } = {}) {
-  const el = document.createElement('div');
-  el.className = 'home-docs workspace-document';
-  const docs = buildDocs(null, el, () => el.isConnected);
+  const surface = WorkspacePrimitives.createSurface({ label: t('docs.frame_title', 'Document'), className: 'workspace-document' });
+  const host = document.createElement('div');
+  host.className = 'home-docs';
+  surface.content.append(host);
+  const docs = buildDocs(null, host, () => surface.el.isConnected);
   const target = { root: String(root || ''), path: String(path || '') };
   const show = () => docs.open(target);
-  return { el, show, enter: show, leave: docs.leave, isDirty: docs.isDirty };
+  return { el: surface.el, show, enter: show, leave: docs.leave, isDirty: docs.isDirty };
 }

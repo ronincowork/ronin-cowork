@@ -306,7 +306,7 @@ export function createCoworkView(options = {}) {
    *  keeps its tiles while it is out. One trade for every surface, present and future. */
   const putSurface = (token, id, tab = '', doc = '') => { const request = surfaceRequest(token); return bench?.place(request.type, id, { ...request.detail, tab, doc }) || false; };
   const isShown = (name) => Object.values(seats).some((seat) => seat.pool.active === name && !surfaceIn(seat.id));
-  const remember = () => { ctx?.patchViewState(viewKey, { ...bench?.snapshot(), seats: Object.fromEntries(Object.keys(seats).map((id) => [id, surfaceIn(id) ? (bench.resourceAt(id) ? { type: heldSurface(id), key: bench.resourceAt(id) } : heldSurface(id)) : seats[id].pool.active])) }); reportView(); };
+  const remember = () => { const snapshot = bench?.snapshot(); ctx?.patchViewState(viewKey, { ...snapshot, seats: Object.fromEntries(Object.keys(seats).map((id) => [id, surfaceIn(id) ? snapshot?.seats?.[id] : seats[id].pool.active])) }); reportView(); };
   const lead = () => membersOfTeam(team).find((m) => m.team_lead)?.name || '';
 
   const putCommons = (id, tab = '', doc = '') => putSurface(COMMONS, id, tab, doc);

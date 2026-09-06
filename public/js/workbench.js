@@ -64,7 +64,7 @@ export function createWorkbench(options = {}) {
   const fixedWorkspaces = options.fixedWorkspaces && typeof options.fixedWorkspaces === 'object' ? options.fixedWorkspaces : {};
 
   const defaults = {}, cells = {}, columns = { workspace1: node('div', 'wk-workbench-column'), workspace2: node('div', 'wk-workbench-column') };
-  const instances = new Map(), instanceNodes = new WeakMap();
+  const instances = new Map(), instanceNodes = new WeakMap(), instanceDetails = new WeakMap();
   let selected = 'workspace1', count = 2, restoring = false, selectorTitle = null;
   const visibleIds = () => WORKBENCH_IDS.filter((id) => count === 4 || !LOWER.has(id));
   const holding = (id) => cells[id]?.firstElementChild ?? null;
@@ -197,6 +197,7 @@ export function createWorkbench(options = {}) {
     if (fixedWorkspaces[id] && fixedWorkspaces[id] !== type) return false;
     const value = instance(type, id, detail);
     if (!value || !placeNode(id, value.el)) return false;
+    instanceDetails.set(value.el, { ...detail });
     value.el.dataset.workbenchSurface = type;
     if (detail.key) value.el.dataset.workbenchResource = detail.key;
     else delete value.el.dataset.workbenchResource;
@@ -207,7 +208,10 @@ export function createWorkbench(options = {}) {
     options.onPlacement?.(snapshot());
     return true;
   };
-  const snapshot = () => ({ count, selected, arrangement: layout.arrangement.state(), seats: Object.fromEntries(WORKBENCH_IDS.map((id) => [id, resourceAt(id) ? { type: typeAt(id), key: resourceAt(id) } : typeAt(id)])) });
+  const snapshot = () => ({ count, selected, arrangement: layout.arrangement.state(), seats: Object.fromEntries(WORKBENCH_IDS.map((id) => {
+    const type = typeAt(id), key = resourceAt(id), detail = instanceDetails.get(holding(id)) || {};
+    return [id, key ? { type, key, ...(['root', 'path', 'tab', 'doc'].reduce((kept, field) => detail[field] ? { ...kept, [field]: detail[field] } : kept, {})) } : type];
+  })) });
   const refreshSelector = () => {
     if (selectorTitle) selectorTitle.textContent = options.title?.(tenant) || options.label || profile.name;
     selectorCards.replaceChildren();
