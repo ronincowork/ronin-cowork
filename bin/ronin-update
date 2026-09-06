@@ -62,6 +62,8 @@ say()  { echo "→ $1"; }
 # elsewhere", so the release landed, current moved, and the old code kept serving.
 # shellcheck source=libexec/ronin-machine.sh
 . "$SELF/libexec/ronin-machine.sh"
+# shellcheck source=../libexec/ronin-render-check.sh
+. "$SELF/libexec/ronin-render-check.sh"
 RONIN_UNIT="$(machine_operator_unit)"
 
 # --- arguments ---
@@ -250,23 +252,6 @@ why_not_restarted() {
   fi
 }
 
-# The render check, byoin's contract exactly (bin/ronin-byoin): exit 0 = rendered
-# and looked at; exit 2 = NO HEADLESS BROWSER here, an honest SKIP with its reason —
-# a laptop installing for the first time has no Playwright and must not be refused
-# for it; anything else = the page is actually broken.
-render_check() { # $1=tree $2=url $3=what; returns 1 only on a REAL failure
-  local out rc=0
-  out="$(cd "$1" && node scripts/smoke-ui.mjs "$2" 2>&1)" || rc=$?
-  if [ "$rc" = 0 ]; then
-    say "$3 gated: the page renders"
-  elif [ "$rc" = 2 ]; then
-    say "render check skipped — no headless browser here; the boot and version answer are the proof (docs/host-tools.md)"
-  else
-    printf '%s\n' "$out" | tail -12 | sed 's/^/  /'
-    return 1
-  fi
-}
-
 restart_and_gate() {
   local act
   act="$(machine_operator_restart_action)"
@@ -289,8 +274,12 @@ restart_and_gate() {
     curl -fsS -m 2 -o /dev/null "${url}api/health" 2>/dev/null && break
     sleep 1
   done
-  render_check "$HOME_DIR/current" "$url" "the live page" ||
+  local render_rc
+  if render_check "$HOME_DIR/current" "$url" "the live page"; then render_rc=0; else render_rc=$?; fi
+  if [ "$render_rc" = 1 ]; then
+    printf '%s\n' "$RENDER_DETAILS" | sed 's/^/  /'
     fail "the LIVE page failed its gate after the swap — roll back: bin/ronin-update --rollback"
+  fi
 }
 
 # --- rollback: the previous unpacked release, by symlink ---
@@ -478,8 +467,11 @@ done
 ANSWER="$(curl -fsS -m 3 "http://127.0.0.1:$SCRATCH/api/version" 2>/dev/null || true)"
 echo "$ANSWER" | grep -q "\"release\":\"$VER\"" ||
   fail "the candidate does not answer release $VER (got: ${ANSWER:-nothing}) — nothing was swapped"
-render_check "$TARGET" "http://127.0.0.1:$SCRATCH/" "the candidate ($VER)" ||
+if render_check "$TARGET" "http://127.0.0.1:$SCRATCH/" "the candidate ($VER)"; then render_rc=0; else render_rc=$?; fi
+if [ "$render_rc" = 1 ]; then
+  printf '%s\n' "$RENDER_DETAILS" | sed 's/^/  /'
   fail "the CANDIDATE failed its render gate — nothing was swapped; the serving release never moved"
+fi
 kill_tree "$CANDIDATE_PID"
 wait "$CANDIDATE_PID" 2>/dev/null || true
 CANDIDATE_PID=""
@@ -502,7 +494,7 @@ if unit_serves_home; then
   restart_and_gate
   echo "✓ $VER is live — /api/version answers it"
 elif [ -z "$CUR" ]; then
-  echo "✓ $VER is installed at $HOME_DIR/current — FIRST install on this home."
+  echo "✓ $VER is installed at $HOME_DIR/current — FIRST install on this home: current did not point at an earlier release here."
   # Only for a hand-run update; get-ronin execs setup.sh itself.
   if [ -z "${RONIN_FROM_GET:-}" ]; then
     echo "  To make it serve: (cd $HOME_DIR/current && ./setup.sh)   # units, PATH, start"

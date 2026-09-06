@@ -67,10 +67,9 @@ if [ -z "$TEAM" ]; then
   [ "$n" -eq 1 ] || echo "WARNING: $ME is on several teams ($tags); using $TEAM." >&2
 fi
 
-url=$("$TOOL_DIR/ronin-url") || exit $?
-AUTH=()
-[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
-api() { curl -sS -m 20 "${AUTH[@]+"${AUTH[@]}"}" "$@" 2>/dev/null; }
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+api() { curl -sS -m 20 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" "$@" 2>/dev/null; }
 q() { python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1" 2>/dev/null || printf '%s' "$1"; }
 
 # THE VIEW — the bare form.

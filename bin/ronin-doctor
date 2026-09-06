@@ -255,6 +255,33 @@ else
   find_ "nothing answers ${URL}api/health — the grid is down; journalctl --user -u $RONIN_UNIT -n 50, restart is the owner's hand"
 fi
 
+# The command door is a different question from the page: a Unix socket at
+# <data root>/run/ronin.sock (docs/operator-connection.md), which is the address, the
+# liveness check and the credential at once. Resolve it the way ronin_bin/ronin-url does
+# and knock the same way — a bare connect, no HTTP, 2 s — so doctor and the tools it
+# vouches for cannot disagree about whether anyone is home.
+SOCK="${RONIN_SOCKET:-${RONIN_DATA_ROOT:-$HOME/.ronin}/run/ronin.sock}"
+if [ ! -e "$SOCK" ]; then
+  note "no Ronin has started on this box (no socket at $SOCK)"
+elif ! command -v python3 >/dev/null 2>&1; then
+  note "socket present at $SOCK, but python3 is absent so doctor cannot knock on it — ronin-url needs it too"
+elif SOCK="$SOCK" python3 - <<'PY' 2>/dev/null
+import os, socket, sys
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(2)
+try:
+    s.connect(os.environ["SOCK"])
+except OSError:
+    sys.exit(1)
+finally:
+    s.close()
+PY
+then
+  ok "command socket at $SOCK answers"
+else
+  find_ "Ronin is not running (socket at $SOCK, nobody listening); journalctl --user -u ronin.service -n 50 says why"
+fi
+
 # ---- 4b. the perimeter: is the front door shut? -----------------------------------
 # Two facts about THIS BOX, which is why they live here and not in a repo gate: a
 # checked-in file cannot know a machine's file modes or what it ended up bound to.
@@ -266,9 +293,9 @@ sect "perimeter"
 # by name for the same reason: doctor must be safe to run and safe to paste.
 if [ -f "$ROOT/.env" ]; then
   if [ "$OS" = "Darwin" ]; then
-    ENV_MODE="$(stat -f '%Lp' "$ROOT/.env" 2>/dev/null)"
+    ENV_MODE="$(stat -L -f '%Lp' "$ROOT/.env" 2>/dev/null)"
   else
-    ENV_MODE="$(stat -c '%a' "$ROOT/.env" 2>/dev/null)"
+    ENV_MODE="$(stat -L -c '%a' "$ROOT/.env" 2>/dev/null)"
   fi
   # Anything readable by group or other. The file holds GRID_PASS and provider keys on
   # a box whose premise is many concurrent agent sessions under one Unix user.
@@ -462,7 +489,7 @@ shim_have="$(command -v tmux || true)"
 if [ "$(readlink -f "$shim_have" 2>/dev/null)" = "$(readlink -f "$shim_want")" ]; then
   ok "tmux resolves to the guard shim"
 elif [ "$(env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -lc 'readlink -f "$(command -v tmux)"' 2>/dev/null)" = "$(readlink -f "$shim_want")" ]; then
-  note "tmux resolves to ${shim_have:-nothing} in THIS shell, but a fresh login shell gets the guard shim — this pane predates the last ./setup.sh. New sessions are guarded"
+  note "tmux resolves to ${shim_have:-nothing} in THIS shell, but a fresh login shell gets the guard shim — expected on the pane that ran setup. New sessions are guarded"
 else
   find_ "tmux resolves to ${shim_have:-nothing}, not bin/shim/tmux, and a fresh login shell does not get it either; re-run ./setup.sh"
 fi
@@ -478,7 +505,7 @@ fi
 if command -v write_tegami >/dev/null 2>&1; then
   ok "bin/ tools reachable by bare name"
 elif env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -lc 'command -v write_tegami' >/dev/null 2>&1; then
-  note "bin/ is not on THIS shell's PATH, but a fresh login shell has it — this pane started before ./setup.sh last ran. New sessions are fine; nothing to fix"
+  note "bin/ is not on THIS shell's PATH, but a fresh login shell has it — expected on the pane that ran setup. New sessions are fine; nothing to fix"
 else
   find_ "bin/ is not on PATH, and a fresh login shell does not get it either — write_tegami, tejun* and koshi only work from the repo root; re-run ./setup.sh"
 fi
@@ -498,7 +525,7 @@ if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
       *tmux-server.service*) ok "tmux server lives in tmux-server.service's cgroup" ;;
       *ronin.service*)       find_ "the tmux server is inside the operator's cgroup — restarting Ronin WILL kill every session on this box; see docs/tmux-server-cgroup.md (owner's hand)" ;;
       '')                    note "could not read the tmux server's cgroup" ;;
-      *)                     find_ "the tmux server is outside tmux-server.service (started by hand?) — sessions die with whatever started it; see docs/tmux-server-cgroup.md (owner's hand)" ;;
+      *)                     note "the tmux server was started outside any Ronin unit (adopted); it lives and dies with whatever started it" ;;
     esac
   fi
 fi

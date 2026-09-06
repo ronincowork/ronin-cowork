@@ -100,6 +100,7 @@ chmod 600 .env 2>/dev/null || true
 # function in libexec/ronin-banner.sh.
 # shellcheck source=libexec/ronin-banner.sh
 . "$REPO_DIR/libexec/ronin-banner.sh"
+read -r RECORDED_BIND RECORDED_BIND_SOURCE <<<"$(ronin_bind_full "$REPO_DIR")"
 ronin_record_bind "$REPO_DIR"
 
 # --- Claude Code settings Ronin needs (two keys, one merge) ---
@@ -115,9 +116,9 @@ echo "==> Claude Code settings (the ⛽ context gauge, and light/dark reaching t
 if [ ! -f "$CLAUDE_SETTINGS_PY" ] || [ ! -f "$STATUSLINE_SH" ]; then
   echo "    SKIPPED: $CLAUDE_SETTINGS_PY or $STATUSLINE_SH not found."
 elif ! command -v python3 >/dev/null 2>&1; then
-  echo "    SKIPPED: python3 not found, cannot edit JSON safely. Add by hand to ~/.claude/settings.json:"
-  echo "      \"statusLine\": { \"type\": \"command\", \"command\": \"$STATUSLINE_SH\" },"
-  echo "      \"theme\": \"dark-ansi\""
+  ronin_say "    SKIPPED: python3 not found, cannot edit JSON safely. Add by hand to ~/.claude/settings.json:"
+  ronin_say "      \"statusLine\": { \"type\": \"command\", \"command\": \"$STATUSLINE_SH\" },"
+  ronin_say "      \"theme\": \"dark-ansi\""
 else
   [ -x "$STATUSLINE_SH" ] || chmod +x "$STATUSLINE_SH" 2>/dev/null || true
   python3 "$CLAUDE_SETTINGS_PY" "$STATUSLINE_SH" || \
@@ -250,10 +251,12 @@ case "$(basename "${SHELL:-}")" in
 esac
 
 manual_shim() {                                    # never fails the install: say the line
-  echo "    $1"
-  echo "    Put this in your shell's rc file by hand (the shim must come BEFORE /usr/bin):"
-  echo "      $PATH_LINE_BOTH"
+  ronin_say "    $1"
+  ronin_say "    Put this in your shell's rc file by hand (the shim must come BEFORE /usr/bin):"
+  ronin_say "      $PATH_LINE_BOTH"
 }
+
+OUTSIDE_RC_FILES=()
 
 if [ ! -d "$SHIM_DIR" ]; then
   echo "    SKIPPED: $SHIM_DIR not found — nothing to put on PATH."
@@ -328,6 +331,7 @@ else
   elif [ ! -e "$RC" ] && [ ! -w "$(dirname "$RC")" ]; then
     manual_shim "LEFT ALONE: cannot create $RC (directory not writable)."
   elif append_block "$RC" "$PATH_LINE" "$BLOCK_NOTE"; then
+    OUTSIDE_RC_FILES+=("$RC")
     echo "    added $PATH_ADDS to $RC  ($RC_WHY)"
     echo "      $PATH_LINE"
   else
@@ -342,21 +346,23 @@ else
     if rc_has_dir "$RC_ALSO" "$SHIM_DIR" "$SHIM_REAL" && rc_has_dir "$RC_ALSO" "$BIN_DIR" "$BIN_REAL"; then
       echo "    $RC_ALSO already carries both ($RC_ALSO_WHY)."
     elif ! writable_rc "$RC_ALSO"; then
-      echo "    LEFT ALONE: cannot append to $RC_ALSO — put this in it by hand:"
-      echo "      $PATH_LINE_BOTH"
+      ronin_say "    LEFT ALONE: cannot append to $RC_ALSO — put this in it by hand:"
+      ronin_say "      $PATH_LINE_BOTH"
     elif append_block "$RC_ALSO" "$PATH_LINE_BIN" \
         "# ALSO here, not only in $(basename "$RC"): that file returns early for a NON-interactive"$'\n'"# shell, so the guards would be inert for scripts and agent CLIs. This file is read by"$'\n'"# login shells whichever they are. A shell that reads BOTH files ends up with these two"$'\n'"# directories twice — harmless, because what the guards need is the shim FIRST, and the"$'\n'"# \${PATH#…} strip keeps it there."; then
+      OUTSIDE_RC_FILES+=("$RC_ALSO")
       echo "    added $SHIM_DIR and $BIN_DIR to $RC_ALSO  ($RC_ALSO_WHY)"
     else
-      echo "    LEFT ALONE: could not append to $RC_ALSO."
+      ronin_say "    LEFT ALONE: could not append to $RC_ALSO. Put this in it by hand:"
+      ronin_say "      $PATH_LINE_BOTH"
     fi
   fi
 
-  echo "    NOTE: rc files are read at shell START — this shell and every session already"
-  echo "    open keep the old PATH. For the current shell, run:"
-  echo "      $PATH_LINE_BOTH"
-  echo "    Check any shell with:  command -v tmux write_tegami"
-  echo "      -> $SHIM_DIR/tmux  and  $BIN_DIR/write_tegami"
+  ronin_say "    NOTE: rc files are read at shell START — this shell and every session already"
+  ronin_say "    open keep the old PATH. For the current shell, run:"
+  ronin_say "      $PATH_LINE_BOTH"
+  ronin_say "    Check any shell with:  command -v tmux write_tegami"
+  ronin_say "      -> $SHIM_DIR/tmux  and  $BIN_DIR/write_tegami"
 fi
 
 # --- PATH: where an agent Ronin installs lands ---
@@ -402,8 +408,8 @@ agent_append() {                                   # $1 = file
 }
 
 if [ -z "$RC" ]; then
-  echo "    SKIPPED: $RC_WHY. Put this in your shell's rc file by hand:"
-  echo "      $AGENT_LINE"
+  ronin_say "    SKIPPED: $RC_WHY. Put this in your shell's rc file by hand:"
+  ronin_say "      $AGENT_LINE"
 else
   for f in "$RC" ${RC_ALSO:+"$RC_ALSO"}; do
     missing=0
@@ -413,15 +419,17 @@ else
     if [ "$missing" = 0 ]; then
       echo "    already on PATH via $f"
     elif ! { [ -e "$f" ] && [ -w "$f" ]; } && ! { [ ! -e "$f" ] && [ -w "$(dirname "$f")" ]; }; then
-      echo "    LEFT ALONE: cannot append to $f — put this in it by hand:"
-      echo "      $AGENT_LINE"
+      ronin_say "    LEFT ALONE: cannot append to $f — put this in it by hand:"
+      ronin_say "      $AGENT_LINE"
     elif agent_append "$f"; then
+      OUTSIDE_RC_FILES+=("$f")
       echo "    added ${AGENT_DIRS[*]} to $f"
     else
-      echo "    LEFT ALONE: could not append to $f."
+      ronin_say "    LEFT ALONE: could not append to $f. Put this in it by hand:"
+      ronin_say "      $AGENT_LINE"
     fi
   done
-  echo "    NOTE: read at shell START. For this shell:  $AGENT_LINE"
+  ronin_say "    NOTE: read at shell START. For this shell:  $AGENT_LINE"
 fi
 
 # --- autostart ---
@@ -540,7 +548,6 @@ fi
 export RONIN_IP="${IP:-}" RONIN_FQDN="${FQDN:-}"
 PORT="$(ronin_port "$REPO_DIR")"
 OPEN_URL="$(ronin_open_url "$REPO_DIR" "$PORT")"
-ronin_banner "$REPO_DIR" "$OPEN_URL" >&3
 
 # Only what is still outstanding on this box — and no prose dressed as a numbered
 # step. A person at this prompt needs exactly three things: run this, here is the
@@ -551,9 +558,11 @@ SERVED_ALREADY="$(ronin_served_url "$PORT")"
 # `sudo`, and rendered below as a single `sudo bash -c` block. Three separate sudo lines
 # meant three pastes and three password prompts for what is one decision: "yes, do the
 # root-owned parts of my install" (owner, 2026-08-24).
-STEP_ACT=(); NSTEPS=0
+STEP_ACT=(); STEP_OK=(); STEP_FAIL=(); NSTEPS=0
 machine_linger_on || if [ $? -eq 1 ]; then
   STEP_ACT[$NSTEPS]="$(machine_linger_action)"
+  STEP_OK[$NSTEPS]="linger enabled for ${USER:-$(id -un)}"
+  STEP_FAIL[$NSTEPS]="linger was not enabled"
   NSTEPS=$(( NSTEPS + 1 ))
 fi
 # Nothing to ask for when serve already points at THIS install: the address in the box
@@ -564,6 +573,8 @@ if [ -z "$SERVED_ALREADY" ] && [ -n "${IP:-}" ] && command -v tailscale >/dev/nu
   # tailscale's success chatter (the proxy tree, the disable hint) says nothing the
 # line above has not already said better — stdout is dropped, errors still speak.
   STEP_ACT[$NSTEPS]="tailscale serve --bg --https=8443 http://$IP:$PORT >/dev/null"
+  STEP_OK[$NSTEPS]="Tailscale HTTPS now serves Ronin on port 8443"
+  STEP_FAIL[$NSTEPS]="Tailscale HTTPS was not configured"
   NSTEPS=$(( NSTEPS + 1 ))
   WANT_SERVE=1
 fi
@@ -580,45 +591,13 @@ fi
 # same library the same question, so the offer and the finding cannot drift apart.
 if [ "$OS" = "Linux" ] && machine_swap_offerable; then
   STEP_ACT[$NSTEPS]="$(machine_swap_action)"
+  STEP_OK[$NSTEPS]="4 GB swapfile installed and recorded in /etc/fstab"
+  STEP_FAIL[$NSTEPS]="swapfile was not installed"
   NSTEPS=$(( NSTEPS + 1 ))
   WANT_SWAP=1
 fi
 
-if [ "$NSTEPS" = 1 ]; then
-  out "  One more step. Copy and paste this, and you're good to go:"
-elif [ "$NSTEPS" -gt 1 ]; then
-  out "  One more step. Copy and paste this whole block — it asks for your password once:"
-fi
-if [ "$NSTEPS" -gt 0 ]; then
-  out ""
-  # Each action on its own line inside ONE sudo, so the person reads exactly what will
-  # run as root before they run it. No `set -e`: the actions are independent, and one
-  # failing must not silently skip the others.
-  out "      sudo bash -c '"
-  s=0
-  while [ "$s" -lt "$NSTEPS" ]; do
-    out "        ${STEP_ACT[$s]}"
-    s=$(( s + 1 ))
-  done
-  out "      '"
-  out ""
-  if [ -n "${WANT_SWAP:-}" ]; then
-    out "  (The swapfile part is insurance: this box has no swap, so if memory ever fills,"
-    out "   the kernel kills a session instead of slowing down. It is a one-time setup —"
-    out "   the /etc/fstab line brings it back automatically on every reboot.)"
-    out ""
-  fi
-  if [ -n "$WANT_SERVE" ] && [ -n "${FQDN:-}" ]; then
-    out "  When that's done, your door is:"
-    out ""
-    out "      https://$FQDN:8443"
-  else
-    out "  When that's done, run  ronin-welcome  to see your address."
-  fi
-  out ""
-fi
-
-# Printed instructions above are the contract. On a local graphical desktop this is
+# The frame and the paste printed below are the contract. On a local graphical desktop this is
 # merely a convenience: wait for /api/health to answer 200, then ask the OS to open
 # the page. SSH/headless detection and opener failures are non-fatal in the helper.
 # Linux only, deliberately: macOS renders the launchd agent but the user loads it by
@@ -641,4 +620,87 @@ if [ "$OS" = "Linux" ]; then
   if [ "$RONIN_READY" -eq 1 ]; then
     "$REPO_DIR/libexec/ronin-open-browser" "$OPEN_URL" || true
   fi
+fi
+
+# The frame comes first: one composed result gives the person the address to copy and
+# every persistent touch outside the install home. This is presentation, not another
+# setup log. Paths are printed with ~ and every line fits an 80-column terminal, which
+# the frame itself guarantees (libexec/ronin-banner.sh, RONIN_FRAME_TEXT).
+USER_STORE_ROOT="$("$REPO_DIR/bin/ronin-store" --root user)"
+DATA_STORE_ROOT="$("$REPO_DIR/bin/ronin-store" --root data)"
+RC_SUMMARY=""
+for f in "$RC" ${RC_ALSO:+"$RC_ALSO"}; do
+  [ -n "$f" ] && [ -f "$f" ] || continue
+  if grep -qF "$SHIM_BEGIN" "$f" 2>/dev/null || grep -qF "$AGENT_BEGIN" "$f" 2>/dev/null; then
+    case " $RC_SUMMARY " in *" $f "*) ;; *) RC_SUMMARY="${RC_SUMMARY:+$RC_SUMMARY, }$(ronin_tilde "$f")" ;; esac
+  fi
+done
+RESULT_LINES=(
+  "WHAT CHANGED OUTSIDE $(ronin_tilde "$REPO_DIR")"
+  "Claude Code  · ~/.claude/settings.json: statusLine, when unclaimed;"
+  "               theme dark-ansi if unset, dark or light; others stay."
+)
+if [ -n "$RC_SUMMARY" ]; then
+  RESULT_LINES+=("Shell PATH   · $RC_SUMMARY" "               shim first; Ronin tools next; ~/.local/bin last.")
+else
+  RESULT_LINES+=("Shell PATH   · no rc file changed; use the manual line printed above.")
+fi
+RESULT_LINES+=(
+  "tmux command · $(ronin_tilde "$SHIM_DIR")/tmux"
+  "               refuses 'tmux kill-server' because it ends every session."
+  "Stores       · user: $(ronin_tilde "$USER_STORE_ROOT")"
+  "               data: $(ronin_tilde "$DATA_STORE_ROOT")"
+)
+if [ "$OS" = Linux ] && command -v systemctl >/dev/null 2>&1; then
+  RESULT_LINES+=("Autostart    · ~/.config/systemd/user/{tmux-server,ronin}.service")
+elif [ "$OS" = Darwin ]; then
+  RESULT_LINES+=("Autostart    · ~/Library/LaunchAgents/com.ronin.plist (load line above)")
+else
+  RESULT_LINES+=("Autostart    · no unit or plist written on this platform.")
+fi
+TMUX_LEASE="$DATA_STORE_ROOT/machine/tmux-adoption"
+if [ -f "$TMUX_LEASE" ]; then
+  TMUX_PRIOR="$(sed -n 's/^prior=//p' "$TMUX_LEASE" 2>/dev/null | head -1)"
+  RESULT_LINES+=("tmux lease   · exit-empty is off; prior ${TMUX_PRIOR:-unknown}; uninstall restores it." "               $(ronin_tilde "$TMUX_LEASE")")
+else
+  RESULT_LINES+=("tmux lease   · none; no existing default tmux server was changed.")
+fi
+RESULT_LINES+=("Network bind · $RECORDED_BIND in $(ronin_tilde "$REPO_DIR")/.env" "               source: $RECORDED_BIND_SOURCE")
+ronin_banner "$REPO_DIR" "$OPEN_URL" "${RESULT_LINES[@]}" >&3
+
+# LAST ON PURPOSE: the one thing they still have to do is the last thing on the screen.
+# The frame above has said where Ronin is and what changed; this says what is left.
+if [ "$NSTEPS" = 1 ]; then
+  out "  One more step. Copy and paste this, and you're good to go:"
+elif [ "$NSTEPS" -gt 1 ]; then
+  out "  One more step. Copy and paste this whole block — it asks for your password once:"
+fi
+if [ "$NSTEPS" -gt 0 ]; then
+  out ""
+  # Each action reports on its own line inside ONE sudo: the action, then a check mark
+  # with what happened, or a cross with what did not and where Ronin still answers.
+  # One plain line per action, readable at a glance, and deliberately no `set -e`: the
+  # actions are independent, so one failing reports itself and never skips the rest.
+  out "      sudo bash -c '"
+  s=0
+  while [ "$s" -lt "$NSTEPS" ]; do
+    out "        ${STEP_ACT[$s]} && echo \"✓ ${STEP_OK[$s]}\" || echo \"✗ ${STEP_FAIL[$s]} — Ronin is still at $OPEN_URL\""
+    s=$(( s + 1 ))
+  done
+  out "      '"
+  out ""
+  if [ -n "${WANT_SWAP:-}" ]; then
+    out "  (The swapfile part is insurance: this box has no swap, so if memory ever fills,"
+    out "   the kernel kills a session instead of slowing down. It is a one-time setup —"
+    out "   the /etc/fstab line brings it back automatically on every reboot.)"
+    out ""
+  fi
+  if [ -n "$WANT_SERVE" ] && [ -n "${FQDN:-}" ]; then
+    out "  When that's done, your door is:"
+    out ""
+    out "      https://$FQDN:8443"
+  else
+    out "  When that's done, run  ronin-welcome  to see your address."
+  fi
+  out ""
 fi

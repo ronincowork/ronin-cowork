@@ -2,6 +2,8 @@ import { AUTOMATION_IDENTITY, git, gitOut, revParse, worktreeRemove } from '../d
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { healthCheck, notifyTeam, restartService, serviceStartedAfter } from './health.js';
 import { queuePromotionContinuation } from './continuation.js';
+import { houseSend } from '../desks/lead.js';
+import { receiptById } from '../desks/receipts.js';
 import {
   acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, now, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
   type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate,
@@ -13,6 +15,8 @@ export interface Effects {
   restart: () => Promise<PromotionReceipt['restart']>;
   health: (primaryDir: string) => Promise<HealthResult>;
   notify: (primaryDir: string, team: string, text: string) => Promise<string>;
+  /** One house notice into a contributing session's tile; absent in older fakes. */
+  tell?: (session: string, text: string) => Promise<string>;
   handInsFor: HandInSource;
   beforeAdvance?: (repo: string, index: number) => Promise<void>;
 }
@@ -21,8 +25,41 @@ export const realEffects: Effects = {
   restart: restartService,
   health: (dir) => healthCheck({ dir }),
   notify: notifyTeam,
+  tell: houseSend,
   handInsFor: ledgerHandIns,
 };
+
+const promotedLine = (r: PromotionReceipt): string =>
+  r.repos.map((x) => `${x.repo}: ${x.line} promoted to ${x.target}@${x.candidate.slice(0, 7)}`).join('; ');
+
+/** The line moved: one post on the team board, so every desk can ask `status` whether it
+ *  is behind, and one notice in the tile of each session whose hand-in rode in, naming
+ *  its receipts and the desk it may now close (owner, 2026-09-05: promotion tells the
+ *  originator itself; nobody waits for it to percolate). */
+export async function announcePromotion(r: PromotionReceipt, primary: string, fx: Effects, log: (line: string) => void): Promise<void> {
+  if (r.kind !== 'team_promotion') return;
+  await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${promotedLine(r)}; ${r.restart ? 'restart and health passed' : 'no restart requested'}. Every desk: tejun-desk status says whether you are behind ${r.repos[0]?.target ?? 'dev'}; contributors have been told they can close.`);
+  if (!fx.tell) return;
+  const per = new Map<string, string[]>();
+  for (const repo of r.repos) {
+    for (const id of repo.hand_in_receipts) {
+      const receipt = id.startsWith('hi_') ? await receiptById(repo.repo, id).catch(() => null) : null;
+      const session = receipt?.session;
+      if (!session) continue;
+      const what = `${id}${receipt?.desk ? ` (${repo.repo}:${receipt.desk})` : ''} → ${repo.target}@${repo.candidate.slice(0, 7)}`;
+      per.set(session, [...(per.get(session) ?? []), what]);
+    }
+    for (const session of repo.sessions) if (!per.has(session)) per.set(session, [`${repo.repo} → ${repo.target}@${repo.candidate.slice(0, 7)}`]);
+  }
+  for (const [session, items] of per) {
+    const text = `from promotion: your hand-in is on ${r.repos[0]?.target ?? 'dev'} — ${items.join('; ')} [${r.id}]. The desk is finished: tejun-desk close <repo:branch> unless you still need it.`;
+    try {
+      log(`  told  ${session}: ${await fx.tell(session, text)}`);
+    } catch (e) {
+      log(`  told  ${session}: not reachable at the tile — ${String((e as { stdout?: string; message?: string }).stdout ?? (e as Error).message ?? e).split('\n')[0]}; the board post stands`);
+    }
+  }
+}
 
 async function removeOwnCandidates(receipt: PromotionReceipt): Promise<void> {
   for (const repo of receipt.repos) {
@@ -111,6 +148,7 @@ async function promoteTeamLocked(o: PromoteOptions, receiptId: string): Promise<
     r = advanceState(r, 'complete');
     await writeReceipt(r, ledger);
     await removeOwnCandidates(r);
+    await announcePromotion(r, active[0].c.dir, fx, log);
     return { ok: true, receipt: r, nothing: false, message: `complete — ${r.repos.map((x) => `${x.repo} ${x.target}@${x.candidate.slice(0, 7)}`).join(', ')} (no restart requested)` };
   }
   r = advanceState(r, 'restarting');
@@ -153,9 +191,7 @@ export async function finishPromotionRestart(
     await writeReceipt(r, ledger);
     await removeOwnCandidates(r);
     await releasePromotionLock(r.revert_of ?? r.id, ledger);
-    if (r.kind === 'team_promotion') {
-      await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${r.repos.map((x) => `${x.repo} ${x.target}@${x.candidate.slice(0, 7)}`).join(', ')}; restart and health passed.`);
-    }
+    await announcePromotion(r, primary, fx, log);
     return { ok: true, receipt: r, nothing: false, message: `complete — ${r.repos.map((x) => `${x.repo} ${x.target}@${x.candidate.slice(0, 7)}`).join(', ')}; the app is up` };
   }
 

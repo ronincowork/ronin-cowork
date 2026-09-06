@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# ronin-url — resolve the live Ronin operator address for zero-dependency shell tools.
+# ronin-url — where the live Ronin answers, for zero-dependency shell tools.
 #
-# The address is a fact about this running operator, never a Campaign default and never a
-# guess a caller may carry. RONIN_URL is the explicit override; otherwise the operator's
-# tmux server option is the one bus shared by every session.
+# Prints one line: RONIN_URL when it is set (an explicit development/test target over
+# HTTP), otherwise the path of the operator's own socket. The socket is the address, held
+# by the kernel: it lives at <data root>/run/ronin.sock — the same rule every Ronin store is
+# found by — or wherever RONIN_SOCKET says, which a session is told at birth. No tmux is
+# consulted; the tmux server option that used to carry the address was retired 2026-09-05.
+#
+# Exit 4 with one of two refusals, so "never started" and "stopped" stop wearing the same
+# words. Callers build their request through the sibling ronin-http.sh.
 set -u
 
 if [ -n "${RONIN_URL:-}" ]; then
@@ -11,41 +16,35 @@ if [ -n "${RONIN_URL:-}" ]; then
   exit 0
 fi
 
-raw=""
-if command -v tmux >/dev/null 2>&1; then
-  raw=$(tmux show-option -s -qv @ronin-operator 2>/dev/null || true)
-fi
-# The instance rides along with the url: "<pid>:<started>". A stopped operator leaves its
-# address behind — the option lives on the tmux server, which outlives it by design — and
-# handing that address to a caller turns this tool's honest refusal into a connection
-# refused that nobody can explain. A pid on this box is free to check. Two lines out, so
-# neither field has to be escaped.
-both=$(RAW="$raw" python3 - <<'PY' 2>/dev/null || true
-import json, os
-try:
-    value = json.loads(os.environ.get("RAW", ""))
-    if value.get("version") == 1 and isinstance(value.get("url"), str):
-        print(value["url"].strip())
-        print(str(value.get("instance") or ""))
-except Exception:
-    pass
-PY
-)
-url=$(printf '%s\n' "$both" | sed -n 1p)
-pid=$(printf '%s\n' "$both" | sed -n 2p | cut -d: -f1)
+sock=${RONIN_SOCKET:-${RONIN_DATA_ROOT:-$HOME/.ronin}/run/ronin.sock}
 
-# Unknown beats wrong: an instance we cannot read (an older operator published it) counts
-# as alive rather than refused. A recycled pid is the one false positive, and it leaves
-# the caller exactly where they stood before this check existed.
-if [ -n "$url" ]; then
-  case "$pid" in
-    '' | *[!0-9]*) printf '%s\n' "$url"; exit 0 ;;
-    *) if kill -0 "$pid" 2>/dev/null; then printf '%s\n' "$url"; exit 0; fi ;;
-  esac
-fi
-
-cat >&2 <<'EOF'
-REFUSED: Ronin's address could not be resolved. Ronin may not be running.
-Start Ronin, or set RONIN_URL to its address and try again.
+if [ ! -e "$sock" ]; then
+  cat >&2 <<EOF
+REFUSED: no Ronin has started on this box (no socket at $sock).
+Start Ronin, or set RONIN_URL for a development/test target.
 EOF
-exit 4
+  exit 4
+fi
+
+# Somebody must be listening: a socket file outlives a crash. Connecting is the check —
+# no HTTP, nothing that can hang — and python3 is already this tool's one dependency.
+if ! SOCK="$sock" python3 - <<'PY' 2>/dev/null
+import os, socket, sys
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(2)
+try:
+    s.connect(os.environ["SOCK"])
+except OSError:
+    sys.exit(1)
+finally:
+    s.close()
+PY
+then
+  cat >&2 <<EOF
+REFUSED: Ronin is not running (socket at $sock, nobody listening).
+journalctl --user -u ronin.service -n 50 says why; start it with: systemctl --user start ronin
+EOF
+  exit 4
+fi
+
+printf '%s\n' "$sock"

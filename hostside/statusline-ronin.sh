@@ -10,7 +10,7 @@
 #
 # WHAT CONSUMES IT
 #   src/ctx.ts:19  — CTX_PATTERNS[0]  /⛽ ctx (\d+(?:\.\d+)?)%/           (mode: 'used')
-#   src/ctx.ts:33  — MODEL_PATTERNS[0] /⛽ ctx \d+(?:\.\d+)?% · ([^\n·]{1,24}?)\s*$/
+#   src/ctx.ts     — MODEL_PATTERNS[0] /⛽ ctx \d+(?:\.\d+)?% · ([^\n·]{1,24}?)(?:\s{2,}.*)?\s*$/
 #
 #   Ronin scrapes that line back out of ORDINARY PANE TEXT with `tmux capture-pane`
 #   (src/tmux.ts capturePane) to drive the ⛽ gauge on each session tile. It never
@@ -18,8 +18,9 @@
 #   exists purely so the number is on the screen for anything to read.
 #
 #   Two consequences of those regexes, both load-bearing — do not "tidy" them away:
-#     * the model name must be LAST on the line, right after " · ", and ≤24 chars
-#       with no "·" in it, or MODEL_PATTERNS[0] will not match;
+#     * the model name must come right after " · ", be ≤24 chars with no "·" and no
+#       double space in it, or MODEL_PATTERNS[0] will not match; text Claude Code
+#       right-aligns on the same row, two or more spaces later, is ignored;
 #     * the model is only readable when a percentage is printed, because the model
 #       pattern is anchored on the "⛽ ctx NN%" prefix.
 #
