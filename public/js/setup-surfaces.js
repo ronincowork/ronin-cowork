@@ -153,11 +153,13 @@ function createRegisterSurface(context) {
 }
 
 /** The state a provider block says in one word. */
-const providerWord = (provider) => provider?.activated ? t('setup_surface.activated', 'Activated')
-  : provider?.login_open ? t('setup_surface.sign_in_open', 'Sign-in open')
-  : provider?.installed ? t('setup_surface.installed_sign_in', 'Installed · sign in')
-  : provider?.installable ? t('setup_surface.not_installed_install', 'Not installed · install')
-  : provider?.state || 'absent';
+function providerWord(provider) {
+  if (provider?.activated) return t('setup_surface.activated', 'Activated');
+  if (provider?.login_open) return t('setup_surface.sign_in_open', 'Sign-in open');
+  if (provider?.installed) return t('setup_surface.installed_sign_in', 'Installed · sign in');
+  if (provider?.installable) return t('setup_surface.not_installed_install', 'Not installed · install');
+  return provider?.state || 'absent';
+}
 
 /**
  * ONE MODEL PROVIDERS SURFACE. Its first face says one thing — add a model provider —
