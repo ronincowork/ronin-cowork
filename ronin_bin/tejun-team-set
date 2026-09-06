@@ -39,9 +39,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-url=$("$TOOL_DIR/ronin-url") || exit $?
-AUTH=()
-[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
 
 body=$(NAME="$NAME" OBJ="$OBJ" ROLE="$ROLE" ROOT="$ROOT" REPOS="$REPOS" BRANCH="$BRANCH" \
        BOARD="$BOARD" STATE="$STATE" ADD="$ADD" python3 - <<'PY'
@@ -58,7 +57,7 @@ PY
 ) || die "BAD-ARG: could not build the request" 2
 
 out=/tmp/tejun-team-set.$$
-code=$(curl -sS -m 20 "${AUTH[@]+"${AUTH[@]}"}" -o "$out" -w '%{http_code}' \
+code=$(curl -sS -m 20 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -o "$out" -w '%{http_code}' \
        -H 'content-type: application/json' -X PUT --data "$body" "$url/api/team" 2>/dev/null) \
   || { rm -f "$out"; die "UNREACHABLE: Ronin did not answer at $url" 5; }
 python3 - "$code" "$out" <<'PY'

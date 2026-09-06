@@ -25,6 +25,12 @@ where it is: it is PATH interception, so you type `tmux` and the guard answers.
 One shelf per audience: **ronin_catalogs** (what you can do) · **ronin_library** (the
 reading) · **ronin_sops** (how this house works) · **ronin_bin** (what you run).
 
+**Two files here are not tools.** `tool-path.sh` resolves a tool's real file behind its
+projected symlink (`SELF`, hence `TOOL_DIR`), and `ronin-http.sh` is sourced by every tool
+that talks to the operator: `ronin_connect` resolves the door through the sibling
+`ronin-url` — the operator's Unix socket, or `RONIN_URL` — and sets `url` and `RONIN_CURL`
+for the request (`docs/operator-connection.md`). A tool never carries an address of its own.
+
 ## Adding a tool
 
 Entry point for the whole system: `ronin_catalogs/README.md`. A tool is an executable

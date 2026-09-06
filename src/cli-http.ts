@@ -1,49 +1,56 @@
 import 'dotenv/config';
-import { tmux } from './tmux-client.js';
-import { OPERATOR_CONNECTION_OPT, instanceIsAlive, type OperatorConnection } from './operator-url.js';
+import http from 'node:http';
+import { operatorSocketPath, socketRefusal } from './operator-socket.js';
 
 export interface CliReply { stdout: string; stderr: string; exit: number }
 
-async function option(name: string): Promise<string> {
-  try { return (await tmux.run(['show-option', '-s', '-qv', name])).trim(); }
-  catch { return ''; }
+/** Where a command goes. `RONIN_URL` is the explicit development/test target over HTTP,
+ *  with `RONIN_CLI_TOKEN` as its credential; otherwise the operator's own socket, whose
+ *  file mode is the credential and whose path a newborn was told at birth. */
+export type OperatorTarget =
+  | { kind: 'url'; url: string; token: string }
+  | { kind: 'socket'; path: string };
+
+export function operatorTarget(env: NodeJS.ProcessEnv = process.env): OperatorTarget {
+  const override = env.RONIN_URL?.trim();
+  if (override) return { kind: 'url', url: override.endsWith('/') ? override : `${override}/`, token: env.RONIN_CLI_TOKEN?.trim() ?? '' };
+  return { kind: 'socket', path: operatorSocketPath(env) };
 }
 
-export async function operatorConnection(): Promise<OperatorConnection> {
-  const override = process.env.RONIN_URL?.trim();
-  if (override) return { version: 1, url: override, token: process.env.RONIN_CLI_TOKEN?.trim() ?? '', instance: 'environment' };
-  const raw = await option(OPERATOR_CONNECTION_OPT);
-  let connection: Partial<OperatorConnection> = {};
-  try { connection = JSON.parse(raw) as Partial<OperatorConnection>; } catch { /* refusal below */ }
-  if (connection.version !== 1 || typeof connection.url !== 'string' || !connection.url.trim()) {
-    throw new Error("Ronin's live operator connection could not be resolved. Ronin may not be running.\nStart Ronin, or set RONIN_URL for a development/test target.");
-  }
-  // A published address outlives the operator that published it: same refusal, because
-  // from the caller's side "no address" and "the address of something gone" are one fact.
-  if (!instanceIsAlive(String(connection.instance ?? ''))) {
-    throw new Error("Ronin's live operator connection could not be resolved. Ronin may not be running.\nStart Ronin, or set RONIN_URL for a development/test target.");
-  }
-  return { version: 1, url: connection.url.trim(), token: typeof connection.token === 'string' ? connection.token : '', instance: String(connection.instance ?? '') };
+type Raw = { status: number; body: string };
+
+function overSocket(socketPath: string, route: string, payload: string): Promise<Raw> {
+  return new Promise((resolve, reject) => {
+    const req = http.request({ socketPath, path: route, method: 'POST', headers: { 'content-type': 'application/json' } }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+    });
+    req.on('error', (e: NodeJS.ErrnoException) => reject(new Error(socketRefusal(e.code, socketPath))));
+    req.end(payload);
+  });
 }
 
-async function address(connection: OperatorConnection): Promise<string> {
-  const url = connection.url;
-  if (!url) throw new Error("Ronin's address could not be resolved. Ronin may not be running.\nStart Ronin, or set RONIN_URL to its address and try again.");
-  return url.endsWith('/') ? url : `${url}/`;
+async function overHttp(target: { url: string; token: string }, route: string, payload: string): Promise<Raw> {
+  const basic = process.env.GRID_USER && process.env.GRID_PASS
+    ? `Basic ${Buffer.from(`${process.env.GRID_USER}:${process.env.GRID_PASS}`).toString('base64')}` : '';
+  const res = await fetch(new URL(route.replace(/^\//, ''), target.url), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...(target.token ? { authorization: `Bearer ${target.token}` } : basic ? { authorization: basic } : {}) },
+    body: payload,
+  });
+  return { status: res.status, body: await res.text() };
 }
 
 export async function cliRequest(tool: string, args = process.argv.slice(2), input?: string): Promise<CliReply> {
-  const connection = await operatorConnection();
-  const token = process.env.RONIN_CLI_TOKEN?.trim() || connection.token;
-  const basic = process.env.GRID_USER && process.env.GRID_PASS
-    ? `Basic ${Buffer.from(`${process.env.GRID_USER}:${process.env.GRID_PASS}`).toString('base64')}` : '';
-  const res = await fetch(new URL(`api/cli/${tool}`, await address(connection)), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : basic ? { authorization: basic } : {}) },
-    body: JSON.stringify({ args, input, session: process.env.RONIN_SESSION ?? '', pane: process.env.TMUX_PANE ?? '' }),
-  });
-  const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as CliReply & { error?: string };
-  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  const target = operatorTarget();
+  const payload = JSON.stringify({ args, input, session: process.env.RONIN_SESSION ?? '', pane: process.env.TMUX_PANE ?? '' });
+  const route = `/api/cli/${tool}`;
+  const raw = target.kind === 'socket' ? await overSocket(target.path, route, payload) : await overHttp(target, route, payload);
+  let body: CliReply & { error?: string };
+  try { body = JSON.parse(raw.body) as CliReply & { error?: string }; } catch { body = { stdout: '', stderr: '', exit: 1, error: `HTTP ${raw.status}` }; }
+  if (raw.status < 200 || raw.status >= 300) throw new Error(body.error || `HTTP ${raw.status}`);
   return body;
 }
 

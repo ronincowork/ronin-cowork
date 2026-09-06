@@ -48,12 +48,11 @@ case " $JOBS " in
 esac
 request="$*"
 
-url=$("$TOOL_DIR/ronin-url") || exit $?
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
 
-AUTH=()
-[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
 
-api() { curl -sS -m 20 "${AUTH[@]+"${AUTH[@]}"}" "$@" 2>/dev/null; }
+api() { curl -sS -m 20 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" "$@" 2>/dev/null; }
 
 # JSON string escaping, for a request that will contain quotes and newlines.
 esc() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\t/\\t/g' | awk '{printf "%s%s", sep, $0; sep="\\n"}'; }

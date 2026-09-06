@@ -78,10 +78,9 @@ while [ $# -gt 0 ]; do
 done
 ME=$(me 2>/dev/null || true)
 
-url=$("$TOOL_DIR/ronin-url") || exit $?
-AUTH=()
-[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
-api() { curl -sS -m 60 "${AUTH[@]+"${AUTH[@]}"}" -H 'content-type: application/json' "$@" 2>/dev/null; }
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+api() { curl -sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -H 'content-type: application/json' "$@" 2>/dev/null; }
 
 # IS THE NAME LIVE — one read decides which of the three this call is.
 roster=$(api "$url/api/sessions") || die "UNREACHABLE: Ronin did not answer at $url" 5
@@ -160,7 +159,7 @@ PY
 ) || die "BAD-ARG: could not build the request" 2
 
 out=/tmp/tejun-session-set.$$
-code=$(curl -sS -m 60 "${AUTH[@]+"${AUTH[@]}"}" -o "$out" -w '%{http_code}' \
+code=$(curl -sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -o "$out" -w '%{http_code}' \
        -H 'content-type: application/json' -X POST --data "$body" "$url/api/session" 2>/dev/null) \
   || { rm -f "$out"; die "UNREACHABLE: Ronin did not answer at $url" 5; }
 python3 - "$code" "$out" <<'PY'

@@ -32,12 +32,11 @@ esac
 pane="${TMUX_PANE:-$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)}"
 [ -n "$pane" ] || { echo "NOT-IN-TMUX: no session to end (are you inside a tmux pane?)" >&2; exit 2; }
 
-url=$("$TOOL_DIR/ronin-url") || exit $?
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
 
-AUTH=()
-[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
 
-body=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' "${AUTH[@]+"${AUTH[@]}"}" \
+body=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" \
   -X POST "$url/api/harakiri" \
   -H 'content-type: application/json' \
   -d "{\"pane\":\"$pane\"}" 2>&1) || {
