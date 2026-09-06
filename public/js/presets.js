@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
+import { createFolderPicker } from './folder-picker.js';
 
 export const PRESETS_TYPE = 'setup.presets';
 export const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
@@ -16,6 +17,66 @@ export const HOUSE_PRESETS = Object.freeze([
   { handle: 'agent_editable_doc', shelf: 'agents', label: 'Agent + Editable Doc', description: 'One coding agent beside a document you both edit.', glyph: { rects: [[9, 4, 16, 24]], path: 'M13 12h8 M13 17h8 M13 22h5' }, destination: 'Ronin Lab' },
 ]);
 
+/**
+ * WHAT A PERSON USES RONIN FOR, and the three stones each answer shows first. The labels
+ * and the triads are the owner artifact's proposal and provisional: change them here, in
+ * one place. Several kinds may be picked; the stones shown are the union. Before any pick,
+ * the default three.
+ */
+export const PRESET_KINDS = Object.freeze([
+  { id: 'build', label: 'Build software', presets: Object.freeze(['bare_metal', 'staff_my_codebase', 'develop_new_project']) },
+  { id: 'life', label: 'Life Assistants', presets: Object.freeze(['personal_assistant', 'health_and_fitness', 'agent_editable_doc']) },
+  { id: 'research', label: 'Research and writing', presets: Object.freeze(['morning_brief', 'personal_assistant', 'bare_metal']) },
+]);
+export const DEFAULT_RESTING_PRESETS = Object.freeze(['bare_metal', 'personal_assistant', 'agent_editable_doc']);
+export const PRESET_KINDS_KEY = 'ronin.setup.kinds.v1';
+const knownKind = (id) => PRESET_KINDS.some((kind) => kind.id === id);
+/** The house handles at rest for the picked kinds, in kind order, deduplicated. */
+export const restingPresets = (kinds = []) => {
+  const picked = PRESET_KINDS.filter((kind) => kinds.includes(kind.id)).flatMap((kind) => kind.presets);
+  return picked.length ? [...new Set(picked)] : [...DEFAULT_RESTING_PRESETS];
+};
+/** One preference shared by Register and Presets; the Setup environment persists it. */
+export function createKindsPreference(storage = globalThis.localStorage, persist = null) {
+  let kinds = [];
+  const listeners = new Set();
+  try {
+    const saved = JSON.parse(storage?.getItem(PRESET_KINDS_KEY) || '[]');
+    if (Array.isArray(saved)) kinds = saved.map(String).filter(knownKind);
+  } catch { /* storage is optional */ }
+  const api = {
+    get: () => [...kinds],
+    set: (next, { save = true } = {}) => {
+      kinds = [...new Set((Array.isArray(next) ? next : []).map(String).filter(knownKind))];
+      try { storage?.setItem(PRESET_KINDS_KEY, JSON.stringify(kinds)); } catch { /* storage is optional */ }
+      if (save && typeof persist === 'function') void persist([...kinds]);
+      for (const listener of listeners) listener([...kinds]);
+      return [...kinds];
+    },
+    hydrate: (next) => api.set(next, { save: false }),
+    toggle: (id) => api.set(kinds.includes(id) ? kinds.filter((kind) => kind !== id) : [...kinds, id]),
+    subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
+  };
+  return api;
+}
+/** The kind pills — the same row on Register and above the stones. */
+export function renderKindPills(host, preference, { lead = '' } = {}) {
+  const row = document.createElement('div'); row.className = 'cv-pills sp-kinds';
+  if (lead) { const word = document.createElement('span'); word.className = 'sp-kinds-lead'; word.textContent = lead; row.append(word); }
+  const paint = (picked) => {
+    for (const button of row.querySelectorAll?.('.cv-pill') || []) button.setAttribute('aria-pressed', String(picked.includes(button.dataset.kind)));
+  };
+  for (const kind of PRESET_KINDS) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'cv-pill'; button.dataset.kind = kind.id;
+    button.textContent = kind.label; button.setAttribute('aria-pressed', String(preference.get().includes(kind.id)));
+    button.addEventListener('click', () => preference.toggle(kind.id));
+    row.append(button);
+  }
+  const stop = preference.subscribe(paint);
+  host.append(row);
+  return { el: row, destroy: stop };
+}
+
 const treatment = (controls, launchShape, seats) => Object.freeze({ controls: Object.freeze(controls), launchShape, seats });
 export const CORE_PRESET_TREATMENTS = Object.freeze({
   bare_metal: treatment(['sessions'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
@@ -27,7 +88,7 @@ export const CORE_PRESET_TREATMENTS = Object.freeze({
     team && { workspace: 'workspace2', type: 'team.commons', key: team, tab: 'wipeboard' },
     ...sessions.filter((row) => !/head[_ -]coach/i.test(row.name)).slice(0, 2).map((row, index) => ({ workspace: `workspace${index + 3}`, type: 'session', key: row.name })),
   ].filter(Boolean) })),
-  morning_brief: treatment(['grok', 'schedule', 'delivery', 'active'], 'team', ({ sessions = [], team = '', document = '' }) => ({ count: 4, seats: [
+  morning_brief: treatment(['schedule', 'roles'], 'team', ({ sessions = [], team = '', document = '' }) => ({ count: 4, seats: [
     sessions[0] && { workspace: 'workspace1', type: 'session', key: sessions[0].name },
     team && { workspace: 'workspace2', type: 'team.commons', key: team, tab: 'cron-jobs' },
     document && { workspace: 'workspace3', type: 'document', key: document },
@@ -122,11 +183,18 @@ const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/
 export function initialControls(handle, defaultProvider = '') {
   switch (handle) {
     case 'bare_metal': return { sessions: [{ name: 'session_1', provider: defaultProvider }, { name: 'session_2', provider: defaultProvider }] };
-    case 'staff_my_codebase': return { root: 'ronin_project_1' };
+    case 'staff_my_codebase': return { root: 'ronin_project_1', root_dir: '' };
     case 'develop_new_project': return { root: 'ronin_project_1', features: ['frontend', 'backend'] };
     case 'personal_assistant': return { assistant_mode: 'single', specialists: '' };
-    case 'health_and_fitness': return { roles: ['head_coach', 'nutritionist', 'race_and_event_guide'].map((name) => ({ name, ask: '' })) };
-    case 'morning_brief': return { grok: 'grok', schedule: 'every day at 8am', delivery: 'team lead', active: true };
+    case 'health_and_fitness': return { roles: [
+      { name: 'Head Coach', ask: 'Set the programme, hold the check-ins, and adjust it season by season.' },
+      { name: 'Nutritionist', ask: "Match the plate to the programme; plan the week's meals around real life." },
+      { name: 'Race and Event Guide', ask: "Put the next race or event on the calendar, build the training weeks back from it, and know the course, the rules, the kit list and the day's logistics." },
+    ] };
+    case 'morning_brief': return { schedule: 'daily 08:00', roles: [
+      { name: 'brief writer', ask: "Write the morning page on the owner's topic: what moved, what is waiting on the owner, and what today holds. One page, read on a phone in the time the kettle takes. List it on the Docs tab." },
+      { name: 'reader', ask: 'Read what the topic produced since yesterday — documents, records, and notes in the project root — and hand the writer the facts, each with the document that proves it.' },
+    ] };
     case 'agent_editable_doc': return { root: 'ronin_lab', document: 'README.md' };
     default: return {};
   }
@@ -150,6 +218,16 @@ function renderRootControls(host, state, roots, label = 'Which project') {
   select.value = state.root;
   select.addEventListener('change', () => { state.root = select.value; });
   host.append(field(label, select));
+}
+
+function renderCodebaseControls(host, state) {
+  const picker = createFolderPicker({ value: state.root_dir || '', onChange: (dir, folder = null) => {
+    state.root_dir = dir;
+    state.root = folder?.registered_root?.name || '';
+  } });
+  host.append(field('Your own codebase', picker.el));
+  const url = input(); url.placeholder = 'https://github.com/owner/repository'; url.disabled = true;
+  host.append(field('GitHub repo · remote evaluation pending', url));
 }
 
 function renderRows(host, state, key, providers, addLabel) {
@@ -200,22 +278,26 @@ function renderAskRows(host, state, key, addLabel) {
 
 function renderSpecialControls(host, handle, state, runtime) {
   const providers = runtime.providers || [], roots = runtime.roots || [];
-  if (['staff_my_codebase', 'develop_new_project'].includes(handle)) renderRootControls(host, state, roots, 'Which project');
+  if (handle === 'staff_my_codebase') renderCodebaseControls(host, state);
+  if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where');
   if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder');
   if (handle === 'bare_metal') { host.append(el('p', 'sp-control-label', 'Choose the model for each session')); renderRows(host, state, 'sessions', providers, 'Session'); }
   if (handle === 'develop_new_project') { host.append(el('p', 'sp-control-label', 'Split the work · each feature agent gets its own worktree')); renderRows(host, state, 'features', providers, 'Feature Agent'); }
-  if (handle === 'health_and_fitness') { host.append(el('p', 'sp-control-label', 'Tell each agent what you want')); renderAskRows(host, state, 'roles', 'Health role'); }
+  if (handle === 'health_and_fitness') { host.append(el('p', 'sp-control-label', "Each agent's kick-off message")); renderAskRows(host, state, 'roles', 'role'); }
   if (handle === 'personal_assistant') {
     const select = el('select');
-    select.append(option('single', 'Single Assistant (instant)'), option('lead', 'Team Lead without recruiting'), option('recruit', 'Team Lead that recruits specialists'));
+    select.append(option('single', 'Single assistant'), option('recruit', 'Chief of Staff'));
     select.value = state.assistant_mode; select.addEventListener('change', () => { state.assistant_mode = select.value; specialists.hidden = select.value !== 'recruit'; });
     const specialists = input(state.specialists); specialists.placeholder = 'financial adviser, research, scheduling…'; specialists.addEventListener('input', () => { state.specialists = specialists.value; });
     specialists.hidden = state.assistant_mode !== 'recruit';
-    host.append(field('Launch as', select), field('Specialist help', specialists), el('p', 'sp-dependency', 'Requires gbrain.'));
+    host.append(field('How it runs', select), field('Recruit', specialists));
   }
   if (handle === 'morning_brief') {
-    for (const [key, label] of [['schedule', 'When'], ['delivery', 'Deliver to']]) { const control = input(state[key]); control.addEventListener('input', () => { state[key] = control.value; }); host.append(field(label, control)); }
-    const active = input('', 'checkbox'); active.checked = state.active; active.addEventListener('change', () => { state.active = active.checked; }); host.append(field('Start active', active));
+    const when = el('select');
+    for (const [value, label] of [['daily 07:00', 'Every day, 7:00'], ['daily 08:00', 'Every day, 8:00'], ['weekdays 08:00', 'Weekdays, 8:00']]) when.append(option(value, label));
+    when.value = state.schedule; when.addEventListener('change', () => { state.schedule = when.value; });
+    host.append(field('When', when), el('p', 'sp-control-label', 'What Grokbot looks at'));
+    renderAskRows(host, state, 'roles', 'role');
   }
   if (handle === 'agent_editable_doc') { const doc = input(state.document); doc.addEventListener('input', () => { state.document = doc.value; }); host.append(field('Which document', doc)); }
 }
@@ -245,28 +327,47 @@ function saveSlots(environment, slots) {
 }
 
 export function createPresetsSurface({ environment = {}, workspace = 'workspace1' } = {}) {
-  const { createSurface, createAction, createActionBar, createNotice } = WorkspaceKit.primitives;
+  const { createSurface, createAction, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('setup.presets', 'Presets'), className: 'sp-surface' });
   const grid = el('div', 'sp-grid'), detail = el('div', 'sp-detail'), notice = createNotice();
-  surface.content.append(grid, detail, notice.el);
-  let templates = [], runtime = { providers: [], roots: [] }, selected = 0;
+  const kinds = environment.kinds || createKindsPreference();
+  const more = el('div', 'sp-more');
+  const showAll = createAction({ label: t('setup.presets_show_all', 'Show all seven ›'), size: 'compact', action: () => { expanded = !expanded; if (!visibleIndexes().includes(selected)) selected = -1; paintGrid(); paintDetail(); } });
+  more.append(showAll.el);
+  renderKindPills(surface.content, kinds, { lead: t('setup.presets_kinds_lead', 'You use Ronin for') });
+  const inner = el('div', 'sp-inner');
+  const column = el('div', 'sp-column'); column.append(grid, more);
+  inner.append(column, detail); surface.content.append(inner, notice.el);
+  let templates = [], runtime = { providers: [], roots: [] }, selected = -1, expanded = false;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
   const controls = new Map();
   const requirementState = createPresetRequirementState((next) => environment.setSetupRequirementState?.(next));
 
   const available = () => templates.map((row) => ({ ...row, shelf: row.shelf || (row.agents ? 'teams' : 'agents'), handle: row.name }));
   const save = () => saveSlots(environment, slots.map(({ handle, shelf }) => ({ handle, shelf })));
-  const current = () => slots[selected];
+  const current = () => selected >= 0 ? slots[selected] : null;
   const controlState = () => {
     const slot = current();
     if (!controls.has(slot.handle)) controls.set(slot.handle, initialControls(slot.handle, runtime.providers.find((row) => row.activated)?.id || ''));
     return controls.get(slot.handle);
   };
 
+  // THREE STONES AT REST. The resting set is by house position, so a replaced slot keeps
+  // its place; all seven stay in the DOM (hidden when folded) so slot indexes, persistence
+  // and change-preset hold. Show all seven unfolds the rest.
+  const restingIndexes = () => restingPresets(kinds.get()).map((handle) => HOUSE_PRESETS.findIndex((row) => row.handle === handle)).filter((index) => index >= 0);
+  const visibleIndexes = () => expanded ? slots.map((_, index) => index) : restingIndexes();
   const paintGrid = () => {
     grid.replaceChildren();
+    const visible = visibleIndexes();
+    showAll.el.textContent = expanded ? t('setup.presets_show_fewer', '‹ Show fewer') : t('setup.presets_show_all', 'Show all seven ›');
+    showAll.el.setAttribute('aria-expanded', String(expanded));
     slots.forEach((slot, index) => {
       const button = el('button', 'sp-slot'); button.type = 'button'; button.setAttribute('aria-pressed', String(index === selected));
+      const position = visible.indexOf(index);
+      button.hidden = position < 0;
+      button.dataset.column = String(position < 0 ? 0 : position % 3);
+      button.dataset.column2 = String(position < 0 ? 0 : position % 2);
       const gate = presetReadiness(slot.handle, runtime);
       button.dataset.gated = String(!gate.ready);
       if (!gate.ready) button.title = gate.reason;
@@ -278,37 +379,30 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
         button.addEventListener('blur', () => requirementState.clearPreview());
       }
       button.addEventListener('click', () => {
-        selected = index; requirementState.select(gate.ready ? [] : gate.targets);
+        selected = selected === index ? -1 : index;
+        requirementState.select(selected < 0 || gate.ready ? [] : gate.targets);
         paintGrid(); paintDetail();
       }); grid.append(button);
     });
   };
 
   const paintDetail = () => {
-    detail.replaceChildren(); const slot = current(); if (!slot) return;
-    const heading = el('div', 'sp-heading');
-    const headingCopy = el('div', 'sp-heading-copy');
-    headingCopy.append(el('h3', '', slot.label || slot.handle), el('p', 'sp-description', slot.description || ''), el('small', 'sp-destination', slot.destination || ''));
-    heading.append(headingCopy);
-    const change = el('details', 'sp-change'), summary = el('summary', '', '⚙ change preset'); change.append(summary);
-    const picker = el('select');
-    for (const row of available()) picker.append(option(`${row.shelf}:${row.handle}`, row.label || row.handle));
-    picker.value = `${slot.shelf}:${slot.handle}`;
-    picker.addEventListener('change', () => { const [shelf, handle] = picker.value.split(':'); const row = available().find((item) => item.shelf === shelf && item.handle === handle); slots[selected] = row || { shelf, handle, label: handle }; save(); paintGrid(); paintDetail(); });
-    const restore = el('button', 'wk-action', 'Restore house default'); restore.type = 'button'; restore.addEventListener('click', () => { slots[selected] = { ...HOUSE_PRESETS[selected] }; save(); paintGrid(); paintDetail(); });
-    change.append(picker, restore); heading.append(change); detail.append(heading);
+    detail.replaceChildren(); const slot = current();
+    inner.dataset.open = String(Boolean(slot));
+    detail.hidden = !slot;
+    if (!slot) { requirementState.syncOpen([]); return; }
     const gate = presetReadiness(slot.handle, runtime);
     requirementState.syncOpen(gate.ready ? [] : gate.targets);
-    const message = el('textarea'); message.rows = 4; message.placeholder = 'What should this launch begin with?'; detail.append(field('User Message', message));
-    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime); detail.append(fixed); }
-    if (!gate.ready) {
-      const blocked = el('div', 'sp-gate');
-      blocked.append(el('p', '', gate.reason));
-      const link = el('button', 'wk-action', gate.surface === 'setup.providers' ? 'Open model provider setup' : gate.surface === 'setup.gbrain' ? 'Open gbrain setup' : 'Open Ronin Services setup');
-      link.type = 'button'; link.addEventListener('click', () => environment.navigateToSurface?.(gate.surface, gate.detail));
-      blocked.append(link); detail.append(blocked);
-    }
-    const customize = createAction({ label: 'Customize', action: () => environment.customize?.({ template: { shelf: slot.shelf, name: slot.handle }, workspace: 'workspace2', user_message: message.value }) });
+    const heading = el('div', 'sp-heading');
+    heading.append(el('h3', '', slot.label || slot.handle));
+    const go = el('div', 'sp-go');
+    const warning = el('p', 'sp-warning', gate.reason); warning.hidden = true;
+    let warningTimer = null;
+    const showHeld = () => {
+      warning.hidden = false; requirementState.select(gate.targets);
+      clearTimeout(warningTimer); warningTimer = setTimeout(() => { warning.hidden = true; }, 3200);
+    };
+    const message = el('textarea'); message.rows = 3; message.placeholder = 'What should it start on?';
     const launchNow = async () => {
       if (typeof environment.launch !== 'function') return notice.set('failed', 'Launch is not available yet.');
       const tab = environment.reserveLaunchTab?.() || window.open('about:blank', '_blank');
@@ -322,11 +416,22 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       else if (url) window.open(url, '_blank', 'noopener');
       notice.set('success', 'Launched in a new tab.');
     };
-    const launch = createAction({ label: 'Launch', kind: 'primary', disabled: !gate.ready, ...(gate.ready ? { action: launchNow } : {}) });
-    const actions = createActionBar({ label: 'Preset actions', actions: [customize, launch] }); detail.append(actions.el);
-    if (!gate.ready) actions.append(el('span', 'sp-held', 'Held'));
+    if (!gate.ready) { const mark = el('button', 'sp-warn', '!'); mark.type = 'button'; mark.title = 'Not launchable yet'; mark.addEventListener('click', showHeld); go.append(mark); }
+    const launch = createAction({ label: 'Launch', kind: 'primary', action: gate.ready ? launchNow : showHeld });
+    launch.el.className = `${launch.el.className || ''} sp-launch`.trim();
+    if (!gate.ready) { launch.el.dataset.held = 'true'; launch.el.setAttribute('aria-disabled', 'true'); }
+    go.append(launch.el); heading.append(go); detail.append(heading, warning, el('p', 'sp-description', slot.description || ''));
+    const panel = el('div', 'sp-choice-panel');
+    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime); panel.append(fixed); }
+    if (slot.handle !== 'bare_metal') panel.append(field('Initial message to agent', message));
+    detail.append(panel);
   };
 
+  kinds.subscribe(() => {
+    const visible = visibleIndexes();
+    if (!visible.includes(selected)) { selected = -1; paintGrid(); paintDetail(); }
+    else paintGrid();
+  });
   const enter = async () => {
     surface.setState('loading', 'Loading presets…');
     const supplied = await environment.presetData?.();

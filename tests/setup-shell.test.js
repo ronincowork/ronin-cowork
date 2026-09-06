@@ -76,10 +76,15 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
     source('js/setup-view.js'), source('js/main.js'), source('js/cowork-view.js'),
   ]);
   assert.match(setup, /registerSetupSurfaces\(\);[\s\S]*registerPresetsSurface\(\);/);
-  assert.match(setup, /fixedWorkspaces: \{ workspace2: PRESETS_TYPE \}/);
-  assert.match(setup, /selectorWorkspace: 'workspace1'/);
+  // The Team page's own shape: workspace 1 · selector · workspace 2. Presets is pinned in
+  // workspace 1 (the widest column); the selector aims at workspace 2.
+  assert.match(setup, /fixedWorkspaces: \{ workspace1: PRESETS_TYPE \}/);
+  assert.match(setup, /selectorWorkspace: 'workspace2'/);
   assert.match(setup, /selectorCurrent: true/);
-  assert.match(setup, /bench\.arrangement\.move\('selector', 0\)/);
+  assert.doesNotMatch(setup, /arrangement\.move\('selector', 0\)/);
+  assert.match(setup, /order: Object\.freeze\(\['workspace1', 'selector', 'workspace2'\]\)/);
+  assert.match(setup, /bench\.place\(PRESETS_TYPE, 'workspace1'\)/);
+  assert.match(setup, /SETUP_SURFACE_TYPES\.providers, 'workspace2', detail\)/);
   assert.match(setup, /hideFeedback: true/);
   assert.match(setup, /hideShapeControl: true/);
   assert.match(setup, /mountProviderSetupSession/);
@@ -87,7 +92,7 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /environment\.setupRuntime = runtime\.ok \? runtime\.data : \{ providers: \[\] \};[\s\S]*bench\.refreshSelector\(\);[\s\S]*const stored/);
   assert.match(setup, /setSetupRequirementState: \(next\) => \{[\s\S]*environment\.setupRequirementState = requirementState\(next\);[\s\S]*bench\?\.refreshSelector\(\)/);
   assert.match(setup, /setSetupRequirementState: \(next\) => environment\.setSetupRequirementState\(next\)/);
-  assert.match(setup, /SETUP_SURFACE_TYPES\.register, SETUP_SURFACE_TYPES\.providers, SETUP_SURFACE_TYPES\.roots/);
+  assert.match(setup, /SETUP_SURFACE_TYPES\.providers, SETUP_SURFACE_TYPES\.register, SETUP_SURFACE_TYPES\.roots/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.services, SETUP_SURFACE_TYPES\.gbrain, SETUP_SURFACE_TYPES\.templates/);
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
   assert.match(cowork, /PRESETS_TYPE/);

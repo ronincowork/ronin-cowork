@@ -76,7 +76,9 @@ export async function launchPresetPlan(plan = {}, send) {
   const configured = plan.template.name === 'bare_metal'
     ? (plan.inputs?.sessions || [])
     : plan.template.name === 'health_and_fitness'
-      ? (plan.inputs?.roles || []).map((row) => ({ ...row, instructions: plan.user_message }))
+      ? (plan.inputs?.roles || []).map((row) => ({ ...row, instructions: [row.ask, plan.user_message].filter(Boolean).join('\n\n') }))
+      : plan.template.name === 'morning_brief'
+        ? (plan.inputs?.roles || template.agents || []).map((row) => ({ ...row, instructions: [row.ask || row.instructions, plan.user_message].filter(Boolean).join('\n\n') }))
       : plan.template.name === 'develop_new_project'
         ? (plan.inputs?.features || []).map((row) => ({ ...(typeof row === 'string' ? { name: row } : row), instructions: plan.user_message }))
         : (template.agents || []);
@@ -91,10 +93,8 @@ export async function launchPresetPlan(plan = {}, send) {
   if (plan.template?.name === 'morning_brief') {
     const scheduled = await ask('/api/setup/morning-brief/schedules', { method: 'POST', json: {
       team,
-      request: plan.user_message || template.objective || 'Write the morning briefing.',
-      when: plan.inputs?.schedule || 'every day at 8am',
-      to: plan.inputs?.delivery === 'team lead' ? 'lead' : plan.inputs?.delivery || 'lead',
-      active: plan.inputs?.active !== false,
+      request: 'Run the configured Morning Brief team and publish today\'s briefing.',
+      when: plan.inputs?.schedule || 'daily 08:00',
     } });
     if (!scheduled.ok) return scheduled;
     schedule = scheduled.data?.schedule || null;

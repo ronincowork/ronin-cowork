@@ -113,7 +113,7 @@ test('native login mounts only the attachment published by the real setup runtim
 
 test('selector definitions expose non-selectable provider group and exact dependency targets', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  assert.match(source, /targetKey: SETUP_REQUIREMENT_TARGETS\.providers/);
+  assert.match(source, /createProviderSurface, SETUP_REQUIREMENT_TARGETS\.providers/);
   assert.match(source, /createServicesSurface, SETUP_REQUIREMENT_TARGETS\.services/);
   assert.match(source, /createGbrainSurface, SETUP_REQUIREMENT_TARGETS\.gbrain/);
   assert.doesNotMatch(source, /key:\s*SETUP_REQUIREMENT_TARGETS\.providers/, 'provider group remains metadata, never an aggregate selectable offer');

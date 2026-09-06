@@ -11,8 +11,8 @@ const responder = (template, calls) => async (url, options = {}) => {
   throw new Error(`unexpected ${url}`);
 };
 
-test('Personal Assistant faithfully launches three distinct shapes', async () => {
-  for (const [mode, recruit, view] of [['single', null, 'cowork'], ['lead', 'nobody', 'team'], ['recruit', 'staff agents', 'team']]) {
+test('Personal Assistant faithfully launches its two approved shapes', async () => {
+  for (const [mode, recruit, view] of [['single', null, 'cowork'], ['recruit', 'staff agents', 'team']]) {
     const calls = [], send = responder({ name: 'personal_assistant', label: 'Personal Assistant', brief: 'Help.' }, calls);
     const result = await launchPresetPlan({ template: { shelf: 'agents', name: 'personal_assistant' }, inputs: { assistant_mode: mode, specialists: 'research' } }, send);
     assert.equal(result.ok, true); assert.equal(result.data.urlView, view);
@@ -24,9 +24,9 @@ test('Personal Assistant faithfully launches three distinct shapes', async () =>
 
 test('Morning Brief creates a real schedule and returns its receipt', async () => {
   const calls = [], send = responder({ name: 'morning_brief', label: 'Morning Brief', objective: 'Brief.', agents: [{ name: 'writer' }] }, calls);
-  const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'morning_brief' }, user_message: 'News', inputs: { schedule: 'weekdays at 8am', delivery: 'team lead', active: true } }, send);
+  const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'morning_brief' }, user_message: 'News', inputs: { schedule: 'weekdays 08:00' } }, send);
   const call = calls.find((row) => row.url === '/api/setup/morning-brief/schedules');
-  assert.deepEqual({ request: call.body.request, when: call.body.when, to: call.body.to, active: call.body.active }, { request: 'News', when: 'weekdays at 8am', to: 'lead', active: true });
+  assert.deepEqual(call.body, { team: call.body.team, request: "Run the configured Morning Brief team and publish today's briefing.", when: 'weekdays 08:00' });
   assert.equal(result.data.schedule.job.id, 'job-1');
 });
 
