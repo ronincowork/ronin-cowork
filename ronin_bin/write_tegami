@@ -9,6 +9,23 @@
 #        write_tegami --doc <path>                       list a doc you are working on
 #        write_tegami --undoc <path>                     take it off the list
 #
+# FIELD VERBS — one field, your own session, no block. Each edits the current letter in
+# place and runs it through the same validator as a whole-block save, so the shape rules
+# hold and "at", "docs" and "teams" are carried through untouched. Several may be combined
+# in one call; they apply in order.
+#        write_tegami --objective <text>                 your objective sentence
+#        write_tegami --phase <title>                    append a phase rung
+#        write_tegami --gate <text>                      append a gate rung
+#        write_tegami --rung N <title>                   retitle rung N (phase or gate)
+#        write_tegami --leg N <title>                    append a leg to phase N
+#        write_tegami --leg N.M <title>                  retitle leg M of rung N
+#        write_tegami --status N[.M] PLANNED|ACTIVE|DONE set one status
+#        write_tegami --done N[.M]                       the same, DONE
+#        write_tegami --active N[.M]                     the same, ACTIVE
+#        write_tegami --drop N[.M]                       remove a rung or a leg
+#        write_tegami --repo <repo>:<branch>             add or keep a checkout row
+#        write_tegami --unrepo <repo>[:<branch>]         remove one
+#
 # THE MARKER FORM TAKES ONE POSITION AND NEVER JSON, and it writes exactly ONE KEY:
 # "at" -> {"rung":2,"leg":3}, or {"rung":4} for a gate, or null. It touches nothing
 # else — not a status, not a title, not even to tidy.
@@ -129,6 +146,9 @@ STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 SESSION_STORE="$("$STORE" session)"
 
 TARGET=""; ACTIVE=""; STATE=""; DOCADD=""; DOCDEL=""
+# Field verbs collect here as "verb<US>arg<US>arg" and apply in order, after the parse.
+US=$(printf '\037'); EDITS=()
+need() { [ -n "${2-}" ] || die "write_tegami: $1 needs a value: write_tegami $1 $3"; }
 while [ $# -gt 0 ]; do
   case "$1" in
     --session)    shift; TARGET=${1-} ;;
@@ -139,10 +159,24 @@ while [ $# -gt 0 ]; do
     # and two flags a keystroke apart with unrelated meanings is a trap.
     --doc)        shift; DOCADD=${1-} ;;
     --undoc)      shift; DOCDEL=${1-} ;;
+    --objective)  need "$1" "${2-}" "<text>";        EDITS+=("objective$US$2"); shift ;;
+    --phase)      need "$1" "${2-}" "<title>";       EDITS+=("phase$US$2"); shift ;;
+    --gate)       need "$1" "${2-}" "<text>";        EDITS+=("gate$US$2"); shift ;;
+    --rung)       need "$1" "${3-}" "N <title>";     EDITS+=("rung$US$2$US$3"); shift 2 ;;
+    --leg)        need "$1" "${3-}" "N[.M] <title>"; EDITS+=("leg$US$2$US$3"); shift 2 ;;
+    --status)     need "$1" "${3-}" "N[.M] <status>"; EDITS+=("status$US$2$US$3"); shift 2 ;;
+    --done)       need "$1" "${2-}" "N[.M]";         EDITS+=("status$US$2${US}DONE"); shift ;;
+    --active)     need "$1" "${2-}" "N[.M]";         EDITS+=("status$US$2${US}ACTIVE"); shift ;;
+    --drop)       need "$1" "${2-}" "N[.M]";         EDITS+=("drop$US$2"); shift ;;
+    --repo)       need "$1" "${2-}" "<repo>:<branch>"; EDITS+=("repo$US$2"); shift ;;
+    --unrepo)     need "$1" "${2-}" "<repo>[:<branch>]"; EDITS+=("unrepo$US$2"); shift ;;
     *) die "write_tegami: unknown argument: $1" ;;
   esac
   shift
 done
+if [ ${#EDITS[@]} -gt 0 ] && { [ -n "$TARGET" ] || [ -n "$ACTIVE" ] || [ -n "$STATE" ] || [ -n "$DOCADD" ] || [ -n "$DOCDEL" ]; }; then
+  die "write_tegami: field verbs are your OWN letter and travel alone — not with --session/--at, --on_track/--on_tangent or --doc/--undoc."
+fi
 
 # THE STATE SWITCH — one word, your own session, no block.
 #
@@ -367,8 +401,111 @@ NAME=$(me)
 DIR="$SESSION_STORE/$(key_of "$NAME")"
 FILE="$DIR/tegami.md"
 
-BODY=$(cat)
-[ -n "${BODY// /}" ] || die "write_tegami: nothing on stdin. Send the json block."
+if [ ${#EDITS[@]} -gt 0 ]; then
+  # THE FIELD VERBS. Read the current block, apply each edit in order, and hand the result
+  # to the validator below exactly as if the agent had sent it on stdin. One validator,
+  # one save path: a verb can never write a shape the block form would refuse, and it
+  # inherits the carry-through of "at", "docs" and "teams" for free.
+  PREVB=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" 2>/dev/null)
+  BODY=$(RONIN_PREV_BLOCK="$PREVB" python3 - "${EDITS[@]}" <<'EDIT'
+import json, os, sys
+US = "\037"
+# The block arrives in the environment: stdin is this script (the heredoc), so a pipe
+# would be swallowed by it.
+try:
+    d = json.loads(os.environ.get("RONIN_PREV_BLOCK") or "{}")
+except Exception:
+    d = {}
+if not isinstance(d, dict):
+    d = {}
+out = {k: d[k] for k in ("objective", "mandate", "repos", "ladder_state", "ladder") if k in d}
+ladder = out.setdefault("ladder", [])
+if not isinstance(ladder, list):
+    sys.exit("write_tegami: the letter's ladder is not a list; fix it with a whole-block save.")
+STATUSES = {"PLANNED", "ACTIVE", "DONE"}
+
+def pos(word, verb, want=None):
+    # N or N.M, as the rung sits in the letter; want = "rung" | "leg" | None (either)
+    parts = word.split(".")
+    if not all(p.isdigit() for p in parts) or len(parts) > 2:
+        sys.exit("write_tegami: %s takes a position as read_tegami --rungs prints it — N or N.M — not %r." % (verb, word))
+    ri = int(parts[0]); li = int(parts[1]) if len(parts) > 1 else None
+    if not 1 <= ri <= len(ladder):
+        sys.exit("write_tegami: %s: rung %d is out of range (1..%d)." % (verb, ri, len(ladder)))
+    rung = ladder[ri - 1]
+    if li is None:
+        if want == "leg":
+            sys.exit("write_tegami: %s: rung %d is a %s — name a leg, N.M." % (verb, ri, "gate" if "gate" in rung else "phase"))
+        return rung, None
+    if "gate" in rung:
+        sys.exit("write_tegami: %s: rung %d is a gate and has no legs." % (verb, ri))
+    legs = rung.get("legs") or []
+    if not 1 <= li <= len(legs):
+        sys.exit("write_tegami: %s: rung %d has %d leg(s); %d is out of range." % (verb, ri, len(legs), li))
+    return rung, legs[li - 1]
+
+said = []
+for raw in sys.argv[1:]:
+    f = raw.split(US)
+    verb, args = f[0], f[1:]
+    if verb == "objective":
+        out["objective"] = args[0].strip(); said.append("objective set")
+    elif verb == "phase":
+        ladder.append({"phase": args[0].strip(), "status": "PLANNED", "legs": []}); said.append("phase %d added" % len(ladder))
+    elif verb == "gate":
+        ladder.append({"gate": args[0].strip(), "status": "PLANNED"}); said.append("gate %d added" % len(ladder))
+    elif verb == "rung":
+        rung, _ = pos(args[0], "--rung", "rung")
+        key = "gate" if "gate" in rung else "phase"
+        rung[key] = args[1].strip(); said.append("rung %s retitled" % args[0])
+    elif verb == "leg":
+        if "." in args[0]:
+            _, leg = pos(args[0], "--leg", "leg")
+            leg["title"] = args[1].strip(); said.append("leg %s retitled" % args[0])
+        else:
+            rung, _ = pos(args[0], "--leg", "rung")
+            if "gate" in rung:
+                sys.exit("write_tegami: --leg: rung %s is a gate; legs belong to a phase." % args[0])
+            rung.setdefault("legs", []).append({"title": args[1].strip(), "status": "PLANNED"})
+            said.append("leg %s.%d added" % (args[0], len(rung["legs"])))
+    elif verb == "status":
+        st = args[1].strip().upper()
+        if st not in STATUSES:
+            sys.exit("write_tegami: --status takes PLANNED, ACTIVE or DONE, not %r." % args[1])
+        rung, leg = pos(args[0], "--status")
+        (leg if leg is not None else rung)["status"] = st; said.append("%s -> %s" % (args[0], st))
+    elif verb == "drop":
+        rung, leg = pos(args[0], "--drop")
+        if leg is not None:
+            rung["legs"].remove(leg)
+        else:
+            ladder.remove(rung)
+        said.append("%s dropped" % args[0])
+    elif verb == "repo":
+        repo, _, branch = args[0].partition(":")
+        repo, branch = repo.strip(), branch.strip()
+        if not repo:
+            sys.exit("write_tegami: --repo takes <repo>:<branch>.")
+        repos = out.setdefault("repos", [])
+        if not any(isinstance(r, dict) and r.get("repo") == repo and r.get("branch", "") == branch for r in repos):
+            repos.append({"repo": repo, "branch": branch})
+        said.append("repo %s kept" % args[0])
+    elif verb == "unrepo":
+        repo, _, branch = args[0].partition(":")
+        before = len(out.get("repos") or [])
+        out["repos"] = [r for r in (out.get("repos") or [])
+                        if not (isinstance(r, dict) and r.get("repo") == repo.strip() and (not branch or r.get("branch", "") == branch.strip()))]
+        if len(out["repos"]) == before:
+            print("write_tegami: note — no repo row matched %s." % args[0], file=sys.stderr)
+        said.append("repo %s removed" % args[0])
+print("write_tegami: " + "; ".join(said), file=sys.stderr)
+print(json.dumps(out, ensure_ascii=False))
+EDIT
+) || exit 3
+else
+  BODY=$(cat)
+  [ -n "${BODY// /}" ] || die "write_tegami: nothing on stdin. Send the json block."
+fi
 
 # THE TEAMS DERIVATION — tags in, roster facts out, fresh on every save. The letter's
 # "teams" block is machinery-owned (R35): one entry per team this session is on, with

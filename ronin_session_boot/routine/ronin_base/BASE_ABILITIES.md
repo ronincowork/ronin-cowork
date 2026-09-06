@@ -8,10 +8,12 @@ mean the internal sub-agent. Delegation using neither vocabulary is your call an
 extra confirmation.
 
 **Your work record** is the owner's account of your task, progress, tracked documents,
-worktrees and team. `read_tegami` prints it; `write_tegami < block.json` replaces your
-block with the JSON on stdin. The shape is in the letter you were seeded with and in the
-`write_tegami` row of `ronin_catalogs/TOOLS.md`. Keep it true whenever your task, position
-or documents change.
+worktrees and team. `read_tegami` prints it. Change one field with one call:
+`write_tegami --objective "<sentence>"`, `--phase "<title>"`, `--leg N "<title>"`,
+`--done N.M`, `--gate "<what you wait for>"`, `--doc <path>`; `write_tegami < block.json`
+replaces the whole authored block. The shape is in the letter you were seeded with and
+in the `write_tegami` row of `ronin_catalogs/TOOLS.md`. Keep it true whenever your task,
+position or documents change.
 
 **Other sessions.** `tejun-peek <session>` shows its recent live pane. `tejun-send
 <session> <message...>` delivers one message; open with `from @<your session>:` since the
