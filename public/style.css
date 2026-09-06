@@ -5822,9 +5822,20 @@ button.wb-door:hover b {
 .setup-lede, .setup-fine, .setup-notice, .setup-state { margin: 0; }
 .setup-good { color: var(--ok); }
 .setup-provider-list { align-content: start; }
+.setup-provider-blocks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.setup-provider-block { min-height: calc(var(--space-12) * 2.25); }
+.setup-provider-block .wk-card-summary[data-good='true'] { color: var(--ok-2); }
+.setup-provider-block[data-activated='true'] { border-color: var(--ok-2); }
+.setup-provider-back { justify-self: start; }
+.setup-kinds { display: grid; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
 .setup-provider h3 { margin: 0; }
 .setup-provider-terminal { min-height: min(54vh, 34rem); overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--term-bg); }
 .setup-provider-terminal > .wk-terminal-host, .setup-provider-terminal .tile { height: 100%; min-height: inherit; }
+.setup-launch-own-stones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+.setup-launch-stone { display: flex; min-height: calc(var(--space-12) * 4); flex-direction: column; align-items: flex-start; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-7); text-align: left; }
+.setup-launch-stone i { color: var(--accent); font-size: var(--text-9); font-style: normal; }
+.setup-launch-stone b { margin-top: auto; color: var(--fg-strong); font-size: var(--text-7); }
+.setup-launch-stone span { margin-top: var(--space-2); color: var(--muted); font-size: var(--text-3); }
 .setup-template-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
 .setup-mode, .setup-template-card { min-height: 44px; border: var(--edge) solid var(--line); background: var(--panel); color: inherit; text-align: left; }
 .setup-mode[aria-pressed='true'] { border-color: var(--kaki); }

@@ -4,22 +4,24 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
-import { SETUP_REQUIREMENT_TARGETS, mountProviderAttachment, providerFromRuntime, providerOffers, setupRequirementClass } from './setup-provider-state.js';
+import { SETUP_REQUIREMENT_TARGETS, mountProviderAttachment, providerFromRuntime, setupRequirementClass, setupRequirementPresentation } from './setup-provider-state.js';
+import { createKindsPreference, renderKindPills } from './presets.js';
 
 export { SETUP_REQUIREMENT_TARGETS, mountProviderAttachment, providerFromRuntime, providerOffers, setupRequirementClass, setupRequirementPresentation } from './setup-provider-state.js';
 
 export const SETUP_SURFACE_TYPES = Object.freeze({
   register: 'setup.register', providers: 'setup.providers', roots: 'setup.roots',
-  services: 'setup.services', gbrain: 'setup.gbrain', templates: 'setup.templates',
+  services: 'setup.services', gbrain: 'setup.gbrain', templates: 'setup.templates', launchOwn: 'setup.launch-own',
 });
 
 const summaries = new Map([
   [SETUP_SURFACE_TYPES.register, 'optional'],
-  [SETUP_SURFACE_TYPES.providers, 'not installed'],
+  [SETUP_SURFACE_TYPES.providers, 'none yet'],
   [SETUP_SURFACE_TYPES.roots, '2 folders'],
   [SETUP_SURFACE_TYPES.services, 'not active'],
   [SETUP_SURFACE_TYPES.gbrain, 'not installed'],
   [SETUP_SURFACE_TYPES.templates, '0 loaded'],
+  [SETUP_SURFACE_TYPES.launchOwn, 'template · team · agent'],
 ]);
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 const notifySummary = (type, value, workbench) => { summaries.set(type, value); workbench?.refreshSelector?.(); };
@@ -47,6 +49,12 @@ function createRegisterSurface(context) {
   const out = surface(t('setup_surface.register', 'Register'));
   const body = el('div', 'setup-surface-body');
   const notice = el('p', 'setup-notice');
+  // What you use Ronin for: the same pills as above the stones; the answer picks the
+  // three presets shown first. It is a Setup preference, not a registration field.
+  const kindsField = el('div', 'setup-kinds');
+  kindsField.append(el('span', 'cv-eyebrow', t('setup_surface.kinds_lead', 'What you use Ronin for · pick any')));
+  renderKindPills(kindsField, context.environment?.kinds || createKindsPreference());
+  kindsField.append(el('p', 'setup-fine', t('setup_surface.kinds_note', 'Picks the presets you see first. Every preset stays reachable.')));
   let current = null;
   const field = (label, control) => { const wrap = el('label', 'setup-field'); wrap.append(el('span', '', label), control); return wrap; };
   const input = (name, type = 'text') => { const node = el('input'); node.name = name; node.type = type; return node; };
@@ -140,28 +148,77 @@ function createRegisterSurface(context) {
     }));
     notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
   };
-  body.append(identity, form, preferencesDisclosure, recoveryDisclosure); out.content.append(body);
+  body.append(kindsField, identity, form, preferencesDisclosure, recoveryDisclosure); out.content.append(body);
   return { el: out.el, show: async () => { const result = await request('/api/setup/registration', { cache: 'no-store' }); current = result.ok ? result.data : null; paint(); } };
 }
 
+/** The state a provider block says in one word. */
+const providerWord = (provider) => provider?.activated ? t('setup_surface.activated', 'Activated')
+  : provider?.login_open ? t('setup_surface.sign_in_open', 'Sign-in open')
+  : provider?.installed ? t('setup_surface.installed_sign_in', 'Installed · sign in')
+  : provider?.installable ? t('setup_surface.not_installed_install', 'Not installed · install')
+  : provider?.state || 'absent';
+
+/**
+ * ONE MODEL PROVIDERS SURFACE. Its first face says one thing — add a model provider —
+ * above equal blocks, one per provider in the runtime catalog, no block bigger than
+ * another. Choosing a block opens that provider in place: the same adaptive stage
+ * (install · native sign-in tile with Done and Close · activated) the individual surfaces
+ * had, with a word back to all providers. Never a dashboard of every provider's stage.
+ */
 function createProviderSurface(context) {
-  const providerKey = String(context.detail?.provider || context.detail?.key || '');
-  const out = surface(context.detail?.label || t('setup_surface.provider', 'Model provider'));
+  const out = surface(t('setup_surface.providers', 'Model providers'));
   const body = el('div', 'setup-surface-body setup-provider-list'); out.content.append(body);
+  let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
+  let blocks = new Map();
   const disposeMount = (destroy = true) => {
     if (!mounted) return;
     if (destroy) mounted.destroy?.(); else mounted.park?.();
     mounted = null;
   };
-  const paint = async () => {
-    const result = await request('/api/setup/runtime', { cache: 'no-store' });
-    disposeMount();
-    body.replaceChildren();
-    if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); return; }
-    context.environment.setupRuntime = result.data;
-    const provider = providerFromRuntime(result.data, providerKey);
-    context.workbench?.refreshSelector?.();
+  // The requirement seam: a blocked stone names the provider it needs; the block lights.
+  const markBlocks = (state = context.environment?.setupRequirementState || {}) => {
+    for (const [id, block] of blocks) {
+      const shown = setupRequirementPresentation(SETUP_REQUIREMENT_TARGETS.provider(id), state);
+      block.classList.toggle('is-requirement-marked', shown.marked);
+      block.classList.toggle('is-requirement-flashing', shown.flashing);
+      if (shown.flashCycle > 0) block.dataset.requirementFlashCycle = String(shown.flashCycle);
+    }
+  };
+  const unsubscribe = context.environment?.onSetupRequirementState?.((state) => markBlocks(state)) || (() => {});
+  const summarize = (runtime) => {
+    const activated = Number(runtime?.activated_count || 0);
+    notifySummary(SETUP_SURFACE_TYPES.providers, activated ? t('setup_surface.providers_activated', '{n} activated', { n: activated }) : t('setup_surface.providers_none', 'none yet'), context.workbench);
+  };
+  const paintBlocks = (runtime) => {
+    const providers = (Array.isArray(runtime?.providers) ? runtime.providers : []).filter((provider) => provider?.id);
+    blocks = new Map();
+    body.append(el('p', 'setup-lede', t('setup_surface.add_provider', 'Add a model provider.')));
+    if (!providers.length) { body.append(el('p', 'setup-fine', t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.'))); return; }
+    const grid = el('div', 'setup-provider-blocks');
+    for (const provider of providers) {
+      const key = SETUP_REQUIREMENT_TARGETS.provider(provider.id);
+      const card = WorkspaceKit.primitives.createCard({
+        heading: provider.label || provider.id, summary: providerWord(provider), metadata: provider.from ? [provider.from] : [],
+        className: `setup-provider-block ${setupRequirementClass(key)}`,
+        action: () => { opened = String(provider.id); void paint(); },
+      });
+      card.el.dataset.provider = provider.id;
+      card.el.dataset.activated = String(provider.activated === true);
+      card.el.dataset.setupRequirementTarget = key;
+      if (provider.activated) card.summary.dataset.good = 'true';
+      blocks.set(String(provider.id), card.el);
+      grid.append(card.el);
+    }
+    body.append(grid, el('p', 'setup-fine', t('setup_surface.provider_disclosure_short', 'Each provider signs you in its own way; Ronin records only that you finished.')));
+    markBlocks();
+  };
+  const paintProvider = (runtime) => {
+    const provider = providerFromRuntime(runtime, opened);
+    const back = action(t('setup_surface.all_providers', '‹ All providers'), '', () => { disposeMount(false); opened = ''; void paint(); });
+    back.classList.add('setup-provider-back'); back.dataset.size = 'compact';
+    body.append(back);
     if (!provider) { body.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return; }
     const row = el('section', 'setup-provider');
     row.dataset.provider = provider.id;
@@ -185,9 +242,19 @@ function createProviderSurface(context) {
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
     } else row.append(el('p', 'setup-good', t('setup_surface.activated', 'Activated')));
     body.append(row);
-    notifySummary(SETUP_SURFACE_TYPES.providers, provider.state || 'absent', context.workbench);
   };
-  return { el: out.el, show: paint, destroy: () => disposeMount() };
+  const paint = async () => {
+    const result = await request('/api/setup/runtime', { cache: 'no-store' });
+    disposeMount();
+    body.replaceChildren();
+    blocks = new Map();
+    if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); return; }
+    context.environment.setupRuntime = result.data;
+    context.workbench?.refreshSelector?.();
+    if (opened) paintProvider(result.data); else paintBlocks(result.data);
+    summarize(result.data);
+  };
+  return { el: out.el, show: paint, destroy: () => { disposeMount(); unsubscribe(); } };
 }
 
 function createRootsSurface(context) {
@@ -295,6 +362,28 @@ function createTemplatesSetupSurface(context) {
   return { el: out.el, show };
 }
 
+function createLaunchOwnSurface(context) {
+  const out = surface(t('setup_surface.launch_own', 'Launch your own'));
+  const body = el('div', 'setup-surface-body setup-launch-own');
+  const notice = el('p', 'setup-notice');
+  const stones = el('div', 'setup-launch-own-stones');
+  for (const row of [
+    { kind: 'template', glyph: '▤', label: 'Template', line: 'Start from any loaded template.' },
+    { kind: 'team', glyph: '人人', label: 'Team', line: 'A lead and agents, from scratch.' },
+    { kind: 'agent', glyph: '人', label: 'Agent', line: 'One agent, your instructions.' },
+  ]) {
+    const button = el('button', 'setup-launch-stone'); button.type = 'button';
+    button.append(el('i', '', row.glyph), el('b', '', row.label), el('span', '', row.line));
+    button.addEventListener('click', () => {
+      if (typeof context.environment?.openLaunchForm === 'function') context.environment.openLaunchForm({ kind: row.kind, seed: {} });
+      else notice.textContent = t('setup_surface.launch_adapter_pending', 'This launch form is being connected.');
+    });
+    stones.append(button);
+  }
+  body.append(stones, notice); out.content.append(body);
+  return { el: out.el };
+}
+
 export function setupSurfaceDefinitions() {
   const definition = (type, label, create, targetKey = '') => ({
     type, header: 'surface', label: () => label, summary: () => summaries.get(type), create: (context) => create(context),
@@ -302,19 +391,12 @@ export function setupSurfaceDefinitions() {
   });
   return [
     definition(SETUP_SURFACE_TYPES.register, t('setup_surface.register', 'Register'), createRegisterSurface),
-    {
-      type: SETUP_SURFACE_TYPES.providers,
-      header: 'surface',
-      label: () => t('setup_surface.provider', 'Model provider'),
-      targetKey: SETUP_REQUIREMENT_TARGETS.providers,
-      targetClass: setupRequirementClass(SETUP_REQUIREMENT_TARGETS.providers),
-      discover: (_tenant, environment) => providerOffers(environment?.setupRuntime),
-      create: (context) => createProviderSurface(context),
-    },
+    definition(SETUP_SURFACE_TYPES.providers, t('setup_surface.providers', 'Model providers'), createProviderSurface, SETUP_REQUIREMENT_TARGETS.providers),
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace folders'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.services, t('settei.ronin_services', 'Ronin Services'), createServicesSurface, SETUP_REQUIREMENT_TARGETS.services),
     definition(SETUP_SURFACE_TYPES.gbrain, t('pane.gbrain', 'gbrain'), createGbrainSurface, SETUP_REQUIREMENT_TARGETS.gbrain),
     definition(SETUP_SURFACE_TYPES.templates, t('league.templates', 'Templates'), createTemplatesSetupSurface),
+    definition(SETUP_SURFACE_TYPES.launchOwn, t('setup_surface.launch_own', 'Launch your own'), createLaunchOwnSurface),
   ];
 }
 

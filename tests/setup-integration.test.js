@@ -17,7 +17,7 @@ test('all seven core handles expose only their ruled specialized controls after 
     develop_new_project: ['user_message', 'customize', 'launch', 'root', 'features'],
     personal_assistant: ['user_message', 'customize', 'launch', 'assistant_mode', 'specialists'],
     health_and_fitness: ['user_message', 'customize', 'launch', 'roles'],
-    morning_brief: ['user_message', 'customize', 'launch', 'grok', 'schedule', 'delivery', 'active'],
+    morning_brief: ['user_message', 'customize', 'launch', 'schedule', 'roles'],
     agent_editable_doc: ['user_message', 'customize', 'launch', 'root', 'document'],
   };
   for (const [handle, controls] of Object.entries(expected)) {
@@ -31,10 +31,10 @@ test('all seven initial controls preserve the ruled destinations and teaching ch
   assert.equal(presets.initialControls('staff_my_codebase').root, 'ronin_project_1');
   assert.deepEqual(presets.initialControls('develop_new_project'), { root: 'ronin_project_1', features: ['frontend', 'backend'] });
   assert.deepEqual(presets.initialControls('personal_assistant'), { assistant_mode: 'single', specialists: '' });
-  assert.deepEqual(presets.initialControls('health_and_fitness', 'claude').roles, [
-    { name: 'head_coach', ask: '' }, { name: 'nutritionist', ask: '' }, { name: 'race_and_event_guide', ask: '' },
-  ]);
-  assert.deepEqual(presets.initialControls('morning_brief'), { grok: 'grok', schedule: 'every day at 8am', delivery: 'team lead', active: true });
+  assert.deepEqual(presets.initialControls('health_and_fitness', 'claude').roles.map((row) => row.name), ['Head Coach', 'Nutritionist', 'Race and Event Guide']);
+  assert.ok(presets.initialControls('health_and_fitness').roles.every((row) => row.ask));
+  assert.deepEqual(presets.initialControls('morning_brief').roles.map((row) => row.name), ['brief writer', 'reader']);
+  assert.equal(presets.initialControls('morning_brief').schedule, 'daily 08:00');
   assert.deepEqual(presets.initialControls('agent_editable_doc'), { root: 'ronin_lab', document: 'README.md' });
 });
 

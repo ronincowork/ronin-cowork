@@ -155,38 +155,30 @@ test('each blocked selection increments flashCycle and ready selection clears ma
   assert.deepEqual(state.select([]), { hovered: [], open: [], flash: [], flashCycle: 2 });
 });
 
-test('blocked detail retains ordinary controls and a native held Launch contract', async () => {
+test('blocked detail keeps its controls and summons the concept warning from held Launch', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /detail\.append\(blocked\);\s*return/);
-  assert.match(source, /label: 'Launch', kind: 'primary', disabled: !gate\.ready/);
-  assert.match(source, /gate\.ready \? \{ action: launchNow \} : \{\}/);
-  assert.match(source, /actions\.append\(el\('span', 'sp-held', 'Held'\)\)/);
-  assert.match(source, /headingCopy\.append\([\s\S]*slot\.destination/);
+  assert.match(source, /const showHeld = \(\) =>/);
+  assert.match(source, /label: 'Launch', kind: 'primary', action: gate\.ready \? launchNow : showHeld/);
+  assert.match(source, /launch\.el\.dataset\.held = 'true'/);
+  assert.match(source, /el\('button', 'sp-warn', '!'\)/);
+  assert.doesNotMatch(source, /headingCopy\.append\([\s\S]*slot\.destination/);
   assert.doesNotMatch(source, /button\.append\([^\n]*slot\.destination/);
 });
 
-test('Customize calls only its adapter with exact template and User Message', async () => {
-  const customizations = [];
-  let launches = 0;
+test('the selected concept entry has one framed action panel and no loose Customize control', async () => {
   const surface = presets.createPresetsSurface({ environment: {
     presetData: async () => ({
       templates: [],
       runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] },
     }),
     loadPresetSlots: () => null,
-    customize: (payload) => customizations.push(payload),
-    launch: async () => { launches += 1; return { ok: false }; },
+    launch: async () => ({ ok: false }),
   } });
   await surface.enter();
-  const nodes = [...surface.el.walk()];
-  const message = nodes.find((node) => node.tagName === 'TEXTAREA');
-  const customize = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Customize');
-  message.value = 'Keep the caller honest';
-  customize.click();
-  assert.equal(launches, 0);
-  assert.deepEqual(customizations, [{
-    template: { shelf: 'teams', name: 'bare_metal' },
-    workspace: 'workspace2',
-    user_message: 'Keep the caller honest',
-  }]);
+  let nodes = [...surface.el.walk()];
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sp-slot'))[3].click();
+  nodes = [...surface.el.walk()];
+  assert.ok(nodes.find((node) => String(node.className).includes('sp-choice-panel')));
+  assert.ok(nodes.find((node) => node.tagName === 'TEXTAREA'));
+  assert.equal(nodes.some((node) => node.tagName === 'BUTTON' && node.textContent === 'Customize'), false);
 });
