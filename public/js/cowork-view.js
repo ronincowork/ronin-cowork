@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
+import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 import { createAddAgentView } from './add-agent.js';
@@ -438,6 +438,7 @@ export function createCoworkView(options = {}) {
     for (const seat of Object.values(seats)) seat.pool.sync(names);
     paintSeats();
   };
+  const restorationMembers = () => campaign && !team ? unassignedSessions() : membersOfTeam(team);
   // THE LEAD IS ALWAYS HOT (owner: "the team manager is always hot, regardless") — pinned
   // and kept streaming in workspace 1, its default home.
   const ensureLeadHot = (members) => {
@@ -561,7 +562,7 @@ export function createCoworkView(options = {}) {
     const members = membersOfTeam(team);
     const roster = teamByName(team);
     seenMembers = membership(members);
-    syncPools(members);
+    syncPools(restorationMembers());
     ensureLeadHot(members);
     seatTheTeam();
     touch(lastSeat);
@@ -642,7 +643,7 @@ export function createCoworkView(options = {}) {
       bench.enter({ arrangement: typed.arrangement, count: context.viewState(viewKey)?.count, selected: context.viewState(viewKey)?.selected });
       remembered = { ...typed.seats };
       if (!Object.keys(remembered).length) remembered = typed.focusedSession ? { workspace1: typed.focusedSession } : {};
-      const members = membersOfTeam(team);
+      const members = restorationMembers();
       syncPools(members);
       ensureLeadHot(members);
       seatTheTeam();
