@@ -17,10 +17,12 @@
 
   --fg-strong: #d7e3f7;
   --fg: #c5c8c6;
-  --muted: #6b7488;
+  /* Muted is for things that are muted: a state word, a connective. It still has to be
+     read, so it stays at 6:1 or better on the panel; dim, the placeholder grey, at 3.5:1. */
+  --muted: #949eb0;
   --muted-2: #8fa3c8;
-  --muted-3: #6f80a0;
-  --dim: #454d61;
+  --muted-3: #8797b5;
+  --dim: #68718a;
 
   --accent: #e0af68;
 
@@ -221,10 +223,10 @@
   --line-3: #a9a191;
   --fg-strong: #14161c;
   --fg: #2c2e36;
-  --muted: #6d7284;
+  --muted: #585e6e;
   --muted-2: #5a617a;
-  --muted-3: #6d7284;
-  --dim: #b0aca0;
+  --muted-3: #585e6e;
+  --dim: #857f73;
   --accent: #a06b1a;
   --accent-2: #3f6a95;
   --accent-deep: #8a5a10;
