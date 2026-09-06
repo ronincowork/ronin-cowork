@@ -424,6 +424,12 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     const panel = el('div', 'sp-choice-panel');
     if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime); panel.append(fixed); }
     if (slot.handle !== 'bare_metal') panel.append(field('Initial message to agent', message));
+    const customize = createAction({ label: 'Customize this', action: () => environment.customize?.({
+      template: { shelf: slot.shelf || '', name: slot.handle },
+      user_message: String(message.value || ''),
+    }) });
+    customize.el.className = `${customize.el.className || ''} sp-customize`.trim();
+    panel.append(customize.el);
     detail.append(panel);
   };
 

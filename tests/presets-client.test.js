@@ -165,7 +165,8 @@ test('blocked detail keeps its controls and summons the concept warning from hel
   assert.doesNotMatch(source, /button\.append\([^\n]*slot\.destination/);
 });
 
-test('the selected concept entry has one framed action panel and no loose Customize control', async () => {
+test('the selected preset entry keeps Customize in its framed panel and calls the existing adapter', async () => {
+  const calls = [];
   const surface = presets.createPresetsSurface({ environment: {
     presetData: async () => ({
       templates: [],
@@ -173,6 +174,7 @@ test('the selected concept entry has one framed action panel and no loose Custom
     }),
     loadPresetSlots: () => null,
     launch: async () => ({ ok: false }),
+    customize: (detail) => calls.push(detail),
   } });
   await surface.enter();
   let nodes = [...surface.el.walk()];
@@ -180,5 +182,8 @@ test('the selected concept entry has one framed action panel and no loose Custom
   nodes = [...surface.el.walk()];
   assert.ok(nodes.find((node) => String(node.className).includes('sp-choice-panel')));
   assert.ok(nodes.find((node) => node.tagName === 'TEXTAREA'));
-  assert.equal(nodes.some((node) => node.tagName === 'BUTTON' && node.textContent === 'Customize'), false);
+  const customize = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Customize this');
+  assert.ok(customize);
+  customize.click();
+  assert.deepEqual(calls, [{ template: { shelf: 'agents', name: 'personal_assistant' }, user_message: '' }]);
 });
