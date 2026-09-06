@@ -7,6 +7,13 @@ export class DocumentPathError extends Error {
   constructor(message: string, readonly status = 400) { super(message); }
 }
 
+/** Preserve the established Docs shelf contract when no registered root is supplied. */
+export function legacyDocumentPath(requestedPath: unknown): string {
+  const file = String(requestedPath ?? '');
+  if (!file.startsWith('/')) throw new DocumentPathError('An absolute path is required.');
+  return file;
+}
+
 const containedBy = (root: string, file: string): boolean => {
   const relative = path.relative(root, file);
   return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative));

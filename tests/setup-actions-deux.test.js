@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-globalThis.Element = class {};
-globalThis.Node = class {};
-globalThis.document = { createElement: () => ({}) };
+class FakeNode { constructor() { this.dataset = {}; } append() {} }
+globalThis.Element = FakeNode;
+globalThis.Node = FakeNode;
+globalThis.document = { createElement: () => new FakeNode(), querySelector: () => null, head: { append() {} } };
 globalThis.location = { href: 'https://ronin.test/#/setup', hash: '#/setup' };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 

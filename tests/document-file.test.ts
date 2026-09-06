@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { DocumentPathError, resolveDocumentFile } from '../src/document-file.js';
+import { DocumentPathError, legacyDocumentPath, resolveDocumentFile } from '../src/document-file.js';
 import type { ProjectRootInfo } from '../src/project-roots.js';
 
 const rootInfo = (name: string, dir: string): ProjectRootInfo => ({
@@ -37,4 +37,10 @@ test('only existing Markdown files in active registered roots are editable', asy
   await assert.rejects(resolveDocumentFile('lab', 'page.html', [active]), (error: unknown) => error instanceof DocumentPathError && error.status === 415);
   await assert.rejects(resolveDocumentFile('lab', 'missing.md', [active]), (error: unknown) => error instanceof DocumentPathError && error.status === 404);
   await assert.rejects(resolveDocumentFile('lab', 'page.html', [{ ...active, archived: true }]), (error: unknown) => error instanceof DocumentPathError && error.status === 403);
+});
+
+test('legacy Docs access remains byte-for-byte absolute and outside root policy', () => {
+  assert.equal(legacyDocumentPath('/any/existing/docs/path.html'), '/any/existing/docs/path.html');
+  assert.equal(legacyDocumentPath('/home/person/private-note.md'), '/home/person/private-note.md');
+  assert.throws(() => legacyDocumentPath('relative.md'), (error: unknown) => error instanceof DocumentPathError && error.status === 400);
 });
