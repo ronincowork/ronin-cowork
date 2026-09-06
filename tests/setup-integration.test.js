@@ -8,6 +8,7 @@ globalThis.document = { createElement: () => new FakeNode(), querySelector: () =
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
 const presets = await import('../public/js/presets.js');
+const { launchPresetPlan } = await import('../public/js/preset-launch.js');
 const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 
 test('all seven core handles expose only their ruled specialized controls after the universal shell', () => {
@@ -46,7 +47,7 @@ test('every core seating case uses only real receipt objects and missing objects
     personal_assistant: { receipt: { sessions: [{ name: 'assistant' }] }, count: 1, types: ['session'] },
     health_and_fitness: { receipt: { team: 'health', sessions: [{ name: 'head_coach' }, { name: 'nutritionist' }] }, count: 4, types: ['session', 'team.commons', 'session'] },
     morning_brief: { receipt: { team: 'brief', sessions: [{ name: 'grok' }], document: 'brief.md' }, count: 4, types: ['session', 'team.commons', 'document'] },
-    agent_editable_doc: { receipt: { sessions: [{ name: 'brainstorm' }], document: 'README.md' }, count: 2, types: ['session', 'document'] },
+    agent_editable_doc: { receipt: { sessions: [{ name: 'brainstorm' }], root: 'ronin_lab', document: 'README.md' }, count: 2, types: ['session', 'document'] },
   };
   for (const [handle, row] of Object.entries(cases)) {
     const plan = presets.seatingPlan(handle, row.receipt);
@@ -79,6 +80,39 @@ test('the integrated Setup/Cowork adapters hand Customize to a new tab and use t
   assert.match(launch, /request\('\/api\/launch'/);
   assert.match(launch, /request\('\/api\/team-rosters'/);
   assert.match(workspace, /window\.open\(url\.href, '_blank', 'noopener'\)/);
+  assert.match(setup, /openLaunchForm: \(\{ kind, seed = \{\} \} = \{\}\) => openLaunchForm\(ctx, \{ kind, seed \}\)/);
+  assert.match(setup, /openTemplateLaunchForm: \(\) => openTemplateLaunchForm\(ctx\)/);
+  assert.match(cowork, /createDocumentWorkspaceAdapter\(\{ root: detail\.root, path: detail\.path \|\| detail\.key \}\)/);
+});
+
+test('Agent + Editable Doc carries only a registered root and root-relative path into the existing editor seat', () => {
+  const plan = presets.seatingPlan('agent_editable_doc', {
+    sessions: [{ name: 'brainstorm' }], root: 'ronin_lab', document: 'notes/brief.md',
+  });
+  assert.deepEqual(plan.seats[1], {
+    workspace: 'workspace2', type: 'document', key: 'notes/brief.md', root: 'ronin_lab', path: 'notes/brief.md',
+  });
+  assert.deepEqual(presets.seatingPlan('agent_editable_doc', {
+    sessions: [{ name: 'brainstorm' }], document: '/tmp/unsafe.md',
+  }).seats, [{ workspace: 'workspace1', type: 'session', key: 'brainstorm' }]);
+});
+
+test('Agent + Editable Doc launch receipt retains the selected registered root for seating', async () => {
+  const calls = [];
+  const result = await launchPresetPlan({
+    template: { shelf: 'agents', name: 'agent_editable_doc' },
+    inputs: { root: 'ronin_lab', document: 'notes/brief.md' },
+    user_message: 'Work beside me.',
+  }, async (url, options) => {
+    calls.push({ url, options });
+    if (url === '/api/templates/agents') return { ok: true, data: [{ name: 'agent_editable_doc' }] };
+    if (url === '/api/launch') return { ok: true, data: { name: 'writer' } };
+    return { ok: false, message: `unexpected ${url}` };
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.data.root, 'ronin_lab');
+  assert.equal(result.data.document, 'notes/brief.md');
+  assert.deepEqual(calls.map(({ url }) => url), ['/api/templates/agents', '/api/launch']);
 });
 
 test('all inventoried launch families use the shared launch marker and no Team Roster torii', async () => {

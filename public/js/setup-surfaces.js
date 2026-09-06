@@ -377,7 +377,8 @@ function createLaunchOwnSurface(context) {
     const button = el('button', 'setup-launch-stone'); button.type = 'button';
     button.append(el('i', '', row.glyph), el('b', '', row.label), el('span', '', row.line));
     button.addEventListener('click', () => {
-      if (typeof context.environment?.openLaunchForm === 'function') context.environment.openLaunchForm({ kind: row.kind, seed: {} });
+      if (row.kind === 'template' && typeof context.environment?.openTemplateLaunchForm === 'function') context.environment.openTemplateLaunchForm();
+      else if (typeof context.environment?.openLaunchForm === 'function') context.environment.openLaunchForm({ kind: row.kind, seed: {} });
       else notice.textContent = t('setup_surface.launch_adapter_pending', 'This launch form is being connected.');
     });
     stones.append(button);

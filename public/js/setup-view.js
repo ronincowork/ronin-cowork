@@ -3,7 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
 import { PRESETS_TYPE, createKindsPreference, createPresetsSurface, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
-import { openWorkspaceStateTab, reserveWorkspaceTab } from './workspace.js';
+import { openLaunchForm, openTemplateLaunchForm, openWorkspaceStateTab, reserveWorkspaceTab } from './workspace.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
@@ -67,6 +67,8 @@ export function createSetupView() {
     presets: (workspace) => createPresetsSurface({ environment: presetEnvironment(), workspace }),
     showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
     openTemplateMaker: () => ctx?.navigate('launch'),
+    openLaunchForm: ({ kind, seed = {} } = {}) => openLaunchForm(ctx, { kind, seed }),
+    openTemplateLaunchForm: () => openTemplateLaunchForm(ctx),
     setupRuntime: null,
     // What the person uses Ronin for: one persisted preference shared by Register and Presets.
     kinds: createKindsPreference(globalThis.localStorage, (kinds) => request('/api/setup/preferences', { method: 'PATCH', json: { kinds } })),

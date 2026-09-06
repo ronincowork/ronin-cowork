@@ -10,7 +10,7 @@ import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { createTeamJikan } from './team-jikan.js';
 import { buildMessageQueue, watchMessageQueueAttention } from './message-queue.js';
-import { buildDocs } from './docs.js';
+import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { buildArchives } from './archives.js';
 import { homeData, refreshHome, statusLabel } from './home.js';
 import { request } from './request.js';
@@ -64,7 +64,7 @@ const currentWorkStep = (letter) => {
 const COMMONS = '@commons';
 const COWORK = '@cowork';
 const NEW = '@new';
-const WB_TYPES = Object.freeze({ addAgent: 'team.add-agent', commons: 'team.commons', cron: 'cowork.cron-jobs', desk: 'ronin.desk', terminal: 'session.terminal', roster: 'cowork.team-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent', team: 'team.profile', archives: 'cowork.archives' });
+const WB_TYPES = Object.freeze({ addAgent: 'team.add-agent', commons: 'team.commons', cron: 'cowork.cron-jobs', desk: 'ronin.desk', document: 'document', terminal: 'session.terminal', roster: 'cowork.team-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent', team: 'team.profile', archives: 'cowork.archives' });
 const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 
 function registerWorkbenchCatalog() {
@@ -86,6 +86,7 @@ function registerWorkbenchCatalog() {
   add({ type: WB_TYPES.newTeamForm, header: 'surface', className: 'wk-selector-utility wk-selector-group-after', label: () => t('new_team.title', 'New Team'), summary: () => t('new_team.card_summary', 'Template · kit · lead — the drawn form.'), variant: 'dotted', create: ({ workspace, environment }) => environment.newTeamForm(workspace) });
   add({ type: WB_TYPES.newAgent, header: 'surface', className: 'wk-selector-utility', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment }) => environment.newAgent(workspace) });
   add({ type: WB_TYPES.archives, header: 'surface', className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
+  add({ type: WB_TYPES.document, header: 'surface', label: () => t('docs.frame_title', 'Document'), create: ({ detail, environment }) => environment.document(detail) });
   add({ type: WB_TYPES.team, header: 'surface', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
   profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, PRESETS_TYPE, FEEDBACK_TYPE]);
   // THE TEAM BENCH HAS ONE SHORTCUT: Add Agent to Team. It always births a Cowork Agent;
@@ -268,6 +269,7 @@ export function createCoworkView(options = {}) {
       reserveLaunchTab: reserveWorkspaceTab,
     }, workspace: id }),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
+    document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
       const reading = readingsOf(member);
@@ -295,7 +297,7 @@ export function createCoworkView(options = {}) {
   const tokenOf = (node) => node?.dataset?.workbenchSurface || '';
   /** Which surface token this cell holds, or '' for its own seat. */
   const heldSurface = (id) => tokenOf(cellHolding(id));
-  const surfaceRequest = (token) => token && typeof token === 'object' ? { type: token.type, detail: { key: token.key || '' } } : token?.startsWith('@team:') ? { type: WB_TYPES.team, detail: { key: token.slice(6) } } : { type: legacyTypes[token] || token, detail: {} };
+  const surfaceRequest = (token) => token && typeof token === 'object' ? { type: token.type, detail: { key: token.key || '', root: token.root || '', path: token.path || '' } } : token?.startsWith('@team:') ? { type: WB_TYPES.team, detail: { key: token.slice(6) } } : { type: legacyTypes[token] || token, detail: {} };
   const whereIs = (token) => { const request = surfaceRequest(token); return bench?.locations(request.type, request.detail.key)[0] || ''; };
   /** A surface other than the seat's own is in this workspace. */
   const surfaceIn = (id) => !bench?.isDefault(id);

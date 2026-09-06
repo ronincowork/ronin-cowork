@@ -93,9 +93,9 @@ export const CORE_PRESET_TREATMENTS = Object.freeze({
     team && { workspace: 'workspace2', type: 'team.commons', key: team, tab: 'cron-jobs' },
     document && { workspace: 'workspace3', type: 'document', key: document },
   ].filter(Boolean) })),
-  agent_editable_doc: treatment(['root', 'document'], 'agent', ({ sessions = [], document = '' }) => ({ count: 2, seats: [
+  agent_editable_doc: treatment(['root', 'document'], 'agent', ({ sessions = [], document = '', root = '' }) => ({ count: 2, seats: [
     sessions[0] && { workspace: 'workspace1', type: 'session', key: sessions[0].name },
-    document && { workspace: 'workspace2', type: 'document', key: document },
+    document && root && { workspace: 'workspace2', type: 'document', key: document, root, path: document },
   ].filter(Boolean) })),
 });
 

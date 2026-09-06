@@ -75,9 +75,9 @@ test('provider cascading preserves explicit row overrides', () => {
 
 test('fixed seating uses only returned objects and falls back when none exist', () => {
   assert.equal(presets.seatingPlan('agent_editable_doc', {}), null);
-  assert.deepEqual(presets.seatingPlan('agent_editable_doc', { sessions: [{ name: 'brainstorm' }], document: 'README.md' }), {
+  assert.deepEqual(presets.seatingPlan('agent_editable_doc', { sessions: [{ name: 'brainstorm' }], root: 'ronin_lab', document: 'README.md' }), {
     count: 2,
-    seats: [{ workspace: 'workspace1', type: 'session', key: 'brainstorm' }, { workspace: 'workspace2', type: 'document', key: 'README.md' }],
+    seats: [{ workspace: 'workspace1', type: 'session', key: 'brainstorm' }, { workspace: 'workspace2', type: 'document', key: 'README.md', root: 'ronin_lab', path: 'README.md' }],
   });
 });
 

@@ -57,7 +57,7 @@ export async function launchPresetPlan(plan = {}, send) {
     const launched = await launchAgent({ name: template.name }, plan, '', send);
     if (!launched.ok) return launched;
     const name = launched.data?.name;
-    return { ok: true, data: { sessions: name ? [{ name }] : [], receipts: launched.data?.receipt ? [launched.data.receipt] : [], document: plan.inputs?.document || '', urlView: 'cowork' } };
+    return { ok: true, data: { sessions: name ? [{ name }] : [], receipts: launched.data?.receipt ? [launched.data.receipt] : [], root: plan.inputs?.root || '', document: plan.inputs?.document || '', urlView: 'cowork' } };
   }
 
   const team = unique(template.name);
