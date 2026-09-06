@@ -11,9 +11,10 @@
   --raise: #1a2233;
   --well: #0d1220;
 
-  --line: #1f2738;
-  --line-2: #2a3247;
-  --line-3: #3a4560;
+  /* A line has to be seen: hairline near 2:1 on the panel, edges near 3:1 or better. */
+  --line: #3d475c;
+  --line-2: #515e77;
+  --line-3: #62718e;
 
   --fg-strong: #d7e3f7;
   --fg: #c5c8c6;
@@ -218,9 +219,9 @@
   --panel: #ffffff;
   --raise: #f1efe8;
   --well: #f7f5ef;
-  --line: #d9d4c8;
-  --line-2: #c8c2b2;
-  --line-3: #a9a191;
+  --line: #caccd4;
+  --line-2: #a7aab8;
+  --line-3: #8a8fa1;
   --fg-strong: #14161c;
   --fg: #2c2e36;
   --muted: #585e6e;
