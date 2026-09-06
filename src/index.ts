@@ -53,6 +53,7 @@ import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
+import { DocumentPathError, readDocumentFile, resolveDocumentPage, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { discoverParts, partsToLoad } from './parts.js';
@@ -257,12 +258,11 @@ registerCli(app); // /api/cli/:tool — command-line faces of operator verbs
 startMessageQueue();
 
 app.get('/api/file', async (req, res) => {
-  const file = String(req.query.path ?? '');
-  if (!file.startsWith('/')) return res.status(400).json({ error: 'An absolute path is required.' });
   try {
-    const text = await fs.promises.readFile(file, 'utf8');
+    const { path: file, text } = await readDocumentFile(req.query.root, req.query.path);
     res.json({ path: file, text });
   } catch (e) {
+    if (e instanceof DocumentPathError) return res.status(e.status).json({ error: e.message });
     const code = (e as NodeJS.ErrnoException)?.code;
     if (code === 'ENOENT' || code === 'EISDIR') return res.status(404).json({ error: 'No such file.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
@@ -270,23 +270,27 @@ app.get('/api/file', async (req, res) => {
 });
 
 app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, res) => {
-  const file = String(req.query.path ?? '');
-  if (!file.startsWith('/')) return res.status(400).json({ error: 'An absolute path is required.' });
   const text = typeof req.body === 'string' ? req.body : '';
   try {
-    await fs.promises.access(file);
-    await fs.promises.writeFile(file, text, 'utf8');
+    await saveDocumentFile(req.query.root, req.query.path, text);
     res.json({ ok: true, bytes: Buffer.byteLength(text) });
   } catch (e) {
+    if (e instanceof DocumentPathError) return res.status(e.status).json({ error: e.message });
     const code = (e as NodeJS.ErrnoException)?.code;
     if (code === 'ENOENT') return res.status(404).json({ error: 'No such file — it moved or was deleted.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
   }
 });
 
-app.get('/raw/*', (req, res) => {
+app.get('/raw/*', async (req, res) => {
   const file = '/' + String((req.params as Record<string, string>)[0] ?? '');
-  res.sendFile(file, { dotfiles: 'allow', headers: { 'Cache-Control': 'no-store' } }, (e) => {
+  let allowed: string;
+  try { allowed = await resolveDocumentPage(file); }
+  catch (e) {
+    if (e instanceof DocumentPathError) return res.status(e.status).json({ error: e.message });
+    return res.status(500).json({ error: String((e as Error)?.message ?? e) });
+  }
+  res.sendFile(allowed, { dotfiles: 'allow', headers: { 'Cache-Control': 'no-store' } }, (e) => {
     if (!e || res.headersSent) return;
     const code = (e as NodeJS.ErrnoException)?.code;
     if (code === 'ENOENT' || code === 'EISDIR') return res.status(404).json({ error: 'No such file.' });
