@@ -19,6 +19,21 @@ const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
 // absence of `code`: silence is not an instruction. Nothing validates the combination.
 const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 
+/** A preload may name a template outside the form's default kind filter. Keep a compatible
+ * current kind when possible; otherwise use the template's first declared kind. */
+function templateEntryKind(current, template) {
+  const kinds = Array.isArray(template?.kinds) ? template.kinds.filter(Boolean) : [];
+  return kinds.includes(current) ? current : kinds[0] || current;
+}
+
+export function templateEntryPlan({ currentKind, kindTouched = false, templates = [], template = '' } = {}) {
+  const row = templates.find((candidate) => candidate.name === template);
+  if (!row) return { kind: currentKind, template: '' };
+  const kind = templateEntryKind(currentKind, row);
+  if (kindTouched && kind !== currentKind) return { kind: currentKind, template: '' };
+  return { kind, template: row.name };
+}
+
 export function createNewAgentView(kit, { connect = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
@@ -638,7 +653,11 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       teams = teamRows.ok && Array.isArray(teamRows.data) ? teamRows.data.filter((row) => row.state !== 'archived') : [];
       roots = rootRows.ok && Array.isArray(rootRows.data) ? rootRows.data : [];
       if (!loaded) { await loadSeed(); loaded = true; }
-      if (typeof detail?.template === 'string' && detail.template) applyTemplate(detail.template);
+      if (typeof detail?.template === 'string' && detail.template) {
+        const entry = templateEntryPlan({ currentKind: draft.kind, kindTouched: draft.kindTouched, templates, template: detail.template });
+        draft.kind = entry.kind;
+        if (entry.template) applyTemplate(entry.template);
+      }
       seedPrompt(typeof detail?.prompt === 'string' ? detail.prompt.trim() : '');
       paint();
     },

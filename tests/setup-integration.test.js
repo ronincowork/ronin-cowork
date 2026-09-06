@@ -75,7 +75,7 @@ test('the integrated Setup/Cowork adapters hand Customize to a new tab and use t
   assert.match(workspace, /context\.patchViewState\(view, viewPatch\);[\s\S]*reserveWorkspaceTab\(\);[\s\S]*context\.patchViewState\(view, restore\);[\s\S]*openWorkspaceTab\(view, param, tab\)/);
   assert.match(launchView, /customize\.template\.shelf === 'agents' \? TYPES\.agent : TYPES\.team/);
   assert.match(launchView, /template: customize\.template\.name, prompt: String\(customize\.user_message/);
-  assert.match(agentForm, /applyTemplate\(detail\.template\)/);
+  assert.match(agentForm, /templateEntryPlan\(\{ currentKind: draft\.kind, kindTouched: draft\.kindTouched, templates, template: detail\.template \}\);[\s\S]*if \(entry\.template\) applyTemplate\(entry\.template\)/);
   assert.match(teamForm, /applyTemplate\(detail\.template\)/);
   assert.match(launch, /request\('\/api\/launch'/);
   assert.match(launch, /request\('\/api\/team-rosters'/);

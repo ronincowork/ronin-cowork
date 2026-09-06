@@ -10,6 +10,7 @@ globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener()
 
 const { openLaunchForm, openTemplateLaunchForm } = await import('../public/js/workspace.js');
 const { launchEntryPlan } = await import('../public/js/launch-view.js');
+const { templateEntryPlan } = await import('../public/js/new-agent.js');
 
 function harness(blocked = false) {
   const state = { launch: { seats: { workspace4: 'launch.help' }, untouched: { exact: true } } };
@@ -84,4 +85,17 @@ test('door adapters make zero launch or Team-roster submissions', () => {
     openTemplateLaunchForm(h.context);
     assert.equal(submissions, 0);
   } finally { globalThis.fetch = beforeFetch; }
+});
+
+test('Customize preload retains non-coding and coding templates through their declared kinds', () => {
+  const personal = { name: 'personal_assistant', kinds: ['work', 'personal', 'household', 'social'] };
+  const coding = { name: 'staff_my_codebase', kinds: ['coding', 'work'] };
+  assert.deepEqual(templateEntryPlan({ currentKind: 'coding', templates: [personal, coding], template: personal.name }), { kind: 'work', template: personal.name });
+  assert.deepEqual(templateEntryPlan({ currentKind: 'coding', templates: [personal, coding], template: coding.name }), { kind: 'coding', template: coding.name });
+});
+
+test('Customize preload falls back honestly for missing templates and preserves a touched kind', () => {
+  const personal = { name: 'personal_assistant', kinds: ['work', 'personal'] };
+  assert.deepEqual(templateEntryPlan({ currentKind: 'coding', templates: [personal], template: 'missing' }), { kind: 'coding', template: '' });
+  assert.deepEqual(templateEntryPlan({ currentKind: 'coding', kindTouched: true, templates: [personal], template: personal.name }), { kind: 'coding', template: '' });
 });
