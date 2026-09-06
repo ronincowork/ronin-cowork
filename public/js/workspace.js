@@ -136,6 +136,20 @@ export function openWorkspaceStateTab(context, view, viewPatch, param = '') {
   return openWorkspaceTab(view, param, tab);
 }
 
+/** Patch the already-reserved destination tab after an asynchronous launch resolves. */
+export function seedReservedWorkspaceTab(tab, view, viewPatch) {
+  if (!tab?.sessionStorage || !view || !viewPatch || typeof viewPatch !== 'object') return false;
+  try {
+    const raw = tab.sessionStorage.getItem(WORKSPACE_STATE_KEY) ?? tab.sessionStorage.getItem(PREVIOUS_WORKSPACE_STATE_KEY);
+    const state = migrateWorkspaceState(JSON.parse(raw || 'null'));
+    state.views[view] = { ...(state.views[view] || {}), ...viewPatch };
+    tab.sessionStorage.setItem(WORKSPACE_STATE_KEY, JSON.stringify(state));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 /** Setup's Agent and Team doors preload the existing launch workbench; they never submit. */
 export function openLaunchForm(context, { kind, seed = {} } = {}) {
   if (!['agent', 'team'].includes(kind) || !seed || typeof seed !== 'object') return null;

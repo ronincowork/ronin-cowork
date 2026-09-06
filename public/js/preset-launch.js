@@ -1,5 +1,6 @@
 /* Browser adapter from the Presets shell to Ronin's ordinary launch routes. */
 import { request } from './request.js';
+import { seedReservedWorkspaceTab } from './workspace.js';
 
 const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 34);
 const unique = (base) => `${slug(base) || 'preset'}_${Date.now().toString(36)}`;
@@ -102,9 +103,22 @@ export async function launchPresetPlan(plan = {}, send) {
   return { ok: true, data: { team, sessions, receipts, schedule, document: plan.inputs?.document || '', urlView: 'team' } };
 }
 
-export function presetLaunchUrl(data = {}) {
+export function presetWorkspaceState(plan) {
+  if (!plan || !Array.isArray(plan.seats)) return null;
+  const seats = Object.fromEntries(plan.seats.flatMap(({ workspace, type, key, root, path, tab, doc }) => {
+    if (!workspace || !key) return [];
+    if (type === 'session') return [[workspace, key]];
+    return [[workspace, { type, key, ...(root ? { root } : {}), ...(path ? { path } : {}), ...(tab ? { tab } : {}), ...(doc ? { doc } : {}) }]];
+  }));
+  return Object.keys(seats).length ? { count: plan.count, seats } : null;
+}
+
+export function presetLaunchUrl(data = {}, plan = null, tab = null) {
   const url = new URL(location.href);
-  const view = data.urlView === 'team' && data.team ? `team/${encodeURIComponent(data.team)}` : 'cowork';
-  url.hash = `#/${view}`;
+  const team = data.urlView === 'team' && data.team;
+  const view = team ? 'team' : 'cowork';
+  const workspaceState = presetWorkspaceState(plan);
+  if (workspaceState) seedReservedWorkspaceTab(tab, view, workspaceState);
+  url.hash = team ? `#/team/${encodeURIComponent(data.team)}` : '#/cowork';
   return url.href;
 }

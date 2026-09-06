@@ -411,7 +411,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       launch.setDisabled(false);
       if (!result?.ok) { tab?.close?.(); return notice.set('failed', result?.message || 'Launch failed.'); }
       const plan = seatingPlan(slot.handle, result.data || {});
-      const url = environment.launchUrl?.(result.data || {}, plan) || result.data?.url;
+      const url = environment.launchUrl?.(result.data || {}, plan, tab) || result.data?.url;
       if (tab && url) { tab.opener = null; tab.location.href = url; }
       else if (url) window.open(url, '_blank', 'noopener');
       notice.set('success', 'Launched in a new tab.');
