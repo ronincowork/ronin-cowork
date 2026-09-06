@@ -1959,6 +1959,9 @@ body {
 .tw-archives .home-archives {
   display: block;
 }
+.workspace-document > .wk-surface-content > .home-docs {
+  display: flex;
+}
 .home[data-pane='wipe'] .home-wipe {
   display: flex;
 }

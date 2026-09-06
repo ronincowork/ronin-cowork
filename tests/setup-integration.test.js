@@ -142,3 +142,9 @@ test('Setup surfaces consume the one runtime contract and keep local template mo
   assert.match(text, /else if \(!entitled\)/);
   assert.match(text, /mode === 'library'/);
 });
+
+test('seated Workbench Docs overrides only its own legacy hidden host', async () => {
+  const css = await readFile(new URL('../public/style.css', import.meta.url), 'utf8');
+  assert.match(css, /\.home-docs \{\s*display: none;/);
+  assert.match(css, /\.workspace-document > \.wk-surface-content > \.home-docs \{\s*display: flex;/);
+});
