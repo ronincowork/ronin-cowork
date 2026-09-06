@@ -7,7 +7,7 @@ import { rootDir } from './resources.js';
 import { execFile as run } from './spawn-broker.js';
 import { collectBirthLines } from './sockets.js';
 import { createSession, killSessionTree, sessionExists, setLaunchStamp, setTags } from './tmux.js';
-import { addJob, isValidTeam, listJobs, setJob, type Job } from './jikan.js';
+import { addJob, isValidTeam, listJobs, type Job } from './jikan.js';
 import type { InstalledAnswer } from './routes/installed-api.js';
 
 export const PROVIDER_SETUP_TEAM = 'provider_setup';
@@ -17,7 +17,14 @@ export const INSTALLED_ROOTS = [
 ] as const;
 
 interface ProviderMarker { activated_at?: unknown }
-interface SetupSection { providers?: Record<string, ProviderMarker>; [key: string]: unknown }
+export const SETUP_PREFERENCE_KINDS = ['build', 'life', 'research'] as const;
+export type SetupPreferenceKind = typeof SETUP_PREFERENCE_KINDS[number];
+export interface SetupPreferences { kinds: SetupPreferenceKind[] }
+interface SetupSection {
+  providers?: Record<string, ProviderMarker>;
+  preferences?: { kinds?: unknown };
+  [key: string]: unknown;
+}
 
 export interface SetupProviderState {
   id: string;
@@ -42,6 +49,7 @@ export interface SetupRuntimeAnswer {
   roots: Array<{ name: string; label: string; dir: string }>;
   gbrain: { installed: boolean; active: boolean };
   services: { installed: boolean; activated: boolean; switched_on: boolean; active: boolean };
+  preferences: SetupPreferences;
 }
 
 export interface ProviderSessionOps {
@@ -57,6 +65,25 @@ const activatedAt = (section: SetupSection, provider: string): string | null => 
   const value = section.providers?.[provider]?.activated_at;
   return typeof value === 'string' && value.trim() ? value : null;
 };
+
+export function setupPreferences(section: SetupSection): SetupPreferences {
+  const selected = new Set(
+    (Array.isArray(section.preferences?.kinds) ? section.preferences.kinds : [])
+      .filter((kind): kind is SetupPreferenceKind =>
+        typeof kind === 'string' && SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind)),
+  );
+  return { kinds: SETUP_PREFERENCE_KINDS.filter((kind) => selected.has(kind)) };
+}
+
+export async function writeSetupPreferences(kinds: unknown): Promise<SetupPreferences> {
+  if (!Array.isArray(kinds)) throw new Error('Send { kinds: [...] }.');
+  if (kinds.some((kind) => typeof kind !== 'string' || !SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind))) {
+    throw new Error('Kinds are build, life, and research.');
+  }
+  const preferences = setupPreferences({ preferences: { kinds } });
+  await updateSection<SetupSection>('setup', (setup) => ({ ...setup, preferences }));
+  return preferences;
+}
 
 const defaultSessionOps: ProviderSessionOps = {
   exists: sessionExists,
@@ -119,6 +146,7 @@ export async function setupRuntimeAnswer(
       switched_on: installed?.services.switched_on ?? false,
       active: Boolean(installed?.services.installed && installed.services.activated && installed.services.switched_on && installed.services.loaded.length),
     },
+    preferences: setupPreferences(section),
   };
 }
 
@@ -225,16 +253,11 @@ export interface MorningBriefScheduleDraft {
   team: unknown;
   request: unknown;
   when: unknown;
-  to?: unknown;
-  active?: unknown;
 }
 
 export async function createMorningBriefSchedule(draft: MorningBriefScheduleDraft): Promise<{ team: string; job: Job }> {
   const team = typeof draft.team === 'string' ? draft.team.trim() : '';
-  const rawTo = typeof draft.to === 'string' ? draft.to.trim() : '';
-  const to = rawTo.toLowerCase() === 'team lead' || !rawTo ? 'lead' : rawTo;
-  let job = await addJob(team, { request: draft.request, when: draft.when, to, by: 'owner' });
-  if (draft.active === false) job = await setJob(team, job.id, 'paused');
+  const job = await addJob(team, { request: draft.request, when: draft.when, to: 'lead', by: 'owner' });
   return { team, job };
 }
 

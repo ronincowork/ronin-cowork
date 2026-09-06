@@ -9,6 +9,7 @@ import {
   setupRuntimeAnswer,
   createMorningBriefSchedule,
   morningBriefSchedules,
+  writeSetupPreferences,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
 
@@ -69,10 +70,17 @@ export function registerSetupRuntime(app: express.Express): void {
         team: body.team,
         request: body.request,
         when: body.when,
-        to: body.to,
-        active: body.active,
       });
       res.json({ ok: true, schedule });
+    } catch (error) {
+      res.status(400).json({ error: errMsg(error) });
+    }
+  });
+
+  app.patch('/api/setup/preferences', async (req, res) => {
+    try {
+      const preferences = await writeSetupPreferences(req.body?.kinds);
+      res.json({ ok: true, preferences });
     } catch (error) {
       res.status(400).json({ error: errMsg(error) });
     }

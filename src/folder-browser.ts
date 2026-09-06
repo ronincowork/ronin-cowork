@@ -22,6 +22,25 @@ export interface FolderListing {
   folders: Array<{ name: string; dir: string; kind: 'repository' | 'folder'; repository: boolean }>;
 }
 
+export interface RegisteredRootRef { name: string; dir: string }
+export type RegisteredFolderListing = Omit<FolderListing, 'folders'> & {
+  folders: Array<FolderListing['folders'][number] & { registered_root: RegisteredRootRef | null }>;
+};
+
+export function withRegisteredRoots(
+  listing: FolderListing,
+  roots: RegisteredRootRef[],
+): RegisteredFolderListing {
+  const byDir = new Map(roots.map((root) => [path.resolve(root.dir), root]));
+  return {
+    ...listing,
+    folders: listing.folders.map((folder) => {
+      const root = byDir.get(path.resolve(folder.dir));
+      return { ...folder, registered_root: root ? { name: root.name, dir: root.dir } : null };
+    }),
+  };
+}
+
 export async function browseFolders(raw: string, options: { hidden?: boolean; query?: string } = {}): Promise<FolderListing> {
   const dir = await safeDirectory(raw || HOME);
   const query = String(options.query ?? '').trim().toLocaleLowerCase().slice(0, 80);

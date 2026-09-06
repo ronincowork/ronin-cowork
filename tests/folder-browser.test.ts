@@ -32,6 +32,24 @@ test('folder browser classifies only each immediate entry direct .git marker', a
   } finally { await rm(base, { recursive: true, force: true }); }
 });
 
+test('folder listings identify registered roots by exact server-normalized directory', async () => {
+  const base = await mkdtemp(path.join(os.homedir(), '.ronin-folder-test-'));
+  try {
+    await mkdir(path.join(base, 'Registered'));
+    await mkdir(path.join(base, 'Registered sibling'));
+    await mkdir(path.join(base, 'Plain'));
+    const { browseFolders, withRegisteredRoots } = await import('../src/folder-browser.js');
+    const listing = withRegisteredRoots(await browseFolders(base), [
+      { name: 'registered', dir: path.join(base, '.', 'Registered') },
+      { name: 'archived_still_registered', dir: path.join(base, 'Plain') },
+    ]);
+    const byName = Object.fromEntries(listing.folders.map((item) => [item.name, item]));
+    assert.deepEqual(byName.Registered.registered_root, { name: 'registered', dir: path.join(base, 'Registered') });
+    assert.deepEqual(byName.Plain.registered_root, { name: 'archived_still_registered', dir: path.join(base, 'Plain') });
+    assert.equal(byName['Registered sibling'].registered_root, null, 'prefix and sibling paths never match');
+  } finally { await rm(base, { recursive: true, force: true }); }
+});
+
 test('folder creation stays under home and can initialize local git without a remote', async () => {
   const base = await mkdtemp(path.join(os.homedir(), '.ronin-folder-test-'));
   try {

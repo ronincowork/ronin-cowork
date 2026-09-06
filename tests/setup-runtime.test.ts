@@ -140,22 +140,41 @@ test('installed roots are distinct registered repositories with READMEs and firs
   assert.equal(launch.repositories[0]?.managed?.worktree, launch.assignment?.desks[0]?.worktree);
 });
 
-test('Morning Brief scheduling creates real JIKAN state and normalizes lead/paused controls', async () => {
-  const active = await runtime.createMorningBriefSchedule({
-    team: 'morning_brief', request: 'Prepare the morning brief.', when: 'daily 08:00', to: 'team lead', active: true,
-  });
-  assert.equal(active.team, 'morning_brief');
-  assert.equal(active.job.to, 'lead');
-  assert.equal(active.job.state, 'active');
-  assert.ok(active.job.due);
-
-  const paused = await runtime.createMorningBriefSchedule({
-    team: 'morning_brief', request: 'Prepare a second brief.', when: 'daily 09:00', to: 'lead', active: false,
-  });
-  assert.equal(paused.job.state, 'paused');
-  assert.equal(paused.job.due, '');
+test('Morning Brief scheduling creates active lead jobs for each preset cadence', async () => {
+  const schedules = [];
+  for (const when of ['daily 07:00', 'daily 08:00', 'weekdays 08:00']) {
+    schedules.push(await runtime.createMorningBriefSchedule({
+      team: 'morning_brief',
+      request: 'Produce the brief using the configured research roles.',
+      when,
+    }));
+  }
+  assert.ok(schedules.every((schedule) => schedule.team === 'morning_brief'));
+  assert.ok(schedules.every((schedule) => schedule.job.to === 'lead'));
+  assert.ok(schedules.every((schedule) => schedule.job.state === 'active'));
+  assert.ok(schedules.every((schedule) => schedule.job.due));
   const read = await runtime.morningBriefSchedules('morning_brief');
-  assert.deepEqual(read.schedules.map((job) => job.id), [active.job.id, paused.job.id]);
+  assert.deepEqual(read.schedules.map((job) => job.when), ['daily 07:00', 'daily 08:00', 'weekdays 08:00']);
+});
+
+test('Setup kinds are canonical runtime facts and persist without replacing setup state', async () => {
+  const state = await import('../src/machine-state.js');
+  await state.updateSection<Record<string, unknown>>('setup', () => ({
+    completed_at: '2026-09-06T00:00:00.000Z',
+    providers: { codex: { activated_at: '2026-09-06T01:00:00.000Z' } },
+  }));
+  assert.deepEqual(await runtime.writeSetupPreferences(['research', 'build', 'research']), {
+    kinds: ['build', 'research'],
+  });
+  const section = await state.readSetupSection();
+  assert.equal(section.completed_at, '2026-09-06T00:00:00.000Z');
+  assert.deepEqual(section.providers, { codex: { activated_at: '2026-09-06T01:00:00.000Z' } });
+  assert.deepEqual(section.preferences, { kinds: ['build', 'research'] });
+  const answer = await runtime.setupRuntimeAnswer(section, { exists: async () => false }, available([]));
+  assert.deepEqual(answer.preferences, { kinds: ['build', 'research'] });
+  await assert.rejects(runtime.writeSetupPreferences('build'), /Send \{ kinds/);
+  await assert.rejects(runtime.writeSetupPreferences(['build', 'unknown']), /Kinds are build, life, and research/);
+  assert.deepEqual(await runtime.writeSetupPreferences([]), { kinds: [] });
 });
 
 test.after(async () => { await rm(box, { recursive: true, force: true }); });
