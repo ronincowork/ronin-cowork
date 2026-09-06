@@ -12,26 +12,16 @@ const containedBy = (root: string, file: string): boolean => {
   return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative));
 };
 
-async function resolveRegisteredDocument(rootName: unknown, requestedPath: unknown, suppliedRoots: ProjectRootInfo[] | undefined, page: boolean): Promise<string> {
+export async function resolveDocumentFile(rootName: unknown, requestedPath: unknown, suppliedRoots?: ProjectRootInfo[]): Promise<string> {
   const rootToken = String(rootName ?? '').trim();
   const supplied = String(requestedPath ?? '').trim();
   if (!supplied) throw new DocumentPathError('A document path is required.');
 
   const roots = (suppliedRoots ?? await listProjectRoots()).filter((root) => !root.archived);
-  let candidate: string;
-  let permitted = roots;
-  if (rootToken) {
-    const root = roots.find((entry) => entry.name === rootToken);
-    if (!root) throw new DocumentPathError('Choose a registered workspace folder.', 403);
-    if (path.isAbsolute(supplied)) throw new DocumentPathError('Use a path relative to the workspace folder.');
-    candidate = path.resolve(root.dir, supplied);
-    permitted = [root];
-  } else {
-    // Compatibility for the existing Docs shelf. Absolute paths still pass through the
-    // same registered-root boundary; they are no longer arbitrary-file authority.
-    if (!path.isAbsolute(supplied)) throw new DocumentPathError('An absolute path or registered workspace folder is required.');
-    candidate = path.resolve(supplied);
-  }
+  const root = roots.find((entry) => entry.name === rootToken);
+  if (!root) throw new DocumentPathError('Choose a registered workspace folder.', 403);
+  if (path.isAbsolute(supplied)) throw new DocumentPathError('Use a path relative to the workspace folder.');
+  const candidate = path.resolve(root.dir, supplied);
 
   let canonical: string;
   try { canonical = await realpath(candidate); }
@@ -39,27 +29,16 @@ async function resolveRegisteredDocument(rootName: unknown, requestedPath: unkno
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') throw new DocumentPathError('No such file — it moved or was deleted.', 404);
     throw error;
   }
-  if (!(page ? /\.(md|html?)$/i : /\.md$/i).test(canonical)) {
-    throw new DocumentPathError(page ? 'Only documents can be opened.' : 'Only Markdown documents can be edited.', 415);
-  }
+  if (!/\.md$/i.test(canonical)) throw new DocumentPathError('Only Markdown documents can be edited.', 415);
 
-  const allowed = await Promise.all(permitted.map(async (root) => {
-    try { return containedBy(await realpath(root.dir), canonical); }
-    catch { return false; }
-  }));
-  if (!allowed.some(Boolean)) throw new DocumentPathError('That document is outside the registered workspace folders.', 403);
+  let rootPath: string;
+  try { rootPath = await realpath(root.dir); }
+  catch { throw new DocumentPathError('That workspace folder is unavailable.', 404); }
+  if (!containedBy(rootPath, canonical)) throw new DocumentPathError('That document is outside the registered workspace folder.', 403);
   const facts = await stat(canonical);
   if (!facts.isFile()) throw new DocumentPathError('No such file.', 404);
   return canonical;
 }
-
-/** Resolve only an existing Markdown document inside an active registered project root. */
-export const resolveDocumentFile = (rootName: unknown, requestedPath: unknown, suppliedRoots?: ProjectRootInfo[]) =>
-  resolveRegisteredDocument(rootName, requestedPath, suppliedRoots, false);
-
-/** Resolve an existing Markdown/HTML document for the existing view-only raw route. */
-export const resolveDocumentPage = (requestedPath: unknown, suppliedRoots?: ProjectRootInfo[]) =>
-  resolveRegisteredDocument('', requestedPath, suppliedRoots, true);
 
 /** Read from the validated inode without following a last-moment replacement symlink. */
 export async function readDocumentFile(rootName: unknown, requestedPath: unknown): Promise<{ path: string; text: string }> {

@@ -136,6 +136,17 @@ export function openWorkspaceStateTab(context, view, viewPatch, param = '') {
   return openWorkspaceTab(view, param, tab);
 }
 
+/** Setup's Agent and Team doors preload the existing launch workbench; they never submit. */
+export function openLaunchForm(context, { kind, seed = {} } = {}) {
+  if (!['agent', 'team'].includes(kind) || !seed || typeof seed !== 'object') return null;
+  return openWorkspaceStateTab(context, 'launch', { preload: { kind, seed } }, kind);
+}
+
+/** Templates have two existing forms and trays, not a third invented launch form. */
+export function openTemplateLaunchForm(context) {
+  return openWorkspaceStateTab(context, 'launch', { preload: { kind: 'template', seed: {} } }, 'template');
+}
+
 /**
  * The one ViewHost owner. Views may be empty and may carry no classification; only a
  * registered id and an element are structural. Lifecycle failures are contained to the
