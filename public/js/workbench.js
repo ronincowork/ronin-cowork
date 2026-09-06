@@ -9,6 +9,14 @@ const LOWER = new Set(['workspace3', 'workspace4']);
 const COLUMN_OF = Object.freeze({ workspace1: 'workspace1', workspace3: 'workspace1', workspace2: 'workspace2', workspace4: 'workspace2' });
 const SURFACE_DRAG = 'application/x-ronin-workbench-surface';
 const HEADER_KINDS = new Set(['surface', 'channels', 'terminal']);
+const INTERACTIVE_DESCENDANT = [
+  'a[href]', 'area[href]', 'button', 'input', 'select', 'textarea', 'summary',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[role="button"]', '[role="checkbox"]', '[role="combobox"]', '[role="link"]',
+  '[role="listbox"]', '[role="menuitem"]', '[role="menuitemcheckbox"]',
+  '[role="menuitemradio"]', '[role="option"]', '[role="radio"]', '[role="slider"]',
+  '[role="spinbutton"]', '[role="switch"]', '[role="tab"]', '[role="textbox"]',
+].join(',');
 
 const node = (tag, cls = '') => {
   const out = document.createElement(tag);
@@ -53,6 +61,7 @@ export function createWorkbench(options = {}) {
   if (!profile || !Array.isArray(profile.types)) throw new Error(`unknown Workbench.profile: ${options.profile || '(blank)'}`);
   if (typeof options.defaultNode !== 'function') throw new Error('a workbench needs a defaultNode(workspace) factory');
   const tenant = options.tenant && typeof options.tenant === 'object' ? options.tenant : Object.freeze({ kind: 'none' });
+  const fixedWorkspaces = options.fixedWorkspaces && typeof options.fixedWorkspaces === 'object' ? options.fixedWorkspaces : {};
 
   const defaults = {}, cells = {}, columns = { workspace1: node('div', 'wk-workbench-column'), workspace2: node('div', 'wk-workbench-column') };
   const instances = new Map(), instanceNodes = new WeakMap();
@@ -79,7 +88,10 @@ export function createWorkbench(options = {}) {
     const cell = node('div', 'wk-workbench-cell');
     cell.dataset.workspace = id;
     cell.append(made);
-    cell.addEventListener('pointerdown', () => select(id), true);
+    cell.addEventListener('pointerdown', (event) => {
+      if (event.target instanceof Element && event.target.closest(INTERACTIVE_DESCENDANT)) return;
+      select(id);
+    }, true);
     cell.addEventListener('dragover', (event) => { if (event.dataTransfer?.types.includes(SURFACE_DRAG)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } });
     cell.addEventListener('drop', (event) => {
       const raw = event.dataTransfer?.getData(SURFACE_DRAG);
@@ -153,6 +165,7 @@ export function createWorkbench(options = {}) {
   const restoreDefault = (id) => placeNode(id, defaults[id]);
 
   const allowed = () => profile.types.flatMap((type) => {
+    if (typeof options.selectorFilter === 'function' && !options.selectorFilter(type)) return [];
     const definition = WorkbenchLibrary.get(type);
     if (!definition || definition.visible?.(tenant, options.environment) === false) return [];
     const discovered = definition.discover?.(tenant, options.environment);
@@ -181,6 +194,7 @@ export function createWorkbench(options = {}) {
   const resourceAt = (id) => holding(id)?.dataset?.workbenchResource || '';
   const locations = (type, resource = '') => WORKBENCH_IDS.filter((id) => typeAt(id) === type && (!resource || resourceAt(id) === resource));
   const place = (type, id = selected, detail = {}) => {
+    if (fixedWorkspaces[id] && fixedWorkspaces[id] !== type) return false;
     const value = instance(type, id, detail);
     if (!value || !placeNode(id, value.el)) return false;
     value.el.dataset.workbenchSurface = type;
@@ -197,20 +211,47 @@ export function createWorkbench(options = {}) {
   const refreshSelector = () => {
     if (selectorTitle) selectorTitle.textContent = options.title?.(tenant) || options.label || profile.name;
     selectorCards.replaceChildren();
+    const requirementState = options.environment?.setupRequirementState || {};
+    const requirementHas = (field, key) => Boolean(key) && Array.isArray(requirementState[field]) && requirementState[field].some((entry) => String(entry) === key);
+    const presentRequirement = (element, key, targetClass = '') => {
+      key = String(key || '');
+      if (!key) return;
+      element.dataset.setupRequirementTarget = key;
+      if (targetClass) element.classList.add(...String(targetClass).split(/\s+/).filter(Boolean));
+      element.classList.toggle('is-requirement-marked', requirementHas('hovered', key) || requirementHas('open', key));
+      element.classList.toggle('is-requirement-flashing', requirementHas('flash', key) && Number(requirementState.flashCycle) > 0);
+      if (Number(requirementState.flashCycle) > 0) element.dataset.requirementFlashCycle = String(requirementState.flashCycle);
+    };
+    const renderedGroups = new Set();
     for (const { definition, offer } of allowed()) {
       const label = offer.label ?? (typeof definition.label === 'function' ? definition.label(tenant, options.environment) : definition.label || definition.type);
       const summary = offer.summary ?? (typeof definition.summary === 'function' ? definition.summary(tenant, options.environment) : definition.summary || '');
       const detail = { ...offer, key: offer.key || '' };
+      const groupKey = String(definition.targetKey || '');
+      const offerKey = String(offer.targetKey || groupKey);
+      if (offer.targetKey && groupKey && offerKey !== groupKey && !renderedGroups.has(groupKey)) {
+        const group = node('div', 'wk-selector-group');
+        group.textContent = typeof definition.label === 'function' ? definition.label(tenant, options.environment) : definition.label || definition.type;
+        presentRequirement(group, groupKey, definition.targetClass);
+        selectorCards.append(group);
+        renderedGroups.add(groupKey);
+      }
       // A selector card is a door, not a status lamp. The workspace itself already shows
       // what is placed there; painting every matching door as pressed made one of two
       // visible Agents look selected and the other not as seats changed underneath it.
-      const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: () => place(definition.type, selected, detail) });
+      const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: () => place(definition.type, options.selectorWorkspace || selected, detail) });
+      if (options.selectorCurrent) {
+        const target = options.selectorWorkspace || selected;
+        const current = typeAt(target) === definition.type && resourceAt(target) === String(detail.key || '');
+        if (current) card.el.setAttribute('aria-current', 'page');
+      }
       // A readable title is display text, not identity. Consumers such as the render gate
       // address an offered resource by its fixed key even after its title is edited.
       if (detail.key) card.el.dataset.workbenchOfferResource = detail.key;
-      for (const cls of [definition.className, offer.className]) {
+      for (const cls of [definition.className, offer.className, offer.targetClass]) {
         if (cls) card.el.classList.add(...String(cls).split(/\s+/).filter(Boolean));
       }
+      presentRequirement(card.el, offerKey, offer.targetClass || definition.targetClass);
       if (offer.onPointerEnter) card.el.addEventListener('pointerenter', offer.onPointerEnter);
       if (offer.onPointerLeave) card.el.addEventListener('pointerleave', offer.onPointerLeave);
       card.el.draggable = true;

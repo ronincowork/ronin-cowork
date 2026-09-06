@@ -17,6 +17,9 @@ import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
+import { openWorkspaceStateTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { PRESETS_TYPE, createPresetsSurface, registerPresetsSurface } from './presets.js';
+import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { refreshDesks } from './desks.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
@@ -66,6 +69,7 @@ const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 
 function registerWorkbenchCatalog() {
   registerFeedbackSurface();
+  registerPresetsSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: WB_TYPES.commons, header: 'channels', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Team commons'), summary: () => t('team.commons_summary', 'See Docs / Wipeboard / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
@@ -83,7 +87,7 @@ function registerWorkbenchCatalog() {
   add({ type: WB_TYPES.newAgent, header: 'surface', className: 'wk-selector-utility', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment }) => environment.newAgent(workspace) });
   add({ type: WB_TYPES.archives, header: 'surface', className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
   add({ type: WB_TYPES.team, header: 'surface', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
-  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, FEEDBACK_TYPE]);
+  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, PRESETS_TYPE, FEEDBACK_TYPE]);
   // THE TEAM BENCH HAS ONE SHORTCUT: Add Agent to Team. It always births a Cowork Agent;
   // terminal and bare-metal choices stay on the full launch page.
   profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.terminal, WB_TYPES.addAgent, FEEDBACK_TYPE]);
@@ -224,12 +228,12 @@ export function createCoworkView(options = {}) {
   // its roster exists, so the form that made it hands the workspace over to it and goes
   // back to empty. Staffing happens from inside the Team, through Add Agent.
   const newTeamFormBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => {
-    const view = createNewTeamFormView(WorkspaceKit, { created: async (name) => { await refreshTeams(); bench.place(WB_TYPES.team, id, { key: name, label: readableTeam(name) }); } });
+    const view = createNewTeamFormView(WorkspaceKit, { created: async () => { await refreshTeams(); bench.refreshSelector(); } });
     return [id, { el: view.el, enter: () => view.enter() }];
   })) : {};
   // The drawn New Agent, per seat: a birth returns to the workspace whose form made it.
   const newAgentBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => {
-    const view = createNewAgentView(WorkspaceKit, { connect: (name) => connectSession(name, id) });
+    const view = createNewAgentView(WorkspaceKit, {});
     // The detail rides through: `S.showNewSession(prompt)` seeds the form's Instructions.
     return [id, { el: view.el, enter: (detail) => view.enter(detail) }];
   })) : {};
@@ -257,6 +261,12 @@ export function createCoworkView(options = {}) {
     newTeamForm: (id) => ({ el: newTeamFormBySeat[id].el, show: () => void newTeamFormBySeat[id].enter() }),
     newAgent: (id) => ({ el: newAgentBySeat[id].el, show: (detail) => void newAgentBySeat[id].enter(detail) }),
     addAgent: (id) => ({ el: addAgentBySeat[id].el, show: () => addAgentBySeat[id].enter() }),
+    presets: (id) => createPresetsSurface({ environment: {
+      customize: ({ template, user_message } = {}) => openWorkspaceStateTab(ctx, 'launch', { customize: { template, user_message: String(user_message || '') } }),
+      launch: launchPresetPlan,
+      launchUrl: presetLaunchUrl,
+      reserveLaunchTab: reserveWorkspaceTab,
+    }, workspace: id }),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
@@ -446,14 +456,14 @@ export function createCoworkView(options = {}) {
   // reading is absent. RIREKI's cherry-pick or summary joins the row when the service
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the /api/home row
-  const leagueTeamSurfaces = new Map(), openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
+  const leagueTeamSurfaces = new Map(), openTeam = (name) => openWorkspaceTab('team', name);
   const createLeagueTeamSurface = (name, id) => {
     const cacheKey = `${id}\0${name}`;
     if (leagueTeamSurfaces.has(cacheKey)) {
       const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached;
     }
     const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name), team = teamByName(name);
-    const launch = createAction({ label: t('league.launch_team', 'Launch'), size: 'compact', action: () => openTeam(name) });
+    const launch = createAction({ label: t('league.launch_team', 'Launch'), launch: true, size: 'compact', action: () => openTeam(name) });
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
     const surface = createSurface({ label, className: 'league-team-edit', actions: name === UNASSIGNED ? [launch] : [launch, remove] });
     surface.content.classList.add('league-team-edit-content');
@@ -595,7 +605,7 @@ export function createCoworkView(options = {}) {
     title: ({ param, viewState }) => {
       const fallback = campaign ? t('campaign.coworks', 'Teams') : (param || t('team.team', 'Team'));
       const name = viewState?.(viewKey)?.tabName;
-      return name ? { bare: `${name} · ${fallback}` } : fallback;
+      return name ? { bare: name } : fallback;
     },
     tabName: {
       get: () => ctx?.viewState(viewKey)?.tabName || '',
