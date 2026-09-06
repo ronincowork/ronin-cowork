@@ -255,6 +255,33 @@ else
   find_ "nothing answers ${URL}api/health — the grid is down; journalctl --user -u $RONIN_UNIT -n 50, restart is the owner's hand"
 fi
 
+# The command door is a different question from the page: a Unix socket at
+# <data root>/run/ronin.sock (docs/operator-connection.md), which is the address, the
+# liveness check and the credential at once. Resolve it the way ronin_bin/ronin-url does
+# and knock the same way — a bare connect, no HTTP, 2 s — so doctor and the tools it
+# vouches for cannot disagree about whether anyone is home.
+SOCK="${RONIN_SOCKET:-${RONIN_DATA_ROOT:-$HOME/.ronin}/run/ronin.sock}"
+if [ ! -e "$SOCK" ]; then
+  note "no Ronin has started on this box (no socket at $SOCK)"
+elif ! command -v python3 >/dev/null 2>&1; then
+  note "socket present at $SOCK, but python3 is absent so doctor cannot knock on it — ronin-url needs it too"
+elif SOCK="$SOCK" python3 - <<'PY' 2>/dev/null
+import os, socket, sys
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(2)
+try:
+    s.connect(os.environ["SOCK"])
+except OSError:
+    sys.exit(1)
+finally:
+    s.close()
+PY
+then
+  ok "command socket at $SOCK answers"
+else
+  find_ "Ronin is not running (socket at $SOCK, nobody listening); journalctl --user -u ronin.service -n 50 says why"
+fi
+
 # ---- 4b. the perimeter: is the front door shut? -----------------------------------
 # Two facts about THIS BOX, which is why they live here and not in a repo gate: a
 # checked-in file cannot know a machine's file modes or what it ended up bound to.
