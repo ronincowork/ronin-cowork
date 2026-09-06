@@ -21,6 +21,7 @@ test('importing the server under the unit runner never publishes operator option
     PATH: `${fixture}:${process.env.PATH ?? ''}`,
     BIND: '127.0.0.1',
     RONIN_TEST_RUNNER: '1',
+    RONIN_DATA_ROOT: path.join(fixture, 'data'),
     RONIN_TMUX_LOG: log,
     TMUX_TMPDIR: path.join(fixture, 't'),
   };
@@ -29,7 +30,10 @@ test('importing the server under the unit runner never publishes operator option
 
   await exec(process.execPath, ['--import', 'tsx', '--eval', "await import('./src/index.ts')"], { cwd: repo, env });
   const calls = await fs.readFile(log, 'utf8').catch(() => '');
-  assert.doesNotMatch(calls, /set-option .*@ronin-(?:url|cli-token)/);
+  assert.doesNotMatch(calls, /set-option .*@ronin-(?:operator|url|cli-token)/);
+  // Nor the operator socket: the runner is not the box instance, and the data root it
+  // was given stays empty of a door nothing answers behind.
+  await assert.rejects(fs.stat(path.join(fixture, 'data', 'run', 'ronin.sock')), { code: 'ENOENT' });
 });
 
 test('a scratch entry point inherited from a tmux pane never publishes its address', async (t) => {
@@ -44,6 +48,7 @@ test('a scratch entry point inherited from a tmux pane never publishes its addre
     BIND: '127.0.0.1',
     PORT: '0',
     NODE_ENV: 'development',
+    RONIN_DATA_ROOT: path.join(fixture, 'data'),
     RONIN_TMUX_LOG: log,
     TMUX: '/tmp/tmux-live/default,1,0',
     TMUX_PANE: '%1',
@@ -70,8 +75,14 @@ test('a scratch entry point inherited from a tmux pane never publishes its addre
       reject(new Error(`scratch server exited before listening (${code})`));
     });
   });
+  // A dev run (`npm run dev`, a hand start, this) is not the box instance: it binds no
+  // socket in its data root, and stopping it — the SIGTERM every `tsx watch` save sends —
+  // must reach for nothing shared. Until 2026-09-05 this exact stop erased the live
+  // operator's address from the tmux server for every tool on the box.
+  await assert.rejects(fs.stat(path.join(fixture, 'data', 'run', 'ronin.sock')), { code: 'ENOENT' });
   child.kill('SIGTERM');
   await new Promise((resolve) => child.once('exit', resolve));
   const calls = await fs.readFile(log, 'utf8').catch(() => '');
-  assert.doesNotMatch(calls, /set-option .*@ronin-(?:url|cli-token)/);
+  assert.doesNotMatch(calls, /set-option .*@ronin-(?:operator|url|cli-token)/);
+  assert.doesNotMatch(calls, /set-option -s -u/);
 });
