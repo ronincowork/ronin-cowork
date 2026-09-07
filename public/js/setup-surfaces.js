@@ -84,14 +84,20 @@ function createRegisterSurface(context) {
     const wrap = el('fieldset', 'setup-field setup-register-checklist');
     wrap.append(el('legend', '', label));
     const boxes = [];
+    const other = input(`${name}_other`); other.className = 'setup-register-other'; other.placeholder = t('setup_surface.something_else_prompt', 'Tell us'); other.hidden = true;
     for (const [value, text] of choices) {
       const box = input(name, 'checkbox'); box.value = value; boxes.push(box);
-      const row = el('label', 'setup-register-check'); row.append(box, el('span', '', text)); wrap.append(row);
+      const row = el(value === 'something_else' ? 'div' : 'label', 'setup-register-check');
+      if (value === 'something_else') {
+        const prompt = el('label', 'setup-register-check-label'); prompt.append(box, el('span', '', text));
+        box.addEventListener('change', () => { other.hidden = !box.checked; if (box.checked) other.focus(); });
+        row.classList.add('setup-register-check-other'); row.append(prompt, other);
+      } else row.append(box, el('span', '', text));
+      wrap.append(row);
     }
-    return { wrap, values: () => boxes.filter((box) => box.checked).map((box) => box.value) };
+    return { wrap, other, values: () => boxes.filter((box) => box.checked).map((box) => box.value) };
   };
   const email = input('email', 'email'); email.placeholder = 'you@example.com';
-  const purpose = input('purpose'); purpose.placeholder = t('setup_surface.purpose_hint', 'What would you like Ronin to help with?');
   const identityMode = choiceGroup('identity_mode', t('setup_surface.identity', 'How would you like to register?'), [
     ['email', 'With email'], ['anonymous', 'Anonymous'], ['no_thanks', 'No thank you'],
   ]);
@@ -100,6 +106,11 @@ function createRegisterSurface(context) {
     ['build_software', 'Build software'], ['life_assistants', 'Life assistants'],
     ['research_writing', 'Research and writing'], ['other', 'Something else'],
   ]);
+  const kindOther = input('kind_other'); kindOther.className = 'setup-register-other'; kindOther.placeholder = t('setup_surface.something_else_prompt', 'Tell us'); kindOther.hidden = true;
+  kind.wrap.append(kindOther);
+  for (const button of kind.wrap.querySelectorAll('button')) button.addEventListener('click', () => {
+    kindOther.hidden = kind.value.value !== 'other'; if (!kindOther.hidden) kindOther.focus();
+  });
   const preferredFeature = choiceGroup('preferred_feature', t('setup_surface.preferred_feature', 'Which core Ronin feature do you prefer most?'), [
     ['remote_access', 'Work from anywhere'],
     ['multiple_providers', 'Use multiple providers without lock-in'],
@@ -123,43 +134,55 @@ function createRegisterSurface(context) {
   const welcome = el('div', 'setup-register-welcome');
   welcome.append(el('span', 'setup-register-eyebrow', t('setup_surface.say_hello', 'Say hello')), el('h2', '', t('setup_surface.register_welcome', 'Welcome to Ronin')), el('p', 'setup-lede', t('setup_surface.register_lede', 'Share only what feels useful. Your answers help us shape better starting points; local Ronin works whether you register or not.')));
   const about = el('section', 'setup-register-group');
+  about.classList.add('setup-register-about');
   const emailField = field(t('setup_surface.email', 'Email address'), email);
   about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField);
   const fit = el('section', 'setup-register-group');
+  fit.classList.add('setup-register-fit');
+  runLocation.wrap.classList.add('setup-register-half');
+  preferredFeature.wrap.classList.add('setup-register-half');
+  reasons.wrap.classList.add('setup-register-full');
+  kind.wrap.classList.add('setup-register-full');
+  const ownField = field(t('setup_surface.own_words', 'Anything else'), own);
+  ownField.classList.add('setup-register-full');
   fit.append(
     el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), runLocation.wrap, preferredFeature.wrap, reasons.wrap, kind.wrap,
-    field(t('setup_surface.purpose', 'What would make Ronin useful to you?'), purpose),
-    field(t('setup_surface.own_words', 'Anything else? (optional)'), own),
+    ownField,
   );
   const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration sends a confirmation and can unlock Ronin Services. Anonymous registration sends these answers without contact details. Communication stays off unless you choose otherwise.'));
   const declined = el('p', 'setup-register-declined', t('setup_surface.no_thanks_message', 'We hope you enjoy Ronin. If you’d like to share feedback later, we’d be glad to hear it.'));
   declined.hidden = true;
-  const registerAction = action(t('setup_surface.register_action', 'Register'), '', async () => {
+  const registerAction = action(t('setup_surface.register_action', 'Send'), '', async () => {
     notice.textContent = t('setup_surface.saving', 'Saving…');
-    const anonymous = identityMode.value.value === 'anonymous';
+    const anonymous = identityMode.value.value !== 'email';
     const result = await request('/api/setup/registration', { method: 'POST', json: {
-      identity_mode: identityMode.value.value, email: email.value, purpose: purpose.value,
-      kind: kind.value.value, user_type: '', goals: [], preferred_feature: preferredFeature.value.value,
-      reasons: reasons.values(), run_location: runLocation.value.value, intended_use: [], theme_preference: '', own_words: own.value,
+      identity_mode: anonymous ? 'anonymous' : 'email', email: email.value, purpose: '',
+      kind: kind.value.value, kind_other: kindOther.value, user_type: '', goals: [], preferred_feature: preferredFeature.value.value,
+      reasons: reasons.values(), reason_other: reasons.other.value, run_location: runLocation.value.value,
+      intended_use: [], theme_preference: '', own_words: own.value,
     } });
     notice.textContent = result.ok
       ? anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.confirm_email', 'Registration saved. Confirm the email to receive Services entitlement.')
       : result.message;
     if (result.ok) { current = result.data; paint(); }
   });
+  registerAction.dataset.launch = 'true';
+  const sendLabel = registerAction.textContent;
+  const sendMark = el('img', 'wk-launch-mark'); sendMark.src = 'brand/nin-mark.svg'; sendMark.alt = '';
+  registerAction.replaceChildren(sendMark, el('span', '', sendLabel));
   const paintIdentityMode = () => {
-    const anonymous = identityMode.value.value === 'anonymous';
+    const emailRegistration = identityMode.value.value === 'email';
     const declinedRegistration = identityMode.value.value === 'no_thanks';
-    emailField.hidden = anonymous || declinedRegistration;
+    emailField.hidden = !emailRegistration || declinedRegistration;
     fit.hidden = declinedRegistration;
     consent.hidden = declinedRegistration;
     registerAction.hidden = declinedRegistration;
     notice.hidden = declinedRegistration;
     declined.hidden = !declinedRegistration;
-    email.required = !anonymous && !declinedRegistration;
+    email.required = emailRegistration && !declinedRegistration;
   };
   for (const button of identityMode.wrap.querySelectorAll('button')) button.addEventListener('click', paintIdentityMode);
-  identityMode.wrap.querySelector('[data-value="email"]')?.click();
+  paintIdentityMode();
   form.append(
     welcome, about, fit,
     consent, registerAction, declined, notice,
@@ -205,8 +228,8 @@ function createRegisterSurface(context) {
       if (!next?.trim()) return;
       const result = await request('/api/setup/registration/recovery', { method: 'POST', json: {
         action: 'change_address', identity_mode: 'email', email: next.trim(), purpose: current.purpose,
-        kind: current.kind, user_type: current.user_type, goals: current.goals,
-        preferred_feature: current.preferred_feature, reasons: current.reasons, run_location: current.run_location,
+        kind: current.kind, kind_other: current.kind_other, user_type: current.user_type, goals: current.goals,
+        preferred_feature: current.preferred_feature, reasons: current.reasons, reason_other: current.reason_other, run_location: current.run_location,
         intended_use: current.intended_use,
         theme_preference: current.theme_preference, own_words: current.own_words,
       } });
