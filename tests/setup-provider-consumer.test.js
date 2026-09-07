@@ -61,30 +61,39 @@ test('future providers retain an honest fallback without generic credential copy
   assert.match(source, /mountProviderAttachment/);
 });
 
-test('every selected provider follows the same four-step readiness path', () => {
+test('provider readiness keeps opt-in separate from navigation and measured state', () => {
   const cases = [
-    [{ id: 'grok', label: 'Grok CLI', installable: true }, ['complete', 'current', 'pending', 'pending'], 'install'],
-    [{ id: 'hermes', label: 'Hermes' }, ['complete', 'current', 'pending', 'pending'], 'manual'],
-    [{ id: 'openai', label: 'Codex', installed: true }, ['complete', 'complete', 'current', 'pending'], 'sign_in'],
-    [{ id: 'openai', label: 'Codex', installed: true, login_open: true }, ['complete', 'complete', 'current', 'pending'], 'login_open'],
-    [{ id: 'openai', label: 'Codex', installed: true, activated: true }, ['complete', 'complete', 'complete', 'complete'], null],
+    [{ id: 'grok', label: 'Grok CLI', installable: true }, false, ['off', 'not_installed', 'blocked', 'not_ready']],
+    [{ id: 'hermes', label: 'Hermes' }, true, ['on', 'not_installed', 'blocked', 'not_ready']],
+    [{ id: 'openai', label: 'Codex', installed: true }, true, ['on', 'installed', 'available', 'not_ready']],
+    [{ id: 'openai', label: 'Codex', installed: true, login_open: true }, true, ['on', 'installed', 'open', 'not_ready']],
+    [{ id: 'openai', label: 'Codex', installed: true, activated: true }, true, ['on', 'installed', 'recorded', 'ready']],
   ];
-  for (const [provider, statuses, nextAction] of cases) {
-    const steps = providerReadiness(provider);
-    assert.deepEqual(steps.map((step) => step.label), ['Use with Ronin', 'Installed', 'Authenticated', 'Ready']);
+  for (const [provider, optedIn, statuses] of cases) {
+    const steps = providerReadiness(provider, optedIn);
+    assert.deepEqual(steps.map((step) => step.label), ['Use with Ronin', 'Install', 'Authenticate', 'Ready']);
     assert.deepEqual(steps.map((step) => step.status), statuses);
-    assert.deepEqual(steps.filter((step) => step.action !== 'none').map((step) => step.action), nextAction ? [nextAction] : []);
   }
 });
 
 test('provider instructions stay under the relevant readiness step', () => {
   const grok = providerReadiness({ id: 'grok', label: 'Grok CLI', installable: true, install: 'npm install -g @xai-official/grok' });
   assert.match(grok[1].detail, /globally with npm/);
-  assert.equal(grok[2].detail, '');
+  assert.doesNotMatch(grok[2].detail, /npm|Grok CLI globally/);
   const codex = providerReadiness({ id: 'openai', label: 'Codex', installed: true });
   assert.match(codex[2].detail, /OpenAI account sign-in/);
   assert.doesNotMatch(codex[1].detail, /sign-in/);
   const ready = providerReadiness({ id: 'openai', label: 'Codex', installed: true, activated: true });
   assert.match(ready[2].detail, /not monitored/);
   assert.match(ready[3].detail, /activated for Launch/);
+});
+
+test('provider surface uses a real persisted opt-in and uniform Install/Authenticate controls', async () => {
+  const source = await readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+  assert.match(source, /checkbox\.type = 'checkbox'/);
+  assert.match(source, /\/api\/setup\/preferences[\s\S]*providers: \[\.\.\.selected\]/);
+  assert.match(source, /setup-provider-action-row/);
+  assert.match(source, /setup-provider-action/);
+  assert.doesNotMatch(source, /step_complete|Complete/);
+  assert.doesNotMatch(source, /notify\(|flash/i);
 });

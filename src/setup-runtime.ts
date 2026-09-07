@@ -19,10 +19,10 @@ export const INSTALLED_ROOTS = [
 interface ProviderMarker { activated_at?: unknown }
 export const SETUP_PREFERENCE_KINDS = ['build', 'life', 'research'] as const;
 export type SetupPreferenceKind = typeof SETUP_PREFERENCE_KINDS[number];
-export interface SetupPreferences { kinds: SetupPreferenceKind[] }
+export interface SetupPreferences { kinds: SetupPreferenceKind[]; providers: string[] }
 interface SetupSection {
   providers?: Record<string, ProviderMarker>;
-  preferences?: { kinds?: unknown };
+  preferences?: { kinds?: unknown; providers?: unknown };
   [key: string]: unknown;
 }
 
@@ -72,17 +72,33 @@ export function setupPreferences(section: SetupSection): SetupPreferences {
       .filter((kind): kind is SetupPreferenceKind =>
         typeof kind === 'string' && SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind)),
   );
-  return { kinds: SETUP_PREFERENCE_KINDS.filter((kind) => selected.has(kind)) };
+  const providers = Array.isArray(section.preferences?.providers)
+    ? [...new Set(section.preferences.providers.filter((provider): provider is string =>
+      typeof provider === 'string' && /^[a-z0-9_-]+$/.test(provider)))]
+    : [];
+  return { kinds: SETUP_PREFERENCE_KINDS.filter((kind) => selected.has(kind)), providers };
 }
 
-export async function writeSetupPreferences(kinds: unknown): Promise<SetupPreferences> {
-  if (!Array.isArray(kinds)) throw new Error('Send { kinds: [...] }.');
-  if (kinds.some((kind) => typeof kind !== 'string' || !SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind))) {
-    throw new Error('Kinds are build, life, and research.');
-  }
-  const preferences = setupPreferences({ preferences: { kinds } });
-  await updateSection<SetupSection>('setup', (setup) => ({ ...setup, preferences }));
-  return preferences;
+export async function writeSetupPreferences(input: unknown): Promise<SetupPreferences> {
+  const patch = Array.isArray(input) ? { kinds: input } : input;
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Send Setup preferences.');
+  const update = patch as { kinds?: unknown; providers?: unknown };
+  if (update.kinds === undefined && update.providers === undefined) throw new Error('Send kinds or providers.');
+  let written: SetupPreferences = { kinds: [], providers: [] };
+  await updateSection<SetupSection>('setup', (setup) => {
+    const current = setupPreferences(setup);
+    const kinds = update.kinds === undefined ? current.kinds : update.kinds;
+    const providers = update.providers === undefined ? current.providers : update.providers;
+    if (!Array.isArray(kinds) || kinds.some((kind) => typeof kind !== 'string' || !SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind))) {
+      throw new Error('Kinds are build, life, and research.');
+    }
+    if (!Array.isArray(providers) || providers.some((provider) => typeof provider !== 'string' || !/^[a-z0-9_-]+$/.test(provider))) {
+      throw new Error('Providers must be provider IDs.');
+    }
+    written = setupPreferences({ preferences: { kinds, providers } });
+    return { ...setup, preferences: written };
+  });
+  return written;
 }
 
 const defaultSessionOps: ProviderSessionOps = {
