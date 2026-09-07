@@ -106,13 +106,39 @@ test('selector definitions retain neutral provider grouping without requirement 
   assert.doesNotMatch(source, /SETUP_REQUIREMENT_TARGETS|targetKey|targetClass/);
 });
 
-test('Register keeps required fields behind concise disclosure and uses a neutral action', async () => {
+test('Register keeps one compact profile flow without duplicating Preset purpose controls', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
   for (const name of ['email', 'purpose', 'kind', 'user_type', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
   assert.match(source, /setup-register-disclosure/);
-  assert.match(source, /Communication preferences/);
+  assert.match(source, /Communication choices/);
+  assert.match(source, /Communication is off until you choose otherwise/);
   assert.match(source, /register_action'[\s\S]*?'Register'\), '', async/);
+  assert.doesNotMatch(source, /renderKindPills|createKindsPreference|setup-kinds/);
   assert.doesNotMatch(source, /registration_pending'[\s\S]*?Registration pending/);
+});
+
+test('Services gives two value points and routes its only registration gate action directly', async () => {
+  const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+  assert.match(source, /services_value_records/);
+  assert.match(source, /services_value_library/);
+  assert.match(source, /services_requires_short/);
+  assert.match(source, /register_direct'[\s\S]*?workbench\?\.place\(SETUP_SURFACE_TYPES\.register/);
+  assert.doesNotMatch(source, /usedFor: t\('setup_surface\.services_used'/);
+});
+
+test('Setup gbrain opts into one diagnosed status notice without raw transport errors', async () => {
+  const [setup, gbrain] = await Promise.all([
+    (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
+    (await import('node:fs/promises')).readFile(new URL('../public/js/gbrain.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(setup, /designedErrors: true/);
+  assert.match(setup, /setupRuntime\?\.gbrain/);
+  assert.match(gbrain, /className = 'gb-notice'/);
+  assert.match(gbrain, /setAttribute\('role', 'status'\)/);
+  assert.match(gbrain, /gbrain\.known_(?:not_)?installed/);
+  assert.match(gbrain, /gbrain\.status_diagnosis/);
+  assert.match(gbrain, /gbrain\.check_again/);
+  assert.doesNotMatch(gbrain.match(/if \(options\.designedErrors\)[\s\S]*?return;/)?.[0] || '', /r\.message|HTTP/);
 });
 
 test('legacy Services mutation entry points explicitly retire to registration', async () => {
