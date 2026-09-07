@@ -104,7 +104,6 @@ test('the surface renders the three steps from providerReadiness with real contr
   assert.match(source, /setup-provider-step/);
   assert.match(source, /setup-provider-command/);
   assert.match(source, /setup-provider-problem/);
-  assert.match(source, /authenticate\.disabled = !provider\.installed/);
   assert.doesNotMatch(source, /step_complete|Complete/);
   assert.doesNotMatch(source, /notify\(|flash/i);
 });
@@ -134,4 +133,6 @@ test('provider steps adapt to the shared stone surface width with one control si
   assert.match(css, /\.setup-provider-label \{[^}]*font-size: var\(--text-7\)/);
   assert.match(css, /\.setup-provider-note \{[^}]*font-size: var\(--text-5\)/);
   assert.match(css, /\.setup-provider-control > \.setup-provider-action:disabled \{[^}]*background: transparent/);
+  assert.match(css, /\.setup-provider-terminal \{[^}]*min-height: max\(30rem, 78vh\)/);
+  assert.match(css, /\.setup-provider-terminal \.tile > \.tile-head \{ display: none; \}/);
 });

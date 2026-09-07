@@ -361,31 +361,29 @@ function createProviderSurface(context) {
       made.classList.add('setup-provider-action');
       return made;
     };
+    // Only the current step owns a control. A done step is a quiet fact and a waiting
+    // step says what it waits for; neither carries a dead button.
     const installRow = stepRow(install, install.status === 'installed'
       ? t('setup_surface.installed', 'Installed')
       : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
-    if (install.action === 'manual' && install.manual) {
+    if (install.current && install.action === 'manual' && install.manual) {
       const link = el('a', 'wk-action setup-provider-action setup-provider-manual', install.manual.label);
       link.href = install.manual.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
       installRow.controls.append(link);
-    } else {
-      const installAction = control(install, t('setup_surface.install', 'Install'), async () => {
+    } else if (install.current && install.action === 'install' && provider.installable) {
+      installRow.controls.append(control(install, t('setup_surface.install', 'Install'), async () => {
         const result = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
         if (!result.ok) { problem.textContent = result.message; problem.hidden = false; return; }
         await paint();
-      });
-      installAction.disabled = install.action !== 'install' || !provider.installable;
-      installRow.controls.append(installAction);
+      }));
     }
     const authRow = stepRow(auth, auth.status === 'recorded'
       ? t('setup_surface.signed_in', 'Signed in')
       : auth.status === 'open' ? t('setup_surface.sign_in_open', 'Sign-in open')
         : auth.status === 'available' ? t('setup_surface.not_signed_in', 'Not signed in') : t('setup_surface.install_first', 'After install'));
-    if (auth.action !== 'login_open') {
-      const authenticate = control(auth, t('setup_surface.authenticate', 'Authenticate'), () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`));
-      authenticate.disabled = !provider.installed;
-      authRow.controls.append(authenticate);
-    } else {
+    if (auth.current && auth.action !== 'login_open') {
+      authRow.controls.append(control(auth, t('setup_surface.authenticate', 'Authenticate'), () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`)));
+    } else if (auth.action === 'login_open') {
       const terminal = el('div', 'setup-provider-terminal');
       const done = control(auth, t('setup_surface.done', 'Done'), () => { mounted?.park?.(); return press(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`); });
       const close = action(t('setup_surface.close', 'Close'), '', () => { mounted?.park?.(); return press(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); });

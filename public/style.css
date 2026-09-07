@@ -6110,8 +6110,12 @@ button.wb-door:hover b {
 }
 .setup-provider-problem { margin: 0; }
 .setup-provider-problem[hidden] { display: none; }
-.setup-provider-terminal { grid-column: 1 / -1; min-height: min(54vh, 34rem); overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--term-bg); }
+/* The native sign-in tile: headerless, since it is a sign-in and not a session anyone
+   drives from the tile head, and tall enough to take most of the workspace; the detail
+   scrolls down to it. */
+.setup-provider-terminal { grid-column: 1 / -1; min-height: max(30rem, 78vh); overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--term-bg); }
 .setup-provider-terminal > .wk-terminal-host, .setup-provider-terminal .tile { height: 100%; min-height: inherit; }
+.setup-provider-terminal .tile > .tile-head { display: none; }
 @media (max-width: 700px) {
   .setup-explainer-body { grid-template-columns: 1fr; }
   .setup-surface-body { padding: var(--space-4); }
