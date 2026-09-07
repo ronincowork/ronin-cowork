@@ -34,12 +34,14 @@ switch to the retired phone-only drill-down.
 **Model providers** shows one stone per provider in the runtime catalog, each wearing a
 short measured state: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
 installed**, or **Manual install**. Selecting a stone opens that provider's detail beside
-the rail: the same four rows for every provider, in this order.
+the rail: the same four numbered steps for every provider, in this order. A finished step
+wears a check, the next unmet step wears the kaki mark and owns the only enabled control,
+and the steps after it wait with their controls disabled.
 
 | Row | What it measures | The action it owns |
 |---|---|---|
 | **Use with Ronin** | the persisted opt-in for this provider, kept with the Setup preferences | the checkbox |
-| **Install** | whether the CLI is found, with its path when it is | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets a guide link instead |
+| **Install** | whether the CLI is found, with its path when it is | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
 | **Authenticate** | whether Setup completion was recorded | **Authenticate** opens the provider's native sign-in as a temporary tile in this workspace, once the provider is opted in and installed |
 | **Ready** | the recorded activation | none; it is the measured result |
 

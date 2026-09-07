@@ -19,7 +19,7 @@ export function providerFromRuntime(runtime, key) {
 
 const PROVIDER_MANUAL_ROUTES = Object.freeze({
   hermes: {
-    label: 'Open Hermes install guide',
+    label: 'Install guide',
     url: 'https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md',
   },
 });
@@ -81,20 +81,23 @@ export function providerPresentation(provider) {
 }
 
 /**
- * The four rows of a selected provider, in order, from the runtime row and the persisted
- * opt-in. Each row carries its status key, at most one short detail line, an optional
- * install command, and the real action it owns. This is the only source the surface reads.
+ * The four steps of a selected provider, in order, from the runtime row and the persisted
+ * opt-in. Each step carries its status key, at most one short detail line, an optional
+ * install command, the real action it owns, whether it is done, and whether it is the
+ * current step: exactly the first unmet one. This is the only source the surface reads.
  */
+const STEP_DONE = Object.freeze({ use: 'on', installed: 'installed', authenticated: 'recorded', ready: 'ready' });
+
 export function providerReadiness(provider, optedIn = false) {
   const label = String(provider?.label || provider?.id || 'This provider');
   const presentation = providerPresentation(provider);
   const installed = provider?.installed === true;
   const activated = provider?.activated === true;
   const loginOpen = provider?.login_open === true;
-  return [
+  const steps = [
     {
       key: 'use', label: 'Use with Ronin', status: optedIn ? 'on' : 'off',
-      detail: '', action: 'opt_in',
+      detail: optedIn ? '' : 'Turn on to install and sign in here.', action: 'opt_in',
     },
     {
       key: 'installed', label: 'Install', status: installed ? 'installed' : 'not_installed',
@@ -114,6 +117,13 @@ export function providerReadiness(provider, optedIn = false) {
       detail: activated ? `${label} is activated for Launch.` : 'After sign-in is recorded.', action: 'none',
     },
   ];
+  let found = false;
+  for (const step of steps) {
+    step.done = step.status === STEP_DONE[step.key];
+    step.current = !found && !step.done;
+    if (step.current) found = true;
+  }
+  return steps;
 }
 
 /** Mount only the explicit Runtime attachment; never infer a provider session name. */
