@@ -448,6 +448,7 @@ function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
   const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);
   let timer = null;
+  let said = '';  // the last press's answer, kept across the surface's own re-reads until the next press
   const explain = () => {
     const intro = el('section', 'setup-services-intro');
     const lockup = el('div', 'setup-services-lockup');
@@ -490,17 +491,18 @@ function createServicesSurface(context) {
     const routines = { ...completeRoutineMap(catalog.ok && Array.isArray(catalog.data) ? catalog.data : [], defaults.routines), ronin_services: on };
     return saveCampaign(row.id, { config: { agent_defaults: { ...defaults, routines } } });
   };
-  /** Ronin restarts itself: ask, then watch /api/installed come back and re-read. Sessions are untouched. */
-  const restartRonin = async (state) => {
+  /** Restart: ask, then read the restart off the machine — /api/installed's startedAt changes when Ronin is back.
+   *  A refusal answers in the tool's own words; no answer means Ronin went down, which is the restart happening. */
+  const restartRonin = async (state, startedAt) => {
     state.dataset.tone = 'warn';
     state.replaceChildren(el('p', 'setup-services-status-line', t('services_setup.restarting', 'Restarting Ronin…')), el('p', 'setup-services-next', t('services_setup.next_restarting', 'Sessions stay up; this surface re-reads the machine as Ronin comes back.')));
-    await request('/api/machine/restart', { method: 'POST', json: {} });
-    const until = Date.now() + 90_000;
-    await new Promise((resolve) => setTimeout(resolve, 2500));
+    const asked = await request('/api/machine/restart', { method: 'POST', json: {} });
+    if (!asked.ok && asked.kind !== 'network') { said = asked.message; await show(); return; }
+    const until = Date.now() + 120_000;
     while (Date.now() < until && body.isConnected) {
-      const probe = await request('/api/installed', { cache: 'no-store' });
-      if (probe.ok) break;
       await new Promise((resolve) => setTimeout(resolve, 2000));
+      const probe = await request('/api/installed', { cache: 'no-store' });
+      if (probe.ok && probe.data?.cowork?.startedAt && probe.data.cowork.startedAt !== startedAt) break;
     }
     if (body.isConnected) await show();
   };
@@ -511,7 +513,10 @@ function createServicesSurface(context) {
       request('/api/installed', { cache: 'no-store' }),
       request('/api/services/activation', { cache: 'no-store' }),
     ]);
+    // Ronin is down or unreachable for a moment (a restart in flight): keep what is painted and look again shortly.
+    if (!installed.ok && installed.kind === 'network' && body.dataset.state) { timer = setTimeout(() => { if (body.isConnected) void show(); }, 3000); return; }
     const model = servicesSetupModel(registration, installed, activation);
+    const startedAt = installed.ok ? installed.data?.cowork?.startedAt || '' : '';
     body.replaceChildren(explain());
     body.dataset.state = model.state;
     const state = el('section', 'setup-services-status');
@@ -521,16 +526,17 @@ function createServicesSurface(context) {
     body.append(state);
     // Register · Install · Switch — three controls in one shape; the first two read Done once they are, the switch toggles.
     const steps = el('div', 'setup-services-steps');
-    const notice = el('p', 'setup-notice setup-services-notice');
+    const notice = el('p', 'setup-notice setup-services-notice', said);
+    if (said) notice.classList.add('bad');
     for (const item of model.steps) {
       const wrap = el('div', 'setup-services-step');
       const button = action(item.label, '', async () => {
         if (item.act === 'register') { openRegister(); return; }
-        button.disabled = true; notice.textContent = '';
-        if (item.act === 'restart') { await restartRonin(state); return; }
+        button.disabled = true; said = ''; notice.textContent = '';
+        if (item.act === 'restart') { await restartRonin(state, startedAt); return; }
         const result = item.act === 'switch_on' || item.act === 'switch_off' ? await switchServices(item.act === 'switch_on')
           : await request(item.act === 'install' ? '/api/services/install' : '/api/services/activation/poll', { method: 'POST', json: {} });
-        if (!result.ok) { notice.textContent = result.message; notice.classList.add('bad'); button.disabled = false; return; }
+        if (!result.ok) said = result.message;
         await show();
       });
       button.classList.add('setup-services-step-action');
