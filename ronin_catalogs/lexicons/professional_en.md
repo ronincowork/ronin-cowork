@@ -1347,11 +1347,21 @@ The catalog entry goes. {dir} is not touched.
 - **messages.retry:** Try Again
 - **messages.force:** Force
 - **messages.dismiss:** Dismiss
+- **messages.select_all:** Select All
+- **messages.select_all_count:** Select All ({count})
+- **messages.select_message:** Select message to {target}
+- **messages.dismiss_selected:** Dismiss Selected
+- **messages.dismiss_selected_count:** Dismiss Selected ({count})
+- **messages.dismiss_wipeboard:** Dismiss Wipeboard Notices
+- **messages.dismiss_wipeboard_count:** Dismiss Wipeboard Notices ({count})
+- **messages.dismiss_all:** Dismiss All
+- **messages.dismiss_all_count:** Dismiss All ({count})
 - **messages.trying:** Trying…
 - **messages.forcing:** Forcing…
 - **messages.dismissing:** Dismissing…
 - **messages.delivered:** Delivered and cleared.
 - **messages.dismissed:** Message dismissed.
+- **messages.dismissed_count:** {count} message(s) dismissed.
 - **messages.retained:** Still waiting — {reason}
 - **messages.action_failed:** Message action failed — {reason}
 - **messages.attention:** Check Team Commons → Agent Message Queue
