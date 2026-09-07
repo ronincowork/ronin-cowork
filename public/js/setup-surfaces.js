@@ -275,7 +275,7 @@ function createServicesSurface(context) {
     const intro = el('section', 'setup-services-intro');
     const lockup = el('div', 'setup-services-lockup');
     const mark = el('img', 'setup-services-mark');
-    mark.src = 'brand/nin-mark.svg'; mark.alt = '';
+    mark.src = 'brand/services-mark.svg'; mark.alt = '';
     const identity = el('div', 'setup-services-identity');
     identity.append(
       el('h2', '', t('settei.ronin_services', 'Ronin Services')),
