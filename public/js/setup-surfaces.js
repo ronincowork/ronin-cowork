@@ -51,20 +51,27 @@ export function setupExplainer({ usedFor, requires, use }) {
 function createRegisterSurface(context) {
   const out = surface(t('setup_surface.register', 'Register'));
   const body = el('div', 'setup-surface-body setup-register-compact');
-  const notice = el('p', 'setup-notice');
+  const notice = el('p', 'setup-notice setup-register-notice');
+  notice.setAttribute('aria-live', 'polite');
   let current = null;
-  const field = (label, control) => { const wrap = el('label', 'setup-field'); wrap.append(el('span', '', label), control); return wrap; };
+  const labels = new Map();
+  const field = (label, control) => { const wrap = el('label', 'setup-field setup-register-input'); wrap.append(el('span', 'setup-register-question', label), control); return wrap; };
   const input = (name, type = 'text') => { const node = el('input'); node.name = name; node.type = type; return node; };
-  const choiceGroup = (name, label, choices, { multiple = false } = {}) => {
+  const checkRow = (label, box, className = '') => { const row = el('label', `setup-register-check ${className}`.trim()); row.append(box, el('span', '', label)); return row; };
+  const choiceGroup = (name, label, choices, { multiple = false, explain = false } = {}) => {
     const value = input(name, 'hidden');
     const selected = new Set();
+    /** One quiet explanation for the chosen answer, shown only once something is chosen. */
+    const explanation = explain ? el('p', 'setup-register-explain') : null;
+    if (explanation) { explanation.hidden = true; explanation.setAttribute('aria-live', 'polite'); }
     const group = el('div', 'setup-register-choice-grid');
-    group.setAttribute('role', 'group'); group.setAttribute('aria-label', label);
+    group.setAttribute('role', 'group'); group.setAttribute('aria-label', label); group.dataset.choices = String(choices.length);
     for (const [key, text, description = ''] of choices) {
+      labels.set(key, text);
       const button = el('button', 'setup-register-choice');
       button.type = 'button'; button.dataset.value = key; button.setAttribute('aria-pressed', 'false');
       button.append(el('strong', '', text));
-      if (description) button.append(el('span', '', description));
+      if (description && !explanation) button.append(el('span', '', description));
       button.addEventListener('click', () => {
         if (multiple) {
           if (selected.has(key)) selected.delete(key); else selected.add(key);
@@ -73,32 +80,34 @@ function createRegisterSurface(context) {
         } else {
           value.value = key;
           for (const option of group.querySelectorAll('button')) option.setAttribute('aria-pressed', String(option === button));
+          if (explanation) { explanation.textContent = description; explanation.hidden = !description; }
         }
       });
       group.append(button);
     }
     const wrap = el('div', 'setup-field setup-register-bounded');
-    wrap.append(el('span', '', label), group, value);
+    wrap.append(el('span', 'setup-register-question', label), group, value);
+    if (explanation) wrap.append(explanation);
     return { value, wrap, values: () => multiple ? [...selected] : value.value };
   };
   const checklistGroup = (name, label, choices) => {
-    const wrap = el('fieldset', 'setup-field setup-register-checklist');
-    wrap.append(el('legend', '', label));
+    const wrap = el('fieldset', 'setup-register-checklist');
+    wrap.append(el('legend', 'setup-register-question', label));
     const boxes = [];
     const other = input(`${name}_other`); other.className = 'setup-register-other'; other.placeholder = t('setup_surface.something_else_prompt', 'Tell us'); other.hidden = true;
     for (const [value, text] of choices) {
+      labels.set(value, text);
       const box = input(name, 'checkbox'); box.value = value; boxes.push(box);
-      const row = el(value === 'something_else' ? 'div' : 'label', 'setup-register-check');
       if (value === 'something_else') {
-        const prompt = el('label', 'setup-register-check-label'); prompt.append(box, el('span', '', text));
+        const row = el('div', 'setup-register-check-other');
         box.addEventListener('change', () => { other.hidden = !box.checked; if (box.checked) other.focus(); });
-        row.classList.add('setup-register-check-other'); row.append(prompt, other);
-      } else row.append(box, el('span', '', text));
-      wrap.append(row);
+        row.append(checkRow(text, box), other);
+        wrap.append(row);
+      } else wrap.append(checkRow(text, box));
     }
     return { wrap, other, values: () => boxes.filter((box) => box.checked).map((box) => box.value) };
   };
-  const email = input('email', 'email'); email.placeholder = 'you@example.com';
+  const email = input('email', 'email'); email.placeholder = 'you@example.com'; email.autocomplete = 'email';
   const identityMode = choiceGroup('identity_mode', t('setup_surface.identity', 'How would you like to register?'), [
     ['email', 'With email'], ['anonymous', 'Anonymous'], ['no_thanks', 'No thank you'],
   ]);
@@ -113,10 +122,11 @@ function createRegisterSurface(context) {
     kindOther.hidden = kind.value.value !== 'other'; if (!kindOther.hidden) kindOther.focus();
   });
   const preferredFeature = choiceGroup('preferred_feature', t('setup_surface.preferred_feature', 'Which core Ronin feature do you prefer most?'), [
-    ['remote_access', 'Work from anywhere'],
-    ['multiple_providers', 'Use multiple providers without lock-in'],
-    ['team_coordination', 'Agents with team coordination skills'],
-  ]);
+    ['remote_access', 'Work from anywhere', t('setup_surface.feature_remote_access', 'Ronin runs on your home machine or a virtual machine. You open it from a browser wherever you are, any time.')],
+    ['multiple_providers', 'Multiple providers without lock-in', t('setup_surface.feature_multiple_providers', 'You keep your own accounts and your direct relationship with each model provider. Ronin never stands in between, everything runs on your machine, and how your agents work together is yours.')],
+    ['team_coordination', 'Agents with team coordination skills', t('setup_surface.feature_team_coordination', 'Coordination is light reading an agent does to build its brief. Each launch brief carries a few simple tools so agents can message and coordinate with one another.')],
+  ], { explain: true });
+  preferredFeature.wrap.querySelector('.setup-register-choice-grid').dataset.layout = 'rows';
   const reasons = checklistGroup('reasons', t('setup_surface.reasons', 'Why is that useful to you?'), [
     ['different_strengths', 'Different models have different strengths. I want to use the best one for each job.'],
     ['network_resilience', 'Sometimes one model provider is having network issues, so I want another available.'],
@@ -137,6 +147,8 @@ function createRegisterSurface(context) {
   const about = el('section', 'setup-register-group');
   about.classList.add('setup-register-about');
   const emailField = field(t('setup_surface.email', 'Email address'), email);
+  identityMode.wrap.classList.add('setup-register-half');
+  emailField.classList.add('setup-register-half');
   about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField);
   const fit = el('section', 'setup-register-group');
   fit.classList.add('setup-register-fit');
@@ -171,6 +183,8 @@ function createRegisterSurface(context) {
   const sendLabel = registerAction.textContent;
   const sendMark = el('img', 'wk-launch-mark'); sendMark.src = 'brand/nin-mark.svg'; sendMark.alt = '';
   registerAction.replaceChildren(sendMark, el('span', '', sendLabel));
+  const send = el('div', 'setup-register-send');
+  send.append(consent, registerAction, notice);
   const paintIdentityMode = () => {
     const emailRegistration = identityMode.value.value === 'email';
     const declinedRegistration = identityMode.value.value === 'no_thanks';
@@ -179,45 +193,53 @@ function createRegisterSurface(context) {
     consent.hidden = declinedRegistration;
     registerAction.hidden = declinedRegistration;
     notice.hidden = declinedRegistration;
+    send.hidden = declinedRegistration;
     declined.hidden = !declinedRegistration;
     email.required = emailRegistration && !declinedRegistration;
   };
   for (const button of identityMode.wrap.querySelectorAll('button')) button.addEventListener('click', paintIdentityMode);
   paintIdentityMode();
-  form.append(
-    welcome, about, fit,
-    consent, registerAction, declined, notice,
-  );
+  form.append(welcome, about, fit, send, declined);
   const prefs = el('form', 'setup-form setup-preferences');
   const checks = Object.fromEntries(['newsletter', 'release_updates', 'no_communication'].map((name) => [name, input(name, 'checkbox')]));
   const followUps = Object.fromEntries(['product_research', 'interviews', 'support'].map((name) => [name, input(name, 'checkbox')]));
-  const prefNotice = el('p', 'setup-notice');
+  const prefNotice = el('p', 'setup-notice setup-register-notice');
+  prefNotice.setAttribute('aria-live', 'polite');
   const recovery = el('div', 'setup-registration-recovery');
   const preferences = el('section', 'setup-register-group setup-preferences-wrap');
   preferences.append(el('h3', '', t('setup_surface.communication_preferences', 'Communication choices')), prefs);
-  const recoveryOptions = el('section', 'setup-register-options');
+  const recoveryOptions = el('section', 'setup-register-group setup-register-options');
   recoveryOptions.append(el('h3', '', t('setup_surface.registration_options', 'Registration options')), recovery);
   prefs.append(
-    field(t('setup_surface.newsletter', 'Newsletter'), checks.newsletter),
-    field(t('setup_surface.release_updates', 'Code and release updates'), checks.release_updates),
-    el('strong', '', t('setup_surface.follow_up', 'Allowed follow-up')),
-    field(t('setup_surface.follow_product', 'Product research'), followUps.product_research),
-    field(t('setup_surface.follow_interviews', 'Interviews'), followUps.interviews),
-    field(t('setup_surface.follow_support', 'Support'), followUps.support),
-    field(t('setup_surface.no_communication', 'No communication'), checks.no_communication),
-    action(t('setup_surface.update_preferences', 'Update preferences'), 'primary', async () => {
+    checkRow(t('setup_surface.newsletter', 'Newsletter'), checks.newsletter),
+    checkRow(t('setup_surface.release_updates', 'Code and release updates'), checks.release_updates),
+    el('span', 'setup-register-subhead', t('setup_surface.follow_up', 'Allowed follow-up')),
+    checkRow(t('setup_surface.follow_product', 'Product research'), followUps.product_research),
+    checkRow(t('setup_surface.follow_interviews', 'Interviews'), followUps.interviews),
+    checkRow(t('setup_surface.follow_support', 'Support'), followUps.support),
+    checkRow(t('setup_surface.no_communication', 'No communication'), checks.no_communication, 'setup-register-check-apart'),
+    action(t('setup_surface.update_preferences', 'Update preferences'), '', async () => {
       const result = await request('/api/setup/registration/communication', { method: 'PATCH', json: { newsletter: checks.newsletter.checked, release_updates: checks.release_updates.checked, no_communication: checks.no_communication.checked, follow_up: Object.entries(followUps).filter(([, box]) => box.checked).map(([name]) => name) } });
       prefNotice.textContent = result.ok ? t('setup_surface.preferences_saved', 'Preferences updated.') : result.message;
       if (result.ok) { current = result.data; paint(); }
     }), prefNotice,
   );
   checks.no_communication.addEventListener('change', () => { if (checks.no_communication.checked) { checks.newsletter.checked = false; checks.release_updates.checked = false; for (const box of Object.values(followUps)) box.checked = false; } });
+  /** The submitted summary speaks the same words the form showed, never a stored key. */
+  const wordFor = (key) => labels.get(key) || '';
+  const summaryWords = () => {
+    const words = [current?.email_masked, current?.run_location && wordFor(current.run_location), current?.preferred_feature && wordFor(current.preferred_feature)];
+    words.push(current?.kind === 'other' && current?.kind_other ? current.kind_other : current?.kind && wordFor(current.kind));
+    for (const reason of current?.reasons || []) words.push(reason === 'something_else' && current?.reason_other ? current.reason_other : wordFor(reason));
+    return words.filter(Boolean).join(' · ');
+  };
   const paint = () => {
     const registered = current?.status === 'registered';
     const anonymous = current?.status === 'anonymous';
     identity.hidden = !current?.submitted_at;
+    identity.dataset.tone = current?.status === 'pending' ? 'pending' : 'ok';
     identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.check_email', 'Check your email')),
-      el('span', '', [current?.email_masked, current?.purpose, current?.preferred_feature, current?.run_location, ...(current?.reasons || [])].filter(Boolean).join(' · ')));
+      el('span', '', summaryWords()));
     form.hidden = Boolean(current?.submitted_at);
     preferences.hidden = !current?.submitted_at || anonymous;
     recoveryOptions.hidden = !current?.submitted_at;
@@ -259,7 +281,7 @@ function createRegisterSurface(context) {
     }));
     notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
   };
-  body.append(identity, form, preferences, recoveryOptions); out.content.append(body);
+  body.append(identity, form, preferences, recoveryOptions, notice); out.content.append(body);
   return { el: out.el, show: async () => { const result = await request('/api/setup/registration', { cache: 'no-store' }); current = result.ok ? result.data : null; paint(); } };
 }
 
