@@ -17,7 +17,7 @@ const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'n
 const DIALS = ['user', 'read', 'write'];
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
 
-export function createNewTeamFormView(kit, { created = null } = {}) {
+export function createNewTeamFormView(kit, { created = null, embedded = false } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
@@ -51,8 +51,14 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     disabled: true,
     action: () => void doRaise(),
   });
-  const surface = createSurface({ label: t('new_team.title', 'New Team'), className: 'ntf-surface', actions: [raise] });
+  const surface = createSurface({ label: t('new_team.title', 'New Team'), className: 'ntf-surface', actions: [raise], header: !embedded });
   const notice = createNotice();
+  if (embedded) {
+    surface.content.classList.add('ntf-surface', 'launch-form-embed');
+    const embedActions = el('div', 'launch-form-embed-actions');
+    embedActions.append(raise.el);
+    surface.content.append(embedActions);
+  }
 
   // and "Make your own" is the manual door; a mode switch above the form was a second way
   // to say the same thing.
@@ -600,7 +606,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   surface.content.append(form, notice.el);
 
   return {
-    el: surface.el,
+    el: embedded ? surface.content : surface.el,
     enter: async (detail = {}) => {
       paint();
       const [seeded, tray, catalog, rootRows, sopRows, wayRows] = await Promise.all([
@@ -628,4 +634,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       paint();
     },
   };
+}
+
+/** Form-only adapter for an existing work-surface detail region. */
+export function createEmbeddedNewTeamFormView(kit, options = {}) {
+  return createNewTeamFormView(kit, { ...options, embedded: true });
 }

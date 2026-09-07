@@ -141,7 +141,12 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.match(source, /explanation\.textContent = chosen \? description : ''; explanation\.hidden = !chosen \|\| !description; if \(chosen\) button\.after\(explanation\)/, 'the explanation drops out right under the chosen row');
   assert.match(source, /Which of these describes you best in terms of getting value from Ronin\?/);
   assert.doesNotMatch(source, /Which of these things Ronin does would you appreciate most\?/);
-  assert.match(css, /\.setup-register-choice-grid\[data-layout='rows'\] > \.setup-register-explain \{ grid-column: 2;/, 'the explanation sits beside the rows when the surface is wide');
+  assert.match(css, /\.setup-register-choice-grid\[data-layout='rows'\] > \.setup-register-explain \{ grid-column: 2; align-self: start;/, 'the explanation sits beside its own row when the surface is wide');
+  assert.doesNotMatch(css, /setup-register-explain \{ grid-column: 2; grid-row/, 'the explanation follows the chosen row, not the top of the list');
+  assert.doesNotMatch(source, /setup-register-half/, 'About you stacks its questions at every width');
+  assert.doesNotMatch(css, /@container setup-register[^}]*\.setup-register-group \{ grid-template-columns: repeat\(2/, 'groups never split into two columns');
+  assert.match(css, /\.setup-register-group > :not\(h3\) \+ :not\(h3\) \{ margin-top: var\(--space-6\); \}/, 'questions breathe more than the lines inside them');
+  assert.match(css, /\.setup-register-check \{[^}]*padding: var\(--space-1\) 0;/, 'checklist lines sit tight');
   assert.doesNotMatch(source, /Why is that useful to you\?/);
   for (const reason of ['own_instructions', 'no_collisions']) assert.match(source, new RegExp(`\\['${reason}', `));
   assert.match(source, /reads by default/);
@@ -251,13 +256,16 @@ test('the Services mark is a constructed RS monogram in the house hexagon, blue 
   assert.match(house, frame, 'the house mark still carries the hexagon this test pins');
   assert.match(services, frame, 'same open hexagon as the house mark');
   assert.match(services, /viewBox="0 0 120 104"/);
-  assert.match(services, /<title id="title">Ronin Services mark<\/title>/);
+  assert.match(services, /<title id="services-mark-title">Ronin Services mark<\/title>/);
+  assert.match(services, /aria-labelledby="services-mark-title services-mark-desc"/);
+  assert.doesNotMatch(services, /id="(title|desc)"/, 'ids are prefixed: the markup is inlined into the page, where a bare id would collide');
   // Letters are built from one house cell and turned to the frame's own angle.
   assert.match(services, /transform="translate\(60 52\) scale\(\.86\) rotate\(28\.5\) translate\(-62\.5 -52\)"/);
   assert.match(services, /<g class="rs-r" stroke="#3f6a95"><path d="M31 76V28H51L57 40L51 52H31"\/><path d="M45 52L57 76"\/><\/g>/, 'the R: stem, cell, leg');
-  assert.match(services, /<path stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"\/>/, 'the S: two cells, kaki');
+  assert.match(services, /<path class="rs-k" stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"\/>/, 'the S: two cells, kaki');
+  assert.match(services, /<path class="rs-k" fill="none" stroke="#c46243" stroke-width="8"/, 'the frame carries the kaki class too');
   // The R follows the shell's reference blue; as a plain image it falls back by scheme.
-  assert.match(services, /\.rs-r\{stroke:var\(--accent-2,#3f6a95\)\}@media \(prefers-color-scheme:dark\)\{\.rs-r\{stroke:var\(--accent-2,#81a2be\)\}\}/);
+  assert.match(services, /\.rs-k\{stroke:var\(--kaki,#c46243\)\}\.rs-r\{stroke:var\(--accent-2,#3f6a95\)\}@media \(prefers-color-scheme:dark\)\{\.rs-r\{stroke:var\(--accent-2,#81a2be\)\}\}/, 'every colour is token-bound when inlined, with the file fallbacks when loaded as an image');
   assert.doesNotMatch(services, /<text|<image|fill="#/, 'letters are drawn strokes, not a font or a filled badge');
   assert.doesNotMatch(services, /<!--[^>]*--[^>]*-->/, 'no double hyphen inside a comment: XML rejects it and the browser shows a broken image');
   const colours = new Set((services.match(/#[0-9a-fA-F]{6}\b/g) || []).map((c) => c.toLowerCase()));

@@ -10,8 +10,8 @@ import { createStoneWorkSurface } from './stone-work-surface.js';
 import { servicesSetupModel } from './services-setup-state.js';
 import { campaignById, campaigns, loadCampaigns, saveCampaign } from './campaigns.js';
 import { completeRoutineMap } from './campaign-routines.js';
-import { createNewTeamFormView } from './new-team-form.js';
-import { createNewAgentView } from './new-agent.js';
+import { createEmbeddedNewTeamFormView } from './new-team-form.js';
+import { createEmbeddedNewAgentView } from './new-agent.js';
 import { HOUSE_PRESETS, buildLaunchPlan, initialControls, seatingPlan } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
@@ -156,10 +156,7 @@ function createRegisterSurface(context) {
   const about = el('section', 'setup-register-group');
   about.classList.add('setup-register-about');
   const emailField = field(t('setup_surface.email', 'Email address'), email);
-  identityMode.wrap.classList.add('setup-register-half');
-  emailField.classList.add('setup-register-half');
-  runLocation.wrap.classList.add('setup-register-half');
-  /* About you: how to register, the address if so, and where Ronin will live. */
+  /* About you: how to register, the address if so, and where Ronin will live — stacked. */
   about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField, runLocation.wrap);
   const fit = el('section', 'setup-register-group');
   fit.classList.add('setup-register-fit');
@@ -613,7 +610,7 @@ function createLaunchOwnSurface(context) {
   const renderDetail = (item, host) => {
     const views = [item.id === 'template'
       ? createTemplatesSurface()
-      : item.id === 'team' ? createNewTeamFormView(WorkspaceKit, {}) : createNewAgentView(WorkspaceKit, {})];
+      : item.id === 'team' ? createEmbeddedNewTeamFormView(WorkspaceKit, {}) : createEmbeddedNewAgentView(WorkspaceKit, {})];
     host.append(...views.map((view) => view.el));
     for (const view of views) void view.enter({});
     return () => { for (const view of views) view.el.remove(); };
