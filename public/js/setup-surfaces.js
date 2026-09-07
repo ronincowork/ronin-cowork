@@ -266,15 +266,16 @@ function createRegisterSurface(context) {
 }
 
 /**
- * ONE MODEL PROVIDERS SURFACE. Its first face is an inventory of equal blocks, one per
- * provider in the runtime catalog, no block bigger than another. Choosing a block opens
- * that provider in place: the same adaptive stage
- * (install · native sign-in tile with Done and Close · activated) the individual surfaces
- * had, with a word back to all providers. Never a dashboard of every provider's stage.
+ * ONE MODEL PROVIDERS SURFACE. Its first face is an inventory of equal stones, one per
+ * provider in the runtime catalog, mounted straight on the surface content so the shared
+ * stone seat owns every inset exactly as Presets does. Choosing a stone opens that
+ * provider in place beside the rail as four numbered steps (use · install · authenticate
+ * with the native sign-in tile, Done / Close and Close · ready). Never a dashboard of
+ * every provider at once.
  */
 function createProviderSurface(context) {
   const out = surface(t('setup_surface.providers', 'Model providers'));
-  const body = el('div', 'setup-surface-body setup-provider-list'); out.content.append(body);
+  const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
   let runtime = { providers: [] };
@@ -291,13 +292,37 @@ function createProviderSurface(context) {
     const provider = providerFromRuntime(runtime, providerId);
     if (!provider) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
     const optedIn = Array.isArray(runtime.preferences?.providers) && runtime.preferences.providers.includes(provider.id);
-    const [use, install, auth, ready] = providerReadiness(provider, optedIn);
-    const row = el('section', 'setup-provider');
-    row.dataset.provider = provider.id;
-    const flow = el('div', 'setup-provider-readiness');
-    const optIn = el('label', 'setup-provider-optin');
-    const checkbox = el('input'); checkbox.type = 'checkbox'; checkbox.checked = use.status === 'on';
-    optIn.append(checkbox, el('span', '', t('setup_surface.provider_use', 'Use with Ronin')));
+    const steps = providerReadiness(provider, optedIn);
+    const [use, install, auth, ready] = steps;
+    const card = el('article', 'setup-provider');
+    card.dataset.provider = provider.id;
+    const head = el('header', 'setup-provider-head');
+    head.append(el('h2', '', provider.label || provider.id));
+    if (provider.from) head.append(el('p', 'setup-provider-from', t('setup_surface.provider_from', 'From {vendor}', { vendor: provider.from })));
+    const flow = el('ol', 'setup-provider-steps');
+    // One shape for all four steps: a mark that says done, current, or pending; the label
+    // with its measured state beside it; at most one short line; then a control of one size.
+    const stepRow = (step, state) => {
+      const item = el('li', 'setup-provider-step');
+      item.dataset.step = step.key; item.dataset.status = step.status;
+      item.dataset.done = String(step.done === true); item.dataset.current = String(step.current === true);
+      const mark = el('span', 'setup-provider-mark', step.done ? '✓' : String(steps.indexOf(step) + 1));
+      mark.setAttribute('aria-hidden', 'true');
+      const copy = el('div', 'setup-provider-copy');
+      const title = el('div', 'setup-provider-title');
+      const label = el(step.key === 'use' ? 'label' : 'strong', 'setup-provider-label', step.label);
+      title.append(label, el('span', 'setup-provider-state', state));
+      copy.append(title);
+      if (step.detail) copy.append(el('p', 'setup-provider-note', step.detail));
+      if (step.command) copy.append(el('code', 'setup-provider-command', step.command));
+      const controls = el('div', 'setup-provider-control');
+      item.append(mark, copy, controls);
+      flow.append(item);
+      return { item, controls, label };
+    };
+    const useRow = stepRow(use, use.status === 'on' ? t('setup_surface.on', 'On') : t('setup_surface.off', 'Off'));
+    const checkbox = el('input', 'setup-provider-optin'); checkbox.type = 'checkbox'; checkbox.checked = use.status === 'on';
+    checkbox.id = `setup-provider-optin-${provider.id}`; useRow.label.htmlFor = checkbox.id;
     checkbox.addEventListener('change', async () => {
       const previous = optedIn;
       const selected = new Set(Array.isArray(runtime.preferences?.providers) ? runtime.preferences.providers : []);
@@ -307,28 +332,14 @@ function createProviderSurface(context) {
       runtime.preferences = result.data;
       stones.refreshDetail();
     });
-    flow.append(optIn);
-    // One row shape for Install and Authenticate: the measured state beside the label,
-    // at most one short line under it, and the same-sized control(s) after the copy.
-    const actionRow = (step, state) => {
-      const item = el('section', 'setup-provider-action-row');
-      item.dataset.step = step.key; item.dataset.status = step.status;
-      const copy = el('div', 'setup-provider-action-copy');
-      copy.append(el('strong', '', step.label), el('span', 'setup-provider-action-state', state));
-      if (step.detail) copy.append(el('p', 'setup-fine', step.detail));
-      if (step.command) copy.append(el('code', 'setup-provider-command', step.command));
-      const controls = el('div', 'setup-provider-action-control');
-      item.append(copy, controls);
-      flow.append(item);
-      return controls;
-    };
-    const installControls = actionRow(install, install.status === 'installed'
+    useRow.controls.append(checkbox);
+    const installRow = stepRow(install, install.status === 'installed'
       ? t('setup_surface.installed', 'Installed')
       : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
     if (install.action === 'manual' && install.manual) {
       const link = el('a', 'wk-action setup-provider-action setup-provider-manual', install.manual.label);
       link.href = install.manual.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
-      installControls.append(link);
+      installRow.controls.append(link);
     } else {
       const installAction = action(t('setup_surface.install', 'Install'), 'primary', async () => {
         const installed = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
@@ -336,35 +347,32 @@ function createProviderSurface(context) {
       });
       installAction.classList.add('setup-provider-action');
       installAction.disabled = install.action !== 'install' || !optedIn || !provider.installable;
-      installControls.append(installAction);
+      installRow.controls.append(installAction);
     }
-    const authControls = actionRow(auth, auth.status === 'recorded'
-      ? t('setup_surface.auth_recorded', 'Setup recorded')
+    const authRow = stepRow(auth, auth.status === 'recorded'
+      ? t('setup_surface.auth_recorded', 'Recorded')
       : auth.status === 'open' ? t('setup_surface.sign_in_open', 'Sign-in open')
-        : auth.status === 'available' ? t('setup_surface.auth_available', 'Available') : t('setup_surface.install_first', 'Install first'));
+        : auth.status === 'available' ? t('setup_surface.auth_available', 'Ready to sign in') : t('setup_surface.install_first', 'After install'));
     if (auth.action !== 'login_open') {
       const authenticate = action(t('setup_surface.authenticate', 'Authenticate'), 'primary', async () => {
         await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} }); await paint();
       });
       authenticate.classList.add('setup-provider-action');
       authenticate.disabled = auth.status !== 'available' || !optedIn;
-      authControls.append(authenticate);
+      authRow.controls.append(authenticate);
     } else {
       const terminal = el('div', 'setup-provider-terminal');
       const done = action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); });
       const close = action(t('setup_surface.close', 'Close'), '', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); });
       done.classList.add('setup-provider-action'); close.classList.add('setup-provider-action');
-      authControls.append(done, close);
-      flow.append(terminal);
+      authRow.controls.append(done, close);
+      authRow.item.append(terminal);
       mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
     }
-    const readyRow = el('section', 'setup-provider-ready');
-    readyRow.dataset.ready = String(ready.status === 'ready');
-    readyRow.append(el('strong', '', ready.label), el('span', '', ready.status === 'ready' ? t('setup_surface.ready_launch', 'Activated for Launch') : t('setup_surface.not_ready', 'Not ready')));
-    flow.append(readyRow);
-    row.append(el('h3', '', provider.label || provider.id), flow);
-    host.append(row);
+    stepRow(ready, ready.status === 'ready' ? t('setup_surface.ready_launch', 'Activated for Launch') : t('setup_surface.not_ready', 'Not yet'));
+    card.append(head, flow);
+    host.append(card);
     return () => disposeMount();
   };
   const stones = createStoneWorkSurface({
@@ -373,23 +381,21 @@ function createProviderSurface(context) {
     renderDetail: (item, host) => paintProvider(item.id, host),
     onSelectionChange: (id) => { opened = String(id || ''); },
   });
+  stones.mount(out.content, { after: [notice] });
+  const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   const paint = async () => {
     const result = await request('/api/setup/runtime', { cache: 'no-store' });
     disposeMount();
-    body.replaceChildren();
-    if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); return; }
+    if (!result.ok) { stones.setItems([]); say(result.message, true); return; }
     runtime = result.data;
     context.environment.setupRuntime = runtime;
     context.workbench?.refreshSelector?.();
     const providers = (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id);
-    if (!providers.length) body.append(el('p', 'setup-fine', t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.')));
-    else {
-      stones.setItems(providers.map((provider) => ({
-        id: String(provider.id), label: provider.label || provider.id, state: providerPresentation(provider).inventoryState,
-        className: 'setup-provider-stone', attrs: { 'data-provider': provider.id, 'data-activated': String(provider.activated === true) },
-      })));
-      stones.mount(body);
-    }
+    say(providers.length ? '' : t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.'));
+    stones.setItems(providers.map((provider) => ({
+      id: String(provider.id), label: provider.label || provider.id, state: providerPresentation(provider).inventoryState,
+      className: 'setup-provider-stone', attrs: { 'data-provider': provider.id, 'data-activated': String(provider.activated === true) },
+    })));
     summarize(runtime);
   };
   return { el: out.el, show: paint, destroy: () => { disposeMount(); stones.destroy(); } };

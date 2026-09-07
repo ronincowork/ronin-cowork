@@ -48,7 +48,7 @@ test('Hermes has one explicit manual route instead of a prose dead end', () => {
   const result = providerPresentation({ id: 'hermes', label: 'Hermes', blocked: 'Install Hermes manually.' });
   assert.equal(result.action, 'manual');
   assert.equal(result.detail, 'Install Hermes manually.');
-  assert.equal(result.manual.label, 'Open Hermes install guide');
+  assert.equal(result.manual.label, 'Install guide');
   assert.match(result.manual.url, /NousResearch\/hermes-agent/);
 });
 
@@ -95,18 +95,45 @@ test('each readiness row carries only its own short line', () => {
 });
 
 test('the surface renders the four rows from providerReadiness with real opt-in and matching controls', () => {
-  assert.match(source, /const \[use, install, auth, ready\] = providerReadiness\(provider, optedIn\)/);
+  assert.match(source, /const steps = providerReadiness\(provider, optedIn\)/);
+  assert.match(source, /const \[use, install, auth, ready\] = steps/);
   assert.match(source, /checkbox\.type = 'checkbox'/);
   assert.match(source, /\/api\/setup\/preferences[\s\S]*providers: \[\.\.\.selected\]/);
-  assert.match(source, /setup-provider-action-row/);
+  assert.match(source, /setup-provider-step/);
   assert.match(source, /setup-provider-command/);
+  assert.match(source, /stones\.mount\(out\.content/);
+  assert.doesNotMatch(source, /setup-surface-body setup-provider-list/);
   assert.doesNotMatch(source, /step_complete|Complete/);
   assert.doesNotMatch(source, /notify\(|flash/i);
 });
 
-test('provider action rows adapt to the shared stone surface width instead of a fixed control grid', () => {
+test('every step carries done and exactly one current step, the first unmet one', () => {
+  const cases = [
+    [{ id: 'grok', label: 'Grok CLI', installable: true }, false, 'use'],
+    [{ id: 'grok', label: 'Grok CLI', installable: true }, true, 'installed'],
+    [{ id: 'hermes', label: 'Hermes' }, true, 'installed'],
+    [{ id: 'codex', label: 'Codex', installed: true }, true, 'authenticated'],
+    [{ id: 'codex', label: 'Codex', installed: true, login_open: true }, true, 'authenticated'],
+    [{ id: 'codex', label: 'Codex', installed: true, activated: true }, true, null],
+  ];
+  for (const [provider, optedIn, current] of cases) {
+    const steps = providerReadiness(provider, optedIn);
+    assert.deepEqual(steps.filter((step) => step.current).map((step) => step.key), current ? [current] : []);
+    for (const step of steps) assert.equal(typeof step.done, 'boolean');
+    const firstUnmet = steps.find((step) => !step.done);
+    assert.equal(firstUnmet?.key ?? null, current);
+  }
+  assert.equal(providerReadiness({ id: 'codex', installed: true }, false)[0].detail, 'Turn on to install and sign in here.');
+  assert.equal(providerReadiness({ id: 'codex', installed: true }, true)[0].detail, '');
+});
+
+test('provider steps adapt to the shared stone surface width with one control size', () => {
   assert.doesNotMatch(css, /setup-provider-action-control \{[^}]*repeat\(2, 10rem\)/);
-  assert.match(css, /\.setup-provider-action \{[^}]*flex: 1 1 10rem/);
-  assert.match(css, /@container setup-stone-work-surface \(min-width: [^)]+\) \{\s*\.setup-provider-action-row \{[^}]*grid-template-columns: minmax\(0, 1fr\) auto/);
-  assert.doesNotMatch(css, /@media \(max-width: 700px\) \{\s*\.setup-provider-action-row/);
+  assert.match(css, /\.setup-provider-action \{[^}]*flex: 0 0 10rem/);
+  assert.match(css, /@container setup-stone-work-surface \(min-width: [^)]+\) \{\s*\.setup-provider-step \{[^}]*grid-template-columns: auto minmax\(0, 1fr\) auto/);
+  assert.doesNotMatch(css, /@media \(max-width: 700px\) \{\s*\.setup-provider-step/);
+  assert.match(css, /\.setup-provider-head h2 \{[^}]*font-size: var\(--text-9\)/);
+  assert.match(css, /\.setup-provider-label \{[^}]*font-size: var\(--text-7\)/);
+  assert.match(css, /\.setup-provider-note \{[^}]*font-size: var\(--text-5\)/);
+  assert.match(css, /\.setup-provider-control > \.setup-provider-action:disabled \{[^}]*background: transparent/);
 });
