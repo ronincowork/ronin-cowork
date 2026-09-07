@@ -75,9 +75,11 @@ Services access.
 Loaded templates and making a template work locally. **Ronin Library** and **Share Yours**
 require Services entitlement. The Services, gbrain, and Templates surfaces state what each
 is for, what it requires, and how to use it before showing their specialized controls.
-The Services surface wears its own mark, `brand/services-mark.svg`: an R and S monogram
-inside the house hexagon, drawn in code in the same kaki as the hito mark, so it reads on
-both shells. The heading beside it carries the accessible name; the image is decorative.
+The Services surface wears its own mark, `brand/services-mark.svg`: an R and S built from
+the house hexagon and leaning with its edge, the R in the shell's reference blue, the S and
+the open frame in kaki. The heading beside it carries the accessible name; the image is
+decorative. Inlining the markup lets the R follow the theme toggle; as an image it follows
+the colour scheme.
 
 ## gbrain
 
