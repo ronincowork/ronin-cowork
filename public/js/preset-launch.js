@@ -14,6 +14,8 @@ function launchAgent(row, plan, team = '', send) {
     team,
     instructions: plan.user_message || row.instructions || '',
     provider: row.provider || '',
+    model: row.model || '',
+    team_lead: row.team_lead === true,
     project_root: plan.inputs?.root || '',
     mandate: row.mandate,
     behaviours: row.behaviours,
@@ -74,7 +76,7 @@ export async function launchPresetPlan(plan = {}, send) {
   };
   const made = await (send ? send('/api/team-rosters', rosterOptions) : request('/api/team-rosters', rosterOptions));
   if (!made.ok) return made;
-  const configured = plan.template.name === 'bare_metal'
+  const configured = plan.template.name === 'bare_metal' || plan.template.name === 'ronin_team'
     ? (plan.inputs?.sessions || [])
     : plan.template.name === 'health_and_fitness'
       ? (plan.inputs?.roles || []).map((row) => ({ ...row, instructions: [row.ask, plan.user_message].filter(Boolean).join('\n\n') }))

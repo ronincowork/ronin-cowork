@@ -53,23 +53,24 @@ test('purpose pills offer three original categories and All Sample Presets as si
 });
 
 test('the original category choices need no second Show all control', async () => {
-  assert.deepEqual(presets.PRESET_KINDS.map(({ presets: rows }) => rows.length), [3, 3, 3]);
+  assert.deepEqual(presets.PRESET_KINDS.map(({ presets: rows }) => rows.length), [4, 3, 3]);
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /Show all seven|presets_show_all|sp-more/);
 });
 
-test('the seven house slots are fixed core handles', () => {
-  assert.equal(presets.HOUSE_PRESETS.length, 7);
+test('the house slots are fixed core handles', () => {
+  assert.equal(presets.HOUSE_PRESETS.length, 8);
   assert.deepEqual(presets.HOUSE_PRESETS.map((row) => row.handle), [
-    'bare_metal', 'staff_my_codebase', 'develop_new_project', 'personal_assistant',
+    'bare_metal', 'ronin_team', 'staff_my_codebase', 'develop_new_project', 'personal_assistant',
     'health_and_fitness', 'morning_brief', 'agent_editable_doc',
   ]);
   assert.ok(presets.HOUSE_PRESETS.every((row) => presets.isCorePreset(row.handle)));
 });
 
-test('the seven approved resting-stone lines are verbatim and every stone has a glyph', () => {
+test('the approved resting-stone lines are verbatim and every stone has a glyph', () => {
   assert.deepEqual(presets.HOUSE_PRESETS.map(({ handle, description }) => [handle, description]), [
     ['bare_metal', 'Start one to four agents, each in its own tile. Lock and load.'],
+    ['ronin_team', 'A Team Lead and two agents, born with the full Ronin team room.'],
     ['staff_my_codebase', 'Point a team at a codebase and get its read on the stack.'],
     ['develop_new_project', 'A lead plus feature agents, each in its own worktree.'],
     ['personal_assistant', 'One assistant that remembers. Alone, or a lead that hires help.'],
@@ -79,6 +80,7 @@ test('the seven approved resting-stone lines are verbatim and every stone has a 
   ]);
   assert.deepEqual(presets.HOUSE_PRESETS.map((row) => row.glyph), [
     { rects: [[4, 9, 10, 14], [18, 9, 10, 14]] },
+    { text: '人人' },
     { path: 'M5 7h22 M5 13h22 M5 19h22 M5 25h14' },
     { path: 'M8 28V4 M8 12h6c4 0 4-4 10-4h3 M8 20h6c4 0 4 4 10 4h3' },
     { text: '人' },
@@ -96,7 +98,11 @@ test('a non-core replacement receives only universal actions and ordinary launch
 
 test('Bare Metal starts with two default-provider rows and three sessions use four workspaces', () => {
   assert.deepEqual(presets.initialControls('bare_metal', 'codex').sessions, [
-    { name: 'session_1', provider: 'codex' }, { name: 'session_2', provider: 'codex' },
+    { name: 'session_1', provider: 'codex', model: '' }, { name: 'session_2', provider: 'codex', model: '' },
+  ]);
+  assert.equal(presets.initialControls('bare_metal').tiles, 2);
+  assert.deepEqual(presets.initialControls('ronin_team', 'codex').sessions.map(({ name, team_lead }) => [name, team_lead === true]), [
+    ['team_lead', true], ['agent_1', false], ['agent_2', false],
   ]);
   assert.deepEqual([0, 1, 2, 3, 4].map(presets.bareMetalWorkspaceCount), [1, 1, 2, 4, 4]);
 });
@@ -194,9 +200,10 @@ test('the selected preset entry keeps Customize in its framed panel and calls th
   } });
   await surface.enter();
   let nodes = [...surface.el.walk()];
-  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[3].click();
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[4].click();
   nodes = [...surface.el.walk()];
   assert.ok(nodes.find((node) => String(node.className).includes('sp-choice-panel')));
+  assert.ok(nodes.find((node) => String(node.className).includes('sp-select') && node.textContent === 'select'));
   assert.ok(nodes.find((node) => node.tagName === 'TEXTAREA'));
   const customize = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Customize this');
   assert.ok(customize);
