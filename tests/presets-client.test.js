@@ -263,13 +263,10 @@ test('the purpose row hands its height to the rail so the stones rest at the sha
   assert.match(css, /\.sp-surface \.sws:not\(\[data-open='true'\]\) \.sws-rail \{ padding-top: max\(var\(--space-6\), calc\(var\(--sws-stone\) \+ var\(--sws-gap\) - var\(--sp-intro, 0px\)\)\); \}/);
 });
 
-test('Code Stack Eval separates this evaluation from future Ronin workspace use', async () => {
+test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /createFolderPicker|Show hidden folders|GitHub repo · remote evaluation pending/);
-  assert.match(source, /folder\.registered_root \? 'Used by Ronin' : 'Use with Ronin'/);
-  assert.match(source, /state\.root_dir = folder\.dir; state\.root = folder\.registered_root\?\.name \|\| ''/);
-  assert.match(source, /environment\.navigateToSurface\?\.\('setup\.roots', \{ dir: folder\.dir \}\)/);
-  assert.match(source, /workspaceFoldersAction\(environment, 'Manage workspace folders'\)/);
+  assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
 });
 
 test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
@@ -278,17 +275,22 @@ test('Develop a New Project offers the canonical Workspace Folders door beneath 
   assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
 });
 
-test('Code Stack Eval separates this evaluation from future Ronin workspace use', async () => {
+test('Code Stack Eval keeps ticked folders on Apply and evaluates the chosen one', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /createFolderPicker|Show hidden folders|GitHub repo · remote evaluation pending/);
-  assert.match(source, /folder\.registered_root \? 'Used by Ronin' : 'Use with Ronin'/);
-  assert.match(source, /state\.root_dir = folder\.dir; state\.root = folder\.registered_root\?\.name \|\| ''/);
-  assert.match(source, /environment\.navigateToSurface\?\.\('setup\.roots', \{ dir: folder\.dir \}\)/);
+  assert.match(source, /tick\.checked = Boolean\(folder\.registered_root\) \|\| state\.pending\.includes\(folder\.dir\)/);
+  assert.match(source, /state\.root_dir = folder\.dir; state\.root = folder\.registered_root\?\.name \|\| '';\n\s+if \(!folder\.registered_root\) state\.pending = /);
+  assert.match(source, /request\('\/api\/project-roots', \{ method: 'POST', json: \{ name, dir: folder\.dir, \.\.\.\(profile \? \{ before, profile, confirmed: true \} : \{\}\) \} \}\)/);
+  assert.match(source, /if \(state\.root_dir === dir\) state\.root = made\.name/);
+  assert.match(source, /environment\?\.navigateToSurface\?\.\('setup\.roots'\)/);
   assert.match(source, /workspaceFoldersAction\(environment, 'Manage workspace folders'\)/);
 });
 
-test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
-  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
-  assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
-  assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
+test('the launched team page seats a remembered commons on the tab the preset chose', async () => {
+  const source = await readFile(new URL('../public/js/cowork-view.js', import.meta.url), 'utf8');
+  assert.match(source, /const surfaceRequest = \(token\) => token && typeof token === 'object' \? \{ type: token\.type, detail: \{ key: token\.key \|\| '', root: token\.root \|\| '', path: token\.path \|\| '', \.\.\.\(token\.tab \? \{ tab: token\.tab \} : \{\}\), \.\.\.\(token\.doc \? \{ doc: token\.doc \} : \{\}\) \} \}/);
+  const health = presets.seatingPlan('health_and_fitness', { team: 'health', sessions: [{ name: 'head_coach' }, { name: 'nutritionist' }] });
+  assert.equal(health.seats[1].tab, 'wipeboard');
+  const brief = presets.seatingPlan('morning_brief', { team: 'brief', sessions: [{ name: 'writer' }] });
+  assert.equal(brief.seats[1].tab, 'cron-jobs');
 });

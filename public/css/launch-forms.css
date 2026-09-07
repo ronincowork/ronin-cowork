@@ -73,6 +73,14 @@
   .sp-codebase-place { display: flex; align-items: baseline; gap: var(--space-5); color: var(--fg-strong); }
   .sp-codebase-list { border-top: var(--edge) solid var(--line-2); }
   .sp-codebase-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--space-5); border-bottom: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-2); }
+  .sp-codebase-keep { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--muted); cursor: pointer; }
+  .sp-codebase-keep input { margin: 0; accent-color: var(--kaki); }
+  .sp-codebase-keep input:disabled + span { color: var(--fg-strong); }
+  .sp-codebase-evaluate[aria-pressed='true'] { color: var(--kaki); font-weight: 600; }
+  .sp-codebase-apply { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-5); }
+  .sp-codebase-apply-action { align-self: auto; padding-block: var(--space-3); }
+  .sp-codebase-apply-action:not(:disabled) { border-style: solid; border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
+  .sp-codebase-status { color: var(--muted); font-size: var(--form-note); }
   .sp-codebase-open, .sp-codebase-future, .sp-codebase-evaluate { border: 0; background: transparent; padding: var(--space-2); font: inherit; cursor: pointer; }
   .sp-codebase-open { overflow: hidden; color: var(--fg-strong); text-align: left; text-overflow: ellipsis; white-space: nowrap; }
   .sp-codebase-kind { color: var(--muted); font-size: var(--form-note); }

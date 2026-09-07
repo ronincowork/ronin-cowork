@@ -92,6 +92,14 @@ fixed browser controls and initial seating: Bare Metal, Code Stack Eval, Develop
 Project, Personal Assistant, Home Health, Grokbot Morning Briefing, and Agent + Editable
 Doc. The treatment follows the core handle, not its slot.
 
+The launch view is the browser's, not the template's. When Launch returns, the preset's
+fixed seating is written into the new tab before it opens: the workspace count (one, two,
+or four; three sessions use four) and what each workspace holds — a session by name, the
+team commons on a named tab (Home Health opens the Wipeboard in workspace 2, Grokbot the
+Cron jobs), or a document beside its agent. The team page fills each workspace from that
+seating as the roster arrives; a seat naming something the launch did not return is left
+to the ordinary default rather than filled with a placeholder.
+
 Replacing a slot with an ordinary template immediately removes the special controls and
 seating. The replacement still has User Message, Customize, and ordinary Launch; no
 template schema or backend launch contract is added.
@@ -104,8 +112,11 @@ asks only for what its cadence needs: **Every day** a time, **Day of the week** 
 time, **One time** a date and a time; the schedule is written in the Cron jobs grammar
 (`daily 08:00`, `weekly mon 08:00`, `once 2026-09-08 08:00`). A role's kick-off message is
 one line at rest and about three while it is being edited. Code Stack Eval browses folders
-here and keeps *Evaluate* (this run) apart from *Use with Ronin* (a workspace folder, via
-the Workspace folders surface); Develop a New Project offers the same door under its
+here, each row saying whether it is a repository: tick any number to **Keep** and press
+**Apply**, and they become workspace folders on the Workspace folders surface beside it at
+once; **Evaluate** picks the one this run is about, ticking it too, since the evaluation
+needs a kept folder. Nothing is kept until Apply, and a repository is kept with the
+profile Ronin measured, unchanged. Develop a New Project offers the same door under its
 folder choice; Personal Assistant's **Single assistant** and **Chief of Staff** are two
 buttons, and Recruit appears only for the second.
 

@@ -224,36 +224,108 @@ function renderRootControls(host, state, roots, label = 'Which project', environ
   host.append(field(label, content, 'select'));
 }
 
+/**
+ * CODE STACK EVAL'S FOLDERS. Two decisions, kept apart: which folders Ronin keeps as
+ * workspace folders (tick any number, then Apply — they appear on the Workspace folders
+ * surface beside this one), and which one this evaluation runs on (Evaluate). Choosing a
+ * folder to evaluate ticks it too, because the evaluation needs a kept folder; nothing is
+ * kept until Apply. A repository is kept with the profile Ronin measured, unchanged.
+ */
+const rootHandle = (folder) => slug(folder.name) || 'folder';
+async function keepFolder(folder) {
+  const inspected = await request(`/api/project-roots/inspect?dir=${encodeURIComponent(folder.dir)}`, { cache: 'no-store' });
+  if (!inspected.ok) return inspected;
+  const profile = inspected.data.repo ? {
+    mode: inspected.data.repo_profile?.mode || 'direct',
+    working: inspected.data.repo_profile?.mode === 'reviewed' ? (inspected.data.repo_profile?.working || '') : '',
+    stable: inspected.data.repo_profile?.stable || inspected.data.repo?.branch || 'main',
+    worktrees: inspected.data.repo_profile?.worktrees || 'disabled',
+  } : null;
+  const absent = inspected.data.arrangement?.source === 'absent';
+  const before = profile ? { mode: inspected.data.arrangement?.mode || profile.mode, working: absent ? '' : (inspected.data.arrangement?.working || ''), stable: absent ? '' : (inspected.data.arrangement?.stable || ''), worktrees: profile.worktrees } : null;
+  for (const name of [rootHandle(folder), `${rootHandle(folder)}_2`, `${rootHandle(folder)}_3`]) {
+    const made = await request('/api/project-roots', { method: 'POST', json: { name, dir: folder.dir, ...(profile ? { before, profile, confirmed: true } : {}) } });
+    if (made.ok) return { ok: true, name };
+    if (!/already in the catalog/i.test(made.message || '')) return made;
+  }
+  return { ok: false, message: `Could not find a free handle for ${folder.name}.` };
+}
 function renderCodebaseControls(host, state, environment) {
+  state.pending ||= [];
   const browser = el('div', 'sp-codebase-browser');
   const place = el('div', 'sp-codebase-place');
   const listing = el('div', 'sp-codebase-list');
+  const bar = el('div', 'sp-codebase-apply');
+  const apply = el('button', 'fs-door sp-codebase-apply-action', 'Apply'); apply.type = 'button';
+  const status = el('span', 'sp-codebase-status');
+  bar.append(apply, status);
   let current = '';
   let parent = '';
+  let folders = [];
+  const paintStatus = () => {
+    const count = state.pending.length;
+    const chosen = folders.find((folder) => folder.dir === state.root_dir);
+    const waiting = state.root_dir && !state.root;
+    apply.disabled = !count;
+    status.textContent = count
+      ? `${count} ${count === 1 ? 'folder becomes a workspace folder' : 'folders become workspace folders'} on Apply${waiting ? '; the evaluation runs on the one you chose' : ''}.`
+      : waiting ? `Apply keeps ${chosen?.name || 'the chosen folder'} before the evaluation can run on it.`
+        : state.root ? `Evaluating ${chosen?.name || state.root}.` : 'Tick the folders to keep, choose one to evaluate, then Apply.';
+  };
   const load = async (dir = current) => {
     listing.replaceChildren(el('p', 'setup-fine', 'Reading folders…'));
     const query = new URLSearchParams(); if (dir) query.set('dir', dir);
     const result = await request(`/api/folders?${query}`, { cache: 'no-store' });
     if (!result.ok) { listing.replaceChildren(el('p', 'setup-notice bad', result.message)); return; }
-    current = result.data.dir || ''; parent = result.data.parent || '';
+    current = result.data.dir || ''; parent = result.data.parent || ''; folders = result.data.folders || [];
     place.replaceChildren();
     const up = el('button', 'sp-workspace-link', '← Up'); up.type = 'button'; up.disabled = !parent; up.addEventListener('click', () => parent && load(parent));
     place.append(up, el('strong', '', current === result.data.home ? 'Home' : current));
     listing.replaceChildren();
-    for (const folder of result.data.folders || []) {
+    for (const folder of folders) {
       const row = el('div', 'sp-codebase-row');
       const open = el('button', 'sp-codebase-open', folder.name); open.type = 'button'; open.addEventListener('click', () => load(folder.dir));
       const kind = el('span', 'sp-codebase-kind', folder.registered_root ? 'workspace folder' : folder.kind === 'repository' ? 'repository' : 'folder');
-      const future = el('button', 'sp-codebase-future', folder.registered_root ? 'Used by Ronin' : 'Use with Ronin'); future.type = 'button';
-      future.setAttribute('aria-pressed', String(Boolean(folder.registered_root)));
-      future.addEventListener('click', () => environment.navigateToSurface?.('setup.roots', { dir: folder.dir }));
-      const choose = el('button', 'sp-codebase-evaluate', state.root_dir === folder.dir ? 'Selected' : 'Evaluate'); choose.type = 'button';
-      choose.addEventListener('click', () => { state.root_dir = folder.dir; state.root = folder.registered_root?.name || ''; void load(current); });
-      row.append(open, kind, future, choose); listing.append(row);
+      const keep = el('label', 'sp-codebase-keep');
+      const tick = el('input'); tick.type = 'checkbox';
+      tick.checked = Boolean(folder.registered_root) || state.pending.includes(folder.dir);
+      tick.disabled = Boolean(folder.registered_root);
+      tick.setAttribute('aria-label', `Keep ${folder.name} as a workspace folder`);
+      tick.addEventListener('change', () => {
+        state.pending = tick.checked ? [...new Set([...state.pending, folder.dir])] : state.pending.filter((dir) => dir !== folder.dir);
+        if (!tick.checked && state.root_dir === folder.dir && !folder.registered_root) { state.root_dir = ''; state.root = ''; void load(current); return; }
+        paintStatus();
+      });
+      keep.append(tick, el('span', '', folder.registered_root ? 'Kept' : 'Keep'));
+      const evaluating = state.root_dir === folder.dir;
+      const choose = el('button', 'sp-codebase-evaluate', evaluating ? 'Evaluating' : 'Evaluate'); choose.type = 'button';
+      choose.setAttribute('aria-pressed', String(evaluating));
+      choose.addEventListener('click', () => {
+        state.root_dir = folder.dir; state.root = folder.registered_root?.name || '';
+        if (!folder.registered_root) state.pending = [...new Set([...state.pending, folder.dir])];
+        void load(current);
+      });
+      row.append(open, kind, keep, choose); listing.append(row);
     }
     if (!listing.children.length) listing.append(el('p', 'setup-fine', 'No folders here.'));
+    paintStatus();
   };
-  browser.append(place, listing, workspaceFoldersAction(environment, 'Manage workspace folders'));
+  apply.addEventListener('click', async () => {
+    apply.disabled = true; status.textContent = 'Keeping…';
+    const kept = [];
+    for (const dir of [...state.pending]) {
+      const folder = folders.find((row) => row.dir === dir) || { dir, name: dir.split('/').pop() || 'folder' };
+      const made = await keepFolder(folder);
+      if (!made.ok) { status.textContent = made.message || `Could not keep ${folder.name}.`; apply.disabled = false; return; }
+      kept.push(dir);
+      if (state.root_dir === dir) state.root = made.name;
+    }
+    state.pending = state.pending.filter((dir) => !kept.includes(dir));
+    await load(current);
+    // The kept folders appear on the Workspace folders surface beside this one at once.
+    environment?.navigateToSurface?.('setup.roots');
+  });
+  browser.append(place, listing, bar, workspaceFoldersAction(environment, 'Manage workspace folders'));
   host.append(field('Your own codebase', browser, 'select'));
   void load();
 }

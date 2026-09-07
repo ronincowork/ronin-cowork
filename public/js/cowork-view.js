@@ -297,7 +297,9 @@ export function createCoworkView(options = {}) {
   const tokenOf = (node) => node?.dataset?.workbenchSurface || '';
   /** Which surface token this cell holds, or '' for its own seat. */
   const heldSurface = (id) => tokenOf(cellHolding(id));
-  const surfaceRequest = (token) => token && typeof token === 'object' ? { type: token.type, detail: { key: token.key || '', root: token.root || '', path: token.path || '' } } : token?.startsWith('@team:') ? { type: WB_TYPES.team, detail: { key: token.slice(6) } } : { type: legacyTypes[token] || token, detail: {} };
+  // A remembered surface keeps its tab and document too: a preset seats the commons on
+  // the Wipeboard or Cron jobs, and a document beside its agent, in the tab it opens.
+  const surfaceRequest = (token) => token && typeof token === 'object' ? { type: token.type, detail: { key: token.key || '', root: token.root || '', path: token.path || '', ...(token.tab ? { tab: token.tab } : {}), ...(token.doc ? { doc: token.doc } : {}) } } : token?.startsWith('@team:') ? { type: WB_TYPES.team, detail: { key: token.slice(6) } } : { type: legacyTypes[token] || token, detail: {} };
   const whereIs = (token) => { const request = surfaceRequest(token); return bench?.locations(request.type, request.detail.key)[0] || ''; };
   /** A surface other than the seat's own is in this workspace. */
   const surfaceIn = (id) => !bench?.isDefault(id);
