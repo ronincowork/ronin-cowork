@@ -96,7 +96,10 @@ function createRegisterSurface(context) {
     ['email', 'With email'], ['anonymous', 'Anonymous'], ['no_thanks', 'No thank you'],
   ]);
   identityMode.wrap.classList.add('setup-register-identity-choice');
-  const kind = choiceGroup('kind', t('setup_surface.kind', 'Where Ronin fits'), [['work', 'Work'], ['personal', 'Personal'], ['learning', 'Learning'], ['other', 'Something else']]);
+  const kind = choiceGroup('kind', t('setup_surface.kind', 'Which of these are you most likely to use?'), [
+    ['build_software', 'Build software'], ['life_assistants', 'Life assistants'],
+    ['research_writing', 'Research and writing'], ['other', 'Something else'],
+  ]);
   const preferredFeature = choiceGroup('preferred_feature', t('setup_surface.preferred_feature', 'Which core Ronin feature do you prefer most?'), [
     ['remote_access', 'Work from anywhere'],
     ['multiple_providers', 'Use multiple providers without lock-in'],
@@ -111,7 +114,7 @@ function createRegisterSurface(context) {
     ['visible_agents', 'I prefer a visible team of agents I can interact with directly, rather than hidden sub-agents.'],
     ['something_else', 'Something else.'],
   ]);
-  const runLocation = choiceGroup('run_location', t('setup_surface.run_location', 'Where will you run Ronin?'), [
+  const runLocation = choiceGroup('run_location', t('setup_surface.run_location', 'Where will you install Ronin?'), [
     ['virtual_machine', 'Virtual machine'], ['personal_server', 'Personal server'], ['personal_computer', 'Personal computer'],
   ]);
   const own = el('textarea'); own.name = 'own_words'; own.rows = 3;
