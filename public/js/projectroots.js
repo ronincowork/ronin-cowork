@@ -5,6 +5,7 @@ import { loadProjects } from './home.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFolderPicker } from './folder-picker.js';
+import { createStoneWorkSurface } from './stone-work-surface.js';
 
 export function buildProjectRoots(root, isShowing, campaignId = () => '', options = {}) {
   const { createAction } = WorkspaceKit.primitives;
@@ -12,46 +13,44 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   const stones = options.presentation === 'stones';
   let data = null; // { roots: [...], untagged: n }
   let editing = null; // handle of the block whose form is open
-  let selected = null; // handle whose existing detail surface is open in the stones view
 
   const head = document.createElement('div');
   head.className = 'pr-head';
   const count = document.createElement('span');
   count.className = 'pr-count';
   const openAdd = createAction({ label: t('roots.add', '＋ Add workspace folder'), kind: 'primary', title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') }).el;
-  openAdd.addEventListener('click', () => { editing = NEW; selected = stones ? NEW : null; render(); });
+  openAdd.addEventListener('click', () => {
+    editing = NEW;
+    if (stones) stoneSurface.openDetail({ id: NEW, label: t('roots.add', '＋ Add workspace folder') }, { returnFocus: openAdd });
+    else render();
+  });
   head.append(openAdd, count);
 
   const list = document.createElement('div');
   list.className = 'pr-list';
-  const detail = document.createElement('div');
-  detail.className = 'pr-detail';
-  const inner = document.createElement('div');
-  inner.className = 'pr-inner';
+  let stoneSurface = null;
   if (stones) {
-    root.classList.add('setup-roots-stones');
-    const column = document.createElement('div');
-    column.className = 'pr-column';
-    column.append(list);
-    inner.append(column, detail);
-    inner.addEventListener('keydown', (event) => {
-      if (event.key !== 'Escape' || !selected || editing) return;
-      const previous = selected;
-      selected = null;
-      render();
-      requestAnimationFrame(() => list.querySelector(`[data-root-name="${CSS.escape(previous)}"]`)?.focus());
+    stoneSurface = createStoneWorkSurface({
+      className: 'setup-roots-stones',
+      onSelectionChange: (id) => {
+        if (id !== editing) editing = null;
+      },
+      renderDetail: (item, host) => {
+        if (item.id === NEW) host.append(addCard());
+        else {
+          const current = data?.roots?.find((entry) => entry.name === item.id);
+          if (current) host.append(block(current));
+        }
+      },
     });
-    root.append(head, inner);
+    root.append(head, stoneSurface.el);
   } else root.append(head, list);
 
   const say = (msg, bad) => {
     list.innerHTML = '';
     if (stones) {
-      selected = null;
       editing = null;
-      detail.replaceChildren();
-      detail.hidden = true;
-      inner.dataset.open = 'false';
+      stoneSurface.setItems([]).select('');
     }
     const p = document.createElement('div');
     p.className = 'pr-empty' + (bad ? ' bad' : '');
@@ -186,9 +185,11 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     f.appendChild(row);
 
     cancel.addEventListener('click', () => {
-      if (creating && stones) selected = null;
       editing = null;
-      render();
+      if (stones) {
+        if (creating) { stoneSurface.select(''); openAdd.focus(); }
+        else stoneSurface.refreshDetail();
+      } else render();
     });
     save.addEventListener('click', async () => {
       const body = {};
@@ -251,9 +252,9 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         }
       }
       editing = null;
-      if (stones) selected = name;
       await loadProjects(); // the launcher's picker reads the same catalog
       await refresh();
+      if (stones) stoneSurface.select(name);
     });
     return f;
   }
@@ -324,7 +325,8 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     const edit = createAction({ label: t('roots.edit', 'edit') }).el;
     edit.addEventListener('click', () => {
       editing = editing === r.name ? null : r.name;
-      render();
+      if (stones) stoneSurface.refreshDetail();
+      else render();
     });
     const shelve = createAction({
       label: r.archived ? t('roots.unarchive', 'unarchive') : t('roots.archive', 'archive'),
@@ -369,32 +371,9 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     return b;
   }
 
-  function stone(r) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'pr-stone';
-    button.dataset.rootName = r.name;
-    button.setAttribute('aria-pressed', String(selected === r.name));
-    if (!r.facts?.exists) button.classList.add('gone');
-    if (r.archived) button.classList.add('archived');
-    const name = document.createElement('b');
-    name.textContent = r.name;
-    const place = document.createElement('span');
-    place.textContent = r.remit || r.dir;
-    button.append(name, place);
-    button.addEventListener('click', () => {
-      selected = selected === r.name ? null : r.name;
-      editing = null;
-      render();
-      requestAnimationFrame(() => list.querySelector(`[data-root-name="${CSS.escape(r.name)}"]`)?.focus());
-    });
-    return button;
-  }
-
   function render() {
     if (!data) return;
     list.innerHTML = '';
-    detail.replaceChildren();
     const roots = [...data.roots].sort((a, b) => (a.archived ? 1 : 0) - (b.archived ? 1 : 0));
     const archived = roots.filter((r) => r.archived).length;
     const live = roots.length - archived;
@@ -407,13 +386,13 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       for (const r of roots) list.appendChild(block(r));
       return;
     }
-    for (const r of roots) list.appendChild(stone(r));
-    const current = selected === NEW ? null : roots.find((r) => r.name === selected);
-    if (selected && selected !== NEW && !current) selected = null;
-    inner.dataset.open = String(Boolean(selected));
-    detail.hidden = !selected;
-    if (selected === NEW) detail.append(addCard());
-    else if (current) detail.append(block(current));
+    stoneSurface.setItems(roots.map((r) => ({
+      id: r.name,
+      label: r.name,
+      secondary: r.remit || r.dir,
+      state: r.archived ? t('roots.chip_archived', 'archived') : !r.facts?.exists ? t('roots.chip_gone', 'directory is gone') : '',
+      className: [!r.facts?.exists ? 'gone' : '', r.archived ? 'archived' : ''].filter(Boolean).join(' '),
+    })));
   }
 
   /** The last card in the list: the same shape as a root, and the place a new one is typed. */
