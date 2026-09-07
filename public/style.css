@@ -5856,6 +5856,7 @@ button.wb-door:hover b {
 .setup-provider-back { justify-self: start; }
 .setup-kinds { display: grid; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
 .setup-provider h3 { margin: 0; }
+.setup-provider-manual { width: fit-content; box-sizing: border-box; text-decoration: none; }
 .setup-provider-terminal { min-height: min(54vh, 34rem); overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--term-bg); }
 .setup-provider-terminal > .wk-terminal-host, .setup-provider-terminal .tile { height: 100%; min-height: inherit; }
 .setup-launch-own-stones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }

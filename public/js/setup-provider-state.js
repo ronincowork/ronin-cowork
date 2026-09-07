@@ -17,6 +17,59 @@ export function providerFromRuntime(runtime, key) {
   return (Array.isArray(runtime?.providers) ? runtime.providers : []).find((provider) => provider?.id === key) || null;
 }
 
+const PROVIDER_SIGN_IN = Object.freeze({
+  anthropic: 'Claude Code handles Anthropic account sign-in in its native setup.',
+  openai: 'Codex handles OpenAI account sign-in in its native setup.',
+  gemini: 'Gemini CLI handles Google account sign-in in its native setup.',
+  grok: 'Grok CLI handles xAI account sign-in in its native setup.',
+  hermes: 'Hermes handles Nous Research account setup in its native flow.',
+});
+
+const PROVIDER_MANUAL_ROUTES = Object.freeze({
+  hermes: {
+    label: 'Open Hermes install guide',
+    url: 'https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md',
+  },
+});
+
+/** Consumer copy and action intent derived only from Setup Runtime truth. */
+export function providerPresentation(provider) {
+  const id = String(provider?.id || '');
+  const label = String(provider?.label || id || 'This provider');
+  if (provider?.login_open) return {
+    inventoryState: 'Sign-in open',
+    detail: `Complete ${label}'s native setup below. Done / Close records completion; Close leaves it unactivated.`,
+    action: 'login_open',
+  };
+  if (provider?.activated) return {
+    inventoryState: 'Setup complete',
+    detail: `Ronin recorded ${label} setup completion${provider.activated_at ? ` on ${provider.activated_at}` : ''}. ${label} controls current authentication and may ask you to sign in again.`,
+    action: 'none',
+  };
+  if (provider?.installed) return {
+    inventoryState: 'Sign-in unknown',
+    detail: `${PROVIDER_SIGN_IN[id] || `${label} handles account sign-in in its native setup.`} Ronin has not recorded setup completion yet.`,
+    action: 'sign_in',
+  };
+  if (provider?.installable) {
+    const command = String(provider.install || '').trim();
+    return {
+      inventoryState: 'Install available',
+      detail: id === 'grok'
+        ? `Installs Grok CLI globally with npm${command ? `: ${command}` : '.'}`
+        : `Ronin can install ${label} on this machine${command ? ` with ${command}` : '.'}`,
+      action: 'install',
+    };
+  }
+  const manual = PROVIDER_MANUAL_ROUTES[id] || null;
+  return {
+    inventoryState: 'Manual install',
+    detail: String(provider?.blocked || `${label} must be installed outside Ronin. It will appear here when its command is available.`),
+    action: 'manual',
+    manual,
+  };
+}
+
 /** Mount only the explicit Runtime attachment; never infer a provider session name. */
 export function mountProviderAttachment(environment, host, provider, workspace, onClosed) {
   const attachment = provider?.attachment;

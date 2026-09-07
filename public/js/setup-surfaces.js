@@ -5,10 +5,10 @@ import { t } from './lexicon.js';
 import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
 import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
-import { mountProviderAttachment, providerFromRuntime } from './setup-provider-state.js';
+import { mountProviderAttachment, providerFromRuntime, providerPresentation } from './setup-provider-state.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 
-export { mountProviderAttachment, providerFromRuntime, providerOffers } from './setup-provider-state.js';
+export { mountProviderAttachment, providerFromRuntime, providerOffers, providerPresentation } from './setup-provider-state.js';
 
 export const SETUP_SURFACE_TYPES = Object.freeze({
   register: 'setup.register', providers: 'setup.providers', roots: 'setup.roots',
@@ -147,19 +147,10 @@ function createRegisterSurface(context) {
   return { el: out.el, show: async () => { const result = await request('/api/setup/registration', { cache: 'no-store' }); current = result.ok ? result.data : null; paint(); } };
 }
 
-/** The state a provider block says in one word. */
-function providerWord(provider) {
-  if (provider?.activated) return t('setup_surface.activated', 'Activated');
-  if (provider?.login_open) return t('setup_surface.sign_in_open', 'Sign-in open');
-  if (provider?.installed) return t('setup_surface.installed_sign_in', 'Installed · sign in');
-  if (provider?.installable) return t('setup_surface.not_installed_install', 'Not installed · install');
-  return provider?.state || 'absent';
-}
-
 /**
- * ONE MODEL PROVIDERS SURFACE. Its first face says one thing — add a model provider —
- * above equal blocks, one per provider in the runtime catalog, no block bigger than
- * another. Choosing a block opens that provider in place: the same adaptive stage
+ * ONE MODEL PROVIDERS SURFACE. Its first face is an inventory of equal blocks, one per
+ * provider in the runtime catalog, no block bigger than another. Choosing a block opens
+ * that provider in place: the same adaptive stage
  * (install · native sign-in tile with Done and Close · activated) the individual surfaces
  * had, with a word back to all providers. Never a dashboard of every provider's stage.
  */
@@ -181,27 +172,36 @@ function createProviderSurface(context) {
   const paintProvider = (providerId, host) => {
     const provider = providerFromRuntime(runtime, providerId);
     if (!provider) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
+    const presentation = providerPresentation(provider);
     const row = el('section', 'setup-provider');
     row.dataset.provider = provider.id;
-    row.append(el('h3', '', provider.label || provider.id), el('p', 'setup-state', provider.state || 'absent'));
-    if (!provider.installed) {
-      if (provider.installable) row.append(el('p', 'setup-fine', provider.from || provider.install), action(t('setup_surface.install', 'Install'), 'primary', async () => {
+    row.append(el('h3', '', provider.label || provider.id), el('p', 'setup-state', presentation.inventoryState));
+    if (presentation.action === 'install') {
+      row.append(el('p', 'setup-fine', presentation.detail), action(t('setup_surface.install', 'Install'), 'primary', async () => {
         const installed = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
         if (!installed.ok) row.append(el('p', 'setup-notice bad', installed.message));
         else await paint();
       }));
-      else row.append(el('p', 'setup-fine', provider.blocked || t('setup_surface.manual_install', 'This provider requires a user-run install step.')));
-    } else if (!provider.activated && !provider.login_open) {
-      row.append(el('p', 'setup-fine', t('setup_surface.provider_disclosure', 'The provider may ask for credentials, an API key, a subscription, device login, or trust approval.')),
+    } else if (presentation.action === 'manual') {
+      row.append(el('p', 'setup-fine', presentation.detail));
+      if (presentation.manual) {
+        const link = el('a', 'wk-action setup-provider-manual', presentation.manual.label);
+        link.href = presentation.manual.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        row.append(link);
+      } else row.append(el('p', 'setup-state', t('setup_surface.manual_only', 'Manual install only')));
+    } else if (presentation.action === 'sign_in') {
+      row.append(el('p', 'setup-fine', presentation.detail),
         action(t('setup_surface.sign_in', 'Open sign-in'), 'primary', async () => { await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} }); await paint(); }));
-    } else if (provider.login_open) {
+    } else if (presentation.action === 'login_open') {
       const terminal = el('div', 'setup-provider-terminal');
-      row.append(terminal,
+      row.append(el('p', 'setup-fine', presentation.detail), terminal,
         action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); }),
         action(t('setup_surface.close', 'Close'), '', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); }));
       mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
-    } else row.append(el('p', 'setup-good', t('setup_surface.activated', 'Activated')));
+    } else row.append(el('p', 'setup-good', presentation.detail));
     host.append(row);
     return () => disposeMount();
   };
@@ -220,14 +220,13 @@ function createProviderSurface(context) {
     context.environment.setupRuntime = runtime;
     context.workbench?.refreshSelector?.();
     const providers = (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id);
-    body.append(el('p', 'setup-lede', t('setup_surface.add_provider', 'Add a model provider.')));
     if (!providers.length) body.append(el('p', 'setup-fine', t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.')));
     else {
       stones.setItems(providers.map((provider) => ({
-        id: String(provider.id), label: provider.label || provider.id, secondary: provider.from || '', state: providerWord(provider),
+        id: String(provider.id), label: provider.label || provider.id, state: providerPresentation(provider).inventoryState,
         className: 'setup-provider-stone', attrs: { 'data-provider': provider.id, 'data-activated': String(provider.activated === true) },
       })));
-      body.append(stones.el, el('p', 'setup-fine', t('setup_surface.provider_disclosure_short', 'Each provider signs you in its own way; Ronin records only that you finished.')));
+      body.append(stones.el);
     }
     summarize(runtime);
   };
