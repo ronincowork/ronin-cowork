@@ -107,6 +107,7 @@
     .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] { scroll-snap-type: none; }
     .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] > .wk-layout-surface { flex: 0 0 auto; width: 100%; scroll-snap-align: none; }
     .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-column { height: auto; }
+    .wk-workbench-layout[data-workbench-profile='setup'] > .wk-layout-surface[data-surface='workspace1'] .sp-surface { height: calc(100dvh - var(--row-head) - var(--space-6)); }
     .wk-new-team-layout { display: flex; flex-direction: column; overflow: auto; }
     .wk-new-team-layout > .wk-layout-surface { flex: 0 0 auto; width: 100%; }
   }

@@ -1,17 +1,18 @@
 
 @layer app {
 
-  .sp-surface { --sp-stone: calc(var(--space-12) * 5); --sp-gap: var(--space-5); font-size: var(--text-5); }
-  .sp-surface > .wk-surface-content { display: flex; flex-direction: column; overflow: hidden; }
+  .sp-surface { --sp-stone: clamp(var(--setup-stone-min), var(--setup-stone-fluid), var(--setup-stone-size)); --sp-gap: var(--setup-stone-gap); container: setup-preset-phalanx / inline-size; font-size: var(--text-5); }
+  .sp-content { display: flex; flex-direction: column; overflow: hidden; }
   .sp-kinds { margin-bottom: var(--space-7); }
   .sp-kinds-lead { margin-right: var(--space-2); color: var(--muted); font-size: var(--form-note); }
   .sp-inner { display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--space-8); }
   .sp-column { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
-  .sp-grid { display: grid; grid-template-columns: repeat(3, var(--sp-stone)); gap: var(--sp-gap); }
-  .sp-inner[data-open='true'] .sp-grid { grid-template-columns: var(--sp-stone); }
+  .sp-inner:not([data-open='true']) .sp-column { flex: 1 1 auto; min-width: 0; }
+  .sp-grid { display: grid; width: min(100%, calc(var(--setup-stone-size) * 3 + var(--sp-gap) * 2)); grid-template-columns: repeat(auto-fit, var(--setup-stone-size)); gap: var(--sp-gap); }
+  .sp-inner[data-open='true'] .sp-grid { width: var(--sp-stone); grid-template-columns: var(--sp-stone); }
   .sp-slot[hidden] { display: none; }
   .sp-more { display: flex; margin-top: var(--space-3); }
-  .sp-slot { position: relative; display: flex; flex-direction: column; align-items: flex-start; width: var(--sp-stone); height: var(--sp-stone); min-width: var(--sp-stone); min-height: var(--sp-stone); overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-9) var(--space-7) var(--space-7); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
+  .sp-slot { position: relative; display: flex; flex-direction: column; align-items: flex-start; width: var(--sp-stone); max-width: 100%; aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-7) var(--space-6) var(--space-6); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
   .sp-slot::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); }
   .sp-slot:hover { border-color: var(--kaki); }
   .sp-slot[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
@@ -219,7 +220,4 @@
   .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--dim); font-style: normal; }
 
-  @media (max-width: 680px) {
-    .sp-surface { height: calc(100dvh - var(--row-head) - var(--space-6)); }
-  }
 }
