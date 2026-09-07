@@ -104,9 +104,8 @@ Replacing a slot with an ordinary template immediately removes the special contr
 seating. The replacement still has User Message, Customize, and ordinary Launch; no
 template schema or backend launch contract is added.
 
-The **You use Ronin for** row sits above the stones, and the stones themselves rest at the
-same height as the Model providers stones: the row's height is taken out of the rail's top
-room rather than added to it. A preset launches its template as stored, through the same
+The **You use Ronin for** row sits in the shared stone header, so the Presets stones start
+on the same line as every other stone surface. A preset launches its template as stored, through the same
 team loader the New Team form uses: each row is one of the template's agents with its
 instructions, mandate, lead mark and Routine switches, and the owner's starting message
 appended. A row carries no provider or model; those come from the same Configuration and

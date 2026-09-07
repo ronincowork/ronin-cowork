@@ -517,13 +517,6 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     onSelectionChange: (id) => { selected = id == null ? -1 : Number(id); },
   });
   stoneSurface.mount(surface.content, { before: [kindsHost], after: [notice.el] });
-  // THE STONES START WHERE THE OTHER SURFACES' STONES START. The purpose row sits above
-  // the shared rail, so its height is handed to the CSS, which takes it out of the
-  // rail's top room; Presets and Model providers then rest at one elevation.
-  if (typeof ResizeObserver === 'function') {
-    const measure = () => surface.el.style?.setProperty?.('--sp-intro', `${Math.max(0, Math.round(stoneSurface.el.offsetTop - kindsHost.offsetTop))}px`);
-    new ResizeObserver(measure).observe(kindsHost);
-  }
   const paintGrid = () => {
     const visible = visibleIndexes();
     stoneSurface.setItems(slots.map((slot, index) => {
