@@ -38,7 +38,7 @@ test('all initial controls preserve the ruled destinations and teaching choices'
   assert.ok(presets.initialControls('health_and_fitness').roles.every((row) => row.ask));
   assert.deepEqual(presets.initialControls('morning_brief').roles.map((row) => row.name), ['brief writer', 'reader']);
   assert.equal(presets.initialControls('morning_brief').schedule, 'daily 08:00');
-  assert.deepEqual(presets.initialControls('agent_editable_doc'), { root: 'ronin_lab', document: 'README.md' });
+  assert.deepEqual(presets.initialControls('agent_editable_doc'), { root: 'ronin_lab', document: 'priorities-for-the-week.md' });
 });
 
 test('every core seating case uses only real receipt objects and missing objects fall back honestly', () => {
