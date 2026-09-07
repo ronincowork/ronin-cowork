@@ -226,10 +226,10 @@ export function templateBox(art, label, blurb, picked, act) {
   return cell;
 }
 
-export function templateTray(rows, current, onPick) {
+export function templateTray(rows, current, onPick, { includeOwn = true } = {}) {
   const grid = el('div', 'fs-tmplgrid');
   const box = templateBox;
-  grid.append(box('＋', t('forms.own', 'Make your own'), t('forms.own_blurb', 'Fresh and empty. Fill it in yourself.'), current === '', () => onPick('')));
+  if (includeOwn) grid.append(box('＋', t('forms.own', 'Make your own'), t('forms.own_blurb', 'Fresh and empty. Fill it in yourself.'), current === '', () => onPick('')));
   for (const row of rows) {
     grid.append(box(row.art, row.label, row.blurb, current === row.name, () => onPick(row.name)));
   }

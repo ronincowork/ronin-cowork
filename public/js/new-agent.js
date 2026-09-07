@@ -10,7 +10,7 @@ import { t } from './lexicon.js';
 import { createWhereItWorks } from './where-it-works.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createBand, createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
@@ -54,6 +54,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   let snapshot = '';
   let busy = false;
   let loaded = false;
+  let templateMode = false;
   const touched = { mandate: false, model: false, root: false, repos: false, books: false, launchMode: false };
 
   const start = createAction({
@@ -74,29 +75,49 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   // and "Make your own" is the manual door; a mode switch above the form said it twice.
 
-  /* ---- 1 · New session ---- */
-  const stepType = createStep({ n: 1, key: 'type', title: t('new_agent.new_session', 'New session') });
+  /* ---- 1 · Kind ---- */
+  const stepKind = createStep({ n: 1, key: 'kind', title: t('kind', 'Kind') });
+  const kindHost = el('div');
+  function paintKinds() {
+    kindHost.replaceChildren(kindTiles(draft.kind, (key) => {
+      draft.kind = key;
+      draft.kindTouched = true;
+      if (draft.template && !offered().some((row) => row.name === draft.template)) { draft.template = ''; snapshot = ''; }
+      paint();
+    }));
+  }
+  stepKind.body.append(kindHost);
+
+  /* ---- 2 · New session ---- */
+  const stepType = createStep({ n: 2, key: 'type', title: t('new_agent.new_session', 'New session') });
   const typeHost = el('div', 'fs-pair');
+  const templateHost = el('div', 'na-template-tray');
   const TYPES = () => [
     { key: 'cowork_agent', label: t('new_agent.type_cowork', 'Cowork Agent'), sub: t('new_agent.type_cowork_sub', 'Born into Ronin: the floor, its routines, its reading and its team.') },
     { key: 'bare_metal_agent', label: t('new_agent.type_bare', 'Bare-metal Agent'), sub: t('new_agent.type_bare_sub', 'The provider’s agent and nothing else — no floor, no routines, no reading.') },
     { key: 'terminal', label: t('new_agent.type_terminal', 'Terminal'), sub: t('new_agent.type_terminal_sub', 'A raw tmux pane. No agent is launched and nothing is sent to it.') },
+    { key: 'template', label: t('new_agent.apply_template', 'Apply Template'), sub: t('new_agent.apply_template_sub', 'Start with one of your available Agent templates.') },
   ];
   function paintTypes() {
     typeHost.replaceChildren();
     for (const type of TYPES()) {
       const box = el('button', 'fs-way');
       box.type = 'button';
-      box.setAttribute('aria-pressed', String(draft.type === type.key));
+      box.setAttribute('aria-pressed', String(type.key === 'template' ? templateMode : !templateMode && draft.type === type.key));
       box.append(el('b', null, type.label), el('small', null, type.sub));
-      box.addEventListener('click', () => { draft.type = type.key; paint(); });
+      box.addEventListener('click', () => {
+        templateMode = type.key === 'template';
+        if (templateMode) draft.type = 'cowork_agent';
+        else draft.type = type.key;
+        paint();
+      });
       typeHost.append(box);
     }
   }
-  stepType.body.append(typeHost);
+  stepType.body.append(typeHost, templateHost);
 
-  /* ---- 2 · name & kind ---- */
-  const stepTop = createStep({ n: 2, key: 'top', title: t('new_team.name_kind', 'Name & kind') });
+  /* ---- 3 · Name & instructions ---- */
+  const stepTop = createStep({ n: 3, key: 'top', title: t('new_agent.name_instructions', 'Name & instructions') });
   const nameInput = el('input');
   nameInput.type = 'text';
   nameInput.autocapitalize = 'off';
@@ -116,19 +137,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     paintActions(); // Start wakes on the first character of a name
   });
   const leanNote = el('p', 'na-omitted');
-  const kindHost = el('div');
-  function paintKinds() {
-    // THE KIND IS THE TRAY'S FILTER and only a Cowork Agent has one; Manual has no tray
-    // to filter, so it does not ask (the drawing's own rule).
-    kindHost.hidden = !isCowork();
-    if (kindHost.hidden) return;
-    kindHost.replaceChildren(kindTiles(draft.kind, (key) => {
-      draft.kind = key;
-      draft.kindTouched = true;
-      if (draft.template && !offered().some((row) => row.name === draft.template)) { draft.template = ''; snapshot = ''; }
-      paint();
-    }));
-  }
   function paintLeanNote() {
     leanNote.hidden = isCowork();
     if (leanNote.hidden) return;
@@ -138,10 +146,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
   const topLeft = el('div', 'aa-col');
   topLeft.append(createField({ label: t('add_agent.name', 'name'), control: nameInput }).el, leanNote);
-  stepTop.body.append(topLeft, kindHost);
+  stepTop.body.append(topLeft);
 
-  /* ---- 3 · Template ---- */
-  const stepTemplate = createStep({ n: 3, key: 'template', title: t('template', 'Template') });
+  /* ---- Apply Template lives under the fourth session choice. ---- */
   function restoreTemplateDefaults() {
     const value = (field) => seed?.seeds?.[field]?.value;
     draft.instructions = '';
@@ -179,11 +186,11 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   });
   const templateDirty = () => !!templateRow() && authored() !== snapshot;
   function paintTray() {
-    stepTemplate.body.replaceChildren(templateTray(offered(), draft.template, (name) => applyTemplate(name)));
+    templateHost.hidden = !templateMode;
+    templateHost.replaceChildren();
+    if (templateMode) templateHost.append(templateTray(offered(), draft.template, (name) => applyTemplate(name), { includeOwn: false }));
   }
 
-  /* ---- 4 · Instructions ---- */
-  const stepInstructions = createStep({ n: 4, key: 'instructions', title: t('new_agent.instructions', 'Instructions'), onToggle: () => toggle('instructions') });
   const instructionsInput = el('textarea');
   instructionsInput.classList.add('wk-field-control');
   instructionsInput.rows = 6;
@@ -198,10 +205,11 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     // you happened to type a name too. (@template_shelves measured it.)
     paintActions();
   });
-  stepInstructions.body.append(instructionsInput);
+  const instructionsField = createField({ label: t('new_agent.instructions', 'Instructions'), control: instructionsInput }).el;
+  stepTop.body.append(instructionsField);
 
-  /* ---- 5 · Team ---- */
-  const stepTeam = createStep({ n: 5, key: 'team', title: t('squad', 'Team'), onToggle: () => toggle('team') });
+  /* ---- 4 · Team ---- */
+  const stepTeam = createStep({ n: 4, key: 'team', title: t('squad', 'Team'), onToggle: () => toggle('team') });
   const teamHost = el('div');
   function paintTeam() {
     teamHost.replaceChildren();
@@ -264,8 +272,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
   stepTeam.body.append(teamHost);
 
-  /* ---- 6 · Who and where ---- */
-  const stepWhere = createStep({ n: 6, key: 'where', title: t('new_team.who_where', 'Who and where'), onToggle: () => toggle('where') });
+  /* ---- 5 · Who and where ---- */
+  const stepWhere = createStep({ n: 5, key: 'where', title: t('new_team.who_where', 'Who and where'), onToggle: () => toggle('where') });
   const pair = providerModelPair(
     () => ({ provider: draft.provider, model: draft.model }),
     (provider, model) => { draft.provider = provider; draft.model = model; touched.model = true; paintFoot(); },
@@ -283,8 +291,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
   function paintRoots() { where.setRoots(roots); where.root = draft.root; draft.root = where.root; }
 
-  /* ---- 7 · Mandate ---- */
-  const stepMandate = createStep({ n: 7, key: 'mandate', title: t('mandate', 'Mandate'), onToggle: () => toggle('mandate') });
+  /* ---- 6 · Mandate ---- */
+  const stepMandate = createStep({ n: 6, key: 'mandate', title: t('mandate', 'Mandate'), onToggle: () => toggle('mandate') });
   const mandateHost = el('div');
   function paintMandate() {
     mandateHost.replaceChildren(
@@ -300,8 +308,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
   stepMandate.body.append(mandateHost);
 
-  /* ---- 8 · Loadout ---- */
-  const stepLoadout = createStep({ n: 8, key: 'loadout', title: t('loadout', 'Tools and skills'), onToggle: () => toggle('loadout') });
+  /* ---- 7 · Loadout ---- */
+  const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('loadout', 'Tools and skills'), onToggle: () => toggle('loadout') });
   const routinesHead = el('p', 'fs-head', t('routines', 'Routines'));
   const worktreesMode = el('div', 'fs-worktrees-mode');
   const routinesHost = el('div');
@@ -369,22 +377,21 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   /* ---- the plan: which steps exist for this type and door ---- */
   const steps = {
-    type: stepType, top: stepTop, template: stepTemplate, instructions: stepInstructions,
+    kind: stepKind, type: stepType, top: stepTop,
     team: stepTeam, where: stepWhere, mandate: stepMandate, loadout: stepLoadout,
   };
   const plan = () => {
-    if (draft.type === 'terminal') return ['type', 'top', 'team', 'where'];
-    if (draft.type === 'bare_metal_agent') return ['type', 'top', 'instructions', 'team', 'where'];
-    return ['type', 'top', 'template', 'instructions', 'team', 'where', 'mandate', 'loadout'];
+    if (draft.type === 'terminal') return ['kind', 'type', 'top', 'team', 'where'];
+    if (draft.type === 'bare_metal_agent') return ['kind', 'type', 'top', 'team', 'where'];
+    return ['kind', 'type', 'top', 'team', 'where', 'mandate', 'loadout'];
   };
-  const FOLDS = ['instructions', 'team', 'where', 'mandate', 'loadout'];
+  const FOLDS = ['team', 'where', 'mandate', 'loadout'];
   function toggle(key) {
     if (draft.expanded[key]) delete draft.expanded[key];
     else draft.expanded[key] = true;
     paintFolds();
   }
   const meta = {
-    instructions: () => draft.instructions.slice(0, 40),
     team: () => (draft.teamMode === 'none' ? t('new_agent.a_ronin', 'a rōnin') : chosenTeam()),
     where: () => draft.root,
     mandate: () => `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
@@ -393,8 +400,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     }),
   };
   function paintFolds() {
-    const folded = isCowork() && !!templateRow();
+    const templateFolded = isCowork() && !!templateRow();
     for (const key of FOLDS) {
+      const folded = key === 'loadout' || templateFolded;
       steps[key].setCollapsed(folded && !draft.expanded[key], folded ? meta[key]() : '', folded);
     }
   }
@@ -592,10 +600,12 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     const order = plan();
     for (const [key, step] of Object.entries(steps)) step.el.hidden = !order.includes(key);
     order.forEach((key, index) => steps[key].setNumber(index + 1));
-    stepTop.el.querySelector('h3').textContent = isCowork()
-      ? t('new_team.name_kind', 'Name & kind')
+    stepPayload.setNumber(order.length + 1);
+    stepTop.el.querySelector('h3').textContent = hasAgent()
+      ? t('new_agent.name_instructions', 'Name & instructions')
       : t('add_agent.name', 'name');
     pair.el.hidden = !hasAgent();
+    instructionsField.hidden = !hasAgent();
     paintTypes();
     paintLeanNote();
     paintKinds();
@@ -614,16 +624,18 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
 
   // a band of its own rather than trailing off the end of a long form.
-  let payloadOpen = true;
-  const payloadBand = createBand(
-    t('forms.payload_band_agent', 'New launch payload — what this launch will send'),
-    () => { payloadOpen = !payloadOpen; payloadBand.setOpen(payloadOpen); foot.hidden = !payloadOpen; },
-  );
+  let payloadOpen = false;
+  const stepPayload = createStep({ n: 8, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
+    payloadOpen = !payloadOpen;
+    stepPayload.setCollapsed(!payloadOpen, '', true);
+  } });
+  stepPayload.body.append(foot, actions.el);
+  stepPayload.setCollapsed(true, '', true);
   const form = el('div', 'ntf-form');
-  form.append(stepType.el, stepTop.el, stepTemplate.el, stepInstructions.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el);
+  form.append(stepKind.el, stepType.el, stepTop.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el, stepPayload.el);
   // Save as template sits UNDER the reading, for the same reason as on New Team: the
   // reading is the packet, and the button saves the packet.
-  surface.content.append(form, notice.el, payloadBand.el, foot, actions.el);
+  surface.content.append(form, notice.el);
 
   const PA_BOOK = 'ways:personal_assistant';
   const seedPrompt = (prompt) => {

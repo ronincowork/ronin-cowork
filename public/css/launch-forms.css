@@ -79,6 +79,8 @@
   .sp-launch { font-size: inherit; }
 
   .ntf-form, .ntf-actions { font-size: var(--form-input); }
+  .na-surface > .wk-surface-header,
+  .ntf-surface > .wk-surface-header { position: sticky; top: 0; z-index: 4; background: var(--panel); }
   .ntf-foot { font-size: var(--form-note); }
   .ntf-form { display: flex; flex-direction: column; margin-bottom: var(--space-7); }
 
@@ -86,6 +88,8 @@
   .ntf-agent { border-top: var(--edge) solid var(--line); padding: var(--space-3) 0; }
   .ntf-agent:first-child { border-top: 0; }
   .ntf-agent-head { display: flex; align-items: center; gap: var(--space-3); }
+  .ntf-agent-role { flex: 0 0 calc(var(--space-12) * 1.7); color: var(--accent); font-size: var(--form-key); font-weight: 700; text-transform: uppercase; }
+  .ntf-agent-adds { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); }
   .ntf-agent-name { width: calc(var(--space-12) * 3); }
   .ntf-agent-what { flex: 1; min-width: 0; }
   .ntf-agent-name, .ntf-agent-what {
@@ -94,7 +98,7 @@
   }
   .ntf-agent[data-open='true'] .ntf-agent-head {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-columns: calc(var(--space-12) * 1.7) minmax(0, 1fr) auto auto;
     align-items: start;
   }
   .ntf-agent[data-open='true'] .ntf-agent-name { grid-column: 2; width: 100%; min-height: calc(var(--space-12) * 1.5); resize: vertical; }
