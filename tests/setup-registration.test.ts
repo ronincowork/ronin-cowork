@@ -177,13 +177,16 @@ test('the Services mark is a constructed RS monogram in the house hexagon, blue 
   assert.match(house, frame, 'the house mark still carries the hexagon this test pins');
   assert.match(services, frame, 'same open hexagon as the house mark');
   assert.match(services, /viewBox="0 0 120 104"/);
-  assert.match(services, /<title id="title">Ronin Services mark<\/title>/);
+  assert.match(services, /<title id="services-mark-title">Ronin Services mark<\/title>/);
+  assert.match(services, /aria-labelledby="services-mark-title services-mark-desc"/);
+  assert.doesNotMatch(services, /id="(title|desc)"/, 'ids are prefixed: the markup is inlined into the page, where a bare id would collide');
   // Letters are built from one house cell and turned to the frame's own angle.
   assert.match(services, /transform="translate\(60 52\) scale\(\.86\) rotate\(28\.5\) translate\(-62\.5 -52\)"/);
   assert.match(services, /<g class="rs-r" stroke="#3f6a95"><path d="M31 76V28H51L57 40L51 52H31"\/><path d="M45 52L57 76"\/><\/g>/, 'the R: stem, cell, leg');
-  assert.match(services, /<path stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"\/>/, 'the S: two cells, kaki');
+  assert.match(services, /<path class="rs-k" stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"\/>/, 'the S: two cells, kaki');
+  assert.match(services, /<path class="rs-k" fill="none" stroke="#c46243" stroke-width="8"/, 'the frame carries the kaki class too');
   // The R follows the shell's reference blue; as a plain image it falls back by scheme.
-  assert.match(services, /\.rs-r\{stroke:var\(--accent-2,#3f6a95\)\}@media \(prefers-color-scheme:dark\)\{\.rs-r\{stroke:var\(--accent-2,#81a2be\)\}\}/);
+  assert.match(services, /\.rs-k\{stroke:var\(--kaki,#c46243\)\}\.rs-r\{stroke:var\(--accent-2,#3f6a95\)\}@media \(prefers-color-scheme:dark\)\{\.rs-r\{stroke:var\(--accent-2,#81a2be\)\}\}/, 'every colour is token-bound when inlined, with the file fallbacks when loaded as an image');
   assert.doesNotMatch(services, /<text|<image|fill="#/, 'letters are drawn strokes, not a font or a filled badge');
   assert.doesNotMatch(services, /<!--[^>]*--[^>]*-->/, 'no double hyphen inside a comment: XML rejects it and the browser shows a broken image');
   const colours = new Set((services.match(/#[0-9a-fA-F]{6}\b/g) || []).map((c) => c.toLowerCase()));
