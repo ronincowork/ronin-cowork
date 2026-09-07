@@ -5,6 +5,9 @@ import { launchPresetPlan } from '../public/js/preset-launch.js';
 const responder = (template, calls) => async (url, options = {}) => {
   calls.push({ url, body: options.json });
   if (url.startsWith('/api/templates/')) return { ok: true, data: [template] };
+  if (url === '/api/session-launch-specs') return { ok: true, data: [
+    { provider: 'anthropic', model: 'opus', cmd: 'claude --model opus' }, { provider: 'openai', model: 'gpt-5.6-sol', cmd: 'codex --model gpt-5.6-sol' }, { provider: 'google', model: 'gemini-3', cmd: 'gemini --model gemini-3' },
+  ] };
   if (url === '/api/team-rosters') return { ok: true, data: options.json };
   if (url === '/api/launch') return { ok: true, data: { name: options.json.name, receipt: { project_root: options.json.project_root, work_locations: [{ worktree: `/desk/${options.json.name}` }] } } };
   if (url === '/api/setup/morning-brief/schedules') return { ok: true, data: { schedule: { team: options.json.team, job: { id: 'job-1', ...options.json } } } };
@@ -49,6 +52,29 @@ test('Ronin Team launches a real lead and two agents with chosen provider and mo
   const births = calls.filter((row) => row.url === '/api/launch');
   assert.equal(births.length, 3);
   assert.deepEqual(births.map(({ body }) => [body.team_lead, body.provider, body.model]), [
-    [true, 'codex', 'gpt-5.6-sol'], [false, 'claude', 'opus'], [false, 'gemini', 'gemini-3'],
+    [true, 'openai', 'gpt-5.6-sol'], [false, 'anthropic', 'opus'], [false, 'google', 'gemini-3'],
   ]);
+});
+
+test('a row names the agent and the launch names the table provider', async () => {
+  const { launchProviderKey } = await import('../public/js/preset-launch.js');
+  const specs = [{ provider: 'anthropic', model: 'opus', cmd: 'claude --model opus' }, { provider: 'openai', model: 'gpt-5.6-sol', cmd: 'codex --model gpt-5.6-sol' }];
+  assert.equal(launchProviderKey(specs, 'claude'), 'anthropic');
+  assert.equal(launchProviderKey(specs, 'codex'), 'openai');
+  assert.equal(launchProviderKey(specs, 'anthropic'), 'anthropic');
+  assert.equal(launchProviderKey(specs, 'gemini'), 'gemini');
+  assert.equal(launchProviderKey(specs, ''), '');
+  const calls = [];
+  const send = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (url === '/api/templates/teams') return { ok: true, data: [{ name: 'bare_metal', label: 'Bare Metal' }] };
+    if (url === '/api/session-launch-specs') return { ok: true, data: specs };
+    if (url === '/api/team-rosters') return { ok: true, data: options.json };
+    if (url === '/api/launch') return { ok: true, data: { name: options.json.name } };
+    return { ok: false, message: `unexpected ${url}` };
+  };
+  const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, inputs: { sessions: [{ name: 'a', provider: 'claude', model: 'opus' }, { name: 'b', provider: 'codex', model: '' }] } }, send);
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls.filter((row) => row.url === '/api/launch').map((row) => [row.options.json.provider, row.options.json.model]), [['anthropic', 'opus'], ['openai', '']]);
+  assert.equal(calls.filter((row) => row.url === '/api/session-launch-specs').length, 1, 'the table is read once');
 });

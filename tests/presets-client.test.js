@@ -294,3 +294,12 @@ test('the launched team page seats a remembered commons on the tab the preset ch
   const brief = presets.seatingPlan('morning_brief', { team: 'brief', sessions: [{ name: 'writer' }] });
   assert.equal(brief.seats[1].tab, 'cron-jobs');
 });
+
+test('row models come from the launch table, filed under the agent word', () => {
+  const specs = [
+    { provider: 'anthropic', model: 'opus', cmd: 'claude --model opus' }, { provider: 'anthropic', model: 'sonnet', cmd: 'claude --model sonnet' },
+    { provider: 'openai', model: 'gpt-5.6-sol', cmd: 'codex --model gpt-5.6-sol' },
+  ];
+  assert.deepEqual(presets.launchModelsByAgent(specs), { claude: ['opus', 'sonnet'], codex: ['gpt-5.6-sol'] });
+  assert.deepEqual(presets.launchModelsByAgent(null), {});
+});

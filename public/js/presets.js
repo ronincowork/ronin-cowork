@@ -330,13 +330,16 @@ function renderCodebaseControls(host, state, environment) {
   void load();
 }
 
-const MODELS = Object.freeze({
-  codex: Object.freeze(['Default model', 'gpt-5.6-sol', 'gpt-5.6']),
-  claude: Object.freeze(['Default model', 'opus', 'sonnet']),
-  gemini: Object.freeze(['Default model', 'gemini-3']),
-  grok: Object.freeze(['Default model']),
-  hermes: Object.freeze(['Default model']),
-});
+/** The models the launch table offers for each agent word: `claude --model opus` files under `claude`. */
+export function launchModelsByAgent(specs = []) {
+  const out = {};
+  for (const spec of Array.isArray(specs) ? specs : []) {
+    const word = String(spec?.cmd || '').split(/\s+/)[0];
+    if (!word || !spec?.model) continue;
+    (out[word] ||= []).includes(spec.model) || out[word].push(spec.model);
+  }
+  return out;
+}
 const cycle = (button, values, current, paint, label) => {
   const options = values.length ? values : [''];
   button.addEventListener('click', () => {
@@ -346,7 +349,7 @@ const cycle = (button, values, current, paint, label) => {
   button.setAttribute('aria-label', label);
 };
 
-function renderRows(host, state, key, providers, addLabel) {
+function renderRows(host, state, key, providers, addLabel, models = {}) {
   const rows = el('div', 'sp-rows');
   const paint = () => {
     rows.replaceChildren();
@@ -360,7 +363,7 @@ function renderRows(host, state, key, providers, addLabel) {
       const providerPaint = (value) => { row.provider = value; row.model = ''; provider.textContent = providerOptions.find((item) => item.id === value)?.label || value || 'Default provider'; modelPaint(''); };
       cycle(provider, providerOptions.map((item) => item.id), () => row.provider || '', providerPaint, 'Model provider');
       const model = el('button', 'sp-cycle'); model.type = 'button';
-      const modelValues = () => MODELS[row.provider] || ['Default model'];
+      const modelValues = () => ['Default model', ...(models[row.provider] || [])];
       const modelPaint = (value) => { row.model = value === 'Default model' ? '' : value; model.textContent = row.model || 'Default model'; };
       model.addEventListener('click', () => {
         const values = modelValues(); const shown = row.model || 'Default model'; const index = Math.max(0, values.indexOf(shown));
@@ -463,7 +466,7 @@ function renderMorningBriefTiming(host, state) {
   host.append(field('When', timing, 'select'));
 }
 
-function renderSpecialControls(host, handle, state, runtime, environment) {
+function renderSpecialControls(host, handle, state, runtime, environment, models = {}) {
   // ONLY A PROVIDER THAT IS ACTIVATED CAN RUN A ROW. The catalog lists every provider
   // Ronin knows; a row may choose only among the ones this machine can launch with.
   const providers = eligibleProviders(runtime), roots = runtime.roots || [];
@@ -471,12 +474,12 @@ function renderSpecialControls(host, handle, state, runtime, environment) {
   if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where', environment, true);
   if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder', environment);
   if (handle === 'bare_metal') {
-    const agents = el('div'); renderRows(agents, state, 'sessions', providers, 'Session');
+    const agents = el('div'); renderRows(agents, state, 'sessions', providers, 'Session', models);
     const tiles = el('div'); renderTileChoices(tiles, state);
     host.append(section('Agents run side by side', 'select', ...agents.children), section('Tile view', 'select', ...tiles.children));
   }
-  if (handle === 'ronin_team') { const body = el('div'); renderRows(body, state, 'sessions', providers, 'Agent'); host.append(section('Team Lead and agents', 'select', ...body.children)); }
-  if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', providers, 'Feature Agent'); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
+  if (handle === 'ronin_team') { const body = el('div'); renderRows(body, state, 'sessions', providers, 'Agent', models); host.append(section('Team Lead and agents', 'select', ...body.children)); }
+  if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', providers, 'Feature Agent', models); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
   if (handle === 'health_and_fitness') { const body = el('div'); renderAskRows(body, state, 'roles', 'role'); host.append(section("Each agent's kick-off message", 'edit', ...body.children)); }
   if (handle === 'personal_assistant') {
     const modes = el('div', 'sp-mode-options');
@@ -533,7 +536,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   const kinds = environment.kinds || createKindsPreference();
   const kindsHost = el('div', 'sws-intro');
   renderKindPills(kindsHost, kinds, { lead: t('setup.presets_kinds_lead', 'You use Ronin for') });
-  let templates = [], runtime = { providers: [], roots: [] }, selected = -1;
+  let templates = [], runtime = { providers: [], roots: [] }, selected = -1, models = {};
   let detail = null;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
   const controls = new Map();
@@ -606,7 +609,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     if (!gate.ready) { launch.el.dataset.held = 'true'; launch.el.setAttribute('aria-disabled', 'true'); }
     go.append(launch.el); heading.append(go); detail.append(heading, warning, el('p', 'sp-description', slot.description || ''));
     const panel = el('div', 'sp-choice-panel');
-    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, environment); panel.append(fixed); }
+    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, environment, models); panel.append(fixed); }
     if (slot.handle !== 'bare_metal') panel.append(field('Initial message to agent', message));
     detail.append(panel);
   };
@@ -622,11 +625,13 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     if (supplied) {
       templates = Array.isArray(supplied.templates) ? supplied.templates : [];
       runtime = supplied.runtime || runtime;
+      models = launchModelsByAgent(supplied.specs || []);
     }
     else {
-      const [teams, agents, setup] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents'), request('/api/setup/runtime')]);
+      const [teams, agents, setup, specs] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents'), request('/api/setup/runtime'), request('/api/session-launch-specs')]);
       templates = [...(teams.ok ? teams.data : []).map((row) => ({ ...row, shelf: 'teams' })), ...(agents.ok ? agents.data : []).map((row) => ({ ...row, shelf: 'agents' }))];
       runtime = setup.ok ? setup.data : runtime;
+      models = launchModelsByAgent(specs.ok ? specs.data : []);
     }
     const remembered = await storedSlots(environment);
     if (Array.isArray(remembered) && remembered.length === HOUSE_PRESETS.length) slots = HOUSE_PRESETS.map((fallback, index) => {
