@@ -2796,53 +2796,6 @@ body {
 .setup-roots-stones .setup-roots-add-stone .sws-glyph {
   color: var(--kaki);
 }
-.setup-roots-stones .sws-detail .pr-block {
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  background: transparent;
-}
-.setup-roots-stones .sws-detail .pr-top {
-  padding-bottom: var(--space-4);
-}
-.pr-disclosure {
-  border-top: var(--edge) solid var(--line-2);
-}
-.pr-disclosure:last-of-type {
-  border-bottom: var(--edge) solid var(--line-2);
-}
-.pr-disclosure > summary {
-  padding: var(--space-4) 0;
-  color: var(--fg-strong);
-  font-weight: 600;
-  cursor: pointer;
-}
-.pr-disclosure-body {
-  padding: 0 0 var(--space-5) var(--space-5);
-}
-.pr-disclosure-body .pr-facts {
-  margin-top: 0;
-}
-.pr-edit-actions {
-  margin-top: var(--space-5);
-}
-.pr-maintenance {
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: var(--edge) solid var(--line-2);
-}
-.pr-maintenance-label {
-  display: block;
-  color: var(--muted-2);
-  font-size: var(--text-2);
-}
-.pr-maintenance .pr-acts {
-  margin-top: var(--space-3);
-  flex-wrap: wrap;
-}
-.setup-roots-stones .pr-block.editing .pr-form {
-  margin-top: 0;
-}
 .cv-worktrees-default {
   margin-top: var(--space-3);
   padding-top: var(--space-4);

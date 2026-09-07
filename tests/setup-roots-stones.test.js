@@ -18,15 +18,8 @@ test('roots adapt the real project-root blocks and Add form to the shared stone 
   assert.match(roots, /options\.presentation === 'stones'/);
   assert.match(roots, /import \{ createStoneWorkSurface \} from '\.\/stone-work-surface\.js'/);
   assert.match(roots, /stoneSurface = createStoneWorkSurface/);
-  assert.match(roots, /if \(current\) \{[\s\S]*?host\.append\(block\(current\)\)/);
-  assert.doesNotMatch(roots, /if \(current\) \{[\s\S]*?editing = current\.name;[\s\S]*?host\.append\(block\(current\)\)/);
-  assert.match(roots, /edit\.textContent = t\('roots\.edit_details', 'Edit details'\)/);
-  assert.match(roots, /t\('roots\.summary', 'Summary'\)/);
-  assert.match(roots, /t\('roots\.group_repository', 'Repository workflow'\)/);
-  assert.match(roots, /maintenance\.className = 'pr-maintenance'/);
-  assert.match(roots, /editActions\.append\(edit\)/);
-  assert.match(roots, /acts\.append\(shelve, drop\)/);
-  assert.match(roots, /acts\.append\(edit, shelve, drop\)/);
+  assert.match(roots, /if \(current\) \{[\s\S]*?editing = current\.name;[\s\S]*?host\.append\(block\(current\)\)/);
+  assert.match(roots, /if \(!stones\) acts\.append\(edit\);[\s\S]*?acts\.append\(shelve, drop\)/);
   assert.match(roots, /stoneSurface\.refreshDetail\(\)/);
   assert.match(roots, /const openAdd = stones \? null : createAction/);
   assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[messages\] \}\)/);
@@ -53,9 +46,6 @@ test('roots carry no parallel stone DOM or CSS presentation', async () => {
   assert.match(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state/);
   assert.doesNotMatch(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state\s*\{[^}]*?(?:border|border-radius|background|padding):/);
   assert.match(css, /\.setup-roots-stones \.setup-roots-add-stone[\s\S]*?border-color: var\(--kaki\)[\s\S]*?border-style: dashed[\s\S]*?background: color-mix\(in srgb, var\(--kaki-tint\)/);
-  assert.match(css, /\.setup-roots-stones \.sws-detail \.pr-block[\s\S]*?border: 0[\s\S]*?background: transparent/);
-  assert.match(css, /\.pr-disclosure > summary/);
-  assert.match(css, /\.pr-maintenance/);
 });
 
 test('roots stones mount visible loading, empty, and failure output without changing Campaign roots', async () => {
