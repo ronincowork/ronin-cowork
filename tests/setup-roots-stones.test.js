@@ -48,7 +48,7 @@ test('roots stones mount visible loading, empty, and failure output without chan
   const roots = await source('public/js/projectroots.js');
   assert.match(roots, /messages\.className = 'pr-status'/);
   assert.match(roots, /messages\.setAttribute\('role', 'status'\)/);
-  assert.match(roots, /root\.append\(head, messages, stoneSurface\.el\)/);
+  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[head, messages\] \}\)/);
   assert.match(roots, /const output = stones \? messages : list/);
   assert.match(roots, /messages\.replaceChildren\(\)/, 'a successful render clears loading or failure output');
   assert.match(roots, /\(stones \? messages : list\)\.appendChild/, 'the zero-roots message uses the mounted status host');

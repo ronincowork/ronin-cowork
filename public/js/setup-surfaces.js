@@ -226,7 +226,7 @@ function createProviderSurface(context) {
         id: String(provider.id), label: provider.label || provider.id, state: providerPresentation(provider).inventoryState,
         className: 'setup-provider-stone', attrs: { 'data-provider': provider.id, 'data-activated': String(provider.activated === true) },
       })));
-      body.append(stones.el);
+      stones.mount(body);
     }
     summarize(runtime);
   };
