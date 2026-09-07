@@ -508,7 +508,14 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       for (const r of roots) list.appendChild(block(r));
       return;
     }
-    stoneSurface.setItems([...roots.map((r) => ({
+    // Add A Workspace leads the collection (Glen, 2026-09-07): adding is the thing people do.
+    stoneSurface.setItems([{
+      id: NEW,
+      label: t('roots.add_stone', 'Add A Workspace'),
+      glyph: '+',
+      className: 'setup-roots-add-stone',
+      attrs: { title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') },
+    }, ...roots.map((r) => ({
       id: r.name,
       label: r.name,
       state: r.archived
@@ -517,13 +524,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
           ? t('roots.stone_missing', 'Folder missing')
           : t('roots.stone_ready', 'Ready'),
       className: [!r.facts?.exists ? 'gone' : '', r.archived ? 'archived' : ''].filter(Boolean).join(' '),
-    })), {
-      id: NEW,
-      label: t('roots.add_stone', 'Add A Workspace'),
-      glyph: '+',
-      className: 'setup-roots-add-stone',
-      attrs: { title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') },
-    }]);
+    }))]);
   }
 
   /** The last card in the list: the same shape as a root, and the place a new one is typed. */
