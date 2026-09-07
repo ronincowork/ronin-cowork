@@ -20,6 +20,27 @@
 set -u
 
 die() { printf '%s\n' "$*" >&2; exit 3; }
+help() {
+  cat <<'EOF'
+read_tegami — read a session's work record
+
+Usage:
+  read_tegami
+  read_tegami --json
+  read_tegami --rungs
+  read_tegami --session <name> [--json|--rungs]
+
+Common tasks:
+  Use the bare form for the complete record, --json for its data block, and
+  --rungs for positions accepted by write_tegami --session <name> --at N[.M].
+
+This tool reads records; it does not author progress. Reading may refresh the
+machine-owned Team summary in the record. Related: write_tegami --help
+EOF
+}
+case "${1-}" in
+  -h|--help) [ "$#" -eq 1 ] || die "read_tegami: --help takes no other arguments. Run read_tegami --help."; help; exit 0 ;;
+esac
 
 # WHICH SESSION AM I — and it must NEVER guess.
 #
@@ -86,7 +107,7 @@ while [ $# -gt 0 ]; do
     --json)    MODE=json ;;
     --rungs)   MODE=rungs ;;
     --session) shift; TARGET=${1-} ;;
-    *) die "read_tegami: unknown argument: $1" ;;
+    *) die "read_tegami: unknown argument: $1. Run read_tegami --help." ;;
   esac
   shift
 done

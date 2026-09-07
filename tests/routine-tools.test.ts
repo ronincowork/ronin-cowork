@@ -54,7 +54,7 @@ test('missing enabled tools are visible and do not refuse projection', async () 
 const REACH_FAILURES = /Cannot find module|command not found|No such file or directory|NO-REPO/;
 const URL_CALLERS = ['tejun-archive', 'tejun-fork', 'tejun-harakiri', 'tejun-rehydrate', 'tejun-session-set', 'tejun-team-set', 'tejun-teampage', 'mika'];
 test('projected ronin_bin tools resolve the symlink and reach the repository and the operator', async (t) => {
-  const tools = ['tejun', 'tejun-desk', 'tejun-wipeboard', 'tejun-send', 'read_tegami', 'write_tegami', 'tejun-survey', 'tejun-account', 'ronin-url', ...URL_CALLERS];
+  const tools = ['tejun', 'tejun-desk', 'tejun-team', 'tejun-wipeboard', 'tejun-send', 'read_tegami', 'write_tegami', 'tejun-survey', 'tejun-account', 'ronin-url', ...URL_CALLERS];
   const projected = await projectRoutineTools('resolve', [routine('ronin_base', true, tools)]);
   for (const t of tools) assert.ok(projected.delivered.includes(t), `${t} projected`);
   const reached: string[] = [];
@@ -85,11 +85,32 @@ test('projected ronin_bin tools resolve the symlink and reach the repository and
       return { code: err.code ?? 1, out: (err.stdout ?? '') + (err.stderr ?? '') };
     }
   };
+  const helpTools = [
+    'tejun', 'read_tegami', 'write_tegami', 'tejun-desk', 'tejun-team',
+    'tejun-team-set', 'tejun-session-set', 'tejun-archive', 'tejun-rehydrate',
+  ];
+  for (const command of helpTools) {
+    for (const flag of ['-h', '--help']) {
+      reached.length = 0;
+      const help = await run([command, flag]);
+      assert.equal(help.code, 0, `${command} ${flag}: ${help.out}`);
+      assert.match(help.out, new RegExp(command.replace('_', '.')), `${command} identifies itself`);
+      assert.match(help.out, /Usage:/, `${command} gives syntax`);
+      assert.match(help.out, /Related:/, `${command} names related discovery`);
+      assert.equal(reached.length, 0, `${command} help never contacts the operator`);
+    }
+    const invalidHelp = await run([command, '--help', 'extra']);
+    assert.notEqual(invalidHelp.code, 0, `${command} refuses surplus help arguments`);
+    assert.match(invalidHelp.out, new RegExp(`Run ${command.replace('_', '.')} --help`));
+  }
   const tejun = await run(['tejun']);
   assert.match(tejun.out, /forkit/, `tejun lists the stock macros through the symlink: ${tejun.out}`);
-  const desk = await run(['tejun-desk', '--help']);
-  assert.equal(desk.code, 0);
-  assert.match(desk.out, /^usage: tejun-desk/, desk.out);
+  const teamMacro = await run(['tejun', 'team']);
+  assert.equal(teamMacro.code, 0, teamMacro.out);
+  assert.match(teamMacro.out, /=== MACRO: team ===/, 'the existing team macro still compiles');
+  const surplus = await run(['tejun', 'team', 'extra']);
+  assert.equal(surplus.code, 2);
+  assert.match(surplus.out, /Run tejun --help/);
   for (const args of [['tejun-wipeboard'], ['tejun-send'], ['read_tegami', '--session', 'nobody'], ['write_tegami', '--session', 'nobody', '--at', '1'], ['tejun-survey'], ['tejun-account']]) {
     const r = await run(args);
     assert.doesNotMatch(r.out, REACH_FAILURES, `${args.join(' ')}: ${r.out}`);

@@ -42,6 +42,22 @@ const block = (letter: string): Block => {
 const run = (env: NodeJS.ProcessEnv, args: string[], input?: string) =>
   execFileSync(tool, args, { encoding: 'utf8', env, input, stdio: ['pipe', 'pipe', 'pipe'] });
 
+test('help is side-effect-free, actionable, and separates lead positioning', () => {
+  for (const flag of ['--help', '-h']) {
+    const r = spawnSync(tool, [flag], { encoding: 'utf8', env: { ...process.env, TMUX: '', TMUX_PANE: '' } });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /--doc <path>/);
+    assert.match(r.stdout, /--objective <text>/);
+    assert.match(r.stdout, /--phase <title>/);
+    assert.match(r.stdout, /--leg N <title>/);
+    assert.match(r.stdout, /--status N\[\.M\] PLANNED\|ACTIVE\|DONE/);
+    assert.match(r.stdout, /--repo <repo>:<branch>/);
+    assert.match(r.stdout, /Lead position \(separate form/);
+    assert.match(r.stdout, /--session <name> --at N\[\.M\]/);
+    assert.doesNotMatch(r.stderr, /cannot tell which session/);
+  }
+});
+
 test('field verbs edit one field each and carry the pointer and the doc list through', (t) => {
   const f = fixture();
   t.after(() => rmSync(f.dir, { recursive: true, force: true }));

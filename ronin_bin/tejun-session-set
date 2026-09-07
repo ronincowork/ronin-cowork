@@ -34,6 +34,24 @@
 # arguments, 4 refused (unknown role, box full, birth-only flag on a live name…),
 # 5 Ronin unreachable.
 set -u
+case "${1-}" in
+  -h|--help) [ "$#" -eq 1 ] || { echo "tejun-session-set: --help takes no other arguments. Run tejun-session-set --help." >&2; exit 2; }
+    cat <<'EOF'
+tejun-session-set — read, create, or update one Agent by name
+
+Usage:
+  tejun-session-set <name>
+  tejun-session-set <name> --prompt <text> [--team <team>] [--lead]
+                            [--root <path>] [--model <name>] [--mode manual|assisted]
+  tejun-session-set <live-name> [--team <team>] [--lead] [--root <path>]
+
+A bare live name reads it. An unused name creates an Agent; flags on a live name update
+only stated facts. --team adds membership; --lead sets that Agent as the Team lead.
+Birth-only flags are refused for live Agents. Related: tejun-team --help;
+tejun-team-set --help; tejun-fork --help
+EOF
+    exit 0 ;;
+esac
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 TOOL_DIR=$(dirname "$SELF")
 die() { printf '%s\n' "$1" >&2; exit "${2:-4}"; }
@@ -58,7 +76,7 @@ me() {
 }
 
 NAME="${1:-}"
-[ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: tejun-session-set <name> [--prompt <text>] [--team <team>] [--lead] …" 2
+[ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: tejun-session-set <name> [options]. Run tejun-session-set --help." 2
 shift
 PROMPT="" TEAM="" LEAD="" ROOT="" MODE="" CMD="" MODEL="" MCP="" TAGS="" SEED=""
 while [ $# -gt 0 ]; do
@@ -73,7 +91,7 @@ while [ $# -gt 0 ]; do
     --mcp) MCP="${2:-}"; shift 2 ;;
     --tags) TAGS="${2:-}"; shift 2 ;;
     --seed) SEED="${2:-}"; shift 2 ;;
-    *) die "BAD-ARG: $1" 2 ;;
+    *) die "BAD-ARG: $1. Run tejun-session-set --help." 2 ;;
   esac
 done
 ME=$(me 2>/dev/null || true)

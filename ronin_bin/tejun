@@ -6,6 +6,30 @@
 # Exits non-zero if a macro names an action that does not exist — a macro that
 # references an undefined action simply does not compile. No lint required.
 set -u
+help() {
+  cat <<'EOF'
+tejun — discover and compile Ronin macros
+
+Usage:
+  tejun                 list available macros
+  tejun <macro>         compile one macro into its complete instructions
+  tejun tools           read the tool catalog
+  tejun actions         read the action catalog
+
+Common starting points:
+  work records  read_tegami --help, write_tegami --help
+  teams         tejun-team --help, tejun-session-set --help, tejun-team-set --help
+  worktrees     tejun-desk --help
+  lifecycle     tejun-archive --help, tejun-rehydrate --help
+
+Compiling a macro prints instructions; it does not run its operational steps for you.
+Run a chosen tool's --help before using it. Related: tejun-step
+EOF
+}
+case "${1-}" in
+  -h|--help) [ "$#" -eq 1 ] || { echo "tejun: --help takes no other arguments. Run tejun --help." >&2; exit 2; }; help; exit 0 ;;
+esac
+[ "$#" -le 1 ] || { echo "tejun: macros take no arguments. Run tejun --help." >&2; exit 2; }
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 ROOT="$(cd "$(dirname "$SELF")/.." && pwd)"
 # The user's own catalogs — NEVER a hand-spelled path (JUSHO, docs/stores.md). Absent
@@ -77,7 +101,7 @@ for m,(h,b) in macros.items():
             if alias and alias not in macros: aliases[alias]=macros[m]
 macros.update(aliases)
 if name not in macros:
-    print(f"UNKNOWN MACRO '{name}'. Available: {', '.join(macros)}", file=sys.stderr); sys.exit(2)
+    print(f"UNKNOWN MACRO '{name}'. Available: {', '.join(macros)}\nRun tejun --help.", file=sys.stderr); sys.exit(2)
 
 head,body=macros[name]
 # step names live in column 2 of the recipe table; a cell may name two actions ("a + b")

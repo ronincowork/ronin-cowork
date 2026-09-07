@@ -2,10 +2,24 @@
 # tejun-archive — stop a live session while keeping it resumable.
 # Usage: tejun-archive <session>
 set -u
+case "${1-}" in
+  -h|--help) [ "$#" -eq 1 ] || { echo "tejun-archive: --help takes no other arguments. Run tejun-archive --help." >&2; exit 2; }
+    cat <<'EOF'
+tejun-archive — stop a live session while keeping it resumable
+
+Usage:
+  tejun-archive <session>
+
+Archive records the provider conversation and session metadata before stopping the
+live session. A refusal leaves it running; this is not hard deletion.
+Related: tejun-rehydrate --help
+EOF
+    exit 0 ;;
+esac
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 TOOL_DIR=$(dirname "$SELF")
 [ "$#" -eq 1 ] && [ -n "$1" ] && [ "${1#-}" = "$1" ] || {
-  echo "usage: tejun-archive <session>" >&2
+  echo "usage: tejun-archive <session>. Run tejun-archive --help." >&2
   exit 2
 }
 NAME=$1
