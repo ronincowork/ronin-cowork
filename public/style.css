@@ -141,8 +141,8 @@
   --space-12: 34px;
 
   --row-head: calc(var(--space-11) + var(--space-6) + var(--edge));
-  --setup-stone-size: calc(var(--space-12) * 2 + var(--space-11) + var(--space-4));
-  --setup-stone-gap: var(--space-4);
+  --setup-stone-size: calc(var(--space-12) * 2 + var(--space-11) + var(--space-8));
+  --setup-stone-gap: var(--space-6);
 
 
   --workbench-head-font: var(--font-ui);
