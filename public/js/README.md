@@ -50,6 +50,7 @@ where a session is born now. `docs/ui.md` is the written contract those modules 
 | `stats.js` | 413 | `buildStats` — the ▦ Stats pane (TOMODACHI usage readout) |
 | `koshi.js` | 185 | `buildKoshi` — the 目 Koshi pane, model per Koshi job |
 | `gbrain.js` | commons_tab | local gbrain process, privacy, search and integration status |
+| `gbrain-setup-state.js` | pure | the Ronin Setup gbrain surface's state: one status, one next line, at most one action from the snapshot |
 | `system.js` | 187 | `buildSystem` — ⚙ System: release identity, updates, appearance, log out |
 | `shingo.js` | 289 | SHINGO 信号 — the expanded work-record reading and its age helpers |
 | `tile.js` | 695 | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |

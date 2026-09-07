@@ -192,31 +192,75 @@ test('Services keeps exact lifecycle states secondary and offers only the real i
   assert.doesNotMatch(source, /const state = el\('dl'|<dd>|'Yes' : 'No'/);
 });
 
-test('Setup gbrain opts into one diagnosed status notice without raw transport errors', async () => {
-  const [setup, gbrain] = await Promise.all([
-    (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
-    (await import('node:fs/promises')).readFile(new URL('../public/js/gbrain.js', import.meta.url), 'utf8'),
-  ]);
-  assert.match(setup, /designedErrors: true/);
-  assert.match(setup, /setupRuntime\?\.gbrain/);
-  assert.match(gbrain, /className = 'gb-notice'/);
-  assert.match(gbrain, /setAttribute\('role', 'status'\)/);
-  assert.match(gbrain, /gbrain\.known_(?:not_)?installed/);
-  assert.match(gbrain, /gbrain\.status_diagnosis/);
-  assert.match(gbrain, /gbrain\.check_again/);
-  assert.doesNotMatch(gbrain.match(/if \(options\.designedErrors\)[\s\S]*?return;/)?.[0] || '', /r\.message|HTTP/);
+test('Setup gbrain model gives every measured state one status, one next line, and at most one action', async () => {
+  const { GBRAIN_SETUP_STATES, gbrainSetupModel, gbrainAssistantPrompt } = await import('../public/js/gbrain-setup-state.js');
+  const snapshot = (over: Record<string, unknown> = {}) => ({
+    ok: true, status: 200,
+    data: {
+      installed: true, install: { state: 'idle', op: null, log: [] },
+      process: { state: 'running', health: 'reachable', version: '1.2.3' },
+      listener: { scope: 'vm_only', address: '127.0.0.1', port: 7777 },
+      externalModelProvider: 'none', publicAccess: { state: 'off' },
+      search: { weights: 'running', mode: 'hybrid', model: 'nomic', dimensions: 768, reason: null, answers: { state: 'off', reason: 'model-key-missing' } },
+      integrationsKnown: true, integrations: [{ id: 'gmail', label: 'Gmail', state: 'not_connected' }],
+      observedAt: '2026-09-07T12:00:00.000Z',
+      ...over,
+    },
+  });
+  const cases: Array<[string, unknown, unknown, string, string | null, string]> = [
+    ['services_needed', { ok: false, status: 404, message: 'HTTP 404' }, { installed: false, active: false }, 'Not installed on this machine', 'open_services', 'not installed'],
+    ['unreadable', { ok: false, status: 500, message: 'HTTP 500' }, { installed: true, active: false }, 'Status could not be read', 'check_again', 'installed'],
+    ['not_installed', snapshot({ installed: false }), { installed: false, active: false }, 'Not installed on this machine', 'load', 'not installed'],
+    ['install_failed', snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } }), null, 'Install did not finish', 'retry', 'not installed'],
+    ['installing', snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } }), null, 'Installing…', null, 'installing'],
+    ['removing', snapshot({ install: { state: 'running', op: 'uninstall', log: [] } }), null, 'Removing…', null, 'removing'],
+    ['running', snapshot(), { installed: true, active: true }, 'Running on this machine', 'start_assistant', 'running'],
+    ['stopped', snapshot({ process: { state: 'stopped', health: 'unreachable', version: null } }), { installed: true, active: false }, 'Installed · not running', 'check_assistant', 'installed'],
+  ];
+  assert.deepEqual(cases.map(([state]) => state).sort(), [...GBRAIN_SETUP_STATES].sort());
+  for (const [state, result, availability, status, action, summary] of cases) {
+    const model = gbrainSetupModel(result as never, availability as never);
+    assert.equal(model.state, state);
+    assert.equal(model.status, status);
+    assert.equal(model.action?.id ?? null, action);
+    assert.equal(model.summary, summary);
+    assert.ok(model.next.length > 0);
+    assert.doesNotMatch(`${model.status} ${model.next} ${model.action?.label || ''}`, /HTTP|undefined|null/);
+  }
+  assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).next, 'fetching weights');
+  assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).polling, true);
+  assert.deepEqual(gbrainSetupModel(snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } })).log, ['step 3 failed']);
+  const running = gbrainSetupModel(snapshot(), { installed: true, active: true });
+  assert.deepEqual(running.facts.map(([label]: [string]) => label), ['Local gbrain process', 'Local embeddings', 'Reach', 'Outside model use', 'Integrations']);
+  assert.deepEqual(running.facts.map(([, , tone]: [string, string, string]) => tone), ['ok', 'ok', 'ok', 'ok', 'ok']);
+  assert.match(running.next, /hybrid/);
+  assert.match(gbrainSetupModel(snapshot({ search: { weights: 'stopped', mode: 'keyword_only' } })).next, /keyword-only/);
+  assert.equal(gbrainSetupModel(snapshot({ integrationsKnown: false, integrations: [] })).facts[4][1], 'unknown');
+  assert.equal(gbrainSetupModel(snapshot({ integrations: [{ id: 'gmail', label: 'Gmail', state: 'connected' }] })).facts[4][1], '1 connected');
+  assert.equal(running.polling, false);
+  assert.match(gbrainAssistantPrompt('running'), /start using gbrain/);
+  assert.match(gbrainAssistantPrompt('stopped'), /not running/);
 });
 
-test('Setup gbrain uses a benefit-first, single-action presentation without changing the commons default', async () => {
+test('Setup gbrain paints the model and keeps the commons dashboard on its default', async () => {
   const [setup, gbrain] = await Promise.all([
     (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
     (await import('node:fs/promises')).readFile(new URL('../public/js/gbrain.js', import.meta.url), 'utf8'),
   ]);
   assert.match(setup, /presentation: 'setup'/);
-  assert.match(gbrain, /Give your Agents a shared, searchable memory/);
-  assert.match(gbrain, /Status and requirements/);
-  assert.match(gbrain, /Start with PersonalAssistant/);
+  assert.match(setup, /setupRuntime\?\.gbrain/);
+  assert.match(setup, /onState: \(summary\) => notifySummary\(SETUP_SURFACE_TYPES\.gbrain, summary/);
+  assert.match(setup, /openServices: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.services/);
+  assert.match(gbrain, /import \{ gbrainAssistantPrompt, gbrainSetupModel \} from '\.\/gbrain-setup-state\.js'/);
+  assert.match(gbrain, /if \(setup\) \{ renderSetup\(await request\('\/api\/gbrain'\)\); return; \}/);
+  assert.match(gbrain, /if \(!setup\) root\.append\(head, privacy, search, integrations\)/);
+  assert.match(gbrain, /className = 'setup-gbrain-compact'|make\('section', 'setup-gbrain-compact'\)/);
+  assert.match(gbrain, /setAttribute\('aria-live', 'polite'\)/);
+  assert.match(gbrain, /request\('\/api\/gbrain\/install', \{ method: 'POST', json: \{\} \}\)/);
   assert.match(gbrain, /root\.replaceChildren\(wrap\)/);
+  // The commons tab still renders its three cards and the Load/Remove presses.
+  for (const kept of ['renderPrivacy(r.data)', 'renderSearch(r.data)', 'renderIntegrations(r.data)', 'integrations.append(renderRemove())', 'renderLoad(r.data)']) assert.ok(gbrain.includes(kept), kept);
+  assert.doesNotMatch(gbrain, /designedErrors|gb-notice|gb-setup/);
 });
 
 test('legacy Services mutation entry points explicitly retire to registration', async () => {

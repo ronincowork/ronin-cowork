@@ -836,6 +836,44 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **gbrain.remove_confirm:** Remove gbrain from this machine? The server, tokens, wiring and shelves go; your brain repo and its pages are KEPT.
 - **gbrain.checking:** checking…
 - **gbrain.status:** gbrain status
+- **gbrain.configured:** configured
+- **gbrain.status_diagnosis:** Setup could not read the local gbrain status. Nothing was changed.
+- **gbrain.check_again:** Check again
+
+## gbrain — gbrain-setup-state.js and gbrain.js (the Ronin Setup work surface)
+- **gbrain.setup_intro:** A shared, searchable memory for your Agents.
+- **gbrain.setup_credit:** Open-source agent memory by Garry Tan ↗
+- **gbrain.setup_find:** Find by meaning
+- **gbrain.setup_find_copy:** Notes, decisions, and history come back by what they mean, not only by exact words.
+- **gbrain.setup_recall:** Shared recall
+- **gbrain.setup_recall_copy:** Every connected Agent reads and files into the same memory.
+- **gbrain.setup_local:** Stays local
+- **gbrain.setup_local_copy:** Local embeddings and a local process. Outside connections open only when you approve one.
+- **gbrain.setup_status_not_installed:** Not installed on this machine
+- **gbrain.setup_next_services:** gbrain arrives with Ronin Services. Set up Services first, then load gbrain here.
+- **gbrain.setup_open_services:** Open Ronin Services
+- **gbrain.setup_next_load:** Load once to install gbrain, local embedding weights, and Agent wiring. Downloads come from github.com and huggingface.co.
+- **gbrain.setup_status_installing:** Installing…
+- **gbrain.setup_next_installing:** Weights, gbrain, cabinet, and wiring are being set up. This surface checks again every few seconds.
+- **gbrain.setup_status_removing:** Removing…
+- **gbrain.setup_next_removing:** Units, wiring, and shelves are being removed. Your brain repo is kept.
+- **gbrain.setup_status_failed:** Install did not finish
+- **gbrain.setup_next_failed:** The install log says where it stopped. Nothing else was changed.
+- **gbrain.setup_install_log:** Install log
+- **gbrain.setup_status_running:** Running on this machine
+- **gbrain.setup_next_hybrid:** Search is hybrid: by keyword and by meaning. Agents connect through MCP.
+- **gbrain.setup_next_keyword:** Search is keyword-only until the local embedding weights are running. Agents connect through MCP.
+- **gbrain.setup_next_running:** Agents connect through MCP.
+- **gbrain.setup_start_assistant:** Start with Personal Assistant
+- **gbrain.setup_status_stopped:** Installed · not running
+- **gbrain.setup_next_stopped:** The local gbrain process is not answering. Ask Personal Assistant to check it before anything changes.
+- **gbrain.setup_check_assistant:** Ask Personal Assistant to check gbrain
+- **gbrain.setup_status_unreadable:** Status could not be read
+- **gbrain.setup_reach:** Reach
+- **gbrain.setup_outside_model:** Outside model use
+- **gbrain.setup_measured:** Measured now
+- **gbrain.setup_observed:** Observed {time}
+- **gbrain.setup_gate:** The Personal Assistant preset waits for gbrain to be active.
 
 ## koshi — koshi.js (the 目 Koshi tab)
 - **koshi.restart:** ↻ Restart Koshi

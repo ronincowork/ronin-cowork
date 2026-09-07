@@ -159,6 +159,16 @@ The integration headline counts outside connections, not gbrain's internal “re
 policies. Those policies do not mean Gmail, Calendar, Drive, a gateway or a public tunnel
 has been connected.
 
+### In Ronin Setup
+
+The Setup workbench's gbrain selector opens the same tab in its Setup presentation
+(`buildGbrain(..., { presentation: 'setup' })`): the value gbrain gives, then one measured
+status with one next sentence and at most one action, chosen by
+`public/js/gbrain-setup-state.js` from the same `GET /api/gbrain` snapshot. Where the
+service is absent the surface says so and points at Ronin Services instead of pressing a
+Load that cannot exist; where it is loaded it shows the measured rows above and hands the
+first use to Personal Assistant. `docs/setup-workbench.md` has the state table.
+
 ### Where connection credentials live
 
 The implemented boundary is narrow: the gbrain credential gateway owns acquisition and

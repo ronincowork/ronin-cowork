@@ -425,13 +425,16 @@ function createServicesSurface(context) {
   return { el: out.el, show };
 }
 
+/** gbrain: the Setup presentation of the commons tab. Reads and presses are the tab's own. */
 function createGbrainSurface(context) {
   const out = surface(t('pane.gbrain', 'gbrain'));
   const host = el('div', 'setup-surface-body'); out.content.append(host);
   const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
-    designedErrors: true,
     presentation: 'setup',
     availability: () => context.environment?.setupRuntime?.gbrain || null,
+    // The selector card follows the measured state once it is read.
+    onState: (summary) => notifySummary(SETUP_SURFACE_TYPES.gbrain, summary, context.workbench),
+    openServices: () => context.workbench?.place(SETUP_SURFACE_TYPES.services, context.workspace || 'workspace2'),
   });
   return { el: out.el, show: () => {
     const status = context.environment?.setupRuntime?.gbrain;
