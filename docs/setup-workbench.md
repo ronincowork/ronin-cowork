@@ -78,3 +78,27 @@ is for, what it requires, and how to use it before showing their specialized con
 The Services surface wears its own mark, `brand/services-mark.svg`: an R and S monogram
 inside the house hexagon, drawn in code in the same kaki as the hito mark, so it reads on
 both shells. The heading beside it carries the accessible name; the image is decorative.
+
+## gbrain
+
+The gbrain surface is the Setup presentation of the cowork commons gbrain tab: the same
+`GET /api/gbrain` read and the same Load press, painted as value first, then one measured
+status. It opens with what gbrain gives (find by meaning, shared recall, stays local) and a credit to the upstream project, then one status line, one next sentence
+and at most one action for the state Ronin measured:
+
+| Measured | Status | The one action |
+|---|---|---|
+| the gbrain service is absent | Not installed on this machine | Open Ronin Services |
+| installed, but not loaded | Not installed on this machine | Load gbrain |
+| the installer is running | Installing… (the surface re-reads every few seconds) | none |
+| the installer failed | Install did not finish, with the log folded below | Retry install |
+| loaded and the local process answers | Running on this machine | Start with Personal Assistant |
+| loaded and the process is silent | Installed · not running | Ask Personal Assistant to check gbrain |
+| the read itself failed | Status could not be read | Check again |
+
+When gbrain is loaded the surface adds **Measured now**: local process, local embeddings,
+reach, outside model use and integrations, each the snapshot's own value, with the observed
+time and a quiet Check again. The selector card's summary follows the measured state. The
+Personal Assistant preset waits for gbrain to be active, and the surface says so in every
+state. The pure state mapping is `public/js/gbrain-setup-state.js`; `docs/gbrain.md` holds
+what gbrain is.

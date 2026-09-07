@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { gbrainAssistantPrompt, gbrainSetupModel } from './gbrain-setup-state.js';
 
 // A function, not a table: the lexicon loads after this module is evaluated.
 function words() {
@@ -20,8 +21,13 @@ function value(v) {
   return words()[v] || String(v ?? 'unknown').replaceAll('_', ' ');
 }
 
-/** The service-owned gbrain commons_tab. Without its service it is never entered. */
+/**
+ * The service-owned gbrain commons_tab. Without its service it is never entered.
+ * `options.presentation === 'setup'` is the Ronin Setup work surface instead: the same
+ * reads and presses, painted from gbrain-setup-state.js as one status and one action.
+ */
 export function buildGbrain(root, isShowing, askPersonalAssistant, options = {}) {
+  const setup = options.presentation === 'setup';
   const head = document.createElement('div');
   head.className = 'gb-head';
   const intro = document.createElement('div');
@@ -38,7 +44,7 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
   search.className = 'gb-card';
   const integrations = document.createElement('section');
   integrations.className = 'gb-card';
-  root.append(head, privacy, search, integrations);
+  if (!setup) root.append(head, privacy, search, integrations);
 
   const heading = (text) => Object.assign(document.createElement('h3'), { textContent: text });
   const row = (label, text, tone = '') => {
@@ -51,77 +57,6 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
     return el;
   };
   const toneFor = (v) => (['running', 'vm_only', 'none', 'off', 'hybrid'].includes(v) ? 'good' : ['unknown'].includes(v) ? 'warn' : 'bad');
-
-  const renderSetup = (data) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'gb-setup';
-    const intro = document.createElement('section');
-    intro.className = 'setup-compact-intro';
-    const benefits = document.createElement('ul');
-    benefits.className = 'setup-value-points';
-    for (const copy of [
-      t('gbrain.setup_find', 'Find notes, decisions, and history by meaning—not only exact words.'),
-      t('gbrain.setup_recall', 'Let connected Agents recall the same knowledge across sessions.'),
-      t('gbrain.setup_local', 'Keep embeddings and the searchable memory on this machine.'),
-    ]) benefits.append(Object.assign(document.createElement('li'), { textContent: copy }));
-    intro.append(
-      Object.assign(document.createElement('p'), {
-        className: 'setup-lede',
-        textContent: t('gbrain.setup_intro', 'Give your Agents a shared, searchable memory.'),
-      }),
-      benefits,
-    );
-
-    const facts = document.createElement('section');
-    facts.className = 'gb-setup-facts';
-    facts.append(heading(t('gbrain.setup_status', 'Status and requirements')));
-    const installed = data.installed === true;
-    const running = data.process?.state === 'running';
-    const weights = data.search?.weights;
-    const connected = data.integrationsKnown
-      ? (data.integrations || []).filter((item) => item.state === 'connected').length
-      : null;
-    const statusFacts = installed ? [
-      [t('gbrain.process', 'Local gbrain process'), value(data.process?.state)],
-      [t('gbrain.embeddings', 'Local embeddings'), value(weights)],
-      [t('gbrain.listening', 'Listening'), value(data.listener?.scope)],
-      [t('gbrain.provider', 'External model provider'), value(data.externalModelProvider)],
-      [t('gbrain.integrations', 'Integrations'), connected === null ? value('unknown') : connected ? t('gbrain.n_connected', '{n} connected', { n: connected }) : value('none')],
-    ] : [
-      [t('gbrain.install', 'Installation'), data.install?.state === 'running' ? t('gbrain.installing', 'Installing') : data.install?.state === 'failed' ? t('gbrain.failed', 'Failed') : t('gbrain.not_installed', 'Not installed')],
-      [t('gbrain.setup_downloads', 'Install downloads'), 'github.com · huggingface.co'],
-      [t('gbrain.provider', 'External model provider'), value('none')],
-    ];
-    for (const [label, answer] of statusFacts) facts.append(row(label, answer));
-    facts.append(Object.assign(document.createElement('p'), {
-      className: 'setup-requirement',
-      textContent: installed
-        ? t('gbrain.setup_requires_installed', 'Requires a running local process and local embedding weights; Agents connect through MCP.')
-        : t('gbrain.setup_requires_load', 'Load once to install gbrain, local embedding weights, and Agent wiring.'),
-    }));
-
-    const next = document.createElement('button');
-    next.type = 'button';
-    next.className = 'wk-action';
-    if (!installed && data.install?.state === 'running') {
-      next.textContent = t('gbrain.check_installation', 'Check installation');
-      next.addEventListener('click', load);
-    } else if (!installed) {
-      next.textContent = data.install?.state === 'failed' ? t('gbrain.retry_install', 'Retry install') : t('gbrain.load', 'Load gbrain');
-      next.addEventListener('click', async () => {
-        next.disabled = true;
-        await request('/api/gbrain/install', { method: 'POST', json: {} });
-        void load();
-      });
-    } else {
-      next.textContent = running ? t('gbrain.start_with_assistant', 'Start with PersonalAssistant') : t('gbrain.ask_assistant_check', 'Ask PersonalAssistant to check gbrain');
-      next.addEventListener('click', () => askPersonalAssistant(running
-        ? 'Help me start using gbrain. Show me how to save and find shared knowledge, and explain any outside connection before asking me to approve it.'
-        : 'Check why the local gbrain process is not running. Explain what you find before changing anything.'));
-    }
-    wrap.append(intro, facts, next);
-    root.replaceChildren(wrap);
-  };
 
   const renderPrivacy = (data) => {
     privacy.innerHTML = '';
@@ -199,6 +134,93 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
   // and the service's own installer runs — weights, gbrain, cabinet, wiring, shelves.
   // The button exists ONLY while gbrain is absent; once installed the panel takes over.
   let polling = null;
+  const stopPolling = () => { if (polling) { clearInterval(polling); polling = null; } };
+
+  // THE SETUP WORK SURFACE. Value first, then one measured status with one next sentence
+  // and at most one action, then the measured rows when there is something to measure.
+  // Every fact is the snapshot's own; every press is the same route the commons tab uses.
+  const renderSetup = (result) => {
+    const model = gbrainSetupModel(result, options.availability?.());
+    options.onState?.(model.summary, model);
+    if (model.polling && !polling) polling = setInterval(() => { if (isShowing()) void load(); else stopPolling(); }, 3000);
+    if (!model.polling) stopPolling();
+    const make = (tag, className, text) => {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      if (text != null) el.textContent = text;
+      return el;
+    };
+    const wrap = make('section', 'setup-gbrain-compact');
+    wrap.dataset.state = model.state;
+
+    const lockup = make('header', 'setup-gbrain-lockup');
+    const glyph = make('i', 'setup-gbrain-glyph', '◇');
+    glyph.setAttribute('aria-hidden', 'true');
+    const identity = make('div', 'setup-gbrain-identity');
+    const credit = make('a', 'setup-gbrain-credit', t('gbrain.setup_credit', 'Open-source agent memory by Garry Tan ↗'));
+    credit.href = 'https://github.com/garrytan/gbrain';
+    credit.target = '_blank';
+    credit.rel = 'noopener noreferrer';
+    identity.append(make('h2', '', t('pane.gbrain', 'gbrain')), make('p', 'setup-lede', t('gbrain.setup_intro', 'A shared, searchable memory for your Agents.')), credit);
+    lockup.append(glyph, identity);
+
+    const benefits = make('div', 'setup-gbrain-benefits');
+    for (const [head, copy] of [
+      [t('gbrain.setup_find', 'Find by meaning'), t('gbrain.setup_find_copy', 'Notes, decisions, and history come back by what they mean, not only by exact words.')],
+      [t('gbrain.setup_recall', 'Shared recall'), t('gbrain.setup_recall_copy', 'Every connected Agent reads and files into the same memory.')],
+      [t('gbrain.setup_local', 'Stays local'), t('gbrain.setup_local_copy', 'Local embeddings and a local process. Outside connections open only when you approve one.')],
+    ]) {
+      const item = make('div', 'setup-gbrain-benefit');
+      item.append(make('h3', '', head), make('p', '', copy));
+      benefits.append(item);
+    }
+
+    const status = make('section', 'setup-gbrain-status');
+    status.dataset.tone = model.tone;
+    status.setAttribute('aria-live', 'polite');
+    status.append(make('p', 'setup-gbrain-status-line', model.status), make('p', 'setup-gbrain-next', model.next));
+    wrap.append(lockup, benefits, status);
+
+    if (model.log?.length) {
+      const log = make('details', 'setup-gbrain-log');
+      log.append(make('summary', '', t('gbrain.setup_install_log', 'Install log')), make('pre', '', model.log.join('\n')));
+      wrap.append(log);
+    }
+    if (model.action) {
+      const button = make('button', 'wk-action', model.action.label);
+      button.type = 'button';
+      button.dataset.action = model.action.id;
+      button.addEventListener('click', async () => {
+        if (model.action.id === 'open_services') { options.openServices?.(); return; }
+        if (model.action.id === 'start_assistant' || model.action.id === 'check_assistant') { askPersonalAssistant(gbrainAssistantPrompt(model.state)); return; }
+        button.disabled = true;
+        if (model.action.id === 'load' || model.action.id === 'retry') await request('/api/gbrain/install', { method: 'POST', json: {} });
+        void load();
+      });
+      wrap.append(button);
+    }
+    if (model.facts.length) {
+      const facts = make('section', 'setup-gbrain-facts');
+      const list = make('dl');
+      for (const [label, text, tone] of model.facts) {
+        const dd = make('dd', '', text);
+        if (tone) dd.dataset.tone = tone;
+        list.append(make('dt', '', label), dd);
+      }
+      facts.append(make('h3', '', t('gbrain.setup_measured', 'Measured now')), list);
+      const observed = make('p', 'setup-fine setup-gbrain-observed');
+      const time = model.observedAt ? new Date(model.observedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const recheck = make('button', 'setup-gbrain-recheck', t('gbrain.check_again', 'Check again'));
+      recheck.type = 'button';
+      recheck.addEventListener('click', () => { recheck.disabled = true; void load(); });
+      observed.append(make('span', '', time ? t('gbrain.setup_observed', 'Observed {time}', { time }) : ''), recheck);
+      facts.append(observed);
+      wrap.append(facts);
+    }
+    wrap.append(make('p', 'setup-fine setup-gbrain-gate', t('gbrain.setup_gate', 'The Personal Assistant preset waits for gbrain to be active.')));
+    root.replaceChildren(wrap);
+  };
+
   const renderLoad = (data) => {
     search.innerHTML = '';
     integrations.innerHTML = '';
@@ -271,40 +293,13 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
   };
 
   const load = async () => {
-    refresh.hidden = false;
+    if (setup) { renderSetup(await request('/api/gbrain')); return; }
     refresh.disabled = true;
     refresh.textContent = t('gbrain.checking', 'checking…');
     const r = await request('/api/gbrain');
     refresh.disabled = false;
     refresh.textContent = t('gbrain.refresh', '↻ Refresh');
     if (!r.ok) {
-      if (options.designedErrors) {
-        refresh.hidden = true;
-        root.replaceChildren();
-        const notice = document.createElement('section');
-        notice.className = 'gb-notice';
-        notice.setAttribute('role', 'status');
-        const title = heading(t('gbrain.status_unavailable', 'gbrain status is unavailable'));
-        const availability = options.availability?.();
-        const known = document.createElement('p');
-        known.className = 'gb-known';
-        known.textContent = availability?.installed
-          ? t('gbrain.known_installed', 'Ronin reports that gbrain is installed on this machine.')
-          : t('gbrain.known_not_installed', 'Ronin reports that gbrain is not installed on this machine.');
-        const diagnosis = document.createElement('p');
-        diagnosis.textContent = t('gbrain.status_diagnosis', 'Setup could not read the local gbrain status. Nothing was changed.');
-        const retry = document.createElement('button');
-        retry.type = 'button';
-        retry.className = 'wk-action';
-        retry.textContent = t('gbrain.check_again', 'Check again');
-        retry.addEventListener('click', () => {
-          root.replaceChildren(head, privacy, search, integrations);
-          void load();
-        });
-        notice.append(title, known, diagnosis, retry);
-        root.append(notice);
-        return;
-      }
       privacy.innerHTML = '';
       privacy.append(row(t('gbrain.status', 'gbrain status'), r.message, 'bad'));
       search.innerHTML = '';
@@ -312,21 +307,10 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
       return;
     }
     if (!r.data.installed || r.data.install.state === 'running') {
-      if (options.presentation === 'setup') {
-        renderSetup(r.data);
-        return;
-      }
       renderLoad(r.data);
       return;
     }
-    if (polling) {
-      clearInterval(polling);
-      polling = null;
-    }
-    if (options.presentation === 'setup') {
-      renderSetup(r.data);
-      return;
-    }
+    stopPolling();
     renderPrivacy(r.data);
     renderSearch(r.data);
     renderIntegrations(r.data);
