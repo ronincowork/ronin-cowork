@@ -18,16 +18,12 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   head.className = 'pr-head';
   const count = document.createElement('span');
   count.className = 'pr-count';
-  const openAdd = createAction(stones
-    ? { label: t('roots.add_short', '＋ Add'), size: 'compact', className: 'pr-add-action', title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') }
-    : { label: t('roots.add', '＋ Add workspace folder'), kind: 'primary', title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') }).el;
-  openAdd.addEventListener('click', () => {
+  const openAdd = stones ? null : createAction({ label: t('roots.add', '＋ Add workspace folder'), kind: 'primary', title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') }).el;
+  openAdd?.addEventListener('click', () => {
     editing = NEW;
-    if (stones) stoneSurface.openDetail({ id: NEW, label: t('roots.add', '＋ Add workspace folder') }, { returnFocus: openAdd });
-    else render();
+    render();
   });
-  if (stones) head.append(count, openAdd);
-  else head.append(openAdd, count);
+  if (!stones) head.append(openAdd, count);
 
   const list = document.createElement('div');
   list.className = 'pr-list';
@@ -42,14 +38,20 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         if (id !== editing) editing = null;
       },
       renderDetail: (item, host) => {
-        if (item.id === NEW) host.append(addCard());
+        if (item.id === NEW) {
+          editing = NEW;
+          host.append(addCard());
+        }
         else {
           const current = data?.roots?.find((entry) => entry.name === item.id);
-          if (current) host.append(block(current));
+          if (current) {
+            editing = current.name;
+            host.append(block(current));
+          }
         }
       },
     });
-    stoneSurface.mount(root, { before: [head, messages] });
+    stoneSurface.mount(root, { before: [messages] });
   } else root.append(head, list);
 
   const say = (msg, bad) => {
@@ -194,7 +196,10 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     cancel.addEventListener('click', () => {
       editing = null;
       if (stones) {
-        if (creating) { stoneSurface.select(''); openAdd.focus(); }
+        if (creating) {
+          stoneSurface.select('');
+          [...stoneSurface.el.querySelectorAll('[data-sws-id]')].find((button) => button.dataset.swsId === NEW)?.focus();
+        }
         else stoneSurface.refreshDetail();
       } else render();
     });
@@ -369,7 +374,8 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       await loadProjects();
       await refresh();
     });
-    acts.append(edit, shelve, drop);
+    if (!stones) acts.append(edit);
+    acts.append(shelve, drop);
 
     b.prepend(top);
     b.append(facts);
@@ -394,7 +400,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       for (const r of roots) list.appendChild(block(r));
       return;
     }
-    stoneSurface.setItems(roots.map((r) => ({
+    stoneSurface.setItems([...roots.map((r) => ({
       id: r.name,
       label: r.name,
       state: r.archived
@@ -403,7 +409,12 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
           ? t('roots.stone_missing', 'Folder missing')
           : t('roots.stone_ready', 'Ready'),
       className: [!r.facts?.exists ? 'gone' : '', r.archived ? 'archived' : ''].filter(Boolean).join(' '),
-    })));
+    })), {
+      id: NEW,
+      label: t('roots.add_stone', 'Add Workspace Folder'),
+      className: 'setup-roots-add-stone',
+      attrs: { title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') },
+    }]);
   }
 
   /** The last card in the list: the same shape as a root, and the place a new one is typed. */

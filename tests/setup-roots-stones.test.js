@@ -18,11 +18,13 @@ test('roots adapt the real project-root blocks and Add form to the shared stone 
   assert.match(roots, /options\.presentation === 'stones'/);
   assert.match(roots, /import \{ createStoneWorkSurface \} from '\.\/stone-work-surface\.js'/);
   assert.match(roots, /stoneSurface = createStoneWorkSurface/);
-  assert.match(roots, /if \(current\) host\.append\(block\(current\)\)/);
-  assert.match(roots, /stoneSurface\.openDetail\(\{ id: NEW/);
+  assert.match(roots, /if \(current\) \{[\s\S]*?editing = current\.name;[\s\S]*?host\.append\(block\(current\)\)/);
+  assert.match(roots, /if \(!stones\) acts\.append\(edit\);[\s\S]*?acts\.append\(shelve, drop\)/);
   assert.match(roots, /stoneSurface\.refreshDetail\(\)/);
-  assert.match(roots, /label: t\('roots\.add_short', '＋ Add'\), size: 'compact'/);
-  assert.match(roots, /if \(stones\) head\.append\(count, openAdd\)/);
+  assert.match(roots, /const openAdd = stones \? null : createAction/);
+  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[messages\] \}\)/);
+  assert.match(roots, /id: NEW,[\s\S]*?label: t\('roots\.add_stone', 'Add Workspace Folder'\),[\s\S]*?className: 'setup-roots-add-stone'/);
+  assert.doesNotMatch(roots, /stoneSurface\.openDetail/);
   assert.doesNotMatch(roots, /secondary: r\.remit \|\| r\.dir/);
   assert.match(roots, /t\('roots\.stone_ready', 'Ready'\)/);
   assert.match(roots, /t\('roots\.stone_missing', 'Folder missing'\)/);
@@ -42,13 +44,14 @@ test('roots carry no parallel stone DOM or CSS presentation', async () => {
   assert.doesNotMatch(css, /\.setup-roots-stones \.pr-stone/);
   assert.doesNotMatch(css, /--pr-stone/);
   assert.match(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state/);
+  assert.match(css, /\.setup-roots-stones \.setup-roots-add-stone[\s\S]*?border-style: dashed/);
 });
 
 test('roots stones mount visible loading, empty, and failure output without changing Campaign roots', async () => {
   const roots = await source('public/js/projectroots.js');
   assert.match(roots, /messages\.className = 'pr-status'/);
   assert.match(roots, /messages\.setAttribute\('role', 'status'\)/);
-  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[head, messages\] \}\)/);
+  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[messages\] \}\)/);
   assert.match(roots, /const output = stones \? messages : list/);
   assert.match(roots, /messages\.replaceChildren\(\)/, 'a successful render clears loading or failure output');
   assert.match(roots, /\(stones \? messages : list\)\.appendChild/, 'the zero-roots message uses the mounted status host');

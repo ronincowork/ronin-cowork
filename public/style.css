@@ -2791,6 +2791,10 @@ body {
 .setup-roots-stones .sws-stone.gone .sws-state {
   color: var(--bad-soft);
 }
+.setup-roots-stones .setup-roots-add-stone {
+  border-style: dashed;
+  color: var(--muted-2);
+}
 .cv-worktrees-default {
   margin-top: var(--space-3);
   padding-top: var(--space-4);
