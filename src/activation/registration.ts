@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { storeDir } from '../resources.js';
 import { isEntitled } from './flow.js';
 import { clearClaimSecret, clearEntitlementToken } from './secrets.js';
 import { maskEmail, readState as readActivation, writeState as writeActivation } from './state.js';
 
-export type RegistrationStatus = 'optional' | 'pending' | 'registered';
+export type RegistrationStatus = 'optional' | 'anonymous' | 'pending' | 'registered';
 
 export interface CommunicationPreferences {
   newsletter: boolean;
@@ -15,22 +16,42 @@ export interface CommunicationPreferences {
 }
 
 export interface RegistrationRecord {
+  identity_mode: 'email' | 'anonymous';
   email_masked: string | null;
   purpose: string;
   kind: string;
+  kind_other: string;
   user_type: string;
+  goals: string[];
+  preferred_feature: string;
+  reasons: string[];
+  reason_other: string;
+  run_location: string;
+  intended_use: string[];
+  theme_preference: string;
   own_words: string;
+  anonymous_packet_id: string;
   communication: CommunicationPreferences;
   submitted_at: string | null;
   updated_at: string;
 }
 
 const EMPTY: RegistrationRecord = {
+  identity_mode: 'email',
   email_masked: null,
   purpose: '',
   kind: '',
+  kind_other: '',
   user_type: '',
+  goals: [],
+  preferred_feature: '',
+  reasons: [],
+  reason_other: '',
+  run_location: '',
+  intended_use: [],
+  theme_preference: '',
   own_words: '',
+  anonymous_packet_id: '',
   communication: {
     newsletter: false,
     release_updates: false,
@@ -46,6 +67,10 @@ const text = (value: unknown, max = 240) => typeof value === 'string' ? value.tr
 const list = (value: unknown) => Array.isArray(value)
   ? [...new Set(value.map((item) => text(item, 48)).filter(Boolean))].slice(0, 8)
   : [];
+const packetId = () => {
+  const alphabet = 'abcdefghjkmnpqrstvwxyz23456789';
+  return `pkt_${[...randomBytes(26)].map((byte) => alphabet[byte % alphabet.length]).join('')}`;
+};
 
 export async function readRegistration(): Promise<RegistrationRecord> {
   try {
@@ -84,16 +109,27 @@ export async function deleteRegistration(): Promise<void> {
 }
 
 export async function submitRegistration(input: Record<string, unknown>): Promise<RegistrationRecord> {
+  const identityMode = input.identity_mode === 'anonymous' ? 'anonymous' : 'email';
   const email = text(input.email, 320);
-  if (!email || !/^\S+@\S+\.\S+$/.test(email)) throw new Error('Enter a valid email address.');
+  if (identityMode === 'email' && (!email || !/^\S+@\S+\.\S+$/.test(email))) throw new Error('Enter a valid email address or choose Anonymous.');
   const current = await readRegistration();
   return writeRegistration({
     ...current,
-    email_masked: maskEmail(email),
+    identity_mode: identityMode,
+    email_masked: identityMode === 'email' ? maskEmail(email) : null,
     purpose: text(input.purpose, 80),
     kind: text(input.kind, 80),
+    kind_other: text(input.kind_other, 160),
     user_type: text(input.user_type, 80),
+    goals: list(input.goals),
+    preferred_feature: text(input.preferred_feature, 80),
+    reasons: list(input.reasons),
+    reason_other: text(input.reason_other, 240),
+    run_location: text(input.run_location, 80),
+    intended_use: list(input.intended_use),
+    theme_preference: text(input.theme_preference, 24),
     own_words: text(input.own_words, 500),
+    anonymous_packet_id: identityMode === 'anonymous' ? current.anonymous_packet_id || packetId() : '',
     submitted_at: current.submitted_at ?? new Date().toISOString(),
     updated_at: new Date().toISOString(),
   });
@@ -119,16 +155,27 @@ export async function registrationAnswer() {
   const [record, activation, entitled] = await Promise.all([
     readRegistration(), readActivation(), isEntitled().catch(() => false),
   ]);
-  const status: RegistrationStatus = entitled ? 'registered' : record.submitted_at ? 'pending' : 'optional';
+  const status: RegistrationStatus = entitled ? 'registered' : record.submitted_at
+    ? record.identity_mode === 'anonymous' ? 'anonymous' : 'pending'
+    : 'optional';
   return {
     status,
     registered: status === 'registered',
     services_entitled: entitled,
     services_activation: activation.stage,
+    identity_mode: record.identity_mode,
     email_masked: record.email_masked,
     purpose: record.purpose,
     kind: record.kind,
+    kind_other: record.kind_other,
     user_type: record.user_type,
+    goals: record.goals,
+    preferred_feature: record.preferred_feature,
+    reasons: record.reasons,
+    reason_other: record.reason_other,
+    run_location: record.run_location,
+    intended_use: record.intended_use,
+    theme_preference: record.theme_preference,
     own_words: record.own_words,
     communication: record.communication,
     submitted_at: record.submitted_at,

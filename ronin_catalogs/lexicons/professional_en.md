@@ -877,6 +877,60 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **gbrain.setup_observed:** Observed {time}
 - **gbrain.setup_gate:** The Personal Assistant preset waits for gbrain to be active.
 
+## services_setup — services-setup-state.js and setup-surfaces.js (the Ronin Setup Services work surface)
+- **services_setup.intro:** Ronin’s hosted parts: the template library, a background assistant, voice, and team memory.
+- **services_setup.library:** Template library
+- **services_setup.library_copy:** Teams and Agents Ronin keeps and grows, with the procedures, macros, and tools they read, installed with one press.
+- **services_setup.records:** Work records kept current
+- **services_setup.records_copy:** A background assistant keeps every Agent’s work record current, so the roster and the tile say what each is doing.
+- **services_setup.voice:** Voice and memory
+- **services_setup.voice_copy:** Hear a report read back, speak to an Agent from the tile, and keep what a session learns for the team.
+- **services_setup.register:** Register
+- **services_setup.open_register:** Open Register
+- **services_setup.check:** Check status
+- **services_setup.install:** Install Services
+- **services_setup.try_again:** Try again
+- **services_setup.summary_not_active:** not active
+- **services_setup.status_not_active:** Not active on this machine
+- **services_setup.next_register:** Register with an email address to unlock Services. Local Ronin keeps working without it.
+- **services_setup.status_anonymous:** Not active · anonymous hello sent
+- **services_setup.next_anonymous:** Services entitlement goes to an email address. Register with one to continue.
+- **services_setup.summary_sending:** sending
+- **services_setup.status_sending:** Sending the confirmation email…
+- **services_setup.next_sending:** Ronin is asking HQ to send it. This surface checks again in a moment.
+- **services_setup.summary_awaiting:** confirm email
+- **services_setup.status_awaiting_to:** Confirmation email sent to {email}
+- **services_setup.status_awaiting:** Confirmation email sent
+- **services_setup.next_awaiting:** Open the link in that email; any device works. Resend or change the address from Register.
+- **services_setup.summary_expired:** link expired
+- **services_setup.status_expired:** Confirmation link expired
+- **services_setup.next_expired:** Ask for a fresh email from Register. Nothing else changed.
+- **services_setup.summary_send_failed:** waiting to send
+- **services_setup.status_send_failed:** Waiting to send
+- **services_setup.next_send_failed:** HQ could not be reached. Ronin retries on its own; Check status asks again now.
+- **services_setup.summary_not_activated:** not activated
+- **services_setup.status_not_activated:** Installed · not activated
+- **services_setup.summary_ready:** ready to install
+- **services_setup.status_entitled:** Access confirmed · Ready to install
+- **services_setup.next_entitled:** Install fetches Services from Ronin HQ, verifies it, and restarts Ronin’s server. The page blinks; sessions are untouched.
+- **services_setup.summary_installing:** installing
+- **services_setup.status_installing:** Installing Services…
+- **services_setup.next_installing:** Fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched.
+- **services_setup.summary_install_failed:** install failed
+- **services_setup.status_install_failed:** Install did not finish
+- **services_setup.next_install_failed:** The installer did not finish. Nothing else was changed.
+- **services_setup.summary_switched_off:** switched off
+- **services_setup.status_switched_off:** Installed and activated · switched off
+- **services_setup.next_switched_off_running:** Switched off, but still running in this copy of Ronin until it restarts.
+- **services_setup.next_switched_off:** Turn it on for new Agents on the Campaign’s Routines and Installs; a team can differ in its Team Configuration.
+- **services_setup.summary_restart:** restart needed
+- **services_setup.status_restart:** Switched on · not yet running
+- **services_setup.next_restart:** Restart Ronin to start it. Sessions are untouched.
+- **services_setup.summary_active:** active
+- **services_setup.status_active:** Active on this Cowork
+- **services_setup.next_active:** The template library, background assistant, voice, and memory are on for new Agents.
+- **services_setup.gate:** The Grokbot Morning Briefing preset waits for Ronin Services to be active.
+
 ## koshi — koshi.js (the 目 Koshi tab)
 - **koshi.restart:** ↻ Restart Koshi
 - **koshi.restart_title:** Stop and start the watcher. Settings apply on their own; this is for when it is not running at all.

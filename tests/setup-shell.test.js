@@ -109,3 +109,19 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
   assert.match(cowork, /PRESETS_TYPE/);
 });
+
+test('Setup header has only compact viewport and real-theme icon toggles', async () => {
+  const [setup, kit, theme] = await Promise.all([
+    source('js/setup-view.js'), source('workspace-kit.css'), source('js/theme.js'),
+  ]);
+  assert.match(setup, /actions: \[viewportToggle, themeToggle\]/);
+  assert.match(setup, /setTheme\(document\.documentElement\.dataset\.theme === 'dark' \? 'light' : 'dark'\)/);
+  assert.match(setup, /dataset\.setupViewport = viewportMode/);
+  assert.match(setup, /setAttribute\('aria-label'/);
+  assert.match(setup, /setAttribute\('aria-pressed'/);
+  assert.match(kit, /\.setup-header-toggle \{ width: var\(--space-10\); min-height: var\(--space-10\);/);
+  assert.match(kit, /data-setup-viewport='mobile'/);
+  assert.match(kit, /data-setup-viewport='desktop'/);
+  assert.match(theme, /export function setTheme\(name\)/);
+  assert.doesNotMatch(setup, /localStorage\.setItem\([^)]*theme/);
+});

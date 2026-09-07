@@ -79,6 +79,34 @@ The Services surface wears its own mark, `brand/services-mark.svg`: an R and S m
 inside the house hexagon, drawn in code in the same kaki as the hito mark, so it reads on
 both shells. The heading beside it carries the accessible name; the image is decorative.
 
+## Ronin Services
+
+The Services surface opens with what Services adds — the template library, the background
+assistant that keeps work records current, voice and team memory — then one status line, one
+next sentence and at most one action for the state Ronin measured from `GET
+/api/setup/registration`, `GET /api/installed` and `GET /api/services/activation`:
+
+| Measured | Status | The one action |
+|---|---|---|
+| no registration, or the read failed | Not active on this machine | Register |
+| an anonymous hello only | Not active · anonymous hello sent | Register |
+| the confirmation email is being requested | Sending the confirmation email… | none; re-read in 15 s |
+| the email is out, unconfirmed | Confirmation email sent to p\*\*\*\*\*@example.com | Check status (`POST /api/services/activation/poll`) |
+| the confirmation link expired | Confirmation link expired | Open Register |
+| HQ could not be reached while sending | Waiting to send | Check status |
+| entitled, parts absent | Access confirmed · Ready to install | Install Services (`POST /api/services/install`) |
+| the installer is running | Installing Services… | none; re-read in 5 s |
+| the installer did not start or finish | Install did not finish | Try again |
+| parts present without an entitlement | Installed · not activated | the registration row's action |
+| entitled and installed, switched off | Installed and activated · switched off | none; the next line names the switch |
+| switched on, not yet loaded | Switched on · not yet running | none; restart Ronin |
+| switched on and loaded | Active on this Cowork | none |
+
+The selector card's summary follows the same state. The Grokbot Morning Briefing preset waits
+for Services to be active, and the surface says so in every state. The pure state mapping is
+`public/js/services-setup-state.js`; `docs/services-activation.md` holds the activation flow
+itself.
+
 ## gbrain
 
 The gbrain surface is the Setup presentation of the cowork commons gbrain tab: the same

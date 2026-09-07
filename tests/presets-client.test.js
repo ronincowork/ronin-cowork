@@ -218,11 +218,28 @@ test('Bare Metal keeps two real tile layouts, compact rows, separated sections, 
   assert.match(source, /for \(const count of \[2, 4\]\)/);
   assert.doesNotMatch(source, /Customize this|\[1, 2, 4\]/);
   assert.match(css, /\.sp-choice-panel \{[^}]*font-size: var\(--text-5\)/);
-  assert.match(css, /\.sp-choice-panel > \.sp-field:first-child[^}]*padding-top: 0/);
+  assert.match(source, /const wrap = el\('label', 'sp-field sp-section'\)/);
+  assert.match(source, /const section = \(label, prompt, \.\.\.content\)/);
+  assert.match(css, /\.sp-field \{[^}]*gap: var\(--space-6\)/);
+  assert.match(css, /\.sp-section\[hidden\] \{ display: none; \}/);
   assert.match(css, /\.sp-select \{[^}]*font-size: inherit/);
   assert.match(css, /\.sp-lead \{[^}]*font-size: inherit/);
-  assert.match(css, /\.sp-controls > :is\(\.sp-field, \.sp-control-label\):not\(:first-child\) \{[^}]*margin-top: var\(--space-12\);[^}]*border-top[^}]*padding-top: var\(--space-8\)/);
+  assert.match(css, /\.sp-controls > \.sp-section:not\(:first-child\), \.sp-controls \+ \.sp-section \{[^}]*margin-top: var\(--space-12\);[^}]*border-top[^}]*padding-top: var\(--space-8\)/);
   assert.match(css, /\.sp-field-label, \.sp-control-label \{[^}]*font-weight: 600/);
-  assert.match(css, /\.sp-controls \+ \.sp-field \{[^}]*margin-top: var\(--space-10\);[^}]*padding-top: var\(--space-10\)/);
   assert.match(css, /\.sp-rows \{[^}]*gap: var\(--space-2\)/);
+});
+
+test('Personal Assistant hides the whole Recruit section until Chief of Staff is selected', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /const recruit = field\('Recruit', specialists\)/);
+  assert.match(source, /const showRecruit = \(\) => \{ recruit\.hidden = select\.value !== 'recruit'; \}/);
+  assert.doesNotMatch(source, /specialists\.hidden =/);
+});
+
+test('Morning Brief exposes canonical custom timing and expands role instructions while editing', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /option\('daily', 'Every day'\), option\('weekdays', 'Weekdays'\), option\('once', 'One time'\)/);
+  assert.match(source, /state\.schedule = cadence === 'once' \? `once \$\{date\.value\} \$\{time\.value\}` : `\$\{cadence\} \$\{time\.value\}`/);
+  assert.match(source, /ask\.addEventListener\('focus', \(\) => \{ ask\.rows = 3; \}\)/);
+  assert.match(source, /ask\.addEventListener\('blur', \(\) => \{ ask\.rows = 1; \}\)/);
 });

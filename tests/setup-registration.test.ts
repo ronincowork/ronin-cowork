@@ -23,14 +23,30 @@ test('registration begins optional with communication explicitly off', async () 
 test('registration records purpose fields but never stores the plain email', async () => {
   await submitRegistration({
     email: 'person@example.com', purpose: 'Build a product', kind: 'work',
-    user_type: 'individual', own_words: 'Keep the setup small.',
+    user_type: 'individual', preferred_feature: 'multiple_providers',
+    reasons: ['different_strengths', 'avoid_lock_in'], run_location: 'personal_server', own_words: 'Keep the setup small.',
   });
   const record = await readRegistration();
   assert.equal(record.email_masked, 'p*****@example.com');
   assert.equal(record.purpose, 'Build a product');
   assert.equal(record.user_type, 'individual');
+  assert.equal(record.preferred_feature, 'multiple_providers');
+  assert.deepEqual(record.reasons, ['different_strengths', 'avoid_lock_in']);
+  assert.equal(record.run_location, 'personal_server');
   assert.equal(JSON.stringify(record).includes('person@example.com'), false);
   assert.equal((await registrationAnswer()).status, 'pending', 'submission is not entitlement');
+});
+
+test('anonymous registration needs no email and keeps a stable outgoing packet identity', async () => {
+  let record = await submitRegistration({
+    identity_mode: 'anonymous', intended_use: ['self_help', 'personal_assistance'], theme_preference: 'automatic',
+  });
+  assert.equal(record.email_masked, null);
+  assert.match(record.anonymous_packet_id, /^pkt_[a-z2-9]{26}$/);
+  const packetId = record.anonymous_packet_id;
+  record = await submitRegistration({ identity_mode: 'anonymous', intended_use: ['coding'] });
+  assert.equal(record.anonymous_packet_id, packetId);
+  assert.equal((await registrationAnswer()).status, 'anonymous');
 });
 
 test('communication remains independent and No communication clears other choices', async () => {
@@ -107,35 +123,72 @@ test('selector definitions retain neutral provider grouping without requirement 
   assert.doesNotMatch(source, /SETUP_REQUIREMENT_TARGETS|targetKey|targetClass/);
 });
 
-test('Register presents one open profile flow with bounded choices and no Preset duplication', async () => {
+test('Register presents one open profile flow with card choices and anonymous delivery', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  for (const name of ['email', 'purpose', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
-  for (const name of ['kind', 'user_type']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
+  for (const name of ['email', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
+  for (const name of ['identity_mode', 'kind', 'preferred_feature', 'run_location']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
+  assert.match(source, /checklistGroup\('reasons'/);
+  assert.match(source, /reasons\.other\.value/);
+  assert.match(source, /kind_other: kindOther\.value/);
+  assert.doesNotMatch(source, /Who is using Ronin\?|\['individual', 'Just me'\]|\['team', 'A team'\]|\['builder', 'Builder'\]|\['exploring', 'Exploring'\]/);
   assert.match(source, /Welcome to Ronin/);
   assert.match(source, /setup-register-group/);
-  assert.match(source, /setup-register-pill/);
+  assert.match(source, /setup-register-choice-grid/);
   assert.match(source, /aria-pressed/);
+  for (const label of ['With email', 'Anonymous', 'No thank you', 'Work from anywhere', 'Use multiple providers without lock-in', 'Agents with team coordination skills']) assert.match(source, new RegExp(label));
+  for (const message of ['Different models have different strengths', 'network issues', 'New models keep arriving', 'locked into one provider', 'runs out of tokens', 'hidden sub-agents', 'Something else']) assert.match(source, new RegExp(message));
+  for (const place of ['Virtual machine', 'Personal server', 'Personal computer']) assert.match(source, new RegExp(place));
+  assert.match(source, /Where will you install Ronin\?/);
+  assert.doesNotMatch(source, /Where will you run Ronin\?|Where Ronin fits/);
+  for (const kind of ['Which of these are you most likely to use?', 'Build software', 'Life assistants', 'Research and writing']) assert.match(source, new RegExp(kind.replace('?', '\\?')));
+  assert.ok(source.indexOf('runLocation.wrap, preferredFeature.wrap') > -1, 'machine location comes before feature preference');
+  assert.doesNotMatch(source, /Your starting theme|theme\.wrap/);
+  assert.doesNotMatch(source, /What would make Ronin useful to you\?|Anything else\? \(optional\)/);
+  assert.match(source, /setup_surface\.own_words', 'Anything else'/);
+  assert.match(source, /We hope you enjoy Ronin\. If you’d like to share feedback later, we’d be glad to hear it\./);
+  assert.match(source, /declinedRegistration[\s\S]*?fit\.hidden = declinedRegistration/);
+  assert.match(source, /registerAction\.hidden = declinedRegistration/);
   assert.match(source, /Communication choices/);
-  assert.match(source, /Communication is off until you choose otherwise/);
-  assert.match(source, /register_action'[\s\S]*?'Register'\), '', async/);
+  assert.match(source, /Communication stays off unless you choose otherwise/);
+  assert.match(source, /register_action'[\s\S]*?'Send'\), '', async/);
+  assert.match(source, /registerAction\.dataset\.launch = 'true'/);
+  assert.match(source, /identity_mode: anonymous \? 'anonymous' : 'email'/);
+  assert.doesNotMatch(source, /identityMode\.wrap\.querySelector\('\[data-value="email"\]'\)\?\.click/);
   assert.doesNotMatch(source, /Optional profile|setup-register-disclosure/);
+  assert.doesNotMatch(source, /setup-register-pill/);
   assert.doesNotMatch(source, /const kind = el\('select'\)|const userType = el\('select'\)/);
   assert.doesNotMatch(source, /renderKindPills|createKindsPreference|setup-kinds/);
   assert.doesNotMatch(source, /registration_pending'[\s\S]*?Registration pending/);
 });
 
-test('Services leads with identity and benefits, then routes its only registration action directly', async () => {
+test('anonymous Register delivery uses the durable Ronin message path and never starts email activation', async () => {
+  const source = await (await import('node:fs/promises')).readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8');
+  assert.match(source, /if \(anonymous\)[\s\S]*?sendKansou\(buildKansou/);
+  assert.match(source, /the packet is durable before immediate delivery is attempted/);
+  assert.match(source, /if \(anonymous\)[\s\S]*?return;[\s\S]*?await request\(str\(body\.email\)\)/);
+});
+
+test('Services leads with identity and benefits, then paints one measured status and at most one real action', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{ servicesSetupModel \} from '\.\/services-setup-state\.js'/);
   assert.match(source, /setup-services-mark/);
   assert.match(source, /mark\.src = 'brand\/services-mark\.svg'/);
   assert.doesNotMatch(source, /setup-services-mark'\);\n\s*mark\.src = 'brand\/nin-mark\.svg'/);
-  assert.ok(source.indexOf('services_value_records') < source.indexOf('services_register_enables'), 'benefits precede the registration gate');
-  assert.match(source, /services_value_records/);
-  assert.match(source, /services_value_library/);
-  assert.match(source, /services_register_enables/);
-  assert.match(source, /register_direct'[\s\S]*?workbench\?\.place\(SETUP_SURFACE_TYPES\.register/);
-  assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short/);
-  assert.doesNotMatch(source, /usedFor: t\('setup_surface\.services_used'/);
+  assert.ok(source.indexOf('services_setup.library') < source.indexOf('setup-services-status'), 'benefits precede the status block');
+  for (const key of ['services_setup.library', 'services_setup.records', 'services_setup.voice', 'services_setup.gate']) assert.match(source, new RegExp(key.replace('.', '\\.')));
+  assert.match(source, /request\('\/api\/setup\/registration', \{ cache: 'no-store' \}\)/);
+  assert.match(source, /request\('\/api\/installed', \{ cache: 'no-store' \}\)/);
+  assert.match(source, /request\('\/api\/services\/activation', \{ cache: 'no-store' \}\)/);
+  assert.match(source, /servicesSetupModel\(registration, installed, activation\)/);
+  assert.match(source, /setAttribute\('aria-live', 'polite'\)/);
+  assert.match(source, /'register'\) \{ openRegister\(\); return; \}/);
+  assert.match(source, /workbench\?\.place\(SETUP_SURFACE_TYPES\.register/);
+  assert.match(source, /'install' \? '\/api\/services\/install' : '\/api\/services\/activation\/poll'/);
+  assert.match(source, /notifySummary\(SETUP_SURFACE_TYPES\.services, model\.summary/);
+  assert.match(source, /if \(body\.isConnected\) void show\(\)/, 'polling stops when the surface leaves the workspace');
+  assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short|services_register_enables|Registration confirmed · Services access not included/);
+  assert.doesNotMatch(source, /const state = el\('dl'|<dd>|'Yes' : 'No'/);
+  assert.doesNotMatch(source, /services_value_records|Continue where you left off|readable transcripts/i, 'no benefit promises what this beta does not hold');
 });
 
 test('the Services mark is a code-native R and S monogram in the house hexagon', async () => {
@@ -154,15 +207,47 @@ test('the Services mark is a code-native R and S monogram in the house hexagon',
   assert.doesNotMatch(services, /#[0-9a-fA-F]{3,8}\b(?<!#c46243)/, 'no colour beyond kaki');
 });
 
-test('Services keeps exact lifecycle states secondary and offers only the real install action', async () => {
-  const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  for (const key of ['services_not_entitled', 'services_entitled_status', 'services_installed_status', 'services_activated_status', 'services_active_status']) {
-    assert.match(source, new RegExp(key));
+test('Services setup model gives every measured state one status, one next line, and at most one action', async () => {
+  const { SERVICES_SETUP_STATES, servicesSetupModel } = await import('../public/js/services-setup-state.js');
+  const reg = (status: string, extra: Record<string, unknown> = {}) => ({ ok: true, data: { status, services_entitled: false, ...extra } });
+  const entitled = (extra: Record<string, unknown> = {}) => reg('registered', { services_entitled: true, ...extra });
+  const inst = (services: Record<string, unknown> = {}) => ({ ok: true, data: { services: { installed: false, activated: false, switched_on: false, restart_needed: false, ...services } } });
+  const act = (stage: string, extra: Record<string, unknown> = {}) => ({ ok: true, data: { stage, ...extra } });
+  const cases: Array<[string, unknown, unknown, unknown, string, string, string | null, boolean]> = [
+    ['unregistered', { ok: false, status: 500 }, inst(), null, 'not active', 'Not active on this machine', 'register', false],
+    ['anonymous', reg('anonymous'), inst(), act('not_requested'), 'not active', 'Not active · anonymous hello sent', 'register', false],
+    ['sending', reg('pending'), inst(), act('requesting'), 'sending', 'Sending the confirmation email…', null, true],
+    ['awaiting_email', reg('pending', { email_masked: 'p*****@example.com' }), inst(), act('awaiting_email'), 'confirm email', 'Confirmation email sent to p*****@example.com', 'check', true],
+    ['expired', reg('pending'), inst(), act('expired'), 'link expired', 'Confirmation link expired', 'register', false],
+    ['send_failed', reg('pending'), inst(), act('error', { error_at_stage: 'awaiting_email' }), 'waiting to send', 'Waiting to send', 'check', false],
+    ['entitled', entitled(), inst(), act('verified'), 'ready to install', 'Access confirmed · Ready to install', 'install', false],
+    ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', null, true],
+    ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'install', false],
+    ['switched_off', entitled(), inst({ installed: true, activated: true }), act('installed'), 'switched off', 'Installed and activated · switched off', null, false],
+    ['restart_needed', entitled(), inst({ installed: true, activated: true, switched_on: true, restart_needed: true }), act('installed'), 'restart needed', 'Switched on · not yet running', null, false],
+    ['active', entitled(), inst({ installed: true, activated: true, switched_on: true }), act('installed'), 'active', 'Active on this Cowork', null, false],
+  ];
+  assert.deepEqual(cases.map(([state]) => state).sort(), [...SERVICES_SETUP_STATES].sort());
+  for (const [state, registration, installed, activation, summary, status, action, polling] of cases) {
+    const model = servicesSetupModel(registration as never, installed as never, activation as never);
+    assert.equal(model.state, state);
+    assert.equal(model.summary, summary);
+    assert.equal(model.status, status);
+    assert.equal(model.action?.id ?? null, action);
+    assert.equal(model.polling, polling);
+    assert.ok(model.next.length > 0);
+    assert.doesNotMatch(`${model.status} ${model.next} ${model.action?.label || ''}`, /HTTP|undefined|null/);
   }
-  assert.match(source, /entitled && !facts\?\.installed[\s\S]*?\/api\/services\/install/);
-  assert.match(source, /services_activate_next/);
-  assert.match(source, /services_switch_next/);
-  assert.doesNotMatch(source, /const state = el\('dl'|<dd>|'Yes' : 'No'/);
+  assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).state, 'unregistered', 'a read that answers optional is unregistered');
+  assert.equal(servicesSetupModel(null, null, null).state, 'unregistered', 'no reads at all still paint a truthful floor');
+  const installedUnactivated = servicesSetupModel(reg('pending'), inst({ installed: true }), act('awaiting_email'));
+  assert.equal(installedUnactivated.status, 'Installed · not activated');
+  assert.equal(installedUnactivated.summary, 'not activated');
+  assert.equal(installedUnactivated.action?.id, 'check', 'the parts being present does not change the path to entitlement');
+  assert.match(servicesSetupModel(entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' })).next, /did not start/);
+  assert.match(servicesSetupModel(entitled(), inst({ installed: true, activated: true, restart_needed: true }), act('installed')).next, /still running/);
+  assert.equal(servicesSetupModel(entitled(), inst({ installed: true, activated: true, switched_on: true }), act('installing')).state, 'active', 'parts present and switched on outrank a stale installing stage');
+  assert.deepEqual(new Set(cases.map(([, r, i, a]) => servicesSetupModel(r as never, i as never, a as never).tone)), new Set(['', 'warn', 'bad', 'ok']));
 });
 
 test('Setup gbrain model gives every measured state one status, one next line, and at most one action', async () => {

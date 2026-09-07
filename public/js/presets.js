@@ -148,7 +148,7 @@ const el = (tag, cls = '', text = '') => {
   return out;
 };
 const field = (label, control, prompt = '') => {
-  const wrap = el('label', 'sp-field');
+  const wrap = el('label', 'sp-field sp-section');
   const head = el('span', 'sp-field-label');
   head.append(el('span', '', label));
   if (prompt) head.append(el('span', 'sp-select', prompt));
@@ -160,6 +160,11 @@ const controlLabel = (label, prompt = '') => {
   head.append(el('span', '', label));
   if (prompt) head.append(el('span', 'sp-select', prompt));
   return head;
+};
+const section = (label, prompt, ...content) => {
+  const wrap = el('section', 'sp-section');
+  wrap.append(controlLabel(label, prompt), ...content);
+  return wrap;
 };
 const input = (value = '', type = 'text') => { const out = el('input'); out.type = type; out.value = value; return out; };
 const option = (value, label = value) => { const out = el('option', '', label); out.value = value; return out; };
@@ -185,7 +190,7 @@ export function initialControls(handle, defaultProvider = '') {
       { name: 'brief writer', ask: "Write the morning page on the owner's topic: what moved, what is waiting on the owner, and what today holds. One page, read on a phone in the time the kettle takes. List it on the Docs tab." },
       { name: 'reader', ask: 'Read what the topic produced since yesterday — documents, records, and notes in the project root — and hand the writer the facts, each with the document that proves it.' },
     ] };
-    case 'agent_editable_doc': return { root: 'ronin_lab', document: 'README.md' };
+    case 'agent_editable_doc': return { root: 'ronin_lab', document: 'priorities-for-the-week.md' };
     default: return {};
   }
 }
@@ -295,7 +300,9 @@ function renderAskRows(host, state, key, addLabel) {
       const line = el('div', 'sp-row sp-row-ask');
       const name = input(row.name); name.setAttribute('aria-label', `${addLabel} ${index + 1}`);
       name.addEventListener('input', () => { row.name = slug(name.value); });
-      const ask = input(row.ask); ask.placeholder = 'What should this agent do?'; ask.setAttribute('aria-label', `Ask for ${row.name}`);
+      const ask = el('textarea'); ask.value = row.ask || ''; ask.rows = 1; ask.placeholder = 'What should this agent do?'; ask.setAttribute('aria-label', `Ask for ${row.name}`);
+      ask.addEventListener('focus', () => { ask.rows = 3; });
+      ask.addEventListener('blur', () => { ask.rows = 1; });
       ask.addEventListener('input', () => { row.ask = ask.value; });
       const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
       remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });
@@ -308,32 +315,60 @@ function renderAskRows(host, state, key, addLabel) {
   paint(); host.append(rows);
 }
 
+function renderMorningBriefTiming(host, state) {
+  const parsed = String(state.schedule || 'daily 08:00').match(/^(daily|weekdays) (\d{2}:\d{2})$|^once (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
+  let cadence = parsed?.[1] || (parsed?.[3] ? 'once' : 'daily');
+  const nextDay = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  const timing = el('details', 'sp-timing');
+  const summary = el('summary', 'sp-timing-summary');
+  const editor = el('div', 'sp-timing-editor');
+  const cadenceSelect = el('select');
+  cadenceSelect.append(option('daily', 'Every day'), option('weekdays', 'Weekdays'), option('once', 'One time'));
+  cadenceSelect.value = cadence;
+  const date = input(parsed?.[3] || nextDay, 'date');
+  const time = input(parsed?.[2] || parsed?.[4] || '08:00', 'time');
+  const dateField = el('label', 'sp-timing-field'); dateField.append(el('span', '', 'Date'), date);
+  const cadenceField = el('label', 'sp-timing-field'); cadenceField.append(el('span', '', 'Repeats'), cadenceSelect);
+  const timeField = el('label', 'sp-timing-field'); timeField.append(el('span', '', 'Time'), time);
+  const paint = () => {
+    cadence = cadenceSelect.value;
+    dateField.hidden = cadence !== 'once';
+    state.schedule = cadence === 'once' ? `once ${date.value} ${time.value}` : `${cadence} ${time.value}`;
+    summary.textContent = cadence === 'once' ? `Once · ${date.value} at ${time.value}` : `${cadence === 'daily' ? 'Every day' : 'Weekdays'} at ${time.value}`;
+  };
+  cadenceSelect.addEventListener('change', paint); date.addEventListener('input', paint); time.addEventListener('input', paint);
+  editor.append(cadenceField, dateField, timeField); timing.append(summary, editor); paint();
+  host.append(field('When', timing, 'select'));
+}
+
 function renderSpecialControls(host, handle, state, runtime) {
   const providers = runtime.providers || [], roots = runtime.roots || [];
   if (handle === 'staff_my_codebase') renderCodebaseControls(host, state);
   if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where');
   if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder');
   if (handle === 'bare_metal') {
-    host.append(controlLabel('Agents run side by side', 'select')); renderRows(host, state, 'sessions', providers, 'Session');
-    host.append(controlLabel('Tile view', 'select')); renderTileChoices(host, state);
+    const agents = el('div'); renderRows(agents, state, 'sessions', providers, 'Session');
+    const tiles = el('div'); renderTileChoices(tiles, state);
+    host.append(section('Agents run side by side', 'select', ...agents.children), section('Tile view', 'select', ...tiles.children));
   }
-  if (handle === 'ronin_team') { host.append(controlLabel('Team Lead and agents', 'select')); renderRows(host, state, 'sessions', providers, 'Agent'); }
-  if (handle === 'develop_new_project') { host.append(controlLabel('Split the work · each feature agent gets its own worktree')); renderRows(host, state, 'features', providers, 'Feature Agent'); }
-  if (handle === 'health_and_fitness') { host.append(controlLabel("Each agent's kick-off message", 'edit')); renderAskRows(host, state, 'roles', 'role'); }
+  if (handle === 'ronin_team') { const body = el('div'); renderRows(body, state, 'sessions', providers, 'Agent'); host.append(section('Team Lead and agents', 'select', ...body.children)); }
+  if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', providers, 'Feature Agent'); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
+  if (handle === 'health_and_fitness') { const body = el('div'); renderAskRows(body, state, 'roles', 'role'); host.append(section("Each agent's kick-off message", 'edit', ...body.children)); }
   if (handle === 'personal_assistant') {
     const select = el('select');
     select.append(option('single', 'Single assistant'), option('recruit', 'Chief of Staff'));
-    select.value = state.assistant_mode; select.addEventListener('change', () => { state.assistant_mode = select.value; specialists.hidden = select.value !== 'recruit'; });
+    select.value = state.assistant_mode;
     const specialists = input(state.specialists); specialists.placeholder = 'financial adviser, research, scheduling…'; specialists.addEventListener('input', () => { state.specialists = specialists.value; });
-    specialists.hidden = state.assistant_mode !== 'recruit';
-    host.append(field('How it runs', select, 'select'), field('Recruit', specialists));
+    const recruit = field('Recruit', specialists);
+    const showRecruit = () => { recruit.hidden = select.value !== 'recruit'; };
+    select.addEventListener('change', () => { state.assistant_mode = select.value; showRecruit(); });
+    showRecruit();
+    host.append(field('How it runs', select, 'select'), recruit);
   }
   if (handle === 'morning_brief') {
-    const when = el('select');
-    for (const [value, label] of [['daily 07:00', 'Every day, 7:00'], ['daily 08:00', 'Every day, 8:00'], ['weekdays 08:00', 'Weekdays, 8:00']]) when.append(option(value, label));
-    when.value = state.schedule; when.addEventListener('change', () => { state.schedule = when.value; });
-    host.append(field('When', when, 'select'), controlLabel('What Grokbot looks at', 'edit'));
-    renderAskRows(host, state, 'roles', 'role');
+    renderMorningBriefTiming(host, state);
+    const body = el('div'); renderAskRows(body, state, 'roles', 'role');
+    host.append(section('What Grokbot looks at', 'edit', ...body.children));
   }
   if (handle === 'agent_editable_doc') { const doc = input(state.document); doc.addEventListener('input', () => { state.document = doc.value; }); host.append(field('Which document', doc)); }
 }
