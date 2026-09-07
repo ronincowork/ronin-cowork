@@ -849,6 +849,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **gbrain.setup_recall_copy:** Every connected Agent reads and files into the same memory.
 - **gbrain.setup_local:** Stays local
 - **gbrain.setup_local_copy:** Local embeddings and a local process. Outside connections open only when you approve one.
+- **gbrain.setup_status_reading:** Reading local gbrain status…
+- **gbrain.setup_next_reading:** Ronin is asking the local process, the embedding weights, and the integrations list.
 - **gbrain.setup_status_not_installed:** Not installed on this machine
 - **gbrain.setup_next_services:** gbrain arrives with Ronin Services. Set up Services first, then load gbrain here.
 - **gbrain.setup_open_services:** Open Ronin Services
@@ -878,18 +880,32 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **gbrain.setup_gate:** The Personal Assistant preset waits for gbrain to be active.
 
 ## services_setup — services-setup-state.js and setup-surfaces.js (the Ronin Setup Services work surface)
-- **services_setup.intro:** Ronin’s hosted parts: the template library, a background assistant, voice, and team memory.
+- **services_setup.intro:** Ronin’s hosted parts: the recording, the template library, a background assistant, voice, and team memory.
+- **services_setup.beta:** In beta
+- **services_setup.beta_copy:** Ronin Services is the community half of Ronin, in beta. The code is open code, not open source: free to read, not to commercialise. Registering only tells us who is using it with us. It is optional, and nothing here is for sale.
+- **services_setup.transcripts:** Readable transcripts
+- **services_setup.transcripts_copy:** The terminal is recorded and shown as readable text, so Unlocked views scroll smoothly on a phone instead of waiting on a laggy Locked screen.
 - **services_setup.library:** Template library
 - **services_setup.library_copy:** Teams and Agents Ronin keeps and grows, with the procedures, macros, and tools they read, installed with one press.
 - **services_setup.records:** Work records kept current
 - **services_setup.records_copy:** A background assistant keeps every Agent’s work record current, so the roster and the tile say what each is doing.
 - **services_setup.voice:** Voice and memory
 - **services_setup.voice_copy:** Hear a report read back, speak to an Agent from the tile, and keep what a session learns for the team.
+- **services_setup.step_register:** Register
+- **services_setup.step_install:** Install
+- **services_setup.step_switch:** On
+- **services_setup.done:** Done
 - **services_setup.register:** Register
-- **services_setup.open_register:** Open Register
+- **services_setup.sending:** Sending…
 - **services_setup.check:** Check status
-- **services_setup.install:** Install Services
+- **services_setup.install:** Install
+- **services_setup.installing:** Installing…
 - **services_setup.try_again:** Try again
+- **services_setup.register_first:** Register first
+- **services_setup.turn_on:** Turn on
+- **services_setup.turn_off:** Turn off
+- **services_setup.install_first:** Install first
+- **services_setup.no_campaign:** No Campaign to switch it on for.
 - **services_setup.summary_not_installed:** not installed
 - **services_setup.status_not_installed:** Not installed on this machine
 - **services_setup.next_register:** Register with an email address and Ronin installs Services from HQ. Local Ronin keeps working without it.
@@ -908,9 +924,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **services_setup.summary_send_failed:** waiting to send
 - **services_setup.status_send_failed:** Waiting to send
 - **services_setup.next_send_failed:** HQ could not be reached. Ronin retries on its own; Check status asks again now.
-- **services_setup.account_registered:** Registered · the template library and hosted parts are unlocked.
-- **services_setup.account_optional:** Registration is optional. It unlocks the template library and the hosted parts.
-- **services_setup.account_anonymous:** Anonymous hello sent. Registering with an email unlocks the template library and the hosted parts.
 - **services_setup.summary_ready:** ready to install
 - **services_setup.status_entitled:** Registered · Ready to install
 - **services_setup.next_entitled:** Install fetches Services from Ronin HQ, verifies it, and restarts Ronin’s server. The page blinks; sessions are untouched.
@@ -923,7 +936,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **services_setup.summary_switched_off:** switched off
 - **services_setup.status_switched_off:** Installed · switched off
 - **services_setup.next_switched_off_running:** Switched off, but still running in this copy of Ronin until it restarts.
-- **services_setup.next_switched_off:** Turn it on for new Agents on the Campaign’s Routines and Installs; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.
+- **services_setup.next_switched_off:** Turn it on for new Agents here; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.
 - **services_setup.summary_restart:** restart needed
 - **services_setup.status_restart:** Switched on · not yet running
 - **services_setup.next_restart:** Restart Ronin to start it. Sessions are untouched.
@@ -1033,6 +1046,27 @@ The pad's current config downloads as a backup first.
 - **roots.save:** save
 - **roots.cancel:** cancel
 - **roots.edit:** edit
+- **roots.edit_folder:** Edit
+- **roots.edit_folder_title:** Change the summary, shelves, match words, or repository workflow.
+- **roots.save_folder:** Save
+- **roots.cancel_folder:** Cancel
+- **roots.summary:** Summary
+- **roots.summary_none:** No summary yet.
+- **roots.section_folder:** Folder
+- **roots.section_repository:** Repository
+- **roots.fact_directory:** Directory
+- **roots.fact_docs:** Docs
+- **roots.fact_plans:** Plans
+- **roots.fact_match:** Match
+- **roots.fact_remote:** Remote
+- **roots.fact_branch:** Branch
+- **roots.fact_publishing:** Publishing
+- **roots.fact_worktrees:** Worktrees
+- **roots.profile_undeclared:** Not declared
+- **roots.repository_none:** Not a Git repository. A workspace folder does not need to be one.
+- **roots.maintenance_help:** Archive takes it off the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.
+- **roots.maintenance_help_archived:** Unarchive puts it back on the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.
+- **roots.add_head:** Add a workspace
 - **roots.archive_failed:** could not archive it — {message}
 - **roots.exclude:** exclude
 - **roots.exclude_title:** Remove it from the catalog. Nothing on disk is touched.

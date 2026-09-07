@@ -1,8 +1,8 @@
 /* Pure Setup presentation for Ronin Services: the installed facts, the registration answer
- * and the activation record → one status line, one next sentence, at most one action, and a
- * separate optional account line. Installation and registration are two measured facts:
- * installed parts are shown installed and usable whether or not anyone registered.
- * Browser-free; createServicesSurface() in setup-surfaces.js paints it. */
+ * and the activation record → one status line, one next sentence, and the three steps —
+ * Register · Install · On — each in the same shape, reading Done once it is.
+ * Installation and registration are two measured facts: installed parts are shown installed
+ * and usable whether or not anyone registered. Browser-free; setup-surfaces.js paints it. */
 import { t } from './lexicon.js';
 
 export const SERVICES_SETUP_STATES = Object.freeze([
@@ -10,64 +10,49 @@ export const SERVICES_SETUP_STATES = Object.freeze([
   'entitled', 'installing', 'install_failed', 'switched_off', 'restart_needed', 'active',
 ]);
 
-const action = (id, label) => ({ id, label });
+const step = (id, caption, label, { done = false, enabled = true, act = null, title = '' } = {}) => ({ id, caption, label, done, enabled, act, title });
 
-/** The registration path, as one row: where the account stands and its one next step. */
+/** Where the registration stands: its state, tone words, and the Register step. */
 function registrationRow(registration, record) {
   const reg = registration?.ok ? registration.data || {} : {};
   const stage = record.stage || reg.services_activation || 'not_requested';
-  const register = action('register', t('services_setup.register', 'Register'));
-  const check = action('check', t('services_setup.check', 'Check status'));
-  const row = (state, tone, summary, status, next, act = null, polling = false) => ({ state, tone, summary, status, next, action: act, polling });
+  const caption = t('services_setup.step_register', 'Register');
+  const row = (state, tone, status, next, stepIn, polling = false) => ({ state, tone, status, next, step: stepIn, polling });
   if (reg.services_entitled === true) {
-    return row('entitled', 'ok', t('services_setup.summary_ready', 'ready to install'),
-      t('services_setup.status_entitled', 'Registered · Ready to install'),
+    return row('entitled', 'ok', t('services_setup.status_entitled', 'Registered · Ready to install'),
       t('services_setup.next_entitled', 'Install fetches Services from Ronin HQ, verifies it, and restarts Ronin’s server. The page blinks; sessions are untouched.'),
-      action('install', t('services_setup.install', 'Install Services')));
+      step('register', caption, t('services_setup.done', 'Done'), { done: true, enabled: false }));
   }
   if (!registration?.ok || !reg.status || reg.status === 'optional') {
-    return row('unregistered', '', t('services_setup.summary_not_installed', 'not installed'),
-      t('services_setup.status_not_installed', 'Not installed on this machine'),
-      t('services_setup.next_register', 'Register with an email address and Ronin installs Services from HQ. Local Ronin keeps working without it.'), register);
+    return row('unregistered', '', t('services_setup.status_not_installed', 'Not installed on this machine'),
+      t('services_setup.next_register', 'Register with an email address and Ronin installs Services from HQ. Local Ronin keeps working without it.'),
+      step('register', caption, t('services_setup.register', 'Register'), { act: 'register' }));
   }
   if (reg.status === 'anonymous') {
-    return row('anonymous', '', t('services_setup.summary_not_installed', 'not installed'),
-      t('services_setup.status_anonymous', 'Not installed · anonymous hello sent'),
-      t('services_setup.next_anonymous', 'The hosted install goes to an email address. Register with one to continue.'), register);
+    return row('anonymous', '', t('services_setup.status_anonymous', 'Not installed · anonymous hello sent'),
+      t('services_setup.next_anonymous', 'The hosted install goes to an email address. Register with one to continue.'),
+      step('register', caption, t('services_setup.register', 'Register'), { act: 'register' }));
   }
   if (stage === 'requesting') {
-    return row('sending', 'warn', t('services_setup.summary_sending', 'sending'),
-      t('services_setup.status_sending', 'Sending the confirmation email…'),
-      t('services_setup.next_sending', 'Ronin is asking HQ to send it. This surface checks again in a moment.'), null, true);
+    return row('sending', 'warn', t('services_setup.status_sending', 'Sending the confirmation email…'),
+      t('services_setup.next_sending', 'Ronin is asking HQ to send it. This surface checks again in a moment.'),
+      step('register', caption, t('services_setup.sending', 'Sending…'), { enabled: false }), true);
   }
   if (stage === 'expired') {
-    return row('expired', 'bad', t('services_setup.summary_expired', 'link expired'),
-      t('services_setup.status_expired', 'Confirmation link expired'),
+    return row('expired', 'bad', t('services_setup.status_expired', 'Confirmation link expired'),
       t('services_setup.next_expired', 'Ask for a fresh email from Register. Nothing else changed.'),
-      action('register', t('services_setup.open_register', 'Open Register')));
+      step('register', caption, t('services_setup.register', 'Register'), { act: 'register' }));
   }
   if (stage === 'error' && record.error_at_stage !== 'installing') {
-    return row('send_failed', 'bad', t('services_setup.summary_send_failed', 'waiting to send'),
-      t('services_setup.status_send_failed', 'Waiting to send'),
-      t('services_setup.next_send_failed', 'HQ could not be reached. Ronin retries on its own; Check status asks again now.'), check);
+    return row('send_failed', 'bad', t('services_setup.status_send_failed', 'Waiting to send'),
+      t('services_setup.next_send_failed', 'HQ could not be reached. Ronin retries on its own; Check status asks again now.'),
+      step('register', caption, t('services_setup.check', 'Check status'), { act: 'check' }));
   }
   const email = reg.email_masked || record.email_masked || '';
-  return row('awaiting_email', 'warn', t('services_setup.summary_awaiting', 'confirm email'),
+  return row('awaiting_email', 'warn',
     email ? t('services_setup.status_awaiting_to', 'Confirmation email sent to {email}', { email }) : t('services_setup.status_awaiting', 'Confirmation email sent'),
-    t('services_setup.next_awaiting', 'Open the link in that email; any device works. Resend or change the address from Register.'), check, true);
-}
-
-/** The optional account line beside an installed Services: never a gate, only what registration adds. */
-function accountLine(registration, record, row) {
-  const reg = registration?.ok ? registration.data || {} : {};
-  if (reg.services_entitled === true) return { line: t('services_setup.account_registered', 'Registered · the template library and hosted parts are unlocked.'), action: null };
-  const said = {
-    unregistered: t('services_setup.account_optional', 'Registration is optional. It unlocks the template library and the hosted parts.'),
-    anonymous: t('services_setup.account_anonymous', 'Anonymous hello sent. Registering with an email unlocks the template library and the hosted parts.'),
-    sending: row.status, expired: row.status, send_failed: row.status,
-    awaiting_email: row.status,
-  }[row.state] || row.status;
-  return { line: said, action: row.action };
+    t('services_setup.next_awaiting', 'Open the link in that email; any device works. Resend or change the address from Register.'),
+    step('register', caption, t('services_setup.check', 'Check status'), { act: 'check' }), true);
 }
 
 /**
@@ -80,43 +65,53 @@ export function servicesSetupModel(registration, installed, activation = null) {
   const record = activation?.ok ? activation.data || {} : {};
   const stage = record.stage || facts.stage || 'not_requested';
   const parts = facts.installed === true || (Array.isArray(facts.parts) && facts.parts.length > 0);
-  const registration_ = registrationRow(registration, record);
-  const model = (state, tone, summary, status, next, act = null, polling = false) => ({ state, tone, summary, status, next, action: act, polling, account: null });
+  const entitled = registration?.ok && registration.data?.services_entitled === true;
+  const on = facts.switched_on === true;
+  const reg = registrationRow(registration, record);
+  const installCaption = t('services_setup.step_install', 'Install');
+  const switchCaption = t('services_setup.step_switch', 'On');
+  const installing = !parts && entitled && stage === 'installing';
+  const installFailed = !parts && entitled && stage === 'error' && record.error_at_stage === 'installing';
+
+  const installStep = parts ? step('install', installCaption, t('services_setup.done', 'Done'), { done: true, enabled: false })
+    : installing ? step('install', installCaption, t('services_setup.installing', 'Installing…'), { enabled: false })
+    : installFailed ? step('install', installCaption, t('services_setup.try_again', 'Try again'), { act: 'install' })
+    : step('install', installCaption, t('services_setup.install', 'Install'), { act: 'install', enabled: entitled, title: entitled ? '' : t('services_setup.register_first', 'Register first') });
+  const switchStep = on ? step('switch', switchCaption, t('services_setup.done', 'Done'), { done: true, act: 'switch_off', title: t('services_setup.turn_off', 'Turn off') })
+    : step('switch', switchCaption, t('services_setup.turn_on', 'Turn on'), { act: 'switch_on', enabled: parts, title: parts ? '' : t('services_setup.install_first', 'Install first') });
+  const steps = [reg.step, installStep, switchStep];
+  const model = (state, tone, status, next, polling = false) => ({ state, tone, status, next, steps, polling, summary: '' });
 
   if (!parts) {
-    // Nothing installed: the registration path is the install path, so it is the one block.
-    if (registration_.state === 'entitled' && stage === 'installing') {
-      return model('installing', 'warn', t('services_setup.summary_installing', 'installing'),
-        t('services_setup.status_installing', 'Installing Services…'),
-        t('services_setup.next_installing', 'Fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched.'), null, true);
+    if (installing) {
+      return { ...model('installing', 'warn', t('services_setup.status_installing', 'Installing Services…'),
+        t('services_setup.next_installing', 'Fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched.'), true), summary: t('services_setup.summary_installing', 'installing') };
     }
-    if (registration_.state === 'entitled' && stage === 'error' && record.error_at_stage === 'installing') {
-      return model('install_failed', 'bad', t('services_setup.summary_install_failed', 'install failed'),
-        t('services_setup.status_install_failed', 'Install did not finish'),
-        record.error_message || t('services_setup.next_install_failed', 'The installer did not finish. Nothing else was changed.'),
-        action('install', t('services_setup.try_again', 'Try again')));
+    if (installFailed) {
+      return { ...model('install_failed', 'bad', t('services_setup.status_install_failed', 'Install did not finish'),
+        record.error_message || t('services_setup.next_install_failed', 'The installer did not finish. Nothing else was changed.')), summary: t('services_setup.summary_install_failed', 'install failed') };
     }
-    return { ...registration_, account: null };
+    const summary = {
+      entitled: t('services_setup.summary_ready', 'ready to install'), sending: t('services_setup.summary_sending', 'sending'),
+      awaiting_email: t('services_setup.summary_awaiting', 'confirm email'), expired: t('services_setup.summary_expired', 'link expired'),
+      send_failed: t('services_setup.summary_send_failed', 'waiting to send'),
+    }[reg.state] || t('services_setup.summary_not_installed', 'not installed');
+    return { ...model(reg.state, reg.tone, reg.status, reg.next, reg.polling), summary };
   }
 
-  // Installed: the parts are here and usable; registration is a separate, optional fact.
+  // Installed: the parts are here and usable; registration stays its own optional step.
   const counts = { parts: (facts.parts || []).length, loaded: (facts.loaded || []).length };
-  const account = accountLine(registration, record, registration_);
-  const polling = registration_.polling;
-  if (facts.switched_on !== true) {
-    return { ...model('switched_off', '', t('services_setup.summary_switched_off', 'switched off'),
-      t('services_setup.status_switched_off', 'Installed · switched off'),
+  if (!on) {
+    return { ...model('switched_off', '', t('services_setup.status_switched_off', 'Installed · switched off'),
       facts.restart_needed
         ? t('services_setup.next_switched_off_running', 'Switched off, but still running in this copy of Ronin until it restarts.')
-        : t('services_setup.next_switched_off', 'Turn it on for new Agents on the Campaign’s Routines and Installs; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.', counts),
-      null, polling), account };
+        : t('services_setup.next_switched_off', 'Turn it on for new Agents here; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.', counts),
+      reg.polling), summary: t('services_setup.summary_switched_off', 'switched off') };
   }
   if (facts.restart_needed) {
-    return { ...model('restart_needed', 'warn', t('services_setup.summary_restart', 'restart needed'),
-      t('services_setup.status_restart', 'Switched on · not yet running'),
-      t('services_setup.next_restart', 'Restart Ronin to start it. Sessions are untouched.'), null, polling), account };
+    return { ...model('restart_needed', 'warn', t('services_setup.status_restart', 'Switched on · not yet running'),
+      t('services_setup.next_restart', 'Restart Ronin to start it. Sessions are untouched.'), reg.polling), summary: t('services_setup.summary_restart', 'restart needed') };
   }
-  return { ...model('active', 'ok', t('services_setup.summary_active', 'active'),
-    t('services_setup.status_active', 'Active on this Cowork'),
-    t('services_setup.next_active', '{loaded} of {parts} parts are running for new Agents.', counts), null, polling), account };
+  return { ...model('active', 'ok', t('services_setup.status_active', 'Active on this Cowork'),
+    t('services_setup.next_active', '{loaded} of {parts} parts are running for new Agents.', counts), reg.polling), summary: t('services_setup.summary_active', 'active') };
 }

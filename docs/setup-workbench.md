@@ -34,12 +34,14 @@ switch to the retired phone-only drill-down.
 **Model providers** shows one stone per provider in the runtime catalog, each wearing a
 short measured state: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
 installed**, or **Manual install**. Selecting a stone opens that provider's detail beside
-the rail: the same four rows for every provider, in this order.
+the rail: the same four numbered steps for every provider, in this order. A finished step
+wears a check, the next unmet step wears the kaki mark and owns the only enabled control,
+and the steps after it wait with their controls disabled.
 
 | Row | What it measures | The action it owns |
 |---|---|---|
 | **Use with Ronin** | the persisted opt-in for this provider, kept with the Setup preferences | the checkbox |
-| **Install** | whether the CLI is found, with its path when it is | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets a guide link instead |
+| **Install** | whether the CLI is found, with its path when it is | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
 | **Authenticate** | whether Setup completion was recorded | **Authenticate** opens the provider's native sign-in as a temporary tile in this workspace, once the provider is opted in and installed |
 | **Ready** | the recorded activation | none; it is the measured result |
 
@@ -63,6 +65,15 @@ A new installation creates and registers two folders inside `RONIN_USER_ROOT`:
 Each is a Git repository with a README and first commit. Ronin Project 1 also has the
 reviewed `dev` / stable `main` arrangement and managed-worktree readiness. These defaults
 do not replace or rename any external folder; the existing add/load-root flow remains.
+
+In Ronin Setup the folders are square stones on the shared stone work surface; the last,
+dotted stone is **Add A Workspace**. Selecting a folder opens one page about it beside the
+rail: its name and one state line, a **Summary**, **Folder** facts (directory, docs and
+plans shelves, match words), **Repository** facts (remote, branch, publishing flow,
+Worktrees) or one line saying it is not a repository, then **Edit**. Edit replaces the
+facts with the same fields under the same head and ends in **Save** and **Cancel**.
+**Archive** and **Exclude** sit last, under their own rule, with one line saying what each
+does. The Campaign's Project roots surface keeps its list of blocks with inline controls.
 
 ## Presets
 
@@ -93,31 +104,37 @@ both shells. The heading beside it carries the accessible name; the image is dec
 
 ## Ronin Services
 
-The Services surface opens with what Services adds — the template library, the background
-assistant that keeps work records current, voice and team memory — then one status line, one
-next sentence and at most one action for the state Ronin measured from `GET /api/installed`,
+The Services surface opens with its mark and one lede, then **In beta**: Services is the
+community half of Ronin, open code rather than open source, free to read and not to
+commercialise; registering only says who is using it, and nothing is for sale. Then four
+benefits — readable transcripts and the Unlocked views they allow, the template library, the
+background assistant that keeps work records current, voice and team memory — then one status
+line and one next sentence for the state Ronin measured from `GET /api/installed`,
 `GET /api/setup/registration` and `GET /api/services/activation`. Installation and
-registration are two separate facts. Installed parts are shown installed and usable whether
-or not anyone registered; registration is an optional account line beneath, never a gate.
+registration are two separate facts: installed parts are shown installed and usable whether
+or not anyone registered.
 
-| Measured | Status | The one action |
+Beneath the status sit three steps in one shape, **Register · Install · On**, each reading
+**Done** once it is. Register opens the Register surface (or Check status while a confirmation
+is out). Install is `POST /api/services/install` and waits for the entitlement that route
+demands. On is the Campaign's Routine switch for new Agents — the same `ronin_services` map
+Routines and Installs saves — and a Done switch turns off from here; a team can still differ
+in its Team Configuration.
+
+| Measured | Status | Steps |
 |---|---|---|
-| nothing installed, no registration, or the read failed | Not installed on this machine | Register |
-| nothing installed, an anonymous hello only | Not installed · anonymous hello sent | Register |
-| nothing installed, the confirmation email is being requested | Sending the confirmation email… | none; re-read in 15 s |
-| nothing installed, the email is out, unconfirmed | Confirmation email sent to p\*\*\*\*\*@example.com | Check status (`POST /api/services/activation/poll`) |
-| nothing installed, the confirmation link expired | Confirmation link expired | Open Register |
-| nothing installed, HQ could not be reached while sending | Waiting to send | Check status |
-| nothing installed, registered | Registered · Ready to install | Install Services (`POST /api/services/install`) |
-| the installer is running | Installing Services… | none; re-read in 5 s |
-| the installer did not start or finish | Install did not finish | Try again |
-| parts installed, switched off | Installed · switched off, with running and installed part counts | none; the next line names the switch |
-| parts installed, switched on, not yet loaded | Switched on · not yet running | none; restart Ronin |
-| parts installed, switched on and loaded | Active on this Cowork, with running and installed part counts | none |
-
-With parts installed, the account line says *Registration is optional. It unlocks the
-template library and the hosted parts.* with a quiet Register, or the registration state
-in flight with its own quiet action, or *Registered* with none.
+| nothing installed, no registration, or the read failed | Not installed on this machine | Register · Install (waits) · Turn on (waits) |
+| nothing installed, an anonymous hello only | Not installed · anonymous hello sent | Register · Install (waits) · Turn on (waits) |
+| nothing installed, the confirmation email is being requested | Sending the confirmation email… | Sending… · Install (waits) · Turn on (waits); re-read in 15 s |
+| nothing installed, the email is out, unconfirmed | Confirmation email sent to p\*\*\*\*\*@example.com | Check status · Install (waits) · Turn on (waits) |
+| nothing installed, the confirmation link expired | Confirmation link expired | Register · Install (waits) · Turn on (waits) |
+| nothing installed, HQ could not be reached while sending | Waiting to send | Check status · Install (waits) · Turn on (waits) |
+| nothing installed, registered | Registered · Ready to install | Done · Install · Turn on (waits) |
+| the installer is running | Installing Services… | Done · Installing… · Turn on (waits); re-read in 5 s |
+| the installer did not start or finish | Install did not finish | Done · Try again · Turn on (waits) |
+| parts installed, switched off | Installed · switched off, with running and installed part counts | Register or Done · Done · Turn on |
+| parts installed, switched on, not yet loaded | Switched on · not yet running | Register or Done · Done · Done (turns off) |
+| parts installed, switched on and loaded | Active on this Cowork, with running and installed part counts | Register or Done · Done · Done (turns off) |
 
 The selector card's summary follows the same state. The Grokbot Morning Briefing preset waits
 for Services to be active, and the surface says so in every state. The pure state mapping is
@@ -133,6 +150,7 @@ and at most one action for the state Ronin measured:
 
 | Measured | Status | The one action |
 |---|---|---|
+| the read is still in flight | Reading local gbrain status… (painted at once; the real read can take seconds) | none |
 | the gbrain service is absent | Not installed on this machine | Open Ronin Services |
 | Services installed but switched off | Installed · Ronin Services is switched off | Open Ronin Services |
 | installed, but not loaded | Not installed on this machine | Load gbrain |
