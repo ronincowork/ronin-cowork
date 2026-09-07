@@ -5,12 +5,12 @@ import { t } from './lexicon.js';
 import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
 import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
-import { mountProviderAttachment, providerFromRuntime, providerPresentation } from './setup-provider-state.js';
+import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 
-export { mountProviderAttachment, providerFromRuntime, providerOffers, providerPresentation } from './setup-provider-state.js';
+export { mountProviderAttachment, providerFromRuntime, providerOffers, providerPresentation, providerReadiness } from './setup-provider-state.js';
 
 export const SETUP_SURFACE_TYPES = Object.freeze({
   register: 'setup.register', providers: 'setup.providers', roots: 'setup.roots',
@@ -191,36 +191,45 @@ function createProviderSurface(context) {
   const paintProvider = (providerId, host) => {
     const provider = providerFromRuntime(runtime, providerId);
     if (!provider) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
-    const presentation = providerPresentation(provider);
     const row = el('section', 'setup-provider');
     row.dataset.provider = provider.id;
-    row.append(el('h3', '', provider.label || provider.id), el('p', 'setup-state', presentation.inventoryState));
-    if (presentation.action === 'install') {
-      row.append(el('p', 'setup-fine', presentation.detail), action(t('setup_surface.install', 'Install'), 'primary', async () => {
+    const steps = el('ol', 'setup-provider-readiness');
+    for (const step of providerReadiness(provider)) {
+      const item = el('li', 'setup-provider-step');
+      item.dataset.step = step.key;
+      item.dataset.status = step.status;
+      const head = el('div', 'setup-provider-step-head');
+      head.append(el('strong', '', step.label), el('span', 'setup-provider-step-state', step.status === 'complete' ? t('setup_surface.step_complete', 'Complete') : step.status === 'current' ? t('setup_surface.step_next', 'Next') : t('setup_surface.step_pending', 'Pending')));
+      item.append(head);
+      if (step.detail) item.append(el('p', 'setup-fine', step.detail));
+      if (step.action === 'install') item.append(action(t('setup_surface.install', 'Install'), 'primary', async () => {
         const installed = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
-        if (!installed.ok) row.append(el('p', 'setup-notice bad', installed.message));
+        if (!installed.ok) item.append(el('p', 'setup-notice bad', installed.message));
         else await paint();
       }));
-    } else if (presentation.action === 'manual') {
-      row.append(el('p', 'setup-fine', presentation.detail));
-      if (presentation.manual) {
-        const link = el('a', 'wk-action setup-provider-manual', presentation.manual.label);
-        link.href = presentation.manual.url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        row.append(link);
-      } else row.append(el('p', 'setup-state', t('setup_surface.manual_only', 'Manual install only')));
-    } else if (presentation.action === 'sign_in') {
-      row.append(el('p', 'setup-fine', presentation.detail),
-        action(t('setup_surface.sign_in', 'Open sign-in'), 'primary', async () => { await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} }); await paint(); }));
-    } else if (presentation.action === 'login_open') {
-      const terminal = el('div', 'setup-provider-terminal');
-      row.append(el('p', 'setup-fine', presentation.detail), terminal,
-        action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); }),
-        action(t('setup_surface.close', 'Close'), '', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); }));
-      mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
-      if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
-    } else row.append(el('p', 'setup-good', presentation.detail));
+      if (step.action === 'manual') {
+        if (step.manual) {
+          const link = el('a', 'wk-action setup-provider-manual', step.manual.label);
+          link.href = step.manual.url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          item.append(link);
+        } else item.append(el('p', 'setup-state', t('setup_surface.manual_only', 'Manual install only')));
+      }
+      if (step.action === 'sign_in') item.append(action(t('setup_surface.sign_in', 'Open sign-in'), 'primary', async () => {
+        await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} }); await paint();
+      }));
+      if (step.action === 'login_open') {
+        const terminal = el('div', 'setup-provider-terminal');
+        item.append(terminal,
+          action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); }),
+          action(t('setup_surface.close', 'Close'), '', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); }));
+        mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
+        if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
+      }
+      steps.append(item);
+    }
+    row.append(el('h3', '', provider.label || provider.id), steps);
     host.append(row);
     return () => disposeMount();
   };
