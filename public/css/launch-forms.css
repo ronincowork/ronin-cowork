@@ -46,7 +46,6 @@
   .sp-surface { container: setup-preset-phalanx / inline-size; font-size: var(--text-5); }
   .sp-content { display: flex; flex-direction: column; overflow: hidden; }
   .sp-kinds { margin-bottom: 0; }
-  .sp-surface .sws:not([data-open='true']) .sws-rail { padding-top: max(var(--space-6), calc(var(--sws-stone) + var(--sws-gap) - var(--sp-intro, 0px))); }
   .sp-kinds-lead { margin-right: var(--space-2); color: var(--muted); font-size: var(--form-note); }
   .sp-glyph { display: flex; width: var(--space-11); height: var(--space-11); color: var(--accent); font-style: normal; font-size: var(--text-10); font-weight: 400; line-height: 1; }
   .sp-glyph svg { width: 100%; height: 100%; }

@@ -242,15 +242,6 @@ test('Morning Brief asks only for what each cadence needs and expands role instr
   assert.match(source, /ask\.rows = 1; delete line\.dataset\.editing/);
 });
 
-test('the purpose row hands its height to the rail so the stones rest at the shared elevation', async () => {
-  const [source, css] = await Promise.all([
-    readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'),
-    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
-  ]);
-  assert.match(source, /setProperty\?\.\('--sp-intro'/);
-  assert.match(css, /\.sp-surface \.sws:not\(\[data-open='true'\]\) \.sws-rail \{ padding-top: max\(var\(--space-6\), calc\(var\(--sws-stone\) \+ var\(--sws-gap\) - var\(--sp-intro, 0px\)\)\); \}/);
-});
-
 test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
   assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
