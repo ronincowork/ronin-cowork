@@ -66,7 +66,6 @@ export function createSetupView() {
   const environment = {
     presets: (workspace) => createPresetsSurface({ environment: presetEnvironment(), workspace }),
     showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
-    openTemplateMaker: () => ctx?.navigate('launch'),
     openLaunchForm: ({ kind, seed = {} } = {}) => openLaunchForm(ctx, { kind, seed }),
     openTemplateLaunchForm: () => openTemplateLaunchForm(ctx),
     setupRuntime: null,
