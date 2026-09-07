@@ -75,3 +75,109 @@ test('expired and pre-instance retained mail is reaped because the queue is tran
   assert.deepEqual((await fs.readdir(root)).filter((name) => name.endsWith('.json')), []);
   await fs.rm(root, { recursive: true, force: true });
 });
+
+test('source-derived TTLs are clock-controlled and wipeboard content remains outside the transport sweep', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-ttl-'));
+  process.env.RONIN_MESSAGE_QUEUE_DIR = root;
+  const queue = await import(`../src/message-queue.ts?ttl=${Date.now()}`);
+  const target = await liveTarget(t, 'queue_ttl_target');
+  const tell = await queue.enqueueMessage(target, 'short direct transport', 'tell', 'Agent');
+  const board = await queue.enqueueMessage(target, 'durable text lives on the board', 'wipeboard_notice');
+  const house = await queue.enqueueMessage(target, 'one-hour system transport', 'house');
+  assert.equal(Date.parse(tell.expires_at) - Date.parse(tell.created_at), queue.TELL_TTL_MS);
+  assert.equal(Date.parse(board.expires_at) - Date.parse(board.created_at), queue.WIPEBOARD_NOTICE_TTL_MS);
+  assert.equal(Date.parse(house.expires_at) - Date.parse(house.created_at), queue.MESSAGE_TTL_MS);
+  assert.deepEqual((await queue.listQueuedMessages(Date.parse(board.expires_at) + 1)).map((item) => item.id), [tell.id, house.id]);
+  assert.deepEqual((await queue.listQueuedMessages(Date.parse(tell.expires_at) + 1)).map((item) => item.id), [house.id]);
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test('dismissal during an active attempt cannot resurrect the exact message', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-race-'));
+  process.env.RONIN_MESSAGE_QUEUE_DIR = root;
+  const queue = await import(`../src/message-queue.ts?race=${Date.now()}`);
+  const target = await liveTarget(t, 'queue_race_target');
+  const item = await queue.enqueueMessage(target, 'cancel while attempted', 'house');
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let started!: () => void;
+  const active = new Promise<void>((resolve) => { started = resolve; });
+  const attempt = queue.attemptMessage(item.id, 'safe', {
+    safe: async (_target: string, _text: string, onAttempt: () => void) => {
+      onAttempt(); started(); await held;
+      return { delivered: false, submitted: true, reason: 'controlled failure' };
+    },
+    force: async () => ({ delivered: false, submitted: true, reason: 'unused' }),
+  });
+  await active;
+  assert.equal(await queue.dismissMessage(item.id), true);
+  release();
+  assert.equal(await attempt, null);
+  assert.deepEqual(await queue.listQueuedMessages(), []);
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test('bulk dismissal is exact-ID and preserves unread arrivals', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-bulk-'));
+  process.env.RONIN_MESSAGE_QUEUE_DIR = root;
+  const queue = await import(`../src/message-queue.ts?bulk=${Date.now()}`);
+  const target = await liveTarget(t, 'queue_bulk_target');
+  const first = await queue.enqueueMessage(target, 'selected', 'house');
+  const second = await queue.enqueueMessage(target, 'also selected', 'house');
+  const unread = await queue.enqueueMessage(target, 'arrived after selection', 'house');
+  assert.deepEqual((await queue.dismissMessages([first.id, second.id, first.id])).dismissed, [first.id, second.id]);
+  assert.deepEqual((await queue.listQueuedMessages()).map((item) => item.id), [unread.id]);
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test('safe delivery honors Control while explicit Force keeps its documented override', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-control-'));
+  process.env.RONIN_MESSAGE_QUEUE_DIR = root;
+  const queue = await import(`../src/message-queue.ts?control=${Date.now()}`);
+  const { setControl } = await import('../src/tmux.js');
+  const target = await liveTarget(t, 'queue_control_target');
+  await setControl(target, 'read');
+  const item = await queue.enqueueMessage(target, 'respect Control', 'house');
+  let safeCalls = 0;
+  let forceCalls = 0;
+  const delivery = {
+    safe: async () => { safeCalls += 1; return { delivered: false, submitted: false, reason: 'unused' }; },
+    force: async () => { forceCalls += 1; return { delivered: false, submitted: true, reason: 'forced test' }; },
+  };
+  assert.match((await queue.attemptMessage(item.id, 'safe', delivery))?.reason ?? '', /Control/);
+  assert.equal(safeCalls, 0);
+  await queue.attemptMessage(item.id, 'force', delivery);
+  assert.equal(forceCalls, 1);
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test('manual and expired direct tells NACK once, but viewer senders and NACKs do not loop', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-nack-'));
+  process.env.RONIN_MESSAGE_QUEUE_DIR = root;
+  const queue = await import(`../src/message-queue.ts?nack=${Date.now()}`);
+  const { setControl } = await import('../src/tmux.js');
+  const server = await openTestServer('mq_nack', { onPath: true });
+  t.after(() => closeTestServer(server));
+  const sender = 'queue_nack_sender';
+  const target = 'queue_nack_target';
+  await server.run('new-session', '-d', '-s', sender);
+  await server.run('new-session', '-d', '-s', target);
+  await setControl(sender, 'read');
+  const direct = await queue.enqueueMessage(target, 'dismiss me', 'tell', sender);
+  assert.equal(await queue.dismissMessage(direct.id), true);
+  assert.equal(await queue.dismissMessage(direct.id), false);
+  const expiring = await queue.enqueueMessage(target, 'expire me', 'tell', sender);
+  await queue.listQueuedMessages(Date.parse(expiring.expires_at) + 1);
+  const viewer = await queue.enqueueMessage(target, 'no viewer nack', 'tell', 'grid_fake');
+  await queue.dismissMessage(viewer.id);
+  const nack = await queue.enqueueMessage(target, 'already a NACK', 'house', 'Ronin House');
+  await queue.dismissMessage(nack.id);
+  const returns = (await queue.listQueuedMessages()).filter((item) => item.target === sender && item.source === 'house');
+  const pane = await server.run('capture-pane', '-p', '-S', '-', '-t', sender);
+  const evidence = `${returns.map((item) => item.text).join('\n')}\n${pane}`;
+  assert.equal(evidence.split(`Your tell ${direct.id}`).length - 1, 1);
+  assert.equal(evidence.split(`Your tell ${expiring.id}`).length - 1, 1);
+  assert.doesNotMatch(evidence, new RegExp(viewer.id));
+  assert.doesNotMatch(evidence, new RegExp(nack.id));
+  await fs.rm(root, { recursive: true, force: true });
+});

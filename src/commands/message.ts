@@ -1,6 +1,6 @@
 import { deliverMessage, MessageRefused, pendingTellsFrom, type MessageSource } from '../message-queue.js';
+import { messageSender } from '../message-sender.js';
 import { isValidName } from '../tmux.js';
-import { tmux } from '../tmux-client.js';
 
 const args = process.argv.slice(2);
 const sources = new Set<MessageSource>(['tell', 'wipeboard_notice', 'owner', 'house', 'jikan']);
@@ -11,9 +11,8 @@ if (!isValidName(target) || !text) {
   console.error('usage: message-cli [tell|wipeboard_notice|house] <session> <message...>');
   process.exit(2);
 }
-const from = source === 'tell' && process.env.TMUX_PANE
-  ? await tmux.run(['display-message', '-p', '-t', process.env.TMUX_PANE, '#S'])
-      .then((stdout) => stdout.trim() || 'Agent').catch(() => 'Agent')
+const from = source === 'tell'
+  ? await messageSender()
   : undefined;
 try {
   if (source === 'tell') {

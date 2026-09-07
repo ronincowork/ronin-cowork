@@ -12,7 +12,8 @@ Automatic delivery waits when the target's Control setting does not allow Agent 
 when a dialog is open, or when somebody else's draft is present. It stops after an
 uncertain submission to avoid sending a duplicate. **Force** is an
 owner-only override that accepts the collision risk. Delivered messages disappear;
-retained messages expire after 48 hours.
+retained direct tells expire after 30 minutes and wipeboard interruption notices after
+10 minutes. Other retained transport expires after 60 minutes.
 
 ## Acceptance and identity
 
@@ -23,10 +24,19 @@ retained messages expire after 48 hours.
   its identity.
 - If the target ends, or the name belongs to a different session birth, the message
   becomes **Target missing**. It cannot be delivered or forced; the owner may dismiss it.
-- Every retained message expires 48 hours after acceptance.
+- Direct Agent tells expire after 30 minutes. Wipeboard interruption notices expire
+  after 10 minutes; the wipeboard post itself remains durable. Owner, House, and cron
+  transport expires after 60 minutes, including system notices whose durable receipt or
+  wipeboard entry remains authoritative.
+- A manually dismissed or expired direct tell sends one House negative acknowledgment
+  to its original base Agent, when that session still exists. House messages and viewer
+  (`grid_`) identities never generate another acknowledgment, preventing loops.
 
 The queue is transport, not a record. Delivered and expired items leave no archive here.
 RIREKI and TEGAMI hold the records.
+
+Messages are identified by their generated queue ID, not their content. Ronin does not
+collapse repeated text: two intentional tells with the same words remain two messages.
 
 ## Automatic delivery
 
@@ -82,6 +92,9 @@ Configuration.
   Message Queue**. Polling does not repeat it.
 - Each card shows From, To, message type, state, age, attempts, text, reason, and the
   actions valid for that state.
+- The queue view is machine-wide. Select messages individually, use **Select All**, or
+  use **Dismiss Selected** / **Dismiss All**. Bulk dismissal sends the exact IDs in the
+  displayed snapshot, so a newly arrived unread message is not swept accidentally.
 - Actions report their result immediately. Successful delivery says **Delivered and
   cleared** before the card disappears.
 
@@ -97,3 +110,7 @@ The REST surface is:
 - `POST /api/messages/:id/retry`
 - `POST /api/messages/:id/force`
 - `DELETE /api/messages/:id`
+- `DELETE /api/messages` with `{ "ids": ["..."] }` for exact-ID bulk dismissal
+
+Dismissal wins over an attempt already in progress: a late failed-attempt write cannot
+recreate the dismissed item.
