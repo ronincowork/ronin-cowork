@@ -2864,6 +2864,23 @@ body {
 .pr-fine, .pr-detail .pr-group-help, .pr-detail .pr-flow, .pr-detail .pr-err { margin: 0; color: var(--muted-2); font-size: var(--text-4); line-height: 1.45; }
 .pr-fine.bad, .pr-detail .pr-err { color: var(--bad-soft); }
 .pr-section .pr-fact-list + .pr-fine { margin-top: var(--space-5); }
+/* What a workspace is, above the stones, in the same 14px as the detail. */
+.wk-surface-content.sws-host > .pr-intro { margin: 0; max-width: 44rem; color: var(--muted-2); font-size: var(--text-5); line-height: 1.5; }
+/* The folder browser inside the add page: the same face and size, fields and buttons as the
+   form's, no second scale of its own. */
+.pr-detail .folder-picker { font-size: inherit; }
+.pr-detail .folder-chosen { gap: var(--space-2); border: 0; border-radius: var(--radius-hair); background: var(--well); padding: var(--space-4) var(--space-5); }
+.pr-detail .folder-chosen span, .pr-detail .folder-hidden, .pr-detail .folder-create-row label, .pr-detail .folder-empty, .pr-detail .folder-loading { color: var(--muted-2); font-size: inherit; }
+.pr-detail .folder-chosen code { color: var(--fg-strong); font: inherit; }
+.pr-detail .folder-chosen .folder-context { font-size: var(--text-4); }
+.pr-detail .folder-controls input[type='search'], .pr-detail .folder-create-row > input[type='text'] { min-height: 2.25rem; border: 0; border-radius: var(--radius-hair); background: var(--well); color: var(--fg-strong); padding: var(--space-4) var(--space-5); font: inherit; }
+.pr-detail .folder-controls button, .pr-detail .folder-crumbs button, .pr-detail .folder-row button, .pr-detail .folder-create button { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; }
+.pr-detail .folder-row { border-color: var(--line-3); padding: var(--space-2) var(--space-3); }
+.pr-detail .folder-list, .pr-detail .folder-create { border-color: var(--line-3); }
+.pr-detail .folder-open { color: var(--fg-strong); }
+.pr-detail .folder-group { padding: var(--space-4) var(--space-4) var(--space-3); font-size: inherit; font-weight: 700; color: var(--fg-strong); }
+.pr-detail .folder-kind { font-size: inherit; }
+.pr-detail .folder-create summary { font-size: inherit; }
 /* The real form in the same rhythm, its fields drawn as the Presets fields are. */
 .pr-detail .pr-form { margin: 0; border: 0; padding: 0; gap: var(--space-6); }
 .pr-detail .pr-group { border: 0; border-radius: 0; padding: 0; gap: var(--space-5); }
@@ -2977,6 +2994,8 @@ body {
 .folder-list { max-height: 260px; overflow-y: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); }
 .folder-row { display: flex; gap: var(--space-2); align-items: center; padding: var(--space-2); border-bottom: var(--edge) solid var(--line-2); }
 .folder-row:last-child { border-bottom: 0; }
+.folder-group { padding: var(--space-3) var(--space-3) var(--space-2); border-bottom: var(--edge) solid var(--line-2); color: var(--muted-2); font-size: var(--text-2); }
+.folder-kind { margin-left: var(--space-3); color: var(--muted-2); font-size: var(--text-2); }
 .folder-open { flex: 1; text-align: left; border-color: transparent !important; }
 .folder-choose { color: var(--kaki) !important; }
 .folder-empty, .folder-loading { display: block; padding: var(--space-4); color: var(--muted-2); }

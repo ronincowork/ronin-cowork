@@ -27,7 +27,8 @@ test('roots adapt the real project-root detail and Add form to the shared stone 
   assert.match(roots, /if \(current\) host\.append\(detail\(current\)\)/);
   assert.match(roots, /stoneSurface\.refreshDetail\(\)/);
   assert.match(roots, /const openAdd = stones \? null : createAction/);
-  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[messages\] \}\)/);
+  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[intro, messages\] \}\)/);
+  assert.match(roots, /intro\.className = 'pr-intro'[\s\S]*?t\('roots\.intro', 'A workspace is a folder Ronin keeps for Teams and Agents\. Three things happen there: it may be a Git repository; Agents are born from it/);
   assert.match(roots, /stoneSurface\.setItems\(\[\{\s*id: NEW,\s*label: t\('roots\.add_stone', 'Add A Workspace'\),\s*glyph: '\+',\s*className: 'setup-roots-add-stone'/, 'Add A Workspace is the first stone');
   assert.doesNotMatch(roots, /stoneSurface\.openDetail/);
   assert.doesNotMatch(roots, /secondary: r\.remit \|\| r\.dir/);
@@ -74,6 +75,8 @@ test('the Setup form keeps the real fields and reads as sections, while Campaign
   assert.match(roots, /if \(editing === r\.name\) b\.appendChild\(form\(r\)\)/, 'the Campaign block still edits inline');
   assert.match(roots, /d\.dataset\.mode = 'add'/);
   assert.match(roots, /t\('roots\.add_head', 'Add a workspace'\)/);
+  assert.match(roots, /words: \{[\s\S]*?chosen: t\('roots\.picker_path', 'Path'\),[\s\S]*?note: '',[\s\S]*?take: t\('roots\.picker_keep', 'Keep'\)/, 'Setup says the picker in keep-or-ignore terms, never "choose" or "where the Agent will start"');
+  assert.doesNotMatch(roots.slice(roots.indexOf('function addCard')), /roots\.add_hint/, 'the add page does not say choose');
   assert.match(roots, /!\(stones && stoneSurface\.selected\(\)\)/, 'an open Setup detail is not repainted by the poll');
 });
 
@@ -105,11 +108,26 @@ test('roots stones mount visible loading, empty, and failure output without chan
   const roots = await source('public/js/projectroots.js');
   assert.match(roots, /messages\.className = 'pr-status'/);
   assert.match(roots, /messages\.setAttribute\('role', 'status'\)/);
-  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[messages\] \}\)/);
+  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[intro, messages\] \}\)/);
   assert.match(roots, /const output = stones \? messages : list/);
   assert.match(roots, /messages\.replaceChildren\(\)/, 'a successful render clears loading or failure output');
   assert.match(roots, /\(stones \? messages : list\)\.appendChild/, 'the zero-roots message uses the mounted status host');
   assert.match(roots, /else root\.append\(head, list\)/, 'ordinary Campaign roots retain their existing list mount');
   assert.match(roots, /say\(t\('roots\.loading'/, 'loading is emitted through the shared say path');
   assert.match(roots, /say\(t\('roots\.read_failed'/, 'catalog failures are emitted through the shared say path');
+});
+
+test('the folder picker takes its words from the consumer and keeps its stock words for others', async () => {
+  const picker = await source('public/js/folder-picker.js');
+  assert.match(picker, /createFolderPicker\(\{ value = '', onChange = \(\) => \{\}, words = \{\} \}/);
+  assert.match(picker, /chosen: words\.chosen \?\? t\('folders\.selected', 'Selected folder'\)/);
+  assert.match(picker, /note: words\.note \?\? t\('folders\.start_context', 'This is where the Agent will start\.'\)/);
+  assert.match(picker, /take: words\.take \?\? t\('folders\.choose', 'Choose'\)/);
+  assert.match(picker, /context\.hidden = !say\.note/, 'an empty note hides the standing line until a folder is inspected');
+  assert.match(picker, /folder\.registered_root \? \(say\.kept \|\| 'evaluate'\) : say\.take/);
+  assert.match(picker, /sort\(\(a, b\) => Number\(isRepo\(b\)\) - Number\(isRepo\(a\)\)\)/, 'folders with a repository come first');
+  assert.match(picker, /t\('folders\.group_repositories', 'Folders with a Git repository'\)/);
+  assert.match(picker, /t\('folders\.group_plain', 'Folders'\)/);
+  assert.match(picker, /if \(folder\.registered_root && say\.kept\) choose\.disabled = true/, 'a kept folder is inert where the consumer names it so');
+  for (const other of ['public/js/cowork-setup.js', 'public/js/presets.js']) assert.doesNotMatch(await source(other), /words:/, `${other} keeps the stock words`);
 });

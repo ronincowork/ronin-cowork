@@ -1096,6 +1096,13 @@ The pad's current config downloads as a backup first.
 - **roots.profile_undeclared:** Not declared
 - **roots.repository_none:** Not a Git repository. A workspace folder does not need to be one.
 - **roots.add_head:** Add a workspace
+- **roots.intro:** A workspace is a folder Ronin keeps for Teams and Agents. Three things happen there: it may be a Git repository; Agents are born from it and start making their own files in it; and their work accumulates there — plans, memory, workouts, calendar documents, whatever they keep.
+- **roots.keep_hint:** Keep a folder on this machine for Teams and Agents to start in.
+- **roots.keep_lede:** Keep a folder on this machine for Teams and Agents to start in; a folder not kept is simply left alone.
+- **roots.picker_path:** Path
+- **roots.picker_none:** None yet
+- **roots.picker_keep:** Keep
+- **roots.picker_kept:** Kept
 - **roots.archive_failed:** could not archive it — {message}
 - **roots.exclude:** exclude
 - **roots.exclude_title:** Remove it from the catalog. Nothing on disk is touched.
