@@ -11,6 +11,7 @@ class FakeNode {
   focus() { this.focused = true; }
   add(node) { this.append(node); }
   click() { if (!this.disabled) for (const callback of this.listeners.click || []) callback({ currentTarget: this }); }
+  keydown(key) { if (key === 'Enter' || key === ' ') this.click(); }
   querySelector(selector) {
     const cls = selector.match(/\.([a-z0-9_-]+)$/i)?.[1];
     return this.walk().find((node) => cls && node.className?.split(' ').includes(cls)) || null;
@@ -129,63 +130,46 @@ test('every preset gates on a provider and named presets add their dependencies'
   assert.equal(presets.presetReadiness('morning_brief', { activated_count: 1, services: { active: true } }).ready, true);
 });
 
-test('requirement targets use the first activatable provider and never invent an id', () => {
-  const runtime = {
-    activated_count: 0,
-    providers: [
-      { id: 'blocked', state: 'absent', blocked: 'Install this provider yourself.' },
-      { id: 'claude', state: 'installable', installable: true },
-      { id: 'codex', state: 'installed', installed: true },
-    ],
-    gbrain: { active: false },
-  };
-  assert.deepEqual(presets.presetRequirementTargets('bare_metal', runtime), [
-    'setup.providers', 'setup.provider:claude',
-  ]);
-  assert.deepEqual(presets.presetRequirementTargets('personal_assistant', runtime), [
-    'setup.providers', 'setup.provider:claude', 'setup.gbrain',
-  ]);
-  assert.deepEqual(presets.presetRequirementTargets('bare_metal', {
-    activated_count: 0,
-    providers: [{ id: 'codex', state: 'absent', blocked: 'Unavailable here.' }],
-  }), ['setup.providers']);
-  assert.deepEqual(presets.presetRequirementTargets('bare_metal', { activated_count: 0 }), ['setup.providers']);
-});
-
-test('hover and keyboard focus share preview state while open marks persist', () => {
-  const emitted = [];
-  const state = presets.createPresetRequirementState((next) => emitted.push(next));
-  const targets = ['setup.providers', 'setup.provider:claude', 'setup.provider:claude'];
-  assert.deepEqual(state.preview(targets).hovered, ['setup.providers', 'setup.provider:claude']);
-  assert.deepEqual(state.select(targets), {
-    hovered: [],
-    open: ['setup.providers', 'setup.provider:claude'],
-    flash: ['setup.providers', 'setup.provider:claude'],
-    flashCycle: 1,
-  });
-  state.preview(['setup.gbrain']);
-  const afterBlur = state.clearPreview();
-  assert.deepEqual(afterBlur.hovered, []);
-  assert.deepEqual(afterBlur.open, ['setup.providers', 'setup.provider:claude']);
-  assert.equal(emitted.length, 4);
-});
-
-test('each blocked selection increments flashCycle and ready selection clears marking', () => {
-  const state = presets.createPresetRequirementState();
-  assert.equal(state.select(['setup.gbrain']).flashCycle, 1);
-  assert.deepEqual(state.syncOpen(['setup.gbrain']).open, ['setup.gbrain']);
-  assert.equal(state.select(['setup.gbrain']).flashCycle, 2);
-  assert.deepEqual(state.select([]), { hovered: [], open: [], flash: [], flashCycle: 2 });
-});
-
 test('blocked detail keeps its controls and summons the concept warning from held Launch', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
   assert.match(source, /const showHeld = \(\) =>/);
   assert.match(source, /label: 'Launch', kind: 'primary', action: gate\.ready \? launchNow : showHeld/);
   assert.match(source, /launch\.el\.dataset\.held = 'true'/);
+  assert.match(source, /A model provider is required before launching a preset\./);
+  assert.doesNotMatch(source, /createPresetRequirementState|gate\.targets|mouseenter.*requirement|focus.*requirement/);
   assert.match(source, /el\('button', 'sp-warn', '!'\)/);
   assert.doesNotMatch(source, /headingCopy\.append\([\s\S]*slot\.destination/);
   assert.doesNotMatch(source, /button\.append\([^\n]*slot\.destination/);
+});
+
+test('blocked pointer and keyboard Launch only reveal the message and never mutate provider selection', async () => {
+  const providerSelector = { selected: 'anthropic', scrollTop: 17, classes: ['wk-card'] };
+  const before = JSON.stringify(providerSelector);
+  let submissions = 0;
+  const environment = {
+    presetData: async () => ({
+      templates: [],
+      runtime: { activated_count: 0, providers: [{ id: 'anthropic', state: 'installed' }], roots: [] },
+    }),
+    loadPresetSlots: () => null,
+    launch: async () => { submissions += 1; return { ok: true }; },
+    set setupRequirementState(_value) { throw new Error('retired requirement state was mutated'); },
+  };
+  const surface = presets.createPresetsSurface({ environment });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  nodes.find((node) => node.tagName === 'BUTTON' && String(node.className).includes('sp-slot')).click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  const warning = nodes.find((node) => String(node.className).includes('sp-warning'));
+  assert.ok(launch);
+  launch.click();
+  assert.equal(warning.hidden, false);
+  warning.hidden = true;
+  launch.keydown('Enter');
+  assert.equal(warning.hidden, false);
+  assert.equal(JSON.stringify(providerSelector), before);
+  assert.equal(submissions, 0);
 });
 
 test('the selected preset entry keeps Customize in its framed panel and calls the existing adapter', async () => {

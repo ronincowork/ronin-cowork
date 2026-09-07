@@ -36,6 +36,7 @@ floor. `bin/ronin-store desks` and `bin/ronin-store worktrees` resolve them;
 `RONIN_WORKTREES_DIR` moves the worktrees wherever the owner keeps them.
 
 A desk's row holds only what git cannot answer: who opened it, its team and assignment,
+the explicit source kind/ref/exact SHA and selector,
 open or parked, a pending update, the last accepted hand-in, a standing block. Tip,
 dirty files, ahead/behind and whether the folder is mounted are read from git at the
 moment of asking (`deskStatus`). Nothing here is prose an agent maintains.
@@ -55,14 +56,18 @@ migration or running-Agent reconciliation. A coding launch that gets no desk say
 
 ## Open
 
-`openDesk({repo, session, team})` — refused when the repository is `direct`, has no
+`openDesk({repo, session, team, source})` keeps `source` optional: omitted or `dev` uses
+the working line, while `team` uses the Team's local review line. The ref is resolved to an
+exact commit before create/adopt, recorded independently of the unchanged hand-in line, and
+never moves global development. `tejun-desk assign` is the lead-facing CLI over this same
+function for a named session; it adds no authorization layer. The operation is refused when the repository is `direct`, has no
 `RONIN_REPO`, or sits in a Syncthing share whose `.stignore` does not exclude `.git`;
 refused when the requested branch is a funnel point. An explicit `tejun-desk open <repo>`
 does not require that repository to already appear on the team's roster. Any Agent can
 name any managed repository; the roster only determines which desks birth opens
 automatically. Otherwise: the team line is created
 from the working line if missing and mounted at its worktree; the desk branch is cut from
-the line (or an existing branch remounted — a parked desk, or a leftover, which is adopted
+the resolved source (or an existing branch remounted — a parked desk, or a leftover, which is adopted
 rather than lost); upstream is set to the line; when the home checkout has `node_modules`,
 Ronin copies it into a real, private directory in the desk (never a symlink to the live
 operator install); the row is written. A remounted desk keeps its existing private
