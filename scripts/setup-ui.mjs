@@ -117,7 +117,6 @@ async function setupPass(browser, options) {
       })),
       presets: active?.querySelectorAll('.sp-slot').length || 0,
       feedback: [...(document.querySelectorAll('button, a') || [])].some((node) => node.textContent?.trim() === 'Feedback' && node.getClientRects().length > 0),
-      providerGroup: active?.querySelector('[data-setup-requirement-target="setup.providers"]')?.matches('.wk-selector-group') === true,
       stoneBoxes: [...(active?.querySelectorAll('.sp-slot') || [])].map((node) => {
         const box = node.getBoundingClientRect();
         const copy = node.querySelector('.sp-slot-copy');
@@ -165,8 +164,6 @@ async function setupPass(browser, options) {
   const expectedProviderCards = providerRows.map((row) => ({ key: row.id, label: row.label }));
   if (JSON.stringify(state.providerCards) === JSON.stringify(expectedProviderCards)) ok(`${label}: ${providerRows.length} Runtime provider rows render exactly ${providerRows.length} individual cards`);
   else bad(`${label}: Runtime provider rows/cards mismatch ${JSON.stringify({ expectedProviderCards, actual: state.providerCards })}`);
-  if (providerRows.length === 0 || state.providerGroup) ok(`${label}: provider group is metadata only when provider cards exist`);
-  else bad(`${label}: provider group metadata is absent or selectable`);
   const stoneWidths = state.stoneBoxes.map((box) => Math.round(box.width));
   const equalStones = new Set(stoneWidths).size === 1;
   const squareStones = state.stoneBoxes.every((box) => Math.abs(box.width - box.height) <= 2);
@@ -198,28 +195,24 @@ async function setupPass(browser, options) {
 
   if (providerRows.length && !options.ready) {
     const stone = page.locator('.sp-slot').filter({ hasText: 'Bare Metal' }).first();
-    const targets = page.locator('[data-setup-requirement-target]');
-    await stone.hover();
-    const hover = await targets.evaluateAll((nodes) => nodes.filter((node) => node.classList.contains('is-requirement-marked')).map((node) => node.getAttribute('data-setup-requirement-target')));
-    if (JSON.stringify(hover) === JSON.stringify(['setup.providers', 'setup.provider:anthropic'])) ok(`${label}: blocked hover marks the exact provider heading and first activatable card persimmon`);
-    else bad(`${label}: blocked hover target mismatch ${JSON.stringify(hover)}`);
-    await stone.focus();
-    const focus = await targets.evaluateAll((nodes) => nodes.filter((node) => node.classList.contains('is-requirement-marked')).map((node) => node.getAttribute('data-setup-requirement-target')));
-    if (JSON.stringify(focus) === JSON.stringify(hover)) ok(`${label}: keyboard focus matches pointer hover`);
-    else bad(`${label}: keyboard target mismatch ${JSON.stringify(focus)}`);
     await stone.click();
-    const selected = await targets.evaluateAll((nodes) => nodes.filter((node) => node.classList.contains('is-requirement-marked')).map((node) => ({
-      key: node.getAttribute('data-setup-requirement-target'),
-      flashing: node.classList.contains('is-requirement-flashing'),
-      iterations: getComputedStyle(node).animationIterationCount,
-      animation: getComputedStyle(node).animationName,
-    })));
-    const persistent = selected.map((entry) => entry.key);
-    const motionOK = options.reducedMotion === 'reduce'
-      ? selected.every((entry) => entry.animation === 'none')
-      : selected.every((entry) => entry.flashing && entry.iterations === '2');
-    if (JSON.stringify(persistent) === JSON.stringify(hover) && motionOK) ok(`${label}: blocked selection persists and has the ruled two-flash/reduced-motion presentation`);
-    else bad(`${label}: blocked selection presentation mismatch ${JSON.stringify(selected)}`);
+    const selector = page.locator('.wk-workbench-selector-cards');
+    const launch = page.locator('.sp-detail button').filter({ hasText: /^Launch$/ });
+    const selectorState = () => selector.evaluate((node) => ({ html: node.innerHTML, scrollTop: node.scrollTop }));
+    const beforeBlocked = await selectorState();
+    await launch.evaluate((node) => {
+      node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      node.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+      node.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const afterPointer = await selectorState();
+    await launch.focus(); await page.keyboard.press('Enter');
+    const afterKeyboard = await selectorState();
+    const gateMessage = await page.locator('.sp-warning').textContent();
+    if (JSON.stringify(beforeBlocked) === JSON.stringify(afterPointer) && JSON.stringify(beforeBlocked) === JSON.stringify(afterKeyboard)
+      && gateMessage?.trim() === 'A model provider is required before launching a preset.') {
+      ok(`${label}: blocked pointer and keyboard Launch show only the provider-required message and leave the selector byte-identical`);
+    } else bad(`${label}: blocked Launch mutated selector ${JSON.stringify({ beforeBlocked, afterPointer, afterKeyboard, gateMessage })}`);
     const blockedDetail = await page.locator('.sp-detail').evaluate((detail) => {
       const visible = (node) => !!node && node.getClientRects().length > 0;
       const buttons = [...detail.querySelectorAll('button')];

@@ -1,6 +1,6 @@
 import { execFile } from './spawn-broker.js';
 import { envWithoutGitLocation, type TegamiCheckout } from './tegami.js';
-import type { DeskStatus, PendingUpdate } from './desks/schema.js';
+import type { DeskSource, DeskStatus, PendingUpdate } from './desks/schema.js';
 
 export type DeskReadout = 'open' | 'parked' | 'unknown';
 
@@ -23,6 +23,7 @@ export interface DeskState {
   pending: PendingUpdate | null;
   last_hand_in: string;
   blocked: string;
+  desk_source?: DeskSource;
   source: 'registry' | 'git';
 }
 
@@ -108,6 +109,7 @@ export async function deriveDesk(entry: TegamiCheckout, at: RepoLocation | null,
     pending: null,
     last_hand_in: '',
     blocked: '',
+    desk_source: undefined,
     source: 'git',
   };
   if (!at || !entry.branch) return d;
@@ -162,6 +164,7 @@ export function fromStatus(st: DeskStatus): DeskState {
     pending: st.pending,
     last_hand_in: st.last_hand_in,
     blocked: st.blocked,
+    desk_source: st.source,
     source: 'registry',
   };
 }

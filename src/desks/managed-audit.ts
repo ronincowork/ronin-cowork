@@ -18,6 +18,7 @@ export interface ObservedManagedDesk {
   path: string;
   tip: string;
   base_sha: string;
+  source_kind?: 'global_dev' | 'team_line';
   constructed_from_current_dev: boolean;
   mounted: boolean;
   contained_in_dev: boolean;
@@ -143,7 +144,7 @@ export function auditManagedState(input: ManagedAuditInput): ManagedAuditResult 
       if (allDead && (desk.dirty_files.length > 0 || !desk.contained_in_dev) && !quarantined.has(`${repo.repo}\0${desk.id}`)) {
         findings.push(finding('no_orphaned_edits', 'dead_owner_unique_work', repo.repo, desk.id, `dead owners leave ${desk.dirty_files.length} dirty file(s) or commits outside dev without visible custody`));
       }
-      if (!desk.constructed_from_current_dev) {
+      if (!desk.constructed_from_current_dev && desk.source_kind !== 'team_line') {
         findings.push(finding('current_construction', 'base_not_current_dev', repo.repo, desk.id, `desk was constructed from ${desk.base_sha || '<unknown>'}, not the then-current dev tip`));
       }
       if (desk.dev_behind >= 20) findings.push(finding('current_construction', 'desk_lag', repo.repo, desk.id, `${desk.dev_behind} commits behind dev`, 'notice'));

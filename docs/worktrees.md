@@ -158,8 +158,9 @@ anyone changing the code below.
   every promotion, deleted when the team retires, never on a timer. Desk branches are
   private checkpoints. Candidates are throwaway. Each has an owner, a recorded base, and a
   place it hands in to.
-- **An Agent sees three verbs.** Get a worktree (`open`, cut from local `dev`, never from a
-  team line), update it (`sync`, merges local `dev`; `status` reports lag, and 20 commits
+- **An Agent sees three verbs.** Get a worktree (`open`, defaulting to local `dev`; an
+  explicit `--source team` joins an already-moving Team from the exact current local team-line
+  revision), update it (`sync`, merges local `dev`; `status` reports lag, and 20 commits
   behind is a notification, not a block), hand it in (`hand-in`; the candidate is built from
   current `dev` plus the team delta plus the desk delta, so the line is brought current by
   the hand-in itself). Birth, retirement, ledgers and audits never appear in a brief beyond

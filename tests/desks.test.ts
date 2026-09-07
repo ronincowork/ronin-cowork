@@ -133,6 +133,10 @@ test('openDesk: cut from current local dev, mounted, exact base recorded; the te
   assert.equal(st.mounted, true);
   assert.equal(st.worktree, deskWorktree('cowork', 'team/comp/fable'));
   assert.equal(st.base_sha, sh(cowork, ['rev-parse', 'dev']));
+  assert.deepEqual(
+    { kind: st.source?.kind, ref: st.source?.ref, sha: st.source?.sha, selected_by: st.source?.selected_by },
+    { kind: 'global_dev', ref: 'dev', sha: st.base_sha, selected_by: 'fable' },
+  );
   assert.equal(st.working, 'dev');
   assert.equal(st.behind_working, 0);
   assert.equal(st.dependency_location, path.join(st.worktree, 'node_modules'));
@@ -150,6 +154,46 @@ test('openDesk: cut from current local dev, mounted, exact base recorded; the te
   // Idempotent.
   const again = await openDesk({ repo: 'cowork', session: 'fable', team: 'comp' });
   assert.equal(again.worktree, st.worktree);
+});
+
+test('openDesk: an explicit team source is resolved once, recorded exactly, and does not change hand-in or dev', async () => {
+  const devBefore = sh(cowork, ['rev-parse', 'dev']);
+  const line = deskWorktree('cowork', 'team/comp/dev');
+  const accepted = await commitFile(line, 'accepted-before-join.txt', 'team work\n');
+  const st = await openDesk({ repo: 'cowork', session: 'joiner', team: 'comp', source: 'team', selectedBy: 'comps' });
+  assert.equal(st.tip, accepted);
+  assert.equal(st.base_sha, accepted);
+  assert.deepEqual(
+    { kind: st.source?.kind, ref: st.source?.ref, sha: st.source?.sha, selected_by: st.source?.selected_by },
+    { kind: 'team_line', ref: 'team/comp/dev', sha: accepted, selected_by: 'comps' },
+  );
+  assert.equal(st.line, 'team/comp/dev', 'source selection does not redirect hand-in');
+  assert.equal(sh(cowork, ['rev-parse', 'dev']), devBefore, 'opening from the team source never moves global dev');
+
+  const later = await commitFile(line, 'accepted-after-join.txt', 'later team work\n');
+  assert.notEqual(later, st.source?.sha, 'the stored decision remains the exact revision resolved for that operation');
+  assert.equal((await statusOf('cowork', st.branch)).tip, accepted, 'a moving team ref is not silently followed');
+  const adopted = await openDesk({ repo: 'cowork', session: 'joiner', team: 'comp', source: 'team', selectedBy: 'joiner' });
+  assert.equal(adopted.tip, later);
+  assert.equal(adopted.source?.sha, later);
+  assert.equal(adopted.base_sha, accepted, 'the creation base remains distinct from the latest source decision');
+  assert.equal(sh(cowork, ['rev-parse', 'dev']), devBefore);
+});
+
+test('tejun-desk assign gives the lead the same observable source choice for a named session', async () => {
+  const exact = sh(cowork, ['rev-parse', 'team/comp/dev']);
+  const output = execFileSync(process.execPath, [
+    '--import', 'tsx', path.resolve('src/commands/desk.ts'),
+    'assign', 'cowork', '--session', 'assigned', '--team', 'comp', '--source', 'team',
+  ], {
+    cwd: path.resolve('.'),
+    env: { ...process.env, RONIN_SESSION: 'comps', RONIN_TEAMS: 'comp' },
+  }).toString();
+  assert.match(output, new RegExp(`ASSIGNED cowork:team/comp/assigned from team/comp/dev at ${exact.slice(0, 10)} → team/comp/dev`));
+  const rec = await readDesk('cowork', 'team/comp/assigned');
+  assert.equal(rec?.source?.selected_by, 'comps');
+  assert.equal(rec?.source?.sha, exact);
+  assert.equal(rec?.line, 'team/comp/dev');
 });
 
 test('open and hand-in use current local dev even when the team line is 100 commits behind', async () => {

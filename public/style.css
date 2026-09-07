@@ -141,6 +141,10 @@
   --space-12: 34px;
 
   --row-head: calc(var(--space-11) + var(--space-6) + var(--edge));
+  --setup-stone-size: calc(var(--space-12) * 4);
+  --setup-stone-min: calc(var(--space-12) * 3 + var(--space-6));
+  --setup-stone-fluid: 24cqi;
+  --setup-stone-gap: var(--space-4);
 
 
   --workbench-head-font: var(--font-ui);
@@ -5931,13 +5935,8 @@ button.wb-door:hover b {
 .setup-launch-stone i { color: var(--accent); font-size: var(--text-9); font-style: normal; }
 .setup-launch-stone b { margin-top: auto; color: var(--fg-strong); font-size: var(--text-7); }
 .setup-launch-stone span { margin-top: var(--space-2); color: var(--muted); font-size: var(--text-3); }
-.setup-template-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
-.setup-mode, .setup-template-card { min-height: 44px; border: var(--edge) solid var(--line); background: var(--panel); color: inherit; text-align: left; }
-.setup-mode[aria-pressed='true'] { border-color: var(--kaki); }
-.setup-template-room { display: grid; gap: var(--space-3); }
-.setup-template-room h3 { margin: 0; }
 @media (max-width: 700px) {
-  .setup-explainer-body, .setup-template-modes { grid-template-columns: 1fr; }
+  .setup-explainer-body { grid-template-columns: 1fr; }
   .setup-register-disclosure-body { grid-template-columns: 1fr; }
   .setup-register-disclosure-body .setup-field { grid-column: 1; }
   .setup-surface-body { padding: var(--space-4); }

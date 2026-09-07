@@ -6,6 +6,21 @@ import { kindTiles, templateBox } from './form-steps.js';
 
 const el = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
+export const CAMPAIGN_TEMPLATES_TYPE = 'campaign.templates';
+
+export function campaignTemplatesDefinition() {
+  return {
+    type: CAMPAIGN_TEMPLATES_TYPE,
+    header: 'surface',
+    label: () => t('league.templates', 'Templates'),
+    summary: () => t('campaign_view.templates_summary', 'Team casts, agent loadouts, and the library to download more from.'),
+    create: () => {
+      const surface = createTemplatesSurface();
+      return { el: surface.el, show: () => surface.enter() };
+    },
+  };
+}
+
 /** `{ teams: 2, sops: 1 }` → "2 teams · 1 SOP" in the person's words. Every key is spelled
  *  out so check-lexicon can see it; a templated key would be invisible to the floor check. */
 function holdsWords(holds) {

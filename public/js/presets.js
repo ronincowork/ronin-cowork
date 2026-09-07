@@ -113,54 +113,13 @@ export function firstActivatableProvider(runtime = {}) {
       || ['installable', 'installed', 'login_open'].includes(provider.state);
   }) || null;
 }
-export function presetRequirementTargets(handle, runtime = {}) {
-  const targets = [];
-  if (Number(runtime.activated_count || 0) < 1) {
-    targets.push('setup.providers');
-    const provider = firstActivatableProvider(runtime);
-    if (provider) targets.push(`setup.provider:${provider.id}`);
-  }
-  if (handle === 'personal_assistant' && runtime.gbrain?.active !== true) targets.push('setup.gbrain');
-  if (handle === 'morning_brief' && runtime.services?.active !== true) targets.push('setup.services');
-  return targets;
-}
-export function createPresetRequirementState(setter = () => {}) {
-  let state = { hovered: [], open: [], flash: [], flashCycle: 0 };
-  const keys = (targets) => [...new Set((Array.isArray(targets) ? targets : []).filter((target) => typeof target === 'string' && target))];
-  const publish = (patch = {}) => {
-    state = { ...state, ...patch };
-    const next = {
-      hovered: [...state.hovered], open: [...state.open], flash: [...state.flash],
-      flashCycle: state.flashCycle,
-    };
-    setter(next);
-    return next;
-  };
-  return {
-    preview: (targets) => publish({ hovered: keys(targets) }),
-    clearPreview: () => publish({ hovered: [] }),
-    select: (targets) => {
-      const selected = keys(targets);
-      return publish({
-        hovered: [], open: selected, flash: selected,
-        flashCycle: selected.length ? state.flashCycle + 1 : state.flashCycle,
-      });
-    },
-    syncOpen: (targets) => {
-      const opened = keys(targets);
-      return publish({ open: opened, ...(opened.length ? {} : { flash: [] }) });
-    },
-    snapshot: () => ({ ...state, hovered: [...state.hovered], open: [...state.open], flash: [...state.flash] }),
-  };
-}
 export function presetReadiness(handle, runtime = {}) {
   const provider = Number(runtime.activated_count || 0) > 0;
-  const targets = presetRequirementTargets(handle, runtime);
   const activatable = firstActivatableProvider(runtime);
-  if (!provider) return { ready: false, reason: 'Activate one model provider before launching a preset.', surface: 'setup.providers', detail: { provider: activatable?.id || '' }, targets };
-  if (handle === 'personal_assistant' && runtime.gbrain?.active !== true) return { ready: false, reason: 'Personal Assistant requires gbrain to be active.', surface: 'setup.gbrain', detail: {}, targets };
-  if (handle === 'morning_brief' && runtime.services?.active !== true) return { ready: false, reason: 'Grokbot Morning Briefing requires Ronin Services to be active.', surface: 'setup.services', detail: {}, targets };
-  return { ready: true, reason: '', surface: '', detail: {}, targets: [] };
+  if (!provider) return { ready: false, reason: 'A model provider is required before launching a preset.', surface: 'setup.providers', detail: { provider: activatable?.id || '' } };
+  if (handle === 'personal_assistant' && runtime.gbrain?.active !== true) return { ready: false, reason: 'Personal Assistant requires gbrain to be active.', surface: 'setup.gbrain', detail: {} };
+  if (handle === 'morning_brief' && runtime.services?.active !== true) return { ready: false, reason: 'Grokbot Morning Briefing requires Ronin Services to be active.', surface: 'setup.services', detail: {} };
+  return { ready: true, reason: '', surface: '', detail: {} };
 }
 export function seatingPlan(handle, receipt = {}) {
   const fixed = CORE_PRESET_TREATMENTS[handle];
@@ -329,6 +288,7 @@ function saveSlots(environment, slots) {
 export function createPresetsSurface({ environment = {}, workspace = 'workspace1' } = {}) {
   const { createSurface, createAction, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('setup.presets', 'Presets'), className: 'sp-surface' });
+  surface.content.className = `${surface.content.className || ''} sp-content`.trim();
   const grid = el('div', 'sp-grid'), detail = el('div', 'sp-detail'), notice = createNotice();
   const kinds = environment.kinds || createKindsPreference();
   const more = el('div', 'sp-more');
@@ -341,7 +301,6 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   let templates = [], runtime = { providers: [], roots: [] }, selected = -1, expanded = false;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
   const controls = new Map();
-  const requirementState = createPresetRequirementState((next) => environment.setSetupRequirementState?.(next));
 
   const available = () => templates.map((row) => ({ ...row, shelf: row.shelf || (row.agents ? 'teams' : 'agents'), handle: row.name }));
   const save = () => saveSlots(environment, slots.map(({ handle, shelf }) => ({ handle, shelf })));
@@ -372,15 +331,8 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       button.dataset.gated = String(!gate.ready);
       if (!gate.ready) button.title = gate.reason;
       button.append(presetGlyph(slot), el('b', '', slot.label || slot.handle), el('small', 'sp-slot-copy', slot.description || ''));
-      if (!gate.ready) {
-        button.addEventListener('mouseenter', () => requirementState.preview(gate.targets));
-        button.addEventListener('mouseleave', () => requirementState.clearPreview());
-        button.addEventListener('focus', () => requirementState.preview(gate.targets));
-        button.addEventListener('blur', () => requirementState.clearPreview());
-      }
       button.addEventListener('click', () => {
         selected = selected === index ? -1 : index;
-        requirementState.select(selected < 0 || gate.ready ? [] : gate.targets);
         paintGrid(); paintDetail();
       }); grid.append(button);
     });
@@ -390,16 +342,15 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     detail.replaceChildren(); const slot = current();
     inner.dataset.open = String(Boolean(slot));
     detail.hidden = !slot;
-    if (!slot) { requirementState.syncOpen([]); return; }
+    if (!slot) return;
     const gate = presetReadiness(slot.handle, runtime);
-    requirementState.syncOpen(gate.ready ? [] : gate.targets);
     const heading = el('div', 'sp-heading');
     heading.append(el('h3', '', slot.label || slot.handle));
     const go = el('div', 'sp-go');
     const warning = el('p', 'sp-warning', gate.reason); warning.hidden = true;
     let warningTimer = null;
     const showHeld = () => {
-      warning.hidden = false; requirementState.select(gate.targets);
+      warning.hidden = false;
       clearTimeout(warningTimer); warningTimer = setTimeout(() => { warning.hidden = true; }, 3200);
     };
     const message = el('textarea'); message.rows = 3; message.placeholder = 'What should it start on?';

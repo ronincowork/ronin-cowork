@@ -11,7 +11,7 @@ import {
   assignmentId, deskStatus, deskWorktree, lineFor, readDesk, removeDesk, updateDesk,
   writeDesk,
 } from './registry.js';
-import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
+import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskSource, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
 import { materializeNodeModules } from '../worktree-runtime.js';
 import { withManagedTransaction } from './lifecycle-ledger.js';
 
@@ -55,7 +55,15 @@ export async function ensureLine(a: RepoArrangement, team: string): Promise<Team
   return line;
 }
 
-export interface OpenInput { repo: string; session: string; team: string; assignment?: string; branch?: string }
+export interface OpenInput {
+  repo: string;
+  session: string;
+  team: string;
+  assignment?: string;
+  branch?: string;
+  source?: 'dev' | 'team';
+  selectedBy?: string;
+}
 
 export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   const a = await arrangementOf(input.repo);
@@ -74,12 +82,22 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
 
   const existing = await readDesk(a.repo, branch);
   const workingBase = await revParse(a.dir, `refs/heads/${a.working}`) || await revParse(a.dir, 'HEAD');
+  const sourceRef = input.source === 'team' ? line.branch : a.working;
+  const sourceSha = input.source === 'team' ? await revParse(a.dir, `refs/heads/${sourceRef}`) : workingBase;
+  if (!sourceSha) throw new Error(`source '${sourceRef}' does not exist`);
+  const source: DeskSource = {
+    kind: input.source === 'team' ? 'team_line' : 'global_dev',
+    ref: sourceRef,
+    sha: sourceSha,
+    selected_by: input.selectedBy || input.session,
+    selected_at: new Date().toISOString(),
+  };
   const wtPath = existing?.worktree || deskWorktree(a.repo, branch);
   const mounted = await worktreeOf(a.dir, branch);
   if (!mounted) {
     await worktreePrune(a.dir);
     if (await branchExists(a.dir, branch)) await worktreeAddExisting(a.dir, wtPath, branch);
-    else await worktreeAddNew(a.dir, wtPath, branch, workingBase);
+    else await worktreeAddNew(a.dir, wtPath, branch, sourceSha);
   }
   await setUpstream(a.dir, branch, line.branch).catch(() => undefined);
   await stampDeskIdentity(a.dir, mounted?.path ?? wtPath, input.session);
@@ -87,21 +105,23 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
 
   const rec: DeskRecord = existing
     ? { ...existing, session: input.session, team: input.team, assignment: input.assignment ?? existing.assignment, state: 'open', parked_at: undefined, worktree: mounted?.path ?? wtPath,
+        ...(input.source ? { source } : {}),
         owners: existing.owners?.length ? existing.owners : [input.session], dependency_location: existing.dependency_location ?? path.join(mounted?.path ?? wtPath, 'node_modules') }
     : {
         repo: a.repo, root: a.repo, branch, worktree: mounted?.path ?? wtPath, line: line.branch, mode: a.mode,
         session: input.session, team: input.team, assignment: input.assignment ?? assignmentId(input.session, input.team),
         state: 'open', opened_at: new Date().toISOString(), pending: null, last_hand_in: '', blocked: '',
-        base_sha: workingBase,
+        base_sha: sourceSha, source,
         dependency_location: path.join(mounted?.path ?? wtPath, 'node_modules'), owners: [input.session],
       };
   await writeDesk(rec);
+  if (existing && input.source) await adoptLine(rec, a, source.selected_by, source.ref, source.sha);
   return deskStatus(rec, a);
 }
 
-export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string, source = rec.line): Promise<DeskNotice> {
+export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string, source = rec.line, resolvedSha = ''): Promise<DeskNotice> {
   const st = await deskStatus(rec, a);
-  const line_sha = await revParse(a.dir, `refs/heads/${source}`);
+  const line_sha = resolvedSha || await revParse(a.dir, `refs/heads/${source}`);
   const base: DeskNotice = { kind: 'adopted', repo: rec.repo, desk: rec.branch, session: rec.session, line_sha, by, files: [] };
   if (!line_sha || !st.tip) return { ...base, kind: 'pending' };
   const sourceDistance = await aheadBehind(a.dir, st.tip, line_sha);
@@ -115,7 +135,7 @@ export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string,
     await updateDesk(rec.repo, rec.branch, { pending: { line_sha, by, at: new Date().toISOString(), overlap } });
     return { ...base, kind: overlap.length ? 'pending_overlap' : 'pending', files: overlap };
   }
-  const m = await mergeInto(st.worktree, source, `Update ${rec.branch} from ${source}`);
+  const m = await mergeInto(st.worktree, line_sha, `Update ${rec.branch} from ${source} at ${line_sha.slice(0, 10)}`);
   if (!m.ok) {
     await updateDesk(rec.repo, rec.branch, { pending: { line_sha, by, at: new Date().toISOString(), overlap: m.conflicts } });
     return { ...base, kind: 'conflict', files: m.conflicts };

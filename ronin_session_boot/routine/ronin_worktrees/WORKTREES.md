@@ -18,13 +18,19 @@ the corrected status; do not create the missing branch or worktree yourself.
 
 | Verb | Tool | Meaning |
 |---|---|---|
-| **get a worktree** | `tejun-desk open <repo[:branch]>` | Create or remount a private desk from current local `dev`; report its exact base, team line, path, owner, and dependency location. |
+| **get a worktree** | `tejun-desk open <repo[:branch]> [--source dev\|team]` | A new assignment defaults to current local `dev`. When joining a Team already mid-work, explicitly choose `team`. The tool reports the exact resolved source SHA separately from the unchanged hand-in line. |
 | **update it** | `tejun-desk sync <repo[:branch]>` | Merge what local `dev` has accepted. `status` reports distance from `dev`; 20 commits behind is information, never a block. |
 | **hand it in** | `tejun-desk hand-in <repo[:branch]>` | Give the committed desk delta to the team's review line. The isolated candidate includes current local `dev`, accepted team delta, then desk delta. |
 
 `tejun-desk status` reports saved and unsaved files, distance from local `dev` and the team
-line, pending updates, the last receipt, exact base, and dependency location. Read it when
+line, pending updates, the last receipt, exact source choice and SHA, base, and dependency location. Read it when
 something surprises you; `tejun-desk receipts` shows what hand-in recorded.
+
+The source choice is deliberately simple guidance. Start a fresh assignment from `dev`;
+join ongoing Team work from `team`. If those descriptions do not make the right source
+obvious, ask the team lead. The lead can choose centrally with `tejun-desk assign
+<repo[:branch]> --session <name> --team <team> [--source dev|team]`. Neither choice grants
+permission or changes where the desk hands in.
 
 ### The four boundaries
 

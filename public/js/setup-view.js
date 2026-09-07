@@ -24,14 +24,6 @@ const DEFAULT_ARRANGEMENT = Object.freeze({
 });
 const sameOrder = (a = [], b = []) => Array.isArray(a) && a.length === b.length && a.every((name, index) => name === b[index]);
 
-const emptyRequirementState = () => ({ hovered: [], open: [], flash: [], flashCycle: 0 });
-const requirementState = (next = {}) => ({
-  hovered: [...new Set(Array.isArray(next.hovered) ? next.hovered.map(String) : [])],
-  open: [...new Set(Array.isArray(next.open) ? next.open.map(String) : [])],
-  flash: [...new Set(Array.isArray(next.flash) ? next.flash.map(String) : [])],
-  flashCycle: Number.isFinite(next.flashCycle) ? Number(next.flashCycle) : 0,
-});
-
 export function registerSetupWorkbench() {
   registerSetupSurfaces();
   registerPresetsSurface();
@@ -43,7 +35,6 @@ export function createSetupView() {
   const { createSurface } = WorkspaceKit.primitives;
   let ctx = null;
   const providerHosts = new Set();
-  const requirementListeners = new Set();
   const blank = (id) => {
     const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' });
     const word = document.createElement('p'); word.className = 'cv-blank-word'; word.textContent = t('team.workspace_blank', 'Workspace');
@@ -56,7 +47,6 @@ export function createSetupView() {
     launchUrl: presetLaunchUrl,
     reserveLaunchTab: reserveWorkspaceTab,
     kinds: environment.kinds,
-    setSetupRequirementState: (next) => environment.setSetupRequirementState(next),
     navigateToSurface: (type, detail = {}) => {
       bench?.place(type, 'workspace2', detail);
       bench?.select('workspace2');
@@ -66,23 +56,11 @@ export function createSetupView() {
   const environment = {
     presets: (workspace) => createPresetsSurface({ environment: presetEnvironment(), workspace }),
     showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
-    openTemplateMaker: () => ctx?.navigate('launch'),
     openLaunchForm: ({ kind, seed = {} } = {}) => openLaunchForm(ctx, { kind, seed }),
     openTemplateLaunchForm: () => openTemplateLaunchForm(ctx),
     setupRuntime: null,
     // What the person uses Ronin for: one persisted preference shared by Register and Presets.
     kinds: createKindsPreference(globalThis.localStorage, (kinds) => request('/api/setup/preferences', { method: 'PATCH', json: { kinds } })),
-    setupRequirementState: emptyRequirementState(),
-    setSetupRequirementState: (next) => {
-      environment.setupRequirementState = requirementState(next);
-      bench?.refreshSelector();
-      for (const listener of requirementListeners) listener(environment.setupRequirementState);
-    },
-    onSetupRequirementState: (listener) => {
-      if (typeof listener !== 'function') return () => {};
-      requirementListeners.add(listener);
-      return () => requirementListeners.delete(listener);
-    },
     mountProviderSetupSession: ({ host, provider, session, workspace, onClosed } = {}) => {
       if (!(host instanceof Node) || !session) return null;
       const terminal = WorkspaceKit.adapters.createTerminalTileHost({ mode: 'full' });
@@ -149,7 +127,7 @@ export function createSetupView() {
       bench.refreshSelector();
       save();
     },
-    leave: () => { environment.setSetupRequirementState(); bench.leave(); },
+    leave: () => bench.leave(),
     destroy: () => { for (const host of providerHosts) host.destroy(); providerHosts.clear(); bench.leave(); ctx = null; },
   };
 }

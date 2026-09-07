@@ -63,9 +63,8 @@ test('the existing workbench can pin a Setup workspace and aim selector cards at
   assert.match(workbench, /options\.selectorWorkspace \|\| selected/);
   assert.match(workbench, /options\.selectorFilter/);
   assert.match(workbench, /options\.selectorCurrent/);
-  assert.match(workbench, /dataset\.setupRequirementTarget = key/);
-  assert.match(workbench, /is-requirement-marked/);
-  assert.match(workbench, /is-requirement-flashing/);
+  assert.doesNotMatch(workbench, /setupRequirement|is-requirement|requirementFlash/);
+  assert.match(workbench, /definition\.groupKey/);
   assert.match(workbench, /INTERACTIVE_DESCENDANT/);
   assert.match(workbench, /event\.target instanceof Element && event\.target\.closest\(INTERACTIVE_DESCENDANT\)/);
   assert.match(workbench, /cell\.addEventListener\('pointerdown',[\s\S]*select\(id\);[\s\S]*}, true\)/);
@@ -90,8 +89,7 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /mountProviderSetupSession/);
   assert.match(setup, /createTerminalTileHost\(\{ mode: 'full' \}\)/);
   assert.match(setup, /environment\.setupRuntime = runtime\.ok \? runtime\.data : \{ providers: \[\] \};[\s\S]*bench\.refreshSelector\(\);[\s\S]*const stored/);
-  assert.match(setup, /setSetupRequirementState: \(next\) => \{[\s\S]*environment\.setupRequirementState = requirementState\(next\);[\s\S]*bench\?\.refreshSelector\(\)/);
-  assert.match(setup, /setSetupRequirementState: \(next\) => environment\.setSetupRequirementState\(next\)/);
+  assert.doesNotMatch(setup, /SetupRequirement|requirementState|flashCycle/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.providers, SETUP_SURFACE_TYPES\.register, SETUP_SURFACE_TYPES\.roots/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.services, SETUP_SURFACE_TYPES\.gbrain, SETUP_SURFACE_TYPES\.templates/);
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);

@@ -63,15 +63,9 @@
   .wk-workbench-selector-cards .wk-selector-group-after { margin-top: var(--space-5); }
 
   /* RONIN SETUP keeps the workbench: framed workspaces, the scope-coloured header strip,
-     the selector's framed cards. What is Setup's own is the requirement seam — a blocked
-     stone names what it needs and the matching card or block turns persimmon — and the
-     current-card mark, since the selector aims at one work surface here. */
+     the selector's framed cards, and the current-card mark. */
   .wk-workbench-layout[data-workbench-profile='setup'] .wk-selector-group { margin: var(--space-5) var(--space-2) var(--space-2); color: var(--muted); font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
   .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-selector-cards .wk-card[aria-current='page'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
-  .wk-workbench-layout[data-workbench-profile='setup'] [data-setup-requirement-target].is-requirement-marked { color: var(--kaki); }
-  .wk-workbench-layout[data-workbench-profile='setup'] .wk-card.is-requirement-marked { border-color: var(--kaki); }
-  .wk-workbench-layout[data-workbench-profile='setup'] [data-setup-requirement-target].is-requirement-flashing { color: var(--kaki); animation: setup-requirement-pulse 360ms var(--ease) 2; }
-  .wk-workbench-layout[data-workbench-profile='setup'] .wk-card.is-requirement-flashing { border-color: var(--kaki); }
   body:has([data-workspace-view='setup']:not([hidden])) #shapecycle { display: none; }
 
   .team-agent-card .wk-card-summary { color: var(--fg-strong); font-weight: 600; }
@@ -101,10 +95,6 @@
   .wk-layout-surface[data-width='compact'] .wk-card-summary, .wk-layout-surface[data-width='compact'] .wk-card-meta { display: none; }
   .wk-layout-surface[data-width='compact'] .wk-card-heading { font-size: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .wk-new-team-layout { grid-template-columns: minmax(0, 1fr); align-items: start; }
-  @keyframes setup-requirement-pulse { 50% { background: var(--accent-soft); color: var(--kaki-lift); } }
-  @media (prefers-reduced-motion: reduce) {
-    .wk-workbench-layout[data-workbench-profile='setup'] [data-setup-requirement-target].is-requirement-flashing { animation: none; background: var(--accent-soft); color: var(--kaki); }
-  }
   @media (max-width: 680px) {
     body:has([data-workspace-view='setup']:not([hidden])) #bar .brand-word,
     body:has([data-workspace-view='setup']:not([hidden])) #bar #coworkssep,
@@ -117,6 +107,7 @@
     .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] { scroll-snap-type: none; }
     .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] > .wk-layout-surface { flex: 0 0 auto; width: 100%; scroll-snap-align: none; }
     .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-column { height: auto; }
+    .wk-workbench-layout[data-workbench-profile='setup'] > .wk-layout-surface[data-surface='workspace1'] .sp-surface { height: calc(100dvh - var(--row-head) - var(--space-6)); }
     .wk-new-team-layout { display: flex; flex-direction: column; overflow: auto; }
     .wk-new-team-layout > .wk-layout-surface { flex: 0 0 auto; width: 100%; }
   }
