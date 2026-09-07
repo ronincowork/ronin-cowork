@@ -141,6 +141,18 @@ test('Setup gbrain opts into one diagnosed status notice without raw transport e
   assert.doesNotMatch(gbrain.match(/if \(options\.designedErrors\)[\s\S]*?return;/)?.[0] || '', /r\.message|HTTP/);
 });
 
+test('Setup gbrain uses a benefit-first, single-action presentation without changing the commons default', async () => {
+  const [setup, gbrain] = await Promise.all([
+    (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
+    (await import('node:fs/promises')).readFile(new URL('../public/js/gbrain.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(setup, /presentation: 'setup'/);
+  assert.match(gbrain, /Give your Agents a shared, searchable memory/);
+  assert.match(gbrain, /Status and requirements/);
+  assert.match(gbrain, /Start with PersonalAssistant/);
+  assert.match(gbrain, /root\.replaceChildren\(wrap\)/);
+});
+
 test('legacy Services mutation entry points explicitly retire to registration', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8');
   assert.match(source, /app\.post\('\/api\/services\/activation'[\s\S]*status\(410\)/);
