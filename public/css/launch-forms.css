@@ -1,10 +1,10 @@
 
 @layer app {
 
-  .sws-host { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; gap: var(--space-5); padding: var(--space-6) clamp(var(--space-6), 2vw, var(--space-11)); }
+  .sws-host { --sws-inset: clamp(var(--space-6), 2vw, var(--space-11)); display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; gap: var(--space-5); padding: var(--space-6) var(--sws-inset); }
   .sws-host > .sws { flex: 1 1 auto; }
   .sws-host > :not(.sws) { font-size: var(--form-note); line-height: 1.4; }
-  .sws { --sws-stone: var(--setup-stone-size); --sws-gap: var(--setup-stone-gap); display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: clamp(var(--space-8), 3vw, var(--space-11)); container: setup-stone-work-surface / inline-size; }
+  .sws { --sws-stone: var(--setup-stone-size); --sws-gap: var(--setup-stone-gap); display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--sws-inset); container: setup-stone-work-surface / inline-size; }
   .sws-rail { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
   .sws:not([data-open='true']) .sws-rail { display: flex; flex: 1 1 auto; align-items: flex-start; justify-content: center; min-width: 0; padding-top: calc(var(--sws-stone) + var(--sws-gap)); }
   .sws-grid { display: flex; flex-wrap: wrap; justify-content: center; width: min(100%, calc(var(--sws-stone) * 3 + var(--sws-gap) * 2)); gap: var(--sws-gap); }
@@ -44,13 +44,13 @@
   .sp-choice-panel { min-width: 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); padding: var(--space-7); font-size: var(--text-5); }
   .sp-field { display: grid; gap: var(--space-5); border-top: var(--edge) solid var(--line-2); padding: var(--space-8) 0; color: var(--muted); font-size: inherit; }
   .sp-choice-panel > .sp-field:first-child, .sp-controls > .sp-field:first-child, .sp-controls > .sp-control-label:first-child { border-top: 0; padding-top: 0; }
-  .sp-field-label, .sp-control-label { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-6); }
+  .sp-field-label, .sp-control-label { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-6); font-weight: 600; }
   .sp-select { color: var(--kaki); font-size: inherit; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
   .sp-field input, .sp-field select, .sp-field textarea { min-width: 0; border: 0; border-radius: var(--radius-hair); background: var(--well); color: var(--fg); padding: var(--space-4) var(--space-5); font: inherit; }
   .sp-field select { color: var(--accent); }
   .sp-controls { display: grid; }
-  .sp-control-label { margin: 0; padding: 0 0 var(--space-6); color: var(--muted); font-size: inherit; font-weight: 600; }
-  .sp-controls > .sp-control-label:not(:first-child) { margin-top: var(--space-12); border-top: var(--edge) solid var(--line-2); padding-top: var(--space-8); }
+  .sp-control-label { margin: 0; padding: 0 0 var(--space-6); color: var(--muted); font-size: inherit; }
+  .sp-controls > :is(.sp-field, .sp-control-label):not(:first-child) { margin-top: var(--space-12); border-top: var(--edge) solid var(--line-2); padding-top: var(--space-8); }
   .sp-controls + .sp-field { margin-top: var(--space-10); padding-top: var(--space-10); }
   .sp-rows { display: grid; gap: var(--space-2); }
   .sp-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--space-4); border: var(--edge) solid var(--line-3); border-radius: var(--radius-hair); padding: var(--space-4) var(--space-5); }
