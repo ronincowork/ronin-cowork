@@ -272,17 +272,25 @@ function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
   const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);
   const explain = () => {
-    const intro = el('section', 'setup-compact-intro');
-    const values = el('ul', 'setup-value-points');
-    values.append(
-      el('li', '', t('setup_surface.services_value_records', 'Readable work records and memory across your work.')),
-      el('li', '', t('setup_surface.services_value_library', 'Voice tools and access to the Ronin Library.')),
+    const intro = el('section', 'setup-services-intro');
+    const lockup = el('div', 'setup-services-lockup');
+    const mark = el('img', 'setup-services-mark');
+    mark.src = 'brand/nin-mark.svg'; mark.alt = '';
+    const identity = el('div', 'setup-services-identity');
+    identity.append(
+      el('h2', '', t('settei.ronin_services', 'Ronin Services')),
+      el('p', 'setup-lede', t('setup_surface.services_intro', 'Keep your work continuous and bring Ronin’s connected tools within reach.')),
     );
-    intro.append(
-      el('p', 'setup-lede', t('setup_surface.services_intro', 'Ronin Services extends local Ronin when you want connected features.')),
-      values,
-      el('p', 'setup-requirement', t('setup_surface.services_requires_short', 'Requires a confirmed registration.')),
-    );
+    lockup.append(mark, identity);
+    const values = el('div', 'setup-services-benefits');
+    for (const [heading, copy] of [
+      [t('setup_surface.services_continuity', 'Continue where you left off'), t('setup_surface.services_value_records', 'Readable work records and memory carry useful context across your work.')],
+      [t('setup_surface.services_connected', 'Use connected tools'), t('setup_surface.services_value_library', 'Voice tools and Library access stay available through Ronin.')],
+    ]) {
+      const item = el('div', 'setup-services-benefit');
+      item.append(el('h3', '', heading), el('p', '', copy)); values.append(item);
+    }
+    intro.append(lockup, values);
     return intro;
   };
   const show = async () => {
@@ -293,20 +301,32 @@ function createServicesSurface(context) {
     body.replaceChildren();
     body.append(explain());
     if (!registration.ok || registration.data?.status === 'optional') {
+      body.append(el('p', 'setup-services-enablement', t('setup_surface.services_register_enables', 'Register to confirm your access to Ronin Services. Local Ronin keeps working without it.')));
       body.append(action(t('setup_surface.register_direct', 'Register'), '', () => context.workbench?.place(SETUP_SURFACE_TYPES.register, context.workspace || 'workspace2')));
       notifySummary(SETUP_SURFACE_TYPES.services, 'registration optional', context.workbench);
       return;
     }
     const facts = installed.ok ? installed.data?.services : {};
-    const state = el('dl', 'setup-services-state');
-    for (const [label, value] of [
-      [t('setup_surface.entitled', 'Entitled'), registration.data?.services_entitled],
-      [t('setup_surface.installed', 'Installed'), facts?.installed],
-      [t('setup_surface.activated', 'Activated'), facts?.activated],
-      [t('setup_surface.switched_on', 'Switched on'), facts?.switched_on],
-    ]) state.append(el('dt', '', label), el('dd', '', value ? 'Yes' : 'No'));
+    const entitled = registration.data?.services_entitled === true;
+    const state = el('section', 'setup-services-status');
+    let status = t('setup_surface.services_not_entitled', 'Registration confirmed · Services access not included');
+    let next = t('setup_surface.services_access_help', 'Check Routines and Installs for Services access and activation.');
+    if (entitled && !facts?.installed) {
+      status = t('setup_surface.services_entitled_status', 'Services access confirmed · Ready to install');
+      next = t('setup_surface.services_install_next', 'Install Services on this machine to continue.');
+    } else if (facts?.installed && !facts?.activated) {
+      status = t('setup_surface.services_installed_status', 'Installed · Activation needed');
+      next = t('setup_surface.services_activate_next', 'Activate Services in Routines and Installs, then return here.');
+    } else if (facts?.activated && !facts?.switched_on) {
+      status = t('setup_surface.services_activated_status', 'Activated · Switched off');
+      next = t('setup_surface.services_switch_next', 'Turn Services on in Team Configuration when you want this Cowork to use it.');
+    } else if (facts?.switched_on) {
+      status = t('setup_surface.services_active_status', 'Active on this Cowork');
+      next = t('setup_surface.services_active_next', 'Readable work records, memory, voice tools, and Library access are ready.');
+    }
+    state.append(el('p', 'setup-services-status-line', status), el('p', 'setup-services-next', next));
     body.append(state);
-    if (registration.data?.services_entitled && !facts?.installed) body.append(action(t('services.install_now', 'Install Services now'), 'primary', async () => {
+    if (entitled && !facts?.installed) body.append(action(t('services.install_now', 'Install Services'), '', async () => {
       const result = await request('/api/services/install', { method: 'POST', json: {} });
       if (!result.ok) body.append(el('p', 'setup-notice bad', result.message)); else await show();
     }));
