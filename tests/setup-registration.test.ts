@@ -137,7 +137,12 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.match(source, /aria-pressed/);
   assert.match(source, /group\.dataset\.choices = String\(choices\.length\)/, 'choice grids know their count so four choices sit two by two');
   assert.match(source, /\{ explain: true \}/, 'the core-feature question explains the chosen answer');
-  assert.match(source, /explanation\.textContent = description; explanation\.hidden = !description/);
+  assert.match(source, /explanation\.textContent = description; explanation\.hidden = !description; button\.after\(explanation\)/, 'the explanation drops out right under the chosen row');
+  assert.match(source, /Which of these things Ronin does would you appreciate most\?/);
+  assert.doesNotMatch(source, /Why is that useful to you\?/);
+  for (const reason of ['own_instructions', 'no_collisions']) assert.match(source, new RegExp(`\\['${reason}', `));
+  assert.match(source, /reads by default/);
+  assert.match(source, /keep them from colliding/);
   for (const words of ['You open it from a browser wherever you are', 'Ronin never stands in between', 'light reading an agent does to build its brief']) assert.match(source, new RegExp(words));
   assert.doesNotMatch(source, /Use multiple providers without lock-in/);
   assert.match(source, /notice\.setAttribute\('aria-live', 'polite'\)/);

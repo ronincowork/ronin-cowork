@@ -82,7 +82,7 @@ function createRegisterSurface(context) {
         } else {
           value.value = key;
           for (const option of group.querySelectorAll('button')) option.setAttribute('aria-pressed', String(option === button));
-          if (explanation) { explanation.textContent = description; explanation.hidden = !description; }
+          if (explanation) { explanation.textContent = description; explanation.hidden = !description; button.after(explanation); }
         }
       });
       group.append(button);
@@ -129,13 +129,15 @@ function createRegisterSurface(context) {
     ['team_coordination', 'Agents with team coordination skills', t('setup_surface.feature_team_coordination', 'Coordination is light reading an agent does to build its brief. Each launch brief carries a few simple tools so agents can message and coordinate with one another.')],
   ], { explain: true });
   preferredFeature.wrap.querySelector('.setup-register-choice-grid').dataset.layout = 'rows';
-  const reasons = checklistGroup('reasons', t('setup_surface.reasons', 'Why is that useful to you?'), [
+  const reasons = checklistGroup('reasons', t('setup_surface.reasons', 'Which of these things Ronin does would you appreciate most?'), [
     ['different_strengths', 'Different models have different strengths. I want to use the best one for each job.'],
     ['network_resilience', 'Sometimes one model provider is having network issues, so I want another available.'],
     ['new_models', 'New models keep arriving. I want to switch without rebuilding my workspace.'],
     ['avoid_lock_in', 'I do not want to get locked into one provider.'],
     ['subscription_limits', 'If one subscription runs out of tokens, I want to shift work to another provider.'],
     ['visible_agents', 'I prefer a visible team of agents I can interact with directly, rather than hidden sub-agents.'],
+    ['own_instructions', 'I want my own standing instructions handed to my agents every time: a README or SOP that some agents, every agent, or a whole team reads by default.'],
+    ['no_collisions', 'When several agents work in one codebase, I want a structured way to keep them from colliding.'],
     ['something_else', 'Something else.'],
   ]);
   const runLocation = choiceGroup('run_location', t('setup_surface.run_location', 'Where will you install Ronin?'), [
