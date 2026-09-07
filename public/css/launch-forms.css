@@ -3,6 +3,7 @@
 
   .sws-host { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; gap: var(--space-5); padding: var(--space-6); }
   .sws-host > .sws { flex: 1 1 auto; }
+  .sws-host > :not(.sws) { font-size: var(--form-note); line-height: 1.4; }
   .sws { --sws-stone: var(--setup-stone-size); --sws-gap: var(--setup-stone-gap); display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--space-8); container: setup-stone-work-surface / inline-size; }
   .sws-rail { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
   .sws:not([data-open='true']) .sws-rail { display: flex; flex: 1 1 auto; align-items: flex-start; justify-content: center; min-width: 0; padding-top: calc(var(--sws-stone) + var(--sws-gap)); }
@@ -26,7 +27,8 @@
   .sws-label { margin-top: auto; overflow: hidden; color: var(--fg-strong); font-size: var(--text-6); font-weight: 600; line-height: 1.15; text-overflow: ellipsis; }
   .sws-secondary, .sws-state { max-width: 100%; overflow: hidden; color: var(--muted); font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
   .sws-state { color: var(--accent); }
-  .sws-detail { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; }
+  .sws-detail { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; font-size: var(--form-input); line-height: 1.45; }
+  .sws-detail :where(h1, h2, h3, h4) { font-size: var(--form-head); line-height: 1.3; }
   .sws-detail[hidden] { display: none; }
 
   .sp-surface { container: setup-preset-phalanx / inline-size; font-size: var(--text-5); }
