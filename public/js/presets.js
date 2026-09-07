@@ -65,9 +65,14 @@ export function createKindsPreference(storage = globalThis.localStorage, persist
 export function renderKindPills(host, preference, { lead = '' } = {}) {
   const row = document.createElement('div'); row.className = 'cv-pills sp-kinds';
   if (lead) { const word = document.createElement('span'); word.className = 'sp-kinds-lead'; word.textContent = lead; row.append(word); }
-  const choices = PRESET_KINDS.map(({ id, label }) => ({ id, label, kinds: [id] }));
+  const choices = [
+    ...PRESET_KINDS.map(({ id, label }) => ({ id, label, kinds: [id] })),
+    { id: 'all', label: 'All Sample Presets', kinds: PRESET_KINDS.map(({ id }) => id) },
+  ];
   const paint = (picked) => {
-    const id = picked.length === 1 && knownKind(picked[0]) ? picked[0] : '';
+    const id = picked.length === PRESET_KINDS.length && PRESET_KINDS.every(({ id: kind }) => picked.includes(kind))
+      ? 'all'
+      : picked.length === 1 && knownKind(picked[0]) ? picked[0] : '';
     for (const button of row.querySelectorAll?.('.cv-pill[data-kind]') || []) button.setAttribute('aria-pressed', String(button.dataset.kind === id));
   };
   for (const choice of choices) {
