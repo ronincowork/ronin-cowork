@@ -64,8 +64,8 @@ Each is a Git repository with a README and first commit. Ronin Project 1 also ha
 reviewed `dev` / stable `main` arrangement and managed-worktree readiness. These defaults
 do not replace or rename any external folder; the existing add/load-root flow remains.
 
-In Ronin Setup the folders are square stones on the shared stone work surface; the last,
-dotted stone is **Add A Workspace**. Selecting a folder opens one page about it beside the
+In Ronin Setup the folders are square stones on the shared stone work surface; the first,
+dotted stone is **Add A Workspace**, so adding one is never below the fold. Selecting a folder opens one page about it beside the
 rail, in the shape every stone detail shares: the name with its actions on the same line
 (**Edit**, **Archive**, **Exclude**), one state line under it, then **Summary**, **Folder**
 facts (directory, docs and plans shelves, match words), and **Repository** facts (remote,

@@ -28,7 +28,7 @@ test('roots adapt the real project-root detail and Add form to the shared stone 
   assert.match(roots, /stoneSurface\.refreshDetail\(\)/);
   assert.match(roots, /const openAdd = stones \? null : createAction/);
   assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[messages\] \}\)/);
-  assert.match(roots, /id: NEW,[\s\S]*?label: t\('roots\.add_stone', 'Add A Workspace'\),[\s\S]*?glyph: '\+',[\s\S]*?className: 'setup-roots-add-stone'/);
+  assert.match(roots, /stoneSurface\.setItems\(\[\{\s*id: NEW,\s*label: t\('roots\.add_stone', 'Add A Workspace'\),\s*glyph: '\+',\s*className: 'setup-roots-add-stone'/, 'Add A Workspace is the first stone');
   assert.doesNotMatch(roots, /stoneSurface\.openDetail/);
   assert.doesNotMatch(roots, /secondary: r\.remit \|\| r\.dir/);
   assert.match(roots, /t\('roots\.stone_ready', 'Ready'\)/);
