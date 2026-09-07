@@ -2,7 +2,7 @@
 
 **Everything an agent types, and nothing else** — `tejun`, `tejun-step`, `tejun-send`,
 `tejun-peek`, `tejun-team`, `tejun-fork`, `tejun-session-set`, `tejun-team-set`, `tejun-wipeboard`,
-`tejun-harakiri`, `tejun-recall`, `tejun-remember`, `tejun-rireki`, `tejun-desk`, `write_tegami`,
+`tejun-harakiri`, `tejun-archive`, `tejun-rehydrate`, `tejun-recall`, `tejun-remember`, `tejun-rireki`, `tejun-desk`, `write_tegami`,
 `read_tegami`. `setup.sh` puts this
 directory on PATH, after `bin/shim` (the guards) and ahead of `bin/`.
 
