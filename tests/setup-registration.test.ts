@@ -59,11 +59,12 @@ test('registration recovery keeps consent separate and deletion removes local id
   assert.equal(await getEntitlementToken(), null);
 });
 
-test('Setup reuses the Campaign Templates registration for its selector and surface', async () => {
+test('Setup reuses canonical Campaign Templates only inside Launch Your Own', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
   for (const id of ['setup.register', 'setup.providers', 'setup.roots', 'setup.services', 'setup.gbrain']) assert.match(source, new RegExp(id.replace('.', '\\.')));
   assert.match(source, /templates: CAMPAIGN_TEMPLATES_TYPE/);
-  assert.match(source, /campaignTemplatesDefinition\(\)/);
+  assert.match(source, /createTemplatesSurface\(\)/);
+  assert.doesNotMatch(source, /campaignTemplatesDefinition\(\)/);
   assert.doesNotMatch(source, /setup-template-(?:modes|room|card)|openTemplateMaker|\/api\/library/);
   assert.doesNotMatch(source, /servicesCard\s*\(/, 'Setup has no separate Services email/token activation card');
 });

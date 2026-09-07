@@ -4,7 +4,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
-import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
+import { CAMPAIGN_TEMPLATES_TYPE, createTemplatesSurface } from './campaign-templates.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { createNewTeamFormView } from './new-team-form.js';
@@ -354,18 +354,18 @@ function createLaunchOwnSurface(context) {
   const out = surface(t('setup_surface.launch_own', 'Launch your own'));
   const body = el('div', 'setup-surface-body setup-launch-own');
   const renderDetail = (item, host) => {
-    const views = item.id === 'template'
-      ? [createNewAgentView(WorkspaceKit, {}), createNewTeamFormView(WorkspaceKit, {})]
-      : [item.id === 'team' ? createNewTeamFormView(WorkspaceKit, {}) : createNewAgentView(WorkspaceKit, {})];
+    const views = [item.id === 'template'
+      ? createTemplatesSurface()
+      : item.id === 'team' ? createNewTeamFormView(WorkspaceKit, {}) : createNewAgentView(WorkspaceKit, {})];
     host.append(...views.map((view) => view.el));
     for (const view of views) void view.enter({});
     return () => { for (const view of views) view.el.remove(); };
   };
   const stones = createStoneWorkSurface({
     items: [
-      { id: 'template', glyph: '▤', label: t('template', 'Template') },
-      { id: 'team', glyph: '人人', label: t('team', 'Team') },
       { id: 'agent', glyph: '人', label: t('agent', 'Agent') },
+      { id: 'team', glyph: '人人', label: t('team', 'Team') },
+      { id: 'template', glyph: '▤', label: t('template', 'Template') },
     ],
     className: 'setup-launch-own-surface',
     renderDetail,
@@ -385,7 +385,6 @@ export function setupSurfaceDefinitions() {
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace folders'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.services, t('settei.ronin_services', 'Ronin Services'), createServicesSurface),
     definition(SETUP_SURFACE_TYPES.gbrain, t('pane.gbrain', 'gbrain'), createGbrainSurface),
-    campaignTemplatesDefinition(),
     definition(SETUP_SURFACE_TYPES.launchOwn, t('setup_surface.launch_own', 'Launch your own'), createLaunchOwnSurface),
   ];
 }
