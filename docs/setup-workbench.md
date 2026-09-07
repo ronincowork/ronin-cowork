@@ -166,13 +166,20 @@ and at most one action for the state Ronin measured:
 | installed, but not loaded | Not installed on this machine | Load gbrain |
 | the installer is running | Installing… (the surface re-reads every few seconds) | none |
 | the installer failed | Install did not finish, with the log folded below | Retry install |
-| loaded and the local process answers | Running on this machine | Start with Personal Assistant |
-| loaded and the process is silent | Installed · not running | Ask Personal Assistant to check gbrain |
+| loaded and answering, no model provider activated | gbrain is ready · a model provider comes first | Open Model providers |
+| loaded and answering, one provider activated | Everything is good to go | Start your first Personal Assistant |
+| loaded and answering, with a note (keyword-only, network reach, outside model) | Running, with a note | Start your first Personal Assistant |
+| loaded and the process is silent | Installed · not running | Ask an Agent to check gbrain |
 | the read itself failed | Status could not be read | Check again |
 
-When gbrain is loaded the surface adds **Measured now**: local process, local embeddings,
-reach, outside model use and integrations, each the snapshot's own value, with the observed
-time and a quiet Check again. The selector card's summary follows the measured state. The
+When gbrain is loaded the surface adds **What Ronin measured**: one plain sentence per
+measurement saying what it means for the person (the process answers; search by meaning is
+on; only this machine can reach it; no outside model is used; which accounts are linked, and
+which the Personal Assistant can link, one at a time, with approval), each beside the
+snapshot's own value, with the observed time and a quiet Check again. Whether accounts are
+linked is read mechanically from gbrain's integrations list, never assumed. **Start your
+first Personal Assistant** makes exactly the launch the Personal Assistant preset makes, a
+single assistant in a new tab. The selector card's summary follows the measured state. The
 Personal Assistant preset waits for gbrain to be active, and the surface says so in every
 state. The pure state mapping is `public/js/gbrain-setup-state.js`; `docs/gbrain.md` holds
 what gbrain is.

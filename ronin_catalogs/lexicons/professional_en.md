@@ -864,20 +864,44 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **gbrain.setup_status_failed:** Install did not finish
 - **gbrain.setup_next_failed:** The install log says where it stopped. Nothing else was changed.
 - **gbrain.setup_install_log:** Install log
-- **gbrain.setup_status_running:** Running on this machine
-- **gbrain.setup_next_hybrid:** Search is hybrid: by keyword and by meaning. Agents connect through MCP.
-- **gbrain.setup_next_keyword:** Search is keyword-only until the local embedding weights are running. Agents connect through MCP.
-- **gbrain.setup_next_running:** Agents connect through MCP.
-- **gbrain.setup_start_assistant:** Start with Personal Assistant
+- **gbrain.setup_start_assistant:** Start your first Personal Assistant
 - **gbrain.setup_status_stopped:** Installed · not running
-- **gbrain.setup_next_stopped:** The local gbrain process is not answering. Ask Personal Assistant to check it before anything changes.
-- **gbrain.setup_check_assistant:** Ask Personal Assistant to check gbrain
+- **gbrain.setup_next_stopped:** The local gbrain process is not answering. Turn Ronin Services off and on in Team Configuration, or ask an Agent: the button opens the launcher with the request written for you.
+- **gbrain.setup_check_assistant:** Ask an Agent to check gbrain
 - **gbrain.setup_status_unreadable:** Status could not be read
 - **gbrain.setup_reach:** Reach
 - **gbrain.setup_outside_model:** Outside model use
-- **gbrain.setup_measured:** Measured now
+- **gbrain.setup_measured:** What Ronin measured
 - **gbrain.setup_observed:** Observed {time}
 - **gbrain.setup_gate:** The Personal Assistant preset waits for gbrain to be active.
+- **gbrain.setup_status_provider_first:** gbrain is ready · a model provider comes first
+- **gbrain.setup_next_provider_first:** Activate one model provider, then come back and start your first Personal Assistant: an Agent that remembers through gbrain.
+- **gbrain.setup_open_providers:** Open Model providers
+- **gbrain.setup_status_running_note:** Running, with a note
+- **gbrain.setup_next_start_anyway:** You can still start your first Personal Assistant: an Agent that remembers through gbrain. It opens in a new tab.
+- **gbrain.setup_status_ready:** Everything is good to go
+- **gbrain.setup_next_ready:** Start your first Personal Assistant: an Agent that remembers through gbrain. It opens in a new tab. Link accounts from there, one at a time, when you want them.
+- **gbrain.setup_launching:** Launching…
+- **gbrain.setup_launched:** Launched in a new tab.
+- **gbrain.setup_launch_failed:** Launch failed.
+- **gbrain.n_linked:** {n} linked
+- **gbrain.read_process_on:** gbrain is running on this machine.
+- **gbrain.read_process_off:** The local gbrain process is not answering.
+- **gbrain.read_process_unknown:** Whether the local process is running could not be read.
+- **gbrain.read_embeddings_on:** Search by meaning is on: the local embedding weights are running.
+- **gbrain.read_embeddings_off:** Search is keyword-only until the local embedding weights are running.
+- **gbrain.read_embeddings_unknown:** Whether search by meaning is on could not be read.
+- **gbrain.read_reach_local:** Only this machine can reach it. Nothing is open to the network.
+- **gbrain.read_reach_network:** It is reachable from the network. Make sure that is what you want.
+- **gbrain.read_reach_unknown:** Where it listens could not be read.
+- **gbrain.read_outside_none:** No outside model is used. Your Agents do the thinking on your own subscription.
+- **gbrain.read_outside_configured:** An outside model key is configured, so gbrain can call out on its own.
+- **gbrain.read_outside_unknown:** Whether an outside model is configured could not be read.
+- **gbrain.read_accounts_unknown:** Whether any accounts are linked could not be read.
+- **gbrain.read_accounts_linked:** Linked: {names}.
+- **gbrain.read_accounts_none:** No accounts are linked yet. {names} can each be linked by your Personal Assistant, one at a time, with your approval.
+- **gbrain.read_accounts_none_one:** No accounts are linked yet. {names} can be linked by your Personal Assistant when you ask, with your approval.
+- **gbrain.read_accounts_none_short:** No accounts are linked yet. Your Personal Assistant can link one when you ask, with your approval.
 
 ## services_setup — services-setup-state.js and setup-surfaces.js (the Ronin Setup Services work surface)
 - **services_setup.intro:** Ronin’s hosted parts: the recording, the template library, a background assistant, voice, and team memory.

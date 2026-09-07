@@ -190,24 +190,39 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
       const button = make('button', 'wk-action', model.action.label);
       button.type = 'button';
       button.dataset.action = model.action.id;
+      const outcome = make('p', 'setup-notice setup-gbrain-outcome');
+      outcome.setAttribute('role', 'status');
       button.addEventListener('click', async () => {
         if (model.action.id === 'open_services') { options.openServices?.(); return; }
-        if (model.action.id === 'start_assistant' || model.action.id === 'check_assistant') { askPersonalAssistant(gbrainAssistantPrompt(model.state)); return; }
+        if (model.action.id === 'open_providers') { options.openProviders?.(); return; }
+        if (model.action.id === 'check_assistant') { askPersonalAssistant(gbrainAssistantPrompt(model.state)); return; }
+        if (model.action.id === 'start_assistant') {
+          // The same launch the Personal Assistant preset makes, in a new tab.
+          if (typeof options.startAssistant !== 'function') { askPersonalAssistant(gbrainAssistantPrompt(model.state)); return; }
+          button.disabled = true;
+          outcome.textContent = t('gbrain.setup_launching', 'Launching…');
+          const result = await options.startAssistant();
+          button.disabled = false;
+          outcome.textContent = result?.ok ? t('gbrain.setup_launched', 'Launched in a new tab.') : (result?.message || t('gbrain.setup_launch_failed', 'Launch failed.'));
+          return;
+        }
         button.disabled = true;
         if (model.action.id === 'load' || model.action.id === 'retry') await request('/api/gbrain/install', { method: 'POST', json: {} });
         void load();
       });
-      wrap.append(button);
+      wrap.append(button, outcome);
     }
-    if (model.facts.length) {
+    if (model.readings.length) {
       const facts = make('section', 'setup-gbrain-facts');
       const list = make('dl');
-      for (const [label, text, tone] of model.facts) {
-        const dd = make('dd', '', text);
-        if (tone) dd.dataset.tone = tone;
-        list.append(make('dt', '', label), dd);
+      for (const row of model.readings) {
+        const dd = make('dd', '', row.value);
+        if (row.tone) dd.dataset.tone = row.tone;
+        const dt = make('dt', '', row.sentence);
+        dt.dataset.reading = row.key;
+        list.append(dt, dd);
       }
-      facts.append(make('h3', '', t('gbrain.setup_measured', 'Measured now')), list);
+      facts.append(make('h3', '', t('gbrain.setup_measured', 'What Ronin measured')), list);
       const observed = make('p', 'setup-fine setup-gbrain-observed');
       const time = model.observedAt ? new Date(model.observedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
       const recheck = make('button', 'setup-gbrain-recheck', t('gbrain.check_again', 'Check again'));

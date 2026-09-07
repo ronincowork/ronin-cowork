@@ -334,7 +334,7 @@ test('Setup gbrain model gives every measured state one status, one next line, a
       listener: { scope: 'vm_only', address: '127.0.0.1', port: 7777 },
       externalModelProvider: 'none', publicAccess: { state: 'off' },
       search: { weights: 'running', mode: 'hybrid', model: 'nomic', dimensions: 768, reason: null, answers: { state: 'off', reason: 'model-key-missing' } },
-      integrationsKnown: true, integrations: [{ id: 'gmail', label: 'Gmail', state: 'not_connected' }],
+      integrationsKnown: true, integrations: [{ id: 'gmail', label: 'Gmail', category: 'senses', state: 'not_connected' }],
       observedAt: '2026-09-07T12:00:00.000Z',
       ...over,
     },
@@ -348,7 +348,9 @@ test('Setup gbrain model gives every measured state one status, one next line, a
     ['install_failed', snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } }), null, 'Install did not finish', 'retry', 'not installed'],
     ['installing', snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } }), null, 'Installing…', null, 'installing'],
     ['removing', snapshot({ install: { state: 'running', op: 'uninstall', log: [] } }), null, 'Removing…', null, 'removing'],
-    ['running', snapshot(), { installed: true, active: true }, 'Running on this machine', 'start_assistant', 'running'],
+    ['provider_first', snapshot(), { installed: true, active: true, activated_count: 0 }, 'gbrain is ready · a model provider comes first', 'open_providers', 'running'],
+    ['ready', snapshot(), { installed: true, active: true, activated_count: 1 }, 'Everything is good to go', 'start_assistant', 'running'],
+    ['running', snapshot({ listener: { scope: 'network', address: '0.0.0.0', port: 7777 } }), { installed: true, active: true, activated_count: 1 }, 'Running, with a note', 'start_assistant', 'running'],
     ['stopped', snapshot({ process: { state: 'stopped', health: 'unreachable', version: null } }), { installed: true, active: false }, 'Installed · not running', 'check_assistant', 'installed'],
   ];
   assert.deepEqual(cases.map(([state]) => state).sort(), [...GBRAIN_SETUP_STATES].sort());
@@ -364,15 +366,30 @@ test('Setup gbrain model gives every measured state one status, one next line, a
   assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).next, 'fetching weights');
   assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).polling, true);
   assert.deepEqual(gbrainSetupModel(snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } })).log, ['step 3 failed']);
-  const running = gbrainSetupModel(snapshot(), { installed: true, active: true });
-  assert.deepEqual(running.facts.map(([label]: [string]) => label), ['Local gbrain process', 'Local embeddings', 'Reach', 'Outside model use', 'Integrations']);
-  assert.deepEqual(running.facts.map(([, , tone]: [string, string, string]) => tone), ['ok', 'ok', 'ok', 'ok', 'ok']);
-  assert.match(running.next, /hybrid/);
-  assert.match(gbrainSetupModel(snapshot({ search: { weights: 'stopped', mode: 'keyword_only' } })).next, /keyword-only/);
-  assert.equal(gbrainSetupModel(snapshot({ integrationsKnown: false, integrations: [] })).facts[4][1], 'unknown');
-  assert.equal(gbrainSetupModel(snapshot({ integrations: [{ id: 'gmail', label: 'Gmail', state: 'connected' }] })).facts[4][1], '1 connected');
-  assert.equal(running.polling, false);
-  assert.match(gbrainAssistantPrompt('running'), /start using gbrain/);
+  const one = { installed: true, active: true, activated_count: 1 };
+  const ready = gbrainSetupModel(snapshot(), one);
+  assert.deepEqual(ready.readings.map((row: { key: string }) => row.key), ['process', 'embeddings', 'reach', 'outside', 'accounts']);
+  assert.deepEqual(ready.readings.map((row: { tone: string }) => row.tone), ['ok', 'ok', 'ok', 'ok', '']);
+  // Every reading is a sentence a person can act on, beside the measured value.
+  for (const row of ready.readings) { assert.match(row.sentence, /\.$/); assert.ok(row.value.length); }
+  assert.match(ready.readings[4].sentence, /No accounts are linked yet\. Gmail can be linked by your Personal Assistant/);
+  const machine = snapshot({ integrations: [
+    { id: 'credential-gateway', label: 'Credential Gateway', category: 'infra', state: 'not_connected' },
+    { id: 'email-to-brain', label: 'Email-to-Brain', category: 'senses', state: 'not_connected' },
+    { id: 'twilio-voice-brain', label: 'Voice-to-Brain (DEPRECATED — see agent-voice)', category: 'senses', state: 'not_connected' },
+    { id: 'calendar-to-brain', label: 'Calendar-to-Brain', category: 'senses', state: 'connected' },
+    { id: 'x-to-brain', label: 'X-to-Brain', category: 'senses', state: 'not_connected' },
+  ] });
+  assert.equal(gbrainSetupModel(machine, one).readings[4].sentence, 'Linked: Google Calendar.');
+  assert.equal(gbrainSetupModel(machine, one).readings[4].value, '1 linked');
+  assert.match(gbrainSetupModel(snapshot({ integrations: machine.data.integrations.map((row: { state: string }) => ({ ...row, state: 'not_connected' })) }), one).readings[4].sentence, /Gmail, Google Calendar and X can each be linked/);
+  assert.equal(gbrainSetupModel(snapshot({ integrationsKnown: false, integrations: [] }), one).readings[4].value, 'unknown');
+  const keyword = gbrainSetupModel(snapshot({ search: { weights: 'stopped', mode: 'keyword_only' } }), one);
+  assert.equal(keyword.state, 'running');
+  assert.match(keyword.next, /^Search is keyword-only until the local embedding weights are running\. You can still start/);
+  assert.equal(gbrainSetupModel(snapshot(), { installed: true, active: true, activated_count: 0 }).action?.id, 'open_providers');
+  assert.equal(ready.polling, false);
+  assert.match(gbrainAssistantPrompt('ready'), /start using gbrain/);
   assert.match(gbrainAssistantPrompt('stopped'), /not running/);
 });
 
@@ -385,6 +402,11 @@ test('Setup gbrain paints the model and keeps the commons dashboard on its defau
   assert.match(setup, /setupRuntime\?\.gbrain/);
   assert.match(setup, /onState: \(summary\) => notifySummary\(SETUP_SURFACE_TYPES\.gbrain, summary/);
   assert.match(setup, /openServices: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.services/);
+  assert.match(setup, /openProviders: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.providers/);
+  // Start your first Personal Assistant is exactly the preset's launch: same plan, same route, same new tab.
+  assert.match(setup, /launchPresetPlan\(buildLaunchPlan\(slot, '', controls\)\)/);
+  assert.match(setup, /HOUSE_PRESETS\.find\(\(row\) => row\.handle === 'personal_assistant'\)/);
+  assert.match(setup, /presetLaunchUrl\(result\.data \|\| \{\}, seatingPlan\('personal_assistant'/);
   assert.match(gbrain, /import \{ gbrainAssistantPrompt, gbrainSetupModel \} from '\.\/gbrain-setup-state\.js'/);
   assert.match(gbrain, /if \(!root\.querySelector\('\.setup-gbrain-compact'\)\) renderSetup\(undefined\)/);
   assert.match(gbrain, /const mine = \+\+reads;[\s\S]*?if \(mine === reads\) renderSetup\(result\)/);
