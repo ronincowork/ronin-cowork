@@ -685,7 +685,7 @@ async function runPhonePass({ label, browser, contextOpts }) {
       key: node.getAttribute('data-workbench-offer-resource'),
       label: node.querySelector('.wk-card-heading')?.textContent?.trim(),
     })),
-    presets: document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .sp-slot').length,
+    presets: document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .sp-preset-stone').length,
     failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
   }));
   const firstVisible = await page.evaluate(() => window.__roninFirstVisible || null);

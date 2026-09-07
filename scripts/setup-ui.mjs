@@ -115,9 +115,9 @@ async function setupPass(browser, options) {
         key: node.getAttribute('data-workbench-offer-resource'),
         label: node.querySelector('.wk-card-heading')?.textContent?.trim(),
       })),
-      presets: active?.querySelectorAll('.sp-slot').length || 0,
+      presets: active?.querySelectorAll('.sp-preset-stone').length || 0,
       feedback: [...(document.querySelectorAll('button, a') || [])].some((node) => node.textContent?.trim() === 'Feedback' && node.getClientRects().length > 0),
-      stoneBoxes: [...(active?.querySelectorAll('.sp-slot') || [])].map((node) => {
+      stoneBoxes: [...(active?.querySelectorAll('.sp-preset-stone') || [])].map((node) => {
         const box = node.getBoundingClientRect();
         const copy = node.querySelector('.sp-slot-copy');
         const copyBox = copy?.getBoundingClientRect();
@@ -194,10 +194,10 @@ async function setupPass(browser, options) {
   else bad(`${label}: responsive layout mismatch ${JSON.stringify({ legacyPhone: state.legacyPhone, overflow: state.overflow })}`);
 
   if (providerRows.length && !options.ready) {
-    const stone = page.locator('.sp-slot').filter({ hasText: 'Bare Metal' }).first();
+    const stone = page.locator('.sp-preset-stone').filter({ hasText: 'Bare Metal' }).first();
     await stone.click();
     const selector = page.locator('.wk-workbench-selector-cards');
-    const launch = page.locator('.sp-detail button').filter({ hasText: /^Launch$/ });
+    const launch = page.locator('.sp-work-surface .sws-detail button').filter({ hasText: /^Launch$/ });
     const selectorState = () => selector.evaluate((node) => ({ html: node.innerHTML, scrollTop: node.scrollTop }));
     const beforeBlocked = await selectorState();
     await launch.evaluate((node) => {
@@ -213,7 +213,7 @@ async function setupPass(browser, options) {
       && gateMessage?.trim() === 'A model provider is required before launching a preset.') {
       ok(`${label}: blocked pointer and keyboard Launch show only the provider-required message and leave the selector byte-identical`);
     } else bad(`${label}: blocked Launch mutated selector ${JSON.stringify({ beforeBlocked, afterPointer, afterKeyboard, gateMessage })}`);
-    const blockedDetail = await page.locator('.sp-detail').evaluate((detail) => {
+    const blockedDetail = await page.locator('.sp-work-surface .sws-detail').evaluate((detail) => {
       const visible = (node) => !!node && node.getClientRects().length > 0;
       const buttons = [...detail.querySelectorAll('button')];
       const launch = buttons.find((node) => node.textContent?.trim() === 'Launch');
@@ -221,7 +221,7 @@ async function setupPass(browser, options) {
       const gate = detail.querySelector('.sp-gate');
       const link = gate?.querySelector('button');
       const selectedDestination = detail.querySelector('.sp-destination');
-      const restingDestinations = document.querySelectorAll('.sp-grid .sp-slot .sp-destination');
+      const restingDestinations = document.querySelectorAll('.sp-work-surface .sws-grid .sp-destination');
       return {
         message: visible(detail.querySelector('textarea')),
         specialized: visible(detail.querySelector('.sp-controls')),
@@ -275,13 +275,13 @@ async function customizePass(browser, source, activation = 'pointer') {
   await page.goto(`${URL_.replace(/#.*$/, '')}#/${source}`, { waitUntil: 'networkidle' });
   if (source === 'cowork') {
     await page.locator('.wk-workbench-selector-cards .wk-card').filter({ hasText: 'Presets' }).first().click();
-    await page.waitForSelector('[data-workbench-surface="setup.presets"] .sp-slot');
-  } else await page.waitForSelector('[data-workspace-view="setup"]:not([hidden]) .sp-slot');
+    await page.waitForSelector('[data-workbench-surface="setup.presets"] .sp-preset-stone');
+  } else await page.waitForSelector('[data-workspace-view="setup"]:not([hidden]) .sp-preset-stone');
   const message = `${source} exact Customize message`;
-  await page.locator('.sp-detail textarea').fill(message);
+  await page.locator('.sp-work-surface .sws-detail textarea').fill(message);
   const before = await page.evaluate(() => ({ url: location.href, state: sessionStorage.getItem('ronin.workspace.v2') }));
   const popupPromise = page.waitForEvent('popup');
-  const customize = page.locator('.sp-detail button').filter({ hasText: /^Customize$/ });
+  const customize = page.locator('.sp-work-surface .sws-detail button').filter({ hasText: /^Customize$/ });
   if (activation === 'keyboard') { await customize.focus(); await page.keyboard.press('Enter'); }
   else await customize.click();
   const popup = await popupPromise;
@@ -351,8 +351,8 @@ async function presetContentPass(browser) {
   ];
   const results = [];
   for (let index = 0; index < PRESET_COPY.length; index += 1) {
-    await page.locator('.sp-slot').nth(index).click();
-    results.push(await page.locator('.sp-detail').evaluate((detail) => ({
+    await page.locator('.sp-preset-stone').nth(index).click();
+    results.push(await page.locator('.sp-work-surface .sws-detail').evaluate((detail) => ({
       title: detail.querySelector('h3')?.textContent?.trim(),
       copy: detail.querySelector('.sp-description')?.textContent?.trim(),
       labels: [...detail.querySelectorAll('.sp-controls .sp-control-label,.sp-controls .sp-field')].map((node) => node.childNodes[0]?.textContent?.trim()).filter(Boolean),
@@ -363,7 +363,7 @@ async function presetContentPass(browser) {
   const copyOK = results.every((row, index) => row.title === PRESET_COPY[index][0] && row.copy === PRESET_COPY[index][1]);
   const groupsOK = results.every((row, index) => expectedGroups[index].every((label) => row.labels.includes(label)));
   const healthOK = results[4]?.healthAsks === 3 && results[4]?.healthProviders === 0;
-  const glyphs = await page.locator('.sp-slot .sp-glyph').evaluateAll((nodes) => nodes.map((node) => ({
+  const glyphs = await page.locator('.sp-preset-stone .sp-glyph').evaluateAll((nodes) => nodes.map((node) => ({
     text: node.textContent?.trim(), viewBox: node.querySelector('svg')?.getAttribute('viewBox'),
     stroke: node.querySelector('svg')?.getAttribute('stroke'), width: node.querySelector('svg')?.getAttribute('stroke-width'),
     cap: node.querySelector('svg')?.getAttribute('stroke-linecap'), rects: node.querySelectorAll('rect').length,
