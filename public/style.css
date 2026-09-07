@@ -696,7 +696,8 @@ body {
   min-width: 0;
 }
 
-#bar .shape-cycle {
+#bar .shape-cycle,
+#bar .bar-toggle {
   display: inline-flex;
   align-items: center;
   background: transparent;
@@ -709,6 +710,11 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
+/* A compact icon control seated in the bar by the ViewHost (js/workspace.js
+   showActions) — Setup's light/dark. The shape control's frame, square, glyph centred. */
+#bar .bar-toggle { width: 30px; padding: 0; justify-content: center; font-size: var(--text-5); line-height: 1; }
+#bar .bar-toggle[aria-pressed='true'] { color: var(--fg); }
+#bar .setup-surface-toggle { border-color: transparent; font-size: var(--text-4); }
 
 
 #notesheet .ns-card {
@@ -4440,6 +4446,7 @@ button.wb-door:hover b {
     border-color: var(--kaki);
     color: var(--on-strong);
   }
+  #bar .bar-toggle { height: 40px; width: 44px; font-size: var(--text-7); }
 
   #bar .brand {
     flex: 0 1 auto;
@@ -5407,11 +5414,13 @@ button.wb-door:hover b {
     min-width: 34px;
     padding: 0 var(--space-4);
   }
-  #bar .shape-cycle:hover {
+  #bar .shape-cycle:hover,
+  #bar .bar-toggle:hover {
     color: var(--fg);
     border-color: var(--muted);
   }
-  #bar .shape-cycle:active {
+  #bar .shape-cycle:active,
+  #bar .bar-toggle:active {
     background: var(--line);
     color: var(--fg);
   }

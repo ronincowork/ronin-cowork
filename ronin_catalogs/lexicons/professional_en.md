@@ -404,6 +404,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **setup.title:** Ronin Setup
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
+- **setup.use_dark:** Use dark appearance
+- **setup.use_light:** Use light appearance
+- **setup.surface_desktop:** Setting the desktop appearance — click for phone
+- **setup.surface_mobile:** Setting the phone appearance — click for desktop
 - **campaign.settings_title:** Ronin Settings
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)

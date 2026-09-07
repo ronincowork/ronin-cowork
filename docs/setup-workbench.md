@@ -27,7 +27,14 @@ with **Register** and receives the selector choices in this order:
 6. Templates
 
 The same workbench is responsive at phone width and remains keyboard operable. It does not
-switch to the retired phone-only drill-down.
+switch to the retired phone-only drill-down. The phone stack comes from the window's width
+alone; there is no presentation switch, and the selector header carries no controls.
+
+While Setup is open, the right of the top header holds a subtle phone / desktop switcher
+(📱 / 🖥) and a compact **light / dark** control (◐ / ☀). The switcher picks which surface is
+being set; light / dark writes the Campaign's theme for that surface — the same setting the
+cowork commons' Appearance control saves — and repaints. Neither changes the workspace
+count, what is shown, the layout, or a width. The Setup / Settings island is unchanged.
 
 ## Activate a provider
 
