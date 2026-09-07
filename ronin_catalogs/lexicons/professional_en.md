@@ -1033,6 +1033,27 @@ The pad's current config downloads as a backup first.
 - **roots.save:** save
 - **roots.cancel:** cancel
 - **roots.edit:** edit
+- **roots.edit_folder:** Edit
+- **roots.edit_folder_title:** Change the summary, shelves, match words, or repository workflow.
+- **roots.save_folder:** Save
+- **roots.cancel_folder:** Cancel
+- **roots.summary:** Summary
+- **roots.summary_none:** No summary yet.
+- **roots.section_folder:** Folder
+- **roots.section_repository:** Repository
+- **roots.fact_directory:** Directory
+- **roots.fact_docs:** Docs
+- **roots.fact_plans:** Plans
+- **roots.fact_match:** Match
+- **roots.fact_remote:** Remote
+- **roots.fact_branch:** Branch
+- **roots.fact_publishing:** Publishing
+- **roots.fact_worktrees:** Worktrees
+- **roots.profile_undeclared:** Not declared
+- **roots.repository_none:** Not a Git repository. A workspace folder does not need to be one.
+- **roots.maintenance_help:** Archive takes it off the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.
+- **roots.maintenance_help_archived:** Unarchive puts it back on the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.
+- **roots.add_head:** Add a workspace
 - **roots.archive_failed:** could not archive it — {message}
 - **roots.exclude:** exclude
 - **roots.exclude_title:** Remove it from the catalog. Nothing on disk is touched.

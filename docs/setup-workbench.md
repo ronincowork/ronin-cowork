@@ -64,6 +64,15 @@ Each is a Git repository with a README and first commit. Ronin Project 1 also ha
 reviewed `dev` / stable `main` arrangement and managed-worktree readiness. These defaults
 do not replace or rename any external folder; the existing add/load-root flow remains.
 
+In Ronin Setup the folders are square stones on the shared stone work surface; the last,
+dotted stone is **Add A Workspace**. Selecting a folder opens one page about it beside the
+rail: its name and one state line, a **Summary**, **Folder** facts (directory, docs and
+plans shelves, match words), **Repository** facts (remote, branch, publishing flow,
+Worktrees) or one line saying it is not a repository, then **Edit**. Edit replaces the
+facts with the same fields under the same head and ends in **Save** and **Cancel**.
+**Archive** and **Exclude** sit last, under their own rule, with one line saying what each
+does. The Campaign's Project roots surface keeps its list of blocks with inline controls.
+
 ## Presets
 
 Every preset has **User Message**, **Customize**, and the standard hito-in-hexagon
