@@ -17,6 +17,7 @@ class FakeNode {
   }
   querySelectorAll(selector) {
     if (selector === '[data-sws-id]') return [...this.walk()].filter((node) => node.dataset.swsId);
+    if (selector === '.cv-pill[data-kind]') return [...this.walk()].filter((node) => node.className?.split(' ').includes('cv-pill') && node.dataset.kind);
     return [];
   }
   *walk() { for (const child of this.children) { if (!(child instanceof FakeNode)) continue; yield child; yield* child.walk(); } }
@@ -29,6 +30,23 @@ globalThis.document = { createElement: (tag) => new FakeNode(tag), createElement
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
 const presets = await import('../public/js/presets.js');
+
+test('purpose pills are singular Software assistance, Research, or All choices', () => {
+  const host = new FakeNode('div');
+  const preference = presets.createKindsPreference(null);
+  const row = presets.renderKindPills(host, preference).el;
+  const choices = row.children.filter((node) => node.tagName === 'BUTTON');
+  assert.deepEqual(choices.map((node) => node.textContent), ['Software assistance', 'Research', 'All']);
+  choices[0].click();
+  assert.deepEqual(preference.get(), ['build']);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['true', 'false', 'false']);
+  choices[1].click();
+  assert.deepEqual(preference.get(), ['research']);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'true', 'false']);
+  choices[2].click();
+  assert.deepEqual(preference.get(), []);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'false', 'true']);
+});
 
 test('the seven house slots are fixed core handles', () => {
   assert.equal(presets.HOUSE_PRESETS.length, 7);

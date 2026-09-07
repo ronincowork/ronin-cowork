@@ -23,8 +23,7 @@ export const HOUSE_PRESETS = Object.freeze([
 /**
  * WHAT A PERSON USES RONIN FOR, and the three stones each answer shows first. The labels
  * and the triads are the owner artifact's proposal and provisional: change them here, in
- * one place. Several kinds may be picked; the stones shown are the union. Before any pick,
- * the default three.
+ * one place. The visible choice is singular; All keeps the balanced default three.
  */
 export const PRESET_KINDS = Object.freeze([
   { id: 'build', label: 'Build software', presets: Object.freeze(['bare_metal', 'staff_my_codebase', 'develop_new_project']) },
@@ -66,15 +65,22 @@ export function createKindsPreference(storage = globalThis.localStorage, persist
 export function renderKindPills(host, preference, { lead = '' } = {}) {
   const row = document.createElement('div'); row.className = 'cv-pills sp-kinds';
   if (lead) { const word = document.createElement('span'); word.className = 'sp-kinds-lead'; word.textContent = lead; row.append(word); }
+  const choices = [
+    { id: 'software', label: 'Software assistance', kinds: ['build'] },
+    { id: 'research', label: 'Research', kinds: ['research'] },
+    { id: 'all', label: 'All', kinds: [] },
+  ];
   const paint = (picked) => {
-    for (const button of row.querySelectorAll?.('.cv-pill[data-kind]') || []) button.setAttribute('aria-pressed', String(picked.includes(button.dataset.kind)));
+    const id = picked.length === 1 && picked[0] === 'build' ? 'software' : picked.length === 1 && picked[0] === 'research' ? 'research' : 'all';
+    for (const button of row.querySelectorAll?.('.cv-pill[data-kind]') || []) button.setAttribute('aria-pressed', String(button.dataset.kind === id));
   };
-  for (const kind of PRESET_KINDS) {
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'cv-pill'; button.dataset.kind = kind.id;
-    button.textContent = kind.label; button.setAttribute('aria-pressed', String(preference.get().includes(kind.id)));
-    button.addEventListener('click', () => preference.toggle(kind.id));
+  for (const choice of choices) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'cv-pill'; button.dataset.kind = choice.id;
+    button.textContent = choice.label;
+    button.addEventListener('click', () => preference.set(choice.kinds));
     row.append(button);
   }
+  paint(preference.get());
   const stop = preference.subscribe(paint);
   host.append(row);
   return { el: row, destroy: stop };
@@ -335,10 +341,10 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   surface.content.className = `${surface.content.className || ''} sp-content`.trim();
   const notice = createNotice();
   const kinds = environment.kinds || createKindsPreference();
-  const showAll = el('button', 'cv-pill sp-show-all', t('setup.presets_show_all', 'Show all'));
-  showAll.type = 'button';
-  const kindPills = renderKindPills(surface.content, kinds, { lead: t('setup.presets_kinds_lead', 'You use Ronin for') });
-  kindPills.el.append(showAll);
+  const more = el('div', 'sp-more');
+  const showAll = createAction({ label: t('setup.presets_show_all', 'Show all seven ›'), size: 'compact' });
+  more.append(showAll.el);
+  renderKindPills(surface.content, kinds, { lead: t('setup.presets_kinds_lead', 'You use Ronin for') });
   let templates = [], runtime = { providers: [], roots: [] }, selected = -1, expanded = false;
   let detail = null;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
@@ -369,16 +375,16 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       if (selected < 0) requirementState.syncOpen([]);
     },
   });
-  surface.content.append(stoneSurface.el, notice.el);
-  showAll.addEventListener('click', () => {
+  surface.content.append(stoneSurface.el, more, notice.el);
+  showAll.el.addEventListener('click', () => {
     expanded = !expanded;
     if (!visibleIndexes().includes(selected)) { selected = -1; stoneSurface.select(''); }
     paintGrid();
   });
   const paintGrid = () => {
     const visible = visibleIndexes();
-    showAll.textContent = expanded ? t('setup.presets_show_fewer', 'Show fewer') : t('setup.presets_show_all', 'Show all');
-    showAll.setAttribute('aria-expanded', String(expanded));
+    showAll.el.textContent = expanded ? t('setup.presets_show_fewer', '‹ Show fewer') : t('setup.presets_show_all', 'Show all seven ›');
+    showAll.el.setAttribute('aria-expanded', String(expanded));
     stoneSurface.setItems(slots.map((slot, index) => {
       const gate = presetReadiness(slot.handle, runtime);
       return { id: String(index), label: slot.label || slot.handle, glyph: presetGlyph(slot), hidden: !visible.includes(index), className: 'sp-preset-stone', attrs: { 'data-gated': String(!gate.ready), title: gate.ready ? '' : gate.reason } };
