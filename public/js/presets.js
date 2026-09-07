@@ -320,13 +320,6 @@ function renderCodebaseControls(host, state, environment) {
   void load();
 }
 
-const MODELS = Object.freeze({
-  codex: Object.freeze(['Default model', 'gpt-5.6-sol', 'gpt-5.6']),
-  claude: Object.freeze(['Default model', 'opus', 'sonnet']),
-  gemini: Object.freeze(['Default model', 'gemini-3']),
-  grok: Object.freeze(['Default model']),
-  hermes: Object.freeze(['Default model']),
-});
 function renderRows(host, state, key, addLabel) {
   const rows = el('div', 'sp-rows');
   const paint = () => {
