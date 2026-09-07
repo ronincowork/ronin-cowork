@@ -45,8 +45,14 @@ test('purpose pills are singular Software assistance, Research, or All choices',
   assert.deepEqual(preference.get(), ['research']);
   assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'true', 'false']);
   choices[2].click();
-  assert.deepEqual(preference.get(), []);
+  assert.deepEqual(preference.get(), ['build', 'life', 'research']);
   assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'false', 'true']);
+});
+
+test('All exposes all seven directly with no second Show all control', async () => {
+  assert.equal(presets.restingPresets(['build', 'life', 'research']).length, 7);
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /Show all seven|presets_show_all|sp-more/);
 });
 
 test('the seven house slots are fixed core handles', () => {
