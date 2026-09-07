@@ -611,7 +611,10 @@ export function createCoworkView(options = {}) {
       return name ? { bare: name } : fallback;
     },
     tabName: {
-      get: () => ctx?.viewState(viewKey)?.tabName || '',
+      // The island edits the name it visibly owns. A default name is still a real current
+      // value, not suggestion text: putting it in value makes it selectable and editable.
+      get: () => ctx?.viewState(viewKey)?.tabName
+        || (campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team')),
       placeholder: () => campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team'),
       set: (value) => { ctx?.patchViewState(viewKey, { tabName: String(value || '').trim() }); },
     },

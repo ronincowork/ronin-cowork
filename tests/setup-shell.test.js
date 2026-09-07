@@ -61,9 +61,13 @@ test('launch actions reuse the nin mark, never the Team Roster torii, and open t
 });
 
 test('edited Cowork and Team workbench labels become the exact tab title', async () => {
-  const cowork = await source('js/cowork-view.js');
+  const [cowork, kit] = await Promise.all([
+    source('js/cowork-view.js'), source('workspace-kit.css'),
+  ]);
   assert.match(cowork, /return name \? \{ bare: name \} : fallback/);
   assert.match(cowork, /patchViewState\(viewKey, \{ tabName:/);
+  assert.match(cowork, /get: \(\) => ctx\?\.viewState\(viewKey\)\?\.tabName[\s\S]*campaign \? t\('campaign\.coworks', 'Teams'\) : team/);
+  assert.match(kit, /\.ui-bar-place \.wk-tab-name \{[^}]*background: transparent;[^}]*color: inherit;/);
 });
 
 test('the existing workbench can pin a Setup workspace and aim selector cards at the selected work surface', async () => {
