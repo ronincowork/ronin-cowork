@@ -10,6 +10,10 @@ test('New Agent presents Kind, four session doors, combined instructions, and a 
   assert.match(form, /key: 'template'.*Apply Template/);
   assert.match(form, /templateTray\(offered\(\), draft\.template,[\s\S]*includeOwn: false/);
   assert.match(form, /Name & instructions/);
+  assert.match(form, /Session type/);
+  assert.match(form, /Name · required/);
+  assert.match(form, /draft\.type === 'terminal'\) return \['type', 'top'\]/);
+  assert.match(form, /stepPayload\.el\.hidden = draft\.type === 'terminal'/);
   assert.match(form, /stepPayload\.setNumber\(order\.length \+ 1\)/);
   assert.match(form, /key: 'payload'.*Payload/);
   assert.doesNotMatch(form, /const stepTemplate =/);
