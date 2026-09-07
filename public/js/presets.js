@@ -12,6 +12,7 @@ export const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
 
 export const HOUSE_PRESETS = Object.freeze([
   { handle: 'bare_metal', shelf: 'teams', label: 'Bare Metal', description: 'Start one to four agents, each in its own tile. Lock and load.', glyph: { rects: [[4, 9, 10, 14], [18, 9, 10, 14]] }, destination: 'Ronin Lab' },
+  { handle: 'ronin_team', shelf: 'teams', label: 'Ronin Team', description: 'A Team Lead and two agents, born with the full Ronin team room.', glyph: { text: '人人' }, destination: 'Ronin Lab' },
   { handle: 'staff_my_codebase', shelf: 'teams', label: 'Code Stack Eval', description: 'Point a team at a codebase and get its read on the stack.', glyph: { path: 'M5 7h22 M5 13h22 M5 19h22 M5 25h14' }, destination: 'Ronin Project 1' },
   { handle: 'develop_new_project', shelf: 'teams', label: 'Develop a New Project', description: 'A lead plus feature agents, each in its own worktree.', glyph: { path: 'M8 28V4 M8 12h6c4 0 4-4 10-4h3 M8 20h6c4 0 4 4 10 4h3' }, destination: 'Ronin Project 1' },
   { handle: 'personal_assistant', shelf: 'agents', label: 'Personal Assistant', description: 'One assistant that remembers. Alone, or a lead that hires help.', glyph: { text: '人' }, destination: 'Ronin Lab' },
@@ -26,7 +27,7 @@ export const HOUSE_PRESETS = Object.freeze([
  * one place. The visible choice is singular.
  */
 export const PRESET_KINDS = Object.freeze([
-  { id: 'build', label: 'Build software', presets: Object.freeze(['bare_metal', 'staff_my_codebase', 'develop_new_project']) },
+  { id: 'build', label: 'Build software', presets: Object.freeze(['bare_metal', 'ronin_team', 'staff_my_codebase', 'develop_new_project']) },
   { id: 'life', label: 'Life Assistants', presets: Object.freeze(['personal_assistant', 'health_and_fitness', 'agent_editable_doc']) },
   { id: 'research', label: 'Research and writing', presets: Object.freeze(['morning_brief', 'personal_assistant', 'bare_metal']) },
 ]);
@@ -90,6 +91,7 @@ export function renderKindPills(host, preference, { lead = '' } = {}) {
 const treatment = (controls, launchShape, seats) => Object.freeze({ controls: Object.freeze(controls), launchShape, seats });
 export const CORE_PRESET_TREATMENTS = Object.freeze({
   bare_metal: treatment(['sessions'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
+  ronin_team: treatment(['sessions'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
   staff_my_codebase: treatment(['root'], 'team', () => ({ count: 2, seats: [] })),
   develop_new_project: treatment(['root', 'features'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : 2, seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
   personal_assistant: treatment(['assistant_mode', 'specialists'], 'choice', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
@@ -131,10 +133,11 @@ export function presetReadiness(handle, runtime = {}) {
   if (handle === 'morning_brief' && runtime.services?.active !== true) return { ready: false, reason: 'Grokbot Morning Briefing requires Ronin Services to be active.', surface: 'setup.services', detail: {} };
   return { ready: true, reason: '', surface: '', detail: {} };
 }
-export function seatingPlan(handle, receipt = {}) {
+export function seatingPlan(handle, receipt = {}, inputs = {}) {
   const fixed = CORE_PRESET_TREATMENTS[handle];
   if (!fixed) return null;
   const plan = fixed.seats(receipt);
+  if (handle === 'bare_metal' && [1, 2, 4].includes(Number(inputs.tiles))) plan.count = Math.max(plan.count, Number(inputs.tiles));
   return plan.seats.length ? plan : null;
 }
 
@@ -144,14 +147,32 @@ const el = (tag, cls = '', text = '') => {
   if (text) out.textContent = text;
   return out;
 };
-const field = (label, control) => { const wrap = el('label', 'sp-field'); wrap.append(el('span', '', label), control); return wrap; };
+const field = (label, control, prompt = '') => {
+  const wrap = el('label', 'sp-field');
+  const head = el('span', 'sp-field-label');
+  head.append(el('span', '', label));
+  if (prompt) head.append(el('span', 'sp-select', prompt));
+  wrap.append(head, control);
+  return wrap;
+};
+const controlLabel = (label, prompt = '') => {
+  const head = el('p', 'sp-control-label');
+  head.append(el('span', '', label));
+  if (prompt) head.append(el('span', 'sp-select', prompt));
+  return head;
+};
 const input = (value = '', type = 'text') => { const out = el('input'); out.type = type; out.value = value; return out; };
 const option = (value, label = value) => { const out = el('option', '', label); out.value = value; return out; };
 const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
 
 export function initialControls(handle, defaultProvider = '') {
   switch (handle) {
-    case 'bare_metal': return { sessions: [{ name: 'session_1', provider: defaultProvider }, { name: 'session_2', provider: defaultProvider }] };
+    case 'bare_metal': return { tiles: 2, sessions: [{ name: 'session_1', provider: defaultProvider, model: '' }, { name: 'session_2', provider: defaultProvider, model: '' }] };
+    case 'ronin_team': return { sessions: [
+      { name: 'team_lead', provider: defaultProvider, model: '', team_lead: true },
+      { name: 'agent_1', provider: defaultProvider, model: '' },
+      { name: 'agent_2', provider: defaultProvider, model: '' },
+    ] };
     case 'staff_my_codebase': return { root: 'ronin_project_1', root_dir: '' };
     case 'develop_new_project': return { root: 'ronin_project_1', features: ['frontend', 'backend'] };
     case 'personal_assistant': return { assistant_mode: 'single', specialists: '' };
@@ -186,7 +207,7 @@ function renderRootControls(host, state, roots, label = 'Which project') {
   if (!select.options.length) select.append(option(state.root || 'ronin_project_1', state.root || 'Ronin Project 1'));
   select.value = state.root;
   select.addEventListener('change', () => { state.root = select.value; });
-  host.append(field(label, select));
+  host.append(field(label, select, 'select'));
 }
 
 function renderCodebaseControls(host, state) {
@@ -194,10 +215,26 @@ function renderCodebaseControls(host, state) {
     state.root_dir = dir;
     state.root = folder?.registered_root?.name || '';
   } });
-  host.append(field('Your own codebase', picker.el));
+  host.append(field('Your own codebase', picker.el, 'select'));
   const url = input(); url.placeholder = 'https://github.com/owner/repository'; url.disabled = true;
   host.append(field('GitHub repo · remote evaluation pending', url));
 }
+
+const MODELS = Object.freeze({
+  codex: Object.freeze(['Default model', 'gpt-5.6-sol', 'gpt-5.6']),
+  claude: Object.freeze(['Default model', 'opus', 'sonnet']),
+  gemini: Object.freeze(['Default model', 'gemini-3']),
+  grok: Object.freeze(['Default model']),
+  hermes: Object.freeze(['Default model']),
+});
+const cycle = (button, values, current, paint, label) => {
+  const options = values.length ? values : [''];
+  button.addEventListener('click', () => {
+    const index = Math.max(0, options.indexOf(current()));
+    paint(options[(index + 1) % options.length]);
+  });
+  button.setAttribute('aria-label', label);
+};
 
 function renderRows(host, state, key, providers, addLabel) {
   const rows = el('div', 'sp-rows');
@@ -208,19 +245,45 @@ function renderRows(host, state, key, providers, addLabel) {
       const line = el('div', 'sp-row');
       const name = input(row.name); name.setAttribute('aria-label', `${addLabel} ${index + 1}`);
       name.addEventListener('input', () => { row.name = slug(name.value); });
-      const provider = el('select'); provider.setAttribute('aria-label', 'Model provider');
-      provider.append(option('', 'Default provider'), ...providers.map((item) => option(item.id || item.name, item.label || item.name || item.id)));
-      provider.value = row.provider || '';
-      provider.addEventListener('change', () => { row.provider = provider.value; });
+      const providerOptions = [{ id: '', label: 'Default provider' }, ...providers.map((item) => ({ id: item.id || item.name, label: item.label || item.name || item.id }))];
+      const provider = el('button', 'sp-cycle'); provider.type = 'button';
+      const providerPaint = (value) => { row.provider = value; row.model = ''; provider.textContent = providerOptions.find((item) => item.id === value)?.label || value || 'Default provider'; modelPaint(''); };
+      cycle(provider, providerOptions.map((item) => item.id), () => row.provider || '', providerPaint, 'Model provider');
+      const model = el('button', 'sp-cycle'); model.type = 'button';
+      const modelValues = () => MODELS[row.provider] || ['Default model'];
+      const modelPaint = (value) => { row.model = value === 'Default model' ? '' : value; model.textContent = row.model || 'Default model'; };
+      model.addEventListener('click', () => {
+        const values = modelValues(); const shown = row.model || 'Default model'; const index = Math.max(0, values.indexOf(shown));
+        modelPaint(values[(index + 1) % values.length]);
+      });
+      model.setAttribute('aria-label', 'Model');
+      providerPaint(row.provider || ''); modelPaint(row.model || '');
       const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
       remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });
-      line.append(name, provider, remove); rows.append(line);
+      const lead = el('span', 'sp-lead', row.team_lead ? 'Team Lead' : '');
+      if (row.team_lead) remove.hidden = true;
+      line.append(lead, name, provider, model, remove); rows.append(line);
     });
     const add = el('button', 'fs-door', `＋ Add ${addLabel}`); add.type = 'button';
     add.addEventListener('click', () => { state[key].push({ name: `${slug(addLabel)}_${state[key].length + 1}`, provider: providers.find((p) => p.activated)?.id || '' }); paint(); });
     rows.append(add);
   };
   paint(); host.append(rows);
+}
+
+function renderTileChoices(host, state) {
+  const choices = el('div', 'sp-tile-options');
+  const paint = () => {
+    for (const button of choices.querySelectorAll?.('[data-tiles]') || []) button.setAttribute('aria-pressed', String(Number(button.dataset.tiles) === state.tiles));
+  };
+  for (const count of [1, 2, 4]) {
+    const button = el('button', 'sp-tile-choice'); button.type = 'button'; button.dataset.tiles = String(count);
+    const icon = el('span', 'sp-tile-icon');
+    for (let index = 0; index < count; index += 1) icon.append(el('i'));
+    button.append(icon, el('span', '', count === 1 ? 'one tile' : count === 2 ? 'side by side' : 'two by two'));
+    button.addEventListener('click', () => { state.tiles = count; paint(); }); choices.append(button);
+  }
+  paint(); host.append(choices);
 }
 
 function renderAskRows(host, state, key, addLabel) {
@@ -250,22 +313,26 @@ function renderSpecialControls(host, handle, state, runtime) {
   if (handle === 'staff_my_codebase') renderCodebaseControls(host, state);
   if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where');
   if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder');
-  if (handle === 'bare_metal') { host.append(el('p', 'sp-control-label', 'Choose the model for each session')); renderRows(host, state, 'sessions', providers, 'Session'); }
-  if (handle === 'develop_new_project') { host.append(el('p', 'sp-control-label', 'Split the work · each feature agent gets its own worktree')); renderRows(host, state, 'features', providers, 'Feature Agent'); }
-  if (handle === 'health_and_fitness') { host.append(el('p', 'sp-control-label', "Each agent's kick-off message")); renderAskRows(host, state, 'roles', 'role'); }
+  if (handle === 'bare_metal') {
+    host.append(controlLabel('Agents run side by side', 'select')); renderRows(host, state, 'sessions', providers, 'Session');
+    host.append(controlLabel('Tile view', 'select')); renderTileChoices(host, state);
+  }
+  if (handle === 'ronin_team') { host.append(controlLabel('Team Lead and agents', 'select')); renderRows(host, state, 'sessions', providers, 'Agent'); }
+  if (handle === 'develop_new_project') { host.append(controlLabel('Split the work · each feature agent gets its own worktree')); renderRows(host, state, 'features', providers, 'Feature Agent'); }
+  if (handle === 'health_and_fitness') { host.append(controlLabel("Each agent's kick-off message", 'edit')); renderAskRows(host, state, 'roles', 'role'); }
   if (handle === 'personal_assistant') {
     const select = el('select');
     select.append(option('single', 'Single assistant'), option('recruit', 'Chief of Staff'));
     select.value = state.assistant_mode; select.addEventListener('change', () => { state.assistant_mode = select.value; specialists.hidden = select.value !== 'recruit'; });
     const specialists = input(state.specialists); specialists.placeholder = 'financial adviser, research, scheduling…'; specialists.addEventListener('input', () => { state.specialists = specialists.value; });
     specialists.hidden = state.assistant_mode !== 'recruit';
-    host.append(field('How it runs', select), field('Recruit', specialists));
+    host.append(field('How it runs', select, 'select'), field('Recruit', specialists));
   }
   if (handle === 'morning_brief') {
     const when = el('select');
     for (const [value, label] of [['daily 07:00', 'Every day, 7:00'], ['daily 08:00', 'Every day, 8:00'], ['weekdays 08:00', 'Weekdays, 8:00']]) when.append(option(value, label));
     when.value = state.schedule; when.addEventListener('change', () => { state.schedule = when.value; });
-    host.append(field('When', when), el('p', 'sp-control-label', 'What Grokbot looks at'));
+    host.append(field('When', when, 'select'), controlLabel('What Grokbot looks at', 'edit'));
     renderAskRows(host, state, 'roles', 'role');
   }
   if (handle === 'agent_editable_doc') { const doc = input(state.document); doc.addEventListener('input', () => { state.document = doc.value; }); host.append(field('Which document', doc)); }
@@ -357,7 +424,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       const result = await environment.launch(buildLaunchPlan(slot, message.value, controlState()));
       launch.setDisabled(false);
       if (!result?.ok) { tab?.close?.(); return notice.set('failed', result?.message || 'Launch failed.'); }
-      const plan = seatingPlan(slot.handle, result.data || {});
+      const plan = seatingPlan(slot.handle, result.data || {}, controlState());
       const url = environment.launchUrl?.(result.data || {}, plan, tab) || result.data?.url;
       if (tab && url) { tab.opener = null; tab.location.href = url; }
       else if (url) window.open(url, '_blank', 'noopener');

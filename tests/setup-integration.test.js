@@ -11,9 +11,10 @@ const presets = await import('../public/js/presets.js');
 const { launchPresetPlan } = await import('../public/js/preset-launch.js');
 const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 
-test('all seven core handles expose only their ruled specialized controls after the universal shell', () => {
+test('all core handles expose only their ruled specialized controls after the universal shell', () => {
   const expected = {
     bare_metal: ['user_message', 'customize', 'launch', 'sessions'],
+    ronin_team: ['user_message', 'customize', 'launch', 'sessions'],
     staff_my_codebase: ['user_message', 'customize', 'launch', 'root'],
     develop_new_project: ['user_message', 'customize', 'launch', 'root', 'features'],
     personal_assistant: ['user_message', 'customize', 'launch', 'assistant_mode', 'specialists'],
@@ -27,8 +28,9 @@ test('all seven core handles expose only their ruled specialized controls after 
   assert.deepEqual(presets.presetActions('ordinary_replacement'), ['user_message', 'customize', 'launch']);
 });
 
-test('all seven initial controls preserve the ruled destinations and teaching choices', () => {
+test('all initial controls preserve the ruled destinations and teaching choices', () => {
   assert.deepEqual(presets.initialControls('bare_metal', 'codex').sessions.map((row) => row.provider), ['codex', 'codex']);
+  assert.deepEqual(presets.initialControls('ronin_team', 'codex').sessions.map((row) => [row.name, row.team_lead === true]), [['team_lead', true], ['agent_1', false], ['agent_2', false]]);
   assert.equal(presets.initialControls('staff_my_codebase').root, 'ronin_project_1');
   assert.deepEqual(presets.initialControls('develop_new_project'), { root: 'ronin_project_1', features: ['frontend', 'backend'] });
   assert.deepEqual(presets.initialControls('personal_assistant'), { assistant_mode: 'single', specialists: '' });
@@ -42,6 +44,7 @@ test('all seven initial controls preserve the ruled destinations and teaching ch
 test('every core seating case uses only real receipt objects and missing objects fall back honestly', () => {
   const cases = {
     bare_metal: { receipt: { sessions: [{ name: 'a' }, { name: 'b' }, { name: 'c' }] }, count: 4, types: ['session', 'session', 'session'] },
+    ronin_team: { receipt: { sessions: [{ name: 'lead' }, { name: 'a' }, { name: 'b' }] }, count: 4, types: ['session', 'session', 'session'] },
     staff_my_codebase: { receipt: {}, fallback: true },
     develop_new_project: { receipt: { sessions: [{ name: 'lead' }, { name: 'front' }, { name: 'back' }] }, count: 4, types: ['session', 'session', 'session'] },
     personal_assistant: { receipt: { sessions: [{ name: 'assistant' }] }, count: 1, types: ['session'] },

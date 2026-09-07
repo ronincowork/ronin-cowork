@@ -36,3 +36,19 @@ test('Develop Project retains every ordinary launch receipt and work location', 
   assert.equal(result.data.receipts.length, 2);
   assert.ok(result.data.receipts.every((receipt) => receipt.project_root === 'ronin_project_1' && receipt.work_locations.length === 1));
 });
+
+test('Ronin Team launches a real lead and two agents with chosen provider and model', async () => {
+  const calls = [], send = responder({ name: 'ronin_team', label: 'Ronin Team', agents: [] }, calls);
+  const sessions = [
+    { name: 'team_lead', team_lead: true, provider: 'codex', model: 'gpt-5.6-sol' },
+    { name: 'agent_1', provider: 'claude', model: 'opus' },
+    { name: 'agent_2', provider: 'gemini', model: 'gemini-3' },
+  ];
+  const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'ronin_team' }, inputs: { sessions } }, send);
+  assert.equal(result.ok, true);
+  const births = calls.filter((row) => row.url === '/api/launch');
+  assert.equal(births.length, 3);
+  assert.deepEqual(births.map(({ body }) => [body.team_lead, body.provider, body.model]), [
+    [true, 'codex', 'gpt-5.6-sol'], [false, 'claude', 'opus'], [false, 'gemini', 'gemini-3'],
+  ]);
+});
