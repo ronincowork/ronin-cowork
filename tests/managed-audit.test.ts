@@ -48,6 +48,13 @@ test('current construction catches a non-current base when distance cannot expla
   assert(result.findings.some((item) => item.invariant === 'current_construction' && item.code === 'candidate_base_not_current_dev'));
 });
 
+test('an explicitly recorded team-line source is not misreported as a stale dev construction', () => {
+  const repo = cleanRepo();
+  repo.desks[0] = { ...repo.desks[0]!, base_sha: 'accepted-team-tip', source_kind: 'team_line', constructed_from_current_dev: false };
+  const result = auditManagedState({ ledger, projection, repositories: [repo] });
+  assert.equal(result.findings.some((item) => item.code === 'base_not_current_dev'), false);
+});
+
 test('rolling release state requires exactly one matching open PR', () => {
   const repo = cleanRepo();
   repo.release.open_prs.push({ base: 'master', head: 'dev', state: 'open' });
