@@ -181,7 +181,7 @@
   .fs-step-head { display: flex; align-items: baseline; gap: var(--space-3); min-width: 0; border: 0; background: transparent; color: inherit; padding: 0; text-align: left; font: inherit; }
   .fs-step-head h3 { margin: 0; color: var(--fg-strong); font-size: var(--form-head); font-weight: 600; }
   .fs-step-n { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: var(--space-7); height: var(--space-7); background: var(--kaki); color: var(--on-strong); font-size: var(--text-1); font-weight: 700; }
-  .fs-chev { display: inline-flex; align-items: center; justify-content: center; width: var(--space-7); height: var(--space-7); margin-left: auto; border: var(--edge) solid var(--line-2); color: var(--accent); font-size: var(--form-note); }
+  .fs-chev { margin-left: auto; color: var(--accent); font-size: var(--form-note); font-weight: 600; }
   .fs-togglable { grid-column: 1 / -1; width: 100%; align-items: center; border: var(--edge) solid var(--line-3); background: color-mix(in srgb, var(--well) 55%, transparent); padding: var(--space-3) var(--space-4) var(--space-3) 0; cursor: pointer; }
   .fs-togglable:hover h3 { color: var(--kaki-lift); }
   .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 2; }

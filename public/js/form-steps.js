@@ -43,7 +43,9 @@ export function createStep({ n, key, title, onToggle = null }) {
   const setCollapsed = (on, meta = '', togglable = !!onToggle) => {
     box.dataset.collapsed = String(!!on);
     head.classList.toggle('fs-togglable', togglable);
-    chev.textContent = togglable ? (on ? '▸' : '▾') : '';
+    chev.textContent = togglable
+      ? (on ? t('forms.expand', 'Expand') : t('forms.collapse', 'Collapse'))
+      : '';
     if (onToggle) head.setAttribute('aria-expanded', String(!on));
     body.hidden = !!on;
     sum.hidden = !on;

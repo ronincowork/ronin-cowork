@@ -201,7 +201,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   stepTop.body.append(createField({ label: t('new_team.instructions', 'Team instructions'), control: objectiveInput }).el);
 
   /* ---- step 4 · Where ---- */
-  const stepWhere = createStep({ n: 5, key: 'where', title: t('new_team.who_where', 'Who and where'), onToggle: () => toggle('where') });
+  const stepWhere = createStep({ n: 5, key: 'where', title: t('new_team.who_where', 'Who and where') });
   const pair = providerModelPair(
     () => ({ provider: draft.provider, model: draft.model }),
     (provider, model) => { draft.provider = provider; draft.model = model; paintFoot(); },
@@ -217,7 +217,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   function paintRoots() { where.setRoots(roots); where.root = draft.root; where.setRepos(draft.repos, draft.branches); draft.root = where.root; }
 
   /* ---- step 5 · Team kit ---- */
-  const stepKit = createStep({ n: 6, key: 'kit', title: t('team_kit', 'Shared toolkit'), onToggle: () => toggle('kit') });
+  const stepKit = createStep({ n: 6, key: 'kit', title: t('team_kit', 'Shared toolkit') });
   // agent to inherit from its team. It's going to be very agent-specific anyway, and I
   // think open is the only natural thing." Reach, recruit and output stay `open` in the
   // record and are asked once, on the Agent, where they mean something.
@@ -317,7 +317,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const stepLead = agents.step;
 
   /* ---- the collapse rules: a template's answers fold; the header opens them ---- */
-  const FOLDS = ['where', 'kit', 'lead'];
+  const FOLDS = ['lead'];
   const steps = { kind: stepKind, template: stepTemplate, top: stepTop, lead: stepLead, defaults: null, where: stepWhere, kit: stepKit };
   function toggle(key) {
     if (draft.expanded[key]) delete draft.expanded[key];
@@ -329,16 +329,12 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // One list, read by the form's numbering AND by the Launch selector's outline.
   const plan = () => ['kind', 'template', 'top', 'lead', 'defaults', 'where', 'kit'];
   const meta = {
-    where: () => where.summary(),
-    kit: () => t('new_team.kit_meta', '{routines} routines · {books} books', {
-      routines: onNames().length + 1, books: draft.books.length,
-    }),
     lead: () => t('new_team.agents_meta', '{n} agents', { n: draft.agents.length }),
   };
   function paintFolds() {
     stepTemplate.setCollapsed(!templateOpen, templateOpen ? '' : t('new_team.apply_template', 'Apply Template'), true);
     for (const key of FOLDS) {
-      const folded = key === 'where' || key === 'kit' || !!templateRow();
+      const folded = !!templateRow();
       steps[key].setCollapsed(folded && !draft.expanded[key], folded ? meta[key]() : '', folded);
     }
   }
