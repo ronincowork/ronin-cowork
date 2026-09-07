@@ -168,29 +168,33 @@ test('anonymous Register delivery uses the durable Ronin message path and never 
   assert.match(source, /if \(anonymous\)[\s\S]*?return;[\s\S]*?await request\(str\(body\.email\)\)/);
 });
 
-test('Services leads with identity and benefits, then paints one measured status and at most one real action', async () => {
+test('Services leads with identity, the beta, and benefits, then one measured status and the three same-shape steps', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
   assert.match(source, /import \{ servicesSetupModel \} from '\.\/services-setup-state\.js'/);
+  assert.match(source, /import \{ campaignById, campaigns, loadCampaigns, saveCampaign \} from '\.\/campaigns\.js'/);
+  assert.match(source, /import \{ completeRoutineMap \} from '\.\/campaign-routines\.js'/);
   assert.match(source, /setup-services-mark/);
   assert.match(source, /mark\.src = 'brand\/services-mark\.svg'/);
-  assert.doesNotMatch(source, /setup-services-mark'\);\n\s*mark\.src = 'brand\/nin-mark\.svg'/);
-  assert.ok(source.indexOf('services_setup.library') < source.indexOf('setup-services-status'), 'benefits precede the status block');
-  for (const key of ['services_setup.library', 'services_setup.records', 'services_setup.voice', 'services_setup.gate']) assert.match(source, new RegExp(key.replace('.', '\\.')));
+  const order = ['setup-services-lockup', 'services_setup.beta', 'services_setup.transcripts', 'services_setup.library', 'setup-services-status', 'setup-services-steps', 'services_setup.gate'];
+  for (let i = 1; i < order.length; i += 1) assert.ok(source.indexOf(order[i - 1]) < source.indexOf(order[i]), `${order[i - 1]} precedes ${order[i]}`);
+  for (const key of ['services_setup.beta_copy', 'services_setup.transcripts_copy', 'services_setup.records', 'services_setup.voice']) assert.match(source, new RegExp(key.replace('.', '\\.')));
   assert.match(source, /request\('\/api\/setup\/registration', \{ cache: 'no-store' \}\)/);
   assert.match(source, /request\('\/api\/installed', \{ cache: 'no-store' \}\)/);
   assert.match(source, /request\('\/api\/services\/activation', \{ cache: 'no-store' \}\)/);
   assert.match(source, /servicesSetupModel\(registration, installed, activation\)/);
   assert.match(source, /setAttribute\('aria-live', 'polite'\)/);
-  assert.match(source, /if \(act\.id === 'register'\) \{ openRegister\(\); return; \}/);
-  assert.match(source, /if \(model\.account\) \{/, 'installed Services carries a separate optional account line');
-  assert.match(source, /setup-services-account-action/);
+  assert.match(source, /if \(item\.act === 'register'\) \{ openRegister\(\); return; \}/);
   assert.match(source, /workbench\?\.place\(SETUP_SURFACE_TYPES\.register/);
-  assert.match(source, /'install' \? '\/api\/services\/install' : '\/api\/services\/activation\/poll'/);
+  assert.match(source, /item\.act === 'install' \? '\/api\/services\/install' : '\/api\/services\/activation\/poll'/);
+  // The On step is the Campaign's own Routine switch, saved the way Routines and Installs saves it.
+  assert.match(source, /request\('\/api\/routines'\)/);
+  assert.match(source, /ronin_services: on/);
+  assert.match(source, /saveCampaign\(row\.id, \{ config: \{ agent_defaults: \{ \.\.\.defaults, routines \} \} \}\)/);
+  assert.match(source, /setAttribute\('aria-pressed', String\(item\.done\)\)/);
   assert.match(source, /notifySummary\(SETUP_SURFACE_TYPES\.services, model\.summary/);
   assert.match(source, /if \(body\.isConnected\) void show\(\)/, 'polling stops when the surface leaves the workspace');
-  assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short|services_register_enables|Registration confirmed · Services access not included|not activated/);
+  assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short|services_register_enables|Registration confirmed · Services access not included|not activated|setup-services-account/);
   assert.doesNotMatch(source, /const state = el\('dl'|<dd>|'Yes' : 'No'/);
-  assert.doesNotMatch(source, /services_value_records|Continue where you left off|readable transcripts/i, 'no benefit promises what this beta does not hold');
 });
 
 test('the Services mark is a code-native R and S monogram in the house hexagon', async () => {
@@ -209,60 +213,60 @@ test('the Services mark is a code-native R and S monogram in the house hexagon',
   assert.doesNotMatch(services, /#[0-9a-fA-F]{3,8}\b(?<!#c46243)/, 'no colour beyond kaki');
 });
 
-test('Services setup model keeps installation and registration as separate measured facts', async () => {
+test('Services setup model keeps installation and registration as separate facts and shapes three steps', async () => {
   const { SERVICES_SETUP_STATES, servicesSetupModel } = await import('../public/js/services-setup-state.js');
   const reg = (status: string, extra: Record<string, unknown> = {}) => ({ ok: true, data: { status, services_entitled: false, ...extra } });
   const entitled = (extra: Record<string, unknown> = {}) => reg('registered', { services_entitled: true, ...extra });
   const inst = (services: Record<string, unknown> = {}) => ({ ok: true, data: { services: { installed: false, activated: false, switched_on: false, restart_needed: false, parts: [], loaded: [], ...services } } });
   const here = (extra: Record<string, unknown> = {}) => inst({ installed: true, parts: ['counting', 'gbrain', 'koe', 'koshi', 'machine', 'rireki'], loaded: ['gbrain', 'machine'], ...extra });
   const act = (stage: string, extra: Record<string, unknown> = {}) => ({ ok: true, data: { stage, ...extra } });
-  const cases: Array<[string, unknown, unknown, unknown, string, string, string | null, boolean]> = [
-    ['unregistered', { ok: false, status: 500 }, inst(), null, 'not installed', 'Not installed on this machine', 'register', false],
-    ['anonymous', reg('anonymous'), inst(), act('not_requested'), 'not installed', 'Not installed · anonymous hello sent', 'register', false],
-    ['sending', reg('pending'), inst(), act('requesting'), 'sending', 'Sending the confirmation email…', null, true],
-    ['awaiting_email', reg('pending', { email_masked: 'p*****@example.com' }), inst(), act('awaiting_email'), 'confirm email', 'Confirmation email sent to p*****@example.com', 'check', true],
-    ['expired', reg('pending'), inst(), act('expired'), 'link expired', 'Confirmation link expired', 'register', false],
-    ['send_failed', reg('pending'), inst(), act('error', { error_at_stage: 'awaiting_email' }), 'waiting to send', 'Waiting to send', 'check', false],
-    ['entitled', entitled(), inst(), act('verified'), 'ready to install', 'Registered · Ready to install', 'install', false],
-    ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', null, true],
-    ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'install', false],
-    ['switched_off', reg('optional'), here(), act('not_requested'), 'switched off', 'Installed · switched off', null, false],
-    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', null, false],
-    ['active', reg('optional'), here({ switched_on: true }), act('not_requested'), 'active', 'Active on this Cowork', null, false],
+  type Step = { id: string; label: string; done: boolean; enabled: boolean; act: string | null };
+  const shape = (m: { steps: Step[] }) => m.steps.map((s) => `${s.id}:${s.label}:${s.done ? 'done' : s.enabled ? s.act : 'off'}`).join(' ');
+  const cases: Array<[string, unknown, unknown, unknown, string, string, string, boolean]> = [
+    ['unregistered', { ok: false, status: 500 }, inst(), null, 'not installed', 'Not installed on this machine', 'register:Register:register install:Install:off switch:Turn on:off', false],
+    ['anonymous', reg('anonymous'), inst(), act('not_requested'), 'not installed', 'Not installed · anonymous hello sent', 'register:Register:register install:Install:off switch:Turn on:off', false],
+    ['sending', reg('pending'), inst(), act('requesting'), 'sending', 'Sending the confirmation email…', 'register:Sending…:off install:Install:off switch:Turn on:off', true],
+    ['awaiting_email', reg('pending', { email_masked: 'p*****@example.com' }), inst(), act('awaiting_email'), 'confirm email', 'Confirmation email sent to p*****@example.com', 'register:Check status:check install:Install:off switch:Turn on:off', true],
+    ['expired', reg('pending'), inst(), act('expired'), 'link expired', 'Confirmation link expired', 'register:Register:register install:Install:off switch:Turn on:off', false],
+    ['send_failed', reg('pending'), inst(), act('error', { error_at_stage: 'awaiting_email' }), 'waiting to send', 'Waiting to send', 'register:Check status:check install:Install:off switch:Turn on:off', false],
+    ['entitled', entitled(), inst(), act('verified'), 'ready to install', 'Registered · Ready to install', 'register:Done:done install:Install:install switch:Turn on:off', false],
+    ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', 'register:Done:done install:Installing…:off switch:Turn on:off', true],
+    ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'register:Done:done install:Try again:install switch:Turn on:off', false],
+    ['switched_off', reg('optional'), here(), act('not_requested'), 'switched off', 'Installed · switched off', 'register:Register:register install:Done:done switch:Turn on:switch_on', false],
+    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Done:done', false],
+    ['active', entitled(), here({ switched_on: true }), act('installed'), 'active', 'Active on this Cowork', 'register:Done:done install:Done:done switch:Done:done', false],
   ];
   assert.deepEqual(cases.map(([state]) => state).sort(), [...SERVICES_SETUP_STATES].sort());
-  for (const [state, registration, installed, activation, summary, status, action, polling] of cases) {
+  for (const [state, registration, installed, activation, summary, status, steps, polling] of cases) {
     const model = servicesSetupModel(registration as never, installed as never, activation as never);
     assert.equal(model.state, state);
     assert.equal(model.summary, summary);
     assert.equal(model.status, status);
-    assert.equal(model.action?.id ?? null, action);
+    assert.equal(shape(model), steps);
     assert.equal(model.polling, polling);
     assert.ok(model.next.length > 0);
-    assert.doesNotMatch(`${model.status} ${model.next} ${model.action?.label || ''} ${model.account?.line || ''}`, /HTTP|undefined|null/);
+    assert.deepEqual(model.steps.map((s: Step) => s.id), ['register', 'install', 'switch'], 'always the same three steps in the same order');
+    assert.doesNotMatch(`${model.status} ${model.next} ${model.steps.map((s: Step) => s.label).join(' ')}`, /HTTP|undefined|null/);
   }
-  // Installed on the live box without any registration: installed, usable, and no registration demand.
+  // Installed on the live box without any registration: installed, usable, switchable, and Register stays an optional step.
   const live = servicesSetupModel(reg('optional'), here(), act('not_requested'));
-  assert.equal(live.state, 'switched_off');
-  assert.equal(live.action, null, 'installed Services never demands registration as its one action');
+  assert.equal(live.steps[2].act, 'switch_on');
+  assert.equal(live.steps[2].enabled, true, 'installed Services can be switched on here without registering');
   assert.match(live.next, /2 of 6 parts are running now/);
-  assert.match(live.account?.line || '', /optional/i);
-  assert.equal(live.account?.action?.id, 'register', 'registration stays reachable as a quiet, optional line');
   const liveOn = servicesSetupModel(reg('optional'), here({ switched_on: true }), act('not_requested'));
   assert.equal(liveOn.state, 'active');
-  assert.match(liveOn.next, /2 of 6 parts are running/);
-  const registeredOn = servicesSetupModel(entitled(), here({ switched_on: true }), act('installed'));
-  assert.equal(registeredOn.state, 'active');
-  assert.match(registeredOn.account?.line || '', /^Registered/);
-  assert.equal(registeredOn.account?.action, null);
+  assert.equal(liveOn.steps[2].act, 'switch_off', 'a Done switch turns off from here');
+  assert.equal(liveOn.steps[2].enabled, true);
+  assert.equal(liveOn.steps[1].enabled, false, 'Done install has nothing to press');
+  assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[1].enabled, false, 'the hosted install waits for the entitlement the API demands');
+  assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[2].enabled, false, 'nothing to switch on before parts are installed');
   const installedAwaiting = servicesSetupModel(reg('pending', { email_masked: 'p*****@example.com' }), here(), act('awaiting_email'));
   assert.equal(installedAwaiting.state, 'switched_off');
   assert.equal(installedAwaiting.polling, true, 'a confirmation in flight still re-reads');
-  assert.equal(installedAwaiting.account?.action?.id, 'check');
-  assert.match(installedAwaiting.account?.line || '', /Confirmation email sent to p\*\*\*\*\*@example\.com/);
-  for (const [, registration, installed, activation] of cases.slice(0, 9)) assert.equal(servicesSetupModel(registration as never, installed as never, activation as never).account, null, 'with nothing installed the registration path is the one block');
+  assert.equal(installedAwaiting.steps[0].act, 'check');
   assert.equal(servicesSetupModel(null, null, null).state, 'unregistered', 'no reads at all still paint a truthful floor');
   assert.match(servicesSetupModel(entitled(), here({ restart_needed: true }), act('installed')).next, /still running/);
+  assert.match(servicesSetupModel(entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' })).next, /did not start/);
   assert.equal(servicesSetupModel(entitled(), here({ switched_on: true }), act('installing')).state, 'active', 'parts present and switched on outrank a stale installing stage');
   assert.deepEqual(new Set(cases.map(([, r, i, a]) => servicesSetupModel(r as never, i as never, a as never).tone)), new Set(['', 'warn', 'bad', 'ok']));
 });

@@ -8,6 +8,8 @@ import { CAMPAIGN_TEMPLATES_TYPE, createTemplatesSurface } from './campaign-temp
 import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { servicesSetupModel } from './services-setup-state.js';
+import { campaignById, campaigns, loadCampaigns, saveCampaign } from './campaigns.js';
+import { completeRoutineMap } from './campaign-routines.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 
@@ -400,7 +402,7 @@ function createRootsSurface(context) {
   return { el: out.el, show: () => { room.enter(); notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench); } };
 }
 
-/** Ronin Services: value first, then one measured status, one next line, at most one action. */
+/** Ronin Services: identity, the beta, its value, one measured status, and the three steps. */
 function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
   const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);
@@ -413,11 +415,17 @@ function createServicesSurface(context) {
     const identity = el('div', 'setup-services-identity');
     identity.append(
       el('h2', '', t('settei.ronin_services', 'Ronin Services')),
-      el('p', 'setup-lede', t('services_setup.intro', 'Ronin’s hosted parts: the template library, a background assistant, voice, and team memory.')),
+      el('p', 'setup-lede', t('services_setup.intro', 'Ronin’s hosted parts: the recording, the template library, a background assistant, voice, and team memory.')),
     );
     lockup.append(mark, identity);
+    const beta = el('section', 'setup-services-beta');
+    beta.append(
+      el('h3', '', t('services_setup.beta', 'In beta')),
+      el('p', '', t('services_setup.beta_copy', 'Ronin Services is the community half of Ronin, in beta. The code is open code, not open source: free to read, not to commercialise. Registering only tells us who is using it with us. It is optional, and nothing here is for sale.')),
+    );
     const values = el('div', 'setup-services-benefits');
     for (const [heading, copy] of [
+      [t('services_setup.transcripts', 'Readable transcripts'), t('services_setup.transcripts_copy', 'The terminal is recorded and shown as readable text, so Unlocked views scroll smoothly on a phone instead of waiting on a laggy Locked screen.')],
       [t('services_setup.library', 'Template library'), t('services_setup.library_copy', 'Teams and Agents Ronin keeps and grows, with the procedures, macros, and tools they read, installed with one press.')],
       [t('services_setup.records', 'Work records kept current'), t('services_setup.records_copy', 'A background assistant keeps every Agent’s work record current, so the roster and the tile say what each is doing.')],
       [t('services_setup.voice', 'Voice and memory'), t('services_setup.voice_copy', 'Hear a report read back, speak to an Agent from the tile, and keep what a session learns for the team.')],
@@ -425,10 +433,19 @@ function createServicesSurface(context) {
       const item = el('div', 'setup-services-benefit');
       item.append(el('h3', '', heading), el('p', '', copy)); values.append(item);
     }
-    intro.append(lockup, values);
+    intro.append(lockup, beta, values);
     return intro;
   };
   const openRegister = () => context.workbench?.place(SETUP_SURFACE_TYPES.register, context.workspace || 'workspace2');
+  /** The Routine switch for new Agents: the Campaign's own map, saved the way Routines and Installs saves it. */
+  const switchServices = async (on) => {
+    const [catalog] = await Promise.all([request('/api/routines'), loadCampaigns()]);
+    const row = campaignById(context.tenant?.campaign) || campaigns()[0];
+    if (!row) return { ok: false, message: t('services_setup.no_campaign', 'No Campaign to switch it on for.') };
+    const defaults = row.config?.agent_defaults && typeof row.config.agent_defaults === 'object' ? row.config.agent_defaults : {};
+    const routines = { ...completeRoutineMap(catalog.ok && Array.isArray(catalog.data) ? catalog.data : [], defaults.routines), ronin_services: on };
+    return saveCampaign(row.id, { config: { agent_defaults: { ...defaults, routines } } });
+  };
   const show = async () => {
     clearTimeout(timer);
     const [registration, installed, activation] = await Promise.all([
@@ -444,31 +461,28 @@ function createServicesSurface(context) {
     state.setAttribute('aria-live', 'polite');
     state.append(el('p', 'setup-services-status-line', model.status), el('p', 'setup-services-next', model.next));
     body.append(state);
-    const press = (button, act) => async () => {
-      if (act.id === 'register') { openRegister(); return; }
-      button.disabled = true;
-      const route = act.id === 'install' ? '/api/services/install' : '/api/services/activation/poll';
-      const result = await request(route, { method: 'POST', json: {} });
-      if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); button.disabled = false; return; }
-      await show();
-    };
-    if (model.action) {
-      const button = action(model.action.label, '', () => press(button, model.action)());
-      button.dataset.action = model.action.id;
-      body.append(button);
+    // Register · Install · On — three controls in one shape; each reads Done once it is.
+    const steps = el('div', 'setup-services-steps');
+    const notice = el('p', 'setup-notice setup-services-notice');
+    for (const item of model.steps) {
+      const wrap = el('div', 'setup-services-step');
+      const button = action(item.label, '', async () => {
+        if (item.act === 'register') { openRegister(); return; }
+        button.disabled = true; notice.textContent = '';
+        const result = item.act === 'switch_on' || item.act === 'switch_off' ? await switchServices(item.act === 'switch_on')
+          : await request(item.act === 'install' ? '/api/services/install' : '/api/services/activation/poll', { method: 'POST', json: {} });
+        if (!result.ok) { notice.textContent = result.message; notice.classList.add('bad'); button.disabled = false; return; }
+        await show();
+      });
+      button.classList.add('setup-services-step-action');
+      button.dataset.step = item.id; button.dataset.done = String(item.done);
+      button.disabled = !item.enabled || !item.act;
+      if (item.title) button.title = item.title;
+      if (item.id === 'switch') button.setAttribute('aria-pressed', String(item.done));
+      wrap.append(el('span', 'setup-services-step-caption', item.caption), button);
+      steps.append(wrap);
     }
-    if (model.account) {
-      // Installed Services: registration is its own optional fact, said quietly, never a gate.
-      const account = el('p', 'setup-fine setup-services-account');
-      account.append(el('span', '', model.account.line));
-      if (model.account.action) {
-        const quiet = el('button', 'setup-services-account-action', model.account.action.label);
-        quiet.type = 'button'; quiet.dataset.action = model.account.action.id;
-        quiet.addEventListener('click', () => press(quiet, model.account.action)());
-        account.append(quiet);
-      }
-      body.append(account);
-    }
+    body.append(steps, notice);
     body.append(el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.')));
     notifySummary(SETUP_SURFACE_TYPES.services, model.summary, context.workbench);
     // A confirmation or an install in flight: look again quietly while the surface is on screen.
