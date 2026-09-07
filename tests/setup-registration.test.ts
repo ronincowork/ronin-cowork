@@ -69,23 +69,14 @@ test('Setup reuses the Campaign Templates registration for its selector and surf
 });
 
 test('provider discovery is catalog-driven and a keyed surface resolves only its provider', async () => {
-  const { SETUP_REQUIREMENT_TARGETS, providerOffers, providerFromRuntime, setupRequirementClass, setupRequirementPresentation } = await import('../public/js/setup-provider-state.js');
+  const { providerOffers, providerFromRuntime } = await import('../public/js/setup-provider-state.js');
   const providers = [
     ['anthropic', 'Claude'], ['openai', 'Codex'], ['hermes', 'Hermes'],
     ['grok', 'Grok'], ['gemini', 'Gemini'], ['future_cli', 'Future CLI'],
   ].map(([id, label], index) => ({ id, label, state: index ? 'installed' : 'activated' }));
   const runtime = { providers };
   assert.deepEqual(providerOffers(runtime).map((offer) => offer.label), providers.map((provider) => provider.label));
-  assert.deepEqual(providerOffers(runtime).map((offer) => offer.targetKey), providers.map((provider) => `setup.provider:${provider.id}`));
-  assert.equal(SETUP_REQUIREMENT_TARGETS.providers, 'setup.providers');
-  assert.equal(SETUP_REQUIREMENT_TARGETS.gbrain, 'setup.gbrain');
-  assert.equal(SETUP_REQUIREMENT_TARGETS.services, 'setup.services');
-  assert.equal(setupRequirementClass('setup.provider:future_cli'), 'setup-requirement-setup-provider-future_cli');
-  assert.deepEqual(setupRequirementPresentation('setup.provider:openai', {
-    hovered: ['setup.provider:open'], open: ['setup.provider:openai'], flash: ['setup.provider:openai'], flashCycle: 2,
-  }), {
-    targetKey: 'setup.provider:openai', targetClass: 'setup-requirement-setup-provider-openai', marked: true, flashing: true, flashCycle: 2,
-  }, 'target matching is exact, not prefix-based');
+  assert.ok(providerOffers(runtime).every((offer) => offer.groupKey === 'setup.providers'));
   assert.equal(providerFromRuntime(runtime, 'future_cli')?.label, 'Future CLI');
   assert.equal(providerFromRuntime(runtime, 'openai')?.label, 'Codex');
 });
@@ -109,12 +100,10 @@ test('native login mounts only the attachment published by the real setup runtim
   assert.deepEqual((calls[0] as { session: string; workspace: string }).workspace, 'workspace1');
 });
 
-test('selector definitions expose non-selectable provider group and exact dependency targets', async () => {
+test('selector definitions retain neutral provider grouping without requirement targets', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  assert.match(source, /createProviderSurface, SETUP_REQUIREMENT_TARGETS\.providers/);
-  assert.match(source, /createServicesSurface, SETUP_REQUIREMENT_TARGETS\.services/);
-  assert.match(source, /createGbrainSurface, SETUP_REQUIREMENT_TARGETS\.gbrain/);
-  assert.doesNotMatch(source, /key:\s*SETUP_REQUIREMENT_TARGETS\.providers/, 'provider group remains metadata, never an aggregate selectable offer');
+  assert.match(source, /createProviderSurface, 'setup\.providers'/);
+  assert.doesNotMatch(source, /SETUP_REQUIREMENT_TARGETS|targetKey|targetClass/);
 });
 
 test('Register keeps required fields behind concise disclosure and uses a neutral action', async () => {
