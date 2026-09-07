@@ -83,13 +83,17 @@ function createRegisterSurface(context) {
   const email = input('email', 'email'); email.placeholder = 'you@example.com';
   const purpose = input('purpose'); purpose.placeholder = t('setup_surface.purpose_hint', 'What would you like Ronin to help with?');
   const identityMode = choiceGroup('identity_mode', t('setup_surface.identity', 'How would you like to register?'), [
-    ['email', 'With email', 'Receive a confirmation and access to Ronin Services.'],
-    ['anonymous', 'Anonymous', 'Send the profile without your name or email.'],
-    ['no_thanks', 'No thank you', 'Continue using Ronin without registering.'],
+    ['email', 'With email'], ['anonymous', 'Anonymous'], ['no_thanks', 'No thank you'],
   ]);
   identityMode.wrap.classList.add('setup-register-identity-choice');
   const kind = choiceGroup('kind', t('setup_surface.kind', 'Where Ronin fits'), [['work', 'Work'], ['personal', 'Personal'], ['learning', 'Learning'], ['other', 'Something else']]);
   const userType = choiceGroup('user_type', t('setup_surface.user_type', 'Who is using Ronin?'), [['individual', 'Just me'], ['team', 'A team'], ['builder', 'Builder'], ['exploring', 'Exploring']]);
+  const goals = choiceGroup('goals', t('setup_surface.goals', 'What sounds useful about Ronin?'), [
+    ['remote_access', 'Work from anywhere', 'Reach agents while their sessions keep running.'],
+    ['multiple_providers', 'Use multiple providers', 'Mix strengths, switch when needed, avoid lock-in.'],
+    ['visible_teams', 'Run visible agent teams', 'Work with every agent directly and manage the shared edges.'],
+    ['something_else', 'Something else', 'Tell us below.'],
+  ], { multiple: true });
   const intendedUse = choiceGroup('intended_use', t('setup_surface.intended_use', 'What would you like help with?'), [
     ['coding', 'Coding'], ['self_help', 'Self-help'], ['personal_assistance', 'Personal assistance'], ['research', 'Research'], ['writing', 'Writing'],
   ], { multiple: true });
@@ -106,7 +110,7 @@ function createRegisterSurface(context) {
   about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField, userType.wrap);
   const fit = el('section', 'setup-register-group');
   fit.append(
-    el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), intendedUse.wrap, kind.wrap,
+    el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), goals.wrap, intendedUse.wrap, kind.wrap,
     field(t('setup_surface.purpose', 'What would make Ronin useful to you?'), purpose),
     field(t('setup_surface.own_words', 'Anything else? (optional)'), own), theme.wrap,
   );
@@ -118,7 +122,7 @@ function createRegisterSurface(context) {
     const anonymous = identityMode.value.value === 'anonymous';
     const result = await request('/api/setup/registration', { method: 'POST', json: {
       identity_mode: identityMode.value.value, email: email.value, purpose: purpose.value,
-      kind: kind.value.value, user_type: userType.value.value, intended_use: intendedUse.values(),
+      kind: kind.value.value, user_type: userType.value.value, goals: goals.values(), intended_use: intendedUse.values(),
       theme_preference: theme.value.value, own_words: own.value,
     } });
     notice.textContent = result.ok
@@ -174,7 +178,7 @@ function createRegisterSurface(context) {
     const anonymous = current?.status === 'anonymous';
     identity.hidden = !current?.submitted_at;
     identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.check_email', 'Check your email')),
-      el('span', '', [current?.email_masked, current?.purpose, ...(current?.intended_use || [])].filter(Boolean).join(' · ')));
+      el('span', '', [current?.email_masked, current?.purpose, ...(current?.goals || []), ...(current?.intended_use || [])].filter(Boolean).join(' · ')));
     form.hidden = Boolean(current?.submitted_at);
     preferences.hidden = !current?.submitted_at || anonymous;
     recoveryOptions.hidden = !current?.submitted_at;
@@ -186,7 +190,7 @@ function createRegisterSurface(context) {
       if (!next?.trim()) return;
       const result = await request('/api/setup/registration/recovery', { method: 'POST', json: {
         action: 'change_address', identity_mode: 'email', email: next.trim(), purpose: current.purpose,
-        kind: current.kind, user_type: current.user_type, intended_use: current.intended_use,
+        kind: current.kind, user_type: current.user_type, goals: current.goals, intended_use: current.intended_use,
         theme_preference: current.theme_preference, own_words: current.own_words,
       } });
       notice.textContent = result.ok ? t('setup_surface.registration_address_changed', 'Registration email changed; check the new address.') : result.message;

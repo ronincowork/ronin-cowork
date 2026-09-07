@@ -5845,11 +5845,10 @@ button.wb-door:hover b {
 .setup-register-group > .setup-field { border-top: var(--edge) solid var(--line-2); padding: var(--space-6) 0; }
 .setup-register-group > .setup-field[hidden] { display: none; }
 .setup-register-group > .setup-field:last-child { padding-bottom: 0; }
-.setup-register-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-.setup-register-identity-choice .setup-register-choice-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.setup-register-choice { display: grid; gap: var(--space-1); min-height: 4rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--well); color: var(--fg); padding: var(--space-4) var(--space-5); text-align: left; cursor: pointer; font: inherit; }
+.setup-register-choice-grid { display: grid; grid-template-columns: repeat(auto-fit, 7.5rem); gap: var(--space-3); }
+.setup-register-choice { display: grid; align-content: center; gap: var(--space-2); width: 7.5rem; aspect-ratio: 1; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--well); color: var(--fg); padding: var(--space-3); text-align: left; cursor: pointer; font: inherit; }
 .setup-register-choice strong { color: var(--fg-strong); font-size: var(--form-input); font-weight: 650; }
-.setup-register-choice span { color: var(--muted-2); font-size: var(--text-2); line-height: 1.35; }
+.setup-register-choice span { color: var(--muted-2); font-size: var(--text-1); line-height: 1.25; }
 .setup-register-choice:hover { border-color: var(--kaki); background: var(--raise); }
 .setup-register-choice[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 0 var(--kaki); background: var(--accent-soft); }
 .setup-register-group input:not([type='checkbox']), .setup-register-group textarea { border: 0; border-radius: var(--radius-hair); background: var(--well); padding: var(--space-4) var(--space-5); color: var(--fg); font: inherit; }
@@ -5942,8 +5941,8 @@ button.wb-door:hover b {
 @media (max-width: 700px) {
   .setup-explainer-body { grid-template-columns: 1fr; }
   .setup-register-group { padding: var(--space-5); }
-  .setup-register-choice-grid { grid-template-columns: 1fr; }
-  .setup-register-identity-choice .setup-register-choice-grid { grid-template-columns: 1fr; }
+  .setup-register-choice-grid { grid-template-columns: repeat(auto-fit, 7rem); }
+  .setup-register-choice { width: 7rem; }
   .setup-surface-body { padding: var(--space-4); }
   .setup-services-benefits { grid-template-columns: 1fr; }
   .setup-gbrain-benefits { grid-template-columns: 1fr; }
