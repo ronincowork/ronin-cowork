@@ -1352,6 +1352,8 @@ The catalog entry goes. {dir} is not touched.
 - **messages.select_message:** Select message to {target}
 - **messages.dismiss_selected:** Dismiss Selected
 - **messages.dismiss_selected_count:** Dismiss Selected ({count})
+- **messages.dismiss_wipeboard:** Dismiss Wipeboard Notices
+- **messages.dismiss_wipeboard_count:** Dismiss Wipeboard Notices ({count})
 - **messages.dismiss_all:** Dismiss All
 - **messages.dismiss_all_count:** Dismiss All ({count})
 - **messages.trying:** Trying…

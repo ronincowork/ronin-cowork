@@ -95,6 +95,9 @@ Configuration.
 - The queue view is machine-wide. Select messages individually, use **Select All**, or
   use **Dismiss Selected** / **Dismiss All**. Bulk dismissal sends the exact IDs in the
   displayed snapshot, so a newly arrived unread message is not swept accidentally.
+- **Dismiss Wipeboard Notices** dismisses only currently displayed notification copies
+  whose source is `wipeboard_notice`. It preserves direct tells, House/owner/cron
+  transport, newly arrived notices, and every durable post on the wipeboard itself.
 - Actions report their result immediately. Successful delivery says **Delivered and
   cleared** before the card disappears.
 
