@@ -2,7 +2,8 @@
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { kindTiles, templateBox } from './form-steps.js';
+import { templateBox } from './form-steps.js';
+import { createStoneWorkSurface } from './stone-work-surface.js';
 
 const el = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
@@ -71,36 +72,54 @@ export function createTemplatesSurface() {
   const libraryRoom = el('div', 'cv-body');
   const libraryNotice = createNotice({});
   const libraryGrid = el('div', 'fs-tmplgrid');
-  const detail = el('div', 'cv-body');
-  const shelves = el('div', 'cv-body');
-  body.append(el('p', 'cv-note', t('campaign_view.templates_help', 'A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. A handful ship inside Ronin; the rest are on the library.')));
-  body.append(kindHost, libraryRoom, detail, shelves);
+  const installedHead = el('div', 'cv-body');
+  installedHead.append(
+    el('span', 'cv-eyebrow', t('campaign_view.templates_on_system', 'On your system')),
+    el('p', 'cv-note', t('campaign_view.templates_on_system_help', 'Templates available to New Team and New Agent, shipped with Ronin, installed, or saved by you.')),
+    kindHost,
+  );
+  const stoneSurface = createStoneWorkSurface({
+    renderDetail: (item, host) => {
+      if (item.templateType === 'team') showTeam(item.row, host);
+      else if (item.templateType === 'agent') showAgent(item.row, host);
+      else if (item.templateType === 'library') void showPlan(item.row, host);
+      else host.append(el('p', 'cv-note', item.message));
+    },
+    onSelectionChange: (id) => { picked = id || ''; paintLibrary(); },
+  });
+  stoneSurface.mount(body, { before: [installedHead], after: [libraryRoom] });
 
   const byKind = (rows) => (kind === 'open' ? rows : rows.filter((row) => (row.kinds || []).includes(kind)));
   const originWord = (row) => (row.origin === 'user' ? (row.shadowed ? t('campaign_view.templates_yours_over', 'yours, replacing ours') : t('campaign_view.templates_yours', 'yours')) : t('campaign_view.templates_shipped', 'shipped'));
-  /** All · Teams · Agents, drawn as the kind tiles are so the two rows read as one control. */
-  const shapeTiles = () => {
-    const wrap = el('div', 'fs-kinds');
-    wrap.append(el('span', 'fs-gridlabel', t('campaign_view.shape', 'Show')));
-    const grid = el('div', 'fs-kindgrid');
-    for (const [key, icon, word] of [['all', '○', t('campaign_view.shape_all', 'All')], ['team', '⛩', t('campaign_view.shape_team', 'Teams')], ['agent', '人', t('campaign_view.shape_agent', 'Agents')]]) {
-      const box = el('button', 'fs-kindtile');
+  const filterGroup = (label, choices, current, pick) => {
+    const group = el('span');
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', label);
+    group.append(el('span', 'cv-eyebrow', label));
+    for (const [key, word] of choices) {
+      const box = el('button', 'cv-button', word);
       box.type = 'button';
-      box.setAttribute('aria-pressed', String(key === shape));
-      box.append(el('i', null, icon), el('span', null, word));
-      box.addEventListener('click', () => { shape = key; paintKinds(); paintLibrary(); paintShelves(); });
-      grid.append(box);
+      box.setAttribute('aria-pressed', String(key === current));
+      box.addEventListener('click', () => pick(key));
+      group.append(box);
     }
-    wrap.append(grid);
-    return wrap;
+    return group;
   };
-  const paintKinds = () => kindHost.replaceChildren(shapeTiles(), kindTiles(kind, (key) => { kind = key; paintKinds(); paintLibrary(); paintShelves(); }));
+  const paintKinds = () => {
+    const row = createActionBar({ label: t('campaign_view.templates_filter', 'Filter templates') });
+    row.el.setAttribute('aria-label', t('campaign_view.templates_filter', 'Filter templates'));
+    row.el.append(
+      filterGroup(t('campaign_view.shape', 'Show'), [['all', t('campaign_view.shape_all', 'All')], ['team', t('campaign_view.shape_team', 'Teams')], ['agent', t('campaign_view.shape_agent', 'Agents')]], shape, (key) => { shape = key; paintKinds(); paintLibrary(); paintShelves(); }),
+      filterGroup(t('kind', 'Kind'), [['open', t('kind.open', 'open')], ['coding', t('kind.coding', 'coding')], ['work', t('kind.work', 'work')], ['personal', t('kind.personal', 'personal')], ['household', t('kind.household', 'household')], ['social', t('kind.social', 'social')], ['school', t('kind.school', 'school')]], kind, (key) => { kind = key; paintKinds(); paintLibrary(); paintShelves(); }),
+    );
+    kindHost.replaceChildren(row.el);
+  };
   const isTeamCard = (card) => !!card.holds?.teams;
   const byShape = (rows, isTeam) => (shape === 'all' ? rows : rows.filter((row) => (shape === 'team') === isTeam(row)));
 
   /* ---- a picked box opens its detail under the grids ---- */
   /** One of the owner's boxes can go again; the second press is the yes. */
-  const removeAction = (shelf, row) => {
+  const removeAction = (shelf, row, detail) => {
     if (row.origin !== 'user') return null;
     const b = createAction({ label: t('campaign_view.templates_remove', 'Remove from my system'), kind: 'danger' });
     let armed = false;
@@ -110,12 +129,13 @@ export function createTemplatesSurface() {
       const r = await request(`/api/templates/${shelf}/${encodeURIComponent(row.name)}`, { method: 'DELETE' });
       if (!r.ok) { b.setDisabled(false); armed = false; b.el.textContent = r.message; return; }
       picked = '';
-      detail.replaceChildren(el('p', 'cv-note', r.data?.shipped_back ? t('campaign_view.templates_removed_back', 'Removed {name}; the shipped one is back.', { name: row.label || row.name }) : t('campaign_view.templates_removed', 'Removed {name} from your system. It is still on the library.', { name: row.label || row.name })));
-      void readShelves();
+      const message = r.data?.shipped_back ? t('campaign_view.templates_removed_back', 'Removed {name}; the shipped one is back.', { name: row.label || row.name }) : t('campaign_view.templates_removed', 'Removed {name} from your system. It is still on the library.', { name: row.label || row.name });
+      await readShelves();
+      stoneSurface.openDetail({ templateType: 'notice', message });
     });
     return b.el;
   };
-  const showTeam = (row) => {
+  const showTeam = (row, detail) => {
     detail.replaceChildren(el('span', 'cv-eyebrow', `${row.art ? `${row.art} ` : ''}${row.label || row.name} · ${originWord(row)}`));
     if (row.objective) detail.append(el('p', 'cv-note', row.objective));
     const table = el('table', 'cv-table');
@@ -135,20 +155,20 @@ export function createTemplatesSurface() {
     link.download = `${row.name}.json`;
     link.title = t('campaign_view.templates_download_help', 'This template, with your copies of the books and Routines it names, as one file you could put on a library.');
     const actions = el('div', 'cv-actions');
-    const remove = removeAction('teams', row);
+    const remove = removeAction('teams', row, detail);
     if (remove) actions.append(remove);
     actions.append(link);
     detail.append(actions);
   };
-  const showAgent = (row) => {
+  const showAgent = (row, detail) => {
     detail.replaceChildren(el('span', 'cv-eyebrow', `${row.art ? `${row.art} ` : ''}${row.label || row.name} · ${originWord(row)}`));
     if (row.brief) detail.append(el('p', 'cv-note', row.brief));
     if (row.behaviours?.length) detail.append(el('p', 'cv-note', `${t('campaign_view.templates_books', 'Reads')}: ${row.behaviours.join(', ')}`));
-    const remove = removeAction('agents', row);
+    const remove = removeAction('agents', row, detail);
     if (remove) { const actions = el('div', 'cv-actions'); actions.append(remove); detail.append(actions); }
   };
 
-  const showPlan = async (card) => {
+  const showPlan = async (card, detail) => {
     detail.replaceChildren(el('p', 'cv-note', t('campaign_view.library_reading', 'Reading {name} from the library…', { name: card.label || card.name })));
     const r = await request(`/api/library/bundles/${encodeURIComponent(card.name)}`, { cache: 'no-store' });
     if (picked !== `library:${card.name}`) return;
@@ -207,7 +227,11 @@ export function createTemplatesSurface() {
     const rows = byShape(byKind(library.bundles), isTeamCard);
     if (!rows.length) { libraryNotice.set('info', library.bundles.length ? t('campaign_view.library_none_kind', 'Nothing of this kind on the library.') : t('campaign_view.library_none', 'The library lists no bundles yet.')); return; }
     for (const card of rows) {
-      libraryGrid.append(templateBox(card.art || '▤', card.label || card.name, card.blurb || '', picked === `library:${card.name}`, () => { picked = `library:${card.name}`; paintLibrary(); paintShelves(); void showPlan(card); }));
+      libraryGrid.append(templateBox(card.art || '▤', card.label || card.name, card.blurb || '', picked === `library:${card.name}`, () => {
+        picked = `library:${card.name}`;
+        stoneSurface.openDetail({ id: picked, templateType: 'library', row: card });
+        paintLibrary();
+      }));
     }
   };
   const check = createAction({
@@ -232,36 +256,37 @@ export function createTemplatesSurface() {
       paintLibrary();
     },
   });
+  const libraryAbout = el('details');
+  libraryAbout.append(
+    el('summary', null, t('campaign_view.library_about', 'About the Ronin Library')),
+    el('p', 'cv-note', t('campaign_view.library_help', 'The shelf Ronin keeps and grows, a Ronin Services feature: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press; everything a bundle holds is shown before anything is written.')),
+  );
   libraryRoom.append(
-    el('span', 'cv-eyebrow', t('campaign_view.library', 'On the Ronin library — not on your system yet')),
-    el('p', 'cv-note', t('campaign_view.library_help', 'The shelf Ronin keeps and grows, a Ronin Services feature: a team, its people, and the books, macros and tools they read. Nothing is fetched until you press; everything a bundle holds is shown before anything is written; an installed one appears below, on your system.')),
+    el('span', 'cv-eyebrow', t('campaign_view.library', 'Ronin Library')),
     createActionBar({ actions: [check] }).el,
     libraryNotice.el,
+    libraryAbout,
     libraryGrid,
   );
   libraryNotice.set('', '');
 
-  /* ---- the shelves on this machine, below ---- */
+  /* ---- the shelves on this machine, first ---- */
   const paintShelves = () => {
-    shelves.replaceChildren(
-      el('span', 'cv-eyebrow', t('campaign_view.templates_on_system', 'On your system — what New Team and New Agent offer')),
-      el('p', 'cv-note', t('campaign_view.templates_on_system_help', 'Shipped with Ronin, or installed from the library, or saved by you. Anything installed or saved can be removed again from its box.')),
-    );
-    const grid = (rows, key, show) => {
-      const g = el('div', 'fs-tmplgrid');
-      for (const row of rows) g.append(templateBox(row.art || '▤', row.label || row.name, row.blurb || '', picked === `${key}:${row.name}`, () => { picked = `${key}:${row.name}`; paintLibrary(); paintShelves(); show(row); }));
-      return g;
+    const items = [];
+    const add = (rows, templateType) => {
+      for (const row of byKind(rows)) items.push({
+        id: `${templateType}:${row.name}`,
+        label: row.label || row.name,
+        glyph: row.art || (templateType === 'team' ? '人人' : '人'),
+        secondary: templateType === 'team' ? t('campaign_view.templates_team', 'Team') : t('campaign_view.templates_agent', 'Agent'),
+        state: originWord(row),
+        templateType,
+        row,
+      });
     };
-    const shelf = (heading, rows, key, show) => {
-      shelves.append(el('span', 'cv-eyebrow', heading));
-      if (!rows.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_none', 'Nothing on this shelf.'))); return; }
-      const shipped = rows.filter((row) => row.origin !== 'user');
-      const yours = rows.filter((row) => row.origin === 'user');
-      if (shipped.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_shipped_with', 'Shipped with Ronin')), grid(shipped, key, show)); }
-      if (yours.length) { shelves.append(el('p', 'cv-note', t('campaign_view.templates_installed', 'Installed from the library, or saved by you')), grid(yours, key, show)); }
-    };
-    if (shape !== 'agent') shelf(t('campaign_view.templates_teams', 'Teams — projects'), byKind(teams), 'team', showTeam);
-    if (shape !== 'team') shelf(t('campaign_view.templates_agents', 'Agents — people'), byKind(agents), 'agent', showAgent);
+    if (shape !== 'agent') add(teams, 'team');
+    if (shape !== 'team') add(agents, 'agent');
+    stoneSurface.setItems(items);
   };
   const readShelves = async () => {
     const [tm, ag] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents')]);
