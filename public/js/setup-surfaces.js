@@ -262,7 +262,7 @@ function createProviderSurface(context) {
 function createRootsSurface(context) {
   const out = surface(t('setup_surface.roots', 'Workspace folders'));
   const host = el('div', 'desk-pane desk-proj show'); out.content.append(host);
-  const room = buildProjectRoots(host, () => host.isConnected, () => context.tenant?.campaign || '');
+  const room = buildProjectRoots(host, () => host.isConnected, () => context.tenant?.campaign || '', { presentation: 'stones' });
   return { el: out.el, show: () => { room.enter(); notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench); } };
 }
 
