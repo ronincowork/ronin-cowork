@@ -59,14 +59,14 @@ export function installServicesStatus() {
   };
   check.addEventListener('click', () => void act(check, t('services.checking', 'Checking…'), '/api/services/activation/poll')
     .finally(() => { check.textContent = t('services.check_status', 'Check status'); }));
-  resend.addEventListener('click', () => void act(resend, t('services.sending', 'Sending…'), '/api/services/activation/resend')
+  resend.addEventListener('click', () => void act(resend, t('services.sending', 'Sending…'), '/api/setup/registration/recovery', 'POST', { action: 'resend' })
     .finally(() => { resend.textContent = t('services.resend_confirmation', 'Resend confirmation'); }));
-  cancel.addEventListener('click', () => void act(cancel, t('services.cancelling', 'Cancelling…'), '/api/services/activation', 'DELETE')
+  cancel.addEventListener('click', () => void act(cancel, t('services.cancelling', 'Cancelling…'), '/api/setup/registration', 'DELETE')
     .finally(() => { cancel.textContent = t('services.cancel_services', 'Cancel Ronin Services'); pop.hidden = true; }));
   change.addEventListener('click', async () => {
     const email = window.prompt(t('services.new_confirmation_prompt', 'Send the new confirmation to:'));
     if (!email?.trim()) return;
-    await act(change, t('services.changing', 'Changing…'), '/api/services/activation/address', 'POST', { email: email.trim() });
+    await act(change, t('services.changing', 'Changing…'), '/api/setup/registration/recovery', 'POST', { action: 'change_address', email: email.trim() });
     change.textContent = t('services.change_email', 'Change email');
   });
   trigger.addEventListener('click', () => {

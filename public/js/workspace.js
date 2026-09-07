@@ -22,7 +22,7 @@ export const defaultWorkspaceState = () => ({
   campaignSelection: null,
   // Each destination owns one namespace inside this tab. Empty objects and null drafts
   // are valid; the shell stores state but never interprets a feature's workflow.
-  views: { home: {}, cowork: {}, campaign: {}, launch: {}, 'new-team': { draft: null } },
+  views: { home: {}, cowork: {}, campaign: {}, setup: {}, launch: {}, 'new-team': { draft: null } },
   returnTo: null,
 });
 
@@ -101,6 +101,64 @@ export function routeFromHash(hash = location.hash) {
 
 export function hashFor(view, param = '') {
   return '#/' + [view, param].filter(Boolean).map(encodeURIComponent).join('/');
+}
+
+/** Open one destination as another workbench tab while leaving this page in place. */
+export function reserveWorkspaceTab() {
+  const tab = window.open('about:blank', '_blank');
+  if (tab) tab.opener = null;
+  return tab;
+}
+
+export function closeWorkspaceTab(tab) {
+  try { tab?.close(); } catch (_) { /* a blocked popup needs no cleanup */ }
+}
+
+export function openWorkspaceTab(view, param = '', reserved = null) {
+  const url = new URL(location.href);
+  url.hash = hashFor(view, param);
+  if (reserved) {
+    reserved.location.replace(url.href);
+    return reserved;
+  }
+  return window.open(url.href, '_blank', 'noopener');
+}
+
+/** Seed one destination namespace into the browser's cloned tab state, then restore source state. */
+export function openWorkspaceStateTab(context, view, viewPatch, param = '') {
+  if (!context?.patchViewState || !context?.viewState || !viewPatch || typeof viewPatch !== 'object') return null;
+  const previous = context.viewState(view) || {};
+  const restore = Object.fromEntries(Object.keys(viewPatch).map((key) => [key, previous[key]]));
+  context.patchViewState(view, viewPatch);
+  const tab = reserveWorkspaceTab();
+  context.patchViewState(view, restore);
+  if (!tab) return null;
+  return openWorkspaceTab(view, param, tab);
+}
+
+/** Patch the already-reserved destination tab after an asynchronous launch resolves. */
+export function seedReservedWorkspaceTab(tab, view, viewPatch) {
+  if (!tab?.sessionStorage || !view || !viewPatch || typeof viewPatch !== 'object') return false;
+  try {
+    const raw = tab.sessionStorage.getItem(WORKSPACE_STATE_KEY) ?? tab.sessionStorage.getItem(PREVIOUS_WORKSPACE_STATE_KEY);
+    const state = migrateWorkspaceState(JSON.parse(raw || 'null'));
+    state.views[view] = { ...(state.views[view] || {}), ...viewPatch };
+    tab.sessionStorage.setItem(WORKSPACE_STATE_KEY, JSON.stringify(state));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/** Setup's Agent and Team doors preload the existing launch workbench; they never submit. */
+export function openLaunchForm(context, { kind, seed = {} } = {}) {
+  if (!['agent', 'team'].includes(kind) || !seed || typeof seed !== 'object') return null;
+  return openWorkspaceStateTab(context, 'launch', { preload: { kind, seed } }, kind);
+}
+
+/** Templates have two existing forms and trays, not a third invented launch form. */
+export function openTemplateLaunchForm(context) {
+  return openWorkspaceStateTab(context, 'launch', { preload: { kind: 'template', seed: {} } }, 'template');
 }
 
 /**
@@ -207,6 +265,10 @@ export function createWorkspace(host, options = {}) {
     if (changed) invoke(id, 'enter', () => next.enter?.(context));
     if (active?.view !== next) showMap(id, next);
     showName(id, next);
+    const feedback = document.getElementById('feedbackaction');
+    if (feedback) feedback.hidden = next.hideFeedback === true;
+    const shapeControl = document.getElementById('shapecycle');
+    if (shapeControl) shapeControl.hidden = next.hideShapeControl === true;
     active = { id, view: next, param };
     state.view = id;
     if (id === 'team') state.team = param;

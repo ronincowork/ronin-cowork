@@ -388,6 +388,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Teams, Launch)
 
+- **campaign_home.ronin_home:** Ronin Home
 - **campaign_home.machine_settings:** Machine Settings
 - **campaign_home.campaign_is:** Admin Desk configuration
 - **campaign_home.coworks_is:** Your Teams and Agents
@@ -399,6 +400,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_home.check_unavailable:** Available after the next restart
 - **campaign_home.up_to_date:** Up to date
 - **campaign_home.update_available:** {version} available
+- **setup.provider_gate:** Activate one model provider in Machine Settings to use this.
+- **setup.title:** Ronin Setup
+- **setup.open_settings:** Open Ronin Settings
+- **setup.open_setup:** Open Ronin Setup
+- **campaign.settings_title:** Ronin Settings
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)
 

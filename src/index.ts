@@ -53,6 +53,7 @@ import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
+import { DocumentPathError, legacyDocumentPath, readDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { discoverParts, partsToLoad } from './parts.js';
@@ -63,6 +64,8 @@ import { resourceRequestCache } from './resources.js';
 import { compressResponse } from './http-performance.js';
 import { roninIdentity } from './routes/version.js';
 import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
+import { ensureInstalledRoots } from './setup-runtime.js';
+import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -206,10 +209,12 @@ registerMachineSettings(app); // /api/machine-settings — the install record, a
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
 startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts
 registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
+registerSetupRuntime(app); // /api/setup/runtime and provider login completion — explicit readiness facts for Ronin Setup
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
 void stampFreshInstall();
+if (isEntryPoint) void ensureInstalledRoots().catch((error) => console.error(`[setup] installed roots: ${(error as Error).message}`));
 
 void ensureInitialCampaign()
   .then(() => migrateCampaignScope())
@@ -254,11 +259,16 @@ startMessageQueue();
 
 app.get('/api/file', async (req, res) => {
   const file = String(req.query.path ?? '');
-  if (!file.startsWith('/')) return res.status(400).json({ error: 'An absolute path is required.' });
   try {
-    const text = await fs.promises.readFile(file, 'utf8');
-    res.json({ path: file, text });
+    if (req.query.root) {
+      const safe = await readDocumentFile(req.query.root, file);
+      return res.json(safe);
+    }
+    const legacy = legacyDocumentPath(file);
+    const text = await fs.promises.readFile(legacy, 'utf8');
+    res.json({ path: legacy, text });
   } catch (e) {
+    if (e instanceof DocumentPathError) return res.status(e.status).json({ error: e.message });
     const code = (e as NodeJS.ErrnoException)?.code;
     if (code === 'ENOENT' || code === 'EISDIR') return res.status(404).json({ error: 'No such file.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
@@ -267,13 +277,17 @@ app.get('/api/file', async (req, res) => {
 
 app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, res) => {
   const file = String(req.query.path ?? '');
-  if (!file.startsWith('/')) return res.status(400).json({ error: 'An absolute path is required.' });
   const text = typeof req.body === 'string' ? req.body : '';
   try {
-    await fs.promises.access(file);
-    await fs.promises.writeFile(file, text, 'utf8');
+    if (req.query.root) await saveDocumentFile(req.query.root, file, text);
+    else {
+      const legacy = legacyDocumentPath(file);
+      await fs.promises.access(legacy);
+      await fs.promises.writeFile(legacy, text, 'utf8');
+    }
     res.json({ ok: true, bytes: Buffer.byteLength(text) });
   } catch (e) {
+    if (e instanceof DocumentPathError) return res.status(e.status).json({ error: e.message });
     const code = (e as NodeJS.ErrnoException)?.code;
     if (code === 'ENOENT') return res.status(404).json({ error: 'No such file — it moved or was deleted.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
