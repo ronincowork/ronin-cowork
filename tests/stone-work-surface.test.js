@@ -58,6 +58,8 @@ test('consumers cannot override the shared hidden detail or stone geometry', asy
   assert.match(css, /\.sws \{[^}]*gap: var\(--space-11\)/);
   assert.match(css, /\.wk-surface:has\(> \.sws-host\) \{ container: stone-work-surface-seat \/ inline-size; \}/);
   assert.match(css, /@container stone-work-surface-seat \(max-width: 40rem\) \{\s*\.wk-surface:not\(\[data-flush='true'\]\) > \.wk-surface-content\.sws-host \{ padding-inline: var\(--space-6\); \}\s*\.sws \{ gap: var\(--space-6\); \}/);
+  assert.match(css, /@container stone-work-surface-seat \(min-width: 64rem\) \{[^}]*\.wk-surface:not\(\[data-flush='true'\]\) > \.wk-surface-content\.sws-host \{ padding-inline: calc\(var\(--space-12\) \+ var\(--space-7\)\); \}/s);
+  assert.match(css, /\.sws\[data-open='true'\] \.sws-detail \{ max-width: 48rem; \}/);
   assert.doesNotMatch(css, /\.setup-provider-stones \.sws-(?:rail|grid|detail)/);
   assert.doesNotMatch(css, /\.setup-roots-stones \.sws-(?:rail|grid|detail)/);
 });
