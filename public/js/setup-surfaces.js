@@ -7,6 +7,7 @@ import { buildProjectRoots } from './projectroots.js';
 import { CAMPAIGN_TEMPLATES_TYPE, createTemplatesSurface } from './campaign-templates.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation } from './setup-provider-state.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
+import { servicesSetupModel } from './services-setup-state.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 
@@ -402,9 +403,11 @@ function createRootsSurface(context) {
   return { el: out.el, show: () => { room.enter(); notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench); } };
 }
 
+/** Ronin Services: value first, then one measured status, one next line, at most one action. */
 function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
   const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);
+  let timer = null;
   const explain = () => {
     const intro = el('section', 'setup-services-intro');
     const lockup = el('div', 'setup-services-lockup');
@@ -413,13 +416,14 @@ function createServicesSurface(context) {
     const identity = el('div', 'setup-services-identity');
     identity.append(
       el('h2', '', t('settei.ronin_services', 'Ronin Services')),
-      el('p', 'setup-lede', t('setup_surface.services_intro', 'Keep your work continuous and bring Ronin’s connected tools within reach.')),
+      el('p', 'setup-lede', t('services_setup.intro', 'Ronin’s hosted parts: the template library, a background assistant, voice, and team memory.')),
     );
     lockup.append(mark, identity);
     const values = el('div', 'setup-services-benefits');
     for (const [heading, copy] of [
-      [t('setup_surface.services_continuity', 'Continue where you left off'), t('setup_surface.services_value_records', 'Readable work records and memory carry useful context across your work.')],
-      [t('setup_surface.services_connected', 'Use connected tools'), t('setup_surface.services_value_library', 'Voice tools and Library access stay available through Ronin.')],
+      [t('services_setup.library', 'Template library'), t('services_setup.library_copy', 'Teams and Agents Ronin keeps and grows, with the procedures, macros, and tools they read, installed with one press.')],
+      [t('services_setup.records', 'Work records kept current'), t('services_setup.records_copy', 'A background assistant keeps every Agent’s work record current, so the roster and the tile say what each is doing.')],
+      [t('services_setup.voice', 'Voice and memory'), t('services_setup.voice_copy', 'Hear a report read back, speak to an Agent from the tile, and keep what a session learns for the team.')],
     ]) {
       const item = el('div', 'setup-services-benefit');
       item.append(el('h3', '', heading), el('p', '', copy)); values.append(item);
@@ -427,46 +431,40 @@ function createServicesSurface(context) {
     intro.append(lockup, values);
     return intro;
   };
+  const openRegister = () => context.workbench?.place(SETUP_SURFACE_TYPES.register, context.workspace || 'workspace2');
   const show = async () => {
-    const [registration, installed] = await Promise.all([
+    clearTimeout(timer);
+    const [registration, installed, activation] = await Promise.all([
       request('/api/setup/registration', { cache: 'no-store' }),
       request('/api/installed', { cache: 'no-store' }),
+      request('/api/services/activation', { cache: 'no-store' }),
     ]);
-    body.replaceChildren();
-    body.append(explain());
-    if (!registration.ok || registration.data?.status === 'optional') {
-      body.append(el('p', 'setup-services-enablement', t('setup_surface.services_register_enables', 'Register to confirm your access to Ronin Services. Local Ronin keeps working without it.')));
-      body.append(action(t('setup_surface.register_direct', 'Register'), '', () => context.workbench?.place(SETUP_SURFACE_TYPES.register, context.workspace || 'workspace2')));
-      notifySummary(SETUP_SURFACE_TYPES.services, 'registration optional', context.workbench);
-      return;
-    }
-    const facts = installed.ok ? installed.data?.services : {};
-    const entitled = registration.data?.services_entitled === true;
+    const model = servicesSetupModel(registration, installed, activation);
+    body.replaceChildren(explain());
+    body.dataset.state = model.state;
     const state = el('section', 'setup-services-status');
-    let status = t('setup_surface.services_not_entitled', 'Registration confirmed · Services access not included');
-    let next = t('setup_surface.services_access_help', 'Check Routines and Installs for Services access and activation.');
-    if (entitled && !facts?.installed) {
-      status = t('setup_surface.services_entitled_status', 'Services access confirmed · Ready to install');
-      next = t('setup_surface.services_install_next', 'Install Services on this machine to continue.');
-    } else if (facts?.installed && !facts?.activated) {
-      status = t('setup_surface.services_installed_status', 'Installed · Activation needed');
-      next = t('setup_surface.services_activate_next', 'Activate Services in Routines and Installs, then return here.');
-    } else if (facts?.activated && !facts?.switched_on) {
-      status = t('setup_surface.services_activated_status', 'Activated · Switched off');
-      next = t('setup_surface.services_switch_next', 'Turn Services on in Team Configuration when you want this Cowork to use it.');
-    } else if (facts?.switched_on) {
-      status = t('setup_surface.services_active_status', 'Active on this Cowork');
-      next = t('setup_surface.services_active_next', 'Readable work records, memory, voice tools, and Library access are ready.');
-    }
-    state.append(el('p', 'setup-services-status-line', status), el('p', 'setup-services-next', next));
+    state.dataset.tone = model.tone;
+    state.setAttribute('aria-live', 'polite');
+    state.append(el('p', 'setup-services-status-line', model.status), el('p', 'setup-services-next', model.next));
     body.append(state);
-    if (entitled && !facts?.installed) body.append(action(t('services.install_now', 'Install Services'), '', async () => {
-      const result = await request('/api/services/install', { method: 'POST', json: {} });
-      if (!result.ok) body.append(el('p', 'setup-notice bad', result.message)); else await show();
-    }));
-    notifySummary(SETUP_SURFACE_TYPES.services, facts?.switched_on ? 'active' : facts?.activated ? 'activated' : facts?.installed ? 'installed' : registration.data?.services_entitled ? 'entitled' : 'not active', context.workbench);
+    if (model.action) {
+      const button = action(model.action.label, '', async () => {
+        if (model.action.id === 'register') { openRegister(); return; }
+        button.disabled = true;
+        const route = model.action.id === 'install' ? '/api/services/install' : '/api/services/activation/poll';
+        const result = await request(route, { method: 'POST', json: {} });
+        if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); button.disabled = false; return; }
+        await show();
+      });
+      button.dataset.action = model.action.id;
+      body.append(button);
+    }
+    body.append(el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.')));
+    notifySummary(SETUP_SURFACE_TYPES.services, model.summary, context.workbench);
+    // A confirmation or an install in flight: look again quietly while the surface is on screen.
+    if (model.polling) timer = setTimeout(() => { if (body.isConnected) void show(); }, model.state === 'installing' ? 5000 : 15000);
   };
-  return { el: out.el, show };
+  return { el: out.el, show, destroy: () => clearTimeout(timer) };
 }
 
 /** gbrain: the Setup presentation of the commons tab. Reads and presses are the tab's own. */
