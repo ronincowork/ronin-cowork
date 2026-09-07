@@ -8,7 +8,7 @@ and replaces a separate Setup token path. Registration does not itself install, 
 or switch on Services. Communication consent is independently editable, and choosing
 **No communication** does not revoke entitlement. The Setup surface keeps installation and
 registration as separate measured facts: installed parts are installed and usable without
-any registration, and Register is one optional step beside Install and On. It reads the activation
+any registration, and Register is one optional step beside Install and the Switch toggle. It reads the activation
 record for the in-between registration states — email sent, link expired, waiting to send,
 installing, install failed — so its one action is always the real next step
 (`docs/setup-workbench.md`, Ronin Services).

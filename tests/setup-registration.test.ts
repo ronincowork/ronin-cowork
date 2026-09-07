@@ -214,7 +214,7 @@ test('Services leads with identity, the beta, and benefits, then one measured st
   assert.match(source, /request\('\/api\/routines'\)/);
   assert.match(source, /ronin_services: on/);
   assert.match(source, /saveCampaign\(row\.id, \{ config: \{ agent_defaults: \{ \.\.\.defaults, routines \} \} \}\)/);
-  assert.match(source, /setAttribute\('aria-pressed', String\(item\.done\)\)/);
+  assert.match(source, /setAttribute\('aria-pressed', String\(item\.pressed === true\)\)/);
   assert.match(source, /notifySummary\(SETUP_SURFACE_TYPES\.services, model\.summary/);
   assert.match(source, /if \(body\.isConnected\) void show\(\)/, 'polling stops when the surface leaves the workspace');
   assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short|services_register_enables|Registration confirmed · Services access not included|not activated|setup-services-account/);
@@ -257,8 +257,8 @@ test('Services setup model keeps installation and registration as separate facts
     ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', 'register:Done:done install:Installing…:off switch:Turn on:off', true],
     ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'register:Done:done install:Try again:install switch:Turn on:off', false],
     ['switched_off', reg('optional'), here(), act('not_requested'), 'switched off', 'Installed · switched off', 'register:Register:register install:Done:done switch:Turn on:switch_on', false],
-    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Done:done', false],
-    ['active', entitled(), here({ switched_on: true }), act('installed'), 'active', 'Active on this Cowork', 'register:Done:done install:Done:done switch:Done:done', false],
+    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Turn off:switch_off', false],
+    ['active', entitled(), here({ switched_on: true }), act('installed'), 'active', 'Active on this Cowork', 'register:Done:done install:Done:done switch:Turn off:switch_off', false],
   ];
   assert.deepEqual(cases.map(([state]) => state).sort(), [...SERVICES_SETUP_STATES].sort());
   for (const [state, registration, installed, activation, summary, status, steps, polling] of cases) {
@@ -279,8 +279,13 @@ test('Services setup model keeps installation and registration as separate facts
   assert.match(live.next, /2 of 6 parts are running now/);
   const liveOn = servicesSetupModel(reg('optional'), here({ switched_on: true }), act('not_requested'));
   assert.equal(liveOn.state, 'active');
-  assert.equal(liveOn.steps[2].act, 'switch_off', 'a Done switch turns off from here');
+  assert.equal(liveOn.steps[2].act, 'switch_off', 'the switch is a toggle: on reads Turn off');
+  assert.equal(liveOn.steps[2].label, 'Turn off');
+  assert.equal(liveOn.steps[2].pressed, true);
+  assert.equal(liveOn.steps[2].done, false, 'a toggle is never Done');
+  assert.equal(live.steps[2].pressed, false);
   assert.equal(liveOn.steps[2].enabled, true);
+  assert.match(servicesSetupModel(reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested')).next, /Ask any of your Agents to restart Ronin/);
   assert.equal(liveOn.steps[1].enabled, false, 'Done install has nothing to press');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[1].enabled, false, 'the hosted install waits for the entitlement the API demands');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[2].enabled, false, 'nothing to switch on before parts are installed');

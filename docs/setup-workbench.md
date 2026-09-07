@@ -114,14 +114,16 @@ line and one next sentence for the state Ronin measured from `GET /api/installed
 registration are two separate facts: installed parts are shown installed and usable whether
 or not anyone registered.
 
-Beneath the status sit three steps in one shape, **Register · Install · On**, each reading
-**Done** once it is. Register opens the Register surface (or Check status while a confirmation
-is out). Install is `POST /api/services/install` and waits for the entitlement that route
-demands. On is the Campaign's Routine switch for new Agents — the same `ronin_services` map
-Routines and Installs saves — and a Done switch turns off from here; a team can still differ
-in its Team Configuration.
+Beneath the status sit three controls in one shape, **Register · Install · Switch**. Register
+and Install read **Done** once they are; Register opens the Register surface (or Check status
+while a confirmation is out), and Install is `POST /api/services/install`, waiting for the
+entitlement that route demands. Switch is a toggle, **Turn on** or **Turn off**, never Done:
+it sets the Campaign's `ronin_services` Routine — the same map Routines and Installs saves —
+and cascades to new teams and Agents; a team can still differ in its Team Configuration. After
+a press the status says the rest: ask any Agent to restart Ronin, and Unlocked views and the
+other parts start (or stop) on their own; only new Agents are born with the Services reading.
 
-| Measured | Status | Steps |
+| Measured | Status | Controls |
 |---|---|---|
 | nothing installed, no registration, or the read failed | Not installed on this machine | Register · Install (waits) · Turn on (waits) |
 | nothing installed, an anonymous hello only | Not installed · anonymous hello sent | Register · Install (waits) · Turn on (waits) |
@@ -133,8 +135,8 @@ in its Team Configuration.
 | the installer is running | Installing Services… | Done · Installing… · Turn on (waits); re-read in 5 s |
 | the installer did not start or finish | Install did not finish | Done · Try again · Turn on (waits) |
 | parts installed, switched off | Installed · switched off, with running and installed part counts | Register or Done · Done · Turn on |
-| parts installed, switched on, not yet loaded | Switched on · not yet running | Register or Done · Done · Done (turns off) |
-| parts installed, switched on and loaded | Active on this Cowork, with running and installed part counts | Register or Done · Done · Done (turns off) |
+| parts installed, switched on, not yet loaded | Switched on · not yet running, ask any Agent to restart Ronin | Register or Done · Done · Turn off |
+| parts installed, switched on and loaded | Active on this Cowork, with running and installed part counts | Register or Done · Done · Turn off |
 
 The selector card's summary follows the same state. The Grokbot Morning Briefing preset waits
 for Services to be active, and the surface says so in every state. The pure state mapping is
