@@ -218,4 +218,8 @@
   .fs-reading dt { color: var(--muted); font-size: var(--form-key); letter-spacing: .06em; text-transform: uppercase; }
   .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--dim); font-style: normal; }
+
+  @media (max-width: 680px) {
+    .sp-surface { height: calc(100dvh - var(--row-head) - var(--space-6)); }
+  }
 }
