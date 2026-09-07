@@ -96,20 +96,14 @@ test('a non-core replacement receives only universal actions and ordinary launch
   assert.equal(presets.seatingPlan('dinner_party', { sessions: [{ name: 'real' }] }), null);
 });
 
-test('Bare Metal starts with two default-provider rows and three sessions use four workspaces', () => {
-  assert.deepEqual(presets.initialControls('bare_metal', 'codex').sessions, [
-    { name: 'session_1', provider: 'codex', model: '' }, { name: 'session_2', provider: 'codex', model: '' },
-  ]);
+test('Bare Metal starts with two rows that carry no provider or model, and three sessions use four workspaces', () => {
+  assert.deepEqual(presets.initialControls('bare_metal').sessions, [{ name: 'session_1' }, { name: 'session_2' }]);
+  assert.equal('cascadeProvider' in presets || 'eligibleProviders' in presets, false);
   assert.equal(presets.initialControls('bare_metal').tiles, 2);
-  assert.deepEqual(presets.initialControls('ronin_team', 'codex').sessions.map(({ name, team_lead }) => [name, team_lead === true]), [
+  assert.deepEqual(presets.initialControls('ronin_team').sessions.map(({ name, team_lead }) => [name, team_lead === true]), [
     ['team_lead', true], ['agent_1', false], ['agent_2', false],
   ]);
   assert.deepEqual([0, 1, 2, 3, 4].map(presets.bareMetalWorkspaceCount), [1, 1, 2, 4, 4]);
-});
-
-test('provider cascading preserves explicit row overrides', () => {
-  const rows = [{ name: 'one', provider: 'codex' }, { name: 'two', provider: 'claude' }, { name: 'three', provider: '' }];
-  assert.deepEqual(presets.cascadeProvider(rows, 'gemini', 'codex').map((row) => row.provider), ['gemini', 'claude', 'gemini']);
 });
 
 test('fixed seating uses only returned objects and falls back when none exist', () => {
@@ -246,12 +240,6 @@ test('Morning Brief asks only for what each cadence needs and expands role instr
   assert.match(source, /`weekly \$\{weekday\.value\} \$\{time\.value\}`/);
   assert.match(source, /ask\.rows = 3; line\.dataset\.editing = 'true'/);
   assert.match(source, /ask\.rows = 1; delete line\.dataset\.editing/);
-});
-
-test('preset rows offer only activated providers', () => {
-  const runtime = { providers: [{ id: 'claude', activated: true }, { id: 'codex', installed: true }, { id: 'grok', installable: true }, { id: 'gemini', activated: true }] };
-  assert.deepEqual(presets.eligibleProviders(runtime).map((row) => row.id), ['claude', 'gemini']);
-  assert.deepEqual(presets.eligibleProviders({}), []);
 });
 
 test('the purpose row hands its height to the rail so the stones rest at the shared elevation', async () => {

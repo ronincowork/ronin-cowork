@@ -106,8 +106,12 @@ template schema or backend launch contract is added.
 
 The **You use Ronin for** row sits above the stones, and the stones themselves rest at the
 same height as the Model providers stones: the row's height is taken out of the rail's top
-room rather than added to it. A session or feature row offers only providers that are
-**activated** on this machine, plus *Default provider*. Grokbot Morning Briefing's **When**
+room rather than added to it. A preset launches its template as stored, through the same
+team loader the New Team form uses: each row is one of the template's agents with its
+instructions, mandate, lead mark and Routine switches, and the owner's starting message
+appended. A row carries no provider or model; those come from the same Configuration and
+Campaign defaults every launch uses. The preset decides only which rows launch, what they
+are called, and how the new tab is seated. Grokbot Morning Briefing's **When**
 asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
 time, **One time** a date and a time; the schedule is written in the Cron jobs grammar
 (`daily 08:00`, `weekly mon 08:00`, `once 2026-09-08 08:00`). A role's kick-off message is

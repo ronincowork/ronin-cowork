@@ -112,12 +112,6 @@ export const CORE_PRESET_TREATMENTS = Object.freeze({
 
 export const isCorePreset = (handle) => Object.hasOwn(CORE_PRESET_TREATMENTS, String(handle || ''));
 export const bareMetalWorkspaceCount = (count) => count <= 1 ? 1 : count === 2 ? 2 : 4;
-export const cascadeProvider = (rows, provider, previous = '') => rows.map((row) => ({
-  ...row,
-  provider: !row.provider || row.provider === previous ? provider : row.provider,
-}));
-/** The providers a preset row may run on: activated ones only, in catalog order. */
-export const eligibleProviders = (runtime = {}) => (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id && provider.activated === true);
 export const presetActions = (handle) => ['user_message', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
 export function firstActivatableProvider(runtime = {}) {
   return (Array.isArray(runtime.providers) ? runtime.providers : []).find((provider) => {
@@ -171,14 +165,10 @@ const input = (value = '', type = 'text') => { const out = el('input'); out.type
 const option = (value, label = value) => { const out = el('option', '', label); out.value = value; return out; };
 const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
 
-export function initialControls(handle, defaultProvider = '') {
+export function initialControls(handle) {
   switch (handle) {
-    case 'bare_metal': return { tiles: 2, sessions: [{ name: 'session_1', provider: defaultProvider, model: '' }, { name: 'session_2', provider: defaultProvider, model: '' }] };
-    case 'ronin_team': return { sessions: [
-      { name: 'team_lead', provider: defaultProvider, model: '', team_lead: true },
-      { name: 'agent_1', provider: defaultProvider, model: '' },
-      { name: 'agent_2', provider: defaultProvider, model: '' },
-    ] };
+    case 'bare_metal': return { tiles: 2, sessions: [{ name: 'session_1' }, { name: 'session_2' }] };
+    case 'ronin_team': return { sessions: [{ name: 'team_lead', team_lead: true }, { name: 'agent_1' }, { name: 'agent_2' }] };
     case 'staff_my_codebase': return { root: 'ronin_project_1', root_dir: '' };
     case 'develop_new_project': return { root: 'ronin_project_1', features: ['frontend', 'backend'] };
     case 'personal_assistant': return { assistant_mode: 'single', specialists: '' };
@@ -337,45 +327,23 @@ const MODELS = Object.freeze({
   grok: Object.freeze(['Default model']),
   hermes: Object.freeze(['Default model']),
 });
-const cycle = (button, values, current, paint, label) => {
-  const options = values.length ? values : [''];
-  button.addEventListener('click', () => {
-    const index = Math.max(0, options.indexOf(current()));
-    paint(options[(index + 1) % options.length]);
-  });
-  button.setAttribute('aria-label', label);
-};
-
-function renderRows(host, state, key, providers, addLabel) {
+function renderRows(host, state, key, addLabel) {
   const rows = el('div', 'sp-rows');
   const paint = () => {
     rows.replaceChildren();
     state[key].forEach((row, index) => {
-      if (typeof row === 'string') row = state[key][index] = { name: row, provider: '' };
+      if (typeof row === 'string') row = state[key][index] = { name: row };
       const line = el('div', 'sp-row');
       const name = input(row.name); name.setAttribute('aria-label', `${addLabel} ${index + 1}`);
       name.addEventListener('input', () => { row.name = slug(name.value); });
-      const providerOptions = [{ id: '', label: 'Default provider' }, ...providers.map((item) => ({ id: item.id || item.name, label: item.label || item.name || item.id }))];
-      const provider = el('button', 'sp-cycle'); provider.type = 'button';
-      const providerPaint = (value) => { row.provider = value; row.model = ''; provider.textContent = providerOptions.find((item) => item.id === value)?.label || value || 'Default provider'; modelPaint(''); };
-      cycle(provider, providerOptions.map((item) => item.id), () => row.provider || '', providerPaint, 'Model provider');
-      const model = el('button', 'sp-cycle'); model.type = 'button';
-      const modelValues = () => MODELS[row.provider] || ['Default model'];
-      const modelPaint = (value) => { row.model = value === 'Default model' ? '' : value; model.textContent = row.model || 'Default model'; };
-      model.addEventListener('click', () => {
-        const values = modelValues(); const shown = row.model || 'Default model'; const index = Math.max(0, values.indexOf(shown));
-        modelPaint(values[(index + 1) % values.length]);
-      });
-      model.setAttribute('aria-label', 'Model');
-      providerPaint(row.provider || ''); modelPaint(row.model || '');
       const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
       remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });
       const lead = el('span', 'sp-lead', row.team_lead ? 'Team Lead' : '');
       if (row.team_lead) remove.hidden = true;
-      line.append(lead, name, provider, model, remove); rows.append(line);
+      line.append(lead, name, remove); rows.append(line);
     });
     const add = el('button', 'fs-door', `＋ Add ${addLabel}`); add.type = 'button';
-    add.addEventListener('click', () => { state[key].push({ name: `${slug(addLabel)}_${state[key].length + 1}`, provider: providers.find((p) => p.activated)?.id || '' }); paint(); });
+    add.addEventListener('click', () => { state[key].push({ name: `${slug(addLabel)}_${state[key].length + 1}` }); paint(); });
     rows.append(add);
   };
   paint(); host.append(rows);
@@ -464,19 +432,17 @@ function renderMorningBriefTiming(host, state) {
 }
 
 function renderSpecialControls(host, handle, state, runtime, environment) {
-  // ONLY A PROVIDER THAT IS ACTIVATED CAN RUN A ROW. The catalog lists every provider
-  // Ronin knows; a row may choose only among the ones this machine can launch with.
-  const providers = eligibleProviders(runtime), roots = runtime.roots || [];
+  const roots = runtime.roots || [];
   if (handle === 'staff_my_codebase') renderCodebaseControls(host, state, environment);
   if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where', environment, true);
   if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder', environment);
   if (handle === 'bare_metal') {
-    const agents = el('div'); renderRows(agents, state, 'sessions', providers, 'Session');
+    const agents = el('div'); renderRows(agents, state, 'sessions', 'Session');
     const tiles = el('div'); renderTileChoices(tiles, state);
     host.append(section('Agents run side by side', 'select', ...agents.children), section('Tile view', 'select', ...tiles.children));
   }
-  if (handle === 'ronin_team') { const body = el('div'); renderRows(body, state, 'sessions', providers, 'Agent'); host.append(section('Team Lead and agents', 'select', ...body.children)); }
-  if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', providers, 'Feature Agent'); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
+  if (handle === 'ronin_team') { const body = el('div'); renderRows(body, state, 'sessions', 'Agent'); host.append(section('Team Lead and agents', 'select', ...body.children)); }
+  if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', 'Feature Agent'); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
   if (handle === 'health_and_fitness') { const body = el('div'); renderAskRows(body, state, 'roles', 'role'); host.append(section("Each agent's kick-off message", 'edit', ...body.children)); }
   if (handle === 'personal_assistant') {
     const modes = el('div', 'sp-mode-options');
@@ -543,7 +509,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   const current = () => selected >= 0 ? slots[selected] : null;
   const controlState = () => {
     const slot = current();
-    if (!controls.has(slot.handle)) controls.set(slot.handle, initialControls(slot.handle, runtime.providers.find((row) => row.activated)?.id || ''));
+    if (!controls.has(slot.handle)) controls.set(slot.handle, initialControls(slot.handle));
     return controls.get(slot.handle);
   };
 

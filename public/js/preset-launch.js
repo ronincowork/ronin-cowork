@@ -1,6 +1,7 @@
 /* Browser adapter from the Presets shell to Ronin's ordinary launch routes. */
 import { request } from './request.js';
 import { seedReservedWorkspaceTab } from './workspace.js';
+import { launchTeamAgents } from './team-loader.js';
 
 const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 34);
 const unique = (base) => `${slug(base) || 'preset'}_${Date.now().toString(36)}`;
@@ -13,8 +14,6 @@ function launchAgent(row, plan, team = '', send) {
     name: unique(team ? `${team}_${row.name || 'agent'}` : row.name || plan.template.name),
     team,
     instructions: plan.user_message || row.instructions || '',
-    provider: row.provider || '',
-    model: row.model || '',
     team_lead: row.team_lead === true,
     project_root: plan.inputs?.root || '',
     mandate: row.mandate,
@@ -85,13 +84,27 @@ export async function launchPresetPlan(plan = {}, send) {
       : plan.template.name === 'develop_new_project'
         ? (plan.inputs?.features || []).map((row) => ({ ...(typeof row === 'string' ? { name: row } : row), instructions: plan.user_message }))
         : (template.agents || []);
-  const sessions = [], receipts = [];
-  for (const row of configured) {
-    const launched = await launchAgent(row, plan, team, send);
-    if (!launched.ok) return launched;
-    if (launched.data?.name) sessions.push({ name: launched.data.name });
-    if (launched.data?.receipt) receipts.push(launched.data.receipt);
-  }
+  // THE TEMPLATE IS THE TEMPLATE. Each row is one of the stored template's agents — its
+  // instructions, mandate, lead mark and Routine switches — and goes through the same
+  // loader the New Team form uses. The preset only says which rows, what they are called,
+  // and the owner's starting message; nothing about provider or model rides on a row.
+  const stored = Array.isArray(template.agents) ? template.agents : [];
+  const picks = configured.map((row, index) => {
+    const base = stored.find((agent) => slug(agent.name) === slug(row.name)) || stored[index] || stored.at(-1) || {};
+    return {
+      name: unique(`${team}_${row.name || base.name || 'agent'}`),
+      instructions: [row.instructions ?? base.instructions ?? '', plan.user_message].filter(Boolean).filter((line, at, all) => all.indexOf(line) === at).join('\n\n'),
+      mandate: row.mandate || base.mandate,
+      team_lead: row.team_lead === true || (row.team_lead === undefined && base.team_lead === true),
+      routines_on: [...(base.routines_on || [])],
+      routines_off: [...(base.routines_off || [])],
+    };
+  });
+  const outcomes = await launchTeamAgents(ask, team, picks);
+  const refused = outcomes.find(({ result }) => !result?.ok);
+  if (refused) return { ok: false, message: refused.result?.message || `Could not launch ${refused.row.name}.` };
+  const sessions = outcomes.map(({ result }) => result.data?.name).filter(Boolean).map((name) => ({ name }));
+  const receipts = outcomes.map(({ result }) => result.data?.receipt).filter(Boolean);
   let schedule = null;
   if (plan.template?.name === 'morning_brief') {
     const scheduled = await ask('/api/setup/morning-brief/schedules', { method: 'POST', json: {

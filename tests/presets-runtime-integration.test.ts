@@ -39,12 +39,14 @@ test('Presets consumes real provider lifecycle and dependency facts', async () =
 test('Develop Project launch aggregates real managed work-location facts', async () => {
   await runtime.ensureInstalledRoots();
   let sequence = 0;
+  let roster: Record<string, any> | null = null;
   const send = async (url: string, options: { json?: Record<string, any> } = {}) => {
     if (url === '/api/templates/teams') return { ok: true, data: [{ name: 'develop_new_project', label: 'Develop', agents: [] }] };
-    if (url === '/api/team-rosters') return { ok: true, data: options.json };
+    if (url === '/api/team-rosters') { roster = options.json || null; return { ok: true, data: options.json }; }
     if (url === '/api/launch') {
       const name = `feature_${++sequence}`;
-      const resolved = await resolveLaunchDesks({ session: name, team: 'develop_project', project_root: options.json?.project_root, agent: true, control: true });
+      // The root rides the Team record, as the New Team form sends it; the server reads it from the roster.
+      const resolved = await resolveLaunchDesks({ session: name, team: 'develop_project', project_root: options.json?.project_root || roster?.project_root, agent: true, control: true });
       return { ok: true, data: { name, receipt: { project_root: resolved.assignment?.project_root, work_locations: resolved.repositories, desks: resolved.assignment?.desks || [] } } };
     }
     throw new Error(`unexpected ${url}`);
