@@ -66,6 +66,7 @@
      grow or scroll around them. The immediate host also fills the available seat. */
   .wk-surface-content:has(.sws) { display: flex; flex-direction: column; overflow: hidden; }
   .wk-surface-content:has(.sws) > :has(> .sws) { flex: 1 1 auto; min-height: 0; }
+  .wk-surface:not([data-flush='true']) > .wk-surface-content:has(> .sws-host) { padding: 0; }
 
   /* RONIN SETUP keeps the workbench: framed workspaces, the scope-coloured header strip,
      the selector's framed cards, and the current-card mark. */

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 class FakeNode {
   constructor(tag = '') { this.tagName = tag.toUpperCase(); this.children = []; this.dataset = {}; this.attributes = {}; this.listeners = {}; this.hidden = false; this.removed = false; }
@@ -25,6 +26,12 @@ test('shared stone surface selects, refreshes, opens external detail, and restor
     items: [{ id: 'one', label: 'One', secondary: '/one', state: 'ready' }, { id: 'two', label: 'Two' }],
     renderDetail: (item, host) => { rendered.push(item.id); host.append(new FakeNode('article')); },
   });
+  const host = new FakeNode('div');
+  const before = new FakeNode('p');
+  const after = new FakeNode('small');
+  surface.mount(host, { before: [before], after: [after] });
+  assert.match(host.className, /\bsws-host\b/);
+  assert.deepEqual(host.children, [before, surface.el, after]);
   const stones = surface.el.querySelectorAll('[data-sws-id]');
   stones[1].click();
   assert.equal(surface.selected(), 'two');
@@ -42,4 +49,11 @@ test('shared stone surface selects, refreshes, opens external detail, and restor
   assert.equal(prevented, true);
   assert.equal(surface.el.dataset.open, 'false');
   assert.equal(surface.el.querySelectorAll('[data-sws-id]')[1].focused, true);
+});
+
+test('consumers cannot override the shared hidden detail or stone geometry', async () => {
+  const css = await readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /\.sp-work-surface \.sws-detail/);
+  assert.doesNotMatch(css, /\.setup-provider-stones \.sws-(?:rail|grid|detail)/);
+  assert.doesNotMatch(css, /\.setup-roots-stones \.sws-(?:rail|grid|detail)/);
 });

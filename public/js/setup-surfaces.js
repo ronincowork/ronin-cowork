@@ -226,14 +226,14 @@ function createProviderSurface(context) {
     context.environment.setupRuntime = runtime;
     context.workbench?.refreshSelector?.();
     const providers = (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id);
-    body.append(el('p', 'setup-lede', t('setup_surface.add_provider', 'Add a model provider.')));
+    const lead = el('p', 'setup-lede', t('setup_surface.add_provider', 'Add a model provider.'));
     if (!providers.length) body.append(el('p', 'setup-fine', t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.')));
     else {
       stones.setItems(providers.map((provider) => ({
         id: String(provider.id), label: provider.label || provider.id, secondary: provider.from || '', state: providerWord(provider),
         className: 'setup-provider-stone', attrs: { 'data-provider': provider.id, 'data-activated': String(provider.activated === true) },
       })));
-      body.append(stones.el, el('p', 'setup-fine', t('setup_surface.provider_disclosure_short', 'Each provider signs you in its own way; Ronin records only that you finished.')));
+      stones.mount(body, { before: [lead], after: [el('p', 'setup-fine', t('setup_surface.provider_disclosure_short', 'Each provider signs you in its own way; Ronin records only that you finished.'))] });
     }
     summarize(runtime);
   };

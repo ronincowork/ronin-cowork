@@ -46,7 +46,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         }
       },
     });
-    root.append(head, messages, stoneSurface.el);
+    stoneSurface.mount(root, { before: [head, messages] });
   } else root.append(head, list);
 
   const say = (msg, bad) => {

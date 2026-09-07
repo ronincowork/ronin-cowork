@@ -301,7 +301,8 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   surface.content.className = `${surface.content.className || ''} sp-content`.trim();
   const notice = createNotice();
   const kinds = environment.kinds || createKindsPreference();
-  renderKindPills(surface.content, kinds, { lead: t('setup.presets_kinds_lead', 'You use Ronin for') });
+  const kindsHost = el('div', 'sws-intro');
+  renderKindPills(kindsHost, kinds, { lead: t('setup.presets_kinds_lead', 'You use Ronin for') });
   let templates = [], runtime = { providers: [], roots: [] }, selected = -1;
   let detail = null;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
@@ -326,7 +327,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     renderDetail: (item, host) => { selected = Number(item.id); detail = host; paintDetail(); },
     onSelectionChange: (id) => { selected = id == null ? -1 : Number(id); },
   });
-  surface.content.append(stoneSurface.el, notice.el);
+  stoneSurface.mount(surface.content, { before: [kindsHost], after: [notice.el] });
   const paintGrid = () => {
     const visible = visibleIndexes();
     stoneSurface.setItems(slots.map((slot, index) => {
