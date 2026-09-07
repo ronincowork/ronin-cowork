@@ -379,7 +379,7 @@ function createGbrainSurface(context) {
   const host = el('div', 'setup-surface-body'); out.content.append(host);
   const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
     presentation: 'setup',
-    availability: () => context.environment?.setupRuntime?.gbrain || null,
+    availability: () => { const runtime = context.environment?.setupRuntime; return runtime?.gbrain ? { ...runtime.gbrain, services: runtime.services || null } : null; },
     // The selector card follows the measured state once it is read.
     onState: (summary) => notifySummary(SETUP_SURFACE_TYPES.gbrain, summary, context.workbench),
     openServices: () => context.workbench?.place(SETUP_SURFACE_TYPES.services, context.workspace || 'workspace2'),

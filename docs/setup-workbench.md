@@ -89,6 +89,7 @@ and at most one action for the state Ronin measured:
 | Measured | Status | The one action |
 |---|---|---|
 | the gbrain service is absent | Not installed on this machine | Open Ronin Services |
+| Services installed but switched off | Installed · Ronin Services is switched off | Open Ronin Services |
 | installed, but not loaded | Not installed on this machine | Load gbrain |
 | the installer is running | Installing… (the surface re-reads every few seconds) | none |
 | the installer failed | Install did not finish, with the log folded below | Retry install |

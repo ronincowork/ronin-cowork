@@ -183,6 +183,7 @@ test('Setup gbrain model gives every measured state one status, one next line, a
   const cases: Array<[string, unknown, unknown, string, string | null, string]> = [
     ['services_needed', { ok: false, status: 404, message: 'HTTP 404' }, { installed: false, active: false }, 'Not installed on this machine', 'open_services', 'not installed'],
     ['unreadable', { ok: false, status: 500, message: 'HTTP 500' }, { installed: true, active: false }, 'Status could not be read', 'check_again', 'installed'],
+    ['services_off', { ok: false, status: 404, message: 'HTTP 404' }, { installed: true, active: false, services: { installed: true, active: false } }, 'Installed · Ronin Services is switched off', 'open_services', 'installed'],
     ['not_installed', snapshot({ installed: false }), { installed: false, active: false }, 'Not installed on this machine', 'load', 'not installed'],
     ['install_failed', snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } }), null, 'Install did not finish', 'retry', 'not installed'],
     ['installing', snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } }), null, 'Installing…', null, 'installing'],

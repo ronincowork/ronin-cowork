@@ -852,6 +852,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **gbrain.setup_status_not_installed:** Not installed on this machine
 - **gbrain.setup_next_services:** gbrain arrives with Ronin Services. Set up Services first, then load gbrain here.
 - **gbrain.setup_open_services:** Open Ronin Services
+- **gbrain.setup_status_services_off:** Installed · Ronin Services is switched off
+- **gbrain.setup_next_services_off:** gbrain runs as part of Ronin Services. Turn Services on for this Cowork in Team Configuration, then come back here.
 - **gbrain.setup_next_load:** Load once to install gbrain, local embedding weights, and Agent wiring. Downloads come from github.com and huggingface.co.
 - **gbrain.setup_status_installing:** Installing…
 - **gbrain.setup_next_installing:** Weights, gbrain, cabinet, and wiring are being set up. This surface checks again every few seconds.
