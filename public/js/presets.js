@@ -23,7 +23,7 @@ export const HOUSE_PRESETS = Object.freeze([
 /**
  * WHAT A PERSON USES RONIN FOR, and the three stones each answer shows first. The labels
  * and the triads are the owner artifact's proposal and provisional: change them here, in
- * one place. The visible choice is singular; All keeps the balanced default three.
+ * one place. The visible choice is singular.
  */
 export const PRESET_KINDS = Object.freeze([
   { id: 'build', label: 'Build software', presets: Object.freeze(['bare_metal', 'staff_my_codebase', 'develop_new_project']) },
@@ -65,13 +65,9 @@ export function createKindsPreference(storage = globalThis.localStorage, persist
 export function renderKindPills(host, preference, { lead = '' } = {}) {
   const row = document.createElement('div'); row.className = 'cv-pills sp-kinds';
   if (lead) { const word = document.createElement('span'); word.className = 'sp-kinds-lead'; word.textContent = lead; row.append(word); }
-  const choices = [
-    { id: 'software', label: 'Software assistance', kinds: ['build'] },
-    { id: 'research', label: 'Research', kinds: ['research'] },
-    { id: 'all', label: 'All', kinds: PRESET_KINDS.map((kind) => kind.id) },
-  ];
+  const choices = PRESET_KINDS.map(({ id, label }) => ({ id, label, kinds: [id] }));
   const paint = (picked) => {
-    const id = picked.length === 1 && picked[0] === 'build' ? 'software' : picked.length === 1 && picked[0] === 'research' ? 'research' : 'all';
+    const id = picked.length === 1 && knownKind(picked[0]) ? picked[0] : '';
     for (const button of row.querySelectorAll?.('.cv-pill[data-kind]') || []) button.setAttribute('aria-pressed', String(button.dataset.kind === id));
   };
   for (const choice of choices) {
