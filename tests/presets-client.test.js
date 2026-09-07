@@ -158,7 +158,7 @@ test('blocked pointer and keyboard Launch only reveal the message and never muta
   const surface = presets.createPresetsSurface({ environment });
   await surface.enter();
   let nodes = [...surface.el.walk()];
-  nodes.find((node) => node.tagName === 'BUTTON' && String(node.className).includes('sp-slot')).click();
+  nodes.find((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone')).click();
   nodes = [...surface.el.walk()];
   const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
   const warning = nodes.find((node) => String(node.className).includes('sp-warning'));
