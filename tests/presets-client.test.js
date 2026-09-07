@@ -220,7 +220,7 @@ test('Bare Metal keeps two real tile layouts, compact rows, separated sections, 
   assert.match(css, /\.sp-choice-panel \{[^}]*font-size: var\(--text-5\)/);
   assert.match(css, /\.sp-select \{[^}]*font-size: inherit/);
   assert.match(css, /\.sp-lead \{[^}]*font-size: inherit/);
-  assert.match(css, /\.sp-controls > \.sp-control-label:not\(:first-child\) \{[^}]*margin-top: var\(--space-10\);[^}]*border-top[^}]*padding-top: var\(--space-10\)/);
+  assert.match(css, /\.sp-controls > \.sp-control-label:not\(:first-child\) \{[^}]*margin-top: var\(--space-12\);[^}]*border-top[^}]*padding-top: var\(--space-8\)/);
   assert.match(css, /\.sp-controls \+ \.sp-field \{[^}]*margin-top: var\(--space-10\);[^}]*padding-top: var\(--space-10\)/);
   assert.match(css, /\.sp-rows \{[^}]*gap: var\(--space-2\)/);
 });
