@@ -49,10 +49,33 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         }
       },
     });
-    // What a workspace is, in the owner's three terms, above the stones (Glen, 2026-09-07).
-    const intro = document.createElement('p');
+    // What a workspace is, above the stones: one line, a kaki Learn more, three short
+    // points that open on click — never a hard paragraph (Glen, 2026-09-07).
+    const intro = document.createElement('div');
     intro.className = 'pr-intro';
-    intro.textContent = t('roots.intro', 'A workspace is a folder Ronin keeps for Teams and Agents. Three things happen there: it may be a Git repository; Agents are born from it and start making their own files in it; and their work accumulates there — plans, memory, workouts, calendar documents, whatever they keep.');
+    const line = document.createElement('p');
+    line.className = 'pr-intro-line';
+    line.append(document.createTextNode(t('roots.intro_line', 'A workspace is a folder Ronin keeps for Teams and Agents.') + ' '));
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'pr-intro-more';
+    more.textContent = t('roots.learn_more', 'Learn more');
+    more.setAttribute('aria-expanded', 'false');
+    line.append(more);
+    const points = document.createElement('ul');
+    points.className = 'pr-intro-points';
+    points.hidden = true;
+    for (const text of [
+      t('roots.intro_repo', 'It may be a Git repository.'),
+      t('roots.intro_born', 'Agents are born from it and make their own files there.'),
+      t('roots.intro_accumulates', 'Their work accumulates there: plans, memory, notes, calendar documents.'),
+    ]) points.appendChild(document.createElement('li')).textContent = text;
+    more.addEventListener('click', () => {
+      points.hidden = !points.hidden;
+      more.setAttribute('aria-expanded', String(!points.hidden));
+      more.textContent = points.hidden ? t('roots.learn_more', 'Learn more') : t('roots.learn_less', 'Less');
+    });
+    intro.append(line, points);
     stoneSurface.mount(root, { before: [intro, messages] });
   } else root.append(head, list);
 

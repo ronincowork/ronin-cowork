@@ -28,7 +28,10 @@ test('roots adapt the real project-root detail and Add form to the shared stone 
   assert.match(roots, /stoneSurface\.refreshDetail\(\)/);
   assert.match(roots, /const openAdd = stones \? null : createAction/);
   assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[intro, messages\] \}\)/);
-  assert.match(roots, /intro\.className = 'pr-intro'[\s\S]*?t\('roots\.intro', 'A workspace is a folder Ronin keeps for Teams and Agents\. Three things happen there: it may be a Git repository; Agents are born from it/);
+  assert.match(roots, /intro\.className = 'pr-intro'[\s\S]*?t\('roots\.intro_line', 'A workspace is a folder Ronin keeps for Teams and Agents\.'\)/, 'one line, not a paragraph');
+  assert.match(roots, /more\.className = 'pr-intro-more'[\s\S]*?t\('roots\.learn_more', 'Learn more'\)[\s\S]*?more\.setAttribute\('aria-expanded', 'false'\)/, 'a Learn more that opens on click');
+  assert.match(roots, /points\.hidden = true;[\s\S]*?t\('roots\.intro_repo'[\s\S]*?t\('roots\.intro_born'[\s\S]*?t\('roots\.intro_accumulates'/, 'three short points, closed at first');
+  assert.doesNotMatch(roots, /roots\.intro'/, 'the hard paragraph is gone');
   assert.match(roots, /stoneSurface\.setItems\(\[\{\s*id: NEW,\s*label: t\('roots\.add_stone', 'Add A Workspace'\),\s*glyph: '\+',\s*className: 'setup-roots-add-stone'/, 'Add A Workspace is the first stone');
   assert.doesNotMatch(roots, /stoneSurface\.openDetail/);
   assert.doesNotMatch(roots, /secondary: r\.remit \|\| r\.dir/);

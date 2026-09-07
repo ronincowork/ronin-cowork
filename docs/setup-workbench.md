@@ -64,9 +64,9 @@ Each is a Git repository with a README and first commit. Ronin Project 1 also ha
 reviewed `dev` / stable `main` arrangement and managed-worktree readiness. These defaults
 do not replace or rename any external folder; the existing add/load-root flow remains.
 
-In Ronin Setup one line above the stones says what a workspace is, in three terms: it may
-be a Git repository; Agents are born from it and start making their own files in it; and
-their work accumulates there. The folders are square stones on the shared stone work
+In Ronin Setup one line above the stones says what a workspace is, with a kaki **Learn
+more** that opens three short points: it may be a Git repository; Agents are born from it
+and make their own files there; their work accumulates there. The folders are square stones on the shared stone work
 surface; the first, dotted stone is **Add A Workspace**, so adding one is never below the
 fold. Its page speaks in keep-or-ignore terms: the folder browser's row action is **Keep**,
 the chosen path is labelled **Path**, a folder already kept says **Kept** and offers
