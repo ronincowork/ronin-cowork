@@ -29,8 +29,11 @@ test('shared stone surface selects, refreshes, opens external detail, and restor
   stones[1].click();
   assert.equal(surface.selected(), 'two');
   assert.equal(surface.el.dataset.open, 'true');
+  assert.equal(surface.el.querySelectorAll('[data-sws-id]')[1].focused, true);
+  surface.el.querySelectorAll('[data-sws-id]')[1].focused = false;
   surface.refreshDetail();
   assert.deepEqual(rendered, ['two', 'two']);
+  assert.notEqual(surface.el.querySelectorAll('[data-sws-id]')[1].focused, true, 'programmatic refresh does not move focus');
   surface.openDetail({ id: 'new', label: 'Add' });
   assert.equal(surface.selected(), null);
   assert.equal(rendered.at(-1), 'new');

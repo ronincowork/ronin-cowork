@@ -35,6 +35,7 @@ is a name a user learns. Everything not listed here is ordinary English and need
 | root layout | **Three Blocks** | The sparse Settings, Teams, and New Project pattern on Ronin Home. |
 | Setup workbench | **Ronin Setup** | Machine Settings focused on getting Ronin ready to launch. |
 | Campaign workbench | **Ronin Settings** | Machine Settings focused on the existing Campaign configuration. |
+| stone work surface | **stone work surface** | One reusable work surface that presents a collection as square stones. Selecting a stone moves the collection to a left rail and opens that item’s details on the right. Presets, Workspace Folders, and Model Providers reuse it. |
 | tile | **tile**<!--g:glossary.tile--> | One cell showing one session. Never "pane". |
 | `workspace` | **workspace**<!--g:glossary.workspace--> | One slot of the coworkspace. It holds a tile or a commons. |
 | `campaign_commons` | **the commons**<!--g:glossary.campaign_commons--> | The campaign's shared surface. |
