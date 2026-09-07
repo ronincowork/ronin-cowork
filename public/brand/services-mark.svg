@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 104" role="img" aria-labelledby="title desc">
-  <title id="title">Ronin Services mark</title><!-- code-native; same frame as nin-mark.svg; approved 2026-09-07 -->
-  <desc id="desc">An R and S built from the Ronin hexagon and leaning with its edge: the R in the shell's reference blue, the S and the open frame in persimmon.</desc>
-  <!-- The R follows the shell: the accent-2 token when this markup is inlined, else that token’s light and dark values by scheme. -->
-  <style>.rs-r{stroke:var(--accent-2,#3f6a95)}@media (prefers-color-scheme:dark){.rs-r{stroke:var(--accent-2,#81a2be)}}</style>
-  <path fill="none" stroke="#c46243" stroke-width="8" stroke-linejoin="miter" d="M31 6h58l25 46-25 46H31L6 52z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 104" role="img" aria-labelledby="services-mark-title services-mark-desc">
+  <title id="services-mark-title">Ronin Services mark</title><!-- code-native; same frame as nin-mark.svg; approved 2026-09-07 -->
+  <desc id="services-mark-desc">An R and S built from the Ronin hexagon and leaning with its edge: the R in the shell's reference blue, the S and the open frame in persimmon.</desc>
+  <!-- Colour follows the shell when this markup is inlined: the R from the accent-2 token, the S and frame from the kaki token; loaded as an image, the fallbacks apply (the R by colour scheme). Ids are prefixed so inlining never duplicates a bare id. -->
+  <style>.rs-k{stroke:var(--kaki,#c46243)}.rs-r{stroke:var(--accent-2,#3f6a95)}@media (prefers-color-scheme:dark){.rs-r{stroke:var(--accent-2,#81a2be)}}</style>
+  <path class="rs-k" fill="none" stroke="#c46243" stroke-width="8" stroke-linejoin="miter" d="M31 6h58l25 46-25 46H31L6 52z"/>
   <!-- One module, a 26 x 24 house cell at the frame's own slant; rotated to the frame's 28.5 degrees. -->
   <g fill="none" stroke-width="6.5" stroke-linecap="butt" stroke-linejoin="miter" transform="translate(60 52) scale(.86) rotate(28.5) translate(-62.5 -52)">
     <g class="rs-r" stroke="#3f6a95"><path d="M31 76V28H51L57 40L51 52H31"/><path d="M45 52L57 76"/></g>
-    <path stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"/>
+    <path class="rs-k" stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"/>
   </g>
 </svg>
