@@ -329,6 +329,7 @@ function saveSlots(environment, slots) {
 export function createPresetsSurface({ environment = {}, workspace = 'workspace1' } = {}) {
   const { createSurface, createAction, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('setup.presets', 'Presets'), className: 'sp-surface' });
+  surface.content.className = `${surface.content.className || ''} sp-content`.trim();
   const grid = el('div', 'sp-grid'), detail = el('div', 'sp-detail'), notice = createNotice();
   const kinds = environment.kinds || createKindsPreference();
   const more = el('div', 'sp-more');
