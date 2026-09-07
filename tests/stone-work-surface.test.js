@@ -54,6 +54,8 @@ test('shared stone surface selects, refreshes, opens external detail, and restor
 test('consumers cannot override the shared hidden detail or stone geometry', async () => {
   const css = await readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8');
   assert.doesNotMatch(css, /\.sp-work-surface \.sws-detail/);
+  assert.match(css, /\.sws-host \{[^}]*padding: var\(--space-6\) clamp\(var\(--space-6\), 2vw, var\(--space-11\)\)/);
+  assert.match(css, /\.sws \{[^}]*gap: clamp\(var\(--space-8\), 3vw, var\(--space-11\)\)/);
   assert.doesNotMatch(css, /\.setup-provider-stones \.sws-(?:rail|grid|detail)/);
   assert.doesNotMatch(css, /\.setup-roots-stones \.sws-(?:rail|grid|detail)/);
 });
