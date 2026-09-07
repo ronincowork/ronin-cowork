@@ -7,7 +7,7 @@
   .wk-surface:not([data-flush='true']) > .sws-seat > .sws-host { padding: var(--space-6) var(--space-11); }
   .sws-host > .sws { flex: 1 1 auto; }
   .sws-host > :not(.sws) { font-size: var(--form-note); line-height: 1.4; }
-  .sws-header { display: flex; flex: 0 0 var(--space-12); align-items: center; min-width: 0; overflow: auto hidden; scrollbar-width: none; }
+  .sws-header { display: flex; flex: 0 0 var(--space-12); align-items: center; min-width: 0; min-height: 0; block-size: var(--space-12); max-block-size: var(--space-12); overflow: auto hidden; scrollbar-width: none; }
   .sws-header::-webkit-scrollbar { display: none; }
   .sws-header > * { margin-block: 0; }
   .sws-footer[hidden] { display: none; }

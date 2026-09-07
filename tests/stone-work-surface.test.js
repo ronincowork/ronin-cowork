@@ -62,7 +62,7 @@ test('consumers cannot override the shared hidden detail or stone geometry', asy
   assert.match(css, /\.wk-surface-content\.sws-seat \{[^}]*padding: 0;[^}]*container: stone-work-surface-seat/);
   assert.match(css, /> \.sws-seat\.sws-host,\s*\.wk-surface:not\(\[data-flush='true'\]\) > \.sws-seat > \.sws-host \{ padding: var\(--space-6\) var\(--space-11\); \}/);
   assert.match(css, /\.sws \{[^}]*gap: var\(--space-11\)/);
-  assert.match(css, /\.sws-header \{[^}]*flex: 0 0 var\(--space-12\)/);
+  assert.match(css, /\.sws-header \{[^}]*flex: 0 0 var\(--space-12\)[^}]*min-height: 0[^}]*block-size: var\(--space-12\)[^}]*max-block-size: var\(--space-12\)/);
   assert.match(css, /@container stone-work-surface-seat \(max-width: 40rem\)[\s\S]*?> \.sws-seat > \.sws-host \{ padding-inline: var\(--space-6\); \}/);
   assert.match(css, /@container stone-work-surface-seat \(min-width: 44rem\)[\s\S]*?> \.sws-seat > \.sws-host \{ padding-inline: calc\(var\(--space-12\) \+ var\(--space-7\)\); \}/);
   assert.match(css, /\.sws\[data-open='true'\] \.sws-detail \{ max-width: 42rem; \}/);
