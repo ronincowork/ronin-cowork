@@ -31,15 +31,27 @@ switch to the retired phone-only drill-down.
 
 ## Activate a provider
 
-Installation and activation are different facts. An installed provider can open a
-temporary native sign-in session. The provider may ask the owner for credentials, an API
-key, a subscription login, device authorization, or trust approval; Ronin does not answer
-those prompts or inspect account health.
+**Model providers** shows one stone per provider in the runtime catalog, each wearing a
+short measured state: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
+installed**, or **Manual install**. Selecting a stone opens that provider's detail beside
+the rail: the same four rows for every provider, in this order.
+
+| Row | What it measures | The action it owns |
+|---|---|---|
+| **Use with Ronin** | the persisted opt-in for this provider, kept with the Setup preferences | the checkbox |
+| **Install** | whether the CLI is found, with its path when it is | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets a guide link instead |
+| **Authenticate** | whether Setup completion was recorded | **Authenticate** opens the provider's native sign-in as a temporary tile in this workspace, once the provider is opted in and installed |
+| **Ready** | the recorded activation | none; it is the measured result |
+
+Installation and activation are different facts. The provider's own flow may ask the
+owner for credentials, an API key, a subscription login, device authorization, or trust
+approval; Ronin does not answer those prompts or inspect account health.
 
 Choose **Done / Close** only after the provider's own flow is complete. That records the
 provider as activated and closes the temporary session. **Close** abandons the session
-without activation. One activation unlocks Teams and New Project; two activations make
-Ronin Settings the next fresh Machine Settings default.
+without activation. Ronin does not monitor the provider's sign-in afterwards; if the
+provider needs it again, it asks in its normal flow. One activation unlocks Teams and New
+Project; two activations make Ronin Settings the next fresh Machine Settings default.
 
 ## Workspace folders
 
