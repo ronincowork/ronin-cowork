@@ -2782,18 +2782,19 @@ body {
 }
 .pr-status:empty { display: none; }
 .setup-roots-stones .sws-stone.archived .sws-state {
-  border: var(--edge) solid var(--line-2);
-  border-radius: var(--radius-round);
-  background: var(--well);
   color: var(--muted-2);
-  padding: 0 var(--space-2);
 }
 .setup-roots-stones .sws-stone.gone .sws-state {
   color: var(--bad-soft);
 }
 .setup-roots-stones .setup-roots-add-stone {
+  border-color: var(--kaki);
   border-style: dashed;
-  color: var(--muted-2);
+  background: color-mix(in srgb, var(--kaki-tint) 18%, var(--panel));
+  color: var(--kaki-lift);
+}
+.setup-roots-stones .setup-roots-add-stone .sws-glyph {
+  color: var(--kaki);
 }
 .cv-worktrees-default {
   margin-top: var(--space-3);
