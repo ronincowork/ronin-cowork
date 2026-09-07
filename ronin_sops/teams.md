@@ -49,8 +49,29 @@ sessions one at a time, as the work actually needs them — not a batch at birth
    is born tagged onto it, told it is tag-only, and inherits no root or objective. Give
    the team a roster when it has a brief worth inheriting — `tejun-team-set <team>
    --objective "…" --role <team_role> --root <project_root>` creates one, or updates the
-   fields you name on one that exists. Name it the way tags are named: lowercase,
+   fields you name on one that exists. A simple creation inherits the current Campaign's
+   Team defaults: Routines and kit, root/repositories/branch, and Agent launch defaults;
+   explicitly named fields override those values. On an existing Team, omitted fields are
+   preserved rather than reset or re-inherited. Name it the way tags are named: lowercase,
    boring, typeable.
+
+   For a Team created before this inheritance was available, the explicit one-time repair
+   is `tejun-team-set <team> --campaign-defaults`. It reapplies the current Campaign layer;
+   review the Campaign defaults first, then run it once. Ordinary updates never do this.
+
+### Choose the desk source when assigning code work
+
+This is a lead's nudge, not a gate. A new assignment starts from current local `dev`.
+When a session joins work the Team already has in flight, start it from the Team line.
+If the work does not clearly fit either description, ask the lead rather than guessing.
+The lead can make the choice while assigning the desk:
+
+```bash
+tejun-desk assign <repo[:branch]> --session <name> --team <team> --source dev|team
+```
+
+The choice changes only where the private desk starts. It does not change the Team line
+where the desk hands in, grant permission, or add an approval step.
 
 ## Running it
 
@@ -65,3 +86,8 @@ sessions one at a time, as the work actually needs them — not a batch at birth
 - **Membership is nobody's fortress.** Anyone may move a session between teams — you,
   the owner, the session itself. Keep the roster's objective current instead of policing
   the edges; a changed objective reaches every member on their next letter reread.
+- **Choose whether an ending may return.** Archive a live session with `tejun-archive
+  <session>` when its work may be resumed; use hard end/delete only when it should not
+  return. `tejun-rehydrate <archive-id>` restores an archived session through Ronin's
+  existing provider-resume and metadata-restoration path. These are operational choices,
+  not confirmation gates.

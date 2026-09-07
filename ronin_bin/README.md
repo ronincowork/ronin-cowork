@@ -2,7 +2,7 @@
 
 **Everything an agent types, and nothing else** — `tejun`, `tejun-step`, `tejun-send`,
 `tejun-peek`, `tejun-team`, `tejun-fork`, `tejun-session-set`, `tejun-team-set`, `tejun-wipeboard`,
-`tejun-harakiri`, `tejun-recall`, `tejun-remember`, `tejun-rireki`, `tejun-desk`, `write_tegami`,
+`tejun-harakiri`, `tejun-archive`, `tejun-rehydrate`, `tejun-recall`, `tejun-remember`, `tejun-rireki`, `tejun-desk`, `write_tegami`,
 `read_tegami`. `setup.sh` puts this
 directory on PATH, after `bin/shim` (the guards) and ahead of `bin/`.
 
@@ -24,6 +24,15 @@ where it is: it is PATH interception, so you type `tmux` and the guard answers.
 
 One shelf per audience: **ronin_catalogs** (what you can do) · **ronin_library** (the
 reading) · **ronin_sops** (how this house works) · **ronin_bin** (what you run).
+
+## Command help rollout
+
+Agent command discovery is two steps: `tejun --help` identifies the task tool, then
+`<tool> --help` gives its current usage before execution. Help is local, side-effect-free,
+and exits zero. The first bounded rollout covers work records, managed desks, Team and
+Agent management, and archive/rehydrate. The remaining projected tools should adopt the
+same `-h`/`--help` contract as a later mechanical rollout; they are intentionally not
+partially converted here.
 
 **Two files here are not tools.** `tool-path.sh` resolves a tool's real file behind its
 projected symlink (`SELF`, hence `TOOL_DIR`), and `ronin-http.sh` is sourced by every tool

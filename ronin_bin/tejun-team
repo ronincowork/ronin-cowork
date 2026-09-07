@@ -8,6 +8,25 @@
 # Ronin isn't running. Read-only: it reports each member's dial but changes nothing,
 # and never tags anything.
 set -u
+case "${1-}" in
+  -h|--help) [ "$#" -eq 1 ] || { echo "tejun-team: --help takes no other arguments. Run tejun-team --help." >&2; exit 2; }
+    cat <<'EOF'
+tejun-team — list Teams or the current members of one Team
+
+Usage:
+  tejun-team
+  tejun-team <team>
+
+Use the bare form to discover Teams, then name one before coordinating its members.
+This is a live, read-only tmux roster; it changes no membership or Control setting.
+Create an Agent, add it to a Team, or set/change the lead with
+tejun-session-set --help. Create a Team with tejun-team-set --help. Adding membership
+is available by CLI; for a true move, add the new Team then remove the old Team on that
+Team's page in the coworkspace. Related: tejun-session-set --help; tejun-team-set --help
+EOF
+    exit 0 ;;
+esac
+[ "$#" -le 1 ] || { echo "tejun-team: too many arguments. Run tejun-team --help." >&2; exit 2; }
 
 VIEWER_PREFIX="grid_"   # browser viewer sessions — never on a team
 

@@ -46,7 +46,7 @@ import {
 } from '../resource-adapters.js';
 import { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } from '../templates.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
-import { browseFolders, createFolder } from '../folder-browser.js';
+import { browseFolders, createFolder, withRegisteredRoots } from '../folder-browser.js';
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
@@ -65,10 +65,11 @@ const bodyFields = (body: unknown) => {
 export function registerCatalogs(app: express.Express): void {
   app.get('/api/folders', async (req, res) => {
     try {
-      res.json(await browseFolders(String(req.query.dir ?? ''), {
+      const listing = await browseFolders(String(req.query.dir ?? ''), {
         hidden: req.query.hidden === 'yes',
         query: String(req.query.q ?? ''),
-      }));
+      });
+      res.json(withRegisteredRoots(listing, await listProjectRoots()));
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }

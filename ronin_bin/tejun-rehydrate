@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# tejun-rehydrate — restore one archived session through Ronin's existing resume path.
+# Usage: tejun-rehydrate <archive-id>
+set -u
+case "${1-}" in
+  -h|--help) [ "$#" -eq 1 ] || { echo "tejun-rehydrate: --help takes no other arguments. Run tejun-rehydrate --help." >&2; exit 2; }
+    cat <<'EOF'
+tejun-rehydrate — resume one archived session
+
+Usage:
+  tejun-rehydrate <archive-id>
+
+Use the archive id printed by tejun-archive. Ronin restores the provider conversation
+and session metadata; the archive is removed only after restoration succeeds.
+Related: tejun-archive --help
+EOF
+    exit 0 ;;
+esac
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+[ "$#" -eq 1 ] && [ -n "$1" ] && [ "${1#-}" = "$1" ] || {
+  echo "usage: tejun-rehydrate <archive-id>. Run tejun-rehydrate --help." >&2
+  exit 2
+}
+ID=$1
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+out=$(mktemp)
+trap 'rm -f "$out"' EXIT
+code=$(curl -sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -o "$out" -w '%{http_code}' \
+  -H 'content-type: application/json' -X POST "$url/api/archived-sessions/$ID/rehydrate" 2>/dev/null) || {
+  echo "UNREACHABLE: Ronin did not answer at $url" >&2
+  exit 5
+}
+python3 - "$code" "$out" <<'PY'
+import json, sys
+code, path = int(sys.argv[1]), sys.argv[2]
+try:
+    data = json.load(open(path))
+except Exception:
+    data = {}
+if code == 200 and data.get("ok"):
+    print(f"REHYDRATED {data.get('name') or '?'}")
+    raise SystemExit(0)
+print(f"REFUSED: {data.get('error') or f'HTTP {code}'}", file=sys.stderr)
+raise SystemExit(4)
+PY

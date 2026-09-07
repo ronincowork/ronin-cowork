@@ -78,6 +78,38 @@
 set -u
 
 die() { printf '%s\n' "$*" >&2; exit 3; }
+help() {
+  cat <<'EOF'
+write_tegami — update the current session's work record
+
+Usage:
+  write_tegami --objective <text>
+  write_tegami --phase <title> | --gate <text>
+  write_tegami --leg N <title> | --leg N.M <title>
+  write_tegami --status N[.M] PLANNED|ACTIVE|DONE
+  write_tegami --done N[.M] | --active N[.M] | --drop N[.M]
+  write_tegami --repo <repo>:<branch> | --unrepo <repo>[:<branch>]
+  write_tegami --doc <path> | --undoc <path>
+  write_tegami --on_tangent | --on_track
+  write_tegami < work-record.json
+
+Common tasks:
+  --objective changes the objective. --phase and --gate append rungs.
+  --leg N appends a leg; --leg N.M retitles it. Field updates may be combined.
+  --doc lists a working document for the owner; --repo keeps a checkout row current.
+
+Lead position (separate form; changes only another session's pointer):
+  write_tegami --session <name> --at N[.M]
+  write_tegami --session <name> --at none
+
+The tool validates record shape but not progress claims. It never edits another
+session except for the separate --session/--at position form. Related: read_tegami
+EOF
+}
+
+case "${1-}" in
+  -h|--help) [ "$#" -eq 1 ] || die "write_tegami: --help takes no other arguments. Run write_tegami --help."; help; exit 0 ;;
+esac
 
 # WHICH SESSION AM I — and it must NEVER guess.
 #
@@ -170,7 +202,7 @@ while [ $# -gt 0 ]; do
     --drop)       need "$1" "${2-}" "N[.M]";         EDITS+=("drop$US$2"); shift ;;
     --repo)       need "$1" "${2-}" "<repo>:<branch>"; EDITS+=("repo$US$2"); shift ;;
     --unrepo)     need "$1" "${2-}" "<repo>[:<branch>]"; EDITS+=("unrepo$US$2"); shift ;;
-    *) die "write_tegami: unknown argument: $1" ;;
+    *) die "write_tegami: unknown argument: $1. Run write_tegami --help." ;;
   esac
   shift
 done

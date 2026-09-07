@@ -5,7 +5,7 @@
 - **reading_off:** routine/ronin_worktrees/OFF.md
 - **sops:** github
 - **macros:** cutcode, land
-- **actions:** cut-code, open-pr, land-work, land-manifest, desk-open, desk-status, desk-sync, hand-in, desk-park, check-clean, repository-initialize
+- **actions:** cut-code, open-pr, land-work, land-manifest, desk-open, desk-status, desk-sync, hand-in, desk-close, check-clean, repository-initialize
 - **tools:** tejun-desk, ronin-repo-init
 - **parts:** —
 - **mcp:** —

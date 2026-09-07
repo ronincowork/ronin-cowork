@@ -5,18 +5,19 @@ itself. Answer from here; the fuller pages are one `ls` away in `docs/`.
 
 ## The pages
 
-- **The landing** (`/`) has three doors: **Machine Settings** opens the Campaign page (this
-  install's identity, desk profile, Routines and Installs, defaults and templates), **Coworks** opens the
-  coworkspace, **New Project** opens the launch page for a fuller new Team or Agent.
+- **Ronin Home** (`/`) is the **Three Blocks** pattern: **Machine Settings**, **Teams**, and
+  **New Project**. Machine Settings always opens. Teams and New Project unlock after one
+  provider activation. Machine Settings defaults to **Ronin Setup** with zero or one
+  activated provider and **Ronin Settings** with two or more.
 - **The bar** on every page: two doors on the left, **Ronin** (the Campaign) and **Coworks**
   (the all-Teams page); the **place** in the middle, in italics — *Teams* on the Coworks page,
   *Your team: <name>* on a Team page — is a reading, not a button; on the right, **か New**
   for a quick new session, **⚙** for the cowork commons, and **2 ⇄ 4**, one button wearing
   the workspace count.
-- **On a phone** the coworkspace is three steps: pick the Cowork, pick the Agent, drive it in
-  a full-screen tile with the composer docked at the bottom.
+- **On a phone** the same responsive workbenches remain available; Setup keeps Presets in
+  workspace 1 and the selected setup surface in workspace 2.
 
-## The workbench — one page format, three scopes
+## The workbench — one page format, four scopes
 
 Every workbench is the same shape: a **selector column** (the roster: the Team commons card
 first, then each Agent as a card, then ＋ Add team member) beside **two or four workspaces**.
@@ -30,6 +31,7 @@ arrangement per page. The three scopes differ only in what the column offers:
 | **Campaign discovery workbench** | Machine Settings | the Campaign's own surfaces: configuration, project roots, Team roster, templates, Routines and Installs |
 | **Cowork workbench** | Coworks | every Team in the Cowork, then the sessions on no team |
 | **Team workbench** | a Team's page (`#/team/<name>`) | this Team's commons card and its members |
+| **Setup workbench** | Machine Settings / Ronin Setup | Presets pinned in workspace 1; Register, providers, folders, Services, gbrain, and Templates select into workspace 2 |
 
 | Surface | What it is for |
 |---|---|

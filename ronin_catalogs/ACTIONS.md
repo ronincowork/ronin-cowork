@@ -521,16 +521,19 @@ RUN a macro — one call, no hunting through docs, nothing to narrate. A macro n
 an action that does not exist **does not compile** (exit 3), so an undefined step is
 impossible by construction rather than caught by review.
 
-## desk-open — get a worktree from current local dev
+## desk-open — get or assign a worktree from an explicit local source
 `action_kind: mechanical` — run it, don't deliberate.
 A desk is one repository's branch and worktree opened together (`team/<team>/<session>`,
-mounted under the `worktrees` store), cut from the repository's current local working
-line (`dev` for Ronin) and recorded with its exact base, review line, owner and dependency
-location. It opens at once — no clock or approval. Funnel-point requests are reported and
+mounted under the `worktrees` store). A new assignment defaults to the repository's current
+local working line (`dev` for Ronin). An Agent joining a Team already mid-work can explicitly
+choose `--source team`; the selected local ref is resolved once and its exact SHA is recorded
+and reported. The source choice never changes the desk's review-line destination. It opens at
+once — this is guidance, not an approval gate. Funnel-point requests are reported and
 replaced with a private branch. A coding launch opens every desk in the
 assignment before the CLI starts; a session opens one by hand only for a repository its
-brief did not list.
-> Tool: `tejun-desk open <repo[:branch]> [--team t]`
+brief did not list. When the right source is unclear, ask the team lead; the lead can make the
+same source choice centrally for a named session with `assign`.
+> Tool: `tejun-desk open <repo[:branch]> [--team t] [--source dev|team]` · `tejun-desk assign <repo[:branch]> --session s --team t [--source dev|team]`
 
 ## desk-status — what is true about each desk, now
 `action_kind: mechanical` — run it, don't deliberate.
@@ -700,6 +703,24 @@ another session.
 If Ronin is unreachable the tool reports `STUCK` and your session stays. That is the
 correct outcome: say so to the owner. Do NOT reach for `tmux kill-session` — the whole
 point is that one implementation does the killing.
+
+## archive-session — stop a live session so it may return
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-archive <session>`** (TOOLS.md)
+
+Archive when the session's work may be resumed. The tool calls Ronin's existing archive
+path: Ronin records the provider conversation and session metadata before stopping the
+tmux tree. It does not copy the conversation, hard-delete the session record, or create a
+second lifecycle store. A refusal leaves the live session in place.
+
+## rehydrate-session — restore an archived session
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-rehydrate <archive-id>`** (TOOLS.md)
+
+Rehydrate restores an archived session through Ronin's existing provider-resume path and
+restores its session metadata. The archive disappears only after the live session and all
+metadata have been restored. Use hard end/delete instead only when the session should not
+return.
 
 ### Ending someone else's session (NOT harakiri, not an action)
 Harakiri is self-inflicted, by construction. Ending a session that is not yours — a
