@@ -110,18 +110,36 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(cowork, /PRESETS_TYPE/);
 });
 
-test('Setup header has only compact viewport and real-theme icon toggles', async () => {
-  const [setup, kit, theme] = await Promise.all([
-    source('js/setup-view.js'), source('workspace-kit.css'), source('js/theme.js'),
+test('Setup keeps its selector header bare and seats light/dark at the right of the top header', async () => {
+  const [setup, kit, style, html, host, main, theme] = await Promise.all([
+    source('js/setup-view.js'), source('workspace-kit.css'), source('style.css'), source('index.html'),
+    source('js/workspace.js'), source('js/main.js'), source('js/theme.js'),
   ]);
-  assert.match(setup, /actions: \[viewportToggle, themeToggle\]/);
-  assert.match(setup, /setTheme\(document\.documentElement\.dataset\.theme === 'dark' \? 'light' : 'dark'\)/);
-  assert.match(setup, /dataset\.setupViewport = viewportMode/);
-  assert.match(setup, /setAttribute\('aria-label'/);
+  // The presentation toggle that forced the phone stack onto a desktop — and read as
+  // Setup collapsing to one workspace — is gone, with its CSS and its stored memory.
+  assert.doesNotMatch(setup, /viewportToggle|setupViewport|setup-header-toggle|presentation'/);
+  assert.match(setup, /viewportMode: undefined/);
+  assert.doesNotMatch(kit, /data-setup-viewport|setup-header-toggle/);
+  // The selector header carries no controls on Setup.
+  assert.doesNotMatch(setup, /\bactions: \[/);
+  // Light/dark is a bar action: built by Setup, seated by the ViewHost in the bar's one
+  // actions slot at the right, pinning the device theme through theme.js and nothing else.
+  assert.match(setup, /barActions: \[surfaceToggle, themeToggle\]/);
+  assert.match(setup, /barButton\('setup-theme-toggle'\)/);
+  assert.match(setup, /barButton\('setup-surface-toggle'\)/);
+  assert.match(setup, /saveCampaign\(id, \{ desk: \{ \[field\]: /);
+  assert.match(setup, /surface === 'mobile' \? 'theme_mobile' : 'theme'/);
+  assert.match(setup, /setCampaignTheme\(desk\(\)\); applyTheme\(\);/);
+  assert.match(setup, /t\('setup\.use_dark'/);
   assert.match(setup, /setAttribute\('aria-pressed'/);
-  assert.match(kit, /\.setup-header-toggle \{ width: var\(--space-10\); min-height: var\(--space-10\);/);
-  assert.match(kit, /data-setup-viewport='mobile'/);
-  assert.match(kit, /data-setup-viewport='desktop'/);
-  assert.match(theme, /export function setTheme\(name\)/);
   assert.doesNotMatch(setup, /localStorage\.setItem\([^)]*theme/);
+  assert.doesNotMatch(setup, /(themeToggle|surfaceToggle)[^\n]*(setCount|arrangement|place\(|select\()/);
+  assert.match(html, /<span id="viewactions" class="wk-view-actions"><\/span>\s*<span id="feedbackaction">/);
+  assert.match(main, /actionsSlot: document\.getElementById\('viewactions'\)/);
+  assert.match(host, /const showActions = \(id, view\) =>/);
+  assert.match(host, /view\.barActions/);
+  assert.match(host, /showMap\(id, next\); showActions\(id, next\);/);
+  assert.match(style, /#bar \.shape-cycle,\n#bar \.bar-toggle \{/);
+  assert.match(kit, /\.wk-view-actions:empty \{ display: none; \}/);
+  assert.match(theme, /export function setTheme\(name\)/);
 });

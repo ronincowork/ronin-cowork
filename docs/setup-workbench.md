@@ -27,33 +27,35 @@ with **Register** and receives the selector choices in this order:
 6. Templates
 
 The same workbench is responsive at phone width and remains keyboard operable. It does not
-switch to the retired phone-only drill-down.
+switch to the retired phone-only drill-down. The phone stack comes from the window's width
+alone; there is no presentation switch, and the selector header carries no controls.
+
+While Setup is open, the right of the top header holds a subtle phone / desktop switcher
+(📱 / 🖥) and a compact **light / dark** control (◐ / ☀). The switcher picks which surface is
+being set; light / dark writes the Campaign's theme for that surface — the same setting the
+cowork commons' Appearance control saves — and repaints. Neither changes the workspace
+count, what is shown, the layout, or a width. The Setup / Settings island is unchanged.
 
 ## Activate a provider
 
 **Model providers** shows one stone per provider in the runtime catalog, each wearing a
 short measured state: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
 installed**, or **Manual install**. Selecting a stone opens that provider's detail beside
-the rail: the same four numbered steps for every provider, in this order. A finished step
-wears a check, the next unmet step wears the kaki mark and owns the only enabled control,
-and the steps after it wait with their controls disabled.
+the rail: the same three numbered steps for every provider, in this order. A finished step
+wears a check and no control, the next unmet step wears the kaki mark and owns the one
+control, and a later step waits with none. A refused press shows the server's answer
+under the steps.
 
-| Row | What it measures | The action it owns |
+| Step | What it measures | The action it owns |
 |---|---|---|
-| **Use with Ronin** | the persisted opt-in for this provider, kept with the Setup preferences | the checkbox |
-| **Install** | whether the CLI is found, with its path when it is | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
-| **Authenticate** | whether Setup completion was recorded | **Authenticate** opens the provider's native sign-in as a temporary tile in this workspace, once the provider is opted in and installed |
-| **Ready** | the recorded activation | none; it is the measured result |
+| **Install** | whether the CLI is found on this machine | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
+| **Authenticate** | whether the provider is signed in here: its own credential file is on this machine, or a sign-in was recorded through **Done** | **Authenticate** opens the provider's native sign-in as a temporary headerless tile that takes most of this workspace; **Done** records it, **Close** leaves things as they were |
+| **Ready** | the resulting activation, which is what unlocks Teams and New Project | none; it is the measured result |
 
-Installation and activation are different facts. The provider's own flow may ask the
-owner for credentials, an API key, a subscription login, device authorization, or trust
-approval; Ronin does not answer those prompts or inspect account health.
-
-Choose **Done / Close** only after the provider's own flow is complete. That records the
-provider as activated and closes the temporary session. **Close** abandons the session
-without activation. Ronin does not monitor the provider's sign-in afterwards; if the
-provider needs it again, it asks in its normal flow. One activation unlocks Teams and New
-Project; two activations make Ronin Settings the next fresh Machine Settings default.
+Ronin reads only that a credential file exists (for example Claude Code's
+`~/.claude/.credentials.json` or Codex's `~/.codex/auth.json`); it never reads the
+credential and never asks the provider whether the account is still good. A provider that
+needs to sign in again asks in its own flow.
 
 ## Workspace folders
 
@@ -66,9 +68,9 @@ Each is a Git repository with a README and first commit. Ronin Project 1 also ha
 reviewed `dev` / stable `main` arrangement and managed-worktree readiness. These defaults
 do not replace or rename any external folder; the existing add/load-root flow remains.
 
-In Ronin Setup one line above the stones says what a workspace is, in three terms: it may
-be a Git repository; Agents are born from it and start making their own files in it; and
-their work accumulates there. The folders are square stones on the shared stone work
+In Ronin Setup one line above the stones says what a workspace is, with a kaki **Learn
+more** that opens three short points: it may be a Git repository; Agents are born from it
+and make their own files there; their work accumulates there. The folders are square stones on the shared stone work
 surface; the first, dotted stone is **Add A Workspace**, so adding one is never below the
 fold. Its page speaks in keep-or-ignore terms: the folder browser's row action is **Keep**,
 the chosen path is labelled **Path**, a folder already kept says **Kept** and offers
@@ -93,6 +95,19 @@ Doc. The treatment follows the core handle, not its slot.
 Replacing a slot with an ordinary template immediately removes the special controls and
 seating. The replacement still has User Message, Customize, and ordinary Launch; no
 template schema or backend launch contract is added.
+
+The **You use Ronin for** row sits above the stones, and the stones themselves rest at the
+same height as the Model providers stones: the row's height is taken out of the rail's top
+room rather than added to it. A session or feature row offers only providers that are
+**activated** on this machine, plus *Default provider*. Grokbot Morning Briefing's **When**
+asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
+time, **One time** a date and a time; the schedule is written in the Cron jobs grammar
+(`daily 08:00`, `weekly mon 08:00`, `once 2026-09-08 08:00`). A role's kick-off message is
+one line at rest and about three while it is being edited. Code Stack Eval browses folders
+here and keeps *Evaluate* (this run) apart from *Use with Ronin* (a workspace folder, via
+the Workspace folders surface); Develop a New Project offers the same door under its
+folder choice; Personal Assistant's **Single assistant** and **Chief of Staff** are two
+buttons, and Recruit appears only for the second.
 
 ## Registration and optional extras
 
@@ -131,10 +146,15 @@ entitlement that route demands. Switch is a toggle, **Turn on** or **Turn off**,
 it sets the Campaign's `ronin_services` Routine — the same map Routines and Installs saves —
 and cascades to new teams and Agents; a team can still differ in its Team Configuration. After
 a press the status says the rest, and a fourth control, **Restart**, appears for as long as
-`/api/installed` reports `restart_needed`: it is `POST /api/machine/restart`, which answers and
-then runs `ronin_bin/tejun-machine-restart` — the one sanctioned restart, Ronin and nothing
-else; sessions live in the tmux server and stay up. The surface then watches the machine come
-back and re-reads it, so the same control also notices a restart an Agent was asked to do.
+`/api/installed` reports `restart_needed`, painted kaki because it is the one thing left to do.
+It is `POST /api/machine/restart`, which runs `ronin_bin/tejun-machine-restart` — the one
+sanctioned restart, Ronin and nothing else; sessions live in the tmux server and stay up. A
+copy of Ronin that is not the installed service (a preview, a hand-started copy) refuses with
+a sentence instead of restarting the wrong Ronin. The browser reads the restart off the
+machine: `/api/installed` carries the server's `startedAt`, and the control waits for it to
+change before re-reading, so a restart an Agent was asked to do is noticed the same way. While
+Ronin is down for the moment, the surface keeps what it painted rather than reading as
+not installed.
 Unlocked views and the other parts start (or stop) on their own; only new Agents are born
 with the Services reading.
 
@@ -161,32 +181,21 @@ itself.
 ## gbrain
 
 The gbrain surface is the Setup presentation of the cowork commons gbrain tab: the same
-`GET /api/gbrain` read and the same Load press, painted as value first, then one measured
-status. It opens with what gbrain gives (find by meaning, shared recall, stays local) and a credit to the upstream project, then one status line, one next sentence
-and at most one action for the state Ronin measured:
+`GET /api/gbrain` read and the same Load press, painted as three questions with plain
+answers and one control each, then the one next step. Nothing on it is asserted; every
+answer is measured.
 
-| Measured | Status | The one action |
+| Question | Answer | The one control |
 |---|---|---|
-| the read is still in flight | Reading local gbrain status… (painted at once; the real read can take seconds) | none |
-| the gbrain service is absent | Not installed on this machine | Open Ronin Services |
-| Services installed but switched off | Installed · Ronin Services is switched off | Open Ronin Services |
-| installed, but not loaded | Not installed on this machine | Load gbrain |
-| the installer is running | Installing… (the surface re-reads every few seconds) | none |
-| the installer failed | Install did not finish, with the log folded below | Retry install |
-| loaded and answering, no model provider activated | gbrain is ready · a model provider comes first | Open Model providers |
-| loaded and answering, one provider activated | Everything is good to go | Start your first Personal Assistant |
-| loaded and answering, with a note (keyword-only, network reach, outside model) | Running, with a note | Start your first Personal Assistant |
-| loaded and the process is silent | Installed · not running | Ask an Agent to check gbrain |
-| the read itself failed | Status could not be read | Check again |
+| **Installed** | Checking… · Not installed · Installed · running · Installed · not running · Installed · Ronin Services is switched off · Install did not finish · Could not read | Load gbrain · Retry install · Open Ronin Services · Ask an Agent to check gbrain · Check again, by state; none while installing |
+| **Available to Agents** | Default for all Agents · Only selected Agents | the Campaign's own gbrain Routine, saved the way Routines and Installs saves it; selected Agents get it in Team Configuration or on the New Agent form |
+| **Accounts linked** | one row per account gbrain can link, Linked or Not linked | none here: the Personal Assistant links one when asked, with approval |
 
-When gbrain is loaded the surface adds **What Ronin measured**: one plain sentence per
-measurement saying what it means for the person (the process answers; search by meaning is
-on; only this machine can reach it; no outside model is used; which accounts are linked, and
-which the Personal Assistant can link, one at a time, with approval), each beside the
-snapshot's own value, with the observed time and a quiet Check again. Whether accounts are
-linked is read mechanically from gbrain's integrations list, never assumed. **Start your
-first Personal Assistant** makes exactly the launch the Personal Assistant preset makes, a
-single assistant in a new tab. The selector card's summary follows the measured state. The
-Personal Assistant preset waits for gbrain to be active, and the surface says so in every
-state. The pure state mapping is `public/js/gbrain-setup-state.js`; `docs/gbrain.md` holds
-what gbrain is.
+Which accounts exist and whether each is linked is read from gbrain's own integrations
+list (Gmail, Google Calendar, X, meeting transcripts on a stock install). Below the
+answers sits the next step: with gbrain running and no model provider activated, *A model
+provider comes first* and **Open Model providers**; with one activated, *Everything is good
+to go* and **Start your first Personal Assistant**, which makes exactly the launch the
+Personal Assistant preset makes, a single assistant in a new tab. The surface paints at
+once and says Checking… until the read lands; the pure state mapping is
+`public/js/gbrain-setup-state.js`, and `docs/gbrain.md` holds what gbrain is.

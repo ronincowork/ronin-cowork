@@ -34,7 +34,7 @@ export function templateEntryPlan({ currentKind, kindTouched = false, templates 
   return { kind, template: row.name };
 }
 
-export function createNewAgentView(kit, { connect = null } = {}) {
+export function createNewAgentView(kit, { connect = null, embedded = false } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
@@ -64,8 +64,14 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     disabled: true,
     action: () => void doStart(),
   });
-  const surface = createSurface({ label: t('new_agent.title', 'New Agent'), className: 'na-surface', actions: [start] });
+  const surface = createSurface({ label: t('new_agent.title', 'New Agent'), className: 'na-surface', actions: [start], header: !embedded });
   const notice = createNotice();
+  if (embedded) {
+    surface.content.classList.add('na-surface', 'launch-form-embed');
+    const embedActions = el('div', 'launch-form-embed-actions');
+    embedActions.append(start.el);
+    surface.content.append(embedActions);
+  }
 
   const isCowork = () => draft.type === 'cowork_agent';
   const hasAgent = () => draft.type !== 'terminal';
@@ -651,7 +657,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   };
 
   return {
-    el: surface.el,
+    el: embedded ? surface.content : surface.el,
     enter: async (detail = {}) => {
       paint();
       const [tray, sopRows, wayRows, teamRows, rootRows] = await Promise.all([
@@ -676,4 +682,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       paint();
     },
   };
+}
+
+/** Form-only adapter for an existing work-surface detail region. */
+export function createEmbeddedNewAgentView(kit, options = {}) {
+  return createNewAgentView(kit, { ...options, embedded: true });
 }

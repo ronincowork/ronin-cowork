@@ -22,11 +22,13 @@ authentication. The stock launch catalog currently offers Anthropic through Clau
 and OpenAI through Codex; Configuration may list additional Agent CLIs whose provider/model
 launch support or authentication evidence is incomplete.
 
-For an installed provider that is opted in with **Use with Ronin**, **Authenticate**
-starts a temporary native setup session in a tile. The owner completes any credential,
-billing, device-login, or trust step there. **Done / Close** records activation and closes
-the session; **Close** closes without activation. Ronin does not continuously recheck the
-native account afterward.
+An installed provider whose own credential file is on this machine (Claude Code's
+`~/.claude/.credentials.json`, Codex's `~/.codex/auth.json`, Gemini CLI's
+`~/.gemini/oauth_creds.json`) shows as **Signed in**; Ronin reads only that the file
+exists. Otherwise **Authenticate** starts a temporary native setup session in a tile. The
+owner completes any credential, billing, device-login, or trust step there. **Done**
+records activation and closes the session; **Close** closes without activation. Ronin
+does not continuously recheck the native account afterward.
 
 ## Choose billing before login
 

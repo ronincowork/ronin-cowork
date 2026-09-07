@@ -203,6 +203,20 @@ export function createWorkspace(host, options = {}) {
     map = invoke(id, 'map', () => WorkspacePrimitives.createLayoutMap(view.arrangement)) || null;
     if (map) mapSlot.append(map.el);
   };
+  // BAR ACTIONS. A view that exposes `barActions` — its own compact controls, such as
+  // Setup's light/dark toggle — gets them seated in the bar's one actions slot, at the
+  // right, while it is active; every other view leaves the slot empty. The same rule as
+  // the map: the ViewHost does the seating so no feature touches the header itself, and
+  // the controls stay the view's own (it built them, it wires them, it keeps them).
+  const actionsSlot = options.actionsSlot instanceof Element ? options.actionsSlot : null;
+  const showActions = (id, view) => {
+    if (!actionsSlot) return;
+    actionsSlot.replaceChildren();
+    for (const action of Array.isArray(view.barActions) ? view.barActions : []) {
+      const el = action?.el ?? action;
+      if (el instanceof Node) actionsSlot.append(el);
+    }
+  };
   // THE TAB NAME rides beside the map, for a view that offers one (`tabName`). Redrawn on
   // every navigation, not only on a view change: the same view on another param has
   // another default. A commit retitles the tab at once.
@@ -263,7 +277,7 @@ export function createWorkspace(host, options = {}) {
     }
     next.el.hidden = false;
     if (changed) invoke(id, 'enter', () => next.enter?.(context));
-    if (active?.view !== next) showMap(id, next);
+    if (active?.view !== next) { showMap(id, next); showActions(id, next); }
     showName(id, next);
     const feedback = document.getElementById('feedbackaction');
     if (feedback) feedback.hidden = next.hideFeedback === true;

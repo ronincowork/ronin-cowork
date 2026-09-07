@@ -404,6 +404,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **setup.title:** Ronin Setup
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
+- **setup.use_dark:** Use dark appearance
+- **setup.use_light:** Use light appearance
+- **setup.surface_desktop:** Setting the desktop appearance — click for phone
+- **setup.surface_mobile:** Setting the phone appearance — click for desktop
 - **campaign.settings_title:** Ronin Settings
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)
@@ -842,136 +846,42 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## gbrain — gbrain-setup-state.js and gbrain.js (the Ronin Setup work surface)
 - **gbrain.setup_intro:** A shared, searchable memory for your Agents.
-- **gbrain.setup_credit:** Open-source agent memory by Garry Tan ↗
-- **gbrain.setup_find:** Find by meaning
-- **gbrain.setup_find_copy:** Notes, decisions, and history come back by what they mean, not only by exact words.
-- **gbrain.setup_recall:** Shared recall
-- **gbrain.setup_recall_copy:** Every connected Agent reads and files into the same memory.
-- **gbrain.setup_local:** Stays local
-- **gbrain.setup_local_copy:** Local embeddings and a local process. Outside connections open only when you approve one.
-- **gbrain.setup_status_reading:** Reading local gbrain status…
-- **gbrain.setup_next_reading:** Ronin is asking the local process, the embedding weights, and the integrations list.
-- **gbrain.setup_status_not_installed:** Not installed on this machine
-- **gbrain.setup_next_services:** gbrain arrives with Ronin Services. Set up Services first, then load gbrain here.
+- **gbrain.setup_q_installed:** Installed
+- **gbrain.setup_q_agents:** Available to Agents
+- **gbrain.setup_q_accounts:** Accounts linked
+- **gbrain.setup_checking:** Checking…
+- **gbrain.setup_not_installed:** Not installed
+- **gbrain.setup_services_needed_hint:** gbrain comes with Ronin Services.
 - **gbrain.setup_open_services:** Open Ronin Services
-- **gbrain.setup_status_services_off:** Installed · Ronin Services is switched off
-- **gbrain.setup_next_services_off:** gbrain runs as part of Ronin Services. Turn Services on for this Cowork in Team Configuration, then come back here.
-- **gbrain.setup_next_load:** Load once to install gbrain, local embedding weights, and Agent wiring. Downloads come from github.com and huggingface.co.
-- **gbrain.setup_status_installing:** Installing…
-- **gbrain.setup_next_installing:** Weights, gbrain, cabinet, and wiring are being set up. This surface checks again every few seconds.
-- **gbrain.setup_status_removing:** Removing…
-- **gbrain.setup_next_removing:** Units, wiring, and shelves are being removed. Your brain repo is kept.
-- **gbrain.setup_status_failed:** Install did not finish
-- **gbrain.setup_next_failed:** The install log says where it stopped. Nothing else was changed.
+- **gbrain.setup_services_off:** Installed · Ronin Services is switched off
+- **gbrain.setup_services_off_hint:** Turn Services on for this Cowork in Team Configuration.
+- **gbrain.setup_load_hint:** One press. Downloads come from github.com and huggingface.co.
+- **gbrain.setup_installing:** Installing…
+- **gbrain.setup_removing:** Removing…
+- **gbrain.setup_failed:** Install did not finish
 - **gbrain.setup_install_log:** Install log
-- **gbrain.setup_start_assistant:** Start your first Personal Assistant
-- **gbrain.setup_status_stopped:** Installed · not running
-- **gbrain.setup_next_stopped:** The local gbrain process is not answering. Turn Ronin Services off and on in Team Configuration, or ask an Agent: the button opens the launcher with the request written for you.
+- **gbrain.setup_running:** Installed · running
+- **gbrain.setup_running_keyword:** Installed · running · keyword-only search
+- **gbrain.setup_stopped:** Installed · not running
+- **gbrain.setup_stopped_hint:** Turn Ronin Services off and on in Team Configuration, or ask an Agent to look.
 - **gbrain.setup_check_assistant:** Ask an Agent to check gbrain
-- **gbrain.setup_status_unreadable:** Status could not be read
-- **gbrain.setup_reach:** Reach
-- **gbrain.setup_outside_model:** Outside model use
-- **gbrain.setup_measured:** What Ronin measured
-- **gbrain.setup_observed:** Observed {time}
-- **gbrain.setup_gate:** The Personal Assistant preset waits for gbrain to be active.
-- **gbrain.setup_status_provider_first:** gbrain is ready · a model provider comes first
-- **gbrain.setup_next_provider_first:** Activate one model provider, then come back and start your first Personal Assistant: an Agent that remembers through gbrain.
+- **gbrain.setup_unreadable:** Could not read
+- **gbrain.setup_agents_all:** Default for all Agents
+- **gbrain.setup_agents_selected:** Only selected Agents
+- **gbrain.setup_agents_hint:** Selected Agents get it in Team Configuration or on the New Agent form.
+- **gbrain.setup_agents_save_failed:** Could not save.
+- **gbrain.setup_no_campaign:** No Campaign to set a default for.
+- **gbrain.setup_linked:** Linked
+- **gbrain.setup_not_linked:** Not linked
+- **gbrain.setup_no_accounts:** None to link on this install.
+- **gbrain.setup_accounts_hint:** Your Personal Assistant links one when you ask, with your approval.
+- **gbrain.setup_provider_first:** A model provider comes first.
 - **gbrain.setup_open_providers:** Open Model providers
-- **gbrain.setup_status_running_note:** Running, with a note
-- **gbrain.setup_next_start_anyway:** You can still start your first Personal Assistant: an Agent that remembers through gbrain. It opens in a new tab.
-- **gbrain.setup_status_ready:** Everything is good to go
-- **gbrain.setup_next_ready:** Start your first Personal Assistant: an Agent that remembers through gbrain. It opens in a new tab. Link accounts from there, one at a time, when you want them.
+- **gbrain.setup_ready:** Everything is good to go.
+- **gbrain.setup_start_assistant:** Start your first Personal Assistant
 - **gbrain.setup_launching:** Launching…
 - **gbrain.setup_launched:** Launched in a new tab.
 - **gbrain.setup_launch_failed:** Launch failed.
-- **gbrain.n_linked:** {n} linked
-- **gbrain.read_process_on:** gbrain is running on this machine.
-- **gbrain.read_process_off:** The local gbrain process is not answering.
-- **gbrain.read_process_unknown:** Whether the local process is running could not be read.
-- **gbrain.read_embeddings_on:** Search by meaning is on: the local embedding weights are running.
-- **gbrain.read_embeddings_off:** Search is keyword-only until the local embedding weights are running.
-- **gbrain.read_embeddings_unknown:** Whether search by meaning is on could not be read.
-- **gbrain.read_reach_local:** Only this machine can reach it. Nothing is open to the network.
-- **gbrain.read_reach_network:** It is reachable from the network. Make sure that is what you want.
-- **gbrain.read_reach_unknown:** Where it listens could not be read.
-- **gbrain.read_outside_none:** No outside model is used. Your Agents do the thinking on your own subscription.
-- **gbrain.read_outside_configured:** An outside model key is configured, so gbrain can call out on its own.
-- **gbrain.read_outside_unknown:** Whether an outside model is configured could not be read.
-- **gbrain.read_accounts_unknown:** Whether any accounts are linked could not be read.
-- **gbrain.read_accounts_linked:** Linked: {names}.
-- **gbrain.read_accounts_none:** No accounts are linked yet. {names} can each be linked by your Personal Assistant, one at a time, with your approval.
-- **gbrain.read_accounts_none_one:** No accounts are linked yet. {names} can be linked by your Personal Assistant when you ask, with your approval.
-- **gbrain.read_accounts_none_short:** No accounts are linked yet. Your Personal Assistant can link one when you ask, with your approval.
-
-## services_setup — services-setup-state.js and setup-surfaces.js (the Ronin Setup Services work surface)
-- **services_setup.intro:** Ronin’s hosted parts: the recording, the template library, a background assistant, voice, and team memory.
-- **services_setup.beta:** In beta
-- **services_setup.beta_copy:** Ronin Services is the community half of Ronin, in beta. The code is open code, not open source: free to read, not to commercialise. Registering only tells us who is using it with us. It is optional, and nothing here is for sale.
-- **services_setup.transcripts:** Readable transcripts
-- **services_setup.transcripts_copy:** The terminal is recorded and shown as readable text, so Unlocked views scroll smoothly on a phone instead of waiting on a laggy Locked screen.
-- **services_setup.library:** Template library
-- **services_setup.library_copy:** Teams and Agents Ronin keeps and grows, with the procedures, macros, and tools they read, installed with one press.
-- **services_setup.records:** Work records kept current
-- **services_setup.records_copy:** A background assistant keeps every Agent’s work record current, so the roster and the tile say what each is doing.
-- **services_setup.voice:** Voice and memory
-- **services_setup.voice_copy:** Hear a report read back, speak to an Agent from the tile, and keep what a session learns for the team.
-- **services_setup.step_register:** Register
-- **services_setup.step_install:** Install
-- **services_setup.step_switch:** Switch
-- **services_setup.done:** Done
-- **services_setup.register:** Register
-- **services_setup.sending:** Sending…
-- **services_setup.check:** Check status
-- **services_setup.install:** Install
-- **services_setup.installing:** Installing…
-- **services_setup.try_again:** Try again
-- **services_setup.register_first:** Register first
-- **services_setup.turn_on:** Turn on
-- **services_setup.turn_off:** Turn off
-- **services_setup.install_first:** Install first
-- **services_setup.no_campaign:** No Campaign to switch it on for.
-- **services_setup.step_restart:** Restart
-- **services_setup.restart:** Restart
-- **services_setup.restarting:** Restarting Ronin…
-- **services_setup.next_restarting:** Sessions stay up; this surface re-reads the machine as Ronin comes back.
-- **services_setup.summary_not_installed:** not installed
-- **services_setup.status_not_installed:** Not installed on this machine
-- **services_setup.next_register:** Register with an email address and Ronin installs Services from HQ. Local Ronin keeps working without it.
-- **services_setup.status_anonymous:** Not installed · anonymous hello sent
-- **services_setup.next_anonymous:** The hosted install goes to an email address. Register with one to continue.
-- **services_setup.summary_sending:** sending
-- **services_setup.status_sending:** Sending the confirmation email…
-- **services_setup.next_sending:** Ronin is asking HQ to send it. This surface checks again in a moment.
-- **services_setup.summary_awaiting:** confirm email
-- **services_setup.status_awaiting_to:** Confirmation email sent to {email}
-- **services_setup.status_awaiting:** Confirmation email sent
-- **services_setup.next_awaiting:** Open the link in that email; any device works. Resend or change the address from Register.
-- **services_setup.summary_expired:** link expired
-- **services_setup.status_expired:** Confirmation link expired
-- **services_setup.next_expired:** Ask for a fresh email from Register. Nothing else changed.
-- **services_setup.summary_send_failed:** waiting to send
-- **services_setup.status_send_failed:** Waiting to send
-- **services_setup.next_send_failed:** HQ could not be reached. Ronin retries on its own; Check status asks again now.
-- **services_setup.summary_ready:** ready to install
-- **services_setup.status_entitled:** Registered · Ready to install
-- **services_setup.next_entitled:** Install fetches Services from Ronin HQ, verifies it, and restarts Ronin’s server. The page blinks; sessions are untouched.
-- **services_setup.summary_installing:** installing
-- **services_setup.status_installing:** Installing Services…
-- **services_setup.next_installing:** Fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched.
-- **services_setup.summary_install_failed:** install failed
-- **services_setup.status_install_failed:** Install did not finish
-- **services_setup.next_install_failed:** The installer did not finish. Nothing else was changed.
-- **services_setup.summary_switched_off:** switched off
-- **services_setup.status_switched_off:** Installed · switched off
-- **services_setup.next_switched_off_running:** Switched off, but still running in this copy of Ronin. Press Restart, or ask any of your Agents to restart Ronin, and it stops; sessions are untouched.
-- **services_setup.next_switched_off:** Turn it on here: it sets the Campaign’s choice and cascades to new teams and Agents; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.
-- **services_setup.summary_restart:** restart needed
-- **services_setup.status_restart:** Switched on · not yet running
-- **services_setup.next_restart:** Press Restart, or ask any of your Agents to restart Ronin. Unlocked views and the other parts then start on their own; only new Agents are born with the Services reading. Sessions are untouched.
-- **services_setup.summary_active:** active
-- **services_setup.status_active:** Active on this Cowork
-- **services_setup.next_active:** {loaded} of {parts} parts are running for new Agents.
-- **services_setup.gate:** The Grokbot Morning Briefing preset waits for Ronin Services to be active.
 
 ## koshi — koshi.js (the 目 Koshi tab)
 - **koshi.restart:** ↻ Restart Koshi
@@ -1096,7 +1006,12 @@ The pad's current config downloads as a backup first.
 - **roots.profile_undeclared:** Not declared
 - **roots.repository_none:** Not a Git repository. A workspace folder does not need to be one.
 - **roots.add_head:** Add a workspace
-- **roots.intro:** A workspace is a folder Ronin keeps for Teams and Agents. Three things happen there: it may be a Git repository; Agents are born from it and start making their own files in it; and their work accumulates there — plans, memory, workouts, calendar documents, whatever they keep.
+- **roots.intro_line:** A workspace is a folder Ronin keeps for Teams and Agents.
+- **roots.learn_more:** Learn more
+- **roots.learn_less:** Less
+- **roots.intro_repo:** It may be a Git repository.
+- **roots.intro_born:** Agents are born from it and make their own files there.
+- **roots.intro_accumulates:** Their work accumulates there: plans, memory, notes, calendar documents.
 - **roots.keep_hint:** Keep a folder on this machine for Teams and Agents to start in.
 - **roots.keep_lede:** Keep a folder on this machine for Teams and Agents to start in; a folder not kept is simply left alone.
 - **roots.picker_path:** Path

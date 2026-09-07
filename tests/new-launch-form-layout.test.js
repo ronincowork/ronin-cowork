@@ -37,10 +37,15 @@ test('collapsible steps expose one full-width disclosure row and Team defaults u
   ]);
   assert.match(steps, /el\(onToggle \? 'button' : 'div', 'fs-step-head'\)/);
   assert.match(steps, /setAttribute\('aria-expanded'/);
+  assert.match(steps, /forms\.expand', 'Expand'/);
+  assert.match(steps, /forms\.collapse', 'Collapse'/);
   assert.match(css, /\.fs-togglable \{ grid-column: 1 \/ -1; width: 100%/);
   assert.match(team, /key: 'defaults'.*Agent defaults/);
   assert.match(team, /Settings inherited by Agents launched in this Team/);
   assert.match(team, /for \(const key of \['where', 'kit'\]\) steps\[key\]\.el\.hidden = !defaultsOpen/);
+  assert.match(team, /const stepWhere = createStep\(\{ n: 5, key: 'where', title:[^}]+\}\);/);
+  assert.match(team, /const stepKit = createStep\(\{ n: 6, key: 'kit', title:[^}]+\}\);/);
+  assert.match(team, /const FOLDS = \['lead'\]/);
   assert.doesNotMatch(team, /stepDefaults\.body\.append/);
   assert.doesNotMatch(team, /createBand/);
   assert.ok(agents.indexOf('host.append(buttons)') < agents.indexOf('rows().forEach'), 'Add buttons precede Agent rows');

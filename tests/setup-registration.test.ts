@@ -107,9 +107,9 @@ test('native login mounts only the attachment published by the real setup runtim
   const availability = [{
     id: 'claude', label: 'Claude Code', from: 'Anthropic', get: '', parked: '', cmd: 'claude', installed: true, path: '/bin/claude',
   }];
-  const closed = await setupRuntimeAnswer({}, { exists: async () => false }, availability);
+  const closed = await setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => false }, availability);
   assert.equal(mountProviderAttachment(environment, host, closed.providers[0], 'workspace1', () => {}), null);
-  const open = await setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude' }, availability);
+  const open = await setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude', signedIn: async () => false }, availability);
   const mounted = mountProviderAttachment(environment, host, open.providers[0], 'workspace1', () => {});
   assert.ok(mounted);
   assert.equal(calls.length, 1);
@@ -227,14 +227,17 @@ test('Services leads with identity, the beta, and benefits, then one measured st
   assert.match(source, /ronin_services: on/);
   assert.match(source, /saveCampaign\(row\.id, \{ config: \{ agent_defaults: \{ \.\.\.defaults, routines \} \} \}\)/);
   assert.match(source, /setAttribute\('aria-pressed', String\(item\.pressed === true\)\)/);
-  // Restart: the one sanctioned tool behind one route; the browser asks, then watches /api/installed come back.
-  assert.match(source, /if \(item\.act === 'restart'\) \{ await restartRonin\(state\); return; \}/);
+  // Restart: the one sanctioned tool behind one route; the browser asks, then reads the restart off startedAt changing.
+  assert.match(source, /if \(item\.act === 'restart'\) \{ await restartRonin\(state, startedAt\); return; \}/);
   assert.match(source, /request\('\/api\/machine\/restart', \{ method: 'POST', json: \{\} \}\)/);
-  assert.match(source, /const probe = await request\('\/api\/installed', \{ cache: 'no-store' \}\);\n\s*if \(probe\.ok\) break;/);
+  assert.match(source, /if \(!asked\.ok && asked\.kind !== 'network'\)/, 'a refusal is shown in the tool\'s words; only no answer means Ronin went down');
+  assert.match(source, /probe\.data\.cowork\.startedAt !== startedAt\) break;/, 'the restart is read off the machine, not assumed');
+  assert.match(source, /installed\.kind === 'network' && body\.dataset\.state\) \{ timer = setTimeout/, 'a server down for a moment does not repaint the surface as Not installed');
   const route = await (await import('node:fs/promises')).readFile(new URL('../src/routes/machine-restart-api.ts', import.meta.url), 'utf8');
   assert.match(route, /join\(REPO_ROOT, 'ronin_bin', 'tejun-machine-restart'\)/, 'the route runs the sanctioned tool and names no unit');
   assert.doesNotMatch(route, /execFile\(['"]systemctl|ronin\.service/, 'the route invokes no systemctl and names no unit; only the tool does');
-  assert.ok(route.indexOf('res.json({ started: true') < route.indexOf('setTimeout'), 'the answer goes out before Ronin goes down');
+  assert.match(route, /if \(!process\.env\.INVOCATION_ID\) \{\n\s*res\.status\(409\)/, 'a copy that is not the installed service refuses rather than restarting the wrong Ronin');
+  assert.match(route, /res\.status\(409\)\.json\(\{ error: \(error\.stderr \|\| error\.message\)/, 'the tool\'s refusal is answered in its own words');
   const index = await (await import('node:fs/promises')).readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
   assert.match(index, /registerMachineRestart\(app\)/);
   assert.match(source, /notifySummary\(SETUP_SURFACE_TYPES\.services, model\.summary/);
@@ -253,13 +256,16 @@ test('the Services mark is a constructed RS monogram in the house hexagon, blue 
   assert.match(house, frame, 'the house mark still carries the hexagon this test pins');
   assert.match(services, frame, 'same open hexagon as the house mark');
   assert.match(services, /viewBox="0 0 120 104"/);
-  assert.match(services, /<title id="title">Ronin Services mark<\/title>/);
+  assert.match(services, /<title id="services-mark-title">Ronin Services mark<\/title>/);
+  assert.match(services, /aria-labelledby="services-mark-title services-mark-desc"/);
+  assert.doesNotMatch(services, /id="(title|desc)"/, 'ids are prefixed: the markup is inlined into the page, where a bare id would collide');
   // Letters are built from one house cell and turned to the frame's own angle.
   assert.match(services, /transform="translate\(60 52\) scale\(\.86\) rotate\(28\.5\) translate\(-62\.5 -52\)"/);
   assert.match(services, /<g class="rs-r" stroke="#3f6a95"><path d="M31 76V28H51L57 40L51 52H31"\/><path d="M45 52L57 76"\/><\/g>/, 'the R: stem, cell, leg');
-  assert.match(services, /<path stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"\/>/, 'the S: two cells, kaki');
+  assert.match(services, /<path class="rs-k" stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"\/>/, 'the S: two cells, kaki');
+  assert.match(services, /<path class="rs-k" fill="none" stroke="#c46243" stroke-width="8"/, 'the frame carries the kaki class too');
   // The R follows the shell's reference blue; as a plain image it falls back by scheme.
-  assert.match(services, /\.rs-r\{stroke:var\(--accent-2,#3f6a95\)\}@media \(prefers-color-scheme:dark\)\{\.rs-r\{stroke:var\(--accent-2,#81a2be\)\}\}/);
+  assert.match(services, /\.rs-k\{stroke:var\(--kaki,#c46243\)\}\.rs-r\{stroke:var\(--accent-2,#3f6a95\)\}@media \(prefers-color-scheme:dark\)\{\.rs-r\{stroke:var\(--accent-2,#81a2be\)\}\}/, 'every colour is token-bound when inlined, with the file fallbacks when loaded as an image');
   assert.doesNotMatch(services, /<text|<image|fill="#/, 'letters are drawn strokes, not a font or a filled badge');
   assert.doesNotMatch(services, /<!--[^>]*--[^>]*-->/, 'no double hyphen inside a comment: XML rejects it and the browser shows a broken image');
   const colours = new Set((services.match(/#[0-9a-fA-F]{6}\b/g) || []).map((c) => c.toLowerCase()));
@@ -333,8 +339,8 @@ test('Services setup model keeps installation and registration as separate facts
   assert.deepEqual(new Set(cases.map(([, r, i, a]) => servicesSetupModel(r as never, i as never, a as never).tone)), new Set(['', 'warn', 'bad', 'ok']));
 });
 
-test('Setup gbrain model gives every measured state one status, one next line, and at most one action', async () => {
-  const { GBRAIN_SETUP_STATES, gbrainSetupModel, gbrainAssistantPrompt } = await import('../public/js/gbrain-setup-state.js');
+test('Setup gbrain answers three questions plainly with at most one action per state', async () => {
+  const { GBRAIN_SETUP_STATES, gbrainSetupModel, gbrainAccounts } = await import('../public/js/gbrain-setup-state.js');
   const snapshot = (over: Record<string, unknown> = {}) => ({
     ok: true, status: 200,
     data: {
@@ -343,75 +349,74 @@ test('Setup gbrain model gives every measured state one status, one next line, a
       listener: { scope: 'vm_only', address: '127.0.0.1', port: 7777 },
       externalModelProvider: 'none', publicAccess: { state: 'off' },
       search: { weights: 'running', mode: 'hybrid', model: 'nomic', dimensions: 768, reason: null, answers: { state: 'off', reason: 'model-key-missing' } },
-      integrationsKnown: true, integrations: [{ id: 'gmail', label: 'Gmail', category: 'senses', state: 'not_connected' }],
+      integrationsKnown: true, integrations: [
+        { id: 'credential-gateway', label: 'Credential Gateway', category: 'infra', state: 'not_connected' },
+        { id: 'email-to-brain', label: 'Email-to-Brain', category: 'senses', state: 'not_connected' },
+        { id: 'twilio-voice-brain', label: 'Voice-to-Brain (DEPRECATED — see agent-voice)', category: 'senses', state: 'not_connected' },
+        { id: 'calendar-to-brain', label: 'Calendar-to-Brain', category: 'senses', state: 'connected' },
+        { id: 'x-to-brain', label: 'X-to-Brain', category: 'senses', state: 'not_connected' },
+      ],
       observedAt: '2026-09-07T12:00:00.000Z',
       ...over,
     },
   });
-  const cases: Array<[string, unknown, unknown, string, string | null, string | null]> = [
-    ['reading', undefined, { installed: true, active: true }, 'Reading local gbrain status…', null, null],
-    ['services_needed', { ok: false, status: 404, message: 'HTTP 404' }, { installed: false, active: false }, 'Not installed on this machine', 'open_services', 'not installed'],
-    ['unreadable', { ok: false, status: 500, message: 'HTTP 500' }, { installed: true, active: false }, 'Status could not be read', 'check_again', 'installed'],
-    ['services_off', { ok: false, status: 404, message: 'HTTP 404' }, { installed: true, active: false, services: { installed: true, active: false } }, 'Installed · Ronin Services is switched off', 'open_services', 'installed'],
-    ['not_installed', snapshot({ installed: false }), { installed: false, active: false }, 'Not installed on this machine', 'load', 'not installed'],
-    ['install_failed', snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } }), null, 'Install did not finish', 'retry', 'not installed'],
-    ['installing', snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } }), null, 'Installing…', null, 'installing'],
-    ['removing', snapshot({ install: { state: 'running', op: 'uninstall', log: [] } }), null, 'Removing…', null, 'removing'],
-    ['provider_first', snapshot(), { installed: true, active: true, activated_count: 0 }, 'gbrain is ready · a model provider comes first', 'open_providers', 'running'],
-    ['ready', snapshot(), { installed: true, active: true, activated_count: 1 }, 'Everything is good to go', 'start_assistant', 'running'],
-    ['running', snapshot({ listener: { scope: 'network', address: '0.0.0.0', port: 7777 } }), { installed: true, active: true, activated_count: 1 }, 'Running, with a note', 'start_assistant', 'running'],
-    ['stopped', snapshot({ process: { state: 'stopped', health: 'unreachable', version: null } }), { installed: true, active: false }, 'Installed · not running', 'check_assistant', 'installed'],
+  const one = { installed: true, active: true, activated_count: 1 };
+  const cases: Array<[string, unknown, unknown, string, string | null, string | null, boolean]> = [
+    ['reading', undefined, one, 'Checking…', null, null, false],
+    ['services_needed', { ok: false, status: 404, message: 'HTTP 404' }, { installed: false, active: false }, 'Not installed', 'open_services', 'not installed', false],
+    ['services_off', { ok: false, status: 404, message: 'HTTP 404' }, { installed: true, active: false, services: { installed: true, active: false } }, 'Installed · Ronin Services is switched off', 'open_services', 'installed', false],
+    ['unreadable', { ok: false, status: 500, message: 'HTTP 500' }, { installed: true, active: false }, 'Could not read', 'check_again', 'installed', false],
+    ['not_installed', snapshot({ installed: false }), { installed: false, active: false }, 'Not installed', 'load', 'not installed', false],
+    ['install_failed', snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } }), null, 'Install did not finish', 'retry', 'not installed', false],
+    ['installing', snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } }), null, 'Installing…', null, 'installing', false],
+    ['removing', snapshot({ install: { state: 'running', op: 'uninstall', log: [] } }), null, 'Removing…', null, 'removing', false],
+    ['provider_first', snapshot(), { installed: true, active: true, activated_count: 0 }, 'Installed · running', 'open_providers', 'running', true],
+    ['ready', snapshot(), one, 'Installed · running', 'start_assistant', 'running', true],
+    ['stopped', snapshot({ process: { state: 'stopped', health: 'unreachable', version: null } }), { installed: true, active: false }, 'Installed · not running', 'check_assistant', 'installed', true],
   ];
   assert.deepEqual(cases.map(([state]) => state).sort(), [...GBRAIN_SETUP_STATES].sort());
-  for (const [state, result, availability, status, action, summary] of cases) {
+  for (const [state, result, availability, answer, action, summary, installed] of cases) {
     const model = gbrainSetupModel(result as never, availability as never);
     assert.equal(model.state, state);
-    assert.equal(model.status, status);
+    assert.equal(model.answer, answer);
     assert.equal(model.action?.id ?? null, action);
     assert.equal(model.summary, summary);
-    assert.ok(model.next.length > 0);
-    assert.doesNotMatch(`${model.status} ${model.next} ${model.action?.label || ''}`, /HTTP|undefined|null/);
+    assert.equal(model.installed, installed);
+    assert.doesNotMatch(`${model.answer} ${model.hint} ${model.action?.label || ''}`, /HTTP|undefined|null/);
   }
-  assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).next, 'fetching weights');
+  // The next step sits below the answers; install-ish actions sit beside Installed.
+  assert.equal(gbrainSetupModel(snapshot(), one).action?.place, 'next');
+  assert.equal(gbrainSetupModel(snapshot(), { ...one, activated_count: 0 }).action?.place, 'next');
+  assert.equal(gbrainSetupModel(snapshot({ installed: false }), null).action?.place, 'installed');
+  // Accounts: yes or no per linkable account, read from gbrain's own list; infra and deprecated rows are not accounts.
+  assert.deepEqual(gbrainAccounts(snapshot().data), [
+    { id: 'email-to-brain', name: 'Gmail', linked: false },
+    { id: 'calendar-to-brain', name: 'Google Calendar', linked: true },
+    { id: 'x-to-brain', name: 'X', linked: false },
+  ]);
+  assert.equal(gbrainAccounts({ integrationsKnown: false, integrations: [] }), null);
+  assert.deepEqual(gbrainSetupModel(snapshot(), one).accounts?.map((row: { linked: boolean }) => row.linked), [false, true, false]);
+  assert.equal(gbrainSetupModel(snapshot({ integrationsKnown: false, integrations: [] }), one).accounts, null);
+  assert.equal(gbrainSetupModel(snapshot({ search: { weights: 'stopped', mode: 'keyword_only' } }), one).answer, 'Installed · running · keyword-only search');
+  assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).hint, 'fetching weights');
   assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).polling, true);
   assert.deepEqual(gbrainSetupModel(snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } })).log, ['step 3 failed']);
-  const one = { installed: true, active: true, activated_count: 1 };
-  const ready = gbrainSetupModel(snapshot(), one);
-  assert.deepEqual(ready.readings.map((row: { key: string }) => row.key), ['process', 'embeddings', 'reach', 'outside', 'accounts']);
-  assert.deepEqual(ready.readings.map((row: { tone: string }) => row.tone), ['ok', 'ok', 'ok', 'ok', '']);
-  // Every reading is a sentence a person can act on, beside the measured value.
-  for (const row of ready.readings) { assert.match(row.sentence, /\.$/); assert.ok(row.value.length); }
-  assert.match(ready.readings[4].sentence, /No accounts are linked yet\. Gmail can be linked by your Personal Assistant/);
-  const machine = snapshot({ integrations: [
-    { id: 'credential-gateway', label: 'Credential Gateway', category: 'infra', state: 'not_connected' },
-    { id: 'email-to-brain', label: 'Email-to-Brain', category: 'senses', state: 'not_connected' },
-    { id: 'twilio-voice-brain', label: 'Voice-to-Brain (DEPRECATED — see agent-voice)', category: 'senses', state: 'not_connected' },
-    { id: 'calendar-to-brain', label: 'Calendar-to-Brain', category: 'senses', state: 'connected' },
-    { id: 'x-to-brain', label: 'X-to-Brain', category: 'senses', state: 'not_connected' },
-  ] });
-  assert.equal(gbrainSetupModel(machine, one).readings[4].sentence, 'Linked: Google Calendar.');
-  assert.equal(gbrainSetupModel(machine, one).readings[4].value, '1 linked');
-  assert.match(gbrainSetupModel(snapshot({ integrations: machine.data.integrations.map((row: { state: string }) => ({ ...row, state: 'not_connected' })) }), one).readings[4].sentence, /Gmail, Google Calendar and X can each be linked/);
-  assert.equal(gbrainSetupModel(snapshot({ integrationsKnown: false, integrations: [] }), one).readings[4].value, 'unknown');
-  const keyword = gbrainSetupModel(snapshot({ search: { weights: 'stopped', mode: 'keyword_only' } }), one);
-  assert.equal(keyword.state, 'running');
-  assert.match(keyword.next, /^Search is keyword-only until the local embedding weights are running\. You can still start/);
-  assert.equal(gbrainSetupModel(snapshot(), { installed: true, active: true, activated_count: 0 }).action?.id, 'open_providers');
-  assert.equal(ready.polling, false);
-  assert.match(gbrainAssistantPrompt('ready'), /start using gbrain/);
-  assert.match(gbrainAssistantPrompt('stopped'), /not running/);
 });
 
-test('Setup gbrain paints the model and keeps the commons dashboard on its default', async () => {
+test('Setup gbrain paints the three questions, switches the Campaign gbrain Routine, and keeps the commons dashboard on its default', async () => {
   const [setup, gbrain] = await Promise.all([
     (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
     (await import('node:fs/promises')).readFile(new URL('../public/js/gbrain.js', import.meta.url), 'utf8'),
   ]);
   assert.match(setup, /presentation: 'setup'/);
-  assert.match(setup, /setupRuntime\?\.gbrain/);
+  assert.match(setup, /setupRuntime\?\.gbrain|runtime\?\.gbrain/);
   assert.match(setup, /onState: \(summary\) => notifySummary\(SETUP_SURFACE_TYPES\.gbrain, summary/);
   assert.match(setup, /openServices: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.services/);
   assert.match(setup, /openProviders: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.providers/);
+  // Available to Agents is the Campaign's own gbrain Routine, saved the way Routines and Installs saves it.
+  assert.match(setup, /routines\.gbrain === true/);
+  assert.match(setup, /completeRoutineMap\([\s\S]*?defaults\.routines\), gbrain: on === true \}/);
+  assert.match(setup, /saveCampaign\(row\.id, \{ config: \{ agent_defaults: \{ \.\.\.defaults, routines \} \} \}\)/);
   // Start your first Personal Assistant is exactly the preset's launch: same plan, same route, same new tab.
   assert.match(setup, /launchPresetPlan\(buildLaunchPlan\(slot, '', controls\)\)/);
   assert.match(setup, /HOUSE_PRESETS\.find\(\(row\) => row\.handle === 'personal_assistant'\)/);
@@ -420,13 +425,12 @@ test('Setup gbrain paints the model and keeps the commons dashboard on its defau
   assert.match(gbrain, /if \(!root\.querySelector\('\.setup-gbrain-compact'\)\) renderSetup\(undefined\)/);
   assert.match(gbrain, /const mine = \+\+reads;[\s\S]*?if \(mine === reads\) renderSetup\(result\)/);
   assert.match(gbrain, /if \(!setup\) root\.append\(head, privacy, search, integrations\)/);
-  assert.match(gbrain, /className = 'setup-gbrain-compact'|make\('section', 'setup-gbrain-compact'\)/);
+  for (const question of ['gbrain.setup_q_installed', 'gbrain.setup_q_agents', 'gbrain.setup_q_accounts']) assert.ok(gbrain.includes(question), question);
   assert.match(gbrain, /setAttribute\('aria-live', 'polite'\)/);
   assert.match(gbrain, /request\('\/api\/gbrain\/install', \{ method: 'POST', json: \{\} \}\)/);
   assert.match(gbrain, /root\.replaceChildren\(wrap\)/);
-  // The commons tab still renders its three cards and the Load/Remove presses.
   for (const kept of ['renderPrivacy(r.data)', 'renderSearch(r.data)', 'renderIntegrations(r.data)', 'integrations.append(renderRemove())', 'renderLoad(r.data)']) assert.ok(gbrain.includes(kept), kept);
-  assert.doesNotMatch(gbrain, /designedErrors|gb-notice|gb-setup/);
+  assert.doesNotMatch(gbrain, /designedErrors|gb-notice|gb-setup|setup-gbrain-benefit|setup-gbrain-facts/);
 });
 
 test('legacy Services mutation entry points explicitly retire to registration', async () => {

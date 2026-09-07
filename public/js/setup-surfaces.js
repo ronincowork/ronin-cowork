@@ -10,8 +10,8 @@ import { createStoneWorkSurface } from './stone-work-surface.js';
 import { servicesSetupModel } from './services-setup-state.js';
 import { campaignById, campaigns, loadCampaigns, saveCampaign } from './campaigns.js';
 import { completeRoutineMap } from './campaign-routines.js';
-import { createNewTeamFormView } from './new-team-form.js';
-import { createNewAgentView } from './new-agent.js';
+import { createEmbeddedNewTeamFormView } from './new-team-form.js';
+import { createEmbeddedNewAgentView } from './new-agent.js';
 import { HOUSE_PRESETS, buildLaunchPlan, initialControls, seatingPlan } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
@@ -296,9 +296,9 @@ function createRegisterSurface(context) {
  * ONE MODEL PROVIDERS SURFACE. Its first face is an inventory of equal stones, one per
  * provider in the runtime catalog, mounted straight on the surface content so the shared
  * stone seat owns every inset exactly as Presets does. Choosing a stone opens that
- * provider in place beside the rail as four numbered steps (use · install · authenticate
- * with the native sign-in tile, Done / Close and Close · ready). Never a dashboard of
- * every provider at once.
+ * provider in place beside the rail as three numbered steps (install · authenticate with
+ * the native sign-in tile, Done and Close · ready). Never a dashboard of every provider
+ * at once.
  */
 function createProviderSurface(context) {
   const out = surface(t('setup_surface.providers', 'Model providers'));
@@ -318,17 +318,24 @@ function createProviderSurface(context) {
   const paintProvider = (providerId, host) => {
     const provider = providerFromRuntime(runtime, providerId);
     if (!provider) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
-    const optedIn = Array.isArray(runtime.preferences?.providers) && runtime.preferences.providers.includes(provider.id);
-    const steps = providerReadiness(provider, optedIn);
-    const [use, install, auth, ready] = steps;
+    const steps = providerReadiness(provider);
+    const [install, auth, ready] = steps;
     const card = el('article', 'setup-provider');
     card.dataset.provider = provider.id;
     const head = el('header', 'setup-provider-head');
     head.append(el('h2', '', provider.label || provider.id));
     if (provider.from) head.append(el('p', 'setup-provider-from', t('setup_surface.provider_from', 'From {vendor}', { vendor: provider.from })));
     const flow = el('ol', 'setup-provider-steps');
-    // One shape for all four steps: a mark that says done, current, or pending; the label
+    // What the last press answered when it failed; the only way a server refusal is seen.
+    const problem = el('p', 'setup-notice bad setup-provider-problem'); problem.hidden = true;
+    const press = async (path, after = paint) => {
+      const result = await request(path, { method: 'POST', json: {} });
+      if (!result.ok) { problem.textContent = result.message; problem.hidden = false; return; }
+      await after();
+    };
+    // One shape for all three steps: a mark that says done, current, or pending; the label
     // with its measured state beside it; at most one short line; then a control of one size.
+    // Only the current step's control is the kaki primary.
     const stepRow = (step, state) => {
       const item = el('li', 'setup-provider-step');
       item.dataset.step = step.key; item.dataset.status = step.status;
@@ -337,68 +344,54 @@ function createProviderSurface(context) {
       mark.setAttribute('aria-hidden', 'true');
       const copy = el('div', 'setup-provider-copy');
       const title = el('div', 'setup-provider-title');
-      const label = el(step.key === 'use' ? 'label' : 'strong', 'setup-provider-label', step.label);
-      title.append(label, el('span', 'setup-provider-state', state));
+      title.append(el('strong', 'setup-provider-label', step.label), el('span', 'setup-provider-state', state));
       copy.append(title);
       if (step.detail) copy.append(el('p', 'setup-provider-note', step.detail));
       if (step.command) copy.append(el('code', 'setup-provider-command', step.command));
       const controls = el('div', 'setup-provider-control');
       item.append(mark, copy, controls);
       flow.append(item);
-      return { item, controls, label };
+      return { item, controls };
     };
-    const useRow = stepRow(use, use.status === 'on' ? t('setup_surface.on', 'On') : t('setup_surface.off', 'Off'));
-    const checkbox = el('input', 'setup-provider-optin'); checkbox.type = 'checkbox'; checkbox.checked = use.status === 'on';
-    checkbox.id = `setup-provider-optin-${provider.id}`; useRow.label.htmlFor = checkbox.id;
-    checkbox.addEventListener('change', async () => {
-      const previous = optedIn;
-      const selected = new Set(Array.isArray(runtime.preferences?.providers) ? runtime.preferences.providers : []);
-      if (checkbox.checked) selected.add(provider.id); else selected.delete(provider.id);
-      const result = await request('/api/setup/preferences', { method: 'PATCH', json: { providers: [...selected] } });
-      if (!result.ok) { checkbox.checked = previous; return; }
-      runtime.preferences = result.data;
-      stones.refreshDetail();
-    });
-    useRow.controls.append(checkbox);
+    const control = (step, label, onClick) => {
+      const made = action(label, step.current ? 'primary' : '', onClick);
+      made.classList.add('setup-provider-action');
+      return made;
+    };
+    // Only the current step owns a control. A done step is a quiet fact and a waiting
+    // step says what it waits for; neither carries a dead button.
     const installRow = stepRow(install, install.status === 'installed'
       ? t('setup_surface.installed', 'Installed')
       : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
-    if (install.action === 'manual' && install.manual) {
+    if (install.current && install.action === 'manual' && install.manual) {
       const link = el('a', 'wk-action setup-provider-action setup-provider-manual', install.manual.label);
       link.href = install.manual.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
       installRow.controls.append(link);
-    } else {
-      const installAction = action(t('setup_surface.install', 'Install'), 'primary', async () => {
-        const installed = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
-        if (installed.ok) await paint();
-      });
-      installAction.classList.add('setup-provider-action');
-      installAction.disabled = install.action !== 'install' || !optedIn || !provider.installable;
-      installRow.controls.append(installAction);
+    } else if (install.current && install.action === 'install' && provider.installable) {
+      installRow.controls.append(control(install, t('setup_surface.install', 'Install'), async () => {
+        const result = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
+        if (!result.ok) { problem.textContent = result.message; problem.hidden = false; return; }
+        await paint();
+      }));
     }
     const authRow = stepRow(auth, auth.status === 'recorded'
-      ? t('setup_surface.auth_recorded', 'Recorded')
+      ? t('setup_surface.signed_in', 'Signed in')
       : auth.status === 'open' ? t('setup_surface.sign_in_open', 'Sign-in open')
-        : auth.status === 'available' ? t('setup_surface.auth_available', 'Ready to sign in') : t('setup_surface.install_first', 'After install'));
-    if (auth.action !== 'login_open') {
-      const authenticate = action(t('setup_surface.authenticate', 'Authenticate'), 'primary', async () => {
-        await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} }); await paint();
-      });
-      authenticate.classList.add('setup-provider-action');
-      authenticate.disabled = auth.status !== 'available' || !optedIn;
-      authRow.controls.append(authenticate);
-    } else {
+        : auth.status === 'available' ? t('setup_surface.not_signed_in', 'Not signed in') : t('setup_surface.install_first', 'After install'));
+    if (auth.current && auth.action !== 'login_open') {
+      authRow.controls.append(control(auth, t('setup_surface.authenticate', 'Authenticate'), () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`)));
+    } else if (auth.action === 'login_open') {
       const terminal = el('div', 'setup-provider-terminal');
-      const done = action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); });
-      const close = action(t('setup_surface.close', 'Close'), '', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); });
-      done.classList.add('setup-provider-action'); close.classList.add('setup-provider-action');
+      const done = control(auth, t('setup_surface.done', 'Done'), () => { mounted?.park?.(); return press(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`); });
+      const close = action(t('setup_surface.close', 'Close'), '', () => { mounted?.park?.(); return press(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); });
+      close.classList.add('setup-provider-action');
       authRow.controls.append(done, close);
       authRow.item.append(terminal);
       mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
     }
     stepRow(ready, ready.status === 'ready' ? t('setup_surface.ready_launch', 'Activated for Launch') : t('setup_surface.not_ready', 'Not yet'));
-    card.append(head, flow);
+    card.append(head, flow, problem);
     host.append(card);
     return () => disposeMount();
   };
@@ -452,6 +445,7 @@ function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
   const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);
   let timer = null;
+  let said = '';  // the last press's answer, kept across the surface's own re-reads until the next press
   const explain = () => {
     const intro = el('section', 'setup-services-intro');
     const lockup = el('div', 'setup-services-lockup');
@@ -494,17 +488,18 @@ function createServicesSurface(context) {
     const routines = { ...completeRoutineMap(catalog.ok && Array.isArray(catalog.data) ? catalog.data : [], defaults.routines), ronin_services: on };
     return saveCampaign(row.id, { config: { agent_defaults: { ...defaults, routines } } });
   };
-  /** Ronin restarts itself: ask, then watch /api/installed come back and re-read. Sessions are untouched. */
-  const restartRonin = async (state) => {
+  /** Restart: ask, then read the restart off the machine — /api/installed's startedAt changes when Ronin is back.
+   *  A refusal answers in the tool's own words; no answer means Ronin went down, which is the restart happening. */
+  const restartRonin = async (state, startedAt) => {
     state.dataset.tone = 'warn';
     state.replaceChildren(el('p', 'setup-services-status-line', t('services_setup.restarting', 'Restarting Ronin…')), el('p', 'setup-services-next', t('services_setup.next_restarting', 'Sessions stay up; this surface re-reads the machine as Ronin comes back.')));
-    await request('/api/machine/restart', { method: 'POST', json: {} });
-    const until = Date.now() + 90_000;
-    await new Promise((resolve) => setTimeout(resolve, 2500));
+    const asked = await request('/api/machine/restart', { method: 'POST', json: {} });
+    if (!asked.ok && asked.kind !== 'network') { said = asked.message; await show(); return; }
+    const until = Date.now() + 120_000;
     while (Date.now() < until && body.isConnected) {
-      const probe = await request('/api/installed', { cache: 'no-store' });
-      if (probe.ok) break;
       await new Promise((resolve) => setTimeout(resolve, 2000));
+      const probe = await request('/api/installed', { cache: 'no-store' });
+      if (probe.ok && probe.data?.cowork?.startedAt && probe.data.cowork.startedAt !== startedAt) break;
     }
     if (body.isConnected) await show();
   };
@@ -515,7 +510,10 @@ function createServicesSurface(context) {
       request('/api/installed', { cache: 'no-store' }),
       request('/api/services/activation', { cache: 'no-store' }),
     ]);
+    // Ronin is down or unreachable for a moment (a restart in flight): keep what is painted and look again shortly.
+    if (!installed.ok && installed.kind === 'network' && body.dataset.state) { timer = setTimeout(() => { if (body.isConnected) void show(); }, 3000); return; }
     const model = servicesSetupModel(registration, installed, activation);
+    const startedAt = installed.ok ? installed.data?.cowork?.startedAt || '' : '';
     body.replaceChildren(explain());
     body.dataset.state = model.state;
     const state = el('section', 'setup-services-status');
@@ -525,16 +523,17 @@ function createServicesSurface(context) {
     body.append(state);
     // Register · Install · Switch — three controls in one shape; the first two read Done once they are, the switch toggles.
     const steps = el('div', 'setup-services-steps');
-    const notice = el('p', 'setup-notice setup-services-notice');
+    const notice = el('p', 'setup-notice setup-services-notice', said);
+    if (said) notice.classList.add('bad');
     for (const item of model.steps) {
       const wrap = el('div', 'setup-services-step');
       const button = action(item.label, '', async () => {
         if (item.act === 'register') { openRegister(); return; }
-        button.disabled = true; notice.textContent = '';
-        if (item.act === 'restart') { await restartRonin(state); return; }
+        button.disabled = true; said = ''; notice.textContent = '';
+        if (item.act === 'restart') { await restartRonin(state, startedAt); return; }
         const result = item.act === 'switch_on' || item.act === 'switch_off' ? await switchServices(item.act === 'switch_on')
           : await request(item.act === 'install' ? '/api/services/install' : '/api/services/activation/poll', { method: 'POST', json: {} });
-        if (!result.ok) { notice.textContent = result.message; notice.classList.add('bad'); button.disabled = false; return; }
+        if (!result.ok) said = result.message;
         await show();
       });
       button.classList.add('setup-services-step-action');
@@ -569,6 +568,23 @@ function createGbrainSurface(context) {
     onState: (summary) => notifySummary(SETUP_SURFACE_TYPES.gbrain, summary, context.workbench),
     openServices: () => context.workbench?.place(SETUP_SURFACE_TYPES.services, context.workspace || 'workspace2'),
     openProviders: () => context.workbench?.place(SETUP_SURFACE_TYPES.providers, context.workspace || 'workspace2'),
+    // Available to Agents: the Campaign's own gbrain Routine, saved the way Routines and Installs saves it.
+    agentsDefault: {
+      read: async () => {
+        await loadCampaigns();
+        const row = campaignById(context.tenant?.campaign) || campaigns()[0];
+        const routines = row?.config?.agent_defaults?.routines;
+        return routines && typeof routines === 'object' ? routines.gbrain === true : null;
+      },
+      write: async (on) => {
+        const [catalog] = await Promise.all([request('/api/routines'), loadCampaigns()]);
+        const row = campaignById(context.tenant?.campaign) || campaigns()[0];
+        if (!row) return { ok: false, message: t('gbrain.setup_no_campaign', 'No Campaign to set a default for.') };
+        const defaults = row.config?.agent_defaults && typeof row.config.agent_defaults === 'object' ? row.config.agent_defaults : {};
+        const routines = { ...completeRoutineMap(catalog.ok && Array.isArray(catalog.data) ? catalog.data : [], defaults.routines), gbrain: on === true };
+        return saveCampaign(row.id, { config: { agent_defaults: { ...defaults, routines } } });
+      },
+    },
     // Exactly the Personal Assistant preset's launch, single assistant, opened in a new tab.
     startAssistant: async () => {
       const slot = HOUSE_PRESETS.find((row) => row.handle === 'personal_assistant');
@@ -594,7 +610,7 @@ function createLaunchOwnSurface(context) {
   const renderDetail = (item, host) => {
     const views = [item.id === 'template'
       ? createTemplatesSurface()
-      : item.id === 'team' ? createNewTeamFormView(WorkspaceKit, {}) : createNewAgentView(WorkspaceKit, {})];
+      : item.id === 'team' ? createEmbeddedNewTeamFormView(WorkspaceKit, {}) : createEmbeddedNewAgentView(WorkspaceKit, {})];
     host.append(...views.map((view) => view.el));
     for (const view of views) void view.enter({});
     return () => { for (const view of views) view.el.remove(); };

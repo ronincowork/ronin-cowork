@@ -696,7 +696,8 @@ body {
   min-width: 0;
 }
 
-#bar .shape-cycle {
+#bar .shape-cycle,
+#bar .bar-toggle {
   display: inline-flex;
   align-items: center;
   background: transparent;
@@ -709,6 +710,11 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
+/* A compact icon control seated in the bar by the ViewHost (js/workspace.js
+   showActions) — Setup's light/dark. The shape control's frame, square, glyph centred. */
+#bar .bar-toggle { width: 30px; padding: 0; justify-content: center; font-size: var(--text-5); line-height: 1; }
+#bar .bar-toggle[aria-pressed='true'] { color: var(--fg); }
+#bar .setup-surface-toggle { border-color: transparent; font-size: var(--text-4); }
 
 
 #notesheet .ns-card {
@@ -2865,7 +2871,12 @@ body {
 .pr-fine.bad, .pr-detail .pr-err { color: var(--bad-soft); }
 .pr-section .pr-fact-list + .pr-fine { margin-top: var(--space-5); }
 /* What a workspace is, above the stones, in the same 14px as the detail. */
-.wk-surface-content.sws-host > .pr-intro { margin: 0; max-width: 44rem; color: var(--muted-2); font-size: var(--text-5); line-height: 1.5; }
+.wk-surface-content.sws-host > .pr-intro { display: grid; gap: var(--space-3); margin: 0; max-width: 44rem; color: var(--muted-2); font-size: var(--text-5); line-height: 1.5; }
+.pr-intro-line { margin: 0; }
+.pr-intro-more { border: 0; background: none; padding: 0; color: var(--kaki); font: inherit; cursor: pointer; text-decoration: underline; }
+.pr-intro-more:hover { color: var(--kaki-lift); }
+.pr-intro-points { display: grid; gap: var(--space-2); margin: 0; padding-left: var(--space-9); }
+.pr-intro-points[hidden] { display: none; }
 /* The folder browser inside the add page: the same face and size, fields and buttons as the
    form's, no second scale of its own. */
 .pr-detail .folder-picker { font-size: inherit; }
@@ -4435,6 +4446,7 @@ button.wb-door:hover b {
     border-color: var(--kaki);
     color: var(--on-strong);
   }
+  #bar .bar-toggle { height: 40px; width: 44px; font-size: var(--text-7); }
 
   #bar .brand {
     flex: 0 1 auto;
@@ -5402,11 +5414,13 @@ button.wb-door:hover b {
     min-width: 34px;
     padding: 0 var(--space-4);
   }
-  #bar .shape-cycle:hover {
+  #bar .shape-cycle:hover,
+  #bar .bar-toggle:hover {
     color: var(--fg);
     border-color: var(--muted);
   }
-  #bar .shape-cycle:active {
+  #bar .shape-cycle:active,
+  #bar .bar-toggle:active {
     background: var(--line);
     color: var(--fg);
   }
@@ -6034,50 +6048,47 @@ button.wb-door:hover b {
 .setup-services-step-caption { color: var(--muted-2); font-size: var(--text-5); }
 .setup-services-step-action { display: inline-flex; width: 100%; height: 100%; min-height: 2.25rem; align-items: center; justify-content: center; box-sizing: border-box; text-align: center; }
 .setup-services-step-action[data-done='true'] { color: var(--ok); border-color: var(--ok-2); }
+.setup-services-step-action[data-step='restart'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); font-weight: 600; }
+.setup-services-step-action[data-step='restart']:hover { filter: brightness(1.08); }
 .setup-services-notice:empty { display: none; }
-.setup-gbrain-compact { display: grid; align-content: start; width: min(100%, 44rem); margin: 0 auto; gap: var(--space-8); }
+.setup-gbrain-compact { display: grid; align-content: start; width: min(100%, 44rem); margin: 0 auto; gap: var(--space-9); }
 .setup-gbrain-lockup { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; }
 .setup-gbrain-glyph { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; color: var(--kaki); font-style: normal; font-size: var(--text-10); line-height: 1; }
 .setup-gbrain-identity { display: grid; gap: var(--space-2); }
 .setup-gbrain-identity h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-9); font-weight: 600; }
 .setup-gbrain-identity .setup-lede { font-size: var(--text-7); line-height: 1.4; }
-.setup-gbrain-credit { justify-self: start; color: var(--muted-2); font-size: var(--text-4); text-decoration: none; }
-.setup-gbrain-credit:hover { color: var(--kaki); text-decoration: underline; }
-.setup-gbrain-benefits { display: grid; gap: var(--space-3); }
-.setup-gbrain-benefit { display: grid; grid-template-columns: minmax(9rem, 11rem) minmax(0, 1fr); align-items: baseline; gap: var(--space-3) var(--space-6); border-top: var(--edge-2) solid var(--kaki); background: var(--panel); padding: var(--space-5) var(--space-6); }
-.setup-gbrain-benefit h3, .setup-gbrain-benefit p { margin: 0; }
-.setup-gbrain-benefit h3 { color: var(--fg-strong); font-size: var(--text-6); }
-.setup-gbrain-benefit p, .setup-gbrain-next, .setup-gbrain-log, .setup-gbrain-observed { color: var(--muted-2); font-size: var(--text-5); line-height: 1.45; }
-.setup-gbrain-status { display: grid; gap: var(--space-3); border-left: var(--edge-2) solid var(--line-2); padding: var(--space-4) var(--space-6); }
-.setup-gbrain-status[data-tone='ok'] { border-left-color: var(--ok-2); }
-.setup-gbrain-status[data-tone='warn'] { border-left-color: var(--warn); }
-.setup-gbrain-status[data-tone='bad'] { border-left-color: var(--bad); }
-.setup-gbrain-status p { margin: 0; }
-.setup-gbrain-status-line { color: var(--fg-strong); font-size: var(--text-7); font-weight: 650; }
+.setup-gbrain-answers { display: grid; gap: var(--space-4); margin: 0; }
+.setup-gbrain-answer { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: var(--space-3) var(--space-6); align-items: start; border-top: var(--edge-2) solid var(--line-2); background: var(--panel); padding: var(--space-6); }
+.setup-gbrain-answer[data-tone='ok'] { border-top-color: var(--ok-2); }
+.setup-gbrain-answer[data-tone='warn'] { border-top-color: var(--warn); }
+.setup-gbrain-answer[data-tone='bad'] { border-top-color: var(--bad); }
+.setup-gbrain-answer > dt { color: var(--fg-strong); font-size: var(--text-6); font-weight: 600; line-height: 1.45; }
+.setup-gbrain-answer > dd { display: grid; justify-items: start; gap: var(--space-4); margin: 0; min-width: 0; }
+.setup-gbrain-line { margin: 0; color: var(--fg-strong); font-size: var(--text-6); line-height: 1.45; }
+.setup-gbrain-line strong { font-weight: 650; }
+.setup-gbrain-hint { margin: 0; color: var(--muted-2); font-size: var(--text-4); line-height: 1.45; }
+.setup-gbrain-log { color: var(--muted-2); font-size: var(--text-4); }
 .setup-gbrain-log summary { cursor: pointer; }
 .setup-gbrain-log pre { max-height: 12rem; overflow: auto; margin: var(--space-3) 0 0; white-space: pre-wrap; font-size: var(--text-4); }
-.setup-gbrain-compact > .wk-action { justify-self: start; }
-.setup-gbrain-facts { display: grid; gap: var(--space-3); border-top: var(--edge) solid var(--line); padding-top: var(--space-5); }
-.setup-gbrain-facts h3 { margin: 0; color: var(--fg-strong); font-size: var(--text-6); }
-.setup-gbrain-facts dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4) var(--space-6); align-items: baseline; margin: 0; }
+.setup-gbrain-choice { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.setup-gbrain-option { border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--well); color: var(--fg); padding: var(--space-4) var(--space-6); cursor: pointer; font: inherit; font-size: var(--text-5); }
+.setup-gbrain-option:hover { border-color: var(--kaki); background: var(--raise); }
+.setup-gbrain-option[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 0 var(--kaki); background: var(--accent-soft); color: var(--fg-strong); }
+.setup-gbrain-option:disabled { opacity: .6; cursor: default; }
+.setup-gbrain-accounts { display: grid; gap: var(--space-3); width: 100%; margin: 0; padding: 0; list-style: none; }
+.setup-gbrain-accounts li { display: flex; justify-content: space-between; gap: var(--space-6); font-size: var(--text-6); line-height: 1.45; }
+.setup-gbrain-accounts b { color: var(--muted-2); font-weight: 600; white-space: nowrap; }
+.setup-gbrain-accounts li[data-linked='true'] b { color: var(--ok); }
+.setup-gbrain-next { display: grid; justify-items: start; gap: var(--space-4); border-top: var(--edge) solid var(--line); padding-top: var(--space-6); }
 .setup-gbrain-outcome { margin: 0; color: var(--muted-2); font-size: var(--text-5); }
 .setup-gbrain-outcome:empty { display: none; }
-.setup-gbrain-facts dt { color: var(--fg); font-size: var(--text-5); line-height: 1.45; }
-.setup-gbrain-facts dd { margin: 0; text-align: right; color: var(--muted-2); font-size: var(--text-4); font-weight: 600; white-space: nowrap; }
-.setup-gbrain-facts dd[data-tone='ok'] { color: var(--ok); }
-.setup-gbrain-facts dd[data-tone='warn'] { color: var(--warn); }
-.setup-gbrain-facts dd[data-tone='bad'] { color: var(--bad); }
-.setup-gbrain-observed { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: baseline; margin: 0; }
-.setup-gbrain-recheck { border: 0; background: none; padding: 0; color: var(--kaki); font: inherit; font-size: var(--text-5); cursor: pointer; text-decoration: underline; }
-.setup-gbrain-recheck:disabled { color: var(--muted); cursor: default; }
-.setup-gbrain-gate { border-top: var(--edge) solid var(--line); padding-top: var(--space-5); font-size: var(--text-5); line-height: 1.45; }
 .setup-good { color: var(--ok); }
 .setup-provider-stone[data-activated='true'] { border-color: var(--ok-2); }
 .setup-provider-notice { margin: 0; }
 .setup-provider-notice[hidden] { display: none; }
 .setup-kinds { display: grid; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
 /* The selected provider: a flat detail on the shared stone seat, on the Setup type baseline
-   (14 body · 16 step · 20 title). Four numbered steps share one shape — the mark, the copy,
+   (14 body · 16 step · 20 title). Three numbered steps share one shape — the mark, the copy,
    then a control of one size — under a restrained kaki rule. The mark says done, current,
    or pending, and the control's enabled state says the same thing. The shared stone
    surface is the size container: the control sits beside the copy only when the detail is
@@ -6096,7 +6107,6 @@ button.wb-door:hover b {
 .setup-provider-copy { display: grid; gap: var(--space-2); min-width: 0; }
 .setup-provider-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); min-width: 0; }
 .setup-provider-label { color: var(--fg-strong); font-size: var(--text-7); font-weight: 600; line-height: 1.35; }
-label.setup-provider-label { cursor: pointer; }
 .setup-provider-state { color: var(--muted); font-size: var(--text-5); }
 .setup-provider-step[data-current='true'] .setup-provider-state { color: var(--kaki); }
 .setup-provider-step[data-done='true'] .setup-provider-state { color: var(--ok-2); }
@@ -6104,23 +6114,26 @@ label.setup-provider-label { cursor: pointer; }
 .setup-provider-command { color: var(--muted-2); font: var(--text-3) var(--font-mono); overflow-wrap: anywhere; }
 .setup-provider-control { display: flex; flex-wrap: wrap; gap: var(--space-3); min-width: 0; grid-column: 2; }
 .setup-provider-control:empty { display: none; }
-.setup-provider-step[data-step='use'] { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
-.setup-provider-step[data-step='use'] .setup-provider-control { grid-column: auto; }
-.setup-provider-optin { width: var(--space-9); height: var(--space-9); margin: 0; accent-color: var(--kaki); cursor: pointer; }
 .setup-provider-action { display: inline-flex; flex: 0 0 10rem; width: 10rem; min-height: 2.25rem; align-items: center; justify-content: center; box-sizing: border-box; padding-inline: var(--space-4); text-align: center; text-decoration: none; }
 .setup-provider-control > .setup-provider-action:disabled { border-color: var(--line); background: transparent; color: var(--muted); opacity: 1; }
 @container setup-stone-work-surface (min-width: 46rem) {
   .setup-provider-step { grid-template-columns: auto minmax(0, 1fr) auto; }
   .setup-provider-control { grid-column: auto; align-self: center; justify-content: flex-end; }
 }
-.setup-provider-terminal { grid-column: 1 / -1; min-height: min(54vh, 34rem); overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--term-bg); }
+.setup-provider-problem { margin: 0; }
+.setup-provider-problem[hidden] { display: none; }
+/* The native sign-in tile: headerless, since it is a sign-in and not a session anyone
+   drives from the tile head, and tall enough to take most of the workspace; the detail
+   scrolls down to it. */
+.setup-provider-terminal { grid-column: 1 / -1; min-height: max(30rem, 78vh); overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--term-bg); }
 .setup-provider-terminal > .wk-terminal-host, .setup-provider-terminal .tile { height: 100%; min-height: inherit; }
+.setup-provider-terminal .tile > .tile-head { display: none; }
 @media (max-width: 700px) {
   .setup-explainer-body { grid-template-columns: 1fr; }
   .setup-surface-body { padding: var(--space-4); }
   .setup-services-benefit { grid-template-columns: 1fr; }
   .setup-services-steps[data-count='4'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .setup-gbrain-benefit { grid-template-columns: 1fr; }
+  .setup-gbrain-answer { grid-template-columns: 1fr; }
   .setup-explainer { margin: var(--space-4) var(--space-4) 0; }
 }
 .cs-detected { margin-top: var(--space-1); padding: var(--space-4) var(--space-5); border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted-2); font-size: var(--text-2); }
