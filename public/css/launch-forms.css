@@ -2,10 +2,11 @@
 @layer app {
 
   .sp-surface { --sp-stone: calc(var(--space-12) * 5); --sp-gap: var(--space-5); font-size: var(--text-5); }
+  .sp-surface > .wk-surface-content { display: flex; flex-direction: column; overflow: hidden; }
   .sp-kinds { margin-bottom: var(--space-7); }
   .sp-kinds-lead { margin-right: var(--space-2); color: var(--muted); font-size: var(--form-note); }
-  .sp-inner { display: flex; align-items: flex-start; min-height: 0; gap: var(--space-8); }
-  .sp-column { flex: none; min-height: 0; padding: var(--edge-2); }
+  .sp-inner { display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--space-8); }
+  .sp-column { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
   .sp-grid { display: grid; grid-template-columns: repeat(3, var(--sp-stone)); gap: var(--sp-gap); }
   .sp-inner[data-open='true'] .sp-grid { grid-template-columns: var(--sp-stone); }
   .sp-slot[hidden] { display: none; }
@@ -21,7 +22,7 @@
   .sp-glyph svg { width: 100%; height: 100%; }
   .sp-slot b { margin-top: auto; overflow: hidden; color: var(--fg-strong); font-size: var(--text-7); font-weight: 600; line-height: 1.15; text-overflow: ellipsis; }
   .sp-slot-copy { display: none; }
-  .sp-detail { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-2) var(--space-4); }
+  .sp-detail { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-2) var(--space-4); }
   .sp-detail[hidden] { display: none; }
   .sp-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); }
   .sp-heading h3 { margin: 0; color: var(--fg-strong); font-size: var(--form-head); }
