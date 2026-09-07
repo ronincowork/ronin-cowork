@@ -2796,8 +2796,9 @@ body {
 .setup-roots-stones .setup-roots-add-stone .sws-glyph {
   color: var(--kaki);
 }
-/* Setup's selected folder: one page in the shape every stone detail shares. One type family
-   (mono only for the path) and three sizes: 14px body, 14px/700 headings, 13px notes. */
+/* Setup's selected folder: one page in the shape every stone detail shares. One type family,
+   one size (14px; 13px only for editor notes), two weights, two colours: strong for headings
+   and values, muted for labels, state and notes. Labels sit beside values, never over them. */
 .pr-detail {
   container: roots-detail / inline-size;
   min-width: 0;
@@ -2838,8 +2839,7 @@ body {
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
-.pr-detail-state { margin: 0; color: var(--ok); }
-.pr-detail-state[data-tone='muted'] { color: var(--muted-2); }
+.pr-detail-state { margin: 0; color: var(--muted-2); }
 .pr-detail-state[data-tone='bad'] { color: var(--bad-soft); }
 .pr-section { min-width: 0; }
 .pr-section + .pr-section,
@@ -2849,31 +2849,27 @@ body {
   padding-top: var(--space-8);
 }
 .pr-section > h3 { margin-bottom: var(--space-6); }
-.pr-summary-text { margin: 0; color: var(--fg); line-height: 1.55; }
+.pr-summary-text { margin: 0; color: var(--fg-strong); line-height: 1.55; }
 .pr-summary-text.empty { color: var(--muted-2); }
 .pr-fact-list {
   display: grid;
-  grid-template-columns: minmax(6rem, 7rem) minmax(0, 1fr);
-  gap: var(--space-3) var(--space-6);
+  grid-template-columns: minmax(5rem, 6rem) minmax(0, 1fr);
+  gap: var(--space-3) var(--space-5);
   align-items: baseline;
   margin: 0;
 }
 .pr-fact-list dt { color: var(--muted-2); }
-.pr-fact-list dd { margin: 0; min-width: 0; color: var(--fg); overflow-wrap: anywhere; }
-.pr-fact-list dd code { color: var(--fg-strong); font-family: var(--font-mono); font-size: var(--text-4); }
+.pr-fact-list dd { margin: 0; min-width: 0; color: var(--fg-strong); overflow-wrap: anywhere; }
 .pr-fact-list dd[data-tone='bad'] { color: var(--bad-soft); }
 .pr-fine, .pr-detail .pr-group-help, .pr-detail .pr-flow, .pr-detail .pr-err { margin: 0; color: var(--muted-2); font-size: var(--text-4); line-height: 1.45; }
 .pr-fine.bad, .pr-detail .pr-err { color: var(--bad-soft); }
 .pr-section .pr-fact-list + .pr-fine { margin-top: var(--space-5); }
-@container roots-detail (max-width: 24rem) {
-  .pr-fact-list { grid-template-columns: 1fr; gap: var(--space-1); }
-  .pr-fact-list dd + dt { margin-top: var(--space-4); }
-}
 /* The real form in the same rhythm, its fields drawn as the Presets fields are. */
 .pr-detail .pr-form { margin: 0; border: 0; padding: 0; gap: var(--space-6); }
 .pr-detail .pr-group { border: 0; border-radius: 0; padding: 0; gap: var(--space-5); }
 .pr-detail .pr-f { gap: var(--space-2); }
 .pr-detail .pr-f span { color: var(--muted-2); font-size: inherit; font-weight: 400; text-transform: capitalize; }
+.pr-detail .pr-f input, .pr-detail .pr-f select { color: var(--fg-strong); }
 .pr-detail .pr-f input,
 .pr-detail .pr-f select {
   min-height: 2.25rem;
