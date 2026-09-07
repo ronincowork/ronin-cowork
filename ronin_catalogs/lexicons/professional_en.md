@@ -906,6 +906,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **services_setup.turn_off:** Turn off
 - **services_setup.install_first:** Install first
 - **services_setup.no_campaign:** No Campaign to switch it on for.
+- **services_setup.step_restart:** Restart
+- **services_setup.restart:** Restart
+- **services_setup.restarting:** Restarting Ronin…
+- **services_setup.next_restarting:** Sessions stay up; this surface re-reads the machine as Ronin comes back.
 - **services_setup.summary_not_installed:** not installed
 - **services_setup.status_not_installed:** Not installed on this machine
 - **services_setup.next_register:** Register with an email address and Ronin installs Services from HQ. Local Ronin keeps working without it.
@@ -935,11 +939,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **services_setup.next_install_failed:** The installer did not finish. Nothing else was changed.
 - **services_setup.summary_switched_off:** switched off
 - **services_setup.status_switched_off:** Installed · switched off
-- **services_setup.next_switched_off_running:** Switched off, but still running in this copy of Ronin. Ask any of your Agents to restart Ronin and it stops; sessions are untouched.
+- **services_setup.next_switched_off_running:** Switched off, but still running in this copy of Ronin. Press Restart, or ask any of your Agents to restart Ronin, and it stops; sessions are untouched.
 - **services_setup.next_switched_off:** Turn it on here: it sets the Campaign’s choice and cascades to new teams and Agents; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.
 - **services_setup.summary_restart:** restart needed
 - **services_setup.status_restart:** Switched on · not yet running
-- **services_setup.next_restart:** Ask any of your Agents to restart Ronin. Unlocked views and the other parts then start on their own; only new Agents are born with the Services reading. Sessions are untouched.
+- **services_setup.next_restart:** Press Restart, or ask any of your Agents to restart Ronin. Unlocked views and the other parts then start on their own; only new Agents are born with the Services reading. Sessions are untouched.
 - **services_setup.summary_active:** active
 - **services_setup.status_active:** Active on this Cowork
 - **services_setup.next_active:** {loaded} of {parts} parts are running for new Agents.

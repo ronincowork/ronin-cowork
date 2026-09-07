@@ -101,8 +101,9 @@ is for, what it requires, and how to use it before showing their specialized con
 The Services surface wears its own mark, `brand/services-mark.svg`: an R and S built from
 the house hexagon and leaning with its edge, the R in the shell's reference blue, the S and
 the open frame in kaki. The heading beside it carries the accessible name; the image is
-decorative. Inlining the markup lets the R follow the theme toggle; as an image it follows
-the colour scheme.
+decorative. The surface paints the file as an image first, then inlines the markup
+from that same file, so the R's stroke reads the app's `--accent-2` token and follows the
+Light/Dark toggle rather than only the OS scheme.
 
 ## Ronin Services
 
@@ -122,8 +123,13 @@ while a confirmation is out), and Install is `POST /api/services/install`, waiti
 entitlement that route demands. Switch is a toggle, **Turn on** or **Turn off**, never Done:
 it sets the Campaign's `ronin_services` Routine — the same map Routines and Installs saves —
 and cascades to new teams and Agents; a team can still differ in its Team Configuration. After
-a press the status says the rest: ask any Agent to restart Ronin, and Unlocked views and the
-other parts start (or stop) on their own; only new Agents are born with the Services reading.
+a press the status says the rest, and a fourth control, **Restart**, appears for as long as
+`/api/installed` reports `restart_needed`: it is `POST /api/machine/restart`, which answers and
+then runs `ronin_bin/tejun-machine-restart` — the one sanctioned restart, Ronin and nothing
+else; sessions live in the tmux server and stay up. The surface then watches the machine come
+back and re-reads it, so the same control also notices a restart an Agent was asked to do.
+Unlocked views and the other parts start (or stop) on their own; only new Agents are born
+with the Services reading.
 
 | Measured | Status | Controls |
 |---|---|---|
@@ -136,8 +142,8 @@ other parts start (or stop) on their own; only new Agents are born with the Serv
 | nothing installed, registered | Registered · Ready to install | Done · Install · Turn on (waits) |
 | the installer is running | Installing Services… | Done · Installing… · Turn on (waits); re-read in 5 s |
 | the installer did not start or finish | Install did not finish | Done · Try again · Turn on (waits) |
-| parts installed, switched off | Installed · switched off, with running and installed part counts | Register or Done · Done · Turn on |
-| parts installed, switched on, not yet loaded | Switched on · not yet running, ask any Agent to restart Ronin | Register or Done · Done · Turn off |
+| parts installed, switched off | Installed · switched off, with running and installed part counts | Register or Done · Done · Turn on (· Restart while it still runs) |
+| parts installed, switched on, not yet loaded | Switched on · not yet running | Register or Done · Done · Turn off · Restart; re-read in 5 s |
 | parts installed, switched on and loaded | Active on this Cowork, with running and installed part counts | Register or Done · Done · Turn off |
 
 The selector card's summary follows the same state. The Grokbot Morning Briefing preset waits
