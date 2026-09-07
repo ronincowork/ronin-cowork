@@ -10,6 +10,9 @@ import { createStoneWorkSurface } from './stone-work-surface.js';
 import { servicesSetupModel } from './services-setup-state.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
+import { HOUSE_PRESETS, buildLaunchPlan, initialControls, seatingPlan } from './presets.js';
+import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
+import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 export { mountProviderAttachment, providerFromRuntime, providerOffers, providerPresentation, providerReadiness } from './setup-provider-state.js';
 
@@ -473,10 +476,26 @@ function createGbrainSurface(context) {
   const host = el('div', 'setup-surface-body'); out.content.append(host);
   const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
     presentation: 'setup',
-    availability: () => { const runtime = context.environment?.setupRuntime; return runtime?.gbrain ? { ...runtime.gbrain, services: runtime.services || null } : null; },
+    availability: () => {
+      const runtime = context.environment?.setupRuntime;
+      return runtime?.gbrain ? { ...runtime.gbrain, services: runtime.services || null, activated_count: Number(runtime.activated_count || 0) } : null;
+    },
     // The selector card follows the measured state once it is read.
     onState: (summary) => notifySummary(SETUP_SURFACE_TYPES.gbrain, summary, context.workbench),
     openServices: () => context.workbench?.place(SETUP_SURFACE_TYPES.services, context.workspace || 'workspace2'),
+    openProviders: () => context.workbench?.place(SETUP_SURFACE_TYPES.providers, context.workspace || 'workspace2'),
+    // Exactly the Personal Assistant preset's launch, single assistant, opened in a new tab.
+    startAssistant: async () => {
+      const slot = HOUSE_PRESETS.find((row) => row.handle === 'personal_assistant');
+      const provider = (context.environment?.setupRuntime?.providers || []).find((row) => row.activated)?.id || '';
+      const controls = initialControls('personal_assistant', provider);
+      const tab = reserveWorkspaceTab();
+      const result = await launchPresetPlan(buildLaunchPlan(slot, '', controls));
+      if (!result?.ok) { closeWorkspaceTab(tab); return result; }
+      const url = presetLaunchUrl(result.data || {}, seatingPlan('personal_assistant', result.data || {}, controls), tab) || result.data?.url;
+      if (tab && url) tab.location.href = url; else if (url) window.open(url, '_blank', 'noopener');
+      return { ok: true };
+    },
   });
   return { el: out.el, show: () => {
     const status = context.environment?.setupRuntime?.gbrain;
