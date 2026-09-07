@@ -1,26 +1,20 @@
 
 @layer app {
 
-  .sws-host { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; gap: var(--space-5); }
+  .sws-host { --sws-header-height: clamp(6rem, 15dvh, 9rem); display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; gap: 0; }
   .wk-surface-content.sws-host { overflow: hidden; padding: var(--space-6) var(--space-11); container: stone-work-surface-seat / inline-size; }
   .sws-host > .sws { flex: 1 1 auto; }
   .sws-host > :not(.sws) { font-size: var(--form-note); line-height: 1.4; }
-  .sws-header { display: flex; flex: 0 0 calc(var(--space-12) + var(--space-7)); align-items: center; min-width: 0; block-size: calc(var(--space-12) + var(--space-7)); overflow: hidden; }
+  .sws-header { display: flex; flex: 0 0 var(--sws-header-height); align-items: center; min-width: 0; block-size: var(--sws-header-height); overflow: auto; }
   .sws-header::-webkit-scrollbar { display: none; }
   .sws-header > * { margin-block: 0; }
   .sws-footer[hidden] { display: none; }
   .sws { --sws-stone: var(--setup-stone-size); --sws-gap: var(--setup-stone-gap); display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--space-11); container: setup-stone-work-surface / inline-size; }
   .sws-rail { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
-  .sws:not([data-open='true']) .sws-rail { display: flex; flex: 1 1 auto; align-items: flex-start; justify-content: center; min-width: 0; padding-top: calc(var(--sws-stone) + var(--sws-gap)); }
+  .sws:not([data-open='true']) .sws-rail { display: flex; flex: 1 1 auto; align-items: flex-start; justify-content: center; min-width: 0; }
   .sws-grid { display: flex; flex-wrap: wrap; justify-content: center; width: min(100%, calc(var(--sws-stone) * 3 + var(--sws-gap) * 2)); gap: var(--sws-gap); }
   .sws[data-open='true'] .sws-grid { width: var(--sws-stone); flex-direction: column; flex-wrap: nowrap; }
-  .sws-stone { position: relative; display: flex; flex: 0 0 100%; flex-direction: column; align-items: flex-start; width: 100%; max-width: var(--sws-stone); aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-5); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
-  @container setup-stone-work-surface (min-width: 16rem) {
-    .sws:not([data-open='true']) .sws-stone { flex-basis: var(--sws-stone); }
-  }
-  @container setup-stone-work-surface (min-width: 24.5rem) {
-    .sws:not([data-open='true']) .sws-stone { flex-basis: var(--sws-stone); }
-  }
+  .sws-stone { position: relative; display: flex; flex: 0 0 min(100%, var(--sws-stone)); flex-direction: column; align-items: flex-start; width: min(100%, var(--sws-stone)); aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-5); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
   .sws-stone::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); }
   .sws-stone[hidden] { display: none; }
   .sws-stone:hover { border-color: var(--kaki); }
