@@ -175,7 +175,7 @@ function createRegisterSurface(context) {
  */
 function createProviderSurface(context) {
   const out = surface(t('setup_surface.providers', 'Model providers'));
-  const body = el('div', 'setup-surface-body setup-provider-list'); out.content.append(body);
+  const body = out.content; body.className += ' setup-surface-body setup-provider-list';
   let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
   let runtime = { providers: [] };
@@ -263,7 +263,7 @@ function createProviderSurface(context) {
 
 function createRootsSurface(context) {
   const out = surface(t('setup_surface.roots', 'Workspace folders'));
-  const host = el('div', 'desk-pane desk-proj show'); out.content.append(host);
+  const host = out.content; host.className += ' desk-pane desk-proj show';
   const room = buildProjectRoots(host, () => host.isConnected, () => context.tenant?.campaign || '', { presentation: 'stones' });
   return { el: out.el, show: () => { room.enter(); notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench); } };
 }
@@ -352,7 +352,7 @@ function createGbrainSurface(context) {
 
 function createLaunchOwnSurface(context) {
   const out = surface(t('setup_surface.launch_own', 'Launch your own'));
-  const body = el('div', 'setup-surface-body setup-launch-own');
+  const body = out.content; body.className += ' setup-surface-body setup-launch-own';
   const renderDetail = (item, host) => {
     const views = item.id === 'template'
       ? [createNewAgentView(WorkspaceKit, {}), createNewTeamFormView(WorkspaceKit, {})]
@@ -370,7 +370,7 @@ function createLaunchOwnSurface(context) {
     className: 'setup-launch-own-surface',
     renderDetail,
   });
-  stones.mount(body); out.content.append(body);
+  stones.mount(body);
   return { el: out.el, destroy: () => stones.destroy() };
 }
 
