@@ -849,6 +849,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **gbrain.setup_recall_copy:** Every connected Agent reads and files into the same memory.
 - **gbrain.setup_local:** Stays local
 - **gbrain.setup_local_copy:** Local embeddings and a local process. Outside connections open only when you approve one.
+- **gbrain.setup_status_reading:** Reading local gbrain status…
+- **gbrain.setup_next_reading:** Ronin is asking the local process, the embedding weights, and the integrations list.
 - **gbrain.setup_status_not_installed:** Not installed on this machine
 - **gbrain.setup_next_services:** gbrain arrives with Ronin Services. Set up Services first, then load gbrain here.
 - **gbrain.setup_open_services:** Open Ronin Services
