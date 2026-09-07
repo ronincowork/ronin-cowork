@@ -9,6 +9,7 @@
   .sws[data-open='true'] .sws-grid { width: var(--sws-stone); margin-top: max(0px, calc(50% - var(--sws-stone) * 3 / 2 - var(--sws-gap) - var(--space-10))); grid-template-columns: var(--sws-stone); }
   .sws-stone { position: relative; display: flex; flex-direction: column; align-items: flex-start; width: var(--sws-stone); max-width: 100%; aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-7) var(--space-6) var(--space-6); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
   .sws-stone::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); }
+  .sws-stone[hidden] { display: none; }
   .sws-stone:hover { border-color: var(--kaki); }
   .sws-stone[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
   .sws-stone[aria-pressed='true']::before { display: none; }
@@ -25,26 +26,12 @@
   .sp-content { display: flex; flex-direction: column; overflow: hidden; }
   .sp-kinds { margin-bottom: var(--space-7); }
   .sp-kinds-lead { margin-right: var(--space-2); color: var(--muted); font-size: var(--form-note); }
-  .sp-inner { display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--space-8); }
-  .sp-column { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
-  .sp-inner:not([data-open='true']) .sp-column { flex: 1 1 auto; min-width: 0; }
-  .sp-grid { display: grid; width: min(100%, calc(var(--setup-stone-size) * 3 + var(--sp-gap) * 2)); grid-template-columns: repeat(auto-fit, var(--setup-stone-size)); gap: var(--sp-gap); }
-  .sp-inner[data-open='true'] .sp-grid { width: var(--sp-stone); grid-template-columns: var(--sp-stone); }
-  .sp-slot[hidden] { display: none; }
-  .sp-more { display: flex; margin-top: var(--space-3); }
-  .sp-slot { position: relative; display: flex; flex-direction: column; align-items: flex-start; width: var(--sp-stone); max-width: 100%; aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-7) var(--space-6) var(--space-6); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
-  .sp-slot::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); }
-  .sp-slot:hover { border-color: var(--kaki); }
-  .sp-slot[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
-  .sp-slot[aria-pressed='true']::before { display: none; }
-  .sp-slot[data-gated='true'] { opacity: .48; }
-  .sp-slot[data-gated='true'][aria-pressed='true'] { opacity: .7; }
+  .sp-show-all { margin-left: var(--space-2); border-style: dashed; color: var(--muted); }
+  .sp-preset-stone[data-gated='true'] { opacity: .48; }
+  .sp-preset-stone[data-gated='true'][aria-pressed='true'] { opacity: .7; }
   .sp-glyph { display: flex; width: var(--space-11); height: var(--space-11); color: var(--accent); font-style: normal; font-size: var(--text-10); font-weight: 400; line-height: 1; }
   .sp-glyph svg { width: 100%; height: 100%; }
-  .sp-slot b { margin-top: auto; overflow: hidden; color: var(--fg-strong); font-size: var(--text-7); font-weight: 600; line-height: 1.15; text-overflow: ellipsis; }
-  .sp-slot-copy { display: none; }
-  .sp-detail { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-2) var(--space-4); }
-  .sp-detail[hidden] { display: none; }
+  .sp-work-surface .sws-detail { display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-2) var(--space-4); }
   .sp-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); }
   .sp-heading h3 { margin: 0; color: var(--fg-strong); font-size: var(--form-head); }
   .sp-go { display: flex; align-items: center; gap: var(--space-4); }

@@ -8,11 +8,16 @@ class FakeNode {
   replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
   setAttribute(name, value) { this.attributes[name] = String(value); }
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
+  focus() { this.focused = true; }
   add(node) { this.append(node); }
   click() { if (!this.disabled) for (const callback of this.listeners.click || []) callback({ currentTarget: this }); }
   querySelector(selector) {
     const cls = selector.match(/\.([a-z0-9_-]+)$/i)?.[1];
     return this.walk().find((node) => cls && node.className?.split(' ').includes(cls)) || null;
+  }
+  querySelectorAll(selector) {
+    if (selector === '[data-sws-id]') return [...this.walk()].filter((node) => node.dataset.swsId);
+    return [];
   }
   *walk() { for (const child of this.children) { if (!(child instanceof FakeNode)) continue; yield child; yield* child.walk(); } }
   get options() { return this.children.filter((node) => node.tagName === 'OPTION'); }
@@ -178,7 +183,7 @@ test('the selected preset entry keeps Customize in its framed panel and calls th
   } });
   await surface.enter();
   let nodes = [...surface.el.walk()];
-  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sp-slot'))[3].click();
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[3].click();
   nodes = [...surface.el.walk()];
   assert.ok(nodes.find((node) => String(node.className).includes('sp-choice-panel')));
   assert.ok(nodes.find((node) => node.tagName === 'TEXTAREA'));
