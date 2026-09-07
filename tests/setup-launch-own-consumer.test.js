@@ -8,7 +8,8 @@ const css = await readFile(new URL('../public/style.css', import.meta.url), 'utf
 test('Launch your own is exactly one shared Agent, Team, Template consumer', () => {
   const launchOwn = source.slice(source.indexOf('function createLaunchOwnSurface'), source.indexOf('export function setupSurfaceDefinitions'));
   assert.match(launchOwn, /createStoneWorkSurface\(/);
-  assert.match(launchOwn, /stones\.mount\(body\)/);
+  assert.match(launchOwn, /stones\.mount\(out\.content\)/);
+  assert.doesNotMatch(launchOwn, /setup-surface-body/);
   assert.deepEqual([...launchOwn.matchAll(/id: '(template|team|agent)'/g)].map((match) => match[1]), ['agent', 'team', 'template']);
   assert.doesNotMatch(launchOwn, /setup-launch-own-stones|setup-launch-stone|openTemplateLaunchForm|openLaunchForm/);
 });

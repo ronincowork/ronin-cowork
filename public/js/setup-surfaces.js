@@ -518,7 +518,6 @@ function createGbrainSurface(context) {
 
 function createLaunchOwnSurface(context) {
   const out = surface(t('setup_surface.launch_own', 'Launch your own'));
-  const body = el('div', 'setup-surface-body setup-launch-own');
   const renderDetail = (item, host) => {
     const views = [item.id === 'template'
       ? createTemplatesSurface()
@@ -536,7 +535,9 @@ function createLaunchOwnSurface(context) {
     className: 'setup-launch-own-surface',
     renderDetail,
   });
-  stones.mount(body); out.content.append(body);
+  // Mount on the surface content itself, like Presets and Providers, so the shared SWS
+  // host owns the seat container and its narrow/normal/super-wide insets.
+  stones.mount(out.content);
   return { el: out.el, destroy: () => stones.destroy() };
 }
 
