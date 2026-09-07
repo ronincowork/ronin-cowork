@@ -2,24 +2,10 @@
 import { request } from './request.js';
 import { seedReservedWorkspaceTab } from './workspace.js';
 
-/**
- * THE ROW NAMES THE AGENT, THE LAUNCH NAMES THE TABLE ROW. A preset row carries the Setup
- * catalog's id (claude, codex); the launch table keys its rows by provider (anthropic,
- * openai) and its command starts with that agent's word. Translate by the command word;
- * a key the table already knows passes through, and an unknown one is left for the
- * server to refuse in its own words.
- */
-export function launchProviderKey(specs = [], id = '') {
-  const rows = Array.isArray(specs) ? specs : [];
-  if (!id) return '';
-  if (rows.some((spec) => spec?.provider === id)) return id;
-  return rows.find((spec) => String(spec?.cmd || '').split(/\s+/)[0] === id)?.provider || id;
-}
-
 const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 34);
 const unique = (base) => `${slug(base) || 'preset'}_${Date.now().toString(36)}`;
 
-async function launchAgent(row, plan, team = '', send, providerKey = async (id) => id) {
+function launchAgent(row, plan, team = '', send) {
   const options = {
     method: 'POST',
     json: {
@@ -27,7 +13,7 @@ async function launchAgent(row, plan, team = '', send, providerKey = async (id) 
     name: unique(team ? `${team}_${row.name || 'agent'}` : row.name || plan.template.name),
     team,
     instructions: plan.user_message || row.instructions || '',
-    provider: await providerKey(row.provider || ''),
+    provider: row.provider || '',
     model: row.model || '',
     team_lead: row.team_lead === true,
     project_root: plan.inputs?.root || '',
@@ -62,13 +48,6 @@ async function launchPersonalAssistant(plan, template, send) {
 
 export async function launchPresetPlan(plan = {}, send) {
   const ask = send || request;
-  // The launch table is read once, and only when a row names a provider.
-  let specs = null;
-  const providerKey = async (id) => {
-    if (!id) return '';
-    specs ??= await ask('/api/session-launch-specs', { cache: 'no-store' });
-    return launchProviderKey(specs.ok && Array.isArray(specs.data) ? specs.data : [], id);
-  };
   const shelf = plan.template?.shelf === 'teams' ? 'teams' : 'agents';
   const catalog = await ask(`/api/templates/${shelf}`, { cache: 'no-store' });
   if (!catalog.ok) return catalog;
@@ -108,7 +87,7 @@ export async function launchPresetPlan(plan = {}, send) {
         : (template.agents || []);
   const sessions = [], receipts = [];
   for (const row of configured) {
-    const launched = await launchAgent(row, plan, team, send, providerKey);
+    const launched = await launchAgent(row, plan, team, send);
     if (!launched.ok) return launched;
     if (launched.data?.name) sessions.push({ name: launched.data.name });
     if (launched.data?.receipt) receipts.push(launched.data.receipt);
