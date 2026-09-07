@@ -35,14 +35,14 @@ switch to the retired phone-only drill-down.
 short measured state: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
 installed**, or **Manual install**. Selecting a stone opens that provider's detail beside
 the rail: the same three numbered steps for every provider, in this order. A finished step
-wears a check, the next unmet step wears the kaki mark and owns the one primary control,
-and a later step waits with its control disabled. A refused press shows the server's
-answer under the steps.
+wears a check and no control, the next unmet step wears the kaki mark and owns the one
+control, and a later step waits with none. A refused press shows the server's answer
+under the steps.
 
 | Step | What it measures | The action it owns |
 |---|---|---|
 | **Install** | whether the CLI is found on this machine | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
-| **Authenticate** | whether the provider is signed in here: its own credential file is on this machine, or a sign-in was recorded through **Done** | **Authenticate** opens the provider's native sign-in as a temporary tile in this workspace; **Done** records it, **Close** leaves things as they were |
+| **Authenticate** | whether the provider is signed in here: its own credential file is on this machine, or a sign-in was recorded through **Done** | **Authenticate** opens the provider's native sign-in as a temporary headerless tile that takes most of this workspace; **Done** records it, **Close** leaves things as they were |
 | **Ready** | the resulting activation, which is what unlocks Teams and New Project | none; it is the measured result |
 
 Ronin reads only that a credential file exists (for example Claude Code's
