@@ -11,6 +11,7 @@ at `/brand/`.
 | `nin-mark-32.png` | favicon fallback where SVG is refused |
 | `nin-mark-256.png` | `apple-touch-icon` — the home-screen icon |
 | `nin-mark-512.png` | held for a manifest; no consumer yet |
+| `services-mark.svg` | the Ronin Services mark — an R and S monogram in the same open hexagon; worn by the Setup Services surface |
 
 Where they came from, and how to take them again when the mark moves:
 
@@ -21,6 +22,10 @@ cp $LAB/design/assets/nin-mark-32.png  public/brand/
 cp $LAB/design/assets/nin-mark-256.png public/brand/
 cp $LAB/design/assets/nin-mark-512.png public/brand/
 ```
+
+**`services-mark.svg` is the one exception to the copy rule.** It is authored here, in code,
+from the house hexagon and `--kaki`; it has no PNG exports and no lab master yet. If the lab
+adopts it, this file becomes the copy and the lab the master, as with the hito mark.
 
 **The mark changes in the lab first.** Its SVG is the master and the PNGs are exports
 rendered from it; neither is edited here. Editing a file in this directory produces a

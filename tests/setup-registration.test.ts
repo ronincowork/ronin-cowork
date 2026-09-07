@@ -127,7 +127,8 @@ test('Register presents one open profile flow with bounded choices and no Preset
 test('Services leads with identity and benefits, then routes its only registration action directly', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
   assert.match(source, /setup-services-mark/);
-  assert.match(source, /mark\.src = 'brand\/nin-mark\.svg'/);
+  assert.match(source, /mark\.src = 'brand\/services-mark\.svg'/);
+  assert.doesNotMatch(source, /setup-services-mark'\);\n\s*mark\.src = 'brand\/nin-mark\.svg'/);
   assert.ok(source.indexOf('services_value_records') < source.indexOf('services_register_enables'), 'benefits precede the registration gate');
   assert.match(source, /services_value_records/);
   assert.match(source, /services_value_library/);
@@ -135,6 +136,22 @@ test('Services leads with identity and benefits, then routes its only registrati
   assert.match(source, /register_direct'[\s\S]*?workbench\?\.place\(SETUP_SURFACE_TYPES\.register/);
   assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short/);
   assert.doesNotMatch(source, /usedFor: t\('setup_surface\.services_used'/);
+});
+
+test('the Services mark is a code-native R and S monogram in the house hexagon', async () => {
+  const fs = await import('node:fs/promises');
+  const [services, house] = await Promise.all([
+    fs.readFile(new URL('../public/brand/services-mark.svg', import.meta.url), 'utf8'),
+    fs.readFile(new URL('../public/brand/nin-mark.svg', import.meta.url), 'utf8'),
+  ]);
+  const frame = /d="M31 6h58l25 46-25 46H31L6 52z"/;
+  assert.match(house, frame, 'the house mark still carries the hexagon this test pins');
+  assert.match(services, frame, 'same open hexagon as the house mark');
+  assert.match(services, /viewBox="0 0 120 104"/);
+  assert.match(services, /<title id="title">Ronin Services mark<\/title>/);
+  assert.match(services, /stroke="#c46243" stroke-width="8"/);
+  assert.doesNotMatch(services, /<text|<image|fill="#/, 'letters are drawn strokes in the one kaki material, not a font or a filled badge');
+  assert.doesNotMatch(services, /#[0-9a-fA-F]{3,8}\b(?<!#c46243)/, 'no colour beyond kaki');
 });
 
 test('Services keeps exact lifecycle states secondary and offers only the real install action', async () => {

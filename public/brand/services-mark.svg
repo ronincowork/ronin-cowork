@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 104" role="img" aria-labelledby="title desc">
+  <title id="title">Ronin Services mark</title><!-- code-native; same frame as nin-mark.svg -->
+  <desc id="desc">An R and S monogram drawn in persimmon inside the open persimmon hexagonal frame of the Ronin mark.</desc>
+  <path fill="none" stroke="#c46243" stroke-width="8" stroke-linejoin="miter" d="M31 6h58l25 46-25 46H31L6 52z"/>
+  <g fill="none" stroke="#c46243" stroke-width="8" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M34 76V30H47A10 10 0 0 1 47 52H34"/>
+    <path d="M46 52L58 74.5"/>
+    <path d="M93.6 37.8A11 10.5 0 1 0 83 51A11 10.5 0 1 1 72.3 64"/>
+  </g>
+</svg>
