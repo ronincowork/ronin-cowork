@@ -424,17 +424,30 @@ function createServicesSurface(context) {
     state.setAttribute('aria-live', 'polite');
     state.append(el('p', 'setup-services-status-line', model.status), el('p', 'setup-services-next', model.next));
     body.append(state);
+    const press = (button, act) => async () => {
+      if (act.id === 'register') { openRegister(); return; }
+      button.disabled = true;
+      const route = act.id === 'install' ? '/api/services/install' : '/api/services/activation/poll';
+      const result = await request(route, { method: 'POST', json: {} });
+      if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); button.disabled = false; return; }
+      await show();
+    };
     if (model.action) {
-      const button = action(model.action.label, '', async () => {
-        if (model.action.id === 'register') { openRegister(); return; }
-        button.disabled = true;
-        const route = model.action.id === 'install' ? '/api/services/install' : '/api/services/activation/poll';
-        const result = await request(route, { method: 'POST', json: {} });
-        if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); button.disabled = false; return; }
-        await show();
-      });
+      const button = action(model.action.label, '', () => press(button, model.action)());
       button.dataset.action = model.action.id;
       body.append(button);
+    }
+    if (model.account) {
+      // Installed Services: registration is its own optional fact, said quietly, never a gate.
+      const account = el('p', 'setup-fine setup-services-account');
+      account.append(el('span', '', model.account.line));
+      if (model.account.action) {
+        const quiet = el('button', 'setup-services-account-action', model.account.action.label);
+        quiet.type = 'button'; quiet.dataset.action = model.account.action.id;
+        quiet.addEventListener('click', () => press(quiet, model.account.action)());
+        account.append(quiet);
+      }
+      body.append(account);
     }
     body.append(el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.')));
     notifySummary(SETUP_SURFACE_TYPES.services, model.summary, context.workbench);

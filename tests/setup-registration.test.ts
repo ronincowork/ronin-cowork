@@ -174,12 +174,14 @@ test('Services leads with identity and benefits, then paints one measured status
   assert.match(source, /request\('\/api\/services\/activation', \{ cache: 'no-store' \}\)/);
   assert.match(source, /servicesSetupModel\(registration, installed, activation\)/);
   assert.match(source, /setAttribute\('aria-live', 'polite'\)/);
-  assert.match(source, /'register'\) \{ openRegister\(\); return; \}/);
+  assert.match(source, /if \(act\.id === 'register'\) \{ openRegister\(\); return; \}/);
+  assert.match(source, /if \(model\.account\) \{/, 'installed Services carries a separate optional account line');
+  assert.match(source, /setup-services-account-action/);
   assert.match(source, /workbench\?\.place\(SETUP_SURFACE_TYPES\.register/);
   assert.match(source, /'install' \? '\/api\/services\/install' : '\/api\/services\/activation\/poll'/);
   assert.match(source, /notifySummary\(SETUP_SURFACE_TYPES\.services, model\.summary/);
   assert.match(source, /if \(body\.isConnected\) void show\(\)/, 'polling stops when the surface leaves the workspace');
-  assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short|services_register_enables|Registration confirmed · Services access not included/);
+  assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short|services_register_enables|Registration confirmed · Services access not included|not activated/);
   assert.doesNotMatch(source, /const state = el\('dl'|<dd>|'Yes' : 'No'/);
   assert.doesNotMatch(source, /services_value_records|Continue where you left off|readable transcripts/i, 'no benefit promises what this beta does not hold');
 });
@@ -200,25 +202,26 @@ test('the Services mark is a code-native R and S monogram in the house hexagon',
   assert.doesNotMatch(services, /#[0-9a-fA-F]{3,8}\b(?<!#c46243)/, 'no colour beyond kaki');
 });
 
-test('Services setup model gives every measured state one status, one next line, and at most one action', async () => {
+test('Services setup model keeps installation and registration as separate measured facts', async () => {
   const { SERVICES_SETUP_STATES, servicesSetupModel } = await import('../public/js/services-setup-state.js');
   const reg = (status: string, extra: Record<string, unknown> = {}) => ({ ok: true, data: { status, services_entitled: false, ...extra } });
   const entitled = (extra: Record<string, unknown> = {}) => reg('registered', { services_entitled: true, ...extra });
-  const inst = (services: Record<string, unknown> = {}) => ({ ok: true, data: { services: { installed: false, activated: false, switched_on: false, restart_needed: false, ...services } } });
+  const inst = (services: Record<string, unknown> = {}) => ({ ok: true, data: { services: { installed: false, activated: false, switched_on: false, restart_needed: false, parts: [], loaded: [], ...services } } });
+  const here = (extra: Record<string, unknown> = {}) => inst({ installed: true, parts: ['counting', 'gbrain', 'koe', 'koshi', 'machine', 'rireki'], loaded: ['gbrain', 'machine'], ...extra });
   const act = (stage: string, extra: Record<string, unknown> = {}) => ({ ok: true, data: { stage, ...extra } });
   const cases: Array<[string, unknown, unknown, unknown, string, string, string | null, boolean]> = [
-    ['unregistered', { ok: false, status: 500 }, inst(), null, 'not active', 'Not active on this machine', 'register', false],
-    ['anonymous', reg('anonymous'), inst(), act('not_requested'), 'not active', 'Not active · anonymous hello sent', 'register', false],
+    ['unregistered', { ok: false, status: 500 }, inst(), null, 'not installed', 'Not installed on this machine', 'register', false],
+    ['anonymous', reg('anonymous'), inst(), act('not_requested'), 'not installed', 'Not installed · anonymous hello sent', 'register', false],
     ['sending', reg('pending'), inst(), act('requesting'), 'sending', 'Sending the confirmation email…', null, true],
     ['awaiting_email', reg('pending', { email_masked: 'p*****@example.com' }), inst(), act('awaiting_email'), 'confirm email', 'Confirmation email sent to p*****@example.com', 'check', true],
     ['expired', reg('pending'), inst(), act('expired'), 'link expired', 'Confirmation link expired', 'register', false],
     ['send_failed', reg('pending'), inst(), act('error', { error_at_stage: 'awaiting_email' }), 'waiting to send', 'Waiting to send', 'check', false],
-    ['entitled', entitled(), inst(), act('verified'), 'ready to install', 'Access confirmed · Ready to install', 'install', false],
+    ['entitled', entitled(), inst(), act('verified'), 'ready to install', 'Registered · Ready to install', 'install', false],
     ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', null, true],
     ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'install', false],
-    ['switched_off', entitled(), inst({ installed: true, activated: true }), act('installed'), 'switched off', 'Installed and activated · switched off', null, false],
-    ['restart_needed', entitled(), inst({ installed: true, activated: true, switched_on: true, restart_needed: true }), act('installed'), 'restart needed', 'Switched on · not yet running', null, false],
-    ['active', entitled(), inst({ installed: true, activated: true, switched_on: true }), act('installed'), 'active', 'Active on this Cowork', null, false],
+    ['switched_off', reg('optional'), here(), act('not_requested'), 'switched off', 'Installed · switched off', null, false],
+    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', null, false],
+    ['active', reg('optional'), here({ switched_on: true }), act('not_requested'), 'active', 'Active on this Cowork', null, false],
   ];
   assert.deepEqual(cases.map(([state]) => state).sort(), [...SERVICES_SETUP_STATES].sort());
   for (const [state, registration, installed, activation, summary, status, action, polling] of cases) {
@@ -229,17 +232,31 @@ test('Services setup model gives every measured state one status, one next line,
     assert.equal(model.action?.id ?? null, action);
     assert.equal(model.polling, polling);
     assert.ok(model.next.length > 0);
-    assert.doesNotMatch(`${model.status} ${model.next} ${model.action?.label || ''}`, /HTTP|undefined|null/);
+    assert.doesNotMatch(`${model.status} ${model.next} ${model.action?.label || ''} ${model.account?.line || ''}`, /HTTP|undefined|null/);
   }
-  assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).state, 'unregistered', 'a read that answers optional is unregistered');
+  // Installed on the live box without any registration: installed, usable, and no registration demand.
+  const live = servicesSetupModel(reg('optional'), here(), act('not_requested'));
+  assert.equal(live.state, 'switched_off');
+  assert.equal(live.action, null, 'installed Services never demands registration as its one action');
+  assert.match(live.next, /2 of 6 parts are running now/);
+  assert.match(live.account?.line || '', /optional/i);
+  assert.equal(live.account?.action?.id, 'register', 'registration stays reachable as a quiet, optional line');
+  const liveOn = servicesSetupModel(reg('optional'), here({ switched_on: true }), act('not_requested'));
+  assert.equal(liveOn.state, 'active');
+  assert.match(liveOn.next, /2 of 6 parts are running/);
+  const registeredOn = servicesSetupModel(entitled(), here({ switched_on: true }), act('installed'));
+  assert.equal(registeredOn.state, 'active');
+  assert.match(registeredOn.account?.line || '', /^Registered/);
+  assert.equal(registeredOn.account?.action, null);
+  const installedAwaiting = servicesSetupModel(reg('pending', { email_masked: 'p*****@example.com' }), here(), act('awaiting_email'));
+  assert.equal(installedAwaiting.state, 'switched_off');
+  assert.equal(installedAwaiting.polling, true, 'a confirmation in flight still re-reads');
+  assert.equal(installedAwaiting.account?.action?.id, 'check');
+  assert.match(installedAwaiting.account?.line || '', /Confirmation email sent to p\*\*\*\*\*@example\.com/);
+  for (const [, registration, installed, activation] of cases.slice(0, 9)) assert.equal(servicesSetupModel(registration as never, installed as never, activation as never).account, null, 'with nothing installed the registration path is the one block');
   assert.equal(servicesSetupModel(null, null, null).state, 'unregistered', 'no reads at all still paint a truthful floor');
-  const installedUnactivated = servicesSetupModel(reg('pending'), inst({ installed: true }), act('awaiting_email'));
-  assert.equal(installedUnactivated.status, 'Installed · not activated');
-  assert.equal(installedUnactivated.summary, 'not activated');
-  assert.equal(installedUnactivated.action?.id, 'check', 'the parts being present does not change the path to entitlement');
-  assert.match(servicesSetupModel(entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' })).next, /did not start/);
-  assert.match(servicesSetupModel(entitled(), inst({ installed: true, activated: true, restart_needed: true }), act('installed')).next, /still running/);
-  assert.equal(servicesSetupModel(entitled(), inst({ installed: true, activated: true, switched_on: true }), act('installing')).state, 'active', 'parts present and switched on outrank a stale installing stage');
+  assert.match(servicesSetupModel(entitled(), here({ restart_needed: true }), act('installed')).next, /still running/);
+  assert.equal(servicesSetupModel(entitled(), here({ switched_on: true }), act('installing')).state, 'active', 'parts present and switched on outrank a stale installing stage');
   assert.deepEqual(new Set(cases.map(([, r, i, a]) => servicesSetupModel(r as never, i as never, a as never).tone)), new Set(['', 'warn', 'bad', 'ok']));
 });
 
