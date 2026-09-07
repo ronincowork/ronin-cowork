@@ -136,6 +136,9 @@ test('Register presents one open profile flow with card choices and anonymous de
   for (const label of ['With email', 'Anonymous', 'No thank you', 'Work from anywhere', 'Use multiple providers without lock-in', 'Agents with team coordination skills']) assert.match(source, new RegExp(label));
   for (const message of ['Different models have different strengths', 'network issues', 'New models keep arriving', 'locked into one provider', 'runs out of tokens', 'hidden sub-agents', 'Something else']) assert.match(source, new RegExp(message));
   for (const place of ['Virtual machine', 'Personal server', 'Personal computer']) assert.match(source, new RegExp(place));
+  assert.match(source, /Where will you install Ronin\?/);
+  assert.doesNotMatch(source, /Where will you run Ronin\?|Where Ronin fits/);
+  for (const kind of ['Which of these are you most likely to use?', 'Build software', 'Life assistants', 'Research and writing']) assert.match(source, new RegExp(kind.replace('?', '\\?')));
   assert.ok(source.indexOf('runLocation.wrap, preferredFeature.wrap') > -1, 'machine location comes before feature preference');
   assert.doesNotMatch(source, /Your starting theme|theme\.wrap/);
   assert.match(source, /We hope you enjoy Ronin\. If you’d like to share feedback later, we’d be glad to hear it\./);
