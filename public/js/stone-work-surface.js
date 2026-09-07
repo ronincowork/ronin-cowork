@@ -47,15 +47,15 @@ export function createStoneWorkSurface({ items = [], selectedId = '', renderDeta
       const button = element('button', `sws-stone ${item.className || ''}`.trim());
       button.type = 'button';
       button.dataset.swsId = id;
+      button.hidden = item.hidden === true;
       button.setAttribute('aria-pressed', String(id === selected));
       button.setAttribute('aria-expanded', String(id === selected));
       button.setAttribute('aria-controls', detailId);
       if (item.disabled) button.disabled = true;
       for (const [name, value] of Object.entries(item.attrs || {})) button.setAttribute(name, String(value));
       if (item.glyph) {
-        const glyph = element('i', 'sws-glyph');
+        const glyph = item.glyph instanceof Node ? item.glyph : element('i', 'sws-glyph', String(item.glyph));
         glyph.setAttribute('aria-hidden', 'true');
-        glyph.append(item.glyph instanceof Node ? item.glyph : document.createTextNode(String(item.glyph)));
         button.append(glyph);
       }
       button.append(element('b', 'sws-label', item.label || id));
@@ -67,6 +67,7 @@ export function createStoneWorkSurface({ items = [], selectedId = '', renderDeta
         externalDetail = null;
         selected = selected === id ? '' : id;
         paint();
+        buttonFor(id)?.focus();
         notify();
       });
       grid.append(button);
