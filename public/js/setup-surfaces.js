@@ -4,6 +4,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
+import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
 import { mountProviderAttachment, providerFromRuntime } from './setup-provider-state.js';
 import { createKindsPreference, renderKindPills } from './presets.js';
 
@@ -11,7 +12,7 @@ export { mountProviderAttachment, providerFromRuntime, providerOffers } from './
 
 export const SETUP_SURFACE_TYPES = Object.freeze({
   register: 'setup.register', providers: 'setup.providers', roots: 'setup.roots',
-  services: 'setup.services', gbrain: 'setup.gbrain', templates: 'setup.templates', launchOwn: 'setup.launch-own',
+  services: 'setup.services', gbrain: 'setup.gbrain', templates: CAMPAIGN_TEMPLATES_TYPE, launchOwn: 'setup.launch-own',
 });
 
 const summaries = new Map([
@@ -20,7 +21,6 @@ const summaries = new Map([
   [SETUP_SURFACE_TYPES.roots, '2 folders'],
   [SETUP_SURFACE_TYPES.services, 'not active'],
   [SETUP_SURFACE_TYPES.gbrain, 'not installed'],
-  [SETUP_SURFACE_TYPES.templates, '0 loaded'],
   [SETUP_SURFACE_TYPES.launchOwn, 'template · team · agent'],
 ]);
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
@@ -31,7 +31,7 @@ const action = (label, kind, onClick) => {
   return made.el ?? made;
 };
 
-/** The only furniture shared by Services, gbrain, and Templates. */
+/** The only furniture shared by Services and gbrain. */
 export function setupExplainer({ usedFor, requires, use }) {
   const details = el('details', 'setup-explainer');
   const summary = el('summary', '', t('setup_surface.about', 'About this'));
@@ -298,55 +298,6 @@ function createGbrainSurface(context) {
   return { el: out.el, show: () => { room.enter?.(); notifySummary(SETUP_SURFACE_TYPES.gbrain, 'state shown', context.workbench); } };
 }
 
-function createTemplatesSetupSurface(context) {
-  const out = surface(t('league.templates', 'Templates'));
-  out.content.append(setupExplainer({
-    usedFor: t('setup_surface.templates_used', 'Load a ready-made Agent or Team, or keep and share one of your own.'),
-    requires: t('setup_surface.templates_requires', 'Loaded templates and making your own work locally. Ronin Library and Share Yours require Services entitlement.'),
-    use: t('setup_surface.templates_how', 'Choose one of the four modes below; nothing is downloaded or shared until you press the corresponding action.'),
-  }));
-  const body = el('div', 'setup-surface-body'); const nav = el('div', 'setup-template-modes'); const room = el('div', 'setup-template-room');
-  out.content.append(body); body.append(nav, room);
-  let mode = 'loaded'; let entitled = false; let teams = []; let agents = [];
-  const modes = [['loaded', 'Loaded Templates'], ['make', 'Make Your Own Template'], ['library', 'Ronin Library'], ['share', 'Share Yours']];
-  const paint = async () => {
-    nav.replaceChildren(); room.replaceChildren();
-    for (const [key, label] of modes) {
-      const button = el('button', 'setup-mode', label); button.type = 'button'; button.setAttribute('aria-pressed', String(mode === key));
-      button.addEventListener('click', () => { mode = key; void paint(); }); nav.append(button);
-    }
-    if (mode === 'loaded') {
-      room.append(el('h3', '', t('setup_surface.loaded', 'Loaded Templates')));
-      const rows = [...teams.map((x) => ({ ...x, shape: 'Team' })), ...agents.map((x) => ({ ...x, shape: 'Agent' }))];
-      if (!rows.length) room.append(el('p', 'setup-fine', t('setup_surface.none_loaded', 'No templates are loaded.')));
-      for (const row of rows) room.append(el('button', 'setup-template-card', `${row.label || row.name} · ${row.shape}`));
-    } else if (mode === 'make') {
-      room.append(el('h3', '', t('setup_surface.make', 'Make Your Own Template')), el('p', 'setup-fine', t('setup_surface.make_help', 'Start with the ordinary Agent or Team form, then save your choices as a template.')),
-        action(t('setup_surface.make_agent', 'Make Agent template'), 'primary', () => context.environment?.openTemplateMaker?.('agent')),
-        action(t('setup_surface.make_team', 'Make Team template'), '', () => context.environment?.openTemplateMaker?.('team')));
-    } else if (!entitled) {
-      room.append(el('h3', '', mode === 'library' ? 'Ronin Library' : 'Share Yours'), el('p', 'setup-notice warning', t('setup_surface.services_gate', 'Registration with Services entitlement is required for this mode. Local templates remain available.')));
-    } else if (mode === 'library') {
-      room.append(el('h3', '', 'Ronin Library'));
-      const result = await request('/api/library', { cache: 'no-store' });
-      if (!result.ok) room.append(el('p', 'setup-notice bad', result.message));
-      else for (const row of result.data?.bundles || []) room.append(el('button', 'setup-template-card', row.label || row.name));
-    } else {
-      room.append(el('h3', '', 'Share Yours'), el('p', 'setup-fine', t('setup_surface.share_help', 'Choose a loaded template and review the complete bundle before sharing it.')));
-      for (const row of [...teams, ...agents]) room.append(el('button', 'setup-template-card', row.label || row.name));
-    }
-  };
-  const show = async () => {
-    const [teamResult, agentResult, registration] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents'), request('/api/setup/registration')]);
-    teams = teamResult.ok && Array.isArray(teamResult.data) ? teamResult.data : [];
-    agents = agentResult.ok && Array.isArray(agentResult.data) ? agentResult.data : [];
-    entitled = registration.ok && registration.data?.services_entitled === true;
-    notifySummary(SETUP_SURFACE_TYPES.templates, `${teams.length + agents.length} loaded`, context.workbench);
-    await paint();
-  };
-  return { el: out.el, show };
-}
-
 function createLaunchOwnSurface(context) {
   const out = surface(t('setup_surface.launch_own', 'Launch your own'));
   const body = el('div', 'setup-surface-body setup-launch-own');
@@ -381,7 +332,7 @@ export function setupSurfaceDefinitions() {
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace folders'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.services, t('settei.ronin_services', 'Ronin Services'), createServicesSurface),
     definition(SETUP_SURFACE_TYPES.gbrain, t('pane.gbrain', 'gbrain'), createGbrainSurface),
-    definition(SETUP_SURFACE_TYPES.templates, t('league.templates', 'Templates'), createTemplatesSetupSurface),
+    campaignTemplatesDefinition(),
     definition(SETUP_SURFACE_TYPES.launchOwn, t('setup_surface.launch_own', 'Launch your own'), createLaunchOwnSurface),
   ];
 }

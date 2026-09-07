@@ -59,14 +59,12 @@ test('registration recovery keeps consent separate and deletion removes local id
   assert.equal(await getEntitlementToken(), null);
 });
 
-test('setup surface definitions keep all six ruled ids and gates only Library and Share', async () => {
+test('Setup reuses the Campaign Templates registration for its selector and surface', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  for (const id of ['setup.register', 'setup.providers', 'setup.roots', 'setup.services', 'setup.gbrain', 'setup.templates']) assert.match(source, new RegExp(id.replace('.', '\\.')));
-  assert.match(source, /Loaded Templates/);
-  assert.match(source, /Make Your Own Template/);
-  assert.match(source, /Ronin Library/);
-  assert.match(source, /Share Yours/);
-  assert.match(source, /mode === 'library'[\s\S]*entitled/);
+  for (const id of ['setup.register', 'setup.providers', 'setup.roots', 'setup.services', 'setup.gbrain']) assert.match(source, new RegExp(id.replace('.', '\\.')));
+  assert.match(source, /templates: CAMPAIGN_TEMPLATES_TYPE/);
+  assert.match(source, /campaignTemplatesDefinition\(\)/);
+  assert.doesNotMatch(source, /setup-template-(?:modes|room|card)|openTemplateMaker|\/api\/library/);
   assert.doesNotMatch(source, /servicesCard\s*\(/, 'Setup has no separate Services email/token activation card');
 });
 

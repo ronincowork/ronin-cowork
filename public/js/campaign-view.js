@@ -7,7 +7,7 @@ import { createCampaignIdentitySurface, createNewCampaignSurface } from './campa
 import { choice, createDeskProfileSurface, skinWord } from './campaign-desk.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
 import { createRoutinesSurface, routinesSummary } from './campaign-routines.js';
-import { createTemplatesSurface } from './campaign-templates.js';
+import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
 import { buildProjectRoots } from './projectroots.js';
 import { deskProfiles } from './desk-profile.js';
 import { request } from './request.js';
@@ -18,7 +18,7 @@ import { progressiveSurface } from './progressive-surface.js';
 const PROFILE = 'campaign';
 // the machine's own half — account, health — is the Admin Desk's.
 // defaults · Project roots lead, and they are the four the page opens on.
-const TYPES = Object.freeze({ machine: 'campaign.machine', templates: 'campaign.templates', defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', routines: 'campaign.routines', profile: 'campaign.desk-profile', create: 'campaign.new' });
+const TYPES = Object.freeze({ machine: 'campaign.machine', templates: CAMPAIGN_TEMPLATES_TYPE, defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', routines: 'campaign.routines', profile: 'campaign.desk-profile', create: 'campaign.new' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.templates, 'campaign.team-templates': TYPES.templates, 'campaign.session-roles': TYPES.templates, '@new-campaign': TYPES.create });
@@ -79,7 +79,7 @@ function registerCampaignSurfaces() {
   // two tabs this page already has as surfaces left out.
   add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'Themes · Account · Archived · Messages · Help desk · Keypad · Desk.'), create: ({ environment: e }) => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk'), campaign: e.selected }); return e.progressive({ el: surface.el, show: () => surface.select(surface.current() || 'themes') }); } });
   // — teams and agents — in the forms' own boxes, by kind. The session-roles card that once
-  add({ type: TYPES.templates, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.templates_summary', 'Team casts, agent loadouts, and the library to download more from.'), create: () => { const surface = createTemplatesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
+  add(campaignTemplatesDefinition());
   if (MULTIPLE_CAMPAIGNS_ENABLED) add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Team and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
   // New Campaign is not registered while multiple Campaigns are off.
   // Desk profile remains registered so a remembered workspace can still restore it, but
