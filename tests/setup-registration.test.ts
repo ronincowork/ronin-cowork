@@ -23,16 +23,16 @@ test('registration begins optional with communication explicitly off', async () 
 test('registration records purpose fields but never stores the plain email', async () => {
   await submitRegistration({
     email: 'person@example.com', purpose: 'Build a product', kind: 'work',
-    user_type: 'individual', goals: ['multiple_providers', 'visible_teams'], intended_use: ['coding', 'research'],
-    theme_preference: 'dark', own_words: 'Keep the setup small.',
+    user_type: 'individual', preferred_feature: 'multiple_providers',
+    reasons: ['different_strengths', 'avoid_lock_in'], run_location: 'personal_server', own_words: 'Keep the setup small.',
   });
   const record = await readRegistration();
   assert.equal(record.email_masked, 'p*****@example.com');
   assert.equal(record.purpose, 'Build a product');
   assert.equal(record.user_type, 'individual');
-  assert.deepEqual(record.goals, ['multiple_providers', 'visible_teams']);
-  assert.deepEqual(record.intended_use, ['coding', 'research']);
-  assert.equal(record.theme_preference, 'dark');
+  assert.equal(record.preferred_feature, 'multiple_providers');
+  assert.deepEqual(record.reasons, ['different_strengths', 'avoid_lock_in']);
+  assert.equal(record.run_location, 'personal_server');
   assert.equal(JSON.stringify(record).includes('person@example.com'), false);
   assert.equal((await registrationAnswer()).status, 'pending', 'submission is not entitlement');
 });
@@ -126,14 +126,17 @@ test('selector definitions retain neutral provider grouping without requirement 
 test('Register presents one open profile flow with card choices and anonymous delivery', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
   for (const name of ['email', 'purpose', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
-  for (const name of ['identity_mode', 'kind', 'goals', 'intended_use', 'theme_preference']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
+  for (const name of ['identity_mode', 'kind', 'preferred_feature', 'run_location']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
+  assert.match(source, /checklistGroup\('reasons'/);
   assert.doesNotMatch(source, /Who is using Ronin\?|\['individual', 'Just me'\]|\['team', 'A team'\]|\['builder', 'Builder'\]|\['exploring', 'Exploring'\]/);
   assert.match(source, /Welcome to Ronin/);
   assert.match(source, /setup-register-group/);
   assert.match(source, /setup-register-choice-grid/);
   assert.match(source, /aria-pressed/);
-  for (const label of ['With email', 'Anonymous', 'No thank you', 'Coding', 'Self-help', 'Personal assistance', 'Automatic']) assert.match(source, new RegExp(label));
-  for (const message of ['Work from anywhere', 'Use multiple providers', 'Run visible agent teams', 'avoid lock-in', 'manage the shared edges']) assert.match(source, new RegExp(message));
+  for (const label of ['With email', 'Anonymous', 'No thank you', 'Work from anywhere', 'Use multiple providers without lock-in', 'Agents with team coordination skills']) assert.match(source, new RegExp(label));
+  for (const message of ['Different models have different strengths', 'network issues', 'New models keep arriving', 'locked into one provider', 'runs out of tokens', 'hidden sub-agents', 'Something else']) assert.match(source, new RegExp(message));
+  for (const place of ['Virtual machine', 'Personal server', 'Personal computer']) assert.match(source, new RegExp(place));
+  assert.doesNotMatch(source, /Your starting theme|theme\.wrap/);
   assert.match(source, /We hope you enjoy Ronin\. If you’d like to share feedback later, we’d be glad to hear it\./);
   assert.match(source, /declinedRegistration[\s\S]*?fit\.hidden = declinedRegistration/);
   assert.match(source, /registerAction\.hidden = declinedRegistration/);

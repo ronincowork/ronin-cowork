@@ -80,6 +80,16 @@ function createRegisterSurface(context) {
     wrap.append(el('span', '', label), group, value);
     return { value, wrap, values: () => multiple ? [...selected] : value.value };
   };
+  const checklistGroup = (name, label, choices) => {
+    const wrap = el('fieldset', 'setup-field setup-register-checklist');
+    wrap.append(el('legend', '', label));
+    const boxes = [];
+    for (const [value, text] of choices) {
+      const box = input(name, 'checkbox'); box.value = value; boxes.push(box);
+      const row = el('label', 'setup-register-check'); row.append(box, el('span', '', text)); wrap.append(row);
+    }
+    return { wrap, values: () => boxes.filter((box) => box.checked).map((box) => box.value) };
+  };
   const email = input('email', 'email'); email.placeholder = 'you@example.com';
   const purpose = input('purpose'); purpose.placeholder = t('setup_surface.purpose_hint', 'What would you like Ronin to help with?');
   const identityMode = choiceGroup('identity_mode', t('setup_surface.identity', 'How would you like to register?'), [
@@ -87,17 +97,22 @@ function createRegisterSurface(context) {
   ]);
   identityMode.wrap.classList.add('setup-register-identity-choice');
   const kind = choiceGroup('kind', t('setup_surface.kind', 'Where Ronin fits'), [['work', 'Work'], ['personal', 'Personal'], ['learning', 'Learning'], ['other', 'Something else']]);
-  const goals = choiceGroup('goals', t('setup_surface.goals', 'What sounds useful about Ronin?'), [
-    ['remote_access', 'Work from anywhere', 'Reach agents while their sessions keep running.'],
-    ['multiple_providers', 'Use multiple providers', 'Mix strengths, switch when needed, avoid lock-in.'],
-    ['visible_teams', 'Run visible agent teams', 'Work with every agent directly and manage the shared edges.'],
-    ['something_else', 'Something else', 'Tell us below.'],
-  ], { multiple: true });
-  const intendedUse = choiceGroup('intended_use', t('setup_surface.intended_use', 'What would you like help with?'), [
-    ['coding', 'Coding'], ['self_help', 'Self-help'], ['personal_assistance', 'Personal assistance'], ['research', 'Research'], ['writing', 'Writing'],
-  ], { multiple: true });
-  const theme = choiceGroup('theme_preference', t('setup_surface.theme', 'Your starting theme'), [
-    ['automatic', 'Automatic', 'Follow this device.'], ['light', 'Light'], ['dark', 'Dark'],
+  const preferredFeature = choiceGroup('preferred_feature', t('setup_surface.preferred_feature', 'Which core Ronin feature do you prefer most?'), [
+    ['remote_access', 'Work from anywhere'],
+    ['multiple_providers', 'Use multiple providers without lock-in'],
+    ['team_coordination', 'Agents with team coordination skills'],
+  ]);
+  const reasons = checklistGroup('reasons', t('setup_surface.reasons', 'Why is that useful to you?'), [
+    ['different_strengths', 'Different models have different strengths. I want to use the best one for each job.'],
+    ['network_resilience', 'Sometimes one model provider is having network issues, so I want another available.'],
+    ['new_models', 'New models keep arriving. I want to switch without rebuilding my workspace.'],
+    ['avoid_lock_in', 'I do not want to get locked into one provider.'],
+    ['subscription_limits', 'If one subscription runs out of tokens, I want to shift work to another provider.'],
+    ['visible_agents', 'I prefer a visible team of agents I can interact with directly, rather than hidden sub-agents.'],
+    ['something_else', 'Something else.'],
+  ]);
+  const runLocation = choiceGroup('run_location', t('setup_surface.run_location', 'Where will you run Ronin?'), [
+    ['virtual_machine', 'Virtual machine'], ['personal_server', 'Personal server'], ['personal_computer', 'Personal computer'],
   ]);
   const own = el('textarea'); own.name = 'own_words'; own.rows = 3;
   const identity = el('div', 'setup-registration-identity');
@@ -109,9 +124,9 @@ function createRegisterSurface(context) {
   about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField);
   const fit = el('section', 'setup-register-group');
   fit.append(
-    el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), goals.wrap, intendedUse.wrap, kind.wrap,
+    el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), preferredFeature.wrap, reasons.wrap, kind.wrap, runLocation.wrap,
     field(t('setup_surface.purpose', 'What would make Ronin useful to you?'), purpose),
-    field(t('setup_surface.own_words', 'Anything else? (optional)'), own), theme.wrap,
+    field(t('setup_surface.own_words', 'Anything else? (optional)'), own),
   );
   const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration sends a confirmation and can unlock Ronin Services. Anonymous registration sends these answers without contact details. Communication stays off unless you choose otherwise.'));
   const declined = el('p', 'setup-register-declined', t('setup_surface.no_thanks_message', 'We hope you enjoy Ronin. If you’d like to share feedback later, we’d be glad to hear it.'));
@@ -121,8 +136,8 @@ function createRegisterSurface(context) {
     const anonymous = identityMode.value.value === 'anonymous';
     const result = await request('/api/setup/registration', { method: 'POST', json: {
       identity_mode: identityMode.value.value, email: email.value, purpose: purpose.value,
-      kind: kind.value.value, user_type: '', goals: goals.values(), intended_use: intendedUse.values(),
-      theme_preference: theme.value.value, own_words: own.value,
+      kind: kind.value.value, user_type: '', goals: [], preferred_feature: preferredFeature.value.value,
+      reasons: reasons.values(), run_location: runLocation.value.value, intended_use: [], theme_preference: '', own_words: own.value,
     } });
     notice.textContent = result.ok
       ? anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.confirm_email', 'Registration saved. Confirm the email to receive Services entitlement.')
@@ -142,7 +157,6 @@ function createRegisterSurface(context) {
   };
   for (const button of identityMode.wrap.querySelectorAll('button')) button.addEventListener('click', paintIdentityMode);
   identityMode.wrap.querySelector('[data-value="email"]')?.click();
-  theme.wrap.querySelector('[data-value="automatic"]')?.click();
   form.append(
     welcome, about, fit,
     consent, registerAction, declined, notice,
@@ -176,7 +190,7 @@ function createRegisterSurface(context) {
     const anonymous = current?.status === 'anonymous';
     identity.hidden = !current?.submitted_at;
     identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.check_email', 'Check your email')),
-      el('span', '', [current?.email_masked, current?.purpose, ...(current?.goals || []), ...(current?.intended_use || [])].filter(Boolean).join(' · ')));
+      el('span', '', [current?.email_masked, current?.purpose, current?.preferred_feature, current?.run_location, ...(current?.reasons || [])].filter(Boolean).join(' · ')));
     form.hidden = Boolean(current?.submitted_at);
     preferences.hidden = !current?.submitted_at || anonymous;
     recoveryOptions.hidden = !current?.submitted_at;
@@ -188,7 +202,9 @@ function createRegisterSurface(context) {
       if (!next?.trim()) return;
       const result = await request('/api/setup/registration/recovery', { method: 'POST', json: {
         action: 'change_address', identity_mode: 'email', email: next.trim(), purpose: current.purpose,
-        kind: current.kind, user_type: current.user_type, goals: current.goals, intended_use: current.intended_use,
+        kind: current.kind, user_type: current.user_type, goals: current.goals,
+        preferred_feature: current.preferred_feature, reasons: current.reasons, run_location: current.run_location,
+        intended_use: current.intended_use,
         theme_preference: current.theme_preference, own_words: current.own_words,
       } });
       notice.textContent = result.ok ? t('setup_surface.registration_address_changed', 'Registration email changed; check the new address.') : result.message;
