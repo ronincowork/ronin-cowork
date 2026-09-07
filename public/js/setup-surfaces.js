@@ -85,7 +85,9 @@ function createRegisterSurface(context) {
   const identityMode = choiceGroup('identity_mode', t('setup_surface.identity', 'How would you like to register?'), [
     ['email', 'With email', 'Receive a confirmation and access to Ronin Services.'],
     ['anonymous', 'Anonymous', 'Send the profile without your name or email.'],
+    ['no_thanks', 'No thank you', 'Continue using Ronin without registering.'],
   ]);
+  identityMode.wrap.classList.add('setup-register-identity-choice');
   const kind = choiceGroup('kind', t('setup_surface.kind', 'Where Ronin fits'), [['work', 'Work'], ['personal', 'Personal'], ['learning', 'Learning'], ['other', 'Something else']]);
   const userType = choiceGroup('user_type', t('setup_surface.user_type', 'Who is using Ronin?'), [['individual', 'Just me'], ['team', 'A team'], ['builder', 'Builder'], ['exploring', 'Exploring']]);
   const intendedUse = choiceGroup('intended_use', t('setup_surface.intended_use', 'What would you like help with?'), [
@@ -108,30 +110,40 @@ function createRegisterSurface(context) {
     field(t('setup_surface.purpose', 'What would make Ronin useful to you?'), purpose),
     field(t('setup_surface.own_words', 'Anything else? (optional)'), own), theme.wrap,
   );
+  const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration sends a confirmation and can unlock Ronin Services. Anonymous registration sends these answers without contact details. Communication stays off unless you choose otherwise.'));
+  const declined = el('p', 'setup-register-declined', t('setup_surface.no_thanks_message', 'We hope you enjoy Ronin. If you’d like to share feedback later, we’d be glad to hear it.'));
+  declined.hidden = true;
+  const registerAction = action(t('setup_surface.register_action', 'Register'), '', async () => {
+    notice.textContent = t('setup_surface.saving', 'Saving…');
+    const anonymous = identityMode.value.value === 'anonymous';
+    const result = await request('/api/setup/registration', { method: 'POST', json: {
+      identity_mode: identityMode.value.value, email: email.value, purpose: purpose.value,
+      kind: kind.value.value, user_type: userType.value.value, intended_use: intendedUse.values(),
+      theme_preference: theme.value.value, own_words: own.value,
+    } });
+    notice.textContent = result.ok
+      ? anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.confirm_email', 'Registration saved. Confirm the email to receive Services entitlement.')
+      : result.message;
+    if (result.ok) { current = result.data; paint(); }
+  });
   const paintIdentityMode = () => {
     const anonymous = identityMode.value.value === 'anonymous';
-    emailField.hidden = anonymous;
-    email.required = !anonymous;
+    const declinedRegistration = identityMode.value.value === 'no_thanks';
+    emailField.hidden = anonymous || declinedRegistration;
+    userType.wrap.hidden = declinedRegistration;
+    fit.hidden = declinedRegistration;
+    consent.hidden = declinedRegistration;
+    registerAction.hidden = declinedRegistration;
+    notice.hidden = declinedRegistration;
+    declined.hidden = !declinedRegistration;
+    email.required = !anonymous && !declinedRegistration;
   };
   for (const button of identityMode.wrap.querySelectorAll('button')) button.addEventListener('click', paintIdentityMode);
   identityMode.wrap.querySelector('[data-value="email"]')?.click();
   theme.wrap.querySelector('[data-value="automatic"]')?.click();
   form.append(
     welcome, about, fit,
-    el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration sends a confirmation and can unlock Ronin Services. Anonymous registration sends these answers without contact details. Communication stays off unless you choose otherwise.')),
-    action(t('setup_surface.register_action', 'Register'), '', async () => {
-      notice.textContent = t('setup_surface.saving', 'Saving…');
-      const anonymous = identityMode.value.value === 'anonymous';
-      const result = await request('/api/setup/registration', { method: 'POST', json: {
-        identity_mode: identityMode.value.value, email: email.value, purpose: purpose.value,
-        kind: kind.value.value, user_type: userType.value.value, intended_use: intendedUse.values(),
-        theme_preference: theme.value.value, own_words: own.value,
-      } });
-      notice.textContent = result.ok
-        ? anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.confirm_email', 'Registration saved. Confirm the email to receive Services entitlement.')
-        : result.message;
-      if (result.ok) { current = result.data; paint(); }
-    }), notice,
+    consent, registerAction, declined, notice,
   );
   const prefs = el('form', 'setup-form setup-preferences');
   const checks = Object.fromEntries(['newsletter', 'release_updates', 'no_communication'].map((name) => [name, input(name, 'checkbox')]));

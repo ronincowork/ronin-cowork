@@ -130,7 +130,10 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.match(source, /setup-register-group/);
   assert.match(source, /setup-register-choice-grid/);
   assert.match(source, /aria-pressed/);
-  for (const label of ['With email', 'Anonymous', 'Coding', 'Self-help', 'Personal assistance', 'Automatic']) assert.match(source, new RegExp(label));
+  for (const label of ['With email', 'Anonymous', 'No thank you', 'Coding', 'Self-help', 'Personal assistance', 'Automatic']) assert.match(source, new RegExp(label));
+  assert.match(source, /We hope you enjoy Ronin\. If you’d like to share feedback later, we’d be glad to hear it\./);
+  assert.match(source, /declinedRegistration[\s\S]*?fit\.hidden = declinedRegistration/);
+  assert.match(source, /registerAction\.hidden = declinedRegistration/);
   assert.match(source, /Communication choices/);
   assert.match(source, /Communication stays off unless you choose otherwise/);
   assert.match(source, /register_action'[\s\S]*?'Register'\), '', async/);
