@@ -96,6 +96,19 @@ Replacing a slot with an ordinary template immediately removes the special contr
 seating. The replacement still has User Message, Customize, and ordinary Launch; no
 template schema or backend launch contract is added.
 
+The **You use Ronin for** row sits above the stones, and the stones themselves rest at the
+same height as the Model providers stones: the row's height is taken out of the rail's top
+room rather than added to it. A session or feature row offers only providers that are
+**activated** on this machine, plus *Default provider*. Grokbot Morning Briefing's **When**
+asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
+time, **One time** a date and a time; the schedule is written in the Cron jobs grammar
+(`daily 08:00`, `weekly mon 08:00`, `once 2026-09-08 08:00`). A role's kick-off message is
+one line at rest and about three while it is being edited. Code Stack Eval browses folders
+here and keeps *Evaluate* (this run) apart from *Use with Ronin* (a workspace folder, via
+the Workspace folders surface); Develop a New Project offers the same door under its
+folder choice; Personal Assistant's **Single assistant** and **Chief of Staff** are two
+buttons, and Recruit appears only for the second.
+
 ## Registration and optional extras
 
 Registration is optional for local Ronin. A submitted identity may be pending or

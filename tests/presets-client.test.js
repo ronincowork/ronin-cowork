@@ -220,11 +220,11 @@ test('Bare Metal keeps two real tile layouts, compact rows, separated sections, 
   assert.match(css, /\.sp-choice-panel \{[^}]*font-size: var\(--text-5\)/);
   assert.match(source, /const wrap = el\('label', 'sp-field sp-section'\)/);
   assert.match(source, /const section = \(label, prompt, \.\.\.content\)/);
-  assert.match(css, /\.sp-field \{[^}]*gap: var\(--space-6\)/);
+  assert.match(css, /\.sp-field \{[^}]*gap: var\(--space-5\)/);
   assert.match(css, /\.sp-section\[hidden\] \{ display: none; \}/);
   assert.match(css, /\.sp-select \{[^}]*font-size: inherit/);
   assert.match(css, /\.sp-lead \{[^}]*font-size: inherit/);
-  assert.match(css, /\.sp-controls > \.sp-section:not\(:first-child\), \.sp-controls \+ \.sp-section \{[^}]*margin-top: var\(--space-12\);[^}]*border-top[^}]*padding-top: var\(--space-8\)/);
+  assert.match(css, /\.sp-controls > \.sp-section:not\(:first-child\), \.sp-controls \+ \.sp-section \{[^}]*margin-top: var\(--space-9\);[^}]*border-top[^}]*padding-top: var\(--space-9\)/);
   assert.match(css, /\.sp-field-label, \.sp-control-label \{[^}]*font-weight: 600/);
   assert.match(css, /\.sp-rows \{[^}]*gap: var\(--space-2\)/);
 });
@@ -232,14 +232,48 @@ test('Bare Metal keeps two real tile layouts, compact rows, separated sections, 
 test('Personal Assistant hides the whole Recruit section until Chief of Staff is selected', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
   assert.match(source, /const recruit = field\('Recruit', specialists\)/);
-  assert.match(source, /const showRecruit = \(\) => \{ recruit\.hidden = select\.value !== 'recruit'; \}/);
+  assert.match(source, /recruit\.hidden = state\.assistant_mode !== 'recruit'/);
+  assert.match(source, /\['single', 'Single assistant'\], \['recruit', 'Chief of Staff'\]/);
+  assert.match(source, /el\('button', 'sp-mode-choice', label\)/);
   assert.doesNotMatch(source, /specialists\.hidden =/);
 });
 
-test('Morning Brief exposes canonical custom timing and expands role instructions while editing', async () => {
+test('Morning Brief asks only for what each cadence needs and expands role instructions while editing', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
-  assert.match(source, /option\('daily', 'Every day'\), option\('weekdays', 'Weekdays'\), option\('once', 'One time'\)/);
-  assert.match(source, /state\.schedule = cadence === 'once' \? `once \$\{date\.value\} \$\{time\.value\}` : `\$\{cadence\} \$\{time\.value\}`/);
-  assert.match(source, /ask\.addEventListener\('focus', \(\) => \{ ask\.rows = 3; \}\)/);
-  assert.match(source, /ask\.addEventListener\('blur', \(\) => \{ ask\.rows = 1; \}\)/);
+  assert.match(source, /option\('daily', 'Every day'\), option\('weekly', 'Day of the week'\), option\('once', 'One time'\)/);
+  assert.match(source, /dayField\.hidden = cadence !== 'weekly'/);
+  assert.match(source, /dateField\.hidden = cadence !== 'once'/);
+  assert.match(source, /state\.schedule = cadence === 'once' \? `once \$\{date\.value\} \$\{time\.value\}` : cadence === 'weekly' \? `weekly \$\{day\.value\} \$\{time\.value\}` : `daily \$\{time\.value\}`/);
+  assert.match(source, /ask\.rows = 3; line\.dataset\.editing = 'true'/);
+  assert.match(source, /ask\.rows = 1; delete line\.dataset\.editing/);
+});
+
+test('preset rows offer only activated providers', () => {
+  const runtime = { providers: [{ id: 'claude', activated: true }, { id: 'codex', installed: true }, { id: 'grok', installable: true }, { id: 'gemini', activated: true }] };
+  assert.deepEqual(presets.eligibleProviders(runtime).map((row) => row.id), ['claude', 'gemini']);
+  assert.deepEqual(presets.eligibleProviders({}), []);
+});
+
+test('the purpose row hands its height to the rail so the stones rest at the shared elevation', async () => {
+  const [source, css] = await Promise.all([
+    readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
+  ]);
+  assert.match(source, /setProperty\?\.\('--sp-intro'/);
+  assert.match(css, /\.sp-surface \.sws:not\(\[data-open='true'\]\) \.sws-rail \{ padding-top: max\(var\(--space-6\), calc\(var\(--sws-stone\) \+ var\(--sws-gap\) - var\(--sp-intro, 0px\)\)\); \}/);
+});
+
+test('Code Stack Eval separates this evaluation from future Ronin workspace use', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /createFolderPicker|Show hidden folders|GitHub repo · remote evaluation pending/);
+  assert.match(source, /folder\.registered_root \? 'Used by Ronin' : 'Use with Ronin'/);
+  assert.match(source, /state\.root_dir = folder\.dir; state\.root = folder\.registered_root\?\.name \|\| ''/);
+  assert.match(source, /environment\.navigateToSurface\?\.\('setup\.roots', \{ dir: folder\.dir \}\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, 'Manage workspace folders'\)/);
+});
+
+test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
 });

@@ -3,7 +3,6 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
-import { createFolderPicker } from './folder-picker.js';
 
 export { createStoneWorkSurface };
 
@@ -117,6 +116,8 @@ export const cascadeProvider = (rows, provider, previous = '') => rows.map((row)
   ...row,
   provider: !row.provider || row.provider === previous ? provider : row.provider,
 }));
+/** The providers a preset row may run on: activated ones only, in catalog order. */
+export const eligibleProviders = (runtime = {}) => (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id && provider.activated === true);
 export const presetActions = (handle) => ['user_message', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
 export function firstActivatableProvider(runtime = {}) {
   return (Array.isArray(runtime.providers) ? runtime.providers : []).find((provider) => {
@@ -206,23 +207,55 @@ export function buildLaunchPlan(slot, message, controls) {
   };
 }
 
-function renderRootControls(host, state, roots, label = 'Which project') {
+function workspaceFoldersAction(environment, label = '＋ workspace folder', detail = {}) {
+  const action = el('button', 'sp-workspace-link', label); action.type = 'button';
+  action.addEventListener('click', () => environment.navigateToSurface?.('setup.roots', detail));
+  return action;
+}
+
+function renderRootControls(host, state, roots, label = 'Which project', environment = null, manage = false) {
   const select = el('select');
   for (const root of roots) select.append(option(root.name || root.id, root.label || root.name || root.id));
   if (!select.options.length) select.append(option(state.root || 'ronin_project_1', state.root || 'Ronin Project 1'));
   select.value = state.root;
   select.addEventListener('change', () => { state.root = select.value; });
-  host.append(field(label, select, 'select'));
+  const content = el('div', 'sp-root-choice'); content.append(select);
+  if (manage) content.append(workspaceFoldersAction(environment));
+  host.append(field(label, content, 'select'));
 }
 
-function renderCodebaseControls(host, state) {
-  const picker = createFolderPicker({ value: state.root_dir || '', onChange: (dir, folder = null) => {
-    state.root_dir = dir;
-    state.root = folder?.registered_root?.name || '';
-  } });
-  host.append(field('Your own codebase', picker.el, 'select'));
-  const url = input(); url.placeholder = 'https://github.com/owner/repository'; url.disabled = true;
-  host.append(field('GitHub repo · remote evaluation pending', url));
+function renderCodebaseControls(host, state, environment) {
+  const browser = el('div', 'sp-codebase-browser');
+  const place = el('div', 'sp-codebase-place');
+  const listing = el('div', 'sp-codebase-list');
+  let current = '';
+  let parent = '';
+  const load = async (dir = current) => {
+    listing.replaceChildren(el('p', 'setup-fine', 'Reading folders…'));
+    const query = new URLSearchParams(); if (dir) query.set('dir', dir);
+    const result = await request(`/api/folders?${query}`, { cache: 'no-store' });
+    if (!result.ok) { listing.replaceChildren(el('p', 'setup-notice bad', result.message)); return; }
+    current = result.data.dir || ''; parent = result.data.parent || '';
+    place.replaceChildren();
+    const up = el('button', 'sp-workspace-link', '← Up'); up.type = 'button'; up.disabled = !parent; up.addEventListener('click', () => parent && load(parent));
+    place.append(up, el('strong', '', current === result.data.home ? 'Home' : current));
+    listing.replaceChildren();
+    for (const folder of result.data.folders || []) {
+      const row = el('div', 'sp-codebase-row');
+      const open = el('button', 'sp-codebase-open', folder.name); open.type = 'button'; open.addEventListener('click', () => load(folder.dir));
+      const kind = el('span', 'sp-codebase-kind', folder.registered_root ? 'workspace folder' : folder.kind === 'repository' ? 'repository' : 'folder');
+      const future = el('button', 'sp-codebase-future', folder.registered_root ? 'Used by Ronin' : 'Use with Ronin'); future.type = 'button';
+      future.setAttribute('aria-pressed', String(Boolean(folder.registered_root)));
+      future.addEventListener('click', () => environment.navigateToSurface?.('setup.roots', { dir: folder.dir }));
+      const choose = el('button', 'sp-codebase-evaluate', state.root_dir === folder.dir ? 'Selected' : 'Evaluate'); choose.type = 'button';
+      choose.addEventListener('click', () => { state.root_dir = folder.dir; state.root = folder.registered_root?.name || ''; void load(current); });
+      row.append(open, kind, future, choose); listing.append(row);
+    }
+    if (!listing.children.length) listing.append(el('p', 'setup-fine', 'No folders here.'));
+  };
+  browser.append(place, listing, workspaceFoldersAction(environment, 'Manage workspace folders'));
+  host.append(field('Your own codebase', browser, 'select'));
+  void load();
 }
 
 const MODELS = Object.freeze({
@@ -301,8 +334,10 @@ function renderAskRows(host, state, key, addLabel) {
       const name = input(row.name); name.setAttribute('aria-label', `${addLabel} ${index + 1}`);
       name.addEventListener('input', () => { row.name = slug(name.value); });
       const ask = el('textarea'); ask.value = row.ask || ''; ask.rows = 1; ask.placeholder = 'What should this agent do?'; ask.setAttribute('aria-label', `Ask for ${row.name}`);
-      ask.addEventListener('focus', () => { ask.rows = 3; });
-      ask.addEventListener('blur', () => { ask.rows = 1; });
+      // One line at rest, about three while editing: the row marks itself so the CSS can
+      // give the open textarea its height without the sibling cells moving.
+      ask.addEventListener('focus', () => { ask.rows = 3; line.dataset.editing = 'true'; });
+      ask.addEventListener('blur', () => { ask.rows = 1; delete line.dataset.editing; });
       ask.addEventListener('input', () => { row.ask = ask.value; });
       const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
       remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });
@@ -315,37 +350,49 @@ function renderAskRows(host, state, key, addLabel) {
   paint(); host.append(rows);
 }
 
+const WEEKDAYS = Object.freeze([['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']]);
+// THREE WAYS TO SAY WHEN, each asking only for what it needs: Every day wants a time;
+// Day of the week wants the day and a time; One time wants the date and a time. The
+// schedule string is the house grammar the Cron jobs route already reads.
 function renderMorningBriefTiming(host, state) {
-  const parsed = String(state.schedule || 'daily 08:00').match(/^(daily|weekdays) (\d{2}:\d{2})$|^once (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
-  let cadence = parsed?.[1] || (parsed?.[3] ? 'once' : 'daily');
+  const parsed = String(state.schedule || 'daily 08:00').match(/^daily (\d{2}:\d{2})$|^weekly ([a-z]{3}) (\d{2}:\d{2})$|^once (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
+  let cadence = parsed?.[1] ? 'daily' : parsed?.[2] ? 'weekly' : parsed?.[4] ? 'once' : 'daily';
   const nextDay = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   const timing = el('details', 'sp-timing');
   const summary = el('summary', 'sp-timing-summary');
   const editor = el('div', 'sp-timing-editor');
   const cadenceSelect = el('select');
-  cadenceSelect.append(option('daily', 'Every day'), option('weekdays', 'Weekdays'), option('once', 'One time'));
+  cadenceSelect.append(option('daily', 'Every day'), option('weekly', 'Day of the week'), option('once', 'One time'));
   cadenceSelect.value = cadence;
-  const date = input(parsed?.[3] || nextDay, 'date');
-  const time = input(parsed?.[2] || parsed?.[4] || '08:00', 'time');
-  const dateField = el('label', 'sp-timing-field'); dateField.append(el('span', '', 'Date'), date);
+  const day = el('select');
+  for (const [value, label] of WEEKDAYS) day.append(option(value, label));
+  day.value = parsed?.[2] || 'mon';
+  const date = input(parsed?.[4] || nextDay, 'date');
+  const time = input(parsed?.[1] || parsed?.[3] || parsed?.[5] || '08:00', 'time');
   const cadenceField = el('label', 'sp-timing-field'); cadenceField.append(el('span', '', 'Repeats'), cadenceSelect);
+  const dayField = el('label', 'sp-timing-field'); dayField.append(el('span', '', 'Day'), day);
+  const dateField = el('label', 'sp-timing-field'); dateField.append(el('span', '', 'Date'), date);
   const timeField = el('label', 'sp-timing-field'); timeField.append(el('span', '', 'Time'), time);
+  const dayName = () => WEEKDAYS.find(([value]) => value === day.value)?.[1] || day.value;
   const paint = () => {
     cadence = cadenceSelect.value;
+    dayField.hidden = cadence !== 'weekly';
     dateField.hidden = cadence !== 'once';
-    state.schedule = cadence === 'once' ? `once ${date.value} ${time.value}` : `${cadence} ${time.value}`;
-    summary.textContent = cadence === 'once' ? `Once · ${date.value} at ${time.value}` : `${cadence === 'daily' ? 'Every day' : 'Weekdays'} at ${time.value}`;
+    state.schedule = cadence === 'once' ? `once ${date.value} ${time.value}` : cadence === 'weekly' ? `weekly ${day.value} ${time.value}` : `daily ${time.value}`;
+    summary.textContent = cadence === 'once' ? `Once · ${date.value} at ${time.value}` : cadence === 'weekly' ? `Every ${dayName()} at ${time.value}` : `Every day at ${time.value}`;
   };
-  cadenceSelect.addEventListener('change', paint); date.addEventListener('input', paint); time.addEventListener('input', paint);
-  editor.append(cadenceField, dateField, timeField); timing.append(summary, editor); paint();
+  for (const control of [cadenceSelect, day, date, time]) { control.addEventListener('change', paint); control.addEventListener('input', paint); }
+  editor.append(cadenceField, dayField, dateField, timeField); timing.append(summary, editor); paint();
   host.append(field('When', timing, 'select'));
 }
 
-function renderSpecialControls(host, handle, state, runtime) {
-  const providers = runtime.providers || [], roots = runtime.roots || [];
-  if (handle === 'staff_my_codebase') renderCodebaseControls(host, state);
-  if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where');
-  if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder');
+function renderSpecialControls(host, handle, state, runtime, environment) {
+  // ONLY A PROVIDER THAT IS ACTIVATED CAN RUN A ROW. The catalog lists every provider
+  // Ronin knows; a row may choose only among the ones this machine can launch with.
+  const providers = eligibleProviders(runtime), roots = runtime.roots || [];
+  if (handle === 'staff_my_codebase') renderCodebaseControls(host, state, environment);
+  if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where', environment, true);
+  if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder', environment);
   if (handle === 'bare_metal') {
     const agents = el('div'); renderRows(agents, state, 'sessions', providers, 'Session');
     const tiles = el('div'); renderTileChoices(tiles, state);
@@ -355,15 +402,19 @@ function renderSpecialControls(host, handle, state, runtime) {
   if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', providers, 'Feature Agent'); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
   if (handle === 'health_and_fitness') { const body = el('div'); renderAskRows(body, state, 'roles', 'role'); host.append(section("Each agent's kick-off message", 'edit', ...body.children)); }
   if (handle === 'personal_assistant') {
-    const select = el('select');
-    select.append(option('single', 'Single assistant'), option('recruit', 'Chief of Staff'));
-    select.value = state.assistant_mode;
+    const modes = el('div', 'sp-mode-options');
     const specialists = input(state.specialists); specialists.placeholder = 'financial adviser, research, scheduling…'; specialists.addEventListener('input', () => { state.specialists = specialists.value; });
     const recruit = field('Recruit', specialists);
-    const showRecruit = () => { recruit.hidden = select.value !== 'recruit'; };
-    select.addEventListener('change', () => { state.assistant_mode = select.value; showRecruit(); });
-    showRecruit();
-    host.append(field('How it runs', select, 'select'), recruit);
+    const paintMode = () => {
+      for (const button of modes.children) button.setAttribute('aria-pressed', String(button.dataset.mode === state.assistant_mode));
+      recruit.hidden = state.assistant_mode !== 'recruit';
+    };
+    for (const [mode, label] of [['single', 'Single assistant'], ['recruit', 'Chief of Staff']]) {
+      const button = el('button', 'sp-mode-choice', label); button.type = 'button'; button.dataset.mode = mode;
+      button.addEventListener('click', () => { state.assistant_mode = mode; paintMode(); }); modes.append(button);
+    }
+    paintMode();
+    host.append(field('How it runs', modes, 'select'), recruit);
   }
   if (handle === 'morning_brief') {
     renderMorningBriefTiming(host, state);
@@ -430,6 +481,13 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     onSelectionChange: (id) => { selected = id == null ? -1 : Number(id); },
   });
   stoneSurface.mount(surface.content, { before: [kindsHost], after: [notice.el] });
+  // THE STONES START WHERE THE OTHER SURFACES' STONES START. The purpose row sits above
+  // the shared rail, so its height is handed to the CSS, which takes it out of the
+  // rail's top room; Presets and Model providers then rest at one elevation.
+  if (typeof ResizeObserver === 'function') {
+    const measure = () => surface.el.style?.setProperty?.('--sp-intro', `${Math.max(0, Math.round(stoneSurface.el.offsetTop - kindsHost.offsetTop))}px`);
+    new ResizeObserver(measure).observe(kindsHost);
+  }
   const paintGrid = () => {
     const visible = visibleIndexes();
     stoneSurface.setItems(slots.map((slot, index) => {
@@ -471,7 +529,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     if (!gate.ready) { launch.el.dataset.held = 'true'; launch.el.setAttribute('aria-disabled', 'true'); }
     go.append(launch.el); heading.append(go); detail.append(heading, warning, el('p', 'sp-description', slot.description || ''));
     const panel = el('div', 'sp-choice-panel');
-    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime); panel.append(fixed); }
+    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, environment); panel.append(fixed); }
     if (slot.handle !== 'bare_metal') panel.append(field('Initial message to agent', message));
     detail.append(panel);
   };
