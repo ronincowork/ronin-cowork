@@ -108,6 +108,7 @@ test('a registry DeskStatus maps into the same shape, and its facts reach the ro
   };
   const d = fromStatus(st);
   assert.equal(d.source, 'registry');
+  assert.equal(d.desk_source, undefined, 'legacy registry rows remain readable without source provenance');
   assert.equal(d.readout, 'parked');
   assert.equal(d.worktree, null, 'unmounted: no path is claimed');
   assert.equal(d.dirty, null);
