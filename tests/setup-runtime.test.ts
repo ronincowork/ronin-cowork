@@ -164,17 +164,27 @@ test('Setup kinds are canonical runtime facts and persist without replacing setu
     providers: { codex: { activated_at: '2026-09-06T01:00:00.000Z' } },
   }));
   assert.deepEqual(await runtime.writeSetupPreferences(['research', 'build', 'research']), {
-    kinds: ['build', 'research'],
+    kinds: ['build', 'research'], providers: [],
   });
   const section = await state.readSetupSection();
   assert.equal(section.completed_at, '2026-09-06T00:00:00.000Z');
   assert.deepEqual(section.providers, { codex: { activated_at: '2026-09-06T01:00:00.000Z' } });
-  assert.deepEqual(section.preferences, { kinds: ['build', 'research'] });
+  assert.deepEqual(section.preferences, { kinds: ['build', 'research'], providers: [] });
   const answer = await runtime.setupRuntimeAnswer(section, { exists: async () => false }, available([]));
-  assert.deepEqual(answer.preferences, { kinds: ['build', 'research'] });
-  await assert.rejects(runtime.writeSetupPreferences('build'), /Send \{ kinds/);
+  assert.deepEqual(answer.preferences, { kinds: ['build', 'research'], providers: [] });
+  assert.deepEqual(await runtime.writeSetupPreferences({ providers: ['hermes', 'openai', 'hermes'] }), {
+    kinds: ['build', 'research'], providers: ['hermes', 'openai'],
+  });
+  assert.deepEqual((await state.readSetupSection()).preferences, {
+    kinds: ['build', 'research'], providers: ['hermes', 'openai'],
+  });
+  assert.deepEqual(await runtime.writeSetupPreferences({ kinds: ['life'] }), {
+    kinds: ['life'], providers: ['hermes', 'openai'],
+  }, 'purpose writes preserve provider opt-ins');
+  await assert.rejects(runtime.writeSetupPreferences('build'), /Send Setup preferences/);
   await assert.rejects(runtime.writeSetupPreferences(['build', 'unknown']), /Kinds are build, life, and research/);
-  assert.deepEqual(await runtime.writeSetupPreferences([]), { kinds: [] });
+  assert.deepEqual(await runtime.writeSetupPreferences([]), { kinds: [], providers: ['hermes', 'openai'] });
+  await assert.rejects(runtime.writeSetupPreferences({ providers: ['bad provider'] }), /provider IDs/);
 });
 
 test.after(async () => { await rm(box, { recursive: true, force: true }); });

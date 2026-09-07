@@ -70,36 +70,35 @@ export function providerPresentation(provider) {
   };
 }
 
-/** The uniform selected-provider path. Only the first unmet step may carry an action. */
-export function providerReadiness(provider) {
+/** Pure labels for the selected-provider opt-in, measured states, and real action routes. */
+export function providerReadiness(provider, optedIn = false) {
   const label = String(provider?.label || provider?.id || 'This provider');
   const presentation = providerPresentation(provider);
   const installed = provider?.installed === true;
   const activated = provider?.activated === true;
-  const authCurrent = installed && !activated;
   return [
     {
-      key: 'use', label: 'Use with Ronin', status: 'complete',
-      detail: `${label} is selected for setup.`, action: 'none',
+      key: 'use', label: 'Use with Ronin', status: optedIn ? 'on' : 'off',
+      detail: '', action: 'opt_in',
     },
     {
-      key: 'installed', label: 'Installed', status: installed ? 'complete' : 'current',
+      key: 'installed', label: 'Install', status: installed ? 'installed' : 'not_installed',
       detail: installed
         ? `${label} is installed${provider?.path ? ` at ${provider.path}` : '.'}`
         : presentation.detail,
-      action: installed ? 'none' : presentation.action,
+      action: installed ? 'none' : presentation.action === 'manual' ? 'manual' : 'install',
       manual: installed ? null : presentation.manual,
     },
     {
-      key: 'authenticated', label: 'Authenticated', status: activated ? 'complete' : authCurrent ? 'current' : 'pending',
+      key: 'authenticated', label: 'Authenticate', status: activated ? 'recorded' : provider?.login_open ? 'open' : installed ? 'available' : 'blocked',
       detail: activated
         ? `${label} setup completion is recorded. Current sign-in remains provider-owned and is not monitored.`
-        : authCurrent ? presentation.detail : '',
-      action: authCurrent ? presentation.action : 'none',
+        : installed ? presentation.detail : 'Install this provider before authentication.',
+      action: provider?.login_open ? 'login_open' : 'sign_in',
     },
     {
-      key: 'ready', label: 'Ready', status: activated ? 'complete' : 'pending',
-      detail: activated ? `${label} is activated for Launch.` : '', action: 'none',
+      key: 'ready', label: 'Ready', status: activated ? 'ready' : 'not_ready',
+      detail: activated ? `${label} is activated for Launch.` : 'Ready after authentication setup is recorded.', action: 'none',
     },
   ];
 }
