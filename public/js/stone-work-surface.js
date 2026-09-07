@@ -94,6 +94,8 @@ export function createStoneWorkSurface({ items = [], selectedId = '', renderDeta
   const api = {
     el: root,
     mount(host, { before = [], after = [] } = {}) {
+      const seat = host.closest?.('.wk-surface-content') || host;
+      if (!String(seat.className || '').split(/\s+/).includes('sws-seat')) seat.className = `${seat.className || ''} sws-seat`.trim();
       if (!String(host.className || '').split(/\s+/).includes('sws-host')) host.className = `${host.className || ''} sws-host`.trim();
       const header = element('div', 'sws-header');
       const footer = element('div', 'sws-footer');
