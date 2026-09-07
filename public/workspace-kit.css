@@ -72,6 +72,11 @@
      the selector's framed cards, and the current-card mark. */
   .wk-workbench-layout[data-workbench-profile='setup'] .wk-selector-group { margin: var(--space-5) var(--space-2) var(--space-2); color: var(--muted); font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
   .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-selector-cards .wk-card[aria-current='page'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
+  .setup-header-toggle { width: var(--space-10); min-height: var(--space-10); padding: 0; font-size: var(--text-5); line-height: 1; }
+  .wk-workbench-layout[data-workbench-profile='setup'][data-setup-viewport='mobile'] { display: flex; flex-direction: column; overflow: auto; scroll-snap-type: none; }
+  .wk-workbench-layout[data-workbench-profile='setup'][data-setup-viewport='mobile'] > .wk-layout-surface { flex: 0 0 auto; width: 100%; scroll-snap-align: none; }
+  .wk-workbench-layout[data-workbench-profile='setup'][data-setup-viewport='mobile'] .wk-workbench-column { height: calc(100dvh - var(--row-head) - var(--space-6)); min-height: 0; }
+  .wk-workbench-layout[data-workbench-profile='setup'][data-setup-viewport='mobile'] .wk-workbench-splitter { display: none; }
   body:has([data-workspace-view='setup']:not([hidden])) #shapecycle { display: none; }
 
   .team-agent-card .wk-card-summary { color: var(--fg-strong); font-weight: 600; }
@@ -118,6 +123,10 @@
     .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] { scroll-snap-type: none; }
     .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] > .wk-layout-surface { flex: 0 0 auto; width: 100%; scroll-snap-align: none; }
     .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-column { height: calc(100dvh - var(--row-head) - var(--space-6)); min-height: 0; }
+    .wk-workbench-layout[data-workbench-profile='setup'][data-setup-viewport='desktop'] { display: grid; overflow: hidden; }
+    .wk-workbench-layout[data-workbench-profile='setup'][data-setup-viewport='desktop'] > .wk-layout-surface { flex: initial; width: auto; }
+    .wk-workbench-layout[data-workbench-profile='setup'][data-setup-viewport='desktop'] .wk-workbench-column { height: 100%; }
+    .wk-workbench-layout[data-workbench-profile='setup'][data-setup-viewport='desktop'] .wk-workbench-splitter { display: block; }
     .wk-new-team-layout { display: flex; flex-direction: column; overflow: auto; }
     .wk-new-team-layout > .wk-layout-surface { flex: 0 0 auto; width: 100%; }
   }

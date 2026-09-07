@@ -6,6 +6,7 @@ import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { openLaunchForm, openTemplateLaunchForm, openWorkspaceStateTab, reserveWorkspaceTab } from './workspace.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { setTheme } from './theme.js';
 
 const PROFILE = 'setup';
 // The selector's fixed order. Model providers comes first because it is the first job.
@@ -34,7 +35,41 @@ export function createSetupView() {
   registerSetupWorkbench();
   const { createSurface } = WorkspaceKit.primitives;
   let ctx = null;
+  let bench = null;
+  let viewportMode = window.matchMedia('(max-width: 680px)').matches ? 'mobile' : 'desktop';
   const providerHosts = new Set();
+  const headerToggle = (icon, label, action) => {
+    const button = document.createElement('button');
+    button.className = 'wk-action setup-header-toggle';
+    button.type = 'button';
+    button.textContent = icon;
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.addEventListener('click', action);
+    return button;
+  };
+  const viewportToggle = headerToggle('▯', 'Use mobile presentation', () => {
+    viewportMode = viewportMode === 'mobile' ? 'desktop' : 'mobile';
+    paintHeaderToggles();
+    save();
+  });
+  const themeToggle = headerToggle('◐', 'Use dark appearance', () => {
+    setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+    paintHeaderToggles();
+  });
+  const paintHeaderToggles = () => {
+    if (bench?.el) bench.el.dataset.setupViewport = viewportMode;
+    const mobile = viewportMode === 'mobile';
+    viewportToggle.textContent = mobile ? '▣' : '▯';
+    viewportToggle.title = mobile ? 'Use desktop presentation' : 'Use mobile presentation';
+    viewportToggle.setAttribute('aria-label', viewportToggle.title);
+    viewportToggle.setAttribute('aria-pressed', String(mobile));
+    const dark = document.documentElement.dataset.theme === 'dark';
+    themeToggle.textContent = dark ? '☀' : '◐';
+    themeToggle.title = dark ? 'Use light appearance' : 'Use dark appearance';
+    themeToggle.setAttribute('aria-label', themeToggle.title);
+    themeToggle.setAttribute('aria-pressed', String(dark));
+  };
   const blank = (id) => {
     const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' });
     const word = document.createElement('p'); word.className = 'cv-blank-word'; word.textContent = t('team.workspace_blank', 'Workspace');
@@ -52,7 +87,6 @@ export function createSetupView() {
       bench?.select('workspace2');
     },
   });
-  let bench = null;
   const environment = {
     presets: (workspace) => createPresetsSurface({ environment: presetEnvironment(), workspace }),
     showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
@@ -80,7 +114,7 @@ export function createSetupView() {
       return { el: terminal.el, fit: terminal.fit, park: terminal.park, destroy };
     },
   };
-  const save = () => ctx?.patchViewState('setup', bench.snapshot());
+  const save = () => ctx?.patchViewState('setup', { ...bench.snapshot(), viewportMode });
   bench = WorkspaceKit.workbench.create({
     profile: PROFILE,
     tenant: { kind: 'setup' },
@@ -92,6 +126,7 @@ export function createSetupView() {
     selectorWorkspace: 'workspace2',
     selectorCurrent: true,
     selectorFilter: (type) => type !== PRESETS_TYPE,
+    actions: [viewportToggle, themeToggle],
     onStateChange: save,
     onPlacement: save,
   });
@@ -113,6 +148,8 @@ export function createSetupView() {
       // shared runtime truth before restoring a remembered surface into workspace 2.
       bench.refreshSelector();
       const stored = context.viewState('setup') || {};
+      viewportMode = stored.viewportMode === 'mobile' || stored.viewportMode === 'desktop' ? stored.viewportMode : viewportMode;
+      paintHeaderToggles();
       // Widths a person set on this shape are kept; a state saved by an earlier Setup
       // shape (selector first) is re-seated on the workbench order instead.
       const widths = sameOrder(stored.arrangement?.order, DEFAULT_ARRANGEMENT.order) ? stored.arrangement.widths : DEFAULT_ARRANGEMENT.widths;
