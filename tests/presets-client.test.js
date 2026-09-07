@@ -227,3 +227,10 @@ test('Bare Metal keeps two real tile layouts, compact rows, separated sections, 
   assert.match(css, /\.sp-field-label, \.sp-control-label \{[^}]*font-weight: 600/);
   assert.match(css, /\.sp-rows \{[^}]*gap: var\(--space-2\)/);
 });
+
+test('Personal Assistant hides the whole Recruit section until Chief of Staff is selected', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /const recruit = field\('Recruit', specialists\)/);
+  assert.match(source, /const showRecruit = \(\) => \{ recruit\.hidden = select\.value !== 'recruit'; \}/);
+  assert.doesNotMatch(source, /specialists\.hidden =/);
+});

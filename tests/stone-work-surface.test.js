@@ -56,7 +56,8 @@ test('consumers cannot override the shared hidden detail or stone geometry', asy
   assert.doesNotMatch(css, /\.sp-work-surface \.sws-detail/);
   assert.match(css, /\.wk-surface:not\(\[data-flush='true'\]\) > \.wk-surface-content\.sws-host \{ padding: var\(--space-6\) var\(--space-11\); \}/);
   assert.match(css, /\.sws \{[^}]*gap: var\(--space-11\)/);
-  assert.match(css, /@media \(max-width: 700px\) \{\s*\.wk-surface:not\(\[data-flush='true'\]\) > \.wk-surface-content\.sws-host \{ padding-inline: var\(--space-6\); \}\s*\.sws \{ gap: var\(--space-6\); \}/);
+  assert.match(css, /\.wk-surface:has\(> \.sws-host\) \{ container: stone-work-surface-seat \/ inline-size; \}/);
+  assert.match(css, /@container stone-work-surface-seat \(max-width: 40rem\) \{\s*\.wk-surface:not\(\[data-flush='true'\]\) > \.wk-surface-content\.sws-host \{ padding-inline: var\(--space-6\); \}\s*\.sws \{ gap: var\(--space-6\); \}/);
   assert.doesNotMatch(css, /\.setup-provider-stones \.sws-(?:rail|grid|detail)/);
   assert.doesNotMatch(css, /\.setup-roots-stones \.sws-(?:rail|grid|detail)/);
 });

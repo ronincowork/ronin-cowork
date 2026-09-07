@@ -329,10 +329,13 @@ function renderSpecialControls(host, handle, state, runtime) {
   if (handle === 'personal_assistant') {
     const select = el('select');
     select.append(option('single', 'Single assistant'), option('recruit', 'Chief of Staff'));
-    select.value = state.assistant_mode; select.addEventListener('change', () => { state.assistant_mode = select.value; specialists.hidden = select.value !== 'recruit'; });
+    select.value = state.assistant_mode;
     const specialists = input(state.specialists); specialists.placeholder = 'financial adviser, research, scheduling…'; specialists.addEventListener('input', () => { state.specialists = specialists.value; });
-    specialists.hidden = state.assistant_mode !== 'recruit';
-    host.append(field('How it runs', select, 'select'), field('Recruit', specialists));
+    const recruit = field('Recruit', specialists);
+    const showRecruit = () => { recruit.hidden = select.value !== 'recruit'; };
+    select.addEventListener('change', () => { state.assistant_mode = select.value; showRecruit(); });
+    showRecruit();
+    host.append(field('How it runs', select, 'select'), recruit);
   }
   if (handle === 'morning_brief') {
     const when = el('select');
