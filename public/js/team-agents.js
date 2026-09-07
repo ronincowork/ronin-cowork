@@ -8,7 +8,11 @@ const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
 const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 
 /** A fresh row. `open` is the screen's business; everything else is the Agent's. */
-export const agentRow = () => ({ name: '', assignment: '', lead: false, reach: 'open', recruit: 'open', output: ['open'], routinesOn: [], routinesOff: [], open: false });
+export const agentRow = ({ lead = false, assignment = '' } = {}) => ({
+  name: '', assignment, lead,
+  reach: lead ? 'plan' : 'open', recruit: lead ? 'staff agents' : 'open',
+  output: lead ? ['the team'] : ['open'], routinesOn: [], routinesOff: [], open: false,
+});
 
 export function agentPicks(rows) {
   return rows
@@ -25,7 +29,7 @@ export function agentPicks(rows) {
     }));
 }
 
-export function createAgentRows({ n, key, rows, changed, onToggle }) {
+export function createAgentRows({ n, key, rows, changed, onToggle, leadAssignment = () => '' }) {
   const step = createStep({ n, key, title: t('new_team.agents', 'Agents'), onToggle });
   const host = el('div');
 
@@ -36,17 +40,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle }) {
       box.dataset.open = String(row.open);
       const head = el('div', 'ntf-agent-head');
 
-      const lead = el('button', 'ntf-agent-lead', '人');
-      lead.type = 'button';
-      lead.setAttribute('aria-pressed', String(row.lead));
-      lead.title = t('new_team.mark_team_lead', 'Mark as team lead');
-      lead.addEventListener('click', () => {
-        const next = !row.lead;
-        for (const other of rows()) other.lead = false;
-        row.lead = next;
-        paint();
-        changed();
-      });
+      const role = el('span', 'ntf-agent-role', row.lead ? t('new_team.lead_agent', 'Lead Agent') : t('new_team.agent', 'Agent'));
 
       const name = el(row.open ? 'textarea' : 'input', 'ntf-agent-name');
       if (row.open) name.rows = 2;
@@ -81,7 +75,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle }) {
       drop.title = t('new_team.agent_drop', 'Remove this Agent');
       drop.addEventListener('click', () => { rows().splice(index, 1); paint(); changed(); });
 
-      head.append(lead, name, assignment, more, drop);
+      head.append(role, name, assignment, more, drop);
       box.append(head);
 
       if (row.open) {
@@ -101,10 +95,19 @@ export function createAgentRows({ n, key, rows, changed, onToggle }) {
       }
       host.append(box);
     });
-    const add = el('button', 'fs-door', t('new_team.agent_add', '＋ Add an Agent'));
+    const buttons = el('div', 'ntf-agent-adds');
+    const addLead = el('button', 'fs-door', t('new_team.lead_add', '＋ Add Lead Agent'));
+    addLead.type = 'button';
+    addLead.addEventListener('click', () => {
+      for (const other of rows()) other.lead = false;
+      rows().push(agentRow({ lead: true, assignment: leadAssignment() }));
+      paint(); changed();
+    });
+    const add = el('button', 'fs-door', t('new_team.agent_add', '＋ Add Agent'));
     add.type = 'button';
     add.addEventListener('click', () => { rows().push(agentRow()); paint(); changed(); });
-    host.append(add);
+    buttons.append(addLead, add);
+    host.append(buttons);
   }
 
   step.body.append(host);
