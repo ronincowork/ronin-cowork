@@ -22,6 +22,9 @@ export interface RegistrationRecord {
   kind: string;
   user_type: string;
   goals: string[];
+  preferred_feature: string;
+  reasons: string[];
+  run_location: string;
   intended_use: string[];
   theme_preference: string;
   own_words: string;
@@ -38,6 +41,9 @@ const EMPTY: RegistrationRecord = {
   kind: '',
   user_type: '',
   goals: [],
+  preferred_feature: '',
+  reasons: [],
+  run_location: '',
   intended_use: [],
   theme_preference: '',
   own_words: '',
@@ -111,6 +117,9 @@ export async function submitRegistration(input: Record<string, unknown>): Promis
     kind: text(input.kind, 80),
     user_type: text(input.user_type, 80),
     goals: list(input.goals),
+    preferred_feature: text(input.preferred_feature, 80),
+    reasons: list(input.reasons),
+    run_location: text(input.run_location, 80),
     intended_use: list(input.intended_use),
     theme_preference: text(input.theme_preference, 24),
     own_words: text(input.own_words, 500),
@@ -154,6 +163,9 @@ export async function registrationAnswer() {
     kind: record.kind,
     user_type: record.user_type,
     goals: record.goals,
+    preferred_feature: record.preferred_feature,
+    reasons: record.reasons,
+    run_location: record.run_location,
     intended_use: record.intended_use,
     theme_preference: record.theme_preference,
     own_words: record.own_words,
