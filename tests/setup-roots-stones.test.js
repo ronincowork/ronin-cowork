@@ -39,16 +39,17 @@ test('roots adapt the real project-root detail and Add form to the shared stone 
   assert.match(roots, /\/repo-profile/);
 });
 
-test('the selected folder is one page: head, Summary, Folder, Repository, Edit, then maintenance', async () => {
+test('the selected folder is one page: a head line with every action, then Summary, Folder, Repository', async () => {
   const roots = await source('public/js/projectroots.js');
   const detail = roots.slice(roots.indexOf('function detail(r)'), roots.indexOf('function render()'));
   assert.match(detail, /make\('article', 'pr-detail'\)/);
   assert.match(detail, /d\.dataset\.mode = editing === r\.name \? 'edit' : 'read'/);
-  assert.match(detail, /make\('h2', 'pr-detail-name', r\.name\)/, 'the head is the handle');
   assert.match(detail, /make\('p', 'pr-detail-state', words\.join\(' · '\)\)/, 'one measured state line');
-  assert.match(detail, /if \(editing === r\.name\) \{\s*d\.append\(form\(r\)\);\s*return d;\s*\}/, 'Edit swaps the facts for the real form under the same head');
-  assert.match(detail, /head\.append\(edit\)/, 'Edit sits in the head beside the name, never below the fold');
-  const order = ["t('roots.edit_folder', 'Edit')", "t('roots.summary', 'Summary')", "t('roots.section_folder', 'Folder')", "t('roots.section_repository', 'Repository')", "'pr-section pr-maintenance'"]
+  assert.match(detail, /if \(editing === r\.name\) \{\s*const f = form\(r\);[\s\S]*?d\.append\(f\);\s*return d;\s*\}/, 'Edit swaps the facts for the real form under the same head');
+  assert.match(detail, /go\.append\(edit, shelve, drop\)/, 'Edit, Archive and Exclude share the head line');
+  assert.match(detail, /go\.append\(f\.querySelector\('\.pr-frow'\)\)/, 'Save and Cancel stand where Edit stood');
+  assert.match(detail, /make\('h3', 'pr-detail-name', r\.name\)/, 'the head is the handle');
+  const order = ["t('roots.edit_folder', 'Edit')", "t('roots.summary', 'Summary')", "t('roots.section_folder', 'Folder')", "t('roots.section_repository', 'Repository')"]
     .map((needle) => detail.indexOf(needle));
   assert.ok(order.every((at) => at >= 0), 'every section is present');
   assert.deepEqual([...order].sort((a, b) => a - b), order, 'sections come in the ruled order');
@@ -57,7 +58,7 @@ test('the selected folder is one page: head, Summary, Folder, Repository, Edit, 
   assert.match(detail, /t\('roots\.repository_none'/);
   assert.match(detail, /kind: 'primary'/, 'Edit is the one primary action');
   assert.match(detail, /const \{ shelve, drop \} = maintenance\(r\)/, 'Archive and Exclude keep their real handlers');
-  assert.doesNotMatch(detail, /createElement\('details'\)|pr-disclosure|pr-chip/, 'no disclosures and no chips');
+  assert.doesNotMatch(detail, /createElement\('details'\)|pr-disclosure|pr-chip|pr-maintenance/, 'no disclosures, chips, or second action group');
   assert.doesNotMatch(detail, /pr-remit|pr-dir\b/, 'summary and directory appear once each');
 });
 
@@ -88,10 +89,14 @@ test('roots carry no parallel stone DOM or CSS presentation and the detail rhyth
   assert.match(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state/);
   assert.doesNotMatch(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state\s*\{[^}]*?(?:border|border-radius|background|padding):/);
   assert.match(css, /\.setup-roots-stones \.setup-roots-add-stone[\s\S]*?border-color: var\(--kaki\)[\s\S]*?border-style: dashed[\s\S]*?background: color-mix\(in srgb, var\(--kaki-tint\)/);
-  assert.match(css, /\.pr-section \+ \.pr-section,\s*\.pr-detail \.pr-group \+ \.pr-group \{[^}]*border-top: var\(--edge-2\) solid var\(--kaki\)/);
-  assert.match(css, /\.pr-detail-head \{[^}]*grid-template-columns: minmax\(0, 1fr\) auto/, 'the head carries the name and the Edit action side by side');
+  assert.match(css, /\.pr-detail-head \{[^}]*border-bottom: var\(--edge-2\) solid var\(--kaki\)/, 'one kaki rule closes the head');
+  assert.match(css, /\.pr-detail-heading \{[^}]*justify-content: space-between/, 'the head line carries the name and its actions, as Presets does');
+  const detailCss = css.slice(css.indexOf("/* Setup's selected folder"), css.indexOf('.cv-worktrees-default {'));
+  assert.doesNotMatch(detailCss, /--text-(?:[1-3]|[6-9]|10)\b/, 'only 14px body and 13px notes inside the detail');
+  assert.match(detailCss, /\.pr-detail \.pr-f input,\s*\.pr-detail \.pr-f select \{[^}]*border: 0;[^}]*background: var\(--well\)[^}]*font: inherit/, 'fields are drawn as Presets fields, never browser defaults');
   assert.match(css, /\.pr-detail \{[^}]*font-size: var\(--text-5\)/);
   assert.match(css, /\.pr-detail \.pr-group \{[^}]*border: 0/, 'no boxes inside the detail');
+  assert.match(roots, /go\.append\(f\.querySelector\('\.pr-frow'\)\); \/\/ Add and Cancel on the head line/);
 });
 
 test('roots stones mount visible loading, empty, and failure output without changing Campaign roots', async () => {
