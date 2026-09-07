@@ -139,6 +139,7 @@ and at most one action for the state Ronin measured:
 
 | Measured | Status | The one action |
 |---|---|---|
+| the read is still in flight | Reading local gbrain status… (painted at once; the real read can take seconds) | none |
 | the gbrain service is absent | Not installed on this machine | Open Ronin Services |
 | Services installed but switched off | Installed · Ronin Services is switched off | Open Ronin Services |
 | installed, but not loaded | Not installed on this machine | Load gbrain |

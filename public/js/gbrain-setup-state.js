@@ -3,7 +3,7 @@
 import { t } from './lexicon.js';
 
 export const GBRAIN_SETUP_STATES = Object.freeze([
-  'services_needed', 'services_off', 'not_installed', 'installing', 'install_failed', 'removing', 'running', 'stopped', 'unreadable',
+  'reading', 'services_needed', 'services_off', 'not_installed', 'installing', 'install_failed', 'removing', 'running', 'stopped', 'unreadable',
 ]);
 
 const word = (v) => ({
@@ -42,6 +42,14 @@ function facts(data) {
 export function gbrainSetupModel(result, availability = null) {
   const knownInstalled = availability?.installed === true;
   const base = { facts: [], log: null, polling: false, observedAt: null };
+  // No read yet: the surface paints at once and says it is reading. The real read shells
+  // out to the gbrain CLI and can take seconds; an empty body in that window is a defect.
+  if (result === undefined) {
+    return { ...base, state: 'reading', tone: '', summary: null,
+      status: t('gbrain.setup_status_reading', 'Reading local gbrain status…'),
+      next: t('gbrain.setup_next_reading', 'Ronin is asking the local process, the embedding weights, and the integrations list.'),
+      action: null };
+  }
   if (!result?.ok) {
     // Services installed but switched off: the part is on disk and its status route is not loaded.
     if (availability?.services?.installed === true && availability.services.active !== true) {

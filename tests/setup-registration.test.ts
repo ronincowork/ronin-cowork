@@ -286,7 +286,8 @@ test('Setup gbrain model gives every measured state one status, one next line, a
       ...over,
     },
   });
-  const cases: Array<[string, unknown, unknown, string, string | null, string]> = [
+  const cases: Array<[string, unknown, unknown, string, string | null, string | null]> = [
+    ['reading', undefined, { installed: true, active: true }, 'Reading local gbrain status…', null, null],
     ['services_needed', { ok: false, status: 404, message: 'HTTP 404' }, { installed: false, active: false }, 'Not installed on this machine', 'open_services', 'not installed'],
     ['unreadable', { ok: false, status: 500, message: 'HTTP 500' }, { installed: true, active: false }, 'Status could not be read', 'check_again', 'installed'],
     ['services_off', { ok: false, status: 404, message: 'HTTP 404' }, { installed: true, active: false, services: { installed: true, active: false } }, 'Installed · Ronin Services is switched off', 'open_services', 'installed'],
@@ -332,7 +333,8 @@ test('Setup gbrain paints the model and keeps the commons dashboard on its defau
   assert.match(setup, /onState: \(summary\) => notifySummary\(SETUP_SURFACE_TYPES\.gbrain, summary/);
   assert.match(setup, /openServices: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.services/);
   assert.match(gbrain, /import \{ gbrainAssistantPrompt, gbrainSetupModel \} from '\.\/gbrain-setup-state\.js'/);
-  assert.match(gbrain, /if \(setup\) \{ renderSetup\(await request\('\/api\/gbrain'\)\); return; \}/);
+  assert.match(gbrain, /if \(!root\.querySelector\('\.setup-gbrain-compact'\)\) renderSetup\(undefined\)/);
+  assert.match(gbrain, /const mine = \+\+reads;[\s\S]*?if \(mine === reads\) renderSetup\(result\)/);
   assert.match(gbrain, /if \(!setup\) root\.append\(head, privacy, search, integrations\)/);
   assert.match(gbrain, /className = 'setup-gbrain-compact'|make\('section', 'setup-gbrain-compact'\)/);
   assert.match(gbrain, /setAttribute\('aria-live', 'polite'\)/);

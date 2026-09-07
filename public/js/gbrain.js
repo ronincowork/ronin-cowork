@@ -141,7 +141,7 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
   // Every fact is the snapshot's own; every press is the same route the commons tab uses.
   const renderSetup = (result) => {
     const model = gbrainSetupModel(result, options.availability?.());
-    options.onState?.(model.summary, model);
+    if (model.summary) options.onState?.(model.summary, model);
     if (model.polling && !polling) polling = setInterval(() => { if (isShowing()) void load(); else stopPolling(); }, 3000);
     if (!model.polling) stopPolling();
     const make = (tag, className, text) => {
@@ -292,8 +292,17 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
     return el;
   };
 
+  // Setup paints before the read and keeps the last paint until the next read lands, so
+  // the body is never empty; an older slow read never overwrites a newer one.
+  let reads = 0;
   const load = async () => {
-    if (setup) { renderSetup(await request('/api/gbrain')); return; }
+    if (setup) {
+      if (!root.querySelector('.setup-gbrain-compact')) renderSetup(undefined);
+      const mine = ++reads;
+      const result = await request('/api/gbrain');
+      if (mine === reads) renderSetup(result);
+      return;
+    }
     refresh.disabled = true;
     refresh.textContent = t('gbrain.checking', 'checking…');
     const r = await request('/api/gbrain');
