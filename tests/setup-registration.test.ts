@@ -123,13 +123,28 @@ test('Register presents one open profile flow with bounded choices and no Preset
   assert.doesNotMatch(source, /registration_pending'[\s\S]*?Registration pending/);
 });
 
-test('Services gives two value points and routes its only registration gate action directly', async () => {
+test('Services leads with identity and benefits, then routes its only registration action directly', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+  assert.match(source, /setup-services-mark/);
+  assert.match(source, /mark\.src = 'brand\/nin-mark\.svg'/);
+  assert.ok(source.indexOf('services_value_records') < source.indexOf('services_register_enables'), 'benefits precede the registration gate');
   assert.match(source, /services_value_records/);
   assert.match(source, /services_value_library/);
-  assert.match(source, /services_requires_short/);
+  assert.match(source, /services_register_enables/);
   assert.match(source, /register_direct'[\s\S]*?workbench\?\.place\(SETUP_SURFACE_TYPES\.register/);
+  assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short/);
   assert.doesNotMatch(source, /usedFor: t\('setup_surface\.services_used'/);
+});
+
+test('Services keeps exact lifecycle states secondary and offers only the real install action', async () => {
+  const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+  for (const key of ['services_not_entitled', 'services_entitled_status', 'services_installed_status', 'services_activated_status', 'services_active_status']) {
+    assert.match(source, new RegExp(key));
+  }
+  assert.match(source, /entitled && !facts\?\.installed[\s\S]*?\/api\/services\/install/);
+  assert.match(source, /services_activate_next/);
+  assert.match(source, /services_switch_next/);
+  assert.doesNotMatch(source, /const state = el\('dl'|<dd>|'Yes' : 'No'/);
 });
 
 test('Setup gbrain opts into one diagnosed status notice without raw transport errors', async () => {

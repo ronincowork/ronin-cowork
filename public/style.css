@@ -5851,10 +5851,21 @@ button.wb-door:hover b {
 .setup-field input:not([type='checkbox']), .setup-field select, .setup-field textarea { width: 100%; box-sizing: border-box; }
 .setup-field:has(input[type='checkbox']) { grid-template-columns: 1fr auto; align-items: center; }
 .setup-lede, .setup-fine, .setup-notice, .setup-state { margin: 0; }
-.setup-services-compact { align-content: start; max-width: 38rem; gap: var(--space-4); }
-.setup-compact-intro { display: grid; gap: var(--space-4); }
-.setup-value-points { display: grid; gap: var(--space-2); margin: 0; padding-left: var(--space-7); color: var(--muted-2); }
-.setup-requirement { margin: 0; color: var(--fg-strong); font-size: var(--text-3); font-weight: 650; }
+.setup-services-compact { align-content: start; width: min(100%, 42rem); margin: 0 auto; gap: var(--space-5); }
+.setup-services-intro { display: grid; gap: var(--space-6); }
+.setup-services-lockup { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; }
+.setup-services-mark { width: 3.5rem; height: 3.5rem; object-fit: contain; }
+.setup-services-identity { display: grid; gap: var(--space-2); }
+.setup-services-identity h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-7); font-weight: 600; }
+.setup-services-benefits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.setup-services-benefit { display: grid; align-content: start; gap: var(--space-2); min-height: 7rem; border-top: var(--edge-2) solid var(--kaki); background: var(--panel); padding: var(--space-5); }
+.setup-services-benefit h3, .setup-services-benefit p { margin: 0; }
+.setup-services-benefit h3 { color: var(--fg-strong); font-size: var(--form-head); }
+.setup-services-benefit p, .setup-services-enablement, .setup-services-next { color: var(--muted-2); font-size: var(--form-note); line-height: 1.4; }
+.setup-services-enablement { margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-5); }
+.setup-services-status { display: grid; gap: var(--space-2); border-left: var(--edge-2) solid var(--ok-2); padding: var(--space-3) var(--space-5); }
+.setup-services-status-line, .setup-services-next { margin: 0; }
+.setup-services-status-line { color: var(--fg-strong); font-size: var(--form-input); font-weight: 650; }
 .setup-services-compact > .wk-action { justify-self: start; }
 .gb-notice { display: grid; align-content: start; justify-items: start; max-width: 38rem; gap: var(--space-4); border-left: var(--edge-2) solid var(--line-2); padding: var(--space-4) var(--space-6); }
 .gb-notice h3, .gb-notice p { margin: 0; }
@@ -5875,6 +5886,7 @@ button.wb-door:hover b {
   .setup-register-group { grid-template-columns: 1fr; padding: var(--space-4); }
   .setup-register-group > * { grid-column: 1; }
   .setup-surface-body { padding: var(--space-4); }
+  .setup-services-benefits { grid-template-columns: 1fr; }
   .setup-explainer { margin: var(--space-4) var(--space-4) 0; }
 }
 .cs-detected { margin-top: var(--space-1); padding: var(--space-4) var(--space-5); border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted-2); font-size: var(--text-2); }
