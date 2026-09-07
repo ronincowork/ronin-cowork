@@ -241,9 +241,9 @@ test('Personal Assistant hides the whole Recruit section until Chief of Staff is
 test('Morning Brief asks only for what each cadence needs and expands role instructions while editing', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
   assert.match(source, /option\('daily', 'Every day'\), option\('weekly', 'Day of the week'\), option\('once', 'One time'\)/);
-  assert.match(source, /dayField\.hidden = cadence !== 'weekly'/);
+  assert.match(source, /weekdayField\.hidden = cadence !== 'weekly'/);
   assert.match(source, /dateField\.hidden = cadence !== 'once'/);
-  assert.match(source, /state\.schedule = cadence === 'once' \? `once \$\{date\.value\} \$\{time\.value\}` : cadence === 'weekly' \? `weekly \$\{day\.value\} \$\{time\.value\}` : `daily \$\{time\.value\}`/);
+  assert.match(source, /`weekly \$\{weekday\.value\} \$\{time\.value\}`/);
   assert.match(source, /ask\.rows = 3; line\.dataset\.editing = 'true'/);
   assert.match(source, /ask\.rows = 1; delete line\.dataset\.editing/);
 });
@@ -261,6 +261,21 @@ test('the purpose row hands its height to the rail so the stones rest at the sha
   ]);
   assert.match(source, /setProperty\?\.\('--sp-intro'/);
   assert.match(css, /\.sp-surface \.sws:not\(\[data-open='true'\]\) \.sws-rail \{ padding-top: max\(var\(--space-6\), calc\(var\(--sws-stone\) \+ var\(--sws-gap\) - var\(--sp-intro, 0px\)\)\); \}/);
+});
+
+test('Code Stack Eval separates this evaluation from future Ronin workspace use', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /createFolderPicker|Show hidden folders|GitHub repo · remote evaluation pending/);
+  assert.match(source, /folder\.registered_root \? 'Used by Ronin' : 'Use with Ronin'/);
+  assert.match(source, /state\.root_dir = folder\.dir; state\.root = folder\.registered_root\?\.name \|\| ''/);
+  assert.match(source, /environment\.navigateToSurface\?\.\('setup\.roots', \{ dir: folder\.dir \}\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, 'Manage workspace folders'\)/);
+});
+
+test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
 });
 
 test('Code Stack Eval separates this evaluation from future Ronin workspace use', async () => {

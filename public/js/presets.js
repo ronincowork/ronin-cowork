@@ -350,13 +350,15 @@ function renderAskRows(host, state, key, addLabel) {
   paint(); host.append(rows);
 }
 
-const WEEKDAYS = Object.freeze([['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']]);
 // THREE WAYS TO SAY WHEN, each asking only for what it needs: Every day wants a time;
 // Day of the week wants the day and a time; One time wants the date and a time. The
 // schedule string is the house grammar the Cron jobs route already reads.
 function renderMorningBriefTiming(host, state) {
-  const parsed = String(state.schedule || 'daily 08:00').match(/^daily (\d{2}:\d{2})$|^weekly ([a-z]{3}) (\d{2}:\d{2})$|^once (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
-  let cadence = parsed?.[1] ? 'daily' : parsed?.[2] ? 'weekly' : parsed?.[4] ? 'once' : 'daily';
+  const schedule = String(state.schedule || 'daily 08:00');
+  const daily = schedule.match(/^daily (\d{2}:\d{2})$/);
+  const weekly = schedule.match(/^weekly (sun|mon|tue|wed|thu|fri|sat) (\d{2}:\d{2})$/);
+  const once = schedule.match(/^once (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
+  let cadence = weekly ? 'weekly' : once ? 'once' : 'daily';
   const nextDay = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   const timing = el('details', 'sp-timing');
   const summary = el('summary', 'sp-timing-summary');
@@ -364,25 +366,28 @@ function renderMorningBriefTiming(host, state) {
   const cadenceSelect = el('select');
   cadenceSelect.append(option('daily', 'Every day'), option('weekly', 'Day of the week'), option('once', 'One time'));
   cadenceSelect.value = cadence;
-  const day = el('select');
-  for (const [value, label] of WEEKDAYS) day.append(option(value, label));
-  day.value = parsed?.[2] || 'mon';
-  const date = input(parsed?.[4] || nextDay, 'date');
-  const time = input(parsed?.[1] || parsed?.[3] || parsed?.[5] || '08:00', 'time');
-  const cadenceField = el('label', 'sp-timing-field'); cadenceField.append(el('span', '', 'Repeats'), cadenceSelect);
-  const dayField = el('label', 'sp-timing-field'); dayField.append(el('span', '', 'Day'), day);
+  const weekday = el('select');
+  for (const [value, label] of [['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']]) weekday.append(option(value, label));
+  weekday.value = weekly?.[1] || 'mon';
+  const date = input(once?.[1] || nextDay, 'date');
+  const time = input(daily?.[1] || weekly?.[2] || once?.[2] || '08:00', 'time');
+  const weekdayField = el('label', 'sp-timing-field'); weekdayField.append(el('span', '', 'Day'), weekday);
   const dateField = el('label', 'sp-timing-field'); dateField.append(el('span', '', 'Date'), date);
+  const cadenceField = el('label', 'sp-timing-field'); cadenceField.append(el('span', '', 'Repeats'), cadenceSelect);
   const timeField = el('label', 'sp-timing-field'); timeField.append(el('span', '', 'Time'), time);
-  const dayName = () => WEEKDAYS.find(([value]) => value === day.value)?.[1] || day.value;
   const paint = () => {
     cadence = cadenceSelect.value;
-    dayField.hidden = cadence !== 'weekly';
+    weekdayField.hidden = cadence !== 'weekly';
     dateField.hidden = cadence !== 'once';
-    state.schedule = cadence === 'once' ? `once ${date.value} ${time.value}` : cadence === 'weekly' ? `weekly ${day.value} ${time.value}` : `daily ${time.value}`;
-    summary.textContent = cadence === 'once' ? `Once · ${date.value} at ${time.value}` : cadence === 'weekly' ? `Every ${dayName()} at ${time.value}` : `Every day at ${time.value}`;
+    state.schedule = cadence === 'once'
+      ? `once ${date.value} ${time.value}`
+      : cadence === 'weekly' ? `weekly ${weekday.value} ${time.value}` : `daily ${time.value}`;
+    summary.textContent = cadence === 'once'
+      ? `Once · ${date.value} at ${time.value}`
+      : cadence === 'weekly' ? `Every ${weekday.options[weekday.selectedIndex].text} at ${time.value}` : `Every day at ${time.value}`;
   };
-  for (const control of [cadenceSelect, day, date, time]) { control.addEventListener('change', paint); control.addEventListener('input', paint); }
-  editor.append(cadenceField, dayField, dateField, timeField); timing.append(summary, editor); paint();
+  cadenceSelect.addEventListener('change', paint); weekday.addEventListener('change', paint); date.addEventListener('input', paint); time.addEventListener('input', paint);
+  editor.append(cadenceField, weekdayField, dateField, timeField); timing.append(summary, editor); paint();
   host.append(field('When', timing, 'select'));
 }
 
