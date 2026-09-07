@@ -20,10 +20,12 @@ export interface RegistrationRecord {
   email_masked: string | null;
   purpose: string;
   kind: string;
+  kind_other: string;
   user_type: string;
   goals: string[];
   preferred_feature: string;
   reasons: string[];
+  reason_other: string;
   run_location: string;
   intended_use: string[];
   theme_preference: string;
@@ -39,10 +41,12 @@ const EMPTY: RegistrationRecord = {
   email_masked: null,
   purpose: '',
   kind: '',
+  kind_other: '',
   user_type: '',
   goals: [],
   preferred_feature: '',
   reasons: [],
+  reason_other: '',
   run_location: '',
   intended_use: [],
   theme_preference: '',
@@ -115,10 +119,12 @@ export async function submitRegistration(input: Record<string, unknown>): Promis
     email_masked: identityMode === 'email' ? maskEmail(email) : null,
     purpose: text(input.purpose, 80),
     kind: text(input.kind, 80),
+    kind_other: text(input.kind_other, 160),
     user_type: text(input.user_type, 80),
     goals: list(input.goals),
     preferred_feature: text(input.preferred_feature, 80),
     reasons: list(input.reasons),
+    reason_other: text(input.reason_other, 240),
     run_location: text(input.run_location, 80),
     intended_use: list(input.intended_use),
     theme_preference: text(input.theme_preference, 24),
@@ -161,10 +167,12 @@ export async function registrationAnswer() {
     email_masked: record.email_masked,
     purpose: record.purpose,
     kind: record.kind,
+    kind_other: record.kind_other,
     user_type: record.user_type,
     goals: record.goals,
     preferred_feature: record.preferred_feature,
     reasons: record.reasons,
+    reason_other: record.reason_other,
     run_location: record.run_location,
     intended_use: record.intended_use,
     theme_preference: record.theme_preference,
