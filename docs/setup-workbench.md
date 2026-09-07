@@ -124,10 +124,15 @@ entitlement that route demands. Switch is a toggle, **Turn on** or **Turn off**,
 it sets the Campaign's `ronin_services` Routine — the same map Routines and Installs saves —
 and cascades to new teams and Agents; a team can still differ in its Team Configuration. After
 a press the status says the rest, and a fourth control, **Restart**, appears for as long as
-`/api/installed` reports `restart_needed`: it is `POST /api/machine/restart`, which answers and
-then runs `ronin_bin/tejun-machine-restart` — the one sanctioned restart, Ronin and nothing
-else; sessions live in the tmux server and stay up. The surface then watches the machine come
-back and re-reads it, so the same control also notices a restart an Agent was asked to do.
+`/api/installed` reports `restart_needed`, painted kaki because it is the one thing left to do.
+It is `POST /api/machine/restart`, which runs `ronin_bin/tejun-machine-restart` — the one
+sanctioned restart, Ronin and nothing else; sessions live in the tmux server and stay up. A
+copy of Ronin that is not the installed service (a preview, a hand-started copy) refuses with
+a sentence instead of restarting the wrong Ronin. The browser reads the restart off the
+machine: `/api/installed` carries the server's `startedAt`, and the control waits for it to
+change before re-reading, so a restart an Agent was asked to do is noticed the same way. While
+Ronin is down for the moment, the surface keeps what it painted rather than reading as
+not installed.
 Unlocked views and the other parts start (or stop) on their own; only new Agents are born
 with the Services reading.
 

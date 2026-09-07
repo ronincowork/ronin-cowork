@@ -9,20 +9,24 @@ const RESTART_TOOL = join(REPO_ROOT, 'ronin_bin', 'tejun-machine-restart');
 /**
  * POST /api/machine/restart — the Setup Services surface's Restart press.
  *
- * Ronin restarts itself, so the answer goes out first and the restart follows a beat later;
- * the browser then watches /api/installed come back and reads `restart_needed` off it. The
- * restart runs as its own transient unit when systemd-run is here, so the kill of this
- * service's cgroup cannot take the restart request down with it; otherwise the tool runs
- * directly and systemd still honours the job it has already queued. Sessions are untouched:
- * they live in the tmux server, not in Ronin (see the tool's own header).
+ * The tool restarts the installed Ronin service. A copy of Ronin started by hand — a preview,
+ * a developer's `npm start` — is not that service, so pressing Restart there would restart the
+ * wrong Ronin and leave this one unchanged; systemd marks its own services with INVOCATION_ID,
+ * and without it this route refuses with a plain sentence instead. When this copy is the
+ * service, the tool is run and no answer follows: the restart takes this process down, and the
+ * browser reads the restart off /api/installed's `startedAt` changing. Only a refusal from the
+ * tool answers — its own words, so the person reads what it saw. Sessions are untouched: they
+ * live in the tmux server, not in Ronin (see the tool's own header).
  */
 export function registerMachineRestart(app: express.Express): void {
   app.post('/api/machine/restart', (_req, res) => {
-    res.json({ started: true, via: 'tejun-machine-restart' });
-    setTimeout(() => {
-      void execFile('systemd-run', ['--user', '--quiet', '--collect', `--unit=ronin-restart-${Date.now()}`, RESTART_TOOL], { timeout: 20_000 })
-        .catch(() => execFile(RESTART_TOOL, [], { timeout: 60_000 }))
-        .catch((error: Error) => console.error(`[machine-restart] ${error.message}`));
-    }, 150);
+    if (!process.env.INVOCATION_ID) {
+      res.status(409).json({ error: 'This copy of Ronin is not the installed service, so it cannot restart itself; whoever started it restarts it.' });
+      return;
+    }
+    void execFile(RESTART_TOOL, [], { timeout: 90_000 }).then(
+      ({ stdout }) => res.json({ started: true, said: String(stdout || '').trim().slice(0, 400) }),
+      (error: Error & { stderr?: string }) => res.status(409).json({ error: (error.stderr || error.message).trim().slice(0, 400) }),
+    );
   });
 }
