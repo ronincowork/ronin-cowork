@@ -124,7 +124,7 @@ function createRegisterSurface(context) {
   about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField);
   const fit = el('section', 'setup-register-group');
   fit.append(
-    el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), preferredFeature.wrap, reasons.wrap, kind.wrap, runLocation.wrap,
+    el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), runLocation.wrap, preferredFeature.wrap, reasons.wrap, kind.wrap,
     field(t('setup_surface.purpose', 'What would make Ronin useful to you?'), purpose),
     field(t('setup_surface.own_words', 'Anything else? (optional)'), own),
   );
