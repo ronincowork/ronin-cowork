@@ -26,18 +26,25 @@ tejun-desk — manage private worktrees and their Team hand-in lifecycle
 
 Usage:
   tejun-desk open <repo[:branch]> [--source dev|team]
+  tejun-desk assign <repo[:branch]> --session <name> --team <team> [--source dev|team]
   tejun-desk status [<repo[:branch]>] [--assignment]
   tejun-desk sync [<repo[:branch]>]
   tejun-desk hand-in [<repo[:branch]>] [--assignment]
   tejun-desk close [<repo[:branch]>]
+  tejun-desk receipts [<repo>] [--line | --id <receipt-id>]
+  tejun-desk handoff <repo[:branch]> --to <session[,session]>
+  tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"
 
 Common tasks:
   Start fresh work with --source dev; use --source team when joining ongoing Team work.
   Check status when surprised, sync accepted dev changes, commit, then hand in.
 
 Open creates a private desk; sync merges local dev; hand-in admits committed work to
-the Team review line. None performs Git push. Close only removes a clean, integrated
-desk. Related: tejun-desk receipts; the Ronin Worktrees birth guidance.
+the Team review line. Assign lets the lead choose the same source for another Agent;
+receipts are the publication record; handoff transfers custody without moving work.
+None performs Git push. Close only removes a clean, integrated desk. Discard is the
+only destructive form and requires the exact confirmation shown above. Related: the
+Ronin Worktrees birth guidance.
 EOF
     exit 0 ;;
 esac

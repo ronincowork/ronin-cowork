@@ -46,9 +46,10 @@ Usage:
   tejun-session-set <live-name> [--team <team>] [--lead] [--root <path>]
 
 A bare live name reads it. An unused name creates an Agent; flags on a live name update
-only stated facts. --team adds membership; --lead sets that Agent as the Team lead.
-Birth-only flags are refused for live Agents. Related: tejun-team --help;
-tejun-team-set --help; tejun-fork --help
+only stated facts. --team adds membership; --lead sets or changes that Team's lead to
+this Agent. CLI membership is additive: to move an Agent, add the new Team here, then
+remove the old Team on that Team's page in the coworkspace. Birth-only flags are refused
+for live Agents. Related: tejun-team --help; tejun-team-set --help; tejun-fork
 EOF
     exit 0 ;;
 esac

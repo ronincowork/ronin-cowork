@@ -28,8 +28,11 @@ Usage:
                         [--state active|archived] [--campaign-defaults] [--add s1,s2]
 
 Create a Team by naming one that has no record; otherwise only named fields change.
---add adds live Agents and never removes members. This writes the Team record and may
-change membership. Related: tejun-team --help; tejun-session-set --help
+--add adds live Agents and never removes members. To move an Agent between Teams, add
+the destination membership, then remove the old Team on that Team's page in the
+coworkspace. Set or change its lead with `tejun-session-set <agent> --team <team> --lead`.
+This writes the Team record and may change membership. Related: tejun-team --help;
+tejun-session-set --help
 EOF
     exit 0 ;;
 esac

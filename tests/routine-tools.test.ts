@@ -103,6 +103,26 @@ test('projected ronin_bin tools resolve the symlink and reach the repository and
     assert.notEqual(invalidHelp.code, 0, `${command} refuses surplus help arguments`);
     assert.match(invalidHelp.out, new RegExp(`Run ${command.replace('_', '.')} --help`));
   }
+  const deskHelp = (await run(['tejun-desk', '--help'])).out;
+  for (const task of ['open', 'assign', 'status', 'sync', 'hand-in', 'close', 'receipts', 'handoff', 'discard']) {
+    assert.match(deskHelp, new RegExp(`tejun-desk ${task}`), `desk help includes ${task}`);
+  }
+  assert.match(deskHelp, /--source dev\|team/);
+  assert.match(deskHelp, /only destructive form/);
+  assert.match(deskHelp, /None performs Git push/);
+
+  const teamHelp = [
+    (await run(['tejun-team', '--help'])).out,
+    (await run(['tejun-session-set', '--help'])).out,
+    (await run(['tejun-team-set', '--help'])).out,
+  ].join('\n');
+  assert.match(teamHelp, /creates? an Agent/i);
+  assert.match(teamHelp, /Create a Team/i);
+  assert.match(teamHelp, /adds? membership/i);
+  assert.match(teamHelp, /move an Agent/i);
+  assert.match(teamHelp, /remove the old Team on that Team's page/i);
+  assert.match(teamHelp, /sets? or changes? that Team's lead/i);
+  assert.doesNotMatch(teamHelp, /tejun-fork --help/);
   const tejun = await run(['tejun']);
   assert.match(tejun.out, /forkit/, `tejun lists the stock macros through the symlink: ${tejun.out}`);
   const teamMacro = await run(['tejun', 'team']);
