@@ -411,7 +411,8 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       className: [!r.facts?.exists ? 'gone' : '', r.archived ? 'archived' : ''].filter(Boolean).join(' '),
     })), {
       id: NEW,
-      label: t('roots.add_stone', 'Add Workspace Folder'),
+      label: t('roots.add_stone', 'Add A Workspace'),
+      glyph: '+',
       className: 'setup-roots-add-stone',
       attrs: { title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') },
     }]);

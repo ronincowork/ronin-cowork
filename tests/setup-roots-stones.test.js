@@ -23,7 +23,7 @@ test('roots adapt the real project-root blocks and Add form to the shared stone 
   assert.match(roots, /stoneSurface\.refreshDetail\(\)/);
   assert.match(roots, /const openAdd = stones \? null : createAction/);
   assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[messages\] \}\)/);
-  assert.match(roots, /id: NEW,[\s\S]*?label: t\('roots\.add_stone', 'Add Workspace Folder'\),[\s\S]*?className: 'setup-roots-add-stone'/);
+  assert.match(roots, /id: NEW,[\s\S]*?label: t\('roots\.add_stone', 'Add A Workspace'\),[\s\S]*?glyph: '\+',[\s\S]*?className: 'setup-roots-add-stone'/);
   assert.doesNotMatch(roots, /stoneSurface\.openDetail/);
   assert.doesNotMatch(roots, /secondary: r\.remit \|\| r\.dir/);
   assert.match(roots, /t\('roots\.stone_ready', 'Ready'\)/);
@@ -44,7 +44,8 @@ test('roots carry no parallel stone DOM or CSS presentation', async () => {
   assert.doesNotMatch(css, /\.setup-roots-stones \.pr-stone/);
   assert.doesNotMatch(css, /--pr-stone/);
   assert.match(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state/);
-  assert.match(css, /\.setup-roots-stones \.setup-roots-add-stone[\s\S]*?border-style: dashed/);
+  assert.doesNotMatch(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state\s*\{[^}]*?(?:border|border-radius|background|padding):/);
+  assert.match(css, /\.setup-roots-stones \.setup-roots-add-stone[\s\S]*?border-color: var\(--kaki\)[\s\S]*?border-style: dashed[\s\S]*?background: color-mix\(in srgb, var\(--kaki-tint\)/);
 });
 
 test('roots stones mount visible loading, empty, and failure output without changing Campaign roots', async () => {
