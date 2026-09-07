@@ -21,7 +21,7 @@ function value(v) {
 }
 
 /** The service-owned gbrain commons_tab. Without its service it is never entered. */
-export function buildGbrain(root, isShowing, askPersonalAssistant) {
+export function buildGbrain(root, isShowing, askPersonalAssistant, options = {}) {
   const head = document.createElement('div');
   head.className = 'gb-head';
   const intro = document.createElement('div');
@@ -200,12 +200,40 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
   };
 
   const load = async () => {
+    refresh.hidden = false;
     refresh.disabled = true;
     refresh.textContent = t('gbrain.checking', 'checking…');
     const r = await request('/api/gbrain');
     refresh.disabled = false;
     refresh.textContent = t('gbrain.refresh', '↻ Refresh');
     if (!r.ok) {
+      if (options.designedErrors) {
+        refresh.hidden = true;
+        root.replaceChildren();
+        const notice = document.createElement('section');
+        notice.className = 'gb-notice';
+        notice.setAttribute('role', 'status');
+        const title = heading(t('gbrain.status_unavailable', 'gbrain status is unavailable'));
+        const availability = options.availability?.();
+        const known = document.createElement('p');
+        known.className = 'gb-known';
+        known.textContent = availability?.installed
+          ? t('gbrain.known_installed', 'Ronin reports that gbrain is installed on this machine.')
+          : t('gbrain.known_not_installed', 'Ronin reports that gbrain is not installed on this machine.');
+        const diagnosis = document.createElement('p');
+        diagnosis.textContent = t('gbrain.status_diagnosis', 'Setup could not read the local gbrain status. Nothing was changed.');
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'wk-action';
+        retry.textContent = t('gbrain.check_again', 'Check again');
+        retry.addEventListener('click', () => {
+          root.replaceChildren(head, privacy, search, integrations);
+          void load();
+        });
+        notice.append(title, known, diagnosis, retry);
+        root.append(notice);
+        return;
+      }
       privacy.innerHTML = '';
       privacy.append(row(t('gbrain.status', 'gbrain status'), r.message, 'bad'));
       search.innerHTML = '';

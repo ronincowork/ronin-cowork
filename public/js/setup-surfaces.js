@@ -6,7 +6,6 @@ import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
 import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
 import { mountProviderAttachment, providerFromRuntime } from './setup-provider-state.js';
-import { createKindsPreference, renderKindPills } from './presets.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 
 export { mountProviderAttachment, providerFromRuntime, providerOffers } from './setup-provider-state.js';
@@ -48,14 +47,8 @@ export function setupExplainer({ usedFor, requires, use }) {
 
 function createRegisterSurface(context) {
   const out = surface(t('setup_surface.register', 'Register'));
-  const body = el('div', 'setup-surface-body');
+  const body = el('div', 'setup-surface-body setup-register-compact');
   const notice = el('p', 'setup-notice');
-  // What you use Ronin for: the same pills as above the stones; the answer picks the
-  // three presets shown first. It is a Setup preference, not a registration field.
-  const kindsField = el('div', 'setup-kinds');
-  kindsField.append(el('span', 'cv-eyebrow', t('setup_surface.kinds_lead', 'What you use Ronin for · pick any')));
-  renderKindPills(kindsField, context.environment?.kinds || createKindsPreference());
-  kindsField.append(el('p', 'setup-fine', t('setup_surface.kinds_note', 'Picks the presets you see first. Every preset stays reachable.')));
   let current = null;
   const field = (label, control) => { const wrap = el('label', 'setup-field'); wrap.append(el('span', '', label), control); return wrap; };
   const input = (name, type = 'text') => { const node = el('input'); node.name = name; node.type = type; return node; };
@@ -70,15 +63,15 @@ function createRegisterSurface(context) {
   const form = el('form', 'setup-form setup-register-form');
   const registrationDetails = el('details', 'setup-register-disclosure');
   const registrationFields = el('div', 'setup-register-disclosure-body');
-  registrationDetails.append(el('summary', '', t('setup_surface.registration_details', 'Registration details')), registrationFields);
+  registrationDetails.append(el('summary', '', t('setup_surface.registration_details', 'Optional profile')), registrationFields);
   registrationFields.append(
-    field(t('setup_surface.purpose', 'Purpose'), purpose), field(t('setup_surface.kind', 'Kind'), kind),
-    field(t('setup_surface.user_type', 'Type of user'), userType), field(t('setup_surface.own_words', 'Anything else (optional)'), own),
+    field(t('setup_surface.purpose', 'Why you use Ronin'), purpose), field(t('setup_surface.kind', 'Kind'), kind),
+    field(t('setup_surface.user_type', 'Type of user'), userType), field(t('setup_surface.own_words', 'How you use Ronin (optional)'), own),
   );
   form.append(
     el('p', 'setup-lede', t('setup_surface.register_lede', 'Optional. Registration unlocks access to Ronin Services; local Ronin keeps working without it.')),
     field(t('setup_surface.email', 'Email'), email), registrationDetails,
-    el('p', 'setup-fine', t('setup_surface.consent_exact', 'Email confirmation grants Services access; communication choices remain separate.')),
+    el('p', 'setup-fine', t('setup_surface.consent_exact', 'Confirmation grants Services access. Communication is off until you choose otherwise.')),
     action(t('setup_surface.register_action', 'Register'), '', async () => {
       notice.textContent = t('setup_surface.saving', 'Saving…');
       const result = await request('/api/setup/registration', { method: 'POST', json: { email: email.value, purpose: purpose.value, kind: kind.value, user_type: userType.value, own_words: own.value } });
@@ -92,7 +85,7 @@ function createRegisterSurface(context) {
   const prefNotice = el('p', 'setup-notice');
   const recovery = el('div', 'setup-registration-recovery');
   const preferencesDisclosure = el('details', 'setup-register-disclosure setup-preferences-disclosure');
-  preferencesDisclosure.append(el('summary', '', t('setup_surface.communication_preferences', 'Communication preferences')), prefs);
+  preferencesDisclosure.append(el('summary', '', t('setup_surface.communication_preferences', 'Communication choices')), prefs);
   const recoveryDisclosure = el('details', 'setup-register-disclosure setup-recovery-disclosure');
   recoveryDisclosure.append(el('summary', '', t('setup_surface.registration_options', 'Registration options')), recovery);
   prefs.append(
@@ -121,6 +114,13 @@ function createRegisterSurface(context) {
     if (current?.communication) for (const key of Object.keys(checks)) checks[key].checked = current.communication[key] === true;
     for (const [key, box] of Object.entries(followUps)) box.checked = current?.communication?.follow_up?.includes(key) === true;
     recovery.replaceChildren();
+    const changeEmail = () => action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
+      const next = window.prompt(t('setup_surface.new_registration_email', 'Send registration confirmation to:'));
+      if (!next?.trim()) return;
+      const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'change_address', email: next.trim(), purpose: current.purpose, kind: current.kind, user_type: current.user_type, own_words: current.own_words } });
+      notice.textContent = result.ok ? t('setup_surface.registration_address_changed', 'Registration email changed; check the new address.') : result.message;
+      if (result.ok) { current = result.data; paint(); }
+    });
     if (current?.status === 'pending') {
       recovery.append(
         action(t('setup_surface.check_registration', 'Check confirmation'), 'primary', async () => {
@@ -132,15 +132,9 @@ function createRegisterSurface(context) {
           const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'resend' } });
           notice.textContent = result.ok ? t('setup_surface.registration_resent', 'Confirmation resent.') : result.message;
         }),
-        action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
-          const next = window.prompt(t('setup_surface.new_registration_email', 'Send registration confirmation to:'));
-          if (!next?.trim()) return;
-          const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'change_address', email: next.trim(), purpose: current.purpose, kind: current.kind, user_type: current.user_type, own_words: current.own_words } });
-          notice.textContent = result.ok ? t('setup_surface.registration_address_changed', 'Registration email changed; check the new address.') : result.message;
-          if (result.ok) { current = result.data; paint(); }
-        }),
+        changeEmail(),
       );
-    }
+    } else if (current?.submitted_at) recovery.append(changeEmail());
     if (current?.submitted_at) recovery.append(action(t('setup_surface.delete_registration', 'Delete registration'), 'danger', async () => {
       if (!window.confirm(t('setup_surface.delete_registration_confirm', 'Delete this registration and its Services entitlement from this machine? Communication preferences will also be removed.'))) return;
       const result = await request('/api/setup/registration', { method: 'DELETE' });
@@ -149,7 +143,7 @@ function createRegisterSurface(context) {
     }));
     notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
   };
-  body.append(kindsField, identity, form, preferencesDisclosure, recoveryDisclosure); out.content.append(body);
+  body.append(identity, form, preferencesDisclosure, recoveryDisclosure); out.content.append(body);
   return { el: out.el, show: async () => { const result = await request('/api/setup/registration', { cache: 'no-store' }); current = result.ok ? result.data : null; paint(); } };
 }
 
@@ -249,20 +243,30 @@ function createRootsSurface(context) {
 
 function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
-  out.content.append(setupExplainer({
-    usedFor: t('setup_surface.services_used', 'Readable work records, voice, usage history, memory, and the Ronin Library.'),
-    requires: t('setup_surface.services_requires', 'A registered identity grants entitlement. Installation, activation, and the switch are separate states.'),
-    use: t('setup_surface.services_how', 'Register, confirm your email, install Services, then choose whether new Agents use the Services Routine.'),
-  }));
-  const body = el('div', 'setup-surface-body'); out.content.append(body);
+  const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);
+  const explain = () => {
+    const intro = el('section', 'setup-compact-intro');
+    const values = el('ul', 'setup-value-points');
+    values.append(
+      el('li', '', t('setup_surface.services_value_records', 'Readable work records and memory across your work.')),
+      el('li', '', t('setup_surface.services_value_library', 'Voice tools and access to the Ronin Library.')),
+    );
+    intro.append(
+      el('p', 'setup-lede', t('setup_surface.services_intro', 'Ronin Services extends local Ronin when you want connected features.')),
+      values,
+      el('p', 'setup-requirement', t('setup_surface.services_requires_short', 'Requires a confirmed registration.')),
+    );
+    return intro;
+  };
   const show = async () => {
     const [registration, installed] = await Promise.all([
       request('/api/setup/registration', { cache: 'no-store' }),
       request('/api/installed', { cache: 'no-store' }),
     ]);
     body.replaceChildren();
+    body.append(explain());
     if (!registration.ok || registration.data?.status === 'optional') {
-      body.append(el('p', 'setup-notice', t('setup_surface.register_first', 'Register first to request Services entitlement. Registration remains optional for local Ronin.')));
+      body.append(action(t('setup_surface.register_direct', 'Register'), '', () => context.workbench?.place(SETUP_SURFACE_TYPES.register, context.workspace || 'workspace2')));
       notifySummary(SETUP_SURFACE_TYPES.services, 'registration optional', context.workbench);
       return;
     }
@@ -286,13 +290,11 @@ function createServicesSurface(context) {
 
 function createGbrainSurface(context) {
   const out = surface(t('pane.gbrain', 'gbrain'));
-  out.content.append(setupExplainer({
-    usedFor: t('setup_surface.gbrain_used', 'Shared, searchable knowledge for connected Agents.'),
-    requires: t('setup_surface.gbrain_requires', 'gbrain plus its local embedding model; no separate chat-model key is required by Ronin.'),
-    use: t('setup_surface.gbrain_how', 'Load gbrain, check its local process and search state, then enable its Routine for the Agents that should use it.'),
-  }));
   const host = el('div', 'setup-surface-body'); out.content.append(host);
-  const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt));
+  const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
+    designedErrors: true,
+    availability: () => context.environment?.setupRuntime?.gbrain || null,
+  });
   return { el: out.el, show: () => { room.enter?.(); notifySummary(SETUP_SURFACE_TYPES.gbrain, 'state shown', context.workbench); } };
 }
 

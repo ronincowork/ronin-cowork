@@ -5824,6 +5824,10 @@ button.wb-door:hover b {
 .setup-explainer-body p, .setup-fine { color: var(--muted-2); }
 .setup-form, .setup-provider, .setup-registration-identity { display: grid; gap: var(--space-4); padding: var(--space-5); border: var(--edge) solid var(--line); border-radius: var(--radius-xs); }
 .setup-register-form { max-width: 38rem; padding: 0; border: 0; }
+.setup-register-form[hidden] { display: none; }
+.setup-register-form > .wk-action { justify-self: start; }
+.setup-register-compact { align-content: start; max-width: 42rem; }
+.setup-register-compact .setup-registration-identity { border: 0; border-left: var(--edge-2) solid var(--ok-2); border-radius: 0; padding: var(--space-3) var(--space-5); }
 .setup-register-disclosure { max-width: 38rem; border-top: var(--edge) solid var(--line); }
 .setup-register-disclosure > summary { cursor: pointer; padding: var(--space-3) 0; color: var(--muted); font-size: var(--text-2); font-weight: 650; }
 .setup-register-disclosure:not([open]) > :not(summary) { display: none; }
@@ -5836,6 +5840,16 @@ button.wb-door:hover b {
 .setup-field input:not([type='checkbox']), .setup-field select, .setup-field textarea { width: 100%; box-sizing: border-box; }
 .setup-field:has(input[type='checkbox']) { grid-template-columns: 1fr auto; align-items: center; }
 .setup-lede, .setup-fine, .setup-notice, .setup-state { margin: 0; }
+.setup-services-compact { align-content: start; max-width: 38rem; gap: var(--space-4); }
+.setup-compact-intro { display: grid; gap: var(--space-4); }
+.setup-value-points { display: grid; gap: var(--space-2); margin: 0; padding-left: var(--space-7); color: var(--muted-2); }
+.setup-requirement { margin: 0; color: var(--fg-strong); font-size: var(--text-3); font-weight: 650; }
+.setup-services-compact > .wk-action { justify-self: start; }
+.gb-notice { display: grid; align-content: start; justify-items: start; max-width: 38rem; gap: var(--space-4); border-left: var(--edge-2) solid var(--line-2); padding: var(--space-4) var(--space-6); }
+.gb-notice h3, .gb-notice p { margin: 0; }
+.gb-notice h3 { color: var(--fg-strong); font-size: var(--text-5); }
+.gb-notice p { color: var(--muted-2); }
+.gb-notice .gb-known { color: var(--fg); }
 .setup-good { color: var(--ok); }
 .setup-provider-list { display: flex; flex-direction: column; min-height: 0; }
 .setup-provider-stone[data-activated='true'] { border-color: var(--ok-2); }
