@@ -156,10 +156,7 @@ function createRegisterSurface(context) {
   const about = el('section', 'setup-register-group');
   about.classList.add('setup-register-about');
   const emailField = field(t('setup_surface.email', 'Email address'), email);
-  identityMode.wrap.classList.add('setup-register-half');
-  emailField.classList.add('setup-register-half');
-  runLocation.wrap.classList.add('setup-register-half');
-  /* About you: how to register, the address if so, and where Ronin will live. */
+  /* About you: how to register, the address if so, and where Ronin will live — stacked. */
   about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField, runLocation.wrap);
   const fit = el('section', 'setup-register-group');
   fit.classList.add('setup-register-fit');

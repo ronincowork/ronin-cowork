@@ -141,7 +141,12 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.match(source, /explanation\.textContent = chosen \? description : ''; explanation\.hidden = !chosen \|\| !description; if \(chosen\) button\.after\(explanation\)/, 'the explanation drops out right under the chosen row');
   assert.match(source, /Which of these describes you best in terms of getting value from Ronin\?/);
   assert.doesNotMatch(source, /Which of these things Ronin does would you appreciate most\?/);
-  assert.match(css, /\.setup-register-choice-grid\[data-layout='rows'\] > \.setup-register-explain \{ grid-column: 2;/, 'the explanation sits beside the rows when the surface is wide');
+  assert.match(css, /\.setup-register-choice-grid\[data-layout='rows'\] > \.setup-register-explain \{ grid-column: 2; align-self: start;/, 'the explanation sits beside its own row when the surface is wide');
+  assert.doesNotMatch(css, /setup-register-explain \{ grid-column: 2; grid-row/, 'the explanation follows the chosen row, not the top of the list');
+  assert.doesNotMatch(source, /setup-register-half/, 'About you stacks its questions at every width');
+  assert.doesNotMatch(css, /@container setup-register[^}]*\.setup-register-group \{ grid-template-columns: repeat\(2/, 'groups never split into two columns');
+  assert.match(css, /\.setup-register-group > :not\(h3\) \+ :not\(h3\) \{ margin-top: var\(--space-6\); \}/, 'questions breathe more than the lines inside them');
+  assert.match(css, /\.setup-register-check \{[^}]*padding: var\(--space-1\) 0;/, 'checklist lines sit tight');
   assert.doesNotMatch(source, /Why is that useful to you\?/);
   for (const reason of ['own_instructions', 'no_collisions']) assert.match(source, new RegExp(`\\['${reason}', `));
   assert.match(source, /reads by default/);
