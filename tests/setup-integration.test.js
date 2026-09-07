@@ -136,13 +136,14 @@ test('all inventoried launch families use the shared launch marker and no Team R
   assert.doesNotMatch(files[3], /'torii', '⛩'/);
 });
 
-test('Setup surfaces consume the one runtime contract and do not duplicate Campaign Templates', async () => {
+test('Setup surfaces consume the one runtime contract and mount canonical Campaign Templates only through Launch Your Own', async () => {
   const text = await source('setup-surfaces.js');
   assert.match(text, /request\('\/api\/setup\/runtime'/);
   assert.match(text, /\/login`/);
   assert.match(text, /\/done`/);
   assert.match(text, /\/close`/);
-  assert.match(text, /campaignTemplatesDefinition\(\)/);
+  assert.match(text, /createTemplatesSurface\(\)/);
+  assert.doesNotMatch(text, /campaignTemplatesDefinition\(\)/);
   assert.doesNotMatch(text, /mode === 'loaded'|mode === 'make'|\/api\/library/);
 });
 

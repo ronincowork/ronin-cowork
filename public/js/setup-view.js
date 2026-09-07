@@ -11,7 +11,7 @@ const PROFILE = 'setup';
 // The selector's fixed order. Model providers comes first because it is the first job.
 const ORDER = Object.freeze([
   SETUP_SURFACE_TYPES.providers, SETUP_SURFACE_TYPES.register, SETUP_SURFACE_TYPES.roots,
-  SETUP_SURFACE_TYPES.services, SETUP_SURFACE_TYPES.gbrain, SETUP_SURFACE_TYPES.templates, SETUP_SURFACE_TYPES.launchOwn,
+  SETUP_SURFACE_TYPES.services, SETUP_SURFACE_TYPES.gbrain, SETUP_SURFACE_TYPES.launchOwn,
 ]);
 // THE SAME SHAPE AS THE TEAM PAGE: workspace 1, the selector, workspace 2. Presets is
 // pinned in workspace 1 and takes the widest column; the setup work sits compact in
