@@ -49,7 +49,11 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         }
       },
     });
-    stoneSurface.mount(root, { before: [messages] });
+    // What a workspace is, in the owner's three terms, above the stones (Glen, 2026-09-07).
+    const intro = document.createElement('p');
+    intro.className = 'pr-intro';
+    intro.textContent = t('roots.intro', 'A workspace is a folder Ronin keeps for Teams and Agents. Three things happen there: it may be a Git repository; Agents are born from it and start making their own files in it; and their work accumulates there — plans, memory, workouts, calendar documents, whatever they keep.');
+    stoneSurface.mount(root, { before: [intro, messages] });
   } else root.append(head, list);
 
   const say = (msg, bad) => {
@@ -123,7 +127,14 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       const picker = createFolderPicker({ value: existing.dir, onChange: (dir) => {
         dirInput.value = dir;
         dirInput.dispatchEvent(new Event('change'));
-      } });
+      }, ...(stones ? { words: {
+        // In Setup this is a keep-or-ignore decision, not a session start (Glen, 2026-09-07).
+        chosen: t('roots.picker_path', 'Path'),
+        none: t('roots.picker_none', 'None yet'),
+        note: '',
+        take: t('roots.picker_keep', 'Keep'),
+        kept: t('roots.picker_kept', 'Kept'),
+      } } : {}) });
       rootFields.append(picker.el);
     }
     mk(t('roots.f_remit', 'remit'), 'remit', existing.remit, t('roots.f_remit_hint', 'The one line you pick it from in a list'), t('roots.f_remit_placeholder', 'what this is'));
@@ -514,7 +525,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       label: t('roots.add_stone', 'Add A Workspace'),
       glyph: '+',
       className: 'setup-roots-add-stone',
-      attrs: { title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') },
+      attrs: { title: t('roots.keep_hint', 'Keep a folder on this machine for Teams and Agents to start in.') },
     }, ...roots.map((r) => ({
       id: r.name,
       label: r.name,
@@ -547,7 +558,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       const lede = document.createElement('p');
       lede.className = 'pr-detail-state';
       lede.dataset.tone = 'muted';
-      lede.textContent = t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.');
+      lede.textContent = t('roots.keep_lede', 'Keep a folder on this machine for Teams and Agents to start in; a folder not kept is simply left alone.');
       head.append(heading, lede);
       const f = form({ name: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true);
       go.append(f.querySelector('.pr-frow')); // Add and Cancel on the head line
