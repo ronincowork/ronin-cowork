@@ -13,19 +13,19 @@ const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.ur
 
 test('all core handles expose only their ruled specialized controls after the universal shell', () => {
   const expected = {
-    bare_metal: ['user_message', 'customize', 'launch', 'sessions'],
-    ronin_team: ['user_message', 'customize', 'launch', 'sessions'],
-    staff_my_codebase: ['user_message', 'customize', 'launch', 'root'],
-    develop_new_project: ['user_message', 'customize', 'launch', 'root', 'features'],
-    personal_assistant: ['user_message', 'customize', 'launch', 'assistant_mode', 'specialists'],
-    health_and_fitness: ['user_message', 'customize', 'launch', 'roles'],
-    morning_brief: ['user_message', 'customize', 'launch', 'schedule', 'roles'],
-    agent_editable_doc: ['user_message', 'customize', 'launch', 'root', 'document'],
+    bare_metal: ['user_message', 'launch', 'sessions'],
+    ronin_team: ['user_message', 'launch', 'sessions'],
+    staff_my_codebase: ['user_message', 'launch', 'root'],
+    develop_new_project: ['user_message', 'launch', 'root', 'features'],
+    personal_assistant: ['user_message', 'launch', 'assistant_mode', 'specialists'],
+    health_and_fitness: ['user_message', 'launch', 'roles'],
+    morning_brief: ['user_message', 'launch', 'schedule', 'roles'],
+    agent_editable_doc: ['user_message', 'launch', 'root', 'document'],
   };
   for (const [handle, controls] of Object.entries(expected)) {
     assert.deepEqual(presets.presetActions(handle), controls, handle);
   }
-  assert.deepEqual(presets.presetActions('ordinary_replacement'), ['user_message', 'customize', 'launch']);
+  assert.deepEqual(presets.presetActions('ordinary_replacement'), ['user_message', 'launch']);
 });
 
 test('all initial controls preserve the ruled destinations and teaching choices', () => {

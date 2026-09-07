@@ -117,7 +117,7 @@ export const cascadeProvider = (rows, provider, previous = '') => rows.map((row)
   ...row,
   provider: !row.provider || row.provider === previous ? provider : row.provider,
 }));
-export const presetActions = (handle) => ['user_message', 'customize', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
+export const presetActions = (handle) => ['user_message', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
 export function firstActivatableProvider(runtime = {}) {
   return (Array.isArray(runtime.providers) ? runtime.providers : []).find((provider) => {
     if (!provider?.id || provider.activated === true || provider.blocked) return false;
@@ -137,7 +137,7 @@ export function seatingPlan(handle, receipt = {}, inputs = {}) {
   const fixed = CORE_PRESET_TREATMENTS[handle];
   if (!fixed) return null;
   const plan = fixed.seats(receipt);
-  if (handle === 'bare_metal' && [1, 2, 4].includes(Number(inputs.tiles))) plan.count = Math.max(plan.count, Number(inputs.tiles));
+  if (handle === 'bare_metal' && [2, 4].includes(Number(inputs.tiles))) plan.count = Math.max(plan.count, Number(inputs.tiles));
   return plan.seats.length ? plan : null;
 }
 
@@ -276,7 +276,7 @@ function renderTileChoices(host, state) {
   const paint = () => {
     for (const button of choices.querySelectorAll?.('[data-tiles]') || []) button.setAttribute('aria-pressed', String(Number(button.dataset.tiles) === state.tiles));
   };
-  for (const count of [1, 2, 4]) {
+  for (const count of [2, 4]) {
     const button = el('button', 'sp-tile-choice'); button.type = 'button'; button.dataset.tiles = String(count);
     const icon = el('span', 'sp-tile-icon');
     for (let index = 0; index < count; index += 1) icon.append(el('i'));
@@ -438,12 +438,6 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     const panel = el('div', 'sp-choice-panel');
     if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime); panel.append(fixed); }
     if (slot.handle !== 'bare_metal') panel.append(field('Initial message to agent', message));
-    const customize = createAction({ label: 'Customize this', action: () => environment.customize?.({
-      template: { shelf: slot.shelf || '', name: slot.handle },
-      user_message: String(message.value || ''),
-    }) });
-    customize.el.className = `${customize.el.className || ''} sp-customize`.trim();
-    panel.append(customize.el);
     detail.append(panel);
   };
 

@@ -91,7 +91,7 @@ test('the approved resting-stone lines are verbatim and every stone has a glyph'
 });
 
 test('a non-core replacement receives only universal actions and ordinary launch', () => {
-  assert.deepEqual(presets.presetActions('dinner_party'), ['user_message', 'customize', 'launch']);
+  assert.deepEqual(presets.presetActions('dinner_party'), ['user_message', 'launch']);
   assert.equal(presets.buildLaunchPlan({ handle: 'dinner_party', shelf: 'teams' }, 'Hello', {}).treatment, null);
   assert.equal(presets.seatingPlan('dinner_party', { sessions: [{ name: 'real' }] }), null);
 });
@@ -187,7 +187,7 @@ test('blocked pointer and keyboard Launch only reveal the message and never muta
   assert.equal(submissions, 0);
 });
 
-test('the selected preset entry keeps Customize in its framed panel and calls the existing adapter', async () => {
+test('the selected preset entry keeps its message in the framed panel and offers no Customize detour', async () => {
   const calls = [];
   const surface = presets.createPresetsSurface({ environment: {
     presetData: async () => ({
@@ -206,7 +206,20 @@ test('the selected preset entry keeps Customize in its framed panel and calls th
   assert.ok(nodes.find((node) => String(node.className).includes('sp-select') && node.textContent === 'select'));
   assert.ok(nodes.find((node) => node.tagName === 'TEXTAREA'));
   const customize = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Customize this');
-  assert.ok(customize);
-  customize.click();
-  assert.deepEqual(calls, [{ template: { shelf: 'agents', name: 'personal_assistant' }, user_message: '' }]);
+  assert.equal(customize, undefined);
+  assert.deepEqual(calls, []);
+});
+
+test('Bare Metal keeps two real tile layouts, compact rows, separated sections, and one reading size', async () => {
+  const [source, css] = await Promise.all([
+    readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
+  ]);
+  assert.match(source, /for \(const count of \[2, 4\]\)/);
+  assert.doesNotMatch(source, /Customize this|\[1, 2, 4\]/);
+  assert.match(css, /\.sp-choice-panel \{[^}]*font-size: var\(--text-5\)/);
+  assert.match(css, /\.sp-select \{[^}]*font-size: inherit/);
+  assert.match(css, /\.sp-lead \{[^}]*font-size: inherit/);
+  assert.match(css, /\.sp-controls > \.sp-control-label:not\(:first-child\) \{[^}]*margin-top: var\(--space-9\);[^}]*border-top/);
+  assert.match(css, /\.sp-rows \{[^}]*gap: var\(--space-2\)/);
 });
