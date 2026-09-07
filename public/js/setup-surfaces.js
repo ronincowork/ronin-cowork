@@ -565,6 +565,23 @@ function createGbrainSurface(context) {
     onState: (summary) => notifySummary(SETUP_SURFACE_TYPES.gbrain, summary, context.workbench),
     openServices: () => context.workbench?.place(SETUP_SURFACE_TYPES.services, context.workspace || 'workspace2'),
     openProviders: () => context.workbench?.place(SETUP_SURFACE_TYPES.providers, context.workspace || 'workspace2'),
+    // Available to Agents: the Campaign's own gbrain Routine, saved the way Routines and Installs saves it.
+    agentsDefault: {
+      read: async () => {
+        await loadCampaigns();
+        const row = campaignById(context.tenant?.campaign) || campaigns()[0];
+        const routines = row?.config?.agent_defaults?.routines;
+        return routines && typeof routines === 'object' ? routines.gbrain === true : null;
+      },
+      write: async (on) => {
+        const [catalog] = await Promise.all([request('/api/routines'), loadCampaigns()]);
+        const row = campaignById(context.tenant?.campaign) || campaigns()[0];
+        if (!row) return { ok: false, message: t('gbrain.setup_no_campaign', 'No Campaign to set a default for.') };
+        const defaults = row.config?.agent_defaults && typeof row.config.agent_defaults === 'object' ? row.config.agent_defaults : {};
+        const routines = { ...completeRoutineMap(catalog.ok && Array.isArray(catalog.data) ? catalog.data : [], defaults.routines), gbrain: on === true };
+        return saveCampaign(row.id, { config: { agent_defaults: { ...defaults, routines } } });
+      },
+    },
     // Exactly the Personal Assistant preset's launch, single assistant, opened in a new tab.
     startAssistant: async () => {
       const slot = HOUSE_PRESETS.find((row) => row.handle === 'personal_assistant');

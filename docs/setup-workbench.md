@@ -156,32 +156,21 @@ itself.
 ## gbrain
 
 The gbrain surface is the Setup presentation of the cowork commons gbrain tab: the same
-`GET /api/gbrain` read and the same Load press, painted as value first, then one measured
-status. It opens with what gbrain gives (find by meaning, shared recall, stays local) and a credit to the upstream project, then one status line, one next sentence
-and at most one action for the state Ronin measured:
+`GET /api/gbrain` read and the same Load press, painted as three questions with plain
+answers and one control each, then the one next step. Nothing on it is asserted; every
+answer is measured.
 
-| Measured | Status | The one action |
+| Question | Answer | The one control |
 |---|---|---|
-| the read is still in flight | Reading local gbrain status… (painted at once; the real read can take seconds) | none |
-| the gbrain service is absent | Not installed on this machine | Open Ronin Services |
-| Services installed but switched off | Installed · Ronin Services is switched off | Open Ronin Services |
-| installed, but not loaded | Not installed on this machine | Load gbrain |
-| the installer is running | Installing… (the surface re-reads every few seconds) | none |
-| the installer failed | Install did not finish, with the log folded below | Retry install |
-| loaded and answering, no model provider activated | gbrain is ready · a model provider comes first | Open Model providers |
-| loaded and answering, one provider activated | Everything is good to go | Start your first Personal Assistant |
-| loaded and answering, with a note (keyword-only, network reach, outside model) | Running, with a note | Start your first Personal Assistant |
-| loaded and the process is silent | Installed · not running | Ask an Agent to check gbrain |
-| the read itself failed | Status could not be read | Check again |
+| **Installed** | Checking… · Not installed · Installed · running · Installed · not running · Installed · Ronin Services is switched off · Install did not finish · Could not read | Load gbrain · Retry install · Open Ronin Services · Ask an Agent to check gbrain · Check again, by state; none while installing |
+| **Available to Agents** | Default for all Agents · Only selected Agents | the Campaign's own gbrain Routine, saved the way Routines and Installs saves it; selected Agents get it in Team Configuration or on the New Agent form |
+| **Accounts linked** | one row per account gbrain can link, Linked or Not linked | none here: the Personal Assistant links one when asked, with approval |
 
-When gbrain is loaded the surface adds **What Ronin measured**: one plain sentence per
-measurement saying what it means for the person (the process answers; search by meaning is
-on; only this machine can reach it; no outside model is used; which accounts are linked, and
-which the Personal Assistant can link, one at a time, with approval), each beside the
-snapshot's own value, with the observed time and a quiet Check again. Whether accounts are
-linked is read mechanically from gbrain's integrations list, never assumed. **Start your
-first Personal Assistant** makes exactly the launch the Personal Assistant preset makes, a
-single assistant in a new tab. The selector card's summary follows the measured state. The
-Personal Assistant preset waits for gbrain to be active, and the surface says so in every
-state. The pure state mapping is `public/js/gbrain-setup-state.js`; `docs/gbrain.md` holds
-what gbrain is.
+Which accounts exist and whether each is linked is read from gbrain's own integrations
+list (Gmail, Google Calendar, X, meeting transcripts on a stock install). Below the
+answers sits the next step: with gbrain running and no model provider activated, *A model
+provider comes first* and **Open Model providers**; with one activated, *Everything is good
+to go* and **Start your first Personal Assistant**, which makes exactly the launch the
+Personal Assistant preset makes, a single assistant in a new tab. The surface paints at
+once and says Checking… until the read lands; the pure state mapping is
+`public/js/gbrain-setup-state.js`, and `docs/gbrain.md` holds what gbrain is.
