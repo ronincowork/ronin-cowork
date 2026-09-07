@@ -5991,7 +5991,8 @@ button.wb-door:hover b {
 .setup-services-beta h3 { margin: 0; color: var(--fg-strong); font-size: var(--text-7); font-weight: 650; }
 .setup-services-beta p { margin: 0; color: var(--muted-2); font-size: var(--text-5); line-height: 1.45; }
 .setup-services-lockup { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; }
-.setup-services-mark { width: 3.5rem; height: 3.5rem; object-fit: contain; }
+.setup-services-mark { display: block; width: 3.5rem; height: 3.5rem; }
+.setup-services-mark img, .setup-services-mark svg { display: block; width: 100%; height: 100%; object-fit: contain; }
 .setup-services-identity { display: grid; gap: var(--space-2); }
 .setup-services-identity h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-9); font-weight: 600; }
 .setup-services-identity .setup-lede { font-size: var(--text-5); line-height: 1.45; }
@@ -6009,6 +6010,7 @@ button.wb-door:hover b {
 .setup-services-compact > .wk-action { justify-self: start; }
 .setup-services-gate { margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-5); }
 .setup-services-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.setup-services-steps[data-count='4'] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .setup-services-step { display: grid; grid-template-rows: auto 1fr; gap: var(--space-2); min-width: 0; }
 .setup-services-step-caption { color: var(--muted-2); font-size: var(--text-5); }
 .setup-services-step-action { display: inline-flex; width: 100%; height: 100%; min-height: 2.25rem; align-items: center; justify-content: center; box-sizing: border-box; text-align: center; }
@@ -6096,6 +6098,7 @@ label.setup-provider-label { cursor: pointer; }
   .setup-explainer-body { grid-template-columns: 1fr; }
   .setup-surface-body { padding: var(--space-4); }
   .setup-services-benefit { grid-template-columns: 1fr; }
+  .setup-services-steps[data-count='4'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .setup-gbrain-benefit { grid-template-columns: 1fr; }
   .setup-explainer { margin: var(--space-4) var(--space-4) 0; }
 }

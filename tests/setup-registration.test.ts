@@ -199,6 +199,9 @@ test('Services leads with identity, the beta, and benefits, then one measured st
   assert.match(source, /import \{ completeRoutineMap \} from '\.\/campaign-routines\.js'/);
   assert.match(source, /setup-services-mark/);
   assert.match(source, /mark\.src = 'brand\/services-mark\.svg'/);
+  assert.match(source, /fetch\('brand\/services-mark\.svg'\)/, 'the one mark file is inlined so the R follows data-theme');
+  assert.match(source, /host\.innerHTML = markup;\n\s*host\.querySelector\('svg'\)\?\.setAttribute\('aria-hidden', 'true'\)/);
+  assert.doesNotMatch(source, /rs-r|M31 6h58/, 'no second copy of the mark lives in the surface');
   const order = ['setup-services-lockup', 'services_setup.beta', 'services_setup.transcripts', 'services_setup.library', 'setup-services-status', 'setup-services-steps', 'services_setup.gate'];
   for (let i = 1; i < order.length; i += 1) assert.ok(source.indexOf(order[i - 1]) < source.indexOf(order[i]), `${order[i - 1]} precedes ${order[i]}`);
   for (const key of ['services_setup.beta_copy', 'services_setup.transcripts_copy', 'services_setup.records', 'services_setup.voice']) assert.match(source, new RegExp(key.replace('.', '\\.')));
@@ -215,6 +218,16 @@ test('Services leads with identity, the beta, and benefits, then one measured st
   assert.match(source, /ronin_services: on/);
   assert.match(source, /saveCampaign\(row\.id, \{ config: \{ agent_defaults: \{ \.\.\.defaults, routines \} \} \}\)/);
   assert.match(source, /setAttribute\('aria-pressed', String\(item\.pressed === true\)\)/);
+  // Restart: the one sanctioned tool behind one route; the browser asks, then watches /api/installed come back.
+  assert.match(source, /if \(item\.act === 'restart'\) \{ await restartRonin\(state\); return; \}/);
+  assert.match(source, /request\('\/api\/machine\/restart', \{ method: 'POST', json: \{\} \}\)/);
+  assert.match(source, /const probe = await request\('\/api\/installed', \{ cache: 'no-store' \}\);\n\s*if \(probe\.ok\) break;/);
+  const route = await (await import('node:fs/promises')).readFile(new URL('../src/routes/machine-restart-api.ts', import.meta.url), 'utf8');
+  assert.match(route, /join\(REPO_ROOT, 'ronin_bin', 'tejun-machine-restart'\)/, 'the route runs the sanctioned tool and names no unit');
+  assert.doesNotMatch(route, /execFile\(['"]systemctl|ronin\.service/, 'the route invokes no systemctl and names no unit; only the tool does');
+  assert.ok(route.indexOf('res.json({ started: true') < route.indexOf('setTimeout'), 'the answer goes out before Ronin goes down');
+  const index = await (await import('node:fs/promises')).readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
+  assert.match(index, /registerMachineRestart\(app\)/);
   assert.match(source, /notifySummary\(SETUP_SURFACE_TYPES\.services, model\.summary/);
   assert.match(source, /if \(body\.isConnected\) void show\(\)/, 'polling stops when the surface leaves the workspace');
   assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short|services_register_enables|Registration confirmed · Services access not included|not activated|setup-services-account/);
@@ -264,7 +277,7 @@ test('Services setup model keeps installation and registration as separate facts
     ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', 'register:Done:done install:Installing…:off switch:Turn on:off', true],
     ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'register:Done:done install:Try again:install switch:Turn on:off', false],
     ['switched_off', reg('optional'), here(), act('not_requested'), 'switched off', 'Installed · switched off', 'register:Register:register install:Done:done switch:Turn on:switch_on', false],
-    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Turn off:switch_off', false],
+    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Turn off:switch_off restart:Restart:restart', true],
     ['active', entitled(), here({ switched_on: true }), act('installed'), 'active', 'Active on this Cowork', 'register:Done:done install:Done:done switch:Turn off:switch_off', false],
   ];
   assert.deepEqual(cases.map(([state]) => state).sort(), [...SERVICES_SETUP_STATES].sort());
@@ -276,7 +289,8 @@ test('Services setup model keeps installation and registration as separate facts
     assert.equal(shape(model), steps);
     assert.equal(model.polling, polling);
     assert.ok(model.next.length > 0);
-    assert.deepEqual(model.steps.map((s: Step) => s.id), ['register', 'install', 'switch'], 'always the same three steps in the same order');
+    assert.deepEqual(model.steps.slice(0, 3).map((s: Step) => s.id), ['register', 'install', 'switch'], 'always the same three steps in the same order');
+    assert.equal(model.steps.length, state === 'restart_needed' ? 4 : 3, 'Restart appears only while a restart is due');
     assert.doesNotMatch(`${model.status} ${model.next} ${model.steps.map((s: Step) => s.label).join(' ')}`, /HTTP|undefined|null/);
   }
   // Installed on the live box without any registration: installed, usable, switchable, and Register stays an optional step.
@@ -292,7 +306,10 @@ test('Services setup model keeps installation and registration as separate facts
   assert.equal(liveOn.steps[2].done, false, 'a toggle is never Done');
   assert.equal(live.steps[2].pressed, false);
   assert.equal(liveOn.steps[2].enabled, true);
-  assert.match(servicesSetupModel(reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested')).next, /Ask any of your Agents to restart Ronin/);
+  assert.match(servicesSetupModel(reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested')).next, /Press Restart, or ask any of your Agents to restart Ronin/);
+  const offButRunning = servicesSetupModel(reg('optional'), here({ restart_needed: true }), act('not_requested'));
+  assert.equal(offButRunning.steps[3]?.act, 'restart', 'switching off also waits on a restart, so Restart is offered');
+  assert.equal(offButRunning.polling, true, 'the surface watches for the restart an Agent may do instead');
   assert.equal(liveOn.steps[1].enabled, false, 'Done install has nothing to press');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[1].enabled, false, 'the hosted install waits for the entitlement the API demands');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[2].enabled, false, 'nothing to switch on before parts are installed');

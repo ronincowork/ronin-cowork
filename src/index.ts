@@ -40,6 +40,7 @@ import { ensureInitialCampaign } from './campaigns.js';
 import { migrateCampaignScope } from './campaign-scope.js';
 import { stampFreshInstall } from './machine-state.js';
 import { registerUpdate } from './routes/update-api.js';
+import { registerMachineRestart } from './routes/machine-restart-api.js';
 import { registerLibrary } from './routes/library-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerInstalled } from './routes/installed-api.js';
@@ -204,6 +205,7 @@ registerDesks(app); // /api/sessions/:name/desks, /api/teams/:name/desks — der
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
+registerMachineRestart(app); // /api/machine/restart — the Setup Services Restart press; answers, then runs tejun-machine-restart — src/routes/machine-restart-api.ts
 registerLibrary(app); // /api/library* — the template library: index and bundles off the site on a press, install into the owner's stores — src/routes/library-api.ts
 registerMachineSettings(app); // /api/machine-settings — the install record, and writes BY NAME only — src/routes/machine-settings-api.ts
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
