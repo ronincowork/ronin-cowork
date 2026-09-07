@@ -260,9 +260,9 @@ preserve the unsquashed history. `ronin-lab` declares direct publishing to `main
 - `archived: yes` removes a root from the new-session picker while retaining it in Admin Desk.
 - `DELETE /api/project-roots/:name` removes the catalog block only. It never deletes the directory
   or GitHub repository.
-- In Ronin Setup → Workspace folders, the selected folder's page offers **Edit** (then Save and
-  Cancel) and, last, **Archive** and **Exclude**; the Campaign's Project roots surface keeps its
-  inline block controls. Both call the same three routes.
+- In Ronin Setup → Workspace folders, the selected folder's head line offers **Edit**, **Archive**
+  and **Exclude**; while editing, **Save** and **Cancel** take their place. The Campaign's Project
+  roots surface keeps its inline block controls. Both call the same three routes.
 
 Always state which of those three outcomes is intended. "Remove this project" is ambiguous and
 must not become a filesystem deletion by assumption.

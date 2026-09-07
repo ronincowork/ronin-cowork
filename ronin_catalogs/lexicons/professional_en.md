@@ -1050,6 +1050,9 @@ The pad's current config downloads as a backup first.
 - **roots.edit_folder_title:** Change the summary, shelves, match words, or repository workflow.
 - **roots.save_folder:** Save
 - **roots.cancel_folder:** Cancel
+- **roots.archive_folder:** Archive
+- **roots.unarchive_folder:** Unarchive
+- **roots.exclude_folder:** Exclude
 - **roots.summary:** Summary
 - **roots.summary_none:** No summary yet.
 - **roots.section_folder:** Folder
@@ -1064,8 +1067,6 @@ The pad's current config downloads as a backup first.
 - **roots.fact_worktrees:** Worktrees
 - **roots.profile_undeclared:** Not declared
 - **roots.repository_none:** Not a Git repository. A workspace folder does not need to be one.
-- **roots.maintenance_help:** Archive takes it off the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.
-- **roots.maintenance_help_archived:** Unarchive puts it back on the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.
 - **roots.add_head:** Add a workspace
 - **roots.archive_failed:** could not archive it — {message}
 - **roots.exclude:** exclude
