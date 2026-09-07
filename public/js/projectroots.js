@@ -18,13 +18,16 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   head.className = 'pr-head';
   const count = document.createElement('span');
   count.className = 'pr-count';
-  const openAdd = createAction({ label: t('roots.add', '＋ Add workspace folder'), kind: 'primary', title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') }).el;
+  const openAdd = createAction(stones
+    ? { label: t('roots.add_short', '＋ Add'), size: 'compact', className: 'pr-add-action', title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') }
+    : { label: t('roots.add', '＋ Add workspace folder'), kind: 'primary', title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') }).el;
   openAdd.addEventListener('click', () => {
     editing = NEW;
     if (stones) stoneSurface.openDetail({ id: NEW, label: t('roots.add', '＋ Add workspace folder') }, { returnFocus: openAdd });
     else render();
   });
-  head.append(openAdd, count);
+  if (stones) head.append(count, openAdd);
+  else head.append(openAdd, count);
 
   const list = document.createElement('div');
   list.className = 'pr-list';
@@ -394,8 +397,11 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     stoneSurface.setItems(roots.map((r) => ({
       id: r.name,
       label: r.name,
-      secondary: r.remit || r.dir,
-      state: r.archived ? t('roots.chip_archived', 'archived') : !r.facts?.exists ? t('roots.chip_gone', 'directory is gone') : '',
+      state: r.archived
+        ? t('roots.chip_archived', 'Archived')
+        : !r.facts?.exists
+          ? t('roots.stone_missing', 'Folder missing')
+          : t('roots.stone_ready', 'Ready'),
       className: [!r.facts?.exists ? 'gone' : '', r.archived ? 'archived' : ''].filter(Boolean).join(' '),
     })));
   }

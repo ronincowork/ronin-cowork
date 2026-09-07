@@ -2781,6 +2781,16 @@ body {
   gap: var(--space-3);
 }
 .pr-status:empty { display: none; }
+.setup-roots-stones .sws-stone.archived .sws-state {
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-round);
+  background: var(--well);
+  color: var(--muted-2);
+  padding: 0 var(--space-2);
+}
+.setup-roots-stones .sws-stone.gone .sws-state {
+  color: var(--bad-soft);
+}
 .cv-worktrees-default {
   margin-top: var(--space-3);
   padding-top: var(--space-4);

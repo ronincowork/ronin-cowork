@@ -21,7 +21,12 @@ test('roots adapt the real project-root blocks and Add form to the shared stone 
   assert.match(roots, /if \(current\) host\.append\(block\(current\)\)/);
   assert.match(roots, /stoneSurface\.openDetail\(\{ id: NEW/);
   assert.match(roots, /stoneSurface\.refreshDetail\(\)/);
-  assert.match(roots, /secondary: r\.remit \|\| r\.dir/);
+  assert.match(roots, /label: t\('roots\.add_short', '＋ Add'\), size: 'compact'/);
+  assert.match(roots, /if \(stones\) head\.append\(count, openAdd\)/);
+  assert.doesNotMatch(roots, /secondary: r\.remit \|\| r\.dir/);
+  assert.match(roots, /t\('roots\.stone_ready', 'Ready'\)/);
+  assert.match(roots, /t\('roots\.stone_missing', 'Folder missing'\)/);
+  assert.match(roots, /t\('roots\.chip_archived', 'Archived'\)/);
   assert.match(roots, /createFolderPicker/);
   assert.match(roots, /\/api\/project-roots\/inspect/);
   assert.match(roots, /\/repo-profile/);
@@ -36,6 +41,7 @@ test('roots carry no parallel stone DOM or CSS presentation', async () => {
   assert.doesNotMatch(roots, /aria-pressed/);
   assert.doesNotMatch(css, /\.setup-roots-stones \.pr-stone/);
   assert.doesNotMatch(css, /--pr-stone/);
+  assert.match(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state/);
 });
 
 test('roots stones mount visible loading, empty, and failure output without changing Campaign roots', async () => {
