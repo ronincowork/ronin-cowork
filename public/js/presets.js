@@ -68,7 +68,7 @@ export function renderKindPills(host, preference, { lead = '' } = {}) {
   const choices = [
     { id: 'software', label: 'Software assistance', kinds: ['build'] },
     { id: 'research', label: 'Research', kinds: ['research'] },
-    { id: 'all', label: 'All', kinds: [] },
+    { id: 'all', label: 'All', kinds: PRESET_KINDS.map((kind) => kind.id) },
   ];
   const paint = (picked) => {
     const id = picked.length === 1 && picked[0] === 'build' ? 'software' : picked.length === 1 && picked[0] === 'research' ? 'research' : 'all';
@@ -300,11 +300,8 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   surface.content.className = `${surface.content.className || ''} sp-content`.trim();
   const notice = createNotice();
   const kinds = environment.kinds || createKindsPreference();
-  const more = el('div', 'sp-more');
-  const showAll = createAction({ label: t('setup.presets_show_all', 'Show all seven ›'), size: 'compact' });
-  more.append(showAll.el);
   renderKindPills(surface.content, kinds, { lead: t('setup.presets_kinds_lead', 'You use Ronin for') });
-  let templates = [], runtime = { providers: [], roots: [] }, selected = -1, expanded = false;
+  let templates = [], runtime = { providers: [], roots: [] }, selected = -1;
   let detail = null;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
   const controls = new Map();
@@ -320,24 +317,17 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
 
   // THREE STONES AT REST. The resting set is by house position, so a replaced slot keeps
   // its place; all seven stay in the DOM (hidden when folded) so slot indexes, persistence
-  // and change-preset hold. Show all seven unfolds the rest.
+  // and change-preset hold. The All purpose exposes all seven without a second control.
   const restingIndexes = () => restingPresets(kinds.get()).map((handle) => HOUSE_PRESETS.findIndex((row) => row.handle === handle)).filter((index) => index >= 0);
-  const visibleIndexes = () => expanded ? slots.map((_, index) => index) : restingIndexes();
+  const visibleIndexes = () => restingIndexes();
   const stoneSurface = createStoneWorkSurface({
     className: 'sp-work-surface',
     renderDetail: (item, host) => { selected = Number(item.id); detail = host; paintDetail(); },
     onSelectionChange: (id) => { selected = id == null ? -1 : Number(id); },
   });
-  surface.content.append(stoneSurface.el, more, notice.el);
-  showAll.el.addEventListener('click', () => {
-    expanded = !expanded;
-    if (!visibleIndexes().includes(selected)) { selected = -1; stoneSurface.select(''); }
-    paintGrid();
-  });
+  surface.content.append(stoneSurface.el, notice.el);
   const paintGrid = () => {
     const visible = visibleIndexes();
-    showAll.el.textContent = expanded ? t('setup.presets_show_fewer', '‹ Show fewer') : t('setup.presets_show_all', 'Show all seven ›');
-    showAll.el.setAttribute('aria-expanded', String(expanded));
     stoneSurface.setItems(slots.map((slot, index) => {
       const gate = presetReadiness(slot.handle, runtime);
       return { id: String(index), label: slot.label || slot.handle, glyph: presetGlyph(slot), hidden: !visible.includes(index), className: 'sp-preset-stone', attrs: { 'data-gated': String(!gate.ready), title: gate.ready ? '' : gate.reason } };
