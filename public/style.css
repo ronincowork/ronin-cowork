@@ -3836,6 +3836,19 @@ button.wb-door:hover b {
   color: var(--muted);
   font-weight: 400;
 }
+/* A Team's Launch in the roster is the shared kit launch action — the Ronin mark and the
+   word — not a tile-head icon button. Free it from the 26px icon square and the muted
+   count colour so it reads like every other Launch. */
+.home-grp-actions.tile-head > .wk-action {
+  width: auto;
+  height: auto;
+}
+.home-grp-actions.tile-head > .wk-action > span {
+  color: inherit;
+}
+.home-grp-actions.tile-head > .wk-action[data-launch='true']:hover {
+  border-color: var(--kaki);
+}
 .home-grp::after {
   content: '';
   flex: 1;
