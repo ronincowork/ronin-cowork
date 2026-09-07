@@ -704,6 +704,24 @@ If Ronin is unreachable the tool reports `STUCK` and your session stays. That is
 correct outcome: say so to the owner. Do NOT reach for `tmux kill-session` — the whole
 point is that one implementation does the killing.
 
+## archive-session — stop a live session so it may return
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-archive <session>`** (TOOLS.md)
+
+Archive when the session's work may be resumed. The tool calls Ronin's existing archive
+path: Ronin records the provider conversation and session metadata before stopping the
+tmux tree. It does not copy the conversation, hard-delete the session record, or create a
+second lifecycle store. A refusal leaves the live session in place.
+
+## rehydrate-session — restore an archived session
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-rehydrate <archive-id>`** (TOOLS.md)
+
+Rehydrate restores an archived session through Ronin's existing provider-resume path and
+restores its session metadata. The archive disappears only after the live session and all
+metadata have been restored. Use hard end/delete instead only when the session should not
+return.
+
 ### Ending someone else's session (NOT harakiri, not an action)
 Harakiri is self-inflicted, by construction. Ending a session that is not yours — a
 test session you spun up in a previous life, a leftover scratch pane — is a separate,

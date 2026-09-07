@@ -3,7 +3,7 @@
 #
 # Usage: tejun-team-set <team> [--objective <text>] [--role <team_role>] [--root <project_root>]
 #                              [--repos a,b] [--branch <b>] [--wipeboard <board>]
-#                              [--state active|archived] [--add s1,s2]
+#                              [--state active|archived] [--campaign-defaults] [--add s1,s2]
 #
 # ONE UPSERT (owner, 2026-08-26). A team with no roster is CREATED from whatever you
 # name; a team with one is UPDATED in the fields you name and untouched elsewhere.
@@ -24,7 +24,7 @@ die() { printf '%s\n' "$1" >&2; exit "${2:-4}"; }
 NAME="${1:-}"
 [ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: tejun-team-set <team> [--objective <text>] [--role <team_role>] [--add s1,s2] …" 2
 shift
-OBJ="" ROLE="" ROOT="" REPOS="" BRANCH="" BOARD="" STATE="" ADD=""
+OBJ="" ROLE="" ROOT="" REPOS="" BRANCH="" BOARD="" STATE="" ADD="" CAMPAIGN_DEFAULTS=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --objective) OBJ="${2:-}"; shift 2 ;;
@@ -34,6 +34,7 @@ while [ $# -gt 0 ]; do
     --branch) BRANCH="${2:-}"; shift 2 ;;
     --wipeboard) BOARD="${2:-}"; shift 2 ;;
     --state) STATE="${2:-}"; shift 2 ;;
+    --campaign-defaults) CAMPAIGN_DEFAULTS=1; shift ;;
     --add) ADD="${2:-}"; shift 2 ;;
     *) die "BAD-ARG: $1" 2 ;;
   esac
@@ -43,7 +44,7 @@ done
 ronin_connect || exit $?
 
 body=$(NAME="$NAME" OBJ="$OBJ" ROLE="$ROLE" ROOT="$ROOT" REPOS="$REPOS" BRANCH="$BRANCH" \
-       BOARD="$BOARD" STATE="$STATE" ADD="$ADD" python3 - <<'PY'
+       BOARD="$BOARD" STATE="$STATE" ADD="$ADD" CAMPAIGN_DEFAULTS="$CAMPAIGN_DEFAULTS" python3 - <<'PY'
 import json, os
 e = os.environ
 b = {"name": e["NAME"]}
@@ -52,6 +53,7 @@ for k, v in (("objective", "OBJ"), ("team_role", "ROLE"), ("project_root", "ROOT
     if e[v]: b[k] = e[v]
 for k, v in (("repos", "REPOS"), ("session_names", "ADD")):
     if e[v]: b[k] = [t.strip() for t in e[v].split(",") if t.strip()]
+if e["CAMPAIGN_DEFAULTS"]: b["campaign_defaults"] = True
 print(json.dumps(b))
 PY
 ) || die "BAD-ARG: could not build the request" 2

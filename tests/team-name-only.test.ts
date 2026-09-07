@@ -22,6 +22,7 @@ await fs.writeFile(path.join(process.env.RONIN_CONFIG_DIR, 'machine_settings.jso
           routines: { ronin_base: true, ronin_worktrees: true, ronin_services: false },
           behaviours: ['ways:careful'], dial: 'read', launch_mode: 'configured', gbrain_mode: 'disconnected',
         },
+        cowork_defaults: { project_root: 'ronin_cowork', repos: ['ronin_cowork'], branch: 'dev' },
       },
     },
   },
@@ -44,6 +45,9 @@ test('POST /api/team-rosters creates a Team from its name alone', async () => {
   assert.equal(body.roster.title, 'Name Only');
   assert.equal(body.roster.kind, 'open');
   assert.equal(body.roster.wipeboard, 'name_only');
+  assert.equal(body.roster.project_root, 'ronin_cowork');
+  assert.deepEqual(body.roster.repos, ['ronin_cowork']);
+  assert.equal(body.roster.branch, 'dev');
   assert.equal((body.roster.routines as Record<string, boolean>).ronin_base, true);
   assert.equal((body.roster.routines as Record<string, boolean>).ronin_worktrees, true);
   assert.deepEqual(body.roster.behaviours, { books: ['ways:careful'], required: false });
@@ -51,6 +55,47 @@ test('POST /api/team-rosters creates a Team from its name alone', async () => {
     provider: 'openai', model: 'gpt-test', reach: 'execute', recruit: 'nobody', output: ['code'],
     dial: 'read', launch_mode: 'configured', gbrain_mode: 'disconnected',
   });
+});
+
+test('PUT /api/team creates with Campaign defaults, then omission on update preserves them', async () => {
+  const created = await fetch(`${base}/api/team`, {
+    method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'tool_team', objective: 'first' }),
+  });
+  assert.equal(created.status, 200);
+  const first = await created.json() as { created: boolean; roster: Record<string, any> };
+  assert.equal(first.created, true);
+  assert.equal(first.roster.project_root, 'ronin_cowork');
+  assert.deepEqual(first.roster.repos, ['ronin_cowork']);
+  assert.equal(first.roster.branch, 'dev');
+  assert.equal(first.roster.routines.ronin_base, true);
+  assert.equal(first.roster.agent_defaults.model, 'gpt-test');
+
+  const updated = await fetch(`${base}/api/team`, {
+    method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'tool_team', objective: 'second' }),
+  });
+  assert.equal(updated.status, 200);
+  const second = await updated.json() as { created: boolean; roster: Record<string, any> };
+  assert.equal(second.created, false);
+  assert.equal(second.roster.objective, 'second');
+  assert.equal(second.roster.project_root, 'ronin_cowork');
+  assert.deepEqual(second.roster.repos, ['ronin_cowork']);
+  assert.equal(second.roster.branch, 'dev');
+  assert.equal(second.roster.routines.ronin_base, true);
+  assert.equal(second.roster.agent_defaults.model, 'gpt-test');
+});
+
+test('PUT /api/team reapplies Campaign defaults to an existing Team only when explicitly requested', async () => {
+  const response = await fetch(`${base}/api/team`, {
+    method: 'PUT', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'tool_team', campaign_defaults: true, routines: { ronin_services: true } }),
+  });
+  assert.equal(response.status, 200);
+  const body = await response.json() as { created: boolean; roster: Record<string, any> };
+  assert.equal(body.created, false);
+  assert.equal(body.roster.routines.ronin_base, true);
+  assert.equal(body.roster.routines.ronin_worktrees, true);
+  assert.equal(body.roster.routines.ronin_services, true, 'an explicit override remains final');
+  assert.equal(body.roster.agent_defaults.model, 'gpt-test');
 });
 
 test('POST /api/team-rosters overlays explicit choices on Campaign defaults', async () => {

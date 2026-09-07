@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# tejun-archive — stop a live session while keeping it resumable.
+# Usage: tejun-archive <session>
+set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+[ "$#" -eq 1 ] && [ -n "$1" ] && [ "${1#-}" = "$1" ] || {
+  echo "usage: tejun-archive <session>" >&2
+  exit 2
+}
+NAME=$1
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+out=$(mktemp)
+trap 'rm -f "$out"' EXIT
+code=$(curl -sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -o "$out" -w '%{http_code}' \
+  -H 'content-type: application/json' -X POST "$url/api/sessions/$NAME/archive" 2>/dev/null) || {
+  echo "UNREACHABLE: Ronin did not answer at $url" >&2
+  exit 5
+}
+python3 - "$code" "$out" "$NAME" <<'PY'
+import json, sys
+code, path, name = int(sys.argv[1]), sys.argv[2], sys.argv[3]
+try:
+    data = json.load(open(path))
+except Exception:
+    data = {}
+if code == 200 and data.get("ok"):
+    archived = data.get("archived") or {}
+    print(f"ARCHIVED {name} as {archived.get('id') or '?'} — resumable")
+    raise SystemExit(0)
+print(f"REFUSED: {data.get('error') or f'HTTP {code}'}", file=sys.stderr)
+raise SystemExit(4)
+PY

@@ -92,8 +92,10 @@ test('every agent-facing API caller connects through the one library and carries
   });
   assert.deepEqual(callers.sort(), [
     'mika',
+    'tejun-archive',
     'tejun-fork',
     'tejun-harakiri',
+    'tejun-rehydrate',
     'tejun-session-set',
     'tejun-team-set',
     'tejun-teampage',
