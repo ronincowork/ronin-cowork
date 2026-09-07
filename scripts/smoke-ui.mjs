@@ -681,9 +681,9 @@ async function runPhonePass({ label, browser, contextOpts }) {
     profile: document.querySelector('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-layout')?.dataset.workbenchProfile || '',
     workspaces: document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-cell:not([hidden])').length,
     selectors: document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-selector-cards .wk-card').length,
-    providerCards: [...document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-selector-cards [data-workbench-offer-resource]')].map((node) => ({
-      key: node.getAttribute('data-workbench-offer-resource'),
-      label: node.querySelector('.wk-card-heading')?.textContent?.trim(),
+    providerStones: [...document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .setup-provider-stone[data-provider]')].map((node) => ({
+      key: node.getAttribute('data-provider'),
+      label: node.querySelector('.sws-label')?.textContent?.trim(),
     })),
     presets: document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .sp-preset-stone').length,
     failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
@@ -698,7 +698,7 @@ async function runPhonePass({ label, browser, contextOpts }) {
   if (shell.profile === 'setup' && shell.workspaces === 2) ok(`${label}: Setup keeps its two ruled workspaces`);
   else bad(`${label}: Setup profile/seating is wrong — ${JSON.stringify(shell)}`);
   const expectedProviders = providerRows.map((row) => ({ key: row.id, label: row.label }));
-  if (shell.selectors === providerRows.length + 5 && JSON.stringify(shell.providerCards) === JSON.stringify(expectedProviders) && shell.presets === 7) ok(`${label}: explicit Runtime provider rows map one-for-one to cards and seven presets remain usable at phone width`);
+  if (shell.selectors === 7 && JSON.stringify(shell.providerStones) === JSON.stringify(expectedProviders) && shell.presets === 8) ok(`${label}: explicit Runtime provider rows map one-for-one to shared stones and eight presets remain usable at phone width`);
   else bad(`${label}: Setup choices are incomplete — ${JSON.stringify(shell)}`);
   if (shell.failBar) bad(`${label}: the failure banner is showing:\n         ` + shell.failBar.replace(/\n/g, '\n         '));
   else ok(`${label}: no failure banner`);
