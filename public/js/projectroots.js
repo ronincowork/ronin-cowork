@@ -28,6 +28,9 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
 
   const list = document.createElement('div');
   list.className = 'pr-list';
+  const messages = document.createElement('div');
+  messages.className = 'pr-status';
+  messages.setAttribute('role', 'status');
   let stoneSurface = null;
   if (stones) {
     stoneSurface = createStoneWorkSurface({
@@ -43,11 +46,12 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         }
       },
     });
-    root.append(head, stoneSurface.el);
+    root.append(head, messages, stoneSurface.el);
   } else root.append(head, list);
 
   const say = (msg, bad) => {
-    list.innerHTML = '';
+    const output = stones ? messages : list;
+    output.innerHTML = '';
     if (stones) {
       editing = null;
       stoneSurface.setItems([]).select('');
@@ -55,7 +59,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     const p = document.createElement('div');
     p.className = 'pr-empty' + (bad ? ' bad' : '');
     p.textContent = msg;
-    list.appendChild(p);
+    output.appendChild(p);
   };
 
   async function refresh() {
@@ -374,13 +378,14 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   function render() {
     if (!data) return;
     list.innerHTML = '';
+    messages.replaceChildren();
     const roots = [...data.roots].sort((a, b) => (a.archived ? 1 : 0) - (b.archived ? 1 : 0));
     const archived = roots.filter((r) => r.archived).length;
     const live = roots.length - archived;
     count.textContent =
       (live === 1 ? t('roots.count_one', '{n} workspace folder', { n: live }) : t('roots.count_many', '{n} workspace folders', { n: live })) +
       (archived ? ' · ' + t('roots.count_archived', '{n} archived', { n: archived }) : '');
-    if (!roots.length) list.appendChild(document.createElement('div')).textContent = t('roots.empty', 'No workspace folders yet. Choose or create the first one above.');
+    if (!roots.length) (stones ? messages : list).appendChild(document.createElement('div')).textContent = t('roots.empty', 'No workspace folders yet. Choose or create the first one above.');
     if (!stones) {
       if (editing === NEW) list.appendChild(addCard());
       for (const r of roots) list.appendChild(block(r));

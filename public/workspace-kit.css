@@ -62,6 +62,11 @@
   .wk-workbench-selector-cards .wk-selector-entity + .wk-selector-utility,
   .wk-workbench-selector-cards .wk-selector-group-after { margin-top: var(--space-5); }
 
+  /* A stone work surface owns its two scroll regions; its outer surface must not
+     grow or scroll around them. The immediate host also fills the available seat. */
+  .wk-surface-content:has(.sws) { display: flex; flex-direction: column; overflow: hidden; }
+  .wk-surface-content:has(.sws) > :has(> .sws) { flex: 1 1 auto; min-height: 0; }
+
   /* RONIN SETUP keeps the workbench: framed workspaces, the scope-coloured header strip,
      the selector's framed cards, and the current-card mark. */
   .wk-workbench-layout[data-workbench-profile='setup'] .wk-selector-group { margin: var(--space-5) var(--space-2) var(--space-2); color: var(--muted); font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
@@ -106,8 +111,7 @@
     .wk-workbench-layout[data-responsive='workbench'] > .wk-layout-surface { flex: 1 0 80%; scroll-snap-align: start; }
     .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] { scroll-snap-type: none; }
     .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] > .wk-layout-surface { flex: 0 0 auto; width: 100%; scroll-snap-align: none; }
-    .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-column { height: auto; }
-    .wk-workbench-layout[data-workbench-profile='setup'] > .wk-layout-surface[data-surface='workspace1'] .sp-surface { height: calc(100dvh - var(--row-head) - var(--space-6)); }
+    .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-column { height: calc(100dvh - var(--row-head) - var(--space-6)); min-height: 0; }
     .wk-new-team-layout { display: flex; flex-direction: column; overflow: auto; }
     .wk-new-team-layout > .wk-layout-surface { flex: 0 0 auto; width: 100%; }
   }
