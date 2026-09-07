@@ -70,6 +70,40 @@ export function providerPresentation(provider) {
   };
 }
 
+/** The uniform selected-provider path. Only the first unmet step may carry an action. */
+export function providerReadiness(provider) {
+  const label = String(provider?.label || provider?.id || 'This provider');
+  const presentation = providerPresentation(provider);
+  const installed = provider?.installed === true;
+  const activated = provider?.activated === true;
+  const authCurrent = installed && !activated;
+  return [
+    {
+      key: 'use', label: 'Use with Ronin', status: 'complete',
+      detail: `${label} is selected for setup.`, action: 'none',
+    },
+    {
+      key: 'installed', label: 'Installed', status: installed ? 'complete' : 'current',
+      detail: installed
+        ? `${label} is installed${provider?.path ? ` at ${provider.path}` : '.'}`
+        : presentation.detail,
+      action: installed ? 'none' : presentation.action,
+      manual: installed ? null : presentation.manual,
+    },
+    {
+      key: 'authenticated', label: 'Authenticated', status: activated ? 'complete' : authCurrent ? 'current' : 'pending',
+      detail: activated
+        ? `${label} setup completion is recorded. Current sign-in remains provider-owned and is not monitored.`
+        : authCurrent ? presentation.detail : '',
+      action: authCurrent ? presentation.action : 'none',
+    },
+    {
+      key: 'ready', label: 'Ready', status: activated ? 'complete' : 'pending',
+      detail: activated ? `${label} is activated for Launch.` : '', action: 'none',
+    },
+  ];
+}
+
 /** Mount only the explicit Runtime attachment; never infer a provider session name. */
 export function mountProviderAttachment(environment, host, provider, workspace, onClosed) {
   const attachment = provider?.attachment;
