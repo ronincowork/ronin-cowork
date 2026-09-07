@@ -13,7 +13,9 @@ itself. Answer from here; the fuller pages are one `ls` away in `docs/`.
   (the all-Teams page); the **place** in the middle, in italics — *Teams* on the Coworks page,
   *Your team: <name>* on a Team page — is a reading, not a button; on the right, **か New**
   for a quick new session, **⚙** for the cowork commons, and **2 ⇄ 4**, one button wearing
-  the workspace count.
+  the workspace count. On Ronin Setup that seat holds a subtle **📱 / 🖥** switcher and a small **◐ / ☀**
+  light/dark control instead: they set the Campaign's appearance for that surface and
+  never change the workspaces.
 - **On a phone** the same responsive workbenches remain available; Setup keeps Presets in
   workspace 1 and the selected setup surface in workspace 2.
 

@@ -121,6 +121,7 @@ export async function init() {
     // field is gone; this changes a tab/workbench label only, never a Team or Agent.
     nameSlot: document.getElementById('viewplace'),
     mapSlot: document.getElementById('viewmap'),
+    actionsSlot: document.getElementById('viewactions'),
     onNavigate: () => refreshWorkspaceHeader(),
   });
   workspace.kit = WorkspaceKit;

@@ -220,11 +220,11 @@ test('Bare Metal keeps two real tile layouts, compact rows, separated sections, 
   assert.match(css, /\.sp-choice-panel \{[^}]*font-size: var\(--text-5\)/);
   assert.match(source, /const wrap = el\('label', 'sp-field sp-section'\)/);
   assert.match(source, /const section = \(label, prompt, \.\.\.content\)/);
-  assert.match(css, /\.sp-field \{[^}]*gap: var\(--space-6\)/);
+  assert.match(css, /\.sp-field \{[^}]*gap: var\(--space-5\)/);
   assert.match(css, /\.sp-section\[hidden\] \{ display: none; \}/);
   assert.match(css, /\.sp-select \{[^}]*font-size: inherit/);
   assert.match(css, /\.sp-lead \{[^}]*font-size: inherit/);
-  assert.match(css, /\.sp-controls > \.sp-section:not\(:first-child\), \.sp-controls \+ \.sp-section \{[^}]*margin-top: var\(--space-12\);[^}]*border-top[^}]*padding-top: var\(--space-8\)/);
+  assert.match(css, /\.sp-controls > \.sp-section:not\(:first-child\), \.sp-controls \+ \.sp-section \{[^}]*margin-top: var\(--space-9\);[^}]*border-top[^}]*padding-top: var\(--space-9\)/);
   assert.match(css, /\.sp-field-label, \.sp-control-label \{[^}]*font-weight: 600/);
   assert.match(css, /\.sp-rows \{[^}]*gap: var\(--space-2\)/);
 });
@@ -238,27 +238,59 @@ test('Personal Assistant hides the whole Recruit section until Chief of Staff is
   assert.doesNotMatch(source, /specialists\.hidden =/);
 });
 
-test('Morning Brief exposes canonical custom timing and expands role instructions while editing', async () => {
+test('Morning Brief asks only for what each cadence needs and expands role instructions while editing', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
   assert.match(source, /option\('daily', 'Every day'\), option\('weekly', 'Day of the week'\), option\('once', 'One time'\)/);
   assert.match(source, /weekdayField\.hidden = cadence !== 'weekly'/);
   assert.match(source, /dateField\.hidden = cadence !== 'once'/);
   assert.match(source, /`weekly \$\{weekday\.value\} \$\{time\.value\}`/);
-  assert.match(source, /ask\.addEventListener\('focus', \(\) => \{ ask\.rows = 3; \}\)/);
-  assert.match(source, /ask\.addEventListener\('blur', \(\) => \{ ask\.rows = 1; \}\)/);
+  assert.match(source, /ask\.rows = 3; line\.dataset\.editing = 'true'/);
+  assert.match(source, /ask\.rows = 1; delete line\.dataset\.editing/);
 });
 
-test('Code Stack Eval separates this evaluation from future Ronin workspace use', async () => {
-  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /createFolderPicker|Show hidden folders|GitHub repo · remote evaluation pending/);
-  assert.match(source, /folder\.registered_root \? 'Used by Ronin' : 'Use with Ronin'/);
-  assert.match(source, /state\.root_dir = folder\.dir; state\.root = folder\.registered_root\?\.name \|\| ''/);
-  assert.match(source, /environment\.navigateToSurface\?\.\('setup\.roots', \{ dir: folder\.dir \}\)/);
-  assert.match(source, /workspaceFoldersAction\(environment, 'Manage workspace folders'\)/);
+test('preset rows offer only activated providers', () => {
+  const runtime = { providers: [{ id: 'claude', activated: true }, { id: 'codex', installed: true }, { id: 'grok', installable: true }, { id: 'gemini', activated: true }] };
+  assert.deepEqual(presets.eligibleProviders(runtime).map((row) => row.id), ['claude', 'gemini']);
+  assert.deepEqual(presets.eligibleProviders({}), []);
+});
+
+test('the purpose row hands its height to the rail so the stones rest at the shared elevation', async () => {
+  const [source, css] = await Promise.all([
+    readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
+  ]);
+  assert.match(source, /setProperty\?\.\('--sp-intro'/);
+  assert.match(css, /\.sp-surface \.sws:not\(\[data-open='true'\]\) \.sws-rail \{ padding-top: max\(var\(--space-6\), calc\(var\(--sws-stone\) \+ var\(--sws-gap\) - var\(--sp-intro, 0px\)\)\); \}/);
 });
 
 test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
   assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
   assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
+});
+
+test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
+});
+
+test('Code Stack Eval keeps ticked folders on Apply and evaluates the chosen one', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /createFolderPicker|Show hidden folders|GitHub repo · remote evaluation pending/);
+  assert.match(source, /tick\.checked = Boolean\(folder\.registered_root\) \|\| state\.pending\.includes\(folder\.dir\)/);
+  assert.match(source, /state\.root_dir = folder\.dir; state\.root = folder\.registered_root\?\.name \|\| '';\n\s+if \(!folder\.registered_root\) state\.pending = /);
+  assert.match(source, /request\('\/api\/project-roots', \{ method: 'POST', json: \{ name, dir: folder\.dir, \.\.\.\(profile \? \{ before, profile, confirmed: true \} : \{\}\) \} \}\)/);
+  assert.match(source, /if \(state\.root_dir === dir\) state\.root = made\.name/);
+  assert.match(source, /environment\?\.navigateToSurface\?\.\('setup\.roots'\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, 'Manage workspace folders'\)/);
+});
+
+test('the launched team page seats a remembered commons on the tab the preset chose', async () => {
+  const source = await readFile(new URL('../public/js/cowork-view.js', import.meta.url), 'utf8');
+  assert.match(source, /const surfaceRequest = \(token\) => token && typeof token === 'object' \? \{ type: token\.type, detail: \{ key: token\.key \|\| '', root: token\.root \|\| '', path: token\.path \|\| '', \.\.\.\(token\.tab \? \{ tab: token\.tab \} : \{\}\), \.\.\.\(token\.doc \? \{ doc: token\.doc \} : \{\}\) \} \}/);
+  const health = presets.seatingPlan('health_and_fitness', { team: 'health', sessions: [{ name: 'head_coach' }, { name: 'nutritionist' }] });
+  assert.equal(health.seats[1].tab, 'wipeboard');
+  const brief = presets.seatingPlan('morning_brief', { team: 'brief', sessions: [{ name: 'writer' }] });
+  assert.equal(brief.seats[1].tab, 'cron-jobs');
 });

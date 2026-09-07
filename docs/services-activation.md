@@ -6,8 +6,12 @@ one entitlement. The server half is SHIWAKE, at Ronin HQ; this page is the insta
 In Ronin Setup, optional registration creates the identity used for Services entitlement
 and replaces a separate Setup token path. Registration does not itself install, activate,
 or switch on Services. Communication consent is independently editable, and choosing
-**No communication** does not revoke entitlement. The Setup surface reports entitled,
-installed, activated, and switched-on as distinct states.
+**No communication** does not revoke entitlement. The Setup surface keeps installation and
+registration as separate measured facts: installed parts are installed and usable without
+any registration, and Register is one optional step beside Install and the Switch toggle. It reads the activation
+record for the in-between registration states — email sent, link expired, waiting to send,
+installing, install failed — so its one action is always the real next step
+(`docs/setup-workbench.md`, Ronin Services).
 
 **The contract this speaks is the released v1 set in the ronin-shiwake repository**, under its
 contracts directory. Nothing here reads SHIWAKE's source or its work in progress — only the

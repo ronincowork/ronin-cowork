@@ -85,6 +85,7 @@
   .wk-workbench-splitter:hover::after, .wk-workbench-splitter[data-dragging='true']::after, .wk-workbench-splitter:focus-visible::after { background: var(--aiiro); opacity: 1; }
 
   .wk-view-map:empty { display: none; }
+  .wk-view-actions:empty { display: none; }
 
   .wk-view-name:empty { display: none; }
   .wk-tab-name { width: 12rem; max-width: 30vw; height: 1.75rem; padding: 0 var(--space-3); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg-strong); font: inherit; font-size: var(--text-3); }

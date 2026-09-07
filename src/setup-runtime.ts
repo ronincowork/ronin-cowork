@@ -1,4 +1,5 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { AGENTS, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
@@ -19,10 +20,10 @@ export const INSTALLED_ROOTS = [
 interface ProviderMarker { activated_at?: unknown }
 export const SETUP_PREFERENCE_KINDS = ['build', 'life', 'research'] as const;
 export type SetupPreferenceKind = typeof SETUP_PREFERENCE_KINDS[number];
-export interface SetupPreferences { kinds: SetupPreferenceKind[] }
+export interface SetupPreferences { kinds: SetupPreferenceKind[]; providers: string[] }
 interface SetupSection {
   providers?: Record<string, ProviderMarker>;
-  preferences?: { kinds?: unknown };
+  preferences?: { kinds?: unknown; providers?: unknown };
   [key: string]: unknown;
 }
 
@@ -36,6 +37,7 @@ export interface SetupProviderState {
   blocked: string | null;
   path: string | null;
   login_open: boolean;
+  signed_in: boolean;
   activated: boolean;
   activated_at: string | null;
   attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
@@ -54,6 +56,8 @@ export interface SetupRuntimeAnswer {
 
 export interface ProviderSessionOps {
   exists(name: string): Promise<boolean>;
+  /** Whether the CLI's own credential file is on this machine. Presence only; never read. */
+  signedIn(provider: string): Promise<boolean>;
   open(provider: string, name: string): Promise<void>;
   close(name: string): Promise<void>;
 }
@@ -72,21 +76,45 @@ export function setupPreferences(section: SetupSection): SetupPreferences {
       .filter((kind): kind is SetupPreferenceKind =>
         typeof kind === 'string' && SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind)),
   );
-  return { kinds: SETUP_PREFERENCE_KINDS.filter((kind) => selected.has(kind)) };
+  const providers = Array.isArray(section.preferences?.providers)
+    ? [...new Set(section.preferences.providers.filter((provider): provider is string =>
+      typeof provider === 'string' && /^[a-z0-9_-]+$/.test(provider)))]
+    : [];
+  return { kinds: SETUP_PREFERENCE_KINDS.filter((kind) => selected.has(kind)), providers };
 }
 
-export async function writeSetupPreferences(kinds: unknown): Promise<SetupPreferences> {
-  if (!Array.isArray(kinds)) throw new Error('Send { kinds: [...] }.');
-  if (kinds.some((kind) => typeof kind !== 'string' || !SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind))) {
-    throw new Error('Kinds are build, life, and research.');
-  }
-  const preferences = setupPreferences({ preferences: { kinds } });
-  await updateSection<SetupSection>('setup', (setup) => ({ ...setup, preferences }));
-  return preferences;
+export async function writeSetupPreferences(input: unknown): Promise<SetupPreferences> {
+  const patch = Array.isArray(input) ? { kinds: input } : input;
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Send Setup preferences.');
+  const update = patch as { kinds?: unknown; providers?: unknown };
+  if (update.kinds === undefined && update.providers === undefined) throw new Error('Send kinds or providers.');
+  let written: SetupPreferences = { kinds: [], providers: [] };
+  await updateSection<SetupSection>('setup', (setup) => {
+    const current = setupPreferences(setup);
+    const kinds = update.kinds === undefined ? current.kinds : update.kinds;
+    const providers = update.providers === undefined ? current.providers : update.providers;
+    if (!Array.isArray(kinds) || kinds.some((kind) => typeof kind !== 'string' || !SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind))) {
+      throw new Error('Kinds are build, life, and research.');
+    }
+    if (!Array.isArray(providers) || providers.some((provider) => typeof provider !== 'string' || !/^[a-z0-9_-]+$/.test(provider))) {
+      throw new Error('Providers must be provider IDs.');
+    }
+    written = setupPreferences({ preferences: { kinds, providers } });
+    return { ...setup, preferences: written };
+  });
+  return written;
+}
+
+/** The CLI signed in on this machine and left its credential file; Ronin reads only that it exists. */
+export async function providerSignedIn(provider: string, home = os.homedir()): Promise<boolean> {
+  const files = AGENTS.find((agent) => agent.id === provider)?.credentials ?? [];
+  for (const file of files) if (await exists(path.join(home, file))) return true;
+  return false;
 }
 
 const defaultSessionOps: ProviderSessionOps = {
   exists: sessionExists,
+  signedIn: providerSignedIn,
   async open(provider, name) {
     const spec = AGENTS.find((agent) => agent.id === provider);
     if (!spec) throw new Error(`Unknown provider "${provider}".`);
@@ -103,7 +131,7 @@ const defaultSessionOps: ProviderSessionOps = {
 
 export async function setupRuntimeAnswer(
   section: SetupSection,
-  ops: Pick<ProviderSessionOps, 'exists'> = defaultSessionOps,
+  ops: Pick<ProviderSessionOps, 'exists'> & Partial<Pick<ProviderSessionOps, 'signedIn'>> = defaultSessionOps,
   availability?: Availability,
   installed?: InstalledAnswer,
 ): Promise<SetupRuntimeAnswer> {
@@ -112,7 +140,8 @@ export async function setupRuntimeAnswer(
     const session = sessionName(agent.id);
     const loginOpen = await ops.exists(session);
     const completed = activatedAt(section, agent.id);
-    const activated = agent.installed && completed !== null;
+    const signedIn = agent.installed && await (ops.signedIn ?? providerSignedIn)(agent.id);
+    const activated = agent.installed && (completed !== null || signedIn);
     return {
       id: agent.id,
       label: agent.label,
@@ -123,6 +152,7 @@ export async function setupRuntimeAnswer(
       blocked: agent.parked || null,
       path: agent.path || null,
       login_open: loginOpen,
+      signed_in: signedIn,
       activated,
       activated_at: completed,
       attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true } : null,

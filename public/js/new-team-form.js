@@ -7,7 +7,7 @@ import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createBand, createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
@@ -17,7 +17,7 @@ const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'n
 const DIALS = ['user', 'read', 'write'];
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
 
-export function createNewTeamFormView(kit, { created = null } = {}) {
+export function createNewTeamFormView(kit, { created = null, embedded = false } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
@@ -42,6 +42,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   let snapshot = '';        // what the applied template wrote, for the dirty test
   let busy = false;
   let loaded = false;
+  let templateOpen = false;
 
   const raise = createAction({
     label: t('forms.launch', 'Launch'),
@@ -50,8 +51,14 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     disabled: true,
     action: () => void doRaise(),
   });
-  const surface = createSurface({ label: t('new_team.title', 'New Team'), className: 'ntf-surface', actions: [raise] });
+  const surface = createSurface({ label: t('new_team.title', 'New Team'), className: 'ntf-surface', actions: [raise], header: !embedded });
   const notice = createNotice();
+  if (embedded) {
+    surface.content.classList.add('ntf-surface', 'launch-form-embed');
+    const embedActions = el('div', 'launch-form-embed-actions');
+    embedActions.append(raise.el);
+    surface.content.append(embedActions);
+  }
 
   // and "Make your own" is the manual door; a mode switch above the form was a second way
   // to say the same thing.
@@ -114,14 +121,29 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   }
   const templateDirty = () => !!templateRow() && authored() !== snapshot;
 
-  /* ---- step 2 · Template (the kind above it has already narrowed the tray) ---- */
-  const stepTemplate = createStep({ n: 2, key: 'template', title: t('template', 'Template') });
+  /* ---- step 2 · Template is optional and opens only when asked for. ---- */
+  const stepTemplate = createStep({ n: 2, key: 'template', title: t('new_team.template_optional', 'Template · optional'), onToggle: () => {
+    templateOpen = !templateOpen;
+    paintFolds();
+  } });
   function paintTray() {
-    stepTemplate.body.replaceChildren(templateTray(offered(), draft.template, (name) => applyTemplate(name)));
+    stepTemplate.body.replaceChildren(templateTray(offered(), draft.template, (name) => applyTemplate(name), { includeOwn: false }));
   }
 
-  /* ---- step 1 · Name & kind ---- */
-  const stepTop = createStep({ n: 1, key: 'top', title: t('new_team.name_kind', 'Name & kind') });
+  /* ---- step 1 · Kind ---- */
+  const stepKind = createStep({ n: 1, key: 'kind', title: t('kind', 'Kind') });
+  const kindHost = el('div');
+  function paintKinds() {
+    kindHost.replaceChildren(kindTiles(draft.kind, (key) => {
+      draft.kind = key;
+      if (draft.template && !offered().some((row) => row.name === draft.template)) { draft.template = ''; snapshot = ''; }
+      paint();
+    }));
+  }
+  stepKind.body.append(kindHost);
+
+  /* ---- step 3 · Name & instructions ---- */
+  const stepTop = createStep({ n: 3, key: 'top', title: t('new_team.name_instructions', 'Name & instructions') });
   const nameInput = el('input');
   nameInput.type = 'text';
   nameInput.autocapitalize = 'off';
@@ -175,27 +197,17 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     if (!isValidTeamName(settled)) return nameField.setValidation('invalid', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
     nameField.setValidation('valid', '');
   };
-  const kindHost = el('div');
-  function paintKinds() {
-    kindHost.replaceChildren(kindTiles(draft.kind, (key) => {
-      draft.kind = key;
-      // The tray narrows with the kind; a pick the kind no longer offers is let go.
-      if (draft.template && !offered().some((row) => row.name === draft.template)) { draft.template = ''; snapshot = ''; }
-      paint();
-    }));
-  }
-  stepTop.body.append(topPair, kindHost);
+  stepTop.body.append(topPair);
 
   /* ---- step 3 · Objective ---- */
-  const stepObjective = createStep({ n: 3, key: 'objective', title: t('new_team.common', 'Common instructions'), onToggle: () => toggle('objective') });
   const objectiveInput = el('textarea');
   objectiveInput.rows = 3;
   objectiveInput.placeholder = t('new_team.objective_placeholder', 'what this team is for');
   objectiveInput.addEventListener('input', () => { draft.objective = objectiveInput.value; paintFoot(); });
-  stepObjective.body.append(createField({ label: t('team.objective', 'Objective'), control: objectiveInput }).el);
+  stepTop.body.append(createField({ label: t('new_team.instructions', 'Team instructions'), control: objectiveInput }).el);
 
   /* ---- step 4 · Where ---- */
-  const stepWhere = createStep({ n: 5, key: 'where', title: t('new_team.who_where', 'Who and where'), onToggle: () => toggle('where') });
+  const stepWhere = createStep({ n: 5, key: 'where', title: t('new_team.who_where', 'Who and where') });
   const pair = providerModelPair(
     () => ({ provider: draft.provider, model: draft.model }),
     (provider, model) => { draft.provider = provider; draft.model = model; paintFoot(); },
@@ -211,7 +223,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   function paintRoots() { where.setRoots(roots); where.root = draft.root; where.setRepos(draft.repos, draft.branches); draft.root = where.root; }
 
   /* ---- step 5 · Team kit ---- */
-  const stepKit = createStep({ n: 6, key: 'kit', title: t('team_kit', 'Shared toolkit'), onToggle: () => toggle('kit') });
+  const stepKit = createStep({ n: 6, key: 'kit', title: t('team_kit', 'Shared toolkit') });
   // agent to inherit from its team. It's going to be very agent-specific anyway, and I
   // think open is the only natural thing." Reach, recruit and output stay `open` in the
   // record and are asked once, on the Agent, where they mean something.
@@ -304,14 +316,15 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const agents = createAgentRows({
     n: 4, key: 'lead',
     rows: () => draft.agents,
+    leadAssignment: () => draft.objective,
     changed: () => paintFoot(),
     onToggle: () => toggle('lead'),
   });
   const stepLead = agents.step;
 
   /* ---- the collapse rules: a template's answers fold; the header opens them ---- */
-  const FOLDS = ['objective', 'where', 'kit', 'lead'];
-  const steps = { template: stepTemplate, top: stepTop, objective: stepObjective, where: stepWhere, kit: stepKit, lead: stepLead };
+  const FOLDS = ['lead'];
+  const steps = { kind: stepKind, template: stepTemplate, top: stepTop, lead: stepLead, defaults: null, where: stepWhere, kit: stepKit };
   function toggle(key) {
     if (draft.expanded[key]) delete draft.expanded[key];
     else draft.expanded[key] = true;
@@ -320,18 +333,14 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // template first offered all fifteen tiles and then quietly dropped the pick when a
   // later kind excluded it. New Agent already asked in this order; the two forms agree.
   // One list, read by the form's numbering AND by the Launch selector's outline.
-  const plan = () => ['top', 'template', 'objective', 'lead', 'where', 'kit'];
+  const plan = () => ['kind', 'template', 'top', 'lead', 'defaults', 'where', 'kit'];
   const meta = {
-    objective: () => draft.objective.slice(0, 40),
-    where: () => where.summary(),
-    kit: () => t('new_team.kit_meta', '{routines} routines · {books} books', {
-      routines: onNames().length + 1, books: draft.books.length,
-    }),
     lead: () => t('new_team.agents_meta', '{n} agents', { n: draft.agents.length }),
   };
   function paintFolds() {
-    const folded = !!templateRow();
+    stepTemplate.setCollapsed(!templateOpen, templateOpen ? '' : t('new_team.apply_template', 'Apply Template'), true);
     for (const key of FOLDS) {
+      const folded = !!templateRow();
       steps[key].setCollapsed(folded && !draft.expanded[key], folded ? meta[key]() : '', folded);
     }
   }
@@ -557,10 +566,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   function paint() {
     plan().forEach((key, index) => steps[key].setNumber(index + 1));
-    defaultsBand.setOpen(defaultsOpen);
+    stepPayload.setNumber(plan().length + 1);
+    stepDefaults.setCollapsed(!defaultsOpen, t('new_team.defaults_summary', 'Settings inherited by Agents launched in this Team'), true);
     for (const key of ['where', 'kit']) steps[key].el.hidden = !defaultsOpen;
-    payloadBand.setOpen(payloadOpen);
-    foot.hidden = !payloadOpen;
+    stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
     paintTray();
     paintKinds();
     paintName();
@@ -579,24 +588,25 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // ONE BAND OVER EVERYTHING THAT IS A DEFAULT, and it folds them all away together: a
   // Team can be raised without ever opening it, which is the point of saying so here
   // rather than repeating "this is a default, not a constraint" on each field below.
-  let defaultsOpen = true;
-  const defaultsBand = createBand(
-    t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.'),
-    () => { defaultsOpen = !defaultsOpen; paint(); },
-  );
-  // there like a turd. It should be a proper section, new launch payload, and marked with
-  // an orange banner to hide or expand." It is what this press will actually send, so it
-  // gets a band of its own and folds like the defaults above it.
-  let payloadOpen = true;
-  const payloadBand = createBand(
-    t('forms.payload_band', 'New launch payload — what this raise will send'),
-    () => { payloadOpen = !payloadOpen; paint(); },
-  );
-  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepLead.el, defaultsBand.el, stepWhere.el, stepKit.el);
-  surface.content.append(form, notice.el, payloadBand.el, foot, saveRow.el);
+  let defaultsOpen = false;
+  const stepDefaults = createStep({ n: 5, key: 'defaults', title: t('new_team.agent_defaults', 'Agent defaults'), onToggle: () => {
+    defaultsOpen = !defaultsOpen;
+    paint();
+  } });
+  steps.defaults = stepDefaults;
+  // The final review stays folded until asked for and explains what opening it reveals.
+  let payloadOpen = false;
+  const stepPayload = createStep({ n: 8, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
+    payloadOpen = !payloadOpen;
+    stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
+  } });
+  stepPayload.body.append(foot, saveRow.el);
+  stepPayload.setCollapsed(true, t('forms.payload_summary', 'Review what Launch will create'), true);
+  form.append(stepKind.el, stepTemplate.el, stepTop.el, stepLead.el, stepDefaults.el, stepWhere.el, stepKit.el, stepPayload.el);
+  surface.content.append(form, notice.el);
 
   return {
-    el: surface.el,
+    el: embedded ? surface.content : surface.el,
     enter: async (detail = {}) => {
       paint();
       const [seeded, tray, catalog, rootRows, sopRows, wayRows] = await Promise.all([
@@ -624,4 +634,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       paint();
     },
   };
+}
+
+/** Form-only adapter for an existing work-surface detail region. */
+export function createEmbeddedNewTeamFormView(kit, options = {}) {
+  return createNewTeamFormView(kit, { ...options, embedded: true });
 }
