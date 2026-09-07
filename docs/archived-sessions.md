@@ -78,6 +78,8 @@ its location with `bin/ronin-store archived_sessions`; never spell the path in c
 
 The browser calls these routes through `public/js/api.js`. Archived rows never enter
 `S.sessions`, so they cannot appear in live pickers or consume the configured session max.
+Agents and team leads use those same routes through `tejun-archive <session>` and
+`tejun-rehydrate <archive-id>`; the tools add no lifecycle or store of their own.
 
 ## Provider identity
 
