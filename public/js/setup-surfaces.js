@@ -7,6 +7,7 @@ import { buildProjectRoots } from './projectroots.js';
 import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
 import { mountProviderAttachment, providerFromRuntime } from './setup-provider-state.js';
 import { createKindsPreference, renderKindPills } from './presets.js';
+import { createStoneWorkSurface } from './stone-work-surface.js';
 
 export { mountProviderAttachment, providerFromRuntime, providerOffers } from './setup-provider-state.js';
 
@@ -173,6 +174,7 @@ function createProviderSurface(context) {
   const body = el('div', 'setup-surface-body setup-provider-list'); out.content.append(body);
   let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
+  let runtime = { providers: [] };
   const disposeMount = (destroy = true) => {
     if (!mounted) return;
     if (destroy) mounted.destroy?.(); else mounted.park?.();
@@ -182,30 +184,9 @@ function createProviderSurface(context) {
     const activated = Number(runtime?.activated_count || 0);
     notifySummary(SETUP_SURFACE_TYPES.providers, activated ? t('setup_surface.providers_activated', '{n} activated', { n: activated }) : t('setup_surface.providers_none', 'none yet'), context.workbench);
   };
-  const paintBlocks = (runtime) => {
-    const providers = (Array.isArray(runtime?.providers) ? runtime.providers : []).filter((provider) => provider?.id);
-    body.append(el('p', 'setup-lede', t('setup_surface.add_provider', 'Add a model provider.')));
-    if (!providers.length) { body.append(el('p', 'setup-fine', t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.'))); return; }
-    const grid = el('div', 'setup-provider-blocks');
-    for (const provider of providers) {
-      const card = WorkspaceKit.primitives.createCard({
-        heading: provider.label || provider.id, summary: providerWord(provider), metadata: provider.from ? [provider.from] : [],
-        className: 'setup-provider-block',
-        action: () => { opened = String(provider.id); void paint(); },
-      });
-      card.el.dataset.provider = provider.id;
-      card.el.dataset.activated = String(provider.activated === true);
-      if (provider.activated) card.summary.dataset.good = 'true';
-      grid.append(card.el);
-    }
-    body.append(grid, el('p', 'setup-fine', t('setup_surface.provider_disclosure_short', 'Each provider signs you in its own way; Ronin records only that you finished.')));
-  };
-  const paintProvider = (runtime) => {
-    const provider = providerFromRuntime(runtime, opened);
-    const back = action(t('setup_surface.all_providers', '‹ All providers'), '', () => { disposeMount(false); opened = ''; void paint(); });
-    back.classList.add('setup-provider-back'); back.dataset.size = 'compact';
-    body.append(back);
-    if (!provider) { body.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return; }
+  const paintProvider = (providerId, host) => {
+    const provider = providerFromRuntime(runtime, providerId);
+    if (!provider) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
     const row = el('section', 'setup-provider');
     row.dataset.provider = provider.id;
     row.append(el('h3', '', provider.label || provider.id), el('p', 'setup-state', provider.state || 'absent'));
@@ -227,19 +208,36 @@ function createProviderSurface(context) {
       mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
     } else row.append(el('p', 'setup-good', t('setup_surface.activated', 'Activated')));
-    body.append(row);
+    host.append(row);
+    return () => disposeMount();
   };
+  const stones = createStoneWorkSurface({
+    selectedId: opened,
+    className: 'setup-provider-stones',
+    renderDetail: (item, host) => paintProvider(item.id, host),
+    onSelectionChange: (id) => { opened = String(id || ''); },
+  });
   const paint = async () => {
     const result = await request('/api/setup/runtime', { cache: 'no-store' });
     disposeMount();
     body.replaceChildren();
     if (!result.ok) { body.append(el('p', 'setup-notice bad', result.message)); return; }
-    context.environment.setupRuntime = result.data;
+    runtime = result.data;
+    context.environment.setupRuntime = runtime;
     context.workbench?.refreshSelector?.();
-    if (opened) paintProvider(result.data); else paintBlocks(result.data);
-    summarize(result.data);
+    const providers = (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id);
+    body.append(el('p', 'setup-lede', t('setup_surface.add_provider', 'Add a model provider.')));
+    if (!providers.length) body.append(el('p', 'setup-fine', t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.')));
+    else {
+      stones.setItems(providers.map((provider) => ({
+        id: String(provider.id), label: provider.label || provider.id, secondary: provider.from || '', state: providerWord(provider),
+        className: 'setup-provider-stone', attrs: { 'data-provider': provider.id, 'data-activated': String(provider.activated === true) },
+      })));
+      body.append(stones.el, el('p', 'setup-fine', t('setup_surface.provider_disclosure_short', 'Each provider signs you in its own way; Ronin records only that you finished.')));
+    }
+    summarize(runtime);
   };
-  return { el: out.el, show: paint, destroy: () => disposeMount() };
+  return { el: out.el, show: paint, destroy: () => { disposeMount(); stones.destroy(); } };
 }
 
 function createRootsSurface(context) {

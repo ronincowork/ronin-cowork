@@ -8,12 +8,18 @@ class FakeNode {
   replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
   setAttribute(name, value) { this.attributes[name] = String(value); }
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
+  focus() { this.focused = true; }
   add(node) { this.append(node); }
   click() { if (!this.disabled) for (const callback of this.listeners.click || []) callback({ currentTarget: this }); }
   keydown(key) { if (key === 'Enter' || key === ' ') this.click(); }
   querySelector(selector) {
     const cls = selector.match(/\.([a-z0-9_-]+)$/i)?.[1];
     return this.walk().find((node) => cls && node.className?.split(' ').includes(cls)) || null;
+  }
+  querySelectorAll(selector) {
+    if (selector === '[data-sws-id]') return [...this.walk()].filter((node) => node.dataset.swsId);
+    if (selector === '.cv-pill[data-kind]') return [...this.walk()].filter((node) => node.className?.split(' ').includes('cv-pill') && node.dataset.kind);
+    return [];
   }
   *walk() { for (const child of this.children) { if (!(child instanceof FakeNode)) continue; yield child; yield* child.walk(); } }
   get options() { return this.children.filter((node) => node.tagName === 'OPTION'); }
@@ -25,6 +31,23 @@ globalThis.document = { createElement: (tag) => new FakeNode(tag), createElement
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
 const presets = await import('../public/js/presets.js');
+
+test('purpose pills are singular Software assistance, Research, or All choices', () => {
+  const host = new FakeNode('div');
+  const preference = presets.createKindsPreference(null);
+  const row = presets.renderKindPills(host, preference).el;
+  const choices = row.children.filter((node) => node.tagName === 'BUTTON');
+  assert.deepEqual(choices.map((node) => node.textContent), ['Software assistance', 'Research', 'All']);
+  choices[0].click();
+  assert.deepEqual(preference.get(), ['build']);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['true', 'false', 'false']);
+  choices[1].click();
+  assert.deepEqual(preference.get(), ['research']);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'true', 'false']);
+  choices[2].click();
+  assert.deepEqual(preference.get(), []);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'false', 'true']);
+});
 
 test('the seven house slots are fixed core handles', () => {
   assert.equal(presets.HOUSE_PRESETS.length, 7);
@@ -162,7 +185,7 @@ test('the selected preset entry keeps Customize in its framed panel and calls th
   } });
   await surface.enter();
   let nodes = [...surface.el.walk()];
-  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sp-slot'))[3].click();
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[3].click();
   nodes = [...surface.el.walk()];
   assert.ok(nodes.find((node) => String(node.className).includes('sp-choice-panel')));
   assert.ok(nodes.find((node) => node.tagName === 'TEXTAREA'));
