@@ -4,9 +4,15 @@
   .sws { --sws-stone: var(--setup-stone-size); --sws-gap: var(--setup-stone-gap); display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--space-8); container: setup-stone-work-surface / inline-size; }
   .sws-rail { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
   .sws:not([data-open='true']) .sws-rail { display: flex; flex: 1 1 auto; align-items: flex-start; justify-content: center; min-width: 0; padding-top: calc(var(--sws-stone) + var(--sws-gap)); }
-  .sws-grid { display: grid; width: min(100%, calc(var(--setup-stone-size) * 3 + var(--sws-gap) * 2)); grid-template-columns: repeat(auto-fit, var(--sws-stone)); justify-content: center; gap: var(--sws-gap); }
-  .sws[data-open='true'] .sws-grid { width: var(--sws-stone); grid-template-columns: var(--sws-stone); }
-  .sws-stone { position: relative; display: flex; flex-direction: column; align-items: flex-start; width: var(--sws-stone); max-width: 100%; aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-7) var(--space-6) var(--space-6); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
+  .sws-grid { display: flex; flex-wrap: wrap; justify-content: center; width: min(100%, calc(var(--sws-stone) * 3 + var(--sws-gap) * 2)); gap: var(--sws-gap); }
+  .sws[data-open='true'] .sws-grid { width: var(--sws-stone); flex-direction: column; flex-wrap: nowrap; }
+  .sws-stone { position: relative; display: flex; flex: 0 0 100%; flex-direction: column; align-items: flex-start; width: 100%; max-width: var(--sws-stone); aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-7) var(--space-6) var(--space-6); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
+  @container setup-stone-work-surface (min-width: 11rem) {
+    .sws:not([data-open='true']) .sws-stone { flex-basis: min(var(--sws-stone), calc((100% - var(--sws-gap)) / 2)); }
+  }
+  @container setup-stone-work-surface (min-width: 16rem) {
+    .sws:not([data-open='true']) .sws-stone { flex-basis: min(var(--sws-stone), calc((100% - var(--sws-gap) * 2) / 3)); }
+  }
   .sws-stone::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); }
   .sws-stone[hidden] { display: none; }
   .sws-stone:hover { border-color: var(--kaki); }
