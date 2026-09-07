@@ -5840,11 +5840,13 @@ button.wb-door:hover b {
 .setup-register-welcome h2 { font-size: clamp(var(--text-7), 4vw, var(--text-10)); font-weight: 560; letter-spacing: -.025em; }
 .setup-register-welcome .setup-lede { max-width: 40rem; font-size: var(--text-4); line-height: 1.55; }
 .setup-register-group { display: grid; gap: 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); padding: var(--space-7); }
+.setup-register-group[hidden] { display: none; }
 .setup-register-group > h3 { padding-bottom: var(--space-6); font-size: var(--text-5); }
 .setup-register-group > .setup-field { border-top: var(--edge) solid var(--line-2); padding: var(--space-6) 0; }
 .setup-register-group > .setup-field[hidden] { display: none; }
 .setup-register-group > .setup-field:last-child { padding-bottom: 0; }
 .setup-register-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.setup-register-identity-choice .setup-register-choice-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .setup-register-choice { display: grid; gap: var(--space-1); min-height: 4rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--well); color: var(--fg); padding: var(--space-4) var(--space-5); text-align: left; cursor: pointer; font: inherit; }
 .setup-register-choice strong { color: var(--fg-strong); font-size: var(--form-input); font-weight: 650; }
 .setup-register-choice span { color: var(--muted-2); font-size: var(--text-2); line-height: 1.35; }
@@ -5852,6 +5854,8 @@ button.wb-door:hover b {
 .setup-register-choice[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 0 var(--kaki); background: var(--accent-soft); }
 .setup-register-group input:not([type='checkbox']), .setup-register-group textarea { border: 0; border-radius: var(--radius-hair); background: var(--well); padding: var(--space-4) var(--space-5); color: var(--fg); font: inherit; }
 .setup-register-consent { max-width: 42rem; line-height: 1.5; }
+.setup-register-declined { max-width: 36rem; margin: 0; border-left: var(--edge-2) solid var(--kaki); padding: var(--space-4) var(--space-5); color: var(--muted-2); line-height: 1.55; }
+.setup-register-declined[hidden], .setup-register-form > .wk-action[hidden], .setup-register-consent[hidden] { display: none; }
 .setup-register-options { display: grid; gap: var(--space-3); border-top: var(--edge) solid var(--line); padding-top: var(--space-5); }
 .setup-register-options[hidden], .setup-preferences-wrap[hidden] { display: none; }
 .setup-preferences { padding: var(--space-3) 0 var(--space-4); border: 0; }
@@ -5911,6 +5915,7 @@ button.wb-door:hover b {
   .setup-explainer-body { grid-template-columns: 1fr; }
   .setup-register-group { padding: var(--space-5); }
   .setup-register-choice-grid { grid-template-columns: 1fr; }
+  .setup-register-identity-choice .setup-register-choice-grid { grid-template-columns: 1fr; }
   .setup-surface-body { padding: var(--space-4); }
   .setup-services-benefits { grid-template-columns: 1fr; }
   .setup-explainer { margin: var(--space-4) var(--space-4) 0; }
