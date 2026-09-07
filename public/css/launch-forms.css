@@ -182,10 +182,10 @@
   .fs-step-head h3 { margin: 0; color: var(--fg-strong); font-size: var(--form-head); font-weight: 600; }
   .fs-step-n { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: var(--space-7); height: var(--space-7); background: var(--kaki); color: var(--on-strong); font-size: var(--text-1); font-weight: 700; }
   .fs-chev { display: inline-flex; align-items: center; justify-content: center; width: var(--space-7); height: var(--space-7); margin-left: auto; border: var(--edge) solid var(--line-2); color: var(--accent); font-size: var(--form-note); }
-  .fs-togglable { grid-column: 1 / -1; width: 100%; align-items: center; border: var(--edge) solid var(--line-3); background: color-mix(in srgb, var(--well) 55%, transparent); padding: var(--space-3) var(--space-4); cursor: pointer; }
+  .fs-togglable { grid-column: 1 / -1; width: 100%; align-items: center; border: var(--edge) solid var(--line-3); background: color-mix(in srgb, var(--well) 55%, transparent); padding: var(--space-3) var(--space-4) var(--space-3) 0; cursor: pointer; }
   .fs-togglable:hover h3 { color: var(--kaki-lift); }
   .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 2; }
-  .fs-step[data-collapsed='true'] > .fs-step-head { grid-column: 1 / -1; width: 100%; align-items: center; border: var(--edge) solid var(--line-2); background: var(--well); padding: var(--space-3) var(--space-4); }
+  .fs-step[data-collapsed='true'] > .fs-step-head { grid-column: 1 / -1; width: 100%; align-items: center; border: var(--edge) solid var(--line-2); background: var(--well); padding: var(--space-3) var(--space-4) var(--space-3) 0; }
   .fs-step[data-collapsed='true'] > .fs-step-head:hover { border-color: var(--kaki); background: var(--raise); }
   .fs-step-body { min-width: 0; display: flex; flex-direction: column; gap: var(--space-4); }
   .fs-step-body[hidden] { display: none; }

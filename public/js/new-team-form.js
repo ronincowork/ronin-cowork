@@ -591,7 +591,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     defaultsOpen = !defaultsOpen;
     paint();
   } });
-  stepDefaults.body.append(el('p', 'fs-step-help', t('new_team.defaults_help', 'These settings are inherited by Agents launched in this Team.')));
   steps.defaults = stepDefaults;
   // The final review stays folded until asked for and explains what opening it reveals.
   let payloadOpen = false;
