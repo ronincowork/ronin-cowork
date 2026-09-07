@@ -311,9 +311,14 @@ function createGbrainSurface(context) {
   const host = el('div', 'setup-surface-body'); out.content.append(host);
   const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
     designedErrors: true,
+    presentation: 'setup',
     availability: () => context.environment?.setupRuntime?.gbrain || null,
   });
-  return { el: out.el, show: () => { room.enter?.(); notifySummary(SETUP_SURFACE_TYPES.gbrain, 'state shown', context.workbench); } };
+  return { el: out.el, show: () => {
+    const status = context.environment?.setupRuntime?.gbrain;
+    notifySummary(SETUP_SURFACE_TYPES.gbrain, status?.active ? 'active' : status?.installed ? 'installed' : 'not installed', context.workbench);
+    room.enter?.();
+  } };
 }
 
 function createLaunchOwnSurface(context) {

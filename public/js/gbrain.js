@@ -52,6 +52,77 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
   };
   const toneFor = (v) => (['running', 'vm_only', 'none', 'off', 'hybrid'].includes(v) ? 'good' : ['unknown'].includes(v) ? 'warn' : 'bad');
 
+  const renderSetup = (data) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'gb-setup';
+    const intro = document.createElement('section');
+    intro.className = 'setup-compact-intro';
+    const benefits = document.createElement('ul');
+    benefits.className = 'setup-value-points';
+    for (const copy of [
+      t('gbrain.setup_find', 'Find notes, decisions, and history by meaning—not only exact words.'),
+      t('gbrain.setup_recall', 'Let connected Agents recall the same knowledge across sessions.'),
+      t('gbrain.setup_local', 'Keep embeddings and the searchable memory on this machine.'),
+    ]) benefits.append(Object.assign(document.createElement('li'), { textContent: copy }));
+    intro.append(
+      Object.assign(document.createElement('p'), {
+        className: 'setup-lede',
+        textContent: t('gbrain.setup_intro', 'Give your Agents a shared, searchable memory.'),
+      }),
+      benefits,
+    );
+
+    const facts = document.createElement('section');
+    facts.className = 'gb-setup-facts';
+    facts.append(heading(t('gbrain.setup_status', 'Status and requirements')));
+    const installed = data.installed === true;
+    const running = data.process?.state === 'running';
+    const weights = data.search?.weights;
+    const connected = data.integrationsKnown
+      ? (data.integrations || []).filter((item) => item.state === 'connected').length
+      : null;
+    const statusFacts = installed ? [
+      [t('gbrain.process', 'Local gbrain process'), value(data.process?.state)],
+      [t('gbrain.embeddings', 'Local embeddings'), value(weights)],
+      [t('gbrain.listening', 'Listening'), value(data.listener?.scope)],
+      [t('gbrain.provider', 'External model provider'), value(data.externalModelProvider)],
+      [t('gbrain.integrations', 'Integrations'), connected === null ? value('unknown') : connected ? t('gbrain.n_connected', '{n} connected', { n: connected }) : value('none')],
+    ] : [
+      [t('gbrain.install', 'Installation'), data.install?.state === 'running' ? t('gbrain.installing', 'Installing') : data.install?.state === 'failed' ? t('gbrain.failed', 'Failed') : t('gbrain.not_installed', 'Not installed')],
+      [t('gbrain.setup_downloads', 'Install downloads'), 'github.com · huggingface.co'],
+      [t('gbrain.provider', 'External model provider'), value('none')],
+    ];
+    for (const [label, answer] of statusFacts) facts.append(row(label, answer));
+    facts.append(Object.assign(document.createElement('p'), {
+      className: 'setup-requirement',
+      textContent: installed
+        ? t('gbrain.setup_requires_installed', 'Requires a running local process and local embedding weights; Agents connect through MCP.')
+        : t('gbrain.setup_requires_load', 'Load once to install gbrain, local embedding weights, and Agent wiring.'),
+    }));
+
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'wk-action';
+    if (!installed && data.install?.state === 'running') {
+      next.textContent = t('gbrain.check_installation', 'Check installation');
+      next.addEventListener('click', load);
+    } else if (!installed) {
+      next.textContent = data.install?.state === 'failed' ? t('gbrain.retry_install', 'Retry install') : t('gbrain.load', 'Load gbrain');
+      next.addEventListener('click', async () => {
+        next.disabled = true;
+        await request('/api/gbrain/install', { method: 'POST', json: {} });
+        void load();
+      });
+    } else {
+      next.textContent = running ? t('gbrain.start_with_assistant', 'Start with PersonalAssistant') : t('gbrain.ask_assistant_check', 'Ask PersonalAssistant to check gbrain');
+      next.addEventListener('click', () => askPersonalAssistant(running
+        ? 'Help me start using gbrain. Show me how to save and find shared knowledge, and explain any outside connection before asking me to approve it.'
+        : 'Check why the local gbrain process is not running. Explain what you find before changing anything.'));
+    }
+    wrap.append(intro, facts, next);
+    root.replaceChildren(wrap);
+  };
+
   const renderPrivacy = (data) => {
     privacy.innerHTML = '';
     const connected = data.integrationsKnown
@@ -241,12 +312,20 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
       return;
     }
     if (!r.data.installed || r.data.install.state === 'running') {
+      if (options.presentation === 'setup') {
+        renderSetup(r.data);
+        return;
+      }
       renderLoad(r.data);
       return;
     }
     if (polling) {
       clearInterval(polling);
       polling = null;
+    }
+    if (options.presentation === 'setup') {
+      renderSetup(r.data);
+      return;
     }
     renderPrivacy(r.data);
     renderSearch(r.data);
