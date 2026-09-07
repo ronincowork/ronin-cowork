@@ -651,13 +651,13 @@ async function checkJourneys(page, label, jsErrors) {
 async function runPhonePass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
   const providerRows = [
-    { id: 'anthropic', label: 'Claude', state: 'installable', installable: true, activated: false },
-    { id: 'openai', label: 'Codex', state: 'installed', installed: true, activated: false },
+    { id: 'anthropic', label: 'Claude Code', state: 'activated', installed: true, activated: true },
+    { id: 'openai', label: 'Codex', state: 'activated', installed: true, activated: true },
   ];
   await page.route('**/api/setup/runtime', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ activated_count: 0, activated_band: 'zero', providers: providerRows, roots: [], gbrain: { active: false }, services: { active: false } }),
+    body: JSON.stringify({ activated_count: 2, activated_band: 'two_plus', providers: providerRows, roots: [], gbrain: { active: false }, services: { active: false } }),
   }));
   await page.addInitScript(() => {
     const timer = setInterval(() => {
@@ -698,7 +698,7 @@ async function runPhonePass({ label, browser, contextOpts }) {
   if (shell.profile === 'setup' && shell.workspaces === 2) ok(`${label}: Setup keeps its two ruled workspaces`);
   else bad(`${label}: Setup profile/seating is wrong — ${JSON.stringify(shell)}`);
   const expectedProviders = providerRows.map((row) => ({ key: row.id, label: row.label }));
-  if (shell.selectors === 7 && JSON.stringify(shell.providerStones) === JSON.stringify(expectedProviders) && shell.presets === 8) ok(`${label}: explicit Runtime provider rows map one-for-one to shared stones and eight presets remain usable at phone width`);
+  if (shell.selectors === 6 && JSON.stringify(shell.providerStones) === JSON.stringify(expectedProviders) && shell.presets === 8) ok(`${label}: activated Runtime providers map one-for-one to shared stones and eight presets remain usable at phone width`);
   else bad(`${label}: Setup choices are incomplete — ${JSON.stringify(shell)}`);
   if (shell.failBar) bad(`${label}: the failure banner is showing:\n         ` + shell.failBar.replace(/\n/g, '\n         '));
   else ok(`${label}: no failure banner`);
