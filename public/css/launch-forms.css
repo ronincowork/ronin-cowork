@@ -1,6 +1,26 @@
 
 @layer app {
 
+  .sws { --sws-stone: clamp(var(--setup-stone-min), var(--setup-stone-fluid), var(--setup-stone-size)); --sws-gap: var(--setup-stone-gap); display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--space-8); container: setup-stone-work-surface / inline-size; }
+  .sws-rail { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
+  .sws:not([data-open='true']) .sws-rail { display: flex; flex: 1 1 auto; align-items: center; justify-content: center; min-width: 0; }
+  .sws-grid { display: grid; width: min(100%, calc(var(--setup-stone-size) * 3 + var(--sws-gap) * 2)); grid-template-columns: repeat(auto-fit, var(--sws-stone)); gap: var(--sws-gap); }
+  .sws:not([data-open='true']) .sws-grid { transform: translateY(calc(-1 * var(--space-10))); }
+  .sws[data-open='true'] .sws-grid { width: var(--sws-stone); margin-top: max(0px, calc(50% - var(--sws-stone) * 3 / 2 - var(--sws-gap) - var(--space-10))); grid-template-columns: var(--sws-stone); }
+  .sws-stone { position: relative; display: flex; flex-direction: column; align-items: flex-start; width: var(--sws-stone); max-width: 100%; aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-7) var(--space-6) var(--space-6); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
+  .sws-stone::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); }
+  .sws-stone:hover { border-color: var(--kaki); }
+  .sws-stone[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
+  .sws-stone[aria-pressed='true']::before { display: none; }
+  .sws-stone:disabled { opacity: .48; cursor: default; }
+  .sws-glyph { display: flex; width: var(--space-11); height: var(--space-11); color: var(--accent); font-style: normal; font-size: var(--text-10); font-weight: 400; line-height: 1; }
+  .sws-glyph > * { width: 100%; height: 100%; }
+  .sws-label { margin-top: auto; overflow: hidden; color: var(--fg-strong); font-size: var(--text-7); font-weight: 600; line-height: 1.15; text-overflow: ellipsis; }
+  .sws-secondary, .sws-state { max-width: 100%; overflow: hidden; color: var(--muted); font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
+  .sws-state { color: var(--accent); }
+  .sws-detail { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; }
+  .sws-detail[hidden] { display: none; }
+
   .sp-surface { --sp-stone: clamp(var(--setup-stone-min), var(--setup-stone-fluid), var(--setup-stone-size)); --sp-gap: var(--setup-stone-gap); container: setup-preset-phalanx / inline-size; font-size: var(--text-5); }
   .sp-content { display: flex; flex-direction: column; overflow: hidden; }
   .sp-kinds { margin-bottom: var(--space-7); }
