@@ -23,14 +23,29 @@ test('registration begins optional with communication explicitly off', async () 
 test('registration records purpose fields but never stores the plain email', async () => {
   await submitRegistration({
     email: 'person@example.com', purpose: 'Build a product', kind: 'work',
-    user_type: 'individual', own_words: 'Keep the setup small.',
+    user_type: 'individual', intended_use: ['coding', 'research'],
+    theme_preference: 'dark', own_words: 'Keep the setup small.',
   });
   const record = await readRegistration();
   assert.equal(record.email_masked, 'p*****@example.com');
   assert.equal(record.purpose, 'Build a product');
   assert.equal(record.user_type, 'individual');
+  assert.deepEqual(record.intended_use, ['coding', 'research']);
+  assert.equal(record.theme_preference, 'dark');
   assert.equal(JSON.stringify(record).includes('person@example.com'), false);
   assert.equal((await registrationAnswer()).status, 'pending', 'submission is not entitlement');
+});
+
+test('anonymous registration needs no email and keeps a stable outgoing packet identity', async () => {
+  let record = await submitRegistration({
+    identity_mode: 'anonymous', intended_use: ['self_help', 'personal_assistance'], theme_preference: 'automatic',
+  });
+  assert.equal(record.email_masked, null);
+  assert.match(record.anonymous_packet_id, /^pkt_[a-z2-9]{26}$/);
+  const packetId = record.anonymous_packet_id;
+  record = await submitRegistration({ identity_mode: 'anonymous', intended_use: ['coding'] });
+  assert.equal(record.anonymous_packet_id, packetId);
+  assert.equal((await registrationAnswer()).status, 'anonymous');
 });
 
 test('communication remains independent and No communication clears other choices', async () => {
@@ -107,21 +122,30 @@ test('selector definitions retain neutral provider grouping without requirement 
   assert.doesNotMatch(source, /SETUP_REQUIREMENT_TARGETS|targetKey|targetClass/);
 });
 
-test('Register presents one open profile flow with bounded choices and no Preset duplication', async () => {
+test('Register presents one open profile flow with card choices and anonymous delivery', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
   for (const name of ['email', 'purpose', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
-  for (const name of ['kind', 'user_type']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
+  for (const name of ['identity_mode', 'kind', 'user_type', 'intended_use', 'theme_preference']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
   assert.match(source, /Welcome to Ronin/);
   assert.match(source, /setup-register-group/);
-  assert.match(source, /setup-register-pill/);
+  assert.match(source, /setup-register-choice-grid/);
   assert.match(source, /aria-pressed/);
+  for (const label of ['With email', 'Anonymous', 'Coding', 'Self-help', 'Personal assistance', 'Automatic']) assert.match(source, new RegExp(label));
   assert.match(source, /Communication choices/);
-  assert.match(source, /Communication is off until you choose otherwise/);
+  assert.match(source, /Communication stays off unless you choose otherwise/);
   assert.match(source, /register_action'[\s\S]*?'Register'\), '', async/);
   assert.doesNotMatch(source, /Optional profile|setup-register-disclosure/);
+  assert.doesNotMatch(source, /setup-register-pill/);
   assert.doesNotMatch(source, /const kind = el\('select'\)|const userType = el\('select'\)/);
   assert.doesNotMatch(source, /renderKindPills|createKindsPreference|setup-kinds/);
   assert.doesNotMatch(source, /registration_pending'[\s\S]*?Registration pending/);
+});
+
+test('anonymous Register delivery uses the durable Ronin message path and never starts email activation', async () => {
+  const source = await (await import('node:fs/promises')).readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8');
+  assert.match(source, /if \(anonymous\)[\s\S]*?sendKansou\(buildKansou/);
+  assert.match(source, /the packet is durable before immediate delivery is attempted/);
+  assert.match(source, /if \(anonymous\)[\s\S]*?return;[\s\S]*?await request\(str\(body\.email\)\)/);
 });
 
 test('Services leads with identity and benefits, then routes its only registration action directly', async () => {
