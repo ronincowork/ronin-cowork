@@ -126,7 +126,8 @@ test('selector definitions retain neutral provider grouping without requirement 
 test('Register presents one open profile flow with card choices and anonymous delivery', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
   for (const name of ['email', 'purpose', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
-  for (const name of ['identity_mode', 'kind', 'user_type', 'goals', 'intended_use', 'theme_preference']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
+  for (const name of ['identity_mode', 'kind', 'goals', 'intended_use', 'theme_preference']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
+  assert.doesNotMatch(source, /Who is using Ronin\?|\['individual', 'Just me'\]|\['team', 'A team'\]|\['builder', 'Builder'\]|\['exploring', 'Exploring'\]/);
   assert.match(source, /Welcome to Ronin/);
   assert.match(source, /setup-register-group/);
   assert.match(source, /setup-register-choice-grid/);

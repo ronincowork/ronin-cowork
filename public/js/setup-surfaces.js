@@ -87,7 +87,6 @@ function createRegisterSurface(context) {
   ]);
   identityMode.wrap.classList.add('setup-register-identity-choice');
   const kind = choiceGroup('kind', t('setup_surface.kind', 'Where Ronin fits'), [['work', 'Work'], ['personal', 'Personal'], ['learning', 'Learning'], ['other', 'Something else']]);
-  const userType = choiceGroup('user_type', t('setup_surface.user_type', 'Who is using Ronin?'), [['individual', 'Just me'], ['team', 'A team'], ['builder', 'Builder'], ['exploring', 'Exploring']]);
   const goals = choiceGroup('goals', t('setup_surface.goals', 'What sounds useful about Ronin?'), [
     ['remote_access', 'Work from anywhere', 'Reach agents while their sessions keep running.'],
     ['multiple_providers', 'Use multiple providers', 'Mix strengths, switch when needed, avoid lock-in.'],
@@ -107,7 +106,7 @@ function createRegisterSurface(context) {
   welcome.append(el('span', 'setup-register-eyebrow', t('setup_surface.say_hello', 'Say hello')), el('h2', '', t('setup_surface.register_welcome', 'Welcome to Ronin')), el('p', 'setup-lede', t('setup_surface.register_lede', 'Share only what feels useful. Your answers help us shape better starting points; local Ronin works whether you register or not.')));
   const about = el('section', 'setup-register-group');
   const emailField = field(t('setup_surface.email', 'Email address'), email);
-  about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField, userType.wrap);
+  about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField);
   const fit = el('section', 'setup-register-group');
   fit.append(
     el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), goals.wrap, intendedUse.wrap, kind.wrap,
@@ -122,7 +121,7 @@ function createRegisterSurface(context) {
     const anonymous = identityMode.value.value === 'anonymous';
     const result = await request('/api/setup/registration', { method: 'POST', json: {
       identity_mode: identityMode.value.value, email: email.value, purpose: purpose.value,
-      kind: kind.value.value, user_type: userType.value.value, goals: goals.values(), intended_use: intendedUse.values(),
+      kind: kind.value.value, user_type: '', goals: goals.values(), intended_use: intendedUse.values(),
       theme_preference: theme.value.value, own_words: own.value,
     } });
     notice.textContent = result.ok
@@ -134,7 +133,6 @@ function createRegisterSurface(context) {
     const anonymous = identityMode.value.value === 'anonymous';
     const declinedRegistration = identityMode.value.value === 'no_thanks';
     emailField.hidden = anonymous || declinedRegistration;
-    userType.wrap.hidden = declinedRegistration;
     fit.hidden = declinedRegistration;
     consent.hidden = declinedRegistration;
     registerAction.hidden = declinedRegistration;
