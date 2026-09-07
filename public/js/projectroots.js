@@ -410,9 +410,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       const dl = make('dl', 'pr-fact-list');
       for (const [label, value, options = {}] of rows) {
         if (value == null || value === '') continue;
-        const dd = make('dd');
-        if (options.mono) dd.append(make('code', '', value));
-        else dd.textContent = value;
+        const dd = make('dd', '', value);
         if (options.title) dd.title = options.title;
         if (options.tone) dd.dataset.tone = options.tone;
         dl.append(make('dt', '', label), dd);
@@ -460,7 +458,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     d.append(section(t('roots.summary', 'Summary'), summary));
 
     const folder = section(t('roots.section_folder', 'Folder'), facts([
-      [t('roots.fact_directory', 'Directory'), r.dir, { mono: true, tone: exists ? '' : 'bad' }],
+      [t('roots.fact_directory', 'Directory'), r.dir, { tone: exists ? '' : 'bad' }],
       [t('roots.fact_docs', 'Docs'), (r.docs || []).join(', ')],
       [t('roots.fact_plans', 'Plans'), (r.plans || []).join(', ')],
       [t('roots.fact_match', 'Match'), (r.match || []).join(', ')],

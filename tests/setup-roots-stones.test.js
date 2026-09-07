@@ -53,7 +53,8 @@ test('the selected folder is one page: a head line with every action, then Summa
     .map((needle) => detail.indexOf(needle));
   assert.ok(order.every((at) => at >= 0), 'every section is present');
   assert.deepEqual([...order].sort((a, b) => a - b), order, 'sections come in the ruled order');
-  assert.match(detail, /t\('roots\.fact_directory', 'Directory'\), r\.dir, \{ mono: true/);
+  assert.match(detail, /t\('roots\.fact_directory', 'Directory'\), r\.dir, \{ tone:/);
+  assert.doesNotMatch(detail, /make\('code'|font-mono/, 'the path is set in the same face as everything else');
   assert.match(detail, /t\('roots\.fact_publishing', 'Publishing'\)/);
   assert.match(detail, /t\('roots\.repository_none'/);
   assert.match(detail, /kind: 'primary'/, 'Edit is the one primary action');
@@ -93,6 +94,7 @@ test('roots carry no parallel stone DOM or CSS presentation and the detail rhyth
   assert.match(css, /\.pr-detail-heading \{[^}]*justify-content: space-between/, 'the head line carries the name and its actions, as Presets does');
   const detailCss = css.slice(css.indexOf("/* Setup's selected folder"), css.indexOf('.cv-worktrees-default {'));
   assert.doesNotMatch(detailCss, /--text-(?:[1-3]|[6-9]|10)\b/, 'only 14px body and 13px notes inside the detail');
+  assert.doesNotMatch(detailCss, /font-mono|var\(--ok\)|@container roots-detail/, 'no second face, no green, labels never stack over values');
   assert.match(detailCss, /\.pr-detail \.pr-f input,\s*\.pr-detail \.pr-f select \{[^}]*border: 0;[^}]*background: var\(--well\)[^}]*font: inherit/, 'fields are drawn as Presets fields, never browser defaults');
   assert.match(css, /\.pr-detail \{[^}]*font-size: var\(--text-5\)/);
   assert.match(css, /\.pr-detail \.pr-group \{[^}]*border: 0/, 'no boxes inside the detail');
