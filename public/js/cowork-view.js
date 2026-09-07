@@ -605,18 +605,15 @@ export function createCoworkView(options = {}) {
     el: root, glyph: campaign ? '⛩' : '人',
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: bench.arrangement,
-    // The owner's per-tab name distinguishes several Workbench tabs. Teams defaults to
-    // its page name; a Team defaults to the Team name. The favicon carries the house.
+    // The owner's per-tab name; Teams defaults to its page name, a Team to the Team name.
     title: ({ param, viewState }) => {
       const fallback = campaign ? t('campaign.coworks', 'Teams') : (param || t('team.team', 'Team'));
       const name = viewState?.(viewKey)?.tabName;
       return name ? { bare: name } : fallback;
     },
     tabName: {
-      // The island edits the name it visibly owns. A default name is still a real current
-      // value, not suggestion text: putting it in value makes it selectable and editable.
-      get: () => ctx?.viewState(viewKey)?.tabName
-        || (campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team')),
+      // The island edits the name it owns; a default is a real value, selectable and editable.
+      get: () => ctx?.viewState(viewKey)?.tabName || (campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team')),
       placeholder: () => campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team'),
       set: (value) => { ctx?.patchViewState(viewKey, { tabName: String(value || '').trim() }); },
     },
