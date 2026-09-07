@@ -5922,16 +5922,19 @@ button.wb-door:hover b {
 .setup-services-mark { width: 3.5rem; height: 3.5rem; object-fit: contain; }
 .setup-services-identity { display: grid; gap: var(--space-2); }
 .setup-services-identity h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-7); font-weight: 600; }
-.setup-services-benefits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-.setup-services-benefit { display: grid; align-content: start; gap: var(--space-2); min-height: 7rem; border-top: var(--edge-2) solid var(--kaki); background: var(--panel); padding: var(--space-5); }
+.setup-services-benefits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.setup-services-benefit { display: grid; align-content: start; gap: var(--space-2); border-top: var(--edge-2) solid var(--kaki); background: var(--panel); padding: var(--space-5); }
 .setup-services-benefit h3, .setup-services-benefit p { margin: 0; }
 .setup-services-benefit h3 { color: var(--fg-strong); font-size: var(--form-head); }
-.setup-services-benefit p, .setup-services-enablement, .setup-services-next { color: var(--muted-2); font-size: var(--form-note); line-height: 1.4; }
-.setup-services-enablement { margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-5); }
-.setup-services-status { display: grid; gap: var(--space-2); border-left: var(--edge-2) solid var(--ok-2); padding: var(--space-3) var(--space-5); }
+.setup-services-benefit p, .setup-services-next, .setup-services-gate { color: var(--muted-2); font-size: var(--form-note); line-height: 1.4; }
+.setup-services-status { display: grid; gap: var(--space-2); border-left: var(--edge-2) solid var(--line-2); padding: var(--space-3) var(--space-5); }
+.setup-services-status[data-tone='ok'] { border-left-color: var(--ok-2); }
+.setup-services-status[data-tone='warn'] { border-left-color: var(--warn); }
+.setup-services-status[data-tone='bad'] { border-left-color: var(--bad); }
 .setup-services-status-line, .setup-services-next { margin: 0; }
 .setup-services-status-line { color: var(--fg-strong); font-size: var(--form-input); font-weight: 650; }
 .setup-services-compact > .wk-action { justify-self: start; }
+.setup-services-gate { margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-5); }
 .setup-gbrain-compact { display: grid; align-content: start; width: min(100%, 42rem); margin: 0 auto; gap: var(--space-6); }
 .setup-gbrain-lockup { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; }
 .setup-gbrain-glyph { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; color: var(--kaki); font-style: normal; font-size: var(--text-10); line-height: 1; }
