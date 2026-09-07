@@ -6,6 +6,10 @@
   .wk-surface:not([data-flush='true']) > .wk-surface-content.sws-host { padding: var(--space-6) var(--space-11); }
   .sws-host > .sws { flex: 1 1 auto; }
   .sws-host > :not(.sws) { font-size: var(--form-note); line-height: 1.4; }
+  .sws-header { display: flex; flex: 0 0 var(--space-12); align-items: center; min-width: 0; overflow: auto hidden; scrollbar-width: none; }
+  .sws-header::-webkit-scrollbar { display: none; }
+  .sws-header > * { margin-block: 0; }
+  .sws-footer[hidden] { display: none; }
   .sws { --sws-stone: var(--setup-stone-size); --sws-gap: var(--setup-stone-gap); display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--space-11); container: setup-stone-work-surface / inline-size; }
   .sws-rail { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
   .sws:not([data-open='true']) .sws-rail { display: flex; flex: 1 1 auto; align-items: flex-start; justify-content: center; min-width: 0; padding-top: calc(var(--sws-stone) + var(--sws-gap)); }
