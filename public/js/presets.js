@@ -148,7 +148,7 @@ const el = (tag, cls = '', text = '') => {
   return out;
 };
 const field = (label, control, prompt = '') => {
-  const wrap = el('label', 'sp-field');
+  const wrap = el('label', 'sp-field sp-section');
   const head = el('span', 'sp-field-label');
   head.append(el('span', '', label));
   if (prompt) head.append(el('span', 'sp-select', prompt));
@@ -160,6 +160,11 @@ const controlLabel = (label, prompt = '') => {
   head.append(el('span', '', label));
   if (prompt) head.append(el('span', 'sp-select', prompt));
   return head;
+};
+const section = (label, prompt, ...content) => {
+  const wrap = el('section', 'sp-section');
+  wrap.append(controlLabel(label, prompt), ...content);
+  return wrap;
 };
 const input = (value = '', type = 'text') => { const out = el('input'); out.type = type; out.value = value; return out; };
 const option = (value, label = value) => { const out = el('option', '', label); out.value = value; return out; };
@@ -314,12 +319,13 @@ function renderSpecialControls(host, handle, state, runtime) {
   if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where');
   if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder');
   if (handle === 'bare_metal') {
-    host.append(controlLabel('Agents run side by side', 'select')); renderRows(host, state, 'sessions', providers, 'Session');
-    host.append(controlLabel('Tile view', 'select')); renderTileChoices(host, state);
+    const agents = el('div'); renderRows(agents, state, 'sessions', providers, 'Session');
+    const tiles = el('div'); renderTileChoices(tiles, state);
+    host.append(section('Agents run side by side', 'select', ...agents.children), section('Tile view', 'select', ...tiles.children));
   }
-  if (handle === 'ronin_team') { host.append(controlLabel('Team Lead and agents', 'select')); renderRows(host, state, 'sessions', providers, 'Agent'); }
-  if (handle === 'develop_new_project') { host.append(controlLabel('Split the work · each feature agent gets its own worktree')); renderRows(host, state, 'features', providers, 'Feature Agent'); }
-  if (handle === 'health_and_fitness') { host.append(controlLabel("Each agent's kick-off message", 'edit')); renderAskRows(host, state, 'roles', 'role'); }
+  if (handle === 'ronin_team') { const body = el('div'); renderRows(body, state, 'sessions', providers, 'Agent'); host.append(section('Team Lead and agents', 'select', ...body.children)); }
+  if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', providers, 'Feature Agent'); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
+  if (handle === 'health_and_fitness') { const body = el('div'); renderAskRows(body, state, 'roles', 'role'); host.append(section("Each agent's kick-off message", 'edit', ...body.children)); }
   if (handle === 'personal_assistant') {
     const select = el('select');
     select.append(option('single', 'Single assistant'), option('recruit', 'Chief of Staff'));
@@ -332,8 +338,9 @@ function renderSpecialControls(host, handle, state, runtime) {
     const when = el('select');
     for (const [value, label] of [['daily 07:00', 'Every day, 7:00'], ['daily 08:00', 'Every day, 8:00'], ['weekdays 08:00', 'Weekdays, 8:00']]) when.append(option(value, label));
     when.value = state.schedule; when.addEventListener('change', () => { state.schedule = when.value; });
-    host.append(field('When', when, 'select'), controlLabel('What Grokbot looks at', 'edit'));
-    renderAskRows(host, state, 'roles', 'role');
+    host.append(field('When', when, 'select'));
+    const body = el('div'); renderAskRows(body, state, 'roles', 'role');
+    host.append(section('What Grokbot looks at', 'edit', ...body.children));
   }
   if (handle === 'agent_editable_doc') { const doc = input(state.document); doc.addEventListener('input', () => { state.document = doc.value; }); host.append(field('Which document', doc)); }
 }
