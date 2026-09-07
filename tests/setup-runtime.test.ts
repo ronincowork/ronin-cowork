@@ -20,7 +20,7 @@ const available = (installed: string[]) => [
 ];
 
 test('provider facts distinguish absent, installable, installed, login open, activated, and count bands', async () => {
-  const closed = { exists: async () => false };
+  const closed = { exists: async () => false, signedIn: async () => false };
   const none = await runtime.setupRuntimeAnswer({}, closed, available([]));
   assert.deepEqual(none.providers.map((provider) => provider.state), ['installable', 'absent']);
   assert.equal(none.activated_count, 0);
@@ -29,7 +29,7 @@ test('provider facts distinguish absent, installable, installed, login open, act
   const installed = await runtime.setupRuntimeAnswer({}, closed, available(['claude']));
   assert.equal(installed.providers[0]?.state, 'installed');
 
-  const login = await runtime.setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude' }, available(['claude']));
+  const login = await runtime.setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude', signedIn: async () => false }, available(['claude']));
   assert.equal(login.providers[0]?.state, 'login_open');
   assert.deepEqual(login.providers[0]?.attachment, {
     type: 'session', key: 'provider_setup_claude', team: 'provider_setup', temporary: true,
@@ -49,6 +49,17 @@ test('provider facts distinguish absent, installable, installed, login open, act
   );
   assert.equal(two.activated_count, 2);
   assert.equal(two.activated_band, 'two_plus');
+
+  const signedIn = await runtime.setupRuntimeAnswer({}, { exists: async () => false, signedIn: async (id) => id === 'claude' }, available(['claude', 'codex']));
+  assert.equal(signedIn.providers[0]?.signed_in, true);
+  assert.equal(signedIn.providers[0]?.state, 'activated', 'a credential file on this machine is a signed-in provider');
+  assert.equal(signedIn.providers[0]?.activated_at, null, 'nothing was recorded; the file is the fact');
+  assert.equal(signedIn.providers[1]?.signed_in, false);
+  assert.equal(signedIn.providers[1]?.state, 'installed');
+  assert.equal(signedIn.activated_count, 1);
+  const absentButFile = await runtime.setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => true }, available([]));
+  assert.equal(absentButFile.providers[0]?.signed_in, false, 'a credential file without the CLI is not a usable provider');
+  assert.equal(absentButFile.providers[0]?.state, 'installable');
 });
 
 test('runtime dependency facts distinguish installed from active gbrain and Services', async () => {
@@ -60,10 +71,10 @@ test('runtime dependency facts distinguish installed from active gbrain and Serv
     },
     routines: [],
   };
-  const answer = await runtime.setupRuntimeAnswer({}, { exists: async () => false }, available([]), installed);
+  const answer = await runtime.setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => false }, available([]), installed);
   assert.deepEqual(answer.gbrain, { installed: true, active: true });
   assert.deepEqual(answer.services, { installed: true, activated: true, switched_on: true, active: true });
-  const parked = await runtime.setupRuntimeAnswer({}, { exists: async () => false }, available([]), {
+  const parked = await runtime.setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => false }, available([]), {
     ...installed, services: { ...installed.services, loaded: [], switched_on: false },
   });
   assert.deepEqual(parked.gbrain, { installed: true, active: false });
@@ -170,7 +181,7 @@ test('Setup kinds are canonical runtime facts and persist without replacing setu
   assert.equal(section.completed_at, '2026-09-06T00:00:00.000Z');
   assert.deepEqual(section.providers, { codex: { activated_at: '2026-09-06T01:00:00.000Z' } });
   assert.deepEqual(section.preferences, { kinds: ['build', 'research'], providers: [] });
-  const answer = await runtime.setupRuntimeAnswer(section, { exists: async () => false }, available([]));
+  const answer = await runtime.setupRuntimeAnswer(section, { exists: async () => false, signedIn: async () => false }, available([]));
   assert.deepEqual(answer.preferences, { kinds: ['build', 'research'], providers: [] });
   assert.deepEqual(await runtime.writeSetupPreferences({ providers: ['hermes', 'openai', 'hermes'] }), {
     kinds: ['build', 'research'], providers: ['hermes', 'openai'],

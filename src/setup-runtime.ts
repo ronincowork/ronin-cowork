@@ -1,4 +1,5 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { AGENTS, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
@@ -36,6 +37,7 @@ export interface SetupProviderState {
   blocked: string | null;
   path: string | null;
   login_open: boolean;
+  signed_in: boolean;
   activated: boolean;
   activated_at: string | null;
   attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
@@ -54,6 +56,8 @@ export interface SetupRuntimeAnswer {
 
 export interface ProviderSessionOps {
   exists(name: string): Promise<boolean>;
+  /** Whether the CLI's own credential file is on this machine. Presence only; never read. */
+  signedIn(provider: string): Promise<boolean>;
   open(provider: string, name: string): Promise<void>;
   close(name: string): Promise<void>;
 }
@@ -101,8 +105,16 @@ export async function writeSetupPreferences(input: unknown): Promise<SetupPrefer
   return written;
 }
 
+/** The CLI signed in on this machine and left its credential file; Ronin reads only that it exists. */
+export async function providerSignedIn(provider: string, home = os.homedir()): Promise<boolean> {
+  const files = AGENTS.find((agent) => agent.id === provider)?.credentials ?? [];
+  for (const file of files) if (await exists(path.join(home, file))) return true;
+  return false;
+}
+
 const defaultSessionOps: ProviderSessionOps = {
   exists: sessionExists,
+  signedIn: providerSignedIn,
   async open(provider, name) {
     const spec = AGENTS.find((agent) => agent.id === provider);
     if (!spec) throw new Error(`Unknown provider "${provider}".`);
@@ -119,7 +131,7 @@ const defaultSessionOps: ProviderSessionOps = {
 
 export async function setupRuntimeAnswer(
   section: SetupSection,
-  ops: Pick<ProviderSessionOps, 'exists'> = defaultSessionOps,
+  ops: Pick<ProviderSessionOps, 'exists'> & Partial<Pick<ProviderSessionOps, 'signedIn'>> = defaultSessionOps,
   availability?: Availability,
   installed?: InstalledAnswer,
 ): Promise<SetupRuntimeAnswer> {
@@ -128,7 +140,8 @@ export async function setupRuntimeAnswer(
     const session = sessionName(agent.id);
     const loginOpen = await ops.exists(session);
     const completed = activatedAt(section, agent.id);
-    const activated = agent.installed && completed !== null;
+    const signedIn = agent.installed && await (ops.signedIn ?? providerSignedIn)(agent.id);
+    const activated = agent.installed && (completed !== null || signedIn);
     return {
       id: agent.id,
       label: agent.label,
@@ -139,6 +152,7 @@ export async function setupRuntimeAnswer(
       blocked: agent.parked || null,
       path: agent.path || null,
       login_open: loginOpen,
+      signed_in: signedIn,
       activated,
       activated_at: completed,
       attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true } : null,
