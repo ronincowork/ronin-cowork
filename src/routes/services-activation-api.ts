@@ -80,7 +80,6 @@ function fail(res: express.Response, e: unknown): void {
 }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
-
 export function registerServicesActivation(app: express.Express): void {
   app.get('/api/setup/registration', async (_req, res) => {
     res.json(await registrationAnswer());
@@ -89,7 +88,23 @@ export function registerServicesActivation(app: express.Express): void {
   app.post('/api/setup/registration', async (req, res) => {
     const body = (req.body ?? {}) as Record<string, unknown>;
     try {
-      await submitRegistration(body);
+      const anonymous = body.identity_mode === 'anonymous';
+      const saved = await submitRegistration(body);
+      if (anonymous) {
+        const message = [
+          `Anonymous Ronin registration${saved.purpose ? `: ${saved.purpose}` : ''}`,
+          saved.kind && `Kind: ${saved.kind}`,
+          saved.user_type && `User type: ${saved.user_type}`,
+          saved.intended_use.length && `Intended use: ${saved.intended_use.join(', ')}`,
+          saved.theme_preference && `Theme: ${saved.theme_preference}`,
+          saved.own_words && `In their words: ${saved.own_words}`,
+        ].filter(Boolean).join('\n');
+        await sendKansou(buildKansou(saved.anonymous_packet_id, {
+          message, feedback_kind: ['other'], using_ronin_for: saved.intended_use,
+        })).catch(() => {}); // the packet is durable before immediate delivery is attempted
+        res.json(await registrationAnswer());
+        return;
+      }
       const current = await readState();
       if (!await isEntitled() && !['awaiting_email', 'requesting', 'verified', 'installing', 'installed'].includes(current.stage)) {
         await request(str(body.email));
