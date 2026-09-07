@@ -34,6 +34,13 @@ test('Setup and Settings share the machine-settings island without a right heade
   assert.match(header, /Ronin Settings/);
 });
 
+test('phone Setup workspaces keep one common viewport height for stone rail scrolling', async () => {
+  const kit = await source('workspace-kit.css');
+  assert.match(kit, /data-workbench-profile='setup'\] \.wk-workbench-column \{ height: calc\(100dvh - var\(--row-head\) - var\(--space-6\)\); min-height: 0; \}/);
+  assert.doesNotMatch(kit, /data-workbench-profile='setup'\] \.wk-workbench-column \{ height: auto; \}/);
+  assert.doesNotMatch(kit, /data-surface='workspace1'\] \.sp-surface \{ height:/);
+});
+
 test('launch actions reuse the nin mark, never the Team Roster torii, and open tabs', async () => {
   const [primitives, kit, roster, workspace, agent, team, add] = await Promise.all([
     source('js/workspace-primitives.js'), source('workspace-kit.css'), source('js/team-roster-surface.js'),
