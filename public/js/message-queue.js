@@ -44,6 +44,8 @@ export const reconcileMessageSelection = (selected, messages) => new Set(
 
 export const dismissalIds = (messages, selected, scope) => scope === 'all'
   ? messages.map((message) => message.id)
+  : scope === 'wipeboard'
+    ? messages.filter((message) => message.source === 'wipeboard_notice').map((message) => message.id)
   : messages.map((message) => message.id).filter((id) => selected.has(id));
 
 /** Watch independently of the queue tab; flash once when each retained problem appears. */
@@ -72,9 +74,10 @@ export function buildMessageQueue(host, onCount = () => {}) {
   const tools = el('div', 'mq-tools');
   const selectAll = el('button', 'cc-btn', t('messages.select_all', 'Select All'));
   const dismissSelected = el('button', 'cc-btn', t('messages.dismiss_selected', 'Dismiss Selected'));
+  const dismissWipeboard = el('button', 'cc-btn', t('messages.dismiss_wipeboard', 'Dismiss Wipeboard Notices'));
   const dismissAll = el('button', 'cc-btn mq-dismiss-all', t('messages.dismiss_all', 'Dismiss All'));
-  selectAll.type = dismissSelected.type = dismissAll.type = 'button';
-  tools.append(selectAll, dismissSelected, dismissAll);
+  selectAll.type = dismissSelected.type = dismissWipeboard.type = dismissAll.type = 'button';
+  tools.append(selectAll, dismissSelected, dismissWipeboard, dismissAll);
   const board = el('div', 'mq-board');
   const empty = el('p', 'mq-empty', t('messages.empty', 'No messages are waiting.'));
   const reconnecting = status('mq-reconnecting');
@@ -110,6 +113,7 @@ export function buildMessageQueue(host, onCount = () => {}) {
     void render();
   });
   dismissSelected.addEventListener('click', () => void bulkDismiss('selected', dismissSelected));
+  dismissWipeboard.addEventListener('click', () => void bulkDismiss('wipeboard', dismissWipeboard));
   dismissAll.addEventListener('click', () => void bulkDismiss('all', dismissAll));
 
   const act = async (message, action, pressed, pending, method = 'POST') => {
@@ -153,6 +157,9 @@ export function buildMessageQueue(host, onCount = () => {}) {
     selectAll.textContent = t('messages.select_all_count', 'Select All ({count})', { count: messages.length });
     dismissSelected.textContent = t('messages.dismiss_selected_count', 'Dismiss Selected ({count})', { count: selected.size });
     dismissSelected.disabled = selected.size === 0;
+    const wipeboardCount = messages.filter((message) => message.source === 'wipeboard_notice').length;
+    dismissWipeboard.textContent = t('messages.dismiss_wipeboard_count', 'Dismiss Wipeboard Notices ({count})', { count: wipeboardCount });
+    dismissWipeboard.disabled = wipeboardCount === 0;
     dismissAll.textContent = t('messages.dismiss_all_count', 'Dismiss All ({count})', { count: messages.length });
     onCount(messages.length);
     if (!messages.length) { board.append(empty); return; }
