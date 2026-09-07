@@ -2782,6 +2782,7 @@ body {
   flex-direction: column;
   gap: var(--space-3);
 }
+.pr-status:empty { display: none; }
 .cv-worktrees-default {
   margin-top: var(--space-3);
   padding-top: var(--space-4);

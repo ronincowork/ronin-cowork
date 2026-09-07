@@ -37,3 +37,16 @@ test('roots carry no parallel stone DOM or CSS presentation', async () => {
   assert.doesNotMatch(css, /\.setup-roots-stones \.pr-stone/);
   assert.doesNotMatch(css, /--pr-stone/);
 });
+
+test('roots stones mount visible loading, empty, and failure output without changing Campaign roots', async () => {
+  const roots = await source('public/js/projectroots.js');
+  assert.match(roots, /messages\.className = 'pr-status'/);
+  assert.match(roots, /messages\.setAttribute\('role', 'status'\)/);
+  assert.match(roots, /root\.append\(head, messages, stoneSurface\.el\)/);
+  assert.match(roots, /const output = stones \? messages : list/);
+  assert.match(roots, /messages\.replaceChildren\(\)/, 'a successful render clears loading or failure output');
+  assert.match(roots, /\(stones \? messages : list\)\.appendChild/, 'the zero-roots message uses the mounted status host');
+  assert.match(roots, /else root\.append\(head, list\)/, 'ordinary Campaign roots retain their existing list mount');
+  assert.match(roots, /say\(t\('roots\.loading'/, 'loading is emitted through the shared say path');
+  assert.match(roots, /say\(t\('roots\.read_failed'/, 'catalog failures are emitted through the shared say path');
+});
