@@ -21,6 +21,14 @@ export interface TeamLine {
 
 export type DeskState = 'open' | 'parked';
 
+export interface DeskSource {
+  kind: 'global_dev' | 'team_line';
+  ref: string;
+  sha: string;
+  selected_by: string;
+  selected_at: string;
+}
+
 export interface RepoDesk {
   repo: string;
   root: string;
@@ -36,6 +44,8 @@ export interface RepoDesk {
   parked_at?: string;
   /** Exact working-line tip from which this desk was first created. */
   base_sha?: string;
+  /** The explicit source decision used to create or most recently adopt this desk. */
+  source?: DeskSource;
   /** The desk-local dependency tree, when the repository has one. */
   dependency_location?: string;
   /** Living or resumable sessions which own this desk. Old rows default to session. */

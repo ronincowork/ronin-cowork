@@ -62,7 +62,8 @@ function parse(argv: string[]): Args {
 const str = (v: string | true | undefined): string => (typeof v === 'string' ? v : '');
 
 const USAGE = `usage: tejun-desk status [<repo[:branch]>] [--session s | --team t | --repo r]
-       tejun-desk open <repo[:branch]> [--team t] [--session s]
+       tejun-desk open <repo[:branch]> [--team t] [--session s] [--source dev|team]
+       tejun-desk assign <repo[:branch]> --session s --team t [--source dev|team]
        tejun-desk hand-in [<repo[:branch]>] [--assignment]
        tejun-desk sync [<repo[:branch]>]
        tejun-desk close [<repo[:branch]>]
@@ -84,7 +85,8 @@ function row(d: DeskStatus): string {
     d.blocked ? `BLOCKED: ${d.blocked}` : '',
     d.mounted ? '' : 'unmounted',
   ].filter(Boolean);
-  return `${deskId(d)} → ${d.line}  ${bits.join(' · ')}  base ${d.base_sha?.slice(0, 10) || '?'} · dependencies ${d.dependency_location || 'none'}  ${d.worktree}`;
+  const source = d.source ? `${d.source.kind}:${d.source.ref}@${d.source.sha.slice(0, 10)} by ${d.source.selected_by}` : `legacy base ${d.base_sha?.slice(0, 10) || '?'}`;
+  return `${deskId(d)} → ${d.line}  ${bits.join(' · ')}  source ${source} · base ${d.base_sha?.slice(0, 10) || '?'} · dependencies ${d.dependency_location || 'none'}  ${d.worktree}`;
 }
 
 function noticeLine(n: DeskNotice): string {
@@ -141,13 +143,19 @@ async function main(): Promise<void> {
         }
         return;
       }
-      case 'open': {
+      case 'open':
+      case 'assign': {
         const selector = parseRepoBranchSelector(positional[0] ?? '');
         if (!selector.repo) die(USAGE, 2);
         if (!session) die('NO-SESSION: not inside a session and no --session', 3);
         const team = str(flags.get('team')) || (await myTeams(session))[0] || '';
-        const d = await openDesk({ repo: selector.repo, branch: selector.branch || undefined, session, team, assignment: assignmentId(session, team) });
-        out(`OPENED ${deskId(d)} from ${d.working} at ${d.base_sha?.slice(0, 10) || d.working_tip.slice(0, 10)} → ${d.line}`);
+        if (verb === 'assign' && (!str(flags.get('session')) || !str(flags.get('team')))) die('usage: tejun-desk assign <repo[:branch]> --session s --team t [--source dev|team]', 2);
+        const requestedSource = str(flags.get('source'));
+        if (requestedSource && !['dev', 'team'].includes(requestedSource)) die("SOURCE: choose 'dev' or 'team'", 2);
+        if (requestedSource === 'team' && !team) die('SOURCE: team requires --team or Team membership', 2);
+        const d = await openDesk({ repo: selector.repo, branch: selector.branch || undefined, session, team, assignment: assignmentId(session, team),
+          source: requestedSource as 'dev' | 'team' || undefined, selectedBy: verb === 'assign' ? (await whoami()) || 'lead' : session });
+        out(`${verb === 'assign' ? 'ASSIGNED' : 'OPENED'} ${deskId(d)} from ${d.source?.ref || d.working} at ${(d.source?.sha || d.base_sha || d.working_tip).slice(0, 10)} → ${d.line}`);
         out(`  worktree ${d.worktree}`);
         out(`  dependencies ${d.dependency_location || 'none'}`);
         out(row(d));
