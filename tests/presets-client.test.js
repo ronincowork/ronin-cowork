@@ -32,21 +32,24 @@ globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener()
 
 const presets = await import('../public/js/presets.js');
 
-test('purpose pills restore the three original preset categories as singular choices', () => {
+test('purpose pills offer three original categories and All Sample Presets as singular choices', () => {
   const host = new FakeNode('div');
   const preference = presets.createKindsPreference(null);
   const row = presets.renderKindPills(host, preference).el;
   const choices = row.children.filter((node) => node.tagName === 'BUTTON');
-  assert.deepEqual(choices.map((node) => node.textContent), ['Build software', 'Life Assistants', 'Research and writing']);
+  assert.deepEqual(choices.map((node) => node.textContent), ['Build software', 'Life Assistants', 'Research and writing', 'All Sample Presets']);
   choices[0].click();
   assert.deepEqual(preference.get(), ['build']);
-  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['true', 'false', 'false']);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['true', 'false', 'false', 'false']);
   choices[1].click();
   assert.deepEqual(preference.get(), ['life']);
-  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'true', 'false']);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'true', 'false', 'false']);
   choices[2].click();
   assert.deepEqual(preference.get(), ['research']);
-  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'false', 'true']);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'false', 'true', 'false']);
+  choices[3].click();
+  assert.deepEqual(preference.get(), ['build', 'life', 'research']);
+  assert.deepEqual(choices.map((node) => node.attributes['aria-pressed']), ['false', 'false', 'false', 'true']);
 });
 
 test('the original category choices need no second Show all control', async () => {
