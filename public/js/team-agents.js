@@ -103,7 +103,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle, leadAssignmen
       rows().push(agentRow({ lead: true, assignment: leadAssignment() }));
       paint(); changed();
     });
-    const add = el('button', 'fs-door', t('new_team.agent_add', '＋ Add Agent'));
+    const add = el('button', 'fs-door', t('new_team.agent_add', '＋ Add Team Agent'));
     add.type = 'button';
     add.addEventListener('click', () => { rows().push(agentRow()); paint(); changed(); });
     buttons.append(addLead, add);

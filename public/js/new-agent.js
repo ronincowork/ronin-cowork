@@ -629,10 +629,10 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   let payloadOpen = false;
   const stepPayload = createStep({ n: 8, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
     payloadOpen = !payloadOpen;
-    stepPayload.setCollapsed(!payloadOpen, '', true);
+    stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
   } });
   stepPayload.body.append(foot, actions.el);
-  stepPayload.setCollapsed(true, '', true);
+  stepPayload.setCollapsed(true, t('forms.payload_summary', 'Review what Launch will create'), true);
   const form = el('div', 'ntf-form');
   form.append(stepKind.el, stepType.el, stepTop.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el, stepPayload.el);
   // Save as template sits UNDER the reading, for the same reason as on New Team: the

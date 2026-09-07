@@ -21,13 +21,26 @@ test('New Agent presents Kind, four session doors, combined instructions, and a 
 
 test('New Team makes templates optional and offers explicit Agent roles', async () => {
   const [form, agents] = await Promise.all([source('new-team-form.js'), source('team-agents.js')]);
-  assert.match(form, /\['kind', 'template', 'top', 'lead', 'where', 'kit'\]/);
+  assert.match(form, /\['kind', 'template', 'top', 'lead', 'defaults', 'where', 'kit'\]/);
   assert.match(form, /Template · optional/);
   assert.match(form, /includeOwn: false/);
   assert.match(form, /Name & instructions/);
   assert.match(agents, /Add Lead Agent/);
-  assert.match(agents, /Add Agent/);
+  assert.match(agents, /Add Team Agent/);
   assert.doesNotMatch(agents, /Mark as team lead/);
+});
+
+test('collapsible steps expose one full-width disclosure row and Team defaults use it', async () => {
+  const [steps, team, css] = await Promise.all([
+    source('form-steps.js'), source('new-team-form.js'),
+    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
+  ]);
+  assert.match(steps, /el\(onToggle \? 'button' : 'div', 'fs-step-head'\)/);
+  assert.match(steps, /setAttribute\('aria-expanded'/);
+  assert.match(css, /\.fs-togglable \{ grid-column: 1 \/ -1; width: 100%/);
+  assert.match(team, /key: 'defaults'.*Agent defaults/);
+  assert.match(team, /Settings inherited by Agents launched in this Team/);
+  assert.doesNotMatch(team, /createBand/);
 });
 
 test('a new lead has an explicit coordinating mandate without a second launch shape', async () => {
