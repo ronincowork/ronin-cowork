@@ -26,12 +26,12 @@ test('roots stones reuse the real project-root blocks and preserve native button
   assert.match(roots, /\/repo-profile/);
 });
 
-test('roots stones are square, smaller than presets, and adapt selected detail for phone', async () => {
+test('roots stones are compact squares on the shared responsive Setup phalanx', async () => {
   const [css, presetCss] = await Promise.all([
     source('public/style.css'),
     source('public/css/launch-forms.css'),
   ]);
-  assert.match(presetCss, /--sp-stone: calc\(var\(--space-12\) \* 5\)/);
+  assert.match(presetCss, /--sp-stone: clamp\(var\(--setup-stone-min\), var\(--setup-stone-fluid\), var\(--setup-stone-size\)\)/);
   assert.match(css, /--pr-stone: clamp\(var\(--setup-stone-min[^;]+var\(--setup-stone-fluid, 24cqi\)[^;]+var\(--setup-stone-size/);
   assert.match(css, /container: setup-roots \/ inline-size/);
   assert.match(css, /grid-template-columns: repeat\(auto-fit, var\(--setup-stone-size/);
