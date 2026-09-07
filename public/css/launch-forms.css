@@ -121,6 +121,8 @@
   .ntf-form, .ntf-actions { font-size: var(--form-input); }
   .na-surface > .wk-surface-header,
   .ntf-surface > .wk-surface-header { position: sticky; top: 0; z-index: 4; background: var(--panel); }
+  .launch-form-embed { display: flex; flex-direction: column; min-width: 0; overflow: visible; }
+  .launch-form-embed-actions { position: sticky; top: 0; z-index: 4; display: flex; justify-content: flex-end; background: var(--panel); padding-bottom: var(--space-3); }
   .ntf-foot { font-size: var(--form-note); }
   .ntf-form { display: flex; flex-direction: column; margin-bottom: var(--space-7); }
 
