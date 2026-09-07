@@ -2796,53 +2796,6 @@ body {
 .setup-roots-stones .setup-roots-add-stone .sws-glyph {
   color: var(--kaki);
 }
-.setup-roots-stones .sws-detail .pr-block {
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  background: transparent;
-}
-.setup-roots-stones .sws-detail .pr-top {
-  padding-bottom: var(--space-4);
-}
-.pr-disclosure {
-  border-top: var(--edge) solid var(--line-2);
-}
-.pr-disclosure:last-of-type {
-  border-bottom: var(--edge) solid var(--line-2);
-}
-.pr-disclosure > summary {
-  padding: var(--space-4) 0;
-  color: var(--fg-strong);
-  font-weight: 600;
-  cursor: pointer;
-}
-.pr-disclosure-body {
-  padding: 0 0 var(--space-5) var(--space-5);
-}
-.pr-disclosure-body .pr-facts {
-  margin-top: 0;
-}
-.pr-edit-actions {
-  margin-top: var(--space-5);
-}
-.pr-maintenance {
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: var(--edge) solid var(--line-2);
-}
-.pr-maintenance-label {
-  display: block;
-  color: var(--muted-2);
-  font-size: var(--text-2);
-}
-.pr-maintenance .pr-acts {
-  margin-top: var(--space-3);
-  flex-wrap: wrap;
-}
-.setup-roots-stones .pr-block.editing .pr-form {
-  margin-top: 0;
-}
 .cv-worktrees-default {
   margin-top: var(--space-3);
   padding-top: var(--space-4);
@@ -5877,8 +5830,7 @@ button.wb-door:hover b {
 .setup-form, .setup-provider, .setup-registration-identity { display: grid; gap: var(--space-4); padding: var(--space-5); border: var(--edge) solid var(--line); border-radius: var(--radius-xs); }
 .setup-register-form { width: 100%; padding: 0; border: 0; gap: var(--space-8); }
 .setup-register-form[hidden] { display: none; }
-.setup-register-form > .wk-action { justify-self: start; min-width: 8.5rem; border-color: var(--kaki); background: var(--raise); color: var(--fg-strong); }
-.setup-register-form > .wk-action:hover { background: var(--accent-soft); color: var(--kaki); }
+.setup-register-form > .wk-action { justify-self: start; }
 .setup-register-compact { align-content: start; width: min(100%, 52rem); margin: 0 auto; gap: var(--space-8); }
 .setup-register-compact .setup-registration-identity { border: 0; border-left: var(--edge-2) solid var(--ok-2); border-radius: 0; padding: var(--space-3) var(--space-5); }
 .setup-register-welcome { display: grid; gap: var(--space-3); padding: var(--space-4) 0 var(--space-2); }
@@ -5886,8 +5838,9 @@ button.wb-door:hover b {
 .setup-register-eyebrow { color: var(--kaki); font-size: var(--text-2); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .setup-register-welcome h2 { font-size: clamp(var(--text-7), 4vw, var(--text-10)); font-weight: 560; letter-spacing: -.025em; }
 .setup-register-welcome .setup-lede { max-width: 40rem; font-size: var(--text-4); line-height: 1.55; }
-.setup-register-group { display: grid; gap: 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); padding: var(--space-7); }
+.setup-register-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 0 var(--space-8); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); padding: var(--space-7); }
 .setup-register-group[hidden] { display: none; }
+.setup-register-group > h3, .setup-register-group > .setup-register-full { grid-column: 1 / -1; }
 .setup-register-group > h3 { padding-bottom: var(--space-6); font-size: var(--text-5); }
 .setup-register-group > .setup-field { border-top: var(--edge) solid var(--line-2); padding: var(--space-6) 0; }
 .setup-register-group > .setup-field[hidden] { display: none; }
@@ -5902,7 +5855,10 @@ button.wb-door:hover b {
 .setup-register-checklist legend { padding: 0 0 var(--space-3); color: var(--fg); }
 .setup-register-check { display: grid; grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: start; width: 100%; box-sizing: border-box; border-top: var(--edge) solid var(--line); padding: var(--space-3) 0; color: var(--muted-2); cursor: pointer; line-height: 1.4; }
 .setup-register-check span { min-width: 0; }
-.setup-register-check input { width: 1rem; height: 1rem; margin: .15rem 0 0; accent-color: var(--kaki); }
+.setup-register-check input[type='checkbox'] { width: 1rem; height: 1rem; margin: .15rem 0 0; accent-color: var(--kaki); }
+.setup-register-check-other { grid-template-columns: minmax(0, 1fr) minmax(12rem, .7fr); align-items: center; gap: var(--space-5); }
+.setup-register-check-label { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: start; cursor: pointer; }
+.setup-register-other[hidden] { display: none; }
 .setup-register-group input:not([type='checkbox']), .setup-register-group textarea { border: 0; border-radius: var(--radius-hair); background: var(--well); padding: var(--space-4) var(--space-5); color: var(--fg); font: inherit; }
 .setup-register-consent { max-width: 42rem; line-height: 1.5; }
 .setup-register-declined { max-width: 36rem; margin: 0; border-left: var(--edge-2) solid var(--kaki); padding: var(--space-4) var(--space-5); color: var(--muted-2); line-height: 1.55; }
@@ -5939,39 +5895,40 @@ button.wb-door:hover b {
 .setup-services-account { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: baseline; margin: 0; }
 .setup-services-account-action { border: 0; background: none; padding: 0; color: var(--kaki); font: inherit; font-size: var(--text-5); cursor: pointer; text-decoration: underline; }
 .setup-services-account-action:disabled { color: var(--muted); cursor: default; }
-.setup-gbrain-compact { display: grid; align-content: start; width: min(100%, 42rem); margin: 0 auto; gap: var(--space-6); }
+.setup-gbrain-compact { display: grid; align-content: start; width: min(100%, 44rem); margin: 0 auto; gap: var(--space-8); }
 .setup-gbrain-lockup { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; }
 .setup-gbrain-glyph { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; color: var(--kaki); font-style: normal; font-size: var(--text-10); line-height: 1; }
 .setup-gbrain-identity { display: grid; gap: var(--space-2); }
-.setup-gbrain-identity h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-7); font-weight: 600; }
-.setup-gbrain-credit { justify-self: start; color: var(--muted-2); font-size: var(--form-note); text-decoration: none; }
+.setup-gbrain-identity h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-9); font-weight: 600; }
+.setup-gbrain-identity .setup-lede { font-size: var(--text-7); line-height: 1.4; }
+.setup-gbrain-credit { justify-self: start; color: var(--muted-2); font-size: var(--text-4); text-decoration: none; }
 .setup-gbrain-credit:hover { color: var(--kaki); text-decoration: underline; }
-.setup-gbrain-benefits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
-.setup-gbrain-benefit { display: grid; align-content: start; gap: var(--space-2); border-top: var(--edge-2) solid var(--kaki); background: var(--panel); padding: var(--space-5); }
+.setup-gbrain-benefits { display: grid; gap: var(--space-3); }
+.setup-gbrain-benefit { display: grid; grid-template-columns: minmax(9rem, 11rem) minmax(0, 1fr); align-items: baseline; gap: var(--space-3) var(--space-6); border-top: var(--edge-2) solid var(--kaki); background: var(--panel); padding: var(--space-5) var(--space-6); }
 .setup-gbrain-benefit h3, .setup-gbrain-benefit p { margin: 0; }
-.setup-gbrain-benefit h3 { color: var(--fg-strong); font-size: var(--form-head); }
-.setup-gbrain-benefit p, .setup-gbrain-next, .setup-gbrain-log, .setup-gbrain-observed { color: var(--muted-2); font-size: var(--form-note); line-height: 1.4; }
-.setup-gbrain-status { display: grid; gap: var(--space-2); border-left: var(--edge-2) solid var(--line-2); padding: var(--space-3) var(--space-5); }
+.setup-gbrain-benefit h3 { color: var(--fg-strong); font-size: var(--text-6); }
+.setup-gbrain-benefit p, .setup-gbrain-next, .setup-gbrain-log, .setup-gbrain-observed { color: var(--muted-2); font-size: var(--text-5); line-height: 1.45; }
+.setup-gbrain-status { display: grid; gap: var(--space-3); border-left: var(--edge-2) solid var(--line-2); padding: var(--space-4) var(--space-6); }
 .setup-gbrain-status[data-tone='ok'] { border-left-color: var(--ok-2); }
 .setup-gbrain-status[data-tone='warn'] { border-left-color: var(--warn); }
 .setup-gbrain-status[data-tone='bad'] { border-left-color: var(--bad); }
 .setup-gbrain-status p { margin: 0; }
-.setup-gbrain-status-line { color: var(--fg-strong); font-size: var(--form-input); font-weight: 650; }
+.setup-gbrain-status-line { color: var(--fg-strong); font-size: var(--text-7); font-weight: 650; }
 .setup-gbrain-log summary { cursor: pointer; }
-.setup-gbrain-log pre { max-height: 12rem; overflow: auto; margin: var(--space-3) 0 0; white-space: pre-wrap; font-size: var(--text-2); }
+.setup-gbrain-log pre { max-height: 12rem; overflow: auto; margin: var(--space-3) 0 0; white-space: pre-wrap; font-size: var(--text-4); }
 .setup-gbrain-compact > .wk-action { justify-self: start; }
 .setup-gbrain-facts { display: grid; gap: var(--space-3); border-top: var(--edge) solid var(--line); padding-top: var(--space-5); }
-.setup-gbrain-facts h3 { margin: 0; color: var(--fg-strong); font-size: var(--form-head); }
+.setup-gbrain-facts h3 { margin: 0; color: var(--fg-strong); font-size: var(--text-6); }
 .setup-gbrain-facts dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2) var(--space-6); align-items: baseline; margin: 0; }
-.setup-gbrain-facts dt { color: var(--muted-2); font-size: var(--form-note); }
-.setup-gbrain-facts dd { margin: 0; text-align: right; color: var(--fg); font-size: var(--form-input); font-weight: 600; }
+.setup-gbrain-facts dt { color: var(--muted-2); font-size: var(--text-5); }
+.setup-gbrain-facts dd { margin: 0; text-align: right; color: var(--fg); font-size: var(--text-5); font-weight: 600; }
 .setup-gbrain-facts dd[data-tone='ok'] { color: var(--ok); }
 .setup-gbrain-facts dd[data-tone='warn'] { color: var(--warn); }
 .setup-gbrain-facts dd[data-tone='bad'] { color: var(--bad); }
 .setup-gbrain-observed { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: baseline; margin: 0; }
-.setup-gbrain-recheck { border: 0; background: none; padding: 0; color: var(--kaki); font: inherit; font-size: var(--form-note); cursor: pointer; text-decoration: underline; }
+.setup-gbrain-recheck { border: 0; background: none; padding: 0; color: var(--kaki); font: inherit; font-size: var(--text-5); cursor: pointer; text-decoration: underline; }
 .setup-gbrain-recheck:disabled { color: var(--muted); cursor: default; }
-.setup-gbrain-gate { border-top: var(--edge) solid var(--line); padding-top: var(--space-5); font-size: var(--form-note); line-height: 1.4; }
+.setup-gbrain-gate { border-top: var(--edge) solid var(--line); padding-top: var(--space-5); font-size: var(--text-5); line-height: 1.45; }
 .setup-good { color: var(--ok); }
 .setup-provider-list { display: flex; flex-direction: column; min-height: 0; }
 .setup-provider-stone[data-activated='true'] { border-color: var(--ok-2); }
@@ -5979,31 +5936,35 @@ button.wb-door:hover b {
 .setup-kinds { display: grid; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
 .setup-provider h3 { margin: 0; }
 .setup-provider-manual { box-sizing: border-box; text-decoration: none; }
-.setup-provider-readiness { display: grid; gap: 0; }
+.setup-provider-readiness { display: grid; gap: 0; min-width: 0; }
 .setup-provider-optin { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) 0; font-weight: 650; }
 .setup-provider-optin input { width: var(--space-5); height: var(--space-5); accent-color: var(--kaki); }
-.setup-provider-action-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); padding: var(--space-5) 0; border-top: var(--edge) solid var(--line); }
+/* Install and Authenticate share one row: copy, then the same-sized control(s). The shared
+   stone surface is the size container, so the controls sit beside the copy only when the
+   detail is wide enough and otherwise take their own line; a narrow detail stretches them. */
+.setup-provider-action-row { display: grid; gap: var(--space-4); min-width: 0; padding: var(--space-5) 0; border-top: var(--edge) solid var(--line); }
 .setup-provider-action-copy { display: grid; gap: var(--space-2); min-width: 0; }
 .setup-provider-action-state { color: var(--muted); font-size: var(--text-2); }
-.setup-provider-action-control { display: grid; grid-template-columns: repeat(2, 10rem); justify-content: end; gap: var(--space-2); }
-.setup-provider-action { display: inline-flex; width: 10rem; min-height: 2.25rem; align-items: center; justify-content: center; box-sizing: border-box; text-align: center; }
-.setup-provider-ready { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) 0; border-top: var(--edge) solid var(--line); }
+.setup-provider-command { color: var(--muted-2); font: var(--text-2) var(--font-mono); overflow-wrap: anywhere; }
+.setup-provider-action-control { display: flex; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
+.setup-provider-action { display: inline-flex; flex: 1 1 10rem; min-width: 0; min-height: 2.25rem; align-items: center; justify-content: center; box-sizing: border-box; text-align: center; }
+@container setup-stone-work-surface (min-width: 46rem) {
+  .setup-provider-action-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); }
+  .setup-provider-action { flex: 0 0 10rem; }
+}
+.setup-provider-ready { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-4); min-width: 0; padding: var(--space-5) 0; border-top: var(--edge) solid var(--line); }
 .setup-provider-ready span { color: var(--muted); font-size: var(--text-2); }
 .setup-provider-ready[data-ready='true'] span { color: var(--ok); }
-@media (max-width: 700px) {
-  .setup-provider-action-row { grid-template-columns: 1fr; }
-  .setup-provider-action-control { grid-template-columns: repeat(2, minmax(0, 1fr)); justify-content: stretch; }
-  .setup-provider-action { width: 100%; }
-}
 .setup-provider-terminal { min-height: min(54vh, 34rem); overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--term-bg); }
 .setup-provider-terminal > .wk-terminal-host, .setup-provider-terminal .tile { height: 100%; min-height: inherit; }
 @media (max-width: 700px) {
   .setup-explainer-body { grid-template-columns: 1fr; }
   .setup-register-group { padding: var(--space-5); }
   .setup-register-choice-grid { grid-template-columns: repeat(auto-fit, 6rem); }
+  .setup-register-check-other { grid-template-columns: 1fr; }
   .setup-surface-body { padding: var(--space-4); }
   .setup-services-benefit { grid-template-columns: 1fr; }
-  .setup-gbrain-benefits { grid-template-columns: 1fr; }
+  .setup-gbrain-benefit { grid-template-columns: 1fr; }
   .setup-explainer { margin: var(--space-4) var(--space-4) 0; }
 }
 .cs-detected { margin-top: var(--space-1); padding: var(--space-4) var(--space-5); border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted-2); font-size: var(--text-2); }

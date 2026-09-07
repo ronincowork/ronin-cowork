@@ -3,56 +3,59 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const { providerPresentation, providerReadiness } = await import('../public/js/setup-provider-state.js');
+const source = await readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+const css = await readFile(new URL('../public/style.css', import.meta.url), 'utf8');
 
-test('provider inventory states are short, readable, and preserve lifecycle truth', () => {
+test('provider stone states are the short SETUP_WORKBENCH words and keep lifecycle truth', () => {
   const cases = [
-    [{ id: 'anthropic', installed: true, activated: true }, 'Setup complete', 'none'],
+    [{ id: 'anthropic', installed: true, activated: true }, 'Activated', 'none'],
     [{ id: 'anthropic', installed: true, login_open: true }, 'Sign-in open', 'login_open'],
-    [{ id: 'anthropic', installed: true }, 'Sign-in unknown', 'sign_in'],
-    [{ id: 'grok', installable: true }, 'Install available', 'install'],
+    [{ id: 'anthropic', installed: true }, 'Needs sign-in', 'sign_in'],
+    [{ id: 'grok', installable: true }, 'Not installed', 'install'],
     [{ id: 'hermes' }, 'Manual install', 'manual'],
   ];
   for (const [provider, inventoryState, action] of cases) {
     const presentation = providerPresentation(provider);
     assert.equal(presentation.inventoryState, inventoryState);
     assert.equal(presentation.action, action);
-    assert.ok(inventoryState.length <= 17);
+    assert.ok(inventoryState.length <= 14);
   }
 });
 
-test('known installed providers explain their own native sign-in and honest auth boundary', () => {
-  for (const [id, label, account] of [
+test('installed providers name their own sign-in from the runtime vendor and the honest auth boundary', () => {
+  for (const [id, label, from] of [
     ['anthropic', 'Claude Code', 'Anthropic'],
     ['openai', 'Codex', 'OpenAI'],
     ['gemini', 'Gemini CLI', 'Google'],
   ]) {
-    const detail = providerPresentation({ id, label, installed: true }).detail;
-    assert.match(detail, new RegExp(`${label} handles ${account} account sign-in`));
-    assert.match(detail, /Ronin has not recorded setup completion yet/);
+    const detail = providerPresentation({ id, label, from, installed: true }).detail;
+    assert.equal(detail, `${label} signs in to ${from} in a tile here. Done / Close records it.`);
   }
-  const activated = providerPresentation({ id: 'openai', label: 'Codex', installed: true, activated: true, activated_at: '2026-09-07' });
-  assert.match(activated.detail, /recorded Codex setup completion on 2026-09-07/);
-  assert.match(activated.detail, /controls current authentication and may ask you to sign in again/);
+  const activated = providerPresentation({ id: 'openai', label: 'Codex', installed: true, activated: true, activated_at: '2026-09-07T11:02:00.000Z' });
+  assert.equal(activated.detail, 'Recorded 2026-09-07. Sign-in stays with Codex; Ronin does not monitor it.');
+  const open = providerPresentation({ id: 'openai', label: 'Codex', installed: true, login_open: true });
+  assert.equal(open.detail, "Finish Codex's sign-in in the tile, then Done / Close. Close leaves it unactivated.");
 });
 
-test('Grok states global npm install impact in one line', () => {
+test('Grok states the global npm install and carries the exact command separately', () => {
   const result = providerPresentation({ id: 'grok', label: 'Grok CLI', installable: true, install: 'npm install -g @xai-official/grok' });
   assert.equal(result.action, 'install');
-  assert.equal(result.detail, 'Installs Grok CLI globally with npm: npm install -g @xai-official/grok');
+  assert.equal(result.detail, 'Installs globally with npm.');
+  assert.equal(result.command, 'npm install -g @xai-official/grok');
 });
 
 test('Hermes has one explicit manual route instead of a prose dead end', () => {
   const result = providerPresentation({ id: 'hermes', label: 'Hermes', blocked: 'Install Hermes manually.' });
   assert.equal(result.action, 'manual');
+  assert.equal(result.detail, 'Install Hermes manually.');
   assert.equal(result.manual.label, 'Open Hermes install guide');
   assert.match(result.manual.url, /NousResearch\/hermes-agent/);
 });
 
-test('future providers retain an honest fallback without generic credential copy', async () => {
+test('future providers retain an honest fallback without generic credential copy', () => {
   const installed = providerPresentation({ id: 'future', label: 'Future CLI', installed: true });
   assert.equal(installed.action, 'sign_in');
-  assert.match(installed.detail, /Future CLI handles account sign-in in its native setup/);
-  const source = await readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+  assert.equal(installed.detail, 'Future CLI opens its own sign-in in a tile here. Done / Close records it.');
   assert.doesNotMatch(source, /Add a model provider\./);
   assert.doesNotMatch(source, /credentials, an API key, a subscription, device login, or trust approval/);
   assert.doesNotMatch(source, /Each provider signs you in its own way/);
@@ -76,24 +79,34 @@ test('provider readiness keeps opt-in separate from navigation and measured stat
   }
 });
 
-test('provider instructions stay under the relevant readiness step', () => {
+test('each readiness row carries only its own short line', () => {
   const grok = providerReadiness({ id: 'grok', label: 'Grok CLI', installable: true, install: 'npm install -g @xai-official/grok' });
-  assert.match(grok[1].detail, /globally with npm/);
-  assert.doesNotMatch(grok[2].detail, /npm|Grok CLI globally/);
-  const codex = providerReadiness({ id: 'openai', label: 'Codex', installed: true });
-  assert.match(codex[2].detail, /OpenAI account sign-in/);
-  assert.doesNotMatch(codex[1].detail, /sign-in/);
-  const ready = providerReadiness({ id: 'openai', label: 'Codex', installed: true, activated: true });
-  assert.match(ready[2].detail, /not monitored/);
-  assert.match(ready[3].detail, /activated for Launch/);
+  assert.equal(grok[1].command, 'npm install -g @xai-official/grok');
+  assert.equal(grok[1].detail, 'Installs globally with npm.');
+  assert.equal(grok[2].detail, '');
+  const codex = providerReadiness({ id: 'openai', label: 'Codex', from: 'OpenAI', installed: true, path: '/usr/local/bin/codex' });
+  assert.equal(codex[1].detail, '/usr/local/bin/codex');
+  assert.equal(codex[1].command, '');
+  assert.match(codex[2].detail, /signs in to OpenAI/);
+  const ready = providerReadiness({ id: 'openai', label: 'Codex', installed: true, activated: true, activated_at: '2026-09-07T11:02:00.000Z' });
+  assert.equal(ready[2].detail, 'Recorded 2026-09-07. Sign-in stays with Codex; Ronin does not monitor it.');
+  assert.equal(ready[3].detail, 'Codex is activated for Launch.');
+  for (const steps of [grok, codex, ready]) for (const step of steps) assert.ok((step.detail || '').split('. ').length <= 2, `${step.key}: ${step.detail}`);
 });
 
-test('provider surface uses a real persisted opt-in and uniform Install/Authenticate controls', async () => {
-  const source = await readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+test('the surface renders the four rows from providerReadiness with real opt-in and matching controls', () => {
+  assert.match(source, /const \[use, install, auth, ready\] = providerReadiness\(provider, optedIn\)/);
   assert.match(source, /checkbox\.type = 'checkbox'/);
   assert.match(source, /\/api\/setup\/preferences[\s\S]*providers: \[\.\.\.selected\]/);
   assert.match(source, /setup-provider-action-row/);
-  assert.match(source, /setup-provider-action/);
+  assert.match(source, /setup-provider-command/);
   assert.doesNotMatch(source, /step_complete|Complete/);
   assert.doesNotMatch(source, /notify\(|flash/i);
+});
+
+test('provider action rows adapt to the shared stone surface width instead of a fixed control grid', () => {
+  assert.doesNotMatch(css, /setup-provider-action-control \{[^}]*repeat\(2, 10rem\)/);
+  assert.match(css, /\.setup-provider-action \{[^}]*flex: 1 1 10rem/);
+  assert.match(css, /@container setup-stone-work-surface \(min-width: [^)]+\) \{\s*\.setup-provider-action-row \{[^}]*grid-template-columns: minmax\(0, 1fr\) auto/);
+  assert.doesNotMatch(css, /@media \(max-width: 700px\) \{\s*\.setup-provider-action-row/);
 });

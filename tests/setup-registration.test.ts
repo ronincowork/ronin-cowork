@@ -125,9 +125,11 @@ test('selector definitions retain neutral provider grouping without requirement 
 
 test('Register presents one open profile flow with card choices and anonymous delivery', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  for (const name of ['email', 'purpose', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
+  for (const name of ['email', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
   for (const name of ['identity_mode', 'kind', 'preferred_feature', 'run_location']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
   assert.match(source, /checklistGroup\('reasons'/);
+  assert.match(source, /reasons\.other\.value/);
+  assert.match(source, /kind_other: kindOther\.value/);
   assert.doesNotMatch(source, /Who is using Ronin\?|\['individual', 'Just me'\]|\['team', 'A team'\]|\['builder', 'Builder'\]|\['exploring', 'Exploring'\]/);
   assert.match(source, /Welcome to Ronin/);
   assert.match(source, /setup-register-group/);
@@ -141,12 +143,17 @@ test('Register presents one open profile flow with card choices and anonymous de
   for (const kind of ['Which of these are you most likely to use?', 'Build software', 'Life assistants', 'Research and writing']) assert.match(source, new RegExp(kind.replace('?', '\\?')));
   assert.ok(source.indexOf('runLocation.wrap, preferredFeature.wrap') > -1, 'machine location comes before feature preference');
   assert.doesNotMatch(source, /Your starting theme|theme\.wrap/);
+  assert.doesNotMatch(source, /What would make Ronin useful to you\?|Anything else\? \(optional\)/);
+  assert.match(source, /setup_surface\.own_words', 'Anything else'/);
   assert.match(source, /We hope you enjoy Ronin\. If you’d like to share feedback later, we’d be glad to hear it\./);
   assert.match(source, /declinedRegistration[\s\S]*?fit\.hidden = declinedRegistration/);
   assert.match(source, /registerAction\.hidden = declinedRegistration/);
   assert.match(source, /Communication choices/);
   assert.match(source, /Communication stays off unless you choose otherwise/);
-  assert.match(source, /register_action'[\s\S]*?'Register'\), '', async/);
+  assert.match(source, /register_action'[\s\S]*?'Send'\), '', async/);
+  assert.match(source, /registerAction\.dataset\.launch = 'true'/);
+  assert.match(source, /identity_mode: anonymous \? 'anonymous' : 'email'/);
+  assert.doesNotMatch(source, /identityMode\.wrap\.querySelector\('\[data-value="email"\]'\)\?\.click/);
   assert.doesNotMatch(source, /Optional profile|setup-register-disclosure/);
   assert.doesNotMatch(source, /setup-register-pill/);
   assert.doesNotMatch(source, /const kind = el\('select'\)|const userType = el\('select'\)/);
@@ -278,6 +285,7 @@ test('Setup gbrain model gives every measured state one status, one next line, a
   const cases: Array<[string, unknown, unknown, string, string | null, string]> = [
     ['services_needed', { ok: false, status: 404, message: 'HTTP 404' }, { installed: false, active: false }, 'Not installed on this machine', 'open_services', 'not installed'],
     ['unreadable', { ok: false, status: 500, message: 'HTTP 500' }, { installed: true, active: false }, 'Status could not be read', 'check_again', 'installed'],
+    ['services_off', { ok: false, status: 404, message: 'HTTP 404' }, { installed: true, active: false, services: { installed: true, active: false } }, 'Installed · Ronin Services is switched off', 'open_services', 'installed'],
     ['not_installed', snapshot({ installed: false }), { installed: false, active: false }, 'Not installed on this machine', 'load', 'not installed'],
     ['install_failed', snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } }), null, 'Install did not finish', 'retry', 'not installed'],
     ['installing', snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } }), null, 'Installing…', null, 'installing'],

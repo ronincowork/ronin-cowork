@@ -3,7 +3,7 @@
 import { t } from './lexicon.js';
 
 export const GBRAIN_SETUP_STATES = Object.freeze([
-  'services_needed', 'not_installed', 'installing', 'install_failed', 'removing', 'running', 'stopped', 'unreadable',
+  'services_needed', 'services_off', 'not_installed', 'installing', 'install_failed', 'removing', 'running', 'stopped', 'unreadable',
 ]);
 
 const word = (v) => ({
@@ -36,12 +36,20 @@ function facts(data) {
 
 /**
  * @param {{ok:boolean,status?:number,data?:object}|null} result  the /api/gbrain read
- * @param {{installed?:boolean,active?:boolean}|null} availability  Ronin's own runtime fact about the gbrain part
+ * @param {{installed?:boolean,active?:boolean,services?:{installed?:boolean,active?:boolean}}|null} availability
+ *   Ronin's own runtime facts: the gbrain part, and the Services install it rides with
  */
 export function gbrainSetupModel(result, availability = null) {
   const knownInstalled = availability?.installed === true;
   const base = { facts: [], log: null, polling: false, observedAt: null };
   if (!result?.ok) {
+    // Services installed but switched off: the part is on disk and its status route is not loaded.
+    if (availability?.services?.installed === true && availability.services.active !== true) {
+      return { ...base, state: 'services_off', tone: 'warn', summary: knownInstalled ? 'installed' : 'not installed',
+        status: t('gbrain.setup_status_services_off', 'Installed · Ronin Services is switched off'),
+        next: t('gbrain.setup_next_services_off', 'gbrain runs as part of Ronin Services. Turn Services on for this Cowork in Team Configuration, then come back here.'),
+        action: action('open_services', t('gbrain.setup_open_services', 'Open Ronin Services')) };
+    }
     if (knownInstalled) {
       return { ...base, state: 'unreadable', tone: 'warn', summary: 'installed',
         status: t('gbrain.setup_status_unreadable', 'Status could not be read'),

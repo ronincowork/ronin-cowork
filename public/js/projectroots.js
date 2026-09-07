@@ -45,6 +45,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         else {
           const current = data?.roots?.find((entry) => entry.name === item.id);
           if (current) {
+            editing = current.name;
             host.append(block(current));
           }
         }
@@ -287,14 +288,12 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
 
     const facts = document.createElement('div');
     facts.className = 'pr-facts';
-    const repoFacts = document.createElement('div');
-    repoFacts.className = 'pr-facts';
-    const chip = (text, cls, title, host = facts) => {
+    const chip = (text, cls, title) => {
       const c = document.createElement('span');
       c.className = 'pr-chip' + (cls ? ' ' + cls : '');
       c.textContent = text;
       if (title) c.title = title;
-      host.appendChild(c);
+      facts.appendChild(c);
     };
     if (r.archived) {
       chip(t('roots.chip_archived', 'archived'), 'muted', t('roots.chip_archived_title', 'Off the new-session picker. Still here, and still launchable by name.'));
@@ -305,8 +304,8 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       chip(t('roots.chip_gone', 'directory is gone'), 'bad', t('roots.chip_gone_title', 'Nothing on disk at this path — fix the path or exclude it'));
     } else if (r.facts.repo) {
       const remote = (r.facts.repo.remote || '').replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
-      chip(remote || t('roots.chip_no_remote', 'repo, no remote'), '', r.facts.repo.remote || t('roots.chip_no_remote_title', 'A git repo with no origin'), repoFacts);
-      if (r.facts.repo.branch) chip('⑂ ' + r.facts.repo.branch, '', '', repoFacts);
+      chip(remote || t('roots.chip_no_remote', 'repo, no remote'), '', r.facts.repo.remote || t('roots.chip_no_remote_title', 'A git repo with no origin'));
+      if (r.facts.repo.branch) chip('⑂ ' + r.facts.repo.branch);
       // HOW THE REPOSITORY IS RUN, apart from the branch mounted here: read from its
       // checked-in RONIN_REPO. No record = today's shared checkout, said plainly.
       const a = r.arrangement;
@@ -316,9 +315,9 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         chip(enabled ? t('roots.chip_worktrees', 'Repository: Worktrees allowed') : t('roots.chip_checkout', 'Repository: use checkout'), '',
           a.mode === 'reviewed'
             ? t('roots.chip_reviewed_title', 'Reviewed: work moves through {working}, then review reaches {stable}. The branch mounted here is incidental.', { working: a.working || 'dev', stable: a.stable || 'master' })
-            : t('roots.chip_direct_title', 'Direct: commits land on {stable} itself.', { stable: a.stable || 'main' }), repoFacts);
+            : t('roots.chip_direct_title', 'Direct: commits land on {stable} itself.', { stable: a.stable || 'main' }));
       } else if (a) {
-        chip(t('roots.chip_shared', 'Repository: use checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.'), repoFacts);
+        chip(t('roots.chip_shared', 'Repository: use checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.'));
       }
     } else {
       // A project_root need not be a project_repo. `~/lab` is one; this is a
@@ -326,7 +325,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       chip(t('roots.chip_no_repo', 'no repo'), 'muted', t('roots.chip_no_repo_title', 'Not a git repo — a workspace folder does not need to be one'));
     }
     if (r.sessions) chip(r.sessions === 1 ? t('roots.sessions_one', '{n} session', { n: r.sessions }) : t('roots.sessions_many', '{n} sessions', { n: r.sessions }), 'muted');
-    if (r.remit && !stones) {
+    if (r.remit) {
       const rem = document.createElement('div');
       rem.className = 'pr-remit';
       rem.textContent = r.remit;
@@ -336,7 +335,6 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     const acts = document.createElement('div');
     acts.className = 'pr-acts';
     const edit = createAction({ label: t('roots.edit', 'edit') }).el;
-    if (stones) edit.textContent = t('roots.edit_details', 'Edit details');
     edit.addEventListener('click', () => {
       editing = editing === r.name ? null : r.name;
       if (stones) stoneSurface.refreshDetail();
@@ -376,55 +374,13 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       await loadProjects();
       await refresh();
     });
+    if (!stones) acts.append(edit);
+    acts.append(shelve, drop);
+
     b.prepend(top);
-    if (stones && editing === r.name) {
-      b.classList.add('editing');
-      b.appendChild(form(r));
-      return b;
-    }
-    if (stones) {
-      const disclosure = (label, content, open = false) => {
-        const details = document.createElement('details');
-        details.className = 'pr-disclosure';
-        details.open = open;
-        const summary = document.createElement('summary');
-        summary.textContent = label;
-        details.append(summary, content);
-        return details;
-      };
-      const summaryBody = document.createElement('div');
-      summaryBody.className = 'pr-disclosure-body';
-      summaryBody.append(facts);
-      if (r.remit) {
-        const rem = document.createElement('div');
-        rem.className = 'pr-remit';
-        rem.textContent = r.remit;
-        summaryBody.append(rem);
-      }
-      b.append(disclosure(t('roots.summary', 'Summary'), summaryBody, true));
-      const repoBody = document.createElement('div');
-      repoBody.className = 'pr-disclosure-body';
-      if (repoFacts.childElementCount) repoBody.append(repoFacts);
-      else repoBody.append(Object.assign(document.createElement('p'), { className: 'pr-remit', textContent: t('roots.repository_none', 'This workspace folder is not a Git repository. No repository workflow is required.') }));
-      b.append(disclosure(t('roots.group_repository', 'Repository workflow'), repoBody));
-      const editActions = document.createElement('div');
-      editActions.className = 'pr-edit-actions';
-      editActions.append(edit);
-      b.append(editActions);
-      const maintenance = document.createElement('div');
-      maintenance.className = 'pr-maintenance';
-      const maintenanceLabel = document.createElement('span');
-      maintenanceLabel.className = 'pr-maintenance-label';
-      maintenanceLabel.textContent = t('roots.maintenance', 'Folder maintenance');
-      acts.append(shelve, drop);
-      maintenance.append(maintenanceLabel, acts);
-      b.append(maintenance);
-    } else {
-      acts.append(edit, shelve, drop);
-      if (repoFacts.childElementCount) facts.append(...repoFacts.children);
-      b.append(facts, acts);
-      if (editing === r.name) b.appendChild(form(r));
-    }
+    b.append(facts);
+    b.append(acts);
+    if (editing === r.name) b.appendChild(form(r));
     return b;
   }
 

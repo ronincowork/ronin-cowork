@@ -5,7 +5,7 @@ import { t } from './lexicon.js';
 import { buildGbrain } from './gbrain.js';
 import { buildProjectRoots } from './projectroots.js';
 import { CAMPAIGN_TEMPLATES_TYPE, createTemplatesSurface } from './campaign-templates.js';
-import { mountProviderAttachment, providerFromRuntime, providerPresentation } from './setup-provider-state.js';
+import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { servicesSetupModel } from './services-setup-state.js';
 import { createNewTeamFormView } from './new-team-form.js';
@@ -85,14 +85,20 @@ function createRegisterSurface(context) {
     const wrap = el('fieldset', 'setup-field setup-register-checklist');
     wrap.append(el('legend', '', label));
     const boxes = [];
+    const other = input(`${name}_other`); other.className = 'setup-register-other'; other.placeholder = t('setup_surface.something_else_prompt', 'Tell us'); other.hidden = true;
     for (const [value, text] of choices) {
       const box = input(name, 'checkbox'); box.value = value; boxes.push(box);
-      const row = el('label', 'setup-register-check'); row.append(box, el('span', '', text)); wrap.append(row);
+      const row = el(value === 'something_else' ? 'div' : 'label', 'setup-register-check');
+      if (value === 'something_else') {
+        const prompt = el('label', 'setup-register-check-label'); prompt.append(box, el('span', '', text));
+        box.addEventListener('change', () => { other.hidden = !box.checked; if (box.checked) other.focus(); });
+        row.classList.add('setup-register-check-other'); row.append(prompt, other);
+      } else row.append(box, el('span', '', text));
+      wrap.append(row);
     }
-    return { wrap, values: () => boxes.filter((box) => box.checked).map((box) => box.value) };
+    return { wrap, other, values: () => boxes.filter((box) => box.checked).map((box) => box.value) };
   };
   const email = input('email', 'email'); email.placeholder = 'you@example.com';
-  const purpose = input('purpose'); purpose.placeholder = t('setup_surface.purpose_hint', 'What would you like Ronin to help with?');
   const identityMode = choiceGroup('identity_mode', t('setup_surface.identity', 'How would you like to register?'), [
     ['email', 'With email'], ['anonymous', 'Anonymous'], ['no_thanks', 'No thank you'],
   ]);
@@ -101,6 +107,11 @@ function createRegisterSurface(context) {
     ['build_software', 'Build software'], ['life_assistants', 'Life assistants'],
     ['research_writing', 'Research and writing'], ['other', 'Something else'],
   ]);
+  const kindOther = input('kind_other'); kindOther.className = 'setup-register-other'; kindOther.placeholder = t('setup_surface.something_else_prompt', 'Tell us'); kindOther.hidden = true;
+  kind.wrap.append(kindOther);
+  for (const button of kind.wrap.querySelectorAll('button')) button.addEventListener('click', () => {
+    kindOther.hidden = kind.value.value !== 'other'; if (!kindOther.hidden) kindOther.focus();
+  });
   const preferredFeature = choiceGroup('preferred_feature', t('setup_surface.preferred_feature', 'Which core Ronin feature do you prefer most?'), [
     ['remote_access', 'Work from anywhere'],
     ['multiple_providers', 'Use multiple providers without lock-in'],
@@ -124,43 +135,55 @@ function createRegisterSurface(context) {
   const welcome = el('div', 'setup-register-welcome');
   welcome.append(el('span', 'setup-register-eyebrow', t('setup_surface.say_hello', 'Say hello')), el('h2', '', t('setup_surface.register_welcome', 'Welcome to Ronin')), el('p', 'setup-lede', t('setup_surface.register_lede', 'Share only what feels useful. Your answers help us shape better starting points; local Ronin works whether you register or not.')));
   const about = el('section', 'setup-register-group');
+  about.classList.add('setup-register-about');
   const emailField = field(t('setup_surface.email', 'Email address'), email);
   about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField);
   const fit = el('section', 'setup-register-group');
+  fit.classList.add('setup-register-fit');
+  runLocation.wrap.classList.add('setup-register-half');
+  preferredFeature.wrap.classList.add('setup-register-half');
+  reasons.wrap.classList.add('setup-register-full');
+  kind.wrap.classList.add('setup-register-full');
+  const ownField = field(t('setup_surface.own_words', 'Anything else'), own);
+  ownField.classList.add('setup-register-full');
   fit.append(
     el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), runLocation.wrap, preferredFeature.wrap, reasons.wrap, kind.wrap,
-    field(t('setup_surface.purpose', 'What would make Ronin useful to you?'), purpose),
-    field(t('setup_surface.own_words', 'Anything else? (optional)'), own),
+    ownField,
   );
   const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration sends a confirmation and can unlock Ronin Services. Anonymous registration sends these answers without contact details. Communication stays off unless you choose otherwise.'));
   const declined = el('p', 'setup-register-declined', t('setup_surface.no_thanks_message', 'We hope you enjoy Ronin. If you’d like to share feedback later, we’d be glad to hear it.'));
   declined.hidden = true;
-  const registerAction = action(t('setup_surface.register_action', 'Register'), '', async () => {
+  const registerAction = action(t('setup_surface.register_action', 'Send'), '', async () => {
     notice.textContent = t('setup_surface.saving', 'Saving…');
-    const anonymous = identityMode.value.value === 'anonymous';
+    const anonymous = identityMode.value.value !== 'email';
     const result = await request('/api/setup/registration', { method: 'POST', json: {
-      identity_mode: identityMode.value.value, email: email.value, purpose: purpose.value,
-      kind: kind.value.value, user_type: '', goals: [], preferred_feature: preferredFeature.value.value,
-      reasons: reasons.values(), run_location: runLocation.value.value, intended_use: [], theme_preference: '', own_words: own.value,
+      identity_mode: anonymous ? 'anonymous' : 'email', email: email.value, purpose: '',
+      kind: kind.value.value, kind_other: kindOther.value, user_type: '', goals: [], preferred_feature: preferredFeature.value.value,
+      reasons: reasons.values(), reason_other: reasons.other.value, run_location: runLocation.value.value,
+      intended_use: [], theme_preference: '', own_words: own.value,
     } });
     notice.textContent = result.ok
       ? anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.confirm_email', 'Registration saved. Confirm the email to receive Services entitlement.')
       : result.message;
     if (result.ok) { current = result.data; paint(); }
   });
+  registerAction.dataset.launch = 'true';
+  const sendLabel = registerAction.textContent;
+  const sendMark = el('img', 'wk-launch-mark'); sendMark.src = 'brand/nin-mark.svg'; sendMark.alt = '';
+  registerAction.replaceChildren(sendMark, el('span', '', sendLabel));
   const paintIdentityMode = () => {
-    const anonymous = identityMode.value.value === 'anonymous';
+    const emailRegistration = identityMode.value.value === 'email';
     const declinedRegistration = identityMode.value.value === 'no_thanks';
-    emailField.hidden = anonymous || declinedRegistration;
+    emailField.hidden = !emailRegistration || declinedRegistration;
     fit.hidden = declinedRegistration;
     consent.hidden = declinedRegistration;
     registerAction.hidden = declinedRegistration;
     notice.hidden = declinedRegistration;
     declined.hidden = !declinedRegistration;
-    email.required = !anonymous && !declinedRegistration;
+    email.required = emailRegistration && !declinedRegistration;
   };
   for (const button of identityMode.wrap.querySelectorAll('button')) button.addEventListener('click', paintIdentityMode);
-  identityMode.wrap.querySelector('[data-value="email"]')?.click();
+  paintIdentityMode();
   form.append(
     welcome, about, fit,
     consent, registerAction, declined, notice,
@@ -206,8 +229,8 @@ function createRegisterSurface(context) {
       if (!next?.trim()) return;
       const result = await request('/api/setup/registration/recovery', { method: 'POST', json: {
         action: 'change_address', identity_mode: 'email', email: next.trim(), purpose: current.purpose,
-        kind: current.kind, user_type: current.user_type, goals: current.goals,
-        preferred_feature: current.preferred_feature, reasons: current.reasons, run_location: current.run_location,
+        kind: current.kind, kind_other: current.kind_other, user_type: current.user_type, goals: current.goals,
+        preferred_feature: current.preferred_feature, reasons: current.reasons, reason_other: current.reason_other, run_location: current.run_location,
         intended_use: current.intended_use,
         theme_preference: current.theme_preference, own_words: current.own_words,
       } });
@@ -266,13 +289,13 @@ function createProviderSurface(context) {
     const provider = providerFromRuntime(runtime, providerId);
     if (!provider) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
     const optedIn = Array.isArray(runtime.preferences?.providers) && runtime.preferences.providers.includes(provider.id);
-    const presentation = providerPresentation(provider);
+    const [use, install, auth, ready] = providerReadiness(provider, optedIn);
     const row = el('section', 'setup-provider');
     row.dataset.provider = provider.id;
     const flow = el('div', 'setup-provider-readiness');
-    const use = el('label', 'setup-provider-optin');
-    const checkbox = el('input'); checkbox.type = 'checkbox'; checkbox.checked = optedIn;
-    use.append(checkbox, el('span', '', t('setup_surface.provider_use', 'Use with Ronin')));
+    const optIn = el('label', 'setup-provider-optin');
+    const checkbox = el('input'); checkbox.type = 'checkbox'; checkbox.checked = use.status === 'on';
+    optIn.append(checkbox, el('span', '', t('setup_surface.provider_use', 'Use with Ronin')));
     checkbox.addEventListener('change', async () => {
       const previous = optedIn;
       const selected = new Set(Array.isArray(runtime.preferences?.providers) ? runtime.preferences.providers : []);
@@ -282,65 +305,62 @@ function createProviderSurface(context) {
       runtime.preferences = result.data;
       stones.refreshDetail();
     });
-    flow.append(use);
-    const actionRow = (label, state, help) => {
+    flow.append(optIn);
+    // One row shape for Install and Authenticate: the measured state beside the label,
+    // at most one short line under it, and the same-sized control(s) after the copy.
+    const actionRow = (step, state) => {
       const item = el('section', 'setup-provider-action-row');
+      item.dataset.step = step.key; item.dataset.status = step.status;
       const copy = el('div', 'setup-provider-action-copy');
-      copy.append(el('strong', '', label), el('span', 'setup-provider-action-state', state));
-      if (help) copy.append(el('p', 'setup-fine', help));
+      copy.append(el('strong', '', step.label), el('span', 'setup-provider-action-state', state));
+      if (step.detail) copy.append(el('p', 'setup-fine', step.detail));
+      if (step.command) copy.append(el('code', 'setup-provider-command', step.command));
       const controls = el('div', 'setup-provider-action-control');
       item.append(copy, controls);
       flow.append(item);
       return controls;
     };
-    const installControls = actionRow(
-      t('setup_surface.install', 'Install'),
-      provider.installed ? t('setup_surface.installed', 'Installed') : t('setup_surface.not_installed', 'Not installed'),
-      provider.installed ? `${provider.label || provider.id} is installed${provider.path ? ` at ${provider.path}` : '.'}` : presentation.detail,
-    );
-    if (!provider.installed && presentation.action === 'manual' && presentation.manual && optedIn) {
-      const link = el('a', 'wk-action setup-provider-action setup-provider-manual', presentation.manual.label);
-      link.href = presentation.manual.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    const installControls = actionRow(install, install.status === 'installed'
+      ? t('setup_surface.installed', 'Installed')
+      : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
+    if (install.action === 'manual' && install.manual) {
+      const link = el('a', 'wk-action setup-provider-action setup-provider-manual', install.manual.label);
+      link.href = install.manual.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
       installControls.append(link);
     } else {
-      const install = action(t('setup_surface.install', 'Install'), 'primary', async () => {
+      const installAction = action(t('setup_surface.install', 'Install'), 'primary', async () => {
         const installed = await request('/api/install', { method: 'POST', json: { items: [{ kind: 'agent', name: provider.id }] } });
-        if (!installed.ok) return;
-        else await paint();
+        if (installed.ok) await paint();
       });
-      install.classList.add('setup-provider-action');
-      install.disabled = provider.installed || !optedIn || !provider.installable;
-      installControls.append(install);
+      installAction.classList.add('setup-provider-action');
+      installAction.disabled = install.action !== 'install' || !optedIn || !provider.installable;
+      installControls.append(installAction);
     }
-    const authState = provider.activated
+    const authControls = actionRow(auth, auth.status === 'recorded'
       ? t('setup_surface.auth_recorded', 'Setup recorded')
-      : provider.login_open ? t('setup_surface.sign_in_open', 'Sign-in open')
-        : provider.installed ? t('setup_surface.auth_available', 'Available') : t('setup_surface.install_first', 'Install first');
-    const authHelp = provider.activated
-      ? `${provider.label || provider.id} setup is recorded. Current sign-in remains provider-owned and is not monitored.`
-      : provider.installed ? presentation.detail : t('setup_surface.install_before_auth', 'Install this provider before authentication.');
-    const authControls = actionRow(t('setup_surface.authenticate', 'Authenticate'), authState, authHelp);
-    if (!provider.login_open) {
+      : auth.status === 'open' ? t('setup_surface.sign_in_open', 'Sign-in open')
+        : auth.status === 'available' ? t('setup_surface.auth_available', 'Available') : t('setup_surface.install_first', 'Install first'));
+    if (auth.action !== 'login_open') {
       const authenticate = action(t('setup_surface.authenticate', 'Authenticate'), 'primary', async () => {
         await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} }); await paint();
       });
       authenticate.classList.add('setup-provider-action');
-      authenticate.disabled = !optedIn || !provider.installed || provider.activated;
+      authenticate.disabled = auth.status !== 'available' || !optedIn;
       authControls.append(authenticate);
     } else {
-        const terminal = el('div', 'setup-provider-terminal');
-        const done = action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); });
-        const close = action(t('setup_surface.close', 'Close'), '', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); });
-        done.classList.add('setup-provider-action'); close.classList.add('setup-provider-action');
-        authControls.append(done, close);
-        flow.append(terminal);
-        mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
-        if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
+      const terminal = el('div', 'setup-provider-terminal');
+      const done = action(t('setup_surface.done_close', 'Done / Close'), 'primary', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`, { method: 'POST', json: {} }); await paint(); });
+      const close = action(t('setup_surface.close', 'Close'), '', async () => { mounted?.park?.(); await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`, { method: 'POST', json: {} }); await paint(); });
+      done.classList.add('setup-provider-action'); close.classList.add('setup-provider-action');
+      authControls.append(done, close);
+      flow.append(terminal);
+      mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
+      if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
     }
-    const ready = el('section', 'setup-provider-ready');
-    ready.dataset.ready = String(provider.activated === true);
-    ready.append(el('strong', '', t('setup_surface.ready', 'Ready')), el('span', '', provider.activated ? t('setup_surface.ready_launch', 'Activated for Launch') : t('setup_surface.not_ready', 'Not ready')));
-    flow.append(ready);
+    const readyRow = el('section', 'setup-provider-ready');
+    readyRow.dataset.ready = String(ready.status === 'ready');
+    readyRow.append(el('strong', '', ready.label), el('span', '', ready.status === 'ready' ? t('setup_surface.ready_launch', 'Activated for Launch') : t('setup_surface.not_ready', 'Not ready')));
+    flow.append(readyRow);
     row.append(el('h3', '', provider.label || provider.id), flow);
     host.append(row);
     return () => disposeMount();
@@ -463,7 +483,7 @@ function createGbrainSurface(context) {
   const host = el('div', 'setup-surface-body'); out.content.append(host);
   const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
     presentation: 'setup',
-    availability: () => context.environment?.setupRuntime?.gbrain || null,
+    availability: () => { const runtime = context.environment?.setupRuntime; return runtime?.gbrain ? { ...runtime.gbrain, services: runtime.services || null } : null; },
     // The selector card follows the measured state once it is read.
     onState: (summary) => notifySummary(SETUP_SURFACE_TYPES.gbrain, summary, context.workbench),
     openServices: () => context.workbench?.place(SETUP_SURFACE_TYPES.services, context.workspace || 'workspace2'),
