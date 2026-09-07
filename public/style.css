@@ -141,9 +141,7 @@
   --space-12: 34px;
 
   --row-head: calc(var(--space-11) + var(--space-6) + var(--edge));
-  --setup-stone-size: calc(var(--space-12) * 3 + var(--space-5));
-  --setup-stone-min: calc(var(--space-12) * 2 + var(--space-11));
-  --setup-stone-fluid: 24cqi;
+  --setup-stone-size: calc(var(--space-12) * 2 + var(--space-11));
   --setup-stone-gap: var(--space-4);
 
 
