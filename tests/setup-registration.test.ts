@@ -221,7 +221,7 @@ test('Services leads with identity, the beta, and benefits, then one measured st
   assert.doesNotMatch(source, /const state = el\('dl'|<dd>|'Yes' : 'No'/);
 });
 
-test('the Services mark is a code-native R and S monogram in the house hexagon', async () => {
+test('the Services mark is a constructed RS monogram in the house hexagon, blue R and kaki S, leaning with the frame', async () => {
   const fs = await import('node:fs/promises');
   const [services, house] = await Promise.all([
     fs.readFile(new URL('../public/brand/services-mark.svg', import.meta.url), 'utf8'),
@@ -232,9 +232,16 @@ test('the Services mark is a code-native R and S monogram in the house hexagon',
   assert.match(services, frame, 'same open hexagon as the house mark');
   assert.match(services, /viewBox="0 0 120 104"/);
   assert.match(services, /<title id="title">Ronin Services mark<\/title>/);
-  assert.match(services, /stroke="#c46243" stroke-width="8"/);
-  assert.doesNotMatch(services, /<text|<image|fill="#/, 'letters are drawn strokes in the one kaki material, not a font or a filled badge');
-  assert.doesNotMatch(services, /#[0-9a-fA-F]{3,8}\b(?<!#c46243)/, 'no colour beyond kaki');
+  // Letters are built from one house cell and turned to the frame's own angle.
+  assert.match(services, /transform="translate\(60 52\) scale\(\.86\) rotate\(28\.5\) translate\(-62\.5 -52\)"/);
+  assert.match(services, /<g class="rs-r" stroke="#3f6a95"><path d="M31 76V28H51L57 40L51 52H31"\/><path d="M45 52L57 76"\/><\/g>/, 'the R: stem, cell, leg');
+  assert.match(services, /<path stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"\/>/, 'the S: two cells, kaki');
+  // The R follows the shell's reference blue; as a plain image it falls back by scheme.
+  assert.match(services, /\.rs-r\{stroke:var\(--accent-2,#3f6a95\)\}@media \(prefers-color-scheme:dark\)\{\.rs-r\{stroke:var\(--accent-2,#81a2be\)\}\}/);
+  assert.doesNotMatch(services, /<text|<image|fill="#/, 'letters are drawn strokes, not a font or a filled badge');
+  assert.doesNotMatch(services, /<!--[^>]*--[^>]*-->/, 'no double hyphen inside a comment: XML rejects it and the browser shows a broken image');
+  const colours = new Set((services.match(/#[0-9a-fA-F]{6}\b/g) || []).map((c) => c.toLowerCase()));
+  assert.deepEqual([...colours].sort(), ['#3f6a95', '#81a2be', '#c46243'], 'kaki plus the two shell values of the reference blue, nothing else');
 });
 
 test('Services setup model keeps installation and registration as separate facts and shapes three steps', async () => {
