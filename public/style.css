@@ -6076,7 +6076,7 @@ button.wb-door:hover b {
 .setup-provider-notice[hidden] { display: none; }
 .setup-kinds { display: grid; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
 /* The selected provider: a flat detail on the shared stone seat, on the Setup type baseline
-   (14 body · 16 step · 20 title). Four numbered steps share one shape — the mark, the copy,
+   (14 body · 16 step · 20 title). Three numbered steps share one shape — the mark, the copy,
    then a control of one size — under a restrained kaki rule. The mark says done, current,
    or pending, and the control's enabled state says the same thing. The shared stone
    surface is the size container: the control sits beside the copy only when the detail is
@@ -6095,7 +6095,6 @@ button.wb-door:hover b {
 .setup-provider-copy { display: grid; gap: var(--space-2); min-width: 0; }
 .setup-provider-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); min-width: 0; }
 .setup-provider-label { color: var(--fg-strong); font-size: var(--text-7); font-weight: 600; line-height: 1.35; }
-label.setup-provider-label { cursor: pointer; }
 .setup-provider-state { color: var(--muted); font-size: var(--text-5); }
 .setup-provider-step[data-current='true'] .setup-provider-state { color: var(--kaki); }
 .setup-provider-step[data-done='true'] .setup-provider-state { color: var(--ok-2); }
@@ -6103,15 +6102,14 @@ label.setup-provider-label { cursor: pointer; }
 .setup-provider-command { color: var(--muted-2); font: var(--text-3) var(--font-mono); overflow-wrap: anywhere; }
 .setup-provider-control { display: flex; flex-wrap: wrap; gap: var(--space-3); min-width: 0; grid-column: 2; }
 .setup-provider-control:empty { display: none; }
-.setup-provider-step[data-step='use'] { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
-.setup-provider-step[data-step='use'] .setup-provider-control { grid-column: auto; }
-.setup-provider-optin { width: var(--space-9); height: var(--space-9); margin: 0; accent-color: var(--kaki); cursor: pointer; }
 .setup-provider-action { display: inline-flex; flex: 0 0 10rem; width: 10rem; min-height: 2.25rem; align-items: center; justify-content: center; box-sizing: border-box; padding-inline: var(--space-4); text-align: center; text-decoration: none; }
 .setup-provider-control > .setup-provider-action:disabled { border-color: var(--line); background: transparent; color: var(--muted); opacity: 1; }
 @container setup-stone-work-surface (min-width: 46rem) {
   .setup-provider-step { grid-template-columns: auto minmax(0, 1fr) auto; }
   .setup-provider-control { grid-column: auto; align-self: center; justify-content: flex-end; }
 }
+.setup-provider-problem { margin: 0; }
+.setup-provider-problem[hidden] { display: none; }
 .setup-provider-terminal { grid-column: 1 / -1; min-height: min(54vh, 34rem); overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--term-bg); }
 .setup-provider-terminal > .wk-terminal-host, .setup-provider-terminal .tile { height: 100%; min-height: inherit; }
 @media (max-width: 700px) {

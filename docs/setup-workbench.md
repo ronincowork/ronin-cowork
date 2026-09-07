@@ -34,26 +34,21 @@ switch to the retired phone-only drill-down.
 **Model providers** shows one stone per provider in the runtime catalog, each wearing a
 short measured state: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
 installed**, or **Manual install**. Selecting a stone opens that provider's detail beside
-the rail: the same four numbered steps for every provider, in this order. A finished step
-wears a check, the next unmet step wears the kaki mark and owns the only enabled control,
-and the steps after it wait with their controls disabled.
+the rail: the same three numbered steps for every provider, in this order. A finished step
+wears a check, the next unmet step wears the kaki mark and owns the one primary control,
+and a later step waits with its control disabled. A refused press shows the server's
+answer under the steps.
 
-| Row | What it measures | The action it owns |
+| Step | What it measures | The action it owns |
 |---|---|---|
-| **Use with Ronin** | the persisted opt-in for this provider, kept with the Setup preferences | the checkbox |
-| **Install** | whether the CLI is found, with its path when it is | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
-| **Authenticate** | whether Setup completion was recorded | **Authenticate** opens the provider's native sign-in as a temporary tile in this workspace, once the provider is opted in and installed |
-| **Ready** | the recorded activation | none; it is the measured result |
+| **Install** | whether the CLI is found on this machine | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
+| **Authenticate** | whether the provider is signed in here: its own credential file is on this machine, or a sign-in was recorded through **Done** | **Authenticate** opens the provider's native sign-in as a temporary tile in this workspace; **Done** records it, **Close** leaves things as they were |
+| **Ready** | the resulting activation, which is what unlocks Teams and New Project | none; it is the measured result |
 
-Installation and activation are different facts. The provider's own flow may ask the
-owner for credentials, an API key, a subscription login, device authorization, or trust
-approval; Ronin does not answer those prompts or inspect account health.
-
-Choose **Done / Close** only after the provider's own flow is complete. That records the
-provider as activated and closes the temporary session. **Close** abandons the session
-without activation. Ronin does not monitor the provider's sign-in afterwards; if the
-provider needs it again, it asks in its normal flow. One activation unlocks Teams and New
-Project; two activations make Ronin Settings the next fresh Machine Settings default.
+Ronin reads only that a credential file exists (for example Claude Code's
+`~/.claude/.credentials.json` or Codex's `~/.codex/auth.json`); it never reads the
+credential and never asks the provider whether the account is still good. A provider that
+needs to sign in again asks in its own flow.
 
 ## Workspace folders
 

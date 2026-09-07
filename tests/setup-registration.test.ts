@@ -107,9 +107,9 @@ test('native login mounts only the attachment published by the real setup runtim
   const availability = [{
     id: 'claude', label: 'Claude Code', from: 'Anthropic', get: '', parked: '', cmd: 'claude', installed: true, path: '/bin/claude',
   }];
-  const closed = await setupRuntimeAnswer({}, { exists: async () => false }, availability);
+  const closed = await setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => false }, availability);
   assert.equal(mountProviderAttachment(environment, host, closed.providers[0], 'workspace1', () => {}), null);
-  const open = await setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude' }, availability);
+  const open = await setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude', signedIn: async () => false }, availability);
   const mounted = mountProviderAttachment(environment, host, open.providers[0], 'workspace1', () => {});
   assert.ok(mounted);
   assert.equal(calls.length, 1);
