@@ -38,16 +38,14 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         if (id !== editing) editing = null;
       },
       renderDetail: (item, host) => {
+        host.scrollTop = 0; // a new page starts at its head, whatever the last one was scrolled to
         if (item.id === NEW) {
           editing = NEW;
           host.append(addCard());
         }
         else {
           const current = data?.roots?.find((entry) => entry.name === item.id);
-          if (current) {
-            editing = current.name;
-            host.append(block(current));
-          }
+          if (current) host.append(detail(current));
         }
       },
     });
@@ -83,9 +81,10 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     const f = document.createElement('div');
     f.className = 'pr-form';
     const group = (title, description) => {
-      const box = document.createElement('fieldset');
+      // Setup's detail reads as sections under one head; the Campaign block keeps its fieldsets.
+      const box = document.createElement(stones ? 'section' : 'fieldset');
       box.className = 'pr-group';
-      const legend = document.createElement('legend');
+      const legend = document.createElement(stones ? 'h3' : 'legend');
       legend.textContent = title;
       const help = document.createElement('p');
       help.className = 'pr-group-help';
@@ -94,7 +93,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       f.appendChild(box);
       return box;
     };
-    const rootFields = group(t('roots.group_root', 'Workspace folder'), t('roots.group_root_help', 'An existing directory on this machine where Agents may work.'));
+    const rootFields = group(stones ? t('roots.section_folder', 'Folder') : t('roots.group_root', 'Workspace folder'), t('roots.group_root_help', 'An existing directory on this machine where Agents may work.'));
     const mk = (label, key, value, hint, ph, host = rootFields) => {
       const wrap = document.createElement('label');
       wrap.className = 'pr-f';
@@ -115,7 +114,9 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     };
     // The handle is shown, never edited: renaming is a catalog edit by hand, not a form
     // field. It is here because a block with no name on it is unreadable.
-    mk(t('roots.f_handle', 'handle'), 'name', existing.name, t('roots.f_handle_hint', 'The short name — this IS the shortcut'), 'ronin').disabled = !creating;
+    const handleInput = mk(t('roots.f_handle', 'handle'), 'name', existing.name, t('roots.f_handle_hint', 'The short name — this IS the shortcut'), 'ronin');
+    handleInput.disabled = !creating;
+    if (stones && !creating) handleInput.closest('label').hidden = true; // the detail head already says it
     const dirInput = mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Where the Agent starts and discovers project instructions.'), '');
     if (creating) {
       dirInput.closest('label').hidden = true;
@@ -142,7 +143,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         stable: existing.arrangement?.source === 'absent' ? '' : (existing.arrangement?.stable || ''),
         worktrees: existing.repo_profile?.worktrees || 'disabled',
       };
-      const repoFields = group(t('roots.group_repository', 'Advanced repository workflow'), t('roots.group_repository_help', 'Optional Git publishing and Worktrees choices. An ordinary folder needs none of these.'));
+      const repoFields = group(stones ? t('roots.section_repository', 'Repository') : t('roots.group_repository', 'Advanced repository workflow'), t('roots.group_repository_help', 'Optional Git publishing and Worktrees choices. An ordinary folder needs none of these.'));
       repoFields.classList.add('pr-group-advanced');
       const pick = (label, value, options, hint, host = repoFields) => {
         const wrap = document.createElement('label'); wrap.className = 'pr-f';
@@ -187,8 +188,8 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
 
     const row = document.createElement('div');
     row.className = 'pr-frow';
-    const save = createAction({ label: creating ? t('roots.add_save', 'Add') : t('roots.save', 'save'), kind: 'primary' }).el;
-    const cancel = createAction({ label: t('roots.cancel', 'cancel') }).el;
+    const save = createAction({ label: creating ? t('roots.add_save', 'Add') : stones ? t('roots.save_folder', 'Save') : t('roots.save', 'save'), kind: 'primary' }).el;
+    const cancel = createAction({ label: stones ? t('roots.cancel_folder', 'Cancel') : t('roots.cancel', 'cancel') }).el;
     const err = status('pr-err');
     row.append(save, cancel, err.el);
     f.appendChild(row);
@@ -337,9 +338,20 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     const edit = createAction({ label: t('roots.edit', 'edit') }).el;
     edit.addEventListener('click', () => {
       editing = editing === r.name ? null : r.name;
-      if (stones) stoneSurface.refreshDetail();
-      else render();
+      render();
     });
+    const { shelve, drop } = maintenance(r);
+    acts.append(edit, shelve, drop);
+
+    b.prepend(top);
+    b.append(facts);
+    b.append(acts);
+    if (editing === r.name) b.appendChild(form(r));
+    return b;
+  }
+
+  /** Archive/unarchive and exclude: the same two jobs on the Campaign block and the Setup detail. */
+  function maintenance(r) {
     const shelve = createAction({
       label: r.archived ? t('roots.unarchive', 'unarchive') : t('roots.archive', 'archive'),
       title: r.archived
@@ -374,14 +386,114 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       await loadProjects();
       await refresh();
     });
-    if (!stones) acts.append(edit);
-    acts.append(shelve, drop);
+    return { shelve, drop };
+  }
 
-    b.prepend(top);
-    b.append(facts);
-    b.append(acts);
-    if (editing === r.name) b.appendChild(form(r));
-    return b;
+  /* -- Setup's selected folder: one page in the Services and gbrain voice. A head, then
+   * Summary, Folder facts, Repository facts, and Edit; maintenance last. Edit swaps the
+   * three fact sections for the real form under the same head. -- */
+  function detail(r) {
+    const make = (tag, className, text) => {
+      const n = document.createElement(tag);
+      if (className) n.className = className;
+      if (text != null) n.textContent = text;
+      return n;
+    };
+    const section = (title, ...content) => {
+      const s = make('section', 'pr-section');
+      s.append(make('h3', '', title), ...content);
+      return s;
+    };
+    const facts = (rows) => {
+      const dl = make('dl', 'pr-fact-list');
+      for (const [label, value, options = {}] of rows) {
+        if (value == null || value === '') continue;
+        const dd = make('dd');
+        if (options.mono) dd.append(make('code', '', value));
+        else dd.textContent = value;
+        if (options.title) dd.title = options.title;
+        if (options.tone) dd.dataset.tone = options.tone;
+        dl.append(make('dt', '', label), dd);
+      }
+      return dl;
+    };
+    const exists = !!r.facts?.exists;
+    const d = make('article', 'pr-detail');
+    d.dataset.mode = editing === r.name ? 'edit' : 'read';
+    if (r.archived) d.classList.add('archived');
+    if (!exists) d.classList.add('gone');
+
+    const head = make('header', 'pr-detail-head');
+    const title = make('div', 'pr-detail-title');
+    title.append(make('h2', 'pr-detail-name', r.name)); // the head IS the handle — no second name
+    const words = [r.archived ? t('roots.chip_archived', 'Archived') : !exists ? t('roots.stone_missing', 'Folder missing') : t('roots.stone_ready', 'Ready')];
+    if (r.sessions) words.push(r.sessions === 1 ? t('roots.sessions_one', '{n} session', { n: r.sessions }) : t('roots.sessions_many', '{n} sessions', { n: r.sessions }));
+    const state = make('p', 'pr-detail-state', words.join(' · '));
+    state.dataset.tone = r.archived ? 'muted' : exists ? 'ok' : 'bad';
+    title.append(state);
+    head.append(title);
+    d.append(head);
+
+    if (editing === r.name) {
+      d.append(form(r));
+      return d;
+    }
+
+    // The one primary action sits in the head, beside the name, so editing is never below the fold.
+    const edit = createAction({ label: t('roots.edit_folder', 'Edit'), kind: 'primary', title: t('roots.edit_folder_title', 'Change the summary, shelves, match words, or repository workflow.') }).el;
+    edit.addEventListener('click', () => {
+      editing = r.name;
+      stoneSurface.refreshDetail();
+      stoneSurface.el.querySelector('.pr-detail .pr-form input:not([disabled])')?.focus();
+    });
+    head.append(edit);
+
+    const summary = make('p', 'pr-summary-text', r.remit || t('roots.summary_none', 'No summary yet.'));
+    if (!r.remit) summary.classList.add('empty');
+    d.append(section(t('roots.summary', 'Summary'), summary));
+
+    const folder = section(t('roots.section_folder', 'Folder'), facts([
+      [t('roots.fact_directory', 'Directory'), r.dir, { mono: true, tone: exists ? '' : 'bad' }],
+      [t('roots.fact_docs', 'Docs'), (r.docs || []).join(', ')],
+      [t('roots.fact_plans', 'Plans'), (r.plans || []).join(', ')],
+      [t('roots.fact_match', 'Match'), (r.match || []).join(', ')],
+    ]));
+    // The one maintenance job that arrives on its own: a directory moved or deleted out
+    // from under the catalog. Flagged, never auto-removed.
+    if (!exists) folder.append(make('p', 'pr-fine bad', t('roots.chip_gone_title', 'Nothing on disk at this path — fix the path or exclude it')));
+    d.append(folder);
+
+    if (exists && r.facts.repo) {
+      const repo = r.facts.repo;
+      const remote = (repo.remote || '').replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
+      // HOW THE REPOSITORY IS RUN, apart from the branch mounted here: read from its
+      // checked-in RONIN_REPO. No record = today's shared checkout, said plainly.
+      const a = r.arrangement;
+      const declared = !!a && a.source !== 'absent';
+      d.append(section(t('roots.section_repository', 'Repository'), facts([
+        [t('roots.fact_remote', 'Remote'), remote || t('roots.chip_no_remote', 'repo, no remote'), { title: repo.remote || t('roots.chip_no_remote_title', 'A git repo with no origin') }],
+        [t('roots.fact_branch', 'Branch'), repo.branch],
+        [t('roots.fact_publishing', 'Publishing'), declared
+          ? (a.mode === 'reviewed'
+            ? t('roots.flow_reviewed', '{working} → review → {stable}', { working: a.working || 'dev', stable: a.stable || 'main' })
+            : t('roots.flow_direct', 'commits → {stable}', { stable: a.stable || 'main' }))
+          : t('roots.profile_undeclared', 'Not declared'), { title: declared ? '' : t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.') }],
+        [t('roots.fact_worktrees', 'Worktrees'), declared && r.repo_profile?.worktrees === 'enabled' ? t('roots.worktrees_enabled', 'Use Ronin Worktrees') : t('roots.worktrees_disabled', 'Use the checkout')],
+      ])));
+    } else if (exists) {
+      // A project_root need not be a project_repo. `~/lab` is one; this is a legal shape, not a warning.
+      d.append(section(t('roots.section_repository', 'Repository'), make('p', 'pr-fine', t('roots.repository_none', 'Not a Git repository. A workspace folder does not need to be one.'))));
+    }
+
+    const { shelve, drop } = maintenance(r);
+    const acts = make('div', 'pr-acts');
+    acts.append(shelve, drop);
+    const upkeep = make('section', 'pr-section pr-maintenance');
+    upkeep.append(acts, make('p', 'pr-fine', r.archived
+      ? t('roots.maintenance_help_archived', 'Unarchive puts it back on the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.')
+      : t('roots.maintenance_help', 'Archive takes it off the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.')));
+    d.append(upkeep);
+    return d;
   }
 
   function render() {
@@ -420,6 +532,27 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
 
   /** The last card in the list: the same shape as a root, and the place a new one is typed. */
   function addCard() {
+    if (stones) {
+      // Under the dotted Add A Workspace stone: the same real add form, under one head.
+      const d = document.createElement('article');
+      d.className = 'pr-detail';
+      d.dataset.mode = 'add';
+      const head = document.createElement('header');
+      head.className = 'pr-detail-head';
+      const title = document.createElement('div');
+      title.className = 'pr-detail-title';
+      const h = document.createElement('h2');
+      h.className = 'pr-detail-name';
+      h.textContent = t('roots.add_head', 'Add a workspace');
+      const lede = document.createElement('p');
+      lede.className = 'pr-detail-state';
+      lede.dataset.tone = 'muted';
+      lede.textContent = t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.');
+      title.append(h, lede);
+      head.append(title);
+      d.append(head, form({ name: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true));
+      return d;
+    }
     const b = document.createElement('div');
     b.className = 'pr-block pr-add';
     if (editing === NEW) {
@@ -437,8 +570,9 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   // Only while the pane is actually on screen — a tile on another tab costs nothing.
   // Slow on purpose: the catalog changes when the owner changes it, and each poll
   // shells out to git once per project_root.
+  // An open Setup detail is left alone too: a repaint would drop focus from its controls.
   setInterval(() => {
-    if (isShowing() && !editing) void refresh();
+    if (isShowing() && !editing && !(stones && stoneSurface.selected())) void refresh();
   }, 15000);
 
   say(t('roots.loading', 'loading…'));
