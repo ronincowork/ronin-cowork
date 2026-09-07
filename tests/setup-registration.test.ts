@@ -106,13 +106,19 @@ test('selector definitions retain neutral provider grouping without requirement 
   assert.doesNotMatch(source, /SETUP_REQUIREMENT_TARGETS|targetKey|targetClass/);
 });
 
-test('Register keeps one compact profile flow without duplicating Preset purpose controls', async () => {
+test('Register presents one open profile flow with bounded choices and no Preset duplication', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  for (const name of ['email', 'purpose', 'kind', 'user_type', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
-  assert.match(source, /setup-register-disclosure/);
+  for (const name of ['email', 'purpose', 'own_words']) assert.match(source, new RegExp(`name = '${name}'|input\\('${name}'`));
+  for (const name of ['kind', 'user_type']) assert.match(source, new RegExp(`choiceGroup\\('${name}'`));
+  assert.match(source, /Welcome to Ronin/);
+  assert.match(source, /setup-register-group/);
+  assert.match(source, /setup-register-pill/);
+  assert.match(source, /aria-pressed/);
   assert.match(source, /Communication choices/);
   assert.match(source, /Communication is off until you choose otherwise/);
   assert.match(source, /register_action'[\s\S]*?'Register'\), '', async/);
+  assert.doesNotMatch(source, /Optional profile|setup-register-disclosure/);
+  assert.doesNotMatch(source, /const kind = el\('select'\)|const userType = el\('select'\)/);
   assert.doesNotMatch(source, /renderKindPills|createKindsPreference|setup-kinds/);
   assert.doesNotMatch(source, /registration_pending'[\s\S]*?Registration pending/);
 });
