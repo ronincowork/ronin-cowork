@@ -95,6 +95,7 @@ export function registerServicesActivation(app: express.Express): void {
           `Anonymous Ronin registration${saved.purpose ? `: ${saved.purpose}` : ''}`,
           saved.kind && `Kind: ${saved.kind}`,
           saved.user_type && `User type: ${saved.user_type}`,
+          saved.goals.length && `Why Ronin: ${saved.goals.join(', ')}`,
           saved.intended_use.length && `Intended use: ${saved.intended_use.join(', ')}`,
           saved.theme_preference && `Theme: ${saved.theme_preference}`,
           saved.own_words && `In their words: ${saved.own_words}`,
