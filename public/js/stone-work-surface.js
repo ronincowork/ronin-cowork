@@ -93,6 +93,11 @@ export function createStoneWorkSurface({ items = [], selectedId = '', renderDeta
 
   const api = {
     el: root,
+    mount(host, { before = [], after = [] } = {}) {
+      if (!String(host.className || '').split(/\s+/).includes('sws-host')) host.className = `${host.className || ''} sws-host`.trim();
+      host.replaceChildren(...before, root, ...after);
+      return api;
+    },
     setItems(next) { rows = [...(next || [])]; paint(); return api; },
     select(id, { focus = false } = {}) {
       const next = byId(id) ? String(id) : '';
