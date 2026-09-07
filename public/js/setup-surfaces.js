@@ -7,6 +7,8 @@ import { buildProjectRoots } from './projectroots.js';
 import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation } from './setup-provider-state.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
+import { createNewTeamFormView } from './new-team-form.js';
+import { createNewAgentView } from './new-agent.js';
 
 export { mountProviderAttachment, providerFromRuntime, providerOffers, providerPresentation } from './setup-provider-state.js';
 
@@ -300,24 +302,25 @@ function createGbrainSurface(context) {
 function createLaunchOwnSurface(context) {
   const out = surface(t('setup_surface.launch_own', 'Launch your own'));
   const body = el('div', 'setup-surface-body setup-launch-own');
-  const notice = el('p', 'setup-notice');
-  const stones = el('div', 'setup-launch-own-stones');
-  for (const row of [
-    { kind: 'template', glyph: '▤', label: 'Template', line: 'Start from any loaded template.' },
-    { kind: 'team', glyph: '人人', label: 'Team', line: 'A lead and agents, from scratch.' },
-    { kind: 'agent', glyph: '人', label: 'Agent', line: 'One agent, your instructions.' },
-  ]) {
-    const button = el('button', 'setup-launch-stone'); button.type = 'button';
-    button.append(el('i', '', row.glyph), el('b', '', row.label), el('span', '', row.line));
-    button.addEventListener('click', () => {
-      if (row.kind === 'template' && typeof context.environment?.openTemplateLaunchForm === 'function') context.environment.openTemplateLaunchForm();
-      else if (typeof context.environment?.openLaunchForm === 'function') context.environment.openLaunchForm({ kind: row.kind, seed: {} });
-      else notice.textContent = t('setup_surface.launch_adapter_pending', 'This launch form is being connected.');
-    });
-    stones.append(button);
-  }
-  body.append(stones, notice); out.content.append(body);
-  return { el: out.el };
+  const renderDetail = (item, host) => {
+    const views = item.id === 'template'
+      ? [createNewAgentView(WorkspaceKit, {}), createNewTeamFormView(WorkspaceKit, {})]
+      : [item.id === 'team' ? createNewTeamFormView(WorkspaceKit, {}) : createNewAgentView(WorkspaceKit, {})];
+    host.append(...views.map((view) => view.el));
+    for (const view of views) void view.enter({});
+    return () => { for (const view of views) view.el.remove(); };
+  };
+  const stones = createStoneWorkSurface({
+    items: [
+      { id: 'template', glyph: '▤', label: t('template', 'Template') },
+      { id: 'team', glyph: '人人', label: t('team', 'Team') },
+      { id: 'agent', glyph: '人', label: t('agent', 'Agent') },
+    ],
+    className: 'setup-launch-own-surface',
+    renderDetail,
+  });
+  stones.mount(body); out.content.append(body);
+  return { el: out.el, destroy: () => stones.destroy() };
 }
 
 export function setupSurfaceDefinitions() {
