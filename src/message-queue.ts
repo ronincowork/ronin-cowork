@@ -25,10 +25,14 @@ export interface QueuedMessage {
 }
 
 const DIR = storeDir('message_queue');
-export const MESSAGE_TTL_MS = 48 * 60 * 60 * 1_000;
+export const MESSAGE_TTL_MS = 60 * 60 * 1_000;
+export const TELL_TTL_MS = 30 * 60 * 1_000;
+export const WIPEBOARD_NOTICE_TTL_MS = 10 * 60 * 1_000;
 const active = new Set<string>();
+const cancelled = new Set<string>();
 const file = (id: string) => path.join(DIR, `${id}.json`);
 const lockFile = (id: string) => path.join(DIR, `${id}.lock`);
+const cancelFile = (id: string) => path.join(DIR, `${id}.cancel`);
 const validId = (id: string) => /^[a-f0-9-]{36}$/.test(id);
 
 async function write(item: QueuedMessage): Promise<void> {
@@ -38,17 +42,24 @@ async function write(item: QueuedMessage): Promise<void> {
   await fs.rename(tmp, file(item.id));
 }
 
-export async function listQueuedMessages(): Promise<QueuedMessage[]> {
+export const messageTtlMs = (source: MessageSource): number => source === 'tell'
+  ? TELL_TTL_MS
+  : source === 'wipeboard_notice' ? WIPEBOARD_NOTICE_TTL_MS : MESSAGE_TTL_MS;
+
+export async function listQueuedMessages(now = Date.now()): Promise<QueuedMessage[]> {
   let names: string[];
   try { names = await fs.readdir(DIR); } catch { return []; }
   const rows: QueuedMessage[] = [];
-  const now = Date.now();
   for (const name of names.filter((n) => n.endsWith('.json')).sort()) {
     try {
       const item = JSON.parse(await fs.readFile(path.join(DIR, name), 'utf8')) as QueuedMessage;
       const expires = Date.parse(item.expires_at);
-      if (!item.target_key || !Number.isFinite(expires) || expires <= now) {
+      if (!item.target_key || !Number.isFinite(expires)) {
         await fs.unlink(path.join(DIR, name)).catch(() => {});
+        continue;
+      }
+      if (expires <= now) {
+        await dismissMessage(item.id, 'expired');
         continue;
       }
       rows.push(item);
@@ -75,7 +86,7 @@ export async function enqueueMessage(target: string, text: string, source: Messa
   const item: QueuedMessage = {
     id: randomUUID(), from, target, target_key: targetSession.key, text, source,
     state: 'pending', reason: 'waiting for delivery', attempts: 0,
-    created_at: at, updated_at: at, expires_at: new Date(now + MESSAGE_TTL_MS).toISOString(),
+    created_at: at, updated_at: at, expires_at: new Date(now + messageTtlMs(source)).toISOString(),
   };
   await write(item);
   return item;
@@ -95,12 +106,52 @@ export class MessageRefused extends Error {
   }
 }
 
-export async function dismissMessage(id: string): Promise<boolean> {
-  if (!validId(id)) return false;
-  try { await fs.unlink(file(id)); return true; } catch { return false; }
+type Disposition = 'dismissed' | 'expired' | 'delivered';
+
+const canNack = (item: QueuedMessage): boolean => item.source === 'tell'
+  && item.from !== 'Agent'
+  && !item.from.startsWith('grid_');
+
+async function negativeAck(item: QueuedMessage, reason: 'dismissed' | 'expired'): Promise<void> {
+  if (!canNack(item)) return;
+  const text = `Your tell ${item.id} to '${item.target}' was ${reason} before delivery.`;
+  try { await deliverMessage(item.from, text, 'house'); } catch { /* sender ended; no return path remains */ }
 }
 
-export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'): Promise<QueuedMessage | null> {
+export async function dismissMessage(id: string, disposition: Disposition = 'dismissed'): Promise<boolean> {
+  if (!validId(id)) return false;
+  const attempting = active.has(id) || await fs.stat(lockFile(id)).then(() => true, () => false);
+  if (attempting) {
+    cancelled.add(id);
+    await fs.writeFile(cancelFile(id), disposition).catch(() => {});
+  }
+  let item: QueuedMessage;
+  try { item = JSON.parse(await fs.readFile(file(id), 'utf8')) as QueuedMessage; } catch { return false; }
+  try { await fs.unlink(file(id)); } catch { return false; }
+  if (disposition !== 'delivered') await negativeAck(item, disposition);
+  return true;
+}
+
+export async function dismissMessages(ids: readonly string[]): Promise<{ dismissed: string[]; not_found: string[] }> {
+  const dismissed: string[] = [];
+  const not_found: string[] = [];
+  for (const id of [...new Set(ids)]) {
+    if (await dismissMessage(id)) dismissed.push(id);
+    else not_found.push(id);
+  }
+  return { dismissed, not_found };
+}
+
+interface Delivery {
+  safe: typeof deliverSafe;
+  force: typeof deliverForce;
+}
+
+export async function attemptMessage(
+  id: string,
+  mode: 'safe' | 'force' = 'safe',
+  delivery: Delivery = { safe: deliverSafe, force: deliverForce },
+): Promise<QueuedMessage | null> {
   if (!validId(id)) return null;
   if (active.has(id)) {
     try { return JSON.parse(await fs.readFile(file(id), 'utf8')) as QueuedMessage; } catch { return null; }
@@ -116,7 +167,7 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
       if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
       try {
         const age = Date.now() - (await fs.stat(lockFile(id))).mtimeMs;
-        if (age > 15_000) { await fs.unlink(lockFile(id)); return attemptMessage(id, mode); }
+        if (age > 15_000) { await fs.unlink(lockFile(id)); return attemptMessage(id, mode, delivery); }
       } catch { /* it cleared between checks */ }
       try { return JSON.parse(await fs.readFile(file(id), 'utf8')) as QueuedMessage; } catch { return null; }
     }
@@ -128,12 +179,17 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
       attempted = true;
       item.attempts += 1;
     };
-    const retain = async (state: MessageState, reason: string): Promise<QueuedMessage> => {
+    const retain = async (state: MessageState, reason: string): Promise<QueuedMessage | null> => {
+      if (cancelled.has(id) || await fs.stat(cancelFile(id)).then(() => true, () => false)) return null;
       if (!attempted && item.state === state && item.reason === reason) return item;
       item.state = state;
       item.reason = reason;
       item.updated_at = new Date().toISOString();
       await write(item);
+      if (cancelled.has(id) || await fs.stat(cancelFile(id)).then(() => true, () => false)) {
+        await fs.unlink(file(id)).catch(() => {});
+        return null;
+      }
       return item;
     };
     const targetSession = (await listSessions()).find((session) => session.name === item.target);
@@ -142,12 +198,15 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
         ? 'the target name now belongs to a different session'
         : 'target session no longer exists');
     }
+    if (mode === 'safe' && targetSession.control !== 'write') {
+      return retain('stuck', `the target Control setting is '${targetSession.control}'`);
+    }
     try {
       if (mode === 'force') countAttempt();
       const result = mode === 'force'
-        ? await deliverForce(item.target, item.text)
-        : await deliverSafe(item.target, item.text, countAttempt);
-      if (result.delivered) { await dismissMessage(id); return null; }
+        ? await delivery.force(item.target, item.text)
+        : await delivery.safe(item.target, item.text, countAttempt);
+      if (result.delivered) { await dismissMessage(id, 'delivered'); return null; }
       return retain(mode === 'force' || result.submitted ? 'failed' : 'stuck', result.reason);
     } catch (e) {
       return retain(mode === 'force' || attempted ? 'failed' : 'stuck', String((e as Error).message ?? e));
@@ -156,6 +215,8 @@ export async function attemptMessage(id: string, mode: 'safe' | 'force' = 'safe'
     await lock?.close().catch(() => {});
     if (lock) await fs.unlink(lockFile(id)).catch(() => {});
     active.delete(id);
+    cancelled.delete(id);
+    await fs.unlink(cancelFile(id)).catch(() => {});
   }
 }
 
