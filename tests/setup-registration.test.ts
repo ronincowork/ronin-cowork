@@ -135,10 +135,13 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.match(source, /setup-register-group/);
   assert.match(source, /setup-register-choice-grid/);
   assert.match(source, /aria-pressed/);
+  const css = await (await import('node:fs/promises')).readFile(new URL('../public/style.css', import.meta.url), 'utf8');
   assert.match(source, /group\.dataset\.choices = String\(choices\.length\)/, 'choice grids know their count so four choices sit two by two');
   assert.match(source, /\{ explain: true \}/, 'the core-feature question explains the chosen answer');
-  assert.match(source, /explanation\.textContent = description; explanation\.hidden = !description; button\.after\(explanation\)/, 'the explanation drops out right under the chosen row');
-  assert.match(source, /Which of these things Ronin does would you appreciate most\?/);
+  assert.match(source, /explanation\.textContent = chosen \? description : ''; explanation\.hidden = !chosen \|\| !description; if \(chosen\) button\.after\(explanation\)/, 'the explanation drops out right under the chosen row');
+  assert.match(source, /Which of these describes you best in terms of getting value from Ronin\?/);
+  assert.doesNotMatch(source, /Which of these things Ronin does would you appreciate most\?/);
+  assert.match(css, /\.setup-register-choice-grid\[data-layout='rows'\] > \.setup-register-explain \{ grid-column: 2;/, 'the explanation sits beside the rows when the surface is wide');
   assert.doesNotMatch(source, /Why is that useful to you\?/);
   for (const reason of ['own_instructions', 'no_collisions']) assert.match(source, new RegExp(`\\['${reason}', `));
   assert.match(source, /reads by default/);
@@ -151,7 +154,6 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.doesNotMatch(source, /\.\.\.\(current\?\.reasons \|\| \[\]\)\]\.filter\(Boolean\)/);
   assert.match(source, /checkRow\(t\('setup_surface\.no_communication', 'No communication'\), checks\.no_communication, 'setup-register-check-apart'\)/);
   assert.match(source, /identity\.dataset\.tone = current\?\.status === 'pending' \? 'pending' : 'ok'/);
-  const css = await (await import('node:fs/promises')).readFile(new URL('../public/style.css', import.meta.url), 'utf8');
   assert.match(css, /\.setup-register-compact \{ container: setup-register \/ inline-size;/, 'Register sizes its pairs from its own width');
   assert.match(css, /@container setup-register \(min-width: 40rem\)/);
   assert.match(css, /\.setup-register-group \{[^}]*border-top: var\(--edge-2\) solid var\(--kaki\)/, 'groups open with a kaki rule');
@@ -165,7 +167,9 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.match(source, /Where will you install Ronin\?/);
   assert.doesNotMatch(source, /Where will you run Ronin\?|Where Ronin fits/);
   for (const kind of ['Which of these are you most likely to use?', 'Build software', 'Life assistants', 'Research and writing']) assert.match(source, new RegExp(kind.replace('?', '\\?')));
-  assert.ok(source.indexOf('runLocation.wrap, preferredFeature.wrap') > -1, 'machine location comes before feature preference');
+  assert.match(source, /about\.append\([\s\S]*?identityMode\.wrap, emailField, runLocation\.wrap\)/, 'where Ronin will live belongs to About you');
+  assert.ok(source.indexOf('runLocation.wrap') < source.indexOf('preferredFeature.wrap, reasons.wrap'), 'machine location comes before feature preference');
+  assert.match(source, /const chosen = value\.value === key \? '' : key;/, 'a second click clears a single choice');
   assert.doesNotMatch(source, /Your starting theme|theme\.wrap/);
   assert.doesNotMatch(source, /What would make Ronin useful to you\?|Anything else\? \(optional\)/);
   assert.match(source, /setup_surface\.own_words', 'Anything else'/);

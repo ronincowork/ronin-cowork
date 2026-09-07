@@ -80,9 +80,11 @@ function createRegisterSurface(context) {
           button.setAttribute('aria-pressed', String(selected.has(key)));
           value.value = JSON.stringify([...selected]);
         } else {
-          value.value = key;
-          for (const option of group.querySelectorAll('button')) option.setAttribute('aria-pressed', String(option === button));
-          if (explanation) { explanation.textContent = description; explanation.hidden = !description; button.after(explanation); }
+          /* A second click on the chosen answer clears it; nothing here is mandatory. */
+          const chosen = value.value === key ? '' : key;
+          value.value = chosen;
+          for (const option of group.querySelectorAll('button')) option.setAttribute('aria-pressed', String(Boolean(chosen) && option === button));
+          if (explanation) { explanation.textContent = chosen ? description : ''; explanation.hidden = !chosen || !description; if (chosen) button.after(explanation); }
         }
       });
       group.append(button);
@@ -129,7 +131,7 @@ function createRegisterSurface(context) {
     ['team_coordination', 'Agents with team coordination skills', t('setup_surface.feature_team_coordination', 'Coordination is light reading an agent does to build its brief. Each launch brief carries a few simple tools so agents can message and coordinate with one another.')],
   ], { explain: true });
   preferredFeature.wrap.querySelector('.setup-register-choice-grid').dataset.layout = 'rows';
-  const reasons = checklistGroup('reasons', t('setup_surface.reasons', 'Which of these things Ronin does would you appreciate most?'), [
+  const reasons = checklistGroup('reasons', t('setup_surface.reasons', 'Which of these describes you best in terms of getting value from Ronin?'), [
     ['different_strengths', 'Different models have different strengths. I want to use the best one for each job.'],
     ['network_resilience', 'Sometimes one model provider is having network issues, so I want another available.'],
     ['new_models', 'New models keep arriving. I want to switch without rebuilding my workspace.'],
@@ -153,17 +155,18 @@ function createRegisterSurface(context) {
   const emailField = field(t('setup_surface.email', 'Email address'), email);
   identityMode.wrap.classList.add('setup-register-half');
   emailField.classList.add('setup-register-half');
-  about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField);
+  runLocation.wrap.classList.add('setup-register-half');
+  /* About you: how to register, the address if so, and where Ronin will live. */
+  about.append(el('h3', '', t('setup_surface.about_you', 'About you')), identityMode.wrap, emailField, runLocation.wrap);
   const fit = el('section', 'setup-register-group');
   fit.classList.add('setup-register-fit');
-  runLocation.wrap.classList.add('setup-register-half');
-  preferredFeature.wrap.classList.add('setup-register-half');
+  preferredFeature.wrap.classList.add('setup-register-full', 'setup-register-feature');
   reasons.wrap.classList.add('setup-register-full');
   kind.wrap.classList.add('setup-register-full');
   const ownField = field(t('setup_surface.own_words', 'Anything else'), own);
   ownField.classList.add('setup-register-full');
   fit.append(
-    el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), runLocation.wrap, preferredFeature.wrap, reasons.wrap, kind.wrap,
+    el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), preferredFeature.wrap, reasons.wrap, kind.wrap,
     ownField,
   );
   const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration sends a confirmation and can unlock Ronin Services. Anonymous registration sends these answers without contact details. Communication stays off unless you choose otherwise.'));
