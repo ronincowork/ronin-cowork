@@ -461,7 +461,7 @@ function createServicesSurface(context) {
     state.setAttribute('aria-live', 'polite');
     state.append(el('p', 'setup-services-status-line', model.status), el('p', 'setup-services-next', model.next));
     body.append(state);
-    // Register · Install · On — three controls in one shape; each reads Done once it is.
+    // Register · Install · Switch — three controls in one shape; the first two read Done once they are, the switch toggles.
     const steps = el('div', 'setup-services-steps');
     const notice = el('p', 'setup-notice setup-services-notice');
     for (const item of model.steps) {
@@ -478,7 +478,7 @@ function createServicesSurface(context) {
       button.dataset.step = item.id; button.dataset.done = String(item.done);
       button.disabled = !item.enabled || !item.act;
       if (item.title) button.title = item.title;
-      if (item.id === 'switch') button.setAttribute('aria-pressed', String(item.done));
+      if (item.id === 'switch') button.setAttribute('aria-pressed', String(item.pressed === true));
       wrap.append(el('span', 'setup-services-step-caption', item.caption), button);
       steps.append(wrap);
     }

@@ -891,7 +891,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **services_setup.voice_copy:** Hear a report read back, speak to an Agent from the tile, and keep what a session learns for the team.
 - **services_setup.step_register:** Register
 - **services_setup.step_install:** Install
-- **services_setup.step_switch:** On
+- **services_setup.step_switch:** Switch
 - **services_setup.done:** Done
 - **services_setup.register:** Register
 - **services_setup.sending:** Sending…
@@ -933,11 +933,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **services_setup.next_install_failed:** The installer did not finish. Nothing else was changed.
 - **services_setup.summary_switched_off:** switched off
 - **services_setup.status_switched_off:** Installed · switched off
-- **services_setup.next_switched_off_running:** Switched off, but still running in this copy of Ronin until it restarts.
-- **services_setup.next_switched_off:** Turn it on for new Agents here; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.
+- **services_setup.next_switched_off_running:** Switched off, but still running in this copy of Ronin. Ask any of your Agents to restart Ronin and it stops; sessions are untouched.
+- **services_setup.next_switched_off:** Turn it on here: it sets the Campaign’s choice and cascades to new teams and Agents; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.
 - **services_setup.summary_restart:** restart needed
 - **services_setup.status_restart:** Switched on · not yet running
-- **services_setup.next_restart:** Restart Ronin to start it. Sessions are untouched.
+- **services_setup.next_restart:** Ask any of your Agents to restart Ronin. Unlocked views and the other parts then start on their own; only new Agents are born with the Services reading. Sessions are untouched.
 - **services_setup.summary_active:** active
 - **services_setup.status_active:** Active on this Cowork
 - **services_setup.next_active:** {loaded} of {parts} parts are running for new Agents.
