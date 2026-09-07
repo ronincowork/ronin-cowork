@@ -2,7 +2,10 @@
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
+import { createStoneWorkSurface } from './stone-work-surface.js';
 import { createFolderPicker } from './folder-picker.js';
+
+export { createStoneWorkSurface };
 
 export const PRESETS_TYPE = 'setup.presets';
 export const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
