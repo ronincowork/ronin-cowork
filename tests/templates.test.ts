@@ -55,16 +55,6 @@ test('the shipped team shelf surfaces casts with one marked lead each', async ()
   assert.deepEqual(staff?.agents.find((row) => row.name === 'codebase assessor')?.mandate?.output, ['the team']);
 });
 
-test('the Presets additions remain ordinary templates and Staff My Codebase stays whole', async () => {
-  const teams = await listTeamTemplates();
-  const agents = await listAgentTemplates();
-  assert.ok(teams.some((row) => row.name === 'bare_metal'));
-  assert.ok(teams.some((row) => row.name === 'develop_new_project'));
-  assert.ok(agents.some((row) => row.name === 'agent_editable_doc'));
-  assert.deepEqual(teams.find((row) => row.name === 'staff_my_codebase')?.agents.map((row) => row.name),
-    ['code coordinator', 'codebase assessor']);
-});
-
 test('a cast parses from the section format, row keys never leaking top-level', () => {
   const rows = parseTemplateAgents([
     '# Box', '- **objective:** o', '', '## agents', '',

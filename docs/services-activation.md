@@ -3,12 +3,6 @@
 How a free Cowork install asks for Ronin Services, confirms an address, and ends up holding
 one entitlement. The server half is SHIWAKE, at Ronin HQ; this page is the install's half.
 
-In Ronin Setup, optional registration creates the identity used for Services entitlement
-and replaces a separate Setup token path. Registration does not itself install, activate,
-or switch on Services. Communication consent is independently editable, and choosing
-**No communication** does not revoke entitlement. The Setup surface reports entitled,
-installed, activated, and switched-on as distinct states.
-
 **The contract this speaks is the released v1 set in the ronin-shiwake repository**, under its
 contracts directory. Nothing here reads SHIWAKE's source or its work in progress — only the
 released contract. (The path is deliberately not written as a live path: it is another repo,

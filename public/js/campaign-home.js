@@ -18,8 +18,6 @@ function DOORS() {
   ];
 }
 
-export const setupDefaultView = (activatedCount) => Number(activatedCount) >= 2 ? 'campaign' : 'setup';
-
 /** The machine door's house mark: a wheel with eight broad teeth, recognisably admin
  * without importing a platform emoji or turning into a literal vehicle silhouette. */
 function doorGlyph(glyph) {
@@ -55,29 +53,19 @@ export function createCampaignHome() {
 
   let ctx = null;
   let entered = false;
-  let activatedCount = 0;
-  let runtimeKnown = false;
 
   function paintDoors() {
     doors.replaceChildren();
     for (const door of DOORS()) {
       const card = el('a', 'ch-door');
-      const locked = door.key !== 'campaign' && (!runtimeKnown || activatedCount < 1);
-      const route = door.key === 'campaign' ? setupDefaultView(activatedCount) : door.route;
-      card.href = `#/${route}`;
+      card.href = `#/${door.route}`;
       card.dataset.door = door.key;
-      if (locked) {
-        card.dataset.unavailable = 'true';
-        card.setAttribute('aria-disabled', 'true');
-      }
       card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
-      if (locked) card.append(el('p', 'ch-gate', t('setup.provider_gate', 'Activate one model provider in Machine Settings to use this.')));
       card.addEventListener('click', (event) => {
         // Modified clicks belong to the browser: new tab/window, link menu, middle click.
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        if (locked) return;
-        ctx?.navigate(route);
+        ctx?.navigate(door.route);
       });
       doors.append(card);
     }
@@ -108,7 +96,8 @@ export function createCampaignHome() {
   return {
     el: root,
     glyph: '⛩',
-    title: () => t('campaign_home.ronin_home', 'Ronin Home'),
+    // The ViewHost adds the house name. Empty keeps the root tab exactly "Ronin".
+    title: () => '',
     enter: (context) => {
       ctx = context;
       entered = true;
@@ -117,12 +106,6 @@ export function createCampaignHome() {
       delete answer.dataset.state;
       check.disabled = false;
       paintDoors();
-      void request('/api/setup/runtime', { cache: 'no-store' }).then((result) => {
-        if (!entered) return;
-        runtimeKnown = result.ok;
-        activatedCount = result.ok ? Number(result.data?.activated_count) || 0 : 0;
-        paintDoors();
-      });
     },
     leave: () => { entered = false; document.body.classList.remove('ronin-home-active'); },
     destroy: () => { entered = false; ctx = null; document.body.classList.remove('ronin-home-active'); },

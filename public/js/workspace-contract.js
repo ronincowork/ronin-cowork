@@ -26,13 +26,7 @@ export function teamWorkspaceState(state = {}, viewState = null, declaration = n
   const seats = {};
   for (const [slot, value] of Object.entries(view.seats && typeof view.seats === 'object' ? view.seats : {})) {
     if (text(value)) seats[slot] = value;
-    else if (value && typeof value === 'object' && text(value.type)) seats[slot] = Object.freeze({
-      type: value.type, key: text(value.key),
-      ...(text(value.root) ? { root: value.root } : {}),
-      ...(text(value.path) ? { path: value.path } : {}),
-      ...(text(value.tab) ? { tab: value.tab } : {}),
-      ...(text(value.doc) ? { doc: value.doc } : {}),
-    });
+    else if (value && typeof value === 'object' && text(value.type)) seats[slot] = Object.freeze({ type: value.type, key: text(value.key) });
   }
   return Object.freeze({
     team: text(state.team),

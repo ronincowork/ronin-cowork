@@ -12,27 +12,11 @@ import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-
 import {
   createBand, createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
 // absence of `code`: silence is not an instruction. Nothing validates the combination.
 const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
-
-/** A preload may name a template outside the form's default kind filter. Keep a compatible
- * current kind when possible; otherwise use the template's first declared kind. */
-function templateEntryKind(current, template) {
-  const kinds = Array.isArray(template?.kinds) ? template.kinds.filter(Boolean) : [];
-  return kinds.includes(current) ? current : kinds[0] || current;
-}
-
-export function templateEntryPlan({ currentKind, kindTouched = false, templates = [], template = '' } = {}) {
-  const row = templates.find((candidate) => candidate.name === template);
-  if (!row) return { kind: currentKind, template: '' };
-  const kind = templateEntryKind(currentKind, row);
-  if (kindTouched && kind !== currentKind) return { kind: currentKind, template: '' };
-  return { kind, template: row.name };
-}
 
 export function createNewAgentView(kit, { connect = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
@@ -58,7 +42,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   const start = createAction({
     label: t('forms.launch', 'Launch'),
-    launch: true,
     size: 'compact',
     disabled: true,
     action: () => void doStart(),
@@ -457,7 +440,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   async function doStart() {
     if (busy) return;
-    const launchTab = reserveWorkspaceTab();
     const name = draft.name.trim();
     busy = true;
     start.setDisabled(true);
@@ -468,7 +450,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     if (draft.teamMode === 'new' && !team) team = '';
     if (draft.teamMode === 'new' && isCowork() && team) {
       if (!isValidTeamName(team)) {
-        closeWorkspaceTab(launchTab);
         busy = false;
         start.setDisabled(false);
         notice.set('failed', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
@@ -479,7 +460,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         json: { name: team, kind: draft.kind, ...(draft.template ? { template: draft.template } : {}) },
       });
       if (!made.ok) {
-        closeWorkspaceTab(launchTab);
         busy = false;
         start.setDisabled(false);
         notice.set('failed', made.message);
@@ -508,7 +488,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     busy = false;
     start.setDisabled(false);
     if (!result.ok) {
-      closeWorkspaceTab(launchTab);
       notice.set('failed', result.message);
       return;
     }
@@ -516,7 +495,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     const deskNote = result.data?.receipt?.desk_note || '';
     if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
     else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
-    openWorkspaceTab(team ? 'team' : 'cowork', team, launchTab);
+    if (born && !deskNote) connect?.(born);
   }
 
   async function doSave() {
@@ -653,11 +632,6 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       teams = teamRows.ok && Array.isArray(teamRows.data) ? teamRows.data.filter((row) => row.state !== 'archived') : [];
       roots = rootRows.ok && Array.isArray(rootRows.data) ? rootRows.data : [];
       if (!loaded) { await loadSeed(); loaded = true; }
-      if (typeof detail?.template === 'string' && detail.template) {
-        const entry = templateEntryPlan({ currentKind: draft.kind, kindTouched: draft.kindTouched, templates, template: detail.template });
-        draft.kind = entry.kind;
-        if (entry.template) applyTemplate(entry.template);
-      }
       seedPrompt(typeof detail?.prompt === 'string' ? detail.prompt.trim() : '');
       paint();
     },

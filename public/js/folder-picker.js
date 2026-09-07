@@ -42,10 +42,10 @@ export function createFolderPicker({ value = '', onChange = () => {} } = {}) {
   let homeDir = '';
   let parent = null;
   let timer = null;
-  const select = async (dir, folder = null) => {
+  const select = async (dir) => {
     selected = dir;
     chosenPath.textContent = dir;
-    onChange(dir, folder);
+    onChange(dir);
     context.textContent = t('folders.inspecting', 'Checking the starting context…');
     const inspected = await request(`/api/project-roots/inspect?dir=${encodeURIComponent(dir)}`, { cache: 'no-store' });
     if (!inspected.ok) { context.textContent = inspected.message; return; }
@@ -73,9 +73,8 @@ export function createFolderPicker({ value = '', onChange = () => {} } = {}) {
     listing.replaceChildren();
     for (const folder of result.data.folders) {
       const row = el('div', 'folder-row');
-      const kind = folder.registered_root ? 'workspace folder' : folder.kind === 'repository' ? 'repository' : 'folder';
-      const open = el('button', 'folder-open', `▸ ${folder.name} · ${kind}`); open.type = 'button'; open.addEventListener('click', () => load(folder.dir));
-      const choose = el('button', 'folder-choose', folder.registered_root ? 'evaluate' : t('folders.choose', 'Choose')); choose.type = 'button'; choose.addEventListener('click', () => void select(folder.dir, folder));
+      const open = el('button', 'folder-open', '▸ ' + folder.name); open.type = 'button'; open.addEventListener('click', () => load(folder.dir));
+      const choose = el('button', 'folder-choose', t('folders.choose', 'Choose')); choose.type = 'button'; choose.addEventListener('click', () => void select(folder.dir));
       row.append(open, choose); listing.append(row);
     }
     if (!result.data.folders.length) listing.append(el('span', 'folder-empty', t('folders.empty', 'No matching folders here.')));

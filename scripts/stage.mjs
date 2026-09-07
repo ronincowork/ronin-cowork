@@ -21,15 +21,6 @@ if (path.resolve(src) === path.resolve(dest)) {
 fs.rmSync(dest, { recursive: true, force: true });
 fs.cpSync(src, dest, { recursive: true });
 
-// The live index is rewritten in memory by src/index.ts to its immutable commit path.
-// Staging is a separate static tree, so its copy must point at that tree instead of
-// retaining the source placeholder (or borrowing the live client's assets).
-const stagedIndex = path.join(dest, 'index.html');
-if (fs.existsSync(stagedIndex)) {
-  const html = fs.readFileSync(stagedIndex, 'utf8');
-  fs.writeFileSync(stagedIndex, html.replaceAll('/__RONIN_ASSET_VERSION__/', '/staging/'));
-}
-
 const files = fs.readdirSync(dest, { recursive: true }).filter((f) => !fs.statSync(path.join(dest, f)).isDirectory());
 console.log(`staged ${files.length} file(s)`);
 console.log(`  from  ${src}`);

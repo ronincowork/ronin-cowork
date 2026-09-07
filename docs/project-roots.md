@@ -5,14 +5,6 @@ an existing directory, the project's remit and matching words, its session-boot 
 and its memory keys. The new-session launcher, Admin Desk, session identity, and recall
 all resolve that one handle.
 
-## Installed starting folders
-
-Ronin Setup creates and registers **Ronin Lab** (`ronin_lab`) and **Ronin Project 1**
-(`ronin_project_1`) inside `RONIN_USER_ROOT`. Both start as Git repositories with a README
-and first commit. Project 1 is prepared for reviewed `dev`, stable `main`, and managed
-worktrees. They are optional starting places, not migrations: Ronin does not replace,
-rename, or overwrite an external folder, and the ordinary add/load-root flow remains.
-
 ## Where the record lives
 
 There are two files with the same basename and different jobs:

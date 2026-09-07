@@ -107,9 +107,9 @@ export function createRoutinesSurface(campaign) {
         const actions = el('div', 'cv-actions');
         const resend = el('button', 'cv-button', t('campaign_view.svc_resend', 'Send the email again')); resend.type = 'button';
         if (activation?.resend_available_at && new Date(activation.resend_available_at) > new Date()) { resend.disabled = true; resend.title = t('campaign_view.svc_resend_after', 'after {time}', { time: new Date(activation.resend_available_at).toLocaleTimeString() }); }
-        resend.addEventListener('click', () => act('/api/setup/registration/recovery', { action: 'resend' }, notice));
+        resend.addEventListener('click', () => act('/api/services/activation/resend', null, notice));
         const cancel = el('button', 'cv-button', t('campaign_view.svc_cancel', 'Cancel the request')); cancel.type = 'button';
-        cancel.addEventListener('click', () => act('/api/setup/registration', 'DELETE', notice));
+        cancel.addEventListener('click', () => act('/api/services/activation', 'DELETE', notice));
         actions.append(resend, cancel);
         block.append(actions);
       } else if (stage === 'verified' || stage === 'installing') {
@@ -120,7 +120,7 @@ export function createRoutinesSurface(campaign) {
         const email = el('input', 'cv-input'); email.type = 'email'; email.required = true; email.placeholder = t('campaign_view.svc_email', 'you@example.com'); email.autocomplete = 'email';
         const send = el('button', 'cv-button', t('campaign_view.svc_send', 'Send confirmation email')); send.type = 'submit'; send.dataset.primary = 'true';
         form.append(email, send);
-        form.addEventListener('submit', (event) => { event.preventDefault(); if (email.value.trim()) void act('/api/setup/registration', { email: email.value.trim() }, notice); });
+        form.addEventListener('submit', (event) => { event.preventDefault(); if (email.value.trim()) void act('/api/services/activation', { email: email.value.trim() }, notice); });
         block.append(el('p', 'cv-choice-why', stage === 'expired' ? t('campaign_view.svc_expired', 'That confirmation link expired. Ask for a fresh one.') : t('campaign_view.svc_ask', 'To activate: the address the entitlement should go to, then confirm from the email.')), form);
       }
     }

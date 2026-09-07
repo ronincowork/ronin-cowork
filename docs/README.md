@@ -10,8 +10,7 @@ contracts remain available, but they are not prerequisites for installing or usi
 | What authority does Ronin have on this machine? | [How Ronin protects your machine and work](how-ronin-protects-you.md) |
 | Is this machine suitable, or should the user rent one? | [Rent or prepare a machine](rent-a-machine.md) |
 | How do I install without disturbing existing tmux work? | [Install Ronin](install.md) |
-| How do I launch from the new Setup workbench? | [Ronin Setup](setup-workbench.md) |
-| What will the legacy `cowork_setup` route ask, and what happens after Save? | [Get started](get-started.md) |
+| What will `cowork_setup` ask, and what happens after Save? | [Get started](get-started.md) |
 | How do I establish one provider without exposing credentials or changing billing by accident? | [Provider sign-in](provider-sign-in.md) |
 
 ## Once the coworkspace is running
@@ -19,7 +18,6 @@ contracts remain available, but they are not prerequisites for installing or usi
 | Question | Route |
 |---|---|
 | How do I find and arrange work? | [Workbench](workbench.md) |
-| Why are Teams or New Project unavailable? | [Ronin Setup](setup-workbench.md#activate-a-provider) |
 | How do I add or change a Workspace Folder? | [Workspace folders](project-roots.md) |
 | How do parallel Agents avoid colliding in the same files? | [Ronin Worktrees](worktrees.md) |
 | How do session Control settings work? | [Session Control](session-control-dials.md) |

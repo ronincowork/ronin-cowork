@@ -30,7 +30,6 @@
 import { launchSpecData, projectData } from './home.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { dialRow, dialRowMulti } from './form-steps.js';
 import { swapTeamLead } from './team-lead-swap.js';
 
@@ -275,7 +274,6 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
   // actions are built after `reset` and `launch` exist.
   const launch = async () => {
     if (busy) return;
-    const launchTab = reserveWorkspaceTab();
     busy = true;
     start.setDisabled(true);
     notice.set('info', t('add_agent.starting', 'Starting…'));
@@ -300,7 +298,6 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
       },
     });
     if (!result.ok) {
-      closeWorkspaceTab(launchTab);
       busy = false;
       start.setDisabled(false);
       notice.set('failed', result.message);
@@ -327,10 +324,10 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
     // receipt carries a desk note. Connecting swaps this surface for the tile in the
     // same breath, which would take the one line explaining the missing desk with it;
     // so the note holds the surface, and the newborn is on the roster one click away.
-    openWorkspaceTab('team', teamName(), launchTab);
+    if (born && !deskNote && !leadNote) connect?.(born);
   };
 
-  const start = createAction({ label: t('forms.launch', 'Launch'), launch: true, kind: 'primary', action: () => void launch() });
+  const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void launch() });
   const cancel = createAction({ label: t('add_agent.cancel', 'Cancel'), action: () => { reset(); notice.set('', ''); } });
   const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [cancel, start] });
   const alternative = el('p', 'aa-alternative');

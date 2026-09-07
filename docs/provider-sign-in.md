@@ -7,9 +7,8 @@ it never asks the owner to paste a key into chat or a recorded tile.
 
 ## First establish what exists
 
-Use **Ronin Setup → Model providers**. It distinguishes absent, installable, installed,
-login-open, and activated states without pretending to inspect account health. For an
-advanced shell check, inspect from the same login shell a Ronin tile receives:
+Use the `cowork_setup` or Configuration Agent list, or inspect from the same login shell a
+Ronin tile receives:
 
 ```bash
 for command in claude codex gemini grok hermes; do
@@ -21,11 +20,6 @@ This proves only whether a CLI is found. Ronin deliberately does not treat insta
 authentication. The stock launch catalog currently offers Anthropic through Claude Code
 and OpenAI through Codex; Configuration may list additional Agent CLIs whose provider/model
 launch support or authentication evidence is incomplete.
-
-For an installed provider, **Open sign-in** starts a temporary native setup session. The
-owner completes any credential, billing, device-login, or trust step. **Done / Close**
-records activation and closes the session; **Close** closes without activation. Ronin does
-not continuously recheck the native account afterward.
 
 ## Choose billing before login
 

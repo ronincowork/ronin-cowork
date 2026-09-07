@@ -19,42 +19,19 @@ export interface FolderListing {
   home: string;
   dir: string;
   parent: string | null;
-  folders: Array<{ name: string; dir: string; kind: 'repository' | 'folder'; repository: boolean }>;
-}
-
-export interface RegisteredRootRef { name: string; dir: string }
-export type RegisteredFolderListing = Omit<FolderListing, 'folders'> & {
-  folders: Array<FolderListing['folders'][number] & { registered_root: RegisteredRootRef | null }>;
-};
-
-export function withRegisteredRoots(
-  listing: FolderListing,
-  roots: RegisteredRootRef[],
-): RegisteredFolderListing {
-  const byDir = new Map(roots.map((root) => [path.resolve(root.dir), root]));
-  return {
-    ...listing,
-    folders: listing.folders.map((folder) => {
-      const root = byDir.get(path.resolve(folder.dir));
-      return { ...folder, registered_root: root ? { name: root.name, dir: root.dir } : null };
-    }),
-  };
+  folders: Array<{ name: string; dir: string }>;
 }
 
 export async function browseFolders(raw: string, options: { hidden?: boolean; query?: string } = {}): Promise<FolderListing> {
   const dir = await safeDirectory(raw || HOME);
   const query = String(options.query ?? '').trim().toLocaleLowerCase().slice(0, 80);
   const entries = await readdir(dir, { withFileTypes: true });
-  const visible = entries
+  const folders = entries
     .filter((entry) => entry.isDirectory() && (options.hidden || !entry.name.startsWith('.')))
     .filter((entry) => !query || entry.name.toLocaleLowerCase().includes(query))
     .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(0, 200);
-  const folders = await Promise.all(visible.map(async (entry) => {
-    const entryDir = path.join(dir, entry.name);
-    const repository = await stat(path.join(entryDir, '.git')).then(() => true, () => false);
-    return { name: entry.name, dir: entryDir, kind: repository ? 'repository' as const : 'folder' as const, repository };
-  }));
+    .slice(0, 200)
+    .map((entry) => ({ name: entry.name, dir: path.join(dir, entry.name) }));
   return { home: HOME, dir, parent: dir === HOME ? null : path.dirname(dir), folders };
 }
 

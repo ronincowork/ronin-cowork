@@ -5,7 +5,6 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { buildRoster } from './roster.js';
 import { refreshHome } from './home.js';
-import { openWorkspaceTab } from './workspace.js';
 
 const node = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 
@@ -14,7 +13,11 @@ export function createTeamRosterSurface() {
   const surface = WorkspaceKit.primitives.createSurface({ label, className: 'team-roster-surface' });
   const host = node('div', 'home-sec team-roster-detail');
   surface.content.append(host);
-  const openTeam = (name) => openWorkspaceTab('team', name);
+  const openTeam = (name) => {
+    const url = new URL(location.href);
+    url.hash = `#/team/${encodeURIComponent(name)}`;
+    window.open(url.href, '_blank', 'noopener');
+  };
   const removeTeam = async (team, count) => {
     if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team, count }))) return;
     const result = await deleteTeamRoster(team);
@@ -25,9 +28,11 @@ export function createTeamRosterSurface() {
     hideGroupCounts: true,
     groups: () => teamsFromState().filter((team) => !team.holding).map((team) => team.name),
     groupActions: (team, count) => {
-      const launch = WorkspaceKit.primitives.createAction({
-        label: t('league.launch_team', 'Launch'), launch: true, size: 'compact', action: () => openTeam(team),
-      }).el;
+      const launch = node('button', 'torii', '⛩');
+      launch.type = 'button';
+      launch.title = t('league.launch_team', 'Launch');
+      launch.setAttribute('aria-label', launch.title);
+      launch.addEventListener('click', () => openTeam(team));
       const remove = node('button', 'kill', '🗑');
       remove.type = 'button';
       remove.title = t('league.delete_team', 'Delete');

@@ -9,7 +9,6 @@ import { createTerminalTileHost } from './terminal-tile-host.js';
 import { makeDrop } from './tiledrop.js';
 import { S } from './state.js';
 import { t } from './lexicon.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFeedbackSurface } from './feedback.js';
 
@@ -128,16 +127,10 @@ export async function buildPhone() {
     const note = el('p', 'ph-launch-note', t('phone.launch_defaults', "Everything else launches with this Team's defaults."));
     const state = el('p', 'ph-launch-state');
     state.hidden = true;
-    const go = el('button', 'ph-launch-go', t('forms.launch', 'Launch'));
-    go.dataset.launch = 'true';
-    const launchMark = el('img', 'wk-launch-mark');
-    launchMark.src = 'brand/nin-mark.svg';
-    launchMark.alt = '';
-    go.prepend(launchMark);
+    const go = el('button', 'ph-launch-go', t('add_agent.start', 'Start'));
     go.type = 'button';
     let busy = false;
     go.addEventListener('click', async () => {
-      const launchTab = reserveWorkspaceTab();
       if (busy || !name.value.trim()) return;
       busy = true;
       go.disabled = true;
@@ -161,7 +154,6 @@ export async function buildPhone() {
       busy = false;
       go.disabled = false;
       if (!result.ok) {
-        closeWorkspaceTab(launchTab);
         state.dataset.kind = 'failed';
         state.textContent = result.message;
         return;
@@ -169,7 +161,7 @@ export async function buildPhone() {
       const born = result.data?.name || name.value.trim();
       await fetchSessions();
       // The Agent opens where it was born: this Cowork's stage.
-      openWorkspaceTab('team', team, launchTab);
+      location.hash = sessionHash(team, born);
     });
     open.addEventListener('click', () => {
       form.hidden = !form.hidden;

@@ -1,75 +1,6 @@
 
 @layer app {
 
-  .sws-host { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; gap: var(--space-5); padding: var(--space-6); }
-  .sws-host > .sws { flex: 1 1 auto; }
-  .sws-host > :not(.sws) { font-size: var(--form-note); line-height: 1.4; }
-  .sws { --sws-stone: var(--setup-stone-size); --sws-gap: var(--setup-stone-gap); display: flex; flex: 1 1 auto; align-items: stretch; min-height: 0; gap: var(--space-8); container: setup-stone-work-surface / inline-size; }
-  .sws-rail { flex: none; min-height: 0; overflow-y: auto; padding: var(--edge-2); }
-  .sws:not([data-open='true']) .sws-rail { display: flex; flex: 1 1 auto; align-items: flex-start; justify-content: center; min-width: 0; padding-top: calc(var(--sws-stone) + var(--sws-gap)); }
-  .sws-grid { display: flex; flex-wrap: wrap; justify-content: center; width: min(100%, calc(var(--sws-stone) * 3 + var(--sws-gap) * 2)); gap: var(--sws-gap); }
-  .sws[data-open='true'] .sws-grid { width: var(--sws-stone); flex-direction: column; flex-wrap: nowrap; }
-  .sws-stone { position: relative; display: flex; flex: 0 0 100%; flex-direction: column; align-items: flex-start; width: 100%; max-width: var(--sws-stone); aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-5); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
-  @container setup-stone-work-surface (min-width: 16rem) {
-    .sws:not([data-open='true']) .sws-stone { flex-basis: var(--sws-stone); }
-  }
-  @container setup-stone-work-surface (min-width: 24.5rem) {
-    .sws:not([data-open='true']) .sws-stone { flex-basis: var(--sws-stone); }
-  }
-  .sws-stone::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); }
-  .sws-stone[hidden] { display: none; }
-  .sws-stone:hover { border-color: var(--kaki); }
-  .sws-stone[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
-  .sws-stone[aria-pressed='true']::before { display: none; }
-  .sws-stone:disabled { opacity: .48; cursor: default; }
-  .sws-glyph { display: flex; width: var(--space-11); height: var(--space-11); color: var(--accent); font-style: normal; font-size: var(--text-10); font-weight: 400; line-height: 1; }
-  .sws-glyph > * { width: 100%; height: 100%; }
-  .sws-label { margin-top: auto; overflow: hidden; color: var(--fg-strong); font-size: var(--text-6); font-weight: 600; line-height: 1.15; text-overflow: ellipsis; }
-  .sws-secondary, .sws-state { max-width: 100%; overflow: hidden; color: var(--muted); font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
-  .sws-state { color: var(--accent); }
-  .sws-detail { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; font-size: var(--form-input); line-height: 1.45; }
-  .sws-detail :where(h1, h2, h3, h4) { font-size: var(--form-head); line-height: 1.3; }
-  .sws-detail[hidden] { display: none; }
-
-  .sp-surface { container: setup-preset-phalanx / inline-size; font-size: var(--text-5); }
-  .sp-content { display: flex; flex-direction: column; overflow: hidden; }
-  .sp-kinds { margin-bottom: var(--space-7); }
-  .sp-kinds-lead { margin-right: var(--space-2); color: var(--muted); font-size: var(--form-note); }
-  .sp-glyph { display: flex; width: var(--space-11); height: var(--space-11); color: var(--accent); font-style: normal; font-size: var(--text-10); font-weight: 400; line-height: 1; }
-  .sp-glyph svg { width: 100%; height: 100%; }
-  .sp-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); margin-bottom: var(--space-5); }
-  .sp-heading h3 { margin: 0; color: var(--fg-strong); font-size: var(--form-head); }
-  .sp-go { display: flex; align-items: center; gap: var(--space-4); }
-  .sp-description { margin: 0 0 var(--space-8); color: var(--fg-strong); font-size: var(--text-5); line-height: 1.6; }
-  .sp-choice-panel { min-width: 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); padding: var(--space-5) var(--space-7); }
-  .sp-field { display: grid; gap: var(--space-5); border-top: var(--edge) solid var(--line-2); padding: var(--space-8) 0; color: var(--muted); font-size: var(--text-5); }
-  .sp-choice-panel > .sp-field:first-child, .sp-controls > .sp-field:first-child, .sp-controls > .sp-control-label:first-child { border-top: 0; }
-  .sp-field-label, .sp-control-label { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-6); }
-  .sp-select { color: var(--kaki); font-size: var(--form-head); font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
-  .sp-field input, .sp-field select, .sp-field textarea { min-width: 0; border: 0; border-radius: var(--radius-hair); background: var(--well); color: var(--fg); padding: var(--space-4) var(--space-5); font: inherit; }
-  .sp-field select { color: var(--accent); }
-  .sp-controls { display: grid; }
-  .sp-control-label { margin: 0; border-top: var(--edge) solid var(--line-2); padding: var(--space-8) 0 var(--space-6); color: var(--muted); font-size: var(--text-5); }
-  .sp-rows { display: grid; gap: var(--space-2); }
-  .sp-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--space-5); border: var(--edge) solid var(--line-3); border-radius: var(--radius-hair); padding: var(--space-5) var(--space-6); }
-  .sp-row-ask { grid-template-columns: minmax(calc(var(--space-12) * 2.5), .7fr) minmax(0, 1fr) auto; }
-  .sp-row input { min-width: 0; border: 0; background: transparent; color: var(--fg-strong); padding: var(--space-2) 0; font: inherit; }
-  .sp-cycle { border: 0; border-bottom: var(--edge) solid transparent; background: transparent; color: var(--accent); padding: var(--space-2) 0; font: inherit; cursor: pointer; }
-  .sp-cycle:hover { border-bottom-color: var(--accent); }
-  .sp-lead { color: var(--accent); font-size: var(--form-note); white-space: nowrap; }
-  .sp-lead:empty { width: 0; }
-  .sp-remove { border: 0; background: transparent; color: var(--muted); cursor: pointer; font: inherit; }
-  .sp-rows > .fs-door { border-style: dashed; border-color: var(--accent); color: var(--accent); }
-  .sp-tile-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
-  .sp-tile-choice { display: grid; gap: var(--space-4); justify-items: start; border: var(--edge) solid var(--line-3); border-radius: var(--radius-hair); background: transparent; color: var(--fg); padding: var(--space-5); font: inherit; cursor: pointer; }
-  .sp-tile-choice[aria-pressed='true'] { border-color: var(--accent); background: var(--raise); box-shadow: inset var(--edge-2) 0 var(--accent); color: var(--accent); }
-  .sp-tile-icon { display: grid; grid-template-columns: repeat(2, var(--space-4)); gap: var(--space-1); }
-  .sp-tile-icon i { width: var(--space-4); height: var(--space-4); border: var(--edge) solid currentColor; }
-  .sp-tile-choice[data-tiles='1'] .sp-tile-icon { grid-template-columns: var(--space-4); }
-  .sp-warning { margin: calc(-1 * var(--space-2)) 0 0; border-left: var(--edge-2) solid var(--kaki); padding: 0 var(--space-4); color: var(--fg-strong); }
-  .sp-warning[hidden] { display: none; }
-  .sp-warn { width: var(--space-10); height: var(--space-10); border: var(--edge-2) solid var(--kaki); border-radius: var(--radius-round); background: transparent; color: var(--kaki); font-weight: 700; cursor: pointer; }
-  .sp-launch[data-held='true'] { border-color: var(--line-3); color: var(--fg); }
 
   .ntf-form, .ntf-actions { font-size: var(--form-input); }
   .ntf-foot { font-size: var(--form-note); }
@@ -243,5 +174,4 @@
   .fs-reading dt { color: var(--muted); font-size: var(--form-key); letter-spacing: .06em; text-transform: uppercase; }
   .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--dim); font-style: normal; }
-
 }

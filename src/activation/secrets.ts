@@ -27,10 +27,6 @@ export const getClaimSecret = () => readSecret(claimFile());
 export const putEntitlementToken = (v: string) => writeSecret(tokenFile(), v);
 export const getEntitlementToken = () => readSecret(tokenFile());
 
-export async function clearEntitlementToken(): Promise<void> {
-  await fs.rm(tokenFile(), { force: true });
-}
-
 export async function clearClaimSecret(): Promise<void> {
   await fs.rm(claimFile(), { force: true });
 }

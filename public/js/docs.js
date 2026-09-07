@@ -4,10 +4,9 @@ import { status } from './ui.js';
 import { homeData } from './home.js';
 import { t } from './lexicon.js';
 import { DOC_MIME } from './team-drag.js';
-import { WorkspacePrimitives } from './workspace-primitives.js';
 
 export function buildDocs(tile, root, isShowing, only = null, reposFirst = () => []) {
-  let openPath = null; // normalized target, or null while the list is showing
+  let openPath = null; // null = the list is showing
   let dirty = false; // the owner has typed since the last load or save
   // Only rebuild the list when it actually changed — see refresh(). null, not '', so the
   // first read always draws: an empty roster signs as '' and would otherwise leave
@@ -80,18 +79,6 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   root.append(pills, list, ed);
   const isPage = (p) => /\.html?$/i.test(p);
   const rawUrl = (p) => '/raw' + p.split('/').map(encodeURIComponent).join('/');
-  const targetOf = (value) => {
-    if (typeof value === 'string' && value) return { key: `absolute:${value}`, path: value, title: value };
-    const root = typeof value?.root === 'string' ? value.root.trim() : '';
-    const relative = typeof value?.path === 'string' ? value.path.trim() : '';
-    if (!root || !relative) return null;
-    return { key: `root:${root}:${relative}`, root, path: relative, title: `${root}/${relative}` };
-  };
-  const fileUrl = (target) => {
-    const query = new URLSearchParams({ path: target.path });
-    if (target.root) query.set('root', target.root);
-    return '/api/file?' + query.toString();
-  };
 
   const show = (which) => {
     root.dataset.view = which;
@@ -105,26 +92,23 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
 
   /* ---------- opening and saving ---------- */
 
-  const open = async (requested) => {
-    const target = targetOf(requested);
-    if (!target) { say(t('docs.bad_path', 'Choose a document in a workspace folder.'), true); return false; }
+  const open = async (path) => {
     // The guard ← has always had, now that ← is not the only way in. Arriving from the
     // tile can land on a doc while another is open and TYPED IN; without this, that
     // typing would go without a word. Same question, same wording, one place further out.
-    if (target.key === openPath?.key) return true;
-    if (dirty && target.key !== openPath?.key && !confirm(t('docs.discard_confirm', 'Discard unsaved changes?'))) return false;
-    openPath = target;
-    title.textContent = target.path.split('/').pop();
-    title.title = target.title;
-    if (!target.root && isPage(target.path)) {
+    if (dirty && path !== openPath && !confirm(t('docs.discard_confirm', 'Discard unsaved changes?'))) return;
+    openPath = path;
+    title.textContent = path.split('/').pop();
+    title.title = path;
+    if (isPage(path)) {
       // No text round-trip: the frame fetches the page itself, and a page has no Save —
       // an HTML edited in a textarea is a different feature, and not one anyone asked for.
       dirty = false;
       say('');
-      pop.href = rawUrl(target.path);
-      frame.src = rawUrl(target.path);
+      pop.href = rawUrl(path);
+      frame.src = rawUrl(path);
       show('view');
-      return true;
+      return;
     }
     frame.src = 'about:blank'; // a page left running behind a textarea is a page nobody sees
     pop.removeAttribute('href');
@@ -134,20 +118,18 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     markDirty(false);
     say(t('docs.loading', 'loading…'));
     show('edit');
-    const r = await request(fileUrl(target), { cache: 'no-store' });
+    const r = await request('/api/file?path=' + encodeURIComponent(path), { cache: 'no-store' });
     if (!r.ok) {
       // Never leave an enabled, empty box over a path that failed to load: a Save from
       // there would write emptiness over the file.
       say(r.message, true);
-      openPath = null; // the same target can be retried after the underlying problem clears
-      return false;
+      return;
     }
     area.value = r.data.text ?? '';
     area.disabled = false;
     save.disabled = false;
     markDirty(false);
     say('');
-    return true;
   };
 
   const doSave = async () => {
@@ -156,7 +138,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     say(t('docs.saving', 'saving…'));
     // text/plain on purpose — see the route in src/index.ts. The global json parser
     // has a 100kb limit and would refuse a large document before it ever arrived.
-    const r = await request(fileUrl(openPath), {
+    const r = await request('/api/file?path=' + encodeURIComponent(openPath), {
       method: 'PUT',
       text: area.value,
     });
@@ -319,18 +301,5 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     // return. It takes a path and shows it; who asked, and why, stays the caller's.
     open,
     leave,
-    isDirty: () => dirty,
   };
-}
-
-/** Seat the one existing Docs editor directly as a workbench resource. */
-export function createDocumentWorkspaceAdapter({ root, path } = {}) {
-  const surface = WorkspacePrimitives.createSurface({ label: t('docs.frame_title', 'Document'), className: 'workspace-document' });
-  const host = document.createElement('div');
-  host.className = 'home-docs';
-  surface.content.append(host);
-  const docs = buildDocs(null, host, () => surface.el.isConnected);
-  const target = { root: String(root || ''), path: String(path || '') };
-  const show = () => docs.open(target);
-  return { el: surface.el, show, enter: show, leave: docs.leave, isDirty: docs.isDirty };
 }

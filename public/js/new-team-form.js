@@ -9,7 +9,6 @@ import { launchTeamAgents } from './team-loader.js';
 import {
   createBand, createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -45,7 +44,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   const raise = createAction({
     label: t('forms.launch', 'Launch'),
-    launch: true,
     size: 'compact',
     disabled: true,
     action: () => void doRaise(),
@@ -419,7 +417,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       if (!busy) notice.set('failed', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
       return;
     }
-    const launchTab = reserveWorkspaceTab();
     busy = true;
     raise.setDisabled(true);
     notice.set('info', t('new_team.checking_names', 'Checking Agent names…'));
@@ -430,7 +427,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     // the live set and duplicates inside the form before it creates anything.
     const live = await request('/api/sessions', { cache: 'no-store' });
     if (!live.ok) {
-      closeWorkspaceTab(launchTab);
       busy = false;
       raise.setDisabled(false);
       return notice.set('failed', t('new_team.name_check_failed', 'Agent names could not be checked, so nothing was created. {reason}', {
@@ -439,7 +435,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     }
     const conflicts = conflictingAgentNames(picks, Array.isArray(live.data) ? live.data : []);
     if (conflicts.length) {
-      closeWorkspaceTab(launchTab);
       busy = false;
       raise.setDisabled(false);
       return notice.set('failed', t('new_team.agent_name_taken', 'Nothing was created. Choose another name for: {names}.', {
@@ -457,7 +452,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     // cannot birth the cast twice (@team_loader's refinement, taken).
     const made = await request('/api/team-rosters', { method: 'POST', json: rosterBody(name) });
     if (!made.ok) {
-      closeWorkspaceTab(launchTab);
       busy = false;
       raise.setDisabled(false);
       return notice.set('failed', made.message);
@@ -471,7 +465,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     busy = false;
     raise.setDisabled(false);
     if (refused.length) {
-      closeWorkspaceTab(launchTab);
       return notice.set('failed', t('new_team.staffing_failed', 'Team created, but {failed} of {total} Agents could not be launched: {names}. Open the Team and add them there.', {
         failed: refused.length,
         total: outcomes.length,
@@ -481,7 +474,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     notice.set('', '');
     reset();
     await created?.(name);
-    openWorkspaceTab('team', name, launchTab);
   }
 
   async function doSave() {
@@ -597,7 +589,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   return {
     el: surface.el,
-    enter: async (detail = {}) => {
+    enter: async () => {
       paint();
       const [seeded, tray, catalog, rootRows, sopRows, wayRows] = await Promise.all([
         request('/api/launch-seed'),
@@ -616,11 +608,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       // The seed lands only while the form is untouched — re-entering an open draft
       // must not overwrite the owner's hand.
       if (!loaded) { applySeed(); loaded = true; }
-      if (typeof detail?.template === 'string' && detail.template) applyTemplate(detail.template);
-      if (typeof detail?.prompt === 'string' && detail.prompt.trim()) {
-        draft.objective = detail.prompt.trim();
-        objectiveInput.value = draft.objective;
-      }
       paint();
     },
   };
