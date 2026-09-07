@@ -5851,9 +5851,10 @@ button.wb-door:hover b {
 .setup-register-choice span { color: var(--muted-2); font-size: var(--text-1); line-height: 1.25; }
 .setup-register-choice:hover { border-color: var(--kaki); background: var(--raise); }
 .setup-register-choice[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 0 var(--kaki); background: var(--accent-soft); }
-.setup-register-checklist { grid-template-columns: 1fr; margin: 0; border-right: 0; border-bottom: 0; border-left: 0; }
+.setup-register-group > .setup-register-checklist { grid-template-columns: minmax(0, 1fr); width: 100%; margin: 0; border-right: 0; border-bottom: 0; border-left: 0; }
 .setup-register-checklist legend { padding: 0 0 var(--space-3); color: var(--fg); }
-.setup-register-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: start; border-top: var(--edge) solid var(--line); padding: var(--space-3) 0; color: var(--muted-2); cursor: pointer; line-height: 1.4; }
+.setup-register-check { display: grid; grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: start; width: 100%; box-sizing: border-box; border-top: var(--edge) solid var(--line); padding: var(--space-3) 0; color: var(--muted-2); cursor: pointer; line-height: 1.4; }
+.setup-register-check span { min-width: 0; }
 .setup-register-check input { width: 1rem; height: 1rem; margin: .15rem 0 0; accent-color: var(--kaki); }
 .setup-register-group input:not([type='checkbox']), .setup-register-group textarea { border: 0; border-radius: var(--radius-hair); background: var(--well); padding: var(--space-4) var(--space-5); color: var(--fg); font: inherit; }
 .setup-register-consent { max-width: 42rem; line-height: 1.5; }
