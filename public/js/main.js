@@ -18,6 +18,7 @@ import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createCampaignView } from './campaign-view.js';
+import { createSetupView } from './setup-view.js';
 import { createLaunchView } from './launch-view.js';
 import { installWorkspaceHeader } from './workspace-header.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -102,7 +103,9 @@ export async function init() {
 
   // workbench: it gets the three-step drill-down — Cowork, Agent, tile-with-keys —
   // and none of the chrome below. iPad (coarse but wide) and desktop continue as ever.
-  if (IS_PHONE) {
+  // The four workbenches now use their existing narrow responsive layout on phones too.
+  // Keep the retired phone drill-down reachable only from its explicit legacy route.
+  if (IS_PHONE && location.hash.startsWith('#/m')) {
     await buildPhone();
     reveal();
     return;
@@ -114,7 +117,9 @@ export async function init() {
   const workspace = createWorkspace(viewhost, {
     onError: (where, error) => showFailure(`workspace ${where}`, error),
     // The bar's slots for the tab name and the layout map; the ViewHost fills them per active view.
-    nameSlot: document.getElementById('viewname'),
+    // The dynamic island owns the workbench label editor. The former right-header
+    // field is gone; this changes a tab/workbench label only, never a Team or Agent.
+    nameSlot: document.getElementById('viewplace'),
     mapSlot: document.getElementById('viewmap'),
     onNavigate: () => refreshWorkspaceHeader(),
   });
@@ -141,6 +146,7 @@ export async function init() {
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.
   guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
+  guard('register the Setup destination', () => workspace.register('setup', createSetupView()));
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
   workspace.start();
   document.getElementById('bootframe')?.remove();

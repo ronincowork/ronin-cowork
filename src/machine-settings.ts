@@ -192,7 +192,8 @@ const writeDesksSection = (value: { new_project?: string }) =>
 const writeWantedSection = (wanted: Array<{ kind: string; name: string }>) =>
   updateDocument((document) => { document.wanted = wanted; });
 const completeSetup = () => updateDocument((document) => {
-  document.setup = { completed_at: new Date().toISOString() };
+  const setup = ((document.setup ?? {}) as Record<string, unknown>) || {};
+  document.setup = { ...setup, pending: false, completed_at: new Date().toISOString() };
 });
 async function liveCount(): Promise<number> {
   try {

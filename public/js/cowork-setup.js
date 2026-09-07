@@ -274,7 +274,7 @@ export async function buildCoworkSetup(host, onDone) {
       }
     }
     const gbrainResult = await request('/api/machine-settings', { method: 'PATCH', json: { family: 'gbrain', value: { enabled: wantServices.checked && wantGbrain.checked } } }); if (!gbrainResult.ok) problems.push(gbrainResult.message);
-    if (!activationExists && wantServices.checked) { const result = await request('/api/services/activation', { method: 'POST', json: { email: emailField.input.value.trim() } }); if (!result.ok && result.status === 400) problems.push(result.message); else if (!result.ok) installNote = ' ' + t('setup.note_activation', 'Services activation needs attention in the workspace.'); }
+    if (!activationExists && wantServices.checked) { const result = await request('/api/setup/registration', { method: 'POST', json: { email: emailField.input.value.trim() } }); if (!result.ok && result.status === 400) problems.push(result.message); else if (!result.ok) installNote = ' ' + t('setup.note_activation', 'Services activation needs attention in the workspace.'); }
     if (problems.length) { line.say(problems[0], 'bad'); save.disabled = false; return; }
     // The pending flag must actually clear — a silent failure here would loop the
     // person back into setup on their next load with no word about why.

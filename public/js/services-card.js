@@ -102,7 +102,7 @@ export function servicesCard(container, onChange) {
       // The action names what it DOES. "Save" would hide an immediate, disclosed account
       // action behind a word that means "write this down".
       actions.appendChild(nodeOf(button(t('services.send_confirmation', 'Send confirmation email'), {
-        onClick: () => act(f, '/api/services/activation', { email: email.value.trim() }),
+        onClick: () => act(f, '/api/setup/registration', { email: email.value.trim() }),
       })));
     }
 
@@ -113,11 +113,11 @@ export function servicesCard(container, onChange) {
         onClick: () => act(line, '/api/services/activation/poll', null),
       })));
       const resend = button(t('services.resend', 'Resend'), {
-        onClick: () => act(line, '/api/services/activation/resend', null),
+        onClick: () => act(line, '/api/setup/registration/recovery', { action: 'resend' }),
       });
       const change = button(t('services.change_address', 'Change address'), { onClick: () => changeAddress() });
       const cancel = button(t('services.cancel_request', 'Cancel request'), {
-        onClick: () => act(line, '/api/services/activation', null, 'DELETE'),
+        onClick: () => act(line, '/api/setup/registration', null, 'DELETE'),
       });
       actions.append(nodeOf(resend), nodeOf(change), nodeOf(cancel));
       if (state.resend_available_at) {
@@ -137,7 +137,7 @@ export function servicesCard(container, onChange) {
       actions.append(nodeOf(button(t('services.change_and_retry', 'Change address and try again'), {
         onClick: () => changeAddress(),
       })), nodeOf(button(t('services.cancel_request', 'Cancel request'), {
-        onClick: () => act(line, '/api/services/activation', null, 'DELETE'),
+        onClick: () => act(line, '/api/setup/registration', null, 'DELETE'),
       })));
     }
 
@@ -203,7 +203,7 @@ export function servicesCard(container, onChange) {
   async function changeAddress() {
     const next = window.prompt(t('services.new_address_prompt', 'New email address for Ronin Services'));
     if (!next) return;
-    await act(line, '/api/services/activation/address', { email: next.trim() });
+    await act(line, '/api/setup/registration/recovery', { action: 'change_address', email: next.trim() });
   }
 
   async function load() {

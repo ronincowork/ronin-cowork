@@ -17,10 +17,23 @@ try {
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error)));
+    // Launch is intentionally redirected into Setup until two providers are active.
+    // Hold the legacy four-profile granite check in its ready-state contract.
+    if (expected.profile === 'launch') {
+      await page.route('**/api/setup/runtime', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          activated_count: 2,
+          activated_band: 'two_plus',
+          providers: [],
+          roots: [],
+        }),
+      }));
+    }
     await page.goto(`${defaultUrl()}#/${expected.hash}`);
-    const frame = page.locator('.wk-workbench-layout:visible');
+    const frame = page.locator(`.wk-workbench-layout[data-workbench-profile="${expected.profile}"]:visible`);
     await frame.waitFor();
-    if (await frame.getAttribute('data-workbench-profile') !== expected.profile) fail(`${expected.hash}: wrong Workbench.profile`);
     if (await page.locator('.tw-cell:visible,.tw-column:visible,.cv-selector:visible,.tw-kanban:visible').count()) fail(`${expected.hash}: legacy frame survived`);
 
     const shape = page.locator('#shapecycle:visible');
@@ -31,6 +44,7 @@ try {
     if (ids.join(',') !== 'workspace1,workspace2,workspace3,workspace4') fail(`${expected.hash}: workspace ids differ`);
 
     const heads = page.locator('.wk-workbench-host:visible .wk-surface-header:visible,.wk-workbench-host:visible .wk-channel-service-tabs:visible,.wk-workbench-host:visible .tile-head:visible');
+    await heads.nth(4).waitFor();
     const metrics = await heads.evaluateAll((items) => [...new Set(items.map((item) => `${Math.round(item.getBoundingClientRect().height)}|${getComputedStyle(item).backgroundColor}`))]);
     if (await heads.count() !== 5 || metrics.length !== 1) fail(`${expected.hash}: headers are not one fixed band per selector/workspace`);
     const headTitles = page.locator('.wk-workbench-host:visible .wk-surface-header-title:visible,.wk-workbench-host:visible .wk-channel-service-title:visible,.wk-workbench-host:visible .tile-head .sess:visible');
