@@ -7,7 +7,7 @@ import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createBand, createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
@@ -318,7 +318,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   /* ---- the collapse rules: a template's answers fold; the header opens them ---- */
   const FOLDS = ['where', 'kit', 'lead'];
-  const steps = { kind: stepKind, template: stepTemplate, top: stepTop, where: stepWhere, kit: stepKit, lead: stepLead };
+  const steps = { kind: stepKind, template: stepTemplate, top: stepTop, lead: stepLead, defaults: null, where: stepWhere, kit: stepKit };
   function toggle(key) {
     if (draft.expanded[key]) delete draft.expanded[key];
     else draft.expanded[key] = true;
@@ -327,7 +327,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // template first offered all fifteen tiles and then quietly dropped the pick when a
   // later kind excluded it. New Agent already asked in this order; the two forms agree.
   // One list, read by the form's numbering AND by the Launch selector's outline.
-  const plan = () => ['kind', 'template', 'top', 'lead', 'where', 'kit'];
+  const plan = () => ['kind', 'template', 'top', 'lead', 'defaults', 'where', 'kit'];
   const meta = {
     where: () => where.summary(),
     kit: () => t('new_team.kit_meta', '{routines} routines · {books} books', {
@@ -564,9 +564,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   function paint() {
     plan().forEach((key, index) => steps[key].setNumber(index + 1));
-    defaultsBand.setOpen(defaultsOpen);
+    stepPayload.setNumber(plan().length + 1);
+    stepDefaults.setCollapsed(!defaultsOpen, t('new_team.defaults_summary', 'Settings inherited by Agents launched in this Team'), true);
     for (const key of ['where', 'kit']) steps[key].el.hidden = !defaultsOpen;
-    stepPayload.setCollapsed(!payloadOpen, '', true);
+    stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
     paintTray();
     paintKinds();
     paintName();
@@ -586,21 +587,20 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // Team can be raised without ever opening it, which is the point of saying so here
   // rather than repeating "this is a default, not a constraint" on each field below.
   let defaultsOpen = false;
-  const defaultsBand = createBand(
-    t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.'),
-    () => { defaultsOpen = !defaultsOpen; paint(); },
-  );
-  // there like a turd. It should be a proper section, new launch payload, and marked with
-  // an orange banner to hide or expand." It is what this press will actually send, so it
-  // gets a band of its own and folds like the defaults above it.
+  const stepDefaults = createStep({ n: 5, key: 'defaults', title: t('new_team.agent_defaults', 'Agent defaults'), onToggle: () => {
+    defaultsOpen = !defaultsOpen;
+    paint();
+  } });
+  steps.defaults = stepDefaults;
+  // The final review stays folded until asked for and explains what opening it reveals.
   let payloadOpen = false;
-  const stepPayload = createStep({ n: 7, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
+  const stepPayload = createStep({ n: 8, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
     payloadOpen = !payloadOpen;
-    stepPayload.setCollapsed(!payloadOpen, '', true);
+    stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
   } });
   stepPayload.body.append(foot, saveRow.el);
-  stepPayload.setCollapsed(true, '', true);
-  form.append(stepKind.el, stepTemplate.el, stepTop.el, stepLead.el, defaultsBand.el, stepWhere.el, stepKit.el, stepPayload.el);
+  stepPayload.setCollapsed(true, t('forms.payload_summary', 'Review what Launch will create'), true);
+  form.append(stepKind.el, stepTemplate.el, stepTop.el, stepLead.el, stepDefaults.el, stepWhere.el, stepKit.el, stepPayload.el);
   surface.content.append(form, notice.el);
 
   return {

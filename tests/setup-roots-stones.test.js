@@ -27,8 +27,9 @@ test('roots adapt the real project-root detail and Add form to the shared stone 
   assert.match(roots, /if \(current\) host\.append\(detail\(current\)\)/);
   assert.match(roots, /stoneSurface\.refreshDetail\(\)/);
   assert.match(roots, /const openAdd = stones \? null : createAction/);
-  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[messages\] \}\)/);
-  assert.match(roots, /id: NEW,[\s\S]*?label: t\('roots\.add_stone', 'Add A Workspace'\),[\s\S]*?glyph: '\+',[\s\S]*?className: 'setup-roots-add-stone'/);
+  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[intro, messages\] \}\)/);
+  assert.match(roots, /intro\.className = 'pr-intro'[\s\S]*?t\('roots\.intro', 'A workspace is a folder Ronin keeps for Teams and Agents\. Three things happen there: it may be a Git repository; Agents are born from it/);
+  assert.match(roots, /stoneSurface\.setItems\(\[\{\s*id: NEW,\s*label: t\('roots\.add_stone', 'Add A Workspace'\),\s*glyph: '\+',\s*className: 'setup-roots-add-stone'/, 'Add A Workspace is the first stone');
   assert.doesNotMatch(roots, /stoneSurface\.openDetail/);
   assert.doesNotMatch(roots, /secondary: r\.remit \|\| r\.dir/);
   assert.match(roots, /t\('roots\.stone_ready', 'Ready'\)/);
@@ -39,25 +40,27 @@ test('roots adapt the real project-root detail and Add form to the shared stone 
   assert.match(roots, /\/repo-profile/);
 });
 
-test('the selected folder is one page: head, Summary, Folder, Repository, Edit, then maintenance', async () => {
+test('the selected folder is one page: a head line with every action, then Summary, Folder, Repository', async () => {
   const roots = await source('public/js/projectroots.js');
   const detail = roots.slice(roots.indexOf('function detail(r)'), roots.indexOf('function render()'));
   assert.match(detail, /make\('article', 'pr-detail'\)/);
   assert.match(detail, /d\.dataset\.mode = editing === r\.name \? 'edit' : 'read'/);
-  assert.match(detail, /make\('h2', 'pr-detail-name', r\.name\)/, 'the head is the handle');
   assert.match(detail, /make\('p', 'pr-detail-state', words\.join\(' · '\)\)/, 'one measured state line');
-  assert.match(detail, /if \(editing === r\.name\) \{\s*d\.append\(form\(r\)\);\s*return d;\s*\}/, 'Edit swaps the facts for the real form under the same head');
-  assert.match(detail, /head\.append\(edit\)/, 'Edit sits in the head beside the name, never below the fold');
-  const order = ["t('roots.edit_folder', 'Edit')", "t('roots.summary', 'Summary')", "t('roots.section_folder', 'Folder')", "t('roots.section_repository', 'Repository')", "'pr-section pr-maintenance'"]
+  assert.match(detail, /if \(editing === r\.name\) \{\s*const f = form\(r\);[\s\S]*?d\.append\(f\);\s*return d;\s*\}/, 'Edit swaps the facts for the real form under the same head');
+  assert.match(detail, /go\.append\(edit, shelve, drop\)/, 'Edit, Archive and Exclude share the head line');
+  assert.match(detail, /go\.append\(f\.querySelector\('\.pr-frow'\)\)/, 'Save and Cancel stand where Edit stood');
+  assert.match(detail, /make\('h3', 'pr-detail-name', r\.name\)/, 'the head is the handle');
+  const order = ["t('roots.edit_folder', 'Edit')", "t('roots.summary', 'Summary')", "t('roots.section_folder', 'Folder')", "t('roots.section_repository', 'Repository')"]
     .map((needle) => detail.indexOf(needle));
   assert.ok(order.every((at) => at >= 0), 'every section is present');
   assert.deepEqual([...order].sort((a, b) => a - b), order, 'sections come in the ruled order');
-  assert.match(detail, /t\('roots\.fact_directory', 'Directory'\), r\.dir, \{ mono: true/);
+  assert.match(detail, /t\('roots\.fact_directory', 'Directory'\), r\.dir, \{ tone:/);
+  assert.doesNotMatch(detail, /make\('code'|font-mono/, 'the path is set in the same face as everything else');
   assert.match(detail, /t\('roots\.fact_publishing', 'Publishing'\)/);
   assert.match(detail, /t\('roots\.repository_none'/);
   assert.match(detail, /kind: 'primary'/, 'Edit is the one primary action');
   assert.match(detail, /const \{ shelve, drop \} = maintenance\(r\)/, 'Archive and Exclude keep their real handlers');
-  assert.doesNotMatch(detail, /createElement\('details'\)|pr-disclosure|pr-chip/, 'no disclosures and no chips');
+  assert.doesNotMatch(detail, /createElement\('details'\)|pr-disclosure|pr-chip|pr-maintenance/, 'no disclosures, chips, or second action group');
   assert.doesNotMatch(detail, /pr-remit|pr-dir\b/, 'summary and directory appear once each');
 });
 
@@ -72,6 +75,8 @@ test('the Setup form keeps the real fields and reads as sections, while Campaign
   assert.match(roots, /if \(editing === r\.name\) b\.appendChild\(form\(r\)\)/, 'the Campaign block still edits inline');
   assert.match(roots, /d\.dataset\.mode = 'add'/);
   assert.match(roots, /t\('roots\.add_head', 'Add a workspace'\)/);
+  assert.match(roots, /words: \{[\s\S]*?chosen: t\('roots\.picker_path', 'Path'\),[\s\S]*?note: '',[\s\S]*?take: t\('roots\.picker_keep', 'Keep'\)/, 'Setup says the picker in keep-or-ignore terms, never "choose" or "where the Agent will start"');
+  assert.doesNotMatch(roots.slice(roots.indexOf('function addCard')), /roots\.add_hint/, 'the add page does not say choose');
   assert.match(roots, /!\(stones && stoneSurface\.selected\(\)\)/, 'an open Setup detail is not repainted by the poll');
 });
 
@@ -88,21 +93,41 @@ test('roots carry no parallel stone DOM or CSS presentation and the detail rhyth
   assert.match(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state/);
   assert.doesNotMatch(css, /\.setup-roots-stones \.sws-stone\.archived \.sws-state\s*\{[^}]*?(?:border|border-radius|background|padding):/);
   assert.match(css, /\.setup-roots-stones \.setup-roots-add-stone[\s\S]*?border-color: var\(--kaki\)[\s\S]*?border-style: dashed[\s\S]*?background: color-mix\(in srgb, var\(--kaki-tint\)/);
-  assert.match(css, /\.pr-section \+ \.pr-section,\s*\.pr-detail \.pr-group \+ \.pr-group \{[^}]*border-top: var\(--edge-2\) solid var\(--kaki\)/);
-  assert.match(css, /\.pr-detail-head \{[^}]*grid-template-columns: minmax\(0, 1fr\) auto/, 'the head carries the name and the Edit action side by side');
+  assert.match(css, /\.pr-detail-head \{[^}]*border-bottom: var\(--edge-2\) solid var\(--kaki\)/, 'one kaki rule closes the head');
+  assert.match(css, /\.pr-detail-heading \{[^}]*justify-content: space-between/, 'the head line carries the name and its actions, as Presets does');
+  const detailCss = css.slice(css.indexOf("/* Setup's selected folder"), css.indexOf('.cv-worktrees-default {'));
+  assert.doesNotMatch(detailCss, /--text-(?:[1-3]|[6-9]|10)\b/, 'only 14px body and 13px notes inside the detail');
+  assert.doesNotMatch(detailCss, /font-mono|var\(--ok\)|@container roots-detail/, 'no second face, no green, labels never stack over values');
+  assert.match(detailCss, /\.pr-detail \.pr-f input,\s*\.pr-detail \.pr-f select \{[^}]*border: 0;[^}]*background: var\(--well\)[^}]*font: inherit/, 'fields are drawn as Presets fields, never browser defaults');
   assert.match(css, /\.pr-detail \{[^}]*font-size: var\(--text-5\)/);
   assert.match(css, /\.pr-detail \.pr-group \{[^}]*border: 0/, 'no boxes inside the detail');
+  assert.match(roots, /go\.append\(f\.querySelector\('\.pr-frow'\)\); \/\/ Add and Cancel on the head line/);
 });
 
 test('roots stones mount visible loading, empty, and failure output without changing Campaign roots', async () => {
   const roots = await source('public/js/projectroots.js');
   assert.match(roots, /messages\.className = 'pr-status'/);
   assert.match(roots, /messages\.setAttribute\('role', 'status'\)/);
-  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[messages\] \}\)/);
+  assert.match(roots, /stoneSurface\.mount\(root, \{ before: \[intro, messages\] \}\)/);
   assert.match(roots, /const output = stones \? messages : list/);
   assert.match(roots, /messages\.replaceChildren\(\)/, 'a successful render clears loading or failure output');
   assert.match(roots, /\(stones \? messages : list\)\.appendChild/, 'the zero-roots message uses the mounted status host');
   assert.match(roots, /else root\.append\(head, list\)/, 'ordinary Campaign roots retain their existing list mount');
   assert.match(roots, /say\(t\('roots\.loading'/, 'loading is emitted through the shared say path');
   assert.match(roots, /say\(t\('roots\.read_failed'/, 'catalog failures are emitted through the shared say path');
+});
+
+test('the folder picker takes its words from the consumer and keeps its stock words for others', async () => {
+  const picker = await source('public/js/folder-picker.js');
+  assert.match(picker, /createFolderPicker\(\{ value = '', onChange = \(\) => \{\}, words = \{\} \}/);
+  assert.match(picker, /chosen: words\.chosen \?\? t\('folders\.selected', 'Selected folder'\)/);
+  assert.match(picker, /note: words\.note \?\? t\('folders\.start_context', 'This is where the Agent will start\.'\)/);
+  assert.match(picker, /take: words\.take \?\? t\('folders\.choose', 'Choose'\)/);
+  assert.match(picker, /context\.hidden = !say\.note/, 'an empty note hides the standing line until a folder is inspected');
+  assert.match(picker, /folder\.registered_root \? \(say\.kept \|\| 'evaluate'\) : say\.take/);
+  assert.match(picker, /sort\(\(a, b\) => Number\(isRepo\(b\)\) - Number\(isRepo\(a\)\)\)/, 'folders with a repository come first');
+  assert.match(picker, /t\('folders\.group_repositories', 'Folders with a Git repository'\)/);
+  assert.match(picker, /t\('folders\.group_plain', 'Folders'\)/);
+  assert.match(picker, /if \(folder\.registered_root && say\.kept\) choose\.disabled = true/, 'a kept folder is inert where the consumer names it so');
+  for (const other of ['public/js/cowork-setup.js', 'public/js/presets.js']) assert.doesNotMatch(await source(other), /words:/, `${other} keeps the stock words`);
 });

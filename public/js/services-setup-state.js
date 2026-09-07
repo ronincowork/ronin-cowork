@@ -69,7 +69,7 @@ export function servicesSetupModel(registration, installed, activation = null) {
   const on = facts.switched_on === true;
   const reg = registrationRow(registration, record);
   const installCaption = t('services_setup.step_install', 'Install');
-  const switchCaption = t('services_setup.step_switch', 'On');
+  const switchCaption = t('services_setup.step_switch', 'Switch');
   const installing = !parts && entitled && stage === 'installing';
   const installFailed = !parts && entitled && stage === 'error' && record.error_at_stage === 'installing';
 
@@ -77,10 +77,13 @@ export function servicesSetupModel(registration, installed, activation = null) {
     : installing ? step('install', installCaption, t('services_setup.installing', 'Installing…'), { enabled: false })
     : installFailed ? step('install', installCaption, t('services_setup.try_again', 'Try again'), { act: 'install' })
     : step('install', installCaption, t('services_setup.install', 'Install'), { act: 'install', enabled: entitled, title: entitled ? '' : t('services_setup.register_first', 'Register first') });
-  const switchStep = on ? step('switch', switchCaption, t('services_setup.done', 'Done'), { done: true, act: 'switch_off', title: t('services_setup.turn_off', 'Turn off') })
-    : step('switch', switchCaption, t('services_setup.turn_on', 'Turn on'), { act: 'switch_on', enabled: parts, title: parts ? '' : t('services_setup.install_first', 'Install first') });
-  const steps = [reg.step, installStep, switchStep];
-  const model = (state, tone, status, next, polling = false) => ({ state, tone, status, next, steps, polling, summary: '' });
+  // The switch is a toggle, never Done: it drives the Campaign's choice and cascades to new teams and Agents.
+  const switchStep = on ? { ...step('switch', switchCaption, t('services_setup.turn_off', 'Turn off'), { act: 'switch_off' }), pressed: true }
+    : { ...step('switch', switchCaption, t('services_setup.turn_on', 'Turn on'), { act: 'switch_on', enabled: parts, title: parts ? '' : t('services_setup.install_first', 'Install first') }), pressed: false };
+  // A moved switch waits on a restart of Ronin; the Restart control appears only then, and the surface watches for it.
+  const restartStep = parts && facts.restart_needed ? step('restart', t('services_setup.step_restart', 'Restart'), t('services_setup.restart', 'Restart'), { act: 'restart' }) : null;
+  const steps = [reg.step, installStep, switchStep, ...(restartStep ? [restartStep] : [])];
+  const model = (state, tone, status, next, polling = false) => ({ state, tone, status, next, steps, polling: polling || facts.restart_needed === true, summary: '' });
 
   if (!parts) {
     if (installing) {
@@ -104,13 +107,13 @@ export function servicesSetupModel(registration, installed, activation = null) {
   if (!on) {
     return { ...model('switched_off', '', t('services_setup.status_switched_off', 'Installed · switched off'),
       facts.restart_needed
-        ? t('services_setup.next_switched_off_running', 'Switched off, but still running in this copy of Ronin until it restarts.')
-        : t('services_setup.next_switched_off', 'Turn it on for new Agents here; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.', counts),
+        ? t('services_setup.next_switched_off_running', 'Switched off, but still running in this copy of Ronin. Press Restart, or ask any of your Agents to restart Ronin, and it stops; sessions are untouched.')
+        : t('services_setup.next_switched_off', 'Turn it on here: it sets the Campaign’s choice and cascades to new teams and Agents; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.', counts),
       reg.polling), summary: t('services_setup.summary_switched_off', 'switched off') };
   }
   if (facts.restart_needed) {
     return { ...model('restart_needed', 'warn', t('services_setup.status_restart', 'Switched on · not yet running'),
-      t('services_setup.next_restart', 'Restart Ronin to start it. Sessions are untouched.'), reg.polling), summary: t('services_setup.summary_restart', 'restart needed') };
+      t('services_setup.next_restart', 'Press Restart, or ask any of your Agents to restart Ronin. Unlocked views and the other parts then start on their own; only new Agents are born with the Services reading. Sessions are untouched.'), reg.polling), summary: t('services_setup.summary_restart', 'restart needed') };
   }
   return { ...model('active', 'ok', t('services_setup.status_active', 'Active on this Cowork'),
     t('services_setup.next_active', '{loaded} of {parts} parts are running for new Agents.', counts), reg.polling), summary: t('services_setup.summary_active', 'active') };

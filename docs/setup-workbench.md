@@ -66,14 +66,21 @@ Each is a Git repository with a README and first commit. Ronin Project 1 also ha
 reviewed `dev` / stable `main` arrangement and managed-worktree readiness. These defaults
 do not replace or rename any external folder; the existing add/load-root flow remains.
 
-In Ronin Setup the folders are square stones on the shared stone work surface; the last,
-dotted stone is **Add A Workspace**. Selecting a folder opens one page about it beside the
-rail: its name and one state line, a **Summary**, **Folder** facts (directory, docs and
-plans shelves, match words), **Repository** facts (remote, branch, publishing flow,
-Worktrees) or one line saying it is not a repository, then **Edit**. Edit replaces the
-facts with the same fields under the same head and ends in **Save** and **Cancel**.
-**Archive** and **Exclude** sit last, under their own rule, with one line saying what each
-does. The Campaign's Project roots surface keeps its list of blocks with inline controls.
+In Ronin Setup one line above the stones says what a workspace is, in three terms: it may
+be a Git repository; Agents are born from it and start making their own files in it; and
+their work accumulates there. The folders are square stones on the shared stone work
+surface; the first, dotted stone is **Add A Workspace**, so adding one is never below the
+fold. Its page speaks in keep-or-ignore terms: the folder browser's row action is **Keep**,
+the chosen path is labelled **Path**, a folder already kept says **Kept** and offers
+nothing, and nothing says where an Agent will start — that belongs to a session launch, not
+to the catalog. The browser lists folders with a Git repository first, under their own
+line, then plain folders, because the repositories are the ones that matter. Selecting a folder opens one page about it beside the
+rail, in the shape every stone detail shares: the name with its actions on the same line
+(**Edit**, **Archive**, **Exclude**), one state line under it, then **Summary**, **Folder**
+facts (directory, docs and plans shelves, match words), and **Repository** facts (remote,
+branch, publishing flow, Worktrees) or one line saying it is not a repository. Edit replaces
+the facts with the same fields under the same head, and **Save** and **Cancel** take the
+actions' place on that line; nothing else on the page interacts. The Campaign's Project roots surface keeps its list of blocks with inline controls.
 
 ## Presets
 
@@ -98,9 +105,12 @@ Services access.
 Loaded templates and making a template work locally. **Ronin Library** and **Share Yours**
 require Services entitlement. The Services, gbrain, and Templates surfaces state what each
 is for, what it requires, and how to use it before showing their specialized controls.
-The Services surface wears its own mark, `brand/services-mark.svg`: an R and S monogram
-inside the house hexagon, drawn in code in the same kaki as the hito mark, so it reads on
-both shells. The heading beside it carries the accessible name; the image is decorative.
+The Services surface wears its own mark, `brand/services-mark.svg`: an R and S built from
+the house hexagon and leaning with its edge, the R in the shell's reference blue, the S and
+the open frame in kaki. The heading beside it carries the accessible name; the image is
+decorative. The surface paints the file as an image first, then inlines the markup
+from that same file, so the R's stroke reads the app's `--accent-2` token and follows the
+Light/Dark toggle rather than only the OS scheme.
 
 ## Ronin Services
 
@@ -114,14 +124,21 @@ line and one next sentence for the state Ronin measured from `GET /api/installed
 registration are two separate facts: installed parts are shown installed and usable whether
 or not anyone registered.
 
-Beneath the status sit three steps in one shape, **Register · Install · On**, each reading
-**Done** once it is. Register opens the Register surface (or Check status while a confirmation
-is out). Install is `POST /api/services/install` and waits for the entitlement that route
-demands. On is the Campaign's Routine switch for new Agents — the same `ronin_services` map
-Routines and Installs saves — and a Done switch turns off from here; a team can still differ
-in its Team Configuration.
+Beneath the status sit three controls in one shape, **Register · Install · Switch**. Register
+and Install read **Done** once they are; Register opens the Register surface (or Check status
+while a confirmation is out), and Install is `POST /api/services/install`, waiting for the
+entitlement that route demands. Switch is a toggle, **Turn on** or **Turn off**, never Done:
+it sets the Campaign's `ronin_services` Routine — the same map Routines and Installs saves —
+and cascades to new teams and Agents; a team can still differ in its Team Configuration. After
+a press the status says the rest, and a fourth control, **Restart**, appears for as long as
+`/api/installed` reports `restart_needed`: it is `POST /api/machine/restart`, which answers and
+then runs `ronin_bin/tejun-machine-restart` — the one sanctioned restart, Ronin and nothing
+else; sessions live in the tmux server and stay up. The surface then watches the machine come
+back and re-reads it, so the same control also notices a restart an Agent was asked to do.
+Unlocked views and the other parts start (or stop) on their own; only new Agents are born
+with the Services reading.
 
-| Measured | Status | Steps |
+| Measured | Status | Controls |
 |---|---|---|
 | nothing installed, no registration, or the read failed | Not installed on this machine | Register · Install (waits) · Turn on (waits) |
 | nothing installed, an anonymous hello only | Not installed · anonymous hello sent | Register · Install (waits) · Turn on (waits) |
@@ -132,9 +149,9 @@ in its Team Configuration.
 | nothing installed, registered | Registered · Ready to install | Done · Install · Turn on (waits) |
 | the installer is running | Installing Services… | Done · Installing… · Turn on (waits); re-read in 5 s |
 | the installer did not start or finish | Install did not finish | Done · Try again · Turn on (waits) |
-| parts installed, switched off | Installed · switched off, with running and installed part counts | Register or Done · Done · Turn on |
-| parts installed, switched on, not yet loaded | Switched on · not yet running | Register or Done · Done · Done (turns off) |
-| parts installed, switched on and loaded | Active on this Cowork, with running and installed part counts | Register or Done · Done · Done (turns off) |
+| parts installed, switched off | Installed · switched off, with running and installed part counts | Register or Done · Done · Turn on (· Restart while it still runs) |
+| parts installed, switched on, not yet loaded | Switched on · not yet running | Register or Done · Done · Turn off · Restart; re-read in 5 s |
+| parts installed, switched on and loaded | Active on this Cowork, with running and installed part counts | Register or Done · Done · Turn off |
 
 The selector card's summary follows the same state. The Grokbot Morning Briefing preset waits
 for Services to be active, and the surface says so in every state. The pure state mapping is
@@ -156,13 +173,20 @@ and at most one action for the state Ronin measured:
 | installed, but not loaded | Not installed on this machine | Load gbrain |
 | the installer is running | Installing… (the surface re-reads every few seconds) | none |
 | the installer failed | Install did not finish, with the log folded below | Retry install |
-| loaded and the local process answers | Running on this machine | Start with Personal Assistant |
-| loaded and the process is silent | Installed · not running | Ask Personal Assistant to check gbrain |
+| loaded and answering, no model provider activated | gbrain is ready · a model provider comes first | Open Model providers |
+| loaded and answering, one provider activated | Everything is good to go | Start your first Personal Assistant |
+| loaded and answering, with a note (keyword-only, network reach, outside model) | Running, with a note | Start your first Personal Assistant |
+| loaded and the process is silent | Installed · not running | Ask an Agent to check gbrain |
 | the read itself failed | Status could not be read | Check again |
 
-When gbrain is loaded the surface adds **Measured now**: local process, local embeddings,
-reach, outside model use and integrations, each the snapshot's own value, with the observed
-time and a quiet Check again. The selector card's summary follows the measured state. The
+When gbrain is loaded the surface adds **What Ronin measured**: one plain sentence per
+measurement saying what it means for the person (the process answers; search by meaning is
+on; only this machine can reach it; no outside model is used; which accounts are linked, and
+which the Personal Assistant can link, one at a time, with approval), each beside the
+snapshot's own value, with the observed time and a quiet Check again. Whether accounts are
+linked is read mechanically from gbrain's integrations list, never assumed. **Start your
+first Personal Assistant** makes exactly the launch the Personal Assistant preset makes, a
+single assistant in a new tab. The selector card's summary follows the measured state. The
 Personal Assistant preset waits for gbrain to be active, and the surface says so in every
 state. The pure state mapping is `public/js/gbrain-setup-state.js`; `docs/gbrain.md` holds
 what gbrain is.

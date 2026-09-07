@@ -49,7 +49,11 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         }
       },
     });
-    stoneSurface.mount(root, { before: [messages] });
+    // What a workspace is, in the owner's three terms, above the stones (Glen, 2026-09-07).
+    const intro = document.createElement('p');
+    intro.className = 'pr-intro';
+    intro.textContent = t('roots.intro', 'A workspace is a folder Ronin keeps for Teams and Agents. Three things happen there: it may be a Git repository; Agents are born from it and start making their own files in it; and their work accumulates there — plans, memory, workouts, calendar documents, whatever they keep.');
+    stoneSurface.mount(root, { before: [intro, messages] });
   } else root.append(head, list);
 
   const say = (msg, bad) => {
@@ -123,7 +127,14 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       const picker = createFolderPicker({ value: existing.dir, onChange: (dir) => {
         dirInput.value = dir;
         dirInput.dispatchEvent(new Event('change'));
-      } });
+      }, ...(stones ? { words: {
+        // In Setup this is a keep-or-ignore decision, not a session start (Glen, 2026-09-07).
+        chosen: t('roots.picker_path', 'Path'),
+        none: t('roots.picker_none', 'None yet'),
+        note: '',
+        take: t('roots.picker_keep', 'Keep'),
+        kept: t('roots.picker_kept', 'Kept'),
+      } } : {}) });
       rootFields.append(picker.el);
     }
     mk(t('roots.f_remit', 'remit'), 'remit', existing.remit, t('roots.f_remit_hint', 'The one line you pick it from in a list'), t('roots.f_remit_placeholder', 'what this is'));
@@ -353,7 +364,9 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   /** Archive/unarchive and exclude: the same two jobs on the Campaign block and the Setup detail. */
   function maintenance(r) {
     const shelve = createAction({
-      label: r.archived ? t('roots.unarchive', 'unarchive') : t('roots.archive', 'archive'),
+      label: r.archived
+        ? (stones ? t('roots.unarchive_folder', 'Unarchive') : t('roots.unarchive', 'unarchive'))
+        : (stones ? t('roots.archive_folder', 'Archive') : t('roots.archive', 'archive')),
       title: r.archived
         ? t('roots.unarchive_title', 'Put it back on the new-session picker.')
         : t('roots.archive_title', 'Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched.'),
@@ -372,7 +385,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       await loadProjects();
       await refresh();
     });
-    const drop = createAction({ label: t('roots.exclude', 'exclude'), kind: 'danger', title: t('roots.exclude_title', 'Remove it from the catalog. Nothing on disk is touched.') }).el;
+    const drop = createAction({ label: stones ? t('roots.exclude_folder', 'Exclude') : t('roots.exclude', 'exclude'), kind: 'danger', title: t('roots.exclude_title', 'Remove it from the catalog. Nothing on disk is touched.') }).el;
     drop.addEventListener('click', async () => {
       if (!confirm(t('roots.exclude_confirm', 'Exclude "{name}" from your Ronin?\n\nThe catalog entry goes. {dir} is not touched.', { name: r.name, dir: r.dir }))) return;
       drop.disabled = true;
@@ -408,9 +421,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       const dl = make('dl', 'pr-fact-list');
       for (const [label, value, options = {}] of rows) {
         if (value == null || value === '') continue;
-        const dd = make('dd');
-        if (options.mono) dd.append(make('code', '', value));
-        else dd.textContent = value;
+        const dd = make('dd', '', value);
         if (options.title) dd.title = options.title;
         if (options.tone) dd.dataset.tone = options.tone;
         dl.append(make('dt', '', label), dd);
@@ -423,37 +434,42 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     if (r.archived) d.classList.add('archived');
     if (!exists) d.classList.add('gone');
 
+    // THE HEAD, the shape every stone detail shares (Presets: `.sp-heading`): the name and
+    // every action on one line, one measured line under it. Nothing else interacts below.
     const head = make('header', 'pr-detail-head');
-    const title = make('div', 'pr-detail-title');
-    title.append(make('h2', 'pr-detail-name', r.name)); // the head IS the handle — no second name
+    const heading = make('div', 'pr-detail-heading');
+    heading.append(make('h3', 'pr-detail-name', r.name)); // the head IS the handle — no second name
+    const go = make('div', 'pr-detail-go');
+    heading.append(go);
     const words = [r.archived ? t('roots.chip_archived', 'Archived') : !exists ? t('roots.stone_missing', 'Folder missing') : t('roots.stone_ready', 'Ready')];
     if (r.sessions) words.push(r.sessions === 1 ? t('roots.sessions_one', '{n} session', { n: r.sessions }) : t('roots.sessions_many', '{n} sessions', { n: r.sessions }));
     const state = make('p', 'pr-detail-state', words.join(' · '));
     state.dataset.tone = r.archived ? 'muted' : exists ? 'ok' : 'bad';
-    title.append(state);
-    head.append(title);
+    head.append(heading, state);
     d.append(head);
 
     if (editing === r.name) {
-      d.append(form(r));
+      const f = form(r);
+      go.append(f.querySelector('.pr-frow')); // Save and Cancel stand where Edit stood
+      d.append(f);
       return d;
     }
 
-    // The one primary action sits in the head, beside the name, so editing is never below the fold.
     const edit = createAction({ label: t('roots.edit_folder', 'Edit'), kind: 'primary', title: t('roots.edit_folder_title', 'Change the summary, shelves, match words, or repository workflow.') }).el;
     edit.addEventListener('click', () => {
       editing = r.name;
       stoneSurface.refreshDetail();
       stoneSurface.el.querySelector('.pr-detail .pr-form input:not([disabled])')?.focus();
     });
-    head.append(edit);
+    const { shelve, drop } = maintenance(r);
+    go.append(edit, shelve, drop);
 
     const summary = make('p', 'pr-summary-text', r.remit || t('roots.summary_none', 'No summary yet.'));
     if (!r.remit) summary.classList.add('empty');
     d.append(section(t('roots.summary', 'Summary'), summary));
 
     const folder = section(t('roots.section_folder', 'Folder'), facts([
-      [t('roots.fact_directory', 'Directory'), r.dir, { mono: true, tone: exists ? '' : 'bad' }],
+      [t('roots.fact_directory', 'Directory'), r.dir, { tone: exists ? '' : 'bad' }],
       [t('roots.fact_docs', 'Docs'), (r.docs || []).join(', ')],
       [t('roots.fact_plans', 'Plans'), (r.plans || []).join(', ')],
       [t('roots.fact_match', 'Match'), (r.match || []).join(', ')],
@@ -484,15 +500,6 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       // A project_root need not be a project_repo. `~/lab` is one; this is a legal shape, not a warning.
       d.append(section(t('roots.section_repository', 'Repository'), make('p', 'pr-fine', t('roots.repository_none', 'Not a Git repository. A workspace folder does not need to be one.'))));
     }
-
-    const { shelve, drop } = maintenance(r);
-    const acts = make('div', 'pr-acts');
-    acts.append(shelve, drop);
-    const upkeep = make('section', 'pr-section pr-maintenance');
-    upkeep.append(acts, make('p', 'pr-fine', r.archived
-      ? t('roots.maintenance_help_archived', 'Unarchive puts it back on the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.')
-      : t('roots.maintenance_help', 'Archive takes it off the new-session picker. Exclude removes the catalog entry; nothing on disk is touched.')));
-    d.append(upkeep);
     return d;
   }
 
@@ -512,7 +519,14 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       for (const r of roots) list.appendChild(block(r));
       return;
     }
-    stoneSurface.setItems([...roots.map((r) => ({
+    // Add A Workspace leads the collection (Glen, 2026-09-07): adding is the thing people do.
+    stoneSurface.setItems([{
+      id: NEW,
+      label: t('roots.add_stone', 'Add A Workspace'),
+      glyph: '+',
+      className: 'setup-roots-add-stone',
+      attrs: { title: t('roots.keep_hint', 'Keep a folder on this machine for Teams and Agents to start in.') },
+    }, ...roots.map((r) => ({
       id: r.name,
       label: r.name,
       state: r.archived
@@ -521,13 +535,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
           ? t('roots.stone_missing', 'Folder missing')
           : t('roots.stone_ready', 'Ready'),
       className: [!r.facts?.exists ? 'gone' : '', r.archived ? 'archived' : ''].filter(Boolean).join(' '),
-    })), {
-      id: NEW,
-      label: t('roots.add_stone', 'Add A Workspace'),
-      glyph: '+',
-      className: 'setup-roots-add-stone',
-      attrs: { title: t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.') },
-    }]);
+    }))]);
   }
 
   /** The last card in the list: the same shape as a root, and the place a new one is typed. */
@@ -539,18 +547,22 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       d.dataset.mode = 'add';
       const head = document.createElement('header');
       head.className = 'pr-detail-head';
-      const title = document.createElement('div');
-      title.className = 'pr-detail-title';
-      const h = document.createElement('h2');
+      const heading = document.createElement('div');
+      heading.className = 'pr-detail-heading';
+      const h = document.createElement('h3');
       h.className = 'pr-detail-name';
       h.textContent = t('roots.add_head', 'Add a workspace');
+      const go = document.createElement('div');
+      go.className = 'pr-detail-go';
+      heading.append(h, go);
       const lede = document.createElement('p');
       lede.className = 'pr-detail-state';
       lede.dataset.tone = 'muted';
-      lede.textContent = t('roots.add_hint', 'Choose or create a folder on this machine where Agents should start.');
-      title.append(h, lede);
-      head.append(title);
-      d.append(head, form({ name: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true));
+      lede.textContent = t('roots.keep_lede', 'Keep a folder on this machine for Teams and Agents to start in; a folder not kept is simply left alone.');
+      head.append(heading, lede);
+      const f = form({ name: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true);
+      go.append(f.querySelector('.pr-frow')); // Add and Cancel on the head line
+      d.append(head, f);
       return d;
     }
     const b = document.createElement('div');

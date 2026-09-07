@@ -35,6 +35,19 @@ export function createAgentRows({ n, key, rows, changed, onToggle, leadAssignmen
 
   function paint() {
     host.replaceChildren();
+    const buttons = el('div', 'ntf-agent-adds');
+    const addLead = el('button', 'fs-door', t('new_team.lead_add', '＋ Add Lead Agent'));
+    addLead.type = 'button';
+    addLead.addEventListener('click', () => {
+      for (const other of rows()) other.lead = false;
+      rows().push(agentRow({ lead: true, assignment: leadAssignment() }));
+      paint(); changed();
+    });
+    const add = el('button', 'fs-door', t('new_team.agent_add', '＋ Add Team Agent'));
+    add.type = 'button';
+    add.addEventListener('click', () => { rows().push(agentRow()); paint(); changed(); });
+    buttons.append(addLead, add);
+    host.append(buttons);
     rows().forEach((row, index) => {
       const box = el('div', 'ntf-agent');
       box.dataset.open = String(row.open);
@@ -95,19 +108,6 @@ export function createAgentRows({ n, key, rows, changed, onToggle, leadAssignmen
       }
       host.append(box);
     });
-    const buttons = el('div', 'ntf-agent-adds');
-    const addLead = el('button', 'fs-door', t('new_team.lead_add', '＋ Add Lead Agent'));
-    addLead.type = 'button';
-    addLead.addEventListener('click', () => {
-      for (const other of rows()) other.lead = false;
-      rows().push(agentRow({ lead: true, assignment: leadAssignment() }));
-      paint(); changed();
-    });
-    const add = el('button', 'fs-door', t('new_team.agent_add', '＋ Add Agent'));
-    add.type = 'button';
-    add.addEventListener('click', () => { rows().push(agentRow()); paint(); changed(); });
-    buttons.append(addLead, add);
-    host.append(buttons);
   }
 
   step.body.append(host);

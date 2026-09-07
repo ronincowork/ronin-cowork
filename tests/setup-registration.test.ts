@@ -203,6 +203,9 @@ test('Services leads with identity, the beta, and benefits, then one measured st
   assert.match(source, /import \{ completeRoutineMap \} from '\.\/campaign-routines\.js'/);
   assert.match(source, /setup-services-mark/);
   assert.match(source, /mark\.src = 'brand\/services-mark\.svg'/);
+  assert.match(source, /fetch\('brand\/services-mark\.svg'\)/, 'the one mark file is inlined so the R follows data-theme');
+  assert.match(source, /host\.innerHTML = markup;\n\s*host\.querySelector\('svg'\)\?\.setAttribute\('aria-hidden', 'true'\)/);
+  assert.doesNotMatch(source, /rs-r|M31 6h58/, 'no second copy of the mark lives in the surface');
   const order = ['setup-services-lockup', 'services_setup.beta', 'services_setup.transcripts', 'services_setup.library', 'setup-services-status', 'setup-services-steps', 'services_setup.gate'];
   for (let i = 1; i < order.length; i += 1) assert.ok(source.indexOf(order[i - 1]) < source.indexOf(order[i]), `${order[i - 1]} precedes ${order[i]}`);
   for (const key of ['services_setup.beta_copy', 'services_setup.transcripts_copy', 'services_setup.records', 'services_setup.voice']) assert.match(source, new RegExp(key.replace('.', '\\.')));
@@ -218,14 +221,24 @@ test('Services leads with identity, the beta, and benefits, then one measured st
   assert.match(source, /request\('\/api\/routines'\)/);
   assert.match(source, /ronin_services: on/);
   assert.match(source, /saveCampaign\(row\.id, \{ config: \{ agent_defaults: \{ \.\.\.defaults, routines \} \} \}\)/);
-  assert.match(source, /setAttribute\('aria-pressed', String\(item\.done\)\)/);
+  assert.match(source, /setAttribute\('aria-pressed', String\(item\.pressed === true\)\)/);
+  // Restart: the one sanctioned tool behind one route; the browser asks, then watches /api/installed come back.
+  assert.match(source, /if \(item\.act === 'restart'\) \{ await restartRonin\(state\); return; \}/);
+  assert.match(source, /request\('\/api\/machine\/restart', \{ method: 'POST', json: \{\} \}\)/);
+  assert.match(source, /const probe = await request\('\/api\/installed', \{ cache: 'no-store' \}\);\n\s*if \(probe\.ok\) break;/);
+  const route = await (await import('node:fs/promises')).readFile(new URL('../src/routes/machine-restart-api.ts', import.meta.url), 'utf8');
+  assert.match(route, /join\(REPO_ROOT, 'ronin_bin', 'tejun-machine-restart'\)/, 'the route runs the sanctioned tool and names no unit');
+  assert.doesNotMatch(route, /execFile\(['"]systemctl|ronin\.service/, 'the route invokes no systemctl and names no unit; only the tool does');
+  assert.ok(route.indexOf('res.json({ started: true') < route.indexOf('setTimeout'), 'the answer goes out before Ronin goes down');
+  const index = await (await import('node:fs/promises')).readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
+  assert.match(index, /registerMachineRestart\(app\)/);
   assert.match(source, /notifySummary\(SETUP_SURFACE_TYPES\.services, model\.summary/);
   assert.match(source, /if \(body\.isConnected\) void show\(\)/, 'polling stops when the surface leaves the workspace');
   assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short|services_register_enables|Registration confirmed · Services access not included|not activated|setup-services-account/);
   assert.doesNotMatch(source, /const state = el\('dl'|<dd>|'Yes' : 'No'/);
 });
 
-test('the Services mark is a code-native R and S monogram in the house hexagon', async () => {
+test('the Services mark is a constructed RS monogram in the house hexagon, blue R and kaki S, leaning with the frame', async () => {
   const fs = await import('node:fs/promises');
   const [services, house] = await Promise.all([
     fs.readFile(new URL('../public/brand/services-mark.svg', import.meta.url), 'utf8'),
@@ -236,9 +249,16 @@ test('the Services mark is a code-native R and S monogram in the house hexagon',
   assert.match(services, frame, 'same open hexagon as the house mark');
   assert.match(services, /viewBox="0 0 120 104"/);
   assert.match(services, /<title id="title">Ronin Services mark<\/title>/);
-  assert.match(services, /stroke="#c46243" stroke-width="8"/);
-  assert.doesNotMatch(services, /<text|<image|fill="#/, 'letters are drawn strokes in the one kaki material, not a font or a filled badge');
-  assert.doesNotMatch(services, /#[0-9a-fA-F]{3,8}\b(?<!#c46243)/, 'no colour beyond kaki');
+  // Letters are built from one house cell and turned to the frame's own angle.
+  assert.match(services, /transform="translate\(60 52\) scale\(\.86\) rotate\(28\.5\) translate\(-62\.5 -52\)"/);
+  assert.match(services, /<g class="rs-r" stroke="#3f6a95"><path d="M31 76V28H51L57 40L51 52H31"\/><path d="M45 52L57 76"\/><\/g>/, 'the R: stem, cell, leg');
+  assert.match(services, /<path stroke="#c46243" d="M94 40L88 28H74L68 40L74 52H88L94 64L88 76H74L68 64"\/>/, 'the S: two cells, kaki');
+  // The R follows the shell's reference blue; as a plain image it falls back by scheme.
+  assert.match(services, /\.rs-r\{stroke:var\(--accent-2,#3f6a95\)\}@media \(prefers-color-scheme:dark\)\{\.rs-r\{stroke:var\(--accent-2,#81a2be\)\}\}/);
+  assert.doesNotMatch(services, /<text|<image|fill="#/, 'letters are drawn strokes, not a font or a filled badge');
+  assert.doesNotMatch(services, /<!--[^>]*--[^>]*-->/, 'no double hyphen inside a comment: XML rejects it and the browser shows a broken image');
+  const colours = new Set((services.match(/#[0-9a-fA-F]{6}\b/g) || []).map((c) => c.toLowerCase()));
+  assert.deepEqual([...colours].sort(), ['#3f6a95', '#81a2be', '#c46243'], 'kaki plus the two shell values of the reference blue, nothing else');
 });
 
 test('Services setup model keeps installation and registration as separate facts and shapes three steps', async () => {
@@ -261,8 +281,8 @@ test('Services setup model keeps installation and registration as separate facts
     ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', 'register:Done:done install:Installing…:off switch:Turn on:off', true],
     ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'register:Done:done install:Try again:install switch:Turn on:off', false],
     ['switched_off', reg('optional'), here(), act('not_requested'), 'switched off', 'Installed · switched off', 'register:Register:register install:Done:done switch:Turn on:switch_on', false],
-    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Done:done', false],
-    ['active', entitled(), here({ switched_on: true }), act('installed'), 'active', 'Active on this Cowork', 'register:Done:done install:Done:done switch:Done:done', false],
+    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Turn off:switch_off restart:Restart:restart', true],
+    ['active', entitled(), here({ switched_on: true }), act('installed'), 'active', 'Active on this Cowork', 'register:Done:done install:Done:done switch:Turn off:switch_off', false],
   ];
   assert.deepEqual(cases.map(([state]) => state).sort(), [...SERVICES_SETUP_STATES].sort());
   for (const [state, registration, installed, activation, summary, status, steps, polling] of cases) {
@@ -273,7 +293,8 @@ test('Services setup model keeps installation and registration as separate facts
     assert.equal(shape(model), steps);
     assert.equal(model.polling, polling);
     assert.ok(model.next.length > 0);
-    assert.deepEqual(model.steps.map((s: Step) => s.id), ['register', 'install', 'switch'], 'always the same three steps in the same order');
+    assert.deepEqual(model.steps.slice(0, 3).map((s: Step) => s.id), ['register', 'install', 'switch'], 'always the same three steps in the same order');
+    assert.equal(model.steps.length, state === 'restart_needed' ? 4 : 3, 'Restart appears only while a restart is due');
     assert.doesNotMatch(`${model.status} ${model.next} ${model.steps.map((s: Step) => s.label).join(' ')}`, /HTTP|undefined|null/);
   }
   // Installed on the live box without any registration: installed, usable, switchable, and Register stays an optional step.
@@ -283,8 +304,16 @@ test('Services setup model keeps installation and registration as separate facts
   assert.match(live.next, /2 of 6 parts are running now/);
   const liveOn = servicesSetupModel(reg('optional'), here({ switched_on: true }), act('not_requested'));
   assert.equal(liveOn.state, 'active');
-  assert.equal(liveOn.steps[2].act, 'switch_off', 'a Done switch turns off from here');
+  assert.equal(liveOn.steps[2].act, 'switch_off', 'the switch is a toggle: on reads Turn off');
+  assert.equal(liveOn.steps[2].label, 'Turn off');
+  assert.equal(liveOn.steps[2].pressed, true);
+  assert.equal(liveOn.steps[2].done, false, 'a toggle is never Done');
+  assert.equal(live.steps[2].pressed, false);
   assert.equal(liveOn.steps[2].enabled, true);
+  assert.match(servicesSetupModel(reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested')).next, /Press Restart, or ask any of your Agents to restart Ronin/);
+  const offButRunning = servicesSetupModel(reg('optional'), here({ restart_needed: true }), act('not_requested'));
+  assert.equal(offButRunning.steps[3]?.act, 'restart', 'switching off also waits on a restart, so Restart is offered');
+  assert.equal(offButRunning.polling, true, 'the surface watches for the restart an Agent may do instead');
   assert.equal(liveOn.steps[1].enabled, false, 'Done install has nothing to press');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[1].enabled, false, 'the hosted install waits for the entitlement the API demands');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[2].enabled, false, 'nothing to switch on before parts are installed');
@@ -309,7 +338,7 @@ test('Setup gbrain model gives every measured state one status, one next line, a
       listener: { scope: 'vm_only', address: '127.0.0.1', port: 7777 },
       externalModelProvider: 'none', publicAccess: { state: 'off' },
       search: { weights: 'running', mode: 'hybrid', model: 'nomic', dimensions: 768, reason: null, answers: { state: 'off', reason: 'model-key-missing' } },
-      integrationsKnown: true, integrations: [{ id: 'gmail', label: 'Gmail', state: 'not_connected' }],
+      integrationsKnown: true, integrations: [{ id: 'gmail', label: 'Gmail', category: 'senses', state: 'not_connected' }],
       observedAt: '2026-09-07T12:00:00.000Z',
       ...over,
     },
@@ -323,7 +352,9 @@ test('Setup gbrain model gives every measured state one status, one next line, a
     ['install_failed', snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } }), null, 'Install did not finish', 'retry', 'not installed'],
     ['installing', snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } }), null, 'Installing…', null, 'installing'],
     ['removing', snapshot({ install: { state: 'running', op: 'uninstall', log: [] } }), null, 'Removing…', null, 'removing'],
-    ['running', snapshot(), { installed: true, active: true }, 'Running on this machine', 'start_assistant', 'running'],
+    ['provider_first', snapshot(), { installed: true, active: true, activated_count: 0 }, 'gbrain is ready · a model provider comes first', 'open_providers', 'running'],
+    ['ready', snapshot(), { installed: true, active: true, activated_count: 1 }, 'Everything is good to go', 'start_assistant', 'running'],
+    ['running', snapshot({ listener: { scope: 'network', address: '0.0.0.0', port: 7777 } }), { installed: true, active: true, activated_count: 1 }, 'Running, with a note', 'start_assistant', 'running'],
     ['stopped', snapshot({ process: { state: 'stopped', health: 'unreachable', version: null } }), { installed: true, active: false }, 'Installed · not running', 'check_assistant', 'installed'],
   ];
   assert.deepEqual(cases.map(([state]) => state).sort(), [...GBRAIN_SETUP_STATES].sort());
@@ -339,15 +370,30 @@ test('Setup gbrain model gives every measured state one status, one next line, a
   assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).next, 'fetching weights');
   assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).polling, true);
   assert.deepEqual(gbrainSetupModel(snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } })).log, ['step 3 failed']);
-  const running = gbrainSetupModel(snapshot(), { installed: true, active: true });
-  assert.deepEqual(running.facts.map(([label]: [string]) => label), ['Local gbrain process', 'Local embeddings', 'Reach', 'Outside model use', 'Integrations']);
-  assert.deepEqual(running.facts.map(([, , tone]: [string, string, string]) => tone), ['ok', 'ok', 'ok', 'ok', 'ok']);
-  assert.match(running.next, /hybrid/);
-  assert.match(gbrainSetupModel(snapshot({ search: { weights: 'stopped', mode: 'keyword_only' } })).next, /keyword-only/);
-  assert.equal(gbrainSetupModel(snapshot({ integrationsKnown: false, integrations: [] })).facts[4][1], 'unknown');
-  assert.equal(gbrainSetupModel(snapshot({ integrations: [{ id: 'gmail', label: 'Gmail', state: 'connected' }] })).facts[4][1], '1 connected');
-  assert.equal(running.polling, false);
-  assert.match(gbrainAssistantPrompt('running'), /start using gbrain/);
+  const one = { installed: true, active: true, activated_count: 1 };
+  const ready = gbrainSetupModel(snapshot(), one);
+  assert.deepEqual(ready.readings.map((row: { key: string }) => row.key), ['process', 'embeddings', 'reach', 'outside', 'accounts']);
+  assert.deepEqual(ready.readings.map((row: { tone: string }) => row.tone), ['ok', 'ok', 'ok', 'ok', '']);
+  // Every reading is a sentence a person can act on, beside the measured value.
+  for (const row of ready.readings) { assert.match(row.sentence, /\.$/); assert.ok(row.value.length); }
+  assert.match(ready.readings[4].sentence, /No accounts are linked yet\. Gmail can be linked by your Personal Assistant/);
+  const machine = snapshot({ integrations: [
+    { id: 'credential-gateway', label: 'Credential Gateway', category: 'infra', state: 'not_connected' },
+    { id: 'email-to-brain', label: 'Email-to-Brain', category: 'senses', state: 'not_connected' },
+    { id: 'twilio-voice-brain', label: 'Voice-to-Brain (DEPRECATED — see agent-voice)', category: 'senses', state: 'not_connected' },
+    { id: 'calendar-to-brain', label: 'Calendar-to-Brain', category: 'senses', state: 'connected' },
+    { id: 'x-to-brain', label: 'X-to-Brain', category: 'senses', state: 'not_connected' },
+  ] });
+  assert.equal(gbrainSetupModel(machine, one).readings[4].sentence, 'Linked: Google Calendar.');
+  assert.equal(gbrainSetupModel(machine, one).readings[4].value, '1 linked');
+  assert.match(gbrainSetupModel(snapshot({ integrations: machine.data.integrations.map((row: { state: string }) => ({ ...row, state: 'not_connected' })) }), one).readings[4].sentence, /Gmail, Google Calendar and X can each be linked/);
+  assert.equal(gbrainSetupModel(snapshot({ integrationsKnown: false, integrations: [] }), one).readings[4].value, 'unknown');
+  const keyword = gbrainSetupModel(snapshot({ search: { weights: 'stopped', mode: 'keyword_only' } }), one);
+  assert.equal(keyword.state, 'running');
+  assert.match(keyword.next, /^Search is keyword-only until the local embedding weights are running\. You can still start/);
+  assert.equal(gbrainSetupModel(snapshot(), { installed: true, active: true, activated_count: 0 }).action?.id, 'open_providers');
+  assert.equal(ready.polling, false);
+  assert.match(gbrainAssistantPrompt('ready'), /start using gbrain/);
   assert.match(gbrainAssistantPrompt('stopped'), /not running/);
 });
 
@@ -360,6 +406,11 @@ test('Setup gbrain paints the model and keeps the commons dashboard on its defau
   assert.match(setup, /setupRuntime\?\.gbrain/);
   assert.match(setup, /onState: \(summary\) => notifySummary\(SETUP_SURFACE_TYPES\.gbrain, summary/);
   assert.match(setup, /openServices: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.services/);
+  assert.match(setup, /openProviders: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.providers/);
+  // Start your first Personal Assistant is exactly the preset's launch: same plan, same route, same new tab.
+  assert.match(setup, /launchPresetPlan\(buildLaunchPlan\(slot, '', controls\)\)/);
+  assert.match(setup, /HOUSE_PRESETS\.find\(\(row\) => row\.handle === 'personal_assistant'\)/);
+  assert.match(setup, /presetLaunchUrl\(result\.data \|\| \{\}, seatingPlan\('personal_assistant'/);
   assert.match(gbrain, /import \{ gbrainAssistantPrompt, gbrainSetupModel \} from '\.\/gbrain-setup-state\.js'/);
   assert.match(gbrain, /if \(!root\.querySelector\('\.setup-gbrain-compact'\)\) renderSetup\(undefined\)/);
   assert.match(gbrain, /const mine = \+\+reads;[\s\S]*?if \(mine === reads\) renderSetup\(result\)/);

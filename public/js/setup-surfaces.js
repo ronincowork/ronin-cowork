@@ -12,6 +12,9 @@ import { campaignById, campaigns, loadCampaigns, saveCampaign } from './campaign
 import { completeRoutineMap } from './campaign-routines.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
+import { HOUSE_PRESETS, buildLaunchPlan, initialControls, seatingPlan } from './presets.js';
+import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
+import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 export { mountProviderAttachment, providerFromRuntime, providerOffers, providerPresentation, providerReadiness } from './setup-provider-state.js';
 
@@ -436,6 +439,17 @@ function createRootsSurface(context) {
   return { el: out.el, show: () => { room.enter(); notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench); } };
 }
 
+/** The one Services mark file, read once and inlined so the R's stroke follows the app's data-theme, not only the OS scheme.
+ *  The <img> stays as the first paint and the fallback; the file remains the single master (public/brand/README.md). */
+let servicesMarkMarkup = null;
+async function inlineServicesMark(host) {
+  if (servicesMarkMarkup === null) servicesMarkMarkup = fetch('brand/services-mark.svg').then((r) => (r.ok ? r.text() : '')).catch(() => '');
+  const markup = await servicesMarkMarkup;
+  if (!markup || !host.isConnected) return;
+  host.innerHTML = markup;
+  host.querySelector('svg')?.setAttribute('aria-hidden', 'true');
+}
+
 /** Ronin Services: identity, the beta, its value, one measured status, and the three steps. */
 function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
@@ -444,14 +458,17 @@ function createServicesSurface(context) {
   const explain = () => {
     const intro = el('section', 'setup-services-intro');
     const lockup = el('div', 'setup-services-lockup');
-    const mark = el('img', 'setup-services-mark');
+    const markHost = el('span', 'setup-services-mark');
+    const mark = el('img');
     mark.src = 'brand/services-mark.svg'; mark.alt = '';
+    markHost.append(mark);
+    void inlineServicesMark(markHost);
     const identity = el('div', 'setup-services-identity');
     identity.append(
       el('h2', '', t('settei.ronin_services', 'Ronin Services')),
       el('p', 'setup-lede', t('services_setup.intro', 'Ronin’s hosted parts: the recording, the template library, a background assistant, voice, and team memory.')),
     );
-    lockup.append(mark, identity);
+    lockup.append(markHost, identity);
     const beta = el('section', 'setup-services-beta');
     beta.append(
       el('h3', '', t('services_setup.beta', 'In beta')),
@@ -480,6 +497,20 @@ function createServicesSurface(context) {
     const routines = { ...completeRoutineMap(catalog.ok && Array.isArray(catalog.data) ? catalog.data : [], defaults.routines), ronin_services: on };
     return saveCampaign(row.id, { config: { agent_defaults: { ...defaults, routines } } });
   };
+  /** Ronin restarts itself: ask, then watch /api/installed come back and re-read. Sessions are untouched. */
+  const restartRonin = async (state) => {
+    state.dataset.tone = 'warn';
+    state.replaceChildren(el('p', 'setup-services-status-line', t('services_setup.restarting', 'Restarting Ronin…')), el('p', 'setup-services-next', t('services_setup.next_restarting', 'Sessions stay up; this surface re-reads the machine as Ronin comes back.')));
+    await request('/api/machine/restart', { method: 'POST', json: {} });
+    const until = Date.now() + 90_000;
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    while (Date.now() < until && body.isConnected) {
+      const probe = await request('/api/installed', { cache: 'no-store' });
+      if (probe.ok) break;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+    if (body.isConnected) await show();
+  };
   const show = async () => {
     clearTimeout(timer);
     const [registration, installed, activation] = await Promise.all([
@@ -495,7 +526,7 @@ function createServicesSurface(context) {
     state.setAttribute('aria-live', 'polite');
     state.append(el('p', 'setup-services-status-line', model.status), el('p', 'setup-services-next', model.next));
     body.append(state);
-    // Register · Install · On — three controls in one shape; each reads Done once it is.
+    // Register · Install · Switch — three controls in one shape; the first two read Done once they are, the switch toggles.
     const steps = el('div', 'setup-services-steps');
     const notice = el('p', 'setup-notice setup-services-notice');
     for (const item of model.steps) {
@@ -503,6 +534,7 @@ function createServicesSurface(context) {
       const button = action(item.label, '', async () => {
         if (item.act === 'register') { openRegister(); return; }
         button.disabled = true; notice.textContent = '';
+        if (item.act === 'restart') { await restartRonin(state); return; }
         const result = item.act === 'switch_on' || item.act === 'switch_off' ? await switchServices(item.act === 'switch_on')
           : await request(item.act === 'install' ? '/api/services/install' : '/api/services/activation/poll', { method: 'POST', json: {} });
         if (!result.ok) { notice.textContent = result.message; notice.classList.add('bad'); button.disabled = false; return; }
@@ -512,15 +544,16 @@ function createServicesSurface(context) {
       button.dataset.step = item.id; button.dataset.done = String(item.done);
       button.disabled = !item.enabled || !item.act;
       if (item.title) button.title = item.title;
-      if (item.id === 'switch') button.setAttribute('aria-pressed', String(item.done));
+      if (item.id === 'switch') button.setAttribute('aria-pressed', String(item.pressed === true));
       wrap.append(el('span', 'setup-services-step-caption', item.caption), button);
       steps.append(wrap);
     }
+    steps.dataset.count = String(model.steps.length);
     body.append(steps, notice);
     body.append(el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.')));
     notifySummary(SETUP_SURFACE_TYPES.services, model.summary, context.workbench);
     // A confirmation or an install in flight: look again quietly while the surface is on screen.
-    if (model.polling) timer = setTimeout(() => { if (body.isConnected) void show(); }, model.state === 'installing' ? 5000 : 15000);
+    if (model.polling) timer = setTimeout(() => { if (body.isConnected) void show(); }, model.state === 'installing' || model.steps.some((item) => item.id === 'restart') ? 5000 : 15000);
   };
   return { el: out.el, show, destroy: () => clearTimeout(timer) };
 }
@@ -531,10 +564,26 @@ function createGbrainSurface(context) {
   const host = el('div', 'setup-surface-body'); out.content.append(host);
   const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
     presentation: 'setup',
-    availability: () => { const runtime = context.environment?.setupRuntime; return runtime?.gbrain ? { ...runtime.gbrain, services: runtime.services || null } : null; },
+    availability: () => {
+      const runtime = context.environment?.setupRuntime;
+      return runtime?.gbrain ? { ...runtime.gbrain, services: runtime.services || null, activated_count: Number(runtime.activated_count || 0) } : null;
+    },
     // The selector card follows the measured state once it is read.
     onState: (summary) => notifySummary(SETUP_SURFACE_TYPES.gbrain, summary, context.workbench),
     openServices: () => context.workbench?.place(SETUP_SURFACE_TYPES.services, context.workspace || 'workspace2'),
+    openProviders: () => context.workbench?.place(SETUP_SURFACE_TYPES.providers, context.workspace || 'workspace2'),
+    // Exactly the Personal Assistant preset's launch, single assistant, opened in a new tab.
+    startAssistant: async () => {
+      const slot = HOUSE_PRESETS.find((row) => row.handle === 'personal_assistant');
+      const provider = (context.environment?.setupRuntime?.providers || []).find((row) => row.activated)?.id || '';
+      const controls = initialControls('personal_assistant', provider);
+      const tab = reserveWorkspaceTab();
+      const result = await launchPresetPlan(buildLaunchPlan(slot, '', controls));
+      if (!result?.ok) { closeWorkspaceTab(tab); return result; }
+      const url = presetLaunchUrl(result.data || {}, seatingPlan('personal_assistant', result.data || {}, controls), tab) || result.data?.url;
+      if (tab && url) tab.location.href = url; else if (url) window.open(url, '_blank', 'noopener');
+      return { ok: true };
+    },
   });
   return { el: out.el, show: () => {
     const status = context.environment?.setupRuntime?.gbrain;

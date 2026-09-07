@@ -88,8 +88,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
   stepKind.body.append(kindHost);
 
-  /* ---- 2 · New session ---- */
-  const stepType = createStep({ n: 2, key: 'type', title: t('new_agent.new_session', 'New session') });
+  /* ---- 2 · Session type ---- */
+  const stepType = createStep({ n: 2, key: 'type', title: t('new_agent.session_type_step', 'Session type') });
   const typeHost = el('div', 'fs-pair');
   const templateHost = el('div', 'na-template-tray');
   const TYPES = () => [
@@ -117,12 +117,13 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   stepType.body.append(typeHost, templateHost);
 
   /* ---- 3 · Name & instructions ---- */
-  const stepTop = createStep({ n: 3, key: 'top', title: t('new_agent.name_instructions', 'Name & instructions') });
+  const stepTop = createStep({ n: 3, key: 'top', title: t('new_agent.identity_step', 'Name & instructions') });
   const nameInput = el('input');
   nameInput.type = 'text';
   nameInput.autocapitalize = 'off';
   nameInput.autocomplete = 'off';
   nameInput.spellcheck = false;
+  nameInput.required = true;
   nameInput.maxLength = 40;
   nameInput.placeholder = t('new_agent.name_placeholder', 'name');
   nameInput.addEventListener('input', () => {
@@ -138,14 +139,14 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   });
   const leanNote = el('p', 'na-omitted');
   function paintLeanNote() {
-    leanNote.hidden = isCowork();
+    leanNote.hidden = isCowork() || draft.type === 'terminal';
     if (leanNote.hidden) return;
-    leanNote.textContent = draft.type === 'terminal'
-      ? t('new_agent.terminal_note', 'A terminal takes no kind, no instructions, no mandate and no loadout.')
-      : t('new_agent.bare_note', 'A bare-metal Agent takes no kind, no mandate and no loadout.');
+    leanNote.textContent = t('new_agent.bare_note', 'A bare-metal Agent takes no kind, no mandate and no loadout.');
   }
   const topLeft = el('div', 'aa-col');
-  topLeft.append(createField({ label: t('add_agent.name', 'name'), control: nameInput }).el, leanNote);
+  const nameField = createField({ label: t('new_agent.name_required', 'Name · required'), control: nameInput }).el;
+  nameField.classList.add('na-name-required');
+  topLeft.append(nameField, leanNote);
   stepTop.body.append(topLeft);
 
   /* ---- Apply Template lives under the fourth session choice. ---- */
@@ -381,7 +382,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     team: stepTeam, where: stepWhere, mandate: stepMandate, loadout: stepLoadout,
   };
   const plan = () => {
-    if (draft.type === 'terminal') return ['kind', 'type', 'top', 'team', 'where'];
+    if (draft.type === 'terminal') return ['type', 'top'];
     if (draft.type === 'bare_metal_agent') return ['kind', 'type', 'top', 'team', 'where'];
     return ['kind', 'type', 'top', 'team', 'where', 'mandate', 'loadout'];
   };
@@ -601,9 +602,10 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     for (const [key, step] of Object.entries(steps)) step.el.hidden = !order.includes(key);
     order.forEach((key, index) => steps[key].setNumber(index + 1));
     stepPayload.setNumber(order.length + 1);
+    stepPayload.el.hidden = draft.type === 'terminal';
     stepTop.el.querySelector('h3').textContent = hasAgent()
-      ? t('new_agent.name_instructions', 'Name & instructions')
-      : t('add_agent.name', 'name');
+      ? t('new_agent.identity_step', 'Name & instructions')
+      : t('new_agent.name_required_step', 'Name · required');
     pair.el.hidden = !hasAgent();
     instructionsField.hidden = !hasAgent();
     paintTypes();
@@ -627,10 +629,10 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   let payloadOpen = false;
   const stepPayload = createStep({ n: 8, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
     payloadOpen = !payloadOpen;
-    stepPayload.setCollapsed(!payloadOpen, '', true);
+    stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
   } });
   stepPayload.body.append(foot, actions.el);
-  stepPayload.setCollapsed(true, '', true);
+  stepPayload.setCollapsed(true, t('forms.payload_summary', 'Review what Launch will create'), true);
   const form = el('div', 'ntf-form');
   form.append(stepKind.el, stepType.el, stepTop.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el, stepPayload.el);
   // Save as template sits UNDER the reading, for the same reason as on New Team: the

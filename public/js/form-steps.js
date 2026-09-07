@@ -27,14 +27,15 @@ export const el = (tag, cls, text) => {
 export function createStep({ n, key, title, onToggle = null }) {
   const box = el('section', 'fs-step');
   box.dataset.step = key;
-  const head = el('div', 'fs-step-head');
+  const head = el(onToggle ? 'button' : 'div', 'fs-step-head');
+  if (onToggle) head.type = 'button';
   const num = el('span', 'fs-step-n', String(n));
   const chev = el('span', 'fs-chev', '');
-  head.append(num, el('h3', null, title));
-  const body = el('div', 'fs-step-body');
   const sum = el('span', 'fs-sum');
   sum.hidden = true;
-  box.append(head, body, sum);
+  head.append(num, el('h3', null, title), sum);
+  const body = el('div', 'fs-step-body');
+  box.append(head, body);
   if (onToggle) {
     head.append(chev);
     head.addEventListener('click', () => onToggle());
@@ -43,6 +44,7 @@ export function createStep({ n, key, title, onToggle = null }) {
     box.dataset.collapsed = String(!!on);
     head.classList.toggle('fs-togglable', togglable);
     chev.textContent = togglable ? (on ? '▸' : '▾') : '';
+    if (onToggle) head.setAttribute('aria-expanded', String(!on));
     body.hidden = !!on;
     sum.hidden = !on;
     if (on) sum.textContent = meta || '—';
