@@ -241,13 +241,11 @@ test('Morning Brief asks only for what each cadence needs and expands role instr
   assert.match(source, /ask\.rows = 1; delete line\.dataset\.editing/);
 });
 
-test('the purpose row hands its height to the rail so the stones rest at the shared elevation', async () => {
-  const [source, css] = await Promise.all([
-    readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'),
-    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
-  ]);
-  assert.match(source, /setProperty\?\.\('--sp-intro'/);
-  assert.match(css, /\.sp-surface \.sws:not\(\[data-open='true'\]\) \.sws-rail \{ padding-top: max\(var\(--space-6\), calc\(var\(--sws-stone\) \+ var\(--sws-gap\) - var\(--sp-intro, 0px\)\)\); \}/);
+test('Presets rests on the shared stone header and start line, with no override of its own', async () => {
+  const css = await readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /\.sp-surface \.sws:not\(\[data-open='true'\]\) \.sws-rail/);
+  assert.match(css, /\.sws-host \{[^}]*--sws-header-height: clamp\(6rem, 15dvh, 9rem\)/);
+  assert.match(css, /\.sws-header \{[^}]*flex: 0 0 var\(--sws-header-height\)/);
 });
 
 test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
