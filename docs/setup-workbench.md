@@ -115,7 +115,10 @@ launch takes the Configuration and Campaign defaults every launch uses. The pres
 are called, and how the new tab is seated. Bare Metal is the one exception by design: it makes
 no team; each of its rows is a bare-metal agent, the native CLI started in Ronin Lab with
 the owner's words and no Ronin birth packet, team room, or mandate, and the sessions sit
-together on the Cowork page, seated side by side. A session's name is the name in its row. A stone's gate reads the same runtime the
+together on the Cowork page, seated side by side. A session's name is the name in its row plus one three-digit code shared by the launch, so
+several Bare Metals can live together. A launch the server refuses, for a name already in
+use or anything else, fails loudly: the server's sentence sits beside Launch until the next
+press, and the reserved tab closes. A stone's gate reads the same runtime the
 Model providers surface keeps current, so activating a provider unlocks the stones at once. Grokbot Morning Briefing's **When**
 asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
 time, **One time** a date and a time; the schedule is written in the Cron jobs grammar

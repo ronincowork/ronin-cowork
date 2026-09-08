@@ -577,9 +577,15 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       if (typeof environment.launch !== 'function') return notice.set('failed', 'Launch is not available yet.');
       const tab = environment.reserveLaunchTab?.() || window.open('about:blank', '_blank');
       launch.setDisabled(true); notice.set('info', 'Launching…');
+      warning.hidden = true;
       const result = await environment.launch(buildLaunchPlan(slot, message.value, controlState()));
       launch.setDisabled(false);
-      if (!result?.ok) { tab?.close?.(); return notice.set('failed', result?.message || 'Launch failed.'); }
+      if (!result?.ok) {
+        tab?.close?.();
+        // FAIL LOUDLY: the server's own sentence, beside Launch, until the next press.
+        clearTimeout(warningTimer); warning.textContent = result?.message || 'Launch failed.'; warning.hidden = false;
+        return notice.set('failed', result?.message || 'Launch failed.');
+      }
       const plan = seatingPlan(slot.handle, result.data || {}, controlState());
       const url = environment.launchUrl?.(result.data || {}, plan, tab) || result.data?.url;
       if (tab && url) { tab.opener = null; tab.location.href = url; }

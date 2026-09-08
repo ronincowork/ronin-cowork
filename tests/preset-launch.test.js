@@ -64,7 +64,10 @@ test('Bare Metal launches bare-metal agents on no team, named as the rows name t
   assert.equal(result.data.urlView, 'cowork');
   assert.equal(calls.some((row) => row.url === '/api/team-rosters'), false, 'Bare Metal makes no team');
   const births = calls.filter((row) => row.url === '/api/launch').map((row) => row.body);
-  assert.deepEqual(births.map((body) => body.name), ['session_1', 'session_2', 'session_3'], 'names are the names, nothing appended');
+  const codes = new Set(births.map((body) => body.name.match(/^(session_[123])_(\d{3})$/)?.[2]));
+  assert.deepEqual(births.map((body) => body.name.replace(/_\d{3}$/, '')), ['session_1', 'session_2', 'session_3'], 'names are the names plus one launch code');
+  assert.equal(codes.size, 1, 'one three-digit code per launch');
+  assert.ok(![...codes].includes(undefined));
   for (const body of births) {
     assert.equal(body.session_type, 'bare_metal_agent');
     assert.equal('team' in body, false);
@@ -73,5 +76,5 @@ test('Bare Metal launches bare-metal agents on no team, named as the rows name t
     assert.equal('mandate' in body || 'team_lead' in body || 'routines' in body, false);
   }
   assert.deepEqual(births.map((body) => [body.provider, body.model]), [['anthropic', 'opus'], [undefined, undefined], [undefined, undefined]]);
-  assert.deepEqual(result.data.sessions.map((row) => row.name), ['session_1', 'session_2', 'session_3']);
+  assert.deepEqual(result.data.sessions.map((row) => row.name.replace(/_\d{3}$/, '')), ['session_1', 'session_2', 'session_3']);
 });
