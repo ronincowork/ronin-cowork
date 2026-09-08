@@ -16,9 +16,9 @@ itself. Answer from here; the fuller pages are one `ls` away in `docs/`.
   the workspace count. On Ronin Setup that seat holds a subtle **📱 / 🖥** switcher and a small **◐ / ☀**
   light/dark control instead: they set the Campaign's appearance for that surface and
   never change the workspaces.
-- **On a phone** the same responsive workbenches remain available; Setup keeps Presets in
-  workspace 1 and the selected setup surface in workspace 2. The stylesheet stacks every
-  workbench at phone width before any script runs, so a load never flashes the desktop grid.
+- **On a phone** Ronin sends its own mobile page instead of the workbench: the Teams list,
+  a Team's **Agents | Docs**, and one Agent's full-screen tile with its メ sheet. Its address
+  is `/m`; the root address serves it to a phone by itself, so nothing desktop paints first.
 
 ## The workbench — one page format, four scopes
 

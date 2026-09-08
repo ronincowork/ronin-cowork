@@ -1,15 +1,26 @@
 /* part of the ronin-cowork client — see js/README.md */
+/**
+ * THE MOBILE DOCUMENT'S ENTRY MODULE. `mobile.html` holds the bar and an empty main; this
+ * module fills them and routes the five acts a phone does: see a Team's Agents, see the
+ * documents they work on, change Agent, change Team, launch a new Agent. Nothing here
+ * decides "phone": the server sent this document because the request came from one
+ * (src/index.ts), so the first frame the browser paints is already the mobile bar.
+ *
+ * Three screens, one at a time: Teams → a Team (Agents | Docs) → one Agent's tile. On the
+ * tile the head is hidden and the bar's one メ sheet holds the head's own controls,
+ * RELOCATED not cloned, so every handler and live widget keeps the owner it always had.
+ */
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
-import { guard } from './errors.js';
+import { guard, showFailure } from './errors.js';
 import { connectEvents, sessionsHandlers } from './events.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
-import { loadProjects, projectData, statusLabel } from './home.js';
+import { loadMacros, loadProjects, projectData, refreshHome } from './home.js';
+import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
 import { makeDrop } from './tiledrop.js';
 import { S } from './state.js';
 import { t } from './lexicon.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFeedbackSurface } from './feedback.js';
 
@@ -29,72 +40,88 @@ function agentLabel(session) {
   return session.title || readable(session.name);
 }
 
-/** #/m · #/m/t/<team> · #/m/s/<team>/<session> — anything else is the front door. */
+/**
+ * #/ · #/t/<team> · #/d/<team> · #/s/<team>/<session> · #/feedback — anything else is the
+ * front door. The desktop's own `#/team/<name>` lands on the same Team, so one link opens
+ * it on either device; a `#/m/…` bookmark from the shell's earlier life still resolves.
+ */
 const routeFromHash = () => {
   const parts = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
-  if (parts[0] !== 'm') return { screen: 'teams' };
-  if (parts[1] === 'feedback') return { screen: 'feedback' };
-  if (parts[1] === 't' && parts[2]) return { screen: 'agents', team: parts[2] };
-  if (parts[1] === 's' && parts[2] && parts[3]) return { screen: 'terminal', team: parts[2], session: parts[3] };
+  if (parts[0] === 'm') parts.shift();
+  if (parts[0] === 'feedback') return { screen: 'feedback' };
+  if ((parts[0] === 't' || parts[0] === 'team') && parts[1]) return { screen: 'agents', team: parts[1] };
+  if (parts[0] === 'd' && parts[1]) return { screen: 'docs', team: parts[1] };
+  if (parts[0] === 's' && parts[1] && parts[2]) return { screen: 'terminal', team: parts[1], session: parts[2] };
   return { screen: 'teams' };
 };
-const teamHash = (team) => '#/m/t/' + encodeURIComponent(team);
-const sessionHash = (team, session) => '#/m/s/' + encodeURIComponent(team) + '/' + encodeURIComponent(session);
+const teamHash = (team) => '#/t/' + encodeURIComponent(team);
+const docsHash = (team) => '#/d/' + encodeURIComponent(team);
+const sessionHash = (team, session) => '#/s/' + encodeURIComponent(team) + '/' + encodeURIComponent(session);
 
 export async function buildPhone() {
-  document.body.dataset.phone = '1';
-  const root = el('div', null);
-  root.id = 'phone';
-  const bar = el('header', 'ph-bar');
-  const main = el('main', 'ph-main');
-  root.append(bar, main);
-  document.body.append(root);
-
-  // "we should see the top header, the RoninCowork and the Torii"). RELOCATED from the
-  // hidden desktop bar, not cloned — captured once, because a later paint detaches it
-  // and getElementById would then find nothing. Tapping it is the way home (href="./").
-  const brand = document.getElementById('brandbtn');
+  const root = document.getElementById('phone');
+  if (!root) throw new Error('the mobile document has no #phone');
+  const bar = root.querySelector('.ph-bar');
+  const main = root.querySelector('.ph-main');
+  // The mark is in the document's own markup; tapping it is the way to the Teams list.
+  const brand = bar.querySelector('.brand');
   const feedbackAction = WorkspaceKit.primitives.createAction({ label: t('feedback.button', 'Feedback'), size: 'compact', className: 'fb-bar-action' });
-  feedbackAction.el.addEventListener('click', () => { location.hash = '#/m/feedback'; });
+  feedbackAction.el.addEventListener('click', () => { location.hash = '#/feedback'; });
   const barContent = (...items) => [...items, feedbackAction.el];
-  const feedback = createFeedbackSurface(() => { location.hash = '#/m'; });
+  const feedback = createFeedbackSurface(() => { location.hash = '#/'; });
+
+  const backLink = (href) => {
+    const back = el('a', 'ph-back', '‹');
+    back.href = href;
+    back.title = t('phone.back', 'Back');
+    return back;
+  };
+  const teamsBar = () => bar.replaceChildren(...barContent(brand, el('span', 'ph-title', t('phone.coworks', 'Teams'))));
+  const teamBar = (team) => bar.replaceChildren(...barContent(
+    backLink('#/'),
+    el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })),
+  ));
+  // Painted before anything is fetched: the document already showed this bar, so the
+  // first script frame adds only Feedback, and a stalled server never shows a bare strip.
+  teamsBar();
 
   let route = routeFromHash();
-  let rows = new Map(); // session name -> /api/home row (status, ctx, model, tegami)
   let agentsPainted = ''; // what the Agents screen last drew — identical readings skip the repaint
   let host = null; // the one terminal host, alive only on the terminal screen
-  let stageTile = null; // the mounted tile inside it — for the slow reading clock
+  let stageTile = null; // the mounted tile inside it — for the slow work-record clock
   let sheet = null; // its メ sheet — dies with the host
-
-  /* ---------- readings ---------- */
-  const readRows = async () => {
-    if (document.visibilityState !== 'visible') return;
-    const r = await request('/api/home', { cache: 'no-store' });
-    if (!r.ok || !Array.isArray(r.data)) return;
-    rows = new Map(r.data.map((row) => [row.name, row]));
-    if (route.screen === 'agents') paintAgents();
-  };
+  let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
 
   /* ---------- screen 1 · the Teams ---------- */
   const paintTeams = () => {
-    bar.replaceChildren(...barContent(...(brand ? [brand] : []), el('span', 'ph-title', t('phone.coworks', 'Teams'))));
+    teamsBar();
     const list = el('div', 'ph-list');
     const teams = teamsFromState().filter((team) => !team.holding || unassignedSessions().length);
     for (const team of teams) {
-      const members = membersOfTeam(team.name);
       const card = el('a', 'ph-card');
       card.href = teamHash(team.name);
       const line = el('div', 'ph-card-line');
       line.append(el('span', 'ph-card-name', teamLabel(team)));
-      line.append(el('span', 'ph-card-note', members.length === 1
-        ? t('phone.agents_one', '1 Agent')
-        : t('phone.agents_many', '{n} Agents', { n: members.length })));
       card.append(line);
-      if (team.objective) card.append(el('div', 'ph-card-sub', team.objective));
       list.append(card);
     }
     if (!teams.length) list.append(el('div', 'ph-empty', t('phone.no_coworks', 'No Teams yet.')));
     main.replaceChildren(list);
+  };
+
+  /* ---------- screen 2 · one Team: Agents | Docs ---------- */
+  const segment = (team, which) => {
+    const seg = el('nav', 'ph-seg');
+    for (const [id, label, href] of [
+      ['agents', t('phone.agents', 'Agents'), teamHash(team)],
+      ['docs', t('phone.docs', 'Docs'), docsHash(team)],
+    ]) {
+      const item = el('a', 'ph-seg-item', label);
+      item.href = href;
+      if (id === which) item.setAttribute('aria-current', 'page');
+      seg.append(item);
+    }
+    return seg;
   };
 
   const launchCard = (team) => {
@@ -137,7 +164,6 @@ export async function buildPhone() {
     go.type = 'button';
     let busy = false;
     go.addEventListener('click', async () => {
-      const launchTab = reserveWorkspaceTab();
       if (busy || !name.value.trim()) return;
       busy = true;
       go.disabled = true;
@@ -161,15 +187,14 @@ export async function buildPhone() {
       busy = false;
       go.disabled = false;
       if (!result.ok) {
-        closeWorkspaceTab(launchTab);
         state.dataset.kind = 'failed';
         state.textContent = result.message;
         return;
       }
       const born = result.data?.name || name.value.trim();
       await fetchSessions();
-      // The Agent opens where it was born: this Cowork's stage.
-      openWorkspaceTab('team', team, launchTab);
+      // The Agent opens where it was born: its own tile, in this document.
+      location.hash = sessionHash(team, born);
     });
     open.addEventListener('click', () => {
       form.hidden = !form.hidden;
@@ -180,54 +205,54 @@ export async function buildPhone() {
     return card;
   };
 
-  /* ---------- screen 2 · the Agents ---------- */
   const paintAgents = () => {
     const team = route.team;
-    // Never repaint over an open launch form — the readings clock would wipe a name
-    // mid-typing. The readings resume the moment the form closes or the route moves.
+    // Never repaint over an open launch form — a feed event would wipe a name mid-typing.
     if (main.querySelector('.ph-launch-form:not([hidden])')) return;
-    // And never repaint what has not moved: the 5s clock rebuilding identical cards
-    // detaches the node under a finger mid-tap — a tap that does nothing (caught by
-    // the render gate racing the same window).
-    const signature = team + '\0' + membersOfTeam(team).map((member) => {
-      const row = rows.get(member.name) || {};
-      return [member.name, member.title, member.team_lead, member.session_role, row.status, row.ctx, row.model, row.tegami?.chip?.text].join('|');
-    }).join('\n');
+    // And never repaint what has not moved: rebuilding identical cards detaches the node
+    // under a finger mid-tap — a tap that does nothing.
+    const signature = [team, teamLabel({ ...teamByName(team), name: team })].concat(membersOfTeam(team).map((member) => [member.name, member.title, member.team_lead].join('|'))).join('\n');
     if (signature === agentsPainted) return;
     agentsPainted = signature;
-    bar.replaceChildren(...barContent(
-      backLink('#/m'),
-      el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })),
-    ));
+    teamBar(team);
     const list = el('div', 'ph-list');
     for (const member of membersOfTeam(team)) {
-      const row = rows.get(member.name) || {};
       const card = el('a', 'ph-card');
       card.href = sessionHash(team, member.name);
       const line = el('div', 'ph-card-line');
       line.append(el('span', 'ph-card-name', (member.team_lead ? '人 ' : '') + agentLabel(member)));
-      const state = [statusLabel(row.status), row.ctx != null ? `⛽ ${row.ctx}%` : ''].filter(Boolean).join(' · ');
-      if (state) line.append(el('span', 'ph-card-note', state));
       card.append(line);
-      const step = row.tegami?.chip?.text || '';
-      const sub = [step, member.session_role, (row.model || '').toLowerCase()].filter(Boolean).join(' · ');
-      if (sub) card.append(el('div', 'ph-card-sub', sub));
       list.append(card);
     }
     if (!list.children.length) list.append(el('div', 'ph-empty', t('phone.no_agents', 'No Agents on this Team yet.')));
     list.append(launchCard(team));
-    main.replaceChildren(list);
+    main.replaceChildren(segment(team, 'agents'), list);
+  };
+
+  /**
+   * The Team's documents — the same shelf the desktop commons shows (Tracked · Plans ·
+   * Docs), built by docs.js for this Team's members and repos. A tapped document opens in
+   * the same pane, full width; ← in the pane returns to the list, ‹ in the bar leaves.
+   */
+  const paintDocs = () => {
+    const team = route.team;
+    teamBar(team);
+    const pane = el('div', 'home-docs ph-docs');
+    const docs = buildDocs(null, pane, () => pane.isConnected,
+      (name) => membersOfTeam(team).some((member) => member.name === name),
+      () => teamByName(team)?.repos || []);
+    docsView = docs;
+    main.replaceChildren(segment(team, 'docs'), pane);
+    void refreshHome().then(() => { if (pane.isConnected) docs.enter(); });
+  };
+  const leaveDocs = () => {
+    if (!docsView) return true;
+    const left = docsView.leave(); // false while unsaved typing stands and the owner keeps it
+    if (left) docsView = null;
+    return left;
   };
 
   /* ---------- screen 3 · the Agent ---------- */
-  /**
-   * The tile's own head is hidden (the host's reduced mode); this bar replaces it.
-   * The sheet holds the head's OWN controls, RELOCATED not cloned — every handler
-   * and live widget (gauge needle, dial pointer) keeps the owner it always had.
-   * The whole host is built per open and destroyed on the way out: a phone shows
-   * one Agent at a time, and one reattach per open is the price of never leaking
-   * a transport.
-   */
   const openTerminal = () => {
     const { team, session } = route;
     closeTerminal();
@@ -238,26 +263,25 @@ export async function buildPhone() {
     const tile = host.mount(session);
     stageTile = tile;
 
-    sheet = makeDrop('メ', t('phone.me_title', 'This Agent — status, work record, note, control, kill'), 'me');
+    sheet = makeDrop('メ', t('phone.me_title', 'This Agent — work record, docs, macros, note, control, kill'), 'me');
     const node = (key) => tile[key]?.el ?? tile[key];
-    // The status row is a reading, not a control; setFooter writes the word beside it.
-    tile.dropStatus = sheet.addRow(node('gauge'), t('me.status', 'Status'), 'inert');
-    tile.dropStatus.classList.add('tdrop-status');
-    tile.setFooter(tile.ctxPct ?? null, tile.ctxModel || '');
     sheet.addRow(node('workRecordBtn'), t('me.ladder', 'Work record'));
+    sheet.addRow(node('docsBtn'), t('me.docs', 'Docs'));
+    sheet.addRow(node('tmacBtn'), t('me.macros', 'Macros'));
     // No Services, no choice: the Output row only exists where an unlocked view does.
     if (!tile.servicesOff()) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
-    sheet.addRow(node('docsBtn'), t('me.docs', 'Docs'));
     sheet.addRow(node('noteBtn'), t('me.note', 'Note'));
     sheet.addRow(node('dial'), t('me.control', 'Control'), 'stay');
     sheet.addRow(node('killBtn'), t('me.kill', 'Kill session'));
 
+    // The 📄 and ⚡ menus hang off the hidden tile head; here they hang off the bar.
     bar.replaceChildren(...barContent(
       backLink(teamHash(team)),
       el('span', 'ph-title', agentLabel(S.sessions.find((row) => row.name === session) || { name: session })),
       sheet.btn,
       sheet.menu,
       tile.docsBtn.menu,
+      tile.tmacBtn.menu,
     ));
   };
   const closeTerminal = () => {
@@ -269,16 +293,8 @@ export async function buildPhone() {
     stageTile = null;
   };
 
-  const backLink = (href) => {
-    const back = el('a', 'ph-back', '‹');
-    back.href = href;
-    back.title = t('phone.back', 'Back');
-    return back;
-  };
-
   const paintFeedback = () => {
-    closeTerminal();
-    bar.replaceChildren(...barContent(backLink('#/m'), el('span', 'ph-title', t('feedback.title', 'Feedback'))));
+    bar.replaceChildren(...barContent(backLink('#/'), el('span', 'ph-title', t('feedback.title', 'Feedback'))));
     main.replaceChildren(feedback.el);
     feedback.show?.();
   };
@@ -286,17 +302,22 @@ export async function buildPhone() {
   /* ---------- the router ---------- */
   const render = () => {
     const next = routeFromHash();
+    const staysOnDocs = next.screen === 'docs' && next.team === route.team;
+    if (route.screen === 'docs' && !staysOnDocs && !leaveDocs()) {
+      location.hash = docsHash(route.team); // the owner kept unsaved typing; stay
+      return;
+    }
     if (route.screen === 'terminal' && !(next.screen === 'terminal' && next.session === route.session)) closeTerminal();
     // A screen change always paints fresh; the skip-signature only spans one stay.
     if (next.screen !== route.screen || next.team !== route.team) agentsPainted = '';
     route = next;
     if (route.screen === 'teams') paintTeams();
-    else if (route.screen === 'agents') { paintAgents(); void readRows(); }
+    else if (route.screen === 'agents') paintAgents();
+    else if (route.screen === 'docs') { if (docsView) teamBar(route.team); else paintDocs(); } // a title that arrives late still lands
     else if (route.screen === 'feedback') paintFeedback();
     else if (!host) openTerminal();
   };
   window.addEventListener('hashchange', () => guard('phone route', render));
-  if (!location.hash.startsWith('#/m')) history.replaceState(null, '', '#/m');
 
   /* ---------- the feeds ---------- */
   // Membership and the lists are live off the same feed the workbench uses. A killed
@@ -314,18 +335,17 @@ export async function buildPhone() {
     void fetchSessions();
     void refreshTeams();
   });
-  window.setInterval(() => {
-    if (route.screen === 'agents') void readRows();
-    // The tile refreshes its own gauge and letter on connect; keep them breathing here,
-    // since the desktop's 30s clock (layout.js) never runs on the phone.
-    if (route.screen === 'terminal' && stageTile) { stageTile.refreshCtx(); stageTile.refreshTegami(); }
-  }, 30000);
-  window.setInterval(() => { if (route.screen === 'agents') void readRows(); }, 5000);
+  // The tile refreshes its own work record on connect; keep it breathing here, since the
+  // desktop's 30s clock (layout.js) never runs in this document.
+  window.setInterval(() => { if (route.screen === 'terminal' && stageTile) stageTile.refreshTegami(); }, 30000);
 
   await fetchSessions();
   guard('session event stream', connectEvents);
   await refreshTeams();
   guard('load projects', loadProjects); // the launch card's project_root fallback
+  guard('load macros', loadMacros); // the メ sheet's Macros row reads the same catalog the desktop ⚡ does
   guard('phone paint', render);
-  void readRows();
 }
+
+// The document's one script. A failure here must be on screen, not silent (errors.js).
+buildPhone().catch((e) => showFailure('mobile boot', e));

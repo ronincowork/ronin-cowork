@@ -55,18 +55,21 @@ for (const [name, m] of Object.entries(mod)) {
   if (lines > CEILING) problems.push(`${name}.js is ${lines} lines (ceiling ${CEILING}) — split it; see js/README.md`);
 }
 
+// Two documents, two entry modules: index.html boots main.js, mobile.html boots phone.js.
+const ENTRIES = ['main', 'phone'];
 const seen = new Set();
-(function walk(n) {
+const walk = (n) => {
   if (seen.has(n) || !mod[n]) return;
   seen.add(n);
   for (const i of mod[n].imports) walk(i.from);
-})('main');
+};
+for (const entry of ENTRIES) walk(entry);
 for (const name of Object.keys(mod)) {
-  if (!seen.has(name)) problems.push(`${name}.js is orphaned — nothing reachable from main.js imports it`);
+  if (!seen.has(name)) problems.push(`${name}.js is orphaned — nothing reachable from main.js or phone.js imports it`);
 }
 
 for (const [name, m] of Object.entries(mod)) {
-  if (name === 'main') continue;
+  if (ENTRIES.includes(name)) continue; // an entry module boots itself at top level
   const imported = new Set(m.imports.flatMap((i) => i.locals));
   if (!imported.size) continue;
   let depth = 0;

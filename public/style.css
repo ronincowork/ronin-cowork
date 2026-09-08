@@ -6387,11 +6387,6 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 }
 
 
-body[data-phone] #bar,
-body[data-phone] #viewhost {
-  display: none;
-}
-
 @media (max-width: 680px) {
   .ch-doors {
     grid-template-columns: 1fr;
@@ -6578,17 +6573,17 @@ body[data-phone] #viewhost {
   display: flex;
   position: relative;
 }
-body[data-phone] .wk-terminal-host {
+#phone .wk-terminal-host {
   width: 100%;
   height: 100%;
   min-width: 0;
   min-height: 0;
 }
-body[data-phone] .wk-terminal-host > .tile {
+#phone .wk-terminal-host > .tile {
   width: 100%;
   height: 100%;
 }
-body[data-phone] .tile-head {
+#phone .tile-head {
   display: none;
 }
 
@@ -6675,4 +6670,38 @@ body[data-phone] .tile-head {
   color: var(--fg-strong);
   font-size: var(--text-6);
   font-weight: 600;
+}
+
+/* The Team screen's two-way switch — Agents | Docs. One view at a time, never stacked. */
+#phone .ph-seg {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) 0;
+}
+#phone .ph-seg-item {
+  flex: 1;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--muted-2);
+  font-size: var(--text-5);
+  font-weight: 600;
+  text-decoration: none;
+}
+#phone .ph-seg-item[aria-current='page'] {
+  background: var(--raise);
+  border-color: var(--accent);
+  color: var(--fg-strong);
+}
+/* The shared docs shelf (docs.js) is `display: none` until a desktop pane shows it; here it
+   is the whole screen under the switch. */
+#phone .ph-docs {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  margin: var(--space-4);
 }

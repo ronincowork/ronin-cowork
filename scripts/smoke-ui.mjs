@@ -648,136 +648,69 @@ async function checkJourneys(page, label, jsErrors) {
   await sessionsRoundTrip(4, 'team');
 }
 
-// THE FIRST-PAINT CONTRACT. Installed before any document script: records the first
-// animation frame in which a workbench layout has a box — on a cold load that is the
-// pre-script boot skeleton, before `boot-pending` clears — and whether that frame was the
-// phone shape (surfaces stacked, none side by side) with the bar showing. A desktop-shaped
-// first frame is the flash Glen photographed: the grid at desktop proportions in a phone
-// viewport, replaced a beat later by the stacked presentation.
-function firstPaintRecorder() {
-  const shapeOf = () => {
-    const layout = [...document.querySelectorAll('.wk-workbench-layout')].find((node) => node.getClientRects().length);
-    if (!layout) return null;
-    const style = getComputedStyle(layout);
-    const boxes = [...layout.children].filter((c) => c.classList.contains('wk-layout-surface') && c.getClientRects().length).map((c) => c.getBoundingClientRect());
-    const rows = new Set(boxes.map((b) => Math.round(b.top)));
-    const bar = document.getElementById('bar');
-    return {
-      stacked: style.display === 'flex' && style.flexDirection === 'column' && rows.size === boxes.length,
-      surfaces: boxes.map((b) => [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)]),
-      pending: document.documentElement.classList.contains('boot-pending'),
-      skeleton: layout.classList.contains('boot-workbench-layout'),
-      bar: bar ? getComputedStyle(bar).display : null,
-    };
-  };
+// THE MOBILE DOCUMENT at phone geometry. A phone downloads mobile.html and nothing else,
+// so the first frame the engine paints is the mobile bar: there is no desktop bar, no
+// workbench and no boot skeleton in that document to flash. That is the whole answer to
+// the frame Glen photographed (the desktop bar and a squashed skeleton, replaced a beat
+// later by the phone UI). Two addresses reach the document — /m, and / for a phone-class
+// User-Agent, which the iPhone descriptor sends — and the pass proves both, cold and with
+// the first server answer stalled, the way the flash was caught.
+function mobileFirstPaintRecorder() {
   const tick = () => {
-    const shape = shapeOf();
-    if (shape) { window.__roninFirstPaint = shape; return; }
+    const desktop = document.querySelector('#bar, #bootframe, .wk-workbench-layout');
+    if (desktop && desktop.getClientRects().length) {
+      window.__roninFirstPaint = { mobile: false, painted: desktop.id || desktop.className };
+      return;
+    }
+    const bar = document.querySelector('#phone > .ph-bar');
+    if (bar && bar.getClientRects().length) {
+      window.__roninFirstPaint = { mobile: true, title: bar.querySelector('.ph-title')?.textContent?.trim() || '' };
+      return;
+    }
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
 }
 
-function judgeFirstPaint(label, page_, first) {
-  if (first?.stacked && first.bar !== 'none') ok(`${label}: ${page_} first paint is the phone shape${first.skeleton ? ' (boot skeleton, before script)' : ''}`);
-  else bad(`${label}: ${page_} first paint is not the phone shape — desktop grid flashed (${JSON.stringify(first)})`);
-}
-
-// Cowork and Team at phone width: the first painted frame and the settled frame must both
-// be the stacked phone presentation. The Team need not exist — the page paints its
-// workbench for any name, and this measures shape, not membership.
-async function checkPhoneFirstPaint({ label, browser, contextOpts }) {
-  for (const [name, hash] of [['Cowork', '#/cowork'], ['Team', `#/team/${PROBE}`]]) {
-    const { page, jsErrors } = await openPage(browser, contextOpts);
-    await page.addInitScript(firstPaintRecorder);
+async function runPhonePass({ label, browser, contextOpts }) {
+  const cases = [
+    ['/m', 'm', false],
+    ['/ as a phone', '', false],
+    ['/m with the first answer stalled', 'm', true],
+  ];
+  for (const [name, route, stall] of cases) {
+    const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
+    await page.addInitScript(mobileFirstPaintRecorder);
+    if (stall) {
+      await page.route('**/api/sessions', async (r) => {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        await r.continue();
+      });
+    }
     try {
-      await page.goto(URL_.replace(/#.*$/, '') + hash, { waitUntil: 'networkidle', timeout: 30_000 });
+      await page.goto(new URL(route, URL_.replace(/#.*$/, '')).href, { waitUntil: 'networkidle', timeout: 30_000 });
     } catch (e) {
-      bad(`${label}: ${name} page did not load: ${e.message}`);
+      bad(`${label}: ${name} did not load: ${e.message}`);
     }
     await page.waitForTimeout(1500);
     const first = await page.evaluate(() => window.__roninFirstPaint || null);
-    judgeFirstPaint(label, name, first);
-    const settled = await page.evaluate(() => {
-      const layout = [...document.querySelectorAll('.wk-workbench-layout')].find((node) => node.getClientRects().length && !node.classList.contains('boot-workbench-layout'));
-      if (!layout) return null;
-      const boxes = [...layout.children].filter((c) => c.classList.contains('wk-layout-surface') && c.getClientRects().length).map((c) => c.getBoundingClientRect());
-      return { profile: layout.dataset.workbenchProfile || '', stacked: getComputedStyle(layout).flexDirection === 'column' && new Set(boxes.map((b) => Math.round(b.top))).size === boxes.length, surfaces: boxes.length };
-    });
-    if (settled?.stacked && settled.surfaces > 0) ok(`${label}: ${name} settles on the stacked workbench (${settled.profile}, ${settled.surfaces} surfaces)`);
-    else bad(`${label}: ${name} did not settle on the stacked workbench (${JSON.stringify(settled)})`);
-    if (jsErrors.length) bad(`${label}: ${name} uncaught JS errors:\n         ` + jsErrors.join('\n         '));
+    if (first?.mobile) ok(`${label}: ${name} — first paint is the mobile bar ("${first.title}")`);
+    else bad(`${label}: ${name} — first paint is not the mobile bar (${JSON.stringify(first)})`);
+    const settled = await page.evaluate(() => ({
+      mobile: !!document.querySelector('#phone > .ph-bar') && !!document.querySelector('#phone > .ph-main'),
+      desktop: !!document.querySelector('#bar, #bootframe, #viewhost, .wk-workbench-layout, [data-workspace-view]'),
+      entry: [...document.scripts].some((s) => /\/js\/phone\.js$/.test(s.src)),
+      cards: document.querySelectorAll('#phone .ph-card').length,
+      failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
+    }));
+    if (settled.mobile && settled.entry && !settled.desktop) ok(`${label}: ${name} — the mobile document, with no desktop markup in it (${settled.cards} team cards)`);
+    else bad(`${label}: ${name} — not the mobile document (${JSON.stringify(settled)})`);
+    if (settled.failBar) bad(`${label}: ${name} — the failure banner is showing:\n         ` + settled.failBar.replace(/\n/g, '\n         '));
+    if (jsErrors.length) bad(`${label}: ${name} — uncaught JS errors:\n         ` + jsErrors.join('\n         '));
+    else ok(`${label}: ${name} — no uncaught JS errors`);
+    if (netFails.length) bad(`${label}: ${name} — failed requests:\n         ` + netFails.join('\n         '));
     await page.context().close();
   }
-}
-
-async function runPhonePass({ label, browser, contextOpts }) {
-  await checkPhoneFirstPaint({ label, browser, contextOpts });
-  const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
-  // The five registry rows as GET /api/setup/runtime answers them: id is the CLI id the
-  // Model providers surface joins the catalog on (its `cli` field), never the vendor id.
-  const providerRows = [
-    { id: 'claude', label: 'Claude Code', from: 'Anthropic', provider: 'anthropic', installed: true, signed_in: true, activated: true, state: 'activated' },
-    { id: 'codex', label: 'Codex', from: 'OpenAI', provider: 'openai', installed: true, signed_in: true, activated: true, state: 'activated' },
-    { id: 'gemini', label: 'Gemini CLI', from: 'Google', provider: 'google', installed: true, signed_in: false, activated: false, state: 'installed' },
-    { id: 'grok', label: 'Grok CLI', from: 'xAI', provider: 'xai', installed: false, installable: true, signed_in: false, activated: false, state: 'installable' },
-    { id: 'hermes', label: 'Hermes', from: 'Nous Research', provider: 'nous', installed: false, installable: false, signed_in: false, activated: false, state: 'absent' },
-  ];
-  const runtimeBody = JSON.stringify({ activated_count: 2, activated_band: 'two_plus', providers: providerRows, roots: [], gbrain: { active: false }, services: { active: false } });
-  await page.route('**/api/setup/runtime', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: runtimeBody }));
-  // The Setup Model providers surface is the one client that measures (POST); it must see
-  // the same mocked machine as every reader of the record.
-  await page.route('**/api/setup/providers/measure', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: runtimeBody }));
-  await page.addInitScript(firstPaintRecorder);
-  await page.addInitScript(() => {
-    const timer = setInterval(() => {
-      if (!document.body || document.documentElement.classList.contains('boot-pending')) return;
-      window.__roninFirstVisible = {
-        setup: document.querySelector('[data-workspace-view="setup"]:not([hidden])')?.querySelector('.wk-workbench-layout')?.dataset.workbenchProfile || '',
-        bar: document.getElementById('bar') ? getComputedStyle(document.getElementById('bar')).display : null,
-      };
-      clearInterval(timer);
-    }, 0);
-  });
-  try {
-    await page.goto(URL_.replace(/#.*$/, '') + '#/setup', { waitUntil: 'networkidle', timeout: 30_000 });
-  } catch (e) {
-    bad(`${label}: page did not load: ${e.message}`);
-  }
-  await page.waitForTimeout(3000);
-  const shell = await page.evaluate(() => ({
-    legacyPhone: !!document.getElementById('phone'),
-    barVisible: !!document.getElementById('bar') && getComputedStyle(document.getElementById('bar')).display !== 'none',
-    profile: document.querySelector('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-layout')?.dataset.workbenchProfile || '',
-    workspaces: document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-cell:not([hidden])').length,
-    selectors: document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .wk-workbench-selector-cards .wk-card').length,
-    providerStones: [...document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .setup-provider-stone[data-provider]')].map((node) => ({
-      key: node.getAttribute('data-provider'),
-      label: node.querySelector('.sws-label')?.textContent?.trim(),
-    })),
-    presets: document.querySelectorAll('[data-workspace-view="setup"]:not([hidden]) .sp-preset-stone').length,
-    failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
-  }));
-  judgeFirstPaint(label, 'Setup', await page.evaluate(() => window.__roninFirstPaint || null));
-  const firstVisible = await page.evaluate(() => window.__roninFirstVisible || null);
-  if (firstVisible?.setup === 'setup' && firstVisible.bar !== 'none') ok(`${label}: first paint is the responsive Setup workbench`);
-  else bad(`${label}: first paint missed the responsive Setup workbench (${JSON.stringify(firstVisible)})`);
-  if (!shell.legacyPhone) ok(`${label}: the retired phone drill-down stays retired`);
-  else bad(`${label}: the retired phone drill-down mounted over Setup`);
-  if (shell.barVisible) ok(`${label}: shared workbench chrome remains available`);
-  else bad(`${label}: shared workbench chrome is hidden`);
-  if (shell.profile === 'setup' && shell.workspaces === 2) ok(`${label}: Setup keeps its two ruled workspaces`);
-  else bad(`${label}: Setup profile/seating is wrong — ${JSON.stringify(shell)}`);
-  const expectedProviders = providerRows.map((row) => ({ key: row.id, label: row.label }));
-  if (shell.selectors === 6 && JSON.stringify(shell.providerStones) === JSON.stringify(expectedProviders) && shell.presets === 8) ok(`${label}: activated Runtime providers map one-for-one to shared stones and eight presets remain usable at phone width`);
-  else bad(`${label}: Setup choices are incomplete — ${JSON.stringify(shell)}`);
-  if (shell.failBar) bad(`${label}: the failure banner is showing:\n         ` + shell.failBar.replace(/\n/g, '\n         '));
-  else ok(`${label}: no failure banner`);
-
-  if (jsErrors.length) bad(`${label}: uncaught JS errors:\n         ` + jsErrors.join('\n         '));
-  else ok(`${label}: no uncaught JS errors`);
-  if (netFails.length) bad(`${label}: failed requests:\n         ` + netFails.join('\n         '));
-  else ok(`${label}: no failed requests`);
 }
 
 async function checkA11y(page, label, axeSrc) {
@@ -951,5 +884,5 @@ if (fails.length) {
   process.exit(1);
 }
 console.log(probeAvailable
-  ? `PASSED — desktop and phone [${engine}] both render and paint a live pane.\n`
+  ? `PASSED — the desktop renders and paints a live pane; the phone [${engine}] gets the mobile document.\n`
   : `PASSED — desktop and phone [${engine}] render cleanly; live-pane checks skipped at session capacity.\n`);

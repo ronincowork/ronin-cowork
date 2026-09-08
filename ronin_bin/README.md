@@ -35,10 +35,13 @@ same `-h`/`--help` contract as a later mechanical rollout; they are intentionall
 partially converted here.
 
 **Two files here are not tools.** `tool-path.sh` resolves a tool's real file behind its
-projected symlink (`SELF`, hence `TOOL_DIR`), and `ronin-http.sh` is sourced by every tool
-that talks to the operator: `ronin_connect` resolves the door through the sibling
-`ronin-url` — the operator's Unix socket, or `RONIN_URL` — and sets `url` and `RONIN_CURL`
-for the request (`docs/operator-connection.md`). A tool never carries an address of its own.
+projected symlink (`SELF`, hence `TOOL_DIR`) and carries `ronin_session_me`, the one
+resolver of which session a tool is acting for (the pane, then `$TMUX`, then the session's
+own command directory the tool was reached through; never the focused tile), and
+`ronin-http.sh` is sourced by every tool that talks to the operator: `ronin_connect`
+resolves the door through the sibling `ronin-url` — the operator's Unix socket, or
+`RONIN_URL` — and sets `url` and `RONIN_CURL` for the request
+(`docs/operator-connection.md`). A tool never carries an address of its own.
 
 ## Adding a tool
 
