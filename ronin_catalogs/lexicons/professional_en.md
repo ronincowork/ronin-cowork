@@ -2042,15 +2042,13 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
 - **setup_surface.providers_summary:** {providers} providers · {models} models · {activated} activated here
 - **setup_surface.providers_summary_dated:** {counts} · catalog updated {date}
-- **setup_surface.providers_help:** Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.
-- **setup_surface.providers_measured:** This machine was measured {when}; opening this surface measures it again.
-- **setup_surface.providers_unmeasured:** This machine has not been measured yet.
-- **setup_surface.catalog_stock:** Catalog updated {date} · prices and models as read then; refreshed with each Ronin update.
-- **setup_surface.catalog_yours:** Your catalog copy, updated {date}.
-- **setup_surface.catalog_undated:** date not stated
+- **setup_surface.check_dates:** Check dates
+- **setup_surface.catalog_researched:** Catalog researched
+- **setup_surface.catalog_date_unstated:** Date not stated
+- **setup_surface.machine_measured:** Machine measured
+- **setup_surface.machine_unmeasured:** Not measured yet
 - **setup_surface.section_yours:** Yours
 - **setup_surface.section_catalog:** The catalog
-- **setup_surface.section_catalog_dated:** The catalog · updated {date}
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.

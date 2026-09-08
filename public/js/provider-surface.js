@@ -6,8 +6,8 @@
  * shared stone work surface — one per CLI the registry knows, each wearing its short
  * measured state, then any catalog provider no registry CLI serves — mounted straight on
  * the surface content so the stone seat owns every inset exactly as Presets does. The
- * header says which catalog copy is shown and when it was updated (a snapshot, not live
- * data) and when this machine was last measured.
+ * footer keeps the catalog research date and this machine's measurement date available
+ * behind a short disclosure.
  *
  * Choosing a stone opens that provider beside the rail, top to bottom:
  *   1. YOURS — the three numbered steps (install · authenticate with the native sign-in
@@ -56,23 +56,21 @@ export function providersSummary(catalog) {
   return catalog.updated ? t('setup_surface.providers_summary_dated', '{counts} · catalog updated {date}', { counts, date: catalog.updated }) : counts;
 }
 
-/** THE CATALOG IS A SNAPSHOT, NOT LIVE DATA: one line saying which copy and its date. */
-export function catalogLine(catalog) {
-  const date = catalog?.updated || t('setup_surface.catalog_undated', 'date not stated');
-  return catalog?.origin === 'user'
-    ? t('setup_surface.catalog_yours', 'Your catalog copy, updated {date}.', { date })
-    : t('setup_surface.catalog_stock', 'Catalog updated {date} · prices and models as read then; refreshed with each Ronin update.', { date });
-}
-
 export function createProviderSurface(context) {
   const out = WorkspaceKit.primitives.createSurface({ label: t('setup_surface.providers', 'Model providers'), className: 'setup-surface setup-provider-surface' });
   const action = (label, kind, onClick) => { const made = WorkspaceKit.primitives.createAction({ label, kind, action: onClick }); return made.el ?? made; };
   const yesNo = (on) => (on ? t('setup_surface.yes', 'yes') : t('setup_surface.no', 'no'));
   const when = (stamp) => { const date = new Date(stamp); return Number.isNaN(date.getTime()) ? String(stamp) : date.toLocaleString(); };
-  const intro = el('div', 'setup-provider-intro');
-  const snapshot = el('p', 'setup-fine setup-provider-snapshot');
-  const measured = el('p', 'setup-fine setup-provider-measured');
-  intro.append(el('p', 'setup-fine', t('setup_surface.providers_help', 'Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.')), snapshot, measured);
+  const dates = el('details', 'setup-provider-dates');
+  const catalogDate = el('dd');
+  const machineDate = el('dd');
+  const dateList = el('dl', 'setup-provider-date-list');
+  const dateRow = (label, value) => { const row = el('div'); row.append(el('dt', null, label), value); return row; };
+  dateList.append(
+    dateRow(t('setup_surface.catalog_researched', 'Catalog researched'), catalogDate),
+    dateRow(t('setup_surface.machine_measured', 'Machine measured'), machineDate),
+  );
+  dates.append(el('summary', null, t('setup_surface.check_dates', 'Check dates')), dateList);
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
@@ -82,11 +80,15 @@ export function createProviderSurface(context) {
     if (destroy) mounted.destroy?.(); else mounted.park?.();
     mounted = null;
   };
-  const measuredLine = () => {
+  const measuredDateText = () => {
     const stamp = providerCatalog().measured_at || runtime?.measured_at || '';
     return stamp
-      ? t('setup_surface.providers_measured', 'This machine was measured {when}; opening this surface measures it again.', { when: when(stamp) })
-      : t('setup_surface.providers_unmeasured', 'This machine has not been measured yet.');
+      ? when(stamp)
+      : t('setup_surface.machine_unmeasured', 'Not measured yet');
+  };
+  const paintDates = () => {
+    catalogDate.textContent = providerCatalog().updated || t('setup_surface.catalog_date_unstated', 'Date not stated');
+    machineDate.textContent = measuredDateText();
   };
   /** A catalog provider no registry CLI serves is a stone of its own, keyed by its vendor id. */
   const catalogOnly = () => {
@@ -174,20 +176,17 @@ export function createProviderSurface(context) {
     host.append(card);
   };
 
-  /* ---- 2 · THE CATALOG: the facts as measured, dated, then every model the catalog lists ---- */
+  /* ---- 2 · THE CATALOG: the measured facts, then every model the catalog lists ---- */
   const paintCatalog = (rows, entry, host) => {
     const section = el('section', 'setup-provider-catalog');
-    const catalog = providerCatalog();
-    section.append(el('h3', 'setup-provider-eyebrow', catalog.updated
-      ? t('setup_surface.section_catalog_dated', 'The catalog · updated {date}', { date: catalog.updated })
-      : t('setup_surface.section_catalog', 'The catalog')));
+    section.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_catalog', 'The catalog')));
     const facts = el('dl', 'setup-provider-facts');
     for (const [label, on] of [
       [t('setup_surface.fact_installed', 'Installed'), entry?.installed === true],
       [t('setup_surface.fact_signed_in', 'Signed in'), entry?.signed_in === true],
       [t('setup_surface.fact_activated', 'Activated'), entry?.activated === true],
     ]) { const fact = el('div'); fact.dataset.on = String(on); fact.append(el('dt', null, label), el('dd', null, yesNo(on))); facts.append(fact); }
-    section.append(facts, el('p', 'setup-fine', measuredLine()));
+    section.append(facts);
     if (!rows.length) { section.append(el('p', 'setup-fine', t('setup_surface.no_models', 'The catalog lists no models for this provider.'))); host.append(section); return; }
     const table = el('table', 'setup-provider-models');
     const headRow = el('tr');
@@ -229,7 +228,7 @@ export function createProviderSurface(context) {
     renderDetail: (item, host) => paintProvider(item.id, host),
     onSelectionChange: (id) => { opened = String(id || ''); },
   });
-  stones.mount(out.content, { before: [intro], after: [notice] });
+  stones.mount(out.content, { after: [dates, notice] });
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   const paint = async () => {
     // This surface is the one reader that measures: every other surface takes the
@@ -242,8 +241,7 @@ export function createProviderSurface(context) {
     context.environment.setupRuntime = runtime;
     await loadProviderCatalog();
     context.workbench?.refreshSelector?.();
-    snapshot.textContent = catalogLine(providerCatalog());
-    measured.textContent = measuredLine();
+    paintDates();
     const rows = providerCatalog().rows;
     const providers = (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id);
     const stoneOf = (id, label, secondary, state, activated) => ({ id, label, secondary, state, className: 'setup-provider-stone', attrs: { 'data-provider': id, 'data-activated': String(activated) } });
