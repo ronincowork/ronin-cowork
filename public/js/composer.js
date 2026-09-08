@@ -2,11 +2,16 @@
 import { IS_TOUCH, S } from './state.js';
 import { CAN_RECORD, wireDictation } from './voice.js';
 import { t } from './lexicon.js';
+import { settleComposer } from './composer-rules.js';
 
 /**
  * @param {HTMLElement} body
  * @param {{activate: () => void, clearOverlays: () => void, connected: () => boolean,
- *          send: (text: string) => boolean, scrollToBottom: () => void}} hooks
+ *          send: (text: string) => boolean,
+ *          sendParcel: (text: string) => Promise<{ok: boolean, why?: string}>,
+ *          scrollToBottom: () => void}} hooks
+ *   `send` is a command key, fire-and-forget. `sendParcel` is a message: it resolves to the
+ *   host's answer, and the box clears on nothing else.
  * @returns {{el: HTMLElement, ta: HTMLTextAreaElement, show: (on: boolean) => void}}
  */
 export function buildComposer(body, hooks) {
@@ -42,10 +47,25 @@ export function buildComposer(body, hooks) {
   btn.className = 'csend';
   btn.textContent = '↵';
   btn.title = t('composer.send', 'Send');
-  wrap.append(...[ta, clear, mic, btn].filter(Boolean));
+  // The one honest line: why the text is still here. Shown only while a send is held.
+  const why = document.createElement('p');
+  why.className = 'cwhy';
+  why.setAttribute('role', 'status');
+  wrap.append(...[why, ta, clear, mic, btn].filter(Boolean));
   body.appendChild(wrap);
 
-  const state = { dictation: null, queued: false };
+  const state = { dictation: null, queued: false, inflight: false };
+  // The wire's own words for a send that did not get through, in the owner's language.
+  const reasons = {
+    'not connected': () => t('composer.why_not_connected', 'the tile is not connected'),
+    disconnected: () => t('composer.why_disconnected', 'the connection dropped before the session confirmed it'),
+    unconfirmed: () => t('composer.why_unconfirmed', 'the session did not confirm it — check the tile before sending again'),
+    refused: () => t('composer.why_refused', 'the session refused it'),
+  };
+  const hold = (reason) => {
+    wrap.classList.toggle('held', !!reason);
+    why.textContent = reason ? t('composer.held', 'Not sent — {why}. Your text is kept.', { why: (reasons[reason] || (() => reason))() }) : '';
+  };
   if (mic) state.dictation = wireDictation(ta, mic);
   if (state.dictation)
     state.dictation.afterText = () => {
@@ -65,6 +85,7 @@ export function buildComposer(body, hooks) {
     if (S.dictation) S.dictation.stop();
     ta.value = '';
     grow();
+    hold(null);
     ta.focus();
   };
   clear.addEventListener('click', clearBox);
@@ -80,12 +101,14 @@ export function buildComposer(body, hooks) {
       wrap.classList.add('queued');
       return;
     }
+    // One message in flight at a time: a second Enter while the host is still answering
+    // would send the same text twice.
+    if (state.inflight) return;
     // A send into a closed socket vanishes. Losing the message AND clearing the box
     // made a dictated message silently disappear. Keep the text, say so, and let the
     // auto-reconnect bring the socket back.
     if (!hooks.connected()) {
-      wrap.classList.add('noconn');
-      setTimeout(() => wrap.classList.remove('noconn'), 1200);
+      hold('not connected');
       return;
     }
     const text = ta.value;
@@ -104,15 +127,27 @@ export function buildComposer(body, hooks) {
     // never submitted. Measured on a real Claude pane: text+\r in a single
     // send-keys burst submits correctly, single-line and multi-line both, so the
     // split buys nothing on this path and the timer was pure fragility.
-    if (!hooks.send(text + '\r')) {
-      // Raced the socket between the check above and here — keep the text.
-      wrap.classList.add('noconn');
-      setTimeout(() => wrap.classList.remove('noconn'), 1200);
-      return;
-    }
-    ta.value = '';
-    grow();
-    hooks.scrollToBottom();
+    //
+    // The parcel is its own frame, not a keystroke: the host leaves a scrolled-back view
+    // for it and answers by id. The box clears on that answer and on nothing else — a
+    // message the host did not confirm stays here with the reason (composer-rules.js).
+    // It used to clear as soon as the socket was open, and a phone that had dragged the
+    // pane into copy mode watched its text vanish while the host discarded it.
+    state.inflight = true;
+    wrap.classList.add('sending');
+    hold(null);
+    hooks.sendParcel(text + '\r').then((outcome) => {
+      state.inflight = false;
+      wrap.classList.remove('sending');
+      const verdict = settleComposer(outcome, text, ta.value);
+      if (verdict.clear) {
+        ta.value = '';
+        grow();
+        hooks.scrollToBottom();
+        return;
+      }
+      if (verdict.why) hold(verdict.why);
+    });
   };
   /**
    * Lift above the on-screen keyboard.
@@ -140,7 +175,10 @@ export function buildComposer(body, hooks) {
       window.visualViewport.addEventListener('scroll', lift);
     }
   }
-  ta.addEventListener('input', grow);
+  ta.addEventListener('input', () => {
+    grow();
+    if (wrap.classList.contains('held')) hold(null); // the person is editing: the old reason is stale
+  });
   // Drops (an @mention, a doc reference) are the TILE's — js/tiledroptext.js listens on
   // the body, which this textarea sits in, and lands text here when the tile is unlocked.
   ta.addEventListener('focus', () => {

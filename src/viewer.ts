@@ -64,6 +64,42 @@ export function tileInputAction(state: PaneMouseState, data: string): TileInputA
   return NAVIGATION.test(data) ? 'write' : 'drop';
 }
 
+/** A composer parcel is a message, not a keystroke into a scrolled-back view: it leaves copy
+ *  mode first and is then typed. The owner's rulings stand — copy mode is the scroll and is
+ *  never blocked, and nothing here holds a message. Pure. */
+export function parcelInputActions(state: PaneMouseState): TileInputAction[] {
+  return state.inMode ? ['cancel', 'write'] : ['write'];
+}
+
+export interface ParcelIO {
+  state(): Promise<PaneMouseState>;
+  leave(): Promise<void>;
+}
+
+export interface ParcelOutcome {
+  ok: boolean;
+  why?: string;
+}
+
+/** Deliver one composer parcel to the pane. The answer is the truth the composer clears on:
+ *  ok only once the bytes were written to the attached terminal; otherwise the reason. */
+export async function deliverParcel(
+  name: string,
+  data: string,
+  write: (data: string) => void,
+  io: ParcelIO = { state: () => paneMouseState(name), leave: () => jumpToBottom(name) },
+): Promise<ParcelOutcome> {
+  for (const action of parcelInputActions(await io.state())) {
+    if (action === 'cancel') {
+      await io.leave();
+      if ((await io.state()).inMode) return { ok: false, why: 'the pane stayed in its scrolled-back view' };
+    } else {
+      write(data);
+    }
+  }
+  return { ok: true };
+}
+
 let hideIndicator = true; // copy-mode -H: absent on servers older than the floor; learned once
 export async function enterCopyMode(name: string): Promise<void> {
   const pane = exactPane(name);

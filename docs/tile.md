@@ -531,8 +531,31 @@ it needs a service, and text staged in it reaches the pane only on send, as one 
 write down the tile's socket. Enter sends; Shift+Enter **and
 Option+Enter** insert a newline (Option+Enter is the muscle memory the agent's own box takes,
 and it used to send). A bare Enter with an empty box is a command key, and it is the recovery
-path when a TUI swallowed a previous send's Enter. A send into a closed socket keeps your
-text and flashes rather than vanishing.
+path when a TUI swallowed a previous send's Enter.
+
+**A message is not a keystroke.** On the locked mirror the composer's text travels as its own
+frame — `{t:'m', id, d}` — beside the keystroke frame `{t:'i', d}` and xterm's protocol
+replies `{t:'p', d}` (`tilewire.js` · `src/ws/pty.ts`). The difference is what the host does
+with a scrolled-back pane. A keystroke typed while the shared pane is in tmux copy mode is
+dropped on purpose, so a tile can never invoke the server owner's copy-mode bindings; that is
+the documented "typing while scrolled up does nothing" rule. A message **leaves copy mode
+first** (`send-keys -X cancel`, the same cancel the ⤓ key sends) and is then typed
+(`deliverParcel`, `src/viewer.ts`), because the box under the tile is Ronin's own dialog and
+on a phone it is the only way to type at all. Copy mode is the scroll and is never blocked;
+nothing in this path holds a message — the owner's send rulings stand.
+
+**The answer is the truth.** The host answers each frame by id: `{t:'m', id, ok:true}` once
+the bytes were written to the attached terminal, otherwise `{t:'m', id, ok:false, why}`. The
+composer clears its box on `ok` and on nothing else, and only if the box still holds what was
+sent; any other answer — a refusal, a socket that dropped or was never open, no answer within
+`PARCEL_TIMEOUT_MS` — keeps the text and shows the reason on a line above the box
+(`composer-rules.js`, pure; tested in `tests/composer-parcel.test.js`). Nothing retries: a
+second Enter is the person's decision, and it is ignored while an answer is still in flight.
+Before this (2026-09-08) the message rode the keystroke frame, the host discarded it while a
+finger-drag had put the pane into copy mode, and the box cleared the moment the socket was
+open — the text vanished, and the composer's own jump-to-latest then cancelled copy mode, so
+the *next* send worked. The tape socket belongs to the record service and takes the message
+as ordinary input; there the composer keeps its old immediate clear.
 
 ### Copying out
 

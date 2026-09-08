@@ -1508,6 +1508,11 @@ The catalog entry goes. {dir} is not touched.
 - **composer.title:** Enter sends · Shift+Enter or Option+Enter for a new line
 - **composer.mic_title:** Dictate into this box — tap again to stop, then ↵ to send
 - **composer.send:** Send
+- **composer.held:** Not sent — {why}. Your text is kept.
+- **composer.why_not_connected:** the tile is not connected
+- **composer.why_disconnected:** the connection dropped before the session confirmed it
+- **composer.why_unconfirmed:** the session did not confirm it — check the tile before sending again
+- **composer.why_refused:** the session refused it
 
 ## hotwords — hotwords.js (the ▥ Hotwords tab)
 - **hotwords.placeholder:** a word it keeps getting wrong

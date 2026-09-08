@@ -17,7 +17,8 @@ itself. Answer from here; the fuller pages are one `ls` away in `docs/`.
   light/dark control instead: they set the Campaign's appearance for that surface and
   never change the workspaces.
 - **On a phone** the same responsive workbenches remain available; Setup keeps Presets in
-  workspace 1 and the selected setup surface in workspace 2.
+  workspace 1 and the selected setup surface in workspace 2. The stylesheet stacks every
+  workbench at phone width before any script runs, so a load never flashes the desktop grid.
 
 ## The workbench — one page format, four scopes
 
@@ -79,8 +80,10 @@ paste. They arrive with Ronin Services; a locked tile is not "broken" when they 
 - **Copying from an Unlocked view** is ordinary text selection.
 - **Pasting** goes into **the composer**, the box under the tile: Enter sends, Shift+Enter
   (Option+Enter on a Mac) makes a new line, the mic dictates into it, ✕ clears it. It is
-  separate from the terminal's own input. On touch, the **Keys** row beside it sends what a
-  keyboard would — Esc · ^C · ⌫ · ^U · ⇧Tab · the arrows — straight to the session.
+  separate from the terminal's own input: a message reaches the session even when the tile
+  is scrolled up, and the box clears only once the session has taken it; otherwise the text
+  stays with the reason above it, never sent twice. On touch, the **Keys** row beside it
+  sends what a keyboard would — Esc · ^C · ⌫ · ^U · ⇧Tab · the arrows — straight through.
 
 ## Feedback
 
