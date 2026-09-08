@@ -73,15 +73,17 @@ The browser's door is unchanged: `http://<BIND>:<PORT>` from `.env`, the banner,
 address. The socket answers a different question, *where do I send a command*, and is
 added beside the HTTP listener, never instead of it.
 
-Command discovery is fixed separately at Agent birth. The launch route resolves that
-Agent's enabled Routines, projects only their entitled commands as symlinks into that
-Agent's own directory of the session-commands store, and prepends that directory to the
-environment given directly to tmux and the Agent process. Ordinary non-interactive
-descendants inherit it; they do not source `.bashrc`, `.profile`, or another owner shell
-file. An Agent born with Ronin Base off therefore does not receive Base commands such as
-`write_tegami`, `tejun-fork`, or `ronin-url`. Changing a Team or Campaign default later
-does not mutate a running Agent's birth environment; recreate that Agent to give it the
-newly enabled tools.
+Command discovery is fixed separately at Agent birth. The launch route resolves that Agent's
+enabled Routines, projects only their entitled commands as symlinks into that Agent's own
+directory of the session-commands store, and prepends that directory to the environment
+given directly to tmux and the Agent process. Ordinary non-interactive descendants inherit
+it; they do not source `.bashrc`, `.profile`, or another owner shell file. That directory's
+name is also how `read_tegami`, `write_tegami` and `tejun-teampage` learn which session they
+act for when the calling shell is not inside tmux and carries neither `TMUX_PANE` nor
+`$TMUX`; the name is accepted only when it is a live session. An Agent born with Ronin Base
+off therefore does not receive Base commands such as `write_tegami`, `tejun-fork`, or
+`ronin-url`. Changing a Team or Campaign default later does not mutate a running Agent's
+birth environment; recreate that Agent to give it the newly enabled tools.
 
 ## For a test
 
