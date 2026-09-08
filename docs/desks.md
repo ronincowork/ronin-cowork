@@ -134,7 +134,11 @@ worktree it checks every live session's current directory. If a session is in th
 or below it, close keeps the desk and tells the caller to notify that session to leave,
 then retry. It does not message, relocate, stop, or retry for the caller. Otherwise the
 worktree, branch, and desk row are removed. `handoffDesk` changes explicit owners without
-moving work. `discardDesk` is the explicit path for deleting an unintegrated desk.
+moving work. `tejun-desk close <repo:branch> --with-session` is the explicit coupled end:
+all desk and ownership checks run first, then the owning session is stopped and the desk
+is removed. Ordinary session archive, delete, and harakiri refuse while it owns an open
+desk and point to that command. `discardDesk` is the explicit path for deleting an
+unintegrated desk.
 
 ## The queue
 

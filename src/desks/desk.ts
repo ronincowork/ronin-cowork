@@ -14,7 +14,7 @@ import {
 import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskSource, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
 import { materializeNodeModules } from '../worktree-runtime.js';
 import { withManagedTransaction } from './lifecycle-ledger.js';
-import { listSessions, sessionDir } from '../tmux.js';
+import { listSessions, sessionDir, stopSessionTree } from '../tmux.js';
 
 export async function syncthingHazard(dir: string): Promise<string> {
   let d = path.resolve(dir);
@@ -157,9 +157,10 @@ export interface CloseOutcome { desk: DeskStatus | null; action: 'closed' | 'kep
 interface CloseRuntime {
   sessions(): Promise<Array<{ name: string }>>;
   cwd(session: string): Promise<string>;
+  stop(session: string): Promise<void>;
 }
 
-const liveRuntime: CloseRuntime = { sessions: listSessions, cwd: sessionDir };
+const liveRuntime: CloseRuntime = { sessions: listSessions, cwd: sessionDir, stop: stopSessionTree };
 
 export function cwdIsInside(worktree: string, cwd: string): boolean {
   if (!worktree || !cwd) return false;
@@ -167,7 +168,7 @@ export function cwdIsInside(worktree: string, cwd: string): boolean {
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
 }
 
-export async function closeDesk(repo: string, branch: string, runtime: CloseRuntime = liveRuntime): Promise<CloseOutcome> {
+export async function closeDesk(repo: string, branch: string, runtime: CloseRuntime = liveRuntime, withSession = ''): Promise<CloseOutcome> {
   const rec = await readDesk(repo, branch);
   if (!rec) return { desk: null, action: 'kept', reason: 'no desk is recorded' };
   const a = await arrangementOf(repo);
@@ -175,14 +176,22 @@ export async function closeDesk(repo: string, branch: string, runtime: CloseRunt
   if (st.dirty) return { desk: st, action: 'kept', reason: `unsaved files: ${st.dirty_files.join(', ')}` };
   const integrated = !!st.tip && !!st.line_tip && (await isAncestor(a.dir, st.tip, st.line_tip));
   if (!integrated) return { desk: st, action: 'kept', reason: `${st.ahead} commit(s) are not on ${st.line}` };
+  const sessions = await runtime.sessions();
+  if (withSession) {
+    const owners = rec.owners?.length ? rec.owners : [rec.session];
+    if (!owners.includes(withSession)) return { desk: st, action: 'kept', reason: `session ${withSession} does not own this desk` };
+    if (!sessions.some((session) => session.name === withSession)) return { desk: st, action: 'kept', reason: `session ${withSession} is not live` };
+  }
   const inside: string[] = [];
-  for (const session of await runtime.sessions()) {
+  for (const session of sessions) {
     if (cwdIsInside(st.worktree, await runtime.cwd(session.name))) inside.push(session.name);
   }
-  if (inside.length) {
-    const who = inside.length === 1 ? `session ${inside[0]} is` : `sessions ${inside.join(', ')} are`;
-    return { desk: st, action: 'kept', reason: `${who} running inside ${st.worktree}; notify ${inside.length === 1 ? 'it' : 'them'} to leave, then retry` };
+  const blocking = inside.filter((name) => name !== withSession);
+  if (blocking.length) {
+    const who = blocking.length === 1 ? `session ${blocking[0]} is` : `sessions ${blocking.join(', ')} are`;
+    return { desk: st, action: 'kept', reason: `${who} running inside ${st.worktree}; notify ${blocking.length === 1 ? 'it' : 'them'} to leave, then retry` };
   }
+  if (withSession) await runtime.stop(withSession);
   return withManagedTransaction({
     repo, transaction_id: `close_${randomUUID()}`, type: 'ending_inspected', result: 'started', session: rec.session, team: rec.team,
     refs: [{ name: branch, before: st.tip, after: '' }], commits: [{ role: 'desk_tip', sha: st.tip }],
@@ -196,7 +205,7 @@ export async function closeDesk(repo: string, branch: string, runtime: CloseRunt
     await deleteBranch(a.dir, branch);
     await removeDesk(repo, branch);
     await transaction.finish('desk_closed', 'contained', { detail: { contained_in: st.line } });
-    return { desk: null, action: 'closed', reason: `tip is contained in ${st.line}` };
+    return { desk: null, action: 'closed', reason: `${withSession ? `session ${withSession} ended; ` : ''}tip is contained in ${st.line}` };
   });
 }
 

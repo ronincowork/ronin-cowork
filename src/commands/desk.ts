@@ -66,7 +66,7 @@ const USAGE = `usage: tejun-desk status [<repo[:branch]>] [--session s | --team 
        tejun-desk assign <repo[:branch]> --session s --team t [--source dev|team]
        tejun-desk hand-in [<repo[:branch]>] [--assignment]
        tejun-desk sync [<repo[:branch]>]
-       tejun-desk close [<repo[:branch]>]
+       tejun-desk close [<repo[:branch]>] [--with-session]
        tejun-desk handoff <repo[:branch]> --to <session[,session]>
        tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"
        tejun-desk reply <repo> <receipt id> <message…>
@@ -207,7 +207,7 @@ async function main(): Promise<void> {
         if (!targets.length) die(`NO-DESK: ${session} has no open desk`, 3);
         let kept = false;
         for (const d of targets) {
-          const o = await closeDesk(d.repo, d.branch);
+          const o = await closeDesk(d.repo, d.branch, undefined, flags.get('with-session') ? session : '');
           kept ||= o.action === 'kept';
           out(`${o.action.toUpperCase()} ${deskId(d)} — ${o.reason}`);
         }

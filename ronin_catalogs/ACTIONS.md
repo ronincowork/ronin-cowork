@@ -575,7 +575,7 @@ the line remain in the live desk and are named; close never turns them into an a
 WIP commit. `handoff` transfers explicit ownership without moving the branch or worktree.
 Intentional discard alone deletes unresolved work and requires the exact confirmation;
 its durable receipt names the commits and files before deletion.
-> Tool: `tejun-desk close [<repo[:branch]>]` · `tejun-desk handoff <repo[:branch]> --to <session[,session]>` · `tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"`
+> Tool: `tejun-desk close [<repo[:branch]>] [--with-session]` · `tejun-desk handoff <repo[:branch]> --to <session[,session]>` · `tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"`
 
 ## check-clean
 `action_kind: mechanical` — run it, don't deliberate.

@@ -374,12 +374,20 @@ test('closeDesk keeps unresolved work named, closes only after hand-in, and reco
   const occupied = await closeDesk('cowork', 'team/comp/wispr', {
     sessions: async () => [{ name: 'wispr' }],
     cwd: async () => path.join(wispr, 'src'),
+    stop: async () => assert.fail('plain close must not stop a session'),
   });
   assert.equal(occupied.action, 'kept');
   assert.match(occupied.reason, /session wispr is running inside .*notify it to leave, then retry/);
   assert.ok(existsSync(wispr), 'an occupied worktree remains mounted');
-  const gone = await closeDesk('cowork', 'team/comp/wispr');
+  let stopped = '';
+  const gone = await closeDesk('cowork', 'team/comp/wispr', {
+    sessions: async () => [{ name: 'wispr' }],
+    cwd: async () => wispr,
+    stop: async (name) => { stopped = name; },
+  }, 'wispr');
   assert.equal(gone.action, 'closed');
+  assert.equal(stopped, 'wispr');
+  assert.match(gone.reason, /session wispr ended/);
   assert.equal(await readDesk('cowork', 'team/comp/wispr'), null);
   assert.throws(() => sh(cowork, ['rev-parse', '--verify', '-q', 'refs/heads/team/comp/wispr']));
   const lifecycle = await readManagedEvents({ repo: 'cowork' });

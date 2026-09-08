@@ -56,8 +56,16 @@ import {
 import { ignoreEndingRequest, inspectSessionEnding, promptEnding } from '../desks/ending-runtime.js';
 import type { EndingRequest } from '../desks/ending.js';
 import { resolveEndingRequest } from '../desks/ending-response.js';
+import { listDesks } from '../desks/registry.js';
 
 interface PreparedEnding { proceed: boolean; acknowledgement?: Record<string, unknown> }
+
+async function openDeskRefusal(name: string): Promise<string> {
+  const desks = (await listDesks()).filter((desk) => desk.state === 'open' && (desk.owners?.length ? desk.owners : [desk.session]).includes(name));
+  return desks.length
+    ? `Session "${name}" owns open desk${desks.length === 1 ? '' : 's'} ${desks.map((desk) => `${desk.repo}:${desk.branch}`).join(', ')}. Use tejun-desk close <repo:branch> --with-session.`
+    : '';
+}
 
 async function prepareSessionEnding(
   req: express.Request,
@@ -89,6 +97,8 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     try {
+      const refusal = await openDeskRefusal(name);
+      if (refusal) return res.status(409).json({ error: refusal });
       const prepared = await prepareSessionEnding(req, res, name, 'archive');
       if (!prepared.proceed) return;
       const key = await sessionKey(name);
@@ -186,6 +196,8 @@ export function registerSessions(app: express.Express): void {
   app.delete('/api/sessions/:name', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    const refusal = await openDeskRefusal(name);
+    if (refusal) return res.status(409).json({ error: refusal });
     const prepared = await prepareSessionEnding(req, res, name, 'delete');
     if (!prepared.proceed) return;
     const key = await sessionKey(name);
@@ -215,6 +227,8 @@ export function registerSessions(app: express.Express): void {
     }
     const name = await sessionOfPane(pane);
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
+    const refusal = await openDeskRefusal(name);
+    if (refusal) return res.status(409).json({ error: refusal });
     res.json({ ok: true, session: name });
     console.log(`[ronin] harakiri: ${name} (pane ${pane})`);
     count('ended', { name, end: 'harakiri' });
