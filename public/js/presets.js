@@ -590,7 +590,15 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       const url = environment.launchUrl?.(result.data || {}, plan, tab) || result.data?.url;
       if (tab && url) { tab.opener = null; tab.location.href = url; }
       else if (url) window.open(url, '_blank', 'noopener');
-      notice.set('success', 'Launched in a new tab.');
+      const refused = Array.isArray(result.data?.refused) ? result.data.refused : [];
+      if (refused.length) {
+        // A PARTIAL LAUNCH STILL GOES: the team is open with who was born, and the missing
+        // rows are named here with the server's sentence, until the next press.
+        clearTimeout(warningTimer);
+        warning.textContent = `Launched without ${refused.map((row) => row.name).join(', ')}: ${refused[0].message}`;
+        warning.hidden = false;
+      }
+      notice.set('success', refused.length ? `Launched in a new tab without ${refused.length} of ${refused.length + (result.data?.sessions?.length || 0)}.` : 'Launched in a new tab.');
     };
     if (!gate.ready) { const mark = el('button', 'sp-warn', '!'); mark.type = 'button'; mark.title = 'Not launchable yet'; mark.addEventListener('click', showHeld); go.append(mark); }
     const launch = createAction({ label: 'Launch', kind: 'primary', action: gate.ready ? launchNow : showHeld });
