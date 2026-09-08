@@ -8,6 +8,10 @@
  * row carries its tier, a dated cost reading, what it is good at and not good at, whether
  * it is the provider's default, and the complete launch command — the session_launch_spec.
  *
+ * The file's header carries `- **updated:** YYYY-MM-DD`, the day its prices, models and
+ * descriptions were last read from the public record. It is a snapshot, refreshed with each
+ * release (stock) or by the owner (a shadow copy); readers show the date, never hide it.
+ *
  * This module also holds the shape of the Campaign's measured provider summary, so that
  * the record and the catalog share one vocabulary; measuring and recording live in
  * `src/provider-summary.ts`.
@@ -53,6 +57,8 @@ export interface ProviderCatalogEntry {
 export interface ProviderCatalog {
   origin: 'stock' | 'user';
   path: string;
+  /** The catalog header's `updated` day, `YYYY-MM-DD`; '' when the file carries none. */
+  updated: string;
   providers: ProviderCatalogEntry[];
 }
 
@@ -65,6 +71,12 @@ const isSeparator = (cells: string[]): boolean => cells.every((c) => /^:?-+:?$/.
 const field = (section: string, key: string): string | undefined =>
   new RegExp(`^-\\s*\\*\\*${key}:\\*\\*\\s*\`(.+)\`\\s*$`, 'm').exec(section)?.[1]?.trim();
 const asTier = (value: string): Tier => (TIERS as readonly string[]).includes(value) ? value as Tier : 'standard';
+
+/** The header's `- **updated:** YYYY-MM-DD`, read before the first provider section; '' when absent. */
+export function catalogUpdated(raw: string): string {
+  const preamble = raw.split(/^### /m)[0] ?? '';
+  return /^-\s*\*\*updated:\*\*\s*(\d{4}-\d{2}-\d{2})\s*$/m.exec(preamble)?.[1] ?? '';
+}
 
 /**
  * One `### <Vendor>` section per provider; under it `- **provider:**`, `- **cli:**` and the
@@ -134,7 +146,8 @@ export async function readProviderCatalog(): Promise<ProviderCatalog> {
   const user = userCatalogMd();
   const origin = (await exists(user)) ? 'user' : 'stock';
   const file = origin === 'user' ? user : STOCK_CATALOG_MD;
-  return { origin, path: file, providers: parseProviderCatalog(await readFile(file, 'utf8')) };
+  const raw = await readFile(file, 'utf8');
+  return { origin, path: file, updated: catalogUpdated(raw), providers: parseProviderCatalog(raw) };
 }
 
 export async function listProviderCatalog(): Promise<ProviderCatalogEntry[]> {

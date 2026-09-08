@@ -21,7 +21,13 @@ this document or the catalog.
 
 ## The catalog
 
-One `### <Vendor>` section per provider. The section's fields:
+The file's header carries one field of its own:
+
+| Field | Meaning |
+|---|---|
+| `updated` | `YYYY-MM-DD`: the day the catalog's models, prices and descriptions were last read from the public record |
+
+Then one `### <Vendor>` section per provider. The section's fields:
 
 | Field | Meaning |
 |---|---|
@@ -56,8 +62,18 @@ refuses it. `src/model-providers.ts` parses this shape and nothing else does.
 this is how the owner keeps names and prices fresh without a code release, and how a
 private provider stays private. `docs/shadowing.md` has the rule.
 
-**Tiers and prices are readings.** Each cost carries the month it was read; a stale
-reading is shown dated, not silently trusted and not guessed. The Google, xAI and Nous
+**Keeping it fresh.** The catalog is a snapshot, not live data. The stock file is refreshed
+with each Ronin release: the release order in `docs/tarball.md` carries the step *refresh
+the provider catalog: re-read prices and models, bump `updated`*, and `npm run verify`
+refuses a stock catalog with no `updated` line. A shadow copy in the owner's catalogs store
+is the owner's to refresh and carries its own `updated` line. Ronin shows the date it has,
+stale or not; it never hides it and never guesses a newer one. Each cost also carries the
+month it was read.
+
+**One read for the client.** `GET /api/provider-catalog` answers the catalog object whole,
+`{ origin, path, updated, providers: [{ provider, cli, label, models: [...] }] }` — the same
+object `readProviderCatalog()` gives the server. `GET /api/session-launch-specs`, the flat
+rows, stays only until the picker has switched to that read; then it goes. The Google, xAI and Nous
 sections are written from their vendors' CLI references and price lists and have not yet
 been launched end to end through Ronin; the first real launch of each cell is its proof,
 per the checklist below.
