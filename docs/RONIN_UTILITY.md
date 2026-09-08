@@ -38,7 +38,7 @@ arrangement per page. The three scopes differ only in what the column offers:
 | Surface | What it is for |
 |---|---|
 | **terminal tile** | one Agent: its live terminal, composer, Output selector, Control dial, work record |
-| **team commons** | this team: **Docs** (what agents listed, plans, docs by project root) · **Wipeboard** · **Agent Message Queue** · **Team Configuration** (the team's Routines, kit, launch defaults) |
+| **team commons** | this team: **Docs** (what agents listed, plans, docs by project root) · **Wipeboard** · **Messages** · **Team Configuration** (the team's Routines, kit, launch defaults) |
 | **cowork commons** (⚙) | this install and owner: usage stats · **Account** (Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk · Keypad |
 | **campaign commons** | the Campaign: Campaign · Project roots · Team roster · Templates · **Routines and Installs** (what is on the machine, and the switchboard that fills new teams) |
 | **new session** | the launcher, placed by か New or ＋ Add team member; the newborn lands in that workspace |

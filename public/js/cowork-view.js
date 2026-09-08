@@ -171,7 +171,7 @@ export function createCoworkView(options = {}) {
     };
     const config = el('div', 'tw-config');
     const messages = el('div', 'tw-messages');
-    const messageLabel = t('workspace.channel_agent_message_queue', 'Agent Message Queue');
+    const messageLabel = t('workspace.channel_agent_message_queue', 'Messages');
     let messageTab = null;
     let retainedCount = 0;
     let chooseQueueOnOpen = false;

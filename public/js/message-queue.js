@@ -58,7 +58,7 @@ export function watchMessageQueueAttention() {
         .filter((message) => message.state === 'stuck' || message.state === 'failed' || message.state === 'target_missing')
         .map((message) => message.id));
       if ([...ids].some((id) => !attentionSeen.has(id))) {
-        attention(t('messages.attention', 'Check Team Commons → Agent Message Queue'));
+        attention(t('messages.attention', 'Check Team Commons → Messages'));
       }
       for (const id of [...attentionSeen]) if (!ids.has(id)) attentionSeen.delete(id);
       for (const id of ids) attentionSeen.add(id);

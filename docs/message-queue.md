@@ -82,7 +82,7 @@ those risks. Success clears the card; failure leaves it visible.
 
 ## Team Commons
 
-The queue is **Team Commons → Agent Message Queue**, beside Docs, Wipeboard, and Team
+The queue is **Team Commons → Messages**, beside Docs, Wipeboard, and Team
 Configuration.
 
 - A retained message gives the channel warning emphasis.
