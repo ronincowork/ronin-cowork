@@ -54,10 +54,15 @@ test('launch actions reuse the nin mark, never the Team Roster torii, and open t
   assert.match(roster, /launch: true/);
   assert.doesNotMatch(roster, /'torii', '⛩'/);
   assert.match(workspace, /window\.open\(url\.href, '_blank', 'noopener'\)/);
-  for (const caller of [agent, team, add]) {
+  for (const caller of [agent, team]) {
     assert.match(caller, /launch: true/);
     assert.match(caller, /openWorkspaceTab/);
   }
+  // An Agent added from inside a Team workbench takes the workspace its form is on, in
+  // this tab (Glen, 2026-09-08); the launch mark is the same.
+  assert.match(add, /launch: true/);
+  assert.match(add, /if \(!deskNote && !leadNote\) connect\?\.\(born\);/);
+  assert.doesNotMatch(add, /openWorkspaceTab|reserveWorkspaceTab/);
 });
 
 test('edited Cowork and Team workbench labels become the exact tab title', async () => {
