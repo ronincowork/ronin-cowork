@@ -172,27 +172,6 @@
   .cv-from { display: block; margin-top: var(--space-1); font-size: var(--text-2); color: var(--muted); }
 
   .cv-presets { display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
-  /* Model providers — the catalog on the shared stone work surface (campaign-providers.js).
-     The stones are providers; a stone's detail is its measured facts, dated once, then the
-     catalog's model table, which scrolls in its own box rather than the page. */
-  .cv-providers-intro { display: grid; gap: var(--space-2); }
-  .cv-providers-measured:empty { display: none; }
-  .cv-provider-stone[data-activated='true'] { border-color: var(--ok-2); }
-  .cv-provider { display: grid; gap: var(--space-6); min-width: 0; padding-bottom: var(--space-6); }
-  .cv-provider-head { display: grid; gap: var(--space-2); }
-  .cv-provider-head h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-9); font-weight: 600; line-height: 1.3; }
-  .cv-provider-head .cv-from { margin: 0; }
-  .cv-provider-facts { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-7); margin: 0; }
-  .cv-provider-facts div { display: flex; gap: var(--space-2); font-size: var(--text-3); }
-  .cv-provider-facts dt { color: var(--muted); }
-  .cv-provider-facts dd { margin: 0; color: var(--fg-strong); font-weight: 600; }
-  .cv-provider-facts div[data-on='true'] dd { color: var(--ok); }
-  .cv-provider-table { overflow-x: auto; max-width: 100%; }
-  .cv-provider-models { min-width: calc(var(--space-12) * 10); }
-  .cv-provider-models td { vertical-align: top; }
-  .cv-provider-models td:first-child { white-space: nowrap; }
-  .cv-provider-models .cv-from { display: block; }
-  .cv-tier { color: var(--muted-2); font-size: var(--text-2); letter-spacing: .06em; text-transform: uppercase; }
   .cv-install { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
   .cv-install .cv-actions { justify-content: flex-start; align-items: center; }
   .cv-install .cv-input { max-width: 28ch; }

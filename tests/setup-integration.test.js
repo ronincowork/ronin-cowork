@@ -138,14 +138,17 @@ test('all inventoried launch families use the shared launch marker and no Team R
 
 test('Setup surfaces consume the one runtime contract and mount canonical Campaign Templates only through Launch Your Own', async () => {
   const text = await source('setup-surfaces.js');
-  // The Model providers surface is the one client that measures; every other surface takes
-  // the Campaign's recorded summary from GET /api/setup/runtime (setup-view.js hydrates it).
-  assert.match(text, /request\('\/api\/setup\/providers\/measure', \{ method: 'POST'/);
-  assert.doesNotMatch(text, /request\('\/api\/setup\/runtime'/);
+  // The Model providers surface (provider-surface.js, the one surface Ronin Settings also
+  // seats) is the one client that measures; every other surface takes the Campaign's
+  // recorded summary from GET /api/setup/runtime (setup-view.js hydrates it).
+  const providers = await source('provider-surface.js');
+  assert.match(providers, /request\('\/api\/setup\/providers\/measure', \{ method: 'POST'/);
+  assert.doesNotMatch(providers, /request\('\/api\/setup\/runtime'/);
+  assert.doesNotMatch(text, /request\('\/api\/setup\/(?:runtime|providers\/measure)'/);
   assert.match(await source('setup-view.js'), /request\('\/api\/setup\/runtime'/);
-  assert.match(text, /\/login`/);
-  assert.match(text, /\/done`/);
-  assert.match(text, /\/close`/);
+  assert.match(providers, /\/login`/);
+  assert.match(providers, /\/done`/);
+  assert.match(providers, /\/close`/);
   assert.match(text, /createTemplatesSurface\(\)/);
   assert.doesNotMatch(text, /campaignTemplatesDefinition\(\)/);
   assert.doesNotMatch(text, /mode === 'loaded'|mode === 'make'|\/api\/library/);

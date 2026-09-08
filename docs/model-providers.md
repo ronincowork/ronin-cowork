@@ -216,22 +216,29 @@ the same control with the provider select dropped. The registry's seeds read the
 rows: `models:first` is the marked default of the first launchable provider, `models:light`
 the first launchable **light** row — there is no name-pattern for "cheap".
 
-## The Campaign's Model providers surface
+## The Model providers surface, on two seats
 
-The Campaign workbench (Machine Settings → Ronin Settings) has a **Model providers** card
-(`public/js/campaign-providers.js`) beside Routines and Installs. Its surface is the whole
-catalog on the shared stone work surface: one stone per provider, labelled with the vendor
-and its model count, wearing the measured word — *activated · signed in · installed · not
-installed*; a stone opens that provider's three measured facts and its model table — model,
-tier, cost as read, good at, not good at — with the marked default said. The catalog is a
-snapshot, not live data, and the surface says so with its date: *Catalog updated <date> ·
-prices and models as read then; refreshed with each Ronin update* for the stock file, or
-*Your catalog copy, updated <date>* when the owner's store shadows it; the card's summary
-carries the same date. The measured facts are the Campaign's recorded summary, dated once
-on the surface (*This machine was measured <when>*), never a live word; the surface probes
-nothing and changes nothing — Ronin Setup's
-Model providers surface is where a provider is installed, signed in and activated, and where
-*Check again* measures.
+One surface (`public/js/provider-surface.js`), one definition under one type, seated by two
+selector cards: Ronin Setup's **Model providers** and Ronin Settings' **Model providers**
+open the same thing, and both cards read *N providers · M models · K activated here ·
+catalog updated <date>*. Its first face is the whole inventory on the shared stone work
+surface: one stone per CLI the registry knows, wearing its measured state and the vendor it
+serves with its model count, then any catalog provider no registry CLI serves. The header
+says which catalog copy is shown and its date — the catalog is a snapshot, not live data:
+*Catalog updated <date> · prices and models as read then; refreshed with each Ronin update*
+for the stock file, *Your catalog copy, updated <date>* when the owner's store shadows it —
+and when this machine was last measured.
+
+A stone opens that provider, top to bottom: **Yours**, the three measured steps (install ·
+authenticate with the native sign-in tile, Done and Close · ready) read from the runtime
+row (`docs/setup-workbench.md`, *Activate a provider*); then **The catalog**, the three
+measured facts, dated, and the model table — model, tier, cost as read, good at, not good
+at — with the marked default said. The native sign-in tile is mounted through the
+workbench environment's one shared mount (`public/js/provider-setup-session.js`), which
+both Ronin Setup and Ronin Settings hand their environment, so it works on either seat.
+This surface is the one client that measures: showing it probes the machine and writes
+the Campaign's summary; its catalog rows are the one picker's read, so the surface and
+every picker cannot disagree.
 
 ## New-session integration contract
 

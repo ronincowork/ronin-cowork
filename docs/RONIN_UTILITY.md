@@ -40,7 +40,7 @@ arrangement per page. The three scopes differ only in what the column offers:
 | **terminal tile** | one Agent: its live terminal, composer, Output selector, Control dial, work record |
 | **team commons** | this team: **Docs** (what agents listed, plans, docs by project root) · **Wipeboard** · **Messages** · **Team Configuration** (the team's Routines, kit, launch defaults) |
 | **cowork commons** (⚙) | this install and owner: usage stats · **Account** (Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk · Keypad |
-| **campaign commons** | the Campaign: Campaign · Project roots · Team roster · Templates · **Routines and Installs** (what is on the machine, and the switchboard that fills new teams) · **Model providers** (every provider and model Ronin offers — tier, cost, good at, not good at — and what this machine has: installed, signed in, activated, as measured) |
+| **campaign commons** | the Campaign: Campaign · Project roots · Team roster · Templates · **Routines and Installs** (what is on the machine, and the switchboard that fills new teams) · **Model providers** (the same surface Ronin Setup opens: every provider and model Ronin offers — tier, cost, good at, not good at — and, per provider, install, sign-in and activation here) |
 | **new session** | the launcher, placed by か New or ＋ Add team member; the newborn lands in that workspace |
 
 **Where to send the owner:** teams → the **Coworks** door · settings, account, look, updates
