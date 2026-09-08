@@ -34,30 +34,13 @@ TOOL_DIR=$(dirname "$SELF")
 
 die() { printf '%s\n' "$*" >&2; exit "${2:-3}"; }
 
-# WHICH SESSION AM I — asked of tmux, never guessed (the same resolver as write_tegami).
-me() {
-  local win s sid
-  if [ -n "${TMUX_PANE:-}" ]; then
-    win=$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}' 2>/dev/null) || win=""
-    if [ -n "$win" ]; then
-      s=$(tmux list-windows -a -F '#{session_name}	#{window_id}' 2>/dev/null \
-          | awk -F'	' -v w="$win" '$2==w && $1 !~ /^grid_/ {print $1; exit}')
-      [ -n "$s" ] && { printf '%s\n' "$s"; return 0; }
-    fi
-  fi
-  if [ -n "${TMUX:-}" ]; then
-    sid=${TMUX##*,}
-    s=$(tmux list-sessions -F '#{session_id}	#{session_name}' 2>/dev/null \
-        | awk -F'	' -v i="\$$sid" '$1==i && $2 !~ /^grid_/ {print $2; exit}')
-    [ -n "$s" ] && { printf '%s\n' "$s"; return 0; }
-  fi
-  return 1
-}
+# WHICH SESSION AM I — asked of tmux or read off the session's own command directory,
+# never guessed: ronin_session_me in tool-path.sh, the same resolver as write_tegami.
 
 TEAM=""
 if [ "${1:-}" = "--team" ]; then TEAM="${2:-}"; shift 2 || die "usage: tejun-teampage --team <team> ..." 2; fi
 
-ME=$(me) || die "NO-SESSION: cannot tell which session this is — TMUX_PANE and \$TMUX are both unset." 3
+ME=$(ronin_session_me) || die "NO-SESSION: cannot tell which session this is — TMUX_PANE and \$TMUX are both unset, and this was not run through a session's own command directory." 3
 if [ -z "$TEAM" ]; then
   tags=$(tmux show-option -t "$ME" -qv @ronin-tags 2>/dev/null || true)
   tags=${tags//,/ }

@@ -51,30 +51,18 @@ esac
 # focused in the browser at that instant. Writes followed the owner's mouse. The only
 # symptom was one line of output nobody reads, and a letter was lost.
 #
-# Two sources, both authoritative, neither the attached client:
+# Three sources, each authoritative, none the attached client — resolved by the one
+# ronin_session_me in tool-path.sh, shared with every tool that acts on its own letter:
 #   TMUX_PANE  the pane this shell runs in -> its window -> the non-viewer session holding it
 #   $TMUX      socket,pid,SESSION_ID — set for any process started inside a session
-# If neither answers, DIE. A tool that cannot tell whose letter it is has exactly one
+#   the path   <session-commands>/<session>/<tool>, the directory a born session reaches
+#              its tools through — for the tool shells that are not inside tmux at all
+# If none answers, DIE. A tool that cannot tell whose letter it is has exactly one
 # correct behaviour, and it is not "pick the one on screen".
 me() {
-  local win s sid
-  if [ -n "${TMUX_PANE:-}" ]; then
-    win=$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}' 2>/dev/null) || win=""
-    if [ -n "$win" ]; then
-      s=$(tmux list-windows -a -F '#{session_name}	#{window_id}' 2>/dev/null \
-          | awk -F'	' -v w="$win" '$2==w && $1 !~ /^grid_/ {print $1; exit}')
-      [ -n "$s" ] && { printf '%s
-' "$s"; return 0; }
-    fi
-  fi
-  if [ -n "${TMUX:-}" ]; then
-    sid=${TMUX##*,}
-    s=$(tmux list-sessions -F '#{session_id}	#{session_name}' 2>/dev/null \
-        | awk -F'	' -v i="\$$sid" '$1==i && $2 !~ /^grid_/ {print $2; exit}')
-    [ -n "$s" ] && { printf '%s
-' "$s"; return 0; }
-  fi
-  die "read_tegami: cannot tell which session this is — TMUX_PANE and \$TMUX are both unset.
+  ronin_session_me && return 0
+  die "read_tegami: cannot tell which session this is — TMUX_PANE and \$TMUX are both unset, and this
+  was not run through a session's own command directory.
   Refusing rather than guessing: this used to fall back to the focused tile and wrote one
   session's ladder into another's letter. Pin the pane and retry:
     TMUX_PANE=\$(tmux list-panes -t <your-session> -F '#{pane_id}' | head -1) read_tegami ..."
@@ -112,13 +100,13 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 if [ -n "$TARGET" ]; then
   NAME=$TARGET
 else
-  NAME=$(me)
+  NAME=$(me) || exit 3
 fi
 # Where the session record lives on THIS machine — asked, never spelled. See docs/stores.md.
-. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 FILE="$("$STORE" session)/$(key_of "$NAME")/tegami.md"
