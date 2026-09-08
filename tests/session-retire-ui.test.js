@@ -5,11 +5,13 @@ import fs from 'node:fs/promises';
 globalThis.window = { matchMedia: () => ({ matches: false }) };
 const { createSubmitGate, runShutdownPolling } = await import(`../public/js/session-retire.js?test=${Date.now()}`);
 
-test('live tile names safe shutdown, not irreversible hard delete', async () => {
+test('live tile distinctly names Archive, safe Delete, and confirmed Hard Delete', async () => {
   const source = await fs.readFile(new URL('../public/js/session-retire.js', import.meta.url), 'utf8');
-  assert.match(source, /Shut down Agent/);
-  assert.match(source, /It never discards desk work/);
-  assert.doesNotMatch(source, /Hard delete/);
+  assert.match(source, /Archive is resumable and leaves desks alone/);
+  assert.match(source, /Delete safely closes only clean/);
+  assert.match(source, /Hard Delete irreversibly removes/);
+  assert.match(source, /HARD DELETE \$\{name\} AND OWNED DESKS/);
+  assert.match(source, /mode: 'hard_delete'/);
 });
 
 test('submit gate rejects duplicate clicks until success or failure restores it', async () => {

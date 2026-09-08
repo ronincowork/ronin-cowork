@@ -1538,9 +1538,11 @@ The catalog entry goes. {dir} is not touched.
 
 ## retire — session-retire.js (the tile's retire sheet)
 - **retire.sheet:** Retire {name}
-- **retire.copy:** Archive keeps this Agent available to rehydrate. Shut down Agent safely closes clean, handed-in desks and then ends the Agent. It never discards desk work.
+- **retire.copy:** Archive is resumable and leaves desks alone. Delete safely closes only clean, handed-in desks. Hard Delete irreversibly removes the Agent and every owned desk after preserving destructive evidence.
 - **retire.archive:** Archive
-- **retire.shutdown:** Shut down Agent
+- **retire.shutdown:** Delete
+- **retire.hard_delete:** Hard Delete
+- **retire.hard_delete_confirm:** Hard Delete is irreversible. Delete Agent {name} and every desk it owns, including dirty and unhanded work? Destructive evidence will be preserved.\n\nConfirm exact targets: {exact}
 
 ## retire — the working words
 - **retire.archive_failed:** could not archive it
@@ -1549,6 +1551,8 @@ The catalog entry goes. {dir} is not touched.
 - **retire.resolving:** Resolving Agent…
 - **retire.timeout:** shutdown timed out; the Agent and any remaining desks were left available — try again
 - **retire.archiving:** archiving…
+- **retire.hard_delete_failed:** could not hard delete it
+- **retire.hard_deleting:** starting Hard Delete…
 
 ## customize — the shadow-trade notice
 - **customize.shadow_trade:** Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { shutdownAgent, ShutdownRefused, type ShutdownOps } from '../src/desks/session-shutdown.js';
+import { hardDeleteConfirmation, shutdownAgent, ShutdownRefused, ShutdownSlots, type ShutdownOps } from '../src/desks/session-shutdown.js';
 import type { DeskStatus } from '../src/desks/schema.js';
 
 const desk = (patch: Partial<DeskStatus> = {}): DeskStatus => ({
@@ -60,4 +60,55 @@ test('an unexpected close failure leaves the Agent alive', async () => {
   harness.close = async () => ({ action: 'kept', reason: 'changed during close' });
   await assert.rejects(() => shutdownAgent('agent', () => {}, harness), /Agent remains live/);
   assert.deepEqual(log, []);
+});
+
+test('hung preflight expires before any mutation and aborts its stale task', async () => {
+  const log: string[] = [];
+  const harness = ops([], log);
+  let aborted = false;
+  harness.desks = async (_session, signal) => new Promise((_resolve) => signal?.addEventListener('abort', () => { aborted = true; }));
+  await assert.rejects(() => shutdownAgent('agent', () => {}, harness, { operationTimeoutMs: 20, readTimeoutMs: 5 }), /timed out during assigned desk lookup/);
+  assert.equal(aborted, true);
+  assert.deepEqual(log, []);
+});
+
+test('hung close is aborted and cannot later mutate or end the Agent', async () => {
+  const log: string[] = [];
+  const harness = ops([desk()], log);
+  harness.close = async (_desk, _session, signal) => new Promise((resolve) => {
+    setTimeout(() => {
+      if (!signal?.aborted) log.push('late-close');
+      resolve({ action: 'closed', reason: 'late' });
+    }, 20);
+  });
+  await assert.rejects(() => shutdownAgent('agent', () => {}, harness, { operationTimeoutMs: 50, closeTimeoutMs: 5 }), /timed out during closing/);
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.deepEqual(log, []);
+});
+
+test('hung stop is aborted and cannot later kill after the terminal timeout', async () => {
+  const log: string[] = [];
+  const harness = ops([], log);
+  harness.stop = async (_session, signal) => new Promise((resolve) => {
+    setTimeout(() => {
+      if (!signal?.aborted) log.push('late-stop');
+      resolve();
+    }, 20);
+  });
+  await assert.rejects(() => shutdownAgent('agent', () => {}, harness, { operationTimeoutMs: 50, stopTimeoutMs: 5 }), /timed out during ending Agent/);
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.deepEqual(log, []);
+});
+
+test('a terminal timeout releases the session slot so retry gets a fresh operation', () => {
+  const slots = new ShutdownSlots();
+  assert.equal(slots.begin('agent', 'old'), true);
+  assert.equal(slots.begin('agent', 'duplicate'), false);
+  slots.terminal('agent', 'old');
+  assert.equal(slots.begin('agent', 'retry'), true);
+  assert.equal(slots.current('agent'), 'retry');
+});
+
+test('Hard Delete confirmation names the exact Agent and owned desks', () => {
+  assert.equal(hardDeleteConfirmation('agent'), 'HARD DELETE agent AND OWNED DESKS');
 });

@@ -1,20 +1,20 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { fetchSessionShutdown, startSessionShutdown } from './api.js';
+import { archiveSession, fetchSessionShutdown, startSessionShutdown } from './api.js';
 import { sheet, toast } from './ui.js';
 import { t } from './lexicon.js';
 
 export async function runShutdownPolling(name, {
-  mode = 'shutdown',
+  requestBody,
   start = startSessionShutdown,
   poll = fetchSessionShutdown,
   onProgress = () => {},
   now = () => Date.now(),
   wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-  timeoutMs = 30_000,
+  timeoutMs = requestBody?.mode === 'hard_delete' ? 125_000 : 35_000,
   pollTimeoutMs = 5_000,
 } = {}) {
   onProgress({ state: 'running', phase: 'resolving_agent', message: 'Resolving Agent…' });
-  const started = await start(name, mode);
+  const started = await start(name, requestBody);
   const deadline = now() + timeoutMs;
   let state = started;
   while (state.state === 'running') {
@@ -52,7 +52,7 @@ export function retireSession(name, tileIndex, onDone) {
   const title = document.createElement('h2');
   title.textContent = name;
   const copy = document.createElement('p');
-  copy.textContent = t('retire.copy', 'Archive keeps this Agent available to rehydrate. Shut down Agent safely closes clean, handed-in desks and then ends the Agent. It never discards desk work.');
+  copy.textContent = t('retire.copy', 'Archive is resumable and leaves desks alone. Delete safely closes only clean, handed-in desks. Hard Delete irreversibly removes the Agent and every owned desk after preserving destructive evidence.');
   const progress = document.createElement('p');
   progress.className = 'end-session-progress';
   progress.setAttribute('role', 'status');
@@ -66,8 +66,12 @@ export function retireSession(name, tileIndex, onDone) {
   const hard = document.createElement('button');
   hard.type = 'button';
   hard.className = 'danger';
-  hard.textContent = t('retire.shutdown', 'Shut down Agent');
-  actions.append(archive, hard);
+  hard.textContent = t('retire.shutdown', 'Delete');
+  const destructive = document.createElement('button');
+  destructive.type = 'button';
+  destructive.className = 'danger';
+  destructive.textContent = t('retire.hard_delete', 'Hard Delete');
+  actions.append(archive, hard, destructive);
   dlg.card.append(title, copy, progress, actions);
 
   /* SAY THAT IT IS WORKING. Both buttons are disabled for the whole request — archiving
@@ -99,10 +103,18 @@ export function retireSession(name, tileIndex, onDone) {
     const state = await runShutdownPolling(name, { onProgress: (value) => { progress.textContent = value.message; } });
     toast(state.message, true);
   };
-  archive.addEventListener('click', () => void submit(() => finish(archive, async () => {
-    const state = await runShutdownPolling(name, { mode: 'archive', onProgress: (value) => { progress.textContent = value.message; } });
-    toast(state.message, true);
-  }, t('retire.archive_failed', 'could not archive it'), t('retire.archiving', 'starting archive…'))));
+  archive.addEventListener('click', () => void submit(() => finish(archive, () => archiveSession(name), t('retire.archive_failed', 'could not archive it'), t('retire.archiving', 'archiving…'))));
   hard.addEventListener('click', () => void submit(() => finish(hard, safeShutdown, t('retire.shutdown_failed', 'could not safely shut it down'), t('retire.shutting_down', 'starting shutdown…'))));
+  destructive.addEventListener('click', () => {
+    const exact = `HARD DELETE ${name} AND OWNED DESKS`;
+    if (!confirm(t('retire.hard_delete_confirm', 'Hard Delete is irreversible. Delete Agent {name} and every desk it owns, including dirty and unhanded work? Destructive evidence will be preserved.\n\nConfirm exact targets: {exact}', { name, exact }))) return;
+    void submit(() => finish(destructive, async () => {
+      const state = await runShutdownPolling(name, {
+        requestBody: { mode: 'hard_delete', confirmation: exact },
+        onProgress: (value) => { progress.textContent = value.message; },
+      });
+      toast(state.message, true);
+    }, t('retire.hard_delete_failed', 'could not hard delete it'), t('retire.hard_deleting', 'starting Hard Delete…')));
+  });
   dlg.open();
 }

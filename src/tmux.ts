@@ -152,17 +152,22 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
   }
 }
 
-export async function killSession(name: string): Promise<void> {
+interface StopOptions { signal?: AbortSignal; timeoutMs?: number }
+
+export async function killSession(name: string, opts: StopOptions = {}): Promise<void> {
+  opts.signal?.throwIfAborted();
   try {
-    await tmux.run(['kill-session', '-t', exactSession(name)]);
-  } catch {
+    await tmux.run(['kill-session', '-t', exactSession(name)], { timeoutMs: opts.timeoutMs });
+  } catch (e) {
+    if (opts.signal?.aborted) throw e;
   }
 }
 
-async function groupedSessionTargets(name: string): Promise<Set<string>> {
+async function groupedSessionTargets(name: string, opts: StopOptions = {}): Promise<Set<string>> {
+  opts.signal?.throwIfAborted();
   const targets = new Set<string>([name]);
   try {
-    const stdout = await tmux.run(['list-sessions', '-F', '#{session_name}\t#{session_group}']);
+    const stdout = await tmux.run(['list-sessions', '-F', '#{session_name}\t#{session_group}'], { timeoutMs: opts.timeoutMs });
     const rows = stdout.split('\n').filter(Boolean).map((line) => {
       const [sname, group] = line.split('\t');
       return { sname, group: group || '' };
@@ -173,17 +178,27 @@ async function groupedSessionTargets(name: string): Promise<Set<string>> {
   return targets;
 }
 
-export async function killSessionTree(name: string): Promise<void> {
+export async function killSessionTree(name: string, opts: StopOptions = {}): Promise<void> {
+  opts.signal?.throwIfAborted();
   await removeHandoff(name);
-  const targets = await groupedSessionTargets(name);
-  for (const s of targets) await killSession(s);
+  const targets = await groupedSessionTargets(name, opts);
+  for (const s of targets) {
+    opts.signal?.throwIfAborted();
+    await killSession(s, opts);
+  }
 }
 
-export async function stopSessionTree(name: string): Promise<void> {
-  const targets = await groupedSessionTargets(name);
-  for (const target of targets) await killSession(target);
+export async function stopSessionTree(name: string, opts: StopOptions = {}): Promise<void> {
+  const targets = await groupedSessionTargets(name, opts);
+  for (const target of targets) {
+    opts.signal?.throwIfAborted();
+    await killSession(target, opts);
+  }
   const survivors: string[] = [];
-  for (const target of targets) if (await sessionExists(target)) survivors.push(target);
+  for (const target of targets) {
+    opts.signal?.throwIfAborted();
+    if (await sessionExists(target)) survivors.push(target);
+  }
   if (survivors.length) throw new Error(`Could not stop tmux session tree: ${survivors.join(', ')}`);
 }
 
