@@ -170,7 +170,9 @@ anyone changing the code below.
 - **The house closes what it opens.** `open` records what it creates; hand-in removes its
   candidate; promotion removes its own candidate and leaves the team line and desks as
   they are (the next hand-in carries the line current, and a desk is closed by its session
-  once promotion has told it); team retirement settles the line; startup finishes an
+  once promotion has told it). Close refuses when a live session is still running inside
+  the worktree and tells the caller to notify that session to leave, then retry; it does
+  not move or message the session. Team retirement settles the line; startup finishes an
   interrupted transaction from the ledger. No cleanup chores for Agents or the owner.
 - **The house also absorbs junk it did not make.** `ronin-desk-audit` (read-only, six
   invariants, exit code) and `ronin-desk-settle --dry-run | --yes` (the reconciler: settles
