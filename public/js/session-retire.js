@@ -63,15 +63,14 @@ export function retireSession(name, tileIndex, onDone) {
   archive.type = 'button';
   archive.className = 'primary';
   archive.textContent = t('retire.archive', 'Archive');
-  const hard = document.createElement('button');
-  hard.type = 'button';
-  hard.className = 'danger';
-  hard.textContent = t('retire.shutdown', 'Delete');
+  const safeDelete = document.createElement('button');
+  safeDelete.type = 'button';
+  safeDelete.textContent = t('retire.shutdown', 'Delete');
   const destructive = document.createElement('button');
   destructive.type = 'button';
   destructive.className = 'danger';
   destructive.textContent = t('retire.hard_delete', 'Hard Delete');
-  actions.append(archive, hard, destructive);
+  actions.append(archive, safeDelete, destructive);
   dlg.card.append(title, copy, progress, actions);
 
   /* SAY THAT IT IS WORKING. Both buttons are disabled for the whole request — archiving
@@ -104,7 +103,7 @@ export function retireSession(name, tileIndex, onDone) {
     toast(state.message, true);
   };
   archive.addEventListener('click', () => void submit(() => finish(archive, () => archiveSession(name), t('retire.archive_failed', 'could not archive it'), t('retire.archiving', 'archiving…'))));
-  hard.addEventListener('click', () => void submit(() => finish(hard, safeShutdown, t('retire.shutdown_failed', 'could not safely shut it down'), t('retire.shutting_down', 'starting shutdown…'))));
+  safeDelete.addEventListener('click', () => void submit(() => finish(safeDelete, safeShutdown, t('retire.shutdown_failed', 'could not safely shut it down'), t('retire.shutting_down', 'starting shutdown…'))));
   destructive.addEventListener('click', () => {
     const exact = `HARD DELETE ${name} AND OWNED DESKS`;
     if (!confirm(t('retire.hard_delete_confirm', 'Hard Delete is irreversible. Delete Agent {name} and every desk it owns, including dirty and unhanded work? Destructive evidence will be preserved.\n\nConfirm exact targets: {exact}', { name, exact }))) return;
