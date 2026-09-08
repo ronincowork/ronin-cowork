@@ -57,6 +57,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/feedback.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/folder-picker.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/form-steps.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/gbrain-setup-state.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/gbrain.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/home.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/hotwords.js" />
@@ -94,6 +95,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/roster.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/services-activation.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/services-card.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/services-setup-state.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/session-retire.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/setup-provider-state.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/setup-surfaces.js" />
@@ -118,6 +120,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-roster-surface.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-terminal-pool.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-wipeboard.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/terminal-input.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/terminal-tile-host.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/termview.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/theme.js" />
@@ -163,6 +166,8 @@
       <span class="grow"><span id="viewplace" class="ui-bar-place" hidden></span></span>
       <span id="viewmap" class="wk-view-map"></span>
       <span id="ramrpm" class="ramrpm" hidden></span>
+      <!-- A view's own compact controls (Setup's light/dark). js/workspace.js seats them. -->
+      <span id="viewactions" class="wk-view-actions"></span>
       <span id="feedbackaction"></span>
       <button id="shapecycle" class="shape-cycle" hidden data-t-title="bar.shape_title" title="Two workspaces — click for four">2</button>
       </header>

@@ -6,12 +6,14 @@ import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { openLaunchForm, openTemplateLaunchForm, openWorkspaceStateTab, reserveWorkspaceTab } from './workspace.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { applyTheme, setCampaignTheme } from './theme.js';
+import { campaignById, campaigns, initialCampaignId, loadCampaigns, saveCampaign } from './campaigns.js';
 
 const PROFILE = 'setup';
 // The selector's fixed order. Model providers comes first because it is the first job.
 const ORDER = Object.freeze([
   SETUP_SURFACE_TYPES.providers, SETUP_SURFACE_TYPES.register, SETUP_SURFACE_TYPES.roots,
-  SETUP_SURFACE_TYPES.services, SETUP_SURFACE_TYPES.gbrain, SETUP_SURFACE_TYPES.templates, SETUP_SURFACE_TYPES.launchOwn,
+  SETUP_SURFACE_TYPES.services, SETUP_SURFACE_TYPES.gbrain, SETUP_SURFACE_TYPES.launchOwn,
 ]);
 // THE SAME SHAPE AS THE TEAM PAGE: workspace 1, the selector, workspace 2. Presets is
 // pinned in workspace 1 and takes the widest column; the setup work sits compact in
@@ -34,7 +36,50 @@ export function createSetupView() {
   registerSetupWorkbench();
   const { createSurface } = WorkspaceKit.primitives;
   let ctx = null;
+  let bench = null;
   const providerHosts = new Set();
+  // APPEARANCE lives at the right of the TOP workbench header (#bar), seated there by
+  // the ViewHost while Setup is active, the way the layout map is. A subtle phone /
+  // desktop switcher picks WHICH surface is being set; light / dark then writes the
+  // Campaign's theme for that surface (desk.theme / desk.theme_mobile — the same fields
+  // the Appearance control in the cowork commons saves) and repaints. Neither control
+  // touches the workbench: not the workspace count, what is hidden, the layout mode, or
+  // a width. The selector header carries no controls, and the phone stack comes from
+  // the window's width alone.
+  const COARSE = window.matchMedia('(pointer: coarse)').matches;
+  let surface = COARSE ? 'mobile' : 'desktop';
+  const desk = () => campaignById(initialCampaignId())?.desk || {};
+  const themeOf = () => (surface === 'mobile' ? desk().theme_mobile : desk().theme) === 'dark' ? 'dark' : 'light';
+  const barButton = (className) => {
+    const button = document.createElement('button');
+    button.className = `bar-toggle ${className}`;
+    button.type = 'button';
+    return button;
+  };
+  const surfaceToggle = barButton('setup-surface-toggle');
+  const themeToggle = barButton('setup-theme-toggle');
+  const paintAppearance = () => {
+    const mobile = surface === 'mobile';
+    surfaceToggle.textContent = mobile ? '📱' : '🖥';
+    surfaceToggle.title = mobile ? t('setup.surface_mobile', 'Setting the phone appearance — click for desktop') : t('setup.surface_desktop', 'Setting the desktop appearance — click for phone');
+    surfaceToggle.setAttribute('aria-label', surfaceToggle.title);
+    const dark = themeOf() === 'dark';
+    themeToggle.textContent = dark ? '☀' : '◐';
+    themeToggle.title = dark ? t('setup.use_light', 'Use light appearance') : t('setup.use_dark', 'Use dark appearance');
+    themeToggle.setAttribute('aria-label', themeToggle.title);
+    themeToggle.setAttribute('aria-pressed', String(dark));
+  };
+  surfaceToggle.addEventListener('click', () => { surface = surface === 'mobile' ? 'desktop' : 'mobile'; paintAppearance(); });
+  themeToggle.addEventListener('click', async () => {
+    if (!initialCampaignId()) await loadCampaigns();
+    const id = initialCampaignId();
+    if (!id) return;
+    const field = surface === 'mobile' ? 'theme_mobile' : 'theme';
+    const r = await saveCampaign(id, { desk: { [field]: themeOf() === 'dark' ? 'light' : 'dark' } });
+    if (r.ok) { setCampaignTheme(desk()); applyTheme(); }
+    paintAppearance();
+  });
+  paintAppearance();
   const blank = (id) => {
     const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' });
     const word = document.createElement('p'); word.className = 'cv-blank-word'; word.textContent = t('team.workspace_blank', 'Workspace');
@@ -47,12 +92,14 @@ export function createSetupView() {
     launchUrl: presetLaunchUrl,
     reserveLaunchTab: reserveWorkspaceTab,
     kinds: environment.kinds,
+    // One runtime truth: the Setup view reads it once at entry and the Model providers
+    // surface keeps it current, so a stone's gate never needs a read of its own.
+    runtime: () => environment.setupRuntime,
     navigateToSurface: (type, detail = {}) => {
       bench?.place(type, 'workspace2', detail);
       bench?.select('workspace2');
     },
   });
-  let bench = null;
   const environment = {
     presets: (workspace) => createPresetsSurface({ environment: presetEnvironment(), workspace }),
     showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
@@ -80,7 +127,9 @@ export function createSetupView() {
       return { el: terminal.el, fit: terminal.fit, park: terminal.park, destroy };
     },
   };
-  const save = () => ctx?.patchViewState('setup', bench.snapshot());
+  // viewportMode was the retired presentation toggle's memory; writing undefined drops
+  // it from a stored visit so nobody stays in the stack it forced.
+  const save = () => ctx?.patchViewState('setup', { ...bench.snapshot(), viewportMode: undefined });
   bench = WorkspaceKit.workbench.create({
     profile: PROFILE,
     tenant: { kind: 'setup' },
@@ -100,6 +149,7 @@ export function createSetupView() {
     glyph: '人',
     hideFeedback: true,
     hideShapeControl: true,
+    barActions: [surfaceToggle, themeToggle],
     title: () => t('setup.title', 'Ronin Setup'),
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {
@@ -113,6 +163,10 @@ export function createSetupView() {
       // shared runtime truth before restoring a remembered surface into workspace 2.
       bench.refreshSelector();
       const stored = context.viewState('setup') || {};
+      // The Campaign's record is not read at boot on this page; fetch it once so the
+      // light/dark icon shows the configured theme, not a guess.
+      if (!campaigns().length) void loadCampaigns().then(paintAppearance);
+      paintAppearance();
       // Widths a person set on this shape are kept; a state saved by an earlier Setup
       // shape (selector first) is re-seated on the workbench order instead.
       const widths = sameOrder(stored.arrangement?.order, DEFAULT_ARRANGEMENT.order) ? stored.arrangement.widths : DEFAULT_ARRANGEMENT.widths;

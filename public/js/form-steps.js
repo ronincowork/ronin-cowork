@@ -27,14 +27,15 @@ export const el = (tag, cls, text) => {
 export function createStep({ n, key, title, onToggle = null }) {
   const box = el('section', 'fs-step');
   box.dataset.step = key;
-  const head = el('div', 'fs-step-head');
+  const head = el(onToggle ? 'button' : 'div', 'fs-step-head');
+  if (onToggle) head.type = 'button';
   const num = el('span', 'fs-step-n', String(n));
   const chev = el('span', 'fs-chev', '');
-  head.append(num, el('h3', null, title));
-  const body = el('div', 'fs-step-body');
   const sum = el('span', 'fs-sum');
   sum.hidden = true;
-  box.append(head, body, sum);
+  head.append(num, el('h3', null, title), sum);
+  const body = el('div', 'fs-step-body');
+  box.append(head, body);
   if (onToggle) {
     head.append(chev);
     head.addEventListener('click', () => onToggle());
@@ -42,7 +43,10 @@ export function createStep({ n, key, title, onToggle = null }) {
   const setCollapsed = (on, meta = '', togglable = !!onToggle) => {
     box.dataset.collapsed = String(!!on);
     head.classList.toggle('fs-togglable', togglable);
-    chev.textContent = togglable ? (on ? '▸' : '▾') : '';
+    chev.textContent = togglable
+      ? (on ? t('forms.expand', 'Expand') : t('forms.collapse', 'Collapse'))
+      : '';
+    if (onToggle) head.setAttribute('aria-expanded', String(!on));
     body.hidden = !!on;
     sum.hidden = !on;
     if (on) sum.textContent = meta || '—';
@@ -226,10 +230,10 @@ export function templateBox(art, label, blurb, picked, act) {
   return cell;
 }
 
-export function templateTray(rows, current, onPick) {
+export function templateTray(rows, current, onPick, { includeOwn = true } = {}) {
   const grid = el('div', 'fs-tmplgrid');
   const box = templateBox;
-  grid.append(box('＋', t('forms.own', 'Make your own'), t('forms.own_blurb', 'Fresh and empty. Fill it in yourself.'), current === '', () => onPick('')));
+  if (includeOwn) grid.append(box('＋', t('forms.own', 'Make your own'), t('forms.own_blurb', 'Fresh and empty. Fill it in yourself.'), current === '', () => onPick('')));
   for (const row of rows) {
     grid.append(box(row.art, row.label, row.blurb, current === row.name, () => onPick(row.name)));
   }

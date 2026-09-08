@@ -66,7 +66,8 @@ export class Tile {
     // 🔒 THE LOCKED VIEW — xterm, opened into the body after the panel, as before.
     this.term = new TermView(this.body, {
       // Locked: key-for-key to the host (the mirror, unchanged). Unlocked: DVR input rules.
-      onData: (d) => (this.locked ? this.sendRaw(d) : this.dvrInput(d)),
+      onUserData: (d) => (this.locked ? this.sendRaw(d) : this.dvrInput(d)),
+      onProtocolData: (d) => this.wire.sendTerminalReply(d),
       onResize: ({ cols, rows }) => this.wire.send({ t: 'r', c: cols, r: rows }),
       onSelection: (s) => {
         S.lastSelection = s;
@@ -102,7 +103,7 @@ export class Tile {
       // Desktop: click focuses the terminal. Works great — left untouched.
       // (Home-panel clicks must NOT steal focus into the terminal, though.)
       this.body.addEventListener('pointerdown', (e) => {
-        this.focusTerminal();
+        if (this.term.ownsTarget(e.target)) this.focusTerminal();
       });
       // A drag that was meant to be a copy and silently was not — say the key.
       this.term.wireCopyHint({
@@ -125,7 +126,7 @@ export class Tile {
       // the body threw on it for a few hours and took the terminal's focus with it.
       // Docs replaced that body overlay with a real editor. It owns its own focus just
       // as header controls do; only the terminal body itself redirects into xterm.
-      if (!IS_TOUCH && this.body.contains(e.target)
+      if (!IS_TOUCH && this.term.ownsTarget(e.target)
         && !(e.target instanceof Element && e.target.closest('.tile-doc-view'))) this.term.focus();
     });
     this.syncOutput();

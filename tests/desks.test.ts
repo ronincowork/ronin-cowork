@@ -66,7 +66,7 @@ await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'
 
 const { parseArrangement, arrangementOf } = await import('../src/desks/arrangement.js');
 const { deriveAssignment, listDesks, readDesk, deskWorktree, candidateWorktree } = await import('../src/desks/registry.js');
-const { openDesk, syncDesk, closeDesk, discardDesk, handoffDesk } = await import('../src/desks/desk.js');
+const { openDesk, syncDesk, closeDesk, discardDesk, handoffDesk, cwdIsInside } = await import('../src/desks/desk.js');
 const { handIn } = await import('../src/desks/hand-in.js');
 const statusOf = async (repo: string, branch: string) => {
   const d = (await listDesks({ repo })).find((x) => x.branch === branch);
@@ -369,6 +369,15 @@ test('closeDesk keeps unresolved work named, closes only after hand-in, and reco
   await commitFile(wispr, 'draft2.txt', 'still typing\n', 'finish drafts');
   // Hand it in; now close deletes it because the tip is on the line.
   assert.equal((await handIn('cowork', 'team/comp/wispr')).receipt.result, 'accepted');
+  assert.equal(cwdIsInside(wispr, path.join(wispr, 'src')), true);
+  assert.equal(cwdIsInside(wispr, cowork), false);
+  const occupied = await closeDesk('cowork', 'team/comp/wispr', {
+    sessions: async () => [{ name: 'wispr' }],
+    cwd: async () => path.join(wispr, 'src'),
+  });
+  assert.equal(occupied.action, 'kept');
+  assert.match(occupied.reason, /session wispr is running inside .*notify it to leave, then retry/);
+  assert.ok(existsSync(wispr), 'an occupied worktree remains mounted');
   const gone = await closeDesk('cowork', 'team/comp/wispr');
   assert.equal(gone.action, 'closed');
   assert.equal(await readDesk('cowork', 'team/comp/wispr'), null);

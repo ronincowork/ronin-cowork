@@ -13,24 +13,24 @@ const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.ur
 
 test('all core handles expose only their ruled specialized controls after the universal shell', () => {
   const expected = {
-    bare_metal: ['user_message', 'customize', 'launch', 'sessions'],
-    ronin_team: ['user_message', 'customize', 'launch', 'sessions'],
-    staff_my_codebase: ['user_message', 'customize', 'launch', 'root'],
-    develop_new_project: ['user_message', 'customize', 'launch', 'root', 'features'],
-    personal_assistant: ['user_message', 'customize', 'launch', 'assistant_mode', 'specialists'],
-    health_and_fitness: ['user_message', 'customize', 'launch', 'roles'],
-    morning_brief: ['user_message', 'customize', 'launch', 'schedule', 'roles'],
-    agent_editable_doc: ['user_message', 'customize', 'launch', 'root', 'document'],
+    bare_metal: ['user_message', 'launch', 'sessions'],
+    ronin_team: ['user_message', 'launch', 'sessions'],
+    staff_my_codebase: ['user_message', 'launch', 'root'],
+    develop_new_project: ['user_message', 'launch', 'root', 'features'],
+    personal_assistant: ['user_message', 'launch', 'assistant_mode', 'specialists'],
+    health_and_fitness: ['user_message', 'launch', 'roles'],
+    morning_brief: ['user_message', 'launch', 'schedule', 'roles'],
+    agent_editable_doc: ['user_message', 'launch', 'root', 'document'],
   };
   for (const [handle, controls] of Object.entries(expected)) {
     assert.deepEqual(presets.presetActions(handle), controls, handle);
   }
-  assert.deepEqual(presets.presetActions('ordinary_replacement'), ['user_message', 'customize', 'launch']);
+  assert.deepEqual(presets.presetActions('ordinary_replacement'), ['user_message', 'launch']);
 });
 
 test('all initial controls preserve the ruled destinations and teaching choices', () => {
-  assert.deepEqual(presets.initialControls('bare_metal', 'codex').sessions.map((row) => row.provider), ['codex', 'codex']);
-  assert.deepEqual(presets.initialControls('ronin_team', 'codex').sessions.map((row) => [row.name, row.team_lead === true]), [['team_lead', true], ['agent_1', false], ['agent_2', false]]);
+  assert.deepEqual(presets.initialControls('bare_metal'), { tiles: 4, root: 'ronin_lab', sessions: [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }] });
+  assert.deepEqual(presets.initialControls('ronin_team').sessions.map((row) => [row.name, row.team_lead === true]), [['team_lead', true], ['agent_1', false], ['agent_2', false]]);
   assert.equal(presets.initialControls('staff_my_codebase').root, 'ronin_project_1');
   assert.deepEqual(presets.initialControls('develop_new_project'), { root: 'ronin_project_1', features: ['frontend', 'backend'] });
   assert.deepEqual(presets.initialControls('personal_assistant'), { assistant_mode: 'single', specialists: '' });
@@ -38,7 +38,7 @@ test('all initial controls preserve the ruled destinations and teaching choices'
   assert.ok(presets.initialControls('health_and_fitness').roles.every((row) => row.ask));
   assert.deepEqual(presets.initialControls('morning_brief').roles.map((row) => row.name), ['brief writer', 'reader']);
   assert.equal(presets.initialControls('morning_brief').schedule, 'daily 08:00');
-  assert.deepEqual(presets.initialControls('agent_editable_doc'), { root: 'ronin_lab', document: 'README.md' });
+  assert.deepEqual(presets.initialControls('agent_editable_doc'), { root: 'ronin_lab', document: 'priorities-for-the-week.md' });
 });
 
 test('every core seating case uses only real receipt objects and missing objects fall back honestly', () => {
@@ -136,13 +136,14 @@ test('all inventoried launch families use the shared launch marker and no Team R
   assert.doesNotMatch(files[3], /'torii', '⛩'/);
 });
 
-test('Setup surfaces consume the one runtime contract and do not duplicate Campaign Templates', async () => {
+test('Setup surfaces consume the one runtime contract and mount canonical Campaign Templates only through Launch Your Own', async () => {
   const text = await source('setup-surfaces.js');
   assert.match(text, /request\('\/api\/setup\/runtime'/);
   assert.match(text, /\/login`/);
   assert.match(text, /\/done`/);
   assert.match(text, /\/close`/);
-  assert.match(text, /campaignTemplatesDefinition\(\)/);
+  assert.match(text, /createTemplatesSurface\(\)/);
+  assert.doesNotMatch(text, /campaignTemplatesDefinition\(\)/);
   assert.doesNotMatch(text, /mode === 'loaded'|mode === 'make'|\/api\/library/);
 });
 

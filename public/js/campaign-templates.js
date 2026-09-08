@@ -60,8 +60,8 @@ function verdictWord(v) {
 export function createTemplatesSurface() {
   const { createSurface, createAction, createActionBar, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('league.templates', 'Templates'), className: 'cv-surface' });
-  const body = el('div', 'cv-body');
-  surface.content.append(body);
+  const body = surface.content;
+  body.className += ' cv-body';
   let kind = 'open';
   let shape = 'all'; // all · team · agent — the second axis, beside kind (owner, 2026-09-03)
   let teams = [];

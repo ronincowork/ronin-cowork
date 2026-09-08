@@ -43,3 +43,14 @@ test('one refused launch does not stop the other rows', async () => {
   assert.deepEqual(names, ['refused', 'born']);
   assert.deepEqual(outcomes.map(({ result }) => result.ok), [false, true]);
 });
+
+test('a bare-metal row is placement, not birth material', async () => {
+  const calls = [];
+  const request = async (url, options) => { calls.push({ url, body: options.json }); return { ok: true }; };
+  await launchTeamAgents(request, 'metal', [
+    { session_type: 'bare_metal_agent', name: 'one', project_root: 'ronin_lab', instructions: 'Go.', provider: 'anthropic', model: 'opus' },
+    { name: 'lead', instructions: 'lead', mandate: { reach: 'execute', recruit: 'nobody', output: ['open'] }, team_lead: true },
+  ]);
+  assert.deepEqual(calls[0].body, { session_type: 'bare_metal_agent', team: 'metal', name: 'one', project_root: 'ronin_lab', instructions: 'Go.', provider: 'anthropic', model: 'opus' });
+  assert.equal(calls[1].body.session_type, 'cowork_agent');
+});

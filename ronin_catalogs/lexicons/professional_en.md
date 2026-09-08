@@ -404,6 +404,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **setup.title:** Ronin Setup
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
+- **setup.use_dark:** Use dark appearance
+- **setup.use_light:** Use light appearance
+- **setup.surface_desktop:** Setting the desktop appearance — click for phone
+- **setup.surface_mobile:** Setting the phone appearance — click for desktop
 - **campaign.settings_title:** Ronin Settings
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)
@@ -676,7 +680,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Team commons
-- **team.commons_summary:** See Docs / Wipeboard / Agent Message Queue / Team Configuration
+- **team.commons_summary:** See Docs / Wipeboard / Messages / Team Configuration
 - **team.roster_of:** Roster
 - **team.workspace_blank:** Workspace
 - **team.workspace_empty:** empty
@@ -836,6 +840,48 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **gbrain.remove_confirm:** Remove gbrain from this machine? The server, tokens, wiring and shelves go; your brain repo and its pages are KEPT.
 - **gbrain.checking:** checking…
 - **gbrain.status:** gbrain status
+- **gbrain.configured:** configured
+- **gbrain.status_diagnosis:** Setup could not read the local gbrain status. Nothing was changed.
+- **gbrain.check_again:** Check again
+
+## gbrain — gbrain-setup-state.js and gbrain.js (the Ronin Setup work surface)
+- **gbrain.setup_intro:** A shared, searchable memory for your Agents.
+- **gbrain.setup_q_installed:** Installed
+- **gbrain.setup_q_agents:** Available to Agents
+- **gbrain.setup_q_accounts:** Accounts linked
+- **gbrain.setup_checking:** Checking…
+- **gbrain.setup_not_installed:** Not installed
+- **gbrain.setup_services_needed_hint:** gbrain comes with Ronin Services.
+- **gbrain.setup_open_services:** Open Ronin Services
+- **gbrain.setup_services_off:** Installed · Ronin Services is switched off
+- **gbrain.setup_services_off_hint:** Turn Services on for this Cowork in Team Configuration.
+- **gbrain.setup_load_hint:** One press. Downloads come from github.com and huggingface.co.
+- **gbrain.setup_installing:** Installing…
+- **gbrain.setup_removing:** Removing…
+- **gbrain.setup_failed:** Install did not finish
+- **gbrain.setup_install_log:** Install log
+- **gbrain.setup_running:** Installed · running
+- **gbrain.setup_running_keyword:** Installed · running · keyword-only search
+- **gbrain.setup_stopped:** Installed · not running
+- **gbrain.setup_stopped_hint:** Turn Ronin Services off and on in Team Configuration, or ask an Agent to look.
+- **gbrain.setup_check_assistant:** Ask an Agent to check gbrain
+- **gbrain.setup_unreadable:** Could not read
+- **gbrain.setup_agents_all:** Default for all Agents
+- **gbrain.setup_agents_selected:** Only selected Agents
+- **gbrain.setup_agents_hint:** Selected Agents get it in Team Configuration or on the New Agent form.
+- **gbrain.setup_agents_save_failed:** Could not save.
+- **gbrain.setup_no_campaign:** No Campaign to set a default for.
+- **gbrain.setup_linked:** Linked
+- **gbrain.setup_not_linked:** Not linked
+- **gbrain.setup_no_accounts:** None to link on this install.
+- **gbrain.setup_accounts_hint:** Your Personal Assistant links one when you ask, with your approval.
+- **gbrain.setup_provider_first:** A model provider comes first.
+- **gbrain.setup_open_providers:** Open Model providers
+- **gbrain.setup_ready:** Everything is good to go.
+- **gbrain.setup_start_assistant:** Start your first Personal Assistant
+- **gbrain.setup_launching:** Launching…
+- **gbrain.setup_launched:** Launched in a new tab.
+- **gbrain.setup_launch_failed:** Launch failed.
 
 ## koshi — koshi.js (the 目 Koshi tab)
 - **koshi.restart:** ↻ Restart Koshi
@@ -938,6 +984,40 @@ The pad's current config downloads as a backup first.
 - **roots.save:** save
 - **roots.cancel:** cancel
 - **roots.edit:** edit
+- **roots.edit_folder:** Edit
+- **roots.edit_folder_title:** Change the summary, shelves, match words, or repository workflow.
+- **roots.save_folder:** Save
+- **roots.cancel_folder:** Cancel
+- **roots.archive_folder:** Archive
+- **roots.unarchive_folder:** Unarchive
+- **roots.exclude_folder:** Exclude
+- **roots.summary:** Summary
+- **roots.summary_none:** No summary yet.
+- **roots.section_folder:** Folder
+- **roots.section_repository:** Repository
+- **roots.fact_directory:** Directory
+- **roots.fact_docs:** Docs
+- **roots.fact_plans:** Plans
+- **roots.fact_match:** Match
+- **roots.fact_remote:** Remote
+- **roots.fact_branch:** Branch
+- **roots.fact_publishing:** Publishing
+- **roots.fact_worktrees:** Worktrees
+- **roots.profile_undeclared:** Not declared
+- **roots.repository_none:** Not a Git repository. A workspace folder does not need to be one.
+- **roots.add_head:** Add a workspace
+- **roots.intro_line:** A workspace is a folder Ronin keeps for Teams and Agents.
+- **roots.learn_more:** Learn more
+- **roots.learn_less:** Less
+- **roots.intro_repo:** It may be a Git repository.
+- **roots.intro_born:** Agents are born from it and make their own files there.
+- **roots.intro_accumulates:** Their work accumulates there: plans, memory, notes, calendar documents.
+- **roots.keep_hint:** Keep a folder on this machine for Teams and Agents to start in.
+- **roots.keep_lede:** Keep a folder on this machine for Teams and Agents to start in; a folder not kept is simply left alone.
+- **roots.picker_path:** Path
+- **roots.picker_none:** None yet
+- **roots.picker_keep:** Keep
+- **roots.picker_kept:** Kept
 - **roots.archive_failed:** could not archive it — {message}
 - **roots.exclude:** exclude
 - **roots.exclude_title:** Remove it from the catalog. Nothing on disk is touched.
@@ -1347,14 +1427,24 @@ The catalog entry goes. {dir} is not touched.
 - **messages.retry:** Try Again
 - **messages.force:** Force
 - **messages.dismiss:** Dismiss
+- **messages.select_all:** Select All
+- **messages.select_all_count:** Select All ({count})
+- **messages.select_message:** Select message to {target}
+- **messages.dismiss_selected:** Dismiss Selected
+- **messages.dismiss_selected_count:** Dismiss Selected ({count})
+- **messages.dismiss_wipeboard:** Dismiss Wipeboard Notices
+- **messages.dismiss_wipeboard_count:** Dismiss Wipeboard Notices ({count})
+- **messages.dismiss_all:** Dismiss All
+- **messages.dismiss_all_count:** Dismiss All ({count})
 - **messages.trying:** Trying…
 - **messages.forcing:** Forcing…
 - **messages.dismissing:** Dismissing…
 - **messages.delivered:** Delivered and cleared.
 - **messages.dismissed:** Message dismissed.
+- **messages.dismissed_count:** {count} message(s) dismissed.
 - **messages.retained:** Still waiting — {reason}
 - **messages.action_failed:** Message action failed — {reason}
-- **messages.attention:** Check Team Commons → Agent Message Queue
+- **messages.attention:** Check Team Commons → Messages
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update
@@ -1754,7 +1844,7 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_wipeboard:** Wipeboard
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
-- **workspace.channel_agent_message_queue:** Agent Message Queue
+- **workspace.channel_agent_message_queue:** Messages
 - **workspace.channel_cron_jobs:** Cron jobs
 - **team_config.no_roster:** This Team has no saved record.
 - **team_config.loading:** Loading Team Configuration…

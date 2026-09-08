@@ -64,7 +64,7 @@ the current Cowork, a quick new session, the cowork commons, and the two-or-four
 layout. On a phone, choose the Cowork, choose the Agent, then use its full-screen tile.
 
 A terminal tile provides the live terminal, composer, output view, Control value, and work
-record. Team commons provides Docs, Wipeboard, Agent Message Queue, and Team Configuration.
+record. Team commons provides Docs, Wipeboard, Messages, and Team Configuration.
 Cowork commons provides account, appearance, release, voice, Services, project-root, and
 archive controls. Campaign commons provides Campaign configuration, roots, Coworks,
 templates, and Routines.

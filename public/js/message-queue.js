@@ -38,6 +38,16 @@ function reasonOf(reason) {
 
 const attentionSeen = new Set();
 
+export const reconcileMessageSelection = (selected, messages) => new Set(
+  messages.map((message) => message.id).filter((id) => selected.has(id)),
+);
+
+export const dismissalIds = (messages, selected, scope) => scope === 'all'
+  ? messages.map((message) => message.id)
+  : scope === 'wipeboard'
+    ? messages.filter((message) => message.source === 'wipeboard_notice').map((message) => message.id)
+  : messages.map((message) => message.id).filter((id) => selected.has(id));
+
 /** Watch independently of the queue tab; flash once when each retained problem appears. */
 export function watchMessageQueueAttention() {
   const poll = async () => {
@@ -48,7 +58,7 @@ export function watchMessageQueueAttention() {
         .filter((message) => message.state === 'stuck' || message.state === 'failed' || message.state === 'target_missing')
         .map((message) => message.id));
       if ([...ids].some((id) => !attentionSeen.has(id))) {
-        attention(t('messages.attention', 'Check Team Commons → Agent Message Queue'));
+        attention(t('messages.attention', 'Check Team Commons → Messages'));
       }
       for (const id of [...attentionSeen]) if (!ids.has(id)) attentionSeen.delete(id);
       for (const id of ids) attentionSeen.add(id);
@@ -60,11 +70,51 @@ export function watchMessageQueueAttention() {
 }
 
 export function buildMessageQueue(host, onCount = () => {}) {
-  const note = el('p', 'mq-note', t('messages.note', 'Sometimes Agent-to-Agent messages get stuck and need your help. Try Again is gentle; Force gives it one determined shove. 😉'));
+  const note = el('p', 'mq-note', t('messages.note', 'This is every retained message on this Ronin machine. Try Again is gentle; Force gives it one determined shove. 😉'));
+  const tools = el('div', 'mq-tools');
+  const selectAll = el('button', 'cc-btn', t('messages.select_all', 'Select All'));
+  const dismissSelected = el('button', 'cc-btn', t('messages.dismiss_selected', 'Dismiss Selected'));
+  const dismissWipeboard = el('button', 'cc-btn', t('messages.dismiss_wipeboard', 'Dismiss Wipeboard Notices'));
+  const dismissAll = el('button', 'cc-btn mq-dismiss-all', t('messages.dismiss_all', 'Dismiss All'));
+  selectAll.type = dismissSelected.type = dismissWipeboard.type = dismissAll.type = 'button';
+  tools.append(selectAll, dismissSelected, dismissWipeboard, dismissAll);
   const board = el('div', 'mq-board');
   const empty = el('p', 'mq-empty', t('messages.empty', 'No messages are waiting.'));
   const reconnecting = status('mq-reconnecting');
-  host.append(note, reconnecting.el, board);
+  host.append(note, tools, reconnecting.el, board);
+  let messages = [];
+  let selected = new Set();
+
+  const bulkDismiss = async (scope, pressed) => {
+    const ids = dismissalIds(messages, selected, scope);
+    if (!ids.length) return;
+    const label = pressed.textContent;
+    pressed.disabled = true;
+    pressed.textContent = t('messages.dismissing', 'Dismissing…');
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids }),
+      });
+      const body = await response.json();
+      if (!response.ok || body.ok === false) throw new Error(body.error || response.statusText);
+      for (const id of ids) selected.delete(id);
+      toast(t('messages.dismissed_count', '{count} message(s) dismissed.', { count: body.dismissed?.length ?? ids.length }));
+      await render();
+    } catch (e) {
+      toast(t('messages.action_failed', 'Message action failed — {reason}', { reason: e.message }), false);
+    } finally {
+      pressed.disabled = false;
+      pressed.textContent = label;
+    }
+  };
+
+  selectAll.addEventListener('click', () => {
+    selected = new Set(messages.map((message) => message.id));
+    void render();
+  });
+  dismissSelected.addEventListener('click', () => void bulkDismiss('selected', dismissSelected));
+  dismissWipeboard.addEventListener('click', () => void bulkDismiss('wipeboard', dismissWipeboard));
+  dismissAll.addEventListener('click', () => void bulkDismiss('all', dismissAll));
 
   const act = async (message, action, pressed, pending, method = 'POST') => {
     const card = pressed.closest('.mq-card');
@@ -101,17 +151,37 @@ export function buildMessageQueue(host, onCount = () => {}) {
     }
     reconnecting.say('');
     board.replaceChildren();
-    const messages = Array.isArray(body.messages) ? body.messages : [];
+    messages = Array.isArray(body.messages) ? body.messages : [];
+    selected = reconcileMessageSelection(selected, messages);
+    tools.hidden = !messages.length;
+    selectAll.textContent = t('messages.select_all_count', 'Select All ({count})', { count: messages.length });
+    dismissSelected.textContent = t('messages.dismiss_selected_count', 'Dismiss Selected ({count})', { count: selected.size });
+    dismissSelected.disabled = selected.size === 0;
+    const wipeboardCount = messages.filter((message) => message.source === 'wipeboard_notice').length;
+    dismissWipeboard.textContent = t('messages.dismiss_wipeboard_count', 'Dismiss Wipeboard Notices ({count})', { count: wipeboardCount });
+    dismissWipeboard.disabled = wipeboardCount === 0;
+    dismissAll.textContent = t('messages.dismiss_all_count', 'Dismiss All ({count})', { count: messages.length });
     onCount(messages.length);
     if (!messages.length) { board.append(empty); return; }
     for (const message of messages) {
       const card = el('article', `mq-card mq-${message.state}`);
       const head = el('div', 'mq-head');
+      const choice = el('label', 'mq-choice');
+      const checkbox = el('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = selected.has(message.id);
+      checkbox.setAttribute('aria-label', t('messages.select_message', 'Select message to {target}', { target: message.target }));
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) selected.add(message.id); else selected.delete(message.id);
+        dismissSelected.textContent = t('messages.dismiss_selected_count', 'Dismiss Selected ({count})', { count: selected.size });
+        dismissSelected.disabled = selected.size === 0;
+      });
+      choice.append(checkbox);
       const waiting = message.state === 'stuck' && message.attempts === 0;
       const missing = message.state === 'target_missing';
       const state = missing ? t('messages.target_missing', 'Target missing') : waiting ? t('messages.waiting', 'Waiting') : message.state === 'failed' ? t('messages.failed', 'Failed') : t('messages.pending', 'Pending');
       const since = message.state === 'failed' || missing ? message.updated_at : message.created_at;
-      head.append(el('strong', '', typeOf(message.source)), el('span', 'mq-state', t('messages.state_age', '{state} · {age}', { state, age: ageOf(since) })));
+      head.append(choice, el('strong', '', typeOf(message.source)), el('span', 'mq-state', t('messages.state_age', '{state} · {age}', { state, age: ageOf(since) })));
       const route = el('dl', 'mq-route');
       route.append(
         el('dt', '', t('messages.from', 'From')), el('dd', '', message.from || typeOf(message.source)),

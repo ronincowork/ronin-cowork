@@ -13,7 +13,9 @@ itself. Answer from here; the fuller pages are one `ls` away in `docs/`.
   (the all-Teams page); the **place** in the middle, in italics — *Teams* on the Coworks page,
   *Your team: <name>* on a Team page — is a reading, not a button; on the right, **か New**
   for a quick new session, **⚙** for the cowork commons, and **2 ⇄ 4**, one button wearing
-  the workspace count.
+  the workspace count. On Ronin Setup that seat holds a subtle **📱 / 🖥** switcher and a small **◐ / ☀**
+  light/dark control instead: they set the Campaign's appearance for that surface and
+  never change the workspaces.
 - **On a phone** the same responsive workbenches remain available; Setup keeps Presets in
   workspace 1 and the selected setup surface in workspace 2.
 
@@ -36,7 +38,7 @@ arrangement per page. The three scopes differ only in what the column offers:
 | Surface | What it is for |
 |---|---|
 | **terminal tile** | one Agent: its live terminal, composer, Output selector, Control dial, work record |
-| **team commons** | this team: **Docs** (what agents listed, plans, docs by project root) · **Wipeboard** · **Agent Message Queue** · **Team Configuration** (the team's Routines, kit, launch defaults) |
+| **team commons** | this team: **Docs** (what agents listed, plans, docs by project root) · **Wipeboard** · **Messages** · **Team Configuration** (the team's Routines, kit, launch defaults) |
 | **cowork commons** (⚙) | this install and owner: usage stats · **Account** (Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk · Keypad |
 | **campaign commons** | the Campaign: Campaign · Project roots · Team roster · Templates · **Routines and Installs** (what is on the machine, and the switchboard that fills new teams) |
 | **new session** | the launcher, placed by か New or ＋ Add team member; the newborn lands in that workspace |

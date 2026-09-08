@@ -91,25 +91,18 @@ test('the approved resting-stone lines are verbatim and every stone has a glyph'
 });
 
 test('a non-core replacement receives only universal actions and ordinary launch', () => {
-  assert.deepEqual(presets.presetActions('dinner_party'), ['user_message', 'customize', 'launch']);
+  assert.deepEqual(presets.presetActions('dinner_party'), ['user_message', 'launch']);
   assert.equal(presets.buildLaunchPlan({ handle: 'dinner_party', shelf: 'teams' }, 'Hello', {}).treatment, null);
   assert.equal(presets.seatingPlan('dinner_party', { sessions: [{ name: 'real' }] }), null);
 });
 
-test('Bare Metal starts with two default-provider rows and three sessions use four workspaces', () => {
-  assert.deepEqual(presets.initialControls('bare_metal', 'codex').sessions, [
-    { name: 'session_1', provider: 'codex', model: '' }, { name: 'session_2', provider: 'codex', model: '' },
-  ]);
-  assert.equal(presets.initialControls('bare_metal').tiles, 2);
-  assert.deepEqual(presets.initialControls('ronin_team', 'codex').sessions.map(({ name, team_lead }) => [name, team_lead === true]), [
+test('Bare Metal starts with two rows that carry no provider or model, and three sessions use four workspaces', () => {
+  assert.deepEqual(presets.initialControls('bare_metal').sessions, [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }]);
+  assert.equal(presets.initialControls('bare_metal').tiles, 4);
+  assert.deepEqual(presets.initialControls('ronin_team').sessions.map(({ name, team_lead }) => [name, team_lead === true]), [
     ['team_lead', true], ['agent_1', false], ['agent_2', false],
   ]);
   assert.deepEqual([0, 1, 2, 3, 4].map(presets.bareMetalWorkspaceCount), [1, 1, 2, 4, 4]);
-});
-
-test('provider cascading preserves explicit row overrides', () => {
-  const rows = [{ name: 'one', provider: 'codex' }, { name: 'two', provider: 'claude' }, { name: 'three', provider: '' }];
-  assert.deepEqual(presets.cascadeProvider(rows, 'gemini', 'codex').map((row) => row.provider), ['gemini', 'claude', 'gemini']);
 });
 
 test('fixed seating uses only returned objects and falls back when none exist', () => {
@@ -187,7 +180,7 @@ test('blocked pointer and keyboard Launch only reveal the message and never muta
   assert.equal(submissions, 0);
 });
 
-test('the selected preset entry keeps Customize in its framed panel and calls the existing adapter', async () => {
+test('the selected preset entry keeps its message in the framed panel and offers no Customize detour', async () => {
   const calls = [];
   const surface = presets.createPresetsSurface({ environment: {
     presetData: async () => ({
@@ -206,7 +199,167 @@ test('the selected preset entry keeps Customize in its framed panel and calls th
   assert.ok(nodes.find((node) => String(node.className).includes('sp-select') && node.textContent === 'select'));
   assert.ok(nodes.find((node) => node.tagName === 'TEXTAREA'));
   const customize = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Customize this');
-  assert.ok(customize);
-  customize.click();
-  assert.deepEqual(calls, [{ template: { shelf: 'agents', name: 'personal_assistant' }, user_message: '' }]);
+  assert.equal(customize, undefined);
+  assert.deepEqual(calls, []);
+});
+
+test('Bare Metal keeps two real tile layouts, compact rows, separated sections, and one reading size', async () => {
+  const [source, css] = await Promise.all([
+    readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
+  ]);
+  assert.match(source, /for \(const count of \[2, 4\]\)/);
+  assert.doesNotMatch(source, /Customize this|\[1, 2, 4\]/);
+  assert.match(css, /\.sp-choice-panel \{[^}]*font-size: var\(--text-5\)/);
+  assert.match(source, /const wrap = el\('label', 'sp-field sp-section'\)/);
+  assert.match(source, /const section = \(label, prompt, \.\.\.content\)/);
+  assert.match(css, /\.sp-field \{[^}]*gap: var\(--space-5\)/);
+  assert.match(css, /\.sp-section\[hidden\] \{ display: none; \}/);
+  assert.match(css, /\.sp-select \{[^}]*font-size: inherit/);
+  assert.match(css, /\.sp-lead \{[^}]*font-size: inherit/);
+  assert.match(css, /\.sp-controls > \.sp-section:not\(:first-child\), \.sp-controls \+ \.sp-section \{[^}]*margin-top: var\(--space-9\);[^}]*border-top[^}]*padding-top: var\(--space-9\)/);
+  assert.match(css, /\.sp-field-label, \.sp-control-label \{[^}]*font-weight: 600/);
+  assert.match(css, /\.sp-rows \{[^}]*gap: var\(--space-2\)/);
+});
+
+test('Personal Assistant hides the whole Recruit section until Chief of Staff is selected', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /const recruit = field\('Recruit', specialists\)/);
+  assert.match(source, /recruit\.hidden = state\.assistant_mode !== 'recruit'/);
+  assert.match(source, /\['single', 'Single assistant'\], \['recruit', 'Chief of Staff'\]/);
+  assert.match(source, /el\('button', 'sp-mode-choice', label\)/);
+  assert.doesNotMatch(source, /specialists\.hidden =/);
+});
+
+test('Morning Brief asks only for what each cadence needs and expands role instructions while editing', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /option\('daily', 'Every day'\), option\('weekly', 'Day of the week'\), option\('once', 'One time'\)/);
+  assert.match(source, /weekdayField\.hidden = cadence !== 'weekly'/);
+  assert.match(source, /dateField\.hidden = cadence !== 'once'/);
+  assert.match(source, /`weekly \$\{weekday\.value\} \$\{time\.value\}`/);
+  assert.match(source, /ask\.rows = 3; line\.dataset\.editing = 'true'/);
+  assert.match(source, /ask\.rows = 1; delete line\.dataset\.editing/);
+});
+
+test('Presets rests on the shared stone header and start line, with no override of its own', async () => {
+  const [source, css] = await Promise.all([
+    readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
+  ]);
+  assert.doesNotMatch(source, /--sp-intro|ResizeObserver/, 'the shared header is the one source of stone geometry');
+  assert.doesNotMatch(css, /\.sp-surface \.sws:not\(\[data-open='true'\]\) \.sws-rail/);
+  assert.match(css, /\.sws-host \{[^}]*--sws-header-height: clamp\(6rem, 15dvh, 9rem\)/);
+  assert.match(css, /\.sws-header \{[^}]*flex: 0 0 var\(--sws-header-height\)/);
+});
+
+test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
+});
+
+test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
+});
+
+test('Code Stack Eval keeps ticked folders on Apply and evaluates the chosen one', async () => {
+  const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /createFolderPicker|Show hidden folders|GitHub repo · remote evaluation pending/);
+  assert.match(source, /tick\.checked = Boolean\(folder\.registered_root\) \|\| state\.pending\.includes\(folder\.dir\)/);
+  assert.match(source, /state\.root_dir = folder\.dir; state\.root = folder\.registered_root\?\.name \|\| '';\n\s+if \(!folder\.registered_root\) state\.pending = /);
+  assert.match(source, /request\('\/api\/project-roots', \{ method: 'POST', json: \{ name, dir: folder\.dir, \.\.\.\(profile \? \{ before, profile, confirmed: true \} : \{\}\) \} \}\)/);
+  assert.match(source, /if \(state\.root_dir === dir\) state\.root = made\.name/);
+  assert.match(source, /environment\?\.navigateToSurface\?\.\('setup\.roots'\)/);
+  assert.match(source, /workspaceFoldersAction\(environment, 'Manage workspace folders'\)/);
+});
+
+test('the launched team page seats a remembered commons on the tab the preset chose', async () => {
+  const source = await readFile(new URL('../public/js/cowork-view.js', import.meta.url), 'utf8');
+  assert.match(source, /const surfaceRequest = \(token\) => token && typeof token === 'object' \? \{ type: token\.type, detail: \{ key: token\.key \|\| '', root: token\.root \|\| '', path: token\.path \|\| '', \.\.\.\(token\.tab \? \{ tab: token\.tab \} : \{\}\), \.\.\.\(token\.doc \? \{ doc: token\.doc \} : \{\}\) \} \}/);
+  const health = presets.seatingPlan('health_and_fitness', { team: 'health', sessions: [{ name: 'head_coach' }, { name: 'nutritionist' }] });
+  assert.equal(health.seats[1].tab, 'wipeboard');
+  const brief = presets.seatingPlan('morning_brief', { team: 'brief', sessions: [{ name: 'writer' }] });
+  assert.equal(brief.seats[1].tab, 'cron-jobs');
+});
+
+test('a stone gate reads the runtime the Setup view keeps current, and the held warning has its own room', async () => {
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 0, providers: [], roots: [] } }),
+    runtime: () => ({ activated_count: 2, providers: [{ id: 'claude', activated: true }, { id: 'codex', activated: true }], roots: [] }),
+    loadPresetSlots: () => null,
+    launch: async () => ({ ok: false }),
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  const stones = nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'));
+  // Bare Metal needs only a provider; the shared runtime says two are activated, so the stale zero-provider read must not gate it.
+  assert.equal(stones[0].attributes['data-gated'], 'false', 'the shared runtime wins over a stale read');
+  stones[0].click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  assert.equal(launch.dataset.held, undefined);
+  const css = await readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8');
+  assert.match(css, /\.sp-warning \{ margin: var\(--space-6\) 0 var\(--space-7\);[^}]*padding: var\(--space-3\) var\(--space-5\);[^}]*font-size: var\(--text-5\); line-height: 1\.6; \}/);
+});
+
+test('a row picks its provider and model from the launch table, the New Agent form\'s own choices', () => {
+  const specs = [{ provider: 'anthropic', model: 'opus', cmd: 'claude --model opus' }, { provider: 'anthropic', model: 'sonnet', cmd: 'claude --model sonnet' }, { provider: 'openai', model: 'gpt-5.6-sol', cmd: 'codex --model gpt-5.6-sol' }];
+  assert.deepEqual(presets.launchTable(specs), { anthropic: ['opus', 'sonnet'], openai: ['gpt-5.6-sol'] });
+  assert.deepEqual(presets.launchTable(null), {});
+});
+
+test('a refused launch fails loudly: the server\'s sentence sits beside Launch and stays', async () => {
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] } }),
+    loadPresetSlots: () => null,
+    reserveLaunchTab: () => ({ close() { this.closed = true; } }),
+    launch: async () => ({ ok: false, message: 'Session "session_1" already exists.' }),
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[0].click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  const warning = nodes.find((node) => String(node.className).includes('sp-warning'));
+  assert.equal(warning.hidden, true);
+  await launch.listeners.click[0]();
+  assert.equal(warning.hidden, false);
+  assert.equal(warning.textContent, 'Session "session_1" already exists.');
+});
+
+test('a partial launch still goes to the new tab and names the missing rows beside Launch', async () => {
+  const opened = [];
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] } }),
+    loadPresetSlots: () => null,
+    reserveLaunchTab: () => ({ close() { this.closed = true; }, location: {} }),
+    launch: async () => ({ ok: true, data: { team: 'bare_metal_502', sessions: [{ name: 'session_1_502' }], refused: [{ name: 'session_4_502', message: 'At the session max (21 of 21).' }], urlView: 'team' } }),
+    launchUrl: (data) => { opened.push(data.team); return '#/team/bare_metal_502'; },
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[0].click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  const warning = nodes.find((node) => String(node.className).includes('sp-warning'));
+  await launch.listeners.click[0]();
+  assert.deepEqual(opened, ['bare_metal_502'], 'the tab still goes to the team');
+  assert.equal(warning.hidden, false);
+  assert.equal(warning.textContent, 'Launched without session_4_502: At the session max (21 of 21).');
+});
+
+test('Bare Metal and Ronin Team open on agent · team configuration · agent · agent with a narrow selector', () => {
+  for (const handle of ['bare_metal', 'ronin_team']) {
+    const plan = presets.seatingPlan(handle, { team: 'bare_metal_502', sessions: [{ name: 'session_1_502' }, { name: 'session_2_502' }, { name: 'session_3_502' }] });
+    assert.equal(plan.count, 4, handle);
+    assert.deepEqual(plan.seats, [
+      { workspace: 'workspace1', type: 'session', key: 'session_1_502' },
+      { workspace: 'workspace2', type: 'team.commons', key: 'bare_metal_502', tab: 'team-configuration' },
+      { workspace: 'workspace3', type: 'session', key: 'session_2_502' },
+      { workspace: 'workspace4', type: 'session', key: 'session_3_502' },
+    ], handle);
+    assert.deepEqual(plan.arrangement, presets.NARROW_SELECTOR, handle);
+  }
 });

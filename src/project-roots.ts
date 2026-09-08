@@ -43,6 +43,11 @@ export interface SessionLaunchSpec {
 
 const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.slice(1)) : p);
 
+/** The catalog as it stands, with no first-root seeding: for callers that only need to know what is registered. */
+export async function peekProjectRoots(): Promise<ProjectRootInfo[]> {
+  return parseRoots(await readUserRoots());
+}
+
 export async function listProjectRoots(): Promise<ProjectRootInfo[]> {
   await ensureFirstRoot();
   return parseRoots(await readUserRoots());
@@ -193,7 +198,9 @@ async function writeCatalog(text: string, verify: (roots: ProjectRootInfo[]) => 
   const bad = verify(roots);
   if (bad) throw new Error(`Refused: ${bad}`);
   await mkdir(USER_CATALOGS_DIR, { recursive: true });
-  const tmp = `${USER_PROJECT_ROOTS_MD}.tmp-${process.pid}`;
+  // Two writes in one process must not share a temp name: a concurrent pair of runtime
+  // reads once renamed each other's file away and answered 500.
+  const tmp = `${USER_PROJECT_ROOTS_MD}.tmp-${process.pid}-${process.hrtime.bigint().toString(36)}`;
   await writeFile(tmp, text, 'utf8');
   await rename(tmp, USER_PROJECT_ROOTS_MD);
 }

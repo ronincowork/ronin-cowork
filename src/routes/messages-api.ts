@@ -1,5 +1,5 @@
 import type { Express } from 'express';
-import { attemptMessage, dismissMessage, enqueueMessage, listQueuedMessages, MessageRefused } from '../message-queue.js';
+import { attemptMessage, dismissMessage, dismissMessages, enqueueMessage, listQueuedMessages, MessageRefused } from '../message-queue.js';
 import { isValidName } from '../tmux.js';
 
 export function registerMessages(app: Express): void {
@@ -26,4 +26,10 @@ export function registerMessages(app: Express): void {
     res.json({ ok: true, delivered: retained === null, message: retained });
   });
   app.delete('/api/messages/:id', async (req, res) => res.json({ ok: await dismissMessage(req.params.id) }));
+  app.delete('/api/messages', async (req, res) => {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String) : [];
+    if (!ids.length) return res.status(400).json({ error: 'Choose at least one displayed message.' });
+    const result = await dismissMessages(ids);
+    res.json({ ok: true, ...result });
+  });
 }

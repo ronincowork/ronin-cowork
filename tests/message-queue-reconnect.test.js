@@ -6,6 +6,7 @@ class FakeElement {
   append(...nodes) { this.children.push(...nodes); }
   replaceChildren(...nodes) { this.children = [...nodes]; }
   setAttribute() {}
+  addEventListener() {}
 }
 
 test('the message queue keeps its board and quietly reconnects when polling rejects', async () => {
@@ -17,12 +18,12 @@ test('the message queue keeps its board and quietly reconnects when polling reje
     const { buildMessageQueue } = await import(`../public/js/message-queue.js?reconnect=${Date.now()}`);
     const host = new FakeElement('div');
     const queue = buildMessageQueue(host);
-    const board = host.children[2];
+    const board = host.children[3];
     board.append(new FakeElement('article'));
     queue.enter();
     await new Promise((resolve) => setTimeout(resolve, 0));
     queue.leave();
-    assert.equal(host.children[1].textContent, 'Reconnecting…');
+    assert.equal(host.children[2].textContent, 'Reconnecting…');
     assert.equal(board.children.length, 1, 'the last rendered board remains visible');
   } finally {
     globalThis.document = beforeDocument;
