@@ -57,24 +57,24 @@ test('Ronin Team launches the stored template through the team loader, with noth
   assert.ok(births.every(({ body }) => body.mandate && body.mandate.reach));
 });
 
-test('Bare Metal launches bare-metal agents on no team, named as the rows name them', async () => {
-  const calls = [], send = responder({ name: 'bare_metal', label: 'Bare Metal', agents: [{ name: 'session 1', team_lead: true, instructions: 'Lead.' }, { name: 'session 2', instructions: 'Work.' }] }, calls);
+test('Bare Metal launches a bare-metal team: bare_metal_<code> with native agents inside, named as the rows name them', async () => {
+  const calls = [], send = responder({ name: 'bare_metal', label: 'Bare Metal', objective: 'Work together.', agents: [{ name: 'session 1', team_lead: true, instructions: 'Lead.' }, { name: 'session 2', instructions: 'Work.' }] }, calls);
   const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, user_message: '', inputs: { root: 'ronin_lab', sessions: [{ name: 'session_1', provider: 'anthropic', model: 'opus' }, { name: 'session_2' }, { name: 'session_3' }] } }, send);
   assert.equal(result.ok, true);
-  assert.equal(result.data.urlView, 'cowork');
-  assert.equal(calls.some((row) => row.url === '/api/team-rosters'), false, 'Bare Metal makes no team');
+  assert.equal(result.data.urlView, 'team');
+  const roster = calls.find((row) => row.url === '/api/team-rosters').body;
+  const code = roster.name.match(/^bare_metal_(\d{3})$/)?.[1];
+  assert.ok(code, 'the team is bare_metal_<code>');
+  assert.equal(roster.project_root, 'ronin_lab');
+  assert.equal(result.data.team, roster.name);
   const births = calls.filter((row) => row.url === '/api/launch').map((row) => row.body);
-  const codes = new Set(births.map((body) => body.name.match(/^(session_[123])_(\d{3})$/)?.[2]));
-  assert.deepEqual(births.map((body) => body.name.replace(/_\d{3}$/, '')), ['session_1', 'session_2', 'session_3'], 'names are the names plus one launch code');
-  assert.equal(codes.size, 1, 'one three-digit code per launch');
-  assert.ok(![...codes].includes(undefined));
+  assert.deepEqual(births.map((body) => body.name), [`session_1_${code}`, `session_2_${code}`, `session_3_${code}`], 'row names plus the launch code');
   for (const body of births) {
     assert.equal(body.session_type, 'bare_metal_agent');
-    assert.equal('team' in body, false);
+    assert.equal(body.team, roster.name);
     assert.equal(body.project_root, 'ronin_lab');
     assert.equal(body.instructions, '');
     assert.equal('mandate' in body || 'team_lead' in body || 'routines' in body, false);
   }
   assert.deepEqual(births.map((body) => [body.provider, body.model]), [['anthropic', 'opus'], [undefined, undefined], [undefined, undefined]]);
-  assert.deepEqual(result.data.sessions.map((row) => row.name.replace(/_\d{3}$/, '')), ['session_1', 'session_2', 'session_3']);
 });
