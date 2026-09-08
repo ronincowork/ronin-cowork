@@ -654,11 +654,11 @@ async function runPhonePass({ label, browser, contextOpts }) {
     { id: 'anthropic', label: 'Claude Code', state: 'activated', installed: true, activated: true },
     { id: 'openai', label: 'Codex', state: 'activated', installed: true, activated: true },
   ];
-  await page.route('**/api/setup/runtime', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ activated_count: 2, activated_band: 'two_plus', providers: providerRows, roots: [], gbrain: { active: false }, services: { active: false } }),
-  }));
+  const runtimeBody = JSON.stringify({ activated_count: 2, activated_band: 'two_plus', providers: providerRows, roots: [], gbrain: { active: false }, services: { active: false } });
+  await page.route('**/api/setup/runtime', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: runtimeBody }));
+  // The Setup Model providers surface is the one client that measures (POST); it must see
+  // the same mocked machine as every reader of the record.
+  await page.route('**/api/setup/providers/measure', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: runtimeBody }));
   await page.addInitScript(() => {
     const timer = setInterval(() => {
       if (!document.body || document.documentElement.classList.contains('boot-pending')) return;
