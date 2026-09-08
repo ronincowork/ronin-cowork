@@ -93,16 +93,22 @@ const treatment = (controls, launchShape, seats) => Object.freeze({ controls: Ob
 // configuration from the commons in workspace 2, the other agents in 3 and 4, with the
 // centre selector kept narrow so the agents have the room.
 export const NARROW_SELECTOR = Object.freeze({ order: Object.freeze(['workspace1', 'selector', 'workspace2']), hidden: Object.freeze([]), widths: Object.freeze({ workspace1: 43, selector: 14, workspace2: 43 }) });
-const agentsAroundConfiguration = ({ sessions = [], team = '' }) => ({
-  count: sessions.length >= 2 || team ? 4 : Math.max(1, sessions.length),
-  arrangement: NARROW_SELECTOR,
-  seats: [
-    sessions[0] && { workspace: 'workspace1', type: 'session', key: sessions[0].name },
-    team && { workspace: 'workspace2', type: 'team.commons', key: team, tab: 'team-configuration' },
-    sessions[1] && { workspace: 'workspace3', type: 'session', key: sessions[1].name },
-    sessions[2] && { workspace: 'workspace4', type: 'session', key: sessions[2].name },
-  ].filter(Boolean),
-});
+// THE LEAD TAKES TILE 1. The loader births the marked lead last, so the receipt lists it
+// last; seating reads the mark, not the order. A team with no lead (Bare Metal) is as born.
+export const leadFirst = (sessions = []) => { const lead = sessions.find((row) => row?.team_lead === true); return lead ? [lead, ...sessions.filter((row) => row !== lead)] : sessions; };
+const agentsAroundConfiguration = ({ sessions: born = [], team = '' }) => {
+  const sessions = leadFirst(born);
+  return {
+    count: sessions.length >= 2 || team ? 4 : Math.max(1, sessions.length),
+    arrangement: NARROW_SELECTOR,
+    seats: [
+      sessions[0] && { workspace: 'workspace1', type: 'session', key: sessions[0].name },
+      team && { workspace: 'workspace2', type: 'team.commons', key: team, tab: 'team-configuration' },
+      sessions[1] && { workspace: 'workspace3', type: 'session', key: sessions[1].name },
+      sessions[2] && { workspace: 'workspace4', type: 'session', key: sessions[2].name },
+    ].filter(Boolean),
+  };
+};
 export const CORE_PRESET_TREATMENTS = Object.freeze({
   bare_metal: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
   ronin_team: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
@@ -183,7 +189,7 @@ const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/
 export function initialControls(handle) {
   switch (handle) {
     case 'bare_metal': return { tiles: 4, root: 'ronin_lab', sessions: [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }] };
-    case 'ronin_team': return { sessions: [{ name: 'team_lead', team_lead: true }, { name: 'agent_1' }, { name: 'agent_2' }] };
+    case 'ronin_team': return { root: 'ronin_lab', sessions: [{ name: 'team_lead', team_lead: true }, { name: 'agent_1' }, { name: 'agent_2' }] };
     case 'staff_my_codebase': return { root: 'ronin_project_1', root_dir: '' };
     case 'develop_new_project': return { root: 'ronin_project_1', features: ['frontend', 'backend'] };
     case 'personal_assistant': return { assistant_mode: 'single', specialists: '' };
@@ -218,12 +224,36 @@ function workspaceFoldersAction(environment, label = '＋ workspace folder', det
   return action;
 }
 
-function renderRootControls(host, state, roots, label = 'Which project', environment = null, manage = false) {
+/**
+ * THE ONE LIST OF WORKSPACE FOLDERS. The Setup view hands Presets the client's project
+ * catalog — every tracked folder, the list the Workspace folders surface reloads after a
+ * keep — shown seeded pair first under the runtime's labels, then the rest by name, as the
+ * Workspace folders surface and the New Team form name them. A host with no catalog (the
+ * Cowork workbench's Presets card) falls back to the runtime's seeded pair.
+ */
+export function rootChoices(runtime = {}, environment = null) {
+  const seeded = (Array.isArray(runtime?.roots) ? runtime.roots : []).map((root) => ({ name: root.name, label: root.label || root.name }));
+  const tracked = typeof environment?.trackedRoots === 'function' ? environment.trackedRoots() : null;
+  if (!Array.isArray(tracked) || !tracked.length) return seeded;
+  const names = new Set(tracked.map((root) => root.name));
+  return [...seeded.filter((root) => names.has(root.name)), ...tracked.filter((root) => !seeded.some((seed) => seed.name === root.name)).map((root) => ({ name: root.name, label: root.name }))];
+}
+
+function renderRootControls(host, state, roots, label = 'Which project', environment = null, manage = false, live = null) {
   const select = el('select');
-  for (const root of roots) select.append(option(root.name || root.id, root.label || root.name || root.id));
-  if (!select.options.length) select.append(option(state.root || 'ronin_project_1', state.root || 'Ronin Project 1'));
-  select.value = state.root;
+  // Filled again in place when the catalog changes: the person's choice and the rest of
+  // the open detail stay as they were.
+  const fill = (choices) => {
+    const wanted = select.value || state.root;
+    select.replaceChildren();
+    for (const root of choices) select.append(option(root.name || root.id, root.label || root.name || root.id));
+    if (!select.options.length) select.append(option(state.root || 'ronin_project_1', state.root || 'Ronin Project 1'));
+    select.value = choices.some((root) => (root.name || root.id) === wanted) ? wanted : select.options[0]?.value;
+    state.root = select.value;
+  };
+  fill(roots);
   select.addEventListener('change', () => { state.root = select.value; });
+  live?.add(fill);
   const content = el('div', 'sp-root-choice'); content.append(select);
   if (manage) content.append(workspaceFoldersAction(environment));
   host.append(field(label, content, 'select'));
@@ -448,11 +478,14 @@ function renderMorningBriefTiming(host, state) {
   host.append(field('When', timing, 'select'));
 }
 
-function renderSpecialControls(host, handle, state, runtime, environment) {
-  const roots = runtime.roots || [];
+function renderSpecialControls(host, handle, state, runtime, environment, live = null) {
+  const roots = rootChoices(runtime, environment);
   if (handle === 'staff_my_codebase') renderCodebaseControls(host, state, environment);
-  if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where', environment, true);
-  if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder', environment);
+  // WHERE: every workspace folder Ronin keeps, Ronin Lab first and by default, with the
+  // door to keep another beside it (Glen, 2026-09-08).
+  if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where', environment, true, live);
+  if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Where', environment, true, live);
+  if (handle === 'ronin_team') renderRootControls(host, state, roots, 'Where', environment, true, live);
   if (handle === 'bare_metal') {
     const agents = el('div'); renderRows(agents, state, 'sessions', 'Session');
     const tiles = el('div'); renderTileChoices(tiles, state);
@@ -520,6 +553,9 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   let detail = null;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
   const controls = new Map();
+  // The open detail's Where selects, refilled when the catalog of workspace folders changes.
+  const liveRoots = new Set();
+  environment.onTrackedRoots?.(() => { const choices = rootChoices(freshRuntime(), environment); for (const fill of liveRoots) fill(choices); });
 
   const available = () => templates.map((row) => ({ ...row, shelf: row.shelf || (row.agents ? 'teams' : 'agents'), handle: row.name }));
   const save = () => saveSlots(environment, slots.map(({ handle, shelf }) => ({ handle, shelf })));
@@ -553,7 +589,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   };
 
   const paintDetail = () => {
-    detail.replaceChildren(); const slot = current();
+    detail.replaceChildren(); liveRoots.clear(); const slot = current();
     if (!slot) return;
     const gate = presetReadiness(slot.handle, freshRuntime());
     const heading = el('div', 'sp-heading');
@@ -599,7 +635,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     if (!gate.ready) { launch.el.dataset.held = 'true'; launch.el.setAttribute('aria-disabled', 'true'); }
     go.append(launch.el); heading.append(go); detail.append(heading, warning, el('p', 'sp-description', slot.description || ''));
     const panel = el('div', 'sp-choice-panel');
-    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, environment); panel.append(fixed); }
+    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, environment, liveRoots); panel.append(fixed); }
     if (slot.handle !== 'bare_metal') panel.append(field('Initial message to agent', message));
     detail.append(panel);
   };

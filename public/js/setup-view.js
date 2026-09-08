@@ -6,6 +6,7 @@ import { PRESETS_TYPE, createKindsPreference, createPresetsSurface, registerPres
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { openLaunchForm, openTemplateLaunchForm, openWorkspaceStateTab, reserveWorkspaceTab } from './workspace.js';
 import { request } from './request.js';
+import { loadProjects, onProjects, projectData } from './home.js';
 import { t } from './lexicon.js';
 import { applyTheme, setCampaignTheme } from './theme.js';
 import { campaignById, campaigns, initialCampaignId, loadCampaigns, saveCampaign } from './campaigns.js';
@@ -97,6 +98,11 @@ export function createSetupView() {
     // One runtime truth: the Setup view reads it once at entry and the Model providers
     // surface keeps it current, so a stone's gate never needs a read of its own.
     runtime: () => environment.setupRuntime,
+    // THE ONE LIST OF WORKSPACE FOLDERS: the client's project catalog (home.js), every
+    // tracked folder, which the Workspace folders surface reloads after each keep or
+    // exclude — so a folder kept in workspace 2 is a Where choice in workspace 1 at once.
+    trackedRoots: () => (Array.isArray(projectData) ? projectData : []),
+    onTrackedRoots: onProjects,
     navigateToSurface: (type, detail = {}) => {
       bench?.place(type, 'workspace2', detail);
       bench?.select('workspace2');
@@ -144,6 +150,8 @@ export function createSetupView() {
         environment.setupRuntime = runtime.ok ? runtime.data : { providers: [] };
         if (runtime.ok) environment.kinds.hydrate(runtime.data?.preferences?.kinds || []);
       }
+      // The catalog Presets' Where reads; the runtime read above has just seeded the pair.
+      if (!Array.isArray(projectData)) await loadProjects();
       // Provider cards are catalog discovery, not a client fallback list. Publish the
       // shared runtime truth before restoring a remembered surface into workspace 2.
       bench.refreshSelector();

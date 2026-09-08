@@ -51,18 +51,25 @@ customize step; to shape a launch beyond these choices, use Launch your own.
 | Preset | What launches | Its choices |
 |---|---|---|
 | **Bare Metal** | a bare-metal team: the native provider CLIs themselves, no Ronin packet, three by default | one row per session, each with a provider and model; tile layout |
-| **Ronin Team** | a Team Lead and two agents in the full Ronin team room | the rows, each with a provider and model |
+| **Ronin Team** | a Team Lead and two agents in the full Ronin team room | **Where**; the rows, each with a provider and model |
 | **Code Stack Eval** | a team that reads a codebase and reports on the stack | which folder to evaluate |
-| **Develop a New Project** | a project lead and feature agents, each in its own worktree | the project folder; the feature rows |
+| **Develop a New Project** | a project lead and feature agents, each in its own worktree | **Where**; the feature rows |
 | **Personal Assistant** | one assistant that remembers, or a Chief of Staff that recruits | **Single assistant** or **Chief of Staff**; for the second, who to recruit |
 | **Home Health** | Head Coach, Nutritionist, Race and Event Guide | each role's kick-off message; remove or add roles |
 | **Grokbot Morning Briefing** | a briefing written on a schedule you set | **When**: every day, a day of the week, or one time; what it looks at |
-| **Agent + Editable Doc** | one coding agent beside a document you both edit | which folder and which document |
+| **Agent + Editable Doc** | one coding agent beside a document you both edit | **Where** and which document |
 
 **Gates.** Every preset needs one activated model provider. Personal Assistant also needs
 gbrain running; Grokbot Morning Briefing also needs Ronin Services active. A gated stone
 still opens; its Launch is held and a line beside it says what is missing. Activating the
 provider unlocks the stones at once.
+
+**Where.** Ronin Team, Develop a New Project and Agent + Editable Doc ask where to start:
+every workspace folder Ronin keeps, Ronin Lab and Ronin Project 1 first and Ronin Lab
+chosen by default, then the rest by name — the same list the Workspace folders surface
+shows. **＋ workspace folder** beside it opens Workspace folders in the next workspace; a
+folder kept there is a choice at once, with your choice and typed message left as they
+were.
 
 **Rows.** On Bare Metal, Ronin Team and Develop a New Project each row is one session:
 its name, and a provider and model picked in the line from the same catalog the Agent and
@@ -73,8 +80,10 @@ the machine's configured defaults.
 three-digit code that also rides every session name (`session_1_042`), so several can run
 side by side. Its members are the native CLIs, started in Ronin Lab with your words and
 nothing of Ronin's; the team's Ronin base and worktrees are off. Ronin Team is the same
-shape with Ronin agents and the usual team defaults. Both open their team page as an agent
-top-left, the team's configuration top-right, and the other agents below.
+shape with Ronin agents and the usual team defaults, started in the folder chosen under
+Where. Both open their team page with the team's configuration top-right and the centre
+column kept narrow: Ronin Team seats its Team Lead top-left and Agent 1 and Agent 2 below,
+whatever order they were born in; Bare Metal seats its sessions top-left and below.
 
 **Code Stack Eval's folders.** The page browses your folders and says which are
 repositories. Tick any number to **Keep** and press **Apply**: they become workspace
