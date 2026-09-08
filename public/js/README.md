@@ -42,7 +42,10 @@ where a session is born now. `docs/ui.md` is the written contract those modules 
 | `api.js` | 44 | the `/api/sessions` calls |
 | `widgets.js` | 225 | `makeDial`, `makeGauge`, `setInert`, the job menu |
 | `events.js` | 96 | the `/events` socket, birth/death chips, `openSessionSomewhere` |
-| `home.js` | 131 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault` |
+| `home.js` | 131 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault` (the provider catalog is form-steps.js's) |
+| `form-steps.js` | 373 | the drawn form idiom, and THE ONE PICKER — `providerModelPair`, `loadProviderCatalog`, `orderedCatalog` |
+| `provider-surface.js` | 262 | THE ONE MODEL PROVIDERS SURFACE, seated by Ronin Setup and Ronin Settings — per provider, Yours (the steps and the sign-in tile) then The catalog |
+| `provider-setup-session.js` | 36 | the native sign-in tile's one mount, handed to both workbench environments |
 | `roster.js` | 258 | the ⌂ Roster room — the session list, the session max, the stale line |
 | `archives.js` | — | the Archived room — stopped, resumable sessions backed by manifests |
 | `projectroots.js` | 245 | `buildProjectRoots` — the ▣ Roots pane |
@@ -60,8 +63,9 @@ where a session is born now. `docs/ui.md` is the written contract those modules 
 | `tapeview.js` | 305 | **RIREKI's client render** — the 🔓 view: transcript, folds, live frame, scroll anchoring, paging |
 | `tapefold.js` | 98 | `groupRecs` — the fold rule, pure (tested: `tests/tape-fold.test.js`) |
 | `termview.js` | 250 | the 🔒 view — the untouched `tmux attach` xterm mirror, and touch drag-scroll |
-| `tilewire.js` | 133 | `TileWire` — the tile's socket: reconnect, the protocol split, the drop rule |
-| `composer.js` | 183 | `buildComposer` — the unlocked tile's text entry, its mic and its keyboard lift |
+| `tilewire.js` | 154 | `TileWire` — the tile's socket: reconnect, the protocol split (keystroke · message · protocol reply), the drop rule, the message answered by id |
+| `composer.js` | 226 | `buildComposer` — the tile's text entry (unlocked, and every coarse tile), its mic and its keyboard lift; clears only on the host's answer |
+| `composer-rules.js` | 19 | `settleComposer` — the composer's send rule, pure (tested: `tests/composer-parcel.test.js`) |
 | `dvr.js` | 37 | `dvrStep` — the unlocked input rule, pure (tested: `tests/dvr.test.js`) |
 | `ansi.js` | 12 | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
 | `tiledrop.js` | 95 | `isCoarse`, `makeDrop` — the coarse-pointer sheet primitives (the hoisted phone header is gone; the phone has its own shell) |

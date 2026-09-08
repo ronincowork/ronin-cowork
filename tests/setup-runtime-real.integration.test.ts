@@ -12,17 +12,18 @@ process.env.RONIN_CATALOGS_DIR = path.join(box, 'ronin', 'catalogs');
 await mkdir(process.env.TMUX_TMPDIR, { recursive: true, mode: 0o700 });
 
 const runtime = await import('../src/setup-runtime.js');
+const { measureProviders } = await import('../src/provider-summary.js');
 const tmux = await import('../src/tmux.js');
 
 const available = [{
-  id: 'claude', label: 'Claude Code', from: 'Anthropic', get: 'install claude', parked: '',
+  id: 'claude', label: 'Claude Code', get: 'install claude', parked: '',
   cmd: 'claude', installed: true, path: '/bin/claude',
 }];
 const session = 'provider_setup_claude';
 
 test('a real isolated tmux setup session is the attachment and Done/Close have distinct effects', async () => {
   await tmux.createSession(session, box, { agent: false, argv: ['/bin/sh', '-c', 'while :; do sleep 60; done'] });
-  const open = await runtime.setupRuntimeAnswer({}, undefined, available);
+  const open = await runtime.setupRuntimeAnswer({}, await measureProviders({}, { availability: available, signedIn: async () => false }));
   assert.deepEqual(open.providers[0]?.attachment, {
     type: 'session', key: session, team: 'provider_setup', temporary: true,
   });

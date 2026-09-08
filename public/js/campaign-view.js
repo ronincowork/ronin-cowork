@@ -8,6 +8,8 @@ import { choice, createDeskProfileSurface, skinWord } from './campaign-desk.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
 import { createRoutinesSurface, routinesSummary } from './campaign-routines.js';
 import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
+import { PROVIDER_SURFACE_TYPE, providerSurfaceDefinition } from './provider-surface.js';
+import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { buildProjectRoots } from './projectroots.js';
 import { deskProfiles } from './desk-profile.js';
 import { request } from './request.js';
@@ -18,7 +20,7 @@ import { progressiveSurface } from './progressive-surface.js';
 const PROFILE = 'campaign';
 // the machine's own half — account, health — is the Admin Desk's.
 // defaults · Project roots lead, and they are the four the page opens on.
-const TYPES = Object.freeze({ machine: 'campaign.machine', templates: CAMPAIGN_TEMPLATES_TYPE, defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', routines: 'campaign.routines', profile: 'campaign.desk-profile', create: 'campaign.new' });
+const TYPES = Object.freeze({ machine: 'campaign.machine', templates: CAMPAIGN_TEMPLATES_TYPE, defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', routines: 'campaign.routines', providers: PROVIDER_SURFACE_TYPE, profile: 'campaign.desk-profile', create: 'campaign.new' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.templates, 'campaign.team-templates': TYPES.templates, 'campaign.session-roles': TYPES.templates, '@new-campaign': TYPES.create });
@@ -74,6 +76,7 @@ function registerCampaignSurfaces() {
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
   // CONTROL_BUNDLES build-out for the bundle model behind it.
   add({ type: TYPES.routines, header: 'surface', label: () => t('campaign_view.routines', 'Routines and Installs'), summary: (_tenant, e) => routinesSummary(e.selected()), create: ({ environment: e }) => { const surface = createRoutinesSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
+  add(providerSurfaceDefinition()); // Model providers — the one surface Ronin Setup also seats; provider-surface.js
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.
@@ -100,6 +103,8 @@ export function createCampaignView() {
   let rootsHere = null; // null until /api/project-roots/detail has answered once this entry
   let setteiRead = null; // the SETTEI record, for the subset rule on Agent defaults
   const campaignSurfaces = new Set();
+  // The native sign-in tile the Model providers surface mounts here as on Ronin Setup.
+  const providerSessions = createProviderSetupSessionMount();
   const progressive = (surface) => {
     const coordinated = progressiveSurface({
       loading: () => WorkspaceKit.primitives.setSurfaceState(surface.el, 'loading', t('campaign_view.loading', 'Loading Campaign…')),
@@ -134,6 +139,8 @@ export function createCampaignView() {
     roots: () => (rootsHere === null ? null : rootsHere.filter((root) => !root.archived && campaignOf(root) === selected()?.id).length),
     settei: () => setteiRead,
     progressive,
+    setupRuntime: null,
+    mountProviderSetupSession: providerSessions.mountProviderSetupSession,
   };
   const DEFAULT_VIEW = Object.freeze({ workspace1: TYPES.machine, workspace2: TYPES.templates, workspace3: TYPES.defaults, workspace4: TYPES.roots });
   const blank = (id) => { const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' }); surface.content.append(elem('p', 'cv-blank-word', t('team.workspace_blank', 'Workspace'))); return surface.el; };
@@ -170,6 +177,6 @@ export function createCampaignView() {
       void readMachineSettings().then(refresh);
     },
     leave: () => { entered = false; loadGeneration++; bench.leave(); },
-    destroy: () => { entered = false; loadGeneration++; bench.leave(); ctx = null; },
+    destroy: () => { entered = false; loadGeneration++; providerSessions.destroyAll(); bench.leave(); ctx = null; },
   };
 }

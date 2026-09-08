@@ -304,10 +304,29 @@ test('a stone gate reads the runtime the Setup view keeps current, and the held 
   assert.match(css, /\.sp-warning \{ margin: var\(--space-6\) 0 var\(--space-7\);[^}]*padding: var\(--space-3\) var\(--space-5\);[^}]*font-size: var\(--text-5\); line-height: 1\.6; \}/);
 });
 
-test('a row picks its provider and model from the launch table, the New Agent form\'s own choices', () => {
-  const specs = [{ provider: 'anthropic', model: 'opus', cmd: 'claude --model opus' }, { provider: 'anthropic', model: 'sonnet', cmd: 'claude --model sonnet' }, { provider: 'openai', model: 'gpt-5.6-sol', cmd: 'codex --model gpt-5.6-sol' }];
-  assert.deepEqual(presets.launchTable(specs), { anthropic: ['opus', 'sonnet'], openai: ['gpt-5.6-sol'] });
-  assert.deepEqual(presets.launchTable(null), {});
+test('a row picks its provider and model with the one picker, the New Agent form\'s own choices', async () => {
+  // The picker reads the catalog and the machine's summary itself; this is the one fetch it makes.
+  const catalog = { origin: 'stock', updated: '2026-09-08', providers: [{ provider: 'anthropic', cli: 'claude', label: 'Anthropic', models: [{ model: 'opus', tier: 'frontier', good_at: 'hard work', cmd: 'claude --model opus' }] }, { provider: 'openai', cli: 'codex', label: 'OpenAI', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', good_at: 'the hardest coding', cmd: 'codex --model gpt-5.6-sol' }] }] };
+  const machine = { measured_at: '2026-09-08T11:00:00.000Z', providers: [{ id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true }, { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: false, signed_in: false, activated: false }] };
+  globalThis.fetch = async (url) => { const body = url.startsWith('/api/provider-catalog') ? catalog : url.startsWith('/api/setup/runtime') ? machine : null; return { ok: body !== null, status: body ? 200 : 404, json: async () => body ?? { error: 'no' } }; };
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] } }),
+    loadPresetSlots: () => null,
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[0].click();
+  nodes = [...surface.el.walk()];
+  const rows = nodes.filter((node) => String(node.className).split(' ').includes('sp-row'));
+  assert.equal(rows.length, 3, 'Bare Metal starts with three rows');
+  const selects = [...rows[0].walk()].filter((node) => node.tagName === 'SELECT');
+  assert.equal(selects.length, 2, 'a provider select and a model select, no cycle buttons');
+  assert.deepEqual(selects[0].options.map((option) => [option.textContent, option.value, option.disabled]), [['Default provider', '', false], ['OpenAI', 'openai', false], ['Anthropic — not on this machine', 'anthropic', true]]);
+  assert.equal(selects[0].attributes['aria-label'], 'model provider 1');
+  assert.equal(selects[1].disabled, true, 'no provider named: the model waits');
+  selects[0].value = 'openai'; for (const callback of selects[0].listeners.change) callback();
+  assert.deepEqual(selects[1].options.map((option) => option.textContent), ['Default model', 'gpt-5.6-sol · frontier — the hardest coding']);
+  assert.doesNotMatch(await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'), /launchTable|sp-cycle/);
 });
 
 test('a refused launch fails loudly: the server\'s sentence sits beside Launch and stays', async () => {

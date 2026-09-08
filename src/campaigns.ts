@@ -1,6 +1,7 @@
 import { readMachineSettingsSection, writeMachineSettings } from './machine-settings.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
 import { completeRoutineChoices } from './routines.js';
+import { parseProviderSummary, type ProviderSummary } from './model-providers.js';
 
 async function readCampaigns(): Promise<Record<string, unknown>> {
   return readMachineSettingsSection<Record<string, unknown>>('campaigns', {});
@@ -35,6 +36,8 @@ export interface CampaignConfig {
   state: CampaignState;
   created_at: string;
   config: CampaignSettings;
+  /** What this machine measured of its model providers, dated; null until Ronin has measured once. */
+  providers: ProviderSummary | null;
 }
 
 export type CampaignState = 'active' | 'archived';
@@ -208,6 +211,7 @@ function parse(id: string, raw: string): CampaignConfig | null {
     state: doc.state === 'archived' ? 'archived' : 'active',
     created_at: typeof doc.created_at === 'string' && doc.created_at ? doc.created_at : '',
     config: settings(doc.config),
+    providers: parseProviderSummary(doc.providers),
   };
 }
 
@@ -285,6 +289,7 @@ export async function createCampaign(edit: CampaignEdit & { id?: string }): Prom
       : mergeDeskSettings(await settingsFromTemplate(profile), edit.desk),
     state: edit.state === 'archived' ? 'archived' : 'active',
     created_at: new Date().toISOString(),
+    providers: null,
     config: {
       ...settings(edit.config),
       agent_defaults: await completeAgentDefaults(settings(edit.config).agent_defaults),
@@ -319,6 +324,13 @@ export async function writeCampaign(id: string, edit: CampaignEdit): Promise<Cam
       : {}),
   };
   return writeRecord(merged);
+}
+
+/** The runtime's own write: the measured provider summary, hung on the Campaign. Nothing else in the record moves. */
+export async function writeCampaignProviders(id: string, providers: ProviderSummary): Promise<CampaignConfig> {
+  const existing = await readCampaign(id);
+  if (!existing) throw new Error(`Campaign "${id}" does not exist.`);
+  return writeRecord({ ...existing, providers });
 }
 
 export const archiveCampaign = (id: string): Promise<CampaignConfig> =>

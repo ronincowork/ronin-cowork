@@ -1,229 +1,178 @@
-# Ronin Setup — launch without a settings project
+# Ronin Setup
 
-Ronin Home is the **Three Blocks** landing: **Machine Settings**, **Teams**, and
-**New Project**. Machine Settings always opens. Teams and New Project remain legible but
-unavailable until one model provider has been activated; focusing them explains the gate.
+Ronin Setup is where a new installation becomes a running one: connect a model provider,
+keep a folder or two, and launch. Nothing here asks you to configure Ronin to a personal
+specification first.
 
-Machine Settings has two workbenches:
+## Where it is
 
-- **Ronin Setup** is the guided launch path. It opens by default with zero or one activated
-  provider.
-- **Ronin Settings** is the complete existing configuration workbench. It opens by default
-  with two or more activated providers.
+**Ronin Home** is three blocks: **Machine Settings**, **Teams**, and **New Project**.
+Machine Settings always opens. Teams and New Project stay legible but unavailable until
+one model provider is activated; focusing either one says so.
 
-The place name in the header switches between them without reloading Ronin. An explicit
-choice lasts for the current visit; the provider threshold decides the next fresh entry.
+Machine Settings holds two workbenches. **Ronin Setup**, this guide, opens by default
+while zero or one provider is activated. **Ronin Settings**, the full configuration
+workbench, opens by default once two or more are. The place name in the top bar switches
+between them without reloading; an explicit choice lasts for the visit.
 
 ## The Setup workbench
 
-Setup always uses two workspaces. **Presets** is pinned in workspace 1. Workspace 2 starts
-with **Register** and receives the selector choices in this order:
+Setup is one workbench with two workspaces and a selector column between them:
 
-1. Register
-2. Model providers
-3. Workspace folders
-4. Ronin Services
-5. gbrain
-6. Templates
+- **Workspace 1** always holds **Presets**.
+- **The selector** lists the setup surfaces in this order: Model providers, Register,
+  Workspace folders, Ronin Services, gbrain, Launch your own. Each card carries a one-line
+  state, never an explanation.
+- **Workspace 2** shows the selected surface. Setup opens on Model providers until a
+  provider is activated; after that it remembers the surface you left open.
 
-The same workbench is responsive at phone width and remains keyboard operable. It does not
-switch to the retired phone-only drill-down. The phone stack comes from the window's width
-alone; there is no presentation switch, and the selector header carries no controls.
+On a phone the same three columns stack. While Setup is open, the right of the top bar
+holds a phone / desktop switcher and a light / dark control; they set the appearance of
+that surface and nothing else.
 
-While Setup is open, the right of the top header holds a subtle phone / desktop switcher
-(📱 / 🖥) and a compact **light / dark** control (◐ / ☀). The switcher picks which surface is
-being set; light / dark writes the Campaign's theme for that surface — the same setting the
-cowork commons' Appearance control saves — and repaints. Neither changes the workspace
-count, what is shown, the layout, or a width. The Setup / Settings island is unchanged.
-
-## Activate a provider
-
-**Model providers** shows one stone per provider in the runtime catalog, each wearing a
-short measured state: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
-installed**, or **Manual install**. Selecting a stone opens that provider's detail beside
-the rail: the same three numbered steps for every provider, in this order. A finished step
-wears a check and no control, the next unmet step wears the kaki mark and owns the one
-control, and a later step waits with none. A refused press shows the server's answer
-under the steps.
-
-| Step | What it measures | The action it owns |
-|---|---|---|
-| **Install** | whether the CLI is found on this machine | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
-| **Authenticate** | whether the provider is signed in here: its own credential file is on this machine, or a sign-in was recorded through **Done** | **Authenticate** opens the provider's native sign-in as a temporary headerless tile that takes most of this workspace; **Done** records it, **Close** leaves things as they were |
-| **Ready** | the resulting activation, which is what unlocks Teams and New Project | none; it is the measured result |
-
-Ronin reads only that a credential file exists (for example Claude Code's
-`~/.claude/.credentials.json` or Codex's `~/.codex/auth.json`); it never reads the
-credential and never asks the provider whether the account is still good. A provider that
-needs to sign in again asks in its own flow.
-
-## Workspace folders
-
-A new installation creates and registers two folders inside `RONIN_USER_ROOT`:
-
-- **Ronin Lab** (`ronin_lab`) for ideas, assistants, research, and pre-project work;
-- **Ronin Project 1** (`ronin_project_1`) for project work.
-
-Each is a Git repository with a README and first commit. Ronin Project 1 also has the
-reviewed `dev` / stable `main` arrangement and managed-worktree readiness. These defaults
-do not replace or rename any external folder; the existing add/load-root flow remains.
-
-In Ronin Setup one line above the stones says what a workspace is, with a kaki **Learn
-more** that opens three short points: it may be a Git repository; Agents are born from it
-and make their own files there; their work accumulates there. The folders are square stones on the shared stone work
-surface; the first, dotted stone is **Add A Workspace**, so adding one is never below the
-fold. Its page speaks in keep-or-ignore terms: the folder browser's row action is **Keep**,
-the chosen path is labelled **Path**, a folder already kept says **Kept** and offers
-nothing, and nothing says where an Agent will start — that belongs to a session launch, not
-to the catalog. The browser lists folders with a Git repository first, under their own
-line, then plain folders, because the repositories are the ones that matter. Selecting a folder opens one page about it beside the
-rail, in the shape every stone detail shares: the name with its actions on the same line
-(**Edit**, **Archive**, **Exclude**), one state line under it, then **Summary**, **Folder**
-facts (directory, docs and plans shelves, match words), and **Repository** facts (remote,
-branch, publishing flow, Worktrees) or one line saying it is not a repository. Edit replaces
-the facts with the same fields under the same head, and **Save** and **Cancel** take the
-actions' place on that line; nothing else on the page interacts. The Campaign's Project roots surface keeps its list of blocks with inline controls.
+Every stone surface in Setup shares one shape: square stones on the left; select one and
+the stones fold into a rail with the stone's page beside it; Escape closes it.
 
 ## Presets
 
-Every preset has **User Message**, **Customize**, and the standard hito-in-hexagon
-**Launch** action. Launch opens the result in a new browser tab. Seven shipped handles add
-fixed browser controls and initial seating: Bare Metal, Code Stack Eval, Develop a New
-Project, Personal Assistant, Home Health, Grokbot Morning Briefing, and Agent + Editable
-Doc. The treatment follows the core handle, not its slot.
+Presets are eight quick starts. Each is an ordinary template with a small, fixed set of
+choices in front of it and a launch that opens in a new browser tab.
 
-The launch view is the browser's, not the template's. When Launch returns, the preset's
-fixed seating is written into the new tab before it opens: the workspace count (one, two,
-or four; three sessions use four) and what each workspace holds — a session by name, the
-team commons on a named tab (Home Health opens the Wipeboard in workspace 2, Grokbot the
-Cron jobs), or a document beside its agent. The team page fills each workspace from that
-seating as the roster arrives; a seat naming something the launch did not return is left
-to the ordinary default rather than filled with a placeholder.
+Above the stones, **You use Ronin for** narrows the eight to a purpose: **Build software**
+(Bare Metal, Ronin Team, Code Stack Eval, Develop a New Project), **Life Assistants**
+(Personal Assistant, Home Health, Agent + Editable Doc), **Research and writing** (Grokbot
+Morning Briefing, Personal Assistant, Bare Metal), or **All Sample Presets**. The choice is
+remembered.
 
-Replacing a slot with an ordinary template immediately removes the special controls and
-seating. The replacement still has User Message, Customize, and ordinary Launch; no
-template schema or backend launch contract is added.
+Selecting a stone opens its page: the name, its one line, its own choices, an **Initial
+message to agent** (every preset except Bare Metal), and **Launch**. There is no separate
+customize step; to shape a launch beyond these choices, use Launch your own.
 
-The **You use Ronin for** row sits above the stones, and the stones themselves rest at the
-same height as the Model providers stones: the row's height is taken out of the rail's top
-room rather than added to it. A preset launches its template as stored, through the same
-team loader the New Team form uses: each row is one of the template's agents with its
-instructions, mandate, lead mark and Routine switches, and the owner's starting message
-appended. A row may pick its provider and model in the line, from the launch table, the same
-choices the New Agent form offers, sent as the launch's own keys; left at Default, the
-launch takes the Configuration and Campaign defaults every launch uses. The preset decides only which rows launch, what they
-are called, and how the new tab is seated. Bare Metal is the one exception by design: it is a
-bare-metal team, `bare_metal_<code>`, whose members are the native CLI started in Ronin Lab
-with the owner's words and no Ronin birth packet or mandate; its team record has Ronin base
-and Ronin worktrees off whatever the Campaign cascades. Bare Metal and Ronin Team start
-with three rows and open the team page as an agent in workspace 1, the team's
-configuration from the commons in workspace 2, and the other agents in 3 and 4, with the
-centre selector kept narrow. One three-digit code per launch names the team and rides every row's name
-(`session_1_042`), so several Bare Metals can live together. A team launch the server refuses in part, for the
-session limit, a name already in use or anything else, still opens the team with whoever
-was born and says beside Launch which rows are missing and why, until the next press. Only
-a launch that born nobody closes the tab and fails, with the server's sentence in the same
-place. A stone's gate reads the same runtime the
-Model providers surface keeps current, so activating a provider unlocks the stones at once. Grokbot Morning Briefing's **When**
-asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
-time, **One time** a date and a time; the schedule is written in the Cron jobs grammar
-(`daily 08:00`, `weekly mon 08:00`, `once 2026-09-08 08:00`). A role's kick-off message is
-one line at rest and about three while it is being edited. Code Stack Eval browses folders
-here, each row saying whether it is a repository: tick any number to **Keep** and press
-**Apply**, and they become workspace folders on the Workspace folders surface beside it at
-once; **Evaluate** picks the one this run is about, ticking it too, since the evaluation
-needs a kept folder. Nothing is kept until Apply, and a repository is kept with the
-profile Ronin measured, unchanged. Develop a New Project offers the same door under its
-folder choice; Personal Assistant's **Single assistant** and **Chief of Staff** are two
-buttons, and Recruit appears only for the second.
+| Preset | What launches | Its choices |
+|---|---|---|
+| **Bare Metal** | a bare-metal team: the native provider CLIs themselves, no Ronin packet, three by default | one row per session, each with a provider and model; tile layout |
+| **Ronin Team** | a Team Lead and two agents in the full Ronin team room | the rows, each with a provider and model |
+| **Code Stack Eval** | a team that reads a codebase and reports on the stack | which folder to evaluate |
+| **Develop a New Project** | a project lead and feature agents, each in its own worktree | the project folder; the feature rows |
+| **Personal Assistant** | one assistant that remembers, or a Chief of Staff that recruits | **Single assistant** or **Chief of Staff**; for the second, who to recruit |
+| **Home Health** | Head Coach, Nutritionist, Race and Event Guide | each role's kick-off message; remove or add roles |
+| **Grokbot Morning Briefing** | a briefing written on a schedule you set | **When**: every day, a day of the week, or one time; what it looks at |
+| **Agent + Editable Doc** | one coding agent beside a document you both edit | which folder and which document |
 
-## Registration and optional extras
+**Gates.** Every preset needs one activated model provider. Personal Assistant also needs
+gbrain running; Grokbot Morning Briefing also needs Ronin Services active. A gated stone
+still opens; its Launch is held and a line beside it says what is missing. Activating the
+provider unlocks the stones at once.
 
-Registration is optional for local Ronin. A submitted identity may be pending or
-registered; a registered identity grants Services entitlement, but entitlement,
-installation, activation, and the Routine switch remain separate facts. Newsletter,
-release-update, follow-up, and **No communication** preferences are independent of
-Services access.
+**Rows.** On Bare Metal, Ronin Team and Develop a New Project each row is one session:
+its name, and a provider and model picked in the line from the same catalog the Agent and
+Team forms use, with what this machine cannot launch greyed. Left at Default, a row takes
+the machine's configured defaults.
 
-Loaded templates and making a template work locally. **Ronin Library** and **Share Yours**
-require Services entitlement. The Services, gbrain, and Templates surfaces state what each
-is for, what it requires, and how to use it before showing their specialized controls.
-The Services surface wears its own mark, `brand/services-mark.svg`: an R and S built from
-the house hexagon and leaning with its edge, the R in the shell's reference blue, the S and
-the open frame in kaki. The heading beside it carries the accessible name; the image is
-decorative. The surface paints the file as an image first, then inlines the markup
-from that same file, so the R's stroke reads the app's `--accent-2` token and follows the
-Light/Dark toggle rather than only the OS scheme.
+**Bare Metal, in particular.** Each press makes a team named `bare_metal_<code>`, a
+three-digit code that also rides every session name (`session_1_042`), so several can run
+side by side. Its members are the native CLIs, started in Ronin Lab with your words and
+nothing of Ronin's; the team's Ronin base and worktrees are off. Ronin Team is the same
+shape with Ronin agents and the usual team defaults. Both open their team page as an agent
+top-left, the team's configuration top-right, and the other agents below.
+
+**Code Stack Eval's folders.** The page browses your folders and says which are
+repositories. Tick any number to **Keep** and press **Apply**: they become workspace
+folders at once, on the Workspace folders surface beside you. **Evaluate** picks the one
+this run is about and keeps it too. Nothing is kept until Apply.
+
+**What opens.** Launch opens the new team or agent in a new tab, already seated: Home
+Health puts the Head Coach top-left and the Wipeboard beside it; Grokbot seats the agent,
+its Cron jobs and the briefing; Agent + Editable Doc seats the agent beside the document.
+
+**When something is refused.** If the machine's session limit, a name already in use, or
+anything else stops a row, the team still opens with whoever was born and a line beside
+Launch names the missing rows and why. Only a launch that born nobody closes the tab, and
+the reason sits in the same place.
+
+## Model providers
+
+One stone per provider CLI Ronin knows, each wearing its state: **Activated**, **Sign-in
+open**, **Needs sign-in**, **Not installed**, or **Manual install**. Opening this surface
+measures the machine, so its facts are current when you look.
+
+A provider's page is three numbered steps. A finished step wears a check and no control;
+the next unmet step owns the one control; a later step waits.
+
+| Step | What it measures | The control |
+|---|---|---|
+| **Install** | whether the CLI is on this machine | **Install** runs the provider's own install; a provider Ronin cannot install safely gets an **Install guide** link |
+| **Authenticate** | whether the provider is signed in here | **Authenticate** opens the provider's own sign-in in a tile on this surface; **Done** records it, **Close** leaves things as they were |
+| **Ready** | activation, which unlocks Teams, New Project and the preset stones | none; it is the result |
+
+Below the steps sits what the catalog knows about the provider: its models, their tier and
+cost as read, and the default. Ronin only checks that a sign-in exists; it never reads a
+credential or asks the provider about your account. A provider that needs to sign in
+again asks in its own flow.
+
+Details of the catalog and what is measured are in `docs/model-providers.md`.
+
+## Register
+
+Registration is optional; local Ronin works without it. The form asks for an email, what
+brings you here, which core Ronin feature you prefer, which of the starting patterns you
+are most likely to use, what describes you, where you will install, and anything else.
+Share only what feels useful. A registered identity is what Ronin Services entitlement
+hangs on; it is not a subscription and it switches nothing on by itself. Communication
+choices are separate, and **No communication** is one of them.
+
+## Workspace folders
+
+A workspace folder is a folder Ronin keeps for Teams and Agents to start in. A new
+installation makes two inside Ronin: **Ronin Lab** for ideas, assistants, research and
+pre-project work, and **Ronin Project 1** for project work, prepared for worktrees. Each
+is a Git repository with a README and a first commit. Neither replaces or renames any
+folder of yours.
+
+The surface shows the folders as stones, with **Add A Workspace** first. Adding one is a
+keep-or-ignore decision: browse, and **Keep** the folder you want. Folders with a
+repository are listed first. Selecting a stone opens its page: name and actions
+(**Edit**, **Archive**, **Exclude**), one state line, then its summary, folder facts and
+repository facts. More in `docs/project-roots.md`.
 
 ## Ronin Services
 
-The Services surface opens with its mark and one lede, then **In beta**: Services is the
-community half of Ronin, open code rather than open source, free to read and not to
-commercialise; registering only says who is using it, and nothing is for sale. Then four
-benefits — readable transcripts and the Unlocked views they allow, the template library, the
-background assistant that keeps work records current, voice and team memory — then one status
-line and one next sentence for the state Ronin measured from `GET /api/installed`,
-`GET /api/setup/registration` and `GET /api/services/activation`. Installation and
-registration are two separate facts: installed parts are shown installed and usable whether
-or not anyone registered.
+Services is the community half of Ronin, in beta: readable transcripts and the Unlocked
+tile views, the template library, the background assistant that keeps work records
+current, voice, and team memory. Registering says who is using it; nothing is for sale.
 
-Beneath the status sit three controls in one shape, **Register · Install · Switch**. Register
-and Install read **Done** once they are; Register opens the Register surface (or Check status
-while a confirmation is out), and Install is `POST /api/services/install`, waiting for the
-entitlement that route demands. Switch is a toggle, **Turn on** or **Turn off**, never Done:
-it sets the Campaign's `ronin_services` Routine — the same map Routines and Installs saves —
-and cascades to new teams and Agents; a team can still differ in its Team Configuration. After
-a press the status says the rest, and a fourth control, **Restart**, appears for as long as
-`/api/installed` reports `restart_needed`, painted kaki because it is the one thing left to do.
-It is `POST /api/machine/restart`, which runs `ronin_bin/tejun-machine-restart` — the one
-sanctioned restart, Ronin and nothing else; sessions live in the tmux server and stay up. A
-copy of Ronin that is not the installed service (a preview, a hand-started copy) refuses with
-a sentence instead of restarting the wrong Ronin. The browser reads the restart off the
-machine: `/api/installed` carries the server's `startedAt`, and the control waits for it to
-change before re-reading, so a restart an Agent was asked to do is noticed the same way. While
-Ronin is down for the moment, the surface keeps what it painted rather than reading as
-not installed.
-Unlocked views and the other parts start (or stop) on their own; only new Agents are born
-with the Services reading.
-
-| Measured | Status | Controls |
-|---|---|---|
-| nothing installed, no registration, or the read failed | Not installed on this machine | Register · Install (waits) · Turn on (waits) |
-| nothing installed, an anonymous hello only | Not installed · anonymous hello sent | Register · Install (waits) · Turn on (waits) |
-| nothing installed, the confirmation email is being requested | Sending the confirmation email… | Sending… · Install (waits) · Turn on (waits); re-read in 15 s |
-| nothing installed, the email is out, unconfirmed | Confirmation email sent to p\*\*\*\*\*@example.com | Check status · Install (waits) · Turn on (waits) |
-| nothing installed, the confirmation link expired | Confirmation link expired | Register · Install (waits) · Turn on (waits) |
-| nothing installed, HQ could not be reached while sending | Waiting to send | Check status · Install (waits) · Turn on (waits) |
-| nothing installed, registered | Registered · Ready to install | Done · Install · Turn on (waits) |
-| the installer is running | Installing Services… | Done · Installing… · Turn on (waits); re-read in 5 s |
-| the installer did not start or finish | Install did not finish | Done · Try again · Turn on (waits) |
-| parts installed, switched off | Installed · switched off, with running and installed part counts | Register or Done · Done · Turn on (· Restart while it still runs) |
-| parts installed, switched on, not yet loaded | Switched on · not yet running | Register or Done · Done · Turn off · Restart; re-read in 5 s |
-| parts installed, switched on and loaded | Active on this Cowork, with running and installed part counts | Register or Done · Done · Turn off |
-
-The selector card's summary follows the same state. The Grokbot Morning Briefing preset waits
-for Services to be active, and the surface says so in every state. The pure state mapping is
-`public/js/services-setup-state.js`; `docs/services-activation.md` holds the activation flow
-itself.
+The surface shows one measured status line and three controls in one shape:
+**Register**, **Install**, and a **Turn on / Turn off** switch. Register and Install read
+**Done** once they are. Installing needs a registered identity; switching on cascades to
+new Teams and Agents, and a Team can still differ in its own configuration. When a restart
+is the one thing left to do, a fourth control, **Restart**, appears until Ronin is back.
+Installed parts are usable whether or not anyone registered. The Grokbot Morning Briefing
+preset waits for Services to be active. The activation flow itself is in
+`docs/services-activation.md`.
 
 ## gbrain
 
-The gbrain surface is the Setup presentation of the cowork commons gbrain tab: the same
-`GET /api/gbrain` read and the same Load press, painted as three questions with plain
-answers and one control each, then the one next step. Nothing on it is asserted; every
-answer is measured.
+gbrain is the memory the Personal Assistant runs on. The surface is three questions with
+measured answers and one control each: **Installed** (with **Load gbrain**, or the one
+step the state calls for), **Available to Agents** (default for all Agents, or only
+selected ones), and **Accounts linked** (one row per account gbrain can link; the
+Personal Assistant links one when asked, with your approval). Under them sits the next
+step: **Open Model providers** if none is activated yet, otherwise **Start your first
+Personal Assistant**, the same launch the preset makes. What gbrain is lives in
+`docs/gbrain.md`.
 
-| Question | Answer | The one control |
-|---|---|---|
-| **Installed** | Checking… · Not installed · Installed · running · Installed · not running · Installed · Ronin Services is switched off · Install did not finish · Could not read | Load gbrain · Retry install · Open Ronin Services · Ask an Agent to check gbrain · Check again, by state; none while installing |
-| **Available to Agents** | Default for all Agents · Only selected Agents | the Campaign's own gbrain Routine, saved the way Routines and Installs saves it; selected Agents get it in Team Configuration or on the New Agent form |
-| **Accounts linked** | one row per account gbrain can link, Linked or Not linked | none here: the Personal Assistant links one when asked, with approval |
+## Launch your own
 
-Which accounts exist and whether each is linked is read from gbrain's own integrations
-list (Gmail, Google Calendar, X, meeting transcripts on a stock install). Below the
-answers sits the next step: with gbrain running and no model provider activated, *A model
-provider comes first* and **Open Model providers**; with one activated, *Everything is good
-to go* and **Start your first Personal Assistant**, which makes exactly the launch the
-Personal Assistant preset makes, a single assistant in a new tab. The surface paints at
-once and says Checking… until the read lands; the pure state mapping is
-`public/js/gbrain-setup-state.js`, and `docs/gbrain.md` holds what gbrain is.
+Three stones for anything the presets do not cover:
+
+- **Agent** opens the ordinary New Agent form here: name, kind, provider and model,
+  instructions, mandate, and the Routines it runs with.
+- **Team** opens the ordinary New Team form here: the team, its agents, and where it
+  works.
+- **Template** opens Templates: what is on your system, shipped with Ronin, installed, or
+  saved by you, ready for the Agent and Team forms. The Ronin library and sharing your own
+  come with Ronin Services.
+
+Each launch opens its result in a new tab. Inside a Team's own page, adding an Agent from
+the roster seats the newborn in the workspace that made it instead; see
+`docs/team-workspace.md`.

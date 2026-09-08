@@ -45,14 +45,15 @@ file happens to define every stock name.
 | `TOOLS.md` | a table | same rule, keyed on the tool name in column 1 |
 | `SKINS.md` | `## name` blocks | entry-merge. A skin is a set of design tokens and nothing else — no selector, so the worst a bad one does is look bad |
 | `HOTWORDS.md` | a flat list under `## Terms` | **copy-on-write, not a merge** — see below |
-| `PROJECT_ROOTS.md` | already split by scope | **nothing to shadow** — the launch table is stock, the roots are yours |
+| `MODEL_PROVIDERS.md` | one file: providers and their models | **whole-file, copy-on-write** — a copy in your store is the catalog; stock is not merged in |
+| `PROJECT_ROOTS.md` | already split by scope | **nothing to shadow** — the contract is stock, the roots are yours |
 
 **Deliberately not shadowable:**
 
 - **MICHI and TEGAMI** — session data in the session store, not stock catalogs. There is
   no shipped version to win over.
 - **Your `PROJECT_ROOTS.md`** — already user scope. The shipped file keeps only the
-  provider·model launch table, which is stock because every install needs session_launch_specs.
+  project_root contract; the providers and models it once carried are `MODEL_PROVIDERS.md`.
 - **`workspace_macro`** — machinery in `src/spawn.ts`, not a catalog. A markdown file
   cannot author machinery.
 

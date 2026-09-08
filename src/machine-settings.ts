@@ -9,7 +9,8 @@ import { secureUrl } from './passkey.js';
 import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
-import { listProjectRoots, listSessionLaunchSpecs } from './project-roots.js';
+import { listProjectRoots } from './project-roots.js';
+import { listProviderCatalog, listSessionLaunchSpecs } from './model-providers.js';
 import { storeDir } from './resources.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import { execFile as brokerExecFile } from './spawn-broker.js';
@@ -474,10 +475,12 @@ export function servicesSubscription(activation: PublicActivation): string {
 }
 
 async function readObserved(jobKeyNames: string[]): Promise<Record<string, unknown>> {
+  // The CLI registry says what is installed; the provider catalog says whose it is.
+  const [available, catalog] = await Promise.all([listAgentAvailability(), listProviderCatalog()]);
   const agents = Object.fromEntries(
-    (await listAgentAvailability()).map((a) => [
+    available.map((a) => [
       a.id,
-      { label: a.label, from: a.from, installed: a.installed, path: a.path || null },
+      { label: a.label, from: catalog.find((entry) => entry.cli === a.id)?.label ?? '', installed: a.installed, path: a.path || null },
     ]),
   );
 

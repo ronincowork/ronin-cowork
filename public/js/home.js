@@ -3,8 +3,8 @@
  * HOME DATA — the client's one cache of what the server knows about sessions and
  * catalogs, and the one place that refreshes it.
  *
- * This module was always the de-facto repository (`homeData`, `projectData`,
- * `launchSpecData`, an inflight guard); it is now the declared one. Every reader —
+ * This module was always the de-facto repository (`homeData`, `projectData`, an
+ * inflight guard); it is now the declared one. Every reader —
  * the roster, the launcher, the tile pickers, the ⚡ menus — renders from these
  * caches, and every refresh path (boot, visibility, bfcache, the 8s poll, a
  * mutation's follow-up) lands here rather than fetching its own copy.
@@ -43,14 +43,13 @@ export async function refreshHome() {
 }
 
 export let projectData = null; // /api/project-roots: [{name, dir, read[], provider, model, match[], remit, cmd}]
-export let launchSpecData = null; // /api/session-launch-specs: [{provider, model, cmd}] — the launch table, in table order
+// The provider catalog is not cached here: form-steps.js reads it for the one picker and
+// the Campaign's Model providers surface, fresh on every surface entry.
 
 export async function loadProjects() {
-  const paint = () => tiles.forEach((tile) => tile.renderHome?.());
-  await Promise.allSettled([
-    request('/api/project-roots').then((r) => { if (r.ok && Array.isArray(r.data)) projectData = r.data; paint(); }),
-    request('/api/session-launch-specs').then((r) => { if (r.ok && Array.isArray(r.data)) launchSpecData = r.data; paint(); }),
-  ]);
+  const r = await request('/api/project-roots');
+  if (r.ok && Array.isArray(r.data)) projectData = r.data;
+  tiles.forEach((tile) => tile.renderHome?.());
 }
 
 export let familyData = null; // /api/role-families — the shelves

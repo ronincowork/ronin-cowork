@@ -27,10 +27,10 @@
  * answer here: the surface falls back to the roster's own project_root and draws nothing
  * it cannot prove. It gains the rest as the records land, without another edit.
  */
-import { launchSpecData, projectData } from './home.js';
+import { projectData } from './home.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { dialRow, dialRowMulti } from './form-steps.js';
+import { dialRow, dialRowMulti, loadProviderCatalog, providerModelPair } from './form-steps.js';
 import { swapTeamLead } from './team-lead-swap.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -155,41 +155,15 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
     templateSelect.value = draft.template;
   }
 
-  // TWO PICKS, AND EITHER MAY STAND ALONE. Naming the provider and no model gets that
-  // provider's preferred model, server-side; both blank is the install default. The
-  // model select is disabled until a provider names its table — there is nothing to
-  // pick FROM before that.
-  const providerSelect = el('select');
-  const modelSelect = el('select');
-  providerSelect.classList.add('aa-control', 'aa-short-control');
-  modelSelect.classList.add('aa-control', 'aa-short-control');
-  const providerField = createField({ label: t('add_agent.provider', 'model provider'), control: providerSelect });
-  const modelField = createField({ label: t('add_agent.model', 'model'), control: modelSelect });
-  providerSelect.addEventListener('change', () => {
-    draft.provider = providerSelect.value;
-    draft.model = '';
-    paintModels();
-  });
-  modelSelect.addEventListener('change', () => { draft.model = modelSelect.value; });
-
-  function paintModels() {
-    const rows = Array.isArray(launchSpecData) ? launchSpecData : [];
-    modelSelect.replaceChildren();
-    modelSelect.add(new Option(t('add_agent.default', 'default'), ''));
-    for (const row of rows) if (row.provider === draft.provider) modelSelect.add(new Option(row.model, row.model));
-    modelSelect.value = draft.model;
-    modelSelect.disabled = !draft.provider;
-  }
-  function paintProviders() {
-    const rows = Array.isArray(launchSpecData) ? launchSpecData : [];
-    const seen = [...new Set(rows.map((row) => row.provider).filter(Boolean))];
-    providerSelect.replaceChildren();
-    providerSelect.add(new Option(t('add_agent.default', 'default'), ''));
-    for (const name of seen) providerSelect.add(new Option(name, name));
-    providerSelect.value = seen.includes(draft.provider) ? draft.provider : '';
-    draft.provider = providerSelect.value;
-    paintModels();
-  }
+  // THE ONE PICKER (form-steps.js): the provider and the model, either standing alone —
+  // the provider alone gets its catalog default server-side, both blank is the Team's
+  // or the install's answer. It reads the catalog itself and offers every row.
+  const pair = providerModelPair(
+    () => ({ provider: draft.provider, model: draft.model }),
+    (provider, model) => { draft.provider = provider; draft.model = model; },
+    (label, control) => createField({ label, control }).el,
+    { classes: 'aa-control aa-short-control' },
+  );
 
   const mandateHead = el('p', 'aa-head', t('mandate', 'Mandate'));
   const mandateHost = el('div', 'aa-mandate');
@@ -348,7 +322,7 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
   const left = el('div', 'aa-col');
   left.append(nameField.el, templateField.el);
   const right = el('div', 'aa-col');
-  right.append(providerField.el, modelField.el);
+  right.append(pair.el);
   top.append(left, right);
   form.append(top, leadChoice, instructionField.el, mandateHead, mandateHost, deskLine);
   paintMandate();
@@ -358,7 +332,7 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
     el: surface.el,
     /** Called whenever the surface is shown: the catalogs and the roster may have moved. */
     enter: async () => {
-      paintProviders();
+      pair.paint();
       paintDesk();
       paintFixed();
       // A 404 is ordinary: the door is frozen, not built. Everything above already
@@ -366,14 +340,15 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
       const [answer, tray] = await Promise.all([
         request(`/api/launch-seed?team=${encodeURIComponent(teamName())}`),
         request('/api/templates/agents'),
+        loadProviderCatalog(),
       ]);
       templates = tray.ok && Array.isArray(tray.data) ? tray.data : [];
-      if (!answer.ok) return;
+      if (!answer.ok) { pair.paint(); return; }
       seed = answer.data || null;
       if (!draft.provider) draft.provider = seeded('provider');
       if (!draft.model) draft.model = seeded('model');
       if (!draft.template) resetTemplateAnswers();
-      paintProviders();
+      pair.paint();
       paintTemplates();
       paintMandate();
       paintDesk();

@@ -13,7 +13,10 @@ test('cowork_setup is the live two-stage companion page, not the legacy renderer
   ]) assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(source, /\/api\/machine-settings/);
   assert.match(source, /\/api\/agents/);
-  assert.match(source, /\/api\/session-launch-specs/);
+  // The model fields are the one picker, which reads the provider catalog itself.
+  assert.match(source, /providerModelPair/);
+  assert.match(source, /loadProviderCatalog\(\)/);
+  assert.doesNotMatch(source, /session-launch-specs|LIGHT|modelOpts|Claude Code/);
   assert.match(source, /toRequests\(schema, values\)/);
   assert.match(source, /Your first workspace folder/);
   assert.match(source, /createFolderPicker/);

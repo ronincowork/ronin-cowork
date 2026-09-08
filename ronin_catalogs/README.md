@@ -8,8 +8,9 @@ extending the two catalogs that live here.
 > **Everything in this directory is SYSTEM SCOPE — an upgrade replaces it wholesale**
 > (`../DAIKUSAN.md`). Nothing here may list the_owner's own things.
 >
-> That is why `PROJECT_ROOTS.md` here holds **only the stock provider·model launch
-> table**. The directories a box actually works in are user scope and live outside every
+> That is why `PROJECT_ROOTS.md` here holds **only the project_root contract** and
+> `MODEL_PROVIDERS.md` holds **the stock provider catalog** (a copy in your catalogs store
+> shadows it whole). The directories a box actually works in are user scope and live outside every
 > repo, in the catalogs store — `bin/ronin-store catalogs` prints where, and it is resolved
 > per machine, never spelled by hand (`docs/stores.md`). Created by Ronin on first use, and
 > untouched by any upgrade. Never add a `## <handle>` root block to the shipped file.

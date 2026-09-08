@@ -19,7 +19,7 @@ There are two files with the same basename and different jobs:
 
 | File | Scope | Contains |
 |---|---|---|
-| `ronin_catalogs/PROJECT_ROOTS.md` | system, shipped with Cowork | provider/model launch table; **no project roots** |
+| `ronin_catalogs/PROJECT_ROOTS.md` | system, shipped with Cowork | the project_root contract; **no project roots** (providers and models are `MODEL_PROVIDERS.md`) |
 | `$(ronin-store catalogs)/PROJECT_ROOTS.md` | owner installation | the projects included on this Ronin installation |
 
 The second file is commonly described as **user scope**. That means owner-specific Ronin

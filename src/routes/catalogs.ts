@@ -13,9 +13,9 @@ import { listActions } from '../actions.js';
 import { listSessionReadings } from '../session-readings.js';
 import { listAgentAvailability } from '../agents.js';
 import { dispatchInstall } from '../agent-install.js';
+import { listProviderCatalog, readProviderCatalog } from '../model-providers.js';
 import {
   listProjectRoots,
-  listSessionLaunchSpecs,
   upsertProjectRoot,
   removeProjectRoot,
   repoFacts,
@@ -267,9 +267,11 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
-  app.get('/api/session-launch-specs', async (_req, res) => {
+  // The one catalog read for the client: origin, path, the header's updated day, and every
+  // provider with its models.
+  app.get('/api/provider-catalog', async (_req, res) => {
     try {
-      res.json(await listSessionLaunchSpecs());
+      res.json(await readProviderCatalog());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
@@ -277,7 +279,9 @@ export function registerCatalogs(app: express.Express): void {
 
   app.get('/api/agents', async (_req, res) => {
     try {
-      res.json(await listAgentAvailability());
+      // The CLI registry says what is installed; the catalog says whose it is.
+      const [agents, catalog] = await Promise.all([listAgentAvailability(), listProviderCatalog()]);
+      res.json(agents.map((agent) => ({ ...agent, from: catalog.find((entry) => entry.cli === agent.id)?.label ?? '' })));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

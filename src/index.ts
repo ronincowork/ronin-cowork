@@ -37,6 +37,7 @@ import { registerServicesActivation, resumeInstallWatch } from './routes/service
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
+import { measureAndRecordProviders } from './provider-summary.js';
 import { migrateCampaignScope } from './campaign-scope.js';
 import { stampFreshInstall } from './machine-state.js';
 import { registerUpdate } from './routes/update-api.js';
@@ -198,7 +199,7 @@ app.get('/api/health', (_req, res) =>
 
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
-registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
+registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/provider-catalog, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
 registerDesks(app); // /api/sessions/:name/desks, /api/teams/:name/desks — derived desk state, the control surface's visible half — src/routes/desks-api.ts
@@ -218,9 +219,13 @@ registerServicesActivation(app); // /api/services/activation* — the Ronin Serv
 void stampFreshInstall();
 if (isEntryPoint) void ensureInstalledRoots().catch((error) => console.error(`[setup] installed roots: ${(error as Error).message}`));
 
+// The Campaign's dated provider facts are measured once at start, after the record exists
+// and has migrated: the summary and the migration both read-modify-write the campaigns
+// section, and side by side one of them would lose its write on a fresh install.
 void ensureInitialCampaign()
   .then(() => migrateCampaignScope())
-  .catch(() => {});
+  .then(() => (isEntryPoint ? measureAndRecordProviders() : undefined))
+  .catch((error) => console.error(`[setup] campaign start: ${(error as Error).message}`));
 
 const services: ServiceRegistration[] = [];
 // The parts on disk are the install; the Campaign's Routine switches say which of them run.

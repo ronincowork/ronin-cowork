@@ -1,6 +1,7 @@
 /* Ronin Setup — the fourth workbench, composed entirely from registered surfaces. */
 import { WorkspaceKit } from './workspace-kit.js';
 import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
+import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { PRESETS_TYPE, createKindsPreference, createPresetsSurface, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { openLaunchForm, openTemplateLaunchForm, openWorkspaceStateTab, reserveWorkspaceTab } from './workspace.js';
@@ -37,7 +38,8 @@ export function createSetupView() {
   const { createSurface } = WorkspaceKit.primitives;
   let ctx = null;
   let bench = null;
-  const providerHosts = new Set();
+  // The native sign-in tile the Model providers surface mounts: the one shared implementation.
+  const providerSessions = createProviderSetupSessionMount();
   // APPEARANCE lives at the right of the TOP workbench header (#bar), seated there by
   // the ViewHost while Setup is active, the way the layout map is. A subtle phone /
   // desktop switcher picks WHICH surface is being set; light / dark then writes the
@@ -108,24 +110,7 @@ export function createSetupView() {
     setupRuntime: null,
     // What the person uses Ronin for: one persisted preference shared by Register and Presets.
     kinds: createKindsPreference(globalThis.localStorage, (kinds) => request('/api/setup/preferences', { method: 'PATCH', json: { kinds } })),
-    mountProviderSetupSession: ({ host, provider, session, workspace, onClosed } = {}) => {
-      if (!(host instanceof Node) || !session) return null;
-      const terminal = WorkspaceKit.adapters.createTerminalTileHost({ mode: 'full' });
-      terminal.el.dataset.provider = String(provider?.id || provider || '');
-      terminal.el.dataset.workspace = String(workspace || 'workspace2');
-      host.replaceChildren(terminal.el);
-      terminal.mount(String(session));
-      providerHosts.add(terminal);
-      let closed = false;
-      const destroy = () => {
-        if (closed) return;
-        closed = true;
-        providerHosts.delete(terminal);
-        terminal.destroy();
-        onClosed?.();
-      };
-      return { el: terminal.el, fit: terminal.fit, park: terminal.park, destroy };
-    },
+    mountProviderSetupSession: providerSessions.mountProviderSetupSession,
   };
   // viewportMode was the retired presentation toggle's memory; writing undefined drops
   // it from a stored visit so nobody stays in the stack it forced.
@@ -182,6 +167,6 @@ export function createSetupView() {
       save();
     },
     leave: () => bench.leave(),
-    destroy: () => { for (const host of providerHosts) host.destroy(); providerHosts.clear(); bench.leave(); ctx = null; },
+    destroy: () => { providerSessions.destroyAll(); bench.leave(); ctx = null; },
   };
 }

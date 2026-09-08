@@ -12,6 +12,8 @@ test('the Campaign page has one switch for offering New Campaign', async () => {
     assert.match(source, new RegExp(`add\\(\\{ type: TYPES\\.${type}`));
   }
   assert.match(source, /add\(campaignTemplatesDefinition\(\)\)/);
+  assert.match(source, /add\(providerSurfaceDefinition\(\)\)/);
+  assert.match(source, /providers: PROVIDER_SURFACE_TYPE/);
 });
 
 test('the home page renders the Campaign as a fixed door', async () => {

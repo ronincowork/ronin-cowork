@@ -77,7 +77,9 @@ test('registration recovery keeps consent separate and deletion removes local id
 
 test('Setup reuses canonical Campaign Templates only inside Launch Your Own', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  for (const id of ['setup.register', 'setup.providers', 'setup.roots', 'setup.services', 'setup.gbrain']) assert.match(source, new RegExp(id.replace('.', '\\.')));
+  for (const id of ['setup.register', 'setup.roots', 'setup.services', 'setup.gbrain']) assert.match(source, new RegExp(id.replace('.', '\\.')));
+  // Model providers is the one surface Ronin Settings also seats; its type is that module's.
+  assert.match(source, /providers: PROVIDER_SURFACE_TYPE/);
   assert.match(source, /templates: CAMPAIGN_TEMPLATES_TYPE/);
   assert.match(source, /createTemplatesSurface\(\)/);
   assert.doesNotMatch(source, /campaignTemplatesDefinition\(\)/);
@@ -101,15 +103,17 @@ test('provider discovery is catalog-driven and a keyed surface resolves only its
 test('native login mounts only the attachment published by the real setup runtime', async () => {
   const { mountProviderAttachment } = await import('../public/js/setup-provider-state.js');
   const { setupRuntimeAnswer } = await import('../src/setup-runtime.js');
+  const { measureProviders } = await import('../src/provider-summary.js');
   const calls: unknown[] = [];
   const environment = { mountProviderSetupSession: (input: unknown) => { calls.push(input); return { destroy() {} }; } };
   const host = {};
   const availability = [{
-    id: 'claude', label: 'Claude Code', from: 'Anthropic', get: '', parked: '', cmd: 'claude', installed: true, path: '/bin/claude',
+    id: 'claude', label: 'Claude Code', get: '', parked: '', cmd: 'claude', installed: true, path: '/bin/claude',
   }];
-  const closed = await setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => false }, availability);
+  const measured = await measureProviders({}, { availability, signedIn: async () => false });
+  const closed = await setupRuntimeAnswer({}, measured, { exists: async () => false });
   assert.equal(mountProviderAttachment(environment, host, closed.providers[0], 'workspace1', () => {}), null);
-  const open = await setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude', signedIn: async () => false }, availability);
+  const open = await setupRuntimeAnswer({}, measured, { exists: async (name) => name === 'provider_setup_claude' });
   const mounted = mountProviderAttachment(environment, host, open.providers[0], 'workspace1', () => {});
   assert.ok(mounted);
   assert.equal(calls.length, 1);
@@ -119,7 +123,10 @@ test('native login mounts only the attachment published by the real setup runtim
 
 test('selector definitions retain neutral provider grouping without requirement targets', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  assert.match(source, /createProviderSurface, 'setup\.providers'/);
+  // Model providers is the one surface two workbenches seat; its grouping rides its own definition.
+  assert.match(source, /providerSurfaceDefinition\(\),/);
+  const shared = await (await import('node:fs/promises')).readFile(new URL('../public/js/provider-surface.js', import.meta.url), 'utf8');
+  assert.match(shared, /groupKey: PROVIDER_SURFACE_TYPE/);
   assert.doesNotMatch(source, /SETUP_REQUIREMENT_TARGETS|targetKey|targetClass/);
 });
 

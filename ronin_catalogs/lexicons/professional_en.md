@@ -14,12 +14,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.name_placeholder:** name
 - **add_agent.instruction:** instruction
 - **add_agent.instruction_placeholder:** what this Agent should do
-- **add_agent.provider:** model provider
-- **add_agent.model:** model
 - **add_agent.make_team_lead:** Make Team Lead
 - **add_agent.make_team_lead_sub:** Replace the current Team Lead when this Agent launches.
 - **add_agent.lead_swap_failed:** Started {name} as Team Lead, but could not clear Team Lead from: {names}.
-- **add_agent.default:** default
 - **add_agent.template:** template
 - **add_agent.no_template:** No template
 - **add_agent.worktrees_mode:** Agent work mode
@@ -263,7 +260,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.col_provider:** Provider
 - **campaign_view.col_model:** Preferred model
 - **campaign_view.col_default:** Default
-- **campaign_view.no_launch_table:** No launch table on this install.
 - **campaign_view.templates_summary:** Team casts, agent loadouts, and the library to download more from.
 - **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. A handful ship inside Ronin; the rest are on the library.
 - **campaign_view.library_none_kind:** Nothing of this kind on the library.
@@ -483,8 +479,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.saving:** saving…
 - **settei.saved:** saved
 - **settei.none_set:** — none set —
+- **settei.pick_model:** choose a model to save
 - **settei.unset_using:** unset — using {value}
-- **settei.spec_not_installed:** {spec} — not installed
 - **settei.blurb:** What this install is set to — and what it is running on.
 - **settei.measured:** measured {time}
 - **settei.group_you:** you and this machine
@@ -588,6 +584,12 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.own_blurb:** Fresh and empty. Fill it in yourself.
 - **forms.library_note:** More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.
 - **forms.default:** default
+- **forms.provider_off:** {name} — not on this machine
+- **forms.model_word:** {model} · {tier} — {good_at}
+- **forms.model_off:** {model} · {tier} — not on this machine
+- **forms.tier_light:** light
+- **forms.tier_standard:** standard
+- **forms.tier_frontier:** frontier
 - **forms.provider:** model provider
 - **forms.model:** model
 - **forms.none:** —
@@ -1239,10 +1241,9 @@ The catalog entry goes. {dir} is not touched.
 - **setup.defaults:** How new sessions should start
 - **setup.defaults_lede:** This is only the default. You can choose something different each time.
 - **setup.model:** Start new sessions with
-- **setup.model_hint:** These are the runnable models in Ronin’s launch catalog. A saved choice wins when one exists.
+- **setup.model_hint:** Every model in Ronin’s provider catalog; what this machine cannot launch yet is greyed. A saved choice wins when one exists.
 - **setup.mika:** Mika uses
-- **setup.mika_hint:** The same runnable launch catalog supplies this list. A light model is recommended for Mika.
-- **setup.recommended:** {model} (recommended)
+- **setup.mika_hint:** The same catalog supplies this list. A light-tier model is recommended for Mika.
 - **setup.cap:** Maximum agent sessions
 - **setup.cap_hint:** ≈700 MB per agent. Ronin reserves 25% (minimum 2 GB). Shells don’t count.
 - **setup.cap_none:** No limit — allow any number
@@ -1296,6 +1297,10 @@ The catalog entry goes. {dir} is not touched.
 - **setup.none_detected:** None detected
 - **setup.install_in_tiles:** {agents} — install in visible tiles
 - **setup.no_model:** No runnable model detected
+- **setup.provider_default:** Ronin’s default provider
+- **setup.model_default:** the provider’s default model
+- **setup.provider_default_model:** {provider} · its default model
+- **setup.model_ronin_default:** Ronin’s default
 - **setup.services_already:** Already selected · {stage}
 - **setup.services_begin_for:** Begin activation for {email}
 - **setup.services_begin_after:** Begin activation after you enter an email
@@ -1503,6 +1508,11 @@ The catalog entry goes. {dir} is not touched.
 - **composer.title:** Enter sends · Shift+Enter or Option+Enter for a new line
 - **composer.mic_title:** Dictate into this box — tap again to stop, then ↵ to send
 - **composer.send:** Send
+- **composer.held:** Not sent — {why}. Your text is kept.
+- **composer.why_not_connected:** the tile is not connected
+- **composer.why_disconnected:** the connection dropped before the session confirmed it
+- **composer.why_unconfirmed:** the session did not confirm it — check the tile before sending again
+- **composer.why_refused:** the session refused it
 
 ## hotwords — hotwords.js (the ▥ Hotwords tab)
 - **hotwords.placeholder:** a word it keeps getting wrong
@@ -2022,3 +2032,31 @@ The catalog entry goes. {dir} is not touched.
 - **feedback.sending:** Sending…
 - **feedback.sent:** Sent — thank you
 - **feedback.thank_you:** Thank you for helping us make Ronin better.
+- **setup_surface.providers:** Model providers
+- **setup_surface.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
+- **setup_surface.providers_summary:** {providers} providers · {models} models · {activated} activated here
+- **setup_surface.providers_summary_dated:** {counts} · catalog updated {date}
+- **setup_surface.providers_help:** Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.
+- **setup_surface.providers_measured:** This machine was measured {when}; opening this surface measures it again.
+- **setup_surface.providers_unmeasured:** This machine has not been measured yet.
+- **setup_surface.catalog_stock:** Catalog updated {date} · prices and models as read then; refreshed with each Ronin update.
+- **setup_surface.catalog_yours:** Your catalog copy, updated {date}.
+- **setup_surface.catalog_undated:** date not stated
+- **setup_surface.section_yours:** Yours
+- **setup_surface.section_catalog:** The catalog
+- **setup_surface.section_catalog_dated:** The catalog · updated {date}
+- **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
+- **setup_surface.no_cli_state:** No CLI
+- **setup_surface.no_models:** The catalog lists no models for this provider.
+- **setup_surface.provider_models_n:** {vendor} · {n} models
+- **setup_surface.fact_installed:** Installed
+- **setup_surface.fact_signed_in:** Signed in
+- **setup_surface.fact_activated:** Activated
+- **setup_surface.yes:** yes
+- **setup_surface.no:** no
+- **setup_surface.col_model:** Model
+- **setup_surface.col_tier:** Tier
+- **setup_surface.col_cost:** Cost
+- **setup_surface.col_good_at:** Good at
+- **setup_surface.col_not_good_at:** Not good at
+- **setup_surface.model_default_mark:** the default

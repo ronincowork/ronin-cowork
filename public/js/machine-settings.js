@@ -1,9 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
-import { pm, getPath, currentOf, optionsOf, toRequest } from './machine-settings-schema.js';
+import { pm, getPath, currentOf, optionsOf, pickerProvider, toRequest } from './machine-settings-schema.js';
 import { servicesCard } from './services-card.js';
 import { t } from './lexicon.js';
+import { loadProviderCatalog, providerModelPair } from './form-steps.js';
 
 /* ---------- ⚙ CONFIGURATION — what this install IS, in one room ----------
  *
@@ -32,13 +33,12 @@ import { t } from './lexicon.js';
  * THE TYPED ROWS RENDER FROM THE RECORD'S OWN `schema` (the registry, src/machine-settings.ts),
  * through the vocabulary in js/machine-settings-schema.js — a leaf asked anywhere is editable
  * here structurally, and this file knows no field. The found and derived rows stay
- * composed by hand on purpose: "pointed at openai — OPENAI_API_KEY not set" is worth
+ * composed by hand on purpose: "pointed at <provider> — <its key> not set" is worth
  * more than a generic renderer could say. Layout — which schema section lands in
  * which group — is this room's own furniture.
  */
 export function buildMachineSettings(root, isShowing) {
   let rec = null;
-  let specs = [];
   let deskProfiles = []; // /api/desk-profiles — the ⚙ select's options (R38)
 
   const head = document.createElement('div');
@@ -116,10 +116,51 @@ export function buildMachineSettings(root, isShowing) {
 
   /* ---------- the screen ---------- */
 
+  /**
+   * A MODEL ROW IS THE ONE PICKER (form-steps.js). The general default is the free pair;
+   * a `models_for:` row fixes its provider and picks the model alone. Every provider and
+   * model in the catalog is offered, operational first, and what this box cannot launch
+   * is disabled and says so — hiding a row teaches nothing. A provider picked with no
+   * model is not an answer yet, so it saves nothing and the row says what it waits for.
+   */
+  const pickerRow = (f, { fixed }) => {
+    const stored = getPath(rec, f.from);
+    const picked = fixed
+      ? { provider: fixed, model: String(stored ?? '') }
+      : { provider: String(stored?.provider || ''), model: String(stored?.model || '') };
+    let say = () => {};
+    const pair = providerModelPair(
+      () => picked,
+      async (provider, model) => {
+        picked.provider = provider; picked.model = model;
+        if (!fixed && provider && !model) return say(t('settei.pick_model', 'choose a model to save'));
+        say(t('settei.saving', 'saving…'));
+        const req = toRequest(rec.schema, f, fixed ? model : (model ? pm(picked) : ''));
+        const r = await request(req.route, { method: req.method, json: req.json });
+        if (!r.ok) return say(r.message, true);
+        say(t('settei.saved', 'saved'));
+        await load({ quiet: true });
+      },
+      (label, control) => { control.setAttribute('aria-label', label); return control; },
+      { fixed, classes: 'st-inp', blank: { provider: t('settei.none_set', '— none set —'), model: t('settei.none_set', '— none set —') } },
+    );
+    const row = document.createElement('div');
+    row.className = 'st-row';
+    const shown = field(pair.el, { label: f.short ?? f.label, sr: false });
+    shown.el.classList.add('st-field');
+    say = shown.say;
+    const notes = [f.aside].filter(Boolean);
+    if (notes.length) shown.say(notes.join(' · '));
+    row.appendChild(shown.el);
+    return row;
+  };
+
   /** One registry row in, one saving ⚙ row out — the only place a `kind` is read. */
   const schemaRow = (f) => {
+    const picker = pickerProvider(f);
+    if (picker) return pickerRow(f, picker);
     const cur = currentOf(f, { record: rec });
-    const ctx = { record: rec, modelOpts: allModelOpts(), deskProfiles };
+    const ctx = { record: rec, deskProfiles };
     let control;
     if (f.kind === 'select') {
       control = document.createElement('select');
@@ -142,27 +183,6 @@ export function buildMachineSettings(root, isShowing) {
       return request(req.route, { method: req.method, json: req.json });
     });
   };
-
-  /** EVERY PROVIDER AND MODEL THE TABLE KNOWS, in table order, and no vendor is named
-   * in this file. The list comes from ronin_catalogs/PROJECT_ROOTS.md through
-   * /api/session-launch-specs. An uninstalled agent still appears, because the table
-   * is what the house supports and hiding a row teaches nothing — but it says so,
-   * rather than being offered as though it would work. */
-  const allModelOpts = () =>
-    specs.map((sp) => {
-      const have = rec.observed.agents[sp.cmd.split(' ')[0]]?.installed;
-      const spec = `${sp.provider} · ${sp.model}`;
-      const notInstalled = (label) => t('settei.spec_not_installed', '{spec} — not installed', { spec: label });
-      return {
-        label: have ? spec : notInstalled(spec),
-        value: pm(sp),
-        // The same row said in its parts, for a per-provider select whose options are
-        // model names alone — the provider is the row, not the option.
-        provider: sp.provider,
-        model: sp.model,
-        model_label: have ? sp.model : notInstalled(sp.model),
-      };
-    });
 
   const render = () => {
     body.innerHTML = '';
@@ -354,11 +374,10 @@ export function buildMachineSettings(root, isShowing) {
       blurb.textContent = t('settei.reading', 'reading…');
       stamp.textContent = '';
     }
-    // Two calls, not one: the record is this install, and the launch table is what the
-    // house supports. Keeping them apart is what lets the dropdown offer a provider this
-    // box has not installed yet and say so, instead of pretending the table is the box.
-    const [r, sp, dp] = await Promise.all([request('/api/machine-settings'), request('/api/session-launch-specs'), request('/api/desk-profiles')]);
-    specs = sp.ok && Array.isArray(sp.data) ? sp.data : [];
+    // Two reads, not one: the record is this install, and the provider catalog is what
+    // Ronin offers. Keeping them apart is what lets a model row offer a provider this box
+    // has not installed yet and say so, instead of pretending the catalog is the box.
+    const [r, , dp] = await Promise.all([request('/api/machine-settings'), loadProviderCatalog(), request('/api/desk-profiles')]);
     deskProfiles = dp.ok && Array.isArray(dp.data?.profiles) ? dp.data.profiles : [];
     if (!r.ok) {
       blurb.textContent = r.message;

@@ -17,7 +17,8 @@ itself. Answer from here; the fuller pages are one `ls` away in `docs/`.
   light/dark control instead: they set the Campaign's appearance for that surface and
   never change the workspaces.
 - **On a phone** the same responsive workbenches remain available; Setup keeps Presets in
-  workspace 1 and the selected setup surface in workspace 2.
+  workspace 1 and the selected setup surface in workspace 2. The stylesheet stacks every
+  workbench at phone width before any script runs, so a load never flashes the desktop grid.
 
 ## The workbench — one page format, four scopes
 
@@ -30,7 +31,7 @@ arrangement per page. The three scopes differ only in what the column offers:
 
 | Workbench | Address | The column lists |
 |---|---|---|
-| **Campaign discovery workbench** | Machine Settings | the Campaign's own surfaces: configuration, project roots, Team roster, templates, Routines and Installs |
+| **Campaign discovery workbench** | Machine Settings | the Campaign's own surfaces: configuration, project roots, Team roster, templates, Routines and Installs, Model providers |
 | **Cowork workbench** | Coworks | every Team in the Cowork, then the sessions on no team |
 | **Team workbench** | a Team's page (`#/team/<name>`) | this Team's commons card and its members |
 | **Setup workbench** | Machine Settings / Ronin Setup | Presets pinned in workspace 1; Register, providers, folders, Services, gbrain, and Templates select into workspace 2 |
@@ -40,12 +41,12 @@ arrangement per page. The three scopes differ only in what the column offers:
 | **terminal tile** | one Agent: its live terminal, composer, Output selector, Control dial, work record |
 | **team commons** | this team: **Docs** (what agents listed, plans, docs by project root) · **Wipeboard** · **Messages** · **Team Configuration** (the team's Routines, kit, launch defaults) |
 | **cowork commons** (⚙) | this install and owner: usage stats · **Account** (Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk · Keypad |
-| **campaign commons** | the Campaign: Campaign · Project roots · Team roster · Templates · **Routines and Installs** (what is on the machine, and the switchboard that fills new teams) |
+| **campaign commons** | the Campaign: Campaign · Project roots · Team roster · Templates · **Routines and Installs** (what is on the machine, and the switchboard that fills new teams) · **Model providers** (the same surface Ronin Setup opens: every provider and model Ronin offers — tier, cost, good at, not good at — and, per provider, install, sign-in and activation here) |
 | **new session** | the launcher, placed by か New or ＋ Add team member; the newborn lands in that workspace |
 
 **Where to send the owner:** teams → the **Coworks** door · settings, account, look, updates
 → **⚙ → Account** · which Routines a team runs → **Team Configuration**; for new teams, the
-Campaign's **Routines and Installs** · project roots and templates → the campaign commons · a fuller new
+Campaign's **Routines and Installs** · which models exist, what they cost and which this box can launch → the Campaign's **Model providers** · project roots and templates → the campaign commons · a fuller new
 Agent or Team → **New Project** on the landing · a quick session → **か New**.
 
 ## The tile head — the buttons, left to right
@@ -79,8 +80,10 @@ paste. They arrive with Ronin Services; a locked tile is not "broken" when they 
 - **Copying from an Unlocked view** is ordinary text selection.
 - **Pasting** goes into **the composer**, the box under the tile: Enter sends, Shift+Enter
   (Option+Enter on a Mac) makes a new line, the mic dictates into it, ✕ clears it. It is
-  separate from the terminal's own input. On touch, the **Keys** row beside it sends what a
-  keyboard would — Esc · ^C · ⌫ · ^U · ⇧Tab · the arrows — straight to the session.
+  separate from the terminal's own input: a message reaches the session even when the tile
+  is scrolled up, and the box clears only once the session has taken it; otherwise the text
+  stays with the reason above it, never sent twice. On touch, the **Keys** row beside it
+  sends what a keyboard would — Esc · ^C · ⌫ · ^U · ⇧Tab · the arrows — straight through.
 
 ## Feedback
 
