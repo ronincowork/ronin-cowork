@@ -242,7 +242,11 @@ test('Morning Brief asks only for what each cadence needs and expands role instr
 });
 
 test('Presets rests on the shared stone header and start line, with no override of its own', async () => {
-  const css = await readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8');
+  const [source, css] = await Promise.all([
+    readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
+  ]);
+  assert.doesNotMatch(source, /--sp-intro|ResizeObserver/, 'the shared header is the one source of stone geometry');
   assert.doesNotMatch(css, /\.sp-surface \.sws:not\(\[data-open='true'\]\) \.sws-rail/);
   assert.match(css, /\.sws-host \{[^}]*--sws-header-height: clamp\(6rem, 15dvh, 9rem\)/);
   assert.match(css, /\.sws-header \{[^}]*flex: 0 0 var\(--sws-header-height\)/);
