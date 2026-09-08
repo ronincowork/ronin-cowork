@@ -71,7 +71,7 @@ test('edited Cowork and Team workbench labels become the exact tab title', async
   ]);
   assert.match(cowork, /return name \? \{ bare: name \} : fallback/);
   assert.match(cowork, /patchViewState\(viewKey, \{ tabName:/);
-  assert.match(cowork, /get: \(\) => ctx\?\.viewState\(viewKey\)\?\.tabName[\s\S]*campaign \? t\('campaign\.coworks', 'Teams'\) : team/);
+  assert.match(cowork, /get: \(\) => ctx\?\.viewState\(viewKey\)\?\.tabName[\s\S]*campaign \? t\('campaign\.coworks', 'Teams'\) : readableTeam\(team\)/);
   assert.match(kit, /\.ui-bar-place \.wk-tab-name \{[^}]*background: transparent;[^}]*color: inherit;/);
 });
 

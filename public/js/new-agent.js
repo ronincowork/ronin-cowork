@@ -248,7 +248,7 @@ export function createNewAgentView(kit, { connect = null, embedded = false } = {
     teamHost.append(ways3);
     if (draft.teamMode === 'existing') {
       const select = el('select');
-      for (const team of teams) select.add(new Option(team.title || team.name, team.name));
+      for (const team of teams) select.add(new Option(String(team.title ?? '').trim() || team.name, team.name));
       select.value = draft.team;
       select.addEventListener('change', () => { draft.team = select.value; paintBranch(); void loadSeed(); paintFoot(); });
       teamHost.append(createField({ label: t('squad', 'Team'), control: select }).el);

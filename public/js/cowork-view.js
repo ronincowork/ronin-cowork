@@ -109,7 +109,7 @@ export function createCoworkView(options = {}) {
   let unsubscribe = null;
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
-  const readableTeam = (name) => teamByName(name)?.title || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
+  const readableTeam = (name) => String(teamByName(name)?.title ?? '').trim() || name;
   const setBarLabel = () => S.refreshWorkspaceHeader?.();
 
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
@@ -275,7 +275,7 @@ export function createCoworkView(options = {}) {
       const reading = readingsOf(member);
       return { key: member.name, label: agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null, onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
-    teams: () => campaign ? [...teamsFromState().filter((candidate) => !candidate.holding), { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' }].map((item) => ({ key: item.name, label: item.title || readableTeam(item.name), summary: item.objective || '' })) : [],
+    teams: () => campaign ? [...teamsFromState().filter((candidate) => !candidate.holding), { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' }].map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' })) : [],
   };
   bench = WorkspaceKit.workbench.create({
     profile: campaign ? WB_PROFILES.cowork : WB_PROFILES.team,
@@ -607,14 +607,14 @@ export function createCoworkView(options = {}) {
     arrangement: bench.arrangement,
     // The owner's per-tab name; Teams defaults to its page name, a Team to the Team name.
     title: ({ param, viewState }) => {
-      const fallback = campaign ? t('campaign.coworks', 'Teams') : (param || t('team.team', 'Team'));
+      const fallback = campaign ? t('campaign.coworks', 'Teams') : (readableTeam(param || team) || t('team.team', 'Team'));
       const name = viewState?.(viewKey)?.tabName;
       return name ? { bare: name } : fallback;
     },
     tabName: {
       // The island edits the name it owns; a default is a real value, selectable and editable.
-      get: () => ctx?.viewState(viewKey)?.tabName || (campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team')),
-      placeholder: () => campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team'),
+      get: () => ctx?.viewState(viewKey)?.tabName || (campaign ? t('campaign.coworks', 'Teams') : readableTeam(team) || t('team.team', 'Team')),
+      placeholder: () => campaign ? t('campaign.coworks', 'Teams') : readableTeam(team) || t('team.team', 'Team'),
       set: (value) => { ctx?.patchViewState(viewKey, { tabName: String(value || '').trim() }); },
     },
     placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),

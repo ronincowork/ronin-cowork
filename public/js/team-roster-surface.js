@@ -15,8 +15,12 @@ export function createTeamRosterSurface() {
   const host = node('div', 'home-sec team-roster-detail');
   surface.content.append(host);
   const openTeam = (name) => openWorkspaceTab('team', name);
+  const teamLabel = (name) => {
+    const title = teamsFromState().find((team) => team.name === name)?.title;
+    return String(title ?? '').trim() || name;
+  };
   const removeTeam = async (team, count) => {
-    if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team, count }))) return;
+    if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: teamLabel(team), count }))) return;
     const result = await deleteTeamRoster(team);
     if (!result.ok) surface.setState('failed', result.message);
     else { surface.setState(null, ''); await refreshHome(); roster.render(); }
@@ -24,6 +28,7 @@ export function createTeamRosterSurface() {
   const roster = buildRoster({ index: 'team-roster', connect: (name) => S.connectSession?.(name) }, host, {
     hideGroupCounts: true,
     groups: () => teamsFromState().filter((team) => !team.holding).map((team) => team.name),
+    groupLabel: teamLabel,
     groupActions: (team, count) => {
       const launch = WorkspaceKit.primitives.createAction({
         label: t('league.launch_team', 'Launch'), launch: true, size: 'compact', action: () => openTeam(team),

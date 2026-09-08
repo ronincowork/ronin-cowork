@@ -3849,6 +3849,15 @@ button.wb-door:hover b {
 .home-grp-actions.tile-head > .wk-action[data-launch='true']:hover {
   border-color: var(--kaki);
 }
+.team-roster-detail .home-grp {
+  justify-content: space-between;
+}
+.team-roster-detail .home-grp::after {
+  order: 1;
+}
+.team-roster-detail .home-grp-actions {
+  order: 2;
+}
 .home-grp::after {
   content: '';
   flex: 1;

@@ -291,9 +291,11 @@ export function buildRoster(tile, host, options = {}) {
       for (const s of data) list.appendChild(rowFor(s));
     } else {
       const heading = (text, n, container, acceptsDrop = true) => {
+        const named = options.groupLabel?.(text);
+        const label = String(named ?? '').trim() || text;
         const h = document.createElement('div');
         h.className = 'home-grp';
-        h.append(Object.assign(document.createElement('b'), { textContent: text }));
+        h.append(Object.assign(document.createElement('b'), { textContent: label }));
         const actions = acceptsDrop ? options.groupActions?.(text, n) || [] : [];
         if (actions.length) {
           const controls = document.createElement('span');
@@ -306,7 +308,7 @@ export function buildRoster(tile, host, options = {}) {
         }
         container.appendChild(h);
         if (!acceptsDrop) return;
-        h.title = t('roster.drop_here', 'Drop a session here to add it to {team}', { team: text });
+        h.title = t('roster.drop_here', 'Drop a session here to add it to {team}', { team: label });
         container.addEventListener('dragover', (e) => {
           if (!e.dataTransfer.types.includes('application/x-ronin-session')) return;
           e.preventDefault();
