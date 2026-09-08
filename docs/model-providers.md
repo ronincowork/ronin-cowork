@@ -21,7 +21,13 @@ this document or the catalog.
 
 ## The catalog
 
-One `### <Vendor>` section per provider. The section's fields:
+The file's header carries one field of its own:
+
+| Field | Meaning |
+|---|---|
+| `updated` | `YYYY-MM-DD`: the day the catalog's models, prices and descriptions were last read from the public record |
+
+Then one `### <Vendor>` section per provider. The section's fields:
 
 | Field | Meaning |
 |---|---|
@@ -56,8 +62,18 @@ refuses it. `src/model-providers.ts` parses this shape and nothing else does.
 this is how the owner keeps names and prices fresh without a code release, and how a
 private provider stays private. `docs/shadowing.md` has the rule.
 
-**Tiers and prices are readings.** Each cost carries the month it was read; a stale
-reading is shown dated, not silently trusted and not guessed. The Google, xAI and Nous
+**Keeping it fresh.** The catalog is a snapshot, not live data. The stock file is refreshed
+with each Ronin release: the release order in `docs/tarball.md` carries the step *refresh
+the provider catalog: re-read prices and models, bump `updated`*, and `npm run verify`
+refuses a stock catalog with no `updated` line. A shadow copy in the owner's catalogs store
+is the owner's to refresh and carries its own `updated` line. Ronin shows the date it has,
+stale or not; it never hides it and never guesses a newer one. Each cost also carries the
+month it was read.
+
+**One read for the client.** `GET /api/provider-catalog` answers the catalog object whole,
+`{ origin, path, updated, providers: [{ provider, cli, label, models: [...] }] }` — the same
+object `readProviderCatalog()` gives the server. `GET /api/session-launch-specs`, the flat
+rows, stays only until the picker has switched to that read; then it goes. The Google, xAI and Nous
 sections are written from their vendors' CLI references and price lists and have not yet
 been launched end to end through Ronin; the first real launch of each cell is its proof,
 per the checklist below.
@@ -164,7 +180,7 @@ interface after starting the command:
 
 ```text
 MODEL_PROVIDERS.md row
-  → GET /api/session-launch-specs
+  → GET /api/provider-catalog
   → the one picker (providerModelPair, public/js/form-steps.js)
   → POST /api/launch { cmd, launch_mode }
   → append the provider flag only for live_dangerously
@@ -181,8 +197,9 @@ Every place the product asks *which provider, and which model* is one control:
 the Campaign's Agent defaults, Team Configuration, ⚙ Configuration (the general default,
 each provider's preferred model, and Mika's row), cowork setup and the Presets rows all call
 it; none keeps a list, a join or a vendor's name of its own. The picker reads the catalog
-rows itself (`GET /api/session-launch-specs`) and what this machine measured of each CLI
-(`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
+itself (`GET /api/provider-catalog`: its origin, its `updated` date, and one entry per
+provider with the vendor's label and its model rows) and what this machine measured of each
+CLI (`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
 probes), joined on the catalog's own `cli` field, and it offers:
 
 - every provider and every model in the catalog, the providers this machine can launch
@@ -199,18 +216,29 @@ the same control with the provider select dropped. The registry's seeds read the
 rows: `models:first` is the marked default of the first launchable provider, `models:light`
 the first launchable **light** row — there is no name-pattern for "cheap".
 
-## The Campaign's Model providers surface
+## The Model providers surface, on two seats
 
-The Campaign workbench (Machine Settings → Ronin Settings) has a **Model providers** card
-(`public/js/campaign-providers.js`) beside Routines and Installs. Its surface is the whole
-catalog on the shared stone work surface: one stone per provider, labelled with the vendor
-and its model count, wearing the measured word — *activated · signed in · installed · not
-installed*; a stone opens that provider's three measured facts and its model table — model,
-tier, cost as read, good at, not good at — with the marked default said. The measured facts
-are the Campaign's recorded summary, dated once on the surface (*This machine was measured
-<when>*), never a live word; the surface probes nothing and changes nothing — Ronin Setup's
-Model providers surface is where a provider is installed, signed in and activated, and where
-*Check again* measures.
+One surface (`public/js/provider-surface.js`), one definition under one type, seated by two
+selector cards: Ronin Setup's **Model providers** and Ronin Settings' **Model providers**
+open the same thing, and both cards read *N providers · M models · K activated here ·
+catalog updated <date>*. Its first face is the whole inventory on the shared stone work
+surface: one stone per CLI the registry knows, wearing its measured state and the vendor it
+serves with its model count, then any catalog provider no registry CLI serves. The header
+says which catalog copy is shown and its date — the catalog is a snapshot, not live data:
+*Catalog updated <date> · prices and models as read then; refreshed with each Ronin update*
+for the stock file, *Your catalog copy, updated <date>* when the owner's store shadows it —
+and when this machine was last measured.
+
+A stone opens that provider, top to bottom: **Yours**, the three measured steps (install ·
+authenticate with the native sign-in tile, Done and Close · ready) read from the runtime
+row (`docs/setup-workbench.md`, *Activate a provider*); then **The catalog**, the three
+measured facts, dated, and the model table — model, tier, cost as read, good at, not good
+at — with the marked default said. The native sign-in tile is mounted through the
+workbench environment's one shared mount (`public/js/provider-setup-session.js`), which
+both Ronin Setup and Ronin Settings hand their environment, so it works on either seat.
+This surface is the one client that measures: showing it probes the machine and writes
+the Campaign's summary; its catalog rows are the one picker's read, so the surface and
+every picker cannot disagree.
 
 ## New-session integration contract
 

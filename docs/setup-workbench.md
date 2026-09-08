@@ -38,20 +38,28 @@ count, what is shown, the layout, or a width. The Setup / Settings island is unc
 
 ## Activate a provider
 
-**Model providers** shows one stone per CLI the registry knows, each wearing a
-short measured state. Opening this surface is what measures: it probes the machine and
-writes the Campaign's dated provider summary, which every other surface then reads
-(`docs/model-providers.md`, *The measured summary*). The states: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
-installed**, or **Manual install**. Selecting a stone opens that provider's detail beside
-the rail: the same three numbered steps for every provider, in this order. A finished step
-wears a check and no control, the next unmet step wears the kaki mark and owns the one
-control, and a later step waits with none. A refused press shows the server's answer
-under the steps.
+**Model providers** is one surface with two seats: this card and Ronin Settings' Model
+providers card open the same thing (`public/js/provider-surface.js`). It shows one stone
+per CLI the registry knows, each wearing a short measured state and the vendor it serves
+with its model count, then any catalog provider no registry CLI serves. Its header says
+which catalog copy is shown and when it was updated — the catalog is a snapshot, not live
+data — and when this machine was last measured. Opening this surface is what measures: it
+probes the machine and writes the Campaign's dated provider summary, which every other
+surface then reads (`docs/model-providers.md`, *The measured summary*). The states:
+**Activated**, **Sign-in open**, **Needs sign-in**, **Not installed**, or **Manual install**.
+Selecting a stone opens that provider's detail beside the rail, top to bottom: **Yours**,
+the same three numbered steps for every provider, in this order — a finished step wears a
+check and no control, the next unmet step wears the kaki mark and owns the one control,
+and a later step waits with none; a refused press shows the server's answer under the
+steps — then **The catalog**: the three measured facts, dated, and every model the catalog
+lists for this provider with its tier, cost as read, what it is good at and not, and the
+default marked. Both cards' summaries read *N providers · M models · K activated here ·
+catalog updated <date>*.
 
 | Step | What it measures | The action it owns |
 |---|---|---|
 | **Install** | whether the CLI is found on this machine | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
-| **Authenticate** | whether the provider is signed in here: its own credential file is on this machine, or a sign-in was recorded through **Done** | **Authenticate** opens the provider's native sign-in as a temporary headerless tile that takes most of this workspace; **Done** records it, **Close** leaves things as they were |
+| **Authenticate** | whether the provider is signed in here: its own credential file is on this machine, or a sign-in was recorded through **Done** | **Authenticate** opens the provider's native sign-in as a temporary headerless tile that takes most of this workspace, mounted through the workbench environment's one shared mount (`public/js/provider-setup-session.js`) so it works on either seat; **Done** records it, **Close** leaves things as they were |
 | **Ready** | the resulting activation, which is what unlocks Teams and New Project: installed, signed in or recorded, and holding at least one model in the provider catalog | none; it is the measured result |
 
 Ronin reads only that a credential file exists (for example Claude Code's

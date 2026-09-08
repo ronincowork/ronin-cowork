@@ -28,7 +28,12 @@ concerned.** The public feed is a different door and is not what an entitled box
 
 ## The order
 
-1. **Land the work.** `dev` → PR → `master`, both repos. Master moving is a record of what
+1. **Refresh the provider catalog.** `ronin_catalogs/MODEL_PROVIDERS.md` is a snapshot of
+   every vendor's models, prices and descriptions: re-read them from the public record,
+   change the rows that moved, and bump its `- **updated:**` line to today. `npm run verify`
+   refuses a catalog with no date; nothing refuses a stale one, so this step is the only
+   thing that keeps it true (`docs/model-providers.md`, *Keeping it fresh*).
+2. **Land the work.** `dev` → PR → `master`, both repos. Master moving is a record of what
    is releasable, not a release.
 2. **Tag cowork.** `git tag -a vX.Y.Z origin/master && git push origin vX.Y.Z`. CI refuses a
    tag whose commit is not on `origin/master`, re-runs the gates, builds once, publishes.

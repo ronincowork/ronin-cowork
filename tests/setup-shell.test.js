@@ -104,8 +104,10 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /SETUP_SURFACE_TYPES\.providers, 'workspace2', detail\)/);
   assert.match(setup, /hideFeedback: true/);
   assert.match(setup, /hideShapeControl: true/);
-  assert.match(setup, /mountProviderSetupSession/);
-  assert.match(setup, /createTerminalTileHost\(\{ mode: 'full' \}\)/);
+  // The native sign-in mount is the shared one (provider-setup-session.js), handed to this
+  // environment as it is to Ronin Settings'; neither view keeps a copy.
+  assert.match(setup, /mountProviderSetupSession: providerSessions\.mountProviderSetupSession/);
+  assert.doesNotMatch(setup, /createTerminalTileHost/);
   assert.match(setup, /environment\.setupRuntime = runtime\.ok \? runtime\.data : \{ providers: \[\] \};[\s\S]*bench\.refreshSelector\(\);[\s\S]*const stored/);
   assert.doesNotMatch(setup, /SetupRequirement|requirementState|flashCycle/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.providers, SETUP_SURFACE_TYPES\.register, SETUP_SURFACE_TYPES\.roots/);

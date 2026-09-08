@@ -24,12 +24,19 @@ globalThis.Node = FakeNode;
 globalThis.document = { createElement: (tag) => new FakeNode(tag), querySelector: () => null, head: { append() {} } };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
-const CATALOG = [
-  { provider: 'anthropic', cli: 'claude', model: 'opus', tier: 'frontier', default: true, cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions', cmd: 'claude --model opus' },
-  { provider: 'anthropic', cli: 'claude', model: 'haiku', tier: 'light', default: false, cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors', cmd: 'claude --model haiku' },
-  { provider: 'openai', cli: 'codex', model: 'gpt-5.6-sol', tier: 'frontier', default: true, cost: '$5 in · $30 out per M tokens (2026-09)', good_at: 'the hardest coding', not_good_at: 'bulk loops', cmd: 'codex --model gpt-5.6-sol' },
-  { provider: 'google', cli: 'gemini', model: 'gemini-3.8-flash', tier: 'standard', default: true, cost: '$0.75 in · $3.75 out per M tokens (2026-09)', good_at: 'fast everyday coding', not_good_at: 'the deepest reasoning', cmd: 'gemini --model gemini-3.8-flash' },
-];
+// GET /api/provider-catalog: the catalog's origin and date, then one entry per provider.
+const CATALOG_DOOR = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', providers: [
+  { provider: 'anthropic', cli: 'claude', label: 'Anthropic', models: [
+    { model: 'opus', tier: 'frontier', default: true, cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions', cmd: 'claude --model opus' },
+    { model: 'haiku', tier: 'light', default: false, cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors', cmd: 'claude --model haiku' },
+  ] },
+  { provider: 'openai', cli: 'codex', label: 'OpenAI', models: [
+    { model: 'gpt-5.6-sol', tier: 'frontier', default: true, cost: '$5 in · $30 out per M tokens (2026-09)', good_at: 'the hardest coding', not_good_at: 'bulk loops', cmd: 'codex --model gpt-5.6-sol' },
+  ] },
+  { provider: 'google', cli: 'gemini', label: 'Google', models: [
+    { model: 'gemini-3.8-flash', tier: 'standard', default: true, cost: '$0.75 in · $3.75 out per M tokens (2026-09)', good_at: 'fast everyday coding', not_good_at: 'the deepest reasoning', cmd: 'gemini --model gemini-3.8-flash' },
+  ] },
+] };
 const MACHINE = {
   measured_at: '2026-09-08T11:00:00.000Z',
   providers: [
@@ -39,19 +46,26 @@ const MACHINE = {
   ],
 };
 globalThis.fetch = async (url) => {
-  const body = url.startsWith('/api/session-launch-specs') ? CATALOG : url.startsWith('/api/setup/runtime') ? MACHINE : null;
+  const body = url.startsWith('/api/provider-catalog') ? CATALOG_DOOR : url.startsWith('/api/setup/runtime') ? MACHINE : null;
   return { ok: body !== null, status: body ? 200 : 404, json: async () => body ?? { error: 'no such door' } };
 };
 
 const steps = await import('../public/js/form-steps.js');
-const { orderedCatalog, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
+const { orderedCatalog, catalogRows, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
 const schema = await import('../public/js/machine-settings-schema.js');
+const CATALOG = catalogRows(CATALOG_DOOR.providers);
+
+test('the catalog door flattens to rows that carry their provider, CLI and the catalog\'s own label', () => {
+  assert.deepEqual(CATALOG.map((row) => [row.provider, row.cli, row.provider_label, row.model]), [['anthropic', 'claude', 'Anthropic', 'opus'], ['anthropic', 'claude', 'Anthropic', 'haiku'], ['openai', 'codex', 'OpenAI', 'gpt-5.6-sol'], ['google', 'gemini', 'Google', 'gemini-3.8-flash']]);
+  assert.deepEqual(catalogRows([{ provider: 'nous', cli: 'hermes', models: [{ model: 'x' }] }]).map((row) => row.provider_label), ['nous'], 'no label: the id stands');
+  assert.deepEqual(catalogRows(null), []);
+});
 
 test('the catalog is ordered with the providers this machine can launch first, in catalog order within', () => {
   const rows = orderedCatalog(CATALOG, MACHINE.providers);
   assert.deepEqual(rows.map((row) => `${row.provider}/${row.model}`), ['openai/gpt-5.6-sol', 'anthropic/opus', 'anthropic/haiku', 'google/gemini-3.8-flash']);
   assert.deepEqual(rows.map((row) => row.operational), [true, false, false, false]);
-  assert.equal(rows[0].provider_label, 'OpenAI');
+  assert.equal(rows[0].provider_label, 'OpenAI', 'the catalog\'s label, not the machine row\'s');
   assert.equal(rows[1].cli_label, 'Claude Code');
   // A row whose CLI the machine has no row for is offered under its own id, never dropped.
   assert.equal(orderedCatalog([{ provider: 'nous', cli: 'hermes', model: 'x', tier: 'standard' }], [])[0].provider_label, 'nous');
@@ -61,6 +75,8 @@ test('the picker reads the two doors itself and offers every provider, disabling
   const catalog = await loadProviderCatalog();
   assert.equal(catalog.loaded, true);
   assert.equal(catalog.measured_at, MACHINE.measured_at);
+  assert.equal(catalog.origin, 'stock');
+  assert.equal(catalog.updated, '2026-09-08', 'the catalog is a snapshot: its date rides with it');
   assert.equal(providerCatalog(), catalog);
   const draft = { provider: '', model: '' };
   const pair = providerModelPair(() => draft, (provider, model) => { draft.provider = provider; draft.model = model; }, (label, control) => { control.setAttribute('aria-label', label); return control; });
@@ -130,6 +146,9 @@ test('no client module keeps its own provider or model list, join, or vendor nam
   }
   const home = await read('home.js');
   assert.doesNotMatch(home, /launchSpecData|session-launch-specs/);
+  const stepsSource = await read('form-steps.js');
+  assert.match(stepsSource, /request\('\/api\/provider-catalog'\)/, 'the one catalog read');
+  assert.doesNotMatch(stepsSource, /session-launch-specs/);
   const schemaSource = await read('machine-settings-schema.js');
   assert.doesNotMatch(schemaSource, /haiku|mini|flash|LIGHT|modelOpts/);
 });

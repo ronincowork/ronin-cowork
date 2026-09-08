@@ -16,7 +16,7 @@ import { listLexicons } from '../src/lexicon-catalog.js';
 import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
 import { findDefinition } from '../src/resource-adapters.js';
 import { listMacros } from '../src/macros.js';
-import { listProviderCatalog, TIERS } from '../src/model-providers.js';
+import { readProviderCatalog, TIERS } from '../src/model-providers.js';
 import { AGENTS } from '../src/agents.js';
 import { resolveBehaviourBooks } from '../src/behaviours.js';
 
@@ -264,8 +264,9 @@ await surfacing('ACTIONS.md', () => readEntries('ACTIONS.md'));
 await surfacing('TOOLS.md', () => readEntries('TOOLS.md'));
 await macroCopy();
 
-const catalog = await listProviderCatalog();
+const { providers: catalog, updated } = await readProviderCatalog();
 if (catalog.length === 0) fail('MODEL_PROVIDERS.md: the provider catalog yields no providers');
+if (!/^\d{4}-\d{2}-\d{2}$/.test(updated)) fail('MODEL_PROVIDERS.md: the header carries no `- **updated:** YYYY-MM-DD` line');
 {
   const providers = new Set<string>();
   const clis = new Set<string>();

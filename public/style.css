@@ -6120,6 +6120,28 @@ button.wb-door:hover b {
 .setup-provider-stone[data-activated='true'] { border-color: var(--ok-2); }
 .setup-provider-notice { margin: 0; }
 .setup-provider-notice[hidden] { display: none; }
+/* The header of the one Model providers surface: what the catalog is (a dated snapshot) and
+   when this machine was measured, once each. */
+.setup-provider-intro { display: grid; gap: var(--space-2); }
+.setup-provider-intro > p { margin: 0; }
+.setup-provider-snapshot:empty, .setup-provider-measured:empty { display: none; }
+/* A stone's detail is two sections, top to bottom: Yours (the steps), then The catalog. */
+.setup-provider-yours, .setup-provider-catalog { display: grid; gap: var(--space-5); min-width: 0; }
+.setup-provider-catalog { margin-top: var(--space-8); padding-top: var(--space-7); border-top: var(--edge) solid var(--line); }
+.setup-provider-eyebrow { margin: 0; color: var(--muted); font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.setup-provider-facts { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-7); margin: 0; }
+.setup-provider-facts div { display: flex; gap: var(--space-2); font-size: var(--text-5); }
+.setup-provider-facts dt { color: var(--muted); }
+.setup-provider-facts dd { margin: 0; color: var(--fg-strong); font-weight: 600; }
+.setup-provider-facts div[data-on='true'] dd { color: var(--ok); }
+.setup-provider-table { overflow-x: auto; max-width: 100%; }
+.setup-provider-models { width: 100%; min-width: calc(var(--space-12) * 10); border-collapse: collapse; font-size: var(--text-5); }
+.setup-provider-models th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--muted); font-weight: 600; border-bottom: var(--edge) solid var(--line-2); }
+.setup-provider-models td { padding: var(--space-3); vertical-align: top; border-bottom: var(--edge) solid var(--line); }
+.setup-provider-models td:first-child { white-space: nowrap; }
+.setup-provider-models td b { color: var(--fg-strong); font-weight: 600; }
+.setup-provider-default { display: block; margin-top: var(--space-1); color: var(--muted); font-size: var(--text-2); }
+.setup-provider-tier { color: var(--muted-2); font-size: var(--text-2); letter-spacing: .06em; text-transform: uppercase; }
 .setup-kinds { display: grid; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
 /* The selected provider: a flat detail on the shared stone seat, on the Setup type baseline
    (14 body · 16 step · 20 title). Three numbered steps share one shape — the mark, the copy,

@@ -26,6 +26,7 @@ const campaigns = await import('../src/campaigns.js');
 test('the stock catalog names every provider with its CLI, its tiers and a marked default', async () => {
   const read = await catalog.readProviderCatalog();
   assert.equal(read.origin, 'stock');
+  assert.match(read.updated, /^\d{4}-\d{2}-\d{2}$/, 'the stock catalog says when it was last read from the public record');
   const providers = read.providers;
   assert.deepEqual(providers.map((entry) => entry.cli), ['claude', 'codex', 'gemini', 'grok', 'hermes'], 'one section per CLI the registry knows');
   for (const entry of providers) {
@@ -82,6 +83,13 @@ test('a section may split facts and launch cells over tables, joined by model id
   assert.equal(catalog.providerDefault(example.models, 'nobody'), undefined);
 });
 
+test('the updated day is read from the header only, in YYYY-MM-DD, never from a provider section', () => {
+  assert.equal(catalog.catalogUpdated('# c\n\n- **updated:** 2026-09-08\n\n### V\n- **provider:** `v`\n- **cli:** `claude`\n'), '2026-09-08');
+  assert.equal(catalog.catalogUpdated('# c\n\n### V\n- **updated:** 2026-09-08\n- **provider:** `v`\n'), '', 'a date inside a section is not the catalog\'s');
+  assert.equal(catalog.catalogUpdated('# c\n\n- **updated:** September 2026\n'), '', 'only a full day counts');
+  assert.equal(catalog.catalogUpdated(''), '');
+});
+
 test("the owner's copy in the catalogs store shadows the stock catalog whole", async () => {
   await mkdir(process.env.RONIN_CATALOGS_DIR!, { recursive: true });
   const mine = path.join(process.env.RONIN_CATALOGS_DIR!, catalog.CATALOG_FILE);
@@ -94,6 +102,7 @@ test("the owner's copy in the catalogs store shadows the stock catalog whole", a
     const read = await catalog.readProviderCatalog();
     assert.equal(read.origin, 'user');
     assert.equal(read.path, mine);
+    assert.equal(read.updated, '', 'a shadow copy with no updated line says so; the date is never borrowed from stock');
     assert.deepEqual((await catalog.listSessionLaunchSpecs()).map((row) => row.cmd), ['claude --model fable'], 'the store copy is the whole catalog');
   } finally {
     await rm(mine, { force: true });

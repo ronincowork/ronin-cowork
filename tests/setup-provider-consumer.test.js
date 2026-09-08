@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const { providerPresentation, providerReadiness } = await import('../public/js/setup-provider-state.js');
-const source = await readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
+const source = await readFile(new URL('../public/js/provider-surface.js', import.meta.url), 'utf8');
 const css = await readFile(new URL('../public/style.css', import.meta.url), 'utf8');
 
 test('provider stone states are the short SETUP_WORKBENCH words and keep lifecycle truth', () => {
@@ -97,7 +97,7 @@ test('each readiness step carries only its own short line and never the install 
 });
 
 test('the surface renders the three steps from providerReadiness with real controls and visible errors', () => {
-  const providerSurface = source.slice(source.indexOf('function createProviderSurface'), source.indexOf('function createRootsSurface'));
+  const providerSurface = source.slice(source.indexOf('function createProviderSurface'));
   assert.match(providerSurface, /const steps = providerReadiness\(provider\)/);
   assert.match(providerSurface, /const \[install, auth, ready\] = steps/);
   assert.doesNotMatch(providerSurface, /Use with Ronin|checkbox|api\/setup\/preferences/);

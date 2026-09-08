@@ -364,31 +364,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.sell_stats:** Usage history — what your sessions did, counted over time, never their content.
 - **campaign_view.worktrees_routine_help:** Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **campaign_view.routines_n:** {n} on
-- **campaign_view.providers:** Model providers
-- **campaign_view.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
-- **campaign_view.providers_summary:** {providers} providers · {models} models · {activated} activated here
-- **campaign_view.providers_help:** Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.
-- **campaign_view.providers_measured:** This machine was measured {when}. Ronin Setup → Model providers measures it again.
-- **campaign_view.providers_unmeasured:** This machine has not been measured yet. Ronin Setup → Model providers measures it.
-- **campaign_view.providers_loading:** Reading the catalog…
-- **campaign_view.providers_none:** No model providers are in the catalog on this machine.
-- **campaign_view.provider_activated:** activated
-- **campaign_view.provider_signed_in:** signed in
-- **campaign_view.provider_installed:** installed
-- **campaign_view.provider_absent:** not installed
-- **campaign_view.provider_missing:** This provider is no longer in the catalog.
-- **campaign_view.provider_served_by:** Served by {cli} · {n} models in the catalog
-- **campaign_view.provider_models_n:** {n} models
-- **campaign_view.fact_installed:** Installed
-- **campaign_view.fact_signed_in:** Signed in
-- **campaign_view.fact_activated:** Activated
-- **campaign_view.yes:** yes
-- **campaign_view.no:** no
-- **campaign_view.col_tier:** Tier
-- **campaign_view.col_cost:** Cost
-- **campaign_view.col_good_at:** Good at
-- **campaign_view.col_not_good_at:** Not good at
-- **campaign_view.model_default_mark:** the default
 - **campaign_view.routine_no_description:** No description supplied.
 - **campaign_view.available:** Available
 - **campaign_view.unavailable:** Unavailable
@@ -2057,3 +2032,31 @@ The catalog entry goes. {dir} is not touched.
 - **feedback.sending:** Sending…
 - **feedback.sent:** Sent — thank you
 - **feedback.thank_you:** Thank you for helping us make Ronin better.
+- **setup_surface.providers:** Model providers
+- **setup_surface.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
+- **setup_surface.providers_summary:** {providers} providers · {models} models · {activated} activated here
+- **setup_surface.providers_summary_dated:** {counts} · catalog updated {date}
+- **setup_surface.providers_help:** Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.
+- **setup_surface.providers_measured:** This machine was measured {when}; opening this surface measures it again.
+- **setup_surface.providers_unmeasured:** This machine has not been measured yet.
+- **setup_surface.catalog_stock:** Catalog updated {date} · prices and models as read then; refreshed with each Ronin update.
+- **setup_surface.catalog_yours:** Your catalog copy, updated {date}.
+- **setup_surface.catalog_undated:** date not stated
+- **setup_surface.section_yours:** Yours
+- **setup_surface.section_catalog:** The catalog
+- **setup_surface.section_catalog_dated:** The catalog · updated {date}
+- **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
+- **setup_surface.no_cli_state:** No CLI
+- **setup_surface.no_models:** The catalog lists no models for this provider.
+- **setup_surface.provider_models_n:** {vendor} · {n} models
+- **setup_surface.fact_installed:** Installed
+- **setup_surface.fact_signed_in:** Signed in
+- **setup_surface.fact_activated:** Activated
+- **setup_surface.yes:** yes
+- **setup_surface.no:** no
+- **setup_surface.col_model:** Model
+- **setup_surface.col_tier:** Tier
+- **setup_surface.col_cost:** Cost
+- **setup_surface.col_good_at:** Good at
+- **setup_surface.col_not_good_at:** Not good at
+- **setup_surface.model_default_mark:** the default

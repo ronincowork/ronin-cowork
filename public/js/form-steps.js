@@ -251,43 +251,58 @@ export function templateTray(rows, current, onPick, { includeOwn = true } = {}) 
 
 /**
  * THE CATALOG, READ ONCE PER SURFACE. Two reads, joined on the catalog's own `cli`
- * field: the catalog rows (GET /api/session-launch-specs — provider, cli, model, tier,
- * cost, good_at, not_good_at, default, cmd, in catalog order) and what this machine
- * measured of each CLI (GET /api/setup/runtime `providers`, the Campaign's recorded
- * provider summary: installed, signed in, activated, dated). Nothing here probes; the
- * runtime answers from the record, and only the Setup Model providers surface measures.
+ * field: the provider catalog (GET /api/provider-catalog — its origin, stock or the
+ * owner's copy, the date it was updated, and one entry per provider carrying the vendor
+ * id, its CLI, its label and its model rows: model, tier, cost, good_at, not_good_at,
+ * default, cmd, in catalog order) and what this machine measured of each CLI
+ * (GET /api/setup/runtime `providers`, the Campaign's recorded provider summary:
+ * installed, signed in, activated, dated). The catalog is a snapshot, not live data:
+ * its `updated` date is shown wherever its facts are. Nothing here probes; the runtime
+ * answers from the record, and only the Setup Model providers surface measures.
  * A surface calls `loadProviderCatalog()` when it is shown and paints from
  * `providerCatalog()`; a picker built before the first read paints again when it lands.
  */
-let catalog = { rows: [], machine: [], measured_at: '', loaded: false };
+let catalog = { rows: [], machine: [], measured_at: '', origin: '', updated: '', loaded: false };
 let inflight = null;
 
 export function loadProviderCatalog() {
   if (inflight) return inflight;
-  inflight = Promise.all([request('/api/session-launch-specs'), request('/api/setup/runtime', { cache: 'no-store' })]).then(([specs, runtime]) => {
-    const rows = specs.ok && Array.isArray(specs.data) ? specs.data : [];
+  inflight = Promise.all([request('/api/provider-catalog'), request('/api/setup/runtime', { cache: 'no-store' })]).then(([read, runtime]) => {
+    const providers = read.ok && Array.isArray(read.data?.providers) ? read.data.providers : [];
     const machine = runtime.ok && Array.isArray(runtime.data?.providers) ? runtime.data.providers : [];
-    catalog = { rows: orderedCatalog(rows, machine), machine, measured_at: runtime.ok ? String(runtime.data?.measured_at || '') : '', loaded: true };
+    catalog = {
+      rows: orderedCatalog(catalogRows(providers), machine), machine,
+      measured_at: runtime.ok ? String(runtime.data?.measured_at || '') : '',
+      origin: read.ok ? String(read.data?.origin || '') : '', updated: read.ok ? String(read.data?.updated || '') : '',
+      loaded: true,
+    };
     inflight = null;
     return catalog;
   });
   return inflight;
 }
 
-/** What every reader paints from: `{ rows, machine, measured_at, loaded }`. */
+/** What every reader paints from: `{ rows, machine, measured_at, origin, updated, loaded }`. */
 export const providerCatalog = () => catalog;
+
+/** The catalog's provider entries as flat model rows, each carrying its provider's id, CLI and label. Pure. */
+export function catalogRows(providers = []) {
+  return (Array.isArray(providers) ? providers : []).flatMap((entry) => (Array.isArray(entry?.models) ? entry.models : [])
+    .map((row) => ({ ...row, provider: entry.provider, cli: entry.cli, provider_label: entry.label || entry.provider })));
+}
 
 /**
  * THE ROWS AS THE PICKER OFFERS THEM. Each catalog row gains what the machine measured
  * of its CLI — `operational` (the summary's activated: installed, signed in or recorded,
- * with a cell to launch), the vendor's label and the CLI's — and providers this machine
- * can launch come first, so a first run reads the runnable ones before the greyed ones.
- * Within a group the catalog's own order holds. Pure: the tests feed it rows.
+ * with a cell to launch) and the CLI's label — and providers this machine can launch
+ * come first, so a first run reads the runnable ones before the greyed ones. Within a
+ * group the catalog's own order holds. The vendor's label is the catalog's own. Pure:
+ * the tests feed it rows.
  */
 export function orderedCatalog(rows = [], machine = []) {
   const marked = (Array.isArray(rows) ? rows : []).filter((row) => row?.provider && row?.model).map((row) => {
     const entry = (Array.isArray(machine) ? machine : []).find((item) => item?.id === row.cli) || null;
-    return { ...row, operational: entry?.activated === true, provider_label: entry?.from || row.provider, cli_label: entry?.label || row.cli || '' };
+    return { ...row, operational: entry?.activated === true, provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '' };
   });
   const providers = [...new Set(marked.map((row) => row.provider))];
   const on = providers.filter((provider) => marked.some((row) => row.provider === provider && row.operational));
