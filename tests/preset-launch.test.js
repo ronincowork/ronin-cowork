@@ -57,18 +57,21 @@ test('Ronin Team launches the stored template through the team loader, with noth
   assert.ok(births.every(({ body }) => body.mandate && body.mandate.reach));
 });
 
-test('Bare Metal launches bare-metal agents in Ronin Lab with the owner\'s words and nothing of Ronin\'s', async () => {
+test('Bare Metal launches bare-metal agents on no team, named as the rows name them', async () => {
   const calls = [], send = responder({ name: 'bare_metal', label: 'Bare Metal', agents: [{ name: 'session 1', team_lead: true, instructions: 'Lead.' }, { name: 'session 2', instructions: 'Work.' }] }, calls);
   const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, user_message: '', inputs: { root: 'ronin_lab', sessions: [{ name: 'session_1', provider: 'anthropic', model: 'opus' }, { name: 'session_2' }, { name: 'session_3' }] } }, send);
   assert.equal(result.ok, true);
+  assert.equal(result.data.urlView, 'cowork');
+  assert.equal(calls.some((row) => row.url === '/api/team-rosters'), false, 'Bare Metal makes no team');
   const births = calls.filter((row) => row.url === '/api/launch').map((row) => row.body);
-  assert.equal(births.length, 3);
+  assert.deepEqual(births.map((body) => body.name), ['session_1', 'session_2', 'session_3'], 'names are the names, nothing appended');
   for (const body of births) {
     assert.equal(body.session_type, 'bare_metal_agent');
+    assert.equal('team' in body, false);
     assert.equal(body.project_root, 'ronin_lab');
     assert.equal(body.instructions, '');
     assert.equal('mandate' in body || 'team_lead' in body || 'routines' in body, false);
   }
-  assert.equal(calls.find((row) => row.url === '/api/team-rosters').body.project_root, 'ronin_lab');
-  assert.deepEqual(births.map((body) => [body.provider, body.model]), [['anthropic', 'opus'], [undefined, undefined], [undefined, undefined]], 'a chosen provider and model ride as the launch\'s own keys; default sends none');
+  assert.deepEqual(births.map((body) => [body.provider, body.model]), [['anthropic', 'opus'], [undefined, undefined], [undefined, undefined]]);
+  assert.deepEqual(result.data.sessions.map((row) => row.name), ['session_1', 'session_2', 'session_3']);
 });

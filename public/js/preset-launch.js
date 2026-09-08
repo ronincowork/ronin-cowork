@@ -62,6 +62,24 @@ export async function launchPresetPlan(plan = {}, send) {
     return { ok: true, data: { sessions: name ? [{ name }] : [], receipts: launched.data?.receipt ? [launched.data.receipt] : [], root: plan.inputs?.root || '', document: plan.inputs?.document || '', urlView: 'cowork' } };
   }
 
+  // BARE METAL MAKES NO TEAM. Its rows are the native agent, bare, on no team: Ronin
+  // sessions of the undefined team, seated together on the Cowork page. Their names are
+  // the names in the rows, nothing appended.
+  if (plan.template.name === 'bare_metal') {
+    const picks = (plan.inputs?.sessions || []).map((row) => ({
+      session_type: 'bare_metal_agent', name: slug(row.name) || 'session', project_root: plan.inputs?.root || 'ronin_lab', instructions: plan.user_message || '',
+      ...(row.provider ? { provider: row.provider } : {}), ...(row.model ? { model: row.model } : {}),
+    }));
+    const outcomes = await launchTeamAgents(ask, '', picks);
+    const refused = outcomes.find(({ result }) => !result?.ok);
+    if (refused) return { ok: false, message: refused.result?.message || `Could not launch ${refused.row.name}.` };
+    return { ok: true, data: {
+      sessions: outcomes.map(({ result }) => result.data?.name).filter(Boolean).map((name) => ({ name })),
+      receipts: outcomes.map(({ result }) => result.data?.receipt).filter(Boolean),
+      root: plan.inputs?.root || 'ronin_lab', urlView: 'cowork',
+    } };
+  }
+
   const team = unique(template.name);
   const rosterOptions = {
     method: 'POST',
@@ -89,15 +107,12 @@ export async function launchPresetPlan(plan = {}, send) {
   // loader the New Team form uses. The preset only says which rows, what they are called,
   // and the owner's starting message; nothing about provider or model rides on a row.
   const stored = Array.isArray(template.agents) ? template.agents : [];
-  // BARE METAL is the native agent, bare: each row starts the CLI in the chosen folder
-  // with the owner's words and nothing of Ronin's. Every other preset births Ronin agents.
-  const bare = plan.template.name === 'bare_metal';
+  // A session's name is the name in its row, nothing appended.
   const picks = configured.map((row, index) => {
     const chosen = { ...(row.provider ? { provider: row.provider } : {}), ...(row.model ? { model: row.model } : {}) };
-    if (bare) return { session_type: 'bare_metal_agent', name: unique(`${team}_${row.name || 'session'}`), project_root: plan.inputs?.root || 'ronin_lab', instructions: plan.user_message || '', ...chosen };
     const base = stored.find((agent) => slug(agent.name) === slug(row.name)) || stored[index] || stored.at(-1) || {};
     return {
-      name: unique(`${team}_${row.name || base.name || 'agent'}`),
+      name: slug(row.name || base.name) || 'agent',
       instructions: [row.instructions ?? base.instructions ?? '', plan.user_message].filter(Boolean).filter((line, at, all) => all.indexOf(line) === at).join('\n\n'),
       mandate: row.mandate || base.mandate,
       team_lead: row.team_lead === true || (row.team_lead === undefined && base.team_lead === true),
