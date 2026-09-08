@@ -1,5 +1,8 @@
 export const PRIMARY_DEVICE_ATTRIBUTES = '\x1b[?1;2c';
 export const SECONDARY_DEVICE_ATTRIBUTES = '\x1b[>0;276;0c';
+const PRIMARY_QUERY = '\x1b[c';
+const SECONDARY_QUERY = '\x1b[>c';
+const ATTACH_QUERY_WINDOW_MS = 5_000;
 
 /**
  * tmux asks its attached terminal for DA1/DA2 and accepts the answers for only five
@@ -8,27 +11,60 @@ export const SECONDARY_DEVICE_ATTRIBUTES = '\x1b[>0;276;0c';
  * The output itself is left byte-identical for xterm to parse and display.
  */
 export class DeviceAttributesResponder {
-  private state = 0;
+  private candidate = '';
+  private primaryAnswered = false;
+  private secondaryAnswered = false;
+  private armed = true;
+  private readonly deadline: number;
 
-  constructor(private readonly reply: (data: string) => void) {}
+  constructor(
+    private readonly reply: (data: string) => void,
+    private readonly now: () => number = Date.now,
+    windowMs = ATTACH_QUERY_WINDOW_MS,
+  ) {
+    this.deadline = now() + windowMs;
+  }
 
   feed(data: string): void {
-    for (const byte of data) {
-      if (this.state === 0) {
-        this.state = byte === '\x1b' ? 1 : 0;
-      } else if (this.state === 1) {
-        this.state = byte === '[' ? 2 : byte === '\x1b' ? 1 : 0;
-      } else if (this.state === 2) {
-        if (byte === 'c') {
-          this.reply(PRIMARY_DEVICE_ATTRIBUTES);
-          this.state = 0;
-        } else {
-          this.state = byte === '>' ? 3 : byte === '\x1b' ? 1 : 0;
-        }
-      } else {
-        if (byte === 'c') this.reply(SECONDARY_DEVICE_ATTRIBUTES);
-        this.state = byte === '\x1b' ? 1 : 0;
-      }
+    if (!this.armed || this.now() >= this.deadline) {
+      this.disarm();
+      return;
     }
+    for (const byte of data) {
+      this.candidate += byte;
+      if (this.candidate === PRIMARY_QUERY) this.answerPrimary();
+      else if (this.candidate === SECONDARY_QUERY) this.answerSecondary();
+      else if (!PRIMARY_QUERY.startsWith(this.candidate) && !SECONDARY_QUERY.startsWith(this.candidate)) {
+        this.candidate = byte === '\x1b' ? '\x1b' : '';
+      }
+      if (!this.armed) return;
+    }
+  }
+
+  private answerPrimary(): void {
+    this.candidate = '';
+    if (!this.primaryAnswered) {
+      this.primaryAnswered = true;
+      this.reply(PRIMARY_DEVICE_ATTRIBUTES);
+    }
+    this.finishIfComplete();
+  }
+
+  private answerSecondary(): void {
+    this.candidate = '';
+    if (!this.secondaryAnswered) {
+      this.secondaryAnswered = true;
+      this.reply(SECONDARY_DEVICE_ATTRIBUTES);
+    }
+    this.finishIfComplete();
+  }
+
+  private finishIfComplete(): void {
+    if (this.primaryAnswered && this.secondaryAnswered) this.disarm();
+  }
+
+  private disarm(): void {
+    this.armed = false;
+    this.candidate = '';
   }
 }

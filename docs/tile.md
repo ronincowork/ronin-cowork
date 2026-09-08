@@ -88,9 +88,10 @@ opens the tile and treats public `onData` as person input.
 
 Device Attributes need a stronger timing guarantee. tmux accepts DA answers for only five
 seconds after attach, but a hidden browser may not parse the query until later. The server
-therefore recognizes tmux's output-side DA1/DA2 queries and answers them immediately beside
-the PTY. Public xterm CSI handlers consume the same queries in the browser so it cannot send
-a duplicate late answer. This does not inspect or filter human input: deliberately typing
+therefore recognizes tmux's exact output-side DA1/DA2 queries and answers each at most once
+beside the PTY during the five-second attach window, then disarms. Public xterm CSI handlers
+consume the same queries in the browser so it cannot send a duplicate late answer. This does
+not inspect or filter human input: deliberately typing
 or pasting `ESC [ > 0;276;0c` remains person input byte-for-byte.
 
 **🔓 Unlocked — `public/js/tapeview.js`.** RIREKI's client-side render. **It holds no tmux

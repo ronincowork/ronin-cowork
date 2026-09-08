@@ -22,6 +22,27 @@ test('DA responder recognizes split attach queries without changing output', () 
   assert.deepEqual(replies, [PRIMARY_DEVICE_ATTRIBUTES, SECONDARY_DEVICE_ATTRIBUTES]);
 });
 
+test('DA responder ignores near matches and answers each exact attach query only once', () => {
+  const replies: string[] = [];
+  const responder = new DeviceAttributesResponder((data) => replies.push(data));
+  responder.feed('\x1b[>noise-c\x1b[0c\x1b[?c');
+  assert.deepEqual(replies, []);
+  responder.feed('\x1b[>c\x1b[>c\x1b[c\x1b[c');
+  assert.deepEqual(replies, [SECONDARY_DEVICE_ATTRIBUTES, PRIMARY_DEVICE_ATTRIBUTES]);
+  responder.feed(`application output ${'\x1b[>c'} ${'\x1b[c'}`);
+  assert.deepEqual(replies, [SECONDARY_DEVICE_ATTRIBUTES, PRIMARY_DEVICE_ATTRIBUTES]);
+});
+
+test('DA responder disarms at the attach deadline even if only one query arrived', () => {
+  let clock = 1_000;
+  const replies: string[] = [];
+  const responder = new DeviceAttributesResponder((data) => replies.push(data), () => clock, 5_000);
+  responder.feed('\x1b[c');
+  clock += 5_001;
+  responder.feed('\x1b[>c');
+  assert.deepEqual(replies, [PRIMARY_DEVICE_ATTRIBUTES]);
+});
+
 test('isolated tmux receives DA immediately and cannot type a browser-late DA2 into the pane', { timeout: 12_000 }, async () => {
   const name = `da2_${process.pid}`;
   const server = await openTestServer(name);
