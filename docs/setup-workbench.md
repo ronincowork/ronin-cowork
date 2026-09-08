@@ -109,8 +109,9 @@ same height as the Model providers stones: the row's height is taken out of the 
 room rather than added to it. A preset launches its template as stored, through the same
 team loader the New Team form uses: each row is one of the template's agents with its
 instructions, mandate, lead mark and Routine switches, and the owner's starting message
-appended. A row carries no provider or model; those come from the same Configuration and
-Campaign defaults every launch uses. The preset decides only which rows launch, what they
+appended. A row may pick its provider and model in the line, from the launch table, the same
+choices the New Agent form offers, sent as the launch's own keys; left at Default, the
+launch takes the Configuration and Campaign defaults every launch uses. The preset decides only which rows launch, what they
 are called, and how the new tab is seated. Bare Metal is the one exception by design: each
 of its rows is a bare-metal agent, the native CLI started in Ronin Lab with the owner's
 words and no Ronin birth packet, team room, or mandate. A stone's gate reads the same runtime the
