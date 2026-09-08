@@ -88,6 +88,8 @@ export async function launchPresetPlan(plan = {}, send) {
     const team = `bare_metal_${code}`;
     const made = await ask('/api/team-rosters', { method: 'POST', json: {
       name: team, title: `Bare Metal ${code}`, objective: plan.user_message || template.objective || '', project_root: plan.inputs?.root || 'ronin_lab', template: template.name,
+      // A bare-metal team launches bare: no Ronin base, no worktrees, whatever the Campaign cascades.
+      routines: { ronin_base: false, ronin_worktrees: false },
     } });
     if (!made.ok) return made;
     const picks = (plan.inputs?.sessions || []).map((row) => ({
@@ -163,7 +165,7 @@ export function presetWorkspaceState(plan) {
     if (type === 'session') return [[workspace, key]];
     return [[workspace, { type, key, ...(root ? { root } : {}), ...(path ? { path } : {}), ...(tab ? { tab } : {}), ...(doc ? { doc } : {}) }]];
   }));
-  return Object.keys(seats).length ? { count: plan.count, seats } : null;
+  return Object.keys(seats).length ? { count: plan.count, seats, ...(plan.arrangement ? { arrangement: plan.arrangement } : {}) } : null;
 }
 
 export function presetLaunchUrl(data = {}, plan = null, tab = null) {

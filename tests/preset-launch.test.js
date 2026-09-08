@@ -66,6 +66,7 @@ test('Bare Metal launches a bare-metal team: bare_metal_<code> with native agent
   const code = roster.name.match(/^bare_metal_(\d{3})$/)?.[1];
   assert.ok(code, 'the team is bare_metal_<code>');
   assert.equal(roster.project_root, 'ronin_lab');
+  assert.deepEqual(roster.routines, { ronin_base: false, ronin_worktrees: false }, 'a bare-metal team launches bare');
   assert.equal(result.data.team, roster.name);
   const births = calls.filter((row) => row.url === '/api/launch').map((row) => row.body);
   assert.deepEqual(births.map((body) => body.name), [`session_1_${code}`, `session_2_${code}`, `session_3_${code}`], 'row names plus the launch code');
@@ -89,4 +90,14 @@ test('a team launch the server refuses in part still opens the team and names wh
   const none = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, inputs: { sessions: [{ name: 'session_1' }] } }, refusing(['session_1']));
   assert.equal(none.ok, false, 'nobody born is the only failure');
   assert.equal(none.message, 'At the session max (21 of 21).');
+});
+
+test('the seeded tab state carries the seating\'s arrangement', async () => {
+  const { presetWorkspaceState } = await import('../public/js/preset-launch.js');
+  const state = presetWorkspaceState({ count: 4, arrangement: { order: ['workspace1', 'selector', 'workspace2'], hidden: [], widths: { workspace1: 43, selector: 14, workspace2: 43 } }, seats: [
+    { workspace: 'workspace1', type: 'session', key: 'a' }, { workspace: 'workspace2', type: 'team.commons', key: 't', tab: 'team-configuration' },
+  ] });
+  assert.equal(state.count, 4);
+  assert.deepEqual(state.arrangement.widths, { workspace1: 43, selector: 14, workspace2: 43 });
+  assert.deepEqual(state.seats.workspace2, { type: 'team.commons', key: 't', tab: 'team-configuration' });
 });

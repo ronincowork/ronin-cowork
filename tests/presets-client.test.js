@@ -97,8 +97,8 @@ test('a non-core replacement receives only universal actions and ordinary launch
 });
 
 test('Bare Metal starts with two rows that carry no provider or model, and three sessions use four workspaces', () => {
-  assert.deepEqual(presets.initialControls('bare_metal').sessions, [{ name: 'session_1' }, { name: 'session_2' }]);
-  assert.equal(presets.initialControls('bare_metal').tiles, 2);
+  assert.deepEqual(presets.initialControls('bare_metal').sessions, [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }]);
+  assert.equal(presets.initialControls('bare_metal').tiles, 4);
   assert.deepEqual(presets.initialControls('ronin_team').sessions.map(({ name, team_lead }) => [name, team_lead === true]), [
     ['team_lead', true], ['agent_1', false], ['agent_2', false],
   ]);
@@ -346,4 +346,18 @@ test('a partial launch still goes to the new tab and names the missing rows besi
   assert.deepEqual(opened, ['bare_metal_502'], 'the tab still goes to the team');
   assert.equal(warning.hidden, false);
   assert.equal(warning.textContent, 'Launched without session_4_502: At the session max (21 of 21).');
+});
+
+test('Bare Metal and Ronin Team open on agent · team configuration · agent · agent with a narrow selector', () => {
+  for (const handle of ['bare_metal', 'ronin_team']) {
+    const plan = presets.seatingPlan(handle, { team: 'bare_metal_502', sessions: [{ name: 'session_1_502' }, { name: 'session_2_502' }, { name: 'session_3_502' }] });
+    assert.equal(plan.count, 4, handle);
+    assert.deepEqual(plan.seats, [
+      { workspace: 'workspace1', type: 'session', key: 'session_1_502' },
+      { workspace: 'workspace2', type: 'team.commons', key: 'bare_metal_502', tab: 'team-configuration' },
+      { workspace: 'workspace3', type: 'session', key: 'session_2_502' },
+      { workspace: 'workspace4', type: 'session', key: 'session_3_502' },
+    ], handle);
+    assert.deepEqual(plan.arrangement, presets.NARROW_SELECTOR, handle);
+  }
 });
