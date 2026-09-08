@@ -314,8 +314,13 @@ export function tierWord(tier) {
   return { light: t('forms.tier_light', 'light'), standard: t('forms.tier_standard', 'standard'), frontier: t('forms.tier_frontier', 'frontier') }[tier] || String(tier || '');
 }
 
-/** One model as an option reads: its id, its tier, and what it is good at. */
-export const modelWord = (row) => t('forms.model_word', '{model} · {tier} — {good_at}', { model: row.model, tier: tierWord(row.tier), good_at: row.good_at || '' });
+/**
+ * One model as an option reads: its id and its tier, and stops there. A picker is for
+ * choosing, not for reading: the long good-at / not-good-at description belongs to the
+ * Campaign's Model providers surface, where there is room for the whole table. In an
+ * option it is a sentence squeezed into a line that cannot show it.
+ */
+export const modelWord = (row) => t('forms.model_word', '{model} · {tier}', { model: row.model, tier: tierWord(row.tier) });
 
 /**
  * THE ONE PROVIDER → MODEL PICKER. Two selects, and either pick may stand alone: naming

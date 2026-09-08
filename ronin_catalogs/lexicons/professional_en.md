@@ -585,7 +585,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.library_note:** More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.
 - **forms.default:** default
 - **forms.provider_off:** {name} — not on this machine
-- **forms.model_word:** {model} · {tier} — {good_at}
+- **forms.model_word:** {model} · {tier}
 - **forms.model_off:** {model} · {tier} — not on this machine
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard

@@ -325,7 +325,7 @@ test('a row picks its provider and model with the one picker, the New Agent form
   assert.equal(selects[0].attributes['aria-label'], 'model provider 1');
   assert.equal(selects[1].disabled, true, 'no provider named: the model waits');
   selects[0].value = 'openai'; for (const callback of selects[0].listeners.change) callback();
-  assert.deepEqual(selects[1].options.map((option) => option.textContent), ['Default model', 'gpt-5.6-sol · frontier — the hardest coding']);
+  assert.deepEqual(selects[1].options.map((option) => option.textContent), ['Default model', 'gpt-5.6-sol · frontier']);
   assert.doesNotMatch(await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'), /launchTable|sp-cycle/);
 });
 
