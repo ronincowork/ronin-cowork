@@ -3,7 +3,25 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 globalThis.window = { matchMedia: () => ({ matches: false }) };
-const { createSubmitGate, runShutdownPolling } = await import(`../public/js/session-retire.js?test=${Date.now()}`);
+const { createSubmitGate, retireSession, runShutdownPolling } = await import(`../public/js/session-retire.js?test=${Date.now()}`);
+
+class FakeNode {
+  constructor(tag = '') {
+    this.tagName = tag.toUpperCase(); this.children = []; this.listeners = {}; this.attributes = {};
+    this.className = ''; this.textContent = ''; this.disabled = false; this.isConnected = true;
+    this.classList = { contains: (name) => this.className.split(/\s+/).includes(name), add: (name) => { this.className += ` ${name}`; }, remove: () => {} };
+  }
+  append(...nodes) { this.children.push(...nodes.flat()); for (const node of nodes.flat()) node.parentElement = this; }
+  appendChild(node) { this.append(node); return node; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
+  querySelectorAll(selector) { return [...this.walk()].filter((node) => selector === 'button' && node.tagName === 'BUTTON'); }
+  *walk() { for (const child of this.children) { yield child; yield* child.walk(); } }
+  matches() { return false; }
+  focus() { globalThis.document.activeElement = this; }
+  contains(node) { return node === this || [...this.walk()].includes(node); }
+  getClientRects() { return [1]; }
+}
 
 test('live tile distinctly names Archive, safe Delete, and confirmed Hard Delete', async () => {
   const source = await fs.readFile(new URL('../public/js/session-retire.js', import.meta.url), 'utf8');
@@ -12,6 +30,26 @@ test('live tile distinctly names Archive, safe Delete, and confirmed Hard Delete
   assert.match(source, /Hard Delete irreversibly removes/);
   assert.match(source, /HARD DELETE \$\{name\} AND OWNED DESKS/);
   assert.match(source, /mode: 'hard_delete'/);
+});
+
+test('rendered retirement actions distinguish resumable, safe, and destructive intent', () => {
+  const beforeDocument = globalThis.document;
+  const beforeElement = globalThis.HTMLElement;
+  const body = new FakeNode('body');
+  globalThis.HTMLElement = FakeNode;
+  globalThis.document = { body, activeElement: body, createElement: (tag) => new FakeNode(tag), addEventListener() {} };
+  try {
+    retireSession('agent', 0, async () => {});
+    const buttons = [...body.walk()].filter((node) => node.tagName === 'BUTTON');
+    assert.deepEqual(buttons.map(({ textContent, className }) => ({ text: textContent, className })), [
+      { text: 'Archive', className: 'primary' },
+      { text: 'Delete', className: '' },
+      { text: 'Hard Delete', className: 'danger' },
+    ]);
+  } finally {
+    globalThis.document = beforeDocument;
+    globalThis.HTMLElement = beforeElement;
+  }
 });
 
 test('submit gate rejects duplicate clicks until success or failure restores it', async () => {
