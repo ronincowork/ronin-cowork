@@ -14,6 +14,7 @@ import {
 import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskSource, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
 import { materializeNodeModules } from '../worktree-runtime.js';
 import { withManagedTransaction } from './lifecycle-ledger.js';
+import { listSessions, sessionDir } from '../tmux.js';
 
 export async function syncthingHazard(dir: string): Promise<string> {
   let d = path.resolve(dir);
@@ -153,7 +154,20 @@ export async function syncDesk(repo: string, branch: string): Promise<DeskNotice
 
 export interface CloseOutcome { desk: DeskStatus | null; action: 'closed' | 'kept'; reason: string }
 
-export async function closeDesk(repo: string, branch: string): Promise<CloseOutcome> {
+interface CloseRuntime {
+  sessions(): Promise<Array<{ name: string }>>;
+  cwd(session: string): Promise<string>;
+}
+
+const liveRuntime: CloseRuntime = { sessions: listSessions, cwd: sessionDir };
+
+export function cwdIsInside(worktree: string, cwd: string): boolean {
+  if (!worktree || !cwd) return false;
+  const relative = path.relative(path.resolve(worktree), path.resolve(cwd));
+  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+}
+
+export async function closeDesk(repo: string, branch: string, runtime: CloseRuntime = liveRuntime): Promise<CloseOutcome> {
   const rec = await readDesk(repo, branch);
   if (!rec) return { desk: null, action: 'kept', reason: 'no desk is recorded' };
   const a = await arrangementOf(repo);
@@ -161,6 +175,14 @@ export async function closeDesk(repo: string, branch: string): Promise<CloseOutc
   if (st.dirty) return { desk: st, action: 'kept', reason: `unsaved files: ${st.dirty_files.join(', ')}` };
   const integrated = !!st.tip && !!st.line_tip && (await isAncestor(a.dir, st.tip, st.line_tip));
   if (!integrated) return { desk: st, action: 'kept', reason: `${st.ahead} commit(s) are not on ${st.line}` };
+  const inside: string[] = [];
+  for (const session of await runtime.sessions()) {
+    if (cwdIsInside(st.worktree, await runtime.cwd(session.name))) inside.push(session.name);
+  }
+  if (inside.length) {
+    const who = inside.length === 1 ? `session ${inside[0]} is` : `sessions ${inside.join(', ')} are`;
+    return { desk: st, action: 'kept', reason: `${who} running inside ${st.worktree}; notify ${inside.length === 1 ? 'it' : 'them'} to leave, then retry` };
+  }
   return withManagedTransaction({
     repo, transaction_id: `close_${randomUUID()}`, type: 'ending_inspected', result: 'started', session: rec.session, team: rec.team,
     refs: [{ name: branch, before: st.tip, after: '' }], commits: [{ role: 'desk_tip', sha: st.tip }],

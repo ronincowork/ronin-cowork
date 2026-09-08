@@ -129,13 +129,12 @@ designated lead — the receipt records who ran it — so nothing is ever tied u
 > `park`, `parkedDesks` and `recoverDesk` go; `close` off the line takes `--yes` and
 > receipts the loss; hand-off and add-owner replace recover.
 
-`closeDesk(repo, branch, {unmount})`: unsaved files → a `WIP:` commit on the desk; if the
-tip is already reachable from the line the worktree is removed, the branch deleted and the
-row removed (`deleted`); otherwise the desk is `parked` — row kept with `parked_at`, branch
-kept, worktree removed only when asked. `parkedDesks()` is the lead's list.
-`recoverDesk(repo, branch, session)` remounts a parked desk for a session — the lead's
-"reassign". `discardDesk(repo, branch)` is the one path that deletes an unintegrated tip,
-and the tool demands `--yes`.
+`closeDesk(repo, branch)` refuses dirty or unintegrated work. Before removing an eligible
+worktree it checks every live session's current directory. If a session is in the worktree
+or below it, close keeps the desk and tells the caller to notify that session to leave,
+then retry. It does not message, relocate, stop, or retry for the caller. Otherwise the
+worktree, branch, and desk row are removed. `handoffDesk` changes explicit owners without
+moving work. `discardDesk` is the explicit path for deleting an unintegrated desk.
 
 ## The queue
 
