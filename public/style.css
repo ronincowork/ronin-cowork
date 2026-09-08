@@ -6254,6 +6254,12 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 
 
 .wk-workbench-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+/* PHONE FIRST PAINT. The boot skeleton is the first frame the browser paints, before any
+   script runs. It is not a [data-workspace-view], so it must claim the ViewHost's width
+   itself: without this it shrinks to its content in the row-flex host (30px on a phone,
+   two thin slivers stacked at the left edge — the frame Glen photographed), and the
+   stacked phone shape below only fills the viewport once script replaces the frame. */
+#bootframe { flex: 1 1 auto; min-width: 0; min-height: 0; }
 .boot-workbench-layout { grid-template-columns: minmax(0, 2fr) minmax(11rem, 1fr) minmax(0, 2fr); }
 .boot-surface, .boot-selector { border: var(--edge) solid var(--define-line); border-radius: var(--radius-lg); background: var(--panel); }
 .boot-surface { height: 100%; }
