@@ -6,6 +6,7 @@
   .sws-host > .sws { flex: 1 1 auto; }
   .sws-host > :not(.sws) { font-size: var(--form-note); line-height: 1.4; }
   .sws-header { display: flex; flex: 0 0 var(--sws-header-height); align-items: flex-start; min-width: 0; block-size: var(--sws-header-height); overflow: auto; }
+  .sws-host:has(> .sws[data-open='true']) > .sws-header { display: none; }
   .sws-header::-webkit-scrollbar { display: none; }
   .sws-header > * { margin-block: 0; }
   .sws-footer[hidden] { display: none; }
