@@ -46,10 +46,15 @@ export let projectData = null; // /api/project-roots: [{name, dir, read[], provi
 // The provider catalog is not cached here: form-steps.js reads it for the one picker and
 // the Campaign's Model providers surface, fresh on every surface entry.
 
+const projectListeners = new Set();
+/** Hear the catalog change: the Workspace folders surface reloads it after every keep or exclude. */
+export function onProjects(listener) { projectListeners.add(listener); return () => projectListeners.delete(listener); }
+
 export async function loadProjects() {
   const r = await request('/api/project-roots');
   if (r.ok && Array.isArray(r.data)) projectData = r.data;
   tiles.forEach((tile) => tile.renderHome?.());
+  for (const listener of projectListeners) { try { listener(projectData); } catch (error) { console.error(error); } }
 }
 
 export let familyData = null; // /api/role-families — the shelves
