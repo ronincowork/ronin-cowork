@@ -12,13 +12,13 @@ contracts remain available, but they are not prerequisites for installing or usi
 | How do I install without disturbing existing tmux work? | [Install Ronin](install.md) |
 | How do I launch from the new Setup workbench? | [Ronin Setup](setup-workbench.md) |
 | What will the legacy `cowork_setup` route ask, and what happens after Save? | [Get started](get-started.md) |
-| How do I establish one provider without exposing credentials or changing billing by accident? | [Provider sign-in](provider-sign-in.md) |
+| Which model providers and models does Ronin offer, what does this machine have, and how do I sign one in? | [Model providers](model-providers.md) and [Provider sign-in](provider-sign-in.md) |
 
 ## Once the coworkspace is running
 
 | Question | Route |
 |---|---|
-| How do I find and arrange work? | [Workbench](workbench.md) |
+| How do I find and arrange work, and type into a session from a phone? | [Workbench](workbench.md) and [The tile](tile.md) |
 | Why are Teams or New Project unavailable? | [Ronin Setup](setup-workbench.md#activate-a-provider) |
 | How do I add or change a Workspace Folder? | [Workspace folders](project-roots.md) |
 | How do parallel Agents avoid colliding in the same files? | [Ronin Worktrees](worktrees.md) |
