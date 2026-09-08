@@ -97,9 +97,8 @@ test('a non-core replacement receives only universal actions and ordinary launch
 });
 
 test('Bare Metal starts with two rows that carry no provider or model, and three sessions use four workspaces', () => {
-  assert.deepEqual(presets.initialControls('bare_metal').sessions, [{ name: 'session_1' }, { name: 'session_2' }]);
-  assert.equal('cascadeProvider' in presets || 'eligibleProviders' in presets, false);
-  assert.equal(presets.initialControls('bare_metal').tiles, 2);
+  assert.deepEqual(presets.initialControls('bare_metal').sessions, [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }]);
+  assert.equal(presets.initialControls('bare_metal').tiles, 4);
   assert.deepEqual(presets.initialControls('ronin_team').sessions.map(({ name, team_lead }) => [name, team_lead === true]), [
     ['team_lead', true], ['agent_1', false], ['agent_2', false],
   ]);
@@ -281,4 +280,84 @@ test('the launched team page seats a remembered commons on the tab the preset ch
   assert.equal(health.seats[1].tab, 'wipeboard');
   const brief = presets.seatingPlan('morning_brief', { team: 'brief', sessions: [{ name: 'writer' }] });
   assert.equal(brief.seats[1].tab, 'cron-jobs');
+});
+
+test('a stone gate reads the runtime the Setup view keeps current, and the held warning has its own room', async () => {
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 0, providers: [], roots: [] } }),
+    runtime: () => ({ activated_count: 2, providers: [{ id: 'claude', activated: true }, { id: 'codex', activated: true }], roots: [] }),
+    loadPresetSlots: () => null,
+    launch: async () => ({ ok: false }),
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  const stones = nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'));
+  // Bare Metal needs only a provider; the shared runtime says two are activated, so the stale zero-provider read must not gate it.
+  assert.equal(stones[0].attributes['data-gated'], 'false', 'the shared runtime wins over a stale read');
+  stones[0].click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  assert.equal(launch.dataset.held, undefined);
+  const css = await readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8');
+  assert.match(css, /\.sp-warning \{ margin: var\(--space-6\) 0 var\(--space-7\);[^}]*padding: var\(--space-3\) var\(--space-5\);[^}]*font-size: var\(--text-5\); line-height: 1\.6; \}/);
+});
+
+test('a row picks its provider and model from the launch table, the New Agent form\'s own choices', () => {
+  const specs = [{ provider: 'anthropic', model: 'opus', cmd: 'claude --model opus' }, { provider: 'anthropic', model: 'sonnet', cmd: 'claude --model sonnet' }, { provider: 'openai', model: 'gpt-5.6-sol', cmd: 'codex --model gpt-5.6-sol' }];
+  assert.deepEqual(presets.launchTable(specs), { anthropic: ['opus', 'sonnet'], openai: ['gpt-5.6-sol'] });
+  assert.deepEqual(presets.launchTable(null), {});
+});
+
+test('a refused launch fails loudly: the server\'s sentence sits beside Launch and stays', async () => {
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] } }),
+    loadPresetSlots: () => null,
+    reserveLaunchTab: () => ({ close() { this.closed = true; } }),
+    launch: async () => ({ ok: false, message: 'Session "session_1" already exists.' }),
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[0].click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  const warning = nodes.find((node) => String(node.className).includes('sp-warning'));
+  assert.equal(warning.hidden, true);
+  await launch.listeners.click[0]();
+  assert.equal(warning.hidden, false);
+  assert.equal(warning.textContent, 'Session "session_1" already exists.');
+});
+
+test('a partial launch still goes to the new tab and names the missing rows beside Launch', async () => {
+  const opened = [];
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] } }),
+    loadPresetSlots: () => null,
+    reserveLaunchTab: () => ({ close() { this.closed = true; }, location: {} }),
+    launch: async () => ({ ok: true, data: { team: 'bare_metal_502', sessions: [{ name: 'session_1_502' }], refused: [{ name: 'session_4_502', message: 'At the session max (21 of 21).' }], urlView: 'team' } }),
+    launchUrl: (data) => { opened.push(data.team); return '#/team/bare_metal_502'; },
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[0].click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  const warning = nodes.find((node) => String(node.className).includes('sp-warning'));
+  await launch.listeners.click[0]();
+  assert.deepEqual(opened, ['bare_metal_502'], 'the tab still goes to the team');
+  assert.equal(warning.hidden, false);
+  assert.equal(warning.textContent, 'Launched without session_4_502: At the session max (21 of 21).');
+});
+
+test('Bare Metal and Ronin Team open on agent · team configuration · agent · agent with a narrow selector', () => {
+  for (const handle of ['bare_metal', 'ronin_team']) {
+    const plan = presets.seatingPlan(handle, { team: 'bare_metal_502', sessions: [{ name: 'session_1_502' }, { name: 'session_2_502' }, { name: 'session_3_502' }] });
+    assert.equal(plan.count, 4, handle);
+    assert.deepEqual(plan.seats, [
+      { workspace: 'workspace1', type: 'session', key: 'session_1_502' },
+      { workspace: 'workspace2', type: 'team.commons', key: 'bare_metal_502', tab: 'team-configuration' },
+      { workspace: 'workspace3', type: 'session', key: 'session_2_502' },
+      { workspace: 'workspace4', type: 'session', key: 'session_3_502' },
+    ], handle);
+    assert.deepEqual(plan.arrangement, presets.NARROW_SELECTOR, handle);
+  }
 });

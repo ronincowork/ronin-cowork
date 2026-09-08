@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { AGENTS, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { upsertProjectRoot } from './project-roots.js';
+import { peekProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { rootDir } from './resources.js';
 import { execFile as run } from './spawn-broker.js';
 import { collectBirthLines } from './sockets.js';
@@ -265,15 +265,21 @@ async function ensureRepository(dir: string, label: string, managed: boolean): P
 
 export async function ensureInstalledRoots(): Promise<Array<{ name: string; label: string; dir: string }>> {
   const installed = [];
+  const known = await peekProjectRoots();
   for (const root of INSTALLED_ROOTS) {
     const dir = path.join(rootDir('user'), root.label);
     await ensureRepository(dir, root.label, root.managed);
-    await upsertProjectRoot(root.name, {
-      dir,
-      match: root.label.toLowerCase(),
-      remit: root.remit,
-      archived: '',
-    }, { declareArrangement: false });
+    // Register once. A runtime read runs this on every call; rewriting an unchanged
+    // catalog each time is what let concurrent reads collide.
+    const current = known.find((row) => row.name === root.name);
+    if (!current || path.resolve(current.dir) !== path.resolve(dir) || current.archived) {
+      await upsertProjectRoot(root.name, {
+        dir,
+        match: root.label.toLowerCase(),
+        remit: root.remit,
+        archived: '',
+      }, { declareArrangement: false });
+    }
     installed.push({ name: root.name, label: root.label, dir });
   }
   return installed;

@@ -45,6 +45,23 @@ async function launchPersonalAssistant(plan, template, send) {
   return { ok: true, data: { team, sessions: launched.data?.name ? [{ name: launched.data.name }] : [], receipts: launched.data?.receipt ? [launched.data.receipt] : [], urlView: 'team' } };
 }
 
+/**
+ * WHAT A TEAM LAUNCH CAME TO. Rows the server refused are named with its sentence; if any
+ * row was born the team is open and the person goes there, told who is missing. Only a
+ * launch that born nobody is a failure.
+ */
+function teamOutcome(outcomes, extra = {}) {
+  const born = outcomes.filter(({ result }) => result?.ok);
+  const refused = outcomes.filter(({ result }) => !result?.ok).map(({ row, result }) => ({ name: row.name, message: result?.message || 'refused' }));
+  if (!born.length) return { ok: false, message: refused[0]?.message || 'Nothing launched.' };
+  return { ok: true, data: {
+    ...extra,
+    sessions: born.map(({ result }) => result.data?.name).filter(Boolean).map((name) => ({ name })),
+    receipts: born.map(({ result }) => result.data?.receipt).filter(Boolean),
+    refused, urlView: 'team',
+  } };
+}
+
 export async function launchPresetPlan(plan = {}, send) {
   const ask = send || request;
   const shelf = plan.template?.shelf === 'teams' ? 'teams' : 'agents';
@@ -60,6 +77,27 @@ export async function launchPresetPlan(plan = {}, send) {
     if (!launched.ok) return launched;
     const name = launched.data?.name;
     return { ok: true, data: { sessions: name ? [{ name }] : [], receipts: launched.data?.receipt ? [launched.data.receipt] : [], root: plan.inputs?.root || '', document: plan.inputs?.document || '', urlView: 'cowork' } };
+  }
+
+  // BARE METAL IS A BARE-METAL TEAM: a team named bare_metal_<code>, whose members are the
+  // native agent, bare — no Ronin birth packet, mandate or brief. One three-digit code per
+  // launch names the team and rides every row's name, so several can live together; a name
+  // still in use is refused by the server, loudly, in its words.
+  if (plan.template.name === 'bare_metal') {
+    const code = String(100 + Math.floor(Math.random() * 900));
+    const team = `bare_metal_${code}`;
+    const made = await ask('/api/team-rosters', { method: 'POST', json: {
+      name: team, title: `Bare Metal ${code}`, objective: plan.user_message || template.objective || '', project_root: plan.inputs?.root || 'ronin_lab', template: template.name,
+      // A bare-metal team launches bare: no Ronin base, no worktrees, whatever the Campaign cascades.
+      routines: { ronin_base: false, ronin_worktrees: false },
+    } });
+    if (!made.ok) return made;
+    const picks = (plan.inputs?.sessions || []).map((row) => ({
+      session_type: 'bare_metal_agent', name: `${slug(row.name) || 'session'}_${code}`, project_root: plan.inputs?.root || 'ronin_lab', instructions: plan.user_message || '',
+      ...(row.provider ? { provider: row.provider } : {}), ...(row.model ? { model: row.model } : {}),
+    }));
+    const outcomes = await launchTeamAgents(ask, team, picks);
+    return teamOutcome(outcomes, { team, root: plan.inputs?.root || 'ronin_lab' });
   }
 
   const team = unique(template.name);
@@ -89,22 +127,24 @@ export async function launchPresetPlan(plan = {}, send) {
   // loader the New Team form uses. The preset only says which rows, what they are called,
   // and the owner's starting message; nothing about provider or model rides on a row.
   const stored = Array.isArray(template.agents) ? template.agents : [];
+  // A session's name is the name in its row, nothing appended.
   const picks = configured.map((row, index) => {
+    const chosen = { ...(row.provider ? { provider: row.provider } : {}), ...(row.model ? { model: row.model } : {}) };
     const base = stored.find((agent) => slug(agent.name) === slug(row.name)) || stored[index] || stored.at(-1) || {};
     return {
-      name: unique(`${team}_${row.name || base.name || 'agent'}`),
+      name: slug(row.name || base.name) || 'agent',
       instructions: [row.instructions ?? base.instructions ?? '', plan.user_message].filter(Boolean).filter((line, at, all) => all.indexOf(line) === at).join('\n\n'),
       mandate: row.mandate || base.mandate,
       team_lead: row.team_lead === true || (row.team_lead === undefined && base.team_lead === true),
       routines_on: [...(base.routines_on || [])],
       routines_off: [...(base.routines_off || [])],
+      ...chosen,
     };
   });
   const outcomes = await launchTeamAgents(ask, team, picks);
-  const refused = outcomes.find(({ result }) => !result?.ok);
-  if (refused) return { ok: false, message: refused.result?.message || `Could not launch ${refused.row.name}.` };
-  const sessions = outcomes.map(({ result }) => result.data?.name).filter(Boolean).map((name) => ({ name }));
-  const receipts = outcomes.map(({ result }) => result.data?.receipt).filter(Boolean);
+  const settled = teamOutcome(outcomes, { team });
+  if (!settled.ok) return settled;
+  const { sessions, receipts, refused } = settled.data;
   let schedule = null;
   if (plan.template?.name === 'morning_brief') {
     const scheduled = await ask('/api/setup/morning-brief/schedules', { method: 'POST', json: {
@@ -115,7 +155,7 @@ export async function launchPresetPlan(plan = {}, send) {
     if (!scheduled.ok) return scheduled;
     schedule = scheduled.data?.schedule || null;
   }
-  return { ok: true, data: { team, sessions, receipts, schedule, document: plan.inputs?.document || '', urlView: 'team' } };
+  return { ok: true, data: { team, sessions, receipts, refused, schedule, document: plan.inputs?.document || '', urlView: 'team' } };
 }
 
 export function presetWorkspaceState(plan) {
@@ -125,7 +165,7 @@ export function presetWorkspaceState(plan) {
     if (type === 'session') return [[workspace, key]];
     return [[workspace, { type, key, ...(root ? { root } : {}), ...(path ? { path } : {}), ...(tab ? { tab } : {}), ...(doc ? { doc } : {}) }]];
   }));
-  return Object.keys(seats).length ? { count: plan.count, seats } : null;
+  return Object.keys(seats).length ? { count: plan.count, seats, ...(plan.arrangement ? { arrangement: plan.arrangement } : {}) } : null;
 }
 
 export function presetLaunchUrl(data = {}, plan = null, tab = null) {

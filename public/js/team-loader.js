@@ -19,18 +19,22 @@ export async function launchTeamAgents(request, team, rows = []) {
     for (const name of row.routines_on || []) map[name] = true;
     return Object.keys(map).length ? { routines: map } : {};
   };
-  const launch = (row) => request('/api/launch', {
-    method: 'POST',
-    json: {
+  // A BARE-METAL ROW is the native agent itself, born with no Ronin packet: the route
+  // wants its working folder and its opening words, and refuses birth material by name.
+  const chosen = (row) => ({ ...(row.provider ? { provider: row.provider } : {}), ...(row.model ? { model: row.model } : {}) });
+  const body = (row) => row.session_type === 'bare_metal_agent'
+    ? { session_type: 'bare_metal_agent', ...(team ? { team } : {}), name: row.name, project_root: row.project_root, instructions: row.instructions, ...chosen(row) }
+    : {
       session_type: 'cowork_agent',
-      team,
+      ...(team ? { team } : {}),
       team_lead: row.team_lead === true,
       name: row.name,
       instructions: row.instructions,
       mandate: row.mandate,
       ...routinesOf(row),
-    },
-  });
+      ...chosen(row),
+    };
+  const launch = (row) => request('/api/launch', { method: 'POST', json: body(row) });
 
   const ordinary = rows.filter((row) => row.team_lead !== true);
   const leads = rows.filter((row) => row.team_lead === true);
