@@ -116,9 +116,11 @@ are called, and how the new tab is seated. Bare Metal is the one exception by de
 bare-metal team, `bare_metal_<code>`, whose members are the native CLI started in Ronin Lab
 with the owner's words and no Ronin birth packet or mandate, seated side by side on that
 team's page. One three-digit code per launch names the team and rides every row's name
-(`session_1_042`), so several Bare Metals can live together. A launch the server refuses, for a name already in
-use or anything else, fails loudly: the server's sentence sits beside Launch until the next
-press, and the reserved tab closes. A stone's gate reads the same runtime the
+(`session_1_042`), so several Bare Metals can live together. A team launch the server refuses in part, for the
+session limit, a name already in use or anything else, still opens the team with whoever
+was born and says beside Launch which rows are missing and why, until the next press. Only
+a launch that born nobody closes the tab and fails, with the server's sentence in the same
+place. A stone's gate reads the same runtime the
 Model providers surface keeps current, so activating a provider unlocks the stones at once. Grokbot Morning Briefing's **When**
 asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
 time, **One time** a date and a time; the schedule is written in the Cron jobs grammar

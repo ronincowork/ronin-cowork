@@ -326,3 +326,24 @@ test('a refused launch fails loudly: the server\'s sentence sits beside Launch a
   assert.equal(warning.hidden, false);
   assert.equal(warning.textContent, 'Session "session_1" already exists.');
 });
+
+test('a partial launch still goes to the new tab and names the missing rows beside Launch', async () => {
+  const opened = [];
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] } }),
+    loadPresetSlots: () => null,
+    reserveLaunchTab: () => ({ close() { this.closed = true; }, location: {} }),
+    launch: async () => ({ ok: true, data: { team: 'bare_metal_502', sessions: [{ name: 'session_1_502' }], refused: [{ name: 'session_4_502', message: 'At the session max (21 of 21).' }], urlView: 'team' } }),
+    launchUrl: (data) => { opened.push(data.team); return '#/team/bare_metal_502'; },
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[0].click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  const warning = nodes.find((node) => String(node.className).includes('sp-warning'));
+  await launch.listeners.click[0]();
+  assert.deepEqual(opened, ['bare_metal_502'], 'the tab still goes to the team');
+  assert.equal(warning.hidden, false);
+  assert.equal(warning.textContent, 'Launched without session_4_502: At the session max (21 of 21).');
+});

@@ -45,6 +45,23 @@ async function launchPersonalAssistant(plan, template, send) {
   return { ok: true, data: { team, sessions: launched.data?.name ? [{ name: launched.data.name }] : [], receipts: launched.data?.receipt ? [launched.data.receipt] : [], urlView: 'team' } };
 }
 
+/**
+ * WHAT A TEAM LAUNCH CAME TO. Rows the server refused are named with its sentence; if any
+ * row was born the team is open and the person goes there, told who is missing. Only a
+ * launch that born nobody is a failure.
+ */
+function teamOutcome(outcomes, extra = {}) {
+  const born = outcomes.filter(({ result }) => result?.ok);
+  const refused = outcomes.filter(({ result }) => !result?.ok).map(({ row, result }) => ({ name: row.name, message: result?.message || 'refused' }));
+  if (!born.length) return { ok: false, message: refused[0]?.message || 'Nothing launched.' };
+  return { ok: true, data: {
+    ...extra,
+    sessions: born.map(({ result }) => result.data?.name).filter(Boolean).map((name) => ({ name })),
+    receipts: born.map(({ result }) => result.data?.receipt).filter(Boolean),
+    refused, urlView: 'team',
+  } };
+}
+
 export async function launchPresetPlan(plan = {}, send) {
   const ask = send || request;
   const shelf = plan.template?.shelf === 'teams' ? 'teams' : 'agents';
@@ -78,14 +95,7 @@ export async function launchPresetPlan(plan = {}, send) {
       ...(row.provider ? { provider: row.provider } : {}), ...(row.model ? { model: row.model } : {}),
     }));
     const outcomes = await launchTeamAgents(ask, team, picks);
-    const refused = outcomes.find(({ result }) => !result?.ok);
-    if (refused) return { ok: false, message: refused.result?.message || `Could not launch ${refused.row.name}.` };
-    return { ok: true, data: {
-      team,
-      sessions: outcomes.map(({ result }) => result.data?.name).filter(Boolean).map((name) => ({ name })),
-      receipts: outcomes.map(({ result }) => result.data?.receipt).filter(Boolean),
-      root: plan.inputs?.root || 'ronin_lab', urlView: 'team',
-    } };
+    return teamOutcome(outcomes, { team, root: plan.inputs?.root || 'ronin_lab' });
   }
 
   const team = unique(template.name);
@@ -130,10 +140,9 @@ export async function launchPresetPlan(plan = {}, send) {
     };
   });
   const outcomes = await launchTeamAgents(ask, team, picks);
-  const refused = outcomes.find(({ result }) => !result?.ok);
-  if (refused) return { ok: false, message: refused.result?.message || `Could not launch ${refused.row.name}.` };
-  const sessions = outcomes.map(({ result }) => result.data?.name).filter(Boolean).map((name) => ({ name }));
-  const receipts = outcomes.map(({ result }) => result.data?.receipt).filter(Boolean);
+  const settled = teamOutcome(outcomes, { team });
+  if (!settled.ok) return settled;
+  const { sessions, receipts, refused } = settled.data;
   let schedule = null;
   if (plan.template?.name === 'morning_brief') {
     const scheduled = await ask('/api/setup/morning-brief/schedules', { method: 'POST', json: {
@@ -144,7 +153,7 @@ export async function launchPresetPlan(plan = {}, send) {
     if (!scheduled.ok) return scheduled;
     schedule = scheduled.data?.schedule || null;
   }
-  return { ok: true, data: { team, sessions, receipts, schedule, document: plan.inputs?.document || '', urlView: 'team' } };
+  return { ok: true, data: { team, sessions, receipts, refused, schedule, document: plan.inputs?.document || '', urlView: 'team' } };
 }
 
 export function presetWorkspaceState(plan) {

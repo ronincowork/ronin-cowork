@@ -78,3 +78,15 @@ test('Bare Metal launches a bare-metal team: bare_metal_<code> with native agent
   }
   assert.deepEqual(births.map((body) => [body.provider, body.model]), [['anthropic', 'opus'], [undefined, undefined], [undefined, undefined]]);
 });
+
+test('a team launch the server refuses in part still opens the team and names who is missing', async () => {
+  const template = { name: 'bare_metal', label: 'Bare Metal', objective: 'Work.', agents: [] };
+  const refusing = (names) => { const inner = responder(template, []); return async (url, options = {}) => (url === '/api/launch' && names.includes(options.json.name.replace(/_\d{3}$/, ''))) ? { ok: false, message: 'At the session max (21 of 21).' } : inner(url, options); };
+  const partial = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, inputs: { sessions: [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }, { name: 'session_4' }] } }, refusing(['session_4']));
+  assert.equal(partial.ok, true, 'three were born, so the team opens');
+  assert.equal(partial.data.sessions.length, 3);
+  assert.deepEqual(partial.data.refused.map((row) => [row.name.replace(/_\d{3}$/, ''), row.message]), [['session_4', 'At the session max (21 of 21).']]);
+  const none = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, inputs: { sessions: [{ name: 'session_1' }] } }, refusing(['session_1']));
+  assert.equal(none.ok, false, 'nobody born is the only failure');
+  assert.equal(none.message, 'At the session max (21 of 21).');
+});
