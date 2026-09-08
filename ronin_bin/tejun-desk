@@ -30,7 +30,7 @@ Usage:
   tejun-desk status [<repo[:branch]>] [--assignment]
   tejun-desk sync [<repo[:branch]>]
   tejun-desk hand-in [<repo[:branch]>] [--assignment]
-  tejun-desk close [<repo[:branch]>]
+  tejun-desk close [<repo[:branch]>] [--with-session]
   tejun-desk receipts [<repo>] [--line | --id <receipt-id>]
   tejun-desk handoff <repo[:branch]> --to <session[,session]>
   tejun-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"
