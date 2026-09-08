@@ -3,7 +3,8 @@ import path from 'node:path';
 import { mergeSessionDefaults, resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './resources.js';
 import { bootFiles, ensureShelf } from './birth-readme.js';
-import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
+import { listProjectRoots, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
+import { listSessionLaunchSpecs } from './model-providers.js';
 import { readAgentsSection, readDesksSection } from './machine-state.js';
 import { storeDir } from './resources.js';
 import { findDefinition, listRoutines, routineReading } from './resource-adapters.js';
@@ -275,7 +276,7 @@ export async function resolveForm(
   const launchMode = agent ? (form.launch_mode ?? parentSeed?.seeds.launch_mode.value ?? 'live_dangerously') as LaunchMode : 'configured';
   if (launchMode === 'live_dangerously') {
     if (!spec?.liveDangerously) {
-      throw new Error('This launch command declares no `live_dangerously:` flag in the launch table, so it cannot launch Dangerously (see ronin_catalogs/PROJECT_ROOTS.md).');
+      throw new Error('This launch command declares no `live_dangerously:` flag in the provider catalog, so it cannot launch Dangerously (see ronin_catalogs/MODEL_PROVIDERS.md).');
     }
     cmd = `${cmd} ${spec.liveDangerously}`;
   }
@@ -302,8 +303,8 @@ export async function resolveForm(
   if (mcpOffWanted && !spec?.gbrainDisconnected) {
     if (askedOff) {
       throw new Error(
-        'This launch command declares no `gbrain_disconnected:` tokens in the launch table, ' +
-          'so it cannot launch with gbrain disconnected (see ronin_catalogs/PROJECT_ROOTS.md).',
+        'This launch command declares no `gbrain_disconnected:` tokens in the provider catalog, ' +
+          'so it cannot launch with gbrain disconnected (see ronin_catalogs/MODEL_PROVIDERS.md).',
       );
     }
     mcpOffWanted = false;

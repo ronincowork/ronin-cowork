@@ -160,13 +160,13 @@ only as much as the owner actually said, and let the rest load lazily:
 | The owner said | You pass | What is born on |
 |---|---|---|
 | *"give me an agent to do XYZ"* | neither field | the owner's session default — `agents.sessions.default` |
-| *"give me an Anthropic agent"* | `provider: anthropic` | that provider's preferred model in ⚙ Configuration, else its first column |
+| *"give me an Anthropic agent"* | `provider: anthropic` | that provider's preferred model in ⚙ Configuration, else its default row in the provider catalog |
 | *"open a fable five session"* | `model: fable` | that model |
 
 A behaviour states no model and biases none, so there is no layer in between and nothing
 a fork inherits about the model from the books it reads. **Never invent the
 next field down** — passing a model because the owner named a vendor is you deciding
-something they left open. A model must be a real cell from the launch table and a
+something they left open. A model must be a real cell from the provider catalog and a
 provider a real row; never a command you composed, and never both a `cmd` and either.
 
 State the resolved Team, Control and any selected behaviours in the report.

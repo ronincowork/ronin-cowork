@@ -9,10 +9,11 @@ process.env.RONIN_USER_ROOT = path.join(box, 'ronin');
 process.env.RONIN_CATALOGS_DIR = path.join(box, 'ronin', 'catalogs');
 
 const runtime = await import('../src/setup-runtime.js');
+const { measureProviders } = await import('../src/provider-summary.js');
 const { resolveLaunchDesks } = await import('../src/launch-desks.js');
 const { launchPresetPlan } = await import('../public/js/preset-launch.js');
 
-const available = [{ id: 'codex', label: 'Codex', from: 'OpenAI', get: '', parked: '', cmd: 'codex', installed: true, path: '/bin/codex' }];
+const available = [{ id: 'codex', label: 'Codex', get: '', parked: '', cmd: 'codex', installed: true, path: '/bin/codex' }];
 
 test('Presets consumes real provider lifecycle and dependency facts', async () => {
   const live = new Set<string>();
@@ -23,12 +24,12 @@ test('Presets consumes real provider lifecycle and dependency facts', async () =
     close: async (name) => { live.delete(name); },
   };
   await runtime.openProviderLogin('codex', ops, available);
-  const login = await runtime.setupRuntimeAnswer({}, ops, available, {
+  const login = await runtime.setupRuntimeAnswer({}, await measureProviders({}, { availability: available, signedIn: async () => false }), ops, {
     cowork: { release: null, commit: '', dirty: false, startedAt: '' },
     services: { parts: ['gbrain'], loaded: ['gbrain'], parked: [], installed: true, restart_needed: false, activated: true, stage: 'active', switched_on: true },
     routines: [],
   });
-  assert.deepEqual(login.providers[0]?.attachment, { type: 'session', key: 'provider_setup_codex', team: 'provider_setup', temporary: true });
+  assert.deepEqual(login.providers.find((provider) => provider.id === 'codex')?.attachment, { type: 'session', key: 'provider_setup_codex', team: 'provider_setup', temporary: true });
   assert.deepEqual(login.gbrain, { installed: true, active: true });
   assert.equal(login.services.active, true);
   await runtime.completeProviderLogin('codex', ops, () => '2026-09-05T15:00:00.000Z', async (provider, at) => { activated.push([provider, at]); });

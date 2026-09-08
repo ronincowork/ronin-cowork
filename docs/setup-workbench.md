@@ -38,8 +38,10 @@ count, what is shown, the layout, or a width. The Setup / Settings island is unc
 
 ## Activate a provider
 
-**Model providers** shows one stone per provider in the runtime catalog, each wearing a
-short measured state: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
+**Model providers** shows one stone per CLI the registry knows, each wearing a
+short measured state. Opening this surface is what measures: it probes the machine and
+writes the Campaign's dated provider summary, which every other surface then reads
+(`docs/model-providers.md`, *The measured summary*). The states: **Activated**, **Sign-in open**, **Needs sign-in**, **Not
 installed**, or **Manual install**. Selecting a stone opens that provider's detail beside
 the rail: the same three numbered steps for every provider, in this order. A finished step
 wears a check and no control, the next unmet step wears the kaki mark and owns the one
@@ -50,7 +52,7 @@ under the steps.
 |---|---|---|
 | **Install** | whether the CLI is found on this machine | **Install** runs the catalog's own install command; a provider Ronin cannot install safely gets an **Install guide** link instead |
 | **Authenticate** | whether the provider is signed in here: its own credential file is on this machine, or a sign-in was recorded through **Done** | **Authenticate** opens the provider's native sign-in as a temporary headerless tile that takes most of this workspace; **Done** records it, **Close** leaves things as they were |
-| **Ready** | the resulting activation, which is what unlocks Teams and New Project | none; it is the measured result |
+| **Ready** | the resulting activation, which is what unlocks Teams and New Project: installed, signed in or recorded, and holding at least one model in the provider catalog | none; it is the measured result |
 
 Ronin reads only that a credential file exists (for example Claude Code's
 `~/.claude/.credentials.json` or Codex's `~/.codex/auth.json`); it never reads the
@@ -123,8 +125,8 @@ centre selector kept narrow. One three-digit code per launch names the team and 
 session limit, a name already in use or anything else, still opens the team with whoever
 was born and says beside Launch which rows are missing and why, until the next press. Only
 a launch that born nobody closes the tab and fails, with the server's sentence in the same
-place. A stone's gate reads the same runtime the
-Model providers surface keeps current, so activating a provider unlocks the stones at once. Grokbot Morning Briefing's **When**
+place. A stone's gate reads the Campaign's provider summary, which the
+Model providers surface rewrites on every visit, Done and Close, so activating a provider unlocks the stones at once. Grokbot Morning Briefing's **When**
 asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
 time, **One time** a date and a time; the schedule is written in the Cron jobs grammar
 (`daily 08:00`, `weekly mon 08:00`, `once 2026-09-08 08:00`). A role's kick-off message is

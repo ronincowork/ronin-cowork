@@ -13,8 +13,8 @@
  * `agents.sessions.by_provider.<provider>`, and `resolveForm` reads it for a launch that
  * names a provider and no model. This file is that path, end to end.
  *
- * The shipped launch table is used deliberately (`ronin_catalogs/PROJECT_ROOTS.md`):
- * "anthropic's first column" has to mean the real table, or the fallback is untested.
+ * The shipped provider catalog is used deliberately (`ronin_catalogs/MODEL_PROVIDERS.md`):
+ * "anthropic's default row" has to mean the real catalog, or the fallback is untested.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -129,13 +129,13 @@ test("the owner's scenario: default is OpenAI, the launch says anthropic, and it
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]);
 });
 
-test('a provider with no preference set falls back to its first column in the launch table', async () => {
+test('a provider with no preference set falls back to its default row in the provider catalog', async () => {
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-terra' }, by_provider: {} });
-  // Anthropic's first column in ronin_catalogs/PROJECT_ROOTS.md is `opus`. The fallback
+  // Anthropic's row marked `default` in ronin_catalogs/MODEL_PROVIDERS.md is `opus`. The fallback
   // is what makes the setting optional rather than a thing you must fill in before the
   // feature works at all.
   const r = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(r.cmd.startsWith('claude --model opus'), `expected the first column, got "${r.cmd}"`);
+  assert.ok(r.cmd.startsWith('claude --model opus'), `expected the catalog default, got "${r.cmd}"`);
   // Nobody stated the model, so it reads as the system's answer, not the owner's.
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'system', source: 'src/spawn.ts' }]);
   // An explicit null is the same as absent: the owner cleared the row, they did not

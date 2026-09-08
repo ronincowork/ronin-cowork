@@ -1,9 +1,9 @@
 # Model providers
 
-Ronin launches agents from one provider/model catalog:
-`ronin_catalogs/PROJECT_ROOTS.md`. Each populated table cell is a
-`session_launch_spec` — `{provider, model, cmd}` — and the ＋ New session picker is a
-direct rendering of those cells.
+Ronin launches agents from **one provider catalog**: `ronin_catalogs/MODEL_PROVIDERS.md`.
+It is the only place a provider or a model is named. Every picker, every launch and every
+provider fact on screen reads from it, or from the Campaign's **measured provider
+summary**, which says what this machine has and when that was measured.
 
 This is intentionally data, not provider code. Adding a provider or model must not add a
 route, UI branch, parser branch, or spawn branch.
@@ -13,16 +13,60 @@ Provider setup has three records with deliberately different contents:
 | Record | Holds |
 |---|---|
 | this document | the provider/model extension contract |
-| `ronin_catalogs/PROJECT_ROOTS.md` | public model IDs and complete launch commands |
+| `ronin_catalogs/MODEL_PROVIDERS.md` | every provider and model: tier, cost, what it is good at and not, the complete launch command |
 | `ronin_sops/secrets.md` | how the owner supplies and audits the credential that pays |
 
 Account identity is handled by `ronin_sops/accounts.md`. Secret values never cross into
-this document or the launch catalog.
+this document or the catalog.
+
+## The catalog
+
+One `### <Vendor>` section per provider. The section's fields:
+
+| Field | Meaning |
+|---|---|
+| `provider` | the vendor id a launch names (`anthropic`, `openai`, `google`, `xai`, `nous`) and the key of `agents.sessions.by_provider` |
+| `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, `gemini`, `grok`, `hermes`) |
+| `gbrain_disconnected` | the CLI's flag for a launch with no MCP servers; a provider without one cannot launch disconnected |
+| `live_dangerously` | the CLI's additive flag for the Dangerously launch mode; a provider without one refuses that mode |
+
+The `provider` and `cli` fields are the join between the two things Ronin knows about a
+provider: the catalog (whose it is, what it offers) and the CLI registry (how it installs,
+resumes and is recognised in a tile). The join lives in this data and nowhere else — no
+command-word match, no map in a client.
+
+Then a table, one row per model, in the order the picker offers them:
+
+| Column | Meaning |
+|---|---|
+| `model` | the provider's real model id, passed to the CLI unchanged — never a euphemism |
+| `tier` | **light** · **standard** · **frontier**: the vendor's own cost and capability band |
+| `default` | `yes` on the one row a launch naming this provider and no model gets when ⚙ Configuration holds no preference for it; the first row when no row says so |
+| `cost` | the public list price per million tokens, input · output, with the month it was read in parentheses — a dated reading, never a contract |
+| `good at` · `not good at` | one line each, from the vendor's positioning and the public record |
+| `launch` | the complete interactive command for that model: the `session_launch_spec` cell |
+
+A section may spread the columns over two tables (facts in one, `launch` in another) or
+keep one wide table; rows are joined by model id and the first table sets the order. A row
+without a `launch` cell is a name in a list, not a launchable spec, and `npm run verify`
+refuses it. `src/model-providers.ts` parses this shape and nothing else does.
+
+**Shadowing.** The shipped file is stock and an upgrade replaces it. A copy at
+`$(ronin-store catalogs)/MODEL_PROVIDERS.md` is the catalog for that machine, whole —
+this is how the owner keeps names and prices fresh without a code release, and how a
+private provider stays private. `docs/shadowing.md` has the rule.
+
+**Tiers and prices are readings.** Each cost carries the month it was read; a stale
+reading is shown dated, not silently trusted and not guessed. The Google, xAI and Nous
+sections are written from their vendors' CLI references and price lists and have not yet
+been launched end to end through Ronin; the first real launch of each cell is its proof,
+per the checklist below.
 
 ## One command registry
 
 `src/agents.ts` is the single executable registry for agent-provider CLI syntax. A route,
-installer, archive lifecycle, or UI must not spell a provider command itself. Each row owns:
+installer, archive lifecycle, or UI must not spell a provider command itself. It holds
+CLI facts only — the vendor's name and its models are the catalog's. Each row owns:
 
 | Field | Command contract |
 |---|---|
@@ -30,6 +74,7 @@ installer, archive lifecycle, or UI must not spell a provider command itself. Ea
 | `operations.update` | Either a package-manager shell line or argv for the installed CLI's native updater. |
 | `operations.version` | Args used to read the installed CLI version. |
 | `cmd` | Executable name resolved through the owner's login shell. |
+| `credentials` | The CLI's own credential files under the home directory; Ronin reads only that one exists. |
 | `initial` | Whether a new interactive launch accepts the brief positionally. |
 | `operations.session.newIdFlag` | Optional flag for a Ronin-minted new conversation UUID. |
 | `operations.session.resume` | Arguments before the provider conversation UUID. |
@@ -42,11 +87,12 @@ Current verified lifecycle syntax:
 | Claude Code | `claude --session-id <uuid> …` | `claude --resume <uuid>` | yes; exact legacy fallback also exists |
 | Codex | discovered from matching open rollout + writer-lock FDs | `codex resume <uuid>` | yes |
 | Gemini CLI | CLI-managed UUID | `gemini --resume <uuid>` | command verified; identity discovery not yet integrated, so no |
-| Grok CLI | not verified | not verified | no |
+| Grok Build | not verified | not verified | no |
 | Hermes | not verified | not verified | no |
 
 Upstream command references used for these rows: [Claude CLI and update reference](https://code.claude.com/docs/en/cli-reference),
 [Codex CLI repository](https://github.com/openai/codex), [Gemini CLI reference](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/cli-reference.md),
+[Grok Build overview](https://docs.x.ai/build/overview)
 and [Hermes CLI reference](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md).
 They are evidence for maintainers; they are not runtime inputs. Runtime consumers read
 `AGENTS[].operations` only.
@@ -56,6 +102,34 @@ stopping tmux. Adding support means verifying the installed CLI's own help, loca
 exact current-session identity without ambiguity, and proving a real resume journey; then
 change its one registry row and this table together. Do not infer syntax from another
 provider.
+
+## The measured summary
+
+What this machine *has* is measured, not derived on every read. The Campaign record
+(`campaigns.<id>.providers` in machine settings) keeps one dated summary:
+
+| Field | Meaning |
+|---|---|
+| `measured_at` | when the machine was last asked |
+| `installed` | CLI ids found on the login-shell PATH, with `paths` saying where |
+| `signed_in` | CLI ids whose own credential file is on this machine — presence only, never read |
+| `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, and holding at least one model in the catalog |
+| `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
+
+`src/provider-summary.ts` measures and records it. It is written:
+
+- at Ronin start;
+- after **Done** and after **Close** on the Setup Model providers surface (a sign-in
+  closed without Done may still have left a credential file);
+- whenever the Setup **Model providers** surface is opened — that surface, and only that
+  surface, probes: `POST /api/setup/providers/measure`.
+
+Everything else reads the record through `GET /api/setup/runtime`: Ronin Home's three
+blocks, the Presets gates, the gbrain next step and the selector summaries. A machine that
+has never been measured is measured once on the first read, not guessed. A stale summary
+shows its date. Agent installs run in a tile with no completion hook in the server, so a
+freshly installed CLI shows on the next visit to Model providers or the next Ronin start;
+a count that lags an install by that much is the measurement, not a bug.
 
 ## Provider and agent are different axes
 
@@ -72,23 +146,24 @@ every terminal agent behaves like Claude.
 
 | Part | Meaning |
 |---|---|
-| provider | The service/CLI identity shown before the dot in the picker |
-| model | The provider's real model ID, taken from a column heading |
-| cmd | The complete interactive agent command stored in that cell |
-| column order | The order the picker offers that provider's models in, and the fallback for a provider whose preferred model is unset in ⚙ Configuration |
-| first model column | Not a stored default. It answers only when `agents.sessions.by_provider.<provider>` is unset |
+| provider | the vendor id shown before the dot in the picker; the section's `provider` field |
+| cli | the registry row that serves it; the section's `cli` field |
+| model | the provider's real model id, from the row's `model` column |
+| cmd | the complete interactive agent command in the row's `launch` cell |
+| row order | the order the picker offers that provider's models in |
+| default | the marked row, else the first: what answers when `agents.sessions.by_provider.<provider>` is unset. Not a stored default |
 
-The heading and command must agree. For example, `openai · gpt-5.6-terra` resolves to a
-Codex command carrying `--model gpt-5.6-terra`; it must never resolve to bare `codex` and
-inherit an unseen local default. A provider also declares its additive
-`live_dangerously` flag. The `configured` launch mode leaves the cell command unchanged;
-`live_dangerously` appends that flag for this launch and refuses when none is declared.
+The model id and the command must agree: `openai · gpt-5.6-terra` resolves to a Codex
+command carrying `--model gpt-5.6-terra`; it must never resolve to bare `codex` and
+inherit an unseen local default. A provider also declares its additive `live_dangerously`
+flag. The `configured` launch mode leaves the cell command unchanged; `live_dangerously`
+appends that flag for this launch and refuses when none is declared.
 
 The launch path does no provider interpretation, but it does adapt to the agent's terminal
 interface after starting the command:
 
 ```text
-PROJECT_ROOTS.md cell
+MODEL_PROVIDERS.md row
   → GET /api/session-launch-specs
   → ＋ New session picker
   → POST /api/launch { cmd, launch_mode }
@@ -130,39 +205,50 @@ discard the owner's brief.
 An OpenAI-compatible provider using an already-supported Codex profile inherits this
 contract and normally needs no source change. A provider's native CLI does not: capture
 its real startup, trust dialog, empty prompt, typed prompt and working screen; add those
-fixtures and the smallest corresponding patterns before adding its launch-table row.
+fixtures and the smallest corresponding patterns before adding its catalog section.
 
 ## Adding a native provider
 
-Give a provider its own subsection and Markdown table beside Anthropic and OpenAI in
-`ronin_catalogs/PROJECT_ROOTS.md`. Use the provider's real model IDs as headings and a
-complete command in each cell:
+Give a provider its own section in `ronin_catalogs/MODEL_PROVIDERS.md` (or in your shadow
+copy). Name its vendor id and the registry row that serves it, then one row per model with
+the provider's real model ids and a complete command in each `launch` cell:
 
 ```markdown
 ### Example
 
-| provider | model-a | model-b |
-|---|---|---|
-| `example` | `example-agent --model model-a` | `example-agent --model model-b` |
+- **provider:** `example`
+- **cli:** `example`
+- **live_dangerously:** `--yes`
+
+| model | tier | default | cost | good at | not good at | launch |
+|---|---|---|---|---|---|---|
+| `model-a` | standard | yes | $1 in · $4 out per M tokens (2026-09) | everyday work | deep reasoning | `example-agent --model model-a` |
+| `model-b` | light | | $0.20 in · $1 out per M tokens (2026-09) | bulk and speed | large refactors | `example-agent --model model-b` |
 ```
 
 The command must start an interactive coding agent in the current directory and remain
 alive to receive Ronin's opening brief. A raw HTTP client or one-shot completion command
-is not a session agent.
+is not a session agent. A new CLI also needs its registry row in `src/agents.ts`; the
+catalog's `cli` must name an existing row, and `npm run verify` checks that it does.
 
 ## Adding an OpenAI-compatible provider
 
 Protocol compatibility does not make the provider `openai`. Give DigitalOcean, Hugging
-Face, or another service its own provider name so the picker states who receives the
-request and whose account pays for it.
+Face, or another service its own section so the picker states who receives the request
+and whose account pays for it.
 
 When Codex is the interactive client, keep endpoint/authentication configuration in a
-named Codex profile and put only the profile plus model selection in the launch table:
+named Codex profile and put only the profile plus model selection in the launch cells:
 
 ```markdown
-| provider | vendor/model-a | vendor/model-b |
-|---|---|---|
-| `example` | `codex --profile example --model vendor/model-a` | `codex --profile example --model vendor/model-b` |
+### Example
+
+- **provider:** `example`
+- **cli:** `codex`
+
+| model | tier | default | cost | good at | not good at | launch |
+|---|---|---|---|---|---|---|
+| `vendor/model-a` | standard | yes | … (2026-09) | … | … | `codex --profile example --model vendor/model-a` |
 ```
 
 The profile owns the compatible endpoint and protocol settings. Its credential comes
@@ -170,7 +256,7 @@ from an environment variable or the provider's supported login store, following
 `ronin_sops/secrets.md`. Neither the secret nor its value belongs in this repository, the
 catalog, a project_root, or a launch command.
 
-OpenAI-compatible is a claim to verify, not a blanket guarantee. Before adding cells,
+OpenAI-compatible is a claim to verify, not a blanket guarantee. Before adding rows,
 prove that the provider supports the API shape the current Codex CLI uses, streaming,
 tool calls, and the chosen model IDs. Then launch one real session through Ronin and
 confirm that the tile reaches a prompt and receives the complete built brief.
@@ -179,28 +265,33 @@ confirm that the tile reaches a prompt and receives the complete built brief.
 
 - **DigitalOcean Gradient AI** documents `https://inference.do-ai.run` as its serverless
   inference base and explicitly describes Codex and other coding agents as supported
-  clients. Its model access key stays outside Ronin. Add a `digitalocean` table only after
-  a named Codex profile and at least one exact model ID have been exercised end to end.
+  clients. Its model access key stays outside Ronin. Add a `digitalocean` section only
+  after a named Codex profile and at least one exact model ID have been exercised end to end.
 - **Hugging Face Inference Providers** documents an OpenAI-compatible chat-completions
   endpoint at `https://router.huggingface.co/v1` and model IDs such as
   `openai/gpt-oss-120b:cerebras`. Its compatibility is currently described for chat
   completions, so do not assume it satisfies Codex's full agent/tool protocol; prove that
-  with the installed CLI before adding a `huggingface` table.
+  with the installed CLI before adding a `huggingface` section.
 
-These are examples, not stock launch entries. A provider appears in the picker only when
-its commands are known to launch successfully and its setup can be stated without putting
-a credential in the shipped catalog.
+These are examples, not stock catalog entries. A provider's rows are offered in the
+picker whether or not this machine can launch them — the single picker says beside each
+what this machine has — and its setup must be stateable without putting a credential in
+the shipped catalog.
 
 ## Addition checklist
 
-1. Verify the provider's current first-party API and model documentation.
+1. Verify the provider's current first-party API, model and price documentation; date the
+   cost reading.
 2. Decide whether this is a new provider profile for a supported agent CLI or a new agent
    terminal interface.
 3. Configure and test the CLI/profile outside Ronin; keep credentials out of the repo.
-4. For a new agent CLI, capture and test every new-session state in the contract above.
-5. Add one provider subsection and one table row; use real model IDs as columns.
-6. Put the desired default first and make permission/sandbox policy explicit in the cell.
+4. For a new agent CLI, capture and test every new-session state in the contract above,
+   and add its registry row to `src/agents.ts`.
+5. Add one provider section with its `provider` and `cli` fields and one row per model,
+   with real model ids; mark the default row; fill tier, cost, good at and not good at.
+6. Make permission/sandbox policy explicit in the launch cell and declare the
+   `live_dangerously` and `gbrain_disconnected` flags the CLI has.
 7. Run `node scripts/check-tests.mjs`, `npx tsx scripts/check-catalogs.ts`, and
    `npm run verify`.
-8. Launch every new cell through ＋ New session. Confirm the receipt's command, the agent
+8. Launch every new row through ＋ New session. Confirm the receipt's command, the agent
    and model visible in the tile, and the complete startup request received by the agent.

@@ -1,4 +1,4 @@
-import type { SessionLaunchSpec } from './project-roots.js';
+import { providerDefault, type SessionLaunchSpec } from './model-providers.js';
 import { defaultAgentCommand } from './agents.js';
 
 export interface SessionsDefaults {
@@ -65,7 +65,7 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
   if (provider) {
     within = specs.filter((s) => s.provider === provider);
     if (!within.length) {
-      throw new Error(`Unknown provider "${provider}" — this box's launch table offers: ${offer([...new Set(specs.map((s) => s.provider))])}.`);
+      throw new Error(`Unknown provider "${provider}" — this box's provider catalog offers: ${offer([...new Set(specs.map((s) => s.provider))])}.`);
     }
   }
 
@@ -73,7 +73,7 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
     const named = (within.find((s) => s.model === model && s.provider === dflt?.provider)
       ?? within.find((s) => s.model === model))?.cmd;
     if (!named) {
-      const whose = provider ? `${provider} offers` : "this box's launch table offers";
+      const whose = provider ? `${provider} offers` : "this box's provider catalog offers";
       throw new Error(`Unknown model "${model}" — ${whose}: ${offer([...new Set(within.map((s) => s.model))])}.`);
     }
     return { cmd: named, source: 'explicit_launch' };
@@ -83,7 +83,7 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
     const preferred = req.sessions?.by_provider?.[provider] ?? '';
     const chosen = preferred ? within.find((s) => s.model === preferred)?.cmd : undefined;
     if (chosen) return { cmd: chosen, source: 'settei_provider' };
-    return { cmd: within[0]!.cmd, source: 'system' };
+    return { cmd: providerDefault(within, provider)!.cmd, source: 'system' };
   }
 
   const installed = dflt?.provider && dflt?.model

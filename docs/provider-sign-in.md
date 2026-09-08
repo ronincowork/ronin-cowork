@@ -18,17 +18,20 @@ done
 ```
 
 This proves only whether a CLI is found. Ronin deliberately does not treat installation as
-authentication. The stock launch catalog currently offers Anthropic through Claude Code
-and OpenAI through Codex; Configuration may list additional Agent CLIs whose provider/model
-launch support or authentication evidence is incomplete.
+authentication. The provider catalog (`ronin_catalogs/MODEL_PROVIDERS.md`) lists every
+provider and model Ronin offers; beside each, Ronin Setup shows what this machine has. The
+Google, xAI and Nous rows are written from their vendors' CLI references and have not yet
+been launched end to end through Ronin.
 
 An installed provider whose own credential file is on this machine (Claude Code's
 `~/.claude/.credentials.json`, Codex's `~/.codex/auth.json`, Gemini CLI's
-`~/.gemini/oauth_creds.json`) shows as **Signed in**; Ronin reads only that the file
-exists. Otherwise **Authenticate** starts a temporary native setup session in a tile. The
-owner completes any credential, billing, device-login, or trust step there. **Done**
-records activation and closes the session; **Close** closes without activation. Ronin
-does not continuously recheck the native account afterward.
+`~/.gemini/oauth_creds.json`, Grok Build's `~/.grok/auth.json`) shows as **Signed in**; Ronin
+reads only that the file exists. Otherwise **Authenticate** starts a temporary native setup
+session in a tile. The owner completes any credential, billing, device-login, or trust step
+there. **Done** records activation and closes the session; **Close** closes without
+activation. Both measure the machine again and write the Campaign's provider summary.
+Ronin does not continuously recheck the native account afterward: the summary is dated,
+and the Model providers surface measures again whenever it is opened.
 
 ## Choose billing before login
 
@@ -84,9 +87,8 @@ launch request owner-controlled authorization.
 
 ## Other Agent CLIs
 
-Gemini CLI, Grok CLI, and Hermes may appear in the Agent registry, but the stock
-provider/model launch table and safe authentication evidence are not equivalent to that
-registry. Do not invent a sign-in command or normalize one provider's status output into
+Gemini CLI, Grok Build, and Hermes have rows in the provider catalog and rows in the Agent
+registry, but a catalog row and safe authentication evidence are not the same thing. Do not invent a sign-in command or normalize one provider's status output into
 another's. Follow current first-party CLI instructions, keep credentials with the owner,
 and report unsupported or unknowable states plainly. Hermes currently has no safe automatic
 installer in Ronin.

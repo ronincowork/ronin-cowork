@@ -101,15 +101,17 @@ test('provider discovery is catalog-driven and a keyed surface resolves only its
 test('native login mounts only the attachment published by the real setup runtime', async () => {
   const { mountProviderAttachment } = await import('../public/js/setup-provider-state.js');
   const { setupRuntimeAnswer } = await import('../src/setup-runtime.js');
+  const { measureProviders } = await import('../src/provider-summary.js');
   const calls: unknown[] = [];
   const environment = { mountProviderSetupSession: (input: unknown) => { calls.push(input); return { destroy() {} }; } };
   const host = {};
   const availability = [{
-    id: 'claude', label: 'Claude Code', from: 'Anthropic', get: '', parked: '', cmd: 'claude', installed: true, path: '/bin/claude',
+    id: 'claude', label: 'Claude Code', get: '', parked: '', cmd: 'claude', installed: true, path: '/bin/claude',
   }];
-  const closed = await setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => false }, availability);
+  const measured = await measureProviders({}, { availability, signedIn: async () => false });
+  const closed = await setupRuntimeAnswer({}, measured, { exists: async () => false });
   assert.equal(mountProviderAttachment(environment, host, closed.providers[0], 'workspace1', () => {}), null);
-  const open = await setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude', signedIn: async () => false }, availability);
+  const open = await setupRuntimeAnswer({}, measured, { exists: async (name) => name === 'provider_setup_claude' });
   const mounted = mountProviderAttachment(environment, host, open.providers[0], 'workspace1', () => {});
   assert.ok(mounted);
   assert.equal(calls.length, 1);

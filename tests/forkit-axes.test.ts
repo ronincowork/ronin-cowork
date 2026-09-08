@@ -107,10 +107,10 @@ test('forkit teaches all three ways to ask, and silence is the first of them', a
   assert.match(text, /`provider`, `model`/, 'both are parameters');
   assert.match(text, /neither\s+uses the Campaign's Agent defaults, then the install defaults/i, 'and silence is the default');
   assert.match(text, /provider: anthropic/, 'naming a vendor alone is a documented way to ask');
-  assert.match(text, /that provider's preferred model in ⚙ Configuration, else its first column/i);
+  assert.match(text, /that provider's preferred model in ⚙ Configuration, else its default row in the provider catalog/i);
   assert.match(text, /A behaviour states no model and biases none/i);
   assert.match(text, /Never invent the\s+next field down/i, 'a vendor is not permission to pick a model');
-  assert.match(text, /real cell from the launch table/i, 'never a composed command');
+  assert.match(text, /real cell from the provider catalog/i, 'never a composed command');
 });
 
 test('a fork keeps behaviour as birth reading, not a live mark', async () => {

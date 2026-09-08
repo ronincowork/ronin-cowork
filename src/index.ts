@@ -37,6 +37,7 @@ import { registerServicesActivation, resumeInstallWatch } from './routes/service
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
+import { measureAndRecordProviders } from './provider-summary.js';
 import { migrateCampaignScope } from './campaign-scope.js';
 import { stampFreshInstall } from './machine-state.js';
 import { registerUpdate } from './routes/update-api.js';
@@ -217,6 +218,7 @@ startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through t
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
 void stampFreshInstall();
 if (isEntryPoint) void ensureInstalledRoots().catch((error) => console.error(`[setup] installed roots: ${(error as Error).message}`));
+if (isEntryPoint) void measureAndRecordProviders().catch((error) => console.error(`[setup] provider summary: ${(error as Error).message}`)); // the Campaign's dated provider facts, measured once at start
 
 void ensureInitialCampaign()
   .then(() => migrateCampaignScope())
