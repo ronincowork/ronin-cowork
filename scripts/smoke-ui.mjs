@@ -650,9 +650,14 @@ async function checkJourneys(page, label, jsErrors) {
 
 async function runPhonePass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
+  // The five registry rows as GET /api/setup/runtime answers them: id is the CLI id the
+  // Model providers surface joins the catalog on (its `cli` field), never the vendor id.
   const providerRows = [
-    { id: 'anthropic', label: 'Claude Code', state: 'activated', installed: true, activated: true },
-    { id: 'openai', label: 'Codex', state: 'activated', installed: true, activated: true },
+    { id: 'claude', label: 'Claude Code', from: 'Anthropic', provider: 'anthropic', installed: true, signed_in: true, activated: true, state: 'activated' },
+    { id: 'codex', label: 'Codex', from: 'OpenAI', provider: 'openai', installed: true, signed_in: true, activated: true, state: 'activated' },
+    { id: 'gemini', label: 'Gemini CLI', from: 'Google', provider: 'google', installed: true, signed_in: false, activated: false, state: 'installed' },
+    { id: 'grok', label: 'Grok CLI', from: 'xAI', provider: 'xai', installed: false, installable: true, signed_in: false, activated: false, state: 'installable' },
+    { id: 'hermes', label: 'Hermes', from: 'Nous Research', provider: 'nous', installed: false, installable: false, signed_in: false, activated: false, state: 'absent' },
   ];
   const runtimeBody = JSON.stringify({ activated_count: 2, activated_band: 'two_plus', providers: providerRows, roots: [], gbrain: { active: false }, services: { active: false } });
   await page.route('**/api/setup/runtime', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: runtimeBody }));
