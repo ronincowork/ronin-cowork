@@ -42,6 +42,7 @@ export async function paneMouseState(name: string): Promise<PaneMouseState> {
 export type TileInputAction = 'write' | 'drop' | 'enter-scroll-up' | 'scroll-up' | 'scroll-down' | 'cancel';
 
 const WHEEL = /^\x1b\[<(6[45]);\d+;\d+M$/;
+const MOUSE_RELEASE = /^\x1b\[<\d+;\d+;\d+m$/;
 const NAVIGATION = /^\x1b\[(?:A|B|C|D|5~|6~)$/;
 
 /** What the tile does with one input message, given the shared pane's state. Pure. */
@@ -54,6 +55,9 @@ export function tileInputAction(state: PaneMouseState, data: string): TileInputA
     return up ? 'enter-scroll-up' : 'write';
   }
   if (!state.inMode) return 'write';
+  // tmux may have entered copy mode on the preceding MouseDrag1Pane. The matching
+  // release must reach it so MouseDragEnd1Pane can finish and cancel that mode.
+  if (MOUSE_RELEASE.test(data)) return 'write';
   // Scrolled up: Escape leaves, the navigation keys move, and everything else is quiet so
   // a tile cannot invoke the server owner's copy-mode bindings (jump, search, goto…).
   if (data === '\x1b') return 'cancel';

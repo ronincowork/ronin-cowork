@@ -12,11 +12,14 @@ test('full Secondary DA response takes only the protocol channel, without byte f
   const query = '\x1b[>c';
   const da = '\x1b[>0;276;0c';
   const term = {
+    parser: { registerCsiHandler: (id, fn) => { listeners[`csi:${id.prefix ?? ''}${id.final}`] = fn; } },
     _core: { coreService: { onUserInput: (fn) => { listeners.user = fn; } } },
     onData: (fn) => { listeners.data = fn; },
     write: (data) => { assert.equal(data, query); listeners.data(da); },
   };
   wireTerminalInput(term, (data) => user.push(data), (data) => protocol.push(data));
+  assert.equal(listeners['csi:c']([]), true);
+  assert.equal(listeners['csi:>c']([]), true);
   term.write(query);
   assert.deepEqual(protocol, [da]);
   assert.deepEqual(user, []);
@@ -24,6 +27,18 @@ test('full Secondary DA response takes only the protocol channel, without byte f
   listeners.user();
   listeners.data(da); // the same bytes deliberately typed/pasted are still user input
   assert.deepEqual(user, [da]);
+});
+
+test('missing private xterm provenance degrades safely after public DA suppression', () => {
+  const handlers = [];
+  let onData;
+  wireTerminalInput({
+    parser: { registerCsiHandler: (id, fn) => handlers.push([id, fn]) },
+    onData: (fn) => { onData = fn; },
+  }, (data) => handlers.push(['user', data]), () => assert.fail('fallback cannot claim protocol provenance'));
+  assert.equal(handlers.length, 2);
+  assert.doesNotThrow(() => onData('typed'));
+  assert.deepEqual(handlers[2], ['user', 'typed']);
 });
 
 test('router resets provenance for every emission', () => {
@@ -66,4 +81,10 @@ test('intentional terminal wheel input keeps the existing scrollback actions byt
   assert.equal(tileInputAction({ inMode: false, appWantsMouse: false }, wheelUp), 'enter-scroll-up');
   assert.equal(tileInputAction({ inMode: true, appWantsMouse: false }, wheelUp), 'scroll-up');
   assert.equal(tileInputAction({ inMode: true, appWantsMouse: false }, '\x1b'), 'cancel');
+});
+
+test('mouse release passes through copy mode while typing remains quiet', () => {
+  const scrolled = { inMode: true, appWantsMouse: false };
+  assert.equal(tileInputAction(scrolled, '\x1b[<0;2;1m'), 'write');
+  assert.equal(tileInputAction(scrolled, 'hello'), 'drop');
 });

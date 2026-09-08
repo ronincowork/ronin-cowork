@@ -80,13 +80,18 @@ the start-only config rewrites no key table, and that the tile's commands leave 
 byte-identical.
 
 xterm has two input owners behind one public `onData` event: human keyboard/paste/mouse
-input and terminal-generated protocol replies. Ronin listens to xterm core's explicit
-`onUserInput` provenance signal and gives those owners separate websocket messages.
-Person input (`t:i`) keeps the pane-state and DVR rules. Protocol replies (`t:p`) answer
-the attached PTY directly. For example, xterm's Secondary Device Attributes reply
-`ESC [ > 0;276;0c` can therefore never be parked as composer text or classified as a
-person's scroll/key action. This is provenance routing, not filtering terminal-looking
-text: deliberately typing or pasting the same bytes remains person input.
+input and terminal-generated protocol replies. Ronin keeps the owners separate when the
+pinned xterm provenance signal is present: person input (`t:i`) retains the pane-state and
+DVR rules, while other terminal replies (`t:p`) answer the attached PTY directly. That
+private signal is an optimization, not a boot dependency; a future xterm without it still
+opens the tile and treats public `onData` as person input.
+
+Device Attributes need a stronger timing guarantee. tmux accepts DA answers for only five
+seconds after attach, but a hidden browser may not parse the query until later. The server
+therefore recognizes tmux's output-side DA1/DA2 queries and answers them immediately beside
+the PTY. Public xterm CSI handlers consume the same queries in the browser so it cannot send
+a duplicate late answer. This does not inspect or filter human input: deliberately typing
+or pasting `ESC [ > 0;276;0c` remains person input byte-for-byte.
 
 **🔓 Unlocked — `public/js/tapeview.js`.** RIREKI's client-side render. **It holds no tmux
 connection** — no attach, no viewer session, no pipe; tmux does not know this view exists.
@@ -586,11 +591,13 @@ field click that exposed this boundary was not deterministic; the invariant is e
 without guessing a click coordinate or suppressing global pointer/wheel events.
 
 The yellow numeric marker at the top-right is tmux's copy-mode position indicator, not
-xterm's ordinary viewport scroll. A mouse drag forwarded to an attached tmux client can
-invoke tmux's stock `MouseDrag1Pane` copy-mode behavior. Before the ownership guard, a
-composer pointer/focus event could refocus the xterm beneath it and let a slight follow-on
-drag take that path. The exact field gesture remains intermittent, but composer-owned
-events now cannot reach that path at all; terminal-owned gestures remain byte-identical.
+xterm's ordinary viewport scroll. A press followed by motion across a terminal cell can
+invoke tmux's stock `MouseDrag1Pane` copy-mode behavior. Previously Ronin then observed the
+pane in copy mode and dropped the matching mouse release with other non-navigation input,
+so tmux never ran `MouseDragEnd1Pane` and remained locked. Mouse releases now pass through
+while in copy mode; typing remains quiet, and ordinary wheel/trackpad reports retain their
+existing byte and command paths. Composer ownership guards are separate defensive hygiene,
+not claimed as the reproduced cause of this lock.
 
 ---
 

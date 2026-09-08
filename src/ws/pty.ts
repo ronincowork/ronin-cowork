@@ -14,6 +14,7 @@ import {
   tileInputAction,
 } from '../tmux.js';
 import { getStreamHandler } from '../sockets.js';
+import { DeviceAttributesResponder } from '../terminal-protocol.js';
 
 const HEARTBEAT_MS = 30_000;
 
@@ -70,7 +71,9 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
     void killSession(viewer);
   };
 
+  const deviceAttributes = new DeviceAttributesResponder((reply) => term.write(reply));
   term.onData((d) => {
+    deviceAttributes.feed(d);
     if (ws.readyState === ws.OPEN) ws.send(Buffer.from(d, 'utf8'));
   });
   term.onExit(() => {

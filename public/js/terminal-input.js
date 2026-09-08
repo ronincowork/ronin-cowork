@@ -14,8 +14,18 @@ export function terminalInputRouter(user, protocol) {
 }
 
 export function wireTerminalInput(term, user, protocol) {
+  // tmux's DA queries are answered synchronously beside its PTY. Keep xterm from
+  // producing a duplicate whose browser parse timer could fire after tmux's deadline.
+  term.parser?.registerCsiHandler({ final: 'c' }, () => true);
+  term.parser?.registerCsiHandler({ prefix: '>', final: 'c' }, () => true);
+
   const userSignal = term?._core?.coreService?.onUserInput;
-  if (typeof userSignal !== 'function') throw new Error('xterm user-input provenance is unavailable');
+  // onUserInput is not public in the pinned xterm. Retain its stronger provenance when
+  // present, but an internal rename must not prevent every terminal tile from opening.
+  if (typeof userSignal !== 'function') {
+    term.onData(user);
+    return;
+  }
   const router = terminalInputRouter(user, protocol);
   userSignal.call(term._core.coreService, router.markUserInput);
   term.onData(router.route);

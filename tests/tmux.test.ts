@@ -104,6 +104,8 @@ test('the tile drives copy mode itself and is quiet inside it, so server binding
   assert.equal(tileInputAction(scrolled, 'f'), 'drop');
   assert.equal(tileInputAction(scrolled, 'hello'), 'drop');
   assert.equal(tileInputAction(scrolled, '\x03'), 'drop');
+  // A drag can enter tmux copy mode between press and release. Never strand the drag.
+  assert.equal(tileInputAction(scrolled, '\x1b[<0;2;1m'), 'write');
   // Escape leaves through an explicit cancel, whatever the vi/emacs table binds it to
   assert.equal(tileInputAction(scrolled, '\x1b'), 'cancel');
   // the navigation keys still move
