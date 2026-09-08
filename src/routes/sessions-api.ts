@@ -11,7 +11,6 @@ import {
   getProjectRoot,
   getTags,
   isValidName,
-  killSessionTree,
   listSessions,
   sessionExists,
   sessionOfPane,
@@ -56,15 +55,64 @@ import {
 import { ignoreEndingRequest, inspectSessionEnding, promptEnding } from '../desks/ending-runtime.js';
 import type { EndingRequest } from '../desks/ending.js';
 import { resolveEndingRequest } from '../desks/ending-response.js';
-import { listDesks } from '../desks/registry.js';
+import { randomUUID } from 'node:crypto';
+import { closeAssignedDesks, shutdownAgent, ShutdownRefused, type ShutdownProgress } from '../desks/session-shutdown.js';
 
 interface PreparedEnding { proceed: boolean; acknowledgement?: Record<string, unknown> }
 
-async function openDeskRefusal(name: string): Promise<string> {
-  const desks = (await listDesks()).filter((desk) => desk.state === 'open' && (desk.owners?.length ? desk.owners : [desk.session]).includes(name));
-  return desks.length
-    ? `Session "${name}" owns open desk${desks.length === 1 ? '' : 's'} ${desks.map((desk) => `${desk.repo}:${desk.branch}`).join(', ')}. Use tejun-desk close <repo:branch> --with-session.`
-    : '';
+interface ShutdownOperation extends ShutdownProgress {
+  id: string;
+  session: string;
+  state: 'running' | 'complete' | 'failed';
+  closed: string[];
+  error?: string;
+  blockers?: ShutdownRefused['blockers'];
+  mode?: 'shutdown' | 'archive';
+  archived?: ReturnType<typeof publicArchive>;
+}
+
+const publicArchive = ({ id, name, archived_at, agent, tags }: ArchivedSession) => ({ id, name, archived_at, agent, tags });
+
+const shutdownOperations = new Map<string, ShutdownOperation>();
+const shutdownBySession = new Map<string, string>();
+
+async function performAgentShutdown(name: string, progress: (value: ShutdownProgress) => void): Promise<string[]> {
+  const key = await sessionKey(name);
+  const result = await shutdownAgent(name, progress);
+  emitSessionEnd(name, key);
+  count('ended', { name, end: 'harakiri' });
+  return result.closed;
+}
+
+async function notifyShutdownBlockers(name: string, error: ShutdownRefused): Promise<void> {
+  const queued = await enqueueMessage(name, `Ronin could not close this Agent because assigned desk work needs closeout.\n${error.message}\nRun tejun-harakiri again after completing the named NEXT actions.`, 'house');
+  await attemptMessage(queued.id, 'safe').catch(() => null);
+}
+
+async function performAgentArchive(name: string, progress: (value: ShutdownProgress) => void): Promise<{ archived: ArchivedSession; closed: string[] }> {
+  progress({ phase: 'resolving_agent', message: `Resolving Agent ${name}` });
+  const key = await sessionKey(name);
+  const runtime = await sessionRuntime(name);
+  const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
+  if (!provider) throw new Error(`Could not identify a resumable ${runtime.agent || 'agent'} conversation.`);
+  const archived: ArchivedSession = {
+    version: 1, id: key, name, key, archived_at: new Date().toISOString(), cwd: runtime.cwd,
+    agent: provider.agent, provider_session_id: provider.id, tags: await getTags(name), leads: await getLeads(name),
+    wipeboards: await getWipeboards(name), note: await getNote(name), control: await getControl(name),
+    project_root: await getProjectRoot(name),
+  };
+  await writeArchive(archived);
+  try {
+    const result = await closeAssignedDesks(name, progress);
+    progress({ phase: 'ending_agent', message: `Archiving Agent ${name}`, desk_count: result.closed.length });
+    await stopSessionTree(name);
+    count('ended', { name, end: 'archived' });
+    progress({ phase: 'complete', message: `Agent ${name} archived and ${result.closed.length} assigned desk(s) closed`, desk_count: result.closed.length });
+    return { archived, closed: result.closed };
+  } catch (e) {
+    if (await sessionExists(name)) await removeArchive(archived.id).catch(() => {});
+    throw e;
+  }
 }
 
 async function prepareSessionEnding(
@@ -84,7 +132,6 @@ async function prepareSessionEnding(
 }
 
 export function registerSessions(app: express.Express): void {
-  const publicArchive = ({ id, name, archived_at, agent, tags }: ArchivedSession) => ({ id, name, archived_at, agent, tags });
   app.get('/api/archived-sessions', async (_req, res) => {
     try {
       res.json((await listArchives()).map(publicArchive));
@@ -97,40 +144,13 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     try {
-      const refusal = await openDeskRefusal(name);
-      if (refusal) return res.status(409).json({ error: refusal });
-      const prepared = await prepareSessionEnding(req, res, name, 'archive');
-      if (!prepared.proceed) return;
-      const key = await sessionKey(name);
-      const runtime = await sessionRuntime(name);
-      const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
-      if (!provider) return res.status(409).json({ error: `Could not identify a resumable ${runtime.agent || 'agent'} conversation.` });
-      const archived: ArchivedSession = {
-        version: 1,
-        id: key,
-        name,
-        key,
-        archived_at: new Date().toISOString(),
-        cwd: runtime.cwd,
-        agent: provider.agent,
-        provider_session_id: provider.id,
-        tags: await getTags(name),
-        leads: await getLeads(name),
-        wipeboards: await getWipeboards(name),
-        note: await getNote(name),
-        control: await getControl(name),
-        project_root: await getProjectRoot(name),
-      };
-      await writeArchive(archived); // durable first; tmux remains live on any failure above
-      try {
-        await stopSessionTree(name);  // no handoff removal and no SessionEnd event
-      } catch (e) {
-        if (await sessionExists(name)) await removeArchive(archived.id).catch(() => {});
-        throw e;
-      }
-      count('ended', { name, end: 'archived' });
-      res.json({ ok: true, archived: publicArchive(archived), ...(prepared.acknowledgement ? { worktree_acknowledgement: prepared.acknowledgement } : {}) });
+      const result = await performAgentArchive(name, () => {});
+      res.json({ ok: true, archived: publicArchive(result.archived), closed: result.closed });
     } catch (e) {
+      if (e instanceof ShutdownRefused) {
+        await notifyShutdownBlockers(name, e);
+        return res.status(409).json({ error: e.message, blockers: e.blockers });
+      }
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });
@@ -196,15 +216,65 @@ export function registerSessions(app: express.Express): void {
   app.delete('/api/sessions/:name', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    const refusal = await openDeskRefusal(name);
-    if (refusal) return res.status(409).json({ error: refusal });
-    const prepared = await prepareSessionEnding(req, res, name, 'delete');
-    if (!prepared.proceed) return;
     const key = await sessionKey(name);
-    await killSessionTree(name);
-    emitSessionEnd(name, key); // rireki deletes the tape: no graveyard, eventually is fine
-    count('ended', { name, end: 'deleted' });
-    res.json({ ok: true, ...(prepared.acknowledgement ? { worktree_acknowledgement: prepared.acknowledgement } : {}) });
+    try {
+      const result = await shutdownAgent(name);
+      emitSessionEnd(name, key); // rireki deletes the tape: no graveyard, eventually is fine
+      count('ended', { name, end: 'deleted' });
+      res.json({ ok: true, closed: result.closed });
+    } catch (e) {
+      if (e instanceof ShutdownRefused) {
+        await notifyShutdownBlockers(name, e);
+        return res.status(409).json({ error: e.message, blockers: e.blockers });
+      }
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+    }
+  });
+
+  app.post('/api/sessions/:name/shutdown', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
+    const existingId = shutdownBySession.get(name);
+    const existing = existingId ? shutdownOperations.get(existingId) : undefined;
+    if (existing?.state === 'running') return res.status(202).json(existing);
+    const mode = req.body?.mode === 'archive' ? 'archive' : 'shutdown';
+    const id = randomUUID();
+    const operation: ShutdownOperation = {
+      id, session: name, mode, state: 'running', phase: 'resolving_agent', message: `Resolving Agent ${name}`, closed: [],
+    };
+    shutdownOperations.set(id, operation);
+    shutdownBySession.set(name, id);
+    res.status(202).json(operation); // acknowledge before desk or git inspection begins
+    setImmediate(() => void (async () => {
+      try {
+        if (mode === 'archive') {
+          const result = await performAgentArchive(name, (value) => Object.assign(operation, value));
+          operation.closed = result.closed;
+          operation.archived = publicArchive(result.archived);
+        } else {
+          operation.closed = await performAgentShutdown(name, (value) => Object.assign(operation, value));
+        }
+        operation.state = 'complete';
+      } catch (e) {
+        operation.state = 'failed';
+        operation.phase = 'failed';
+        operation.error = String((e as Error)?.message ?? e);
+        operation.message = operation.error;
+        if (e instanceof ShutdownRefused) operation.blockers = e.blockers;
+        if (e instanceof ShutdownRefused) await notifyShutdownBlockers(name, e);
+      }
+      setTimeout(() => {
+        shutdownOperations.delete(id);
+        if (shutdownBySession.get(name) === id) shutdownBySession.delete(name);
+      }, 5 * 60_000).unref();
+    })());
+  });
+
+  app.get('/api/session-shutdowns/:id', (req, res) => {
+    const operation = shutdownOperations.get(req.params.id);
+    if (!operation) return res.status(404).json({ error: 'No such shutdown operation.' });
+    res.status(operation.state === 'failed' && operation.blockers ? 409 : 200).json(operation);
   });
 
   app.put('/api/sessions/:name/title', async (req, res) => {
@@ -227,12 +297,17 @@ export function registerSessions(app: express.Express): void {
     }
     const name = await sessionOfPane(pane);
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
-    const refusal = await openDeskRefusal(name);
-    if (refusal) return res.status(409).json({ error: refusal });
-    res.json({ ok: true, session: name });
-    console.log(`[ronin] harakiri: ${name} (pane ${pane})`);
-    count('ended', { name, end: 'harakiri' });
-    setTimeout(() => void killSessionTree(name), 50);
+    try {
+      const closed = await performAgentShutdown(name, () => {});
+      res.json({ ok: true, session: name, closed });
+      console.log(`[ronin] harakiri: ${name} (pane ${pane}); closed ${closed.length} desk(s)`);
+    } catch (e) {
+      if (e instanceof ShutdownRefused) {
+        await notifyShutdownBlockers(name, e);
+        return res.status(409).json({ error: e.message, blockers: e.blockers });
+      }
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+    }
   });
 
   app.get('/api/sessions/:name/project-root', async (req, res) => {

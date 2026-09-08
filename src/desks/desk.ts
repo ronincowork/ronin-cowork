@@ -168,7 +168,13 @@ export function cwdIsInside(worktree: string, cwd: string): boolean {
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
 }
 
-export async function closeDesk(repo: string, branch: string, runtime: CloseRuntime = liveRuntime, withSession = ''): Promise<CloseOutcome> {
+async function closeDeskWithOptions(
+  repo: string,
+  branch: string,
+  runtime: CloseRuntime,
+  withSession: string,
+  stopWithSession: boolean,
+): Promise<CloseOutcome> {
   const rec = await readDesk(repo, branch);
   if (!rec) return { desk: null, action: 'kept', reason: 'no desk is recorded' };
   const a = await arrangementOf(repo);
@@ -191,7 +197,7 @@ export async function closeDesk(repo: string, branch: string, runtime: CloseRunt
     const who = blocking.length === 1 ? `session ${blocking[0]} is` : `sessions ${blocking.join(', ')} are`;
     return { desk: st, action: 'kept', reason: `${who} running inside ${st.worktree}; notify ${blocking.length === 1 ? 'it' : 'them'} to leave, then retry` };
   }
-  if (withSession) await runtime.stop(withSession);
+  if (withSession && stopWithSession) await runtime.stop(withSession);
   return withManagedTransaction({
     repo, transaction_id: `close_${randomUUID()}`, type: 'ending_inspected', result: 'started', session: rec.session, team: rec.team,
     refs: [{ name: branch, before: st.tip, after: '' }], commits: [{ role: 'desk_tip', sha: st.tip }],
@@ -207,6 +213,20 @@ export async function closeDesk(repo: string, branch: string, runtime: CloseRunt
     await transaction.finish('desk_closed', 'contained', { detail: { contained_in: st.line } });
     return { desk: null, action: 'closed', reason: `${withSession ? `session ${withSession} ended; ` : ''}tip is contained in ${st.line}` };
   });
+}
+
+export async function closeDesk(repo: string, branch: string, runtime: CloseRuntime = liveRuntime, withSession = ''): Promise<CloseOutcome> {
+  return closeDeskWithOptions(repo, branch, runtime, withSession, true);
+}
+
+/**
+ * Remove one already-preflighted desk while its owner remains alive. A coordinated
+ * shutdown uses this for every desk, then stops the Agent only after all removals
+ * succeed. The ordinary --with-session path deliberately retains its old one-desk
+ * behaviour.
+ */
+export async function closeDeskForShutdown(repo: string, branch: string, session: string, runtime: CloseRuntime = liveRuntime): Promise<CloseOutcome> {
+  return closeDeskWithOptions(repo, branch, runtime, session, false);
 }
 
 export async function handoffDesk(repo: string, branch: string, successors: string[]): Promise<DeskStatus> {

@@ -684,6 +684,14 @@ The final act of `land` / `delete`: the session that finished the work ends itse
 Sessions are disposable; the record lives in git, the README and the manifest —
 never in a pane.
 
+Harakiri owns managed-desk closeout. It checks every desk assigned to this Agent in one
+batch. A clean desk whose tip is contained in its Team line closes automatically — an
+`ACCEPTED` hand-in is immediately sufficient, without global-dev promotion, a separate
+`tejun-desk close`, or owner intervention. Dirty files, pending or rejected hand-ins,
+unique commits, shared ownership, and other-session occupancy refuse the whole preflight,
+keep the Agent and desks alive, message the Agent, and name the exact next action. It never
+quarantines or discards work implicitly.
+
 **It takes no arguments and you do not name a session.** `tejun-harakiri`, nothing else.
 The tool hands your pane to Ronin; Ronin works out which session that is, checks the
 dial, and ends it. How a session is actually killed is Ronin's business, not yours —
@@ -695,8 +703,8 @@ success message to print: the proof is that the session is gone. If you are stil
 able to type after this step, you did not perform it. Never claim a landing is
 complete while your pane still exists.
 
-This is the LAST step, after the README, the manifest line, every desk handed in or
-parked, and your report to the owner. Nothing of value may exist only in your pane — or
+This is the LAST step, after the README, the manifest line, every desk handed in, and your
+report to the owner. Harakiri closes accepted, clean, Team-contained desks itself. Nothing of value may exist only in your pane — or
 only in a desk nobody has been told about — when you do this. Never perform harakiri on
 another session.
 

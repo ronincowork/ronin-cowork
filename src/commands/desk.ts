@@ -13,6 +13,7 @@ import { writeDiscardReceipt } from '../desks/quarantine.js';
 import { arrangementOf } from '../desks/arrangement.js';
 import { randomUUID } from 'node:crypto';
 import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
+import { shutdownAgent, ShutdownRefused } from '../desks/session-shutdown.js';
 
 const out = (s = '') => process.stdout.write(s + '\n');
 function die(verdict: string, code: number): never {
@@ -203,11 +204,22 @@ async function main(): Promise<void> {
       }
       case 'close': {
         if (!session) die('NO-SESSION: not inside a session and no --session', 3);
+        if (flags.get('with-session')) {
+          if (positional[0]) await pickOne(session, positional[0], 'close'); // validate the named desk, then close the whole assignment
+          try {
+            const result = await shutdownAgent(session);
+            out(`CLOSED ${result.closed.join(', ') || 'no desks'} — session ${session} ended`);
+            return;
+          } catch (e) {
+            if (e instanceof ShutdownRefused) die(`REFUSED: ${e.message}`, 4);
+            die(`STUCK: ${(e as Error).message}`, 5);
+          }
+        }
         const targets = positional[0] ? [await pickOne(session, positional[0], 'close')] : await mine(session, '');
         if (!targets.length) die(`NO-DESK: ${session} has no open desk`, 3);
         let kept = false;
         for (const d of targets) {
-          const o = await closeDesk(d.repo, d.branch, undefined, flags.get('with-session') ? session : '');
+          const o = await closeDesk(d.repo, d.branch);
           kept ||= o.action === 'kept';
           out(`${o.action.toUpperCase()} ${deskId(d)} — ${o.reason}`);
         }
