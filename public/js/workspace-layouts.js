@@ -72,6 +72,9 @@ export function createWorkbenchLayout(options = {}) {
     wrapper.append(body);
     el.append(wrapper);
   }
+  // A label, not a switch: the phone shape is the stylesheet's default at phone width
+  // (workspace-kit.css, PHONE FIRST PAINT), so the first paint never waits for this.
+  // Only 'desktop' would change the shape, and nothing sets it today.
   el.dataset.responsive = 'workbench';
   const host = document.createElement('div');
   host.className = 'wk-workbench-host';

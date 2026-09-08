@@ -4,6 +4,7 @@ import pty from '@lydell/node-pty';
 import {
   capturePane,
   createViewer,
+  deliverParcel,
   exactSession,
   isValidName,
   applyTileInput,
@@ -20,6 +21,11 @@ const HEARTBEAT_MS = 30_000;
 
 export const isTerminalReply = (msg: { t?: string; d?: string }): msg is { t: 'p'; d: string } =>
   msg.t === 'p' && typeof msg.d === 'string';
+
+/** A composer parcel: a whole message with its Enter, sent by a person from the tile's own
+ *  box. It rides the same authenticated socket as a keystroke and is answered by id. */
+export const isParcel = (msg: { t?: string; d?: string; id?: string }): msg is { t: 'm'; d: string; id: string } =>
+  msg.t === 'm' && typeof msg.d === 'string' && typeof msg.id === 'string' && msg.id.length > 0 && msg.id.length <= 64;
 
 export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
   const session = url.searchParams.get('session') ?? '';
@@ -91,7 +97,7 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
       term.write(raw.toString('utf8'));
       return;
     }
-    let msg: { t?: string; d?: string; c?: number; r?: number; n?: number };
+    let msg: { t?: string; d?: string; id?: string; c?: number; r?: number; n?: number };
     try {
       msg = JSON.parse(raw.toString());
     } catch {
@@ -101,6 +107,20 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
       // xterm generated this for its PTY peer (DA/DSR/window reports). It must answer
       // the attached terminal directly, never wait behind or enter person-input routing.
       term.write(msg.d);
+    } else if (isParcel(msg)) {
+      // A composer message. Same ordered queue as typing, so it lands after the keys that
+      // preceded it; unlike a keystroke it leaves a scrolled-back view first, because the
+      // box under the tile is Ronin's own dialog and on a phone the only way to type. The
+      // answer is what the composer clears on: ok after the bytes reached the terminal, or
+      // the reason they did not. No hold is added here — the owner's send rulings stand.
+      const { id, d } = msg;
+      const answer = (outcome: { ok: boolean; why?: string }) => {
+        if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ t: 'm', id, ...outcome }));
+      };
+      inputQueue = inputQueue.then(async () => {
+        if (closed) { answer({ ok: false, why: 'the terminal is gone' }); return; }
+        answer(await deliverParcel(viewer, d, (data) => term.write(data)));
+      }).catch((e) => answer({ ok: false, why: String((e as Error)?.message ?? e) }));
     } else if (msg.t === 'i' && typeof msg.d === 'string') {
       const data = msg.d;
       // One tmux round trip per message, in order: the shared pane's mode decides whether

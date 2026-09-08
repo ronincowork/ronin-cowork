@@ -324,6 +324,16 @@ export class Tile {
     return this.wire.sendInput(d);
   }
 
+  /**
+   * A composer message. On the mirror it is its own frame: the host leaves a scrolled-back
+   * view, types it, and answers by id — the answer is what the composer clears on. The tape
+   * socket belongs to the record service and takes it as input with no answer to wait for.
+   */
+  sendParcel(text) {
+    if (this.locked) return this.wire.sendParcel(text);
+    return Promise.resolve({ ok: this.sendRaw(text), why: 'not connected' });
+  }
+
   /** Housekeeping down the same socket (the ⤓ key's `{t:'bottom'}`). Quiet by design. */
   send(msg) {
     return this.wire.send(msg);
@@ -475,6 +485,7 @@ export class Tile {
         clearOverlays: () => this.clearOverlays(),
         connected: () => this.wire.connected(),
         send: (text) => this.sendRaw(text),
+        sendParcel: (text) => this.sendParcel(text),
         scrollToBottom: () => this.jumpLatest(),
       });
       // Coarse pointer: the software keyboard has no Esc, Ctrl, Tab or arrows, so the

@@ -1,4 +1,8 @@
 /* part of the ronin-cowork client — see js/README.md */
+
+/** How long a parcel waits for the host's answer before the composer is told it is unconfirmed. */
+export const PARCEL_TIMEOUT_MS = 8000;
+
 export class TileWire {
   /**
    * @param {{onStatus: (state: string) => void, onControl: (msg: object) => void,
@@ -11,6 +15,8 @@ export class TileWire {
     this.retry = null;
     this.wantOpen = false;
     this.session = null;
+    this.parcels = new Map(); // id → settle(outcome), one per composer message in flight
+    this.parcelSeq = 0;
   }
 
   connected() {
@@ -39,6 +45,34 @@ export class TileWire {
     return this.send({ t: 'p', d });
   }
 
+  /**
+   * A composer message — the whole text with its Enter — sent as its own frame and
+   * answered by the host by id. Resolves to the truth the composer acts on: `{ok: true}`
+   * once the bytes reached the terminal, otherwise `{ok: false, why}`. Never rejects.
+   */
+  sendParcel(d, timeoutMs = PARCEL_TIMEOUT_MS) {
+    if (!this.connected()) {
+      this.hooks.onDrop();
+      return Promise.resolve({ ok: false, why: 'not connected' });
+    }
+    const id = String(++this.parcelSeq);
+    return new Promise((resolve) => {
+      const settle = (outcome) => {
+        clearTimeout(timer);
+        this.parcels.delete(id);
+        resolve(outcome);
+      };
+      const timer = setTimeout(() => settle({ ok: false, why: 'unconfirmed' }), timeoutMs);
+      this.parcels.set(id, settle);
+      this.ws.send(JSON.stringify({ t: 'm', id, d }));
+    });
+  }
+
+  /** The socket went away under parcels still waiting: each is told, none is retried. */
+  settleParcels(why) {
+    for (const settle of [...this.parcels.values()]) settle({ ok: false, why });
+  }
+
   clearRetry() {
     if (!this.retry) return;
     clearTimeout(this.retry);
@@ -52,6 +86,7 @@ export class TileWire {
       this.ws.close();
     } catch (_) {}
     this.ws = null;
+    this.settleParcels('disconnected');
   }
 
   /** Stop wanting a connection at all. */
@@ -95,6 +130,10 @@ export class TileWire {
         } catch (_) {
           return;
         }
+        if (m.t === 'm' && this.parcels.has(m.id)) {
+          this.parcels.get(m.id)(m.ok ? { ok: true } : { ok: false, why: m.why || 'refused' });
+          return;
+        }
         this.hooks.onControl(m);
         return;
       }
@@ -102,6 +141,7 @@ export class TileWire {
     };
     ws.onclose = () => {
       if (this.ws !== ws) return;
+      this.settleParcels('disconnected');
       this.hooks.onStatus('off');
       if (this.wantOpen && this.session === session) {
         this.retry = setTimeout(() => {
