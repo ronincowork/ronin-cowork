@@ -88,9 +88,23 @@ export function renderKindPills(host, preference, { lead = '' } = {}) {
 }
 
 const treatment = (controls, launchShape, seats) => Object.freeze({ controls: Object.freeze(controls), launchShape, seats });
+// THE TEAM PAGE A BARE METAL OR RONIN TEAM OPENS ON: an agent in workspace 1, the team's
+// configuration from the commons in workspace 2, the other agents in 3 and 4, with the
+// centre selector kept narrow so the agents have the room.
+export const NARROW_SELECTOR = Object.freeze({ order: Object.freeze(['workspace1', 'selector', 'workspace2']), hidden: Object.freeze([]), widths: Object.freeze({ workspace1: 43, selector: 14, workspace2: 43 }) });
+const agentsAroundConfiguration = ({ sessions = [], team = '' }) => ({
+  count: sessions.length >= 2 || team ? 4 : Math.max(1, sessions.length),
+  arrangement: NARROW_SELECTOR,
+  seats: [
+    sessions[0] && { workspace: 'workspace1', type: 'session', key: sessions[0].name },
+    team && { workspace: 'workspace2', type: 'team.commons', key: team, tab: 'team-configuration' },
+    sessions[1] && { workspace: 'workspace3', type: 'session', key: sessions[1].name },
+    sessions[2] && { workspace: 'workspace4', type: 'session', key: sessions[2].name },
+  ].filter(Boolean),
+});
 export const CORE_PRESET_TREATMENTS = Object.freeze({
-  bare_metal: treatment(['sessions'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
-  ronin_team: treatment(['sessions'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
+  bare_metal: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
+  ronin_team: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
   staff_my_codebase: treatment(['root'], 'team', () => ({ count: 2, seats: [] })),
   develop_new_project: treatment(['root', 'features'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : 2, seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
   personal_assistant: treatment(['assistant_mode', 'specialists'], 'choice', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
@@ -167,7 +181,7 @@ const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/
 
 export function initialControls(handle) {
   switch (handle) {
-    case 'bare_metal': return { tiles: 2, sessions: [{ name: 'session_1' }, { name: 'session_2' }] };
+    case 'bare_metal': return { tiles: 4, root: 'ronin_lab', sessions: [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }] };
     case 'ronin_team': return { sessions: [{ name: 'team_lead', team_lead: true }, { name: 'agent_1' }, { name: 'agent_2' }] };
     case 'staff_my_codebase': return { root: 'ronin_project_1', root_dir: '' };
     case 'develop_new_project': return { root: 'ronin_project_1', features: ['frontend', 'backend'] };
@@ -320,7 +334,25 @@ function renderCodebaseControls(host, state, environment) {
   void load();
 }
 
-function renderRows(host, state, key, addLabel) {
+/** The launch table by provider: `[{ provider, model, cmd }]` → { anthropic: ['opus', …], … }, in table order. */
+export function launchTable(specs = []) {
+  const out = {};
+  for (const spec of Array.isArray(specs) ? specs : []) {
+    if (!spec?.provider) continue;
+    (out[spec.provider] ||= []);
+    if (spec.model && !out[spec.provider].includes(spec.model)) out[spec.provider].push(spec.model);
+  }
+  return out;
+}
+const cycle = (button, options, current, paint, label) => {
+  button.type = 'button'; button.setAttribute('aria-label', label);
+  button.addEventListener('click', () => { const values = options(); const index = Math.max(0, values.indexOf(current())); paint(values[(index + 1) % values.length]); });
+};
+
+// A ROW IS ONE SESSION: its name, and the launch table's own provider and model — the same
+// choices the New Agent form offers, sent as the launch's own keys. Default means the
+// Configuration / Campaign defaults every launch takes.
+function renderRows(host, state, key, addLabel, table = {}) {
   const rows = el('div', 'sp-rows');
   const paint = () => {
     rows.replaceChildren();
@@ -329,11 +361,17 @@ function renderRows(host, state, key, addLabel) {
       const line = el('div', 'sp-row');
       const name = input(row.name); name.setAttribute('aria-label', `${addLabel} ${index + 1}`);
       name.addEventListener('input', () => { row.name = slug(name.value); });
+      const provider = el('button', 'sp-cycle'); const model = el('button', 'sp-cycle');
+      const paintModel = (value) => { row.model = value || ''; model.textContent = row.model || 'Default model'; };
+      const paintProvider = (value) => { row.provider = value || ''; provider.textContent = row.provider || 'Default provider'; paintModel(''); };
+      cycle(provider, () => ['', ...Object.keys(table)], () => row.provider || '', paintProvider, 'Model provider');
+      cycle(model, () => ['', ...(table[row.provider] || [])], () => row.model || '', paintModel, 'Model');
+      provider.textContent = row.provider || 'Default provider'; model.textContent = row.model || 'Default model';
       const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
       remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });
       const lead = el('span', 'sp-lead', row.team_lead ? 'Team Lead' : '');
       if (row.team_lead) remove.hidden = true;
-      line.append(lead, name, remove); rows.append(line);
+      line.append(lead, name, provider, model, remove); rows.append(line);
     });
     const add = el('button', 'fs-door', `＋ Add ${addLabel}`); add.type = 'button';
     add.addEventListener('click', () => { state[key].push({ name: `${slug(addLabel)}_${state[key].length + 1}` }); paint(); });
@@ -424,18 +462,18 @@ function renderMorningBriefTiming(host, state) {
   host.append(field('When', timing, 'select'));
 }
 
-function renderSpecialControls(host, handle, state, runtime, environment) {
+function renderSpecialControls(host, handle, state, runtime, environment, table = {}) {
   const roots = runtime.roots || [];
   if (handle === 'staff_my_codebase') renderCodebaseControls(host, state, environment);
   if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where', environment, true);
   if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder', environment);
   if (handle === 'bare_metal') {
-    const agents = el('div'); renderRows(agents, state, 'sessions', 'Session');
+    const agents = el('div'); renderRows(agents, state, 'sessions', 'Session', table);
     const tiles = el('div'); renderTileChoices(tiles, state);
     host.append(section('Agents run side by side', 'select', ...agents.children), section('Tile view', 'select', ...tiles.children));
   }
-  if (handle === 'ronin_team') { const body = el('div'); renderRows(body, state, 'sessions', 'Agent'); host.append(section('Team Lead and agents', 'select', ...body.children)); }
-  if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', 'Feature Agent'); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
+  if (handle === 'ronin_team') { const body = el('div'); renderRows(body, state, 'sessions', 'Agent', table); host.append(section('Team Lead and agents', 'select', ...body.children)); }
+  if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', 'Feature Agent', table); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
   if (handle === 'health_and_fitness') { const body = el('div'); renderAskRows(body, state, 'roles', 'role'); host.append(section("Each agent's kick-off message", 'edit', ...body.children)); }
   if (handle === 'personal_assistant') {
     const modes = el('div', 'sp-mode-options');
@@ -492,7 +530,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   const kinds = environment.kinds || createKindsPreference();
   const kindsHost = el('div', 'sws-intro');
   renderKindPills(kindsHost, kinds, { lead: t('setup.presets_kinds_lead', 'You use Ronin for') });
-  let templates = [], runtime = { providers: [], roots: [] }, selected = -1;
+  let templates = [], runtime = { providers: [], roots: [] }, selected = -1, table = {};
   let detail = null;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
   const controls = new Map();
@@ -524,7 +562,10 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     const measure = () => surface.el.style?.setProperty?.('--sp-intro', `${Math.max(0, Math.round(stoneSurface.el.offsetTop - kindsHost.offsetTop))}px`);
     new ResizeObserver(measure).observe(kindsHost);
   }
+  // The gate reads the runtime the Setup view keeps current when there is one.
+  const freshRuntime = () => { const live = environment.runtime?.(); if (live && typeof live === 'object') runtime = live; return runtime; };
   const paintGrid = () => {
+    freshRuntime();
     const visible = visibleIndexes();
     stoneSurface.setItems(slots.map((slot, index) => {
       const gate = presetReadiness(slot.handle, runtime);
@@ -535,7 +576,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   const paintDetail = () => {
     detail.replaceChildren(); const slot = current();
     if (!slot) return;
-    const gate = presetReadiness(slot.handle, runtime);
+    const gate = presetReadiness(slot.handle, freshRuntime());
     const heading = el('div', 'sp-heading');
     heading.append(el('h3', '', slot.label || slot.handle));
     const go = el('div', 'sp-go');
@@ -550,14 +591,28 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       if (typeof environment.launch !== 'function') return notice.set('failed', 'Launch is not available yet.');
       const tab = environment.reserveLaunchTab?.() || window.open('about:blank', '_blank');
       launch.setDisabled(true); notice.set('info', 'Launching…');
+      warning.hidden = true;
       const result = await environment.launch(buildLaunchPlan(slot, message.value, controlState()));
       launch.setDisabled(false);
-      if (!result?.ok) { tab?.close?.(); return notice.set('failed', result?.message || 'Launch failed.'); }
+      if (!result?.ok) {
+        tab?.close?.();
+        // FAIL LOUDLY: the server's own sentence, beside Launch, until the next press.
+        clearTimeout(warningTimer); warning.textContent = result?.message || 'Launch failed.'; warning.hidden = false;
+        return notice.set('failed', result?.message || 'Launch failed.');
+      }
       const plan = seatingPlan(slot.handle, result.data || {}, controlState());
       const url = environment.launchUrl?.(result.data || {}, plan, tab) || result.data?.url;
       if (tab && url) { tab.opener = null; tab.location.href = url; }
       else if (url) window.open(url, '_blank', 'noopener');
-      notice.set('success', 'Launched in a new tab.');
+      const refused = Array.isArray(result.data?.refused) ? result.data.refused : [];
+      if (refused.length) {
+        // A PARTIAL LAUNCH STILL GOES: the team is open with who was born, and the missing
+        // rows are named here with the server's sentence, until the next press.
+        clearTimeout(warningTimer);
+        warning.textContent = `Launched without ${refused.map((row) => row.name).join(', ')}: ${refused[0].message}`;
+        warning.hidden = false;
+      }
+      notice.set('success', refused.length ? `Launched in a new tab without ${refused.length} of ${refused.length + (result.data?.sessions?.length || 0)}.` : 'Launched in a new tab.');
     };
     if (!gate.ready) { const mark = el('button', 'sp-warn', '!'); mark.type = 'button'; mark.title = 'Not launchable yet'; mark.addEventListener('click', showHeld); go.append(mark); }
     const launch = createAction({ label: 'Launch', kind: 'primary', action: gate.ready ? launchNow : showHeld });
@@ -565,7 +620,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     if (!gate.ready) { launch.el.dataset.held = 'true'; launch.el.setAttribute('aria-disabled', 'true'); }
     go.append(launch.el); heading.append(go); detail.append(heading, warning, el('p', 'sp-description', slot.description || ''));
     const panel = el('div', 'sp-choice-panel');
-    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, environment); panel.append(fixed); }
+    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, environment, table); panel.append(fixed); }
     if (slot.handle !== 'bare_metal') panel.append(field('Initial message to agent', message));
     detail.append(panel);
   };
@@ -581,11 +636,15 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     if (supplied) {
       templates = Array.isArray(supplied.templates) ? supplied.templates : [];
       runtime = supplied.runtime || runtime;
+      table = launchTable(supplied.specs || []);
     }
     else {
-      const [teams, agents, setup] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents'), request('/api/setup/runtime')]);
+      const shared = environment.runtime?.();
+      // The launch table is the same one the New Agent form reads: a row's provider and model choices.
+      const [teams, agents, setup, specs] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents'), shared ? null : request('/api/setup/runtime'), request('/api/session-launch-specs')]);
       templates = [...(teams.ok ? teams.data : []).map((row) => ({ ...row, shelf: 'teams' })), ...(agents.ok ? agents.data : []).map((row) => ({ ...row, shelf: 'agents' }))];
-      runtime = setup.ok ? setup.data : runtime;
+      runtime = shared || (setup?.ok ? setup.data : runtime);
+      table = launchTable(specs.ok ? specs.data : []);
     }
     const remembered = await storedSlots(environment);
     if (Array.isArray(remembered) && remembered.length === HOUSE_PRESETS.length) slots = HOUSE_PRESETS.map((fallback, index) => {

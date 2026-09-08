@@ -109,9 +109,22 @@ same height as the Model providers stones: the row's height is taken out of the 
 room rather than added to it. A preset launches its template as stored, through the same
 team loader the New Team form uses: each row is one of the template's agents with its
 instructions, mandate, lead mark and Routine switches, and the owner's starting message
-appended. A row carries no provider or model; those come from the same Configuration and
-Campaign defaults every launch uses. The preset decides only which rows launch, what they
-are called, and how the new tab is seated. Grokbot Morning Briefing's **When**
+appended. A row may pick its provider and model in the line, from the launch table, the same
+choices the New Agent form offers, sent as the launch's own keys; left at Default, the
+launch takes the Configuration and Campaign defaults every launch uses. The preset decides only which rows launch, what they
+are called, and how the new tab is seated. Bare Metal is the one exception by design: it is a
+bare-metal team, `bare_metal_<code>`, whose members are the native CLI started in Ronin Lab
+with the owner's words and no Ronin birth packet or mandate; its team record has Ronin base
+and Ronin worktrees off whatever the Campaign cascades. Bare Metal and Ronin Team start
+with three rows and open the team page as an agent in workspace 1, the team's
+configuration from the commons in workspace 2, and the other agents in 3 and 4, with the
+centre selector kept narrow. One three-digit code per launch names the team and rides every row's name
+(`session_1_042`), so several Bare Metals can live together. A team launch the server refuses in part, for the
+session limit, a name already in use or anything else, still opens the team with whoever
+was born and says beside Launch which rows are missing and why, until the next press. Only
+a launch that born nobody closes the tab and fails, with the server's sentence in the same
+place. A stone's gate reads the same runtime the
+Model providers surface keeps current, so activating a provider unlocks the stones at once. Grokbot Morning Briefing's **When**
 asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
 time, **One time** a date and a time; the schedule is written in the Cron jobs grammar
 (`daily 08:00`, `weekly mon 08:00`, `once 2026-09-08 08:00`). A role's kick-off message is

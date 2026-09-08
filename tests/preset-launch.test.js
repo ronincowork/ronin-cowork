@@ -56,3 +56,48 @@ test('Ronin Team launches the stored template through the team loader, with noth
   assert.ok(births.every(({ body }) => body.instructions.endsWith('Ship it.')));
   assert.ok(births.every(({ body }) => body.mandate && body.mandate.reach));
 });
+
+test('Bare Metal launches a bare-metal team: bare_metal_<code> with native agents inside, named as the rows name them', async () => {
+  const calls = [], send = responder({ name: 'bare_metal', label: 'Bare Metal', objective: 'Work together.', agents: [{ name: 'session 1', team_lead: true, instructions: 'Lead.' }, { name: 'session 2', instructions: 'Work.' }] }, calls);
+  const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, user_message: '', inputs: { root: 'ronin_lab', sessions: [{ name: 'session_1', provider: 'anthropic', model: 'opus' }, { name: 'session_2' }, { name: 'session_3' }] } }, send);
+  assert.equal(result.ok, true);
+  assert.equal(result.data.urlView, 'team');
+  const roster = calls.find((row) => row.url === '/api/team-rosters').body;
+  const code = roster.name.match(/^bare_metal_(\d{3})$/)?.[1];
+  assert.ok(code, 'the team is bare_metal_<code>');
+  assert.equal(roster.project_root, 'ronin_lab');
+  assert.deepEqual(roster.routines, { ronin_base: false, ronin_worktrees: false }, 'a bare-metal team launches bare');
+  assert.equal(result.data.team, roster.name);
+  const births = calls.filter((row) => row.url === '/api/launch').map((row) => row.body);
+  assert.deepEqual(births.map((body) => body.name), [`session_1_${code}`, `session_2_${code}`, `session_3_${code}`], 'row names plus the launch code');
+  for (const body of births) {
+    assert.equal(body.session_type, 'bare_metal_agent');
+    assert.equal(body.team, roster.name);
+    assert.equal(body.project_root, 'ronin_lab');
+    assert.equal(body.instructions, '');
+    assert.equal('mandate' in body || 'team_lead' in body || 'routines' in body, false);
+  }
+  assert.deepEqual(births.map((body) => [body.provider, body.model]), [['anthropic', 'opus'], [undefined, undefined], [undefined, undefined]]);
+});
+
+test('a team launch the server refuses in part still opens the team and names who is missing', async () => {
+  const template = { name: 'bare_metal', label: 'Bare Metal', objective: 'Work.', agents: [] };
+  const refusing = (names) => { const inner = responder(template, []); return async (url, options = {}) => (url === '/api/launch' && names.includes(options.json.name.replace(/_\d{3}$/, ''))) ? { ok: false, message: 'At the session max (21 of 21).' } : inner(url, options); };
+  const partial = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, inputs: { sessions: [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }, { name: 'session_4' }] } }, refusing(['session_4']));
+  assert.equal(partial.ok, true, 'three were born, so the team opens');
+  assert.equal(partial.data.sessions.length, 3);
+  assert.deepEqual(partial.data.refused.map((row) => [row.name.replace(/_\d{3}$/, ''), row.message]), [['session_4', 'At the session max (21 of 21).']]);
+  const none = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, inputs: { sessions: [{ name: 'session_1' }] } }, refusing(['session_1']));
+  assert.equal(none.ok, false, 'nobody born is the only failure');
+  assert.equal(none.message, 'At the session max (21 of 21).');
+});
+
+test('the seeded tab state carries the seating\'s arrangement', async () => {
+  const { presetWorkspaceState } = await import('../public/js/preset-launch.js');
+  const state = presetWorkspaceState({ count: 4, arrangement: { order: ['workspace1', 'selector', 'workspace2'], hidden: [], widths: { workspace1: 43, selector: 14, workspace2: 43 } }, seats: [
+    { workspace: 'workspace1', type: 'session', key: 'a' }, { workspace: 'workspace2', type: 'team.commons', key: 't', tab: 'team-configuration' },
+  ] });
+  assert.equal(state.count, 4);
+  assert.deepEqual(state.arrangement.widths, { workspace1: 43, selector: 14, workspace2: 43 });
+  assert.deepEqual(state.seats.workspace2, { type: 'team.commons', key: 't', tab: 'team-configuration' });
+});

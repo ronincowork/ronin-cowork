@@ -151,6 +151,13 @@ test('installed roots are distinct registered repositories with READMEs and firs
   assert.equal(launch.repositories[0]?.managed?.worktree, launch.assignment?.desks[0]?.worktree);
 });
 
+test('concurrent runtime reads do not collide on the roots catalog', async () => {
+  const before = await readFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'), 'utf8');
+  const rounds = await Promise.all([1, 2, 3, 4].map(() => runtime.ensureInstalledRoots()));
+  for (const made of rounds) assert.deepEqual(made.map((root) => root.name), ['ronin_lab', 'ronin_project_1']);
+  assert.equal(await readFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'), 'utf8'), before, 'an unchanged catalog is not rewritten');
+});
+
 test('Morning Brief scheduling creates active lead jobs for each preset cadence', async () => {
   const schedules = [];
   for (const when of ['daily 07:00', 'daily 08:00', 'weekdays 08:00']) {
