@@ -10,7 +10,24 @@
 > (`$(ronin-store catalogs)/MODEL_PROVIDERS.md`) and edit it there. A copy in the store
 > wins over this one whole, file for file; an upgrade never touches it.
 
+- **updated:** 2026-09-08
+
+## Keeping it fresh
+
+Everything below is a snapshot, not live data: the models a vendor lists, the prices it
+publishes and the words about what each model is good at were read on the date above.
+The stock catalog is refreshed with each Ronin release (the release order in
+`docs/tarball.md` has the step: re-read prices and models, bump `updated`). A shadow copy
+in your catalogs store is yours to refresh, and carries its own `updated` line. Ronin
+shows the date it has, stale or not; it never hides it and never guesses a newer one.
+
 ## How to read a provider
+
+The file's own header field:
+
+| Field | Meaning |
+|---|---|
+| `updated` | the day this catalog's models, prices and descriptions were last read from the public record, `YYYY-MM-DD` |
 
 One `### <Vendor label>` section per provider. Its fields:
 
