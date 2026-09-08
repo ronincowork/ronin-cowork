@@ -25,11 +25,15 @@ globalThis.Node = FakeNode;
 globalThis.document = { createElement: (tag) => new FakeNode(tag), createElementNS: (_ns, tag) => new FakeNode(tag), querySelector: () => null, head: { append() {} } };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
-const CATALOG = [
-  { provider: 'anthropic', cli: 'claude', model: 'opus', tier: 'frontier', default: true, cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions', cmd: 'claude --model opus' },
-  { provider: 'anthropic', cli: 'claude', model: 'haiku', tier: 'light', default: false, cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors', cmd: 'claude --model haiku' },
-  { provider: 'xai', cli: 'grok', model: 'grok-4.6', tier: 'frontier', default: true, cost: '$2 in · $6 out per M tokens (2026-09)', good_at: 'long-running agents', not_good_at: 'the cheapest bulk work', cmd: 'grok -m grok-4.6' },
-];
+let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', providers: [
+  { provider: 'anthropic', cli: 'claude', label: 'Anthropic', models: [
+    { model: 'opus', tier: 'frontier', default: true, cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions', cmd: 'claude --model opus' },
+    { model: 'haiku', tier: 'light', default: false, cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors', cmd: 'claude --model haiku' },
+  ] },
+  { provider: 'xai', cli: 'grok', label: 'xAI', models: [
+    { model: 'grok-4.6', tier: 'frontier', default: true, cost: '$2 in · $6 out per M tokens (2026-09)', good_at: 'long-running agents', not_good_at: 'the cheapest bulk work', cmd: 'grok -m grok-4.6' },
+  ] },
+] };
 let machine = {
   measured_at: '2026-09-08T11:00:00.000Z',
   providers: [
@@ -38,7 +42,7 @@ let machine = {
   ],
 };
 globalThis.fetch = async (url) => {
-  const body = url.startsWith('/api/session-launch-specs') ? CATALOG : url.startsWith('/api/setup/runtime') ? machine : null;
+  const body = url.startsWith('/api/provider-catalog') ? catalog : url.startsWith('/api/setup/runtime') ? machine : null;
   return { ok: body !== null, status: body ? 200 : 404, json: async () => body ?? { error: 'no such door' } };
 };
 
@@ -69,7 +73,21 @@ test('the surface lists every catalog provider as a stone with its measured stat
   const measured = byClass(surface.el, 'cv-providers-measured')[0].textContent;
   assert.match(measured, /^This machine was measured .+\. Ronin Setup → Model providers measures it again\.$/);
   assert.doesNotMatch(measured, /\bnow\b|\blive\b/);
-  assert.equal(providers.providersSummary({ loaded: true, rows: (await import('../public/js/form-steps.js')).providerCatalog().rows }), '2 providers · 3 models · 1 activated here');
+  // The catalog is a snapshot, not live data: the surface says which copy and its date, once.
+  assert.equal(byClass(surface.el, 'cv-providers-catalog')[0].textContent, 'Catalog updated 2026-09-08 · prices and models as read then; refreshed with each Ronin update.');
+  const read = (await import('../public/js/form-steps.js')).providerCatalog();
+  assert.equal(providers.providersSummary(read), '2 providers · 3 models · 1 activated here · catalog 2026-09-08');
+  assert.equal(providers.providersSummary({ ...read, updated: '' }), '2 providers · 3 models · 1 activated here');
+  assert.equal(providers.catalogLine({ origin: 'user', updated: '2026-10-01' }), 'Your catalog copy, updated 2026-10-01.');
+  assert.equal(providers.catalogLine({ origin: 'stock', updated: '' }), 'Catalog updated date not stated · prices and models as read then; refreshed with each Ronin update.');
+});
+
+test('the owner\'s shadow copy is named as theirs, with its own date', async () => {
+  catalog = { ...catalog, origin: 'user', path: '/yours/MODEL_PROVIDERS.md', updated: '2026-10-01' };
+  const surface = providers.createProvidersSurface();
+  await surface.enter();
+  assert.equal(byClass(surface.el, 'cv-providers-catalog')[0].textContent, 'Your catalog copy, updated 2026-10-01.');
+  catalog = { ...catalog, origin: 'stock', updated: '2026-09-08' };
 });
 
 test('a stone opens the provider: its three measured facts, then the catalog table with tier, cost, good at and not good at', async () => {
@@ -101,5 +119,5 @@ test('an unmeasured machine is said, never guessed', async () => {
   assert.equal(byClass(surface.el, 'cv-providers-measured')[0].textContent, 'This machine has not been measured yet. Ronin Setup → Model providers measures it.');
   stones[1].click();
   const card = byClass(surface.el, 'cv-provider')[0];
-  assert.equal(walk(card).find((node) => node.tagName === 'H2').textContent, 'xai', 'no machine row: the catalog id stands');
+  assert.equal(walk(card).find((node) => node.tagName === 'H2').textContent, 'xAI', 'no machine row: the catalog\'s own label stands');
 });

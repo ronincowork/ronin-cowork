@@ -164,7 +164,7 @@ interface after starting the command:
 
 ```text
 MODEL_PROVIDERS.md row
-  → GET /api/session-launch-specs
+  → GET /api/provider-catalog
   → the one picker (providerModelPair, public/js/form-steps.js)
   → POST /api/launch { cmd, launch_mode }
   → append the provider flag only for live_dangerously
@@ -181,8 +181,9 @@ Every place the product asks *which provider, and which model* is one control:
 the Campaign's Agent defaults, Team Configuration, ⚙ Configuration (the general default,
 each provider's preferred model, and Mika's row), cowork setup and the Presets rows all call
 it; none keeps a list, a join or a vendor's name of its own. The picker reads the catalog
-rows itself (`GET /api/session-launch-specs`) and what this machine measured of each CLI
-(`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
+itself (`GET /api/provider-catalog`: its origin, its `updated` date, and one entry per
+provider with the vendor's label and its model rows) and what this machine measured of each
+CLI (`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
 probes), joined on the catalog's own `cli` field, and it offers:
 
 - every provider and every model in the catalog, the providers this machine can launch
@@ -206,9 +207,13 @@ The Campaign workbench (Machine Settings → Ronin Settings) has a **Model provi
 catalog on the shared stone work surface: one stone per provider, labelled with the vendor
 and its model count, wearing the measured word — *activated · signed in · installed · not
 installed*; a stone opens that provider's three measured facts and its model table — model,
-tier, cost as read, good at, not good at — with the marked default said. The measured facts
-are the Campaign's recorded summary, dated once on the surface (*This machine was measured
-<when>*), never a live word; the surface probes nothing and changes nothing — Ronin Setup's
+tier, cost as read, good at, not good at — with the marked default said. The catalog is a
+snapshot, not live data, and the surface says so with its date: *Catalog updated <date> ·
+prices and models as read then; refreshed with each Ronin update* for the stock file, or
+*Your catalog copy, updated <date>* when the owner's store shadows it; the card's summary
+carries the same date. The measured facts are the Campaign's recorded summary, dated once
+on the surface (*This machine was measured <when>*), never a live word; the surface probes
+nothing and changes nothing — Ronin Setup's
 Model providers surface is where a provider is installed, signed in and activated, and where
 *Check again* measures.
 

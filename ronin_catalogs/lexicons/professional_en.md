@@ -367,6 +367,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.providers:** Model providers
 - **campaign_view.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
 - **campaign_view.providers_summary:** {providers} providers · {models} models · {activated} activated here
+- **campaign_view.providers_summary_dated:** {counts} · catalog {date}
+- **campaign_view.catalog_stock:** Catalog updated {date} · prices and models as read then; refreshed with each Ronin update.
+- **campaign_view.catalog_yours:** Your catalog copy, updated {date}.
+- **campaign_view.catalog_undated:** date not stated
 - **campaign_view.providers_help:** Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.
 - **campaign_view.providers_measured:** This machine was measured {when}. Ronin Setup → Model providers measures it again.
 - **campaign_view.providers_unmeasured:** This machine has not been measured yet. Ronin Setup → Model providers measures it.

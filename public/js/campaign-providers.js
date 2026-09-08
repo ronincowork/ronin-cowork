@@ -40,7 +40,16 @@ export function providersSummary(catalog) {
   const rows = catalog.rows;
   const providers = new Set(rows.map((row) => row.provider)).size;
   const activated = new Set(rows.filter((row) => row.operational).map((row) => row.provider)).size;
-  return t('campaign_view.providers_summary', '{providers} providers · {models} models · {activated} activated here', { providers, models: rows.length, activated });
+  const counts = t('campaign_view.providers_summary', '{providers} providers · {models} models · {activated} activated here', { providers, models: rows.length, activated });
+  return catalog.updated ? t('campaign_view.providers_summary_dated', '{counts} · catalog {date}', { counts, date: catalog.updated }) : counts;
+}
+
+/** THE CATALOG IS A SNAPSHOT, NOT LIVE DATA: one line saying which copy and its date. */
+export function catalogLine(catalog) {
+  const date = catalog?.updated || t('campaign_view.catalog_undated', 'date not stated');
+  return catalog?.origin === 'user'
+    ? t('campaign_view.catalog_yours', 'Your catalog copy, updated {date}.', { date })
+    : t('campaign_view.catalog_stock', 'Catalog updated {date} · prices and models as read then; refreshed with each Ronin update.', { date });
 }
 
 /** The measured word for a provider's stone, from the machine's row for its CLI. */
@@ -57,8 +66,9 @@ export function createProvidersSurface(onLoaded = null) {
   const when = (stamp) => { const date = new Date(stamp); return Number.isNaN(date.getTime()) ? String(stamp) : date.toLocaleString(); };
   const surface = createSurface({ label: t('campaign_view.providers', 'Model providers'), className: 'cv-surface cv-providers' });
   const intro = el('div', 'cv-providers-intro');
+  const snapshot = el('p', 'cv-note cv-providers-catalog');
   const measured = el('p', 'cv-note cv-providers-measured');
-  intro.append(el('p', 'cv-note', t('campaign_view.providers_help', 'Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.')), measured);
+  intro.append(el('p', 'cv-note', t('campaign_view.providers_help', 'Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.')), snapshot, measured);
   const stones = createStoneWorkSurface({ className: 'cv-provider-stones', renderDetail: (item, host) => paintProvider(item.id, host) });
   stones.mount(surface.content, { before: [intro] });
 
@@ -113,6 +123,7 @@ export function createProvidersSurface(onLoaded = null) {
 
   const paint = () => {
     const { rows } = providerCatalog();
+    snapshot.textContent = catalogLine(providerCatalog());
     measured.textContent = measuredLine();
     const providers = rows.filter((row, index) => rows.findIndex((other) => other.provider === row.provider) === index);
     stones.setItems(providers.map((row) => {
