@@ -585,7 +585,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.library_note:** More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.
 - **forms.default:** default
 - **forms.provider_off:** {name} — not on this machine
-- **forms.model_word:** {model} · {tier} — {good_at}
+- **forms.model_word:** {model} · {tier}
 - **forms.model_off:** {model} · {tier} — not on this machine
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
@@ -1538,15 +1538,21 @@ The catalog entry goes. {dir} is not touched.
 
 ## retire — session-retire.js (the tile's retire sheet)
 - **retire.sheet:** Retire {name}
-- **retire.copy:** Archive stops the session and frees its RAM, while keeping it available to rehydrate. Hard delete permanently removes its Ronin record.
+- **retire.copy:** Archive is resumable and leaves desks alone. Delete safely closes only clean, handed-in desks. Hard Delete irreversibly removes the Agent and every owned desk after preserving destructive evidence.
 - **retire.archive:** Archive
-- **retire.hard_delete:** Hard delete
+- **retire.shutdown:** Delete
+- **retire.hard_delete:** Hard Delete
+- **retire.hard_delete_confirm:** Hard Delete is irreversible. Delete Agent {name} and every desk it owns, including dirty and unhanded work? Destructive evidence will be preserved.\n\nConfirm exact targets: {exact}
 
 ## retire — the working words
 - **retire.archive_failed:** could not archive it
+- **retire.shutdown_failed:** could not safely shut it down
+- **retire.shutting_down:** starting shutdown…
+- **retire.resolving:** Resolving Agent…
+- **retire.timeout:** shutdown timed out; the Agent and any remaining desks were left available — try again
 - **retire.archiving:** archiving…
-- **retire.delete_failed:** could not hard delete it
-- **retire.deleting:** deleting…
+- **retire.hard_delete_failed:** could not hard delete it
+- **retire.hard_deleting:** starting Hard Delete…
 
 ## customize — the shadow-trade notice
 - **customize.shadow_trade:** Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, 
@@ -2036,15 +2042,13 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
 - **setup_surface.providers_summary:** {providers} providers · {models} models · {activated} activated here
 - **setup_surface.providers_summary_dated:** {counts} · catalog updated {date}
-- **setup_surface.providers_help:** Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.
-- **setup_surface.providers_measured:** This machine was measured {when}; opening this surface measures it again.
-- **setup_surface.providers_unmeasured:** This machine has not been measured yet.
-- **setup_surface.catalog_stock:** Catalog updated {date} · prices and models as read then; refreshed with each Ronin update.
-- **setup_surface.catalog_yours:** Your catalog copy, updated {date}.
-- **setup_surface.catalog_undated:** date not stated
+- **setup_surface.check_dates:** Check dates
+- **setup_surface.catalog_researched:** Catalog researched
+- **setup_surface.catalog_date_unstated:** Date not stated
+- **setup_surface.machine_measured:** Machine measured
+- **setup_surface.machine_unmeasured:** Not measured yet
 - **setup_surface.section_yours:** Yours
 - **setup_surface.section_catalog:** The catalog
-- **setup_surface.section_catalog_dated:** The catalog · updated {date}
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.

@@ -88,6 +88,7 @@ test('projected ronin_bin tools resolve the symlink and reach the repository and
   const helpTools = [
     'tejun', 'read_tegami', 'write_tegami', 'tejun-desk', 'tejun-team',
     'tejun-team-set', 'tejun-session-set', 'tejun-archive', 'tejun-rehydrate',
+    'tejun-harakiri',
   ];
   for (const command of helpTools) {
     for (const flag of ['-h', '--help']) {

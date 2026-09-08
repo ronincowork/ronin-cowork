@@ -46,8 +46,12 @@ test('Ronin Team launches the stored template through the team loader, with noth
     { name: 'agent 2', instructions: 'Work.', mandate: { reach: 'execute', recruit: 'nobody', output: ['open'] } },
   ] }, calls);
   const sessions = [{ name: 'team_lead', team_lead: true }, { name: 'agent_1' }, { name: 'agent_2' }];
-  const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'ronin_team' }, user_message: 'Ship it.', inputs: { sessions } }, send);
+  const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'ronin_team' }, user_message: 'Ship it.', inputs: { sessions, root: 'ronin_lab' } }, send);
   assert.equal(result.ok, true);
+  // Where rides the Team record, as the New Team form sends it.
+  assert.equal(calls.find((row) => row.url === '/api/team-rosters').body.project_root, 'ronin_lab');
+  // The receipt keeps each row's lead mark, in birth order, for the seating to read.
+  assert.deepEqual(result.data.sessions, [{ name: 'agent_1' }, { name: 'agent_2' }, { name: 'team_lead', team_lead: true }]);
   const births = calls.filter((row) => row.url === '/api/launch');
   assert.equal(births.length, 3);
   // The loader's order: ordinary rows first, the marked lead last; the stored template's

@@ -89,13 +89,13 @@ test('the picker reads the two doors itself and offers every provider, disabling
   assert.deepEqual(pair.modelSelect.options.map((option) => option.value), ['']);
 });
 
-test('naming a provider offers its models with tier and good-at beside the name; the model pick stands alone', async () => {
+test('naming a provider offers its models as id and tier alone — no description in the option; the model pick stands alone', async () => {
   await loadProviderCatalog();
   const draft = { provider: 'anthropic', model: '' };
   const pair = providerModelPair(() => draft, (provider, model) => { draft.provider = provider; draft.model = model; }, (_label, control) => control);
   assert.equal(pair.providerSelect.value, 'anthropic');
   assert.equal(pair.modelSelect.disabled, false);
-  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['default', 'opus · frontier — long agentic coding runs', 'haiku · light — fast sub-agents']);
+  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['default', 'opus · frontier', 'haiku · light']);
   assert.deepEqual(pair.modelSelect.options.map((option) => option.disabled), [false, true, true], 'Anthropic is installed but not activated here');
   pair.modelSelect.value = 'haiku'; pair.modelSelect.fire('change');
   assert.deepEqual(draft, { provider: 'anthropic', model: 'haiku' });
@@ -112,7 +112,7 @@ test('a fixed provider drops the provider select: the row is the provider, the p
   const pair = providerModelPair(() => draft, (provider, model) => { draft.provider = provider; draft.model = model; }, (label, control) => { control.setAttribute('aria-label', label); return control; }, { fixed: 'openai', blank: { model: '— none set —' } });
   assert.deepEqual(pair.el.children, [pair.modelSelect]);
   assert.equal(pair.modelSelect.attributes['aria-label'], 'model');
-  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['— none set —', 'gpt-5.6-sol · frontier — the hardest coding']);
+  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['— none set —', 'gpt-5.6-sol · frontier']);
   assert.equal(pair.modelSelect.value, 'gpt-5.6-sol');
   pair.modelSelect.value = ''; pair.modelSelect.fire('change');
   assert.deepEqual(draft, { provider: 'openai', model: '' });

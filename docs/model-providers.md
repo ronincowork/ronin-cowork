@@ -203,8 +203,10 @@ probes), joined on the catalog's own `cli` field, and it offers:
 
 - every provider and every model in the catalog, the providers this machine can launch
   first and the rest after, in catalog order within each group;
-- each model as `<id> · <tier> — <good at>`, so the tier and the fit are read where the
-  choice is made;
+- each model as `<id> · <tier>`, and no further — the tier is the one descriptor carried
+  into the choice. What a model is good at and not good at is the Model providers
+  surface's to show, where the table has room for it; an option line does not, and a
+  description squeezed into one is read by nobody;
 - what this machine cannot launch **disabled, never hidden** — the list teaches what
   Ronin offers, and a greyed row says *not on this machine*.
 

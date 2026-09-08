@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { arrangementOf } from './arrangement.js';
-import { closeDesk, discardDesk } from './desk.js';
+import { closeDesk, closeDeskForShutdown, discardDesk } from './desk.js';
 import { ignoreEnding, promptOwners, type EndingDispositionOps, type EndingDispositionResult } from './ending-disposition.js';
 import { inspectEnding, type EndingDeskInput, type EndingPreflight, type EndingRequest, type EndingScope } from './ending.js';
 import { appendManagedEvent, withManagedTransaction } from './lifecycle-ledger.js';
@@ -64,7 +64,7 @@ export function isTeamLineEndingFact(fact: EndingDeskInput): boolean {
   return fact.kind === 'team_line';
 }
 
-function runtimeOps(preflight: EndingPreflight): EndingDispositionOps {
+function runtimeOps(preflight: EndingPreflight, closingSession = '', signal?: AbortSignal): EndingDispositionOps {
   return {
     async prompt(target, message) {
       const queued = await enqueueMessage(target, message, 'house');
@@ -78,15 +78,18 @@ function runtimeOps(preflight: EndingPreflight): EndingDispositionOps {
           refs: [{ name: fact.branch, before: fact.tip, after: '' }], commits: [{ role: 'team_line_tip', sha: fact.tip }],
           objects: [{ kind: 'team_line', id: `${fact.repo}:${fact.branch}`, path: fact.worktree, owner_team: fact.team }], detail: { operation: 'team_retire' },
         }, async (transaction) => {
-          await discardDesk(fact.repo, fact.branch);
+          await discardDesk(fact.repo, fact.branch, signal);
           await transaction.finish('desk_closed', 'contained', { detail: { team_line: true, contained_in: fact.line } });
         });
         return;
       }
-      const outcome = await closeDesk(fact.repo, fact.branch);
+      const outcome = closingSession
+        ? await closeDeskForShutdown(fact.repo, fact.branch, closingSession, undefined, signal)
+        : await closeDesk(fact.repo, fact.branch);
       if (outcome.action !== 'closed') throw new Error(`could not close ${fact.repo}:${fact.branch}: ${outcome.reason}`);
     },
     async quarantineAndRemove(fact) {
+      signal?.throwIfAborted();
       const transaction_id = `quarantine_${randomUUID()}`;
       return withManagedTransaction({
         repo: fact.repo, transaction_id, type: 'ending_inspected', result: 'started',
@@ -96,8 +99,10 @@ function runtimeOps(preflight: EndingPreflight): EndingDispositionOps {
         objects: [{ kind: 'desk', id: `${fact.repo}:${fact.branch}`, path: fact.worktree, owner_sessions: fact.owners, owner_team: fact.team }],
         detail: { scope: preflight.scope, requested_action: preflight.requested_action, changes: fact.changes },
       }, async (transaction) => {
-        const manifest = await quarantineDesk(fact);
-        await discardDesk(fact.repo, fact.branch);
+        const manifest = await quarantineDesk(fact, undefined, signal);
+        signal?.throwIfAborted();
+        await discardDesk(fact.repo, fact.branch, signal);
+        signal?.throwIfAborted();
         await transaction.finish('quarantined', 'quarantined', {
           objects: [
             { kind: 'quarantine', id: `${fact.repo}:${manifest.id}`, path: manifest.untracked_root, owner_sessions: fact.owners, owner_team: fact.team },
@@ -126,6 +131,6 @@ export async function promptEnding(preflight: EndingPreflight): Promise<EndingDi
   return promptOwners(preflight, runtimeOps(preflight));
 }
 
-export async function ignoreEndingRequest(preflight: EndingPreflight): Promise<EndingDispositionResult> {
-  return ignoreEnding(preflight, runtimeOps(preflight));
+export async function ignoreEndingRequest(preflight: EndingPreflight, closingSession = '', signal?: AbortSignal): Promise<EndingDispositionResult> {
+  return ignoreEnding(preflight, runtimeOps(preflight, closingSession, signal));
 }

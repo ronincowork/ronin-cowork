@@ -56,7 +56,9 @@ function teamOutcome(outcomes, extra = {}) {
   if (!born.length) return { ok: false, message: refused[0]?.message || 'Nothing launched.' };
   return { ok: true, data: {
     ...extra,
-    sessions: born.map(({ result }) => result.data?.name).filter(Boolean).map((name) => ({ name })),
+    // Each born session keeps its row's lead mark, so seating can put the lead first
+    // whatever order the loader birthed them in.
+    sessions: born.filter(({ result }) => result.data?.name).map(({ row, result }) => ({ name: result.data.name, ...(row.team_lead === true ? { team_lead: true } : {}) })),
     receipts: born.map(({ result }) => result.data?.receipt).filter(Boolean),
     refused, urlView: 'team',
   } };

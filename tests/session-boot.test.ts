@@ -163,6 +163,8 @@ test('Routine reading teaches only the selected capability; test policy stays wi
   assert.match(services, /Hotwords\*\* are the owner's dictation\s+glossary/);
   assert.match(worktrees, /tejun-desk status --assignment/);
   assert.match(worktrees, /tejun-desk hand-in/);
+  assert.match(worktrees, /tejun-harakiri/);
+  assert.match(worktrees, /ACCEPTED.*hand-in is enough/);
   assert.doesNotMatch(worktrees, /first full repository BYOIN/i);
   assert.match(machine, /tejun-survey/);
   assert.match(machine, /bin\/ronin-store --all/);

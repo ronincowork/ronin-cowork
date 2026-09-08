@@ -23,7 +23,7 @@ const readable = (name) => String(name || '').split(/[_-]+/).filter(Boolean)
   .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 function teamLabel(team) {
   if (team.name === UNASSIGNED) return t('league.ronin', 'Ronin: no team');
-  return team.title || readable(team.name);
+  return String(team.title ?? '').trim() || team.name;
 }
 function agentLabel(session) {
   return session.title || readable(session.name);

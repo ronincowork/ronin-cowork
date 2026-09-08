@@ -103,6 +103,7 @@ test('Bare Metal starts with two rows that carry no provider or model, and three
     ['team_lead', true], ['agent_1', false], ['agent_2', false],
   ]);
   assert.deepEqual([0, 1, 2, 3, 4].map(presets.bareMetalWorkspaceCount), [1, 1, 2, 4, 4]);
+  assert.equal(presets.initialControls('ronin_team').root, 'ronin_lab', 'Ronin Team starts in Ronin Lab');
 });
 
 test('fixed seating uses only returned objects and falls back when none exist', () => {
@@ -254,14 +255,58 @@ test('Presets rests on the shared stone header and start line, with no override 
 
 test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
-  assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
+  assert.match(source, /if \(handle === 'develop_new_project'\) renderRootControls\(host, state, roots, 'Where', environment, true, live\)/);
   assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
 });
 
-test('Develop a New Project offers the canonical Workspace Folders door beneath its selector', async () => {
+test('Ronin Team and Agent + Editable Doc ask Where from the one list of workspace folders, with the door beside it', async () => {
   const source = await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8');
-  assert.match(source, /renderRootControls\(host, state, roots, 'Where', environment, true\)/);
-  assert.match(source, /workspaceFoldersAction\(environment, label = '＋ workspace folder'/);
+  assert.match(source, /if \(handle === 'ronin_team'\) renderRootControls\(host, state, roots, 'Where', environment, true, live\)/);
+  assert.match(source, /if \(handle === 'agent_editable_doc'\) renderRootControls\(host, state, roots, 'Where', environment, true, live\)/);
+  assert.doesNotMatch(source, /'Which folder'/);
+  assert.match(source, /const roots = rootChoices\(runtime, environment\)/, 'one chooser, one source');
+  assert.doesNotMatch(source, /const roots = runtime\.roots \|\| \[\]/);
+  // The source is the client's project catalog, handed in by the Setup view; the catalog
+  // announces its reloads so a folder kept in workspace 2 becomes a choice at once.
+  const setup = await readFile(new URL('../public/js/setup-view.js', import.meta.url), 'utf8');
+  assert.match(setup, /trackedRoots: \(\) => \(Array\.isArray\(projectData\) \? projectData : \[\]\)/);
+  assert.match(setup, /onTrackedRoots: onProjects/);
+  assert.match(setup, /if \(!Array\.isArray\(projectData\)\) await loadProjects\(\);/);
+  const home = await readFile(new URL('../public/js/home.js', import.meta.url), 'utf8');
+  assert.match(home, /export function onProjects\(listener\)/);
+  assert.match(home, /for \(const listener of projectListeners\)/);
+  // Seeded pair first under the runtime's labels, then every other tracked folder by name;
+  // a host with no catalog keeps the seeded pair.
+  const runtime = { roots: [{ name: 'ronin_lab', label: 'Ronin Lab' }, { name: 'ronin_project_1', label: 'Ronin Project 1' }] };
+  assert.deepEqual(presets.rootChoices(runtime, { trackedRoots: () => [{ name: 'site' }, { name: 'ronin_project_1' }, { name: 'ronin_lab' }, { name: 'shiwake' }] }), [
+    { name: 'ronin_lab', label: 'Ronin Lab' }, { name: 'ronin_project_1', label: 'Ronin Project 1' }, { name: 'site', label: 'site' }, { name: 'shiwake', label: 'shiwake' },
+  ]);
+  assert.deepEqual(presets.rootChoices(runtime, { trackedRoots: () => [{ name: 'site' }] }), [{ name: 'site', label: 'site' }], 'an excluded seeded folder is no choice');
+  assert.deepEqual(presets.rootChoices(runtime, {}), runtime.roots.map(({ name, label }) => ({ name, label })));
+});
+
+test('Where lists every tracked workspace folder and refills in place when one is kept', async () => {
+  let listener = null;
+  let tracked = [{ name: 'ronin_lab' }, { name: 'ronin_project_1' }, { name: 'site' }];
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [{ name: 'ronin_lab', label: 'Ronin Lab' }, { name: 'ronin_project_1', label: 'Ronin Project 1' }] } }),
+    trackedRoots: () => tracked,
+    onTrackedRoots: (fn) => { listener = fn; return () => {}; },
+    loadPresetSlots: () => null,
+    launch: async () => ({ ok: false }),
+  } });
+  await surface.enter();
+  const stones = [...surface.el.walk()].filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'));
+  stones[1].click(); // Ronin Team
+  const select = [...surface.el.walk()].find((node) => node.tagName === 'SELECT');
+  assert.deepEqual(select.options.map((row) => [row.value, row.textContent]), [['ronin_lab', 'Ronin Lab'], ['ronin_project_1', 'Ronin Project 1'], ['site', 'site']]);
+  assert.equal(select.value, 'ronin_lab', 'Ronin Lab by default');
+  select.value = 'site'; for (const callback of select.listeners.change) callback();
+  tracked = [...tracked, { name: 'shiwake' }];
+  listener();
+  assert.deepEqual(select.options.map((row) => row.value), ['ronin_lab', 'ronin_project_1', 'site', 'shiwake'], 'the kept folder is a choice at once');
+  assert.equal(select.value, 'site', 'the choice survives the refill');
+  assert.ok([...surface.el.walk()].some((node) => node.tagName === 'BUTTON' && node.textContent === '＋ workspace folder'), 'the door to keep another folder sits beside Where');
 });
 
 test('Code Stack Eval keeps ticked folders on Apply and evaluates the chosen one', async () => {
@@ -325,7 +370,7 @@ test('a row picks its provider and model with the one picker, the New Agent form
   assert.equal(selects[0].attributes['aria-label'], 'model provider 1');
   assert.equal(selects[1].disabled, true, 'no provider named: the model waits');
   selects[0].value = 'openai'; for (const callback of selects[0].listeners.change) callback();
-  assert.deepEqual(selects[1].options.map((option) => option.textContent), ['Default model', 'gpt-5.6-sol · frontier — the hardest coding']);
+  assert.deepEqual(selects[1].options.map((option) => option.textContent), ['Default model', 'gpt-5.6-sol · frontier']);
   assert.doesNotMatch(await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'), /launchTable|sp-cycle/);
 });
 
@@ -367,6 +412,20 @@ test('a partial launch still goes to the new tab and names the missing rows besi
   assert.deepEqual(opened, ['bare_metal_502'], 'the tab still goes to the team');
   assert.equal(warning.hidden, false);
   assert.equal(warning.textContent, 'Launched without session_4_502: At the session max (21 of 21).');
+});
+
+test('Ronin Team opens on Team Lead · Team Configuration · Agent 1 · Agent 2, whatever order they were born in', () => {
+  // The loader births the lead last; the receipt's mark, not its order, seats the lead first.
+  const plan = presets.seatingPlan('ronin_team', { team: 'ronin_team_k1', sessions: [{ name: 'agent_1' }, { name: 'agent_2' }, { name: 'team_lead', team_lead: true }] });
+  assert.equal(plan.count, 4);
+  assert.deepEqual(plan.seats, [
+    { workspace: 'workspace1', type: 'session', key: 'team_lead' },
+    { workspace: 'workspace2', type: 'team.commons', key: 'ronin_team_k1', tab: 'team-configuration' },
+    { workspace: 'workspace3', type: 'session', key: 'agent_1' },
+    { workspace: 'workspace4', type: 'session', key: 'agent_2' },
+  ]);
+  assert.deepEqual(plan.arrangement, presets.NARROW_SELECTOR);
+  assert.deepEqual(presets.leadFirst([{ name: 'a' }, { name: 'b' }]), [{ name: 'a' }, { name: 'b' }], 'no lead, as born');
 });
 
 test('Bare Metal and Ronin Team open on agent · team configuration · agent · agent with a narrow selector', () => {

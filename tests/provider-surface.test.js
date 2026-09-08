@@ -101,8 +101,13 @@ test('showing the surface measures once, then reads the catalog, and lists one s
   assert.deepEqual(stones.map((stone) => byClass(stone, 'sws-state')[0].textContent), ['Activated', 'Sign-in open', 'Not installed', 'No CLI']);
   assert.deepEqual(stones.map((stone) => byClass(stone, 'sws-secondary')[0].textContent), ['Anthropic · 2 models', 'OpenAI · 1 models', 'xAI', 'Pi · 1 models']);
   assert.deepEqual(stones.map((stone) => stone.attributes['data-activated']), ['true', 'false', 'false', 'false']);
-  assert.equal(byClass(made.el, 'setup-provider-snapshot')[0].textContent, 'Catalog updated 2026-09-08 · prices and models as read then; refreshed with each Ronin update.');
-  assert.match(byClass(made.el, 'setup-provider-measured')[0].textContent, /^This machine was measured .+; opening this surface measures it again\.$/);
+  const dates = byClass(made.el, 'setup-provider-dates')[0];
+  assert.equal(walk(dates).find((node) => node.tagName === 'SUMMARY').textContent, 'Check dates');
+  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.map((row) => row.children.map((cell) => cell.textContent)), [
+    ['Catalog researched', '2026-09-08'],
+    ['Machine measured', new Date('2026-09-08T11:00:00.000Z').toLocaleString()],
+  ]);
+  assert.equal(byClass(made.el, 'setup-provider-intro').length, 0);
   assert.equal(surface.providersSummary((await import('../public/js/form-steps.js')).providerCatalog()), '3 providers · 4 models · 1 activated here · catalog updated 2026-09-08');
 });
 
@@ -122,7 +127,7 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   const steps = byClass(card, 'setup-provider-step');
   assert.deepEqual(steps.map((step) => [step.dataset.step, step.dataset.status, step.dataset.done]), [['installed', 'installed', 'true'], ['authenticated', 'recorded', 'true'], ['ready', 'ready', 'true']]);
   assert.equal(section.className, 'setup-provider-catalog');
-  assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'The catalog · updated 2026-09-08');
+  assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'The catalog');
   const facts = byClass(section, 'setup-provider-facts')[0].children;
   assert.deepEqual(facts.map((fact) => [fact.children[0].textContent, fact.children[1].textContent, fact.dataset.on]), [['Installed', 'yes', 'true'], ['Signed in', 'yes', 'true'], ['Activated', 'yes', 'true']]);
   const table = byClass(section, 'setup-provider-models')[0];
@@ -172,8 +177,10 @@ test('an unmeasured machine and the owner\'s catalog copy are each said, never g
   catalog = { ...catalog, origin: 'user', updated: '2026-10-01' };
   const made = surface.createProviderSurface(context());
   await made.show();
-  assert.equal(byClass(made.el, 'setup-provider-measured')[0].textContent, 'This machine has not been measured yet.');
-  assert.equal(byClass(made.el, 'setup-provider-snapshot')[0].textContent, 'Your catalog copy, updated 2026-10-01.');
+  const dates = byClass(made.el, 'setup-provider-dates')[0];
+  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.map((row) => row.children.map((cell) => cell.textContent)), [
+    ['Catalog researched', '2026-10-01'],
+    ['Machine measured', 'Not measured yet'],
+  ]);
   assert.deepEqual(byClass(made.el, 'sws-stone').map((stone) => stone.attributes['data-provider']), ['anthropic', 'openai', 'pi'], 'with no registry rows every catalog provider is a stone of its own');
-  assert.equal(surface.catalogLine({ origin: 'stock', updated: '' }), 'Catalog updated date not stated · prices and models as read then; refreshed with each Ronin update.');
 });

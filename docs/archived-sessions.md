@@ -32,10 +32,12 @@ tmux session, and RIREKI continues against the same tape and scroll. Archive emi
 as a death. Hard delete emits `SessionEnd` and removes the record directory, including the
 tape and scroll.
 
-- A tile's trash action offers **Archive** or **Hard delete**. Archive writes a private,
-  sanitized manifest first, then stops the base tmux session and every grouped viewer.
-  Hard delete retains the irreversible behavior: the session-end lifecycle runs and the
-  session record directory is removed.
+- A live tile's trash action offers **Archive**, **Delete**, and **Hard Delete**. Archive is
+  resumable and refuses while the Agent owns an open desk. Delete visibly checks all desks,
+  automatically closes clean Team-contained work, and refuses actionably without loss.
+  Hard Delete is unmistakably destructive: after exact-target confirmation it preserves
+  quarantine/receipt evidence, then removes the Agent and every owned desk regardless of
+  dirty files or unhanded commits.
 - The Commons has a separate **Archived** tab listing disk-backed records. They are absent
   from the Roster and live session list and therefore do not count toward the session maximum.
 - Clicking an archived row recreates tmux, resumes the same provider conversation, restores
@@ -64,14 +66,17 @@ its location with `bin/ronin-store archived_sessions`; never spell the path in c
   available for recovery.
 - Rehydrate refuses a live name collision and a missing provider CLI. If process creation or
   metadata restoration fails, the partial tmux tree is stopped and the manifest remains.
-- Archive does not emit `SessionEnd` and does not remove the session directory. Hard delete
+- Archive does not emit `SessionEnd` and does not remove the session directory. Live shutdown
   does both, whether selected on a live tile or on an archived row.
 
 ## HTTP contract
 
 | Request | Result |
 |---|---|
-| `POST /api/sessions/:name/archive` | Persist manifest, stop and verify the tmux tree |
+| `POST /api/sessions/:name/archive` | Persist the resumable manifest and stop the Agent; refuses while it owns an open desk |
+| `DELETE /api/sessions/:name` | Coordinated close of safe assigned desks followed by Agent deletion |
+| `POST /api/sessions/:name/shutdown` | Immediately start observable safe Delete, or exact-confirmed Hard Delete; returns an operation id |
+| `GET /api/session-shutdowns/:id` | Current phase, desk count, terminal success, or actionable blockers |
 | `GET /api/archived-sessions` | Roster-safe rows: `id`, `name`, `archived_at`, `agent` |
 | `POST /api/archived-sessions/:id/rehydrate` | Resume provider conversation and restore metadata |
 | `DELETE /api/archived-sessions/:id` | Irreversibly end and remove the archived record |

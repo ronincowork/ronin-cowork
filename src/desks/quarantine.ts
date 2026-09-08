@@ -50,9 +50,11 @@ async function copyUntracked(
   worktree: string,
   files: string[],
   destination: string,
+  signal?: AbortSignal,
 ): Promise<Array<{ path: string; kind: 'file' | 'symlink'; mode: number; link?: string }>> {
   const entries: Array<{ path: string; kind: 'file' | 'symlink'; mode: number; link?: string }> = [];
   for (const relative of files) {
+    signal?.throwIfAborted();
     const source = path.resolve(worktree, relative);
     const base = path.resolve(worktree) + path.sep;
     if (!source.startsWith(base)) throw new Error(`untracked path escapes worktree: ${relative}`);
@@ -71,7 +73,8 @@ async function copyUntracked(
   return entries;
 }
 
-export async function quarantineDesk(fact: EndingDeskFact, id = `q_${Date.now()}_${randomUUID().slice(0, 8)}`): Promise<QuarantineManifest> {
+export async function quarantineDesk(fact: EndingDeskFact, id = `q_${Date.now()}_${randomUUID().slice(0, 8)}`, signal?: AbortSignal): Promise<QuarantineManifest> {
+  signal?.throwIfAborted();
   const dir = path.join(root(), safe(fact.repo), safe(id));
   await mkdir(path.dirname(dir), { recursive: true, mode: 0o700 });
   await mkdir(dir, { recursive: false, mode: 0o700 });
@@ -80,14 +83,18 @@ export async function quarantineDesk(fact: EndingDeskFact, id = `q_${Date.now()}
     : fact.changes;
   const quarantine_ref = fact.tip ? `refs/ronin/quarantine/${safe(id)}` : '';
   try {
+    signal?.throwIfAborted();
     if (quarantine_ref) await git(fact.repo_dir, ['update-ref', quarantine_ref, fact.tip]);
+    signal?.throwIfAborted();
     const staged_patch = path.join(dir, 'staged.patch');
     const unstaged_patch = path.join(dir, 'unstaged.patch');
     let untracked_entries: QuarantineManifest['untracked_entries'] = [];
     if (fact.mounted) {
       await writeFile(staged_patch, (await git(fact.worktree, ['diff', '--cached', '--binary'])).stdout, { mode: 0o600 });
+      signal?.throwIfAborted();
       await writeFile(unstaged_patch, (await git(fact.worktree, ['diff', '--binary'])).stdout, { mode: 0o600 });
-      untracked_entries = await copyUntracked(fact.worktree, changes.untracked, path.join(dir, 'untracked'));
+      signal?.throwIfAborted();
+      untracked_entries = await copyUntracked(fact.worktree, changes.untracked, path.join(dir, 'untracked'), signal);
     } else {
       await writeFile(staged_patch, '', { mode: 0o600 });
       await writeFile(unstaged_patch, '', { mode: 0o600 });
@@ -99,6 +106,7 @@ export async function quarantineDesk(fact: EndingDeskFact, id = `q_${Date.now()}
       staged_patch: path.relative(dir, staged_patch), unstaged_patch: path.relative(dir, unstaged_patch),
       untracked_root: 'untracked', untracked_entries,
     };
+    signal?.throwIfAborted();
     await atomicJson(path.join(dir, 'manifest.json'), manifest);
     return manifest;
   } catch (error) {
