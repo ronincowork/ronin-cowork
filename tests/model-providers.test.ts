@@ -9,7 +9,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -133,6 +133,15 @@ test('the summary is what was measured, dated, and survives the record round tri
   assert.deepEqual(catalog.parseProviderSummary({ measured_at: 't', installed: ['claude', 'claude', 7], operational: ['bad id!'], paths: { claude: '/x', codex: 3 } }), {
     measured_at: 't', installed: ['claude'], signed_in: [], operational: [], activated_count: 0, paths: { claude: '/x' },
   });
+});
+
+test('the start-up measure follows the Campaign record and its migration, never beside them', async () => {
+  // Both the summary write and the scope migration read-modify-write the campaigns section
+  // of machine settings; run concurrently on a fresh install, one write is lost. The chain
+  // in src/index.ts is the seam, so it is pinned here.
+  const source = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
+  assert.match(source, /ensureInitialCampaign\(\)\s*\.then\(\(\) => migrateCampaignScope\(\)\)\s*\.then\(\(\) => \(isEntryPoint \? measureAndRecordProviders\(\) : undefined\)\)/);
+  assert.equal(source.match(/measureAndRecordProviders\(\)/g)?.length, 1, 'measured at start in one place only');
 });
 
 test.after(async () => { await rm(box, { recursive: true, force: true }); });

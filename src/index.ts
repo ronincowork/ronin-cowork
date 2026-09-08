@@ -218,11 +218,14 @@ startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through t
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
 void stampFreshInstall();
 if (isEntryPoint) void ensureInstalledRoots().catch((error) => console.error(`[setup] installed roots: ${(error as Error).message}`));
-if (isEntryPoint) void measureAndRecordProviders().catch((error) => console.error(`[setup] provider summary: ${(error as Error).message}`)); // the Campaign's dated provider facts, measured once at start
 
+// The Campaign's dated provider facts are measured once at start, after the record exists
+// and has migrated: the summary and the migration both read-modify-write the campaigns
+// section, and side by side one of them would lose its write on a fresh install.
 void ensureInitialCampaign()
   .then(() => migrateCampaignScope())
-  .catch(() => {});
+  .then(() => (isEntryPoint ? measureAndRecordProviders() : undefined))
+  .catch((error) => console.error(`[setup] campaign start: ${(error as Error).message}`));
 
 const services: ServiceRegistration[] = [];
 // The parts on disk are the install; the Campaign's Routine switches say which of them run.
