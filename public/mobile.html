@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0e14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Ronin</title>
+    <link id="tabicon" rel="icon" type="image/svg+xml" href="/brand/nin-mark.svg" />
+    <link rel="apple-touch-icon" href="/brand/nin-mark-256.png" />
+    <script>
+      try {
+        var t = localStorage.getItem('tmuxgrid.theme');
+        if (t !== 'light' && t !== 'dark') {
+          t = localStorage.getItem('tmuxgrid.theme.system.mobile') || 'light';
+        }
+        if (t === 'light') document.documentElement.dataset.theme = 'light';
+      } catch (e) {}
+    </script>
+    <!-- THE MOBILE DOCUMENT. A phone downloads this page and nothing else: no desktop bar,
+         no workbench, no boot skeleton. The first frame the browser paints is the bar
+         below, because there is nothing else in the document to paint; js/phone.js fills
+         the list and routes the screens. The server sends this at /m, and at / to a phone. -->
+    <link rel="stylesheet" href="/__RONIN_ASSET_VERSION__/style.css" />
+    <link rel="stylesheet" href="/__RONIN_ASSET_VERSION__/css/feedback.css" />
+    <!-- modulepreloads:start -->
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/ansi.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/api.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/composer-rules.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/composer.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/desks.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/docs.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/dvr.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/errors.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/events.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/feedback.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/home.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/keysrow.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/lexicon.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/output.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/phone.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/provenance.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/request.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/session-retire.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/shingo.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/state.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tapefold.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tapeview.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-controller.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-drag.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/terminal-input.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/terminal-tile-host.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/termview.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/theme.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tile-doc-view.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tile.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tiledocs.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tiledrop.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tiledroptext.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tilehead.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tilemacros.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tilementions.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tilemore.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tilewire.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tips.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/ui.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/voice.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/widgets.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workbench.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workspace-adapters.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workspace-arrangement.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workspace-contract.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workspace-kit.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workspace-layouts.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workspace-primitives.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workspace.js" />
+    <!-- modulepreloads:end -->
+  </head>
+  <body>
+    <div id="phone">
+      <header class="ph-bar">
+        <a class="brand brand-home" href="#/" aria-label="Ronin">
+          <img class="brand-mark" src="brand/nin-mark.svg" alt="" />
+        </a>
+        <span class="ph-title">Teams</span>
+      </header>
+      <main class="ph-main"></main>
+    </div>
+
+    <script src="/vendor/xterm.js"></script>
+    <script src="/vendor/addon-fit.js"></script>
+    <script type="module" src="/__RONIN_ASSET_VERSION__/js/phone.js"></script>
+  </body>
+</html>

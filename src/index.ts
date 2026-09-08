@@ -160,14 +160,31 @@ app.get('/vendor/xterm.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/xt
 app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/addon-fit/lib/addon-fit.js')));
 
 const assetVersion = roninIdentity().commit.replace(/[^A-Za-z0-9._-]/g, '_');
-const indexHtml = fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion);
-const sendIndex = (_req: express.Request, res: express.Response) => {
+const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion);
+const indexHtml = readDocument('index.html');
+// THE MOBILE DOCUMENT. A phone downloads mobile.html — the bar, an empty list and
+// js/phone.js — and never the desktop page, so the first frame it paints is the mobile bar:
+// there is nothing else in that document to paint. The phone is read off the request, the
+// way it has always been done: an iPhone says "iPhone", an Android phone says "Mobile". An
+// iPad says it is a Mac and keeps the workbench, which is the rule for a coarse-but-wide
+// screen. /m is always the mobile document and /index.html always the desktop one.
+const mobileHtml = readDocument('mobile.html');
+const PHONE_AGENT = /\b(?:iPhone|iPod)\b|\bAndroid\b.*\bMobile\b/;
+const isPhone = (req: express.Request) => PHONE_AGENT.test(req.get('user-agent') ?? '');
+const sendDocument = (html: string) => (_req: express.Request, res: express.Response) => {
   res.setHeader('Cache-Control', 'no-cache');
-  res.type('html').send(indexHtml);
+  res.type('html').send(html);
 };
-app.get('/', sendIndex);
+const sendIndex = sendDocument(indexHtml);
+const sendMobile = sendDocument(mobileHtml);
+app.get('/', (req, res) => {
+  res.setHeader('Vary', 'User-Agent'); // one address, two documents: a cache must never hand a phone the desktop
+  (isPhone(req) ? sendMobile : sendIndex)(req, res);
+});
 app.get('/index.html', sendIndex);
 app.get('/cowork-setup', sendIndex);
+app.get('/m', sendMobile);
+app.get('/mobile.html', sendMobile);
 app.use(`/${assetVersion}`, express.static(PUBLIC, { immutable: true, maxAge: '1y', index: false }));
 
 const noCacheClient = (res: express.Response, filePath: string) => {

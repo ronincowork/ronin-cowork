@@ -627,13 +627,14 @@ not claimed as the reproduced cause of this lock.
 
 ## The phone and the touch keys
 
-**A phone never builds the workbench at all.** At an iPhone-class viewport (small AND
-coarse — `IS_PHONE` in `state.js`) `main.js` mounts the phone shell instead
-Agent, drive its tile. On the stage the tile's own head is hidden and the shell's slim
-bar replaces it — ‹ back, the Agent's title, and one メ sheet holding the head's own
-controls (Status, Work record, Output, Note, Control, Kill), **relocated, not cloned**,
-so every handler and live widget keeps its owner. The Status row is a reading, not a
-door.
+**A phone never downloads the workbench at all.** The server reads the phone off the
+request and sends `public/mobile.html` — its own document, booted by `js/phone.js`, with
+no desktop bar, workbench or boot skeleton in it to paint first — at `/` for a phone-class
+User-Agent and always at `/m` (`src/index.ts`). Three screens, one at a time: the Teams
+list, a Team's **Agents | Docs**, and one Agent's tile. On the tile the head is hidden and
+the document's slim bar replaces it — ‹ back, the Agent's title, and one メ sheet holding
+the head's own controls (Work record, Docs, Macros, Output where Services allow, Note,
+Control, Kill), **relocated, not cloned**, so every handler and live widget keeps its owner.
 
 **The keys ride the composer on every coarse tile** — phone shell and iPad workbench
 alike (`public/js/keysrow.js`): Esc, ^C, ⌫, ^U, Tab, ⇧Tab, the arrows and ⤓, docked

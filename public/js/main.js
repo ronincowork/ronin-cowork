@@ -9,8 +9,7 @@ import { activeProfile, loadDeskProfile } from './desk-profile.js';
 import { connectEvents } from './events.js';
 import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome } from './home.js';
 import { build } from './layout.js';
-import { IS_PHONE, S, tiles } from './state.js';
-import { buildPhone } from './phone.js';
+import { S, tiles } from './state.js';
 import { installTips } from './tips.js';
 import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
@@ -101,15 +100,9 @@ export async function init() {
   }
 
 
-  // workbench: it gets the three-step drill-down — Cowork, Agent, tile-with-keys —
-  // and none of the chrome below. iPad (coarse but wide) and desktop continue as ever.
-  // The four workbenches now use their existing narrow responsive layout on phones too.
-  // Keep the retired phone drill-down reachable only from its explicit legacy route.
-  if (IS_PHONE && location.hash.startsWith('#/m')) {
-    await buildPhone();
-    reveal();
-    return;
-  }
+  // THE DESKTOP DOCUMENT. A phone never loads this page: the server sends mobile.html to a
+  // phone-class User-Agent (src/index.ts), and /m is that document's own address. Nothing
+  // below decides "phone"; an iPad (coarse but wide) and a desktop get this workbench.
 
   const viewhost = document.getElementById('viewhost');
   if (!viewhost) throw new Error('workspace ViewHost is missing');
@@ -156,8 +149,8 @@ export async function init() {
   // header now belongs to it. Session discovery, event wiring and home catalogs below
   // enrich that workspace; none decides which surface the person is looking at. Keeping
   // the veil over those reads exposed only the light canvas (--bg, the beige flash) on
-  // every reload, sometimes for seconds on a busy box. Phone lifts the same veil at its
-  // own mount boundary above; desktop must not make network readiness a paint boundary.
+  // every reload, sometimes for seconds on a busy box. The desktop must not make
+  // network readiness a paint boundary.
   reveal();
 
   guard('install workspace controls', build);

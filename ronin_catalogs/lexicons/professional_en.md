@@ -1674,7 +1674,7 @@ The catalog entry goes. {dir} is not touched.
 ## composer — the ✕ clear
 - **composer.clear_title:** Clear this box
 
-## phone — phone.js (the phone shell: Teams, a Team's Agents, one Agent's tile)
+## phone — phone.js (the mobile document: Teams, a Team's Agents | Docs, one Agent's tile)
 - **phone.coworks:** Teams
 - **phone.launch_card:** Launch New Agent
 - **phone.launch_defaults:** Everything else launches with this Team's defaults.
@@ -1682,8 +1682,10 @@ The catalog entry goes. {dir} is not touched.
 - **phone.agents_one:** 1 Agent
 - **phone.agents_many:** {n} Agents
 - **phone.no_agents:** No Agents on this Team yet.
+- **phone.agents:** Agents
+- **phone.docs:** Docs
 - **phone.back:** Back
-- **phone.me_title:** This Agent — status, work record, note, control, kill
+- **phone.me_title:** This Agent — work record, docs, macros, note, control, kill
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 
