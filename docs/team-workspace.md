@@ -49,7 +49,7 @@ one on leave so no transport survives outside the entered destination.
 5. Each workspace gets back what it remembered. With nothing remembered: the **人** (the
    designated lead) left, the commons right. A remembered member the roster no longer has
    is waited for while the roster is still arriving, then let go.
-6. The roster renders one card per member and an inert `＋ Add team member` card. A card
+6. The roster renders one card per member and a `＋ Add Agent to Team` card. A card
    is a **reading**: session role, 人, SHINGO chip, status (ready · thinking · awaiting
    input), model, ⛽ context, attached — read off `/api/home`'s row on entry and every 5s.
 7. **Click a card** and its Tile goes into the workspace last touched (the one carrying
@@ -210,7 +210,10 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
 
 ## Known limits
 
-- `＋ Add team member` is intentionally inert.
+- `＋ Add Agent to Team` opens the Add Agent form in the workspace you place it in. The
+  born Agent takes that same workspace, in this tab; no new tab opens. If the launch
+  receipt carries a desk or lead note, the form stays so the note can be read, and the
+  newborn is on the roster one click away (owner ruling 2026-09-08).
 - Team Configuration edits roster metadata but never the Cowork ID; that stable address
   is pinned by live Agent membership and lead pointers. Membership itself is still edited
   from roster drag/drop, never stored on the roster.
