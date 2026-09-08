@@ -89,7 +89,11 @@ export async function launchPresetPlan(plan = {}, send) {
   // loader the New Team form uses. The preset only says which rows, what they are called,
   // and the owner's starting message; nothing about provider or model rides on a row.
   const stored = Array.isArray(template.agents) ? template.agents : [];
+  // BARE METAL is the native agent, bare: each row starts the CLI in the chosen folder
+  // with the owner's words and nothing of Ronin's. Every other preset births Ronin agents.
+  const bare = plan.template.name === 'bare_metal';
   const picks = configured.map((row, index) => {
+    if (bare) return { session_type: 'bare_metal_agent', name: unique(`${team}_${row.name || 'session'}`), project_root: plan.inputs?.root || 'ronin_lab', instructions: plan.user_message || '' };
     const base = stored.find((agent) => slug(agent.name) === slug(row.name)) || stored[index] || stored.at(-1) || {};
     return {
       name: unique(`${team}_${row.name || base.name || 'agent'}`),

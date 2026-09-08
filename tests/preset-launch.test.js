@@ -56,3 +56,18 @@ test('Ronin Team launches the stored template through the team loader, with noth
   assert.ok(births.every(({ body }) => body.instructions.endsWith('Ship it.')));
   assert.ok(births.every(({ body }) => body.mandate && body.mandate.reach));
 });
+
+test('Bare Metal launches bare-metal agents in Ronin Lab with the owner\'s words and nothing of Ronin\'s', async () => {
+  const calls = [], send = responder({ name: 'bare_metal', label: 'Bare Metal', agents: [{ name: 'session 1', team_lead: true, instructions: 'Lead.' }, { name: 'session 2', instructions: 'Work.' }] }, calls);
+  const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'bare_metal' }, user_message: '', inputs: { root: 'ronin_lab', sessions: [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }] } }, send);
+  assert.equal(result.ok, true);
+  const births = calls.filter((row) => row.url === '/api/launch').map((row) => row.body);
+  assert.equal(births.length, 3);
+  for (const body of births) {
+    assert.equal(body.session_type, 'bare_metal_agent');
+    assert.equal(body.project_root, 'ronin_lab');
+    assert.equal(body.instructions, '');
+    assert.equal('mandate' in body || 'team_lead' in body || 'routines' in body, false);
+  }
+  assert.equal(calls.find((row) => row.url === '/api/team-rosters').body.project_root, 'ronin_lab');
+});

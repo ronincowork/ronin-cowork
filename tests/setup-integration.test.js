@@ -29,7 +29,7 @@ test('all core handles expose only their ruled specialized controls after the un
 });
 
 test('all initial controls preserve the ruled destinations and teaching choices', () => {
-  assert.deepEqual(presets.initialControls('bare_metal').sessions, [{ name: 'session_1' }, { name: 'session_2' }]);
+  assert.deepEqual(presets.initialControls('bare_metal'), { tiles: 2, root: 'ronin_lab', sessions: [{ name: 'session_1' }, { name: 'session_2' }] });
   assert.deepEqual(presets.initialControls('ronin_team').sessions.map((row) => [row.name, row.team_lead === true]), [['team_lead', true], ['agent_1', false], ['agent_2', false]]);
   assert.equal(presets.initialControls('staff_my_codebase').root, 'ronin_project_1');
   assert.deepEqual(presets.initialControls('develop_new_project'), { root: 'ronin_project_1', features: ['frontend', 'backend'] });
