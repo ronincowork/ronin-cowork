@@ -30,7 +30,6 @@
 import { launchSpecData, projectData } from './home.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { dialRow, dialRowMulti } from './form-steps.js';
 import { swapTeamLead } from './team-lead-swap.js';
 
@@ -275,7 +274,6 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
   // actions are built after `reset` and `launch` exist.
   const launch = async () => {
     if (busy) return;
-    const launchTab = reserveWorkspaceTab();
     busy = true;
     start.setDisabled(true);
     notice.set('info', t('add_agent.starting', 'Starting…'));
@@ -300,7 +298,6 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
       },
     });
     if (!result.ok) {
-      closeWorkspaceTab(launchTab);
       busy = false;
       start.setDisabled(false);
       notice.set('failed', result.message);
@@ -323,11 +320,13 @@ export function createAddAgentView(kit, { team, roster, members, connect, fullLa
     else if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
     else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
     reset();
-    // THE LOOP: the Agent appears in the workspace that made it — EXCEPT when the
-    // receipt carries a desk note. Connecting swaps this surface for the tile in the
-    // same breath, which would take the one line explaining the missing desk with it;
-    // so the note holds the surface, and the newborn is on the roster one click away.
-    openWorkspaceTab('team', teamName(), launchTab);
+    // THE LOOP: the Agent appears in the workspace that made it, in this tab (Glen,
+    // 2026-09-08: an Agent added from inside a Team workbench takes the workspace the
+    // Add Agent surface is on; no new tab) — EXCEPT when the receipt carries a desk or
+    // lead note. Connecting swaps this surface for the tile in the same breath, which
+    // would take the one line explaining it with it; so the note holds the surface, and
+    // the newborn is on the roster one click away.
+    if (!deskNote && !leadNote) connect?.(born);
   };
 
   const start = createAction({ label: t('forms.launch', 'Launch'), launch: true, kind: 'primary', action: () => void launch() });
