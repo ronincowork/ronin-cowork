@@ -92,6 +92,9 @@ export function createSetupView() {
     launchUrl: presetLaunchUrl,
     reserveLaunchTab: reserveWorkspaceTab,
     kinds: environment.kinds,
+    // One runtime truth: the Setup view reads it once at entry and the Model providers
+    // surface keeps it current, so a stone's gate never needs a read of its own.
+    runtime: () => environment.setupRuntime,
     navigateToSurface: (type, detail = {}) => {
       bench?.place(type, 'workspace2', detail);
       bench?.select('workspace2');

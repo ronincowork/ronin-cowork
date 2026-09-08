@@ -524,7 +524,10 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     const measure = () => surface.el.style?.setProperty?.('--sp-intro', `${Math.max(0, Math.round(stoneSurface.el.offsetTop - kindsHost.offsetTop))}px`);
     new ResizeObserver(measure).observe(kindsHost);
   }
+  // The gate reads the runtime the Setup view keeps current when there is one.
+  const freshRuntime = () => { const live = environment.runtime?.(); if (live && typeof live === 'object') runtime = live; return runtime; };
   const paintGrid = () => {
+    freshRuntime();
     const visible = visibleIndexes();
     stoneSurface.setItems(slots.map((slot, index) => {
       const gate = presetReadiness(slot.handle, runtime);
@@ -535,7 +538,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   const paintDetail = () => {
     detail.replaceChildren(); const slot = current();
     if (!slot) return;
-    const gate = presetReadiness(slot.handle, runtime);
+    const gate = presetReadiness(slot.handle, freshRuntime());
     const heading = el('div', 'sp-heading');
     heading.append(el('h3', '', slot.label || slot.handle));
     const go = el('div', 'sp-go');
@@ -583,9 +586,10 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
       runtime = supplied.runtime || runtime;
     }
     else {
-      const [teams, agents, setup] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents'), request('/api/setup/runtime')]);
+      const shared = environment.runtime?.();
+      const [teams, agents, setup] = await Promise.all([request('/api/templates/teams'), request('/api/templates/agents'), shared ? null : request('/api/setup/runtime')]);
       templates = [...(teams.ok ? teams.data : []).map((row) => ({ ...row, shelf: 'teams' })), ...(agents.ok ? agents.data : []).map((row) => ({ ...row, shelf: 'agents' }))];
-      runtime = setup.ok ? setup.data : runtime;
+      runtime = shared || (setup?.ok ? setup.data : runtime);
     }
     const remembered = await storedSlots(environment);
     if (Array.isArray(remembered) && remembered.length === HOUSE_PRESETS.length) slots = HOUSE_PRESETS.map((fallback, index) => {
