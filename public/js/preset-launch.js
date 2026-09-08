@@ -66,8 +66,11 @@ export async function launchPresetPlan(plan = {}, send) {
   // sessions of the undefined team, seated together on the Cowork page. Their names are
   // the names in the rows, nothing appended.
   if (plan.template.name === 'bare_metal') {
+    // One three-digit code per launch rides every row's name, so several Bare Metals can
+    // live together; a name still in use is refused by the server, loudly, in its words.
+    const code = String(100 + Math.floor(Math.random() * 900));
     const picks = (plan.inputs?.sessions || []).map((row) => ({
-      session_type: 'bare_metal_agent', name: slug(row.name) || 'session', project_root: plan.inputs?.root || 'ronin_lab', instructions: plan.user_message || '',
+      session_type: 'bare_metal_agent', name: `${slug(row.name) || 'session'}_${code}`, project_root: plan.inputs?.root || 'ronin_lab', instructions: plan.user_message || '',
       ...(row.provider ? { provider: row.provider } : {}), ...(row.model ? { model: row.model } : {}),
     }));
     const outcomes = await launchTeamAgents(ask, '', picks);

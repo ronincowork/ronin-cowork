@@ -307,3 +307,22 @@ test('a row picks its provider and model from the launch table, the New Agent fo
   assert.deepEqual(presets.launchTable(specs), { anthropic: ['opus', 'sonnet'], openai: ['gpt-5.6-sol'] });
   assert.deepEqual(presets.launchTable(null), {});
 });
+
+test('a refused launch fails loudly: the server\'s sentence sits beside Launch and stays', async () => {
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] } }),
+    loadPresetSlots: () => null,
+    reserveLaunchTab: () => ({ close() { this.closed = true; } }),
+    launch: async () => ({ ok: false, message: 'Session "session_1" already exists.' }),
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'))[0].click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  const warning = nodes.find((node) => String(node.className).includes('sp-warning'));
+  assert.equal(warning.hidden, true);
+  await launch.listeners.click[0]();
+  assert.equal(warning.hidden, false);
+  assert.equal(warning.textContent, 'Session "session_1" already exists.');
+});
