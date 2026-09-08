@@ -4746,8 +4746,22 @@ button.wb-door:hover b {
   outline: none;
 }
 
-.tile:is(.tape-on, .keys-on) .composer.noconn textarea {
+.tile:is(.tape-on, .keys-on) .composer.held textarea {
   border-color: var(--bad-deep);
+}
+.tile:is(.tape-on, .keys-on) .composer.sending textarea {
+  opacity: 0.6;
+}
+/* The reason a send was held — its own row above the box, only while it is true. */
+.tile:is(.tape-on, .keys-on) .composer .cwhy {
+  display: none;
+  flex-basis: 100%;
+  margin: 0;
+  font: var(--text-3)/1.3 var(--font-ui);
+  color: var(--bad-deep);
+}
+.tile:is(.tape-on, .keys-on) .composer.held .cwhy {
+  display: block;
 }
 
 .tile:is(.tape-on, .keys-on) .composer.queued .csend {

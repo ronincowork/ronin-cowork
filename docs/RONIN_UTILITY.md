@@ -79,8 +79,12 @@ paste. They arrive with Ronin Services; a locked tile is not "broken" when they 
 - **Copying from an Unlocked view** is ordinary text selection.
 - **Pasting** goes into **the composer**, the box under the tile: Enter sends, Shift+Enter
   (Option+Enter on a Mac) makes a new line, the mic dictates into it, ✕ clears it. It is
-  separate from the terminal's own input. On touch, the **Keys** row beside it sends what a
-  keyboard would — Esc · ^C · ⌫ · ^U · ⇧Tab · the arrows — straight to the session.
+  separate from the terminal's own input: a message sent from it reaches the session even
+  when the tile is scrolled up (it returns the view to the bottom first), and the box
+  clears only once the session has taken it. If it could not be delivered, the text stays
+  in the box with the reason above it — nothing is sent twice on your behalf. On touch,
+  the **Keys** row beside it sends what a keyboard would — Esc · ^C · ⌫ · ^U · ⇧Tab · the
+  arrows — straight to the session.
 
 ## Feedback
 
