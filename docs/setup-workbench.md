@@ -111,7 +111,9 @@ team loader the New Team form uses: each row is one of the template's agents wit
 instructions, mandate, lead mark and Routine switches, and the owner's starting message
 appended. A row carries no provider or model; those come from the same Configuration and
 Campaign defaults every launch uses. The preset decides only which rows launch, what they
-are called, and how the new tab is seated. A stone's gate reads the same runtime the
+are called, and how the new tab is seated. Bare Metal is the one exception by design: each
+of its rows is a bare-metal agent, the native CLI started in Ronin Lab with the owner's
+words and no Ronin birth packet, team room, or mandate. A stone's gate reads the same runtime the
 Model providers surface keeps current, so activating a provider unlocks the stones at once. Grokbot Morning Briefing's **When**
 asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
 time, **One time** a date and a time; the schedule is written in the Cron jobs grammar

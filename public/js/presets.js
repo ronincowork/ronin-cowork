@@ -167,7 +167,7 @@ const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/
 
 export function initialControls(handle) {
   switch (handle) {
-    case 'bare_metal': return { tiles: 2, sessions: [{ name: 'session_1' }, { name: 'session_2' }] };
+    case 'bare_metal': return { tiles: 2, root: 'ronin_lab', sessions: [{ name: 'session_1' }, { name: 'session_2' }] };
     case 'ronin_team': return { sessions: [{ name: 'team_lead', team_lead: true }, { name: 'agent_1' }, { name: 'agent_2' }] };
     case 'staff_my_codebase': return { root: 'ronin_project_1', root_dir: '' };
     case 'develop_new_project': return { root: 'ronin_project_1', features: ['frontend', 'backend'] };
