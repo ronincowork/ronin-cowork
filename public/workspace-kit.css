@@ -85,11 +85,17 @@
   .wk-workbench-splitter:hover::after, .wk-workbench-splitter[data-dragging='true']::after, .wk-workbench-splitter:focus-visible::after { background: var(--aiiro); opacity: 1; }
 
   .wk-view-map:empty { display: none; }
+  .wk-view-actions:empty { display: none; }
 
   .wk-view-name:empty { display: none; }
   .wk-tab-name { width: 12rem; max-width: 30vw; height: 1.75rem; padding: 0 var(--space-3); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg-strong); font: inherit; font-size: var(--text-3); }
   .wk-tab-name::placeholder { color: var(--muted); }
   .wk-tab-name:focus-visible { outline: var(--edge) solid var(--focus-ring); outline-offset: 1px; }
+  /* In THE PLACE this is the island itself, not a form field laid over it. Keep the
+     established island at rest and reveal editability through its focus ring. This
+     lives in the Kit's layer so the generic field treatment cannot win by layer order. */
+  .ui-bar-place .wk-tab-name { width: 100%; max-width: none; height: auto; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; text-align: center; }
+  .ui-bar-place .wk-tab-name:focus-visible { outline: var(--edge-2) solid currentColor; outline-offset: var(--space-1); border-radius: var(--radius-xs); }
   .wk-channel-service-grow { flex: 1 1 auto; }
   .wk-layout-map { display: flex; align-items: stretch; gap: var(--space-1); height: 1.5rem; width: 4.5rem; padding: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); }
   .wk-layout-map-slot { flex: 1 1 auto; min-width: .5rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); padding: 0; cursor: pointer; touch-action: none; }

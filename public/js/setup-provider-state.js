@@ -17,47 +17,63 @@ export function providerFromRuntime(runtime, key) {
   return (Array.isArray(runtime?.providers) ? runtime.providers : []).find((provider) => provider?.id === key) || null;
 }
 
-const PROVIDER_SIGN_IN = Object.freeze({
-  anthropic: 'Claude Code handles Anthropic account sign-in in its native setup.',
-  openai: 'Codex handles OpenAI account sign-in in its native setup.',
-  gemini: 'Gemini CLI handles Google account sign-in in its native setup.',
-  grok: 'Grok CLI handles xAI account sign-in in its native setup.',
-  hermes: 'Hermes handles Nous Research account setup in its native flow.',
-});
-
 const PROVIDER_MANUAL_ROUTES = Object.freeze({
   hermes: {
-    label: 'Open Hermes install guide',
+    label: 'Install guide',
     url: 'https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md',
   },
 });
 
-/** Consumer copy and action intent derived only from Setup Runtime truth. */
+/** The day part of a recorded ISO stamp, or the stamp as written. */
+const recordedDay = (value) => {
+  const text = String(value || '').trim();
+  return /^\d{4}-\d{2}-\d{2}T/.test(text) ? text.slice(0, 10) : text;
+};
+
+/** The sentence for an installed provider that has not signed in here yet. */
+const signInSentence = (provider) => {
+  const label = String(provider?.label || provider?.id || 'This provider');
+  return `Opens ${label} in a tile here. Follow its sign-in, then press Done.`;
+};
+
+/** The sentence for a signed-in provider: what Ronin measured, or what it recorded. */
+const signedInSentence = (provider) => {
+  const label = String(provider?.label || provider?.id || 'This provider');
+  const vendor = String(provider?.from || '').trim();
+  if (provider?.signed_in) return vendor ? `${vendor} credentials are on this machine.` : `${label} credentials are on this machine.`;
+  return `Sign-in recorded${provider?.activated_at ? ` ${recordedDay(provider.activated_at)}` : ''}. ${label} asks again itself if it ever needs to.`;
+};
+
+/**
+ * Consumer copy and action intent derived only from Setup Runtime truth. The inventory
+ * state is the short selector word from SETUP_WORKBENCH: activated · sign-in open ·
+ * needs sign-in · not installed · manual install. Signed in is measured from the CLI's
+ * own credential file or recorded by Done; nothing here reads a credential.
+ */
 export function providerPresentation(provider) {
   const id = String(provider?.id || '');
   const label = String(provider?.label || id || 'This provider');
   if (provider?.login_open) return {
     inventoryState: 'Sign-in open',
-    detail: `Complete ${label}'s native setup below. Done / Close records completion; Close leaves it unactivated.`,
+    detail: `Finish signing in to ${label} in the tile, then press Done. Close keeps things as they were.`,
     action: 'login_open',
   };
   if (provider?.activated) return {
-    inventoryState: 'Setup complete',
-    detail: `Ronin recorded ${label} setup completion${provider.activated_at ? ` on ${provider.activated_at}` : ''}. ${label} controls current authentication and may ask you to sign in again.`,
+    inventoryState: 'Activated',
+    detail: signedInSentence(provider),
     action: 'none',
   };
   if (provider?.installed) return {
-    inventoryState: 'Sign-in unknown',
-    detail: `${PROVIDER_SIGN_IN[id] || `${label} handles account sign-in in its native setup.`} Ronin has not recorded setup completion yet.`,
+    inventoryState: 'Needs sign-in',
+    detail: signInSentence(provider),
     action: 'sign_in',
   };
   if (provider?.installable) {
     const command = String(provider.install || '').trim();
     return {
-      inventoryState: 'Install available',
-      detail: id === 'grok'
-        ? `Installs Grok CLI globally with npm${command ? `: ${command}` : '.'}`
-        : `Ronin can install ${label} on this machine${command ? ` with ${command}` : '.'}`,
+      inventoryState: 'Not installed',
+      detail: /^npm install -g\b/.test(command) ? 'Installs globally with npm.' : command ? 'Ronin runs this on this machine.' : `Ronin can install ${label} on this machine.`,
+      command,
       action: 'install',
     };
   }
@@ -70,38 +86,46 @@ export function providerPresentation(provider) {
   };
 }
 
-/** The uniform selected-provider path. Only the first unmet step may carry an action. */
+/**
+ * The three steps of a selected provider, in order, from the runtime row alone: Install,
+ * Authenticate, Ready. Each step carries its status key, at most one short detail line,
+ * an optional install command, the real action it owns, whether it is done, and whether
+ * it is the current step: exactly the first unmet one. This is the only source the
+ * surface reads. There is no opt-in step: nothing at launch read one.
+ */
+const STEP_DONE = Object.freeze({ installed: 'installed', authenticated: 'recorded', ready: 'ready' });
+
 export function providerReadiness(provider) {
-  const label = String(provider?.label || provider?.id || 'This provider');
   const presentation = providerPresentation(provider);
   const installed = provider?.installed === true;
   const activated = provider?.activated === true;
-  const authCurrent = installed && !activated;
-  return [
+  const loginOpen = provider?.login_open === true;
+  const steps = [
     {
-      key: 'use', label: 'Use with Ronin', status: 'complete',
-      detail: `${label} is selected for setup.`, action: 'none',
+      key: 'installed', label: 'Install', status: installed ? 'installed' : 'not_installed',
+      detail: installed ? '' : presentation.detail,
+      command: installed ? '' : presentation.command || '',
+      action: installed ? 'none' : presentation.action === 'manual' ? 'manual' : 'install',
+      manual: installed ? null : presentation.manual || null,
     },
     {
-      key: 'installed', label: 'Installed', status: installed ? 'complete' : 'current',
-      detail: installed
-        ? `${label} is installed${provider?.path ? ` at ${provider.path}` : '.'}`
-        : presentation.detail,
-      action: installed ? 'none' : presentation.action,
-      manual: installed ? null : presentation.manual,
+      key: 'authenticated', label: 'Authenticate',
+      status: activated ? 'recorded' : loginOpen ? 'open' : installed ? 'available' : 'blocked',
+      detail: activated || loginOpen ? presentation.detail : installed ? signInSentence(provider) : '',
+      action: loginOpen ? 'login_open' : 'sign_in',
     },
     {
-      key: 'authenticated', label: 'Authenticated', status: activated ? 'complete' : authCurrent ? 'current' : 'pending',
-      detail: activated
-        ? `${label} setup completion is recorded. Current sign-in remains provider-owned and is not monitored.`
-        : authCurrent ? presentation.detail : '',
-      action: authCurrent ? presentation.action : 'none',
-    },
-    {
-      key: 'ready', label: 'Ready', status: activated ? 'complete' : 'pending',
-      detail: activated ? `${label} is activated for Launch.` : '', action: 'none',
+      key: 'ready', label: 'Ready', status: activated ? 'ready' : 'not_ready',
+      detail: activated ? '' : 'After sign-in.', action: 'none',
     },
   ];
+  let found = false;
+  for (const step of steps) {
+    step.done = step.status === STEP_DONE[step.key];
+    step.current = !found && !step.done;
+    if (step.current) found = true;
+  }
+  return steps;
 }
 
 /** Mount only the explicit Runtime attachment; never infer a provider session name. */

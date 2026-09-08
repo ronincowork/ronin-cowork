@@ -9,7 +9,9 @@ test('Setup and Campaign share the one canonical Templates stone consumer', asyn
     readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
     readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8'),
   ]);
-  assert.match(setup, /campaignTemplatesDefinition\(\)/);
+  assert.match(setup, /import \{ CAMPAIGN_TEMPLATES_TYPE, createTemplatesSurface \}/);
+  assert.match(setup, /item\.id === 'template'[\s\S]*createTemplatesSurface\(\)/);
+  assert.doesNotMatch(setup, /campaignTemplatesDefinition\(\)/);
   assert.match(campaign, /add\(campaignTemplatesDefinition\(\)\)/);
   assert.match(source, /import \{ createStoneWorkSurface \} from '\.\/stone-work-surface\.js'/);
   assert.match(source, /stoneSurface\.mount\(body, \{ before: \[installedHead\], after: \[libraryRoom\] \}\)/);

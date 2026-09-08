@@ -3,7 +3,6 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
-import { createFolderPicker } from './folder-picker.js';
 
 export { createStoneWorkSurface };
 
@@ -113,11 +112,7 @@ export const CORE_PRESET_TREATMENTS = Object.freeze({
 
 export const isCorePreset = (handle) => Object.hasOwn(CORE_PRESET_TREATMENTS, String(handle || ''));
 export const bareMetalWorkspaceCount = (count) => count <= 1 ? 1 : count === 2 ? 2 : 4;
-export const cascadeProvider = (rows, provider, previous = '') => rows.map((row) => ({
-  ...row,
-  provider: !row.provider || row.provider === previous ? provider : row.provider,
-}));
-export const presetActions = (handle) => ['user_message', 'customize', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
+export const presetActions = (handle) => ['user_message', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
 export function firstActivatableProvider(runtime = {}) {
   return (Array.isArray(runtime.providers) ? runtime.providers : []).find((provider) => {
     if (!provider?.id || provider.activated === true || provider.blocked) return false;
@@ -137,7 +132,7 @@ export function seatingPlan(handle, receipt = {}, inputs = {}) {
   const fixed = CORE_PRESET_TREATMENTS[handle];
   if (!fixed) return null;
   const plan = fixed.seats(receipt);
-  if (handle === 'bare_metal' && [1, 2, 4].includes(Number(inputs.tiles))) plan.count = Math.max(plan.count, Number(inputs.tiles));
+  if (handle === 'bare_metal' && [2, 4].includes(Number(inputs.tiles))) plan.count = Math.max(plan.count, Number(inputs.tiles));
   return plan.seats.length ? plan : null;
 }
 
@@ -148,7 +143,7 @@ const el = (tag, cls = '', text = '') => {
   return out;
 };
 const field = (label, control, prompt = '') => {
-  const wrap = el('label', 'sp-field');
+  const wrap = el('label', 'sp-field sp-section');
   const head = el('span', 'sp-field-label');
   head.append(el('span', '', label));
   if (prompt) head.append(el('span', 'sp-select', prompt));
@@ -161,18 +156,19 @@ const controlLabel = (label, prompt = '') => {
   if (prompt) head.append(el('span', 'sp-select', prompt));
   return head;
 };
+const section = (label, prompt, ...content) => {
+  const wrap = el('section', 'sp-section');
+  wrap.append(controlLabel(label, prompt), ...content);
+  return wrap;
+};
 const input = (value = '', type = 'text') => { const out = el('input'); out.type = type; out.value = value; return out; };
 const option = (value, label = value) => { const out = el('option', '', label); out.value = value; return out; };
 const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
 
-export function initialControls(handle, defaultProvider = '') {
+export function initialControls(handle) {
   switch (handle) {
-    case 'bare_metal': return { tiles: 2, sessions: [{ name: 'session_1', provider: defaultProvider, model: '' }, { name: 'session_2', provider: defaultProvider, model: '' }] };
-    case 'ronin_team': return { sessions: [
-      { name: 'team_lead', provider: defaultProvider, model: '', team_lead: true },
-      { name: 'agent_1', provider: defaultProvider, model: '' },
-      { name: 'agent_2', provider: defaultProvider, model: '' },
-    ] };
+    case 'bare_metal': return { tiles: 2, sessions: [{ name: 'session_1' }, { name: 'session_2' }] };
+    case 'ronin_team': return { sessions: [{ name: 'team_lead', team_lead: true }, { name: 'agent_1' }, { name: 'agent_2' }] };
     case 'staff_my_codebase': return { root: 'ronin_project_1', root_dir: '' };
     case 'develop_new_project': return { root: 'ronin_project_1', features: ['frontend', 'backend'] };
     case 'personal_assistant': return { assistant_mode: 'single', specialists: '' };
@@ -185,7 +181,7 @@ export function initialControls(handle, defaultProvider = '') {
       { name: 'brief writer', ask: "Write the morning page on the owner's topic: what moved, what is waiting on the owner, and what today holds. One page, read on a phone in the time the kettle takes. List it on the Docs tab." },
       { name: 'reader', ask: 'Read what the topic produced since yesterday — documents, records, and notes in the project root — and hand the writer the facts, each with the document that proves it.' },
     ] };
-    case 'agent_editable_doc': return { root: 'ronin_lab', document: 'README.md' };
+    case 'agent_editable_doc': return { root: 'ronin_lab', document: 'priorities-for-the-week.md' };
     default: return {};
   }
 }
@@ -201,71 +197,146 @@ export function buildLaunchPlan(slot, message, controls) {
   };
 }
 
-function renderRootControls(host, state, roots, label = 'Which project') {
+function workspaceFoldersAction(environment, label = '＋ workspace folder', detail = {}) {
+  const action = el('button', 'sp-workspace-link', label); action.type = 'button';
+  action.addEventListener('click', () => environment.navigateToSurface?.('setup.roots', detail));
+  return action;
+}
+
+function renderRootControls(host, state, roots, label = 'Which project', environment = null, manage = false) {
   const select = el('select');
   for (const root of roots) select.append(option(root.name || root.id, root.label || root.name || root.id));
   if (!select.options.length) select.append(option(state.root || 'ronin_project_1', state.root || 'Ronin Project 1'));
   select.value = state.root;
   select.addEventListener('change', () => { state.root = select.value; });
-  host.append(field(label, select, 'select'));
+  const content = el('div', 'sp-root-choice'); content.append(select);
+  if (manage) content.append(workspaceFoldersAction(environment));
+  host.append(field(label, content, 'select'));
 }
 
-function renderCodebaseControls(host, state) {
-  const picker = createFolderPicker({ value: state.root_dir || '', onChange: (dir, folder = null) => {
-    state.root_dir = dir;
-    state.root = folder?.registered_root?.name || '';
-  } });
-  host.append(field('Your own codebase', picker.el, 'select'));
-  const url = input(); url.placeholder = 'https://github.com/owner/repository'; url.disabled = true;
-  host.append(field('GitHub repo · remote evaluation pending', url));
+/**
+ * CODE STACK EVAL'S FOLDERS. Two decisions, kept apart: which folders Ronin keeps as
+ * workspace folders (tick any number, then Apply — they appear on the Workspace folders
+ * surface beside this one), and which one this evaluation runs on (Evaluate). Choosing a
+ * folder to evaluate ticks it too, because the evaluation needs a kept folder; nothing is
+ * kept until Apply. A repository is kept with the profile Ronin measured, unchanged.
+ */
+const rootHandle = (folder) => slug(folder.name) || 'folder';
+async function keepFolder(folder) {
+  const inspected = await request(`/api/project-roots/inspect?dir=${encodeURIComponent(folder.dir)}`, { cache: 'no-store' });
+  if (!inspected.ok) return inspected;
+  const profile = inspected.data.repo ? {
+    mode: inspected.data.repo_profile?.mode || 'direct',
+    working: inspected.data.repo_profile?.mode === 'reviewed' ? (inspected.data.repo_profile?.working || '') : '',
+    stable: inspected.data.repo_profile?.stable || inspected.data.repo?.branch || 'main',
+    worktrees: inspected.data.repo_profile?.worktrees || 'disabled',
+  } : null;
+  const absent = inspected.data.arrangement?.source === 'absent';
+  const before = profile ? { mode: inspected.data.arrangement?.mode || profile.mode, working: absent ? '' : (inspected.data.arrangement?.working || ''), stable: absent ? '' : (inspected.data.arrangement?.stable || ''), worktrees: profile.worktrees } : null;
+  for (const name of [rootHandle(folder), `${rootHandle(folder)}_2`, `${rootHandle(folder)}_3`]) {
+    const made = await request('/api/project-roots', { method: 'POST', json: { name, dir: folder.dir, ...(profile ? { before, profile, confirmed: true } : {}) } });
+    if (made.ok) return { ok: true, name };
+    if (!/already in the catalog/i.test(made.message || '')) return made;
+  }
+  return { ok: false, message: `Could not find a free handle for ${folder.name}.` };
 }
-
-const MODELS = Object.freeze({
-  codex: Object.freeze(['Default model', 'gpt-5.6-sol', 'gpt-5.6']),
-  claude: Object.freeze(['Default model', 'opus', 'sonnet']),
-  gemini: Object.freeze(['Default model', 'gemini-3']),
-  grok: Object.freeze(['Default model']),
-  hermes: Object.freeze(['Default model']),
-});
-const cycle = (button, values, current, paint, label) => {
-  const options = values.length ? values : [''];
-  button.addEventListener('click', () => {
-    const index = Math.max(0, options.indexOf(current()));
-    paint(options[(index + 1) % options.length]);
+function renderCodebaseControls(host, state, environment) {
+  state.pending ||= [];
+  const browser = el('div', 'sp-codebase-browser');
+  const place = el('div', 'sp-codebase-place');
+  const listing = el('div', 'sp-codebase-list');
+  const bar = el('div', 'sp-codebase-apply');
+  const apply = el('button', 'fs-door sp-codebase-apply-action', 'Apply'); apply.type = 'button';
+  const status = el('span', 'sp-codebase-status');
+  bar.append(apply, status);
+  let current = '';
+  let parent = '';
+  let folders = [];
+  const paintStatus = () => {
+    const count = state.pending.length;
+    const chosen = folders.find((folder) => folder.dir === state.root_dir);
+    const waiting = state.root_dir && !state.root;
+    apply.disabled = !count;
+    status.textContent = count
+      ? `${count} ${count === 1 ? 'folder becomes a workspace folder' : 'folders become workspace folders'} on Apply${waiting ? '; the evaluation runs on the one you chose' : ''}.`
+      : waiting ? `Apply keeps ${chosen?.name || 'the chosen folder'} before the evaluation can run on it.`
+        : state.root ? `Evaluating ${chosen?.name || state.root}.` : 'Tick the folders to keep, choose one to evaluate, then Apply.';
+  };
+  const load = async (dir = current) => {
+    listing.replaceChildren(el('p', 'setup-fine', 'Reading folders…'));
+    const query = new URLSearchParams(); if (dir) query.set('dir', dir);
+    const result = await request(`/api/folders?${query}`, { cache: 'no-store' });
+    if (!result.ok) { listing.replaceChildren(el('p', 'setup-notice bad', result.message)); return; }
+    current = result.data.dir || ''; parent = result.data.parent || ''; folders = result.data.folders || [];
+    place.replaceChildren();
+    const up = el('button', 'sp-workspace-link', '← Up'); up.type = 'button'; up.disabled = !parent; up.addEventListener('click', () => parent && load(parent));
+    place.append(up, el('strong', '', current === result.data.home ? 'Home' : current));
+    listing.replaceChildren();
+    for (const folder of folders) {
+      const row = el('div', 'sp-codebase-row');
+      const open = el('button', 'sp-codebase-open', folder.name); open.type = 'button'; open.addEventListener('click', () => load(folder.dir));
+      const kind = el('span', 'sp-codebase-kind', folder.registered_root ? 'workspace folder' : folder.kind === 'repository' ? 'repository' : 'folder');
+      const keep = el('label', 'sp-codebase-keep');
+      const tick = el('input'); tick.type = 'checkbox';
+      tick.checked = Boolean(folder.registered_root) || state.pending.includes(folder.dir);
+      tick.disabled = Boolean(folder.registered_root);
+      tick.setAttribute('aria-label', `Keep ${folder.name} as a workspace folder`);
+      tick.addEventListener('change', () => {
+        state.pending = tick.checked ? [...new Set([...state.pending, folder.dir])] : state.pending.filter((dir) => dir !== folder.dir);
+        if (!tick.checked && state.root_dir === folder.dir && !folder.registered_root) { state.root_dir = ''; state.root = ''; void load(current); return; }
+        paintStatus();
+      });
+      keep.append(tick, el('span', '', folder.registered_root ? 'Kept' : 'Keep'));
+      const evaluating = state.root_dir === folder.dir;
+      const choose = el('button', 'sp-codebase-evaluate', evaluating ? 'Evaluating' : 'Evaluate'); choose.type = 'button';
+      choose.setAttribute('aria-pressed', String(evaluating));
+      choose.addEventListener('click', () => {
+        state.root_dir = folder.dir; state.root = folder.registered_root?.name || '';
+        if (!folder.registered_root) state.pending = [...new Set([...state.pending, folder.dir])];
+        void load(current);
+      });
+      row.append(open, kind, keep, choose); listing.append(row);
+    }
+    if (!listing.children.length) listing.append(el('p', 'setup-fine', 'No folders here.'));
+    paintStatus();
+  };
+  apply.addEventListener('click', async () => {
+    apply.disabled = true; status.textContent = 'Keeping…';
+    const kept = [];
+    for (const dir of [...state.pending]) {
+      const folder = folders.find((row) => row.dir === dir) || { dir, name: dir.split('/').pop() || 'folder' };
+      const made = await keepFolder(folder);
+      if (!made.ok) { status.textContent = made.message || `Could not keep ${folder.name}.`; apply.disabled = false; return; }
+      kept.push(dir);
+      if (state.root_dir === dir) state.root = made.name;
+    }
+    state.pending = state.pending.filter((dir) => !kept.includes(dir));
+    await load(current);
+    // The kept folders appear on the Workspace folders surface beside this one at once.
+    environment?.navigateToSurface?.('setup.roots');
   });
-  button.setAttribute('aria-label', label);
-};
+  browser.append(place, listing, bar, workspaceFoldersAction(environment, 'Manage workspace folders'));
+  host.append(field('Your own codebase', browser, 'select'));
+  void load();
+}
 
-function renderRows(host, state, key, providers, addLabel) {
+function renderRows(host, state, key, addLabel) {
   const rows = el('div', 'sp-rows');
   const paint = () => {
     rows.replaceChildren();
     state[key].forEach((row, index) => {
-      if (typeof row === 'string') row = state[key][index] = { name: row, provider: '' };
+      if (typeof row === 'string') row = state[key][index] = { name: row };
       const line = el('div', 'sp-row');
       const name = input(row.name); name.setAttribute('aria-label', `${addLabel} ${index + 1}`);
       name.addEventListener('input', () => { row.name = slug(name.value); });
-      const providerOptions = [{ id: '', label: 'Default provider' }, ...providers.map((item) => ({ id: item.id || item.name, label: item.label || item.name || item.id }))];
-      const provider = el('button', 'sp-cycle'); provider.type = 'button';
-      const providerPaint = (value) => { row.provider = value; row.model = ''; provider.textContent = providerOptions.find((item) => item.id === value)?.label || value || 'Default provider'; modelPaint(''); };
-      cycle(provider, providerOptions.map((item) => item.id), () => row.provider || '', providerPaint, 'Model provider');
-      const model = el('button', 'sp-cycle'); model.type = 'button';
-      const modelValues = () => MODELS[row.provider] || ['Default model'];
-      const modelPaint = (value) => { row.model = value === 'Default model' ? '' : value; model.textContent = row.model || 'Default model'; };
-      model.addEventListener('click', () => {
-        const values = modelValues(); const shown = row.model || 'Default model'; const index = Math.max(0, values.indexOf(shown));
-        modelPaint(values[(index + 1) % values.length]);
-      });
-      model.setAttribute('aria-label', 'Model');
-      providerPaint(row.provider || ''); modelPaint(row.model || '');
       const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
       remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });
       const lead = el('span', 'sp-lead', row.team_lead ? 'Team Lead' : '');
       if (row.team_lead) remove.hidden = true;
-      line.append(lead, name, provider, model, remove); rows.append(line);
+      line.append(lead, name, remove); rows.append(line);
     });
     const add = el('button', 'fs-door', `＋ Add ${addLabel}`); add.type = 'button';
-    add.addEventListener('click', () => { state[key].push({ name: `${slug(addLabel)}_${state[key].length + 1}`, provider: providers.find((p) => p.activated)?.id || '' }); paint(); });
+    add.addEventListener('click', () => { state[key].push({ name: `${slug(addLabel)}_${state[key].length + 1}` }); paint(); });
     rows.append(add);
   };
   paint(); host.append(rows);
@@ -276,7 +347,7 @@ function renderTileChoices(host, state) {
   const paint = () => {
     for (const button of choices.querySelectorAll?.('[data-tiles]') || []) button.setAttribute('aria-pressed', String(Number(button.dataset.tiles) === state.tiles));
   };
-  for (const count of [1, 2, 4]) {
+  for (const count of [2, 4]) {
     const button = el('button', 'sp-tile-choice'); button.type = 'button'; button.dataset.tiles = String(count);
     const icon = el('span', 'sp-tile-icon');
     for (let index = 0; index < count; index += 1) icon.append(el('i'));
@@ -295,7 +366,11 @@ function renderAskRows(host, state, key, addLabel) {
       const line = el('div', 'sp-row sp-row-ask');
       const name = input(row.name); name.setAttribute('aria-label', `${addLabel} ${index + 1}`);
       name.addEventListener('input', () => { row.name = slug(name.value); });
-      const ask = input(row.ask); ask.placeholder = 'What should this agent do?'; ask.setAttribute('aria-label', `Ask for ${row.name}`);
+      const ask = el('textarea'); ask.value = row.ask || ''; ask.rows = 1; ask.placeholder = 'What should this agent do?'; ask.setAttribute('aria-label', `Ask for ${row.name}`);
+      // One line at rest, about three while editing: the row marks itself so the CSS can
+      // give the open textarea its height without the sibling cells moving.
+      ask.addEventListener('focus', () => { ask.rows = 3; line.dataset.editing = 'true'; });
+      ask.addEventListener('blur', () => { ask.rows = 1; delete line.dataset.editing; });
       ask.addEventListener('input', () => { row.ask = ask.value; });
       const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
       remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });
@@ -308,32 +383,79 @@ function renderAskRows(host, state, key, addLabel) {
   paint(); host.append(rows);
 }
 
-function renderSpecialControls(host, handle, state, runtime) {
-  const providers = runtime.providers || [], roots = runtime.roots || [];
-  if (handle === 'staff_my_codebase') renderCodebaseControls(host, state);
-  if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where');
-  if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder');
+// THREE WAYS TO SAY WHEN, each asking only for what it needs: Every day wants a time;
+// Day of the week wants the day and a time; One time wants the date and a time. The
+// schedule string is the house grammar the Cron jobs route already reads.
+function renderMorningBriefTiming(host, state) {
+  const schedule = String(state.schedule || 'daily 08:00');
+  const daily = schedule.match(/^daily (\d{2}:\d{2})$/);
+  const weekly = schedule.match(/^weekly (sun|mon|tue|wed|thu|fri|sat) (\d{2}:\d{2})$/);
+  const once = schedule.match(/^once (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
+  let cadence = weekly ? 'weekly' : once ? 'once' : 'daily';
+  const nextDay = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  const timing = el('details', 'sp-timing');
+  const summary = el('summary', 'sp-timing-summary');
+  const editor = el('div', 'sp-timing-editor');
+  const cadenceSelect = el('select');
+  cadenceSelect.append(option('daily', 'Every day'), option('weekly', 'Day of the week'), option('once', 'One time'));
+  cadenceSelect.value = cadence;
+  const weekday = el('select');
+  for (const [value, label] of [['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']]) weekday.append(option(value, label));
+  weekday.value = weekly?.[1] || 'mon';
+  const date = input(once?.[1] || nextDay, 'date');
+  const time = input(daily?.[1] || weekly?.[2] || once?.[2] || '08:00', 'time');
+  const weekdayField = el('label', 'sp-timing-field'); weekdayField.append(el('span', '', 'Day'), weekday);
+  const dateField = el('label', 'sp-timing-field'); dateField.append(el('span', '', 'Date'), date);
+  const cadenceField = el('label', 'sp-timing-field'); cadenceField.append(el('span', '', 'Repeats'), cadenceSelect);
+  const timeField = el('label', 'sp-timing-field'); timeField.append(el('span', '', 'Time'), time);
+  const paint = () => {
+    cadence = cadenceSelect.value;
+    weekdayField.hidden = cadence !== 'weekly';
+    dateField.hidden = cadence !== 'once';
+    state.schedule = cadence === 'once'
+      ? `once ${date.value} ${time.value}`
+      : cadence === 'weekly' ? `weekly ${weekday.value} ${time.value}` : `daily ${time.value}`;
+    summary.textContent = cadence === 'once'
+      ? `Once · ${date.value} at ${time.value}`
+      : cadence === 'weekly' ? `Every ${weekday.options[weekday.selectedIndex].text} at ${time.value}` : `Every day at ${time.value}`;
+  };
+  cadenceSelect.addEventListener('change', paint); weekday.addEventListener('change', paint); date.addEventListener('input', paint); time.addEventListener('input', paint);
+  editor.append(cadenceField, weekdayField, dateField, timeField); timing.append(summary, editor); paint();
+  host.append(field('When', timing, 'select'));
+}
+
+function renderSpecialControls(host, handle, state, runtime, environment) {
+  const roots = runtime.roots || [];
+  if (handle === 'staff_my_codebase') renderCodebaseControls(host, state, environment);
+  if (handle === 'develop_new_project') renderRootControls(host, state, roots, 'Where', environment, true);
+  if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Which folder', environment);
   if (handle === 'bare_metal') {
-    host.append(controlLabel('Agents run side by side', 'select')); renderRows(host, state, 'sessions', providers, 'Session');
-    host.append(controlLabel('Tile view', 'select')); renderTileChoices(host, state);
+    const agents = el('div'); renderRows(agents, state, 'sessions', 'Session');
+    const tiles = el('div'); renderTileChoices(tiles, state);
+    host.append(section('Agents run side by side', 'select', ...agents.children), section('Tile view', 'select', ...tiles.children));
   }
-  if (handle === 'ronin_team') { host.append(controlLabel('Team Lead and agents', 'select')); renderRows(host, state, 'sessions', providers, 'Agent'); }
-  if (handle === 'develop_new_project') { host.append(controlLabel('Split the work · each feature agent gets its own worktree')); renderRows(host, state, 'features', providers, 'Feature Agent'); }
-  if (handle === 'health_and_fitness') { host.append(controlLabel("Each agent's kick-off message", 'edit')); renderAskRows(host, state, 'roles', 'role'); }
+  if (handle === 'ronin_team') { const body = el('div'); renderRows(body, state, 'sessions', 'Agent'); host.append(section('Team Lead and agents', 'select', ...body.children)); }
+  if (handle === 'develop_new_project') { const body = el('div'); renderRows(body, state, 'features', 'Feature Agent'); host.append(section('Split the work · each feature agent gets its own worktree', '', ...body.children)); }
+  if (handle === 'health_and_fitness') { const body = el('div'); renderAskRows(body, state, 'roles', 'role'); host.append(section("Each agent's kick-off message", 'edit', ...body.children)); }
   if (handle === 'personal_assistant') {
-    const select = el('select');
-    select.append(option('single', 'Single assistant'), option('recruit', 'Chief of Staff'));
-    select.value = state.assistant_mode; select.addEventListener('change', () => { state.assistant_mode = select.value; specialists.hidden = select.value !== 'recruit'; });
+    const modes = el('div', 'sp-mode-options');
     const specialists = input(state.specialists); specialists.placeholder = 'financial adviser, research, scheduling…'; specialists.addEventListener('input', () => { state.specialists = specialists.value; });
-    specialists.hidden = state.assistant_mode !== 'recruit';
-    host.append(field('How it runs', select, 'select'), field('Recruit', specialists));
+    const recruit = field('Recruit', specialists);
+    const paintMode = () => {
+      for (const button of modes.children) button.setAttribute('aria-pressed', String(button.dataset.mode === state.assistant_mode));
+      recruit.hidden = state.assistant_mode !== 'recruit';
+    };
+    for (const [mode, label] of [['single', 'Single assistant'], ['recruit', 'Chief of Staff']]) {
+      const button = el('button', 'sp-mode-choice', label); button.type = 'button'; button.dataset.mode = mode;
+      button.addEventListener('click', () => { state.assistant_mode = mode; paintMode(); }); modes.append(button);
+    }
+    paintMode();
+    host.append(field('How it runs', modes, 'select'), recruit);
   }
   if (handle === 'morning_brief') {
-    const when = el('select');
-    for (const [value, label] of [['daily 07:00', 'Every day, 7:00'], ['daily 08:00', 'Every day, 8:00'], ['weekdays 08:00', 'Weekdays, 8:00']]) when.append(option(value, label));
-    when.value = state.schedule; when.addEventListener('change', () => { state.schedule = when.value; });
-    host.append(field('When', when, 'select'), controlLabel('What Grokbot looks at', 'edit'));
-    renderAskRows(host, state, 'roles', 'role');
+    renderMorningBriefTiming(host, state);
+    const body = el('div'); renderAskRows(body, state, 'roles', 'role');
+    host.append(section('What Grokbot looks at', 'edit', ...body.children));
   }
   if (handle === 'agent_editable_doc') { const doc = input(state.document); doc.addEventListener('input', () => { state.document = doc.value; }); host.append(field('Which document', doc)); }
 }
@@ -380,7 +502,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   const current = () => selected >= 0 ? slots[selected] : null;
   const controlState = () => {
     const slot = current();
-    if (!controls.has(slot.handle)) controls.set(slot.handle, initialControls(slot.handle, runtime.providers.find((row) => row.activated)?.id || ''));
+    if (!controls.has(slot.handle)) controls.set(slot.handle, initialControls(slot.handle));
     return controls.get(slot.handle);
   };
 
@@ -395,6 +517,13 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     onSelectionChange: (id) => { selected = id == null ? -1 : Number(id); },
   });
   stoneSurface.mount(surface.content, { before: [kindsHost], after: [notice.el] });
+  // THE STONES START WHERE THE OTHER SURFACES' STONES START. The purpose row sits above
+  // the shared rail, so its height is handed to the CSS, which takes it out of the
+  // rail's top room; Presets and Model providers then rest at one elevation.
+  if (typeof ResizeObserver === 'function') {
+    const measure = () => surface.el.style?.setProperty?.('--sp-intro', `${Math.max(0, Math.round(stoneSurface.el.offsetTop - kindsHost.offsetTop))}px`);
+    new ResizeObserver(measure).observe(kindsHost);
+  }
   const paintGrid = () => {
     const visible = visibleIndexes();
     stoneSurface.setItems(slots.map((slot, index) => {
@@ -436,14 +565,8 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     if (!gate.ready) { launch.el.dataset.held = 'true'; launch.el.setAttribute('aria-disabled', 'true'); }
     go.append(launch.el); heading.append(go); detail.append(heading, warning, el('p', 'sp-description', slot.description || ''));
     const panel = el('div', 'sp-choice-panel');
-    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime); panel.append(fixed); }
+    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, environment); panel.append(fixed); }
     if (slot.handle !== 'bare_metal') panel.append(field('Initial message to agent', message));
-    const customize = createAction({ label: 'Customize this', action: () => environment.customize?.({
-      template: { shelf: slot.shelf || '', name: slot.handle },
-      user_message: String(message.value || ''),
-    }) });
-    customize.el.className = `${customize.el.className || ''} sp-customize`.trim();
-    panel.append(customize.el);
     detail.append(panel);
   };
 

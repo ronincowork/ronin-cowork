@@ -159,6 +159,15 @@ The integration headline counts outside connections, not gbrain's internal “re
 policies. Those policies do not mean Gmail, Calendar, Drive, a gateway or a public tunnel
 has been connected.
 
+### In Ronin Setup
+
+The Setup workbench's gbrain selector opens the same tab in its Setup presentation
+(`buildGbrain(..., { presentation: 'setup' })`): three questions with measured answers,
+Installed, Available to Agents, and Accounts linked, then the one next step, all chosen by
+`public/js/gbrain-setup-state.js` from the same `GET /api/gbrain` snapshot. Available to
+Agents is the Campaign's gbrain Routine; Accounts linked is the integrations list, one
+Linked or Not linked per account. `docs/setup-workbench.md` has the table.
+
 ### Where connection credentials live
 
 The implemented boundary is narrow: the gbrain credential gateway owns acquisition and

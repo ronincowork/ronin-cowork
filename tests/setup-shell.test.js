@@ -61,9 +61,13 @@ test('launch actions reuse the nin mark, never the Team Roster torii, and open t
 });
 
 test('edited Cowork and Team workbench labels become the exact tab title', async () => {
-  const cowork = await source('js/cowork-view.js');
+  const [cowork, kit] = await Promise.all([
+    source('js/cowork-view.js'), source('workspace-kit.css'),
+  ]);
   assert.match(cowork, /return name \? \{ bare: name \} : fallback/);
   assert.match(cowork, /patchViewState\(viewKey, \{ tabName:/);
+  assert.match(cowork, /get: \(\) => ctx\?\.viewState\(viewKey\)\?\.tabName[\s\S]*campaign \? t\('campaign\.coworks', 'Teams'\) : team/);
+  assert.match(kit, /\.ui-bar-place \.wk-tab-name \{[^}]*background: transparent;[^}]*color: inherit;/);
 });
 
 test('the existing workbench can pin a Setup workspace and aim selector cards at the selected work surface', async () => {
@@ -100,7 +104,42 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /environment\.setupRuntime = runtime\.ok \? runtime\.data : \{ providers: \[\] \};[\s\S]*bench\.refreshSelector\(\);[\s\S]*const stored/);
   assert.doesNotMatch(setup, /SetupRequirement|requirementState|flashCycle/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.providers, SETUP_SURFACE_TYPES\.register, SETUP_SURFACE_TYPES\.roots/);
-  assert.match(setup, /SETUP_SURFACE_TYPES\.services, SETUP_SURFACE_TYPES\.gbrain, SETUP_SURFACE_TYPES\.templates/);
+  assert.match(setup, /SETUP_SURFACE_TYPES\.services, SETUP_SURFACE_TYPES\.gbrain, SETUP_SURFACE_TYPES\.launchOwn/);
+  assert.doesNotMatch(setup, /SETUP_SURFACE_TYPES\.templates/);
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
   assert.match(cowork, /PRESETS_TYPE/);
+});
+
+test('Setup keeps its selector header bare and seats light/dark at the right of the top header', async () => {
+  const [setup, kit, style, html, host, main, theme] = await Promise.all([
+    source('js/setup-view.js'), source('workspace-kit.css'), source('style.css'), source('index.html'),
+    source('js/workspace.js'), source('js/main.js'), source('js/theme.js'),
+  ]);
+  // The presentation toggle that forced the phone stack onto a desktop — and read as
+  // Setup collapsing to one workspace — is gone, with its CSS and its stored memory.
+  assert.doesNotMatch(setup, /viewportToggle|setupViewport|setup-header-toggle|presentation'/);
+  assert.match(setup, /viewportMode: undefined/);
+  assert.doesNotMatch(kit, /data-setup-viewport|setup-header-toggle/);
+  // The selector header carries no controls on Setup.
+  assert.doesNotMatch(setup, /\bactions: \[/);
+  // Light/dark is a bar action: built by Setup, seated by the ViewHost in the bar's one
+  // actions slot at the right, pinning the device theme through theme.js and nothing else.
+  assert.match(setup, /barActions: \[surfaceToggle, themeToggle\]/);
+  assert.match(setup, /barButton\('setup-theme-toggle'\)/);
+  assert.match(setup, /barButton\('setup-surface-toggle'\)/);
+  assert.match(setup, /saveCampaign\(id, \{ desk: \{ \[field\]: /);
+  assert.match(setup, /surface === 'mobile' \? 'theme_mobile' : 'theme'/);
+  assert.match(setup, /setCampaignTheme\(desk\(\)\); applyTheme\(\);/);
+  assert.match(setup, /t\('setup\.use_dark'/);
+  assert.match(setup, /setAttribute\('aria-pressed'/);
+  assert.doesNotMatch(setup, /localStorage\.setItem\([^)]*theme/);
+  assert.doesNotMatch(setup, /(themeToggle|surfaceToggle)[^\n]*(setCount|arrangement|place\(|select\()/);
+  assert.match(html, /<span id="viewactions" class="wk-view-actions"><\/span>\s*<span id="feedbackaction">/);
+  assert.match(main, /actionsSlot: document\.getElementById\('viewactions'\)/);
+  assert.match(host, /const showActions = \(id, view\) =>/);
+  assert.match(host, /view\.barActions/);
+  assert.match(host, /showMap\(id, next\); showActions\(id, next\);/);
+  assert.match(style, /#bar \.shape-cycle,\n#bar \.bar-toggle \{/);
+  assert.match(kit, /\.wk-view-actions:empty \{ display: none; \}/);
+  assert.match(theme, /export function setTheme\(name\)/);
 });

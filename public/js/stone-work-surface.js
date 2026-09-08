@@ -94,8 +94,14 @@ export function createStoneWorkSurface({ items = [], selectedId = '', renderDeta
   const api = {
     el: root,
     mount(host, { before = [], after = [] } = {}) {
+      if (!String(host.className || '').split(/\s+/).includes('wk-surface-content')) throw new TypeError('Stone work surfaces mount directly in a work-surface content seat.');
       if (!String(host.className || '').split(/\s+/).includes('sws-host')) host.className = `${host.className || ''} sws-host`.trim();
-      host.replaceChildren(...before, root, ...after);
+      const header = element('div', 'sws-header');
+      const footer = element('div', 'sws-footer');
+      header.append(...before);
+      footer.append(...after);
+      footer.hidden = !after.length;
+      host.replaceChildren(header, root, footer);
       return api;
     },
     setItems(next) { rows = [...(next || [])]; paint(); return api; },

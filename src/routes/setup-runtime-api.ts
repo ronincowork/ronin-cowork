@@ -79,7 +79,7 @@ export function registerSetupRuntime(app: express.Express): void {
 
   app.patch('/api/setup/preferences', async (req, res) => {
     try {
-      const preferences = await writeSetupPreferences(req.body?.kinds);
+      const preferences = await writeSetupPreferences(req.body);
       res.json({ ok: true, preferences });
     } catch (error) {
       res.status(400).json({ error: errMsg(error) });

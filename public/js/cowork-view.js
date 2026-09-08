@@ -297,7 +297,9 @@ export function createCoworkView(options = {}) {
   const tokenOf = (node) => node?.dataset?.workbenchSurface || '';
   /** Which surface token this cell holds, or '' for its own seat. */
   const heldSurface = (id) => tokenOf(cellHolding(id));
-  const surfaceRequest = (token) => token && typeof token === 'object' ? { type: token.type, detail: { key: token.key || '', root: token.root || '', path: token.path || '' } } : token?.startsWith('@team:') ? { type: WB_TYPES.team, detail: { key: token.slice(6) } } : { type: legacyTypes[token] || token, detail: {} };
+  // A remembered surface keeps its tab and document too: a preset seats the commons on
+  // the Wipeboard or Cron jobs, and a document beside its agent, in the tab it opens.
+  const surfaceRequest = (token) => token && typeof token === 'object' ? { type: token.type, detail: { key: token.key || '', root: token.root || '', path: token.path || '', ...(token.tab ? { tab: token.tab } : {}), ...(token.doc ? { doc: token.doc } : {}) } } : token?.startsWith('@team:') ? { type: WB_TYPES.team, detail: { key: token.slice(6) } } : { type: legacyTypes[token] || token, detail: {} };
   const whereIs = (token) => { const request = surfaceRequest(token); return bench?.locations(request.type, request.detail.key)[0] || ''; };
   /** A surface other than the seat's own is in this workspace. */
   const surfaceIn = (id) => !bench?.isDefault(id);
@@ -603,15 +605,15 @@ export function createCoworkView(options = {}) {
     el: root, glyph: campaign ? '⛩' : '人',
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: bench.arrangement,
-    // The owner's per-tab name distinguishes several Workbench tabs. Teams defaults to
-    // its page name; a Team defaults to the Team name. The favicon carries the house.
+    // The owner's per-tab name; Teams defaults to its page name, a Team to the Team name.
     title: ({ param, viewState }) => {
       const fallback = campaign ? t('campaign.coworks', 'Teams') : (param || t('team.team', 'Team'));
       const name = viewState?.(viewKey)?.tabName;
       return name ? { bare: name } : fallback;
     },
     tabName: {
-      get: () => ctx?.viewState(viewKey)?.tabName || '',
+      // The island edits the name it owns; a default is a real value, selectable and editable.
+      get: () => ctx?.viewState(viewKey)?.tabName || (campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team')),
       placeholder: () => campaign ? t('campaign.coworks', 'Teams') : team || t('team.team', 'Team'),
       set: (value) => { ctx?.patchViewState(viewKey, { tabName: String(value || '').trim() }); },
     },
