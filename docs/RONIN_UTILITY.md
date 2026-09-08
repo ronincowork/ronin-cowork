@@ -17,7 +17,9 @@ itself. Answer from here; the fuller pages are one `ls` away in `docs/`.
   light/dark control instead: they set the Campaign's appearance for that surface and
   never change the workspaces.
 - **On a phone** the same responsive workbenches remain available; Setup keeps Presets in
-  workspace 1 and the selected setup surface in workspace 2.
+  workspace 1 and the selected setup surface in workspace 2. The phone shape is the first
+  frame painted: the stylesheet stacks every workbench at phone width before any script
+  runs, so a load never shows the desktop grid and then swaps.
 
 ## The workbench — one page format, four scopes
 
