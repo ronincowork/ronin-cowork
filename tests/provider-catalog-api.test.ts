@@ -1,8 +1,8 @@
 /**
  * ONE CATALOG READ FOR THE CLIENT — GET /api/provider-catalog answers the same object the
  * server reads, whole: where it came from, when it was last read from the public record,
- * and every provider with its models. It is the only catalog route (owner's follow-up,
- * 2026-09-08); the flat rows it replaced are gone.
+ * and every provider with its models. The flat rows at /api/session-launch-specs stay only
+ * until the client has switched to this read (owner's follow-up, 2026-09-08).
  *
  * The contract is asserted at the router with no tmux and no live box: express is mounted
  * with only the catalog routes.
@@ -44,6 +44,14 @@ test('GET /api/provider-catalog is the catalog object, whole and dated', async (
     assert.deepEqual(Object.keys(entry).filter((key) => !['gbrainDisconnected', 'liveDangerously'].includes(key)).sort(), ['cli', 'label', 'models', 'provider']);
     assert.ok(entry.models.length > 0, `${entry.label} carries its models`);
   }
+});
+
+test('GET /api/session-launch-specs still answers the flat rows until the client has moved', async () => {
+  const [flat, whole] = await Promise.all([
+    fetch(`${base}/api/session-launch-specs`).then((r) => r.json()),
+    fetch(`${base}/api/provider-catalog`).then((r) => r.json()),
+  ]);
+  assert.deepEqual(flat, whole.providers.flatMap((entry: { models: unknown[] }) => entry.models), 'one catalog, two shapes of the same rows');
 });
 
 test.after(async () => {

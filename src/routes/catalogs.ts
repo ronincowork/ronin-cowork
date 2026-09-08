@@ -13,7 +13,7 @@ import { listActions } from '../actions.js';
 import { listSessionReadings } from '../session-readings.js';
 import { listAgentAvailability } from '../agents.js';
 import { dispatchInstall } from '../agent-install.js';
-import { listProviderCatalog, readProviderCatalog } from '../model-providers.js';
+import { listProviderCatalog, listSessionLaunchSpecs, readProviderCatalog } from '../model-providers.js';
 import {
   listProjectRoots,
   upsertProjectRoot,
@@ -268,10 +268,19 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   // The one catalog read for the client: origin, path, the header's updated day, and every
-  // provider with its models.
+  // provider with its models. /api/session-launch-specs (the flat rows) stays until the
+  // client has switched to this read, then goes.
   app.get('/api/provider-catalog', async (_req, res) => {
     try {
       res.json(await readProviderCatalog());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  app.get('/api/session-launch-specs', async (_req, res) => {
+    try {
+      res.json(await listSessionLaunchSpecs());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

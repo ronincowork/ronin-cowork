@@ -72,7 +72,8 @@ month it was read.
 
 **One read for the client.** `GET /api/provider-catalog` answers the catalog object whole,
 `{ origin, path, updated, providers: [{ provider, cli, label, models: [...] }] }` — the same
-object `readProviderCatalog()` gives the server, and the only catalog route there is. The Google, xAI and Nous
+object `readProviderCatalog()` gives the server. `GET /api/session-launch-specs`, the flat
+rows, stays only until the picker has switched to that read; then it goes. The Google, xAI and Nous
 sections are written from their vendors' CLI references and price lists and have not yet
 been launched end to end through Ronin; the first real launch of each cell is its proof,
 per the checklist below.
