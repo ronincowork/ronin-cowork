@@ -2,11 +2,13 @@
 import { IS_TOUCH, SELECT_MOD, WHEEL_DOWN, WHEEL_UP, forcesSelection } from './state.js';
 import { termFace, termTheme } from './theme.js';
 import { t } from './lexicon.js';
+import { terminalOwnsTarget, wireTerminalInput } from './terminal-input.js';
 
 export class TermView {
   /**
    * @param {HTMLElement} body
-   * @param {{onData: (d: string) => void, onResize: (size: {cols: number, rows: number}) => void,
+   * @param {{onUserData: (d: string) => void, onProtocolData: (d: string) => void,
+   *          onResize: (size: {cols: number, rows: number}) => void,
    *          onSelection: (text: string) => void}} hooks
    */
   constructor(body, hooks) {
@@ -32,7 +34,7 @@ export class TermView {
     this.fitAddon = new FitAddon.FitAddon();
     this.term.loadAddon(this.fitAddon);
     this.term.open(body);
-    this.term.onData(hooks.onData);
+    wireTerminalInput(this.term, hooks.onUserData, hooks.onProtocolData);
     this.term.onResize(hooks.onResize);
     // Stash the selection as soon as it's made; a streaming TUI repaint can clear the
     // visible highlight before ⌘C fires, so we copy this captured text, not a stale read.
@@ -83,6 +85,10 @@ export class TermView {
     return (this.term.modes?.mouseTrackingMode ?? 'none') !== 'none';
   }
 
+  ownsTarget(target) {
+    return terminalOwnsTarget(this.term.element, target);
+  }
+
   wireJumpPill(hooks) {
     const pill = document.createElement('button');
     pill.type = 'button';
@@ -129,7 +135,7 @@ export class TermView {
       from = null;
       // Left button only, on the terminal, in a locked tile, WITHOUT the modifier —
       // someone already holding it knows the trick and must never be told.
-      if (e.button !== 0 || !hooks.isLocked() || hooks.overHome(e.target)) return;
+      if (e.button !== 0 || !this.ownsTarget(e.target) || !hooks.isLocked() || hooks.overHome(e.target)) return;
       if (forcesSelection(e)) return;
       from = { x: e.clientX, y: e.clientY };
     });
@@ -181,7 +187,7 @@ export class TermView {
       'touchstart',
       (e) => {
         hooks.activate();
-        if (!hooks.isLocked() || hooks.overHome(e.target)) {
+        if (!this.ownsTarget(e.target) || !hooks.isLocked() || hooks.overHome(e.target)) {
           lastY = null; // tape-fed tile and the home panel both scroll natively
           return;
         }

@@ -17,6 +17,9 @@ import { getStreamHandler } from '../sockets.js';
 
 const HEARTBEAT_MS = 30_000;
 
+export const isTerminalReply = (msg: { t?: string; d?: string }): msg is { t: 'p'; d: string } =>
+  msg.t === 'p' && typeof msg.d === 'string';
+
 export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
   const session = url.searchParams.get('session') ?? '';
   const tape = url.searchParams.get('mode') === 'stream';
@@ -91,7 +94,11 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
     } catch {
       return;
     }
-    if (msg.t === 'i' && typeof msg.d === 'string') {
+    if (isTerminalReply(msg)) {
+      // xterm generated this for its PTY peer (DA/DSR/window reports). It must answer
+      // the attached terminal directly, never wait behind or enter person-input routing.
+      term.write(msg.d);
+    } else if (msg.t === 'i' && typeof msg.d === 'string') {
       const data = msg.d;
       // One tmux round trip per message, in order: the shared pane's mode decides whether
       // this is typing, a scroll the tile drives itself, or noise to keep out of copy mode.

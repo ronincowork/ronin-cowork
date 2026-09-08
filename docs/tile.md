@@ -65,10 +65,12 @@ The tile composes one or the other. Neither knows the other exists.
 
 **🔒 Locked — `public/js/termview.js`.** The untouched `tmux attach` mirror. xterm.js, an
 emulator, because the stream is a live screen full of positioning. Scrollback stays
-server-side, so scrolling round-trips through tmux copy-mode. This works and RIREKI does not
-touch it. The tile drives copy-mode itself (`src/viewer.ts`): a wheel over the tile enters
-it with explicit commands aimed at the tile's pane — position indicator hidden, exit at the
-bottom — and scrolls it the same way, never through the server's key tables. While the pane
+server-side, while xterm also keeps the output it has already painted in a local buffer.
+Ordinary trackpad/wheel movement through that local history stays entirely in xterm and
+shows no tmux position indicator. When an intentional terminal gesture needs older tmux
+history, the tile drives copy-mode itself (`src/viewer.ts`) with explicit commands aimed at
+the tile's pane — position indicator hidden where supported, exit at the bottom — never
+through the server's key tables. While the pane
 is in copy-mode, ordinary typing from the tile is dropped so it cannot invoke the server
 owner's copy-mode bindings (jump, search, goto…); Escape leaves, and page and arrow keys
 still move. The server's own bindings are untouched, because the tmux server is shared with
@@ -76,6 +78,15 @@ whatever else the owner runs there, and copy-mode is pane state: someone attache
 same session sees it while the tile is scrolled. `tests/tmux-server-conf.test.ts` pins that
 the start-only config rewrites no key table, and that the tile's commands leave every table
 byte-identical.
+
+xterm has two input owners behind one public `onData` event: human keyboard/paste/mouse
+input and terminal-generated protocol replies. Ronin listens to xterm core's explicit
+`onUserInput` provenance signal and gives those owners separate websocket messages.
+Person input (`t:i`) keeps the pane-state and DVR rules. Protocol replies (`t:p`) answer
+the attached PTY directly. For example, xterm's Secondary Device Attributes reply
+`ESC [ > 0;276;0c` can therefore never be parked as composer text or classified as a
+person's scroll/key action. This is provenance routing, not filtering terminal-looking
+text: deliberately typing or pasting the same bytes remains person input.
 
 **🔓 Unlocked — `public/js/tapeview.js`.** RIREKI's client-side render. **It holds no tmux
 connection** — no attach, no viewer session, no pipe; tmux does not know this view exists.
@@ -565,6 +576,21 @@ The old Copy Mode toggle is retired. One way to copy, any pane, locked or unlock
 
 Locked pastes straight through. Unlocked parks the pasted text in the strip like anything
 else printable, and sends it on Enter. The composer takes a native paste.
+
+Composer and touch-key overlays are not part of xterm's event subtree. Pointer/focus
+events there activate the composer only; they cannot focus xterm or start its copy/scroll
+handling. The coarse touch-scroll and desktop copy-hint listeners similarly require an
+xterm-owned target. This preserves ordinary trackpad scrolling exactly as xterm handles
+it and deliberate terminal touch/wheel routing exactly as tmux handles it. The intermittent
+field click that exposed this boundary was not deterministic; the invariant is enforced
+without guessing a click coordinate or suppressing global pointer/wheel events.
+
+The yellow numeric marker at the top-right is tmux's copy-mode position indicator, not
+xterm's ordinary viewport scroll. A mouse drag forwarded to an attached tmux client can
+invoke tmux's stock `MouseDrag1Pane` copy-mode behavior. Before the ownership guard, a
+composer pointer/focus event could refocus the xterm beneath it and let a slight follow-on
+drag take that path. The exact field gesture remains intermittent, but composer-owned
+events now cannot reach that path at all; terminal-owned gestures remain byte-identical.
 
 ---
 
