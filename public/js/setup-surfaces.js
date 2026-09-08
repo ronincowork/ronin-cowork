@@ -404,7 +404,9 @@ function createProviderSurface(context) {
   stones.mount(out.content, { after: [notice] });
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   const paint = async () => {
-    const result = await request('/api/setup/runtime', { cache: 'no-store' });
+    // This surface is the one reader that measures: every other surface takes the
+    // Campaign's recorded summary from GET /api/setup/runtime.
+    const result = await request('/api/setup/providers/measure', { method: 'POST', json: {} });
     disposeMount();
     if (!result.ok) { stones.setItems([]); say(result.message, true); return; }
     runtime = result.data;

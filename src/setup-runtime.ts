@@ -3,6 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { AGENTS, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
+import { listProviderCatalog, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { activatedAt } from './provider-summary.js';
 import { peekProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { rootDir } from './resources.js';
 import { execFile as run } from './spawn-broker.js';
@@ -17,19 +19,22 @@ export const INSTALLED_ROOTS = [
   { name: 'ronin_project_1', label: 'Ronin Project 1', remit: 'The first project-shaped workspace folder.', managed: true },
 ] as const;
 
-interface ProviderMarker { activated_at?: unknown }
 export const SETUP_PREFERENCE_KINDS = ['build', 'life', 'research'] as const;
 export type SetupPreferenceKind = typeof SETUP_PREFERENCE_KINDS[number];
 export interface SetupPreferences { kinds: SetupPreferenceKind[]; providers: string[] }
 interface SetupSection {
-  providers?: Record<string, ProviderMarker>;
+  providers?: Record<string, { activated_at?: unknown }>;
   preferences?: { kinds?: unknown; providers?: unknown };
   [key: string]: unknown;
 }
 
 export interface SetupProviderState {
+  /** The CLI id — the key of every machine fact. */
   id: string;
+  /** The vendor id the catalog joins to this CLI; '' when the catalog has no section for it. */
+  provider: string;
   label: string;
+  /** The vendor's name, from the catalog. */
   from: string;
   installed: boolean;
   installable: boolean;
@@ -40,6 +45,8 @@ export interface SetupProviderState {
   signed_in: boolean;
   activated: boolean;
   activated_at: string | null;
+  /** Catalog cells this CLI can launch; zero means it cannot count as activated. */
+  models: number;
   attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
   state: 'absent' | 'installable' | 'installed' | 'login_open' | 'activated';
 }
@@ -48,6 +55,8 @@ export interface SetupRuntimeAnswer {
   providers: SetupProviderState[];
   activated_count: number;
   activated_band: 'zero' | 'one' | 'two_plus';
+  /** When the machine facts were measured; a reader shows a stale date rather than guessing. */
+  measured_at: string;
   roots: Array<{ name: string; label: string; dir: string }>;
   gbrain: { installed: boolean; active: boolean };
   services: { installed: boolean; activated: boolean; switched_on: boolean; active: boolean };
@@ -56,8 +65,6 @@ export interface SetupRuntimeAnswer {
 
 export interface ProviderSessionOps {
   exists(name: string): Promise<boolean>;
-  /** Whether the CLI's own credential file is on this machine. Presence only; never read. */
-  signedIn(provider: string): Promise<boolean>;
   open(provider: string, name: string): Promise<void>;
   close(name: string): Promise<void>;
 }
@@ -65,10 +72,6 @@ export interface ProviderSessionOps {
 type Availability = Awaited<ReturnType<typeof listAgentAvailability>>;
 
 const sessionName = (provider: string) => `provider_setup_${provider}`;
-const activatedAt = (section: SetupSection, provider: string): string | null => {
-  const value = section.providers?.[provider]?.activated_at;
-  return typeof value === 'string' && value.trim() ? value : null;
-};
 
 export function setupPreferences(section: SetupSection): SetupPreferences {
   const selected = new Set(
@@ -105,16 +108,8 @@ export async function writeSetupPreferences(input: unknown): Promise<SetupPrefer
   return written;
 }
 
-/** The CLI signed in on this machine and left its credential file; Ronin reads only that it exists. */
-export async function providerSignedIn(provider: string, home = os.homedir()): Promise<boolean> {
-  const files = AGENTS.find((agent) => agent.id === provider)?.credentials ?? [];
-  for (const file of files) if (await exists(path.join(home, file))) return true;
-  return false;
-}
-
 const defaultSessionOps: ProviderSessionOps = {
   exists: sessionExists,
-  signedIn: providerSignedIn,
   async open(provider, name) {
     const spec = AGENTS.find((agent) => agent.id === provider);
     if (!spec) throw new Error(`Unknown provider "${provider}".`);
@@ -129,34 +124,44 @@ const defaultSessionOps: ProviderSessionOps = {
   close: killSessionTree,
 };
 
+/**
+ * The runtime facts as the Campaign's summary holds them. Only `login_open` is live: a
+ * tmux session's presence is an attachment, not a probe of the provider.
+ */
 export async function setupRuntimeAnswer(
   section: SetupSection,
-  ops: Pick<ProviderSessionOps, 'exists'> & Partial<Pick<ProviderSessionOps, 'signedIn'>> = defaultSessionOps,
-  availability?: Availability,
+  summary: ProviderSummary,
+  ops: Pick<ProviderSessionOps, 'exists'> = defaultSessionOps,
   installed?: InstalledAnswer,
+  catalog?: ProviderCatalogEntry[],
 ): Promise<SetupRuntimeAnswer> {
-  const available = availability ?? await listAgentAvailability();
-  const providers = await Promise.all(available.map(async (agent): Promise<SetupProviderState> => {
+  const entries = catalog ?? await listProviderCatalog();
+  const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupProviderState> => {
+    const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);
     const loginOpen = await ops.exists(session);
     const completed = activatedAt(section, agent.id);
-    const signedIn = agent.installed && await (ops.signedIn ?? providerSignedIn)(agent.id);
-    const activated = agent.installed && (completed !== null || signedIn);
+    const isInstalled = summary.installed.includes(agent.id);
+    const signedIn = isInstalled && summary.signed_in.includes(agent.id);
+    const models = entry?.models.length ?? 0;
+    const activated = isInstalled && (completed !== null || signedIn) && models > 0;
     return {
       id: agent.id,
+      provider: entry?.provider ?? '',
       label: agent.label,
-      from: agent.from,
-      installed: agent.installed,
-      installable: !agent.installed && Boolean(agent.get),
-      install: agent.get || null,
+      from: entry?.label ?? '',
+      installed: isInstalled,
+      installable: !isInstalled && Boolean(agent.operations.install),
+      install: agent.operations.install || null,
       blocked: agent.parked || null,
-      path: agent.path || null,
+      path: isInstalled ? summary.paths[agent.id] ?? null : null,
       login_open: loginOpen,
       signed_in: signedIn,
       activated,
       activated_at: completed,
+      models,
       attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true } : null,
-      state: activated ? 'activated' : loginOpen ? 'login_open' : agent.installed ? 'installed' : agent.get ? 'installable' : 'absent',
+      state: activated ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
     };
   }));
   const activated_count = providers.filter((provider) => provider.activated).length;
@@ -165,6 +170,7 @@ export async function setupRuntimeAnswer(
     providers,
     activated_count,
     activated_band: activated_count === 0 ? 'zero' : activated_count === 1 ? 'one' : 'two_plus',
+    measured_at: summary.measured_at,
     roots: roots.map(({ name, label, dir }) => ({ name, label, dir })),
     gbrain: {
       installed: installed?.services.parts.includes('gbrain') ?? false,

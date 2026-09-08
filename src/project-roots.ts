@@ -8,8 +8,6 @@ import { storeDir } from './resources.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const LAUNCH_TABLE_MD = path.join(__dirname, '..', 'ronin_catalogs', 'PROJECT_ROOTS.md');
-
 export const USER_CATALOGS_DIR = storeDir('catalogs');
 export const USER_PROJECT_ROOTS_MD = path.join(USER_CATALOGS_DIR, 'PROJECT_ROOTS.md');
 
@@ -31,14 +29,6 @@ export interface ProjectRootInfo {
   plans: string[];
   archived: boolean;
   campaign_id: string;
-}
-
-export interface SessionLaunchSpec {
-  provider: string;
-  model: string;
-  cmd: string;
-  liveDangerously?: string;
-  gbrainDisconnected?: string;
 }
 
 const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.slice(1)) : p);
@@ -108,46 +98,6 @@ function parseRoots(raw: string): ProjectRootInfo[] {
   return roots;
 }
 
-function parseLaunchTable(raw: string): SessionLaunchSpec[] {
-  const cellsOf = (line: string) => {
-    const c = line.split('|').map((s) => s.trim());
-    return c[0] === '' && c[c.length - 1] === '' ? c.slice(1, -1) : c;
-  };
-  const out: SessionLaunchSpec[] = [];
-  for (const section of raw.split(/^### /m)) {
-    let models: string[] = [];
-    const specs: SessionLaunchSpec[] = [];
-    const gbrainDisconnected = /^-\s*\*\*gbrain_disconnected:\*\*\s*`(.+)`\s*$/m.exec(section)?.[1]?.trim();
-    const liveDangerously = /^-\s*\*\*live_dangerously:\*\*\s*`(.+)`\s*$/m.exec(section)?.[1]?.trim();
-    for (const line of section.split('\n')) {
-      if (!line.includes('|')) continue;
-      const cells = cellsOf(line);
-      if (cells.length < 2) continue;
-      if (/^provider$/i.test(cells[0])) {
-        models = cells.slice(1).map((m) => m.replace(/`/g, '').trim());
-        continue;
-      }
-      const provider = /^`([a-z0-9_-]+)`$/i.exec(cells[0])?.[1];
-      if (!provider || !models.length) continue;
-      cells.slice(1).forEach((cell, i) => {
-        const cmd = /^`(.+)`$/.exec(cell)?.[1];
-        const model = models[i];
-        if (cmd && model) specs.push({
-          provider, model, cmd,
-          ...(gbrainDisconnected ? { gbrainDisconnected } : {}),
-          ...(liveDangerously ? { liveDangerously } : {}),
-        });
-      });
-    }
-    out.push(...specs);
-  }
-  return out;
-}
-
-export async function listSessionLaunchSpecs(): Promise<SessionLaunchSpec[]> {
-  return parseLaunchTable(await readFile(LAUNCH_TABLE_MD, 'utf8'));
-}
-
 const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 
 > Ronin made this file; Ronin never replaces it. It is yours, outside every repo, and an
@@ -163,7 +113,8 @@ const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 >
 > What a session here READS at birth is not a field — it is the files on this root's
 > shelf. Ask \`ronin-store session_boot\` for it, and see docs/session-boot.md.
-> The provider/model launch table is stock and lives in the install, not here.
+> The provider catalog (providers and models) is stock and lives in the install's
+> \`MODEL_PROVIDERS.md\`, not here; your own copy of that file beside this one shadows it.
 `;
 
 const FIELD_ORDER = ['dir', 'memory', 'match', 'remit', 'docs', 'plans', 'archived', 'campaign_id'] as const;

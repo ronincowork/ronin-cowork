@@ -14,7 +14,7 @@
  *     onto Anthropic. That is the sharper defect: not the wrong model, the wrong vendor,
  *     the wrong account, and the wrong bill.
  *
- * The launch table used here is the SHIPPED one (`ronin_catalogs/PROJECT_ROOTS.md`),
+ * The provider catalog used here is the SHIPPED one (`ronin_catalogs/MODEL_PROVIDERS.md`),
  * because a stock role biasing toward a stock table row is the exact failure. Only the
  * owner-scope halves are redirected — no tmux, no socket, no live store.
  */
@@ -28,7 +28,7 @@ const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-role-model-test-'));
 const catalogs = path.join(temp, 'catalogs');
 await fs.mkdir(catalogs, { recursive: true });
 // The owner's own root list. The launch TABLE is not overridden here: a user-scope
-// PROJECT_ROOTS.md shadows the roots, and the shipped provider tables still answer.
+// PROJECT_ROOTS.md shadows the roots, and the shipped provider catalog still answers.
 await fs.writeFile(
   path.join(catalogs, 'PROJECT_ROOTS.md'),
   ['# PROJECT_ROOTS — yours', '', '## alpha', `- **dir:** ${temp}`, '- **remit:** the only root', ''].join('\n'),

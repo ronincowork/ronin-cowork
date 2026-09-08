@@ -77,10 +77,10 @@ an explicit pick. Passing `cmd` is the explicit pick and beats it.
 
 **Naming a VENDOR without naming a model is its own field: `provider`.** *"Give me
 Anthropic"* is `provider: anthropic` and nothing else — the model comes from that
-provider's preferred model in ⚙ Configuration, falling back to its first column in the
-launch table. Use it when the owner names a vendor rather than a model; `model` still
+provider's preferred model in ⚙ Configuration, falling back to its default row in the
+provider catalog. Use it when the owner names a vendor rather than a model; `model` still
 wins when they name one, and naming `provider` beside `cmd` is refused. It must be
-a real `session_launch_spec` cell from the launch table (`ronin_catalogs/PROJECT_ROOTS.md`),
+a real `session_launch_spec` cell from the provider catalog (`ronin_catalogs/MODEL_PROVIDERS.md`),
 never a command you composed — a hand-typed command matches no table row, so the launch
 cannot honor an MCP-off choice for it.
 
@@ -259,7 +259,7 @@ With no `--team` a newborn joins the FIRST team you are on; on no team it is a r
 **Neither is a refusal, and you never create the team first** — the nag this removes is
 an agent flip-flopping between "create the team" and "add the member". One line, one
 verdict: `BORN …` / `UPDATED …` / one `REFUSED: <why>`. `--model <name>` picks a row of
-the launch table by its model column; an unknown name is refused with the names the box
+the provider catalog by its model id; an unknown name is refused with the names the box
 has. Birth-only flags (`--prompt`, `--model`,
 `--cmd`, `--mode`, `--mcp`, `--seed`) are refused by name on a live session.
 

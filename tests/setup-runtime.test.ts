@@ -10,56 +10,91 @@ process.env.RONIN_USER_ROOT = path.join(box, 'ronin');
 process.env.RONIN_CATALOGS_DIR = path.join(box, 'ronin', 'catalogs');
 
 const runtime = await import('../src/setup-runtime.js');
+const summary = await import('../src/provider-summary.js');
+const { listProviderCatalog } = await import('../src/model-providers.js');
 const roots = await import('../src/project-roots.js');
 const arrangements = await import('../src/desks/arrangement.js');
 const launchDesks = await import('../src/launch-desks.js');
 
 const available = (installed: string[]) => [
-  { id: 'claude', label: 'Claude Code', from: 'Anthropic', get: 'install claude', parked: '', cmd: 'claude', installed: installed.includes('claude'), path: installed.includes('claude') ? '/bin/claude' : '' },
-  { id: 'codex', label: 'Codex', from: 'OpenAI', get: '', parked: 'Install this provider yourself.', cmd: 'codex', installed: installed.includes('codex'), path: installed.includes('codex') ? '/bin/codex' : '' },
+  { id: 'claude', label: 'Claude Code', get: 'install claude', parked: '', cmd: 'claude', installed: installed.includes('claude'), path: installed.includes('claude') ? '/bin/claude' : '' },
+  { id: 'codex', label: 'Codex', get: '', parked: 'Install this provider yourself.', cmd: 'codex', installed: installed.includes('codex'), path: installed.includes('codex') ? '/bin/codex' : '' },
 ];
+const catalog = await listProviderCatalog();
+const nobody = async () => false;
+/** One measured summary from a fixture machine: which CLIs are on PATH and which left a credential file. */
+const measured = (section: Record<string, unknown>, installed: string[], signedIn: string[] = []) =>
+  summary.measureProviders(section, { availability: available(installed), signedIn: async (id) => signedIn.includes(id), catalog, now: () => '2026-09-08T10:00:00.000Z' });
+const answer = async (section: Record<string, unknown>, installed: string[], signedIn: string[] = [], exists: (name: string) => Promise<boolean> = nobody) =>
+  runtime.setupRuntimeAnswer(section, await measured(section, installed, signedIn), { exists }, undefined, catalog);
+const row = (a: Awaited<ReturnType<typeof answer>>, id: string) => a.providers.find((provider) => provider.id === id)!;
 
-test('provider facts distinguish absent, installable, installed, login open, activated, and count bands', async () => {
-  const closed = { exists: async () => false, signedIn: async () => false };
-  const none = await runtime.setupRuntimeAnswer({}, closed, available([]));
-  assert.deepEqual(none.providers.map((provider) => provider.state), ['installable', 'absent']);
+test('provider facts come from the measured summary: absent, installable, installed, login open, activated, and count bands', async () => {
+  const none = await answer({}, []);
+  assert.deepEqual(none.providers.map((provider) => provider.id), ['claude', 'codex', 'gemini', 'grok', 'hermes'], 'one row per CLI the registry knows, in its order');
+  assert.equal(row(none, 'claude').state, 'installable');
+  assert.equal(row(none, 'codex').state, 'installable', 'whether a CLI can be installed is the registry\'s fact, not the probe\'s');
+  assert.equal(row(none, 'hermes').state, 'absent', 'a CLI with no install line and not on PATH is absent');
+  assert.ok(row(none, 'hermes').blocked, 'and it says why Ronin cannot install it');
   assert.equal(none.activated_count, 0);
   assert.equal(none.activated_band, 'zero');
+  assert.equal(none.measured_at, '2026-09-08T10:00:00.000Z', 'the answer carries the date it was measured');
+  assert.equal(row(none, 'claude').provider, 'anthropic', 'the catalog joins the vendor id to the CLI');
+  assert.equal(row(none, 'claude').from, 'Anthropic');
+  assert.ok(row(none, 'claude').models > 0);
 
-  const installed = await runtime.setupRuntimeAnswer({}, closed, available(['claude']));
-  assert.equal(installed.providers[0]?.state, 'installed');
+  const installed = await answer({}, ['claude']);
+  assert.equal(row(installed, 'claude').state, 'installed');
+  assert.equal(row(installed, 'claude').path, '/bin/claude');
 
-  const login = await runtime.setupRuntimeAnswer({}, { exists: async (name) => name === 'provider_setup_claude', signedIn: async () => false }, available(['claude']));
-  assert.equal(login.providers[0]?.state, 'login_open');
-  assert.deepEqual(login.providers[0]?.attachment, {
+  const login = await answer({}, ['claude'], [], async (name) => name === 'provider_setup_claude');
+  assert.equal(row(login, 'claude').state, 'login_open');
+  assert.deepEqual(row(login, 'claude').attachment, {
     type: 'session', key: 'provider_setup_claude', team: 'provider_setup', temporary: true,
   });
-  assert.equal(login.providers[1]?.attachment, null);
-  assert.equal('session' in login.providers[0]!, false, 'attachment is the sole public setup-session identity');
+  assert.equal(row(login, 'codex').attachment, null);
+  assert.equal('session' in row(login, 'claude'), false, 'attachment is the sole public setup-session identity');
 
-  const one = await runtime.setupRuntimeAnswer(
-    { providers: { claude: { activated_at: '2026-09-05T00:00:00.000Z' } } }, closed, available(['claude']),
-  );
-  assert.equal(one.providers[0]?.state, 'activated');
+  const one = await answer({ providers: { claude: { activated_at: '2026-09-05T00:00:00.000Z' } } }, ['claude']);
+  assert.equal(row(one, 'claude').state, 'activated');
   assert.equal(one.activated_count, 1);
   assert.equal(one.activated_band, 'one');
 
-  const two = await runtime.setupRuntimeAnswer(
-    { providers: { claude: { activated_at: 'a' }, codex: { activated_at: 'b' } } }, closed, available(['claude', 'codex']),
-  );
+  const two = await answer({ providers: { claude: { activated_at: 'a' }, codex: { activated_at: 'b' } } }, ['claude', 'codex']);
   assert.equal(two.activated_count, 2);
   assert.equal(two.activated_band, 'two_plus');
 
-  const signedIn = await runtime.setupRuntimeAnswer({}, { exists: async () => false, signedIn: async (id) => id === 'claude' }, available(['claude', 'codex']));
-  assert.equal(signedIn.providers[0]?.signed_in, true);
-  assert.equal(signedIn.providers[0]?.state, 'activated', 'a credential file on this machine is a signed-in provider');
-  assert.equal(signedIn.providers[0]?.activated_at, null, 'nothing was recorded; the file is the fact');
-  assert.equal(signedIn.providers[1]?.signed_in, false);
-  assert.equal(signedIn.providers[1]?.state, 'installed');
+  const signedIn = await answer({}, ['claude', 'codex'], ['claude']);
+  assert.equal(row(signedIn, 'claude').signed_in, true);
+  assert.equal(row(signedIn, 'claude').state, 'activated', 'a credential file on this machine is a signed-in provider');
+  assert.equal(row(signedIn, 'claude').activated_at, null, 'nothing was recorded; the file is the fact');
+  assert.equal(row(signedIn, 'codex').signed_in, false);
+  assert.equal(row(signedIn, 'codex').state, 'installed');
   assert.equal(signedIn.activated_count, 1);
-  const absentButFile = await runtime.setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => true }, available([]));
-  assert.equal(absentButFile.providers[0]?.signed_in, false, 'a credential file without the CLI is not a usable provider');
-  assert.equal(absentButFile.providers[0]?.state, 'installable');
+  const absentButFile = await answer({}, [], ['claude']);
+  assert.equal(row(absentButFile, 'claude').signed_in, false, 'a credential file without the CLI is not a usable provider');
+  assert.equal(row(absentButFile, 'claude').state, 'installable');
+});
+
+test('a provider counts as activated only when the catalog gives it something to launch', async () => {
+  const section = { providers: { codex: { activated_at: '2026-09-05T00:00:00.000Z' } } };
+  const withCells = await summary.measureProviders(section, { availability: available(['claude', 'codex']), signedIn: async (id) => id === 'claude', catalog });
+  assert.deepEqual(withCells.installed, ['claude', 'codex']);
+  assert.deepEqual(withCells.signed_in, ['claude']);
+  assert.deepEqual(withCells.operational, ['claude', 'codex']);
+  assert.equal(withCells.activated_count, 2);
+  assert.deepEqual(withCells.paths, { claude: '/bin/claude', codex: '/bin/codex' });
+  // The same machine against a catalog with no OpenAI section: Codex is installed and
+  // recorded, and still not activated — nothing it could launch.
+  const noCodex = catalog.filter((entry) => entry.cli !== 'codex');
+  const without = await summary.measureProviders(section, { availability: available(['claude', 'codex']), signedIn: async (id) => id === 'claude', catalog: noCodex });
+  assert.deepEqual(without.operational, ['claude']);
+  assert.equal(without.activated_count, 1);
+  const shown = await runtime.setupRuntimeAnswer(section, without, { exists: nobody }, undefined, noCodex);
+  assert.equal(row(shown, 'codex').models, 0);
+  assert.equal(row(shown, 'codex').activated, false);
+  assert.equal(row(shown, 'codex').provider, '', 'no catalog section, no vendor id');
+  assert.equal(shown.activated_count, 1);
 });
 
 test('runtime dependency facts distinguish installed from active gbrain and Services', async () => {
@@ -71,12 +106,13 @@ test('runtime dependency facts distinguish installed from active gbrain and Serv
     },
     routines: [],
   };
-  const answer = await runtime.setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => false }, available([]), installed);
+  const facts = await measured({}, []);
+  const answer = await runtime.setupRuntimeAnswer({}, facts, { exists: nobody }, installed, catalog);
   assert.deepEqual(answer.gbrain, { installed: true, active: true });
   assert.deepEqual(answer.services, { installed: true, activated: true, switched_on: true, active: true });
-  const parked = await runtime.setupRuntimeAnswer({}, { exists: async () => false, signedIn: async () => false }, available([]), {
+  const parked = await runtime.setupRuntimeAnswer({}, facts, { exists: nobody }, {
     ...installed, services: { ...installed.services, loaded: [], switched_on: false },
-  });
+  }, catalog);
   assert.deepEqual(parked.gbrain, { installed: true, active: false });
   assert.equal(parked.services.active, false);
 });
@@ -188,7 +224,7 @@ test('Setup kinds are canonical runtime facts and persist without replacing setu
   assert.equal(section.completed_at, '2026-09-06T00:00:00.000Z');
   assert.deepEqual(section.providers, { codex: { activated_at: '2026-09-06T01:00:00.000Z' } });
   assert.deepEqual(section.preferences, { kinds: ['build', 'research'], providers: [] });
-  const answer = await runtime.setupRuntimeAnswer(section, { exists: async () => false, signedIn: async () => false }, available([]));
+  const answer = await runtime.setupRuntimeAnswer(section, await measured(section, []), { exists: nobody }, undefined, catalog);
   assert.deepEqual(answer.preferences, { kinds: ['build', 'research'], providers: [] });
   assert.deepEqual(await runtime.writeSetupPreferences({ providers: ['hermes', 'openai', 'hermes'] }), {
     kinds: ['build', 'research'], providers: ['hermes', 'openai'],

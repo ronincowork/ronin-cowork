@@ -27,7 +27,6 @@ export const AGENTS = [
     id: 'claude',
     cmd: 'claude',
     label: 'Claude Code',
-    from: 'Anthropic',
     operations: {
       install: 'npm install -g @anthropic-ai/claude-code',
       update: { shell: 'npm install -g @anthropic-ai/claude-code@latest', argv: [] },
@@ -43,7 +42,6 @@ export const AGENTS = [
     id: 'codex',
     cmd: 'codex',
     label: 'Codex',
-    from: 'OpenAI',
     operations: {
       install: 'npm install -g @openai/codex',
       update: { shell: 'npm install -g @openai/codex@latest', argv: [] },
@@ -59,7 +57,6 @@ export const AGENTS = [
     id: 'gemini',
     cmd: 'gemini',
     label: 'Gemini CLI',
-    from: 'Google',
     operations: {
       install: 'npm install -g @google/gemini-cli',
       update: { shell: '', argv: ['update'] },
@@ -71,12 +68,11 @@ export const AGENTS = [
     initial: 'positional' as InitialPrompt,
     screen: { busy: [], asking: ['●\\s*\\d+\\.\\s'], ready: [] },
   },
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, version: ['--version'], session: { newIdFlag: '', resume: [], discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: [], initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, version: ['--version'], session: { newIdFlag: '', resume: [], discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
     label: 'Hermes',
-    from: 'Nous Research',
     operations: {
       install: '',
       update: { shell: '', argv: ['update'] },
@@ -93,7 +89,6 @@ export const AGENTS = [
 export interface AgentAvailability {
   id: string;
   label: string;
-  from: string;
   get: string;
   parked: string;
   cmd: string;
@@ -122,7 +117,7 @@ export async function listAgentAvailability(): Promise<AgentAvailability[]> {
 
   return AGENTS.map((a) => {
     const where = found.get(a.cmd) ?? '';
-    return { id: a.id, label: a.label, from: a.from, get: a.operations.install, parked: a.parked, cmd: a.cmd, installed: !!where, path: where };
+    return { id: a.id, label: a.label, get: a.operations.install, parked: a.parked, cmd: a.cmd, installed: !!where, path: where };
   });
 }
 

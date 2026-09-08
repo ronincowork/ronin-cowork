@@ -16,7 +16,8 @@ import { listLexicons } from '../src/lexicon-catalog.js';
 import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
 import { findDefinition } from '../src/resource-adapters.js';
 import { listMacros } from '../src/macros.js';
-import { listSessionLaunchSpecs } from '../src/project-roots.js';
+import { listProviderCatalog, TIERS } from '../src/model-providers.js';
+import { AGENTS } from '../src/agents.js';
 import { resolveBehaviourBooks } from '../src/behaviours.js';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -246,7 +247,7 @@ async function templatesResolve(): Promise<void> {
   }
 }
 
-const FILES = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md'];
+const FILES = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md', 'MODEL_PROVIDERS.md'];
 
 await surfacingDefinitions('role_families', listRoleFamilies);
 await surfacingDefinitions('session_roles', listSessionRoles);
@@ -263,15 +264,38 @@ await surfacing('ACTIONS.md', () => readEntries('ACTIONS.md'));
 await surfacing('TOOLS.md', () => readEntries('TOOLS.md'));
 await macroCopy();
 
-const launchSpecs = await listSessionLaunchSpecs();
-if (launchSpecs.length === 0) fail('PROJECT_ROOTS.md: the launch table yields no session_launch_specs');
-const openaiSpecs = launchSpecs.filter((s) => s.provider === 'openai');
-if (openaiSpecs.length < 2) fail('PROJECT_ROOTS.md: OpenAI must offer more than one real model choice');
-for (const spec of openaiSpecs) {
-  if (spec.model === 'default') fail('PROJECT_ROOTS.md: OpenAI model heading "default" hides the model being launched');
-  const expected = `codex --model ${spec.model}`;
-  if (spec.cmd !== expected) {
-    fail(`PROJECT_ROOTS.md: openai · ${spec.model} must launch "${expected}", got "${spec.cmd}"`);
+const catalog = await listProviderCatalog();
+if (catalog.length === 0) fail('MODEL_PROVIDERS.md: the provider catalog yields no providers');
+{
+  const providers = new Set<string>();
+  const clis = new Set<string>();
+  for (const entry of catalog) {
+    const at = `MODEL_PROVIDERS.md: ${entry.label}`;
+    if (providers.has(entry.provider)) fail(`${at}: provider id "${entry.provider}" is used by two sections`);
+    providers.add(entry.provider);
+    if (clis.has(entry.cli)) fail(`${at}: cli "${entry.cli}" is served by two sections`);
+    clis.add(entry.cli);
+    const agent = AGENTS.find((row) => row.id === entry.cli);
+    if (!agent) { fail(`${at}: cli "${entry.cli}" is not in src/agents.ts`); continue; }
+    if (!entry.models.length) fail(`${at}: offers no model with a launch cell`);
+    if (entry.models.filter((row) => row.default).length > 1) fail(`${at}: more than one row says default`);
+    for (const row of entry.models) {
+      const here = `${at} · ${row.model}`;
+      if (row.model === 'default') fail(`${here}: a model id "default" hides the model being launched`);
+      if (!(TIERS as readonly string[]).includes(row.tier)) fail(`${here}: tier must be one of ${TIERS.join(', ')}`);
+      if (!row.cost.trim()) fail(`${here}: no cost reading`);
+      if (!row.good_at.trim()) fail(`${here}: no "good at"`);
+      if (!row.not_good_at.trim()) fail(`${here}: no "not good at"`);
+      if (!/\(\d{4}-\d{2}\)/.test(row.cost)) fail(`${here}: the cost reading carries no (YYYY-MM) date`);
+      if (row.cmd.split(/\s+/)[0] !== agent.cmd) fail(`${here}: launch "${row.cmd}" does not start with the ${entry.cli} CLI "${agent.cmd}"`);
+      if (!row.cmd.includes(row.model)) fail(`${here}: launch "${row.cmd}" does not name the model it is listed under`);
+    }
+  }
+  const openai = catalog.find((entry) => entry.provider === 'openai');
+  if (!openai || openai.models.length < 2) fail('MODEL_PROVIDERS.md: OpenAI must offer more than one real model choice');
+  for (const row of openai?.models ?? []) {
+    const expected = `codex --model ${row.model}`;
+    if (row.cmd !== expected) fail(`MODEL_PROVIDERS.md: openai · ${row.model} must launch "${expected}", got "${row.cmd}"`);
   }
 }
 

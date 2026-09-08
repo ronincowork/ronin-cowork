@@ -61,7 +61,7 @@ absent.
 |---|---|---|
 | **the toggle** | New Agent: **gbrain on** (the CLI's own config applies) / **gbrain off** (no MCP servers at all, every other connector included). The label says gbrain by the owner's ruling. Per launch; relaunch to change. The Codex exception is recorded below | `src/spawn.ts` |
 | **`mcp:` (the cascading key)** | **which way the toggle opens for a resolved launch — off for every ordinary one**: the brain is something the owner turns ON for the launch that wants it. `on` opens it on; `always` opens it on and withdraws the choice (the `PersonalAssistant` session_role carries the lock). It is the definition's own key, resolved against the system default. A default, not a lock — the form and an explicit `mcp:` in the launch body both override it; only `always` refuses | `ronin_catalogs/session_roles/` · `src/launch-profile.ts` · `src/spawn.ts` |
-| **`gbrain_disconnected:`** | the launch-table key holding a provider's declared tokens for `gbrain_mode: disconnected`. A launch that asks for disconnected and finds none declared is refused; a profile merely defaulting disconnected degrades to connected and the receipt says so. OpenAI disables gbrain specifically. Anthropic's coarse token disables **ALL MCP** for that launch | `ronin_catalogs/PROJECT_ROOTS.md` · `src/project-roots.ts` |
+| **`gbrain_disconnected:`** | the provider catalog's key holding a provider's declared tokens for `gbrain_mode: disconnected`. A launch that asks for disconnected and finds none declared is refused; a profile merely defaulting disconnected degrades to connected and the receipt says so. OpenAI disables gbrain specifically. Anthropic's coarse token disables **ALL MCP** for that launch | `ronin_catalogs/MODEL_PROVIDERS.md` · `src/model-providers.ts` |
 | **`credit:`** | a definition key — one markdown link, text and href — rendered on the opened launch form as a real anchor (*powered by gbrain ↗*). The credit is the FACE's — the `session_role`'s own, with the shelf's as presentation fallback. Never inside the kind button: an anchor in a button is nested-interactive, which the axe gate fails | `ronin_catalogs/session_roles/` · `src/resource-adapters.ts` |
 
 ### Review finding — connected is not provisioned, and off is not yet proved
@@ -79,7 +79,7 @@ launch still tried to start the gbrain client. The row now uses
 `disabled`). The honest limit stays recorded: codex 0.148 has no global "no MCP at all"
 switch, so off disables the named gbrain server and any OTHER server a user has added to
 codex themselves rides through. An owner with more codex servers extends the flags in
-their own launch-table copy.
+their own copy of the provider catalog.
 The launch receipt records what Ronin requested, not what the CLI actually exposed.
 
 One more boundary is deliberate: this is per-session *access*, not per-session data. Every
