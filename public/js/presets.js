@@ -88,9 +88,23 @@ export function renderKindPills(host, preference, { lead = '' } = {}) {
 }
 
 const treatment = (controls, launchShape, seats) => Object.freeze({ controls: Object.freeze(controls), launchShape, seats });
+// THE TEAM PAGE A BARE METAL OR RONIN TEAM OPENS ON: an agent in workspace 1, the team's
+// configuration from the commons in workspace 2, the other agents in 3 and 4, with the
+// centre selector kept narrow so the agents have the room.
+export const NARROW_SELECTOR = Object.freeze({ order: Object.freeze(['workspace1', 'selector', 'workspace2']), hidden: Object.freeze([]), widths: Object.freeze({ workspace1: 43, selector: 14, workspace2: 43 }) });
+const agentsAroundConfiguration = ({ sessions = [], team = '' }) => ({
+  count: sessions.length >= 2 || team ? 4 : Math.max(1, sessions.length),
+  arrangement: NARROW_SELECTOR,
+  seats: [
+    sessions[0] && { workspace: 'workspace1', type: 'session', key: sessions[0].name },
+    team && { workspace: 'workspace2', type: 'team.commons', key: team, tab: 'team-configuration' },
+    sessions[1] && { workspace: 'workspace3', type: 'session', key: sessions[1].name },
+    sessions[2] && { workspace: 'workspace4', type: 'session', key: sessions[2].name },
+  ].filter(Boolean),
+});
 export const CORE_PRESET_TREATMENTS = Object.freeze({
-  bare_metal: treatment(['sessions'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
-  ronin_team: treatment(['sessions'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
+  bare_metal: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
+  ronin_team: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
   staff_my_codebase: treatment(['root'], 'team', () => ({ count: 2, seats: [] })),
   develop_new_project: treatment(['root', 'features'], 'team', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : 2, seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
   personal_assistant: treatment(['assistant_mode', 'specialists'], 'choice', ({ sessions = [] }) => ({ count: sessions.length >= 3 ? 4 : Math.max(1, sessions.length), seats: sessions.map((session, index) => ({ workspace: `workspace${index + 1}`, type: 'session', key: session.name })) })),
@@ -167,7 +181,7 @@ const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/
 
 export function initialControls(handle) {
   switch (handle) {
-    case 'bare_metal': return { tiles: 2, root: 'ronin_lab', sessions: [{ name: 'session_1' }, { name: 'session_2' }] };
+    case 'bare_metal': return { tiles: 4, root: 'ronin_lab', sessions: [{ name: 'session_1' }, { name: 'session_2' }, { name: 'session_3' }] };
     case 'ronin_team': return { sessions: [{ name: 'team_lead', team_lead: true }, { name: 'agent_1' }, { name: 'agent_2' }] };
     case 'staff_my_codebase': return { root: 'ronin_project_1', root_dir: '' };
     case 'develop_new_project': return { root: 'ronin_project_1', features: ['frontend', 'backend'] };
