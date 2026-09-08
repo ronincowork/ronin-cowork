@@ -107,6 +107,11 @@
   .wk-layout-surface[data-width='compact'] .wk-card-summary, .wk-layout-surface[data-width='compact'] .wk-card-meta { display: none; }
   .wk-layout-surface[data-width='compact'] .wk-card-heading { font-size: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .wk-new-team-layout { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  /* PHONE FIRST PAINT. At phone width the stacked shape is the default for every
+     workbench layout, the pre-script boot skeleton in index.html included, so the first
+     frame the browser paints is already the phone presentation. No script-set attribute
+     is needed to reach it: data-responsive stays a script-set OVERRIDE only, and the one
+     value that changes anything is 'desktop', which keeps the side-by-side shape narrow. */
   @media (max-width: 680px) {
     body:has([data-workspace-view='setup']:not([hidden])) #bar .brand-word,
     body:has([data-workspace-view='setup']:not([hidden])) #bar #coworkssep,
@@ -114,10 +119,10 @@
     .wk-league-board [data-surface='cards'] { grid-template-columns: 1fr; }
     .wk-workbench-host { flex-direction: column; }
     .wk-workbench-splitter { display: none; }
-    .wk-workbench-layout[data-responsive='workbench'] { display: flex; flex-direction: column; overflow: auto; scroll-snap-type: y proximity; }
-    .wk-workbench-layout[data-responsive='workbench'] > .wk-layout-surface { flex: 1 0 80%; scroll-snap-align: start; }
-    .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] { scroll-snap-type: none; }
-    .wk-workbench-layout[data-responsive='workbench'][data-workbench-profile='setup'] > .wk-layout-surface { flex: 0 0 auto; width: 100%; scroll-snap-align: none; }
+    .wk-workbench-layout:not([data-responsive='desktop']) { display: flex; flex-direction: column; overflow: auto; scroll-snap-type: y proximity; }
+    .wk-workbench-layout:not([data-responsive='desktop']) > .wk-layout-surface { flex: 1 0 80%; scroll-snap-align: start; }
+    .wk-workbench-layout:not([data-responsive='desktop'])[data-workbench-profile='setup'] { scroll-snap-type: none; }
+    .wk-workbench-layout:not([data-responsive='desktop'])[data-workbench-profile='setup'] > .wk-layout-surface { flex: 0 0 auto; width: 100%; scroll-snap-align: none; }
     .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-column { height: calc(100dvh - var(--row-head) - var(--space-6)); min-height: 0; }
     .wk-new-team-layout { display: flex; flex-direction: column; overflow: auto; }
     .wk-new-team-layout > .wk-layout-surface { flex: 0 0 auto; width: 100%; }
