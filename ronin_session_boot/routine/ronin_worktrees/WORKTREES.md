@@ -1,49 +1,49 @@
 # RONIN WORKTREES — get, update, and hand in
 
-This Routine equips an Agent for managed worktrees when both the repository and the Agent
-choose them. It does not turn every checkout into a managed desk.
+**Your brief names no desk.** That means nobody has opened one for you yet — not that you
+work without one. Run `tejun-desk open <repo>` before your first write: it resolves your
+capability against the repository's profile and either hands you a desk or says this
+repository works in the checkout, which is then the reason to work there, initializing
+nothing. `NO-DESK` from `status` means none is recorded for this session, never that desks
+are unavailable. Agents share one home checkout, so committing to the working line inside it
+puts your work where everyone builds from with no hand-in, and two Agents in one file there
+collide unnoticed.
 
-**Your brief names no desk.** Work in the named checkout under the repository and owner's
-ordinary Git instructions. There is no lease, selected branch, hand-in target, or managed
-lifecycle record, and the absence of a desk is not an error. Do not initialize a repository
-or invent managed machinery merely because this Routine is present.
+**Your brief names a desk.** Work there, one desk per repository; open another
+repository's with it. Before a write, compare `tejun-desk status --assignment`
+with the brief. If they disagree, put the exact discrepancy on the team wipeboard and
+wait for the corrected status; do not create the missing branch or worktree yourself — a
+contradiction is the one case where you wait rather than open.
 
-**Your brief names a desk.** Work there. A multi-repository assignment may have one desk
-per repository. If work takes you to another managed repository, get its desk with
-`tejun-desk open <repo>`. Before a write, compare `tejun-desk status --assignment` with
-the brief. If they disagree, put the exact discrepancy on the team wipeboard and wait for
-the corrected status; do not create the missing branch or worktree yourself.
+### The verbs live in the tool
 
-### The three verbs
-
-| Verb | Tool | Meaning |
-|---|---|---|
-| **get a worktree** | `tejun-desk open <repo[:branch]> [--source dev\|team]` | A new assignment defaults to current local `dev`. When joining a Team already mid-work, explicitly choose `team`. The tool reports the exact resolved source SHA separately from the unchanged hand-in line. |
-| **update it** | `tejun-desk sync <repo[:branch]>` | Merge what local `dev` has accepted. `status` reports distance from `dev`; 20 commits behind is information, never a block. |
-| **hand it in** | `tejun-desk hand-in <repo[:branch]>` | Give the committed desk delta to the team's review line. The isolated candidate includes current local `dev`, accepted team delta, then desk delta. |
-
-`tejun-desk status` reports saved and unsaved files, distance from local `dev` and the team
-line, pending updates, the last receipt, exact source choice and SHA, base, and dependency location. Read it when
-something surprises you; `tejun-desk receipts` shows what hand-in recorded.
-
-The source choice is deliberately simple guidance. Start a fresh assignment from `dev`;
-join ongoing Team work from `team`. If those descriptions do not make the right source
-obvious, ask the team lead. The lead can choose centrally with `tejun-desk assign
-<repo[:branch]> --session <name> --team <team> [--source dev|team]`. Neither choice grants
-permission or changes where the desk hands in.
+**Run `tejun-desk --help` before your first desk command — every Agent, every time.** It
+carries every verb, its flags, which one is destructive and what each does, and it stays
+right when this page has aged. Three carry ordinary work: `tejun-desk open <repo>` gets the
+desk, `tejun-desk sync <repo>` merges what `dev` has accepted, and `tejun-desk hand-in
+<repo>` gives the committed delta to the team review line. Read `tejun-desk status` when
+something surprises you; distance from `dev` is information, never a block. What follows is
+the judgment the help does not carry.
 
 ### The four boundaries
 
 - **Commit** is an ordinary checkpoint on the private desk. It publishes nothing.
 - **Hand-in** admits committed work to the team review line. It is not repository-wide
   verification. Never `git push`.
-- **Team promotion** is the lead's act: verify the review line and admit it to local `dev`.
+- **Team promotion** is the lead's act: `bin/ronin-promote <team>` verifies the review line
+  and admits it to local `dev`, writing the receipt the later `dev → master` PR must carry.
 - **Git push** means remote publication only. Desk and team branches stay local.
 
-Commit coherent checkpoints and run the smallest relevant test. The Team Lead owns full
-repository verification at promotion. A hand-in conflict stays in its isolated candidate
-and names the files; the desk remains live for resolution. An empty update and policy
-facts are ordinary output, not new gates.
+Commit coherent checkpoints and run the smallest relevant test. A hand-in conflict stays in
+its isolated candidate and names the files; the desk remains live for resolution. An empty
+update and policy facts are ordinary output, not new gates.
+
+**Leading changes what you may admit, not where you work.** The lead owns full repository
+verification at promotion, and their own code still reaches the line by desk and hand-in
+like every member's: you are the only Agent who *can* skip that, and being able to is not
+permission. Work reaching `dev` outside the promotion door is in no receipt, and rides into
+the release under one raised for another candidate. Made lead after birth? This part is
+yours too.
 
 Right after `ACCEPTED`, the tool says whether the called desk is level with its line and
 names any unsaved or untracked files excluded from hand-in. `status` provides the same
