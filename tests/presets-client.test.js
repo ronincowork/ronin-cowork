@@ -98,7 +98,6 @@ test('a non-core replacement receives only universal actions and ordinary launch
 
 test('Bare Metal starts with two rows that carry no provider or model, and three sessions use four workspaces', () => {
   assert.deepEqual(presets.initialControls('bare_metal').sessions, [{ name: 'session_1' }, { name: 'session_2' }]);
-  assert.equal('cascadeProvider' in presets || 'eligibleProviders' in presets, false);
   assert.equal(presets.initialControls('bare_metal').tiles, 2);
   assert.deepEqual(presets.initialControls('ronin_team').sessions.map(({ name, team_lead }) => [name, team_lead === true]), [
     ['team_lead', true], ['agent_1', false], ['agent_2', false],
@@ -301,4 +300,10 @@ test('a stone gate reads the runtime the Setup view keeps current, and the held 
   assert.equal(launch.dataset.held, undefined);
   const css = await readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8');
   assert.match(css, /\.sp-warning \{ margin: var\(--space-6\) 0 var\(--space-7\);[^}]*padding: var\(--space-3\) var\(--space-5\);[^}]*font-size: var\(--text-5\); line-height: 1\.6; \}/);
+});
+
+test('a row picks its provider and model from the launch table, the New Agent form\'s own choices', () => {
+  const specs = [{ provider: 'anthropic', model: 'opus', cmd: 'claude --model opus' }, { provider: 'anthropic', model: 'sonnet', cmd: 'claude --model sonnet' }, { provider: 'openai', model: 'gpt-5.6-sol', cmd: 'codex --model gpt-5.6-sol' }];
+  assert.deepEqual(presets.launchTable(specs), { anthropic: ['opus', 'sonnet'], openai: ['gpt-5.6-sol'] });
+  assert.deepEqual(presets.launchTable(null), {});
 });
