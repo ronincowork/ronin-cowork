@@ -2,6 +2,7 @@
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { createWhereItWorks } from './where-it-works.js';
+import { loadProviderCatalog, providerModelPair } from './form-steps.js';
 
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -40,9 +41,8 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   // only on real change now, so a commons waiting off-screen must receive its form here —
   // nothing will render it again when it is placed. A superseded render's host is a
   // discarded node; painting it is invisible and cheap.
-  void Promise.all([request('/api/routines'), request('/api/session-launch-specs'), request('/api/project-roots/detail')]).then(([routineResult, specResult, rootResult]) => {
+  void Promise.all([request('/api/routines'), loadProviderCatalog(), request('/api/project-roots/detail')]).then(([routineResult, , rootResult]) => {
     const routines = routineResult.ok && Array.isArray(routineResult.data) ? routineResult.data : [];
-    const specs = specResult.ok && Array.isArray(specResult.data) ? specResult.data : [];
     const roots = rootResult.ok && Array.isArray(rootResult.data?.roots) ? rootResult.data.roots.filter((root) => !root.archived) : [];
     const defaults = bucket(roster.agent_defaults); const behaviour = bucket(roster.behaviours);
     const form = el('form', 'tw-config-form'); reading(form, t('team_config.cowork_id', 'Team ID'), roster.name, t('settei.none_set', '— none set —'));
@@ -83,11 +83,16 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const behaviours = field(form, t('team_config.behaviours', 'Behaviours'), 'behaviours', list(behaviour.books).join('\n'), 'textarea', t('team_config.behaviours_help', 'One shelf:name book per line.'));
     const requiredRow = el('label', 'tw-config-check tw-config-wide'); const required = el('input'); required.type = 'checkbox'; required.checked = behaviour.required === true; requiredRow.append(required, el('span', null, t('team_config.required', 'Require these behaviours for each new Agent'))); form.append(requiredRow);
 
-    const providers = [...new Set(specs.map((spec) => spec.provider))];
-    const provider = select(form, t('team_config.provider', 'Provider'), 'provider', optionRows(['', ...providers], t), defaults.provider || '');
-    const modelValues = () => ['', ...specs.filter((spec) => spec.provider === provider.value).map((spec) => spec.model)];
-    const model = select(form, t('team_config.model', 'Model'), 'model', optionRows(modelValues(), t), defaults.model || '');
-    provider.addEventListener('change', () => { model.replaceChildren(); for (const item of optionRows(modelValues(), t)) model.add(new Option(item.label, item.value)); model.disabled = !provider.value; }); model.disabled = !provider.value;
+    // THE ONE PICKER (form-steps.js) in this form's own field rows: the Team's provider
+    // and model, either standing alone; the Campaign's answer when both are Default.
+    const picked = { provider: defaults.provider || '', model: defaults.model || '' };
+    const pair = providerModelPair(
+      () => picked,
+      (provider, model) => { picked.provider = provider; picked.model = model; },
+      (label, control) => { const row = el('label', 'tw-config-field'); row.append(el('span', null, label), control); return row; },
+      { classes: 'wk-field-control', blank: { provider: t('team_config.default', 'Default'), model: t('team_config.default', 'Default') }, labels: { provider: t('team_config.provider', 'Provider'), model: t('team_config.model', 'Model') } },
+    );
+    form.append(pair.el);
     const reach = select(form, t('team_config.reach', 'Reach'), 'reach', optionRows(['open', 'discuss', 'plan', 'execute'], t), defaults.reach || 'open');
     const recruit = select(form, t('team_config.recruit', 'Recruit'), 'recruit', optionRows(['open', 'nobody', 'propose agents', 'staff agents'], t), defaults.recruit || 'open');
     const output = select(form, t('team_config.output', 'Output'), 'output', optionRows(['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'], t), defaults.output || 'open');
@@ -116,7 +121,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
         // dropped — but NOT `permissions`, which is ruled out of agent_defaults entirely;
         // spreading it would rewrite a retired field on every save. (Caught by capturing
         // the PUT body while driving: the spread was faithfully carrying it forward.)
-        agent_defaults: { ...defaults, permissions: undefined, provider: provider.value, model: model.value, reach: reach.value, recruit: recruit.value, output: output.value, dial: dial.value, launch_mode: launchMode.value },
+        agent_defaults: { ...defaults, permissions: undefined, provider: picked.provider, model: picked.model, reach: reach.value, recruit: recruit.value, output: output.value, dial: dial.value, launch_mode: launchMode.value },
       } });
       status.textContent = saved.ok ? t('team_config.saved', 'Saved') : saved.message; if (saveAction) saveAction.setDisabled(false); else save.disabled = false; if (saved.ok) optionsArg.onSaved?.(saved.data.roster);
     });

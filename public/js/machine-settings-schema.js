@@ -9,18 +9,28 @@
  * end. The renderers (js/cowork-setup.js, js/machine-settings.js) own furniture and layout; this
  * owns meaning.
  *
- * `ctx` is what a surface already fetched and chose: { record, home, modelOpts,
- * light }. The two surfaces build different modelOpts on purpose — first run offers
- * only what the box can run, ⚙ offers the whole table and says what is not installed.
+ * `ctx` is what a surface already fetched and chose: { record, home, rows }, where
+ * `rows` is the provider catalog as the one picker orders it (form-steps.js
+ * `orderedCatalog`): every row carries its tier and whether this machine can launch it.
  */
 
-/** A provider·model select value is one string so it survives a plain <option>. */
+/** A provider·model value is one string so it survives a plain <option> and a text field. */
 export const pm = (s) => s.provider + '\t' + s.model;
 export const splitPm = (v) => String(v || '').split('\t');
 
-/** A light tier by name, else the LAST column — the launch table puts a provider's
- * richest default first, so the cheapest thing on offer is at the other end. */
-export const LIGHT = /haiku|mini|flash|small|lite/i;
+/**
+ * THE ROW A SEED NAMES, from the catalog alone. `models:first` is the catalog default of
+ * the first provider this machine can launch; `models:light` is the first launchable row
+ * in the light tier — the cheap seat Mika should take — else the first. Null when the
+ * machine can launch nothing: a seed never names a model the box cannot run.
+ */
+export function seedRow(seed, rows = []) {
+  const on = (Array.isArray(rows) ? rows : []).filter((row) => row?.operational);
+  if (!on.length) return null;
+  const first = on.find((row) => row.provider === on[0].provider && row.default) ?? on[0];
+  if (seed === 'models:light') return on.find((row) => row.tier === 'light') ?? first;
+  return first;
+}
 
 /** One path into the record, or undefined. Paths are the registry's own. */
 export function getPath(obj, path) {
@@ -45,27 +55,30 @@ export function initialOf(f, ctx) {
   const cur = currentOf(f, ctx);
   if (cur !== '') return cur;
   if (f.seed === 'home') return ctx.home ?? '';
-  if (f.seed === 'models:first') return ctx.modelOpts?.[0]?.value ?? '';
-  if (f.seed === 'models:light') return ctx.light ? pm(ctx.light) : '';
+  if (f.seed === 'models:first' || f.seed === 'models:light') { const row = seedRow(f.seed, ctx.rows); return row ? pm(row) : ''; }
   if (f.seed === 'sessions:estimate') return String(ctx.sessionEstimate ?? 0);
   if (f.seed === 'open' || f.seed === 'control') return f.seed;
   return '';
 }
 
-/** The options a select offers — resolved from the surface's own ctx. */
+/**
+ * The options a plain select offers — resolved from the surface's own ctx. A field whose
+ * options are `models` or `models_for:<provider>` is not a plain select: it is the one
+ * picker (form-steps.js `providerModelPair`), and `pickerProvider` says which form.
+ */
 export function optionsOf(f, ctx) {
-  if (f.options === 'models') return ctx.modelOpts ?? [];
-  // ONE PROVIDER'S MODELS, by bare name. The registry cannot spell a vendor, so the
-  // provider rides the option source and is read back off it here. The value is the
-  // model alone — the provider is already the key the row lands at.
-  if (String(f.options ?? '').startsWith('models_for:')) {
-    const provider = String(f.options).slice('models_for:'.length);
-    return (ctx.modelOpts ?? [])
-      .filter((o) => o.provider === provider)
-      .map((o) => ({ label: o.model_label ?? o.model, value: o.model }));
-  }
   if (f.options === 'desk_profiles') return (ctx.deskProfiles ?? []).map((p) => ({ label: p.label, value: p.name }));
   return [];
+}
+
+/** Is this field the picker, and in which form: `{ fixed }` with the provider a
+ * `models_for:` row fixes (the row is the provider, the pick is the model alone), or ''
+ * for the free pair; null for any other field. */
+export function pickerProvider(f) {
+  const options = String(f?.options ?? '');
+  if (options === 'models') return { fixed: '' };
+  if (options.startsWith('models_for:')) return { fixed: options.slice('models_for:'.length) };
+  return null;
 }
 
 /** Would this value be omitted from a save? The one rule the registry ever declares. */

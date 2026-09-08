@@ -8,6 +8,7 @@ import { choice, createDeskProfileSurface, skinWord } from './campaign-desk.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
 import { createRoutinesSurface, routinesSummary } from './campaign-routines.js';
 import { CAMPAIGN_TEMPLATES_TYPE, campaignTemplatesDefinition } from './campaign-templates.js';
+import { CAMPAIGN_PROVIDERS_TYPE, campaignProvidersDefinition } from './campaign-providers.js';
 import { buildProjectRoots } from './projectroots.js';
 import { deskProfiles } from './desk-profile.js';
 import { request } from './request.js';
@@ -18,7 +19,7 @@ import { progressiveSurface } from './progressive-surface.js';
 const PROFILE = 'campaign';
 // the machine's own half — account, health — is the Admin Desk's.
 // defaults · Project roots lead, and they are the four the page opens on.
-const TYPES = Object.freeze({ machine: 'campaign.machine', templates: CAMPAIGN_TEMPLATES_TYPE, defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', routines: 'campaign.routines', profile: 'campaign.desk-profile', create: 'campaign.new' });
+const TYPES = Object.freeze({ machine: 'campaign.machine', templates: CAMPAIGN_TEMPLATES_TYPE, defaults: 'campaign.agent-defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', routines: 'campaign.routines', providers: CAMPAIGN_PROVIDERS_TYPE, profile: 'campaign.desk-profile', create: 'campaign.new' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.templates, 'campaign.team-templates': TYPES.templates, 'campaign.session-roles': TYPES.templates, '@new-campaign': TYPES.create });
@@ -74,6 +75,7 @@ function registerCampaignSurfaces() {
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
   // CONTROL_BUNDLES build-out for the bundle model behind it.
   add({ type: TYPES.routines, header: 'surface', label: () => t('campaign_view.routines', 'Routines and Installs'), summary: (_tenant, e) => routinesSummary(e.selected()), create: ({ environment: e }) => { const surface = createRoutinesSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
+  add(campaignProvidersDefinition()); // Model providers — the catalog, and what this machine has; campaign-providers.js
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.

@@ -1,9 +1,9 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Campaign Agent defaults. These values seed the next form; they never edit a live Agent. */
 import { t } from './lexicon.js';
-import { request } from './request.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
+import { loadProviderCatalog, providerModelPair } from './form-steps.js';
 
 const el = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
 const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -51,7 +51,6 @@ export function createAgentDefaultsSurface(campaign) {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('campaign_view.agent_defaults', 'Agent defaults'), className: 'cv-surface' });
   const body = el('div', 'cv-body'); surface.content.append(body);
-  let specs = [];
 
   function paint() {
     const row = campaign(); body.replaceChildren();
@@ -61,19 +60,16 @@ export function createAgentDefaultsSurface(campaign) {
     const form = el('form', 'cv-defaults-form');
     const notice = createNotice();
     body.append(el('p', 'cv-note', t('campaign_view.defaults_help', 'These defaults land in the next Team or Agent form that opens. They remain editable there; nothing live changes.')));
-    const providers = [...new Set(specs.map((spec) => spec.provider))];
-    const provider = selectOf(['', ...providers], String(current.provider || ''));
-    provider.options[0].textContent = t('campaign_view.provider_default', 'Default provider');
-    const model = el('select', 'cv-input');
-    const fillModels = () => {
-      const previous = String(current.model || ''); model.replaceChildren(new Option(t('campaign_view.model_default', 'Default model'), ''));
-      for (const spec of specs.filter((item) => item.provider === provider.value)) model.add(new Option(spec.model, spec.model));
-      model.value = [...model.options].some((option) => option.value === previous) ? previous : '';
-      model.disabled = !provider.value;
-    };
-    provider.addEventListener('change', () => { current.model = ''; fillModels(); }); fillModels();
-    labeled(form, t('campaign_view.col_provider', 'Provider'), provider);
-    labeled(form, t('campaign_view.col_model', 'Preferred model'), model);
+    // THE ONE PICKER (form-steps.js), in this form's own rows: the Campaign's provider
+    // and model, either standing alone, from the catalog it reads itself.
+    const picked = { provider: String(current.provider || ''), model: String(current.model || '') };
+    const pair = providerModelPair(
+      () => picked,
+      (provider, model) => { picked.provider = provider; picked.model = model; },
+      (label, control) => { const row = el('label', 'cv-default-field'); row.append(el('span', 'cv-default-label', label), control); return row; },
+      { classes: 'cv-input', blank: { provider: t('campaign_view.provider_default', 'Default provider'), model: t('campaign_view.model_default', 'Default model') }, labels: { provider: t('campaign_view.col_provider', 'Provider'), model: t('campaign_view.col_model', 'Preferred model') } },
+    );
+    form.append(pair.el);
     const controls = {};
   const fieldLabels = { reach: t('campaign_view.default_reach', 'Reach'), recruit: t('campaign_view.default_recruit', 'Recruit'), output: t('campaign_view.default_output', 'Output'), dial: t('campaign_view.default_dial', 'Control'), launch_mode: t('launch_mode.head', 'launch mode') };
     for (const [name, values] of Object.entries(CHOICES)) {
@@ -85,14 +81,14 @@ export function createAgentDefaultsSurface(campaign) {
     const save = el('button', 'cv-save', t('panels.save', 'Save')); save.type = 'submit'; actions.append(notice.el, save); form.append(actions); body.append(form);
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); save.disabled = true; notice.set('info', t('campaign.saving', 'saving…'));
-      const next = { ...current, provider: provider.value, model: model.value, reach: controls.reach.value, recruit: controls.recruit.value, output: controls.output.values(), dial: controls.dial.value, launch_mode: controls.launch_mode.value, behaviours: behaviours.value.split('\n').map((value) => value.trim()).filter(Boolean) };
+      const next = { ...current, provider: picked.provider, model: picked.model, reach: controls.reach.value, recruit: controls.recruit.value, output: controls.output.values(), dial: controls.dial.value, launch_mode: controls.launch_mode.value, behaviours: behaviours.value.split('\n').map((value) => value.trim()).filter(Boolean) };
       const result = await saveCampaign(row.id, { config: { agent_defaults: next } });
       notice.set(result.ok ? 'success' : 'failed', result.ok ? t('settei.saved', 'saved') : result.message); save.disabled = false;
       if (result.ok) paint();
     });
   }
 
-  return { el: surface.el, enter: () => void request('/api/session-launch-specs').then((result) => { specs = result.ok && Array.isArray(result.data) ? result.data : []; paint(); }) };
+  return { el: surface.el, enter: () => void loadProviderCatalog().then(paint) };
 }
 
 export function defaultsSummary(campaign) {

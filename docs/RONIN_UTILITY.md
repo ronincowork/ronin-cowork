@@ -30,7 +30,7 @@ arrangement per page. The three scopes differ only in what the column offers:
 
 | Workbench | Address | The column lists |
 |---|---|---|
-| **Campaign discovery workbench** | Machine Settings | the Campaign's own surfaces: configuration, project roots, Team roster, templates, Routines and Installs |
+| **Campaign discovery workbench** | Machine Settings | the Campaign's own surfaces: configuration, project roots, Team roster, templates, Routines and Installs, Model providers |
 | **Cowork workbench** | Coworks | every Team in the Cowork, then the sessions on no team |
 | **Team workbench** | a Team's page (`#/team/<name>`) | this Team's commons card and its members |
 | **Setup workbench** | Machine Settings / Ronin Setup | Presets pinned in workspace 1; Register, providers, folders, Services, gbrain, and Templates select into workspace 2 |
@@ -40,12 +40,12 @@ arrangement per page. The three scopes differ only in what the column offers:
 | **terminal tile** | one Agent: its live terminal, composer, Output selector, Control dial, work record |
 | **team commons** | this team: **Docs** (what agents listed, plans, docs by project root) · **Wipeboard** · **Messages** · **Team Configuration** (the team's Routines, kit, launch defaults) |
 | **cowork commons** (⚙) | this install and owner: usage stats · **Account** (Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk · Keypad |
-| **campaign commons** | the Campaign: Campaign · Project roots · Team roster · Templates · **Routines and Installs** (what is on the machine, and the switchboard that fills new teams) |
+| **campaign commons** | the Campaign: Campaign · Project roots · Team roster · Templates · **Routines and Installs** (what is on the machine, and the switchboard that fills new teams) · **Model providers** (every provider and model Ronin offers — tier, cost, good at, not good at — and what this machine has: installed, signed in, activated, as measured) |
 | **new session** | the launcher, placed by か New or ＋ Add team member; the newborn lands in that workspace |
 
 **Where to send the owner:** teams → the **Coworks** door · settings, account, look, updates
 → **⚙ → Account** · which Routines a team runs → **Team Configuration**; for new teams, the
-Campaign's **Routines and Installs** · project roots and templates → the campaign commons · a fuller new
+Campaign's **Routines and Installs** · which models exist, what they cost and which this box can launch → the Campaign's **Model providers** · project roots and templates → the campaign commons · a fuller new
 Agent or Team → **New Project** on the landing · a quick session → **か New**.
 
 ## The tile head — the buttons, left to right

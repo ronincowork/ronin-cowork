@@ -14,12 +14,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.name_placeholder:** name
 - **add_agent.instruction:** instruction
 - **add_agent.instruction_placeholder:** what this Agent should do
-- **add_agent.provider:** model provider
-- **add_agent.model:** model
 - **add_agent.make_team_lead:** Make Team Lead
 - **add_agent.make_team_lead_sub:** Replace the current Team Lead when this Agent launches.
 - **add_agent.lead_swap_failed:** Started {name} as Team Lead, but could not clear Team Lead from: {names}.
-- **add_agent.default:** default
 - **add_agent.template:** template
 - **add_agent.no_template:** No template
 - **add_agent.worktrees_mode:** Agent work mode
@@ -263,7 +260,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.col_provider:** Provider
 - **campaign_view.col_model:** Preferred model
 - **campaign_view.col_default:** Default
-- **campaign_view.no_launch_table:** No launch table on this install.
 - **campaign_view.templates_summary:** Team casts, agent loadouts, and the library to download more from.
 - **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. A handful ship inside Ronin; the rest are on the library.
 - **campaign_view.library_none_kind:** Nothing of this kind on the library.
@@ -368,6 +364,31 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.sell_stats:** Usage history — what your sessions did, counted over time, never their content.
 - **campaign_view.worktrees_routine_help:** Worktrees give each Agent a separate working folder and branch, so file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 - **campaign_view.routines_n:** {n} on
+- **campaign_view.providers:** Model providers
+- **campaign_view.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
+- **campaign_view.providers_summary:** {providers} providers · {models} models · {activated} activated here
+- **campaign_view.providers_help:** Every model provider and model Ronin offers, from the catalog: tier, cost as read, what each is good at and not. Installed, signed in and activated are what this machine measured.
+- **campaign_view.providers_measured:** This machine was measured {when}. Ronin Setup → Model providers measures it again.
+- **campaign_view.providers_unmeasured:** This machine has not been measured yet. Ronin Setup → Model providers measures it.
+- **campaign_view.providers_loading:** Reading the catalog…
+- **campaign_view.providers_none:** No model providers are in the catalog on this machine.
+- **campaign_view.provider_activated:** activated
+- **campaign_view.provider_signed_in:** signed in
+- **campaign_view.provider_installed:** installed
+- **campaign_view.provider_absent:** not installed
+- **campaign_view.provider_missing:** This provider is no longer in the catalog.
+- **campaign_view.provider_served_by:** Served by {cli} · {n} models in the catalog
+- **campaign_view.provider_models_n:** {n} models
+- **campaign_view.fact_installed:** Installed
+- **campaign_view.fact_signed_in:** Signed in
+- **campaign_view.fact_activated:** Activated
+- **campaign_view.yes:** yes
+- **campaign_view.no:** no
+- **campaign_view.col_tier:** Tier
+- **campaign_view.col_cost:** Cost
+- **campaign_view.col_good_at:** Good at
+- **campaign_view.col_not_good_at:** Not good at
+- **campaign_view.model_default_mark:** the default
 - **campaign_view.routine_no_description:** No description supplied.
 - **campaign_view.available:** Available
 - **campaign_view.unavailable:** Unavailable
@@ -483,8 +504,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.saving:** saving…
 - **settei.saved:** saved
 - **settei.none_set:** — none set —
+- **settei.pick_model:** choose a model to save
 - **settei.unset_using:** unset — using {value}
-- **settei.spec_not_installed:** {spec} — not installed
 - **settei.blurb:** What this install is set to — and what it is running on.
 - **settei.measured:** measured {time}
 - **settei.group_you:** you and this machine
@@ -588,6 +609,12 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.own_blurb:** Fresh and empty. Fill it in yourself.
 - **forms.library_note:** More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.
 - **forms.default:** default
+- **forms.provider_off:** {name} — not on this machine
+- **forms.model_word:** {model} · {tier} — {good_at}
+- **forms.model_off:** {model} · {tier} — not on this machine
+- **forms.tier_light:** light
+- **forms.tier_standard:** standard
+- **forms.tier_frontier:** frontier
 - **forms.provider:** model provider
 - **forms.model:** model
 - **forms.none:** —
@@ -1239,10 +1266,9 @@ The catalog entry goes. {dir} is not touched.
 - **setup.defaults:** How new sessions should start
 - **setup.defaults_lede:** This is only the default. You can choose something different each time.
 - **setup.model:** Start new sessions with
-- **setup.model_hint:** These are the runnable models in Ronin’s launch catalog. A saved choice wins when one exists.
+- **setup.model_hint:** Every model in Ronin’s provider catalog; what this machine cannot launch yet is greyed. A saved choice wins when one exists.
 - **setup.mika:** Mika uses
-- **setup.mika_hint:** The same runnable launch catalog supplies this list. A light model is recommended for Mika.
-- **setup.recommended:** {model} (recommended)
+- **setup.mika_hint:** The same catalog supplies this list. A light-tier model is recommended for Mika.
 - **setup.cap:** Maximum agent sessions
 - **setup.cap_hint:** ≈700 MB per agent. Ronin reserves 25% (minimum 2 GB). Shells don’t count.
 - **setup.cap_none:** No limit — allow any number
@@ -1296,6 +1322,10 @@ The catalog entry goes. {dir} is not touched.
 - **setup.none_detected:** None detected
 - **setup.install_in_tiles:** {agents} — install in visible tiles
 - **setup.no_model:** No runnable model detected
+- **setup.provider_default:** Ronin’s default provider
+- **setup.model_default:** the provider’s default model
+- **setup.provider_default_model:** {provider} · its default model
+- **setup.model_ronin_default:** Ronin’s default
 - **setup.services_already:** Already selected · {stage}
 - **setup.services_begin_for:** Begin activation for {email}
 - **setup.services_begin_after:** Begin activation after you enter an email

@@ -111,8 +111,9 @@ same height as the Model providers stones: the row's height is taken out of the 
 room rather than added to it. A preset launches its template as stored, through the same
 team loader the New Team form uses: each row is one of the template's agents with its
 instructions, mandate, lead mark and Routine switches, and the owner's starting message
-appended. A row may pick its provider and model in the line, from the launch table, the same
-choices the New Agent form offers, sent as the launch's own keys; left at Default, the
+appended. A row may pick its provider and model in the line with the one picker — every
+provider and model in the catalog, what this box cannot launch greyed — the same control
+the New Agent form offers, sent as the launch's own keys; left at Default, the
 launch takes the Configuration and Campaign defaults every launch uses. The preset decides only which rows launch, what they
 are called, and how the new tab is seated. Bare Metal is the one exception by design: it is a
 bare-metal team, `bare_metal_<code>`, whose members are the native CLI started in Ronin Lab

@@ -1,9 +1,10 @@
 /* COWORK_SETUP — the live companion page to the RoninCoWork workspace. */
 import { request } from './request.js';
 import { status } from './ui.js';
-import { LIGHT, pm, initialOf, toRequests } from './machine-settings-schema.js';
+import { pm, splitPm, initialOf, toRequests } from './machine-settings-schema.js';
 import { t } from './lexicon.js';
 import { createFolderPicker } from './folder-picker.js';
+import { loadProviderCatalog, providerModelPair } from './form-steps.js';
 
 const el = (tag, cls, text) => {
   const node = document.createElement(tag);
@@ -11,8 +12,7 @@ const el = (tag, cls, text) => {
   if (text != null) node.textContent = text;
   return node;
 };
-const titleCase = (value) => String(value).split(/[-_]/).map((x) => /^gpt$/i.test(x) ? 'GPT' : x.charAt(0).toUpperCase() + x.slice(1)).join(' ');
-const modelLabel = (spec) => `${spec.provider === 'anthropic' ? 'Claude Code' : spec.provider === 'openai' ? 'Codex' : titleCase(spec.provider)} · ${titleCase(spec.model)}`;
+const titleCase = (value) => String(value).split(/[-_]/).map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(' ');
 const fieldById = (schema, id) => schema.fields.find((f) => f.id === id);
 
 function inputField(id, label, hint, { type = 'text', placeholder = '', cls = '' } = {}) {
@@ -31,6 +31,33 @@ function selectField(id, label, hint) {
   const select = document.createElement('select'); select.id = id;
   wrap.append(lab, select, el('span', 'cs-hint', hint));
   return { wrap, select };
+}
+
+/**
+ * A MODEL FIELD IS THE ONE PICKER (form-steps.js): provider and model, either standing
+ * alone, every catalog row offered with what this box cannot launch greyed. `initial` is
+ * the registry's seed as one provider·model string; `value()` gives it back the same way.
+ */
+function pickerField(id, label, hint, initial, onChange, rows) {
+  const wrap = el('div', 'cs-field cs-pick');
+  const [provider, model] = splitPm(initial);
+  const picked = { provider: provider || '', model: model || '' };
+  let cells = 0; // the picker asks for its provider cell first, then its model cell
+  const pair = providerModelPair(
+    () => picked,
+    (nextProvider, nextModel) => { picked.provider = nextProvider; picked.model = nextModel; onChange(); },
+    (text, control) => { control.id = `${id}-${cells++ ? 'model' : 'provider'}`; const cell = el('div', 'cs-pick-cell'); const lab = el('label', 'cs-pick-label', text); lab.htmlFor = control.id; cell.append(lab, control); return cell; },
+    { blank: { provider: t('setup.provider_default', 'Ronin’s default provider'), model: t('setup.model_default', 'the provider’s default model') } },
+  );
+  wrap.append(el('span', 'cs-pick-head', label), pair.el, el('span', 'cs-hint', hint));
+  const word = () => {
+    const row = rows.find((item) => item.provider === picked.provider && item.model === picked.model);
+    if (row) return `${row.provider_label} · ${row.model}`;
+    const provider = rows.find((item) => item.provider === picked.provider);
+    if (provider) return t('setup.provider_default_model', '{provider} · its default model', { provider: provider.provider_label });
+    return rows.some((item) => item.operational) ? t('setup.model_ronin_default', 'Ronin’s default') : t('setup.no_model', 'No runnable model detected');
+  };
+  return { wrap, value: () => (picked.model ? pm(picked) : ''), word };
 }
 
 function choiceField(id, choices, selected) {
@@ -90,22 +117,21 @@ export async function buildCoworkSetup(host, onDone) {
   host.className = 'cs-root';
   host.style.cssText = 'position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;';
   host.replaceChildren();
-  const [setteiRes, agentsRes, specsRes, profilesRes] = await Promise.all([
+  const [setteiRes, agentsRes, catalog, profilesRes] = await Promise.all([
     request('/api/machine-settings', { cache: 'no-store' }), request('/api/agents', { cache: 'no-store' }),
-    request('/api/session-launch-specs', { cache: 'no-store' }), request('/api/desk-profiles', { cache: 'no-store' }),
+    loadProviderCatalog(), request('/api/desk-profiles', { cache: 'no-store' }),
   ]);
   const record = setteiRes.ok ? setteiRes.data : {};
   const schema = record.schema ?? { fields: [], families: {}, seat: {} };
   const agents = agentsRes.ok && Array.isArray(agentsRes.data) ? agentsRes.data : [];
-  const specs = specsRes.ok && Array.isArray(specsRes.data) ? specsRes.data : [];
+  // The catalog as the one picker orders it: every row, with whether this box can launch it.
+  const rows = catalog.rows;
+  const runnable = rows.filter((row) => row.operational);
   const profiles = profilesRes.ok && Array.isArray(profilesRes.data?.profiles) ? profilesRes.data.profiles : [];
   const machine = record.observed?.machine ?? {};
-  const runnable = specs.filter((spec) => agents.some((agent) => agent.installed && agent.cmd === String(spec.cmd || '').split(/\s+/)[0]));
   const ram = Number(machine.ram_gb || 0);
   const sessionEstimate = Math.max(1, Math.floor((ram - Math.max(ram * 0.25, 2)) / 0.7));
-  const ctx = { record, home: machine.home ?? '', sessionEstimate,
-    modelOpts: runnable.map((spec) => ({ value: pm(spec), label: modelLabel(spec), spec })),
-    light: runnable.find((spec) => LIGHT.test(spec.model)) ?? runnable[runnable.length - 1] };
+  const ctx = { record, home: machine.home ?? '', sessionEstimate, rows };
 
   const shell = el('main', 'cs-shell'); host.append(shell);
   const top = el('header', 'cs-topbar');
@@ -180,17 +206,12 @@ export async function buildCoworkSetup(host, onDone) {
 
   const defaults = card(8, t('setup.defaults', 'How new sessions should start'), t('setup.defaults_lede', 'This is only the default. You can choose something different each time.'));
   const defaultFields = el('div', 'cs-fields');
-  const modelField = selectField('cs-model', t('setup.model', 'Start new sessions with'), t('setup.model_hint', 'These are the runnable models in Ronin’s launch catalog. A saved choice wins when one exists.'));
-  const mikaField = selectField('cs-mika', t('setup.mika', 'Mika uses'), t('setup.mika_hint', 'The same runnable launch catalog supplies this list. A light model is recommended for Mika.'));
+  const modelField = pickerField('cs-model', t('setup.model', 'Start new sessions with'), t('setup.model_hint', 'Every model in Ronin’s provider catalog; what this machine cannot launch yet is greyed. A saved choice wins when one exists.'), initialOf(fieldById(schema, 'model'), ctx), updateReviewSoon, rows);
+  const mikaField = pickerField('cs-mika', t('setup.mika', 'Mika uses'), t('setup.mika_hint', 'The same catalog supplies this list. A light-tier model is recommended for Mika.'), initialOf(fieldById(schema, 'mika'), ctx), updateReviewSoon, rows);
   const deskProfileField = selectField('cs-desk-profile', t('setup.desk_profile', 'Desk profile'), t('setup.desk_profile_hint', 'The look, the words, and how much terminal detail your workspace shows.'));
   deskProfileField.select.add(new Option(t('setup.desk_profile_stock', 'Stock'), ''));
   for (const profile of profiles) deskProfileField.select.add(new Option(profile.label || profile.name, profile.name));
   deskProfileField.select.value = initialOf(fieldById(schema, 'deskProfile'), ctx);
-  for (const option of ctx.modelOpts) {
-    modelField.select.add(new Option(option.label, option.value));
-    mikaField.select.add(new Option(LIGHT.test(option.spec.model) ? t('setup.recommended', '{model} (recommended)', { model: option.label }) : option.label, option.value));
-  }
-  modelField.select.value = initialOf(fieldById(schema, 'model'), ctx); mikaField.select.value = initialOf(fieldById(schema, 'mika'), ctx);
   modelField.wrap.classList.add('full');
   const capField = selectField('cs-cap', t('setup.cap', 'Maximum agent sessions'), t('setup.cap_hint', '≈700 MB per agent. Ronin reserves 25% (minimum 2 GB). Shells don’t count.'));
   const savedCap = Number(initialOf(fieldById(schema, 'cap'), ctx));
@@ -239,7 +260,7 @@ export async function buildCoworkSetup(host, onDone) {
     rr.folder.out.textContent = folderPicker.value() || t('setup.folder_skipped', 'Skip for now — add one from Campaign later');
     rr.ready.out.textContent = agents.filter((a) => a.installed).map((a) => a.label).join(', ') || t('setup.none_detected', 'None detected');
     rr.add.li.hidden = additions.length === 0; rr.add.out.textContent = additions.length ? t('setup.install_in_tiles', '{agents} — install in visible tiles', { agents: additions.join(', ') }) : '';
-    rr.model.out.textContent = modelField.select.selectedOptions[0]?.textContent || t('setup.no_model', 'No runnable model detected'); rr.mika.out.textContent = mikaField.select.selectedOptions[0]?.textContent || t('setup.no_model', 'No runnable model detected'); rr.cap.out.textContent = capField.select.selectedOptions[0]?.textContent || '';
+    rr.model.out.textContent = modelField.word(); rr.mika.out.textContent = mikaField.word(); rr.cap.out.textContent = capField.select.selectedOptions[0]?.textContent || '';
     rr.services.out.textContent = activationExists ? t('setup.services_already', 'Already selected · {stage}', { stage: activationStage.replaceAll('_', ' ') }) : wantServices.checked ? (emailField.input.value.trim() ? t('setup.services_begin_for', 'Begin activation for {email}', { email: emailField.input.value.trim() }) : t('setup.services_begin_after', 'Begin activation after you enter an email')) : t('setup.services_not_selected', 'Not selected — nothing will be sent');
     rr.gbrain.out.textContent = wantServices.checked && wantGbrain.checked ? t('setup.gbrain_selected', 'Add local embeddings model · about 0.3 GB') : t('setup.not_selected', 'Not selected');
     rr.kind.out.textContent = titleCase(kindField.value());
@@ -253,7 +274,7 @@ export async function buildCoworkSetup(host, onDone) {
   save.addEventListener('click', async () => {
     if (!activationExists && wantServices.checked && (!emailField.input.value.trim() || !emailField.input.validity.valid)) { line.say(t('setup.err_email', 'Enter the email address for Services confirmation.'), 'bad'); emailField.input.focus(); return; }
     save.disabled = true; line.say(t('setup.saving', 'Saving…'), 'busy');
-    const values = { campaignName: campaignName.input.value, campaignDescription: campaignDescription.input.value, machineName: machineField.input.value, ownerName: ownerField.input.value, mainIntent: kindField.value(), routineBundle: bundleField.value(), model: modelField.select.value, deskProfile: deskProfileField.select.value, mika: mikaField.select.value, cap: capField.select.value };
+    const values = { campaignName: campaignName.input.value, campaignDescription: campaignDescription.input.value, machineName: machineField.input.value, ownerName: ownerField.input.value, mainIntent: kindField.value(), routineBundle: bundleField.value(), model: modelField.value(), deskProfile: deskProfileField.select.value, mika: mikaField.value(), cap: capField.select.value };
     const problems = []; let installNote = ''; const landOn = [];
     // 409 is an answer only from the project POST — the project already exists from a
     // previous Save. Any other family answering 409 is a problem worth showing.
@@ -287,7 +308,7 @@ export async function buildCoworkSetup(host, onDone) {
       const installed = await request('/api/install', { method: 'POST', json: { items: picks.map((name) => ({ kind: 'agent', name })) } });
       if (installed.ok && Array.isArray(installed.data)) landOn.push(...installed.data.filter((x) => x.session).map((x) => x.session)); else if (!installed.ok) installNote += ' ' + t('setup.note_installs', 'Agent installs can be retried from Configuration.');
     }
-    if (ctx.modelOpts.length) { const born = await request('/api/launch', { method: 'POST', json: { behaviours: schema.seat.behaviours, name: schema.seat.name, prompt: schema.seat.prompt } }); if (born.ok && born.data?.name) landOn.push(born.data.name); }
+    if (runnable.length) { const born = await request('/api/launch', { method: 'POST', json: { behaviours: schema.seat.behaviours, name: schema.seat.name, prompt: schema.seat.prompt } }); if (born.ok && born.data?.name) landOn.push(born.data.name); }
     line.say(t('setup.saved', 'Saved. Opening RoninCoWork…') + installNote, installNote ? 'bad' : 'ok'); onDone?.({ tiles: landOn });
   });
   updateReview();

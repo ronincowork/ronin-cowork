@@ -165,7 +165,7 @@ interface after starting the command:
 ```text
 MODEL_PROVIDERS.md row
   → GET /api/session-launch-specs
-  → ＋ New session picker
+  → the one picker (providerModelPair, public/js/form-steps.js)
   → POST /api/launch { cmd, launch_mode }
   → append the provider flag only for live_dangerously
   → run the resolved cmd in the new tile
@@ -173,6 +173,44 @@ MODEL_PROVIDERS.md row
   → type the built brief
   → submit it and verify that it left the prompt
 ```
+
+## The one picker
+
+Every place the product asks *which provider, and which model* is one control:
+`providerModelPair` in `public/js/form-steps.js`. New Agent, New Team, Add Agent to Team,
+the Campaign's Agent defaults, Team Configuration, ⚙ Configuration (the general default,
+each provider's preferred model, and Mika's row), cowork setup and the Presets rows all call
+it; none keeps a list, a join or a vendor's name of its own. The picker reads the catalog
+rows itself (`GET /api/session-launch-specs`) and what this machine measured of each CLI
+(`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
+probes), joined on the catalog's own `cli` field, and it offers:
+
+- every provider and every model in the catalog, the providers this machine can launch
+  first and the rest after, in catalog order within each group;
+- each model as `<id> · <tier> — <good at>`, so the tier and the fit are read where the
+  choice is made;
+- what this machine cannot launch **disabled, never hidden** — the list teaches what
+  Ronin offers, and a greyed row says *not on this machine*.
+
+Either pick may stand alone: a provider with no model resolves to that provider's marked
+default server-side; both blank is the level above's answer (the Team's, the Campaign's,
+the install's). A row whose provider is fixed (⚙'s *Preferred <provider> model*, Mika) is
+the same control with the provider select dropped. The registry's seeds read the same
+rows: `models:first` is the marked default of the first launchable provider, `models:light`
+the first launchable **light** row — there is no name-pattern for "cheap".
+
+## The Campaign's Model providers surface
+
+The Campaign workbench (Machine Settings → Ronin Settings) has a **Model providers** card
+(`public/js/campaign-providers.js`) beside Routines and Installs. Its surface is the whole
+catalog on the shared stone work surface: one stone per provider, labelled with the vendor
+and its model count, wearing the measured word — *activated · signed in · installed · not
+installed*; a stone opens that provider's three measured facts and its model table — model,
+tier, cost as read, good at, not good at — with the marked default said. The measured facts
+are the Campaign's recorded summary, dated once on the surface (*This machine was measured
+<when>*), never a live word; the surface probes nothing and changes nothing — Ronin Setup's
+Model providers surface is where a provider is installed, signed in and activated, and where
+*Check again* measures.
 
 ## New-session integration contract
 
