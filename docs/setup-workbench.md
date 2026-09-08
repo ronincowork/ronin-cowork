@@ -112,9 +112,10 @@ instructions, mandate, lead mark and Routine switches, and the owner's starting 
 appended. A row may pick its provider and model in the line, from the launch table, the same
 choices the New Agent form offers, sent as the launch's own keys; left at Default, the
 launch takes the Configuration and Campaign defaults every launch uses. The preset decides only which rows launch, what they
-are called, and how the new tab is seated. Bare Metal is the one exception by design: each
-of its rows is a bare-metal agent, the native CLI started in Ronin Lab with the owner's
-words and no Ronin birth packet, team room, or mandate. A stone's gate reads the same runtime the
+are called, and how the new tab is seated. Bare Metal is the one exception by design: it makes
+no team; each of its rows is a bare-metal agent, the native CLI started in Ronin Lab with
+the owner's words and no Ronin birth packet, team room, or mandate, and the sessions sit
+together on the Cowork page, seated side by side. A session's name is the name in its row. A stone's gate reads the same runtime the
 Model providers surface keeps current, so activating a provider unlocks the stones at once. Grokbot Morning Briefing's **When**
 asks only for what its cadence needs: **Every day** a time, **Day of the week** a day and a
 time, **One time** a date and a time; the schedule is written in the Cron jobs grammar
