@@ -11,6 +11,7 @@ import {
   getProjectRoot,
   getTags,
   isValidName,
+  killSessionTree,
   listSessions,
   sessionExists,
   sessionOfPane,
@@ -56,7 +57,8 @@ import { ignoreEndingRequest, inspectSessionEnding, promptEnding } from '../desk
 import type { EndingRequest } from '../desks/ending.js';
 import { resolveEndingRequest } from '../desks/ending-response.js';
 import { randomUUID } from 'node:crypto';
-import { closeAssignedDesks, shutdownAgent, ShutdownRefused, type ShutdownProgress } from '../desks/session-shutdown.js';
+import { hardDeleteConfirmation, shutdownAgent, ShutdownRefused, ShutdownSlots, type ShutdownProgress } from '../desks/session-shutdown.js';
+import { listDesks } from '../desks/registry.js';
 
 interface PreparedEnding { proceed: boolean; acknowledgement?: Record<string, unknown> }
 
@@ -67,18 +69,27 @@ interface ShutdownOperation extends ShutdownProgress {
   closed: string[];
   error?: string;
   blockers?: ShutdownRefused['blockers'];
-  mode?: 'shutdown' | 'archive';
-  archived?: ReturnType<typeof publicArchive>;
+  mode?: 'shutdown' | 'hard_delete';
+  destructive?: { closed: string[]; quarantined: Array<{ desk: string; quarantine_id: string }> };
 }
 
 const publicArchive = ({ id, name, archived_at, agent, tags }: ArchivedSession) => ({ id, name, archived_at, agent, tags });
 
 const shutdownOperations = new Map<string, ShutdownOperation>();
-const shutdownBySession = new Map<string, string>();
+const shutdownSlots = new ShutdownSlots();
+
+async function openDeskRefusal(name: string): Promise<string> {
+  const desks = (await listDesks()).filter((desk) => desk.state === 'open' && (desk.owners?.length ? desk.owners : [desk.session]).includes(name));
+  return desks.length
+    ? `Session "${name}" owns open desk${desks.length === 1 ? '' : 's'} ${desks.map((desk) => `${desk.repo}:${desk.branch}`).join(', ')}. Archive leaves managed-desk custody unchanged; run tejun-harakiri or Shut down Agent after closeout instead.`
+    : '';
+}
 
 async function performAgentShutdown(name: string, progress: (value: ShutdownProgress) => void): Promise<string[]> {
   const key = await sessionKey(name);
-  const result = await shutdownAgent(name, progress);
+  const result = await shutdownAgent(name, progress, undefined, {
+    operationTimeoutMs: 25_000, readTimeoutMs: 5_000, closeTimeoutMs: 15_000, stopTimeoutMs: 5_000,
+  });
   emitSessionEnd(name, key);
   count('ended', { name, end: 'harakiri' });
   return result.closed;
@@ -89,30 +100,24 @@ async function notifyShutdownBlockers(name: string, error: ShutdownRefused): Pro
   await attemptMessage(queued.id, 'safe').catch(() => null);
 }
 
-async function performAgentArchive(name: string, progress: (value: ShutdownProgress) => void): Promise<{ archived: ArchivedSession; closed: string[] }> {
+async function performAgentHardDelete(name: string, progress: (value: ShutdownProgress) => void, signal: AbortSignal): Promise<NonNullable<ShutdownOperation['destructive']>> {
+  signal.throwIfAborted();
   progress({ phase: 'resolving_agent', message: `Resolving Agent ${name}` });
   const key = await sessionKey(name);
-  const runtime = await sessionRuntime(name);
-  const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
-  if (!provider) throw new Error(`Could not identify a resumable ${runtime.agent || 'agent'} conversation.`);
-  const archived: ArchivedSession = {
-    version: 1, id: key, name, key, archived_at: new Date().toISOString(), cwd: runtime.cwd,
-    agent: provider.agent, provider_session_id: provider.id, tags: await getTags(name), leads: await getLeads(name),
-    wipeboards: await getWipeboards(name), note: await getNote(name), control: await getControl(name),
-    project_root: await getProjectRoot(name),
-  };
-  await writeArchive(archived);
-  try {
-    const result = await closeAssignedDesks(name, progress);
-    progress({ phase: 'ending_agent', message: `Archiving Agent ${name}`, desk_count: result.closed.length });
-    await stopSessionTree(name);
-    count('ended', { name, end: 'archived' });
-    progress({ phase: 'complete', message: `Agent ${name} archived and ${result.closed.length} assigned desk(s) closed`, desk_count: result.closed.length });
-    return { archived, closed: result.closed };
-  } catch (e) {
-    if (await sessionExists(name)) await removeArchive(archived.id).catch(() => {});
-    throw e;
-  }
+  const ending = await inspectSessionEnding(name, 'hard_delete');
+  signal.throwIfAborted();
+  progress({ phase: 'checking_desks', message: `Checking assigned desks (${ending.desks.length} found)`, desk_count: ending.desks.length });
+  progress({ phase: 'checking_safety', message: 'Owner confirmed destructive removal; preserving desk evidence', desk_count: ending.desks.length });
+  progress({ phase: 'closing_desks', message: `Preserving evidence and deleting owned desks (0/${ending.desks.length})`, desk_count: ending.desks.length });
+  const disposition = await ignoreEndingRequest(ending, name, signal);
+  signal.throwIfAborted(); // an expired operation may preserve evidence, but may never later kill the Agent
+  progress({ phase: 'closing_desks', message: `Preserving evidence and deleting owned desks (${ending.desks.length}/${ending.desks.length})`, desk_count: ending.desks.length });
+  progress({ phase: 'ending_agent', message: `Hard deleting Agent ${name}`, desk_count: ending.desks.length });
+  await killSessionTree(name, { signal, timeoutMs: 4_000 });
+  emitSessionEnd(name, key);
+  count('ended', { name, end: 'deleted' });
+  progress({ phase: 'complete', message: `Agent ${name} and ${ending.desks.length} owned desk(s) hard deleted; destructive evidence preserved`, desk_count: ending.desks.length });
+  return { closed: disposition.closed, quarantined: disposition.quarantined };
 }
 
 async function prepareSessionEnding(
@@ -144,13 +149,28 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     try {
-      const result = await performAgentArchive(name, () => {});
-      res.json({ ok: true, archived: publicArchive(result.archived), closed: result.closed });
-    } catch (e) {
-      if (e instanceof ShutdownRefused) {
-        await notifyShutdownBlockers(name, e);
-        return res.status(409).json({ error: e.message, blockers: e.blockers });
+      const refusal = await openDeskRefusal(name);
+      if (refusal) return res.status(409).json({ error: refusal });
+      const prepared = await prepareSessionEnding(req, res, name, 'archive');
+      if (!prepared.proceed) return;
+      const key = await sessionKey(name);
+      const runtime = await sessionRuntime(name);
+      const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
+      if (!provider) return res.status(409).json({ error: `Could not identify a resumable ${runtime.agent || 'agent'} conversation.` });
+      const archived: ArchivedSession = {
+        version: 1, id: key, name, key, archived_at: new Date().toISOString(), cwd: runtime.cwd,
+        agent: provider.agent, provider_session_id: provider.id, tags: await getTags(name), leads: await getLeads(name),
+        wipeboards: await getWipeboards(name), note: await getNote(name), control: await getControl(name), project_root: await getProjectRoot(name),
+      };
+      await writeArchive(archived);
+      try { await stopSessionTree(name); }
+      catch (e) {
+        if (await sessionExists(name)) await removeArchive(archived.id).catch(() => {});
+        throw e;
       }
+      count('ended', { name, end: 'archived' });
+      res.json({ ok: true, archived: publicArchive(archived), ...(prepared.acknowledgement ? { worktree_acknowledgement: prepared.acknowledgement } : {}) });
+    } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });
@@ -235,26 +255,43 @@ export function registerSessions(app: express.Express): void {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    const existingId = shutdownBySession.get(name);
+    const mode = req.body?.mode === 'hard_delete' ? 'hard_delete' : 'shutdown';
+    if (mode === 'hard_delete') {
+      const expected = hardDeleteConfirmation(name);
+      if (req.body?.confirmation !== expected) return res.status(409).json({ error: `Hard Delete is irreversible. Confirm the exact targets with: ${expected}` });
+    }
+    const existingId = shutdownSlots.current(name);
     const existing = existingId ? shutdownOperations.get(existingId) : undefined;
     if (existing?.state === 'running') return res.status(202).json(existing);
-    const mode = req.body?.mode === 'archive' ? 'archive' : 'shutdown';
     const id = randomUUID();
+    if (!shutdownSlots.begin(name, id)) return res.status(409).json({ error: `A lifecycle operation for Agent ${name} is already running.` });
     const operation: ShutdownOperation = {
       id, session: name, mode, state: 'running', phase: 'resolving_agent', message: `Resolving Agent ${name}`, closed: [],
     };
     shutdownOperations.set(id, operation);
-    shutdownBySession.set(name, id);
     res.status(202).json(operation); // acknowledge before desk or git inspection begins
     setImmediate(() => void (async () => {
+      const controller = new AbortController();
+      const serverTimeoutMs = mode === 'hard_delete' ? 120_000 : 30_000;
+      let deadline: NodeJS.Timeout | undefined;
       try {
-        if (mode === 'archive') {
-          const result = await performAgentArchive(name, (value) => Object.assign(operation, value));
-          operation.closed = result.closed;
-          operation.archived = publicArchive(result.archived);
-        } else {
-          operation.closed = await performAgentShutdown(name, (value) => Object.assign(operation, value));
-        }
+        await Promise.race([
+          (async () => {
+            if (mode === 'hard_delete') {
+              const destructive = await performAgentHardDelete(name, (value) => Object.assign(operation, value), controller.signal);
+              operation.destructive = destructive;
+              operation.closed = [...destructive.closed, ...destructive.quarantined.map((row) => row.desk)];
+            } else {
+              operation.closed = await performAgentShutdown(name, (value) => Object.assign(operation, value));
+            }
+          })(),
+          new Promise<never>((_resolve, reject) => {
+            deadline = setTimeout(() => {
+              controller.abort();
+              reject(new Error(`Server deadline expired after ${serverTimeoutMs / 1000}s; the operation is terminal and retryable.`));
+            }, serverTimeoutMs);
+          }),
+        ]);
         operation.state = 'complete';
       } catch (e) {
         operation.state = 'failed';
@@ -263,10 +300,13 @@ export function registerSessions(app: express.Express): void {
         operation.message = operation.error;
         if (e instanceof ShutdownRefused) operation.blockers = e.blockers;
         if (e instanceof ShutdownRefused) await notifyShutdownBlockers(name, e);
+      } finally {
+        controller.abort();
+        if (deadline) clearTimeout(deadline);
       }
+      shutdownSlots.terminal(name, id); // terminal: a retry always gets a fresh operation
       setTimeout(() => {
         shutdownOperations.delete(id);
-        if (shutdownBySession.get(name) === id) shutdownBySession.delete(name);
       }, 5 * 60_000).unref();
     })());
   });

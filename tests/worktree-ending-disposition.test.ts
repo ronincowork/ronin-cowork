@@ -48,6 +48,16 @@ test('Ignore closes settled desks and quarantines all unresolved work without an
   assert.ok(log.indexOf('quarantine:last') < log.indexOf('remove:last'));
 });
 
+test('owner-confirmed Hard Delete preserves dirty and unhanded evidence instead of blocking', async () => {
+  const log: string[] = [];
+  const dirtyUnhanded = fact('dirty-unhanded', {
+    changes: { staged: ['staged.txt'], unstaged: [], untracked: ['draft.txt'] }, unique_commits: ['unique-tip'],
+  });
+  const result = await ignoreEnding(preflight([dirtyUnhanded]), harness(log));
+  assert.deepEqual(result.quarantined, [{ desk: 'r:dirty-unhanded', quarantine_id: 'q-dirty-unhanded' }]);
+  assert.deepEqual(log.slice(0, 2), ['quarantine:dirty-unhanded', 'remove:dirty-unhanded']);
+});
+
 test('a failed quarantine never removes active machinery', async () => {
   const log: string[] = [];
   const ops = harness(log);

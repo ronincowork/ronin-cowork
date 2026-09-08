@@ -46,8 +46,8 @@ export async function deleteSession(name) {
 }
 
 /** Start the observable safe Agent+desk shutdown transaction. */
-export async function startSessionShutdown(name, mode = 'shutdown') {
-  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/shutdown', { method: 'POST', json: { mode } });
+export async function startSessionShutdown(name, body) {
+  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/shutdown', { method: 'POST', ...(body ? { json: body } : {}) });
   if (!r.ok) throw new Error(r.message);
   return r.data;
 }

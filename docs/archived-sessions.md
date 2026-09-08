@@ -32,11 +32,12 @@ tmux session, and RIREKI continues against the same tape and scroll. Archive emi
 as a death. Hard delete emits `SessionEnd` and removes the record directory, including the
 tape and scroll.
 
-- A live tile's trash action offers **Archive** or **Shut down Agent**. Both visibly move
-  through Agent resolution, assigned-desk checks, safe desk close, and Agent end. Clean
-  Team-contained desks close automatically; blockers keep everything live and message the
-  Agent with exact next actions. Archive writes its private sanitized manifest first and
-  remains resumable. Shut down removes the live session record; neither discards desk work.
+- A live tile's trash action offers **Archive**, **Delete**, and **Hard Delete**. Archive is
+  resumable and refuses while the Agent owns an open desk. Delete visibly checks all desks,
+  automatically closes clean Team-contained work, and refuses actionably without loss.
+  Hard Delete is unmistakably destructive: after exact-target confirmation it preserves
+  quarantine/receipt evidence, then removes the Agent and every owned desk regardless of
+  dirty files or unhanded commits.
 - The Commons has a separate **Archived** tab listing disk-backed records. They are absent
   from the Roster and live session list and therefore do not count toward the session maximum.
 - Clicking an archived row recreates tmux, resumes the same provider conversation, restores
@@ -72,9 +73,9 @@ its location with `bin/ronin-store archived_sessions`; never spell the path in c
 
 | Request | Result |
 |---|---|
-| `POST /api/sessions/:name/archive` | Persist the resumable manifest, close safe assigned desks, and stop the Agent; actionable 409 removes the tentative manifest and leaves both live |
+| `POST /api/sessions/:name/archive` | Persist the resumable manifest and stop the Agent; refuses while it owns an open desk |
 | `DELETE /api/sessions/:name` | Coordinated close of safe assigned desks followed by Agent deletion |
-| `POST /api/sessions/:name/shutdown` | Immediately start observable `shutdown` or `archive`; returns an operation id |
+| `POST /api/sessions/:name/shutdown` | Immediately start observable safe Delete, or exact-confirmed Hard Delete; returns an operation id |
 | `GET /api/session-shutdowns/:id` | Current phase, desk count, terminal success, or actionable blockers |
 | `GET /api/archived-sessions` | Roster-safe rows: `id`, `name`, `archived_at`, `agent` |
 | `POST /api/archived-sessions/:id/rehydrate` | Resume provider conversation and restore metadata |

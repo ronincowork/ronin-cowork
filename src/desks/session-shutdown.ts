@@ -33,12 +33,19 @@ export class ShutdownRefused extends Error {
   }
 }
 
+export class ShutdownExpired extends Error {
+  constructor(readonly phase: string) {
+    super(`Agent shutdown timed out during ${phase}; the Agent remains live. Retry starts a fresh operation.`);
+    this.name = 'ShutdownExpired';
+  }
+}
+
 export interface ShutdownOps {
-  desks(session: string): Promise<DeskStatus[]>;
-  liveSessions(): Promise<Array<{ name: string }>>;
-  cwd(session: string): Promise<string>;
-  close(desk: DeskStatus, session: string): Promise<{ action: 'closed' | 'kept'; reason: string }>;
-  stop(session: string): Promise<void>;
+  desks(session: string, signal?: AbortSignal): Promise<DeskStatus[]>;
+  liveSessions(signal?: AbortSignal): Promise<Array<{ name: string }>>;
+  cwd(session: string, signal?: AbortSignal): Promise<string>;
+  close(desk: DeskStatus, session: string, signal?: AbortSignal): Promise<{ action: 'closed' | 'kept'; reason: string }>;
+  stop(session: string, signal?: AbortSignal): Promise<void>;
 }
 
 const liveOps: ShutdownOps = {
@@ -46,9 +53,62 @@ const liveOps: ShutdownOps = {
     && (desk.owners?.length ? desk.owners : [desk.session]).includes(session)),
   liveSessions: listSessions,
   cwd: sessionDir,
-  close: (desk, session) => closeDeskForShutdown(desk.repo, desk.branch, session),
-  stop: stopSessionTree,
+  close: (desk, session, signal) => closeDeskForShutdown(desk.repo, desk.branch, session, undefined, signal),
+  stop: async (session, signal) => {
+    signal?.throwIfAborted();
+    await stopSessionTree(session, { signal, timeoutMs: 4_000 });
+    signal?.throwIfAborted();
+  },
 };
+
+export interface ShutdownLimits {
+  operationTimeoutMs?: number;
+  readTimeoutMs?: number;
+  closeTimeoutMs?: number;
+  stopTimeoutMs?: number;
+  now?: () => number;
+}
+
+export class ShutdownSlots {
+  private readonly running = new Map<string, string>();
+  current(session: string): string | undefined { return this.running.get(session); }
+  begin(session: string, id: string): boolean {
+    if (this.running.has(session)) return false;
+    this.running.set(session, id);
+    return true;
+  }
+  terminal(session: string, id: string): void {
+    if (this.running.get(session) === id) this.running.delete(session);
+  }
+}
+
+export const hardDeleteConfirmation = (session: string): string => `HARD DELETE ${session} AND OWNED DESKS`;
+
+async function bounded<T>(
+  phase: string,
+  deadline: number,
+  capMs: number,
+  now: () => number,
+  action: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
+  const remaining = deadline - now();
+  if (remaining <= 0) throw new ShutdownExpired(phase);
+  const controller = new AbortController();
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      action(controller.signal),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new ShutdownExpired(phase));
+        }, Math.min(remaining, capMs));
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 const id = (desk: DeskStatus): string => `${desk.repo}:${desk.branch}`;
 
@@ -69,14 +129,22 @@ export async function closeAssignedDesks(
   session: string,
   progress: (value: ShutdownProgress) => void = () => {},
   ops: ShutdownOps = liveOps,
+  limits: ShutdownLimits = {},
 ): Promise<{ session: string; closed: string[] }> {
+  const now = limits.now ?? (() => Date.now());
+  const deadline = now() + (limits.operationTimeoutMs ?? 120_000);
+  const readMs = limits.readTimeoutMs ?? 10_000;
+  const closeMs = limits.closeTimeoutMs ?? 40_000;
   progress({ phase: 'resolving_agent', message: `Resolving Agent ${session}` });
-  const desks = await ops.desks(session);
+  const desks = await bounded('assigned desk lookup', deadline, readMs, now, (signal) => ops.desks(session, signal));
   progress({ phase: 'checking_desks', message: `Checking assigned desks (${desks.length} found)`, desk_count: desks.length });
   progress({ phase: 'checking_safety', message: 'Checking dirty, unhanded, shared, and occupied state', desk_count: desks.length });
 
-  const live = await ops.liveSessions();
-  const cwdRows = await Promise.all(live.map(async (row) => ({ name: row.name, cwd: await ops.cwd(row.name) })));
+  const live = await bounded('live Agent lookup', deadline, readMs, now, (signal) => ops.liveSessions(signal));
+  const cwdRows = await Promise.all(live.map(async (row) => ({
+    name: row.name,
+    cwd: await bounded(`working-directory lookup for ${row.name}`, deadline, readMs, now, (signal) => ops.cwd(row.name, signal)),
+  })));
   const blockers: ShutdownBlocker[] = [];
   for (const desk of desks) {
     const reasons: string[] = [];
@@ -118,7 +186,8 @@ export async function closeAssignedDesks(
   progress({ phase: 'closing_desks', message: `Closing safe desks (0/${desks.length})`, desk_count: desks.length });
   const closed: string[] = [];
   for (const desk of desks) {
-    const outcome = await ops.close(desk, session);
+    if (now() >= deadline) throw new ShutdownExpired('desk close');
+    const outcome = await bounded(`closing ${id(desk)}`, deadline, closeMs, now, (signal) => ops.close(desk, session, signal));
     if (outcome.action !== 'closed') {
       throw new Error(`Shutdown stopped after closing ${closed.length}/${desks.length} desks; Agent remains live. ${id(desk)}: ${outcome.reason}`);
     }
@@ -132,10 +201,16 @@ export async function shutdownAgent(
   session: string,
   progress: (value: ShutdownProgress) => void = () => {},
   ops: ShutdownOps = liveOps,
+  limits: ShutdownLimits = {},
 ): Promise<{ session: string; closed: string[] }> {
-  const result = await closeAssignedDesks(session, progress, ops);
+  const now = limits.now ?? (() => Date.now());
+  const operationTimeoutMs = limits.operationTimeoutMs ?? 120_000;
+  const started = now();
+  const result = await closeAssignedDesks(session, progress, ops, { ...limits, operationTimeoutMs });
+  const remaining = operationTimeoutMs - (now() - started);
+  if (remaining <= 0) throw new ShutdownExpired('ending Agent');
   progress({ phase: 'ending_agent', message: `Ending Agent ${session}`, desk_count: result.closed.length });
-  await ops.stop(session);
+  await bounded('ending Agent', now() + remaining, limits.stopTimeoutMs ?? 20_000, now, (signal) => ops.stop(session, signal));
   progress({ phase: 'complete', message: `Agent ${session} and ${result.closed.length} assigned desk(s) closed`, desk_count: result.closed.length });
   return result;
 }
