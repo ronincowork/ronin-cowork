@@ -282,3 +282,23 @@ test('the launched team page seats a remembered commons on the tab the preset ch
   const brief = presets.seatingPlan('morning_brief', { team: 'brief', sessions: [{ name: 'writer' }] });
   assert.equal(brief.seats[1].tab, 'cron-jobs');
 });
+
+test('a stone gate reads the runtime the Setup view keeps current, and the held warning has its own room', async () => {
+  const surface = presets.createPresetsSurface({ environment: {
+    presetData: async () => ({ templates: [], runtime: { activated_count: 0, providers: [], roots: [] } }),
+    runtime: () => ({ activated_count: 2, providers: [{ id: 'claude', activated: true }, { id: 'codex', activated: true }], roots: [] }),
+    loadPresetSlots: () => null,
+    launch: async () => ({ ok: false }),
+  } });
+  await surface.enter();
+  let nodes = [...surface.el.walk()];
+  const stones = nodes.filter((node) => node.tagName === 'BUTTON' && String(node.className).includes('sws-stone'));
+  // Bare Metal needs only a provider; the shared runtime says two are activated, so the stale zero-provider read must not gate it.
+  assert.equal(stones[0].attributes['data-gated'], 'false', 'the shared runtime wins over a stale read');
+  stones[0].click();
+  nodes = [...surface.el.walk()];
+  const launch = nodes.find((node) => node.tagName === 'BUTTON' && node.textContent === 'Launch');
+  assert.equal(launch.dataset.held, undefined);
+  const css = await readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8');
+  assert.match(css, /\.sp-warning \{ margin: var\(--space-6\) 0 var\(--space-7\);[^}]*padding: var\(--space-3\) var\(--space-5\);[^}]*font-size: var\(--text-5\); line-height: 1\.6; \}/);
+});
