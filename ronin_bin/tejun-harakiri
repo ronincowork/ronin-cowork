@@ -16,12 +16,30 @@ set -u
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 TOOL_DIR=$(dirname "$SELF")
 
+help() {
+  cat <<'EOF'
+tejun-harakiri — safely close your assigned desks, then end this Agent
+
+Usage:
+  tejun-harakiri
+
+Ronin checks every assigned managed desk first. Clean desks whose tips are already
+contained in their Team lines close automatically, including immediately after an
+ACCEPTED hand-in; global-dev promotion and a separate desk close are not required.
+Dirty files, pending/rejected hand-ins, unique commits, shared custody, or another
+session in the worktree keep every desk and this Agent alive and print exact NEXT
+actions. Nothing is implicitly discarded. Related: tejun-desk --help.
+EOF
+}
+
 case "${1:-}" in
   '') ;;
+  -h|--help) [ "$#" -eq 1 ] && { help; exit 0; } ;&
   *) cat >&2 <<EOF
 REFUSED: harakiri takes no session name — it ends the session you are in.
 Ending a DIFFERENT session is a separate, deliberate act (see ronin_catalogs/ACTIONS.md,
 "ending someone else's session"): ask the owner, or use the trash button in Ronin.
+Run tejun-harakiri --help.
 EOF
       exit 4 ;;
 esac
@@ -36,7 +54,9 @@ pane="${TMUX_PANE:-$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)}"
 ronin_connect || exit $?
 
 
-body=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" \
+response_file=$(mktemp)
+trap 'rm -f "$response_file"' EXIT
+body=$(curl -sS -m 10 -o "$response_file" -w '%{http_code}' "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" \
   -X POST "$url/api/harakiri" \
   -H 'content-type: application/json' \
   -d "{\"pane\":\"$pane\"}" 2>&1) || {
@@ -50,6 +70,10 @@ case "$body" in
   401) echo "STUCK: Ronin rejected the request (auth on). Set RONIN_AUTH=user:pass." >&2; exit 5 ;;
   403) echo "DENIED: owner-controlled session (dial 👤); ask the owner to end it." >&2; exit 4 ;;
   404) echo "STUCK: Ronin does not see pane $pane in any session." >&2; exit 5 ;;
+  409) echo "REFUSED: Ronin kept this Agent and its desks open. Complete every NEXT action below, then run tejun-harakiri again." >&2
+       cat "$response_file" >&2
+       echo >&2
+       exit 4 ;;
   *)   echo "STUCK: Ronin answered $body — your session is still here." >&2; exit 5 ;;
 esac
 

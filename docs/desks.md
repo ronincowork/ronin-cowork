@@ -134,11 +134,16 @@ worktree it checks every live session's current directory. If a session is in th
 or below it, close keeps the desk and tells the caller to notify that session to leave,
 then retry. It does not message, relocate, stop, or retry for the caller. Otherwise the
 worktree, branch, and desk row are removed. `handoffDesk` changes explicit owners without
-moving work. `tejun-desk close <repo:branch> --with-session` is the explicit coupled end:
-all desk and ownership checks run first, then the owning session is stopped and the desk
-is removed. Ordinary session archive, delete, and harakiri refuse while it owns an open
-desk and point to that command. `discardDesk` is the explicit path for deleting an
-unintegrated desk.
+moving work. `tejun-harakiri`, live-session Archive, and live-session deletion use the
+coordinated end: all assigned desks and ownership checks run first, clean Team-contained
+desks are removed, then the Agent is stopped. An ACCEPTED hand-in is immediately eligible
+when its clean tip is contained in the Team line; global-dev promotion and a second manual
+close are not prerequisites. Any dirty, unique, pending/rejected, shared, unmounted, or
+occupied desk refuses the whole preflight and messages the Agent with exact next actions.
+`tejun-desk close <repo:branch> --with-session` validates that named desk, then uses the
+same all-assigned-desks transaction so it cannot strand another desk.
+`discardDesk` is the separate explicit path for deleting unintegrated work; coordinated
+ending never invokes it.
 
 ## The queue
 

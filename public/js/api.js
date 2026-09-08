@@ -45,6 +45,19 @@ export async function deleteSession(name) {
   if (!r.ok) throw new Error(r.message);
 }
 
+/** Start the observable safe Agent+desk shutdown transaction. */
+export async function startSessionShutdown(name, mode = 'shutdown') {
+  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/shutdown', { method: 'POST', json: { mode } });
+  if (!r.ok) throw new Error(r.message);
+  return r.data;
+}
+
+export async function fetchSessionShutdown(id, signal) {
+  const r = await request('/api/session-shutdowns/' + encodeURIComponent(id), { cache: 'no-store', signal });
+  if (!r.ok && r.status !== 409) throw new Error(r.message);
+  return r.data;
+}
+
 /** Retire a live session without keeping its tmux process resident. */
 export async function archiveSession(name) {
   const r = await request('/api/sessions/' + encodeURIComponent(name) + '/archive', { method: 'POST' });

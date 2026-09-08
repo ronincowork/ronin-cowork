@@ -51,15 +51,14 @@ facts on request.
 
 ### Finish the assignment
 
-Closing a desk and ending a session are separate acts. A desk is finished when its
-hand-in has been promoted, not when it has been accepted. At final handoff, hand in the
-assignment and keep the desk until promotion tells you the hand-in is on local `dev`;
-then close it. Promotion tells you itself, in your tile and on the team wipeboard; you
-do not ask and you do not poll. While a hand-in waits on the review line, a correction
-the lead asks for is a commit and a second hand-in on the same desk. Do not retain a
-promoted, level desk merely because the session may receive later work: the session
-remains alive at the project root, and the next assignment gets a fresh desk from current
-local `dev`. Hand-in itself does not close a desk.
+For ordinary close, keep the desk until promotion reports its hand-in on local `dev`; do
+not poll. Corrections are another commit and hand-in on the same desk. A promoted desk may
+close while its Agent stays live at the project root, ready to get a fresh desk later.
+
+For final self-shutdown, run `tejun-harakiri`. It closes every clean desk whose tip is
+contained in its Team line — an `ACCEPTED` hand-in is enough; promotion and manual close
+are not required — then ends the Agent. Dirty, pending/rejected, unique, shared, or
+occupied work keeps everything alive and returns exact next actions; nothing is discarded.
 
 The house owns cleanup of candidates, locks, staging, temporary refs, and other managed
 scratch state. It never consumes a live desk during hand-in, and cleanup is not an Agent

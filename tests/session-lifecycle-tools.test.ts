@@ -59,4 +59,9 @@ test('lifecycle tools preserve route refusals and reject extra arguments', async
     exec(path.join(root, 'ronin_bin', 'tejun-rehydrate'), ['one', 'two'], { env }),
     (error: { code?: number; stderr?: string }) => error.code === 2 && /usage: tejun-rehydrate/.test(error.stderr ?? ''),
   );
+  await assert.rejects(
+    exec(path.join(root, 'ronin_bin', 'tejun-harakiri'), [], { env: { ...env, TMUX_PANE: '%7' } }),
+    (error: { code?: number; stdout?: string; stderr?: string }) => error.code === 4
+      && /conversation cannot be resumed/.test((error.stdout ?? '') + (error.stderr ?? '')),
+  );
 });
