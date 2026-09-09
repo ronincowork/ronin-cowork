@@ -14,7 +14,7 @@ export async function persistBirthReceiptAt(dir: string, receipt: unknown): Prom
   await mkdir(dir, { recursive: true });
   const target = path.join(dir, 'birth-receipt.json');
   const tmp = `${target}.${process.pid}.tmp`;
-  await writeFile(tmp, JSON.stringify(receipt, null, 2) + '\n', 'utf8');
+  await writeFile(tmp, JSON.stringify(receipt, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
   await rename(tmp, target);
   return target;
 }

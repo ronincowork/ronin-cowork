@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chmod, lstat, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { ensureMikaHome, mikaStartHerePath } from '../src/mika-runtime.js';
 import { ensureRoninHelpersTeam, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../src/ronin-helper.js';
 import { mikaReadinessFromPane } from '../src/routes/launch.js';
-import { projectRoutineTools } from '../src/routine-tools.js';
+import { bindMikaProviderTools, MIKA_MCP_TOOLS, MikaToolBindingUnavailable } from '../src/mika-provider-tools.js';
 
 test('Mika home is a private stable store outside project-root selection', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-home-'));
@@ -50,7 +50,7 @@ test('selector readiness awaits the singleton and hides transport failures', asy
   assert.match(source, /state: 'ready'/);
   assert.match(source, /state: 'refused'/);
   assert.match(source, /state: 'action_required', action: 'pending_user', code: 'provider_confirmation_required'/);
-  assert.match(source, /mikaReadinessFromPane\(await capturePane\('mika', 0\)\)/);
+  assert.match(source, /mikaReadinessFromPane\(await capturePane\(MIKA_SESSION, 0\)\)/);
   assert.doesNotMatch(source, /send-keys|pressEnter|deliverForce/);
   assert.doesNotMatch(source, /No such session: mika/);
   assert.match(source, /RONIN_HELPER_LOADER/);
@@ -75,13 +75,13 @@ test('ended Mika is not auto-resumed and the next readiness request uses a fresh
   const index = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(index, /launchControl\.ensureMika\(\)/);
-  assert.match(launch, /if \(await sessionExists\('mika'\)\)/);
+  assert.match(launch, /verifyMikaIdentity\(await listSessions\(\)\)/);
   assert.match(launch, /post\('\/api\/mika\/ready'/);
 });
 
 test('a live trust-pending Mika is observed, never relaunched', async () => {
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
-  const liveCheck = launch.indexOf("if (await sessionExists('mika')) return observeLive(true)");
+  const liveCheck = launch.indexOf("if (identity.state === 'verified') return observeLive(true)");
   const launchCall = launch.indexOf("await launch({ body: { prompt } }");
   assert.ok(liveCheck >= 0 && launchCall > liveCheck);
   assert.match(launch, /ready\.state === 'starting' \? 202 : 409/);
@@ -100,22 +100,14 @@ test('Mika birth stays visible through the ordinary session Docs record', async 
   assert.match(tegami, /path\.join\(sessionDir\(key\), 'README\.md'\)/);
 });
 
-test('fresh Mika projection exposes exactly lookup, wheres_waldo, and show', async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-tools-'));
-  process.env.RONIN_SESSION_COMMANDS_DIR = path.join(root, 'commands');
-  const projected = await projectRoutineTools('mika', [], '', {
-    includeTmux: false,
-    extraTools: ['lookup', 'wheres_waldo', 'show'],
-  });
-  assert.deepEqual((await readdir(projected.dir)).sort(), ['lookup', 'show', 'wheres_waldo']);
-  assert.deepEqual(projected.delivered.sort(), ['lookup', 'show', 'wheres_waldo']);
-  assert.deepEqual(projected.missing, []);
-  assert.equal(projected.path, projected.dir, 'no parent shell/code/write PATH is exposed');
-  delete process.env.RONIN_SESSION_COMMANDS_DIR;
-});
-
-test('the cold launch selects only the Mika allowlist and an exact PATH', async () => {
+test('the cold launch binds one exact provider-visible Mika tool allowlist', async () => {
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
-  assert.match(launch, /includeTmux: false, extraTools: \['lookup', 'wheres_waldo', 'show'\]/);
-  assert.match(launch, /houseSeat === 'mika'\),/);
+  assert.match(launch, /bindMikaProviderTools\(resolved\.launchAgent, launch\.argv, boundOperatorSocket\(\)\)/);
+  assert.deepEqual(MIKA_MCP_TOOLS, ['lookup', 'wheres_waldo', 'show']);
+  const argv = bindMikaProviderTools('claude', ['/opt/claude', '--model', 'fable', 'hello'], '/tmp/ronin.sock');
+  assert.deepEqual(argv.slice(1, 3), ['--restricted', '--strict-mcp-config']);
+  assert.equal(argv.filter((word) => word.includes('mcp__mika__')).length, 2);
+  assert.match(argv.join(' '), /mcp__mika__lookup,mcp__mika__wheres_waldo,mcp__mika__show/);
+  assert.doesNotMatch(argv.join(' '), /Bash|Edit|Web|Shell|mcp_servers\.gbrain/);
+  assert.throws(() => bindMikaProviderTools('codex', ['/opt/codex'], '/tmp/ronin.sock'), MikaToolBindingUnavailable);
 });

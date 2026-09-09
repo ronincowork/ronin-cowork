@@ -18,19 +18,18 @@ test('Mika defaults to light and accepts only the three levels', () => {
   assert.throws(() => mikaLevelFromAgents({ jobs: { mikaassist: { level: 'cheap' } } }), MikaUnavailable);
 });
 
-test('exact level is invariant and the general provider wins only within it', () => {
-  const specs = [spec('anthropic', 'claude', 'haiku', 'light'), spec('openai', 'codex', 'luna', 'light'), spec('openai', 'codex', 'terra', 'standard')];
+test('exact level is invariant and only measured tool-confined providers participate', () => {
+  const specs = [spec('anthropic', 'claude', 'haiku', 'light'), spec('openai', 'codex', 'luna', 'light'), spec('anthropic', 'claude', 'sonnet', 'standard')];
   const picked = resolveMikaModel({ level: 'light', generalProvider: 'openai', specs, summary: summary(['claude', 'codex']) });
-  assert.equal(picked.model, 'luna');
+  assert.equal(picked.model, 'haiku');
   const cross = resolveMikaModel({ level: 'standard', generalProvider: 'anthropic', specs, summary: summary(['claude', 'codex']) });
-  assert.equal(cross.model, 'terra');
-  assert.equal(cross.provider_notice, 'default_provider_has_no_level');
+  assert.equal(cross.model, 'sonnet');
 });
 
 test('another available level is a refusal remedy, never an automatic launch', () => {
-  const specs = [spec('openai', 'codex', 'terra', 'standard'), spec('openai', 'codex', 'sol', 'frontier')];
+  const specs = [spec('anthropic', 'claude', 'sonnet', 'standard'), spec('anthropic', 'claude', 'opus', 'frontier')];
   assert.throws(
-    () => resolveMikaModel({ level: 'light', generalProvider: 'openai', specs, summary: summary(['codex']) }),
+    () => resolveMikaModel({ level: 'light', generalProvider: 'anthropic', specs, summary: summary(['claude']) }),
     (error: unknown) => error instanceof MikaUnavailable
       && error.code === 'mika_no_model_at_level'
       && assert.deepEqual(error.available_levels, ['standard', 'frontier']) === undefined,
@@ -42,4 +41,5 @@ test('unmeasured, zero ready, and MCP-capable eligibility refuse distinctly', ()
   assert.throws(() => resolveMikaModel({ level: 'light', specs: [row], summary: null }), (e: unknown) => e instanceof MikaUnavailable && e.code === 'mika_provider_unmeasured');
   assert.throws(() => resolveMikaModel({ level: 'light', specs: [row], summary: summary([]) }), (e: unknown) => e instanceof MikaUnavailable && e.code === 'mika_no_ready_provider');
   assert.throws(() => resolveMikaModel({ level: 'light', specs: [{ ...row, gbrainDisconnected: undefined }], summary: summary(['codex']) }), (e: unknown) => e instanceof MikaUnavailable && e.code === 'mika_no_ready_provider');
+  assert.throws(() => resolveMikaModel({ level: 'light', specs: [row], summary: summary(['codex']) }), (e: unknown) => e instanceof MikaUnavailable && e.code === 'mika_provider_tools_unsupported');
 });

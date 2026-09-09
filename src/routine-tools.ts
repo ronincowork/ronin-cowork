@@ -29,13 +29,11 @@ export async function projectRoutineTools(
   session: string,
   routines: ResolvedRoutine[],
   parentPath = process.env.PATH ?? '/usr/local/bin:/usr/bin:/bin',
-  options: { includeTmux?: boolean; extraTools?: string[] } = {},
 ): Promise<RoutineToolProjection> {
   const dir = path.join(storeDir('session_commands'), session);
   await rm(dir, { recursive: true, force: true });
   await mkdir(dir, { recursive: true });
-  const names = new Set<string>(options.includeTmux === false ? [] : ['shim/tmux']);
-  for (const tool of options.extraTools ?? []) names.add(tool);
+  const names = new Set<string>(['shim/tmux']);
   for (const routine of routines) if (routine.enabled) for (const tool of routine.tools) names.add(tool);
   const delivered: string[] = [];
   const missing: string[] = [];
@@ -49,5 +47,5 @@ export async function projectRoutineTools(
       missing.push(name);
     }
   }
-  return { dir, path: [dir, parentPath].filter(Boolean).join(':'), delivered, missing };
+  return { dir, path: `${dir}:${parentPath}`, delivered, missing };
 }
