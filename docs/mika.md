@@ -70,6 +70,15 @@ Reach **discuss**, recruit **nobody**, output **ideas** — fixed in her launch 
 (`mikaLaunchBody`, `src/routes/launch.ts`). She never plans a task and never proposes agents;
 a change she suggests goes through propose-and-confirm and Ronin's own doors.
 
+## Tips and tricks — teaching her as you go
+
+`ronin_session_boot/house/mika/MIKA_TIPS.md` is the owner's bullet list of nuances: the
+things the documents state correctly but that still surprise ("the agent's Docs tab is
+empty because the agent never listed its documents"). It is compiled into her README at
+her next birth, right after her rules, and it is on her Docs list from birth, so it opens
+from her tile. Your own copy on the session-boot shelf (`ronin-store session_boot`, under
+`house/mika/`) wins over the shipped file.
+
 ## Her birth
 
 She is born in her own private home (`ronin-store mika_home`), not in any project root, with
@@ -150,7 +159,7 @@ Six things, and five of them are data:
 | `ronin_catalogs/session_roles/MikaAssist.md` | her definition — icon ミ, her posture, her opening, `cap: exempt`, `dir: {mika_home}` |
 | `src/mika-runtime.ts` · `src/mika-knowledge.ts` | which model (the rule above) · the source index compiled into her README |
 | `ronin_bin/lookup` · `wheres_waldo` · `show` | her three commands, over the operator socket (`src/mika-context.ts`) |
-| `ronin_session_boot/house/mika/START_HERE.md` | what she is told the first time a provider signs in on Setup: the walkthrough of workspace folders, Services and gbrain, and the presets |
+| `ronin_session_boot/house/mika/START_HERE.md` · `MIKA_RULES.md` · `MIKA_TIPS.md` | the Setup walkthrough, her rules, and the owner's tips — three sections of her README |
 | `ronin_catalogs/MIKA_MACROS.md` | her four jobs |
 | `ronin_catalogs/ACTIONS.md` | `propose-and-confirm` |
 | `ronin_catalogs/TOOLS.md` | the `mika` row |

@@ -117,6 +117,11 @@ export const mikaHomeDir = (): string => storeDir('mika_home');
 export const mikaHouseDir = (): string => path.join(REPO_ROOT, 'ronin_session_boot', 'house', 'mika');
 export const mikaRulesSource = (): string => path.join(mikaHouseDir(), 'MIKA_RULES.md');
 export const mikaStartHereSource = (): string => path.join(mikaHouseDir(), 'START_HERE.md');
+/** The owner's tips and tricks: their shadow on the session-boot shelf wins over the shipped file. */
+export async function mikaTipsSource(): Promise<string> {
+  const shadow = path.join(storeDir('session_boot'), 'house', 'mika', 'MIKA_TIPS.md');
+  try { await stat(shadow); return shadow; } catch { return path.join(mikaHouseDir(), 'MIKA_TIPS.md'); }
+}
 /** What she is TOLD at birth, one line each; the long reading is in her README. */
 export const MIKA_PROMPTS = {
   help: 'The owner opened Help without asking anything yet. Say hello in one line, say what you can do, and wait.',
