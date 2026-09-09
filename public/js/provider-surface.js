@@ -391,6 +391,8 @@ export function createProviderSurface(context) {
         mikaAvailability.textContent = activatedNow === 1
           ? t('setup_surface.one_model_signed_in', '1 model signed in')
           : t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow });
+      } else if (ready.data?.simulated === true) {
+        mikaAvailability.textContent = 'Preview only — Mika runtime unavailable.';
       } else {
         mikaAvailability.textContent = t('mika.start_refused', 'Mika couldn’t start. You can try Help again.');
       }
