@@ -1,5 +1,5 @@
 import type { Express } from 'express';
-import { attemptMessage, dismissMessage, dismissMessages, enqueueMessage, listQueuedMessages, MessageRefused } from '../message-queue.js';
+import { attemptMessage, dismissMessage, dismissMessages, enqueueMessage, forceMessages, listQueuedMessages, MessageRefused } from '../message-queue.js';
 import { isValidName } from '../tmux.js';
 
 export function registerMessages(app: Express): void {
@@ -16,6 +16,13 @@ export function registerMessages(app: Express): void {
       if (error instanceof MessageRefused) return res.status(404).json({ error: error.message, code: 'target_missing' });
       throw error;
     }
+  });
+  // Bulk force takes the exact IDs the owner saw, like bulk dismissal: a message that
+  // arrived after their snapshot is never forced by accident.
+  app.post('/api/messages/force', async (req, res) => {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String) : [];
+    if (!ids.length) return res.status(400).json({ error: 'Choose at least one displayed message.' });
+    res.json({ ok: true, ...(await forceMessages(ids)) });
   });
   app.post('/api/messages/:id/retry', async (req, res) => {
     const retained = await attemptMessage(req.params.id, 'safe');

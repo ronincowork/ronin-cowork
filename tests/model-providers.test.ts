@@ -139,7 +139,8 @@ test('the summary is what was measured, dated, and survives the record round tri
     ],
     signedIn: async (id) => id === 'claude' || id === 'grok',
     now: () => '2026-09-08T10:00:00.000Z',
-    version: async (file, argv) => (file === '/bin/codex' && argv[0] === '--version' ? 'codex-cli 0.151.0' : file === '/bin/claude' ? '2.1.263 (Claude Code)' : ''),
+    version: async (file, argv) => { if (file === '/bin/gemini') throw new Error('gemini was asked: a provider not activated gets nothing spent on it'); return (file === '/bin/codex' && argv[0] === '--version' ? 'codex-cli 0.151.0' : file === '/bin/claude' ? '2.1.263 (Claude Code)' : ''); },
+    modelList: async (id) => id === 'codex' ? { fetched_at: '2026-09-09T10:42:03Z', etag: 'e', client_version: '0.151.0', models: [{ slug: 'gpt-5.6-sol', display_name: 'Sol', description: 'Workhorse', visibility: 'list', priority: 1 }] } : null,
   });
   assert.deepEqual(measured, {
     measured_at: '2026-09-08T10:00:00.000Z',
@@ -149,6 +150,7 @@ test('the summary is what was measured, dated, and survives the record round tri
     activated_count: 2,
     paths: { claude: '/bin/claude', codex: '/bin/codex', gemini: '/bin/gemini' },
     versions: { claude: '2.1.263', codex: '0.151.0' },
+    model_lists: { codex: { fetched_at: '2026-09-09T10:42:03Z', etag: 'e', client_version: '0.151.0', models: [{ slug: 'gpt-5.6-sol', display_name: 'Sol', description: 'Workhorse', visibility: 'list', priority: 1 }] } },
     latest: {},
   }, 'gemini is installed but neither signed in nor recorded; grok has a file but no CLI; a CLI that would not say its version is simply absent');
 
@@ -164,8 +166,20 @@ test('the summary is what was measured, dated, and survives the record round tri
   assert.equal(catalog.parseProviderSummary({ installed: ['claude'] }), null, 'undated is unmeasured');
   assert.deepEqual(catalog.parseProviderSummary({ measured_at: 't', installed: ['claude', 'claude', 7], operational: ['bad id!'], paths: { claude: '/x', codex: 3 }, versions: { codex: '0.151.0', claude: 9 }, latest: { codex: { version: '0.153.4', checked_at: 'c' }, claude: { version: '' } } }), {
     measured_at: 't', installed: ['claude'], signed_in: [], operational: [], activated_count: 0, paths: { claude: '/x' },
-    versions: { codex: '0.151.0' }, latest: { codex: { version: '0.153.4', checked_at: 'c' } },
+    versions: { codex: '0.151.0' }, model_lists: {}, latest: { codex: { version: '0.153.4', checked_at: 'c' } },
   }, 'a summary recorded before versions existed reads back with empty maps, never undefined');
+});
+
+test('the Codex-owned model cache is parsed as version-stamped evidence, never guessed', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'ronin-codex-cache-'));
+  try {
+    await mkdir(path.join(home, '.codex'), { recursive: true });
+    await writeFile(path.join(home, '.codex', 'models_cache.json'), JSON.stringify({ fetched_at: '2026-09-09T10:42:03Z', etag: 'e', client_version: '0.151.0', models: [{ slug: 'gpt-5.5', display_name: 'GPT-5.5', description: 'Candidate', visibility: 'list', priority: 2 }] }));
+    assert.equal((await summary.cliModelList('codex', home))?.models[0]?.slug, 'gpt-5.5');
+    await writeFile(path.join(home, '.codex', 'models_cache.json'), '{bad');
+    assert.equal(await summary.cliModelList('codex', home), null, 'unparseable is not measured');
+    assert.equal(await summary.cliModelList('claude', home), null, 'a CLI with no list is not guessed');
+  } finally { await rm(home, { recursive: true, force: true }); }
 });
 
 test('latest is asked only of a CLI whose install line names an npm package, and every ask is an egress line', async () => {

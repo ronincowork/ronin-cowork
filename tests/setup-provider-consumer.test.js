@@ -29,6 +29,27 @@ test('installed providers say what Authenticate does; signed-in providers say wh
   }
   const measured = providerPresentation({ id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, activated: true, signed_in: true, activated_at: null });
   assert.equal(measured.inventoryState, 'Activated');
+  // Off: the owner's word, and the sentence that keeps the sign-in from looking lost.
+  const off = providerPresentation({ id: 'codex', label: 'Codex', installed: true, signed_in: true, activated: false, off: true });
+  assert.equal(off.inventoryState, 'Off');
+  assert.equal(off.detail, 'Turned off — Ronin is not using Codex. Your sign-in is kept.');
+  assert.equal(off.action, 'off');
+  // The step text every note now travels as: the Install step's detail and command, the Ready step's sentence.
+  const live = providerReadiness({ id: 'claude', label: 'Claude Code', installed: true, signed_in: true, activated: true, updatable: true, update_available: true, update: 'claude update', self_updates: true });
+  assert.equal(live[0].detail, 'Runs here in the page. Tiles already running keep the version they started with; every launch after this gets the new one.');
+  assert.equal(live[0].command, 'claude update');
+  assert.equal(live[2].detail, 'Turn off stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.');
+  assert.equal(live[2].action, 'turn_off');
+  const quiet = providerReadiness({ id: 'claude', label: 'Claude Code', installed: true, signed_in: true, activated: true, updatable: true, update_available: false, self_updates: true });
+  assert.equal(quiet[0].detail, 'Usually updates itself.'); assert.equal(quiet[0].command, '');
+  const running = providerReadiness({ id: 'claude', label: 'Claude Code', installed: true, signed_in: true, activated: true, update_open: true });
+  assert.match(running[0].detail, /^Updating in the page: when it has printed the new version, press Close, then Refresh\./); assert.equal(running[0].command, '');
+  const offSteps = providerReadiness({ id: 'codex', label: 'Codex', installed: true, signed_in: true, activated: false, off: true });
+  assert.deepEqual(offSteps.map((step) => [step.key, step.status, step.done, step.current, step.action]), [
+    ['installed', 'installed', true, false, 'none'],
+    ['authenticated', 'recorded', true, false, 'none'],
+    ['ready', 'off', false, true, 'turn_on'],
+  ], 'off: the sign-in still reads as recorded and owns no control; Ready is the one current step and Turn on its control');
   assert.equal(measured.detail, 'Anthropic credentials are on this machine.');
   const recorded = providerPresentation({ id: 'codex', label: 'Codex', installed: true, activated: true, signed_in: false, activated_at: '2026-09-07T11:02:00.000Z' });
   assert.equal(recorded.detail, 'Sign-in recorded 2026-09-07. Codex asks again itself if it ever needs to.');
@@ -92,7 +113,7 @@ test('each readiness step carries only its own short line and never the install 
   assert.match(codex[1].detail, /Opens Codex in a tile here/);
   const ready = providerReadiness({ id: 'codex', label: 'Codex', installed: true, activated: true, signed_in: true });
   assert.equal(ready[1].detail, 'Codex credentials are on this machine.');
-  assert.equal(ready[2].detail, '');
+  assert.equal(ready[2].detail, 'Turn off stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.', 'an activated Ready step says what its one control does — never a control under an empty line');
   for (const steps of [grok, codex, ready]) for (const step of steps) assert.ok((step.detail || '').split('. ').length <= 2, `${step.key}: ${step.detail}`);
 });
 

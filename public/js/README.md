@@ -25,68 +25,68 @@ See `co-working/user_repo/wip/buildouts/` history and `CLAUDE.md` for the full a
 
 ## The map
 
-Forty-four modules, 8,916 lines. Counts below are `wc -l`, measured against the tree.
+The modules below are the client map.
 
 professionalisation pass: transport, dialog behaviour, the pane registry and the theme
 became shared contracts instead of per-feature re-inventions, and the retired Commons gave its
 two resident rooms — the roster and the launcher — their own modules. `roster.js` is still
 where a session is born now. `docs/ui.md` is the written contract those modules enforce.
 
-| Module | Lines | What it owns |
-|---|---|---|
-| `state.js` | 153 | DOM handle, constants, `tiles`, the shared-state object `S`, save/load |
-| `errors.js` | 115 | `showFailure`, `guard`, `deadTile` — the containment layer |
-| `request.js` | 88 | the ONE transport contract — every JSON call's "what happened" |
-| `ui.js` | 280 | the primitives: sheet, toast, field, status, button, tabs (docs/ui.md) |
-| `theme.js` | 107 | dark/light: the saved choice, `termTheme()` read off the CSS tokens, the flip |
-| `api.js` | 44 | the `/api/sessions` calls |
-| `widgets.js` | 225 | `makeDial`, `makeGauge`, `setInert`, the job menu |
-| `events.js` | 96 | the `/events` socket, birth/death chips, `openSessionSomewhere` |
-| `home.js` | 131 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault` (the provider catalog is form-steps.js's) |
-| `form-steps.js` | 373 | the drawn form idiom, and THE ONE PICKER — `providerModelPair`, `loadProviderCatalog`, `orderedCatalog` |
-| `provider-surface.js` | 262 | THE ONE MODEL PROVIDERS SURFACE, seated by Ronin Setup and Ronin Settings — per provider, Yours (the steps and the sign-in tile) then The catalog |
-| `provider-setup-session.js` | 36 | the native sign-in tile's one mount, handed to both workbench environments |
-| `roster.js` | 258 | the ⌂ Roster room — the session list, the session max, the stale line |
-| `archives.js` | — | the Archived room — stopped, resumable sessions backed by manifests |
-| `projectroots.js` | 245 | `buildProjectRoots` — the ▣ Roots pane |
-| `hotwords.js` | 132 | `buildHotwords` — the ▥ Hotwords pane, the dictation glossary |
-| `stats.js` | 413 | `buildStats` — the ▦ Stats pane (TOMODACHI usage readout) |
-| `koshi.js` | 185 | `buildKoshi` — the 目 Koshi pane, model per Koshi job |
-| `gbrain.js` | commons_tab | local gbrain process, privacy, search and integration status |
-| `gbrain-setup-state.js` | pure | the Ronin Setup gbrain surface's state: one status, one next line, at most one action from the snapshot |
-| `services-setup-state.js` | pure | the Ronin Setup Services surface's state: registration, installed facts and the activation record → one status, one next line, at most one action |
-| `system.js` | 187 | `buildSystem` — ⚙ System: release identity, updates, appearance, log out |
-| `shingo.js` | 289 | SHINGO 信号 — the expanded work-record reading and its age helpers |
-| `tile.js` | 695 | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
-| `tilehead.js` | 343 | `buildTileHead` — the cell's chrome, one table and a loop: name, work-record door, output, ⛩ ⚡ メ, and the メ drops |
-| `output.js` | — | the six Output names and the per-tile selector |
-| `tapeview.js` | 305 | **RIREKI's client render** — the 🔓 view: transcript, folds, live frame, scroll anchoring, paging |
-| `tapefold.js` | 98 | `groupRecs` — the fold rule, pure (tested: `tests/tape-fold.test.js`) |
-| `termview.js` | 250 | the 🔒 view — the untouched `tmux attach` xterm mirror, and touch drag-scroll |
-| `tilewire.js` | 154 | `TileWire` — the tile's socket: reconnect, the protocol split (keystroke · message · protocol reply), the drop rule, the message answered by id |
-| `composer.js` | 226 | `buildComposer` — the tile's text entry (unlocked, and every coarse tile), its mic and its keyboard lift; clears only on the host's answer |
-| `composer-rules.js` | 19 | `settleComposer` — the composer's send rule, pure (tested: `tests/composer-parcel.test.js`) |
-| `dvr.js` | 37 | `dvrStep` — the unlocked input rule, pure (tested: `tests/dvr.test.js`) |
-| `ansi.js` | 12 | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
-| `tiledrop.js` | 95 | `isCoarse`, `makeDrop` — the coarse-pointer sheet primitives (the hoisted phone header is gone; the phone has its own shell) |
-| `phone.js` | 350 | THE MOBILE DOCUMENT's entry module — `mobile.html` boots it, never `main.js`: Teams → a Team (Agents \| Docs) → one Agent's tile, hash-routed (`#/t/…` `#/d/…` `#/s/…`); the server sends that document at `/m`, and at `/` to a phone |
-| `keysrow.js` | 61 | `buildKeysRow` — Esc/^C/Tab/arrows/⤓ docked on every coarse tile's composer |
-| `tilemacros.js` | 231 | `buildTileMacros` — the ⚡ button on a tile head; the `preview:` macros as teaching cards, prefills `+name: `, never runs |
-| `tilementions.js` | — | `buildTileMentions` — the @ button on a tile head; click or drag a live session name into the composer |
-| `tilemore.js` | 158 | DESKTOP ONLY — `buildTileMore`: メ on a tile head and the controls it drops in one strip; `fitDropToTile`, shared by every drop off that header |
-| `team-arrange.js` | 95 | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `tejun-teampage`, run through the page's own verbs |
-| `team-members.js` | 65 | `buildTeamMembers`, `agentTitle`, `configSignature` — the member list shared by the commons configuration tab and the league surfaces, and the changed-only fingerprint that keeps the configuration off the five-second clock |
-| `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
-| `panels.js` | 248 | `buildNotePanel` 📝 (on `ui.sheet`), `toClipboard` |
-| `macros.js` | 103 | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |
-| `pad.js` | 246 | keypad — bindings, chords, firing |
-| `padpanel.js` | 533 | keypad — the ▦ panel and ask-on-press (both on `ui.sheet`) |
-| `weblink.js` | 198 | keypad — WebHID programming of the device |
-| `layout.js` | 420 | `build`, `buildDrawers` — assembling the page |
-| `main.js` | 72 | `init` and the boot call |
-| `tips.js` | 289 | system-wide tooltip suppression; title text survives only as accessible labels while the house help panel is disabled |
-| `mika.js` | 81 | `askMika` — the way to the house assistant |
-| `provenance.js` | 74 | the ◆/◈ marks — a catalog entry that is yours |
+| Module | What it owns |
+|---|---|
+| `state.js` | DOM handle, constants, `tiles`, the shared-state object `S`, save/load |
+| `errors.js` | `showFailure`, `guard`, `deadTile` — the containment layer |
+| `request.js` | the ONE transport contract — every JSON call's "what happened" |
+| `ui.js` | the primitives: sheet, toast, field, status, button, tabs (docs/ui.md) |
+| `theme.js` | dark/light: the saved choice, `termTheme()` read off the CSS tokens, the flip |
+| `api.js` | the `/api/sessions` calls |
+| `widgets.js` | `makeDial`, `makeGauge`, `setInert`, the job menu |
+| `events.js` | the `/events` socket, birth/death chips, `openSessionSomewhere` |
+| `home.js` | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault` (the provider catalog is form-steps.js's) |
+| `form-steps.js` | the drawn form idiom, and THE ONE PICKER — `providerModelPair`, `loadProviderCatalog`, `orderedCatalog` |
+| `provider-surface.js` | THE ONE MODEL PROVIDERS SURFACE, seated by Ronin Setup and Ronin Settings — per provider, Yours (the steps and the sign-in tile) then The catalog |
+| `provider-setup-session.js` | the native sign-in tile's one mount, handed to both workbench environments |
+| `roster.js` | the ⌂ Roster room — the session list, the session max, the stale line |
+| `archives.js` | the Archived room — stopped, resumable sessions backed by manifests |
+| `projectroots.js` | `buildProjectRoots` — the ▣ Roots pane |
+| `hotwords.js` | `buildHotwords` — the ▥ Hotwords pane, the dictation glossary |
+| `stats.js` | `buildStats` — the ▦ Stats pane (TOMODACHI usage readout) |
+| `koshi.js` | `buildKoshi` — the 目 Koshi pane, model per Koshi job |
+| `gbrain.js` | local gbrain process, privacy, search and integration status |
+| `gbrain-setup-state.js` | the Ronin Setup gbrain surface's state: one status, one next line, at most one action from the snapshot |
+| `services-setup-state.js` | the Ronin Setup Services surface's state: registration, installed facts and the activation record → one status, one next line, at most one action |
+| `system.js` | `buildSystem` — ⚙ System: release identity, updates, appearance, log out |
+| `shingo.js` | SHINGO 信号 — the expanded work-record reading and its age helpers |
+| `tile.js` | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
+| `tilehead.js` | `buildTileHead` — the cell's chrome, one table and a loop: name, work-record door, output, ⛩ ⚡ メ, and the メ drops |
+| `output.js` | the six Output names and the per-tile selector |
+| `tapeview.js` | **RIREKI's client render** — the 🔓 view: transcript, folds, live frame, scroll anchoring, paging |
+| `tapefold.js` | `groupRecs` — the fold rule, pure (tested: `tests/tape-fold.test.js`) |
+| `termview.js` | the 🔒 view — the untouched `tmux attach` xterm mirror, and touch drag-scroll |
+| `tilewire.js` | `TileWire` — the tile's socket: reconnect, the protocol split (keystroke · message · protocol reply), the drop rule, the message answered by id |
+| `composer.js` | `buildComposer` — the tile's text entry (unlocked, and every coarse tile), its mic and its keyboard lift; clears only on the host's answer |
+| `composer-rules.js` | `settleComposer` — the composer's send rule, pure (tested: `tests/composer-parcel.test.js`) |
+| `dvr.js` | `dvrStep` — the unlocked input rule, pure (tested: `tests/dvr.test.js`) |
+| `ansi.js` | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
+| `tiledrop.js` | `isCoarse`, `makeDrop` — the coarse-pointer sheet primitives (the hoisted phone header is gone; the phone has its own shell) |
+| `phone.js` | THE MOBILE DOCUMENT's entry module — `mobile.html` boots it, never `main.js`: Teams → a Team (Agents \| Docs) → one Agent's tile, hash-routed (`#/t/…` `#/d/…` `#/s/…`); the server sends that document at `/m`, and at `/` to a phone |
+| `keysrow.js` | `buildKeysRow` — Esc/^C/Tab/arrows/⤓ docked on every coarse tile's composer |
+| `tilemacros.js` | `buildTileMacros` — the ⚡ button on a tile head; the `preview:` macros as teaching cards, prefills `+name: `, never runs |
+| `tilementions.js` | `buildTileMentions` — the @ button on a tile head; click or drag a live session name into the composer |
+| `tilemore.js` | DESKTOP ONLY — `buildTileMore`: メ on a tile head and the controls it drops in one strip; `fitDropToTile`, shared by every drop off that header |
+| `team-arrange.js` | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `tejun-teampage`, run through the page's own verbs |
+| `team-members.js` | `buildTeamMembers`, `agentTitle`, `configSignature` — the member list shared by the commons configuration tab and the league surfaces, and the changed-only fingerprint that keeps the configuration off the five-second clock |
+| `voice.js` | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
+| `panels.js` | `buildNotePanel` 📝 (on `ui.sheet`), `toClipboard` |
+| `macros.js` | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |
+| `pad.js` | keypad — bindings, chords, firing |
+| `padpanel.js` | keypad — the ▦ panel and ask-on-press (both on `ui.sheet`) |
+| `weblink.js` | keypad — WebHID programming of the device |
+| `layout.js` | `build`, `buildDrawers` — assembling the page |
+| `main.js` | `init` and the boot call |
+| `tips.js` | system-wide tooltip suppression; title text survives only as accessible labels while the house help panel is disabled |
+| `mika.js` | `askMika` — the way to the house assistant |
+| `provenance.js` | the ◆/◈ marks — a catalog entry that is yours |
 
 The rule is nothing over 700 lines — and it is MECHANICAL now (`check-modules` fails the
 build), because the written-only version was crossed within a week of being written.

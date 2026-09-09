@@ -288,12 +288,27 @@ export interface ProviderSummary {
   paths: Record<string, string>;
   /** Each installed CLI's own version, as its `--version` printed it; absent when it would not say. */
   versions: Record<string, string>;
+  /** A CLI-owned model list, stamped by the CLI version that fetched it. */
+  model_lists: Record<string, CliModelList>;
   /**
    * The newest version its package source offers, asked only on Refresh — never on an
    * ordinary measure, since each ask is an outbound request with an egress line. Kept
    * from the last Refresh until the next; absent for a CLI with no source Ronin can ask.
    */
   latest: Record<string, { version: string; checked_at: string }>;
+}
+
+export interface CliModelList {
+  fetched_at: string;
+  etag: string;
+  client_version: string;
+  models: Array<{
+    slug: string;
+    display_name: string;
+    description: string;
+    visibility: string;
+    priority: number;
+  }>;
 }
 
 const idList = (v: unknown): string[] => Array.isArray(v)
@@ -319,6 +334,22 @@ export function parseProviderSummary(value: unknown): ProviderSummary | null {
     const { version, checked_at } = row as Record<string, unknown>;
     if (typeof version === 'string' && version && typeof checked_at === 'string' && checked_at) latest[id] = { version, checked_at };
   }
+  const rawLists = v.model_lists && typeof v.model_lists === 'object' && !Array.isArray(v.model_lists) ? v.model_lists as Record<string, unknown> : {};
+  const model_lists: Record<string, CliModelList> = {};
+  for (const [id, row] of Object.entries(rawLists)) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
+    const item = row as Record<string, unknown>;
+    if (typeof item.fetched_at !== 'string' || !item.fetched_at || typeof item.etag !== 'string'
+      || typeof item.client_version !== 'string' || !item.client_version || !Array.isArray(item.models)) continue;
+    const models = item.models.filter((model): model is CliModelList['models'][number] => {
+      if (!model || typeof model !== 'object' || Array.isArray(model)) return false;
+      const m = model as Record<string, unknown>;
+      return typeof m.slug === 'string' && Boolean(m.slug) && typeof m.display_name === 'string'
+        && typeof m.description === 'string' && typeof m.visibility === 'string' && typeof m.priority === 'number';
+    });
+    if (models.length !== item.models.length) continue;
+    model_lists[id] = { fetched_at: item.fetched_at, etag: item.etag, client_version: item.client_version, models };
+  }
   return {
     measured_at: v.measured_at,
     installed: idList(v.installed),
@@ -327,6 +358,7 @@ export function parseProviderSummary(value: unknown): ProviderSummary | null {
     activated_count: operational.length,
     paths,
     versions,
+    model_lists,
     latest,
   };
 }

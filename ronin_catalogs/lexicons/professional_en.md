@@ -497,6 +497,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.reach_alias:** · or {alias} (MagicDNS)
 - **settei.reach_ssh:** reach by ssh
 - **settei.group_capacity:** capacity
+- **settei.group_messages:** messages
 - **settei.group_projects:** projects · {n}
 - **settei.dir_gone:** ✕ {dir} is gone
 - **settei.projects_link:** Edit these in ▣ Workspace folders — this room only shows them.
@@ -587,6 +588,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.provider_off:** {name} — not on this machine
 - **forms.model_word:** {model} · {tier}
 - **forms.model_off:** {model} · {tier} — not on this machine
+- **forms.model_list_current:** {verdict} by your {cli} {client_version}{as_of}
+- **forms.model_list_stale:** {verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
@@ -1285,8 +1288,15 @@ The catalog entry goes. {dir} is not touched.
 - **messages.select_message:** Select message to {target}
 - **messages.dismiss_selected:** Dismiss Selected
 - **messages.dismiss_selected_count:** Dismiss Selected ({count})
-- **messages.dismiss_wipeboard:** Dismiss Wipeboard Notices
-- **messages.dismiss_wipeboard_count:** Dismiss Wipeboard Notices ({count})
+- **messages.clear_selection:** Clear Selection ({count})
+- **messages.force_selected:** Force Selected
+- **messages.force_selected_count:** Force Selected ({count})
+- **messages.auto_force_off:** Auto-force after 2 min: off
+- **messages.auto_force_on:** Auto-force after {minutes} min: on
+- **messages.auto_force_set:** Stuck messages are forced after {minutes} minutes.
+- **messages.auto_force_cleared:** Stuck messages wait for you.
+- **messages.auto_forced_reason:** Auto-forced {age} ago — {reason}
+- **messages.forced_count:** {delivered} delivered · {retained} still retained.
 - **messages.dismiss_all:** Dismiss All
 - **messages.dismiss_all_count:** Dismiss All ({count})
 - **messages.trying:** Trying…
@@ -1297,7 +1307,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.dismissed_count:** {count} message(s) dismissed.
 - **messages.retained:** Still waiting — {reason}
 - **messages.action_failed:** Message action failed — {reason}
-- **messages.attention:** Check Team Commons → Messages
+- **messages.attention:** A message was forced after 2 min and still did not land — Team Commons → Messages
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update
@@ -1901,6 +1911,7 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.
+- **setup_surface.model_candidates:** Listed by the CLI, missing from the catalog
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.fact_installed:** Installed
 - **setup_surface.fact_signed_in:** Signed in
