@@ -1,0 +1,7 @@
+#!/bin/bash
+set -u
+ref=${1-}
+case "$ref" in mika-source:*) ;; *) echo 'Usage: lookup mika-source:<exact-reference>' >&2; exit 2;; esac
+[ "$#" -eq 1 ] || { echo 'lookup accepts one exact reference.' >&2; exit 2; }
+[ -n "${RONIN_SOCKET:-}" ] || { echo 'REFUSED: Ronin operator socket is unavailable.' >&2; exit 4; }
+exec /usr/bin/curl -fsS --unix-socket "$RONIN_SOCKET" -H 'content-type: application/json' -X POST http://ronin/api/mika/source -d "{\"ref\":\"$ref\"}"

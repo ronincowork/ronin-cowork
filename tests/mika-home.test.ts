@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chmod, lstat, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { ensureMikaHome, mikaStartHerePath } from '../src/mika-runtime.js';
 import { ensureRoninHelpersTeam, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../src/ronin-helper.js';
 import { mikaReadinessFromPane } from '../src/routes/launch.js';
+import { projectRoutineTools } from '../src/routine-tools.js';
 
 test('Mika home is a private stable store outside project-root selection', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-home-'));
@@ -97,4 +98,24 @@ test('Mika birth stays visible through the ordinary session Docs record', async 
   assert.match(launch, /rememberSessionKey\(resolved\.name, birthKey\)/);
   assert.match(launch, /resolved\.birth_reading = \[readme\]/);
   assert.match(tegami, /path\.join\(sessionDir\(key\), 'README\.md'\)/);
+});
+
+test('fresh Mika projection exposes exactly lookup, wheres_waldo, and show', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-tools-'));
+  process.env.RONIN_SESSION_COMMANDS_DIR = path.join(root, 'commands');
+  const projected = await projectRoutineTools('mika', [], '', {
+    includeTmux: false,
+    extraTools: ['lookup', 'wheres_waldo', 'show'],
+  });
+  assert.deepEqual((await readdir(projected.dir)).sort(), ['lookup', 'show', 'wheres_waldo']);
+  assert.deepEqual(projected.delivered.sort(), ['lookup', 'show', 'wheres_waldo']);
+  assert.deepEqual(projected.missing, []);
+  assert.equal(projected.path, projected.dir, 'no parent shell/code/write PATH is exposed');
+  delete process.env.RONIN_SESSION_COMMANDS_DIR;
+});
+
+test('the cold launch selects only the Mika allowlist and an exact PATH', async () => {
+  const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
+  assert.match(launch, /includeTmux: false, extraTools: \['lookup', 'wheres_waldo', 'show'\]/);
+  assert.match(launch, /houseSeat === 'mika'\),/);
 });
