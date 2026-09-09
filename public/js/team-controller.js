@@ -1,7 +1,7 @@
 /* The one browser-side Team projection and refresh controller. */
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
-import { teamTag } from './roster-groups.js';
+import { helpersLast, teamTag } from './roster-groups.js';
 import { S } from './state.js';
 
 export const UNASSIGNED = ' unassigned';
@@ -85,6 +85,6 @@ export function teamByName(name) {
 }
 export function teamsFromState() {
   const durable = rosters.filter((r) => r.state !== 'archived').map((r) => ({ ...r, durable: true }));
-  return [...durable.sort(blankLast('name')),
+  return [...durable.sort((a, b) => helpersLast(a.name, b.name)),
     { name: UNASSIGNED, objective: '', durable: false, holding: true }];
 }

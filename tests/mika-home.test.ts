@@ -71,6 +71,13 @@ test('a ronin_helper start creates its ordinary Team idempotently', async () => 
   delete process.env.RONIN_SESSION_BOOT_DIR;
 });
 
+test('a fresh helper launch creates its full Team roster before the tagged session birth', async () => {
+  const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
+  const ensure = launch.indexOf('await ensureRoninHelpersTeam()');
+  const birth = launch.indexOf('await createSession(resolved.name');
+  assert.ok(ensure >= 0 && birth > ensure);
+});
+
 test('ended Mika is not auto-resumed and the next readiness request uses a fresh launch', async () => {
   const index = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');

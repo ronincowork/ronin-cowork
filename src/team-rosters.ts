@@ -285,8 +285,8 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
 
 export async function deleteTeamRoster(name: string, campaign_id?: string): Promise<void> {
   const existing = await readTeamRoster(name, campaign_id);
-  // Deleting a tag-only/empty Team is idempotent: retirement can still strip its live
-  // memberships even when there is no durable roster file.
+  // Deletion is idempotent so retirement can clean up orphaned legacy/incomplete
+  // memberships even when their roster file is already absent.
   if (!existing) return;
   await unlink(teamRosterFile(name, existing.campaign_id));
 }
