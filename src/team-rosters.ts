@@ -285,9 +285,8 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
 
 export async function deleteTeamRoster(name: string, campaign_id?: string): Promise<void> {
   const existing = await readTeamRoster(name, campaign_id);
-  // Deleting a tag-only/empty Team is idempotent: retirement still strips its live
-  // memberships. Legacy uppercase helper records remain addressable by their exact
-  // name, but are never substituted for a live canonical lowercase record.
+  // Deleting a tag-only/empty Team is idempotent: retirement can still strip its live
+  // memberships even when there is no durable roster file.
   if (!existing) return;
   await unlink(teamRosterFile(name, existing.campaign_id));
 }

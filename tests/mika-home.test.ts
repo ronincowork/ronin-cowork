@@ -58,7 +58,7 @@ test('selector readiness awaits the singleton and hides transport failures', asy
   assert.match(source, /readMikaStartHere\(\)/);
 });
 
-test('ronin_helper ensures the generic reserved Team idempotently', async () => {
+test('a ronin_helper start creates its ordinary Team idempotently', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-helper-team-'));
   process.env.RONIN_TEAM_ROSTERS_DIR = path.join(root, 'teams');
   process.env.RONIN_SESSION_BOOT_DIR = path.join(root, 'session-boot');

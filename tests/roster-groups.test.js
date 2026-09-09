@@ -7,7 +7,7 @@ test('the roster offers durable empty Teams alongside live memberships', () => {
   assert.deepEqual(rosterGroups(sessions, ['user_enroll', 'existing']), ['existing', 'user_enroll']);
 });
 
-test('the reserved display Team reads its normalized ordinary tmux membership tag', () => {
+test('the helper Team uses its ordinary exact tmux membership tag', () => {
   assert.equal(teamTag('ronin_helpers'), 'ronin_helpers');
 });
 
@@ -16,14 +16,14 @@ test('ronin_helpers is pinned last even when it is only an empty durable Team', 
     ['alpha', 'zebra', 'ronin_helpers']);
 });
 
-test('canonical roster composition partitions the helper after ordinary and no-team rows', () => {
+test('roster composition partitions an existing helper after ordinary and no-team rows', () => {
   const groups = rosterGroups([{ tags: ['zebra', 'ronin_helpers'] }], ['ronin_helpers', 'alpha']);
   assert.deepEqual(groups, ['alpha', 'zebra', 'ronin_helpers']);
   assert.deepEqual(partitionRosterGroups(groups), { ordinary: ['alpha', 'zebra'], helper: 'ronin_helpers' });
 });
 
-test('a stale uppercase helper tag canonicalizes into the one lowercase last group', () => {
+test('only the exact helper id sorts last; differently named Teams stay ordinary', () => {
   const groups = rosterGroups([{ tags: ['RONIN_HELPERS'] }, { tags: ['ronin_helpers'] }], ['zeta']);
-  assert.deepEqual(groups, ['zeta', 'ronin_helpers']);
-  assert.equal(teamTag('RONIN_HELPERS'), 'ronin_helpers');
+  assert.deepEqual(groups, ['RONIN_HELPERS', 'zeta', 'ronin_helpers']);
+  assert.equal(teamTag('RONIN_HELPERS'), 'RONIN_HELPERS');
 });
