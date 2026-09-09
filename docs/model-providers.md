@@ -142,7 +142,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | `signed_in` | CLI ids whose own credential file is on this machine — presence only, never read |
 | `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, and holding at least one model in the catalog |
 | `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
-| `versions` | what each installed CLI said to the registry's `operations.version` argv, per CLI id; absent when it would not say |
+| `versions` | what each operational/activated CLI said to the registry's `operations.version` argv, per CLI id; an installed but unactivated CLI is not run |
 | `latest` | per CLI id, the newest release its npm package listed and when it was asked — asked only by **Refresh** on the Model providers surface, never by an ordinary measure, since each ask is an outbound request with its own egress line; kept until the next Refresh; absent for a CLI with no npm package to ask |
 
 `src/provider-summary.ts` measures and records it. It is written:
@@ -150,8 +150,8 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 - at Ronin start;
 - after **Done** and after **Close** on the Setup Model providers surface (a sign-in
   closed without Done may still have left a credential file);
-- whenever the Setup **Model providers** surface is opened — that surface, and only that
-  surface, probes: `POST /api/setup/providers/measure`.
+- whenever the Setup **Model providers** surface is opened — that surface paints the record
+  first, then probes behind it with `POST /api/setup/providers/measure` and repaints.
 
 Everything else reads the record through `GET /api/setup/runtime`: Ronin Home's three
 blocks, the Presets gates, the gbrain next step and the selector summaries. A machine that
@@ -251,9 +251,9 @@ measured facts, dated, and the model table — model, tier, cost as read, good a
 at — with the marked default said. The native sign-in tile is mounted through the
 workbench environment's one shared mount (`public/js/provider-setup-session.js`), which
 both Ronin Setup and Ronin Settings hand their environment, so it works on either seat.
-This surface is the one client that measures: showing it probes the machine and writes
-the Campaign's summary; its catalog rows are the one picker's read, so the surface and
-every picker cannot disagree.
+This surface is the one client that measures: showing it paints the Campaign's recorded
+summary immediately, then probes the machine behind that frame, writes the new summary and
+repaints; its catalog rows are the one picker's read, so the surface and every picker cannot disagree.
 
 **Activation is the one switch.** It decides whether Ronin spends anything on a
 provider. **Turn off**, on the Ready step, writes Ronin's own `setup.providers.<cli>.off_at`
@@ -273,20 +273,21 @@ not ask its package source, and offers no control; its step says *Installed* and
 never a stale version and never "not read", since nothing was asked. An activated CLI's
 Install step says its version, which binary said it, and, once **Refresh** has asked, the
 newest release its package source lists: *Installed 0.151.0 · 0.153.4 available · ~/.local/bin/codex*, or *up to date*, or
-*latest unknown: no package source to ask* for a CLI updated by its own subcommand or its
-own installer. Refresh lives inside **Check dates**, the box of what is known and when: it
-measures the machine again and asks the npm registry for each installed CLI whose registry
-update line names an npm package — one outbound request each, on the egress record, only
+*latest unknown: no package source to ask* when its install line names no npm package.
+Refresh lives inside **Check dates**, the box of what is known and when: it measures the
+machine again and asks the npm registry for each operational/activated CLI whose registry
+install line names an npm package — one outbound request each, on the egress record, only
 on this press — and then says what it found with the time, *Checked … — unchanged* or the
 numbers that moved. **Update** runs the registry's `operations.update` line in a temporary
-`provider_setup` session shown in the page exactly as a sign-in is, and the same **Close**
-ends it; npm is pointed at the owner's own prefix, so no box needs root and the owner
+`provider_setup` session shown in the page exactly as a sign-in is. The same **Close** ends
+all three temporary sessions — install, sign-in and update — through one teardown; npm is
+pointed at the owner's own prefix, so no box needs root and the owner
 answers nothing. It is the owner's press, never Ronin's. Tiles already running keep the
 binary they started with until they turn over; every launch after the update reads the new
 one, by absolute path from the login shell's resolution, and by name too, because a newborn's
-PATH carries Ronin's install bin dir (`docs/operator-connection.md`). Some CLIs update
-themselves (Claude Code by default); their rows read *up to date* and the control has
-nothing to do.
+PATH carries Ronin's install bin dir (`docs/operator-connection.md`). Some CLIs usually
+update themselves; the row says so as information, but a failed self-update that leaves an
+authenticated provider behind still offers the manual Update.
 
 ## New-session integration contract
 

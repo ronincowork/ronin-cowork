@@ -103,10 +103,12 @@ the reason sits in the same place.
 
 One stone per provider CLI Ronin knows, each wearing its state: **Activated**, **Off**,
 **Sign-in open**, **Needs sign-in**, **Not installed**, or **Manual install**. Opening this surface
-measures the machine, so its facts are current when you look.
+paints the recorded facts immediately, then measures behind them and repaints when it lands.
 
-A provider's page is three numbered steps. A finished step wears a check and no control;
-the next unmet step owns the one control; a later step waits.
+A provider's page is three numbered steps. A finished step wears a check; the installed
+step also offers Update only when an activated provider has a newer version available and
+the registry knows how to update it. The next unmet step owns the setup control; a later
+step waits.
 
 | Step | What it measures | The control |
 |---|---|---|
