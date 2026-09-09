@@ -48,6 +48,8 @@ import { ensureMikaHome, MikaUnavailable, readMikaStartHere, resolveConfiguredMi
 import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
 import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../ronin-helper.js';
 
+const MIKA_SESSION = 'mika_agent' as const;
+
 /** The environment a newborn is handed beyond what the pane inherits: its projected
  *  command PATH with Ronin's own install bin dir behind it, and the operator socket that
  *  launched it. Undefined when there is nothing to say, so `new-session` gets no empty `-e`.
@@ -182,7 +184,7 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
     : {};
   return {
     session_type: 'cowork_agent',
-    name: 'mika',
+    name: MIKA_SESSION,
     tags: [RONIN_HELPERS_TEAM],
     prompt: typeof source.prompt === 'string' ? source.prompt : '',
     ...(selection ? { provider: selection.provider, model: selection.model } : {}),
@@ -192,7 +194,7 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
 }
 
 export interface LaunchControl {
-  ensureMika(intent?: 'help' | 'setup_provider_ready'): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: 'mika'; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
+  ensureMika(intent?: 'help' | 'setup_provider_ready'): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: typeof MIKA_SESSION; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
 }
 
 export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'action_required' {
@@ -267,7 +269,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
     let mikaSelection: MikaSelection | undefined;
     let mikaHome = '';
     if (houseSeat === 'mika') {
-      if (await sessionExists('mika')) return res.json({ ok: true, name: 'mika', already: true });
+      if (await sessionExists(MIKA_SESSION)) return res.json({ ok: true, name: MIKA_SESSION, already: true });
       try {
         mikaHome = await ensureMikaHome();
         if (loader === RONIN_HELPER_LOADER) await ensureRoninHelpersTeam();
@@ -290,6 +292,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
     const name = String(req.body?.name ?? '').trim();
     if (!name) return res.status(400).json({ error: '`name` is required for every session type.' });
     if (!isValidName(name)) return res.status(400).json({ error: 'Use letters, digits, _ or - (no spaces, . or :).' });
+    if (name === MIKA_SESSION && houseSeat !== 'mika') return res.status(409).json({ error: 'That name is reserved for Mika.', code: 'reserved_house_session' });
 
     if (sessionType === 'bare_metal_agent') {
       if (!String(req.body?.project_root ?? '').trim()) {
@@ -656,10 +659,10 @@ export function registerLaunch(app: express.Express): LaunchControl {
     return launchJob(req, res, next);
   });
   const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help'): Promise<MikaReady> => {
-    const metadata = { session: 'mika' as const, team: RONIN_HELPERS_TEAM, loader: RONIN_HELPER_LOADER };
+    const metadata = { session: MIKA_SESSION, team: RONIN_HELPERS_TEAM, loader: RONIN_HELPER_LOADER };
     const observeLive = async (already: boolean): Promise<MikaReady> => {
       let providerState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
-      try { providerState = mikaReadinessFromPane(await capturePane('mika', 0)); } catch { /* live but not yet drawable */ }
+      try { providerState = mikaReadinessFromPane(await capturePane(MIKA_SESSION, 0)); } catch { /* live but not yet drawable */ }
       if (providerState === 'action_required') {
         return { ok: false, state: 'action_required', action: 'pending_user', code: 'provider_confirmation_required', already, ...metadata };
       }
@@ -668,7 +671,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (welcome?.state === 'pending') await recordRoninHelperWelcome(welcome.conversation, 'delivered');
       return { ok: true, state: 'ready', already, welcome_delivered: welcome?.state === 'pending', ...metadata };
     };
-    if (await sessionExists('mika')) return observeLive(true);
+    if (await sessionExists(MIKA_SESSION)) return observeLive(true);
     if (mikaStarting) return mikaStarting;
     mikaStarting = (async () => {
       const welcome = intent === 'setup_provider_ready' && (await roninHelperWelcomeState())?.state !== 'delivered';

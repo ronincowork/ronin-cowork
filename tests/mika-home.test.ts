@@ -50,7 +50,7 @@ test('selector readiness awaits the singleton and hides transport failures', asy
   assert.match(source, /state: 'ready'/);
   assert.match(source, /state: 'refused'/);
   assert.match(source, /state: 'action_required', action: 'pending_user', code: 'provider_confirmation_required'/);
-  assert.match(source, /mikaReadinessFromPane\(await capturePane\('mika', 0\)\)/);
+  assert.match(source, /mikaReadinessFromPane\(await capturePane\(MIKA_SESSION, 0\)\)/);
   assert.doesNotMatch(source, /send-keys|pressEnter|deliverForce/);
   assert.doesNotMatch(source, /No such session: mika/);
   assert.match(source, /RONIN_HELPER_LOADER/);
@@ -75,13 +75,13 @@ test('ended Mika is not auto-resumed and the next readiness request uses a fresh
   const index = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(index, /launchControl\.ensureMika\(\)/);
-  assert.match(launch, /if \(await sessionExists\('mika'\)\)/);
+  assert.match(launch, /if \(await sessionExists\(MIKA_SESSION\)\)/);
   assert.match(launch, /post\('\/api\/mika\/ready'/);
 });
 
 test('a live trust-pending Mika is observed, never relaunched', async () => {
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
-  const liveCheck = launch.indexOf("if (await sessionExists('mika')) return observeLive(true)");
+  const liveCheck = launch.indexOf("if (await sessionExists(MIKA_SESSION)) return observeLive(true)");
   const launchCall = launch.indexOf("await launch({ body: { prompt } }");
   assert.ok(liveCheck >= 0 && launchCall > liveCheck);
   assert.match(launch, /ready\.state === 'starting' \? 202 : 409/);

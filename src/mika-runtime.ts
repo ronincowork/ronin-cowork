@@ -42,7 +42,7 @@ export function mikaLevelFromAgents(agents: Record<string, unknown>): MikaLevel 
 const orderedLevels = (specs: readonly SessionLaunchSpec[]): MikaLevel[] =>
   MIKA_LEVELS.filter((level) => specs.some((spec) => spec.tier === level));
 
-/** Exact-level only: provider affinity may change the vendor, never the chosen band. */
+/** Catalog/provider order is authority. Mika uses Light, with Standard as its sole fallback. */
 export function resolveMikaModel(input: {
   level: MikaLevel;
   generalProvider?: string;
@@ -56,30 +56,24 @@ export function resolveMikaModel(input: {
   // actually launchable for this house seat.
   const eligible = specs.filter((spec) => operational.has(spec.cli) && !!spec.gbrainDisconnected);
   if (!eligible.length) throw new MikaUnavailable('mika_no_ready_provider', 'Mika needs a ready provider that can launch without external tools. Open Model providers.', [], level);
-  const available = orderedLevels(eligible);
-  const exact = eligible.filter((spec) => spec.tier === level);
-  if (!exact.length) {
+  const firstProvider = eligible[0].provider;
+  const within = eligible.filter((spec) => spec.provider === firstProvider);
+  const available = orderedLevels(within);
+  const chosen = within.find((spec) => spec.tier === 'light') ?? within.find((spec) => spec.tier === 'standard');
+  if (!chosen) {
     throw new MikaUnavailable(
       'mika_no_model_at_level',
-      `No ready provider has a ${level} model for Mika. Choose one of the available levels: ${available.join(', ')}.`,
+      `The first ready provider (${firstProvider}) has neither a Light nor Standard Mika model.`,
       available,
       level,
     );
   }
-  const provider = String(input.generalProvider ?? '').trim();
-  const chosen = exact.find((spec) => spec.provider === provider) ?? exact[0];
-  const providerKnown = provider && eligible.some((spec) => spec.provider === provider);
-  const providerNotice = chosen.provider === provider || !provider
-    ? null
-    : providerKnown
-      ? 'default_provider_has_no_level' as const
-      : 'default_provider_unavailable' as const;
   return {
     requested_level: level,
     provider: chosen.provider,
     model: chosen.model,
     resolved_level: chosen.tier,
-    provider_notice: providerNotice,
+    provider_notice: null,
     available_levels: available,
     spec: chosen,
   };
