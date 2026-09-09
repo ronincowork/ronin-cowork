@@ -6672,6 +6672,14 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   font-weight: 600;
 }
 
+/* THE FIRST FRAME shows the screen the address names (mobile.html reads its own hash in its
+   head): the mark and "Teams" at the front door, ‹ inside a Team or on a tile. The script's
+   first paint replaces these boot nodes with the real bar; the attribute stays, harmless. */
+#phone .ph-bar [data-boot='inside'] { display: none; }
+html[data-screen='inside'] #phone .ph-bar [data-boot='teams'] { display: none; }
+html[data-screen='inside'] #phone .ph-bar .ph-back[data-boot='inside'] { display: flex; }
+html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { display: block; }
+
 /* The Team screen's two-way switch — Agents | Docs. One view at a time, never stacked. */
 #phone .ph-seg {
   display: flex;

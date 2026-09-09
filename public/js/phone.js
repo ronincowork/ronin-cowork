@@ -81,11 +81,15 @@ export async function buildPhone() {
     backLink('#/'),
     el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })),
   ));
-  // Painted before anything is fetched: the document already showed this bar, so the
-  // first script frame adds only Feedback, and a stalled server never shows a bare strip.
-  teamsBar();
-
+  // The document painted a bar for this address before any script ran (mobile.html);
+  // the script's first act is to paint the same bar with its live pieces, so a stalled
+  // server never shows a bare strip and nothing changes shape when the readings land.
   let route = routeFromHash();
+  if (route.screen === 'teams') teamsBar();
+  else if (route.screen === 'feedback') bar.replaceChildren(...barContent(backLink('#/'), el('span', 'ph-title', t('feedback.title', 'Feedback'))));
+  else if (route.screen === 'terminal') bar.replaceChildren(...barContent(backLink(teamHash(route.team)), el('span', 'ph-title', readable(route.session))));
+  else bar.replaceChildren(...barContent(backLink('#/'), el('span', 'ph-title', '')));
+
   let agentsPainted = ''; // what the Agents screen last drew — identical readings skip the repaint
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — for the slow work-record clock
@@ -323,11 +327,15 @@ export async function buildPhone() {
   // Membership and the lists are live off the same feed the workbench uses. A killed
   // or vanished session on stage sends you back to its team — a dead tile is not a page.
   sessionsHandlers.add(() => {
-    if (route.screen === 'terminal' && !S.sessions.some((row) => row.name === route.session)) {
-      location.hash = teamHash(route.team);
+    if (route.screen === 'terminal') {
+      const row = S.sessions.find((r) => r.name === route.session);
+      if (!row) { location.hash = teamHash(route.team); return; }
+      // The tile opened on the name alone; the Agent's own title lands with the list.
+      const title = bar.querySelector('.ph-title');
+      if (title && title.textContent !== agentLabel(row)) title.textContent = agentLabel(row);
       return;
     }
-    if (route.screen !== 'terminal') render();
+    render();
   });
   subscribe(() => { if (route.screen !== 'terminal') render(); });
   document.addEventListener('visibilitychange', () => {
@@ -339,6 +347,19 @@ export async function buildPhone() {
   // desktop's 30s clock (layout.js) never runs in this document.
   window.setInterval(() => { if (route.screen === 'terminal' && stageTile) stageTile.refreshTegami(); }, 30000);
 
+  // Ask the operator which optional surfaces are plugged in BEFORE a tile is born, the
+  // way main.js does: `stream:false` means the 🔓 views are off and every tile is 🔒.
+  {
+    const v = await request('/api/version');
+    if (v.ok && v.data.stream === false) {
+      S.streamOff = true;
+      S.locked = true;
+      S.output = 'locked';
+    }
+    if (v.ok && Array.isArray(v.data.services)) S.services = v.data.services;
+  }
+  // A tile address mounts its tile now: the terminal attaches by name and needs no list.
+  if (route.screen === 'terminal') guard('phone paint', render);
   await fetchSessions();
   guard('session event stream', connectEvents);
   await refreshTeams();
