@@ -497,6 +497,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.reach_alias:** · or {alias} (MagicDNS)
 - **settei.reach_ssh:** reach by ssh
 - **settei.group_capacity:** capacity
+- **settei.group_messages:** messages
 - **settei.group_projects:** projects · {n}
 - **settei.dir_gone:** ✕ {dir} is gone
 - **settei.projects_link:** Edit these in ▣ Workspace folders — this room only shows them.
@@ -1285,8 +1286,15 @@ The catalog entry goes. {dir} is not touched.
 - **messages.select_message:** Select message to {target}
 - **messages.dismiss_selected:** Dismiss Selected
 - **messages.dismiss_selected_count:** Dismiss Selected ({count})
-- **messages.dismiss_wipeboard:** Dismiss Wipeboard Notices
-- **messages.dismiss_wipeboard_count:** Dismiss Wipeboard Notices ({count})
+- **messages.clear_selection:** Clear Selection ({count})
+- **messages.force_selected:** Force Selected
+- **messages.force_selected_count:** Force Selected ({count})
+- **messages.auto_force_off:** Auto-force after 2 min: off
+- **messages.auto_force_on:** Auto-force after {minutes} min: on
+- **messages.auto_force_set:** Stuck messages are forced after {minutes} minutes.
+- **messages.auto_force_cleared:** Stuck messages wait for you.
+- **messages.auto_forced_reason:** Auto-forced {age} ago — {reason}
+- **messages.forced_count:** {delivered} delivered · {retained} still retained.
 - **messages.dismiss_all:** Dismiss All
 - **messages.dismiss_all_count:** Dismiss All ({count})
 - **messages.trying:** Trying…
