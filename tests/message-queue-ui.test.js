@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 globalThis.window = {};
-const { dismissalIds, reconcileMessageSelection } = await import(`../public/js/message-queue.js?ui=${Date.now()}`);
+const { dismissalIds, forceableIds, reconcileMessageSelection } = await import(`../public/js/message-queue.js?ui=${Date.now()}`);
 
 test('queue bulk UI derives exact IDs from the displayed snapshot', () => {
   const messages = [{ id: 'a', source: 'tell' }, { id: 'b', source: 'wipeboard_notice' }];
@@ -13,15 +13,14 @@ test('queue bulk UI derives exact IDs from the displayed snapshot', () => {
   assert.ok(!dismissalIds(messages, selected, 'all').includes('new-unread'));
 });
 
-test('wipeboard dismissal selects only displayed notification copies in a mixed queue', () => {
+test('bulk force acts on the chosen cards only, and never on a missing target', () => {
   const displayed = [
-    { id: 'tell', source: 'tell' },
-    { id: 'board-1', source: 'wipeboard_notice' },
-    { id: 'house', source: 'house' },
-    { id: 'owner', source: 'owner' },
-    { id: 'cron', source: 'jikan' },
-    { id: 'board-2', source: 'wipeboard_notice' },
+    { id: 'tell', source: 'tell', state: 'stuck' },
+    { id: 'board-1', source: 'wipeboard_notice', state: 'failed' },
+    { id: 'gone', source: 'house', state: 'target_missing' },
+    { id: 'owner', source: 'owner', state: 'stuck' },
   ];
-  assert.deepEqual(dismissalIds(displayed, new Set(), 'wipeboard'), ['board-1', 'board-2']);
-  assert.ok(!dismissalIds(displayed, new Set(), 'wipeboard').includes('new-board-notice'));
+  const selected = new Set(['tell', 'gone', 'owner', 'new-unread']);
+  assert.deepEqual(forceableIds(displayed, selected), ['tell', 'owner']);
+  assert.deepEqual(forceableIds(displayed, new Set()), []);
 });

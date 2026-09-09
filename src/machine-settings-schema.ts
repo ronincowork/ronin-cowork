@@ -24,6 +24,11 @@ export const MACHINE_SETTINGS_SCHEMA = {
       custom: 'agents',
     },
     {
+      id: 'messages',
+      title: 'Messages',
+      lede: 'What Ronin does with an Agent message it could not deliver.',
+    },
+    {
       id: 'defaults',
       title: 'Defaults for new sessions',
       lede: 'A default is what a new session starts as, never what it is stuck with — every launch can pick something else.',
@@ -120,6 +125,18 @@ export const MACHINE_SETTINGS_SCHEMA = {
       shape: 'provider-model',
       lands: { family: 'agents', key: 'jobs.mikaassist' },
       omit: 'blank',
+    },
+    {
+      id: 'autoForce',
+      sec: 'messages',
+      kind: 'number',
+      min: 0,
+      label: 'Force a stuck message after',
+      short: 'auto-force after',
+      hint: 'Seconds. A message still waiting or failed after this long is forced once, exactly as if you pressed Force on its card — past the target’s Control setting, a dialog, or someone’s draft. Polite until then. 120 unless you say otherwise; 0 = never. The Messages tab’s switch flips between the two.',
+      from: 'set.messages.auto_force_after_s',
+      shape: 'number',
+      lands: { family: 'messages', key: 'auto_force_after_s' },
     },
     {
       id: 'cap',

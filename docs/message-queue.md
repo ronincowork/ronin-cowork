@@ -11,7 +11,9 @@ retryable. An Agent thinking or running a tool still receives the message.
 Automatic delivery waits when the target's Control setting does not allow Agent writes,
 when a dialog is open, or when somebody else's draft is present. It stops after an
 uncertain submission to avoid sending a duplicate. **Force** is an
-owner-only override that accepts the collision risk. Delivered messages disappear;
+owner-only override that accepts the collision risk. **Auto-force**, on by default, does
+the same to any retained message older than two minutes, once; the owner can switch it
+off or change the delay. Delivered messages disappear;
 retained direct tells expire after 30 minutes and wipeboard interruption notices after
 10 minutes. Other retained transport expires after 60 minutes.
 
@@ -72,13 +74,49 @@ Force. Submitting an already-present copy does not increase it.
 
 ## Force
 
-Force is explicit and never automatic. It rechecks the target identity, bypasses the
-Control setting and prompt-safety checks, types one copy, and tries Enter for at most ten
-seconds.
+Force rechecks the target identity, bypasses the Control setting and prompt-safety
+checks, types one copy, and tries Enter for at most ten seconds.
 
 Force may collide with a draft, act on a dialog, or duplicate a message whose earlier
-submission was uncertain. Use it only after inspecting the retained card and accepting
-those risks. Success clears the card; failure leaves it visible.
+submission was uncertain. Success clears the card; failure leaves it visible.
+
+Force is the owner's act, in one of three forms:
+
+- **Force** on a card forces that message.
+- **Force Selected** forces the chosen cards, one live pane at a time, by the exact IDs
+  displayed; a message that arrived after the selection is never forced by accident. A
+  target-missing card cannot be forced and is left out of the count.
+- **Auto-force** is a standing choice, **on by default at two minutes**: polite for that
+  long, then force. The machine setting `messages.auto_force_after_s` (⚙ Machine Settings →
+  messages, or the **Auto-force after 2 min** switch on the Messages tab, which flips
+  between 120 and 0) makes the two-second sweep force any Waiting or Failed message older
+  than that delay, exactly as if the owner had pressed Force on its card. 0 means never;
+  an absent value means the default. A message is auto-forced **once**: `auto_forced_at` records it, a
+  failed force stays on the card with its reason and the time, and only a manual press
+  tries again. Target-missing messages are never auto-forced.
+
+## Why did Ronin force my message, and why was one dropped?
+
+The short answers, for an owner or for Mika answering one:
+
+- **"A message went in while I was typing / while a dialog was open."** Auto-force is on
+  (the default) and the message had waited two minutes. Ronin was polite for that long:
+  safe delivery holds while the target's Control setting is not read-and-write, while a
+  dialog or menu is open, and while somebody's unsent draft sits at the prompt. After the
+  delay it forces once, exactly as if you had pressed Force on the card. Switch it off with
+  the **Auto-force after 2 min** button on Team Commons → Messages, or set the delay in
+  ⚙ Machine Settings → messages (seconds; 0 = never).
+- **"A message says Failed and never arrived."** Delivery typed it but could not confirm the
+  send, or the one auto-force did not get through. The card stays with its reason and the
+  time it was auto-forced. Press **Force** to try again by hand, or **Dismiss** it.
+- **"A message disappeared without being delivered."** It expired: direct tells after 30
+  minutes, wipeboard interruption notices after 10, other transport after 60. A dismissed or
+  expired direct tell sends one House note back to the Agent that sent it. The wipeboard
+  post itself is never dropped; only its interruption copy is.
+- **"Target missing."** The session it was for has ended, or its name now belongs to a new
+  session. Nothing can deliver it; dismiss it and send again to the live session.
+- **"Messages keep forcing and I do not want that."** Turn the switch off. Force then
+  happens only when you press it, per card or with **Force Selected**.
 
 ## Team Commons
 
@@ -92,19 +130,20 @@ Configuration.
   Message Queue**. Polling does not repeat it.
 - Each card shows From, To, message type, state, age, attempts, text, reason, and the
   actions valid for that state.
-- The queue view is machine-wide. Select messages individually, use **Select All**, or
-  use **Dismiss Selected** / **Dismiss All**. Bulk dismissal sends the exact IDs in the
-  displayed snapshot, so a newly arrived unread message is not swept accidentally.
-- **Dismiss Wipeboard Notices** dismisses only currently displayed notification copies
-  whose source is `wipeboard_notice`. It preserves direct tells, House/owner/cron
-  transport, newly arrived notices, and every durable post on the wipeboard itself.
+- The queue view is machine-wide. The toolbar is two groups. Left: **Select All**
+  (reads **Clear Selection** once every displayed card is chosen), **Force Selected**, and
+  the **Auto-force after 2 min** on/off switch. Right: **Dismiss Selected** and **Dismiss All**.
+  A chosen card is outlined. Bulk force and bulk dismissal send the exact IDs in the
+  displayed snapshot, so a newly arrived unread message is neither forced nor swept by
+  accident.
 - Actions report their result immediately. Successful delivery says **Delivered and
   cleared** before the card disappears.
 
 ## Stored shape and API
 
 Each queue item contains `id`, `from`, `target`, `target_key`, `text`, `source`, `state`,
-`reason`, `attempts`, `created_at`, `updated_at`, and `expires_at`.
+`reason`, `attempts`, `created_at`, `updated_at`, and `expires_at`; `auto_forced_at` is
+present once the sweep has auto-forced it.
 
 The REST surface is:
 
@@ -112,6 +151,7 @@ The REST surface is:
 - `POST /api/messages`
 - `POST /api/messages/:id/retry`
 - `POST /api/messages/:id/force`
+- `POST /api/messages/force` with `{ "ids": ["..."] }` for exact-ID bulk force; answers one outcome per ID
 - `DELETE /api/messages/:id`
 - `DELETE /api/messages` with `{ "ids": ["..."] }` for exact-ID bulk dismissal
 
