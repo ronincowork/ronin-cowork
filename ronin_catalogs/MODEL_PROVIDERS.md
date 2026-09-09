@@ -10,7 +10,7 @@
 > (`$(ronin-store catalogs)/MODEL_PROVIDERS.md`) and edit it there. A copy in the store
 > wins over this one whole, file for file; an upgrade never touches it.
 
-- **updated:** 2026-09-08
+- **updated:** 2026-09-09
 
 ## Keeping it fresh
 
@@ -96,12 +96,14 @@ refused by Codex in the new tile, and Ronin never substitutes.
 
 | model | tier | default | cost | good at | not good at | launch |
 |---|---|---|---|---|---|---|
+| `gpt-6-astra` | frontier | | $10 in · $50 out per M tokens (2026-09) | the hardest end-to-end reasoning, coding, computer use, research and document creation | routine or bulk work where Sol or Terra burns less of the Codex subscription allowance |
 | `gpt-5.6-sol` | frontier | yes | $5 in · $30 out per M tokens (2026-09) | the hardest coding and reasoning work; OpenAI's flagship tier | bulk or latency-sensitive loops where Terra matches it for less |
 | `gpt-5.6-terra` | standard | | $2 in · $12 out per M tokens (2026-09) | everyday agentic coding at roughly half the flagship price | the very hardest problems, where Sol still leads |
 | `gpt-5.6-luna` | light | | $0.20 in · $1.20 out per M tokens (2026-09) | fast, cheap sub-agents, drafts and high-volume routine tasks | deep multi-step reasoning and large refactors |
 
 | model | launch |
 |---|---|
+| `gpt-6-astra` | `codex --model gpt-6-astra` |
 | `gpt-5.6-sol` | `codex --model gpt-5.6-sol` |
 | `gpt-5.6-terra` | `codex --model gpt-5.6-terra` |
 | `gpt-5.6-luna` | `codex --model gpt-5.6-luna` |

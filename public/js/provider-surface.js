@@ -74,12 +74,14 @@ export function createProviderSurface(context) {
     dateRow(t('setup_surface.machine_measured', 'Machine measured'), machineDate),
     dateRow(t('setup_surface.versions_checked', 'Latest versions checked'), versionsDate),
   );
-  dates.append(el('summary', null, t('setup_surface.check_dates', 'Check dates')), dateList);
-  // Refresh: measure again AND ask each installed CLI's package source for its newest
-  // release. The ask is outbound (one egress line each), so it is this press and never
-  // the surface simply opening; opening only measures.
+  // Refresh lives in this box: the box is what-we-know-and-when, and Refresh renews it —
+  // measure again AND ask each installed CLI's package source for its newest release. The
+  // ask is outbound (one egress line each), so it is this press and never the surface
+  // simply opening; opening only measures. What it found is said, changed or not.
   const refreshRow = el('div', 'setup-provider-refresh');
   const refreshNote = el('span', 'setup-fine', t('setup_surface.refresh_note', 'Measures this machine again and asks each installed CLI’s package source for its newest release.'));
+  const refreshOutcome = el('p', 'setup-fine setup-provider-refresh-outcome'); refreshOutcome.hidden = true;
+  dates.append(el('summary', null, t('setup_surface.check_dates', 'Check dates')), dateList, refreshRow, refreshOutcome);
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
@@ -104,13 +106,37 @@ export function createProviderSurface(context) {
     machineDate.textContent = measuredDateText();
     versionsDate.textContent = latestCheckedText();
   };
-  /** The Installed step's state: the version the CLI said, and what Refresh last learned of the newest. */
+  /** A path with the home directory folded to ~, for a line meant to be read. */
+  const homely = (path) => String(path || '').replace(/^\/home\/[^/]+|^\/Users\/[^/]+/, '~');
+  /**
+   * The Installed step's state: the version the CLI said and WHICH binary said it, then
+   * what Refresh last learned of the newest. The path is not decoration: a version without
+   * the file it came from let a correct reading look like a lie (2026-09-09).
+   */
   const installedState = (provider) => {
     const version = provider.version || t('setup_surface.version_unknown', 'version not read');
-    if (!provider.latest) return t('setup_surface.installed_version', 'Installed {version}', { version });
-    return provider.update_available
-      ? t('setup_surface.installed_behind', 'Installed {version} · {latest} available', { version, latest: provider.latest })
-      : t('setup_surface.installed_current', 'Installed {version} · up to date', { version });
+    const where = provider.path ? ' · ' + homely(provider.path) : '';
+    if (provider.latest) {
+      return (provider.update_available
+        ? t('setup_surface.installed_behind', 'Installed {version} · {latest} available', { version, latest: provider.latest })
+        : t('setup_surface.installed_current', 'Installed {version} · up to date', { version })) + where;
+    }
+    if (provider.askable === false) return t('setup_surface.installed_unaskable', 'Installed {version} · latest unknown: no package source to ask', { version }) + where;
+    return t('setup_surface.installed_version', 'Installed {version}', { version }) + where;
+  };
+  /** After a Refresh: what moved since the last reading, or that nothing did. */
+  const refreshSummary = (before, after) => {
+    const rows = (runtime) => new Map((runtime?.providers || []).filter((p) => p?.id).map((p) => [p.id, p]));
+    const was = rows(before); const changes = [];
+    for (const [id, now] of rows(after)) {
+      const then = was.get(id) || {};
+      if (now.version !== then.version && (now.version || then.version)) changes.push(`${now.label || id}: ${then.version || '—'} → ${now.version || '—'}`);
+      if (now.latest !== then.latest && (now.latest || then.latest)) changes.push(`${now.label || id}: ${t('setup_surface.refresh_latest_word', 'latest')} ${then.latest || '—'} → ${now.latest || '—'}`);
+    }
+    const stamp = when(new Date().toISOString());
+    return changes.length
+      ? t('setup_surface.refresh_changed', 'Checked {when} — {changes}', { when: stamp, changes: changes.join(' · ') })
+      : t('setup_surface.refresh_unchanged', 'Checked {when} — unchanged', { when: stamp });
   };
   /** A catalog provider no registry CLI serves is a stone of its own, keyed by its vendor id. */
   const catalogOnly = () => {
@@ -166,24 +192,30 @@ export function createProviderSurface(context) {
     const installRow = stepRow(install, install.status === 'installed'
       ? installedState(provider)
       : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
-    // UPDATE — only for an installed CLI the registry knows how to update. Not the kaki
-    // primary (that is the current step's), so the label carries the news instead.
-    if (install.status === 'installed' && provider.updatable) {
+    // UPDATE — only for an installed CLI the registry knows how to update. It opens in the
+    // page exactly as a sign-in does: a temporary provider_setup session, mounted here, and
+    // the same Close ends it. Not the kaki primary (that is the current step's), so the
+    // label carries the news instead. A sign-in that is open owns the one attachment.
+    if (install.status === 'installed' && provider.update_open && !provider.login_open) {
+      const terminal = el('div', 'setup-provider-terminal');
+      const close = action(t('setup_surface.close', 'Close'), '', () => { mounted?.park?.(); return press(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); });
+      close.classList.add('setup-provider-action', 'setup-provider-update-close');
+      installRow.controls.append(close);
+      installRow.item.append(el('p', 'setup-provider-note setup-provider-update-note', t('setup_surface.update_running', 'Updating in the page. When it has printed the new version, press Close; then Refresh. Tiles already running keep the version they started with; every launch after this gets the new one.')));
+      installRow.item.append(terminal);
+      mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
+      if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
+    } else if (install.status === 'installed' && provider.updatable) {
       const label = provider.update_available
         ? t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest })
         : t('setup_surface.update', 'Update');
-      const update = action(label, '', async () => {
-        const result = await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/update`, { method: 'POST', json: {} });
-        if (!result.ok) { problem.textContent = result.message; problem.hidden = false; return; }
-        await paint(); // the repaint clears the notice; the word about what started comes after it
-        say(t('setup_surface.update_started', 'Updating {label} in tile {session}. Tiles already running keep the version they started with; every launch after this gets the new one. Refresh when it finishes.', { label: provider.label || provider.id, session: result.data?.session || '' }));
-      });
+      const update = action(label, '', () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/update`));
       update.classList.add('setup-provider-action', 'setup-provider-update');
       installRow.controls.append(update);
       const note = el('p', 'setup-provider-note setup-provider-update-note');
       note.append(
         el('code', 'setup-provider-command', provider.update || ''),
-        el('span', null, ' ' + t('setup_surface.update_note', 'runs in a tile. Tiles already running keep the version they started with; every launch after this gets the new one.')),
+        el('span', null, ' ' + t('setup_surface.update_note', 'runs here in the page. Tiles already running keep the version they started with; every launch after this gets the new one.')),
       );
       installRow.item.append(note);
     }
@@ -271,9 +303,15 @@ export function createProviderSurface(context) {
     renderDetail: (item, host) => paintProvider(item.id, host),
     onSelectionChange: (id) => { opened = String(id || ''); },
   });
-  stones.mount(out.content, { after: [dates, refreshRow, notice] });
+  stones.mount(out.content, { after: [dates, notice] });
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
-  const refresh = action(t('setup_surface.refresh', 'Refresh'), '', () => paint(true));
+  const refresh = action(t('setup_surface.refresh', 'Refresh'), '', async () => {
+    const before = runtime;
+    await paint(true);
+    refreshOutcome.textContent = refreshSummary(before, runtime);
+    refreshOutcome.hidden = false;
+    dates.open = true;
+  });
   refresh.classList.add('setup-provider-action', 'setup-provider-refresh-action');
   refreshRow.append(refresh, refreshNote);
   const paint = async (refresh = false) => {

@@ -75,8 +75,9 @@ added beside the HTTP listener, never instead of it.
 
 Command discovery is fixed separately at Agent birth. The launch route resolves that Agent's
 enabled Routines, projects only their entitled commands as symlinks into that Agent's own
-directory of the session-commands store, and prepends that directory to the environment
-given directly to tmux and the Agent process. Ordinary non-interactive descendants inherit
+directory of the session-commands store, and prepends that directory — then Ronin's own install bin dir, `~/.local/bin`, where Install
+and Update put a CLI, so that a CLI named inside a tile is the one Ronin installed and not an
+older system copy — to the environment given directly to tmux and the Agent process. Ordinary non-interactive descendants inherit
 it; they do not source `.bashrc`, `.profile`, or another owner shell file. That directory's
 name is also how `read_tegami`, `write_tegami` and `tejun-teampage` learn which session they
 act for when the calling shell is not inside tmux and carries neither `TMUX_PANE` nor

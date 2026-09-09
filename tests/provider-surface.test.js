@@ -39,7 +39,7 @@ let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '20
   { provider: 'pi', cli: 'pi', label: 'Pi', models: [{ model: 'pi-1', tier: 'standard', default: true, cost: 'free (2026-09)', good_at: 'chat', not_good_at: 'code', cmd: 'pi' }] },
 ] };
 let machine = { measured_at: '2026-09-08T11:00:00.000Z', activated_count: 1, providers: [
-  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, update: 'npm install -g @anthropic-ai/claude-code@latest', update_available: true },
+  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, path: '/home/glen/.local/bin/claude', signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, askable: true, update: 'npm install -g @anthropic-ai/claude-code@latest', update_available: true },
   { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: false, activated: false, login_open: true, state: 'login_open', attachment: { type: 'session', key: 'provider_setup_codex', team: 'provider_setup', temporary: true } },
   { id: 'grok', label: 'Grok Build', from: 'xAI', installed: false, installable: true, install: 'npm install -g @xai-official/grok', activated: false, state: 'installable' },
 ] };
@@ -48,7 +48,7 @@ globalThis.fetch = async (url, init = {}) => {
   calls.push(`${init.method || 'GET'} ${url}`);
   const body = url.startsWith('/api/provider-catalog') ? catalog
     : url.startsWith('/api/setup/runtime') || url.startsWith('/api/setup/providers/measure') || url.startsWith('/api/setup/providers/refresh') ? machine
-      : url.endsWith('/update') ? { ok: true, session: 'update_claude', outcome: 'started', say: 'updating' } : null;
+      : url.endsWith('/update') || url.endsWith('/close') ? { ok: true } : null;
   return { ok: body !== null, status: body ? 200 : 404, json: async () => body ?? { error: 'no such door' } };
 };
 
@@ -111,11 +111,16 @@ test('showing the surface measures once, then reads the catalog, and lists one s
     ['Latest versions checked', new Date('2026-09-09T12:00:00.000Z').toLocaleString()],
   ]);
   assert.equal(byClass(made.el, 'setup-provider-intro').length, 0);
-  // Refresh is the one press that asks outside the machine: its own door, never the plain measure.
+  // Refresh lives inside the dates box — it is the one press that asks outside the machine,
+  // its own door, never the plain measure — and it says what it found, changed or not.
+  assert.equal(byClass(dates, 'setup-provider-refresh-action').length, 1, 'Refresh is inside Check dates');
+  assert.equal(byClass(made.el, 'setup-provider-refresh').length, 1, 'and nowhere else');
   calls.length = 0;
-  byClass(made.el, 'setup-provider-refresh-action')[0].click();
+  byClass(dates, 'setup-provider-refresh-action')[0].click();
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(calls[0], 'POST /api/setup/providers/refresh');
+  assert.match(byClass(dates, 'setup-provider-refresh-outcome')[0].textContent, /^Checked .+ — unchanged$/, 'nothing moved, and that is said with its time');
+  assert.equal(dates.open, true);
   assert.equal(surface.providersSummary((await import('../public/js/form-steps.js')).providerCatalog()), '3 providers · 4 models · 1 activated here · catalog updated 2026-09-08');
 });
 
@@ -134,16 +139,16 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   assert.equal(byClass(card, 'setup-provider-from')[0].textContent, 'From Anthropic');
   const steps = byClass(card, 'setup-provider-step');
   assert.deepEqual(steps.map((step) => [step.dataset.step, step.dataset.status, step.dataset.done]), [['installed', 'installed', 'true'], ['authenticated', 'recorded', 'true'], ['ready', 'ready', 'true']]);
-  // The Installed step says the version and what Refresh last learned; Update is the owner's press, named by what it runs.
-  assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed 2.1.263 · 2.1.265 available');
+  // The Installed step says the version, WHICH binary said it, and what Refresh last learned;
+  // Update is the owner's press, named by what it runs.
+  assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed 2.1.263 · 2.1.265 available · ~/.local/bin/claude');
   const update = byClass(steps[0], 'setup-provider-update')[0];
   assert.equal(update.textContent, 'Update to 2.1.265');
-  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^npm install -g @anthropic-ai\/claude-code@latest runs in a tile\. Tiles already running keep the version/);
+  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^npm install -g @anthropic-ai\/claude-code@latest runs here in the page\. Tiles already running keep the version/);
   calls.length = 0;
   update.click();
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(calls[0], 'POST /api/setup/providers/claude/update');
-  assert.match(byClass(made.el, 'setup-provider-notice')[0].textContent, /Updating Claude Code in tile update_claude/);
   assert.equal(section.className, 'setup-provider-catalog');
   assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'The catalog');
   const facts = byClass(section, 'setup-provider-facts')[0].children;
@@ -156,6 +161,34 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
     ['haiku', 'light', '$1 in · $5 out per M tokens (2026-06)', 'fast sub-agents', 'large refactors'],
   ]);
   assert.ok(byClass(section, 'setup-provider-table')[0], 'the table scrolls in its own box');
+});
+
+test('an update in progress is the same window-in-a-window as a sign-in, with the same Close; a CLI with no package source says so', async () => {
+  const saved = machine;
+  machine = { ...machine, providers: [
+    { ...machine.providers[0], update_open: true, attachment: { type: 'session', key: 'provider_setup_claude_update', team: 'provider_setup', temporary: true } },
+    { id: 'gemini', label: 'Gemini CLI', from: 'Google', installed: true, path: '/usr/bin/gemini', signed_in: false, activated: false, state: 'installed', version: '0.55.1', latest: null, updatable: true, askable: false, update: 'gemini update', update_available: false },
+  ] };
+  try {
+    const ctx = context();
+    const made = surface.createProviderSurface(ctx);
+    await made.show();
+    byClass(made.el, 'sws-stone')[0].click();
+    assert.equal(ctx.mounts.length, 1, 'the update session is mounted in the page');
+    assert.equal(ctx.mounts[0].session, 'provider_setup_claude_update');
+    const step = byClass(made.el, 'setup-provider-step')[0];
+    assert.ok(byClass(step, 'setup-provider-terminal')[0], 'in the Install step');
+    assert.equal(byClass(step, 'setup-provider-update').length, 0, 'no second Update while one runs');
+    assert.match(byClass(step, 'setup-provider-update-note')[0].textContent, /press Close; then Refresh/);
+    calls.length = 0;
+    byClass(step, 'setup-provider-update-close')[0].click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(calls[0], 'POST /api/setup/providers/claude/close', 'the same Close as a sign-in ends it');
+    byClass(made.el, 'sws-stone')[1].click();
+    assert.equal(byClass(byClass(made.el, 'setup-provider-step')[0], 'setup-provider-state')[0].textContent, 'Installed 0.55.1 · latest unknown: no package source to ask · /usr/bin/gemini');
+  } finally {
+    machine = saved;
+  }
 });
 
 test('a sign-in in progress mounts the native tile through the environment, on whichever seat', async () => {
