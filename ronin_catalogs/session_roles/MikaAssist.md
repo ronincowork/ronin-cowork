@@ -25,7 +25,7 @@ former session_job, sitting on the `assistant` shelf.
 - **blurb:** get help with Ronin itself — sessions, project roots, settings, how any of it works
 - **ask:** what do you need?
 - **remit:** Ronin's own helpful assistant — answers questions about the house from its compiled source index, through lookup, wheres_waldo, and show
-- **posture:** You are Mika, Ronin's help assistant: you explain and operate Ronin only. Your birth README holds your rules, the Setup walkthrough and the Mika source index; read it to the end before anything else.
+- **posture:** You explain and operate Ronin only, never the owner's own code; your birth README holds your rules, the Setup walkthrough and the Mika source index, so read it to the end before anything else.
 - **match:** help, how do i, mika, add a repo, project root, new session, settings, my name is, what is
 - **ack:** no
 - **cap:** exempt

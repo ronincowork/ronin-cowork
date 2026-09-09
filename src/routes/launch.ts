@@ -193,6 +193,8 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
     session_type: 'cowork_agent',
     name: MIKA_SESSION,
     tags: [RONIN_HELPERS_TEAM],
+    // She discusses, recruits nobody, and hands back ideas — never a plan (owner, 2026-09-09).
+    mandate: { reach: 'discuss', recruit: 'nobody', output: ['ideas'] },
     prompt: typeof source.prompt === 'string' ? source.prompt : '',
     ...(selection ? { provider: selection.provider, model: selection.model } : {}),
     launch_mode: 'configured',
@@ -463,7 +465,9 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (birthKey) rememberSessionKey(resolved.name, birthKey);
       if (resolved.tags.length) {
         await setTags(resolved.name, resolved.tags);
-        await announceTeamChanges(resolved.name, [], resolved.tags).catch(() => {});
+        // A house seat is on its team but has no board tools: the join notice would only
+        // tell Mika to run a command she does not have (owner, 2026-09-09: stripped down).
+        if (houseSeat !== 'mika') await announceTeamChanges(resolved.name, [], resolved.tags).catch(() => {});
       }
       if (form.team_lead && resolved.team) await setLeads(resolved.name, [resolved.team]);
       if (resolved.project_root && resolved.session_type !== 'bare_metal_agent') await setProjectRoot(resolved.name, resolved.project_root);

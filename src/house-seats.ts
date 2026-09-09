@@ -17,7 +17,7 @@ export function resolveHouseSeatProfile(seat: HouseSeat | undefined, profile: La
     ...profile,
     label: 'Mika Assist',
     posture: [
-      'You are Mika, Ronin\'s help assistant: you explain and operate Ronin only. Your birth README holds your rules, the Setup walkthrough and the Mika source index; read it to the end before anything else.',
+      'You explain and operate Ronin only, never the owner\'s own code; your birth README holds your rules, the Setup walkthrough and the Mika source index, so read it to the end before anything else.',
     ],
     ack: false,
     opening: '{prompt}',
