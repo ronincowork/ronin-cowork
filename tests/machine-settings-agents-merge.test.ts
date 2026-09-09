@@ -90,4 +90,13 @@ test('a body with no sessions key at all touches neither row', async () => {
   assert.deepEqual(s.by_provider, { anthropic: null, openai: 'gpt-5.6-terra' });
 });
 
+test('Mika level is an exact enum and preserves sessions and other jobs', async () => {
+  assert.equal((await save({ jobs: { mikaassist: { level: 'standard' } } })).status, 200);
+  const agents = await readAgentsSection();
+  assert.deepEqual((agents.jobs as Record<string, unknown>).mikaassist, { level: 'standard' });
+  assert.ok((agents.jobs as Record<string, unknown>).mika, 'the unrelated historical job remains');
+  assert.deepEqual((agents.sessions as Sessions).default, { provider: 'anthropic', model: 'opus' });
+  assert.equal((await save({ jobs: { mikaassist: { level: 'cheap' } } })).status, 400);
+});
+
 test.after(() => server.close());
