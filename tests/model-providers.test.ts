@@ -90,24 +90,44 @@ test('the updated day is read from the header only, in YYYY-MM-DD, never from a 
   assert.equal(catalog.catalogUpdated(''), '');
 });
 
-test("the owner's copy in the catalogs store shadows the stock catalog whole", async () => {
+test("the owner's copy is an overlay: a section of a shipped id replaces it in place, a new id appends, a tombstone withdraws, and every entry says its layer", async () => {
   await mkdir(process.env.RONIN_CATALOGS_DIR!, { recursive: true });
   const mine = path.join(process.env.RONIN_CATALOGS_DIR!, catalog.CATALOG_FILE);
+  const table = '| model | tier | default | cost | good at | not good at | launch |\n|---|---|---|---|---|---|---|';
   await writeFile(mine, [
-    '# mine', '', '### Anthropic', '', '- **provider:** `anthropic`', '- **cli:** `claude`', '',
-    '| model | tier | default | cost | good at | not good at | launch |', '|---|---|---|---|---|---|---|',
-    '| `fable` | frontier | yes | $10 (2026-09) | hard | cheap | `claude --model fable` |',
+    '# mine', '',
+    '### Anthropic (mine)', '', '- **provider:** `anthropic`', '- **cli:** `claude`', '', table,
+    '| `fable` | frontier | yes | $10 (2026-09) | hard | cheap | `claude --model fable` |', '',
+    '### xAI', '', '- **provider:** `xai`', '- **hidden:** yes', '',
+    '### Google', '', '- **provider:** `google`', '- **cli:** `gemini`', '', table,
+    '| `gemini-3.1-pro` | frontier | | $2 (2026-09) | x | y | — |',
+    '| `gemini-3.8-flash` | standard | yes | $0.75 (2026-09) | x | y | — |', '',
+    '### Example', '', '- **provider:** `example`', '- **cli:** `codex`', '', table,
+    '| `ex-1` | standard | yes | $1 (2026-09) | a | b | `codex --profile example --model ex-1` |',
   ].join('\n'));
   try {
     const read = await catalog.readProviderCatalog();
     assert.equal(read.origin, 'user');
     assert.equal(read.path, mine);
-    assert.equal(read.updated, '', 'a shadow copy with no updated line says so; the date is never borrowed from stock');
-    assert.deepEqual((await catalog.listSessionLaunchSpecs()).map((row) => row.cmd), ['claude --model fable'], 'the store copy is the whole catalog');
+    assert.equal(read.updated, '', 'the copy has no updated line and says so');
+    assert.match(read.stock_updated, /^\d{4}-\d{2}-\d{2}$/, 'the shipped date is carried beside it, never borrowed for it');
+    assert.deepEqual(read.providers.map((p) => [p.provider, p.origin, p.shadowed]), [
+      ['anthropic', 'user', true], ['openai', 'stock', false], ['nous', 'stock', false], ['example', 'user', false],
+    ], 'anthropic replaced in place; openai and nous untouched; xai hidden and google tombstoned are gone; example appended');
+    assert.equal(read.providers[0].label, 'Anthropic (mine)', 'the heading is the copy\'s, the key was the id');
+    assert.deepEqual(read.providers[0].models.map((m) => m.cmd), ['claude --model fable'], 'the section replaced whole — the shipped rows do not merge in');
+    assert.ok(read.providers[1].models.length >= 3, 'the shipped OpenAI rows are exactly as shipped');
+    assert.deepEqual(read.withdrawn, [{ provider: 'google', label: 'Google' }, { provider: 'xai', label: 'xAI' }], 'both tombstone forms withdraw, in shipped order, and the withdrawn are named');
+    const cmds = (await catalog.listSessionLaunchSpecs()).map((row) => row.cmd);
+    assert.ok(cmds.includes('codex --model gpt-5.6-sol') && cmds.includes('claude --model fable') && cmds.includes('codex --profile example --model ex-1'));
+    assert.ok(!cmds.some((cmd) => cmd.startsWith('gemini') || cmd.startsWith('grok')), 'withdrawn providers launch nothing');
   } finally {
     await rm(mine, { force: true });
   }
-  assert.equal((await catalog.readProviderCatalog()).origin, 'stock');
+  const back = await catalog.readProviderCatalog();
+  assert.equal(back.origin, 'stock');
+  assert.deepEqual(back.withdrawn, []);
+  assert.ok(back.providers.every((p) => p.origin === 'stock' && !p.shadowed), 'no copy: exactly the shipped list, every section shipped');
 });
 
 test('the summary is what was measured, dated, and survives the record round trip', async () => {
