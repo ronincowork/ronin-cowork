@@ -19,7 +19,7 @@ mechanical rather than a matter of taste:
 
 | | |
 |---|---|
-| **ミ Help** in the selector header of every workbench | Mika takes over the selector column: the cards step aside, her ordinary tile is borrowed in, and **Close** puts the cards back. She is started if she is not up |
+| **ミ Help** in the selector header of every workbench | Mika takes over the selector column: the header reads *Mika, your helpful assistant* with **Close** where Help was, the cards step aside, and only her conversation's text shows — no tile head, composer or greeting. Close puts the cards and the roster's title back. She is started if she is not up |
 | **Mika** card on Ronin Setup | the same session as a normal tile in Workspace 2 — it appears as soon as the first model provider is signed in |
 | **＋ include** on the ▣ Roots tab | hands her the include job in the same tile. It is no longer a form |
 | `+system_help: how do dials work?` typed anywhere | `ronin_bin/mika` routes it to her, wherever you typed it |
@@ -63,6 +63,12 @@ moved under ⚙ *Mika model level*) and cascades **up** — Light → Standard �
 across to another provider. When there is no default yet, or it is not signed in — the
 first-run Setup page — the **first operational provider in catalog order** supplies her with
 the same cascade. Providers are never compared for a better level. `src/mika-runtime.ts`.
+
+## Her mandate
+
+Reach **discuss**, recruit **nobody**, output **ideas** — fixed in her launch body
+(`mikaLaunchBody`, `src/routes/launch.ts`). She never plans a task and never proposes agents;
+a change she suggests goes through propose-and-confirm and Ronin's own doors.
 
 ## Her birth
 
