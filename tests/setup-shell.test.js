@@ -104,10 +104,10 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /SETUP_SURFACE_TYPES\.providers, 'workspace2', detail\)/);
   assert.match(setup, /hideFeedback: true/);
   assert.match(setup, /hideShapeControl: true/);
-  // The native sign-in mount is the shared one (provider-setup-session.js), handed to this
-  // environment as it is to Ronin Settings'; neither view keeps a copy.
+  // Provider sign-in and the ordinary Mika agent each reuse their existing tile hosts.
   assert.match(setup, /mountProviderSetupSession: providerSessions\.mountProviderSetupSession/);
-  assert.doesNotMatch(setup, /createTerminalTileHost/);
+  assert.match(setup, /createTerminalTileHost/);
+  assert.match(setup, /TERMINAL_TYPE, 'workspace2', \{ key: MIKA_SESSION \}/);
   assert.match(setup, /environment\.setupRuntime = runtime\.ok \? runtime\.data : \{ providers: \[\] \};[\s\S]*bench\.refreshSelector\(\);[\s\S]*const stored/);
   assert.doesNotMatch(setup, /SetupRequirement|requirementState|flashCycle/);
   assert.match(setup, /SETUP_SURFACE_TYPES\.providers, SETUP_SURFACE_TYPES\.register, SETUP_SURFACE_TYPES\.roots/);
@@ -117,7 +117,7 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(cowork, /PRESETS_TYPE/);
 });
 
-test('Setup keeps its selector header bare and seats light/dark at the right of the top header', async () => {
+test('Setup adds only Help to its selector header and keeps appearance in the top header', async () => {
   const [setup, kit, style, html, host, main, theme] = await Promise.all([
     source('js/setup-view.js'), source('workspace-kit.css'), source('style.css'), source('index.html'),
     source('js/workspace.js'), source('js/main.js'), source('js/theme.js'),
@@ -127,8 +127,7 @@ test('Setup keeps its selector header bare and seats light/dark at the right of 
   assert.doesNotMatch(setup, /viewportToggle|setupViewport|setup-header-toggle|presentation'/);
   assert.match(setup, /viewportMode: undefined/);
   assert.doesNotMatch(kit, /data-setup-viewport|setup-header-toggle/);
-  // The selector header carries no controls on Setup.
-  assert.doesNotMatch(setup, /\bactions: \[/);
+  assert.match(setup, /actions: \[mikaHelp\]/);
   // Light/dark is a bar action: built by Setup, seated by the ViewHost in the bar's one
   // actions slot at the right, pinning the device theme through theme.js and nothing else.
   assert.match(setup, /barActions: \[surfaceToggle, themeToggle\]/);

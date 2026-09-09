@@ -91,3 +91,12 @@ test('dissolve deletes the roster and only the roster', async () => {
   assert.equal(await readTeamRoster('alpha'), null);
   await deleteTeamRoster('alpha'); // idempotent for an already-empty/tag-only Team
 });
+
+test('exact deletion removes a stale uppercase roster file from its Campaign store', async () => {
+  const campaign = path.join(temp, 'home_machine');
+  await fs.mkdir(campaign, { recursive: true });
+  const stale = path.join(campaign, 'RONIN_HELPERS.md');
+  await fs.writeFile(stale, 'title = Ronin Helpers\nobjective = stale\n', 'utf8');
+  await deleteTeamRoster('RONIN_HELPERS');
+  await assert.rejects(fs.lstat(stale), { code: 'ENOENT' });
+});

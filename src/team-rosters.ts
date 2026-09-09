@@ -287,6 +287,16 @@ export async function deleteTeamRoster(name: string, campaign_id?: string): Prom
   const existing = await readTeamRoster(name, campaign_id);
   // Deletion is idempotent so retirement can clean up orphaned legacy/incomplete
   // memberships even when their roster file is already absent.
-  if (!existing) return;
-  await unlink(teamRosterFile(name, existing.campaign_id));
+  if (existing) {
+    await unlink(teamRosterFile(name, existing.campaign_id));
+    return;
+  }
+  // Old stores could contain uppercase filenames that are no longer valid Team ids.
+  // They cannot be read as Teams, but an exact safe delete must still retire the file.
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(name)) return;
+  const campaigns = campaign_id !== undefined ? [campaign_id] : ['', ...await campaignDirs()];
+  await Promise.all(campaigns.map(async (id) => {
+    try { await unlink(teamRosterFile(name, id)); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  }));
 }
