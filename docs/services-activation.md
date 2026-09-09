@@ -113,12 +113,9 @@ spent.
 
 ## Where the person actually sees it
 
-**cowork_setup** (`public/js/cowork-setup.js`) — ticking Services and giving an address now POSTs
-`/api/services/activation`, which asks Ronin HQ to send the confirmation email.
-
-**HQ being unreachable does not block setup.** Only a refusal we caused — a malformed
-address — stops the page. Anything else finishes setup and leaves a pending request with a
-Retry in ⚙ Configuration, which is the recovery rule made real rather than described.
+**Ronin Setup** presents Services as its own surface. Registration and installation use the
+setup-runtime and registration routes; the durable activation state remains visible after
+reload.
 
 **Cowork workspace** (`public/js/services-activation.js`) — a Services status control sits
 beside the Ronin identity in the header and renders the durable stage, not what the page

@@ -132,5 +132,5 @@ test('the folder picker takes its words from the consumer and keeps its stock wo
   assert.match(picker, /t\('folders\.group_repositories', 'Folders with a Git repository'\)/);
   assert.match(picker, /t\('folders\.group_plain', 'Folders'\)/);
   assert.match(picker, /if \(folder\.registered_root && say\.kept\) choose\.disabled = true/, 'a kept folder is inert where the consumer names it so');
-  for (const other of ['public/js/cowork-setup.js', 'public/js/presets.js']) assert.doesNotMatch(await source(other), /words:/, `${other} keeps the stock words`);
+  assert.doesNotMatch(await source('public/js/presets.js'), /words:/, 'presets keeps the stock words');
 });
