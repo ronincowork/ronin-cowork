@@ -149,10 +149,12 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   // The Installed step says the version, WHICH binary said it, and what Refresh last learned;
   // Update is the owner's press, named by what it runs.
   assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed 2.1.263 · 2.1.265 available · ~/.local/bin/claude');
-  assert.equal(byClass(steps[0], 'setup-provider-self-update-note')[0].textContent, 'Usually updates itself.');
+  // Every step's text sits in its copy column under the title — never a fourth child of the grid.
+  for (const step of steps) assert.deepEqual(step.children.map((node) => node.className), ['setup-provider-mark', 'setup-provider-copy', 'setup-provider-control'], `${step.dataset.step}: mark, copy, controls — nothing else`);
   const update = byClass(steps[0], 'setup-provider-update')[0];
   assert.equal(update.textContent, 'Update to 2.1.265');
-  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^claude update runs here in the page\. Tiles already running keep the version/);
+  assert.equal(byClass(steps[0], 'setup-provider-note')[0].textContent, 'Runs here in the page. Tiles already running keep the version they started with; every launch after this gets the new one.');
+  assert.equal(byClass(steps[0], 'setup-provider-command')[0].textContent, 'claude update', 'the line Update runs, under the text, as an install command sits');
   calls.length = 0;
   update.click();
   assert.equal(update.disabled, true, 'the button closes immediately while its session is created');
@@ -166,7 +168,8 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   const ready = steps[2];
   const turnOff = byClass(ready, 'setup-provider-turn-off')[0];
   assert.equal(turnOff.textContent, 'Turn off');
-  assert.equal(byClass(ready, 'setup-provider-switch-note')[0].textContent, 'Stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.');
+  assert.equal(byClass(ready, 'setup-provider-note')[0].textContent, 'Turn off stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.', 'the sentence sits under the title, above the control');
+  assert.deepEqual(ready.children.map((node) => node.className), ['setup-provider-mark', 'setup-provider-copy', 'setup-provider-control']);
   calls.length = 0;
   turnOff.click();
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -201,7 +204,8 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
     const step = byClass(made.el, 'setup-provider-step')[0];
     assert.ok(byClass(step, 'setup-provider-terminal')[0], 'in the Install step');
     assert.equal(byClass(step, 'setup-provider-update').length, 0, 'no second Update while one runs');
-    assert.match(byClass(step, 'setup-provider-update-note')[0].textContent, /press Close; then Refresh/);
+    assert.match(byClass(step, 'setup-provider-note')[0].textContent, /press Close, then Refresh/);
+    assert.deepEqual(step.children.map((node) => node.className), ['setup-provider-mark', 'setup-provider-copy', 'setup-provider-control', 'setup-provider-terminal'], 'the terminal is the one thing a grid may carry beyond its three columns');
     calls.length = 0;
     byClass(step, 'setup-provider-update-close')[0].click();
     await new Promise((resolve) => setTimeout(resolve, 0));
