@@ -255,9 +255,12 @@ This surface is the one client that measures: showing it probes the machine and 
 the Campaign's summary; its catalog rows are the one picker's read, so the surface and
 every picker cannot disagree.
 
-**Versions, Refresh, Update.** An installed CLI's Install step says its version, which
-binary said it, and, once **Refresh** has asked, the newest release its package source
-lists: *Installed 0.151.0 · 0.153.4 available · ~/.local/bin/codex*, or *up to date*, or
+**Versions, Refresh, Update — for activated providers only.** A provider that is not
+activated gets nothing spent on it (owner's rule, 2026-09-09): Ronin does not run it, does
+not ask its package source, and offers no control; its step says *Installed* and stops,
+never a stale version and never "not read", since nothing was asked. An activated CLI's
+Install step says its version, which binary said it, and, once **Refresh** has asked, the
+newest release its package source lists: *Installed 0.151.0 · 0.153.4 available · ~/.local/bin/codex*, or *up to date*, or
 *latest unknown: no package source to ask* for a CLI updated by its own subcommand or its
 own installer. Refresh lives inside **Check dates**, the box of what is known and when: it
 measures the machine again and asks the npm registry for each installed CLI whose registry

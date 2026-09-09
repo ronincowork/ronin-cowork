@@ -76,21 +76,25 @@ test('provider facts come from the measured summary: absent, installable, instal
   assert.equal(row(absentButFile, 'claude').state, 'installable');
 });
 
-test('an installed CLI\'s row says its version, what Refresh last learned of the newest, and whether Update means anything', async () => {
-  const facts = await measured({}, ['claude', 'codex']);
-  const before = await runtime.setupRuntimeAnswer({}, facts, { exists: nobody }, undefined, catalog);
+test('an activated CLI\'s row says its version, what Refresh last learned of the newest, and whether Update means anything; one not activated says Installed and stops', async () => {
+  const on = { providers: { codex: { activated_at: '2026-09-05T00:00:00.000Z' }, claude: { activated_at: '2026-09-05T00:00:00.000Z' } } };
+  const facts = await measured(on, ['claude', 'codex']);
+  const before = await runtime.setupRuntimeAnswer(on, facts, { exists: nobody }, undefined, catalog);
   assert.equal(row(before, 'codex').version, '0.151.0');
   assert.equal(row(before, 'claude').version, null, 'a CLI that would not say is null, not a guess');
   assert.equal(row(before, 'codex').latest, null, 'never asked yet');
-  assert.equal(row(before, 'codex').updatable, true, 'installed and the registry has an update line');
-  assert.equal(row(before, 'codex').self_updates, false, 'Codex requires an explicit update');
-  assert.equal(row(before, 'claude').self_updates, true, 'Claude Code usually updates itself');
-  assert.equal(row(before, 'codex').update, 'npm install -g @openai/codex@latest');
+  assert.equal(row(before, 'codex').updatable, true, 'activated and the registry has an update line');
   assert.equal(row(before, 'codex').update_available, false, 'no latest, no claim');
   assert.equal(row(before, 'gemini').updatable, false, 'not installed: nothing to update');
-  assert.equal(row(before, 'gemini').askable, true, 'its npm release source comes from the install line');
   assert.equal(row(before, 'gemini').update, null);
-  const after = await runtime.setupRuntimeAnswer({}, { ...facts, latest: { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' }, claude: { version: '2.1.265', checked_at: '2026-09-09T12:00:00.000Z' } } }, { exists: nobody }, undefined, catalog);
+  // Installed but not activated: nothing asked, nothing offered — not a stale version, not "not read".
+  const quiet = await measured({}, ['claude', 'codex']);
+  assert.deepEqual(quiet.versions, {}, 'no activated provider, no exec at all');
+  const idle = await runtime.setupRuntimeAnswer({}, { ...quiet, versions: { codex: '0.151.0' }, latest: { codex: { version: '0.153.4', checked_at: 'c' } } }, { exists: nobody }, undefined, catalog);
+  assert.equal(row(idle, 'codex').version, null, 'an earlier measurement is not printed as current');
+  assert.equal(row(idle, 'codex').latest, null);
+  assert.equal(row(idle, 'codex').updatable, false, 'no control for a provider Ronin is not using');
+  const after = await runtime.setupRuntimeAnswer(on, { ...facts, latest: { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' }, claude: { version: '2.1.265', checked_at: '2026-09-09T12:00:00.000Z' } } }, { exists: nobody }, undefined, catalog);
   assert.equal(row(after, 'codex').latest, '0.153.4');
   assert.equal(row(after, 'codex').latest_checked_at, '2026-09-09T12:00:00.000Z');
   assert.equal(row(after, 'codex').update_available, true);

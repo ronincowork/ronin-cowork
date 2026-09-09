@@ -179,6 +179,7 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
   machine = { ...machine, providers: [
     { ...machine.providers[0], update_open: true, attachment: { type: 'session', key: 'provider_setup_claude_update', team: 'provider_setup', temporary: true } },
     { id: 'gemini', label: 'Gemini CLI', from: 'Google', installed: true, path: '/usr/bin/gemini', signed_in: true, activated: true, state: 'activated', version: '0.59.0', latest: '0.59.0', updatable: true, askable: false, update: 'gemini update', update_available: false },
+    { id: 'grok', label: 'Grok CLI', from: 'xAI', installed: true, path: '/usr/bin/grok', signed_in: false, activated: false, state: 'installed', version: null, latest: null, updatable: false, askable: true, update: null, update_available: false },
     { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, path: '/usr/bin/codex', signed_in: false, activated: false, state: 'installed', version: '0.153.4', latest: '0.154.0', updatable: true, askable: true, update: 'npm install -g @openai/codex@latest', update_available: true },
   ] };
   try {
@@ -196,11 +197,17 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
     byClass(step, 'setup-provider-update-close')[0].click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(calls[0], 'POST /api/setup/providers/claude/close', 'the same Close as a sign-in ends it');
+    await settle(); // Close repaints the frame; the stones below are the fresh ones
     byClass(made.el, 'sws-stone')[1].click();
     const geminiStep = byClass(made.el, 'setup-provider-step')[0];
     assert.equal(byClass(geminiStep, 'setup-provider-state')[0].textContent, 'Installed 0.59.0 · up to date · /usr/bin/gemini');
     assert.equal(byClass(geminiStep, 'setup-provider-update').length, 0, 'an up-to-date provider offers no Update control');
+    // Installed but not activated: nothing was asked of it, so Installed and nothing more — no version, no control.
     byClass(made.el, 'sws-stone')[2].click();
+    const grokStep = byClass(made.el, 'setup-provider-step')[0];
+    assert.equal(byClass(grokStep, 'setup-provider-state')[0].textContent, 'Installed');
+    assert.equal(byClass(grokStep, 'setup-provider-update').length, 0);
+    byClass(made.el, 'sws-stone')[3].click();
     const codexStep = byClass(made.el, 'setup-provider-step')[0];
     assert.equal(byClass(codexStep, 'setup-provider-update').length, 0, 'an unauthenticated provider offers no Update control even when a newer version is known');
   } finally {

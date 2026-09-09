@@ -150,6 +150,8 @@ export function createProviderSurface(context) {
    * the file it came from let a correct reading look like a lie (2026-09-09).
    */
   const installedState = (provider) => {
+    // Not activated: nothing was asked of it, so there is nothing to say past Installed.
+    if (provider.activated !== true) return t('setup_surface.installed', 'Installed');
     const version = provider.version || t('setup_surface.version_unknown', 'version not read');
     const where = provider.path ? ' · ' + homely(provider.path) : '';
     if (provider.latest) {

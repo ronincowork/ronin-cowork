@@ -178,9 +178,11 @@ export async function setupRuntimeAnswer(
     const signedIn = isInstalled && summary.signed_in.includes(agent.id);
     const models = entry?.models.length ?? 0;
     const activated = isInstalled && (completed !== null || signedIn) && models > 0;
-    const version = isInstalled ? summary.versions?.[agent.id] ?? null : null;
-    const latest = isInstalled ? summary.latest?.[agent.id] ?? null : null;
-    const updateLine = updateLineOf(agent);
+    // Not activated: nothing was asked and nothing is offered — Installed, and stop. A
+    // version from an earlier measurement is not printed as though it were current.
+    const version = activated ? summary.versions?.[agent.id] ?? null : null;
+    const latest = activated ? summary.latest?.[agent.id] ?? null : null;
+    const updateLine = activated ? updateLineOf(agent) : '';
     return {
       id: agent.id,
       provider: entry?.provider ?? '',
@@ -199,9 +201,9 @@ export async function setupRuntimeAnswer(
       version,
       latest: latest?.version ?? null,
       latest_checked_at: latest?.checked_at ?? null,
-      updatable: isInstalled && Boolean(updateLine),
+      updatable: activated && Boolean(updateLine),
       self_updates: agent.operations.selfUpdates,
-      update: isInstalled && updateLine ? updateLine : null,
+      update: activated && updateLine ? updateLine : null,
       update_available: Boolean(version && latest && newerVersion(version, latest.version)),
       askable: npmPackageOf(agent.operations.install) !== '',
       update_open: updateOpen,
