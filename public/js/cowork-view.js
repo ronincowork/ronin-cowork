@@ -321,12 +321,15 @@ export function createCoworkView(options = {}) {
   const mikaLoading = el('div', 'tw-mika-loading');
   const mikaSpinner = el('span', 'tw-mika-spinner', '人');
   const mikaLoadingLabel = el('span', 'tw-mika-loading-label', t('mika.starting', 'Starting Mika…'));
+  const mikaPreview = el('span', 'tw-mika-preview', 'Preview only — Mika runtime unavailable.');
+  mikaPreview.hidden = true;
   mikaSpinner.setAttribute('aria-hidden', 'true');
   mikaLoading.setAttribute('role', 'status');
   mikaLoading.setAttribute('aria-live', 'polite');
-  mikaLoading.append(mikaSpinner, mikaLoadingLabel);
+  mikaLoading.append(mikaSpinner, mikaLoadingLabel, mikaPreview);
   const showMikaState = (state, workspace = '') => {
     const ready = state === 'ready';
+    if (state === 'loading') mikaPreview.hidden = true;
     mikaLoading.dataset.state = state;
     mikaLoadingLabel.textContent = ready
       ? t('mika.ready', 'Mika is ready in {workspace}.', { workspace })
@@ -396,6 +399,7 @@ export function createCoworkView(options = {}) {
             await Promise.all([fetchSessions(), refreshTeams()]);
             extras.add('mika_agent');
             paint();
+            mikaPreview.hidden = result.data?.simulated !== true;
             return showMikaState('action_required');
           }
           return showMikaState('refused');
