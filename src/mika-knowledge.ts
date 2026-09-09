@@ -63,6 +63,7 @@ export function parseMikaTaxonomy(text: string): MikaTaxonomyNode[] {
 
 async function markdownFiles(base: string, relative = ''): Promise<Map<string, string>> {
   const out = new Map<string, string>();
+  if (!base) return out;
   let rows;
   try { rows = await readdir(path.join(base, relative), { withFileTypes: true }); }
   catch (error) {
@@ -119,7 +120,9 @@ function capUtf8(text: string, limit: number): string {
 
 function defaultOwnerRoots(): Record<string, string> {
   return {
-    docs: path.join(storeDir('library'), 'docs'),
+    // Product docs have no owner shadow store. Owner-authored reading belongs to the
+    // library root below; treating library/docs as both would index the same file twice.
+    docs: '',
     ronin_sops: storeDir('sops'),
     ronin_catalogs: storeDir('catalogs'),
     ronin_session_boot: storeDir('session_boot'),

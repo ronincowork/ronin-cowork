@@ -95,7 +95,7 @@ test('the stock taxonomy discovers the complete approved set within the hard ind
     const built = await compileMikaKnowledgeAt(temp, { ownerRoots: {
       docs: '', ronin_sops: '', ronin_catalogs: '', ronin_session_boot: '', ronin_library: '',
     } });
-    assert.equal(built.entries.length, 145);
+    assert.equal(built.entries.length, 144);
     assert.ok(built.entries.every((row) => row.id !== 'ronin_catalogs/MIKA_MACROS.md'));
     assert.ok(built.bytes <= MIKA_INDEX_BUDGET.bytes, `${built.bytes} index bytes`);
     assert.ok(built.lines <= MIKA_INDEX_BUDGET.lines, `${built.lines} index lines`);
