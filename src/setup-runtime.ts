@@ -56,11 +56,13 @@ export interface SetupProviderState {
   latest_checked_at: string | null;
   /** Installed, and the registry knows how to update it — the Update control's condition. */
   updatable: boolean;
+  /** The CLI's documented behavior: it normally updates itself without an owner action. */
+  self_updates: boolean;
   /** The line Update runs, for the owner to read before pressing. */
   update: string | null;
   /** Latest is known and newer than what is installed. */
   update_available: boolean;
-  /** Whether Refresh has a package source to ask for this CLI's newest release (its update line names an npm package). */
+  /** Whether Refresh has a package source to ask for this CLI's newest release (its install line names an npm package). */
   askable: boolean;
   /** An update is running in its temporary provider_setup session; `attachment` shows it. */
   update_open: boolean;
@@ -92,6 +94,7 @@ type Availability = Awaited<ReturnType<typeof listAgentAvailability>>;
 
 const sessionName = (provider: string) => `provider_setup_${provider}`;
 const updateSessionName = (provider: string) => `provider_setup_${provider}_update`;
+const installSessionName = (provider: string) => `install_${provider}`;
 
 export function setupPreferences(section: SetupSection): SetupPreferences {
   const selected = new Set(
@@ -197,9 +200,10 @@ export async function setupRuntimeAnswer(
       latest: latest?.version ?? null,
       latest_checked_at: latest?.checked_at ?? null,
       updatable: isInstalled && Boolean(updateLine),
+      self_updates: agent.operations.selfUpdates,
       update: isInstalled && updateLine ? updateLine : null,
       update_available: Boolean(version && latest && newerVersion(version, latest.version)),
-      askable: npmPackageOf(agent.operations.update.shell) !== '',
+      askable: npmPackageOf(agent.operations.install) !== '',
       update_open: updateOpen,
       // One attachment per provider: the sign-in when open, else the update. Both are the
       // same temporary provider_setup session shape and the same Close ends either.
@@ -246,13 +250,15 @@ export async function openProviderLogin(
 }
 
 /**
- * Close ends whichever temporary provider_setup session the provider has open — a sign-in,
- * an update, or both — through the one teardown. Nothing in the team outlives its window.
+ * Close ends whichever temporary session the provider has open — install, sign-in, update,
+ * or any combination — through the one teardown. Nothing shown in the page outlives it.
  */
 export async function closeProviderLogin(provider: string, ops: ProviderSessionOps = defaultSessionOps): Promise<{ session: string; closed: boolean }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
   let closed: string | null = null;
-  for (const session of [sessionName(provider), updateSessionName(provider)]) {
+  // Keep the long-standing sign-in name as the receipt when several exist; install joins
+  // the teardown without changing the close response callers already consume.
+  for (const session of [sessionName(provider), updateSessionName(provider), installSessionName(provider)]) {
     if (!(await ops.exists(session))) continue;
     await ops.close(session);
     closed ??= session;

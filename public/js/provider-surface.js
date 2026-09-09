@@ -55,7 +55,10 @@ export function providersSummary(catalog) {
   const providers = new Set(rows.map((row) => row.provider)).size;
   const activated = new Set(rows.filter((row) => row.operational).map((row) => row.provider)).size;
   const counts = t('setup_surface.providers_summary', '{providers} providers · {models} models · {activated} activated here', { providers, models: rows.length, activated });
-  return catalog.updated ? t('setup_surface.providers_summary_dated', '{counts} · catalog updated {date}', { counts, date: catalog.updated }) : counts;
+  const yours = new Set(rows.filter((row) => row.origin === 'user').map((row) => row.provider)).size;
+  const stockDate = catalog.stock_updated || catalog.updated;
+  const dated = stockDate ? t('setup_surface.providers_summary_dated', '{counts} · catalog updated {date}', { counts, date: stockDate }) : counts;
+  return yours ? t('setup_surface.providers_summary_yours', '{dated} · {n} yours', { dated, n: yours }) : dated;
 }
 
 export function createProviderSurface(context) {
@@ -69,10 +72,14 @@ export function createProviderSurface(context) {
   const versionsDate = el('dd');
   const dateList = el('dl', 'setup-provider-date-list');
   const dateRow = (label, value) => { const row = el('div'); row.append(el('dt', null, label), value); return row; };
+  const withdrawnList = el('dd');
+  const withdrawnRow = dateRow(t('setup_surface.withdrawn', 'Withdrawn by your copy'), withdrawnList);
+  withdrawnRow.hidden = true;
   dateList.append(
     dateRow(t('setup_surface.catalog_researched', 'Catalog researched'), catalogDate),
     dateRow(t('setup_surface.machine_measured', 'Machine measured'), machineDate),
     dateRow(t('setup_surface.versions_checked', 'Latest versions checked'), versionsDate),
+    withdrawnRow,
   );
   // Refresh lives in this box: the box is what-we-know-and-when, and Refresh renews it —
   // measure again AND ask each installed CLI's package source for its newest release. The
@@ -102,9 +109,32 @@ export function createProviderSurface(context) {
     return stamps.length ? when(stamps[stamps.length - 1]) : t('setup_surface.versions_unchecked', 'Not checked yet — press Refresh');
   };
   const paintDates = () => {
-    catalogDate.textContent = providerCatalog().updated || t('setup_surface.catalog_date_unstated', 'Date not stated');
+    const read = providerCatalog();
+    const stockDate = read.stock_updated || t('setup_surface.catalog_date_unstated', 'Date not stated');
+    // Two layers, two dates, neither borrowed: the shipped file's, and the owner's copy's when one exists.
+    catalogDate.textContent = read.origin === 'user'
+      ? t('setup_surface.catalog_two_dates', 'Shipped {stock} · your copy {yours}', { stock: stockDate, yours: read.updated || t('setup_surface.catalog_date_unstated', 'Date not stated') })
+      : stockDate;
     machineDate.textContent = measuredDateText();
     versionsDate.textContent = latestCheckedText();
+    const gone = Array.isArray(read.withdrawn) ? read.withdrawn : [];
+    withdrawnList.textContent = gone.map((row) => row.label || row.provider).join(' · ');
+    withdrawnRow.hidden = gone.length === 0;
+  };
+  /**
+   * WHICH LAYER a provider's section came from, said in words — the whole point of the
+   * overlay. A shadow nobody can see is what the surface used to be. The cost is said
+   * too: a user section replaces the shipped one whole, so one edited price forks the
+   * vendor's section until the owner takes the next shipped update.
+   */
+  const provenance = (rows) => {
+    const first = rows[0];
+    if (!first) return '';
+    const read = providerCatalog();
+    const unstated = t('setup_surface.catalog_date_unstated', 'date not stated');
+    if (first.origin !== 'user') return t('setup_surface.section_shipped', 'Shipped catalog · updated {date}', { date: read.stock_updated || unstated });
+    if (first.shadowed) return t('setup_surface.section_yours_shadowed', 'Your copy of this section (updated {yours}) replaces the shipped one (updated {stock}). It stays yours until you take the next shipped update: one edited price forks the whole section.', { yours: read.updated || unstated, stock: read.stock_updated || unstated });
+    return t('setup_surface.section_yours_new', 'Yours · not in the shipped catalog (your copy updated {yours})', { yours: read.updated || unstated });
   };
   /** A path with the home directory folded to ~, for a line meant to be read. */
   const homely = (path) => String(path || '').replace(/^\/home\/[^/]+|^\/Users\/[^/]+/, '~');
@@ -192,6 +222,9 @@ export function createProviderSurface(context) {
     const installRow = stepRow(install, install.status === 'installed'
       ? installedState(provider)
       : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
+    if (install.status === 'installed' && provider.self_updates) {
+      installRow.item.append(el('p', 'setup-provider-note setup-provider-self-update-note', t('setup_surface.self_updates', 'Usually updates itself.')));
+    }
     // UPDATE — only for an installed CLI the registry knows how to update. It opens in the
     // page exactly as a sign-in does: a temporary provider_setup session, mounted here, and
     // the same Close ends it. Not the kaki primary (that is the current step's), so the
@@ -205,11 +238,23 @@ export function createProviderSurface(context) {
       installRow.item.append(terminal);
       mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
-    } else if (install.status === 'installed' && provider.updatable) {
-      const label = provider.update_available
-        ? t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest })
-        : t('setup_surface.update', 'Update');
-      const update = action(label, '', () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/update`));
+    // Update is useful only when there is somewhere newer to move AND the provider is
+    // usable. Otherwise the row already says the complete fact: up to date, or not signed in.
+    } else if (install.status === 'installed' && provider.activated && provider.updatable && provider.update_available) {
+      const label = t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest });
+      const update = action(label, '', async () => {
+        update.disabled = true;
+        update.textContent = t('setup_surface.update_starting', 'Starting…');
+        const result = await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/update`, { method: 'POST', json: {} });
+        if (!result.ok) {
+          problem.textContent = result.message;
+          problem.hidden = false;
+          update.textContent = label;
+          update.disabled = false;
+          return;
+        }
+        await paint();
+      });
       update.classList.add('setup-provider-action', 'setup-provider-update');
       installRow.controls.append(update);
       const note = el('p', 'setup-provider-note setup-provider-update-note');
@@ -263,6 +308,9 @@ export function createProviderSurface(context) {
     ]) { const fact = el('div'); fact.dataset.on = String(on); fact.append(el('dt', null, label), el('dd', null, yesNo(on))); facts.append(fact); }
     section.append(facts);
     if (!rows.length) { section.append(el('p', 'setup-fine', t('setup_surface.no_models', 'The catalog lists no models for this provider.'))); host.append(section); return; }
+    const from = el('p', 'setup-fine setup-provider-provenance', provenance(rows));
+    from.dataset.origin = rows[0].origin || 'stock'; from.dataset.shadowed = String(rows[0].shadowed === true);
+    section.append(from);
     const table = el('table', 'setup-provider-models');
     const headRow = el('tr');
     for (const text of [t('setup_surface.col_model', 'Model'), t('setup_surface.col_tier', 'Tier'), t('setup_surface.col_cost', 'Cost'), t('setup_surface.col_good_at', 'Good at'), t('setup_surface.col_not_good_at', 'Not good at')]) headRow.append(el('th', null, text));
