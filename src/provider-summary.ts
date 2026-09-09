@@ -24,11 +24,25 @@ import { ensureInitialCampaign, initialCampaign, writeCampaignProviders } from '
 import { readSetupSection } from './machine-state.js';
 import { listProviderCatalog, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
 
-interface SetupSection { providers?: Record<string, { activated_at?: unknown }>; [key: string]: unknown }
+interface SetupSection { providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>; [key: string]: unknown }
 
 /** When the owner completed a sign-in through Done, as machine settings record it. */
 export function activatedAt(section: SetupSection, cli: string): string | null {
   const value = section.providers?.[cli]?.activated_at;
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+/**
+ * When the owner turned the provider OFF — Ronin's own mark, in Ronin's own record. It
+ * outranks both the CLI's credential file and `activated_at`, because `operational` is
+ * derived from those and neither can be unset: the file is the vendor's, and Done was
+ * pressed. Off means Ronin stops using the provider — not measured, not updated, not
+ * offered, not launched anew — and nothing else: no vendor file is touched, the sign-in
+ * is kept, and turning it back on clears this one field (owner, 2026-09-09: "stopping
+ * it does not mean signing it out; we keep the credentials, we just turn it quiet").
+ */
+export function offAt(section: SetupSection, cli: string): string | null {
+  const value = section.providers?.[cli]?.off_at;
   return typeof value === 'string' && value.trim() ? value : null;
 }
 
@@ -82,14 +96,18 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
   for (const agent of available) if (agent.installed && agent.path) paths[agent.id] = agent.path;
   const signed_in: string[] = [];
   for (const agent of AGENTS) if (await signedIn(agent.id)) signed_in.push(agent.id);
-  // Every CLI asked at once, each bounded: the measure costs the slowest answer, not the sum.
-  const versions: Record<string, string> = {};
-  const asked = await Promise.all(AGENTS.filter((agent) => paths[agent.id])
-    .map(async (agent) => [agent.id, versionIn(await version(paths[agent.id], agent.operations.version))] as const));
-  for (const [id, found] of asked) if (found) versions[id] = found;
   const launchable = new Set(catalog.filter((entry) => entry.models.length > 0).map((entry) => entry.cli));
   const operational = installed.filter((cli) =>
-    (signed_in.includes(cli) || activatedAt(section, cli) !== null) && launchable.has(cli));
+    offAt(section, cli) === null && (signed_in.includes(cli) || activatedAt(section, cli) !== null) && launchable.has(cli));
+  // THE OWNER'S RULE (2026-09-09): a provider that is not activated gets nothing spent on
+  // it — no exec, no ask, not a millisecond. Installed is enough to say "installed".
+  // Gemini, installed and never signed in here, took 2.9s to say its version on every
+  // paint of a row that offered no action. Only the activated are asked, all at once, each
+  // bounded, so the measure costs the slowest activated answer, not the sum.
+  const versions: Record<string, string> = {};
+  const asked = await Promise.all(AGENTS.filter((agent) => operational.includes(agent.id) && paths[agent.id])
+    .map(async (agent) => [agent.id, versionIn(await version(paths[agent.id], agent.operations.version))] as const));
+  for (const [id, found] of asked) if (found) versions[id] = found;
   return {
     measured_at: (ops.now ?? (() => new Date().toISOString()))(),
     installed, signed_in, operational,
@@ -120,18 +138,20 @@ async function npmViewVersion(pkg: string): Promise<string> {
 }
 
 /**
- * THE ONE OUTBOUND ASK: what is the newest release of each installed CLI. Only for a CLI
- * whose registry install line names an npm package — that is a source Ronin can ask by
- * name; a vendor page is not. Every ask is an egress line, answered or not. A CLI with no
- * such source is simply absent from the answer, and the surface says *latest unknown*.
+ * THE ONE OUTBOUND ASK: what is the newest release of each ACTIVATED CLI (the caller passes
+ * the summary's `operational`; a provider not activated is not asked — the owner's rule).
+ * Only for a CLI whose registry install line names an npm package — that is a source Ronin
+ * can ask by name; a vendor page is not. Every ask is an egress line, answered or not. A
+ * CLI with no such source is simply absent from the answer, and the surface says
+ * *latest unknown*.
  */
-export async function latestVersions(installed: readonly string[], ops: LatestOps = {}): Promise<ProviderSummary['latest']> {
+export async function latestVersions(activated: readonly string[], ops: LatestOps = {}): Promise<ProviderSummary['latest']> {
   const view = ops.npmView ?? npmViewVersion;
   const egress = ops.egress ?? appendEgress;
   const now = ops.now ?? (() => new Date().toISOString());
   const out: ProviderSummary['latest'] = {};
   for (const agent of AGENTS) {
-    if (!installed.includes(agent.id)) continue;
+    if (!activated.includes(agent.id)) continue;
     const pkg = npmPackageOf(agent.operations.install);
     if (!pkg) continue;
     const started = Date.now();
@@ -167,7 +187,7 @@ export async function recordProviderSummary(summary: ProviderSummary): Promise<v
 export async function measureAndRecordProviders(section?: SetupSection, ops: MeasureOps = {}, refresh: LatestOps | false = false): Promise<ProviderSummary> {
   const previous = await readProviderSummary();
   const summary = await measureProviders(section ?? await readSetupSection(), ops);
-  summary.latest = refresh ? await latestVersions(summary.installed, refresh) : (previous?.latest ?? {});
+  summary.latest = refresh ? await latestVersions(summary.operational, refresh) : (previous?.latest ?? {});
   await recordProviderSummary(summary);
   return summary;
 }

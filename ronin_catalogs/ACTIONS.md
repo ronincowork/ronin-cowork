@@ -170,7 +170,8 @@ read_tegami --json              # just the block, for a machine
 read_tegami --rungs             # the positions a marker can point at, current one flagged
 read_tegami --session <name>    # another session's — DENIED at dial 👤
 ```
-**No paths, ever** — it resolves the pane's own session and is viewer-safe. Exit 3 =
+**No paths, ever** — it resolves the pane, then `$TMUX`, then the live session-command
+directory through which it was invoked, and is viewer-safe. Exit 3 =
 no letter yet, which is the ordinary state of a session that has not written one.
 
 ## write-letter — set your ladder, or point at the rung being worked
@@ -436,14 +437,14 @@ funnel points. **Commit** coherent checkpoints privately as you go. At each DONE
 **offer a hand-in** — `tejun-desk hand-in` when the work is coherent for the team; a leg
 may prompt it, never perform it for you, and it is not `git push`. Run no repository-wide verification at a
 commit or a hand-in. Reviewing the team line and promoting it is the lead's job; hand-in
-does not send messages on your behalf. If the team has no lead, the
+notifies the team lead itself. If the team has no lead, the
 hand-in tells you: “this didn't work for promotion: team <team> has no lead; ask the owner
 to mark one on the Team page.” A conflict at hand-in is still yours to
 resolve (`tejun-desk sync`, fix, hand in).
-If your brief lists no desk (manual launch, plain terminal, a
-repository under direct publishing) you have none: ordinary Git in the named checkout is
-correct; follow the repository and owner instructions and invent no desk state. Verify per the doc, with
-scoped evidence, before reporting.
+If your brief lists no desk, none has been opened for you yet. For a managed repository,
+run `tejun-desk open <repo>` before your first write; `NO-DESK` from status means only that
+none is recorded for this session. For a direct repository, ordinary Git in its named
+checkout is correct. Verify per the doc, with scoped evidence, before reporting.
 
 ## open-pr
 `action_kind: mechanical` — run it, don't deliberate.
