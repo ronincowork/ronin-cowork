@@ -44,7 +44,7 @@ where a session is born now. `docs/ui.md` is the written contract those modules 
 | `events.js` | 96 | the `/events` socket, birth/death chips, `openSessionSomewhere` |
 | `home.js` | 131 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault` (the provider catalog is form-steps.js's) |
 | `form-steps.js` | 373 | the drawn form idiom, and THE ONE PICKER — `providerModelPair`, `loadProviderCatalog`, `orderedCatalog` |
-| `provider-surface.js` | 262 | THE ONE MODEL PROVIDERS SURFACE, seated by Ronin Setup and Ronin Settings — per provider, Yours (the steps and the sign-in tile) then The catalog |
+| `provider-surface.js` | 424 | THE ONE MODEL PROVIDERS SURFACE, seated by Ronin Setup and Ronin Settings — per provider, Yours (the steps and the sign-in tile) then The catalog |
 | `provider-setup-session.js` | 36 | the native sign-in tile's one mount, handed to both workbench environments |
 | `roster.js` | 258 | the ⌂ Roster room — the session list, the session max, the stale line |
 | `archives.js` | — | the Archived room — stopped, resumable sessions backed by manifests |
