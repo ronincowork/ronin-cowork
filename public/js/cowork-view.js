@@ -28,7 +28,6 @@ import { renderTeamConfiguration } from './team-configuration.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
 import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
-import { mikaViewContext } from './mika-context.js';
 import { fetchSessions } from './api.js';
 import { helpersLast, RONIN_HELPERS } from './roster-groups.js';
 import { toast } from './ui.js';
@@ -114,7 +113,6 @@ export function createCoworkView(options = {}) {
   let unsubscribe = null;
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
-  let lastMikaContext = '';
   const readableTeam = (name) => String(teamByName(name)?.title ?? '').trim() || name;
   const setBarLabel = () => S.refreshWorkspaceHeader?.();
 
@@ -309,154 +307,30 @@ export function createCoworkView(options = {}) {
   });
   rosterTitle = bench.selectorHeader?.title ?? null;
   root.append(bench.host);
-  const selector = bench.host.querySelector('.wk-workbench-selector');
-  const selectorCards = selector?.querySelector('.wk-workbench-selector-cards');
-  const mikaPanel = el('section', 'tw-mika-panel');
-  const mikaBar = el('header', 'tw-mika-bar');
-  const mikaIntro = el('p', 'tw-mika-intro', t('mika.hello', 'Hi, I’m Mika. How can I help you?'));
-  const mikaClose = createAction({ label: t('mika.close', 'Close'), size: 'compact' });
-  const mikaOpen = createAction({ label: t('mika.open', 'Open Mika'), size: 'compact' });
-  mikaOpen.el.hidden = true;
-  const mikaStage = el('div', 'tw-mika-stage');
-  const mikaLoading = el('div', 'tw-mika-loading');
-  const mikaSpinner = el('span', 'tw-mika-spinner', '人');
-  const mikaLoadingLabel = el('span', 'tw-mika-loading-label', t('mika.starting', 'Starting Mika…'));
-  const mikaPreview = el('span', 'tw-mika-preview', 'Preview only — Mika runtime unavailable.');
-  mikaPreview.hidden = true;
-  mikaSpinner.setAttribute('aria-hidden', 'true');
-  mikaLoading.setAttribute('role', 'status');
-  mikaLoading.setAttribute('aria-live', 'polite');
-  mikaLoading.append(mikaSpinner, mikaLoadingLabel, mikaPreview);
-  const showMikaState = (state, workspace = '') => {
-    const ready = state === 'ready';
-    if (state === 'loading') mikaPreview.hidden = true;
-    mikaLoading.dataset.state = state;
-    mikaLoadingLabel.textContent = ready
-      ? t('mika.ready', 'Mika is ready in {workspace}.', { workspace })
-      : state === 'action_required'
-      ? t('mika.confirmation_needed', 'Mika needs your confirmation')
-      : state === 'refused'
-      ? t('mika.start_refused', 'Mika couldn’t start. Close Help and try again.')
-      : t('mika.starting', 'Starting Mika…');
-    mikaSpinner.hidden = ready || state === 'action_required' || state === 'refused';
-    mikaOpen.el.hidden = state !== 'action_required';
+  const openMika = async () => {
+    if (mikaHelp.el.disabled) return;
+    mikaHelp.el.disabled = true;
+    mikaHelp.el.setAttribute('aria-busy', 'true');
+    try {
+      const result = await readyMika('help');
+      if ((!result.ok || result.data?.state !== 'ready')
+        && !(result.status === 409 && result.data?.state === 'action_required'
+          && result.data?.code === 'provider_confirmation_required')) {
+        toast(t('mika.start_refused', 'Mika couldn’t start. Try again.'), false);
+        return;
+      }
+      await Promise.all([fetchSessions(), refreshTeams()]);
+      extras.add('mika_agent');
+      paint();
+      placeMikaWorkspaceTwo();
+    } catch (_) {
+      toast(t('mika.start_refused', 'Mika couldn’t start. Try again.'), false);
+    } finally {
+      mikaHelp.el.disabled = false;
+      mikaHelp.el.removeAttribute('aria-busy');
+    }
   };
-  const mikaActions = el('span', 'tw-mika-actions');
-  mikaActions.append(mikaOpen.el, mikaClose.el);
-  mikaBar.append(el('b', null, t('mika.name', 'Mika')), mikaActions);
-  mikaPanel.id = 'mika-selector-chat';
-  mikaPanel.setAttribute('aria-label', t('mika.help_region', 'Mika Help'));
-  mikaPanel.hidden = true;
-  mikaStage.append(mikaLoading);
-  mikaPanel.append(mikaBar, mikaIntro, mikaStage);
-  selector?.append(mikaPanel);
-  mikaHelp.el.setAttribute('aria-expanded', 'false');
-  mikaHelp.el.setAttribute('aria-controls', mikaPanel.id);
-
-  let mikaTransition = 0;
-  let mikaSeat = '';
-  const settleMika = (open) => {
-    window.clearTimeout(mikaTransition);
-    mikaTransition = window.setTimeout(() => {
-      if (open) selectorCards.hidden = true;
-      else mikaPanel.hidden = true;
-    }, 180);
-  };
-  const closeMika = () => {
-    if (mikaPanel.hidden) return;
-    // Return the borrowed ordinary Tile to its workspace pool. This detaches the quick
-    // view only; the Tile's own End control remains the sole session-ending action.
-    if (mikaSeat) { seats[mikaSeat].pool.releaseBorrow('mika_agent'); mikaSeat = ''; }
-    if (selectorCards) { selectorCards.hidden = false; selectorCards.inert = false; selectorCards.removeAttribute('aria-hidden'); }
-    mikaPanel.inert = true;
-    mikaPanel.setAttribute('aria-hidden', 'true');
-    selector.dataset.mika = 'closed';
-    settleMika(false);
-    mikaHelp.el.setAttribute('aria-expanded', 'false');
-    mikaHelp.el.focus();
-  };
-  const openMika = () => {
-    if (!mikaPanel.hidden) return closeMika();
-    // Help belongs to the current visible workbench. Mika may be a non-member here, but
-    // the pool already supports ordinary live-session extras; borrow that same Tile
-    // without navigating away or manufacturing a Mika-only viewer.
-    window.clearTimeout(mikaTransition);
-    if (selectorCards) { selectorCards.inert = true; selectorCards.setAttribute('aria-hidden', 'true'); }
-    mikaPanel.hidden = false;
-    mikaPanel.inert = false;
-    mikaPanel.removeAttribute('aria-hidden');
-    showMikaState('loading');
-    // Set the visible state synchronously with the owner's click. A background or
-    // throttled tab may defer requestAnimationFrame indefinitely; Help must still open.
-    void mikaPanel.offsetWidth;
-    selector.dataset.mika = 'open';
-    settleMika(true);
-    mikaHelp.el.setAttribute('aria-expanded', 'true');
-    const label = campaign ? t('campaign.coworks', 'Coworks') : `Team ${readableTeam(team)}`;
-    const context = mikaViewContext(label, view());
-    const seat = bench.selected();
-    void readyMika('help')
-      .then(async (result) => {
-        if (!result.ok || result.data?.state !== 'ready') {
-          if (result.status === 409 && result.data?.state === 'action_required'
-            && result.data?.code === 'provider_confirmation_required') {
-            await Promise.all([fetchSessions(), refreshTeams()]);
-            extras.add('mika_agent');
-            paint();
-            mikaPreview.hidden = result.data?.simulated !== true;
-            return showMikaState('action_required');
-          }
-          return showMikaState('refused');
-        }
-        await Promise.all([fetchSessions(), refreshTeams()]);
-        extras.add('mika_agent');
-        paint(); // membership seats the ordinary session before the selector reveals it
-        const ordinaryHost = seats[seat].pool.borrow('mika_agent');
-        if (!ordinaryHost) return showMikaState('refused');
-        mikaStage.append(ordinaryHost); // move the normal Tile; do not manufacture another
-        mikaSeat = seat;
-        showMikaState('ready', `Workspace ${seat.slice(-1)}`);
-        if (context !== lastMikaContext) void request('/api/mika/send', { method: 'POST', json: { text: context } })
-          .then((sent) => { if (sent.ok) lastMikaContext = context; });
-      })
-      .catch(() => showMikaState('refused'));
-  };
-  mikaHelp.el.addEventListener('click', openMika);
-  mikaOpen.el.addEventListener('click', () => { closeMika(); placeMikaWorkspaceTwo(); });
-  mikaClose.el.addEventListener('click', closeMika);
-  root.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !mikaPanel.hidden) { event.preventDefault(); closeMika(); }
-  });
-  // Visual-review fixture only: the direct staging URL must paint the composition before
-  // the owner touches anything. It never runs on the shipped root and never sends text.
-  const directPreview = location.pathname.startsWith('/staging/')
-    && new URLSearchParams(location.search).get('mika-preview') === 'open';
-  if (directPreview) window.setTimeout(() => {
-    extras.add('mika_agent');
-    syncPools(membersOfTeam(team));
-    const conversation = el('div', 'tw-mika-preview-conversation');
-    conversation.append(
-      el('p', 'tw-mika-preview-message', 'Mika is ready when you need help with Ronin.'),
-      el('p', 'tw-mika-preview-note', 'Visual preview — runtime unavailable.'),
-    );
-    const composer = el('form', 'tw-mika-preview-composer');
-    const input = document.createElement('textarea');
-    input.rows = 2;
-    input.placeholder = 'Ask Mika about Ronin…';
-    input.setAttribute('aria-label', 'Message Mika');
-    const send = document.createElement('button');
-    send.type = 'button';
-    send.textContent = 'Send';
-    composer.append(input, send);
-    mikaStage.replaceChildren(conversation, composer);
-    if (selectorCards) { selectorCards.hidden = true; selectorCards.inert = true; selectorCards.setAttribute('aria-hidden', 'true'); }
-    mikaPanel.hidden = false;
-    mikaPanel.inert = false;
-    mikaPanel.removeAttribute('aria-hidden');
-    selector.dataset.mika = 'open';
-    mikaOpen.el.hidden = false;
-    mikaHelp.el.setAttribute('aria-expanded', 'true');
-  }, 0);
+  mikaHelp.el.addEventListener('click', () => { void openMika(); });
   // A REMEMBERED PLACEMENT OUTLIVES THE SURFACE IT NAMED. `@new` and `@new-team` were
   // the retired board and the seven-field card; a workspace that still remembers one
   // opens its replacement rather than nothing.

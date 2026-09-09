@@ -703,20 +703,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
     finally { mikaStarting = null; }
   };
   app.post('/api/mika/ready', async (req, res) => {
-    if (process.env.RONIN_MIKA_STAGE_FIXTURE === 'action_required') {
-      return res.status(409).json({
-        ok: false,
-        state: 'action_required',
-        action: 'pending_user',
-        code: 'provider_confirmation_required',
-        error: 'Simulated staging state — Mika runtime is unavailable.',
-        already: true,
-        session: 'mika_agent',
-        team: RONIN_HELPERS_TEAM,
-        loader: RONIN_HELPER_LOADER,
-        simulated: true,
-      });
-    }
     const intent = req.body?.intent === 'setup_provider_ready' ? 'setup_provider_ready' : 'help';
     const ready = await ensureMika(intent);
     res.status(ready.ok ? 200 : ready.state === 'starting' ? 202 : 409).json(ready);
