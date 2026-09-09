@@ -75,7 +75,7 @@ independent Agent ── choose what helps ── Team coordination
 | understand the shell, network, and data boundaries | [How Ronin protects your machine and work](docs/how-ronin-protects-you.md) |
 | decide whether I need another machine | [Choose or rent a machine](docs/rent-a-machine.md) |
 | have an Agent install Ronin | [Agent-led installation](docs/install.md) |
-| finish `cowork_setup` and start one working Agent | [Get started](docs/get-started.md) |
+| finish first use in Ronin Setup and start one working Agent | [Get started](docs/get-started.md) |
 | sign in an Agent provider safely | [Provider sign-in](docs/provider-sign-in.md) |
 | find use, troubleshooting, or contributor guidance | [Documentation by question](docs/README.md) |
 
@@ -151,8 +151,8 @@ cd ~/ronin/current && ./setup.sh     # sets everything up on this machine
 ```
 
 Either door reaches the same installed state: `setup.sh` **prints the URL it is serving
-on** and, on a local Linux desktop, opens it. A fresh install enters `cowork_setup`.
-[Get started](docs/get-started.md) continues through the visible form, one provider, and
+on** and, on a local Linux desktop, opens it. A fresh install lands on Ronin Home with
+Ronin Setup open. [Get started](docs/get-started.md) continues through one provider and
 one harmless successful Agent exchange. An installed Agent CLI is not proof that its
 provider is authenticated.
 
