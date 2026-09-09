@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { toRequests } from '../public/js/machine-settings-schema.js';
-import { MACHINE_SETTINGS_SCHEMA } from '../src/machine-settings-schema.js';
+import { getPath, toRequest, toRequests } from '../public/js/machine-settings-schema.js';
+import { MACHINE_SETTINGS_SCHEMA, providerModelFields } from '../src/machine-settings-schema.js';
 
 test('cowork_setup is the live two-stage companion page, not the legacy renderer', async () => {
   const source = await readFile(new URL('../public/js/cowork-setup.js', import.meta.url), 'utf8');
@@ -39,19 +39,46 @@ test('the setup seat names its behaviour and carries no retired launch role', ()
   assert.ok(!('session_role' in MACHINE_SETTINGS_SCHEMA.seat));
 });
 
-test('registry metadata writes the campaign bootstrap without a client field list', () => {
-  const schema = {
-    fields: [
-      { id: 'intent', lands: { family: 'bootstrap', key: 'kind' } },
-      { id: 'model', shape: 'provider-model', lands: { family: 'agents', key: 'sessions.default' }, setup_lands: { family: 'bootstrap', key: 'provider_model' } },
-    ],
-    families: { bootstrap: { route: '/api/machine-settings', method: 'PATCH' }, agents: { route: '/api/machine-settings', method: 'PATCH' } },
-  };
-  const rows = toRequests(schema, { intent: 'coding', model: 'openai\tgpt-5' });
-  assert.deepEqual(rows.find((row) => row.family === 'bootstrap')?.json, {
-    family: 'bootstrap', value: {
-      kind: 'coding', provider_model: { provider: 'openai', model: 'gpt-5' },
-    },
+test('the real registry builds one complete setup request per family', () => {
+  const fields = [...MACHINE_SETTINGS_SCHEMA.fields, ...providerModelFields(['anthropic'])];
+  const schema = { ...MACHINE_SETTINGS_SCHEMA, fields };
+  const values = Object.fromEntries(fields.map((field) => [
+    field.id,
+    field.shape === 'provider-model' ? 'anthropic\tclaude-sonnet-4-5'
+      : field.kind === 'number' ? '3'
+        : field.id === 'routineBundle' ? 'worktrees'
+          : field.id === 'mainIntent' ? 'coding'
+            : `${field.id}-answer`,
+  ]));
+
+  const rows = toRequests(schema, values);
+  const families = fields.map((field) => field.lands.family);
+  assert.equal(rows.length, new Set(families).size);
+  assert.equal(new Set(rows.map((row) => row.family)).size, rows.length);
+  for (const row of rows) {
+    assert.equal(row.route, '/api/machine-settings');
+    assert.equal(row.method, 'PATCH');
+    assert.equal(row.json.family, row.family);
+    assert.notEqual(row.json.value, undefined);
+  }
+  for (const field of fields) {
+    const row = rows.find((candidate) => candidate.family === field.lands.family);
+    assert.notEqual(getPath(row?.json.value, field.lands.key), undefined, field.id);
+    const landingFamilies = new Set([
+      field.lands.family,
+      ...('setup_lands' in field ? [(field.setup_lands as { family: string }).family] : []),
+    ]);
+    assert.equal(landingFamilies.size, 1, `${field.id} lands in more than one family`);
+  }
+});
+
+test('a campaign registry row builds through the standing settings request path', () => {
+  const field = MACHINE_SETTINGS_SCHEMA.fields.find((row) => row.lands.family === 'campaign');
+  assert.ok(field);
+  assert.deepEqual(toRequest(MACHINE_SETTINGS_SCHEMA, field, 'A new campaign'), {
+    route: '/api/machine-settings',
+    method: 'PATCH',
+    json: { family: 'campaign', value: { [field.lands.key]: 'A new campaign' } },
   });
 });
 

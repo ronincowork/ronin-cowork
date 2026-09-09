@@ -37,7 +37,8 @@ PATCH /api/machine-settings   { "family": "machine", "value": { "monitor": true 
 
 PATCH accepts a named family and its typed value. Unknown keys do not replace the
 document. The browser uses `public/js/machine-settings.js`; the setup and standing views
-interpret the schema through `public/js/machine-settings-schema.js`.
+interpret the schema through `public/js/machine-settings-schema.js`; the schema names no
+routes.
 
 Runtime environment variables override server values for the running process. They are
 not written into the document.

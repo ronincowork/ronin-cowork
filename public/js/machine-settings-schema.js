@@ -122,19 +122,19 @@ export function toRequests(schema, values) {
     const v = values[f.id];
     if (v === undefined || omitted(f, v)) continue;
     land(body(f.lands.family), f.lands.key, shaped(f, v));
-    if (f.setup_lands) land(body(f.setup_lands.family), f.setup_lands.key, shaped(f, v));
   }
 
-  return [...byFamily.entries()].map(([fam, json]) => {
-    const route = schema.families[fam];
-    return { family: fam, route: route.route, method: route.method, json: { family: fam, value: json } };
-  });
+  return [...byFamily.entries()].map(([fam, json]) => ({
+    family: fam,
+    route: '/api/machine-settings',
+    method: 'PATCH',
+    json: { family: fam, value: json },
+  }));
 }
 
 /** The request for ONE field's answer — how ⚙ saves a row by itself. */
 export function toRequest(schema, f, v) {
   const json = {};
   land(json, f.lands.key, shaped(f, v));
-  const route = schema.families[f.lands.family];
-  return { route: route.route, method: route.method, json: { family: f.lands.family, value: json } };
+  return { route: '/api/machine-settings', method: 'PATCH', json: { family: f.lands.family, value: json } };
 }

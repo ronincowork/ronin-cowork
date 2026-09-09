@@ -54,13 +54,11 @@ export const MACHINE_SETTINGS_SCHEMA = {
       id: 'campaignName', sec: 'campaign', kind: 'text', ask: false,
       label: 'Campaign name', short: 'campaign name', placeholder: 'Ronin Home',
       from: 'set.campaign.name', lands: { family: 'campaign', key: 'name' }, omit: 'blank',
-      setup_lands: { family: 'bootstrap', key: 'title' },
     },
     {
       id: 'campaignDescription', sec: 'campaign', kind: 'text', ask: false,
       label: 'Description', short: 'campaign description', placeholder: 'What this campaign is for',
       from: 'set.campaign.description', lands: { family: 'campaign', key: 'description' }, omit: 'blank',
-      setup_lands: { family: 'bootstrap', key: 'description' },
     },
     {
       id: 'machineName',
@@ -112,7 +110,6 @@ export const MACHINE_SETTINGS_SCHEMA = {
       seed: 'models:first',
       shape: 'provider-model',
       lands: { family: 'agents', key: 'sessions.default' },
-      setup_lands: { family: 'bootstrap', key: 'provider_model' },
       omit: 'blank',
     },
     {
@@ -126,7 +123,6 @@ export const MACHINE_SETTINGS_SCHEMA = {
       options: 'desk_profiles',
       from: 'set.desk.profile',
       lands: { family: 'desk', key: 'profile' },
-      setup_lands: { family: 'bootstrap', key: 'desk_profile' },
       omit: 'blank',
     },
     {
@@ -160,15 +156,6 @@ export const MACHINE_SETTINGS_SCHEMA = {
       lands: { family: 'session-max', key: 'max' },
     },
   ],
-
-  families: {
-    owner: { method: 'PATCH', route: '/api/machine-settings' },
-    wanted: { method: 'PATCH', route: '/api/machine-settings' },
-    machine: { method: 'PATCH', route: '/api/machine-settings' },
-    agents: { method: 'PATCH', route: '/api/machine-settings' },
-    bootstrap: { method: 'PATCH', route: '/api/machine-settings' },
-    'session-max': { method: 'PATCH', route: '/api/machine-settings' },
-  },
 
   facts: [
     { label: 'this box', path: 'machine.host' },
