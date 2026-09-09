@@ -11,6 +11,7 @@ import { readFile } from 'node:fs/promises';
 class FakeNode {
   constructor(tag = '') { this.tagName = tag.toUpperCase(); this.dataset = {}; this.children = []; this.listeners = {}; this.attributes = {}; this._text = ''; this.disabled = false; this.className = ''; this.hidden = false; }
   append(...nodes) { this.children.push(...nodes.flat().filter(Boolean)); }
+  prepend(...nodes) { this.children.unshift(...nodes.flat().filter(Boolean)); }
   replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
   add(node) { this.append(node); }
   remove() {}

@@ -6129,6 +6129,9 @@ button.wb-door:hover b {
 .setup-provider-stone[data-activated='true'] { border-color: var(--ok-2); }
 .setup-provider-notice { margin: 0; }
 .setup-provider-notice[hidden] { display: none; }
+.setup-mika-availability { display: grid; gap: var(--space-3); margin: var(--space-4); padding: var(--space-4); border: var(--edge) solid var(--kaki); border-radius: var(--radius-xs); background: color-mix(in srgb, var(--kaki) 7%, transparent); color: var(--fg); }
+.setup-mika-availability > strong { color: var(--fg-strong); font-weight: 650; }
+.setup-mika-availability > button { justify-self: start; }
 .setup-provider-dates { margin-top: var(--space-7); color: var(--kiiro); }
 .setup-provider-dates > summary { cursor: pointer; color: var(--kiiro); }
 .setup-provider-date-list { display: grid; gap: var(--space-2); margin: var(--space-4) 0 0; color: var(--fg); }

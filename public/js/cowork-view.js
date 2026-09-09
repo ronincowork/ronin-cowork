@@ -386,7 +386,11 @@ export function createCoworkView(options = {}) {
     mikaPanel.inert = false;
     mikaPanel.removeAttribute('aria-hidden');
     showMikaState('loading');
-    requestAnimationFrame(() => { selector.dataset.mika = 'open'; settleMika(true); });
+    // Set the visible state synchronously with the owner's click. A background or
+    // throttled tab may defer requestAnimationFrame indefinitely; Help must still open.
+    void mikaPanel.offsetWidth;
+    selector.dataset.mika = 'open';
+    settleMika(true);
     mikaHelp.el.setAttribute('aria-expanded', 'true');
     const label = campaign ? t('campaign.coworks', 'Coworks') : `Team ${readableTeam(team)}`;
     const context = mikaViewContext(label, view());
@@ -800,6 +804,14 @@ export function createCoworkView(options = {}) {
       S.connectSession = (name) => connectSession(name);
       if (campaign) void refreshTeams().then(() => renderCards([]));
       else if (team !== loaded) void load(team);
+      if (team === RONIN_HELPERS) {
+        try {
+          if (sessionStorage.getItem('ronin.mika.help.open') === '1') {
+            sessionStorage.removeItem('ronin.mika.help.open');
+            window.setTimeout(() => mikaHelp.el.click(), 0);
+          }
+        } catch (_) {}
+      }
       void readRows();
       window.clearInterval(homeTimer);
       homeTimer = window.setInterval(() => void readRows(), 5000);
