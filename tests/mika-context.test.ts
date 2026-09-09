@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { MIKA_VIEW_TTL_MS, clearMikaViewsForTest, getMikaView, putMikaView, whereIsMika } from '../src/mika-context.js';
+
+test('the source broker is wired to the verified current-generation opener', async () => {
+  const source = await readFile(new URL('../src/mika-context.ts', import.meta.url), 'utf8');
+  assert.match(source, /openMikaSourceAt\(mikaHomeDir\(\), ref\)/);
+  assert.doesNotMatch(source, /mika-source-snapshots/);
+});
 
 test('Mika view reports only the small validated snapshot', () => {
   clearMikaViewsForTest();

@@ -44,7 +44,9 @@ import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentenc
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
-import { ensureMikaHome, MikaUnavailable, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
+import { ensureMikaHome, MikaUnavailable, readMikaStartHere, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
+import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
+import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeDelivered, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../ronin-helper.js';
 
 /** The environment a newborn is handed beyond what the pane inherits: its projected
  *  command PATH with Ronin's own install bin dir behind it, and the operator socket that
@@ -181,7 +183,7 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
   return {
     session_type: 'cowork_agent',
     name: 'mika',
-    tags: ['mika'],
+    tags: [RONIN_HELPERS_TEAM],
     prompt: typeof source.prompt === 'string' ? source.prompt : '',
     ...(selection ? { provider: selection.provider, model: selection.model } : {}),
     launch_mode: 'configured',
@@ -190,10 +192,12 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
 }
 
 export interface LaunchControl {
-  ensureMika(): Promise<{ ok: boolean; already?: boolean; error?: string }>;
+  ensureMika(intent?: 'help' | 'setup_provider_ready'): Promise<{ ok: boolean; state: 'ready' | 'refused'; session: 'mika'; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
 }
 
 export function registerLaunch(app: express.Express): LaunchControl {
+  type MikaReady = Awaited<ReturnType<LaunchControl['ensureMika']>>;
+  let mikaStarting: Promise<MikaReady> | null = null;
   const loadPaneStatus = createActivityCache(async (name: string) => {
     const text = await capturePane(name, 0);
     return {
@@ -254,12 +258,14 @@ export function registerLaunch(app: express.Express): LaunchControl {
     }
   });
 
-  const launch = async (req: express.Request, res: express.Response, houseSeat?: 'mika'): Promise<unknown> => {
+  const launch = async (req: express.Request, res: express.Response, houseSeat?: 'mika', loader?: typeof RONIN_HELPER_LOADER): Promise<unknown> => {
     let mikaSelection: MikaSelection | undefined;
+    let mikaHome = '';
     if (houseSeat === 'mika') {
       if (await sessionExists('mika')) return res.json({ ok: true, name: 'mika', already: true });
       try {
-        await ensureMikaHome();
+        mikaHome = await ensureMikaHome();
+        if (loader === RONIN_HELPER_LOADER) await ensureRoninHelpersTeam();
         mikaSelection = await resolveConfiguredMikaModel();
       } catch (error) {
         if (error instanceof MikaUnavailable) {
@@ -363,8 +369,27 @@ export function registerLaunch(app: express.Express): LaunchControl {
       birthKey = `${resolved.name}-${Date.now()}`;
       birthDir = sessionRecordDir(birthKey);
       try {
-        const sources = [...resolved.birth_reading];
-        const readme = await compileBirthReadmeAt(birthDir, sources, resolved.name, isShelfTeaching);
+        // Mika's generated index replaces the ordinary startup shelf: it is the complete,
+        // bounded map of her admitted knowledge, and keeping both exceeds one-read birth.
+        const resolvedSources = [...resolved.birth_reading];
+        const sources = houseSeat === 'mika' ? [] : resolvedSources;
+        let mikaKnowledgeIndex = '';
+        if (houseSeat === 'mika') {
+          // A cold Mika launch publishes exactly one verified knowledge generation. The
+          // returned index is the only generation path handed into birth; later source
+          // opens resolve through mika-knowledge-current rather than caching this path.
+          const previousSentence = `Read first: ${resolvedSources.join(', ')}.`;
+          const knowledge = await compileMikaKnowledgeAt(mikaHome);
+          mikaKnowledgeIndex = knowledge.index;
+          sources.unshift(mikaKnowledgeIndex);
+          resolved.brief = resolved.brief.replace(previousSentence, `Read first: ${sources.join(', ')}.`);
+        }
+        const readme = await compileBirthReadmeAt(
+          birthDir,
+          sources,
+          resolved.name,
+          (file) => file === mikaKnowledgeIndex || isShelfTeaching(file),
+        );
         const sourceSentence = `Read first: ${sources.join(', ')}.`;
         if (!resolved.brief.includes(sourceSentence)) {
           await rm(birthDir, { recursive: true, force: true });
@@ -526,7 +551,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         provider_notice: mikaSelection.provider_notice,
         available_levels: mikaSelection.available_levels,
       } : undefined;
-      res.json({ ok: true, name: resolved.name, receipt, ...(modelSelection ? { model_selection: modelSelection } : {}) });
+      res.json({ ok: true, name: resolved.name, conversation: birthKey, receipt, ...(modelSelection ? { model_selection: modelSelection } : {}) });
     }
     void appendLaunchLedger(form, resolved, true);
     void (async () => {
@@ -547,7 +572,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
   };
   const launchJob: express.RequestHandler = (req, res) => launch(req, res);
   app.post('/api/launch', launchJob);
-  app.post('/api/mika', (req, res) => launch(req, res, 'mika'));
+  app.post('/api/mika', (req, res) => launch(req, res, 'mika', RONIN_HELPER_LOADER));
 
   app.get('/api/sessions', async (_req, res) => {
     try {
@@ -618,19 +643,46 @@ export function registerLaunch(app: express.Express): LaunchControl {
       send(body && typeof body === 'object' && (body as { ok?: boolean }).ok ? { ...body, team_from: teamFrom } : body);
     return launchJob(req, res, next);
   });
-  return {
-    ensureMika: async () => {
-      if (await sessionExists('mika')) return { ok: true, already: true };
+  const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help'): Promise<MikaReady> => {
+    const metadata = { session: 'mika' as const, team: RONIN_HELPERS_TEAM, loader: RONIN_HELPER_LOADER };
+    if (await sessionExists('mika')) return { ok: true, state: 'ready', already: true, ...metadata };
+    if (mikaStarting) return mikaStarting;
+    mikaStarting = (async () => {
+      const welcome = intent === 'setup_provider_ready' && !(await roninHelperWelcomeDelivered());
+      let prompt = '';
+      if (welcome) {
+        await ensureMikaHome();
+        prompt = await readMikaStartHere();
+      }
       let status = 200;
       let body: Record<string, unknown> = {};
       const response = {
         status(code: number) { status = code; return this; },
         json(value: unknown) { body = value && typeof value === 'object' ? value as Record<string, unknown> : {}; return value; },
       } as unknown as express.Response;
-      await launch({ body: { prompt: '' } } as express.Request, response, 'mika');
+      await launch({ body: { prompt } } as express.Request, response, 'mika', RONIN_HELPER_LOADER);
+      if (status < 400 && body.ok === true && welcome) await recordRoninHelperWelcome(String(body.conversation ?? 'mika'));
       return status < 400 && body.ok === true
-        ? { ok: true, already: body.already === true }
-        : { ok: false, error: String(body.error ?? `HTTP ${status}`) };
-    },
+        ? { ok: true, state: 'ready' as const, already: body.already === true, welcome_delivered: welcome, ...metadata }
+        : {
+            ok: false,
+            state: 'refused' as const,
+            error: typeof body.code === 'string' && body.code.startsWith('mika_')
+              ? String(body.error ?? 'Mika is unavailable at the selected model level.')
+              : 'Mika could not start. Check Mika under Configuration, then try again.',
+            ...(typeof body.code === 'string' ? { code: body.code } : {}),
+            ...(Array.isArray(body.available_levels) ? { available_levels: body.available_levels } : {}),
+            ...metadata,
+          };
+    })();
+    const starting = mikaStarting;
+    try { return await starting; }
+    finally { mikaStarting = null; }
   };
+  app.post('/api/mika/ready', async (req, res) => {
+    const intent = req.body?.intent === 'setup_provider_ready' ? 'setup_provider_ready' : 'help';
+    const ready = await ensureMika(intent);
+    res.status(ready.ok ? 200 : 409).json(ready);
+  });
+  return { ensureMika };
 }

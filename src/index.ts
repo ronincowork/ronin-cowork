@@ -215,7 +215,7 @@ app.get('/api/health', (_req, res) =>
 );
 
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
-const launchControl = registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
+registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
 registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped wheres_waldo/show seam
 registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/provider-catalog, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
@@ -432,12 +432,9 @@ server.listen(config.port, config.bind, async () => {
     `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
   );
   console.log(`[tmux-ronin] browser sockets accepted from: ${allowedOrigins().join(', ')}`);
-  // Mika is an ordinary detached singleton, born after provider readiness is recorded.
-  // Operator restarts find the existing session; a failed private-home/model check is loud
-  // and leaves no partially launched helper.
+  // House helpers are request-loaded ordinary sessions. Ending one truly ends it; the
+  // next Help request enters the ronin_helper loader and starts a fresh conversation.
   await campaignStart;
-  const mika = await launchControl.ensureMika().catch((error) => ({ ok: false, error: String((error as Error)?.message ?? error) }));
-  if (!mika.ok) console.error(`[mika] startup refused: ${mika.error}`);
 });
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {

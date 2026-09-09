@@ -1,5 +1,6 @@
-import { chmod, lstat, mkdir, realpath, stat } from 'node:fs/promises';
-import { storeDir } from './resources.js';
+import { chmod, lstat, mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { REPO_ROOT, storeDir } from './resources.js';
 import { TIERS, listSessionLaunchSpecs, type ProviderSummary, type SessionLaunchSpec, type Tier } from './model-providers.js';
 import { readProviderSummary } from './provider-summary.js';
 import { readAgentsSection } from './machine-state.js';
@@ -110,6 +111,8 @@ export async function resolveConfiguredMikaModel(): Promise<MikaSelection> {
 }
 
 export const mikaHomeDir = (): string => storeDir('mika_home');
+export const mikaStartHereSource = (): string => path.join(REPO_ROOT, 'ronin_session_boot', 'house', 'mika', 'START_HERE.md');
+export const mikaStartHerePath = (): string => path.join(mikaHomeDir(), 'START_HERE.md');
 
 /** Create once, then fail closed on links, ownership, permissions, or path substitution. */
 export async function ensureMikaHome(): Promise<string> {
@@ -122,5 +125,21 @@ export async function ensureMikaHome(): Promise<string> {
   if (resolved !== dir) throw new Error(`Mika home resolves somewhere else: ${dir} -> ${resolved}`);
   if (typeof process.getuid === 'function' && info.uid !== process.getuid()) throw new Error(`Mika home is owned by another account: ${dir}`);
   if ((info.mode & 0o777) !== 0o700) throw new Error(`Mika home permissions are not 0700: ${dir}`);
+  const stock = await readFile(mikaStartHereSource(), 'utf8');
+  const target = mikaStartHerePath();
+  try {
+    const present = await readFile(target, 'utf8');
+    if (present !== stock) throw new Error(`Mika starter is corrupt: ${target}`);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    await writeFile(target, stock, { encoding: 'utf8', mode: 0o444, flag: 'wx' });
+  }
+  await chmod(target, 0o444);
   return dir;
+}
+
+export async function readMikaStartHere(): Promise<string> {
+  const text = await readFile(mikaStartHerePath(), 'utf8');
+  if (text !== await readFile(mikaStartHereSource(), 'utf8')) throw new Error(`Mika starter is corrupt: ${mikaStartHerePath()}`);
+  return text;
 }

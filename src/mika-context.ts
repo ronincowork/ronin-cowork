@@ -1,5 +1,7 @@
 import type express from 'express';
 import { broadcastEvent } from './ws/events.js';
+import { openMikaSourceAt } from './mika-knowledge.js';
+import { mikaHomeDir } from './mika-runtime.js';
 
 export const MIKA_VIEW_TTL_MS = 30_000;
 const TAB_RE = /^[A-Za-z0-9_-]{8,64}$/;
@@ -64,6 +66,16 @@ export function whereIsMika(tab: string, now = Date.now()): string | null {
 }
 
 export function registerMikaContext(app: express.Express): void {
+  app.post('/api/mika/source', async (req, res) => {
+    const ref = typeof req.body?.ref === 'string' ? req.body.ref : '';
+    try {
+      // The broker accepts the opaque public reference only. The knowledge module
+      // resolves the live generation and verifies index, manifest and snapshot hashes.
+      res.json({ ok: true, source: await openMikaSourceAt(mikaHomeDir(), ref) });
+    } catch (error) {
+      res.status(404).json({ error: String((error as Error)?.message ?? error) });
+    }
+  });
   app.put('/api/mika/context/:tab', (req, res) => {
     const view = putMikaView(req.params.tab, req.body?.view);
     if (!view) return res.status(400).json({ error: 'Invalid Mika view snapshot.' });
