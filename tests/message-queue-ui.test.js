@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 globalThis.window = {};
-const { dismissalIds, forceableIds, reconcileMessageSelection } = await import(`../public/js/message-queue.js?ui=${Date.now()}`);
+const { attentionIds, dismissalIds, forceableIds, reconcileMessageSelection } = await import(`../public/js/message-queue.js?ui=${Date.now()}`);
 
 test('queue bulk UI derives exact IDs from the displayed snapshot', () => {
   const messages = [{ id: 'a', source: 'tell' }, { id: 'b', source: 'wipeboard_notice' }];
@@ -23,4 +23,14 @@ test('bulk force acts on the chosen cards only, and never on a missing target', 
   const selected = new Set(['tell', 'gone', 'owner', 'new-unread']);
   assert.deepEqual(forceableIds(displayed, selected), ['tell', 'owner']);
   assert.deepEqual(forceableIds(displayed, new Set()), []);
+});
+
+test('only a message the auto-force already tried and that is still retained earns a flash', () => {
+  const displayed = [
+    { id: 'fresh', state: 'stuck' },
+    { id: 'failed-by-hand', state: 'failed' },
+    { id: 'gone', state: 'target_missing', auto_forced_at: '2026-09-09T10:00:00.000Z' },
+    { id: 'forced-and-stuck', state: 'failed', auto_forced_at: '2026-09-09T10:00:00.000Z' },
+  ];
+  assert.deepEqual(attentionIds(displayed), ['forced-and-stuck']);
 });
