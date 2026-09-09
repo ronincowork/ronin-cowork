@@ -375,7 +375,9 @@ export function buildRoster(tile, host, options = {}) {
       };
       const ordered = partitionRosterGroups(groups);
       for (const g of ordered.ordinary) appendGroup(g);
-      const loose = data.filter((s) => !(s.tags || []).length);
+      // A stale tag without a real Team record is an orphaned membership, not a Team.
+      // Keep that session reachable under no team so the roster never hides it.
+      const loose = data.filter((s) => !groups.some((g) => (s.tags || []).map(teamTag).includes(teamTag(g))));
       if (loose.length) {
         const block = document.createElement('div');
         block.className = 'home-group';

@@ -10,8 +10,7 @@ export const partitionRosterGroups = (groups = []) => ({
   helper: groups.includes(RONIN_HELPERS) ? RONIN_HELPERS : '',
 });
 
-/** Durable empty Teams are drop targets too; membership alone cannot discover them. */
-export const rosterGroups = (sessions = [], offered = []) => [...new Set([
-  ...sessions.flatMap((s) => (s.tags || []).map(teamDisplay)),
-  ...(Array.isArray(offered) ? offered.map(teamDisplay) : []),
-].filter(Boolean))].sort(helpersLast);
+/** Only real Team records are groups; a stale session tag must not synthesize one. */
+export const rosterGroups = (_sessions = [], offered = []) => [...new Set(
+  (Array.isArray(offered) ? offered.map(teamDisplay) : []).filter(Boolean),
+)].sort(helpersLast);
