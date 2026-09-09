@@ -374,13 +374,9 @@ export function createCoworkView(options = {}) {
   };
   const openMika = () => {
     if (!mikaPanel.hidden) return closeMika();
-    // Mika is an ordinary member of the reserved Team. Move there first so the one Tile
-    // Help opens is the same Tile her roster card and Docs use — never a second viewer.
-    if (!campaign && team !== RONIN_HELPERS) {
-      try { sessionStorage.setItem('ronin.mika.help.open', '1'); } catch (_) {}
-      location.hash = `#/team/${encodeURIComponent(RONIN_HELPERS)}`;
-      return;
-    }
+    // Help belongs to the current visible workbench. Mika may be a non-member here, but
+    // the pool already supports ordinary live-session extras; borrow that same Tile
+    // without navigating away or manufacturing a Mika-only viewer.
     window.clearTimeout(mikaTransition);
     if (selectorCards) { selectorCards.inert = true; selectorCards.setAttribute('aria-hidden', 'true'); }
     mikaPanel.hidden = false;
@@ -397,12 +393,15 @@ export function createCoworkView(options = {}) {
         if (!result.ok || result.data?.state !== 'ready') {
           if (result.status === 409 && result.data?.state === 'action_required'
             && result.data?.code === 'provider_confirmation_required') {
-            await Promise.all([fetchSessions(), refreshTeams()]); paint();
+            await Promise.all([fetchSessions(), refreshTeams()]);
+            extras.add('mika');
+            paint();
             return showMikaState('action_required');
           }
           return showMikaState('refused');
         }
         await Promise.all([fetchSessions(), refreshTeams()]);
+        extras.add('mika');
         paint(); // membership seats the ordinary session before the selector reveals it
         const ordinaryHost = seats[seat].pool.borrow('mika');
         if (!ordinaryHost) return showMikaState('refused');
@@ -797,14 +796,6 @@ export function createCoworkView(options = {}) {
       S.connectSession = (name) => connectSession(name);
       if (campaign) void refreshTeams().then(() => renderCards([]));
       else if (team !== loaded) void load(team);
-      if (team === RONIN_HELPERS) {
-        try {
-          if (sessionStorage.getItem('ronin.mika.help.open') === '1') {
-            sessionStorage.removeItem('ronin.mika.help.open');
-            requestAnimationFrame(() => mikaHelp.el.click());
-          }
-        } catch (_) {}
-      }
       void readRows();
       window.clearInterval(homeTimer);
       homeTimer = window.setInterval(() => void readRows(), 5000);
