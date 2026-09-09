@@ -1,6 +1,7 @@
 /* The one browser-side Team projection and refresh controller. */
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
+import { teamTag } from './roster-groups.js';
 import { S } from './state.js';
 
 export const UNASSIGNED = ' unassigned';
@@ -60,7 +61,12 @@ export async function setTeamLead(session, team, lead) {
 export function sessionsAvailableToTeam(team) {
   return sessions().filter((session) => !sessionBelongsToTeam(session, team)).sort(blankLast('session_role'));
 }
-export const sessionBelongsToTeam = (session, team) => (session.tags || []).includes(team);
+export const sessionBelongsToTeam = (session, team) => {
+  const tags = session.tags || [];
+  // Ordinary tmux tags use the house-normalized spelling; the reserved durable Team keeps
+  // its explicit display identity. This is the one adapter between those existing stores.
+  return tags.includes(teamTag(team));
+};
 export const leadsTeam = (session, team) => (session.leads || []).includes(team);
 export function unassignedSessions() {
   const valid = new Set(rosters.filter((team) => team.state !== 'archived').map((team) => team.name));

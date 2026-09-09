@@ -282,17 +282,19 @@ export function createCoworkView(options = {}) {
       const reading = readingsOf(member);
       const mika = team === RONIN_HELPERS && member.name === 'mika';
       return { key: member.name, label: agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null,
-        ...(mika ? { action: () => {
-          const held = holds('workspace2');
-          if (held && !(held === 'mika' || (held === 'session' && seats.workspace2.pool.active === 'mika'))) {
-            toast(t('mika.workspace_two_busy', 'Workspace 2 is in use. Move or close that work before opening Mika.'), false);
-            return false;
-          }
-          return putSession('mika', 'workspace2');
-        } } : {}),
+        ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
         onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
-    teams: () => campaign ? [...teamsFromState().filter((candidate) => !candidate.holding).sort((a, b) => helpersLast(a.name, b.name)), { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' }].map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' })) : [],
+    teams: () => campaign ? (() => {
+      const teams = teamsFromState().filter((candidate) => !candidate.holding);
+      const helper = teams.find((candidate) => candidate.name === RONIN_HELPERS);
+      const ordered = [
+        ...teams.filter((candidate) => candidate.name !== RONIN_HELPERS).sort((a, b) => helpersLast(a.name, b.name)),
+        { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' },
+        ...(helper ? [helper] : []),
+      ];
+      return ordered.map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' }));
+    })() : [],
   };
   bench = WorkspaceKit.workbench.create({
     profile: campaign ? WB_PROFILES.cowork : WB_PROFILES.team,
@@ -313,6 +315,8 @@ export function createCoworkView(options = {}) {
   const mikaBar = el('header', 'tw-mika-bar');
   const mikaIntro = el('p', 'tw-mika-intro', t('mika.hello', 'Hi, I’m Mika. How can I help you?'));
   const mikaClose = createAction({ label: t('mika.close', 'Close'), size: 'compact' });
+  const mikaOpen = createAction({ label: t('mika.open', 'Open Mika'), size: 'compact' });
+  mikaOpen.el.hidden = true;
   const mikaStage = el('div', 'tw-mika-stage');
   const mikaLoading = el('div', 'tw-mika-loading');
   const mikaSpinner = el('span', 'tw-mika-spinner', '人');
@@ -326,12 +330,17 @@ export function createCoworkView(options = {}) {
     mikaLoading.dataset.state = state;
     mikaLoadingLabel.textContent = ready
       ? t('mika.ready', 'Mika is ready in {workspace}.', { workspace })
+      : state === 'action_required'
+      ? t('mika.confirmation_needed', 'Mika needs your confirmation')
       : state === 'refused'
       ? t('mika.start_refused', 'Mika couldn’t start. Close Help and try again.')
       : t('mika.starting', 'Starting Mika…');
-    mikaSpinner.hidden = ready;
+    mikaSpinner.hidden = ready || state === 'action_required' || state === 'refused';
+    mikaOpen.el.hidden = state !== 'action_required';
   };
-  mikaBar.append(el('b', null, t('mika.name', 'Mika')), mikaClose.el);
+  const mikaActions = el('span', 'tw-mika-actions');
+  mikaActions.append(mikaOpen.el, mikaClose.el);
+  mikaBar.append(el('b', null, t('mika.name', 'Mika')), mikaActions);
   mikaPanel.id = 'mika-selector-chat';
   mikaPanel.setAttribute('aria-label', t('mika.help_region', 'Mika Help'));
   mikaPanel.hidden = true;
@@ -385,7 +394,14 @@ export function createCoworkView(options = {}) {
     const seat = bench.selected();
     void readyMika('help')
       .then(async (result) => {
-        if (!result.ok || result.data?.state !== 'ready') return showMikaState('refused');
+        if (!result.ok || result.data?.state !== 'ready') {
+          if (result.status === 409 && result.data?.state === 'action_required'
+            && result.data?.code === 'provider_confirmation_required') {
+            await Promise.all([fetchSessions(), refreshTeams()]); paint();
+            return showMikaState('action_required');
+          }
+          return showMikaState('refused');
+        }
         await Promise.all([fetchSessions(), refreshTeams()]);
         paint(); // membership seats the ordinary session before the selector reveals it
         const ordinaryHost = seats[seat].pool.borrow('mika');
@@ -399,6 +415,7 @@ export function createCoworkView(options = {}) {
       .catch(() => showMikaState('refused'));
   };
   mikaHelp.el.addEventListener('click', openMika);
+  mikaOpen.el.addEventListener('click', () => { closeMika(); placeMikaWorkspaceTwo(); });
   mikaClose.el.addEventListener('click', closeMika);
   root.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !mikaPanel.hidden) { event.preventDefault(); closeMika(); }
@@ -473,6 +490,14 @@ export function createCoworkView(options = {}) {
     remember();
     return true;
   };
+  function placeMikaWorkspaceTwo() {
+    const held = holds('workspace2');
+    if (held && !(held === 'mika' || (held === 'session' && seats.workspace2.pool.active === 'mika'))) {
+      toast(t('mika.workspace_two_busy', 'Workspace 2 is in use. Move or close that work before opening Mika.'), false);
+      return false;
+    }
+    return putSession('mika', 'workspace2');
+  }
 
   /* ---------- one controller, two callers ---------- */
   // Everything that changes this page goes through arrange(): the C/T buttons and the

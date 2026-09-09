@@ -33,7 +33,7 @@ export interface TeamRoster {
 
 const dir = () => storeDir('team_rosters');
 
-export const isValidTeamName = (s: string): boolean => s === 'RONIN_HELPERS' || /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
+export const isValidTeamName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
 export const isReservedTeamName = (s: string): boolean => s === 'unassigned';
 export const isCreatableTeamName = (s: string): boolean => isValidTeamName(s) && !isReservedTeamName(s);
 

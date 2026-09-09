@@ -5,7 +5,7 @@ import { mikaHomeDir } from './mika-runtime.js';
 
 /** Generic loader variation for house helpers. Mika is its first profile; Koshi is out of scope. */
 export const RONIN_HELPER_LOADER = 'ronin_helper' as const;
-export const RONIN_HELPERS_TEAM = 'RONIN_HELPERS' as const;
+export const RONIN_HELPERS_TEAM = 'ronin_helpers' as const;
 
 export async function ensureRoninHelpersTeam(): Promise<TeamRoster> {
   const existing = await readTeamRoster(RONIN_HELPERS_TEAM, '');

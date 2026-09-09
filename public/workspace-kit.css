@@ -62,6 +62,7 @@
   .wk-workbench-selector[data-mika='open'] .wk-workbench-selector-cards { opacity: 0; transform: translateY(calc(-1 * var(--space-3))); pointer-events: none; }
   .wk-workbench-selector[data-mika='open'] .tw-mika-panel { opacity: 1; transform: translateY(0); }
   .tw-mika-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); }
+  .tw-mika-actions { display: flex; align-items: center; gap: var(--space-2); }
   .tw-mika-intro { margin: 0; padding: var(--space-4); color: var(--fg); }
   .tw-mika-stage { display: grid; flex: 1 1 auto; min-height: 0; }
   .tw-mika-stage > * { grid-area: 1 / 1; min-width: 0; min-height: 0; }

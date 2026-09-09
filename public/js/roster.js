@@ -18,7 +18,7 @@ import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
 import { t } from './lexicon.js';
 import { deskLabel, deskReadout, deskTip, desksOf, refreshDesks } from './desks.js';
-import { rosterGroups } from './roster-groups.js';
+import { partitionRosterGroups, rosterGroups, teamTag } from './roster-groups.js';
 
 /**
  * @param {object} tile  rows connect into this tile
@@ -365,14 +365,16 @@ export function buildRoster(tile, host, options = {}) {
           render();
         });
       };
-      for (const g of groups) {
-        const mem = data.filter((s) => (s.tags || []).includes(g));
+      const appendGroup = (g) => {
+        const mem = data.filter((s) => (s.tags || []).includes(teamTag(g)));
         const block = document.createElement('div');
         block.className = 'home-group';
         list.appendChild(block);
         heading(g, mem.length, block);
         for (const s of mem) block.appendChild(rowFor(s));
-      }
+      };
+      const ordered = partitionRosterGroups(groups);
+      for (const g of ordered.ordinary) appendGroup(g);
       const loose = data.filter((s) => !(s.tags || []).length);
       if (loose.length) {
         const block = document.createElement('div');
@@ -381,6 +383,9 @@ export function buildRoster(tile, host, options = {}) {
         heading(t('roster.no_team', 'no team'), loose.length, block, false);
         for (const s of loose) block.appendChild(rowFor(s));
       }
+      // The helper Team follows even the no-team block in DOM order, so visual order,
+      // keyboard traversal and screen-reader reading order agree on what "last" means.
+      if (ordered.helper) appendGroup(ordered.helper);
     }
     if (!data.length) {
       list.appendChild(Object.assign(document.createElement('span'), { className: 'home-empty', textContent: t('roster.no_sessions', 'no sessions yet') }));

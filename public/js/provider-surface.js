@@ -388,7 +388,7 @@ export function createProviderSurface(context) {
       const ready = await readyMika('setup_provider_ready');
       if (ready.ok && ready.data?.state === 'ready' && ready.data?.welcome_delivered === true) {
         try { sessionStorage.setItem('ronin.mika.help.open', '1'); } catch (_) {}
-        location.hash = '#/team/RONIN_HELPERS';
+        location.hash = '#/team/ronin_helpers';
       } else if (ready.ok && ready.data?.state === 'ready') {
         mikaAvailability.textContent = activatedNow === 1
           ? t('setup_surface.one_model_signed_in', '1 model signed in')
