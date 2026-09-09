@@ -21,3 +21,6 @@ her next birth, and it is on her Docs list, so it opens from her tile.
 - **"Where is the document the agent was working on?"** Look at the agent's own Docs
   (メ → 📄 on its tile) first, then the team's Docs tab in Team commons, which lists what
   every member registered plus the plans and docs by project root.
+- **"How do I make an agent the team lead?"** Team commons → Team Configuration, then
+  **Make Lead** on that member's row. Also on the team's profile from the Coworks page, and
+  as the **Make Team Lead** checkbox when adding a team member. Never from a tile.

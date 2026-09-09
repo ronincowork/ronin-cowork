@@ -19,7 +19,7 @@ mechanical rather than a matter of taste:
 
 | | |
 |---|---|
-| **ミ Help** in the selector header of every workbench | Mika takes over the selector column: the header reads *Mika, your helpful assistant* with **Close** where Help was, the cards step aside, and only her conversation's text shows — no tile head, composer or greeting. Close puts the cards and the roster's title back. She is started if she is not up |
+| **ミ Help** in the selector header of every workbench | Mika takes over the selector column: the header reads *Mika, your helpful assistant* with **Close** where Help was, the cards step aside, and only her conversation's text shows — no tile head, composer or greeting. Close puts the cards and the roster's title back. **Drag that header** onto a workspace and she moves there as her ordinary tile while the column becomes a selector again. She is started if she is not up |
 | **Mika** card on Ronin Setup | the same session as a normal tile in Workspace 2 — it appears as soon as the first model provider is signed in |
 | **＋ include** on the ▣ Roots tab | hands her the include job in the same tile. It is no longer a form |
 | `+system_help: how do dials work?` typed anywhere | `ronin_bin/mika` routes it to her, wherever you typed it |

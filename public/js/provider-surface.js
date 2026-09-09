@@ -410,6 +410,9 @@ export function createProviderSurface(context) {
     disposeMount();
     context.environment.setupRuntime = runtime;
     const activatedNow = Number(runtime.activated_count || 0);
+    if (context.workbench?.profile === 'setup') for (const slot of ['workspace1', 'selector'])
+      if ((activatedNow === 0) !== context.workbench.arrangement.state().hidden.includes(slot))
+        context.workbench.arrangement.toggle(slot);
     mikaAvailability.textContent = activatedNow === 0
       ? t('setup_surface.mika_waits', 'Mika becomes available after you install and sign in to a model provider. Registration, Ronin Services, and gbrain are optional next steps.')
       : activatedNow === 1 ? t('setup_surface.one_model_signed_in', '1 model signed in')
