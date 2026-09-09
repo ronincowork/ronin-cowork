@@ -25,12 +25,11 @@ test('bulk force acts on the chosen cards only, and never on a missing target', 
   assert.deepEqual(forceableIds(displayed, new Set()), []);
 });
 
-test('only a message the auto-force already tried and that is still retained earns a flash', () => {
+test('the flash fires once per auto-forced message, and never for an un-forced one', () => {
   const displayed = [
     { id: 'fresh', state: 'stuck' },
     { id: 'failed-by-hand', state: 'failed' },
-    { id: 'force-in-flight', state: 'stuck', auto_forced_at: '2026-09-09T10:00:00.000Z' },
-    { id: 'forced-and-failed', state: 'failed', auto_forced_at: '2026-09-09T10:00:00.000Z', auto_force_failed_at: '2026-09-09T10:00:09.000Z' },
+    { id: 'auto-forced', state: 'failed', auto_forced_at: '2026-09-09T10:00:00.000Z' },
   ];
-  assert.deepEqual(attentionIds(displayed), ['forced-and-failed']);
+  assert.deepEqual(attentionIds(displayed), ['auto-forced']);
 });

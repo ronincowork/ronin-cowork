@@ -38,11 +38,11 @@ function reasonOf(reason) {
 
 const attentionSeen = new Set();
 
-/** The only thing worth a flash: a message whose two-minute auto-force has FINISHED and did
- *  not land, so there is a card to see. A force still in flight, a new arrival, a Waiting
- *  card, a missing target — none of these interrupt the owner. */
+/** One heads-up when a message is auto-forced after the delay. Not a claim that anything
+ *  is still stuck: the queue may already be empty, which is fine. A new arrival, a Waiting
+ *  card, or a missing target never flashes. */
 export const attentionIds = (messages) => messages
-  .filter((message) => message.auto_force_failed_at)
+  .filter((message) => message.auto_forced_at)
   .map((message) => message.id);
 
 export const reconcileMessageSelection = (selected, messages) => new Set(
@@ -68,7 +68,7 @@ export function watchMessageQueueAttention() {
       const body = await response.json();
       const ids = new Set(attentionIds(Array.isArray(body.messages) ? body.messages : []));
       if ([...ids].some((id) => !attentionSeen.has(id))) {
-        attention(t('messages.attention', 'A message was forced after 2 min and still did not land — Team Commons → Messages'));
+        attention(t('messages.attention', 'A message failed to send and was auto-forced after 2 minutes.'));
       }
       for (const id of [...attentionSeen]) if (!ids.has(id)) attentionSeen.delete(id);
       for (const id of ids) attentionSeen.add(id);

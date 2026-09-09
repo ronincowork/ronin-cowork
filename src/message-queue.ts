@@ -23,10 +23,8 @@ export interface QueuedMessage {
   created_at: string;
   updated_at: string;
   expires_at: string;
-  /** Set once when the queue force-delivers the message on the owner's standing auto-force setting. */
+  /** Set once when the queue auto-forces the message on the owner's standing setting. */
   auto_forced_at?: string;
-  /** Set when that auto-force finished without delivering — the one thing worth a flash. */
-  auto_force_failed_at?: string;
 }
 
 const DIR = storeDir('message_queue');
@@ -269,7 +267,7 @@ const autoForceDue = (item: QueuedMessage, afterMs: number, now: number): boolea
   && (item.state === 'stuck' || item.state === 'failed')
   && now - Date.parse(item.created_at) >= afterMs;
 
-async function stamp(id: string, field: 'auto_forced_at' | 'auto_force_failed_at', at: string): Promise<boolean> {
+async function stamp(id: string, field: 'auto_forced_at', at: string): Promise<boolean> {
   try {
     const item = JSON.parse(await fs.readFile(file(id), 'utf8')) as QueuedMessage;
     item[field] = at;
@@ -288,12 +286,8 @@ export async function processMessageQueue(options: SweepOptions = {}): Promise<v
   const afterMs = options.autoForceAfterMs ?? await readAutoForceAfterMs();
   for (const item of await listQueuedMessages(now)) {
     if (autoForceDue(item, afterMs, now)) {
-      const at = new Date(now).toISOString();
-      if (!await stamp(item.id, 'auto_forced_at', at)) continue;
-      const retained = await attemptMessage(item.id, 'force', options.delivery);
-      // Only a force that finished and did not land is worth interrupting the owner for;
-      // the stamp above is set before the force, so the client never flashes mid-attempt.
-      if (retained) await stamp(item.id, 'auto_force_failed_at', new Date().toISOString());
+      // Stamp before the force so the one heads-up fires once, whether or not it lands.
+      if (await stamp(item.id, 'auto_forced_at', new Date(now).toISOString())) await attemptMessage(item.id, 'force', options.delivery);
       continue;
     }
     if (item.state !== 'failed' && item.state !== 'target_missing') await attemptMessage(item.id, 'safe', options.delivery);

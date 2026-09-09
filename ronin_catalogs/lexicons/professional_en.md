@@ -1307,7 +1307,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.dismissed_count:** {count} message(s) dismissed.
 - **messages.retained:** Still waiting — {reason}
 - **messages.action_failed:** Message action failed — {reason}
-- **messages.attention:** A message was forced after 2 min and still did not land — Team Commons → Messages
+- **messages.attention:** A message failed to send and was auto-forced after 2 minutes.
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update
