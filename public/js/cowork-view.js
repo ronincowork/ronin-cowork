@@ -31,6 +31,8 @@ import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from '.
 import { mikaViewContext } from './mika-context.js';
 import { fetchSessions } from './api.js';
 import { helpersLast, RONIN_HELPERS } from './roster-groups.js';
+import { toast } from './ui.js';
+import { readyMika } from './mika-ready.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -278,7 +280,17 @@ export function createCoworkView(options = {}) {
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
       const reading = readingsOf(member);
-      return { key: member.name, label: agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null, onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
+      const mika = team === RONIN_HELPERS && member.name === 'mika';
+      return { key: member.name, label: agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null,
+        ...(mika ? { action: () => {
+          const held = holds('workspace2');
+          if (held && !(held === 'mika' || (held === 'session' && seats.workspace2.pool.active === 'mika'))) {
+            toast(t('mika.workspace_two_busy', 'Workspace 2 is in use. Move or close that work before opening Mika.'), false);
+            return false;
+          }
+          return putSession('mika', 'workspace2');
+        } } : {}),
+        onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
     teams: () => campaign ? [...teamsFromState().filter((candidate) => !candidate.holding).sort((a, b) => helpersLast(a.name, b.name)), { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' }].map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' })) : [],
   };
@@ -330,6 +342,7 @@ export function createCoworkView(options = {}) {
   mikaHelp.el.setAttribute('aria-controls', mikaPanel.id);
 
   let mikaTransition = 0;
+  let mikaSeat = '';
   const settleMika = (open) => {
     window.clearTimeout(mikaTransition);
     mikaTransition = window.setTimeout(() => {
@@ -339,6 +352,9 @@ export function createCoworkView(options = {}) {
   };
   const closeMika = () => {
     if (mikaPanel.hidden) return;
+    // This is only the quick viewer. Destroying its ordinary pool attachment leaves the
+    // tmux session alive; the Tile's own End control remains the only ending action.
+    if (mikaSeat) { emptySeat(mikaSeat); mikaSeat = ''; }
     if (selectorCards) { selectorCards.hidden = false; selectorCards.inert = false; selectorCards.removeAttribute('aria-hidden'); }
     mikaPanel.inert = true;
     mikaPanel.setAttribute('aria-hidden', 'true');
@@ -367,12 +383,16 @@ export function createCoworkView(options = {}) {
     const label = campaign ? t('campaign.coworks', 'Coworks') : `Team ${readableTeam(team)}`;
     const context = mikaViewContext(label, view());
     const seat = bench.selected();
-    void request('/api/mika/ready', { method: 'POST' })
+    void readyMika('help')
       .then(async (result) => {
         if (!result.ok || result.data?.state !== 'ready') return showMikaState('refused');
         await Promise.all([fetchSessions(), refreshTeams()]);
         paint(); // membership seats the ordinary session before the selector reveals it
         if (!putSession('mika', seat, false)) return showMikaState('refused');
+        const ordinaryHost = seats[seat].pool.hostElement('mika');
+        if (!ordinaryHost) return showMikaState('refused');
+        mikaStage.append(ordinaryHost); // move the normal Tile; do not manufacture another
+        mikaSeat = seat;
         showMikaState('ready', `Workspace ${seat.slice(-1)}`);
         if (context !== lastMikaContext) void request('/api/sessions/mika/send', { method: 'POST', json: { text: context } })
           .then((sent) => { if (sent.ok) lastMikaContext = context; });

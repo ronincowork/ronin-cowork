@@ -94,7 +94,7 @@ test('showing the surface measures once, then reads the catalog, and lists one s
   calls.length = 0;
   const made = surface.createProviderSurface(ctx);
   await made.show();
-  assert.deepEqual(calls.slice(0, 3), ['POST /api/setup/providers/measure', 'GET /api/provider-catalog', 'GET /api/setup/runtime'], 'the probe first, the catalog read after the record is written');
+  assert.deepEqual(calls.slice(0, 4), ['POST /api/setup/providers/measure', 'POST /api/mika/ready', 'GET /api/provider-catalog', 'GET /api/setup/runtime'], 'the probe first, then helper readiness and the catalog read after the record is written');
   assert.equal(ctx.refreshed.count, 1);
   assert.equal(ctx.environment.setupRuntime, machine);
   const stones = byClass(made.el, 'sws-stone');

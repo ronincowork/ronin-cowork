@@ -11,8 +11,8 @@ export const PRESETS_TYPE = 'setup.presets';
 export const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
 
 export const HOUSE_PRESETS = Object.freeze([
-  { handle: 'bare_metal', shelf: 'teams', label: 'Bare Metal', description: 'Start one to four agents, each in its own tile. Lock and load.', glyph: { rects: [[4, 9, 10, 14], [18, 9, 10, 14]] }, destination: 'Ronin Lab' },
-  { handle: 'ronin_team', shelf: 'teams', label: 'Ronin Team', description: 'A Team Lead and two agents, born with the full Ronin team room.', glyph: { text: '人人' }, destination: 'Ronin Lab' },
+  { handle: 'bare_metal', shelf: 'teams', label: 'Bare Metal', description: 'Choose a provider and model for each native session, or leave it at Default.', glyph: { rects: [[4, 9, 10, 14], [18, 9, 10, 14]] }, destination: 'Ronin Lab' },
+  { handle: 'ronin_team', shelf: 'teams', label: 'Ronin Team', description: 'Launch a Team Lead and open Team Configuration beside the team.', glyph: { text: '人人' }, destination: 'Ronin Lab' },
   { handle: 'staff_my_codebase', shelf: 'teams', label: 'Code Stack Eval', description: 'Point a team at a codebase and get its read on the stack.', glyph: { path: 'M5 7h22 M5 13h22 M5 19h22 M5 25h14' }, destination: 'Ronin Project 1' },
   { handle: 'develop_new_project', shelf: 'teams', label: 'Develop a New Project', description: 'A lead plus feature agents, each in its own worktree.', glyph: { path: 'M8 28V4 M8 12h6c4 0 4-4 10-4h3 M8 20h6c4 0 4 4 10 4h3' }, destination: 'Ronin Project 1' },
   { handle: 'personal_assistant', shelf: 'agents', label: 'Personal Assistant', description: 'One assistant that remembers. Alone, or a lead that hires help.', glyph: { text: '人' }, destination: 'Ronin Lab' },
@@ -487,6 +487,7 @@ function renderSpecialControls(host, handle, state, runtime, environment, live =
   if (handle === 'agent_editable_doc') renderRootControls(host, state, roots, 'Where', environment, true, live);
   if (handle === 'ronin_team') renderRootControls(host, state, roots, 'Where', environment, true, live);
   if (handle === 'bare_metal') {
+    renderRootControls(host, state, roots, 'Where', environment, true, live);
     const agents = el('div'); renderRows(agents, state, 'sessions', 'Session');
     const tiles = el('div'); renderTileChoices(tiles, state);
     host.append(section('Agents run side by side', 'select', ...agents.children), section('Tile view', 'select', ...tiles.children));

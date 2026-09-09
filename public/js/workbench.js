@@ -230,7 +230,7 @@ export function createWorkbench(options = {}) {
       // A selector card is a door, not a status lamp. The workspace itself already shows
       // what is placed there; painting every matching door as pressed made one of two
       // visible Agents look selected and the other not as seats changed underneath it.
-      const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: () => place(definition.type, options.selectorWorkspace || selected, detail) });
+      const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: typeof offer.action === 'function' ? offer.action : () => place(definition.type, options.selectorWorkspace || selected, detail) });
       if (options.selectorCurrent) {
         const target = options.selectorWorkspace || selected;
         const current = typeAt(target) === definition.type && resourceAt(target) === String(detail.key || '');

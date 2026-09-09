@@ -155,6 +155,7 @@ export function createWarmTerminalPool({
     setPinned,
     destroyAll,
     has: (name) => entries.has(name),
+    hostElement: (name) => entries.get(name)?.host?.el || null,
     get active() { return active; },
     get size() { return entries.size; },
     get streamingCount() { return lru.length; },

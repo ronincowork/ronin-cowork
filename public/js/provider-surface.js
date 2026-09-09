@@ -31,6 +31,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { loadProviderCatalog, providerCatalog, tierWord } from './form-steps.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
+import { readyMika } from './mika-ready.js';
 
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
 
@@ -83,6 +84,7 @@ export function createProviderSurface(context) {
   const refreshOutcome = el('p', 'setup-fine setup-provider-refresh-outcome'); refreshOutcome.hidden = true;
   dates.append(el('summary', null, t('setup_surface.check_dates', 'Check dates')), dateList, refreshRow, refreshOutcome);
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
+  const mikaAvailability = el('p', 'setup-fine setup-mika-availability');
   let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
   let runtime = { providers: [] };
@@ -303,7 +305,7 @@ export function createProviderSurface(context) {
     renderDetail: (item, host) => paintProvider(item.id, host),
     onSelectionChange: (id) => { opened = String(id || ''); },
   });
-  stones.mount(out.content, { after: [dates, notice] });
+  stones.mount(out.content, { after: [dates, mikaAvailability, notice] });
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   const refresh = action(t('setup_surface.refresh', 'Refresh'), '', async () => {
     const before = runtime;
@@ -326,6 +328,27 @@ export function createProviderSurface(context) {
     if (!result.ok) { stones.setItems([]); say(result.message, true); return; }
     runtime = result.data;
     context.environment.setupRuntime = runtime;
+    const activatedNow = Number(runtime.activated_count || 0);
+    mikaAvailability.textContent = activatedNow === 0
+      ? t('setup_surface.mika_waits', 'Mika becomes available after you install and sign in to a model provider. Registration, Ronin Services, and gbrain are optional next steps.')
+      : activatedNow === 1 ? t('setup_surface.one_model_signed_in', '1 model signed in')
+        : t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow });
+    if (activatedNow > 0) {
+      mikaAvailability.replaceChildren(el('span', 'tw-mika-spinner', '人'), el('span', '', t('mika.starting', 'Starting Mika…')));
+      mikaAvailability.querySelector('.tw-mika-spinner')?.setAttribute('aria-hidden', 'true');
+      mikaAvailability.setAttribute('role', 'status');
+      const ready = await readyMika('setup_provider_ready');
+      if (ready.ok && ready.data?.state === 'ready' && ready.data?.welcome_delivered === true) {
+        try { sessionStorage.setItem('ronin.mika.help.open', '1'); } catch (_) {}
+        location.hash = '#/team/RONIN_HELPERS';
+      } else if (ready.ok && ready.data?.state === 'ready') {
+        mikaAvailability.textContent = activatedNow === 1
+          ? t('setup_surface.one_model_signed_in', '1 model signed in')
+          : t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow });
+      } else {
+        mikaAvailability.textContent = t('mika.start_refused', 'Mika couldn’t start. You can try Help again.');
+      }
+    }
     await loadProviderCatalog();
     context.workbench?.refreshSelector?.();
     paintDates();
