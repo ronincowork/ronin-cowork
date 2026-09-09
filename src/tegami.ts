@@ -64,6 +64,7 @@ function seedShell(
   repos: TegamiCheckout[],
   teams: TeamEntry[],
   sessionMandate: Mandate,
+  docs: string[] = [],
 ): string {
   return `# TEGAMI — ${name}
 > **This file is your ladder, and it is a good way to communicate that you understand your
@@ -112,7 +113,7 @@ function seedShell(
 { "objective": "",
   "mandate": ${JSON.stringify(sessionMandate)},
   "teams": ${JSON.stringify(teams)},
-  "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},
+  "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},${docs.length ? `\n  "docs": ${JSON.stringify(docs)},` : ''}
   "ladder": [] }
 \`\`\`
 `;
@@ -123,11 +124,12 @@ export async function seedTegami(
   checkout: TegamiCheckout | TegamiCheckout[] = { repo: '', branch: '' },
   teams: TeamEntry[] = [],
   sessionMandate: Mandate = mandate(undefined),
+  docs: string[] = [],
 ): Promise<string | null> {
   try {
     const file = tegamiPath(await sessionKey(name));
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, seedShell(name, Array.isArray(checkout) ? checkout : [checkout], teams, mandate(sessionMandate)), { flag: 'wx' });
+    await fs.writeFile(file, seedShell(name, Array.isArray(checkout) ? checkout : [checkout], teams, mandate(sessionMandate), docs), { flag: 'wx' });
     return file;
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));
