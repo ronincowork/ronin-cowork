@@ -160,22 +160,6 @@ export const writeWantedSection = (list: Array<{ kind: string; name: string }>):
 export const readSetupSection = (): Promise<Record<string, unknown>> =>
   readSection<Record<string, unknown>>('setup', {});
 
-export async function stampFreshInstall(): Promise<void> {
-  try {
-    if (Object.keys(await readMachineSettingsDocument()).length > 0) return;
-    await updateConfig((doc) => {
-      doc.setup = { pending: true, stamped_at: new Date().toISOString() };
-    });
-  } catch {
-  }
-}
-
-export const completeSetup = (): Promise<void> =>
-  updateConfig((doc) => {
-    const setup = ((doc.setup ?? {}) as Record<string, unknown>) || {};
-    doc.setup = { ...setup, pending: false, completed_at: new Date().toISOString() };
-  });
-
 export async function publishOwner(name?: string): Promise<void> {
   const value = name ?? (await readOwner());
   try {

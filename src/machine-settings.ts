@@ -192,10 +192,6 @@ const writeDesksSection = (value: { new_project?: string }) =>
   }));
 const writeWantedSection = (wanted: Array<{ kind: string; name: string }>) =>
   updateDocument((document) => { document.wanted = wanted; });
-const completeSetup = () => updateDocument((document) => {
-  const setup = ((document.setup ?? {}) as Record<string, unknown>) || {};
-  document.setup = { ...setup, pending: false, completed_at: new Date().toISOString() };
-});
 async function liveCount(): Promise<number> {
   try {
     const stdout = await tmux.run(['list-sessions', '-F', '#{session_name}']);
@@ -439,11 +435,7 @@ async function readSet(): Promise<Record<string, unknown>> {
     wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))
       .filter((w) => typeof w?.kind === 'string' && typeof w?.name === 'string')
       .map((w) => ({ kind: w.kind as string, name: w.name as string })),
-    setup: {
-      pending: setup.pending === true,
-      stamped_at: setup.stamped_at ?? null,
-      completed_at: setup.completed_at ?? null,
-    },
+    setup,
     services: setteiServices(activation),
   };
 }
@@ -635,11 +627,7 @@ async function computeStatus(
       usable: Object.entries(agentsSeen).filter(([, a]) => a.installed).map(([n]) => n),
       ...jobStatus,
     },
-    setup: (set.setup as { pending: boolean; completed_at: string | null }).pending
-      ? 'first run has not been finished'
-      : (set.setup as { completed_at: string | null }).completed_at
-        ? `first run finished ${(set.setup as { completed_at: string }).completed_at}`
-        : 'not applicable — this install predates the first-run surface',
+    setup: 'Ronin Setup is always available in Machine Settings',
     subscription: servicesSubscription(servicesActivation),
   };
 }
@@ -703,8 +691,7 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
   const status = await computeStatus(set, observed);
   const needed = computeNeeded(set, observed);
   needed.push(...repositoryNeeds(set, status));
-  const setupFinished = Boolean((set.setup as { completed_at?: string } | undefined)?.completed_at);
-  if (setupFinished && !(await listProjectRoots()).some((root) => !root.archived)) {
+  if (!(await listProjectRoots()).some((root) => !root.archived)) {
     needed.push({
       leaf: 'workspace_folder',
       needs: 'a workspace folder where Agents can start',
@@ -728,19 +715,6 @@ const editString = (value: unknown): string | undefined =>
 type MachineSettingsWriter = (body: Record<string, unknown>) => Promise<unknown>;
 
 export const MACHINE_SETTINGS_WRITERS = {
-  setup: async () => {
-    await completeSetup();
-    return { ok: true };
-  },
-  bootstrap: async (body) => {
-    const { populateHomeMachine } = await import('./campaigns.js');
-    const campaign = await populateHomeMachine(body);
-    await writeDesksSection({
-      new_project: body.routine_bundle === 'worktrees' || body.routine_bundle === 'services'
-        ? 'managed' : 'none',
-    });
-    return { ok: true, campaign_id: campaign.id };
-  },
   campaign: async (body) => {
     const { writeCampaignSection } = await import('./campaigns.js');
     await writeCampaignSection({

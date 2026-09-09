@@ -39,7 +39,6 @@ import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
 import { measureAndRecordProviders } from './provider-summary.js';
 import { migrateCampaignScope } from './campaign-scope.js';
-import { stampFreshInstall } from './machine-state.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerMachineRestart } from './routes/machine-restart-api.js';
 import { registerLibrary } from './routes/library-api.js';
@@ -182,7 +181,6 @@ app.get('/', (req, res) => {
   (isPhone(req) ? sendMobile : sendIndex)(req, res);
 });
 app.get('/index.html', sendIndex);
-app.get('/cowork-setup', sendIndex);
 app.get('/m', sendMobile);
 app.get('/mobile.html', sendMobile);
 app.use(`/${assetVersion}`, express.static(PUBLIC, { immutable: true, maxAge: '1y', index: false }));
@@ -233,7 +231,6 @@ registerSetupRuntime(app); // /api/setup/runtime and provider login completion �
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
-void stampFreshInstall();
 if (isEntryPoint) void ensureInstalledRoots().catch((error) => console.error(`[setup] installed roots: ${(error as Error).message}`));
 
 // The Campaign's dated provider facts are measured once at start, after the record exists
@@ -326,6 +323,14 @@ app.get('/raw/*', (req, res) => {
     if (code === 'ENOENT' || code === 'EISDIR') return res.status(404).json({ error: 'No such file.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
   });
+});
+
+// Browser navigation always enters the workspace shell. Named legacy pages need no route:
+// an extensionless path is just another way to arrive at the same client-side router.
+app.get('*', (req, res, next) => {
+  if (path.extname(req.path) || req.accepts(['html']) !== 'html') return next();
+  res.setHeader('Vary', 'User-Agent');
+  return (isPhone(req) ? sendMobile : sendIndex)(req, res);
 });
 
 const server = createServer(app);

@@ -66,42 +66,6 @@ export const FRESH_CAMPAIGNS: ReadonlyArray<CampaignEdit & { id: string }> = Obj
   }),
 ]);
 
-export type SetupKind = 'open' | 'coding' | 'work' | 'personal' | 'household' | 'social' | 'school';
-export type SetupRoutineBundle = 'nothing' | 'floor' | 'base' | 'worktrees' | 'services';
-
-const KIND_BEHAVIOURS: Record<SetupKind, string[]> = {
-  open: [],
-  coding: ['sops:github', 'sops:ronin_methodology', 'sops:teams'],
-  work: ['sops:teams'],
-  personal: [],
-  household: [],
-  social: ['sops:teams'],
-  school: [],
-};
-
-export async function populateHomeMachine(input: {
-  kind?: unknown;
-  routine_bundle?: unknown;
-}): Promise<CampaignConfig> {
-  const existing = await readCampaign('home_machine');
-  const campaign = existing ?? await createCampaign(FRESH_CAMPAIGNS[0]!);
-  const kind = (['open', 'coding', 'work', 'personal', 'household', 'social', 'school'] as const)
-    .includes(input.kind as SetupKind) ? input.kind as SetupKind : 'open';
-  const bundle = (['nothing', 'floor', 'base', 'worktrees', 'services'] as const)
-    .includes(input.routine_bundle as SetupRoutineBundle)
-    ? input.routine_bundle as SetupRoutineBundle : 'base';
-  const { listRoutines } = await import('./resource-adapters.js');
-  const routines = Object.fromEntries((await listRoutines()).map((row) =>
-    [row.name, row.bundles.includes(bundle)]));
-  return writeCampaign(campaign.id, {
-    config: { agent_defaults: {
-      ...campaign.config.agent_defaults,
-      routines,
-      behaviours: KIND_BEHAVIOURS[kind],
-    } },
-  });
-}
-
 export function campaignIdFrom(title: string): string {
   const slug = String(title ?? '')
     .trim()
