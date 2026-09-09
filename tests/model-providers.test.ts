@@ -119,6 +119,7 @@ test('the summary is what was measured, dated, and survives the record round tri
     ],
     signedIn: async (id) => id === 'claude' || id === 'grok',
     now: () => '2026-09-08T10:00:00.000Z',
+    version: async (file, argv) => (file === '/bin/codex' && argv[0] === '--version' ? 'codex-cli 0.151.0' : file === '/bin/claude' ? '2.1.263 (Claude Code)' : ''),
   });
   assert.deepEqual(measured, {
     measured_at: '2026-09-08T10:00:00.000Z',
@@ -127,7 +128,9 @@ test('the summary is what was measured, dated, and survives the record round tri
     operational: ['claude', 'codex'],
     activated_count: 2,
     paths: { claude: '/bin/claude', codex: '/bin/codex', gemini: '/bin/gemini' },
-  }, 'gemini is installed but neither signed in nor recorded; grok has a file but no CLI');
+    versions: { claude: '2.1.263', codex: '0.151.0' },
+    latest: {},
+  }, 'gemini is installed but neither signed in nor recorded; grok has a file but no CLI; a CLI that would not say its version is simply absent');
 
   assert.equal(await summary.readProviderSummary(), null, 'nothing measured yet, nothing guessed');
   await summary.recordProviderSummary(measured);
@@ -139,9 +142,32 @@ test('the summary is what was measured, dated, and survives the record round tri
 
   assert.equal(catalog.parseProviderSummary(null), null);
   assert.equal(catalog.parseProviderSummary({ installed: ['claude'] }), null, 'undated is unmeasured');
-  assert.deepEqual(catalog.parseProviderSummary({ measured_at: 't', installed: ['claude', 'claude', 7], operational: ['bad id!'], paths: { claude: '/x', codex: 3 } }), {
+  assert.deepEqual(catalog.parseProviderSummary({ measured_at: 't', installed: ['claude', 'claude', 7], operational: ['bad id!'], paths: { claude: '/x', codex: 3 }, versions: { codex: '0.151.0', claude: 9 }, latest: { codex: { version: '0.153.4', checked_at: 'c' }, claude: { version: '' } } }), {
     measured_at: 't', installed: ['claude'], signed_in: [], operational: [], activated_count: 0, paths: { claude: '/x' },
+    versions: { codex: '0.151.0' }, latest: { codex: { version: '0.153.4', checked_at: 'c' } },
+  }, 'a summary recorded before versions existed reads back with empty maps, never undefined');
+});
+
+test('latest is asked only of a CLI whose update line names an npm package, and every ask is an egress line', async () => {
+  const asked: string[] = [];
+  const egress: Array<Record<string, unknown>> = [];
+  const latest = await summary.latestVersions(['claude', 'codex', 'gemini', 'hermes'], {
+    npmView: async (pkg) => { asked.push(pkg); if (pkg === '@openai/codex') return '0.153.4'; if (pkg === '@anthropic-ai/claude-code') throw new Error('offline'); return ''; },
+    egress: async (line) => { egress.push(line as unknown as Record<string, unknown>); },
+    now: () => '2026-09-09T12:00:00.000Z',
   });
+  assert.deepEqual(asked, ['@anthropic-ai/claude-code', '@openai/codex'], 'gemini updates by its own subcommand and hermes by its own installer: no registry to ask, not asked');
+  assert.deepEqual(latest, { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' } }, 'an ask that failed leaves no answer — unknown, never guessed');
+  assert.deepEqual(egress.map((line) => [line.host, line.path, line.outcome, line.status]), [
+    ['registry.npmjs.org', '/@anthropic-ai/claude-code', 'unreachable', 0],
+    ['registry.npmjs.org', '/@openai/codex', 'ok', 200],
+  ], 'answered or not, each ask is on the egress record');
+  assert.equal(summary.npmPackageOf('npm install -g @openai/codex@latest'), '@openai/codex');
+  assert.equal(summary.npmPackageOf(''), '');
+  assert.equal(catalog.newerVersion('0.151.0', '0.153.4'), true);
+  assert.equal(catalog.newerVersion('2.1.265', '2.1.265'), false);
+  assert.equal(catalog.newerVersion('2.1.265', '2.1.9'), false);
+  assert.equal(catalog.newerVersion('', '1.0.0'), false, 'unreadable on either side is never "newer"');
 });
 
 test('the start-up measure follows the Campaign record and its migration, never beside them', async () => {

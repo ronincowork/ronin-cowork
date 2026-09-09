@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { AGENTS, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { listProviderCatalog, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { listProviderCatalog, newerVersion, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
 import { activatedAt } from './provider-summary.js';
 import { peekProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { rootDir } from './resources.js';
@@ -47,6 +47,17 @@ export interface SetupProviderState {
   activated_at: string | null;
   /** Catalog cells this CLI can launch; zero means it cannot count as activated. */
   models: number;
+  /** What the installed CLI said it is; null when not installed or it would not say. */
+  version: string | null;
+  /** The newest release its package source listed at the last Refresh; null when never asked or unaskable. */
+  latest: string | null;
+  latest_checked_at: string | null;
+  /** Installed, and the registry knows how to update it — the Update control's condition. */
+  updatable: boolean;
+  /** The line Update runs, for the owner to read before pressing. */
+  update: string | null;
+  /** Latest is known and newer than what is installed. */
+  update_available: boolean;
   attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
   state: 'absent' | 'installable' | 'installed' | 'login_open' | 'activated';
 }
@@ -145,6 +156,9 @@ export async function setupRuntimeAnswer(
     const signedIn = isInstalled && summary.signed_in.includes(agent.id);
     const models = entry?.models.length ?? 0;
     const activated = isInstalled && (completed !== null || signedIn) && models > 0;
+    const version = isInstalled ? summary.versions?.[agent.id] ?? null : null;
+    const latest = isInstalled ? summary.latest?.[agent.id] ?? null : null;
+    const updateLine = agent.operations.update.shell || (agent.operations.update.argv.length ? [agent.cmd, ...agent.operations.update.argv].join(' ') : '');
     return {
       id: agent.id,
       provider: entry?.provider ?? '',
@@ -160,6 +174,12 @@ export async function setupRuntimeAnswer(
       activated,
       activated_at: completed,
       models,
+      version,
+      latest: latest?.version ?? null,
+      latest_checked_at: latest?.checked_at ?? null,
+      updatable: isInstalled && Boolean(updateLine),
+      update: isInstalled && updateLine ? updateLine : null,
+      update_available: Boolean(version && latest && newerVersion(version, latest.version)),
       attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true } : null,
       state: activated ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
     };

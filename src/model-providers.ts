@@ -183,6 +183,14 @@ export interface ProviderSummary {
   activated_count: number;
   /** Where each installed CLI was found. */
   paths: Record<string, string>;
+  /** Each installed CLI's own version, as its `--version` printed it; absent when it would not say. */
+  versions: Record<string, string>;
+  /**
+   * The newest version its package source offers, asked only on Refresh — never on an
+   * ordinary measure, since each ask is an outbound request with an egress line. Kept
+   * from the last Refresh until the next; absent for a CLI with no source Ronin can ask.
+   */
+  latest: Record<string, { version: string; checked_at: string }>;
 }
 
 const idList = (v: unknown): string[] => Array.isArray(v)
@@ -198,6 +206,16 @@ export function parseProviderSummary(value: unknown): ProviderSummary | null {
   const rawPaths = v.paths && typeof v.paths === 'object' && !Array.isArray(v.paths) ? v.paths as Record<string, unknown> : {};
   const paths: Record<string, string> = {};
   for (const [id, where] of Object.entries(rawPaths)) if (typeof where === 'string' && where) paths[id] = where;
+  const rawVersions = v.versions && typeof v.versions === 'object' && !Array.isArray(v.versions) ? v.versions as Record<string, unknown> : {};
+  const versions: Record<string, string> = {};
+  for (const [id, version] of Object.entries(rawVersions)) if (typeof version === 'string' && version) versions[id] = version;
+  const rawLatest = v.latest && typeof v.latest === 'object' && !Array.isArray(v.latest) ? v.latest as Record<string, unknown> : {};
+  const latest: Record<string, { version: string; checked_at: string }> = {};
+  for (const [id, row] of Object.entries(rawLatest)) {
+    if (!row || typeof row !== 'object') continue;
+    const { version, checked_at } = row as Record<string, unknown>;
+    if (typeof version === 'string' && version && typeof checked_at === 'string' && checked_at) latest[id] = { version, checked_at };
+  }
   return {
     measured_at: v.measured_at,
     installed: idList(v.installed),
@@ -205,5 +223,19 @@ export function parseProviderSummary(value: unknown): ProviderSummary | null {
     operational,
     activated_count: operational.length,
     paths,
+    versions,
+    latest,
   };
+}
+
+/** True when `candidate` is a newer release than `installed`, comparing dotted numbers; false when either is unreadable. */
+export function newerVersion(installed: string, candidate: string): boolean {
+  const nums = (s: string) => /\d+(?:\.\d+)*/.exec(s)?.[0].split('.').map(Number);
+  const a = nums(installed); const b = nums(candidate);
+  if (!a || !b) return false;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] ?? 0; const y = b[i] ?? 0;
+    if (x !== y) return y > x;
+  }
+  return false;
 }

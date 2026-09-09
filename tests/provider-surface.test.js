@@ -39,14 +39,16 @@ let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '20
   { provider: 'pi', cli: 'pi', label: 'Pi', models: [{ model: 'pi-1', tier: 'standard', default: true, cost: 'free (2026-09)', good_at: 'chat', not_good_at: 'code', cmd: 'pi' }] },
 ] };
 let machine = { measured_at: '2026-09-08T11:00:00.000Z', activated_count: 1, providers: [
-  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, signed_in: true, activated: true, state: 'activated' },
+  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, update: 'npm install -g @anthropic-ai/claude-code@latest', update_available: true },
   { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: false, activated: false, login_open: true, state: 'login_open', attachment: { type: 'session', key: 'provider_setup_codex', team: 'provider_setup', temporary: true } },
   { id: 'grok', label: 'Grok Build', from: 'xAI', installed: false, installable: true, install: 'npm install -g @xai-official/grok', activated: false, state: 'installable' },
 ] };
 const calls = [];
 globalThis.fetch = async (url, init = {}) => {
   calls.push(`${init.method || 'GET'} ${url}`);
-  const body = url.startsWith('/api/provider-catalog') ? catalog : url.startsWith('/api/setup/runtime') || url.startsWith('/api/setup/providers/measure') ? machine : null;
+  const body = url.startsWith('/api/provider-catalog') ? catalog
+    : url.startsWith('/api/setup/runtime') || url.startsWith('/api/setup/providers/measure') || url.startsWith('/api/setup/providers/refresh') ? machine
+      : url.endsWith('/update') ? { ok: true, session: 'update_claude', outcome: 'started', say: 'updating' } : null;
   return { ok: body !== null, status: body ? 200 : 404, json: async () => body ?? { error: 'no such door' } };
 };
 
@@ -106,8 +108,14 @@ test('showing the surface measures once, then reads the catalog, and lists one s
   assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.map((row) => row.children.map((cell) => cell.textContent)), [
     ['Catalog researched', '2026-09-08'],
     ['Machine measured', new Date('2026-09-08T11:00:00.000Z').toLocaleString()],
+    ['Latest versions checked', new Date('2026-09-09T12:00:00.000Z').toLocaleString()],
   ]);
   assert.equal(byClass(made.el, 'setup-provider-intro').length, 0);
+  // Refresh is the one press that asks outside the machine: its own door, never the plain measure.
+  calls.length = 0;
+  byClass(made.el, 'setup-provider-refresh-action')[0].click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls[0], 'POST /api/setup/providers/refresh');
   assert.equal(surface.providersSummary((await import('../public/js/form-steps.js')).providerCatalog()), '3 providers · 4 models · 1 activated here · catalog updated 2026-09-08');
 });
 
@@ -126,6 +134,16 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   assert.equal(byClass(card, 'setup-provider-from')[0].textContent, 'From Anthropic');
   const steps = byClass(card, 'setup-provider-step');
   assert.deepEqual(steps.map((step) => [step.dataset.step, step.dataset.status, step.dataset.done]), [['installed', 'installed', 'true'], ['authenticated', 'recorded', 'true'], ['ready', 'ready', 'true']]);
+  // The Installed step says the version and what Refresh last learned; Update is the owner's press, named by what it runs.
+  assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed 2.1.263 · 2.1.265 available');
+  const update = byClass(steps[0], 'setup-provider-update')[0];
+  assert.equal(update.textContent, 'Update to 2.1.265');
+  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^npm install -g @anthropic-ai\/claude-code@latest runs in a tile\. Tiles already running keep the version/);
+  calls.length = 0;
+  update.click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls[0], 'POST /api/setup/providers/claude/update');
+  assert.match(byClass(made.el, 'setup-provider-notice')[0].textContent, /Updating Claude Code in tile update_claude/);
   assert.equal(section.className, 'setup-provider-catalog');
   assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'The catalog');
   const facts = byClass(section, 'setup-provider-facts')[0].children;
@@ -150,8 +168,8 @@ test('a sign-in in progress mounts the native tile through the environment, on w
   assert.equal(ctx.mounts[0].workspace, 'workspace2');
   assert.equal(ctx.mounts[0].provider.id, 'codex');
   assert.ok(byClass(made.el, 'setup-provider-terminal')[0]);
-  const labels = byClass(made.el, 'setup-provider-action').map((node) => node.textContent);
-  assert.deepEqual(labels, ['Done', 'Close']);
+  const labels = byClass(byClass(made.el, 'setup-provider')[0], 'setup-provider-action').map((node) => node.textContent);
+  assert.deepEqual(labels, ['Done', 'Close'], 'the card owns only the current step\'s controls; Refresh sits by the dates, outside it');
   // Without a mount in the environment the surface says so rather than failing.
   const bare = surface.createProviderSurface({ ...context(), environment: {} });
   await bare.show();
@@ -181,6 +199,7 @@ test('an unmeasured machine and the owner\'s catalog copy are each said, never g
   assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.map((row) => row.children.map((cell) => cell.textContent)), [
     ['Catalog researched', '2026-10-01'],
     ['Machine measured', 'Not measured yet'],
+    ['Latest versions checked', 'Not checked yet — press Refresh'],
   ]);
   assert.deepEqual(byClass(made.el, 'sws-stone').map((stone) => stone.attributes['data-provider']), ['anthropic', 'openai', 'pi'], 'with no registry rows every catalog provider is a stone of its own');
 });

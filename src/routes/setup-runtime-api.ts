@@ -12,6 +12,7 @@ import {
   writeSetupPreferences,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
+import { dispatchUpdate } from '../agent-install.js';
 import { measureAndRecordProviders, readProviderSummary } from '../provider-summary.js';
 import type { ProviderSummary } from '../model-providers.js';
 
@@ -38,6 +39,28 @@ export function registerSetupRuntime(app: express.Express): void {
   app.post('/api/setup/providers/measure', async (_req, res) => {
     try {
       res.json(await answer(await measureAndRecordProviders()));
+    } catch (error) {
+      res.status(500).json({ error: errMsg(error) });
+    }
+  });
+
+  // Refresh: the same measure, and then the one outbound ask — the newest release of each
+  // installed CLI whose update line names an npm package. A press, never a timer; each
+  // ask is an egress line. An ordinary measure keeps the last answer and its date.
+  app.post('/api/setup/providers/refresh', async (_req, res) => {
+    try {
+      res.json(await answer(await measureAndRecordProviders(undefined, {}, {})));
+    } catch (error) {
+      res.status(500).json({ error: errMsg(error) });
+    }
+  });
+
+  // Update: the registry's update line in a tile, as Install runs. The owner's press.
+  app.post('/api/setup/providers/:provider/update', async (req, res) => {
+    try {
+      const started = await dispatchUpdate(String(req.params.provider));
+      if (started.outcome === 'refused') return res.status(400).json({ error: started.say });
+      res.json({ ok: true, ...started });
     } catch (error) {
       res.status(500).json({ error: errMsg(error) });
     }

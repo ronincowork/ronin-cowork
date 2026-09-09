@@ -130,6 +130,8 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | `signed_in` | CLI ids whose own credential file is on this machine — presence only, never read |
 | `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, and holding at least one model in the catalog |
 | `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
+| `versions` | what each installed CLI said to the registry's `operations.version` argv, per CLI id; absent when it would not say |
+| `latest` | per CLI id, the newest release its npm package listed and when it was asked — asked only by **Refresh** on the Model providers surface, never by an ordinary measure, since each ask is an outbound request with its own egress line; kept until the next Refresh; absent for a CLI with no npm package to ask |
 
 `src/provider-summary.ts` measures and records it. It is written:
 
@@ -240,6 +242,19 @@ both Ronin Setup and Ronin Settings hand their environment, so it works on eithe
 This surface is the one client that measures: showing it probes the machine and writes
 the Campaign's summary; its catalog rows are the one picker's read, so the surface and
 every picker cannot disagree.
+
+**Versions, Refresh, Update.** An installed CLI's Install step says its version
+(*Installed 0.151.0*) and, once **Refresh** has asked, the newest release its package
+source lists (*0.153.4 available* · *up to date*). Refresh sits by the dates: it measures
+the machine again and asks the npm registry for each installed CLI whose registry update
+line names an npm package — one outbound request each, on the egress record, only on
+this press. A CLI updated by its own subcommand or its own installer is not asked and
+says nothing about latest. **Update** runs the registry's `operations.update` line in a
+tile exactly as Install does, with npm pointed at the owner's own prefix, so no box needs
+root and the owner answers nothing; it is the owner's press, never Ronin's. Tiles already
+running keep the binary they started with until they turn over; every launch after the
+update reads the new one. Some CLIs update themselves (Claude Code by default); their
+rows read *up to date* and the control has nothing to do.
 
 ## New-session integration contract
 

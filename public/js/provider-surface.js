@@ -14,7 +14,9 @@
  *      tile, Done and Close · ready), read from the runtime row alone
  *      (setup-provider-state.js). The sign-in tile is mounted through the workbench
  *      environment's `mountProviderSetupSession` (provider-setup-session.js), so it works
- *      on either seat.
+ *      on either seat. An installed CLI's step says its version and, once Refresh has
+ *      asked, the newest release its package source lists; an **Update** control runs the
+ *      registry's update line in a tile as Install does — the owner's press, never Ronin's.
  *   2. THE CATALOG — the three measured facts, dated, then every model the catalog lists
  *      for this provider: tier, cost as read, good at, not good at, the default marked.
  *
@@ -64,13 +66,20 @@ export function createProviderSurface(context) {
   const dates = el('details', 'setup-provider-dates');
   const catalogDate = el('dd');
   const machineDate = el('dd');
+  const versionsDate = el('dd');
   const dateList = el('dl', 'setup-provider-date-list');
   const dateRow = (label, value) => { const row = el('div'); row.append(el('dt', null, label), value); return row; };
   dateList.append(
     dateRow(t('setup_surface.catalog_researched', 'Catalog researched'), catalogDate),
     dateRow(t('setup_surface.machine_measured', 'Machine measured'), machineDate),
+    dateRow(t('setup_surface.versions_checked', 'Latest versions checked'), versionsDate),
   );
   dates.append(el('summary', null, t('setup_surface.check_dates', 'Check dates')), dateList);
+  // Refresh: measure again AND ask each installed CLI's package source for its newest
+  // release. The ask is outbound (one egress line each), so it is this press and never
+  // the surface simply opening; opening only measures.
+  const refreshRow = el('div', 'setup-provider-refresh');
+  const refreshNote = el('span', 'setup-fine', t('setup_surface.refresh_note', 'Measures this machine again and asks each installed CLI’s package source for its newest release.'));
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
@@ -86,9 +95,22 @@ export function createProviderSurface(context) {
       ? when(stamp)
       : t('setup_surface.machine_unmeasured', 'Not measured yet');
   };
+  const latestCheckedText = () => {
+    const stamps = (runtime.providers || []).map((provider) => provider?.latest_checked_at).filter(Boolean).sort();
+    return stamps.length ? when(stamps[stamps.length - 1]) : t('setup_surface.versions_unchecked', 'Not checked yet — press Refresh');
+  };
   const paintDates = () => {
     catalogDate.textContent = providerCatalog().updated || t('setup_surface.catalog_date_unstated', 'Date not stated');
     machineDate.textContent = measuredDateText();
+    versionsDate.textContent = latestCheckedText();
+  };
+  /** The Installed step's state: the version the CLI said, and what Refresh last learned of the newest. */
+  const installedState = (provider) => {
+    const version = provider.version || t('setup_surface.version_unknown', 'version not read');
+    if (!provider.latest) return t('setup_surface.installed_version', 'Installed {version}', { version });
+    return provider.update_available
+      ? t('setup_surface.installed_behind', 'Installed {version} · {latest} available', { version, latest: provider.latest })
+      : t('setup_surface.installed_current', 'Installed {version} · up to date', { version });
   };
   /** A catalog provider no registry CLI serves is a stone of its own, keyed by its vendor id. */
   const catalogOnly = () => {
@@ -142,8 +164,29 @@ export function createProviderSurface(context) {
     // Only the current step owns a control. A done step is a quiet fact and a waiting
     // step says what it waits for; neither carries a dead button.
     const installRow = stepRow(install, install.status === 'installed'
-      ? t('setup_surface.installed', 'Installed')
+      ? installedState(provider)
       : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
+    // UPDATE — only for an installed CLI the registry knows how to update. Not the kaki
+    // primary (that is the current step's), so the label carries the news instead.
+    if (install.status === 'installed' && provider.updatable) {
+      const label = provider.update_available
+        ? t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest })
+        : t('setup_surface.update', 'Update');
+      const update = action(label, '', async () => {
+        const result = await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/update`, { method: 'POST', json: {} });
+        if (!result.ok) { problem.textContent = result.message; problem.hidden = false; return; }
+        await paint(); // the repaint clears the notice; the word about what started comes after it
+        say(t('setup_surface.update_started', 'Updating {label} in tile {session}. Tiles already running keep the version they started with; every launch after this gets the new one. Refresh when it finishes.', { label: provider.label || provider.id, session: result.data?.session || '' }));
+      });
+      update.classList.add('setup-provider-action', 'setup-provider-update');
+      installRow.controls.append(update);
+      const note = el('p', 'setup-provider-note setup-provider-update-note');
+      note.append(
+        el('code', 'setup-provider-command', provider.update || ''),
+        el('span', null, ' ' + t('setup_surface.update_note', 'runs in a tile. Tiles already running keep the version they started with; every launch after this gets the new one.')),
+      );
+      installRow.item.append(note);
+    }
     if (install.current && install.action === 'manual' && install.manual) {
       const link = el('a', 'wk-action setup-provider-action setup-provider-manual', install.manual.label);
       link.href = install.manual.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
@@ -228,13 +271,17 @@ export function createProviderSurface(context) {
     renderDetail: (item, host) => paintProvider(item.id, host),
     onSelectionChange: (id) => { opened = String(id || ''); },
   });
-  stones.mount(out.content, { after: [dates, notice] });
+  stones.mount(out.content, { after: [dates, refreshRow, notice] });
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
-  const paint = async () => {
+  const refresh = action(t('setup_surface.refresh', 'Refresh'), '', () => paint('/api/setup/providers/refresh'));
+  refresh.classList.add('setup-provider-action', 'setup-provider-refresh-action');
+  refreshRow.append(refresh, refreshNote);
+  const paint = async (door = '/api/setup/providers/measure') => {
     // This surface is the one reader that measures: every other surface takes the
     // Campaign's recorded summary from GET /api/setup/runtime — which the catalog read
-    // below takes too, after the measurement has been written.
-    const result = await request('/api/setup/providers/measure', { method: 'POST', json: {} });
+    // below takes too, after the measurement has been written. Refresh is the same read
+    // through the door that also asks for the newest releases.
+    const result = await request(door, { method: 'POST', json: {} });
     disposeMount();
     if (!result.ok) { stones.setItems([]); say(result.message, true); return; }
     runtime = result.data;
@@ -256,5 +303,5 @@ export function createProviderSurface(context) {
     say(items.length ? '' : t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.'));
     stones.setItems(items);
   };
-  return { el: out.el, show: paint, destroy: () => { disposeMount(); stones.destroy(); } };
+  return { el: out.el, show: () => paint(), destroy: () => { disposeMount(); stones.destroy(); } };
 }

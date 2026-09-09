@@ -17,7 +17,9 @@
 import { stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { appendEgress, type EgressLine } from './activation/egress.js';
 import { AGENTS, listAgentAvailability, type AgentAvailability } from './agents.js';
+import { execFile } from './spawn-broker.js';
 import { ensureInitialCampaign, initialCampaign, writeCampaignProviders } from './campaigns.js';
 import { readSetupSection } from './machine-state.js';
 import { listProviderCatalog, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
@@ -46,6 +48,22 @@ export interface MeasureOps {
   signedIn?: (cli: string) => Promise<boolean>;
   catalog?: ProviderCatalogEntry[];
   now?: () => string;
+  /** What the installed CLI printed to the registry's version argv, given its path; '' when it would not say. The first dotted number in it is the version. */
+  version?: (path: string, argv: readonly string[]) => Promise<string>;
+}
+
+/** The first dotted number a `--version` line carries, or ''. */
+export const versionIn = (text: string): string => /\d+\.\d+(?:\.\d+)*/.exec(text)?.[0] ?? '';
+
+/** Ask the installed CLI what it is, with the argv the registry declares for it; what it printed, or ''. */
+export async function installedVersion(file: string, argv: readonly string[]): Promise<string> {
+  if (!file || !argv.length) return '';
+  try {
+    const { stdout, stderr } = await execFile(file, argv, { timeout: 8_000 });
+    return `${stdout}\n${stderr}`;
+  } catch {
+    return '';
+  }
 }
 
 /** Probe the machine once and say what it has, dated. Pure of any record: the caller writes it. */
@@ -55,11 +73,18 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
     ops.catalog ?? listProviderCatalog(),
   ]);
   const signedIn = ops.signedIn ?? providerSignedIn;
+  const version = ops.version ?? installedVersion;
   const installed = available.filter((agent) => agent.installed).map((agent) => agent.id);
   const paths: Record<string, string> = {};
   for (const agent of available) if (agent.installed && agent.path) paths[agent.id] = agent.path;
   const signed_in: string[] = [];
   for (const agent of AGENTS) if (await signedIn(agent.id)) signed_in.push(agent.id);
+  const versions: Record<string, string> = {};
+  for (const agent of AGENTS) {
+    if (!paths[agent.id]) continue;
+    const found = versionIn(await version(paths[agent.id], agent.operations.version));
+    if (found) versions[agent.id] = found;
+  }
   const launchable = new Set(catalog.filter((entry) => entry.models.length > 0).map((entry) => entry.cli));
   const operational = installed.filter((cli) =>
     (signed_in.includes(cli) || activatedAt(section, cli) !== null) && launchable.has(cli));
@@ -68,7 +93,58 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
     installed, signed_in, operational,
     activated_count: operational.length,
     paths,
+    versions,
+    latest: {},
   };
+}
+
+/** The npm package an update line installs, when the registry's update is `npm install -g <pkg>@latest`. */
+export function npmPackageOf(updateShell: string): string {
+  return /^npm install -g (\S+)@latest$/.exec(updateShell.trim())?.[1] ?? '';
+}
+
+export interface LatestOps {
+  /** The newest version the npm registry lists for a package; throws when the registry cannot be asked. */
+  npmView?: (pkg: string) => Promise<string>;
+  egress?: (line: EgressLine) => Promise<void>;
+  now?: () => string;
+}
+
+const NPM_REGISTRY = 'registry.npmjs.org';
+
+async function npmViewVersion(pkg: string): Promise<string> {
+  const { stdout } = await execFile('npm', ['view', pkg, 'version'], { timeout: 20_000 });
+  return versionIn(stdout);
+}
+
+/**
+ * THE ONE OUTBOUND ASK: what is the newest release of each installed CLI. Only for a CLI
+ * whose registry update line names an npm package — that is a source Ronin can ask by
+ * name; a vendor page is not. Every ask is an egress line, answered or not. A CLI with no
+ * such source is simply absent from the answer, and the surface says *latest unknown*.
+ */
+export async function latestVersions(installed: readonly string[], ops: LatestOps = {}): Promise<ProviderSummary['latest']> {
+  const view = ops.npmView ?? npmViewVersion;
+  const egress = ops.egress ?? appendEgress;
+  const now = ops.now ?? (() => new Date().toISOString());
+  const out: ProviderSummary['latest'] = {};
+  for (const agent of AGENTS) {
+    if (!installed.includes(agent.id)) continue;
+    const pkg = npmPackageOf(agent.operations.update.shell);
+    if (!pkg) continue;
+    const started = Date.now();
+    let version = '';
+    let outcome = 'unreachable';
+    try {
+      version = await view(pkg);
+      outcome = version ? 'ok' : 'unreadable';
+    } catch {
+      outcome = 'unreachable';
+    }
+    await egress({ at: now(), host: NPM_REGISTRY, method: 'GET', path: `/${pkg}`, status: version ? 200 : 0, outcome, ms: Date.now() - started }).catch(() => { /* bookkeeping never fails the ask */ });
+    if (version) out[agent.id] = { version, checked_at: now() };
+  }
+  return out;
 }
 
 /** The summary the Campaign record holds, or null when Ronin has not measured yet. */
@@ -81,9 +157,15 @@ export async function recordProviderSummary(summary: ProviderSummary): Promise<v
   await writeCampaignProviders(campaign.id, summary);
 }
 
-/** Probe, write, answer: the one door for every measurement Ronin takes. */
-export async function measureAndRecordProviders(section?: SetupSection, ops: MeasureOps = {}): Promise<ProviderSummary> {
+/**
+ * Probe, write, answer: the one door for every measurement Ronin takes. An ordinary
+ * measure keeps the last Refresh's `latest` — it was true when asked and its date says
+ * when; `refresh` asks again, one outbound request per askable CLI.
+ */
+export async function measureAndRecordProviders(section?: SetupSection, ops: MeasureOps = {}, refresh: LatestOps | false = false): Promise<ProviderSummary> {
+  const previous = await readProviderSummary();
   const summary = await measureProviders(section ?? await readSetupSection(), ops);
+  summary.latest = refresh ? await latestVersions(summary.installed, refresh) : (previous?.latest ?? {});
   await recordProviderSummary(summary);
   return summary;
 }

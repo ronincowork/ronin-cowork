@@ -24,7 +24,7 @@ const catalog = await listProviderCatalog();
 const nobody = async () => false;
 /** One measured summary from a fixture machine: which CLIs are on PATH and which left a credential file. */
 const measured = (section: Record<string, unknown>, installed: string[], signedIn: string[] = []) =>
-  summary.measureProviders(section, { availability: available(installed), signedIn: async (id) => signedIn.includes(id), catalog, now: () => '2026-09-08T10:00:00.000Z' });
+  summary.measureProviders(section, { availability: available(installed), signedIn: async (id) => signedIn.includes(id), catalog, now: () => '2026-09-08T10:00:00.000Z', version: async (file) => (file === '/bin/codex' ? '0.151.0' : '') });
 const answer = async (section: Record<string, unknown>, installed: string[], signedIn: string[] = [], exists: (name: string) => Promise<boolean> = nobody) =>
   runtime.setupRuntimeAnswer(section, await measured(section, installed, signedIn), { exists }, undefined, catalog);
 const row = (a: Awaited<ReturnType<typeof answer>>, id: string) => a.providers.find((provider) => provider.id === id)!;
@@ -74,6 +74,24 @@ test('provider facts come from the measured summary: absent, installable, instal
   const absentButFile = await answer({}, [], ['claude']);
   assert.equal(row(absentButFile, 'claude').signed_in, false, 'a credential file without the CLI is not a usable provider');
   assert.equal(row(absentButFile, 'claude').state, 'installable');
+});
+
+test('an installed CLI\'s row says its version, what Refresh last learned of the newest, and whether Update means anything', async () => {
+  const facts = await measured({}, ['claude', 'codex']);
+  const before = await runtime.setupRuntimeAnswer({}, facts, { exists: nobody }, undefined, catalog);
+  assert.equal(row(before, 'codex').version, '0.151.0');
+  assert.equal(row(before, 'claude').version, null, 'a CLI that would not say is null, not a guess');
+  assert.equal(row(before, 'codex').latest, null, 'never asked yet');
+  assert.equal(row(before, 'codex').updatable, true, 'installed and the registry has an update line');
+  assert.equal(row(before, 'codex').update, 'npm install -g @openai/codex@latest');
+  assert.equal(row(before, 'codex').update_available, false, 'no latest, no claim');
+  assert.equal(row(before, 'gemini').updatable, false, 'not installed: nothing to update');
+  assert.equal(row(before, 'gemini').update, null);
+  const after = await runtime.setupRuntimeAnswer({}, { ...facts, latest: { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' }, claude: { version: '2.1.265', checked_at: '2026-09-09T12:00:00.000Z' } } }, { exists: nobody }, undefined, catalog);
+  assert.equal(row(after, 'codex').latest, '0.153.4');
+  assert.equal(row(after, 'codex').latest_checked_at, '2026-09-09T12:00:00.000Z');
+  assert.equal(row(after, 'codex').update_available, true);
+  assert.equal(row(after, 'claude').update_available, false, 'latest known but the installed version is not: no claim either way');
 });
 
 test('a provider counts as activated only when the catalog gives it something to launch', async () => {

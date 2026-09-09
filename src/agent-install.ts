@@ -92,3 +92,34 @@ async function one(
 function installLine(get: string, cmd: string): string {
   return [...installPreamble(), `${get} && ${cmd}`].join('; ');
 }
+
+/**
+ * UPDATE — the same tile, the same preamble, the registry's update line. The preamble
+ * points npm at the owner's own prefix, so no box needs root for this and the owner
+ * answers nothing; a CLI whose updater is its own subcommand runs that instead. The tile
+ * ends by printing the CLI's version so the owner sees what landed. Tiles already
+ * running keep the binary they started with until they turn over; every launch after
+ * this reads the new one. It is the owner's press, never Ronin's.
+ */
+export async function dispatchUpdate(name: string): Promise<InstallStarted> {
+  const said = (outcome: InstallStarted['outcome'], say: string, session: string | null = null): InstallStarted =>
+    ({ kind: 'agent', name, session, outcome, say });
+  const spec = AGENTS.find((a) => a.id === name);
+  if (!spec) return said('refused', `no agent called "${name}"`);
+  const line = spec.operations.update.shell || (spec.operations.update.argv.length ? [spec.cmd, ...spec.operations.update.argv].join(' ') : '');
+  if (!line) return said('refused', `nothing updates ${spec.label} from here yet`);
+  const probed = (await listAgentAvailability()).find((p) => p.id === spec.id);
+  if (!probed?.installed) return said('refused', `${spec.label} is not on this machine; install it first`);
+
+  const session = `update_${spec.id}`;
+  try {
+    if (await sessionExists(session)) await killSessionTree(session);
+    await emitSessionWillBorn(session);
+    await createSession(session, undefined, { agent: false });
+    void collectBirthLines(session, true);
+    await runCommand(session, [...installPreamble(), `${line} && ${spec.cmd} ${spec.operations.version.join(' ')}`].join('; '));
+    return said('started', `updating ${spec.label} in ${session}`, session);
+  } catch (e) {
+    return said('refused', String((e as Error)?.message ?? e));
+  }
+}
