@@ -54,6 +54,8 @@ globalThis.fetch = async (url, init = {}) => {
 
 const surface = await import('../public/js/provider-surface.js');
 const walk = (root) => [...root.walk()];
+/** Let a background measure land: the stub fetch resolves on microtasks, so one macrotask is enough. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
 const byClass = (root, cls) => walk(root).filter((node) => node.className.split(' ').includes(cls));
 const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 const context = () => {
@@ -89,13 +91,18 @@ test('one definition under one type, registered by both workbenches, with one sh
   assert.match(await source('provider-setup-session.js'), /createTerminalTileHost\(\{ mode: 'full' \}\)/);
 });
 
-test('showing the surface measures once, then reads the catalog, and lists one stone per registry CLI plus catalog-only providers', async () => {
+test('showing the surface paints the stones from the record at once, measures behind them, and lists one stone per registry CLI plus catalog-only providers', async () => {
   const ctx = context();
   calls.length = 0;
   const made = surface.createProviderSurface(ctx);
   await made.show();
-  assert.deepEqual(calls.slice(0, 3), ['POST /api/setup/providers/measure', 'GET /api/provider-catalog', 'GET /api/setup/runtime'], 'the probe first, the catalog read after the record is written');
+  // The first frame: the record, through the one picker's read; no measure stands before it.
+  assert.deepEqual(calls.slice(0, 2), ['GET /api/provider-catalog', 'GET /api/setup/runtime'], 'the recorded read comes first');
+  assert.equal(byClass(made.el, 'sws-stone').length, 4, 'the stones are painted when show resolves, before any measure has answered');
   assert.equal(ctx.refreshed.count, 1);
+  await settle();
+  assert.deepEqual(calls.slice(2), ['POST /api/setup/providers/measure', 'GET /api/provider-catalog', 'GET /api/setup/runtime'], 'then the measure, and the record re-read after it is written');
+  assert.equal(ctx.refreshed.count, 2, 'and the frame repainted when it landed');
   assert.equal(ctx.environment.setupRuntime, machine);
   const stones = byClass(made.el, 'sws-stone');
   assert.deepEqual(stones.map((stone) => stone.attributes['data-provider']), ['claude', 'codex', 'grok', 'pi']);
@@ -127,7 +134,7 @@ test('showing the surface measures once, then reads the catalog, and lists one s
 test('a stone opens Yours — the three steps as Setup measures them — then The catalog with the dated facts and the model table', async () => {
   const ctx = context();
   const made = surface.createProviderSurface(ctx);
-  await made.show();
+  await made.show(); await settle();
   byClass(made.el, 'sws-stone')[0].click();
   const detail = byClass(made.el, 'sws-detail')[0];
   const [yours, section] = detail.children;
@@ -177,7 +184,7 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
   try {
     const ctx = context();
     const made = surface.createProviderSurface(ctx);
-    await made.show();
+    await made.show(); await settle();
     byClass(made.el, 'sws-stone')[0].click();
     assert.equal(ctx.mounts.length, 1, 'the update session is mounted in the page');
     assert.equal(ctx.mounts[0].session, 'provider_setup_claude_update');
@@ -204,7 +211,7 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
 test('a sign-in in progress mounts the native tile through the environment, on whichever seat', async () => {
   const ctx = context();
   const made = surface.createProviderSurface(ctx);
-  await made.show();
+  await made.show(); await settle();
   byClass(made.el, 'sws-stone')[1].click();
   assert.equal(ctx.mounts.length, 1);
   assert.equal(ctx.mounts[0].session, 'provider_setup_codex');
@@ -215,7 +222,7 @@ test('a sign-in in progress mounts the native tile through the environment, on w
   assert.deepEqual(labels, ['Done', 'Close'], 'the card owns only the current step\'s controls; Refresh sits by the dates, outside it');
   // Without a mount in the environment the surface says so rather than failing.
   const bare = surface.createProviderSurface({ ...context(), environment: {} });
-  await bare.show();
+  await bare.show(); await settle();
   byClass(bare.el, 'sws-stone')[1].click();
   assert.match(byClass(bare.el, 'setup-provider-terminal')[0].textContent, /terminal attachment is unavailable/);
 });
@@ -223,7 +230,7 @@ test('a sign-in in progress mounts the native tile through the environment, on w
 test('a catalog provider no registry CLI serves keeps its catalog section and says it cannot be set up here', async () => {
   const ctx = context();
   const made = surface.createProviderSurface(ctx);
-  await made.show();
+  await made.show(); await settle();
   byClass(made.el, 'sws-stone')[3].click();
   const detail = byClass(made.el, 'sws-detail')[0];
   const [yours, section] = detail.children;
@@ -241,7 +248,7 @@ test('an unmeasured machine and the owner\'s catalog copy are each said, never g
     { ...catalog.providers[2], origin: 'user', shadowed: false },
   ] };
   const made = surface.createProviderSurface(context());
-  await made.show();
+  await made.show(); await settle();
   const dates = byClass(made.el, 'setup-provider-dates')[0];
   assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.filter((row) => !row.hidden).map((row) => row.children.map((cell) => cell.textContent)), [
     ['Catalog researched', 'Shipped 2026-09-08 · your copy 2026-10-01'],

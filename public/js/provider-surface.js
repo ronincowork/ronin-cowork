@@ -24,6 +24,12 @@
  * (POST /api/setup/providers/measure) and writes the Campaign's dated provider summary,
  * which every other reader then takes from the record; the catalog rows come from the one
  * picker's read (form-steps.js), so this surface and every picker cannot disagree.
+ *
+ * MEASURING IS NOT A REASON TO WITHHOLD THE FRAME. The stones paint at once from the
+ * recorded summary — the same read every other surface makes, and the catalog read this
+ * one makes anyway — and the measure runs behind them, repainting when it lands. A probe
+ * that asks five CLIs their version was sitting between the owner and the first frame
+ * (gemini alone took 2.9s to answer, 2026-09-09); nothing measured ever stands there again.
  */
 import { t } from './lexicon.js';
 import { request } from './request.js';
@@ -355,26 +361,17 @@ export function createProviderSurface(context) {
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   const refresh = action(t('setup_surface.refresh', 'Refresh'), '', async () => {
     const before = runtime;
-    await paint(true);
+    if (!(await measure(true))) return;
     refreshOutcome.textContent = refreshSummary(before, runtime);
     refreshOutcome.hidden = false;
     dates.open = true;
   });
   refresh.classList.add('setup-provider-action', 'setup-provider-refresh-action');
   refreshRow.append(refresh, refreshNote);
-  const paint = async (refresh = false) => {
-    // This surface is the one reader that measures: every other surface takes the
-    // Campaign's recorded summary from GET /api/setup/runtime — which the catalog read
-    // below takes too, after the measurement has been written. Refresh is the same read
-    // through the door that also asks for the newest releases.
-    const result = refresh
-      ? await request('/api/setup/providers/refresh', { method: 'POST', json: {} })
-      : await request('/api/setup/providers/measure', { method: 'POST', json: {} });
+  /** The frame from whatever `runtime` holds now: the record, or the measure once it lands. */
+  const paintFrom = () => {
     disposeMount();
-    if (!result.ok) { stones.setItems([]); say(result.message, true); return; }
-    runtime = result.data;
     context.environment.setupRuntime = runtime;
-    await loadProviderCatalog();
     context.workbench?.refreshSelector?.();
     paintDates();
     const rows = providerCatalog().rows;
@@ -391,5 +388,35 @@ export function createProviderSurface(context) {
     say(items.length ? '' : t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.'));
     stones.setItems(items);
   };
-  return { el: out.el, show: () => paint(), destroy: () => { disposeMount(); stones.destroy(); } };
+  /** The first frame: the recorded summary, through the one picker's read, at once. */
+  const showRecord = async () => {
+    await loadProviderCatalog();
+    const read = providerCatalog();
+    runtime = { providers: Array.isArray(read.machine) ? read.machine : [], measured_at: read.measured_at || '' };
+    paintFrom();
+  };
+  /**
+   * The measure, behind the frame: this surface is the one reader that measures — every
+   * other surface takes the Campaign's recorded summary from GET /api/setup/runtime, which
+   * the catalog read takes too, after the measurement has been written. Refresh is the same
+   * read through the door that also asks for the newest releases. Resolves once repainted.
+   */
+  const measure = async (refresh = false) => {
+    const result = refresh
+      ? await request('/api/setup/providers/refresh', { method: 'POST', json: {} })
+      : await request('/api/setup/providers/measure', { method: 'POST', json: {} });
+    if (!result.ok) { say(result.message, true); return false; }
+    runtime = result.data;
+    await loadProviderCatalog();
+    paintFrom();
+    return true;
+  };
+  /** After a press: the record at once, then the measure, awaited — a press is never the first frame. */
+  const paint = async (refresh = false) => { await showRecord(); return measure(refresh); };
+  return {
+    el: out.el,
+    // Show resolves on the first frame; the measure follows on its own and repaints.
+    show: async () => { await showRecord(); void measure(false); },
+    destroy: () => { disposeMount(); stones.destroy(); },
+  };
 }
