@@ -6137,7 +6137,6 @@ button.wb-door:hover b {
 .setup-provider-date-list dd { margin: 0; }
 /* Refresh: the one control that asks outside this machine (each CLI's package source), so it sits by the dates, not in a step. */
 .setup-provider-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); margin-top: var(--space-5); }
-.setup-provider-update-note { grid-column: 2; }
 /* A stone's detail is two sections, top to bottom: Yours (the steps), then The catalog. */
 .setup-provider-yours, .setup-provider-catalog { display: grid; gap: var(--space-5); min-width: 0; }
 .setup-provider-catalog { margin-top: var(--space-8); padding-top: var(--space-7); border-top: var(--edge) solid var(--line); }

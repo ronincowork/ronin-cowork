@@ -102,6 +102,17 @@ export function providerPresentation(provider) {
  */
 const STEP_DONE = Object.freeze({ installed: 'installed', authenticated: 'recorded', ready: 'ready' });
 
+/** What Turn off does and does not do, said where it is pressed. */
+export const TURN_OFF_SENTENCE = 'Turn off stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.';
+
+/** The Install step's text for an installed CLI: about updating, or nothing. */
+function installedDetail(provider) {
+  if (provider?.update_open && !provider?.login_open) return 'Updating in the page: when it has printed the new version, press Close, then Refresh. Tiles already running keep the version they started with; every launch after this gets the new one.';
+  if (provider?.activated && provider?.updatable && provider?.update_available) return 'Runs here in the page. Tiles already running keep the version they started with; every launch after this gets the new one.';
+  if (provider?.self_updates) return 'Usually updates itself.';
+  return '';
+}
+
 export function providerReadiness(provider) {
   const presentation = providerPresentation(provider);
   const installed = provider?.installed === true;
@@ -120,8 +131,11 @@ export function providerReadiness(provider) {
   const steps = [
     {
       key: 'installed', label: 'Install', status: installed ? 'installed' : 'not_installed',
-      detail: installed ? '' : presentation.detail,
-      command: installed ? '' : presentation.command || '',
+      // An installed step's text is about updating, when there is anything to say: the
+      // update running in the page; a newer release, with the line Update runs; or that the
+      // CLI usually updates itself. One path for step text — it sits under the title.
+      detail: installed ? installedDetail(provider) : presentation.detail,
+      command: installed ? (provider?.update_open || !(provider?.activated && provider?.updatable && provider?.update_available) ? '' : String(provider?.update || '')) : presentation.command || '',
       action: installed ? 'none' : presentation.action === 'manual' ? 'manual' : 'install',
       manual: installed ? null : presentation.manual || null,
     },
@@ -133,7 +147,9 @@ export function providerReadiness(provider) {
     },
     {
       key: 'ready', label: 'Ready', status: activated ? 'ready' : 'not_ready',
-      detail: activated ? '' : 'After sign-in.', action: 'none',
+      // Activated: the switch's own sentence, under the title, so Turn off is never a
+      // control with nothing above it (owner, 2026-09-09).
+      detail: activated ? TURN_OFF_SENTENCE : 'After sign-in.', action: activated ? 'turn_off' : 'none',
     },
   ];
   let found = false;
