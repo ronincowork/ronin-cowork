@@ -235,10 +235,10 @@ export function createProviderSurface(context) {
       installRow.item.append(terminal);
       mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
-    } else if (install.status === 'installed' && provider.updatable) {
-      const label = provider.update_available
-        ? t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest })
-        : t('setup_surface.update', 'Update');
+    // Update is useful only when there is somewhere newer to move AND the provider is
+    // usable. Otherwise the row already says the complete fact: up to date, or not signed in.
+    } else if (install.status === 'installed' && provider.activated && provider.updatable && provider.update_available) {
+      const label = t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest });
       const update = action(label, '', () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/update`));
       update.classList.add('setup-provider-action', 'setup-provider-update');
       installRow.controls.append(update);
