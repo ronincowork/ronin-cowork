@@ -95,6 +95,7 @@ await fs.writeFile(
 );
 
 const { resolveForm } = await import('../src/spawn.js');
+const { mikaLaunchBody } = await import('../src/routes/launch.js');
 type SpawnForm = import('../src/spawn.js').SpawnForm;
 
 /** What the ＋ New form posts: the axes, the picks, and the owner's words. */
@@ -496,6 +497,8 @@ test('Mika house mechanics resolve without a session_role', async () => {
   assert.match(mika.brief, /You are the Mika Assist/);
   assert.ok(!mika.birth_reading.some((file) => file.includes('MikaAssist')));
   assert.equal(mika.stated_by.capExempt[0]?.layer, 'house');
+  const door = mikaLaunchBody({});
+  assert.deepEqual(door.mandate, { reach: 'discuss', recruit: 'nobody', output: ['ideas'] }, 'she discusses, recruits nobody, hands back ideas');
 });
 
 test('a name alone resolves the ordinary Cowork Agent birth', async () => {

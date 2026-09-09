@@ -111,7 +111,7 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /action: \(\) => \{ void ensureAndPlaceMika\(\); \}/);
   // Help is the shared selector panel (mika.js): it readies her and borrows her tile,
   // and never places a workspace; the Mika card is the door that places.
-  const helpPanel = setup.slice(setup.indexOf('const helpPanel = createMikaHelpPanel('), setup.indexOf("mikaHelp.el.addEventListener('click'"));
+  const helpPanel = setup.slice(setup.indexOf('helpPanel = createMikaHelpPanel('), setup.indexOf("mikaHelp.el.addEventListener('click'"));
   assert.match(helpPanel, /await ensureMika\(\)/);
   assert.doesNotMatch(helpPanel, /ensureAndPlaceMika|bench\?\.place\(TERMINAL_TYPE/);
   assert.match(setup, /mikaHelp\.el\.addEventListener\('click', \(\) => \{ if \(operational\(\)\) void helpPanel\.open\(\); \}\)/);

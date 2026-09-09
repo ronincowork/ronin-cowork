@@ -159,6 +159,7 @@ export function createCoworkView(options = {}) {
 
   const rosterNote = el('span', 'tw-roster-note');
   const mikaHelp = createAction({ label: t('mika.help', 'ミ Help'), size: 'compact', className: 'tw-mika-help' });
+  let helpPanel = null;
   const shapeBtn = document.getElementById('shapecycle');
   let rosterTitle = null;
 
@@ -300,7 +301,8 @@ export function createCoworkView(options = {}) {
     tenant: { kind: campaign ? 'cowork' : 'team', team: () => team }, environment,
     defaultNode: (id) => seats[id].surface.el,
     label: campaign ? t('campaign', 'Campaign') : t('team.roster_title', 'Team Roster'),
-    title: () => campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : t('team.roster_title', 'Roster'),
+    // While ミ Help is open the column is Mika's, and every repaint says so.
+    title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : t('team.roster_title', 'Roster'),
     actions: [rosterNote, mikaHelp], shapeControl: shapeBtn, deferSelector: true,
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,
@@ -311,8 +313,9 @@ export function createCoworkView(options = {}) {
   // ミ Help: Mika takes over the selector column — her ordinary tile, borrowed from the
   // pool, no workspace changes hands — and Close puts the roster cards back. The Mika
   // card under Ronin Helpers is the other door: the same session as a normal tile.
-  const helpPanel = createMikaHelpPanel({
+  helpPanel = createMikaHelpPanel({
     selector: bench.host.querySelector('.wk-workbench-selector'),
+    header: bench.selectorHeader, refreshHeader: () => bench.refreshSelector(),
     createAction, t, helpButton: mikaHelp.el,
     ready: async () => {
       const result = await readyMika('help');

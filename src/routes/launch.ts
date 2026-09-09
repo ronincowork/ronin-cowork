@@ -193,6 +193,8 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
     session_type: 'cowork_agent',
     name: MIKA_SESSION,
     tags: [RONIN_HELPERS_TEAM],
+    // She discusses, recruits nobody, and hands back ideas — never a plan (owner, 2026-09-09).
+    mandate: { reach: 'discuss', recruit: 'nobody', output: ['ideas'] },
     prompt: typeof source.prompt === 'string' ? source.prompt : '',
     ...(selection ? { provider: selection.provider, model: selection.model } : {}),
     launch_mode: 'configured',

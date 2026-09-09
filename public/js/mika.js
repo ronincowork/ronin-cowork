@@ -111,25 +111,23 @@ export async function askMika(tile, ask) {
  * `ready()` is the caller's readiness check (it returns truthy when she may be shown),
  * `borrow()` returns her tile's element, `release()` gives it back.
  */
-export function createMikaHelpPanel({ selector, createAction, t, ready, borrow, release, helpButton, view, place }) {
+export function createMikaHelpPanel({ selector, header, refreshHeader, createAction, t, ready, borrow, release, helpButton, view, place }) {
   const cards = selector?.querySelector('.wk-workbench-selector-cards') || null;
+  // The column is hers alone: no bar, no greeting, and the borrowed tile's head and
+  // composer are hidden by the panel's own CSS. The selector HEADER carries the
+  // conversation's title and its Close, where ミ Help was (owner, 2026-09-09).
   const panel = document.createElement('section');
   panel.className = 'setup-mika-panel';
   panel.hidden = true;
-  const bar = document.createElement('header');
-  bar.className = 'setup-mika-bar';
-  const title = document.createElement('b');
-  title.textContent = t('mika.name', 'Mika');
-  const close = createAction({ label: t('mika.close', 'Close'), size: 'compact' });
-  bar.append(title, close.el);
-  const greeting = document.createElement('p');
-  greeting.textContent = t('mika.hello', 'Hi, I’m Mika. How can I help you?');
   const stage = document.createElement('div');
   stage.className = 'setup-mika-stage';
   const loading = document.createElement('p');
   loading.className = 'setup-mika-loading';
-  panel.append(bar, greeting, stage);
+  panel.append(stage);
   selector?.append(panel);
+  const close = createAction({ label: t('mika.close', 'Close'), size: 'compact' });
+  close.el.hidden = true;
+  header?.actions?.append(close.el);
   let open = false;
   const closeHelp = () => {
     if (!open) return;
@@ -137,6 +135,9 @@ export function createMikaHelpPanel({ selector, createAction, t, ready, borrow, 
     release();
     panel.hidden = true;
     if (cards) cards.hidden = false;
+    close.el.hidden = true;
+    if (helpButton) helpButton.hidden = false;
+    refreshHeader?.(); // the roster's own title comes back
     helpButton?.focus();
   };
   const openHelp = async () => {
@@ -144,12 +145,17 @@ export function createMikaHelpPanel({ selector, createAction, t, ready, borrow, 
     open = true;
     if (cards) cards.hidden = true;
     panel.hidden = false;
+    if (header?.title) header.title.textContent = t('mika.header', 'Mika, your helpful assistant');
+    if (helpButton) helpButton.hidden = true;
+    close.el.hidden = false;
     loading.textContent = t('mika.starting', '人 Starting Mika…');
     stage.replaceChildren(loading);
     if (view) void reportMikaView(view());
     let ok = false;
     try { ok = await ready(); } catch (_) { ok = false; }
     if (!open) return; // closed while she was starting
+    // A roster repaint while she started may have restored the roster's own title.
+    if (header?.title) header.title.textContent = t('mika.header', 'Mika, your helpful assistant');
     if (!ok) { loading.textContent = t('mika.start_refused', 'Mika couldn’t start. Try again.'); return; }
     const host = borrow();
     if (host) stage.replaceChildren(host);
@@ -160,7 +166,7 @@ export function createMikaHelpPanel({ selector, createAction, t, ready, borrow, 
   // `show <tab> <surface>` from Mika: the operator names the workspace; only this tab answers.
   const onShow = (m) => { if (place && m.tab === mikaTab() && m.surface) place(m.workspace, m.surface); };
   mikaShowHandlers.add(onShow);
-  return { el: panel, open: openHelp, close: closeHelp, isOpen: () => open, destroy: () => { mikaShowHandlers.delete(onShow); } };
+  return { el: panel, open: openHelp, close: closeHelp, isOpen: () => open, destroy: () => { mikaShowHandlers.delete(onShow); close.el.remove(); } };
 }
 
 /** Mika's one ordinary tile on a workbench that has no team pools (Setup): a surface and a

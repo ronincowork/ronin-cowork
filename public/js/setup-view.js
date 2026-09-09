@@ -122,6 +122,7 @@ export function createSetupView() {
     },
   });
   const mikaHelp = createAction({ label: t('mika.help', 'ミ Help'), size: 'compact' });
+  let helpPanel = null;
   const environment = {
     presets: (workspace) => createPresetsSurface({ environment: presetEnvironment(), workspace }),
     showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
@@ -166,7 +167,7 @@ export function createSetupView() {
     environment,
     defaultNode: blank,
     label: t('setup.title', 'Ronin Setup'),
-    title: () => t('setup.title', 'Ronin Setup'),
+    title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : t('setup.title', 'Ronin Setup'),
     fixedWorkspaces: { workspace1: PRESETS_TYPE },
     selectorWorkspace: 'workspace2',
     selectorCurrent: true,
@@ -177,8 +178,9 @@ export function createSetupView() {
   });
   // ミ Help: Mika takes over the selector column with her ordinary tile borrowed in;
   // Close hands it back. The same panel serves every workbench (mika.js).
-  const helpPanel = createMikaHelpPanel({
+  helpPanel = createMikaHelpPanel({
     selector: bench.host.querySelector('.wk-workbench-selector'),
+    header: bench.selectorHeader, refreshHeader: () => bench.refreshSelector(),
     createAction, t, helpButton: mikaHelp.el,
     ready: async () => {
       const ready = await ensureMika();

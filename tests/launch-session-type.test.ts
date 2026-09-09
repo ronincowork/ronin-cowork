@@ -142,6 +142,7 @@ test('the Mika door accepts words only and fixes every public birth input', () =
     session_type: 'cowork_agent',
     name: 'mika_agent',
     tags: ['ronin_helpers'],
+    mandate: { reach: 'discuss', recruit: 'nobody', output: ['ideas'] },
     prompt: '+system_help:',
     launch_mode: 'configured',
     gbrain_mode: 'disconnected',
