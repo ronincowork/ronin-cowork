@@ -6,7 +6,7 @@ contracts or make a contributor follow the installation journey.
 - Assessing whether Ronin fits this machine: read
   [`docs/how-ronin-protects-you.md`](docs/how-ronin-protects-you.md).
 - Installing or helping with first use: begin with [`docs/install.md`](docs/install.md) and
-  stay through its handoff to `cowork_setup`, provider sign-in, and one working Agent.
+  stay through its handoff to Ronin Setup, provider sign-in, and one working Agent.
 - Working inside an existing coworkspace: use the question-first
   [`docs/README.md`](docs/README.md).
 - Developing this repository: run `npm run verify` for the TypeScript and behavior-test

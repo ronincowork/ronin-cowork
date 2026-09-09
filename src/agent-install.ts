@@ -11,7 +11,8 @@ function agentPrefix(): string {
   return path.join(os.homedir(), '.local');
 }
 
-function agentBinDir(): string {
+/** Where Ronin's own Install and Update put a CLI's command: the owner's prefix, never root's. */
+export function agentBinDir(): string {
   return path.join(agentPrefix(), 'bin');
 }
 
@@ -22,7 +23,10 @@ function bundledNodeBin(): string | null {
 
 function installPreamble(): string[] {
   const nodeBin = bundledNodeBin();
-  const pathParts = ['$PATH', agentBinDir(), ...(nodeBin ? [nodeBin] : [])];
+  // Ronin's own bin dir goes FIRST: the line ends by running the CLI it just installed, and
+  // with the dir appended a system copy of the same name answered instead (0.151.0 printed
+  // after 0.153.4 landed, 2026-09-09). This is the install tile's PATH only.
+  const pathParts = [agentBinDir(), ...(nodeBin ? [nodeBin] : []), '$PATH'];
   return [`export npm_config_prefix=${shq(agentPrefix())}`, `export PATH=${shq(pathParts.join(':'), true)}`];
 }
 
@@ -93,33 +97,20 @@ function installLine(get: string, cmd: string): string {
   return [...installPreamble(), `${get} && ${cmd}`].join('; ');
 }
 
-/**
- * UPDATE — the same tile, the same preamble, the registry's update line. The preamble
- * points npm at the owner's own prefix, so no box needs root for this and the owner
- * answers nothing; a CLI whose updater is its own subcommand runs that instead. The tile
- * ends by printing the CLI's version so the owner sees what landed. Tiles already
- * running keep the binary they started with until they turn over; every launch after
- * this reads the new one. It is the owner's press, never Ronin's.
- */
-export async function dispatchUpdate(name: string): Promise<InstallStarted> {
-  const said = (outcome: InstallStarted['outcome'], say: string, session: string | null = null): InstallStarted =>
-    ({ kind: 'agent', name, session, outcome, say });
-  const spec = AGENTS.find((a) => a.id === name);
-  if (!spec) return said('refused', `no agent called "${name}"`);
-  const line = spec.operations.update.shell || (spec.operations.update.argv.length ? [spec.cmd, ...spec.operations.update.argv].join(' ') : '');
-  if (!line) return said('refused', `nothing updates ${spec.label} from here yet`);
-  const probed = (await listAgentAvailability()).find((p) => p.id === spec.id);
-  if (!probed?.installed) return said('refused', `${spec.label} is not on this machine; install it first`);
+/** The registry's update for a CLI as one shell line, or '' when it has none. */
+export function updateLineOf(spec: (typeof AGENTS)[number]): string {
+  return spec.operations.update.shell || (spec.operations.update.argv.length ? [spec.cmd, ...spec.operations.update.argv].join(' ') : '');
+}
 
-  const session = `update_${spec.id}`;
-  try {
-    if (await sessionExists(session)) await killSessionTree(session);
-    await emitSessionWillBorn(session);
-    await createSession(session, undefined, { agent: false });
-    void collectBirthLines(session, true);
-    await runCommand(session, [...installPreamble(), `${line} && ${spec.cmd} ${spec.operations.version.join(' ')}`].join('; '));
-    return said('started', `updating ${spec.label} in ${session}`, session);
-  } catch (e) {
-    return said('refused', String((e as Error)?.message ?? e));
-  }
+/**
+ * UPDATE — the same preamble as Install, the registry's update line, then the CLI's own
+ * version so the owner sees what landed. The preamble points npm at the owner's own prefix
+ * (no box needs root; the owner answers nothing) and puts that prefix's bin dir first so the
+ * version printed is the one just installed. It runs in a temporary provider_setup session
+ * shown in the page, opened and closed by src/setup-runtime.ts exactly as a sign-in is.
+ */
+export function updateCommand(spec: (typeof AGENTS)[number]): string {
+  const line = updateLineOf(spec);
+  if (!line) throw new Error(`nothing updates ${spec.label} from here yet`);
+  return [...installPreamble(), `${line} && ${spec.cmd} ${spec.operations.version.join(' ')}`].join('; ');
 }
