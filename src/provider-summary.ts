@@ -55,11 +55,14 @@ export interface MeasureOps {
 /** The first dotted number a `--version` line carries, or ''. */
 export const versionIn = (text: string): string => /\d+\.\d+(?:\.\d+)*/.exec(text)?.[0] ?? '';
 
-/** Ask the installed CLI what it is, with the argv the registry declares for it; what it printed, or ''. */
+/** How long one CLI may take to say its version. A slow one (gemini: 2.9s, 2026-09-09) reads *version not read*, never holds the rest. */
+export const VERSION_PROBE_MS = 4_000;
+
+/** Ask the installed CLI what it is, with the argv the registry declares for it; what it printed, or '' — including when it took too long. */
 export async function installedVersion(file: string, argv: readonly string[]): Promise<string> {
   if (!file || !argv.length) return '';
   try {
-    const { stdout, stderr } = await execFile(file, argv, { timeout: 8_000 });
+    const { stdout, stderr } = await execFile(file, argv, { timeout: VERSION_PROBE_MS });
     return `${stdout}\n${stderr}`;
   } catch {
     return '';
@@ -79,12 +82,11 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
   for (const agent of available) if (agent.installed && agent.path) paths[agent.id] = agent.path;
   const signed_in: string[] = [];
   for (const agent of AGENTS) if (await signedIn(agent.id)) signed_in.push(agent.id);
+  // Every CLI asked at once, each bounded: the measure costs the slowest answer, not the sum.
   const versions: Record<string, string> = {};
-  for (const agent of AGENTS) {
-    if (!paths[agent.id]) continue;
-    const found = versionIn(await version(paths[agent.id], agent.operations.version));
-    if (found) versions[agent.id] = found;
-  }
+  const asked = await Promise.all(AGENTS.filter((agent) => paths[agent.id])
+    .map(async (agent) => [agent.id, versionIn(await version(paths[agent.id], agent.operations.version))] as const));
+  for (const [id, found] of asked) if (found) versions[id] = found;
   const launchable = new Set(catalog.filter((entry) => entry.models.length > 0).map((entry) => entry.cli));
   const operational = installed.filter((cli) =>
     (signed_in.includes(cli) || activatedAt(section, cli) !== null) && launchable.has(cli));
