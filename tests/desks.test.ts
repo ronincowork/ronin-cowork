@@ -458,6 +458,12 @@ test('handoff replaces explicit owners without moving the branch or worktree', a
   const lifecycle = await readManagedEvents({ repo: 'cowork' });
   assert.equal(lifecycle.events.at(-1)?.type, 'handed_off');
   assert.deepEqual(lifecycle.events.at(-1)?.objects[0]?.owner_sessions, ['successor', 'coowner']);
+  // Reopening by the old custodian is not a handoff back: custody stays where it was, and
+  // the status says so — the tool acknowledges, it does not decide (owner, 2026-09-09).
+  const reopened = await openDesk({ repo: 'cowork', session: 'custodian', team: 'comp' });
+  assert.equal(reopened.worktree, desk.worktree);
+  assert.deepEqual(reopened.owners, ['successor', 'coowner'], 'open never takes custody from a holder');
+  assert.ok(!reopened.owners!.includes('custodian'));
 });
 
 test('race: two hand-ins at once serialize on the line and both land; the ledger has both accepted, in order', async () => {
