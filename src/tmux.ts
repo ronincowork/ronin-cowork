@@ -19,7 +19,6 @@ export interface SessionInfo {
   control: Control;
   key: string;
   agent: string;
-  house_seat: string;
   campaign_id: string;
   activity: number;
   /** RIREKI's dial: false when the session was born with Ronin Services off — no tape, no unlocked views. */
@@ -72,13 +71,13 @@ export async function listSessions(): Promise<SessionInfo[]> {
     const stdout = await tmux.run([
       'list-sessions',
       '-F',
-      `#{session_name}\t#{${TITLE_OPT}}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${HOUSE_SEAT_OPT}}\t#{${CAMPAIGN_OPT}}\t#{${RIREKI_OPT}}\t#{window_activity}`,
+      `#{session_name}\t#{${TITLE_OPT}}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}\t#{${RIREKI_OPT}}\t#{window_activity}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, title, windows, attached, created, hasNote, tags, leads, control, key, agent, houseSeat, campaign, rireki, activity] = line.split('\t');
+        const [name, title, windows, attached, created, hasNote, tags, leads, control, key, agent, campaign, rireki, activity] = line.split('\t');
         return {
           name,
           title: title?.trim() || '',
@@ -91,7 +90,6 @@ export async function listSessions(): Promise<SessionInfo[]> {
           control: control === 'user' || control === 'read' ? (control as Control) : 'write',
           key: key?.trim() || `${name}-${Number(created) || 0}`,
           agent: agent?.trim() || '',
-          house_seat: houseSeat?.trim() || '',
           campaign_id: campaign?.trim() || '',
           rireki: rireki?.trim() !== 'off',
           activity: Number(activity) || 0,
@@ -372,17 +370,11 @@ export async function projectRootsOfSessions(): Promise<Record<string, string>> 
 }
 
 const AGENT_OPT = '@ronin-agent';
-const HOUSE_SEAT_OPT = '@ronin-house-seat';
 const PROVIDER_SESSION_OPT = '@ronin-provider-session';
 
 export async function setLaunchStamp(name: string, agent: string): Promise<void> {
   if (!agent.trim()) return;
   await tmux.run(['set-option', '-t', exactPane(name), AGENT_OPT, agent.trim()]).catch(() => {});
-}
-
-/** Server-only house identity stamp. Never populated from accepted launch fields. */
-export async function setHouseSeat(name: string, seat: 'mika'): Promise<void> {
-  await tmux.run(['set-option', '-t', exactPane(name), HOUSE_SEAT_OPT, seat]);
 }
 
 export async function setProviderSessionId(name: string, id: string): Promise<void> {

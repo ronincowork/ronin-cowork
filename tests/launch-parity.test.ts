@@ -479,11 +479,11 @@ test('QuarterBack is a session_role, pinned as the developer family\'s default l
 test('Mika house mechanics resolve without a session_role', async () => {
   const mika = await resolveForm({
     house_seat: 'mika',
-    name: 'mika_agent',
+    name: 'mika',
     prompt: '+system_help:',
   }, new Set());
   assert.equal(mika.session_role, '');
-  assert.equal(mika.name, 'mika_agent');
+  assert.equal(mika.name, 'mika');
   assert.match(mika.dir, /\/mika$/);
   assert.equal(mika.project_root, 'mika_home');
   assert.equal(mika.capExempt, true);

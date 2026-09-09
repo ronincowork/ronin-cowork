@@ -4,7 +4,6 @@ import { REPO_ROOT, storeDir } from './resources.js';
 import { TIERS, listSessionLaunchSpecs, type ProviderSummary, type SessionLaunchSpec, type Tier } from './model-providers.js';
 import { readProviderSummary } from './provider-summary.js';
 import { readAgentsSection } from './machine-state.js';
-import { mikaToolCapable } from './mika-provider-tools.js';
 
 export const MIKA_LEVELS = TIERS;
 export type MikaLevel = Tier;
@@ -21,7 +20,7 @@ export interface MikaSelection {
 
 export class MikaUnavailable extends Error {
   constructor(
-    public readonly code: 'mika_provider_unmeasured' | 'mika_no_ready_provider' | 'mika_provider_tools_unsupported' | 'mika_no_model_at_level' | 'mika_model_level_choice_required' | 'invalid_mika_level',
+    public readonly code: 'mika_provider_unmeasured' | 'mika_no_ready_provider' | 'mika_no_model_at_level' | 'mika_model_level_choice_required' | 'invalid_mika_level',
     message: string,
     public readonly available_levels: MikaLevel[] = [],
     public readonly requested_level?: MikaLevel,
@@ -55,9 +54,7 @@ export function resolveMikaModel(input: {
   const operational = new Set(summary.operational);
   // Mika is born with MCP disconnected. A row that cannot express that boundary is not
   // actually launchable for this house seat.
-  const disconnected = specs.filter((spec) => operational.has(spec.cli) && !!spec.gbrainDisconnected);
-  const eligible = disconnected.filter((spec) => mikaToolCapable(spec.cli));
-  if (disconnected.length && !eligible.length) throw new MikaUnavailable('mika_provider_tools_unsupported', 'No ready provider has a measured exact Mika tool binding. Claude is currently the only supported Mika provider.', [], level);
+  const eligible = specs.filter((spec) => operational.has(spec.cli) && !!spec.gbrainDisconnected);
   if (!eligible.length) throw new MikaUnavailable('mika_no_ready_provider', 'Mika needs a ready provider that can launch without external tools. Open Model providers.', [], level);
   const available = orderedLevels(eligible);
   const exact = eligible.filter((spec) => spec.tier === level);

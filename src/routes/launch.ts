@@ -9,7 +9,6 @@ import {
   sessionExists,
   setControl,
   setLaunchStamp,
-  setHouseSeat,
   setLeads,
   setProviderSessionId,
   setCampaign,
@@ -48,9 +47,6 @@ import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js'
 import { ensureMikaHome, MikaUnavailable, readMikaStartHere, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
 import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
 import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../ronin-helper.js';
-import { bindMikaProviderTools } from '../mika-provider-tools.js';
-import { MIKA_HOUSE_SEAT, MIKA_SESSION, verifyMikaIdentity } from '../mika-identity.js';
-import { attemptMessage, enqueueMessage, MessageRefused } from '../message-queue.js';
 
 /** The environment a newborn is handed beyond what the pane inherits: its projected
  *  command PATH with Ronin's own install bin dir behind it, and the operator socket that
@@ -62,12 +58,12 @@ import { attemptMessage, enqueueMessage, MessageRefused } from '../message-queue
  *  absolute path ran the CLI Ronin installed while `codex` typed by name inside it found an
  *  older system copy (2026-09-09). The session's own command directory stays first: its
  *  guards (the tmux shim) must win over anything. Running tiles are untouched. */
-export function birthEnv(toolPath?: string, socket?: string, installBin: string = agentBinDir(), parentPath: string = process.env.PATH ?? ''): Record<string, string> | undefined {
+export function birthEnv(toolPath?: string, socket?: string, installBin: string = agentBinDir(), parentPath: string = process.env.PATH ?? '', exactPath = false): Record<string, string> | undefined {
   const env: Record<string, string> = {};
   const has = (p: string) => p.split(':').includes(installBin);
   if (toolPath) {
     const [own, ...rest] = toolPath.split(':');
-    env.PATH = has(toolPath) ? toolPath : [own, installBin, ...rest].filter(Boolean).join(':');
+    env.PATH = exactPath || has(toolPath) ? toolPath : [own, installBin, ...rest].filter(Boolean).join(':');
   } else if (installBin && !has(parentPath)) {
     env.PATH = [installBin, parentPath].filter(Boolean).join(':');
   }
@@ -186,7 +182,7 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
     : {};
   return {
     session_type: 'cowork_agent',
-    name: MIKA_SESSION,
+    name: 'mika',
     tags: [RONIN_HELPERS_TEAM],
     prompt: typeof source.prompt === 'string' ? source.prompt : '',
     ...(selection ? { provider: selection.provider, model: selection.model } : {}),
@@ -196,7 +192,7 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
 }
 
 export interface LaunchControl {
-  ensureMika(intent?: 'help' | 'setup_provider_ready'): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: typeof MIKA_SESSION; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
+  ensureMika(intent?: 'help' | 'setup_provider_ready'): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: 'mika'; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
 }
 
 export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'action_required' {
@@ -271,9 +267,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
     let mikaSelection: MikaSelection | undefined;
     let mikaHome = '';
     if (houseSeat === 'mika') {
-      const identity = await verifyMikaIdentity(await listSessions());
-      if (identity.state === 'verified') return res.json({ ok: true, name: MIKA_SESSION, already: true });
-      if (identity.state === 'collision') return res.status(409).json({ error: 'The reserved Mika session name is occupied by an unverified session.', code: 'mika_session_collision' });
+      if (await sessionExists('mika')) return res.json({ ok: true, name: 'mika', already: true });
       try {
         mikaHome = await ensureMikaHome();
         if (loader === RONIN_HELPER_LOADER) await ensureRoninHelpersTeam();
@@ -296,9 +290,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
     const name = String(req.body?.name ?? '').trim();
     if (!name) return res.status(400).json({ error: '`name` is required for every session type.' });
     if (!isValidName(name)) return res.status(400).json({ error: 'Use letters, digits, _ or - (no spaces, . or :).' });
-    if (name === MIKA_SESSION && houseSeat !== MIKA_HOUSE_SEAT) {
-      return res.status(409).json({ error: 'That name is reserved for Ronin’s verified house assistant.', code: 'reserved_house_session' });
-    }
 
     if (sessionType === 'bare_metal_agent') {
       if (!String(req.body?.project_root ?? '').trim()) {
@@ -428,11 +419,17 @@ export function registerLaunch(app: express.Express): LaunchControl {
           error: `Could not find ${resolved.cmd.trim().split(/\s+/)[0]} on this machine. Install it from ⚙ Configuration, then launch again.`,
         });
       }
-      if (houseSeat === 'mika') launch.argv = bindMikaProviderTools(resolved.launchAgent, launch.argv, boundOperatorSocket());
       const providerSession = newProviderSession(resolved.launchAgent, launch.argv);
       launch.argv = providerSession.argv;
-      routineTools = resolved.agent && houseSeat !== 'mika'
-        ? await projectRoutineTools(resolved.name, resolved.routines)
+      routineTools = resolved.agent
+        ? await projectRoutineTools(
+            resolved.name,
+            resolved.routines,
+            houseSeat === 'mika' ? '' : undefined,
+            houseSeat === 'mika'
+              ? { includeTmux: false, extraTools: ['lookup', 'wheres_waldo', 'show'] }
+              : {},
+          )
         : null;
       await createSession(resolved.name, resolved.dir, {
         agent: resolved.agent,
@@ -441,7 +438,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         // Told at birth, the way tmux tells every shell where its server is: the socket
         // this operator bound. A process that bound none (a dev run) says nothing, and the
         // newborn's tools use the default path.
-        env: birthEnv(routineTools?.path, boundOperatorSocket()),
+        env: birthEnv(routineTools?.path, boundOperatorSocket(), agentBinDir(), process.env.PATH ?? '', houseSeat === 'mika'),
         control: resolved.agent ? 'user' : undefined,
         key: birthKey || undefined,
         // The Services switch as resolved for THIS Agent at birth (campaign < team < form):
@@ -464,7 +461,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
         : await birthCampaign(resolved.team, form.campaign_id);
       await setCampaign(resolved.name, campaignId);
       await setLaunchStamp(resolved.name, resolved.launchAgent);
-      if (houseSeat === MIKA_HOUSE_SEAT) await setHouseSeat(resolved.name, MIKA_HOUSE_SEAT);
       if (providerSession.id) await setProviderSessionId(resolved.name, providerSession.id);
       if (resolved.session_type === 'cowork_agent') {
         await seedTegami(
@@ -512,7 +508,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
       });
     } else {
       const receipt = {
-        ...(houseSeat === MIKA_HOUSE_SEAT ? { house_seat: MIKA_HOUSE_SEAT, session: MIKA_SESSION, conversation: birthKey } : {}),
         session_type: resolved.session_type,
         session_role: resolved.session_role,
         team: resolved.team,
@@ -661,10 +656,10 @@ export function registerLaunch(app: express.Express): LaunchControl {
     return launchJob(req, res, next);
   });
   const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help'): Promise<MikaReady> => {
-    const metadata = { session: MIKA_SESSION, team: RONIN_HELPERS_TEAM, loader: RONIN_HELPER_LOADER };
+    const metadata = { session: 'mika' as const, team: RONIN_HELPERS_TEAM, loader: RONIN_HELPER_LOADER };
     const observeLive = async (already: boolean): Promise<MikaReady> => {
       let providerState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
-      try { providerState = mikaReadinessFromPane(await capturePane(MIKA_SESSION, 0)); } catch { /* live but not yet drawable */ }
+      try { providerState = mikaReadinessFromPane(await capturePane('mika', 0)); } catch { /* live but not yet drawable */ }
       if (providerState === 'action_required') {
         return { ok: false, state: 'action_required', action: 'pending_user', code: 'provider_confirmation_required', already, ...metadata };
       }
@@ -673,9 +668,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (welcome?.state === 'pending') await recordRoninHelperWelcome(welcome.conversation, 'delivered');
       return { ok: true, state: 'ready', already, welcome_delivered: welcome?.state === 'pending', ...metadata };
     };
-    const identity = await verifyMikaIdentity(await listSessions());
-    if (identity.state === 'verified') return observeLive(true);
-    if (identity.state === 'collision') return { ok: false, state: 'refused', code: 'mika_session_collision', error: 'The reserved Mika session name is occupied by an unverified session.', ...metadata };
+    if (await sessionExists('mika')) return observeLive(true);
     if (mikaStarting) return mikaStarting;
     mikaStarting = (async () => {
       const welcome = intent === 'setup_provider_ready' && (await roninHelperWelcomeState())?.state !== 'delivered';
@@ -691,7 +684,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         json(value: unknown) { body = value && typeof value === 'object' ? value as Record<string, unknown> : {}; return value; },
       } as unknown as express.Response;
       await launch({ body: { prompt } } as express.Request, response, 'mika', RONIN_HELPER_LOADER);
-      if (status < 400 && body.ok === true && welcome) await recordRoninHelperWelcome(String(body.conversation ?? MIKA_SESSION), 'pending');
+      if (status < 400 && body.ok === true && welcome) await recordRoninHelperWelcome(String(body.conversation ?? 'mika'), 'pending');
       return status < 400 && body.ok === true
         ? observeLive(body.already === true)
         : {
@@ -713,20 +706,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
     const intent = req.body?.intent === 'setup_provider_ready' ? 'setup_provider_ready' : 'help';
     const ready = await ensureMika(intent);
     res.status(ready.ok ? 200 : ready.state === 'starting' ? 202 : 409).json(ready);
-  });
-  app.post('/api/mika/send', async (req, res) => {
-    const identity = await verifyMikaIdentity(await listSessions());
-    if (identity.state !== 'verified') return res.status(409).json({ ok: false, state: 'refused', code: identity.state === 'collision' ? 'mika_session_collision' : 'mika_not_running' });
-    const text = typeof req.body?.text === 'string' ? req.body.text : '';
-    if (!text.trim()) return res.status(400).json({ error: 'Nothing to send.' });
-    try {
-      const item = await enqueueMessage(MIKA_SESSION, text, 'owner');
-      const retained = await attemptMessage(item.id, 'safe');
-      res.json({ ok: true, queued: retained !== null, started: retained === null, message: retained });
-    } catch (error) {
-      if (error instanceof MessageRefused) return res.status(409).json({ ok: false, state: 'refused', code: 'mika_not_running' });
-      res.status(500).json({ ok: false, state: 'refused', code: 'mika_send_failed' });
-    }
   });
   return { ensureMika };
 }

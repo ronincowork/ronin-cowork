@@ -61,7 +61,6 @@ test('projected ronin_bin tools resolve the symlink and reach the repository and
   const operator = createServer((req, res) => {
     reached.push(req.url ?? '');
     res.setHeader('content-type', 'application/json');
-    if (req.url === '/api/mika/ready' || req.url === '/api/mika/send') { res.end('{"ok":true}'); return; }
     if (req.url === '/api/harakiri') { res.statusCode = 404; res.end('{}'); return; } // 200 makes the tool wait 15s to die
     if (req.url === '/api/sessions') { res.end('[]'); return; }
     res.end(JSON.stringify({ stdout: req.url === '/api/cli/desk' ? 'usage: tejun-desk\n' : '', stderr: '', exit: 0 }));
@@ -146,7 +145,7 @@ test('projected ronin_bin tools resolve the symlink and reach the repository and
     [['tejun-rehydrate', 'archive-id'], '/api/archived-sessions/archive-id/rehydrate', {}],
     [['tejun-session-set', 'reach'], '/api/session', {}],
     [['tejun-team-set', 'reach'], '/api/team', {}],
-    [['mika'], '/api/mika/send', {}],
+    [['mika'], '/api/mika', {}],
   ];
   for (const [args, door, extra] of knocks) {
     reached.length = 0;

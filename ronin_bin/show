@@ -1,0 +1,8 @@
+#!/bin/bash
+set -u
+tab=${1-}; surface=${2-}
+case "$tab" in *[!A-Za-z0-9_-]*|'') echo 'Usage: show <tab-id> <surface>' >&2; exit 2;; esac
+case "$surface" in *[!A-Za-z0-9@._:-]*|'') echo 'Usage: show <tab-id> <surface>' >&2; exit 2;; esac
+[ "$#" -eq 2 ] || { echo 'show accepts one tab id and one Ronin surface.' >&2; exit 2; }
+[ -n "${RONIN_SOCKET:-}" ] || { echo 'REFUSED: Ronin operator socket is unavailable.' >&2; exit 4; }
+exec /usr/bin/curl -fsS --unix-socket "$RONIN_SOCKET" -H 'content-type: application/json' -X POST http://ronin/api/mika/context/"$tab"/show -d "{\"surface\":\"$surface\"}"
