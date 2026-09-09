@@ -3,15 +3,13 @@
 code is `src/agent-install.ts`, the commands are `src/agents.ts`, and the PATH half is
 `setup.sh`.
 
-**It is an operation**, not a service and not a surface: one dispatcher the setup page
-calls at Save and ⚙ calls any day after. There is no third path, and a second one would
-be a defect.
+**It is an operation**, not a service and not a surface: one dispatcher the Machine
+Settings page calls. A second path would be a defect.
 
 ## The one source
 
-`src/agents.ts` carries every agent's install line as `get`. The operation, the setup page
-and ⚙ all read that one field, so changing a command is one line and every surface
-follows.
+`src/agents.ts` carries every agent's install line as `get`. The operation and Machine
+Settings read that one field, so changing a command is one line and every surface follows.
 
 An **empty `get` means Ronin cannot install it**, and `parked` is the sentence saying why,
 written for the person reading the row. The row then has no tick, the operation refuses
@@ -75,15 +73,10 @@ stays on the needed list, because met items do not exist, so **asking again is t
 the stale session from the last attempt is killed rather than left to collide with its own
 name.
 
-## The surfaces
+## The surface
 
-- **cowork_setup** (`public/js/cowork-setup.js`) — an absent agent's tick is live and the row
-  says what pressing it does, command included. A present agent's tick is fixed: a fact,
-  not a control. At Save the want is written first, so a failed install stays on the needed
-  list, and the dispatch follows.
-- **The landing** — Save exits through the `?tiles=` directive naming the install sessions,
-  so the person lands watching them (`docs/tile-control.md`).
-- **⚙ Configuration** — the same rows any day, the same operation, the same session.
+**Machine Settings** shows the measured availability and the operation any day. A failed
+install remains on the needed list, so asking again is the retry.
 
 ## Proving a command still works
 
