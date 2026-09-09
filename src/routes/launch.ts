@@ -43,6 +43,7 @@ import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentenc
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
+import { ensureMikaHome, MikaUnavailable, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
 
 /** The environment a newborn is handed beyond what the pane inherits: its projected
  *  command PATH, and the operator socket that launched it. Undefined when there is nothing
@@ -159,7 +160,7 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   return { body, ignored: [...ignored].sort() };
 }
 
-export function mikaLaunchBody(input: unknown): Record<string, unknown> {
+export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, 'provider' | 'model'>): Record<string, unknown> {
   const source = input && typeof input === 'object' && !Array.isArray(input)
     ? input as Record<string, unknown>
     : {};
@@ -168,10 +169,17 @@ export function mikaLaunchBody(input: unknown): Record<string, unknown> {
     name: 'mika',
     tags: ['mika'],
     prompt: typeof source.prompt === 'string' ? source.prompt : '',
+    ...(selection ? { provider: selection.provider, model: selection.model } : {}),
+    launch_mode: 'configured',
+    gbrain_mode: 'disconnected',
   };
 }
 
-export function registerLaunch(app: express.Express): void {
+export interface LaunchControl {
+  ensureMika(): Promise<{ ok: boolean; already?: boolean; error?: string }>;
+}
+
+export function registerLaunch(app: express.Express): LaunchControl {
   const loadPaneStatus = createActivityCache(async (name: string) => {
     const text = await capturePane(name, 0);
     return {
@@ -233,7 +241,25 @@ export function registerLaunch(app: express.Express): void {
   });
 
   const launch = async (req: express.Request, res: express.Response, houseSeat?: 'mika'): Promise<unknown> => {
-    const accepted = acceptedLaunchBody(houseSeat === 'mika' ? mikaLaunchBody(req.body) : req.body);
+    let mikaSelection: MikaSelection | undefined;
+    if (houseSeat === 'mika') {
+      if (await sessionExists('mika')) return res.json({ ok: true, name: 'mika', already: true });
+      try {
+        await ensureMikaHome();
+        mikaSelection = await resolveConfiguredMikaModel();
+      } catch (error) {
+        if (error instanceof MikaUnavailable) {
+          return res.status(error.code === 'invalid_mika_level' ? 400 : 409).json({
+            error: error.message,
+            code: error.code,
+            requested_level: error.requested_level,
+            available_levels: error.available_levels,
+          });
+        }
+        return res.status(500).json({ error: `Mika home is unavailable: ${String((error as Error)?.message ?? error)}`, code: 'mika_home_invalid' });
+      }
+    }
+    const accepted = acceptedLaunchBody(houseSeat === 'mika' ? mikaLaunchBody(req.body, mikaSelection) : req.body);
     req.body = accepted.body;
     const sessionType = String(req.body.session_type);
     const name = String(req.body?.name ?? '').trim();
@@ -369,6 +395,7 @@ export function registerLaunch(app: express.Express): void {
         // onto a running session (owner, 2026-09-04). A terminal has no Routines and keeps
         // the recorder's own default.
         rireki: resolved.routines.length ? resolved.routines.some((routine) => routine.name === 'ronin_services' && routine.enabled) : undefined,
+        strictCwd: houseSeat === 'mika',
       });
       runtimeBorn = true;
       if (birthKey) rememberSessionKey(resolved.name, birthKey);
@@ -477,7 +504,15 @@ export function registerLaunch(app: express.Express): void {
       } catch (e) {
         return res.status(500).json({ error: `Session was born, but its birth receipt could not be persisted: ${String((e as Error)?.message ?? e)}` });
       }
-      res.json({ ok: true, name: resolved.name, receipt });
+      const modelSelection = mikaSelection ? {
+        requested_level: mikaSelection.requested_level,
+        provider: mikaSelection.provider,
+        model: mikaSelection.model,
+        resolved_level: mikaSelection.resolved_level,
+        provider_notice: mikaSelection.provider_notice,
+        available_levels: mikaSelection.available_levels,
+      } : undefined;
+      res.json({ ok: true, name: resolved.name, receipt, ...(modelSelection ? { model_selection: modelSelection } : {}) });
     }
     void appendLaunchLedger(form, resolved, true);
     void (async () => {
@@ -569,4 +604,19 @@ export function registerLaunch(app: express.Express): void {
       send(body && typeof body === 'object' && (body as { ok?: boolean }).ok ? { ...body, team_from: teamFrom } : body);
     return launchJob(req, res, next);
   });
+  return {
+    ensureMika: async () => {
+      if (await sessionExists('mika')) return { ok: true, already: true };
+      let status = 200;
+      let body: Record<string, unknown> = {};
+      const response = {
+        status(code: number) { status = code; return this; },
+        json(value: unknown) { body = value && typeof value === 'object' ? value as Record<string, unknown> : {}; return value; },
+      } as unknown as express.Response;
+      await launch({ body: { prompt: '' } } as express.Request, response, 'mika');
+      return status < 400 && body.ok === true
+        ? { ok: true, already: body.already === true }
+        : { ok: false, error: String(body.error ?? `HTTP ${status}`) };
+    },
+  };
 }

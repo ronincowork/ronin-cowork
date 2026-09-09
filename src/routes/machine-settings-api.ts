@@ -21,7 +21,7 @@ export function registerMachineSettings(app: express.Express): void {
       ));
     } catch (error) {
       const message = messageOf(error);
-      res.status(message.startsWith('no machine-settings family') ? 404 : 500)
+      res.status(message.startsWith('no machine-settings family') ? 404 : message.startsWith('invalid_mika_level') ? 400 : 500)
         .json({ error: message });
     }
   });

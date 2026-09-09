@@ -1,7 +1,7 @@
 import { chmod, lstat, mkdir, realpath, stat } from 'node:fs/promises';
 import { storeDir } from './resources.js';
-import { TIERS, listSessionLaunchSpecs, type SessionLaunchSpec, type Tier } from './model-providers.js';
-import { readProviderSummary, type ProviderSummary } from './provider-summary.js';
+import { TIERS, listSessionLaunchSpecs, type ProviderSummary, type SessionLaunchSpec, type Tier } from './model-providers.js';
+import { readProviderSummary } from './provider-summary.js';
 import { readAgentsSection } from './machine-state.js';
 
 export const MIKA_LEVELS = TIERS;
@@ -19,7 +19,7 @@ export interface MikaSelection {
 
 export class MikaUnavailable extends Error {
   constructor(
-    public readonly code: 'mika_provider_unmeasured' | 'mika_no_ready_provider' | 'mika_no_model_at_level' | 'invalid_mika_level',
+    public readonly code: 'mika_provider_unmeasured' | 'mika_no_ready_provider' | 'mika_no_model_at_level' | 'mika_model_level_choice_required' | 'invalid_mika_level',
     message: string,
     public readonly available_levels: MikaLevel[] = [],
     public readonly requested_level?: MikaLevel,
@@ -90,10 +90,21 @@ export async function resolveConfiguredMikaModel(): Promise<MikaSelection> {
     ? agents.sessions as Record<string, unknown> : {};
   const dflt = sessions.default && typeof sessions.default === 'object'
     ? sessions.default as Record<string, unknown> : {};
+  const jobs = agents.jobs && typeof agents.jobs === 'object' ? agents.jobs as Record<string, unknown> : {};
+  const legacy = jobs.mikaassist && typeof jobs.mikaassist === 'object'
+    ? jobs.mikaassist as Record<string, unknown>
+    : jobs.mika && typeof jobs.mika === 'object' ? jobs.mika as Record<string, unknown> : {};
+  const specs = await listSessionLaunchSpecs();
+  let level = mikaLevelFromAgents(agents);
+  if (legacy.level === undefined && (legacy.provider !== undefined || legacy.model !== undefined)) {
+    const pair = specs.find((spec) => spec.provider === legacy.provider && spec.model === legacy.model);
+    if (!pair) throw new MikaUnavailable('mika_model_level_choice_required', 'Mika’s previous model is no longer in the catalog. Choose Light, Standard, or Frontier before she starts.');
+    level = pair.tier;
+  }
   return resolveMikaModel({
-    level: mikaLevelFromAgents(agents),
+    level,
     generalProvider: typeof dflt.provider === 'string' ? dflt.provider : '',
-    specs: await listSessionLaunchSpecs(),
+    specs,
     summary: await readProviderSummary(),
   });
 }

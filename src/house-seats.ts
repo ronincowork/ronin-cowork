@@ -5,7 +5,9 @@ import { mikaHomeDir } from './mika-runtime.js';
 export type HouseSeat = 'mika';
 
 export function profileDir(profile: LaunchProfile): string {
-  return profile.dir === '{install}' ? REPO_ROOT : '';
+  if (profile.dir === '{install}') return REPO_ROOT;
+  if (profile.dir === '{mika_home}') return mikaHomeDir();
+  return '';
 }
 
 export function resolveHouseSeatProfile(seat: HouseSeat | undefined, profile: LaunchProfile): LaunchProfile {
@@ -20,7 +22,7 @@ export function resolveHouseSeatProfile(seat: HouseSeat | undefined, profile: La
     ack: false,
     opening: 'Your job list is ronin_catalogs/MIKA_MACROS.md — read it once, it is short. Then: {prompt}',
     capExempt: true,
-    dir: mikaHomeDir(),
+    dir: '{mika_home}',
     stated_by: {
       ...profile.stated_by,
       label: house,

@@ -143,6 +143,8 @@ test('the Mika door accepts words only and fixes every public birth input', () =
     name: 'mika',
     tags: ['mika'],
     prompt: '+system_help:',
+    launch_mode: 'configured',
+    gbrain_mode: 'disconnected',
   });
 });
 
