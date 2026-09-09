@@ -352,9 +352,9 @@ export function createCoworkView(options = {}) {
   };
   const closeMika = () => {
     if (mikaPanel.hidden) return;
-    // This is only the quick viewer. Destroying its ordinary pool attachment leaves the
-    // tmux session alive; the Tile's own End control remains the only ending action.
-    if (mikaSeat) { emptySeat(mikaSeat); mikaSeat = ''; }
+    // Return the borrowed ordinary Tile to its workspace pool. This detaches the quick
+    // view only; the Tile's own End control remains the sole session-ending action.
+    if (mikaSeat) { seats[mikaSeat].pool.releaseBorrow('mika'); mikaSeat = ''; }
     if (selectorCards) { selectorCards.hidden = false; selectorCards.inert = false; selectorCards.removeAttribute('aria-hidden'); }
     mikaPanel.inert = true;
     mikaPanel.setAttribute('aria-hidden', 'true');
@@ -388,8 +388,7 @@ export function createCoworkView(options = {}) {
         if (!result.ok || result.data?.state !== 'ready') return showMikaState('refused');
         await Promise.all([fetchSessions(), refreshTeams()]);
         paint(); // membership seats the ordinary session before the selector reveals it
-        if (!putSession('mika', seat, false)) return showMikaState('refused');
-        const ordinaryHost = seats[seat].pool.hostElement('mika');
+        const ordinaryHost = seats[seat].pool.borrow('mika');
         if (!ordinaryHost) return showMikaState('refused');
         mikaStage.append(ordinaryHost); // move the normal Tile; do not manufacture another
         mikaSeat = seat;

@@ -121,6 +121,25 @@ export function createWarmTerminalPool({
     return true;
   };
 
+  /** Temporarily lend the member's one ordinary Tile to a quick surface without changing
+   *  this workspace's active member or creating a second viewer. */
+  const borrow = (name) => {
+    const entry = entries.get(name);
+    if (!entry) return null;
+    clearGrace(entry);
+    stream(name, entry);
+    touch(name);
+    return entry.host.el;
+  };
+  const releaseBorrow = (name) => {
+    const entry = entries.get(name);
+    if (!entry?.host) return false;
+    container.append(entry.host.el);
+    if (active === name) { entry.host.reveal?.(); entry.host.fit(); }
+    else park(name);
+    return true;
+  };
+
   /** The hover flourish: start streaming hidden so the click lands on a painted tile.
    *  Declines politely at the cap — a hover never costs a genuinely warm member. */
   const prewarm = (name) => {
@@ -152,10 +171,11 @@ export function createWarmTerminalPool({
     show,
     prewarm,
     keepHot,
+    borrow,
+    releaseBorrow,
     setPinned,
     destroyAll,
     has: (name) => entries.has(name),
-    hostElement: (name) => entries.get(name)?.host?.el || null,
     get active() { return active; },
     get size() { return entries.size; },
     get streamingCount() { return lru.length; },
