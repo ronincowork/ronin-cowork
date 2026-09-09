@@ -18,23 +18,18 @@ test('Mika defaults to light and accepts only the three levels', () => {
   assert.throws(() => mikaLevelFromAgents({ jobs: { mikaassist: { level: 'cheap' } } }), MikaUnavailable);
 });
 
-test('exact level is invariant and the general provider wins only within it', () => {
+test('provider order wins and the first operational provider uses Light', () => {
   const specs = [spec('anthropic', 'claude', 'haiku', 'light'), spec('openai', 'codex', 'luna', 'light'), spec('openai', 'codex', 'terra', 'standard')];
   const picked = resolveMikaModel({ level: 'light', generalProvider: 'openai', specs, summary: summary(['claude', 'codex']) });
-  assert.equal(picked.model, 'luna');
+  assert.equal(picked.model, 'haiku');
   const cross = resolveMikaModel({ level: 'standard', generalProvider: 'anthropic', specs, summary: summary(['claude', 'codex']) });
-  assert.equal(cross.model, 'terra');
-  assert.equal(cross.provider_notice, 'default_provider_has_no_level');
+  assert.equal(cross.model, 'haiku');
+  assert.equal(cross.provider_notice, null);
 });
 
-test('another available level is a refusal remedy, never an automatic launch', () => {
+test('Standard is the sole fallback inside the first operational provider', () => {
   const specs = [spec('openai', 'codex', 'terra', 'standard'), spec('openai', 'codex', 'sol', 'frontier')];
-  assert.throws(
-    () => resolveMikaModel({ level: 'light', generalProvider: 'openai', specs, summary: summary(['codex']) }),
-    (error: unknown) => error instanceof MikaUnavailable
-      && error.code === 'mika_no_model_at_level'
-      && assert.deepEqual(error.available_levels, ['standard', 'frontier']) === undefined,
-  );
+  assert.equal(resolveMikaModel({ level: 'light', generalProvider: 'openai', specs, summary: summary(['codex']) }).model, 'terra');
 });
 
 test('unmeasured, zero ready, and MCP-capable eligibility refuse distinctly', () => {

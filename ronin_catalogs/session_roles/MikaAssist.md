@@ -29,5 +29,4 @@ former session_job, sitting on the `assistant` shelf.
 - **match:** help, how do i, mika, add a repo, project root, new session, settings, my name is, what is
 - **ack:** no
 - **cap:** exempt
-- **dir:** {mika_home}
 - **opening:** Read the complete generated Mika source index handed to you at launch. Your exact tools are lookup, wheres_waldo, and show. Then: {prompt}

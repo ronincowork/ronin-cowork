@@ -21,7 +21,7 @@
 # Run this, say where it went, and get on with your own work. That is what stops one
 # catalog being edited by nine agents with nine ideas about it.
 #
-# SHE IS A SINGLETON. One session named `mika`; the second request finds the first. Two
+# SHE IS A SINGLETON. One session named `mika_agent`; the second request finds the first. Two
 # of her editing PROJECT_ROOTS.md is a real bug, and unlike a ladder marker a catalog
 # write is not recomputed next turn.
 #
@@ -65,7 +65,7 @@ msg="+${job}: ${request}"
 
 # Is she up? Ask tmux, not Ronin — she is reachable whether or not Ronin is running, and
 # the send below goes to the pane either way.
-if tmux has-session -t mika 2>/dev/null; then
+if tmux has-session -t mika_agent 2>/dev/null; then
   # Reuse the ordinary durable inbound-message path. Mika is the session most likely to
   # hold an owner's draft, so safe delivery must retain rather than write blind.
   #
@@ -73,7 +73,7 @@ if tmux has-session -t mika 2>/dev/null; then
   # suggested reply at the prompt — the kind you press Tab to accept — in dim text, and
   # there is almost always one sitting there. A check that could not tell dim from typed
   # would refuse every send forever.
-  exec "$TOOL_DIR/tejun-send" mika "$msg"
+  exec "$TOOL_DIR/tejun-send" mika_agent "$msg"
 fi
 
 # Not up. Her dedicated server door owns the house-only birth mechanics.
@@ -82,6 +82,6 @@ out=$(api -X POST "$url/api/mika" -H 'content-type: application/json' \
 
 case "$out" in
   '') echo "STUCK: could not reach Ronin at $url." >&2; exit 5 ;;
-  *'"ok":true'*) echo "STARTED mika, and asked: $msg"; exit 0 ;;
-  *) echo "STUCK: Ronin refused to start mika — $out" >&2; exit 5 ;;
+  *'"ok":true'*) echo "STARTED Mika, and asked: $msg"; exit 0 ;;
+  *) echo "STUCK: Ronin refused to start Mika — $out" >&2; exit 5 ;;
 esac
