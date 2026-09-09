@@ -273,15 +273,17 @@ export function createProviderSurface(context) {
   });
   stones.mount(out.content, { after: [dates, refreshRow, notice] });
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
-  const refresh = action(t('setup_surface.refresh', 'Refresh'), '', () => paint('/api/setup/providers/refresh'));
+  const refresh = action(t('setup_surface.refresh', 'Refresh'), '', () => paint(true));
   refresh.classList.add('setup-provider-action', 'setup-provider-refresh-action');
   refreshRow.append(refresh, refreshNote);
-  const paint = async (door = '/api/setup/providers/measure') => {
+  const paint = async (refresh = false) => {
     // This surface is the one reader that measures: every other surface takes the
     // Campaign's recorded summary from GET /api/setup/runtime — which the catalog read
     // below takes too, after the measurement has been written. Refresh is the same read
     // through the door that also asks for the newest releases.
-    const result = await request(door, { method: 'POST', json: {} });
+    const result = refresh
+      ? await request('/api/setup/providers/refresh', { method: 'POST', json: {} })
+      : await request('/api/setup/providers/measure', { method: 'POST', json: {} });
     disposeMount();
     if (!result.ok) { stones.setItems([]); say(result.message, true); return; }
     runtime = result.data;
