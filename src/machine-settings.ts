@@ -725,15 +725,14 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
 const editString = (value: unknown): string | undefined =>
   typeof value === 'string' ? value : undefined;
 
-export async function writeMachineSettings(
-  family: string,
-  body: Record<string, unknown>,
-): Promise<unknown> {
-  if (family === 'setup') {
+type MachineSettingsWriter = (body: Record<string, unknown>) => Promise<unknown>;
+
+export const MACHINE_SETTINGS_WRITERS = {
+  setup: async () => {
     await completeSetup();
     return { ok: true };
-  }
-  if (family === 'bootstrap') {
+  },
+  bootstrap: async (body) => {
     const { populateHomeMachine } = await import('./campaigns.js');
     const campaign = await populateHomeMachine(body);
     await writeDesksSection({
@@ -741,39 +740,39 @@ export async function writeMachineSettings(
         ? 'managed' : 'none',
     });
     return { ok: true, campaign_id: campaign.id };
-  }
-  if (family === 'campaign') {
+  },
+  campaign: async (body) => {
     const { writeCampaignSection } = await import('./campaigns.js');
     await writeCampaignSection({
       name: editString(body.name),
       description: editString(body.description),
     });
     return { ok: true };
-  }
-  if (family === 'owner') return { name: await writeOwner(String(body.name ?? '').trim()) };
-  if (family === 'machine') {
+  },
+  owner: async (body) => ({ name: await writeOwner(String(body.name ?? '').trim()) }),
+  machine: async (body) => {
     await writeMachineSection({
       name: editString(body.name),
       where: editString(body.where),
       monitor: typeof body.monitor === 'boolean' ? body.monitor : undefined,
     });
     return { ok: true };
-  }
-  if (family === 'desk') {
+  },
+  desk: async (body) => {
     const { writeDeskSection } = await import('./campaigns.js');
     await writeDeskSection({ profile: editString(body.profile) ?? '' });
     return { ok: true };
-  }
-  if (family === 'desks') {
+  },
+  desks: async (body) => {
     await writeDesksSection({ new_project: editString(body.new_project) ?? 'managed' });
     return { ok: true };
-  }
-  if (family === 'session-max') return { max: await writeMax(Number(body.max)) };
-  if (family === 'gbrain') {
+  },
+  'session-max': async (body) => ({ max: await writeMax(Number(body.max)) }),
+  gbrain: async (body) => {
     await writeGbrainSection({ enabled: body.enabled === true });
     return { ok: true };
-  }
-  if (family === 'wanted') {
+  },
+  wanted: async (body) => {
     const kinds = new Set(['agent', 'service', 'tool', 'key', 'set']);
     const wanted = (Array.isArray(body.wanted) ? body.wanted : [])
       .filter((item): item is { kind: string; name: string } => {
@@ -783,20 +782,20 @@ export async function writeMachineSettings(
       .map(({ kind, name }) => ({ kind, name }));
     await writeWantedSection(wanted);
     return { ok: true, wanted };
-  }
-  if (family === 'campaigns') {
+  },
+  campaigns: async (body) => {
     await updateDocument((document) => { document.campaigns = body.campaigns ?? {}; });
     return { ok: true };
-  }
-  if (family === 'record-section') {
+  },
+  'record-section': async (body) => {
     const key = String(body.key ?? '');
     if (!['sessions', 'owner', 'machine', 'agents', 'gbrain', 'desks', 'wanted', 'setup', 'koshi', 'wipeboard'].includes(key)) {
       throw new Error(`no machine-settings section named '${key}'`);
     }
     await updateDocument((document) => { document[key] = body.value ?? {}; });
     return { ok: true };
-  }
-  if (family === 'agents') {
+  },
+  agents: async (body) => {
     const prior = await readAgentsSection();
     const incomingSessions = (body.sessions ?? {}) as Record<string, unknown>;
     const priorSessions = (prior.sessions ?? {}) as Record<string, unknown>;
@@ -829,6 +828,16 @@ export async function writeMachineSettings(
       jobs: body.jobs === undefined ? prior.jobs : jobs,
     });
     return { ok: true };
+  },
+} satisfies Record<string, MachineSettingsWriter>;
+
+export async function writeMachineSettings(
+  family: string,
+  body: Record<string, unknown>,
+): Promise<unknown> {
+  if (Object.hasOwn(MACHINE_SETTINGS_WRITERS, family)) {
+    const writer = (MACHINE_SETTINGS_WRITERS as Record<string, MachineSettingsWriter>)[family];
+    return writer(body);
   }
   throw new Error(`no machine-settings family named '${family}'`);
 }
