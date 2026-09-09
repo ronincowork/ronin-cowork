@@ -135,21 +135,20 @@ export async function ensureMikaHome(): Promise<string> {
   if (resolved !== dir) throw new Error(`Mika home resolves somewhere else: ${dir} -> ${resolved}`);
   if (typeof process.getuid === 'function' && info.uid !== process.getuid()) throw new Error(`Mika home is owned by another account: ${dir}`);
   if ((info.mode & 0o777) !== 0o700) throw new Error(`Mika home permissions are not 0700: ${dir}`);
+  // The starter in her home is a copy of the shipped one. A release that changes the
+  // shipped file must refresh the copy, never refuse her: on 2026-09-09 an edited
+  // walkthrough made every existing install answer "Mika starter is corrupt".
   const stock = await readFile(mikaStartHereSource(), 'utf8');
   const target = mikaStartHerePath();
-  try {
-    const present = await readFile(target, 'utf8');
-    if (present !== stock) throw new Error(`Mika starter is corrupt: ${target}`);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    await writeFile(target, stock, { encoding: 'utf8', mode: 0o444, flag: 'wx' });
+  let present: string | null = null;
+  try { present = await readFile(target, 'utf8'); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  if (present !== stock) {
+    if (present !== null) await chmod(target, 0o644);
+    await writeFile(target, stock, { encoding: 'utf8', mode: 0o444 });
   }
   await chmod(target, 0o444);
   return dir;
 }
 
-export async function readMikaStartHere(): Promise<string> {
-  const text = await readFile(mikaStartHerePath(), 'utf8');
-  if (text !== await readFile(mikaStartHereSource(), 'utf8')) throw new Error(`Mika starter is corrupt: ${mikaStartHerePath()}`);
-  return text;
-}
+

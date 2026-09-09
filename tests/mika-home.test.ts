@@ -23,14 +23,15 @@ test('Mika home is a private stable store outside project-root selection', async
   delete process.env.RONIN_MIKA_HOME_DIR;
 });
 
-test('a corrupt starter fails honestly and is never replaced by route copy', async () => {
+test('a stale starter from an earlier release is refreshed from the shipped one, never fatal', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-starter-'));
   process.env.RONIN_MIKA_HOME_DIR = path.join(root, 'mika');
   await ensureMikaHome();
   await chmod(mikaStartHerePath(), 0o600);
-  await writeFile(mikaStartHerePath(), 'stale inline fallback\n');
-  await assert.rejects(ensureMikaHome(), /starter is corrupt/);
-  assert.equal(await readFile(mikaStartHerePath(), 'utf8'), 'stale inline fallback\n');
+  await writeFile(mikaStartHerePath(), 'the walkthrough an earlier release shipped\n');
+  await ensureMikaHome();
+  assert.match(await readFile(mikaStartHerePath(), 'utf8'), /Welcome to Ronin/);
+  assert.equal((await stat(mikaStartHerePath())).mode & 0o777, 0o444);
   delete process.env.RONIN_MIKA_HOME_DIR;
 });
 
