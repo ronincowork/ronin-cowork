@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { arrangementOf } from './arrangement.js';
 import { lineDirty, refreshLine } from './desk.js';
-import { casRef, mergeInto, revParse, worktreeAddDetached, worktreeRemove } from './git.js';
+import { casRef, isAncestor, mergeInto, revParse, worktreeAddDetached, worktreeRemove } from './git.js';
 import { withLineLock } from './queue.js';
 import { candidateWorktree, deskStatus, lineFor, readDesk, updateDesk } from './registry.js';
 import { appendReceipt, newReceiptId } from './receipts.js';
@@ -47,13 +47,31 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
         const old = await revParse(a.dir, `refs/heads/${line.branch}`);
         const tip = await revParse(a.dir, `refs/heads/${branch}`);
         const working = await revParse(a.dir, `refs/heads/${a.working}`);
-        const cand = await freshCandidate(a, line.branch, working);
+        let cand = await freshCandidate(a, line.branch, working);
         const accepted = await mergeInto(cand, line.branch, `Add accepted ${line.branch} delta to current ${a.working}`);
+        let resolvedByDesk = false;
         if (!accepted.ok) {
-          return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old,
-            reason: `accepted team delta conflicts with current ${a.working}`, conflict_files: accepted.conflicts }));
+          // The accepted line itself conflicts with current dev. The one place a resolution
+          // can live is a desk that already holds BOTH — cut from the line, synced with dev,
+          // the conflict resolved and committed there. Such a desk is the candidate: start
+          // again at dev and merge the desk alone; the line is an ancestor, so the CAS below
+          // still advances it. Any other desk is told exactly that route.
+          const holdsLine = await isAncestor(a.dir, `refs/heads/${line.branch}`, tip);
+          const holdsWorking = await isAncestor(a.dir, `refs/heads/${a.working}`, tip);
+          if (!holdsLine || !holdsWorking) {
+            return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old,
+              reason: `accepted team delta conflicts with current ${a.working} — resolve it on a desk cut from ${line.branch} (tejun-desk open <repo:branch> --source team), sync that desk with ${a.working} (tejun-desk sync), commit the resolution, and hand that desk in`,
+              conflict_files: accepted.conflicts }));
+          }
+          cand = await freshCandidate(a, line.branch, working);
+          const resolved = await mergeInto(cand, branch, `Hand in ${branch} to ${line.branch} (${rec.session}), resolving the line against current ${a.working}`);
+          if (!resolved.ok) {
+            await updateDesk(repo, branch, { blocked: `hand-in conflicts with current ${a.working} on ${resolved.conflicts.length} file(s) — update the desk and resolve` });
+            return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old, conflict_files: resolved.conflicts }));
+          }
+          resolvedByDesk = true;
         }
-        const incoming = await mergeInto(cand, branch, `Hand in ${branch} to ${line.branch} (${rec.session})`);
+        const incoming = resolvedByDesk ? { ok: true, conflicts: [] as string[] } : await mergeInto(cand, branch, `Hand in ${branch} to ${line.branch} (${rec.session})`);
         if (!incoming.ok) {
           await updateDesk(repo, branch, { blocked: `hand-in conflicts with current ${a.working} plus ${line.branch} on ${incoming.conflicts.length} file(s) — update the desk and resolve` });
           return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old, conflict_files: incoming.conflicts }));

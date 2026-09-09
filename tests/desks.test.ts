@@ -354,6 +354,40 @@ test('handIn conflict: contained in the candidate, the line untouched, the desk 
   assert.ok(accepted.length >= 3);
 });
 
+test('a line that conflicts with dev is resolved by a desk holding both; any other desk is told that route', async () => {
+  // The line takes x.txt one way, dev the other: the accepted team delta now conflicts with dev.
+  await openDesk({ repo: 'cowork', session: 'lineside', team: 'comp' });
+  const lineside = deskWorktree('cowork', 'team/comp/lineside');
+  await syncDesk('cowork', 'team/comp/lineside');
+  await commitFile(lineside, 'x.txt', 'line\n');
+  assert.equal((await handIn('cowork', 'team/comp/lineside')).receipt.result, 'accepted');
+  await commitFile(cowork, 'x.txt', 'dev\n', 'dev takes x.txt another way');
+  const lineBefore = sh(cowork, ['rev-parse', 'team/comp/dev']);
+  // A desk that does not hold the resolution cannot get through, and is told the route.
+  const told = await handIn('cowork', 'team/comp/fable');
+  assert.equal(told.receipt.result, 'conflict');
+  assert.deepEqual(told.receipt.conflict_files, ['x.txt']);
+  assert.match(told.receipt.reason, /resolve it on a desk cut from team\/comp\/dev/);
+  assert.equal(sh(cowork, ['rev-parse', 'team/comp/dev']), lineBefore, 'the line did not move');
+  // The resolver: a desk from dev with the line merged in and the conflict settled.
+  await openDesk({ repo: 'cowork', session: 'resolver', team: 'comp' });
+  const resolver = deskWorktree('cowork', 'team/comp/resolver');
+  try { sh(resolver, ['merge', '--no-edit', 'team/comp/dev']); } catch { /* conflict expected */ }
+  await fs.writeFile(path.join(resolver, 'x.txt'), 'both\n');
+  sh(resolver, ['add', 'x.txt']);
+  sh(resolver, ['commit', '-q', '--no-edit', '-m', 'resolve x.txt against dev']);
+  const r = await handIn('cowork', 'team/comp/resolver');
+  assert.equal(r.receipt.result, 'accepted', r.receipt.reason);
+  const lineNow = sh(cowork, ['rev-parse', 'team/comp/dev']);
+  assert.notEqual(lineNow, lineBefore);
+  sh(cowork, ['merge-base', '--is-ancestor', 'dev', 'team/comp/dev']);
+  sh(cowork, ['merge-base', '--is-ancestor', lineBefore, 'team/comp/dev']);
+  assert.equal(sh(cowork, ['show', 'team/comp/dev:x.txt']), 'both');
+  // Promotion's own merge now applies cleanly.
+  sh(cowork, ['merge-tree', '--write-tree', 'dev', 'team/comp/dev']);
+  assert.equal((await statusOf('cowork', 'team/comp/resolver')).blocked, '');
+});
+
 test('closeDesk keeps unresolved work named, closes only after hand-in, and records lifecycle closure', async () => {
   const wispr = deskWorktree('cowork', 'team/comp/wispr');
   await syncDesk('cowork', 'team/comp/wispr');
