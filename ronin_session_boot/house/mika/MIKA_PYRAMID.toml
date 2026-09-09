@@ -1,0 +1,26 @@
+schema = 1
+
+[[node]]
+id = "start-and-navigate"
+label = "Start, navigate, and operate Ronin"
+root = "docs"
+
+[[node]]
+id = "house-procedures"
+label = "House procedures and situations"
+root = "ronin_sops"
+
+[[node]]
+id = "actions-tools-and-macros"
+label = "Supported actions, tools, macros, models, roles, routines, profiles, and templates"
+root = "ronin_catalogs"
+
+[[node]]
+id = "agent-procedure-contracts"
+label = "Agent birth and active Routine contracts"
+root = "ronin_session_boot"
+
+[[node]]
+id = "library-contract"
+label = "Owner-resolved library behavior"
+root = "ronin_library"

@@ -22,7 +22,7 @@ import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
 import { routineChoices } from '../routines.js';
-import { classifyStatus, createActivityCache, type SessionStatus } from '../status.js';
+import { classifyStatus, createActivityCache } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
@@ -44,6 +44,9 @@ import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentenc
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
+import { ensureMikaHome, MikaUnavailable, readMikaStartHere, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
+import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
+import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../ronin-helper.js';
 
 /** The environment a newborn is handed beyond what the pane inherits: its projected
  *  command PATH with Ronin's own install bin dir behind it, and the operator socket that
@@ -173,19 +176,33 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   return { body, ignored: [...ignored].sort() };
 }
 
-export function mikaLaunchBody(input: unknown): Record<string, unknown> {
+export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, 'provider' | 'model'>): Record<string, unknown> {
   const source = input && typeof input === 'object' && !Array.isArray(input)
     ? input as Record<string, unknown>
     : {};
   return {
     session_type: 'cowork_agent',
     name: 'mika',
-    tags: ['mika'],
+    tags: [RONIN_HELPERS_TEAM],
     prompt: typeof source.prompt === 'string' ? source.prompt : '',
+    ...(selection ? { provider: selection.provider, model: selection.model } : {}),
+    launch_mode: 'configured',
+    gbrain_mode: 'disconnected',
   };
 }
 
-export function registerLaunch(app: express.Express): void {
+export interface LaunchControl {
+  ensureMika(intent?: 'help' | 'setup_provider_ready'): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: 'mika'; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
+}
+
+export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'action_required' {
+  const state = classifyStatus(text);
+  return state === 'awaiting-input' ? 'action_required' : state === null ? 'starting' : 'ready';
+}
+
+export function registerLaunch(app: express.Express): LaunchControl {
+  type MikaReady = Awaited<ReturnType<LaunchControl['ensureMika']>>;
+  let mikaStarting: Promise<MikaReady> | null = null;
   const loadPaneStatus = createActivityCache(async (name: string) => {
     const text = await capturePane(name, 0);
     return {
@@ -246,8 +263,28 @@ export function registerLaunch(app: express.Express): void {
     }
   });
 
-  const launch = async (req: express.Request, res: express.Response, houseSeat?: 'mika'): Promise<unknown> => {
-    const accepted = acceptedLaunchBody(houseSeat === 'mika' ? mikaLaunchBody(req.body) : req.body);
+  const launch = async (req: express.Request, res: express.Response, houseSeat?: 'mika', loader?: typeof RONIN_HELPER_LOADER): Promise<unknown> => {
+    let mikaSelection: MikaSelection | undefined;
+    let mikaHome = '';
+    if (houseSeat === 'mika') {
+      if (await sessionExists('mika')) return res.json({ ok: true, name: 'mika', already: true });
+      try {
+        mikaHome = await ensureMikaHome();
+        if (loader === RONIN_HELPER_LOADER) await ensureRoninHelpersTeam();
+        mikaSelection = await resolveConfiguredMikaModel();
+      } catch (error) {
+        if (error instanceof MikaUnavailable) {
+          return res.status(error.code === 'invalid_mika_level' ? 400 : 409).json({
+            error: error.message,
+            code: error.code,
+            requested_level: error.requested_level,
+            available_levels: error.available_levels,
+          });
+        }
+        return res.status(500).json({ error: `Mika home is unavailable: ${String((error as Error)?.message ?? error)}`, code: 'mika_home_invalid' });
+      }
+    }
+    const accepted = acceptedLaunchBody(houseSeat === 'mika' ? mikaLaunchBody(req.body, mikaSelection) : req.body);
     req.body = accepted.body;
     const sessionType = String(req.body.session_type);
     const name = String(req.body?.name ?? '').trim();
@@ -337,8 +374,27 @@ export function registerLaunch(app: express.Express): void {
       birthKey = `${resolved.name}-${Date.now()}`;
       birthDir = sessionRecordDir(birthKey);
       try {
-        const sources = [...resolved.birth_reading];
-        const readme = await compileBirthReadmeAt(birthDir, sources, resolved.name, isShelfTeaching);
+        // Mika's generated index replaces the ordinary startup shelf: it is the complete,
+        // bounded map of her admitted knowledge, and keeping both exceeds one-read birth.
+        const resolvedSources = [...resolved.birth_reading];
+        const sources = houseSeat === 'mika' ? [] : resolvedSources;
+        let mikaKnowledgeIndex = '';
+        if (houseSeat === 'mika') {
+          // A cold Mika launch publishes exactly one verified knowledge generation. The
+          // returned index is the only generation path handed into birth; later source
+          // opens resolve through mika-knowledge-current rather than caching this path.
+          const previousSentence = `Read first: ${resolvedSources.join(', ')}.`;
+          const knowledge = await compileMikaKnowledgeAt(mikaHome);
+          mikaKnowledgeIndex = knowledge.index;
+          sources.unshift(mikaKnowledgeIndex);
+          resolved.brief = resolved.brief.replace(previousSentence, `Read first: ${sources.join(', ')}.`);
+        }
+        const readme = await compileBirthReadmeAt(
+          birthDir,
+          sources,
+          resolved.name,
+          (file) => file === mikaKnowledgeIndex || isShelfTeaching(file),
+        );
         const sourceSentence = `Read first: ${sources.join(', ')}.`;
         if (!resolved.brief.includes(sourceSentence)) {
           await rm(birthDir, { recursive: true, force: true });
@@ -383,6 +439,7 @@ export function registerLaunch(app: express.Express): void {
         // onto a running session (owner, 2026-09-04). A terminal has no Routines and keeps
         // the recorder's own default.
         rireki: resolved.routines.length ? resolved.routines.some((routine) => routine.name === 'ronin_services' && routine.enabled) : undefined,
+        strictCwd: houseSeat === 'mika',
       });
       runtimeBorn = true;
       if (birthKey) rememberSessionKey(resolved.name, birthKey);
@@ -491,7 +548,15 @@ export function registerLaunch(app: express.Express): void {
       } catch (e) {
         return res.status(500).json({ error: `Session was born, but its birth receipt could not be persisted: ${String((e as Error)?.message ?? e)}` });
       }
-      res.json({ ok: true, name: resolved.name, receipt });
+      const modelSelection = mikaSelection ? {
+        requested_level: mikaSelection.requested_level,
+        provider: mikaSelection.provider,
+        model: mikaSelection.model,
+        resolved_level: mikaSelection.resolved_level,
+        provider_notice: mikaSelection.provider_notice,
+        available_levels: mikaSelection.available_levels,
+      } : undefined;
+      res.json({ ok: true, name: resolved.name, conversation: birthKey, receipt, ...(modelSelection ? { model_selection: modelSelection } : {}) });
     }
     void appendLaunchLedger(form, resolved, true);
     void (async () => {
@@ -512,7 +577,7 @@ export function registerLaunch(app: express.Express): void {
   };
   const launchJob: express.RequestHandler = (req, res) => launch(req, res);
   app.post('/api/launch', launchJob);
-  app.post('/api/mika', (req, res) => launch(req, res, 'mika'));
+  app.post('/api/mika', (req, res) => launch(req, res, 'mika', RONIN_HELPER_LOADER));
 
   app.get('/api/sessions', async (_req, res) => {
     try {
@@ -583,4 +648,57 @@ export function registerLaunch(app: express.Express): void {
       send(body && typeof body === 'object' && (body as { ok?: boolean }).ok ? { ...body, team_from: teamFrom } : body);
     return launchJob(req, res, next);
   });
+  const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help'): Promise<MikaReady> => {
+    const metadata = { session: 'mika' as const, team: RONIN_HELPERS_TEAM, loader: RONIN_HELPER_LOADER };
+    const observeLive = async (already: boolean): Promise<MikaReady> => {
+      let providerState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
+      try { providerState = mikaReadinessFromPane(await capturePane('mika', 0)); } catch { /* live but not yet drawable */ }
+      if (providerState === 'action_required') {
+        return { ok: false, state: 'action_required', action: 'pending_user', code: 'provider_confirmation_required', already, ...metadata };
+      }
+      if (providerState === 'starting') return { ok: false, state: 'starting', already, ...metadata };
+      const welcome = await roninHelperWelcomeState();
+      if (welcome?.state === 'pending') await recordRoninHelperWelcome(welcome.conversation, 'delivered');
+      return { ok: true, state: 'ready', already, welcome_delivered: welcome?.state === 'pending', ...metadata };
+    };
+    if (await sessionExists('mika')) return observeLive(true);
+    if (mikaStarting) return mikaStarting;
+    mikaStarting = (async () => {
+      const welcome = intent === 'setup_provider_ready' && (await roninHelperWelcomeState())?.state !== 'delivered';
+      let prompt = '';
+      if (welcome) {
+        await ensureMikaHome();
+        prompt = await readMikaStartHere();
+      }
+      let status = 200;
+      let body: Record<string, unknown> = {};
+      const response = {
+        status(code: number) { status = code; return this; },
+        json(value: unknown) { body = value && typeof value === 'object' ? value as Record<string, unknown> : {}; return value; },
+      } as unknown as express.Response;
+      await launch({ body: { prompt } } as express.Request, response, 'mika', RONIN_HELPER_LOADER);
+      if (status < 400 && body.ok === true && welcome) await recordRoninHelperWelcome(String(body.conversation ?? 'mika'), 'pending');
+      return status < 400 && body.ok === true
+        ? observeLive(body.already === true)
+        : {
+            ok: false,
+            state: 'refused' as const,
+            error: typeof body.code === 'string' && body.code.startsWith('mika_')
+              ? String(body.error ?? 'Mika is unavailable at the selected model level.')
+              : 'Mika could not start. Check Mika under Configuration, then try again.',
+            ...(typeof body.code === 'string' ? { code: body.code } : {}),
+            ...(Array.isArray(body.available_levels) ? { available_levels: body.available_levels } : {}),
+            ...metadata,
+          };
+    })();
+    const starting = mikaStarting;
+    try { return await starting; }
+    finally { mikaStarting = null; }
+  };
+  app.post('/api/mika/ready', async (req, res) => {
+    const intent = req.body?.intent === 'setup_provider_ready' ? 'setup_provider_ready' : 'help';
+    const ready = await ensureMika(intent);
+    res.status(ready.ok ? 200 : ready.state === 'starting' ? 202 : 409).json(ready);
+  });
+  return { ensureMika };
 }

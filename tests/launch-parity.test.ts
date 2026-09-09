@@ -484,10 +484,13 @@ test('Mika house mechanics resolve without a session_role', async () => {
   }, new Set());
   assert.equal(mika.session_role, '');
   assert.equal(mika.name, 'mika');
-  assert.equal(mika.dir, process.cwd());
+  assert.match(mika.dir, /\/mika$/);
+  assert.equal(mika.project_root, 'mika_home');
   assert.equal(mika.capExempt, true);
+  assert.equal(mika.routines.every((routine) => !routine.enabled), true);
   assert.equal(mika.ack, false);
-  assert.match(mika.opening, /MIKA_MACROS\.md/);
+  assert.match(mika.opening, /exact tools are lookup, wheres_waldo, and show/);
+  assert.match(mika.posture.join(' '), /cannot code, edit or write files, use Git or a shell/);
   assert.match(mika.brief, /You are the Mika Assist/);
   assert.ok(!mika.birth_reading.some((file) => file.includes('MikaAssist')));
   assert.equal(mika.stated_by.capExempt[0]?.layer, 'house');

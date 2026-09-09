@@ -67,6 +67,7 @@ import { roninIdentity } from './routes/version.js';
 import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
 import { ensureInstalledRoots } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
+import { registerMikaContext } from './mika-context.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -215,6 +216,7 @@ app.get('/api/health', (_req, res) =>
 
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
+registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped wheres_waldo/show seam
 registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/provider-catalog, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
@@ -237,7 +239,7 @@ if (isEntryPoint) void ensureInstalledRoots().catch((error) => console.error(`[s
 // The Campaign's dated provider facts are measured once at start, after the record exists
 // and has migrated: the summary and the migration both read-modify-write the campaigns
 // section, and side by side one of them would lose its write on a fresh install.
-void ensureInitialCampaign()
+const campaignStart = ensureInitialCampaign()
   .then(() => migrateCampaignScope())
   .then(() => (isEntryPoint ? measureAndRecordProviders() : undefined))
   .catch((error) => console.error(`[setup] campaign start: ${(error as Error).message}`));
@@ -430,6 +432,9 @@ server.listen(config.port, config.bind, async () => {
     `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
   );
   console.log(`[tmux-ronin] browser sockets accepted from: ${allowedOrigins().join(', ')}`);
+  // House helpers are request-loaded ordinary sessions. Ending one truly ends it; the
+  // next Help request enters the ronin_helper loader and starts a fresh conversation.
+  await campaignStart;
 });
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {

@@ -37,6 +37,9 @@ export const STORES: readonly Store[] = [
   store('memory', 'user', 'memory'),
   store('config', 'user', 'config'),
   store('campaigns', 'user', 'campaigns'),
+  // Mika's stable private working directory. It is deliberately not a project root and
+  // never follows the versioned install as releases move.
+  store('mika_home', 'user', 'mika'),
   store('koshi_weights', 'user', 'koshi_weights'),
   store('koshi_weights_service', 'user', 'koshi_weights_service'),
   store('gbrain_brain', 'user', 'gbrain_brain'),

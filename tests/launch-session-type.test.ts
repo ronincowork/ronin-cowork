@@ -141,8 +141,10 @@ test('the Mika door accepts words only and fixes every public birth input', () =
   }), {
     session_type: 'cowork_agent',
     name: 'mika',
-    tags: ['mika'],
+    tags: ['ronin_helpers'],
     prompt: '+system_help:',
+    launch_mode: 'configured',
+    gbrain_mode: 'disconnected',
   });
 });
 
