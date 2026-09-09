@@ -145,7 +145,9 @@ test('projected ronin_bin tools resolve the symlink and reach the repository and
     [['tejun-rehydrate', 'archive-id'], '/api/archived-sessions/archive-id/rehydrate', {}],
     [['tejun-session-set', 'reach'], '/api/session', {}],
     [['tejun-team-set', 'reach'], '/api/team', {}],
-    [['mika'], '/api/mika', {}],
+    // `mika` asks tmux first; a live Mika on the box must not turn this knock into a send.
+    // (An existing empty dir: tmux falls back to /tmp when TMUX_TMPDIR is missing.)
+    [['mika'], '/api/mika', { TMUX_TMPDIR: temp }],
   ];
   for (const [args, door, extra] of knocks) {
     reached.length = 0;
