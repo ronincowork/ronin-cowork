@@ -17,8 +17,10 @@ solve them, work around them, or warn the owner about them.
 | The thing you are about to wonder about | The answer |
 |---|---|
 | **Ronin runs a tmux server** | Ronin joins the default tmux server already on the box. Existing sessions stay running. If none exists, a separate `systemd --user` unit starts it outside the operator's cgroup. Setup leases the server-wide `exit-empty` option to `off` and uninstall restores the value it found. |
+| **Do I start tmux before `setup.sh`?** | No. Setup measures whether a server is on the default socket and never asks: it joins one that exists, and otherwise `tmux-server.service` starts Ronin's own in its own cgroup. A server started by hand first is only adopted as somebody else's, outside the unit. |
 | **Why is `tmux-server.service` `active (exited)`?** | Handled: setup adopted the existing server, so the unit correctly did not start another. `bin/ronin-doctor` reports the adopted server as a note. |
 | **`systemd --user` dies at logout on a headless box** | Handled in step 3. `bin/ronin-doctor` confirms `ok — linger is on — the coworkspace survives logout`. |
+| **No swap on a cloud VM** | Handled in step 3. Most cloud images ship without swap; setup offers the swapfile line in its closing paste, and `bin/ronin-doctor` reports `NO SWAP` with the same line until it exists. |
 | **Tailscale ordering matters** | Handled in step 3: setup records the address from `tailscale ip -4`. Doctor confirms `ok — auth is off, but the bind is this machine's tailnet address` when that is the chosen posture. |
 | **Is the download what it claims to be?** | Handled: `SHA256SUMS` proves the downloaded bytes match the release manifest and mismatches stop installation. It is not a signature and cannot prove who published both files; release signing is planned. |
 | **Does any of this need root?** | The app, no. Only `enable-linger` and optional `tailscale serve`, both printed for the owner rather than run for them. |
@@ -107,8 +109,8 @@ release. A checksum refusal is a failure, not a warning.
 
 ## 3. Make the machine ready
 
-Two conditions that are cheap to satisfy now and confusing to diagnose later. Check both
-even if the owner says the machine is ready.
+Three conditions that are cheap to satisfy now and confusing to diagnose later. Check all
+three even if the owner says the machine is ready.
 
 **Linger — or Ronin dies when the owner logs out.** Ronin's units are `systemd --user`
 units. On a headless machine (a rented VM, a home server nobody sits at) the user's
@@ -121,7 +123,8 @@ sudo loginctl enable-linger "$USER"                     # owner approves — thi
 ```
 
 `setup.sh` detects this and prints the command, and `bin/ronin-doctor` reports it as a
-fault. Doing it here means the owner never meets the symptom.
+fault. Doing it here means the owner never meets the symptom. Once enabled it survives
+reboots; it is set once for the account.
 
 **Tailscale, if it is being used, must be up and signed in before `setup.sh` runs.** Setup
 reads `tailscale ip -4` to decide what address to bind to. Tailscale absent at that moment
@@ -135,9 +138,25 @@ tailscale ip -4        # an address here, before you run setup
 If the owner is not using Tailscale, that is a fine answer — loopback plus an SSH tunnel
 works. Establish which it is now, not after.
 
-**What you should see:** linger is `yes` on a headless Linux box, and either
-`tailscale ip -4` prints the agreed private address or the owner has deliberately chosen
-loopback. On macOS, linger does not apply.
+**Swap — or the kernel kills a session when memory fills.** Cloud images (Google Cloud,
+AWS, DigitalOcean, Hetzner) ship with no swap. Ronin runs several agents at once, each
+doing real work; with no swap the kernel has no overflow when RAM fills, so it picks a
+process and kills it, and it chooses which — usually the agent session with the most in
+it. Swap turns that sudden death into slowness. On Linux, when there is none:
+
+```bash
+swapon --show    # no output at all means there is none
+sudo bash -c 'fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo "/swapfile none swap sw 0 0" >> /etc/fstab'
+```
+
+The `/etc/fstab` line is what brings it back after a reboot; without it the swap is gone
+at the next boot. `setup.sh` offers this same line in its closing paste when the box can
+take a swapfile, and `bin/ronin-doctor` reports `NO SWAP` until it exists. Inside a
+container, swap is the host's business; skip it and say so.
+
+**What you should see:** linger is `yes` on a headless Linux box, `swapon --show` prints
+a line, and either `tailscale ip -4` prints the agreed private address or the owner has
+deliberately chosen loopback. On macOS, linger and swap do not apply.
 
 ## 4. Set up and serve
 
@@ -152,7 +171,10 @@ installation for this OS; install with the owner's approval only. Then:
 cd <install-home>/current && ./setup.sh
 ```
 
-It installs the units and starts the operator, and prints the URL it is serving on.
+It installs the units and starts the operator, and prints the URL it is serving on. It
+measures whether a tmux server is already on the default socket and never asks: one that
+exists is joined, and when there is none `tmux-server.service` starts Ronin's own, so
+there is no "start tmux first" step and adding one only hands setup a server to adopt.
 Record the complete result; do not turn a warning or SKIP into a pass, and do not turn a
 SKIP into a failure. A SKIP names what could not run, why, and what evidence stands in.
 

@@ -23,6 +23,23 @@ release renews.
    attaches the artifact to a GitHub Release. `bin/ronin-build` itself refuses a commit
    that is not on the declared stable line (`RONIN_REPO`): acceptance is the commit's
    place on that line, never the checkout that happens to be open.
+4. **A fresh box proves the artifact before anyone is pointed at it.** The bundle, not a
+   checkout, on a disposable Linux VM or a throwaway account that has never run tmux or
+   Ronin — the state every new user is in, and one no developer's box is ever in. Three
+   releases (v2.1.2 – v2.2.1) failed every fresh install at the tmux probe while every
+   rerun on a box with a server passed (issue #74); the unit floor now covers the probe
+   with real tmux on a private socket, and this walk is what covers `setup.sh` itself:
+
+   ```bash
+   tmux list-sessions              # expect the honest "no server running" / "error connecting"
+   bin/ronin-update --home ~/ronin && cd ~/ronin/current && ./setup.sh
+   systemctl --user is-active tmux-server ronin        # active, active
+   cat /proc/"$(tmux display-message -p '#{pid}')"/cgroup  # ends in tmux-server.service
+   bin/ronin-doctor                                    # exit 0, or only the linger/swap offers
+   ```
+
+   The server must be in `tmux-server.service`'s cgroup, not the SSH session's; a release
+   that fails this walk is not published as latest.
 
 The build is a **stamp, a prune and a tarball** — there is no compiler in this stack
 (`tsx` runs the TypeScript; the client is native ES modules):

@@ -52,32 +52,79 @@ ronin_tmux_start_id() { # pid
   fi
 }
 
+# ---- the existence probe ----------------------------------------------------------------
+# MEASURED, NEVER ASKED (owner, 2026-09-09): tmux is the authority on whether tmux is
+# running, and a person on a fresh box is not. `list-sessions` is an exit-status question:
+# a live server with zero sessions answers 0 with no output, which `has-session` and
+# `list-clients` cannot tell apart from no server at all.
+#   0 = a server answers on the default socket
+#   1 = no server there. tmux has two wordings for it, chosen by errno and not by
+#       version: "error connecting to <socket> (No such file or directory)" when there is
+#       no socket file, "no server running on <socket>" when a stale socket file is left
+#       from a server that died. Both mean the same thing and both are accepted.
+#   2 = tmux said something else — a protocol mismatch, an unwritable socket directory, a
+#       permission error. Refused with tmux's own words, and the caller stops: the only
+#       branch where a person is needed, and they get the evidence rather than a question.
+# THE STATUS IS TAKEN ON THE COMMAND ITSELF. `$?` read after an `if … fi` is the if
+# statement's status, which is 0 whenever the condition failed and there was no else — the
+# slip that turned every fresh box into "could not determine whether tmux is running" from
+# 2026-09-04 (v2.1.2 through v2.2.1, issue #74). Reruns on a box with a server never met it.
+RONIN_TMUX_PROBE_TEXT=""
 ronin_tmux_probe() {
   probe_err="${TMPDIR:-/tmp}/ronin-tmux-probe.$$"
-  if ronin_tmux list-sessions >/dev/null 2>"$probe_err"; then
-    rm -f "$probe_err"
-    return 0
-  fi
-  probe_rc=$?
-  probe_text=$(cat "$probe_err" 2>/dev/null || true)
+  probe_rc=0
+  ronin_tmux list-sessions >/dev/null 2>"$probe_err" || probe_rc=$?
+  RONIN_TMUX_PROBE_TEXT=$(cat "$probe_err" 2>/dev/null || true)
   rm -f "$probe_err"
-  case "$probe_rc:$probe_text" in
-    1:*'No such file or directory)'|1:'no server running on '*) return 1 ;;
-    *) ronin_refuse "ERROR: could not determine whether tmux is running: ${probe_text:-exit $probe_rc}"; return 2 ;;
+  case "$probe_rc:$RONIN_TMUX_PROBE_TEXT" in
+    0:*) return 0 ;;
+    1:'error connecting to '*'(No such file or directory)'|1:'no server running on '*) return 1 ;;
+    *) ronin_refuse "ERROR: could not determine whether tmux is running (tmux exit $probe_rc): ${RONIN_TMUX_PROBE_TEXT:-no output}"; return 2 ;;
+  esac
+}
+
+# The socket the last probe spoke to, taken from tmux's own words when it named one and
+# otherwise the path tmux derives itself: $TMUX_TMPDIR, else /tmp, then tmux-<uid>/default.
+ronin_tmux_probe_socket() {
+  case "$RONIN_TMUX_PROBE_TEXT" in
+    'error connecting to '*) printf '%s' "${RONIN_TMUX_PROBE_TEXT#error connecting to }" | sed 's/ ([^(]*)$//' ;;
+    'no server running on '*) printf '%s' "${RONIN_TMUX_PROBE_TEXT#no server running on }" ;;
+    *) printf '%s/tmux-%s/default' "${TMUX_TMPDIR:-/tmp}" "$(id -u)" ;;
+  esac
+}
+
+# Who started the server behind this pid — read from its cgroup, the one fact a process
+# cannot dress up, and the same reading bin/ronin-doctor takes. Linux only: without a
+# readable cgroup the answer is unknown, and unknown is treated as somebody else's server
+# (adopted, leased, restorable), never as Ronin's own.
+#   unit     = tmux-server.service, Ronin's start-only unit: ours, nothing to adopt
+#   operator = inside ronin.service, where restarting Ronin ends it; doctor names the repair
+#   foreign  = anything else: the owner's login shell, another program, a hand-started server
+#   unknown  = no readable cgroup (macOS, a hidden /proc)
+# RONIN_PROC is a seam for the tests, which cannot fabricate /proc; nothing else sets it.
+ronin_tmux_server_owner() { # pid
+  cg=$(cat "${RONIN_PROC:-/proc}/$1/cgroup" 2>/dev/null) || { echo unknown; return 0; }
+  case "$cg" in
+    *tmux-server.service*) echo unit ;;
+    *ronin.service*) echo operator ;;
+    '') echo unknown ;;
+    *) echo foreign ;;
   esac
 }
 
 ronin_adopt_tmux() { # state root
   state_root=$1
-  if ronin_tmux_probe; then :; else
-    probe_rc=$?
-    [ "$probe_rc" -eq 1 ] && return 0
-    return "$probe_rc"
-  fi
+  probe_rc=0
+  ronin_tmux_probe || probe_rc=$?
+  case "$probe_rc" in
+    0) ;;
+    1) ronin_say "==> no tmux server on $(ronin_tmux_probe_socket): tmux-server.service starts Ronin's own, in its own cgroup, so restarting Ronin never reaches a session"; return 0 ;;
+    *) return "$probe_rc" ;;
+  esac
 
   pid=$(ronin_tmux display-message -p '#{pid}' 2>/dev/null | tr -d '\r\n')
   socket=$(ronin_tmux display-message -p '#{socket_path}' 2>/dev/null | tr -d '\r\n')
-  [ -n "$socket" ] || socket="${TMUX_TMPDIR:-${TMPDIR:-/tmp}/tmux-$(id -u)}/default"
+  [ -n "$socket" ] || socket="${TMUX_TMPDIR:-/tmp}/tmux-$(id -u)/default"
   start=$(ronin_tmux_start_id "$pid")
   prior=$(ronin_tmux show-options -s -v exit-empty 2>/dev/null | tr -d '\r\n')
   server_version=$(ronin_tmux display-message -p '#{version}' 2>/dev/null | tr -d '\r\n')
@@ -103,6 +150,16 @@ ronin_adopt_tmux() { # state root
       rm -f "$lease"
     fi
   fi
+  # Ronin's own unit started this server: it already runs deploy/tmux-server.conf, so
+  # there is nothing to adopt, nothing to lease, and nothing for uninstall to restore. Any
+  # lease an older release wrote for it stays until uninstall reads it back as a no-op.
+  case "$(ronin_tmux_server_owner "$pid")" in
+    unit)
+      ronin_say "==> Ronin's own tmux server is running (pid $pid, started by tmux-server.service): nothing to adopt, nothing leased"
+      return 0 ;;
+    operator)
+      ronin_say "    this server runs inside the operator's own cgroup, so restarting Ronin would end every session in it; bin/ronin-doctor names the repair, and the owner times it" ;;
+  esac
   if [ ! -f "$lease" ]; then
     mkdir -p "$lease_dir"
     umask 077
@@ -122,14 +179,16 @@ ronin_restore_tmux() { # state root, tmux binary
   state_root=$1 TMUX_BIN=$2
   lease="$state_root/machine/tmux-adoption"
   [ -f "$lease" ] || return 0
-  if ! ronin_tmux_probe; then
-    rc=$?
-    if [ "$rc" -eq 1 ]; then rm -f "$lease"; return 0; fi
-    return "$rc"
-  fi
+  probe_rc=0
+  ronin_tmux_probe || probe_rc=$?
+  case "$probe_rc" in
+    0) ;;
+    1) rm -f "$lease"; ronin_say "removed the tmux lease: no server on $(ronin_tmux_probe_socket), so there is nothing to restore"; return 0 ;;
+    *) return "$probe_rc" ;;
+  esac
   pid=$(ronin_tmux display-message -p '#{pid}' 2>/dev/null | tr -d '\r\n')
   socket=$(ronin_tmux display-message -p '#{socket_path}' 2>/dev/null | tr -d '\r\n')
-  [ -n "$socket" ] || socket="${TMUX_TMPDIR:-${TMPDIR:-/tmp}/tmux-$(id -u)}/default"
+  [ -n "$socket" ] || socket="${TMUX_TMPDIR:-/tmp}/tmux-$(id -u)/default"
   start=$(ronin_tmux_start_id "$pid")
   old_pid=$(sed -n 's/^pid=//p' "$lease"); old_start=$(sed -n 's/^start=//p' "$lease")
   old_socket=$(sed -n 's/^socket=//p' "$lease"); prior=$(sed -n 's/^prior=//p' "$lease")

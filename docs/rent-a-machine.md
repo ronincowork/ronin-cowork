@@ -270,7 +270,30 @@ This is the one step on this page that needs `sudo`, and it is the owner's to ap
 `setup.sh` detects a missing linger and prints this command, and `bin/ronin-doctor` reports
 it as a fault — but by then the owner has already met the symptom. Do it here.
 
-## 6. Establish private access
+## 6. Give the machine swap
+
+**Do this on every rented machine; cloud images ship without it.**
+
+Ronin runs several agent sessions at once and each one runs real work — test suites,
+builds, browsers. When RAM fills on a machine with no swap, the kernel has no overflow:
+it picks a process and kills it, and it chooses which. On a Ronin box that is usually an
+agent session, mid-task, with its work in it. Swap does not add memory; it turns a sudden
+death into slowness, which is the difference between losing an hour and noticing the box
+is sluggish.
+
+```bash
+swapon --show    # no output at all means there is none
+sudo bash -c 'fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo "/swapfile none swap sw 0 0" >> /etc/fstab'
+swapon --show    # expect: /swapfile
+```
+
+The `/etc/fstab` line is what makes it survive a reboot; without it the swap vanishes at
+the next boot. This needs `sudo` and is the owner's to approve. `setup.sh` offers the
+same line in its closing paste when the box can take a swapfile, and `bin/ronin-doctor`
+reports `NO SWAP` until one exists — but by then an agent may already have been killed.
+Do it here.
+
+## 7. Establish private access
 
 Install Tailscale on the owner's computer and the machine using the current
 [official instructions](https://tailscale.com/kb/1347/installation). The owner signs both
@@ -305,7 +328,7 @@ Do not open Ronin's port to the public internet. Keep provider-console and publi
 recovery working until the owner has accepted the Tailscale path. Firewall hardening comes
 after that proof, never before it.
 
-## 7. Put an agent on the machine
+## 8. Put an agent on the machine
 
 While logged in as the ordinary account, install one agent CLI from its maintained
 first-party instructions. The owner completes its authentication; credentials are not
@@ -332,6 +355,7 @@ Before handing the machine to the Ronin installer, report:
 - ordinary account name;
 - successful direct SSH and sudo checks;
 - **linger confirmed on** for that account;
+- **swap present** (`swapon --show` prints a line), or the owner has knowingly declined it;
 - **Tailscale up and signed in**, with a successful reachability check;
 - provider-console recovery location;
 - agent CLI available on the machine.

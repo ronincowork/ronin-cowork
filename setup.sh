@@ -564,6 +564,7 @@ machine_linger_on || if [ $? -eq 1 ]; then
   STEP_OK[$NSTEPS]="linger enabled for ${USER:-$(id -un)}"
   STEP_FAIL[$NSTEPS]="linger was not enabled"
   NSTEPS=$(( NSTEPS + 1 ))
+  WANT_LINGER=1
 fi
 # Nothing to ask for when serve already points at THIS install: the address in the box
 # above is that mapping. Asking anyway is what put a second, different door on a box
@@ -689,6 +690,13 @@ if [ "$NSTEPS" -gt 0 ]; then
   done
   out "      '"
   out ""
+  # Each privileged line gets its one-sentence why, here where the line is, because the
+  # person pasting it may never open the docs (issue #74: "not explained").
+  if [ -n "${WANT_LINGER:-}" ]; then
+    out "  (The linger part keeps Ronin running after you log out: without it, every SSH"
+    out "   disconnect stops Ronin and every agent in it. Set once, it survives reboots.)"
+    out ""
+  fi
   if [ -n "${WANT_SWAP:-}" ]; then
     out "  (The swapfile part is insurance: this box has no swap, so if memory ever fills,"
     out "   the kernel kills a session instead of slowing down. It is a one-time setup —"

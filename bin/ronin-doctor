@@ -655,7 +655,15 @@ machine_has_swap; case $? in
       note "no swap, but this is a container — swap is the host's business, not this install's"
     else
       ram_gb="$(awk '/^MemTotal:/ {printf "%.0f", $2/1048576; exit}' /proc/meminfo 2>/dev/null)"
-      find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: ronin_sops/remote_machine_health.md § swap"
+      # The remedy is the LINE, the same one setup.sh offers, whenever this box can take a
+      # swapfile (machine_swap_offerable: ext4/xfs root, room for it, nothing at /swapfile);
+      # linger's finding prints its command and swap's pointed at a document (issue #74).
+      # Where the file is not a sane offer the SOP says what is, and why.
+      if machine_swap_offerable; then
+        find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: sudo bash -c '$(machine_swap_action)'  (why: ronin_sops/remote_machine_health.md § swap)"
+      else
+        find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: ronin_sops/remote_machine_health.md § swap"
+      fi
     fi ;;
 esac
 
