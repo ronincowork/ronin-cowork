@@ -13,7 +13,7 @@ export const BUNDLE_FORMAT = 'ronin-bundle/1';
 export const LIBRARY_FORMAT = 'ronin-library/1';
 
 export type BundleStore = 'catalogs' | 'sops' | 'ways' | 'library' | 'tools';
-export type BundleCatalog = 'MACROS.md' | 'ACTIONS.md' | 'TOOLS.md';
+export type BundleCatalog = 'MACROS.md' | 'ACTIONS.md' | 'TOOLS.md' | 'MODEL_PROVIDERS.md';
 
 export interface BundleFile {
   store: BundleStore;
@@ -60,7 +60,9 @@ export interface LibraryIndex {
 
 const TOKEN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const STORES: readonly BundleStore[] = ['catalogs', 'sops', 'ways', 'library', 'tools'];
-const CATALOGS: readonly BundleCatalog[] = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md'];
+const CATALOGS: readonly BundleCatalog[] = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'MODEL_PROVIDERS.md'];
+/** A provider section's id: `- **provider:** \`openai\`` — the key it merges by, since its heading is a vendor's name. */
+const providerIdOf = (section: string): string => /^-\s*\*\*provider:\*\*\s*`([^`]+)`\s*$/m.exec(section)?.[1]?.trim() ?? '';
 const CATALOG_DIRS = ['templates/agents', 'templates/teams', 'routines', 'session_roles', 'role_families', 'desk_profiles', 'lexicons'];
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
 const GUARDS = ['tmux', 'systemctl', 'git'];
@@ -111,6 +113,12 @@ function checkEntry(entry: BundleEntry): string | null {
     if (!m || m[1] !== entry.name) return 'a TOOLS row is `| `name` | action | usage |`, on one line';
     return null;
   }
+  if (entry.catalog === 'MODEL_PROVIDERS.md') {
+    if (!/^###\s+\S/.test(entry.text.split('\n')[0] ?? '')) return 'a provider entry opens with its `### <Vendor>` heading';
+    if (providerIdOf(entry.text) !== entry.name) return 'a provider entry is named by its `- **provider:** id`';
+    if (/^##\s|^###\s/m.test(entry.text.split('\n').slice(1).join('\n'))) return 'one entry, one heading';
+    return null;
+  }
   const head = /^##\s+`?([\w-]+)`?(?:\s.*)?$/.exec(entry.text.split('\n')[0] ?? '');
   if (!head || head[1] !== entry.name) return 'a MACROS or ACTIONS entry opens with its own `## name` heading';
   if (/^##\s/m.test(entry.text.split('\n').slice(1).join('\n'))) return 'one entry, one heading';
@@ -137,7 +145,7 @@ export function parseBundle(raw: unknown): Bundle {
   const entries: BundleEntry[] = [];
   for (const raw of Array.isArray(b.entries) ? b.entries : []) {
     const e = (raw ?? {}) as Record<string, unknown>;
-    const catalog = str(e.catalog, 16) as BundleCatalog;
+    const catalog = str(e.catalog, 24) as BundleCatalog;
     if (!CATALOGS.includes(catalog)) throw new Error(`"${name}": an entry's catalog is one of ${CATALOGS.join(', ')}.`);
     const entry: BundleEntry = { catalog, name: words(e.name, 64), text: str(e.text, 20000).trimEnd() };
     const why = checkEntry(entry);
@@ -247,6 +255,19 @@ function findEntry(raw: string, catalog: BundleCatalog, name: string): { text: s
   }
   const footer = raw.search(/^---\s*$/m);
   const body = footer === -1 ? raw : raw.slice(0, footer);
+  if (catalog === 'MODEL_PROVIDERS.md') {
+    // A `### <Vendor>` section, found by the provider id it declares; it ends at the next heading.
+    const heads = [...body.matchAll(/^###\s+\S.*$/gm)];
+    for (const [i, h] of heads.entries()) {
+      const start = h.index!;
+      const after = body.slice(start + h[0].length);
+      const stop = after.search(/^##\s|^###\s/m);
+      const end = start + h[0].length + (stop === -1 ? after.length : stop);
+      if (providerIdOf(body.slice(start, end)) === name) return { text: body.slice(start, end), start, end };
+      void i;
+    }
+    return null;
+  }
   const re = new RegExp(`^##\\s+\`?${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\`?(?:\\s.*)?$`, 'm');
   const m = re.exec(body);
   if (!m) return null;

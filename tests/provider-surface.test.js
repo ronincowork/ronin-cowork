@@ -30,8 +30,8 @@ globalThis.Node = FakeNode;
 globalThis.document = { createElement: (tag) => new FakeNode(tag), createElementNS: (_ns, tag) => new FakeNode(tag), querySelector: () => null, head: { append() {} } };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
-let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', providers: [
-  { provider: 'anthropic', cli: 'claude', label: 'Anthropic', models: [
+let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', stock_updated: '2026-09-08', withdrawn: [], providers: [
+  { provider: 'anthropic', cli: 'claude', label: 'Anthropic', origin: 'stock', shadowed: false, models: [
     { model: 'opus', tier: 'frontier', default: true, cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions', cmd: 'claude --model opus' },
     { model: 'haiku', tier: 'light', default: false, cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors', cmd: 'claude --model haiku' },
   ] },
@@ -105,7 +105,7 @@ test('showing the surface measures once, then reads the catalog, and lists one s
   assert.deepEqual(stones.map((stone) => stone.attributes['data-activated']), ['true', 'false', 'false', 'false']);
   const dates = byClass(made.el, 'setup-provider-dates')[0];
   assert.equal(walk(dates).find((node) => node.tagName === 'SUMMARY').textContent, 'Check dates');
-  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.map((row) => row.children.map((cell) => cell.textContent)), [
+  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.filter((row) => !row.hidden).map((row) => row.children.map((cell) => cell.textContent)), [
     ['Catalog researched', '2026-09-08'],
     ['Machine measured', new Date('2026-09-08T11:00:00.000Z').toLocaleString()],
     ['Latest versions checked', new Date('2026-09-09T12:00:00.000Z').toLocaleString()],
@@ -151,6 +151,7 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   assert.equal(calls[0], 'POST /api/setup/providers/claude/update');
   assert.equal(section.className, 'setup-provider-catalog');
   assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'The catalog');
+  assert.equal(byClass(section, 'setup-provider-provenance')[0].textContent, 'Shipped catalog · updated 2026-09-08', 'the section says which layer it came from');
   const facts = byClass(section, 'setup-provider-facts')[0].children;
   assert.deepEqual(facts.map((fact) => [fact.children[0].textContent, fact.children[1].textContent, fact.dataset.on]), [['Installed', 'yes', 'true'], ['Signed in', 'yes', 'true'], ['Activated', 'yes', 'true']]);
   const table = byClass(section, 'setup-provider-models')[0];
@@ -223,16 +224,28 @@ test('a catalog provider no registry CLI serves keeps its catalog section and sa
   assert.deepEqual(walk(section).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['pi-1']);
 });
 
-test('an unmeasured machine and the owner\'s catalog copy are each said, never guessed', async () => {
+test('an unmeasured machine and the owner\'s catalog copy are each said, never guessed — and a shadowed section says so, with its cost', async () => {
   machine = { providers: [] };
-  catalog = { ...catalog, origin: 'user', updated: '2026-10-01' };
+  catalog = { ...catalog, origin: 'user', updated: '2026-10-01', withdrawn: [{ provider: 'xai', label: 'xAI' }], providers: [
+    { ...catalog.providers[0], origin: 'user', shadowed: true },
+    catalog.providers[1],
+    { ...catalog.providers[2], origin: 'user', shadowed: false },
+  ] };
   const made = surface.createProviderSurface(context());
   await made.show();
   const dates = byClass(made.el, 'setup-provider-dates')[0];
-  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.map((row) => row.children.map((cell) => cell.textContent)), [
-    ['Catalog researched', '2026-10-01'],
+  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.filter((row) => !row.hidden).map((row) => row.children.map((cell) => cell.textContent)), [
+    ['Catalog researched', 'Shipped 2026-09-08 · your copy 2026-10-01'],
     ['Machine measured', 'Not measured yet'],
     ['Latest versions checked', 'Not checked yet — press Refresh'],
-  ]);
+    ['Withdrawn by your copy', 'xAI'],
+  ], 'two layers, two dates, neither borrowed; what the copy withdrew is named');
+  assert.equal(surface.providersSummary((await import('../public/js/form-steps.js')).providerCatalog()), '3 providers · 4 models · 0 activated here · catalog updated 2026-09-08 · 2 yours');
+  byClass(made.el, 'sws-stone')[0].click();
+  const from = byClass(made.el, 'setup-provider-provenance')[0];
+  assert.equal(from.dataset.origin, 'user'); assert.equal(from.dataset.shadowed, 'true');
+  assert.equal(from.textContent, 'Your copy of this section (updated 2026-10-01) replaces the shipped one (updated 2026-09-08). It stays yours until you take the next shipped update: one edited price forks the whole section.');
+  byClass(made.el, 'sws-stone')[2].click();
+  assert.equal(byClass(made.el, 'setup-provider-provenance')[0].textContent, 'Yours · not in the shipped catalog (your copy updated 2026-10-01)');
   assert.deepEqual(byClass(made.el, 'sws-stone').map((stone) => stone.attributes['data-provider']), ['anthropic', 'openai', 'pi'], 'with no registry rows every catalog provider is a stone of its own');
 });

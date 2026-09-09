@@ -262,7 +262,7 @@ export function templateTray(rows, current, onPick, { includeOwn = true } = {}) 
  * A surface calls `loadProviderCatalog()` when it is shown and paints from
  * `providerCatalog()`; a picker built before the first read paints again when it lands.
  */
-let catalog = { rows: [], machine: [], measured_at: '', origin: '', updated: '', loaded: false };
+let catalog = { rows: [], machine: [], measured_at: '', origin: '', updated: '', stock_updated: '', withdrawn: [], loaded: false };
 let inflight = null;
 
 export function loadProviderCatalog() {
@@ -274,6 +274,8 @@ export function loadProviderCatalog() {
       rows: orderedCatalog(catalogRows(providers), machine), machine,
       measured_at: runtime.ok ? String(runtime.data?.measured_at || '') : '',
       origin: read.ok ? String(read.data?.origin || '') : '', updated: read.ok ? String(read.data?.updated || '') : '',
+      stock_updated: read.ok ? String(read.data?.stock_updated || '') : '',
+      withdrawn: read.ok && Array.isArray(read.data?.withdrawn) ? read.data.withdrawn : [],
       loaded: true,
     };
     inflight = null;
@@ -282,13 +284,17 @@ export function loadProviderCatalog() {
   return inflight;
 }
 
-/** What every reader paints from: `{ rows, machine, measured_at, origin, updated, loaded }`. */
+/** What every reader paints from: `{ rows, machine, measured_at, origin, updated, stock_updated, withdrawn, loaded }`. */
 export const providerCatalog = () => catalog;
 
-/** The catalog's provider entries as flat model rows, each carrying its provider's id, CLI and label. Pure. */
+/**
+ * The catalog's provider entries as flat model rows, each carrying its provider's id, CLI,
+ * label, and which layer its section came from (`origin`: stock or user; `shadowed` when the
+ * owner's section replaced a shipped one) — so a surface can say it. Pure.
+ */
 export function catalogRows(providers = []) {
   return (Array.isArray(providers) ? providers : []).flatMap((entry) => (Array.isArray(entry?.models) ? entry.models : [])
-    .map((row) => ({ ...row, provider: entry.provider, cli: entry.cli, provider_label: entry.label || entry.provider })));
+    .map((row) => ({ ...row, provider: entry.provider, cli: entry.cli, provider_label: entry.label || entry.provider, origin: entry.origin || 'stock', shadowed: entry.shadowed === true })));
 }
 
 /**
