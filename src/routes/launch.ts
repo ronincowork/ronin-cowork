@@ -37,6 +37,7 @@ import { campaignResolver, initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { readCampaign } from '../campaigns.js';
 import { listRoutines } from '../resource-adapters.js';
+import { agentBinDir } from '../agent-install.js';
 import { resolveLaunchSeed } from '../launch-seed.js';
 import type { SessionsDefaults } from '../launch-command.js';
 import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentence, type PacketReport } from '../birth-readme.js';
@@ -45,11 +46,24 @@ import { readTegami } from '../tegami-read.js';
 import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
 
 /** The environment a newborn is handed beyond what the pane inherits: its projected
- *  command PATH, and the operator socket that launched it. Undefined when there is nothing
- *  to say, so `new-session` gets no empty `-e`. */
-export function birthEnv(toolPath?: string, socket?: string): Record<string, string> | undefined {
+ *  command PATH with Ronin's own install bin dir behind it, and the operator socket that
+ *  launched it. Undefined when there is nothing to say, so `new-session` gets no empty `-e`.
+ *
+ *  The install bin dir (`~/.local/bin`, where Install and Update put a CLI) is on every
+ *  newborn's PATH because the pane inherits the server's environment, and a server started
+ *  by systemd or npm has no `.profile` and so no `~/.local/bin` — so a tile launched by
+ *  absolute path ran the CLI Ronin installed while `codex` typed by name inside it found an
+ *  older system copy (2026-09-09). The session's own command directory stays first: its
+ *  guards (the tmux shim) must win over anything. Running tiles are untouched. */
+export function birthEnv(toolPath?: string, socket?: string, installBin: string = agentBinDir(), parentPath: string = process.env.PATH ?? ''): Record<string, string> | undefined {
   const env: Record<string, string> = {};
-  if (toolPath) env.PATH = toolPath;
+  const has = (p: string) => p.split(':').includes(installBin);
+  if (toolPath) {
+    const [own, ...rest] = toolPath.split(':');
+    env.PATH = has(toolPath) ? toolPath : [own, installBin, ...rest].filter(Boolean).join(':');
+  } else if (installBin && !has(parentPath)) {
+    env.PATH = [installBin, parentPath].filter(Boolean).join(':');
+  }
   if (socket) env[OPERATOR_SOCKET_ENV] = socket;
   return Object.keys(env).length ? env : undefined;
 }
