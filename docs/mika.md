@@ -72,6 +72,8 @@ a change she suggests goes through propose-and-confirm and Ronin's own doors.
 
 ## Tips and tricks — teaching her as you go
 
+**The file: `ronin_session_boot/house/mika/MIKA_TIPS.md` in the cowork repo.** Add a bullet, commit, delete her, click Help: she reads it.
+
 `ronin_session_boot/house/mika/MIKA_TIPS.md` is the owner's bullet list of nuances: the
 things the documents state correctly but that still surprise ("the agent's Docs tab is
 empty because the agent never listed its documents"). It is compiled into her README at
@@ -92,7 +94,7 @@ run, and nothing of Ronin's own bin:
 | command | does |
 |---|---|
 | `lookup mika-source:<id>` | prints that source, verified against the index she was born with |
-| `wheres_waldo <tab>` | what the owner is looking at in that browser tab — Help reports the tab's view when it opens (`public/js/mika.js`), and her brief names the tab |
+| `owner_view <tab>` | what the owner is looking at in that browser tab — Help reports the tab's view when it opens (`public/js/mika.js`), and her brief names the tab |
 | `show <tab> <surface>` | opens a Ronin surface in another visible workspace of that tab |
 
 ## She is a singleton
@@ -158,7 +160,7 @@ Six things, and five of them are data:
 |---|---|
 | `ronin_catalogs/session_roles/MikaAssist.md` | her definition — icon ミ, her posture, her opening, `cap: exempt`, `dir: {mika_home}` |
 | `src/mika-runtime.ts` · `src/mika-knowledge.ts` | which model (the rule above) · the source index compiled into her README |
-| `ronin_bin/lookup` · `wheres_waldo` · `show` | her three commands, over the operator socket (`src/mika-context.ts`) |
+| `ronin_bin/lookup` · `owner_view` · `show` | her three commands, over the operator socket (`src/mika-context.ts`) |
 | `ronin_session_boot/house/mika/START_HERE.md` · `MIKA_RULES.md` · `MIKA_TIPS.md` | the Setup walkthrough, her rules, and the owner's tips — three sections of her README |
 | `ronin_catalogs/MIKA_MACROS.md` | her four jobs |
 | `ronin_catalogs/ACTIONS.md` | `propose-and-confirm` |
