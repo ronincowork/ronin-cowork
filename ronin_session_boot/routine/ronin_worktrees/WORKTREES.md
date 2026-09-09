@@ -51,24 +51,17 @@ facts on request.
 
 ### Finish the assignment
 
-Your shell was opened inside your desk at birth and it stays there: the desk is where you
-live, not a place you visit, and nobody will ask you to leave it. Once your work is handed
-in there are exactly two states, and `tejun-desk status` certifies which one you are in.
-
-- **Certify first.** After your last hand-in, `tejun-desk status` must read `CERTIFIED
-  CLEAN`: no unsaved files, every commit on the Team line. From then on a termination at
-  any moment loses nothing. `NOT CERTIFIED` names what is still yours; commit and hand it
-  in.
-- **Stay.** Certified and parked. Hang tight; more work may come. A promotion notice
-  needs nothing from you — do not poll for it, and do not close the desk.
-- **Go.** `tejun-harakiri`. It closes every certified desk and ends you, together. Never
-  one without the other: the desk you are standing in cannot be closed while you live,
-  by you or by anyone. Dirty, pending/rejected, unique, shared, or occupied work keeps
-  everything alive and returns exact next actions; nothing is discarded.
-
-`tejun-desk close` is for a desk you are not standing in: a second repository's desk you
-opened alongside, or, for a lead, a desk whose session is already gone. Corrections after
-promotion are another commit and hand-in on the same desk.
+Your shell was opened inside your desk at birth and stays there: the desk is where you
+live, and nobody will ask you to leave it. After your last hand-in, `tejun-desk status`
+must read `CERTIFIED CLEAN` — no unsaved files, every commit on the Team line — so that a
+termination at any moment loses nothing; `NOT CERTIFIED` names what to commit and hand in.
+Then there are two states. **Stay:** certified and parked; hang tight, more may come, and
+a correction is another commit and hand-in; do not poll for promotion, do not close.
+**Go:** `tejun-harakiri` closes every certified desk — an `ACCEPTED` hand-in is enough;
+promotion is not required — and ends you, together, never one without the other; dirty,
+pending/rejected, unique, shared, or occupied work keeps everything alive and returns
+exact next actions, nothing discarded. `tejun-desk close` is for a desk you are not
+standing in: a second repository's desk, or, for a lead, a desk whose session is gone.
 
 The house owns cleanup of candidates, locks, staging, temporary refs, and other managed
 scratch state. It never consumes a live desk during hand-in, and cleanup is not an Agent
