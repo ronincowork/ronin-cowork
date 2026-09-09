@@ -308,9 +308,15 @@ export function catalogRows(providers = []) {
 export function orderedCatalog(rows = [], machine = []) {
   const marked = (Array.isArray(rows) ? rows : []).filter((row) => row?.provider && row?.model).map((row) => {
     const entry = (Array.isArray(machine) ? machine : []).find((item) => item?.id === row.cli) || null;
+    const list = entry?.model_list || null;
+    const measuredModel = Array.isArray(list?.models) ? list.models.find((model) => model?.slug === row.model) : null;
+    const modelListCurrent = Boolean(list?.client_version && entry?.version && list.client_version === entry.version);
     // `off`: the owner turned the provider off — greyed with that word, never the false
     // "not on this machine" (the house rule: disabled, never hidden; and never a lie).
-    return { ...row, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true, provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '' };
+    return { ...row, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
+      provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '',
+      model_list: list, model_list_current: modelListCurrent, model_list_installed: entry?.version || '',
+      listed: list ? Boolean(measuredModel) : null };
   });
   const providers = [...new Set(marked.map((row) => row.provider))];
   const on = providers.filter((provider) => marked.some((row) => row.provider === provider && row.operational));
@@ -329,6 +335,24 @@ export function tierWord(tier) {
  * option it is a sentence squeezed into a line that cannot show it.
  */
 export const modelWord = (row) => t('forms.model_word', '{model} · {tier}', { model: row.model, tier: tierWord(row.tier) });
+
+/** A CLI list is evidence from the client version that fetched it; only a current list can refuse a row. */
+export const modelAvailabilityFact = (row) => {
+  const list = row.model_list;
+  if (!list) return '';
+  const verdict = row.listed ? 'listed' : 'not listed';
+  const asOf = list.fetched_at ? ` (as of ${list.fetched_at})` : '';
+  if (!row.model_list_current) return t('forms.model_list_stale', '{verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read', {
+    verdict, cli: row.cli_label || row.cli, client_version: list.client_version, as_of: asOf, installed_version: row.model_list_installed || '',
+  });
+  return t('forms.model_list_current', '{verdict} by your {cli} {client_version}{as_of}', {
+    verdict, cli: row.cli_label || row.cli, client_version: list.client_version, as_of: asOf,
+  });
+};
+export const modelAvailabilityWord = (row) => {
+  const fact = modelAvailabilityFact(row);
+  return fact ? `${modelWord(row)} — ${fact}` : modelWord(row);
+};
 
 /**
  * THE ONE PROVIDER → MODEL PICKER. Two selects, and either pick may stand alone: naming
@@ -360,7 +384,13 @@ export function providerModelPair(read, write, field, { fixed = '', classes = ''
     const chosen = fixed || providerSelect.value;
     const offered = rows.filter((row) => row.provider === chosen);
     modelSelect.replaceChildren(option(empty.model, ''));
-    for (const row of offered) modelSelect.add(option(fixed && !row.operational ? (row.off ? t('forms.model_turned_off', '{model} · {tier} — turned off', { model: row.model, tier: tierWord(row.tier) }) : t('forms.model_off', '{model} · {tier} — not on this machine', { model: row.model, tier: tierWord(row.tier) })) : modelWord(row), row.model, !row.operational));
+    for (const row of offered) {
+      const unavailable = row.model_list_current && row.listed === false;
+      const label = fixed && !row.operational
+        ? (row.off ? t('forms.model_turned_off', '{model} · {tier} — turned off', { model: row.model, tier: tierWord(row.tier) }) : t('forms.model_off', '{model} · {tier} — not on this machine', { model: row.model, tier: tierWord(row.tier) }))
+        : modelAvailabilityWord(row);
+      modelSelect.add(option(label, row.model, !row.operational || unavailable));
+    }
     modelSelect.value = offered.some((row) => row.model === current.model) ? String(current.model) : '';
     modelSelect.disabled = !chosen;
   };

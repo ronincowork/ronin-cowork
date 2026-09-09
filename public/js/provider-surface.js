@@ -35,7 +35,7 @@ import { t } from './lexicon.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
-import { loadProviderCatalog, providerCatalog, tierWord } from './form-steps.js';
+import { loadProviderCatalog, modelAvailabilityFact, providerCatalog, tierWord } from './form-steps.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
 
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
@@ -343,12 +343,29 @@ export function createProviderSurface(context) {
       line.dataset.model = row.model; line.dataset.tier = row.tier;
       const name = el('td'); name.append(el('b', null, row.model));
       if (row.default) name.append(el('span', 'setup-provider-default', t('setup_surface.model_default_mark', 'the default')));
+      if (row.model_list) name.append(el('span', 'setup-provider-model-status', modelAvailabilityFact(row)));
       line.append(name, el('td', 'setup-provider-tier', tierWord(row.tier)), el('td', null, row.cost || ''), el('td', null, row.good_at || ''), el('td', null, row.not_good_at || ''));
       body.append(line);
     }
     table.append(thead, body);
     const scroll = el('div', 'setup-provider-table'); scroll.append(table);
     section.append(scroll);
+    const list = rows[0]?.model_list;
+    if (list && Array.isArray(list.models)) {
+      const catalogModels = new Set(rows.map((row) => row.model));
+      const candidates = list.models.filter((model) => model?.visibility === 'list' && model?.slug && !catalogModels.has(model.slug));
+      if (candidates.length) {
+        const extra = el('section', 'setup-provider-model-candidates');
+        extra.append(el('h4', '', t('setup_surface.model_candidates', 'Listed by the CLI, missing from the catalog')));
+        for (const candidate of candidates) {
+          const item = el('p', 'setup-provider-model-candidate');
+          item.dataset.model = candidate.slug;
+          item.append(el('b', null, candidate.slug), el('span', null, candidate.description ? ` — ${candidate.description}` : ''));
+          extra.append(item);
+        }
+        section.append(extra);
+      }
+    }
     host.append(section);
   };
 

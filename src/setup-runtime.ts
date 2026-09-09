@@ -54,6 +54,8 @@ export interface SetupProviderState {
   models: number;
   /** What the installed CLI said it is; null when not installed or it would not say. */
   version: string | null;
+  /** Its CLI-owned model list, including the CLI version that fetched it; null when not measured. */
+  model_list: ProviderSummary['model_lists'][string] | null;
   /** The newest release its package source listed at the last Refresh; null when never asked or unaskable. */
   latest: string | null;
   latest_checked_at: string | null;
@@ -205,6 +207,7 @@ export async function setupRuntimeAnswer(
       off_at: offSince,
       models,
       version,
+      model_list: activated ? summary.model_lists?.[agent.id] ?? null : null,
       latest: latest?.version ?? null,
       latest_checked_at: latest?.checked_at ?? null,
       updatable: activated && Boolean(updateLine),

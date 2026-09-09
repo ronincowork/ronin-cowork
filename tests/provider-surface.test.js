@@ -287,6 +287,32 @@ test('a catalog provider no registry CLI serves keeps its catalog section and sa
   assert.deepEqual(walk(section).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['pi-1']);
 });
 
+test('a stale CLI list is dated and named without disproving a catalog row, and exposes catalog candidates', async () => {
+  const savedMachine = machine;
+  try {
+    machine = { measured_at: '2026-09-09T13:00:00.000Z', activated_count: 1, providers: [{
+      id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true,
+      state: 'activated', version: '0.153.4', model_list: {
+        fetched_at: '2026-09-09T06:00:00Z', etag: 'old', client_version: '0.151.0', models: [
+          { slug: 'gpt-5.5', display_name: 'GPT-5.5', description: 'General-purpose model.', visibility: 'list', priority: 2 },
+          { slug: 'gpt-5.3-codex-spark', display_name: 'Spark', description: 'Fast coding model.', visibility: 'list', priority: 1 },
+        ],
+      },
+    }] };
+    const made = surface.createProviderSurface(context());
+    await made.show(); await settle();
+    byClass(made.el, 'sws-stone')[0].click();
+    assert.equal(byClass(made.el, 'setup-provider-model-status')[0].textContent,
+      'not listed by Codex 0.151.0 (as of 2026-09-09T06:00:00Z), you have 0.153.4 — not yet re-read');
+    assert.deepEqual(byClass(made.el, 'setup-provider-model-candidate').map((item) => [item.dataset.model, item.textContent]), [
+      ['gpt-5.5', 'gpt-5.5 — General-purpose model.'],
+      ['gpt-5.3-codex-spark', 'gpt-5.3-codex-spark — Fast coding model.'],
+    ]);
+  } finally {
+    machine = savedMachine;
+  }
+});
+
 test('an unmeasured machine and the owner\'s catalog copy are each said, never guessed — and a shadowed section says so, with its cost', async () => {
   machine = { providers: [] };
   catalog = { ...catalog, origin: 'user', updated: '2026-10-01', withdrawn: [{ provider: 'xai', label: 'xAI' }], providers: [
