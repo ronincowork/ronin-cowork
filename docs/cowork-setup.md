@@ -12,13 +12,18 @@ hidden setting.
 
 | Surface | Source | Save consequence |
 |---|---|---|
-| Coworkspace and owner names | SETTEI plus machine defaults | machine and owner settings |
-| Agents | measured agent catalog | absent selected agents become wanted, needed, and installation work |
-| Session and Mika models | runnable launch-spec catalog | agent defaults |
-| Maximum agent sessions | saved value or RAM estimate | session ceiling; `0` means no limit |
-| Ronin Services | activation record | disclosed Shiwake activation request when newly selected |
-| gbrain | SETTEI | explicit enabled state |
-| First project | owner answers plus read-only folder inspection | project root and remit |
+| Campaign name and description | home Campaign | the home Campaign's title and description |
+| Coworkspace name | machine document plus hostname fallback | the machine document's name |
+| Owner name | machine document plus account-name fallback | the machine document's owner name |
+| Kind and Routine Bundle | registry defaults | the home Campaign's agent behaviours and routines; the bundle also selects the machine's new-project desk mode |
+| Agents | measured agent catalog | the machine document's wanted agents, followed by installation work for absent selections |
+| New-session model | runnable launch-spec catalog | the configured default model record |
+| Desk profile | desk-profile catalog | the home Campaign's desk profile |
+| Mika model | runnable launch-spec catalog | the machine document's Mika job model |
+| Maximum agent sessions | saved value or RAM estimate | the machine document's session ceiling; `0` means no limit |
+| Ronin Services | activation record | one disclosed activation request when newly selected |
+| gbrain | machine document | the machine document's explicit enabled state |
+| First workspace folder | owner answers plus read-only folder inspection | one project-root record with its remit |
 | Git repository | measured from the working folder | review fact only; never stored as an answer |
 
 The RAM estimate reserves 25% of memory, or 2 GB when that is larger, then divides the
