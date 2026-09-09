@@ -5,7 +5,7 @@ import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
 import { listProviderCatalog, newerVersion, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
-import { activatedAt, npmPackageOf } from './provider-summary.js';
+import { activatedAt, npmPackageOf, offAt } from './provider-summary.js';
 import { peekProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
@@ -25,7 +25,7 @@ export const SETUP_PREFERENCE_KINDS = ['build', 'life', 'research'] as const;
 export type SetupPreferenceKind = typeof SETUP_PREFERENCE_KINDS[number];
 export interface SetupPreferences { kinds: SetupPreferenceKind[]; providers: string[] }
 interface SetupSection {
-  providers?: Record<string, { activated_at?: unknown }>;
+  providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>;
   preferences?: { kinds?: unknown; providers?: unknown };
   [key: string]: unknown;
 }
@@ -47,10 +47,15 @@ export interface SetupProviderState {
   signed_in: boolean;
   activated: boolean;
   activated_at: string | null;
+  /** Turned off by the owner: Ronin is not using this provider. The sign-in is kept; live tiles run on. */
+  off: boolean;
+  off_at: string | null;
   /** Catalog cells this CLI can launch; zero means it cannot count as activated. */
   models: number;
   /** What the installed CLI said it is; null when not installed or it would not say. */
   version: string | null;
+  /** Its CLI-owned model list, including the CLI version that fetched it; null when not measured. */
+  model_list: ProviderSummary['model_lists'][string] | null;
   /** The newest release its package source listed at the last Refresh; null when never asked or unaskable. */
   latest: string | null;
   latest_checked_at: string | null;
@@ -67,7 +72,7 @@ export interface SetupProviderState {
   /** An update is running in its temporary provider_setup session; `attachment` shows it. */
   update_open: boolean;
   attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
-  state: 'absent' | 'installable' | 'installed' | 'login_open' | 'activated';
+  state: 'absent' | 'installable' | 'installed' | 'login_open' | 'activated' | 'off';
 }
 
 export interface SetupRuntimeAnswer {
@@ -174,13 +179,16 @@ export async function setupRuntimeAnswer(
     const updateSession = updateSessionName(agent.id);
     const [loginOpen, updateOpen] = await Promise.all([ops.exists(session), ops.exists(updateSession)]);
     const completed = activatedAt(section, agent.id);
+    const offSince = offAt(section, agent.id);
     const isInstalled = summary.installed.includes(agent.id);
     const signedIn = isInstalled && summary.signed_in.includes(agent.id);
     const models = entry?.models.length ?? 0;
-    const activated = isInstalled && (completed !== null || signedIn) && models > 0;
-    const version = isInstalled ? summary.versions?.[agent.id] ?? null : null;
-    const latest = isInstalled ? summary.latest?.[agent.id] ?? null : null;
-    const updateLine = updateLineOf(agent);
+    const activated = isInstalled && offSince === null && (completed !== null || signedIn) && models > 0;
+    // Not activated: nothing was asked and nothing is offered — Installed, and stop. A
+    // version from an earlier measurement is not printed as though it were current.
+    const version = activated ? summary.versions?.[agent.id] ?? null : null;
+    const latest = activated ? summary.latest?.[agent.id] ?? null : null;
+    const updateLine = activated ? updateLineOf(agent) : '';
     return {
       id: agent.id,
       provider: entry?.provider ?? '',
@@ -195,13 +203,16 @@ export async function setupRuntimeAnswer(
       signed_in: signedIn,
       activated,
       activated_at: completed,
+      off: offSince !== null,
+      off_at: offSince,
       models,
       version,
+      model_list: activated ? summary.model_lists?.[agent.id] ?? null : null,
       latest: latest?.version ?? null,
       latest_checked_at: latest?.checked_at ?? null,
-      updatable: isInstalled && Boolean(updateLine),
+      updatable: activated && Boolean(updateLine),
       self_updates: agent.operations.selfUpdates,
-      update: isInstalled && updateLine ? updateLine : null,
+      update: activated && updateLine ? updateLine : null,
       update_available: Boolean(version && latest && newerVersion(version, latest.version)),
       askable: npmPackageOf(agent.operations.install) !== '',
       update_open: updateOpen,
@@ -209,7 +220,7 @@ export async function setupRuntimeAnswer(
       // same temporary provider_setup session shape and the same Close ends either.
       attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true }
         : updateOpen ? { type: 'session', key: updateSession, team: PROVIDER_SETUP_TEAM, temporary: true } : null,
-      state: activated ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
+      state: offSince !== null && isInstalled ? 'off' : activated ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
     };
   }));
   const activated_count = providers.filter((provider) => provider.activated).length;
@@ -300,6 +311,22 @@ export async function completeProviderLogin(
   await record(provider, activated_at);
   await ops.close(session);
   return { session, activated_at };
+}
+
+/**
+ * THE SWITCH. Off writes Ronin's own `off_at` and nothing else — no vendor file, no
+ * session; on deletes it. What the record then says is measured, not assumed: the caller
+ * measures again so `operational` moves with the switch.
+ */
+export async function setProviderOff(provider: string, off: boolean, now = () => new Date().toISOString()): Promise<{ provider: string; off: boolean; off_at: string | null }> {
+  if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
+  let off_at: string | null = null;
+  await updateSection<SetupSection>('setup', (setup) => {
+    const current = { ...(setup.providers?.[provider] ?? {}) };
+    if (off) { off_at = now(); current.off_at = off_at; } else { delete current.off_at; }
+    return { ...setup, providers: { ...(setup.providers ?? {}), [provider]: current } };
+  });
+  return { provider, off, off_at };
 }
 
 async function recordProviderActivation(provider: string, activated_at: string): Promise<void> {

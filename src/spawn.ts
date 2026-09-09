@@ -5,7 +5,9 @@ import { REPO_ROOT } from './resources.js';
 import { bootFiles, ensureShelf } from './birth-readme.js';
 import { listProjectRoots, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { listSessionLaunchSpecs } from './model-providers.js';
-import { readAgentsSection, readDesksSection } from './machine-state.js';
+import { agentSpec } from './agents.js';
+import { readAgentsSection, readDesksSection, readSetupSection } from './machine-state.js';
+import { offAt } from './provider-summary.js';
 import { storeDir } from './resources.js';
 import { findDefinition, listRoutines, routineReading } from './resource-adapters.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
@@ -280,6 +282,17 @@ export async function resolveForm(
   const dflt = sessionsSet.default;
   let cmd = chosen.cmd;
   const spec = launchSpecs.find((b) => b.cmd === cmd);
+  // A provider the owner turned OFF launches nothing new. Its own sentence — not "unknown
+  // model", not "not on this machine": it is here, signed in, and set aside. Tiles already
+  // running are not this check's business. A provider never activated is not refused
+  // here: it launches into its own sign-in in the tile, as it always has.
+  if (spec && agent) {
+    const off = offAt(await readSetupSection(), spec.cli);
+    if (off) {
+      const label = agentSpec(spec.cli)?.label ?? spec.cli;
+      throw new Error(`${label} is turned off on this machine — Ronin is not using it. Turn it on under Model providers; your sign-in is kept.`);
+    }
+  }
   const launchMode = agent ? (form.launch_mode ?? parentSeed?.seeds.launch_mode.value ?? 'live_dangerously') as LaunchMode : 'configured';
   if (launchMode === 'live_dangerously') {
     if (!spec?.liveDangerously) {

@@ -147,10 +147,12 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   // The Installed step says the version, WHICH binary said it, and what Refresh last learned;
   // Update is the owner's press, named by what it runs.
   assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed 2.1.263 · 2.1.265 available · ~/.local/bin/claude');
-  assert.equal(byClass(steps[0], 'setup-provider-self-update-note')[0].textContent, 'Usually updates itself.');
+  // Every step's text sits in its copy column under the title — never a fourth child of the grid.
+  for (const step of steps) assert.deepEqual(step.children.map((node) => node.className), ['setup-provider-mark', 'setup-provider-copy', 'setup-provider-control'], `${step.dataset.step}: mark, copy, controls — nothing else`);
   const update = byClass(steps[0], 'setup-provider-update')[0];
   assert.equal(update.textContent, 'Update to 2.1.265');
-  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^claude update runs here in the page\. Tiles already running keep the version/);
+  assert.equal(byClass(steps[0], 'setup-provider-note')[0].textContent, 'Runs here in the page. Tiles already running keep the version they started with; every launch after this gets the new one.');
+  assert.equal(byClass(steps[0], 'setup-provider-command')[0].textContent, 'claude update', 'the line Update runs, under the text, as an install command sits');
   calls.length = 0;
   update.click();
   assert.equal(update.disabled, true, 'the button closes immediately while its session is created');
@@ -160,6 +162,16 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   assert.equal(section.className, 'setup-provider-catalog');
   assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'The catalog');
   assert.equal(byClass(section, 'setup-provider-provenance')[0].textContent, 'Shipped catalog · updated 2026-09-08', 'the section says which layer it came from');
+  // The switch, on the Ready step: Turn off with the sentence that says what it does and does not do.
+  const ready = steps[2];
+  const turnOff = byClass(ready, 'setup-provider-turn-off')[0];
+  assert.equal(turnOff.textContent, 'Turn off');
+  assert.equal(byClass(ready, 'setup-provider-note')[0].textContent, 'Turn off stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.', 'the sentence sits under the title, above the control');
+  assert.deepEqual(ready.children.map((node) => node.className), ['setup-provider-mark', 'setup-provider-copy', 'setup-provider-control']);
+  calls.length = 0;
+  turnOff.click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls[0], 'POST /api/setup/providers/claude/off');
   const facts = byClass(section, 'setup-provider-facts')[0].children;
   assert.deepEqual(facts.map((fact) => [fact.children[0].textContent, fact.children[1].textContent, fact.dataset.on]), [['Installed', 'yes', 'true'], ['Signed in', 'yes', 'true'], ['Activated', 'yes', 'true']]);
   const table = byClass(section, 'setup-provider-models')[0];
@@ -177,6 +189,7 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
   machine = { ...machine, providers: [
     { ...machine.providers[0], update_open: true, attachment: { type: 'session', key: 'provider_setup_claude_update', team: 'provider_setup', temporary: true } },
     { id: 'gemini', label: 'Gemini CLI', from: 'Google', installed: true, path: '/usr/bin/gemini', signed_in: true, activated: true, state: 'activated', version: '0.59.0', latest: '0.59.0', updatable: true, askable: false, update: 'gemini update', update_available: false },
+    { id: 'grok', label: 'Grok CLI', from: 'xAI', installed: true, path: '/usr/bin/grok', signed_in: false, activated: false, state: 'installed', version: null, latest: null, updatable: false, askable: true, update: null, update_available: false },
     { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, path: '/usr/bin/codex', signed_in: false, activated: false, state: 'installed', version: '0.153.4', latest: '0.154.0', updatable: true, askable: true, update: 'npm install -g @openai/codex@latest', update_available: true },
   ] };
   try {
@@ -189,18 +202,56 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
     const step = byClass(made.el, 'setup-provider-step')[0];
     assert.ok(byClass(step, 'setup-provider-terminal')[0], 'in the Install step');
     assert.equal(byClass(step, 'setup-provider-update').length, 0, 'no second Update while one runs');
-    assert.match(byClass(step, 'setup-provider-update-note')[0].textContent, /press Close; then Refresh/);
+    assert.match(byClass(step, 'setup-provider-note')[0].textContent, /press Close, then Refresh/);
+    assert.deepEqual(step.children.map((node) => node.className), ['setup-provider-mark', 'setup-provider-copy', 'setup-provider-control', 'setup-provider-terminal'], 'the terminal is the one thing a grid may carry beyond its three columns');
     calls.length = 0;
     byClass(step, 'setup-provider-update-close')[0].click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(calls[0], 'POST /api/setup/providers/claude/close', 'the same Close as a sign-in ends it');
+    await settle(); // Close repaints the frame; the stones below are the fresh ones
     byClass(made.el, 'sws-stone')[1].click();
     const geminiStep = byClass(made.el, 'setup-provider-step')[0];
     assert.equal(byClass(geminiStep, 'setup-provider-state')[0].textContent, 'Installed 0.59.0 · up to date · /usr/bin/gemini');
     assert.equal(byClass(geminiStep, 'setup-provider-update').length, 0, 'an up-to-date provider offers no Update control');
+    // Installed but not activated: nothing was asked of it, so Installed and nothing more — no version, no control.
     byClass(made.el, 'sws-stone')[2].click();
+    const grokStep = byClass(made.el, 'setup-provider-step')[0];
+    assert.equal(byClass(grokStep, 'setup-provider-state')[0].textContent, 'Installed');
+    assert.equal(byClass(grokStep, 'setup-provider-update').length, 0);
+    byClass(made.el, 'sws-stone')[3].click();
     const codexStep = byClass(made.el, 'setup-provider-step')[0];
     assert.equal(byClass(codexStep, 'setup-provider-update').length, 0, 'an unauthenticated provider offers no Update control even when a newer version is known');
+  } finally {
+    machine = saved;
+  }
+});
+
+test('an off provider wears Off, keeps its sign-in in view, and offers Turn on and nothing else', async () => {
+  const saved = machine;
+  machine = { ...machine, providers: [
+    { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, path: '/usr/bin/codex', signed_in: true, activated: false, activated_at: '2026-09-05T00:00:00.000Z', off: true, off_at: '2026-09-09T10:00:00.000Z', state: 'off', version: null, latest: null, updatable: false, askable: true, update: null, update_available: false },
+  ] };
+  try {
+    const ctx = context();
+    const made = surface.createProviderSurface(ctx);
+    await made.show(); await settle();
+    const stone = byClass(made.el, 'sws-stone')[0];
+    assert.equal(byClass(stone, 'sws-state')[0].textContent, 'Off');
+    stone.click();
+    const steps = byClass(made.el, 'setup-provider-step');
+    assert.deepEqual(steps.map((step) => [step.dataset.step, step.dataset.status, step.dataset.current]), [['installed', 'installed', 'false'], ['authenticated', 'recorded', 'false'], ['ready', 'off', 'true']]);
+    assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed', 'nothing was asked of it');
+    assert.equal(byClass(steps[0], 'setup-provider-update').length, 0, 'no Update');
+    assert.equal(byClass(steps[1], 'setup-provider-state')[0].textContent, 'Signed in', 'the sign-in is kept, and said');
+    assert.equal(byClass(steps[1], 'setup-provider-action').length, 0, 'no Authenticate');
+    assert.equal(byClass(steps[2], 'setup-provider-state')[0].textContent, 'Off');
+    assert.match(byClass(steps[2], 'setup-provider-note')[0].textContent, /Turned off — Ronin is not using Codex\. Your sign-in is kept\./);
+    const turnOn = byClass(steps[2], 'setup-provider-turn-on')[0];
+    assert.equal(turnOn.textContent, 'Turn on');
+    calls.length = 0;
+    turnOn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(calls[0], 'POST /api/setup/providers/codex/on');
   } finally {
     machine = saved;
   }
@@ -236,6 +287,32 @@ test('a catalog provider no registry CLI serves keeps its catalog section and sa
   assert.match(yours.textContent, /No CLI in Ronin’s registry serves this provider/);
   assert.equal(byClass(yours, 'setup-provider-step').length, 0);
   assert.deepEqual(walk(section).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['pi-1']);
+});
+
+test('a stale CLI list is dated and named without disproving a catalog row, and exposes catalog candidates', async () => {
+  const savedMachine = machine;
+  try {
+    machine = { measured_at: '2026-09-09T13:00:00.000Z', activated_count: 1, providers: [{
+      id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true,
+      state: 'activated', version: '0.153.4', model_list: {
+        fetched_at: '2026-09-09T06:00:00Z', etag: 'old', client_version: '0.151.0', models: [
+          { slug: 'gpt-5.5', display_name: 'GPT-5.5', description: 'General-purpose model.', visibility: 'list', priority: 2 },
+          { slug: 'gpt-5.3-codex-spark', display_name: 'Spark', description: 'Fast coding model.', visibility: 'list', priority: 1 },
+        ],
+      },
+    }] };
+    const made = surface.createProviderSurface(context());
+    await made.show(); await settle();
+    byClass(made.el, 'sws-stone')[0].click();
+    assert.equal(byClass(made.el, 'setup-provider-model-status')[0].textContent,
+      'not listed by Codex 0.151.0 (as of 2026-09-09T06:00:00Z), you have 0.153.4 — not yet re-read');
+    assert.deepEqual(byClass(made.el, 'setup-provider-model-candidate').map((item) => [item.dataset.model, item.textContent]), [
+      ['gpt-5.5', 'gpt-5.5 — General-purpose model.'],
+      ['gpt-5.3-codex-spark', 'gpt-5.3-codex-spark — Fast coding model.'],
+    ]);
+  } finally {
+    machine = savedMachine;
+  }
 });
 
 test('an unmeasured machine and the owner\'s catalog copy are each said, never guessed — and a shadowed section says so, with its cost', async () => {

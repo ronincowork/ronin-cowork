@@ -35,7 +35,7 @@ import { t } from './lexicon.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
-import { loadProviderCatalog, providerCatalog, tierWord } from './form-steps.js';
+import { loadProviderCatalog, modelAvailabilityFact, providerCatalog, tierWord } from './form-steps.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
 import { readyMika } from './mika-ready.js';
 
@@ -152,6 +152,8 @@ export function createProviderSurface(context) {
    * the file it came from let a correct reading look like a lie (2026-09-09).
    */
   const installedState = (provider) => {
+    // Not activated: nothing was asked of it, so there is nothing to say past Installed.
+    if (provider.activated !== true) return t('setup_surface.installed', 'Installed');
     const version = provider.version || t('setup_surface.version_unknown', 'version not read');
     const where = provider.path ? ' · ' + homely(provider.path) : '';
     if (provider.latest) {
@@ -230,9 +232,9 @@ export function createProviderSurface(context) {
     const installRow = stepRow(install, install.status === 'installed'
       ? installedState(provider)
       : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
-    if (install.status === 'installed' && provider.self_updates) {
-      installRow.item.append(el('p', 'setup-provider-note setup-provider-self-update-note', t('setup_surface.self_updates', 'Usually updates itself.')));
-    }
+    // Every step's text — the update running, the line Update runs, "usually updates
+    // itself", the switch's sentence — is the step's own `detail`/`command`, painted by
+    // stepRow in the text column. Nothing is appended to the grid but a terminal.
     // UPDATE — only for an installed CLI the registry knows how to update. It opens in the
     // page exactly as a sign-in does: a temporary provider_setup session, mounted here, and
     // the same Close ends it. Not the kaki primary (that is the current step's), so the
@@ -242,7 +244,6 @@ export function createProviderSurface(context) {
       const close = action(t('setup_surface.close', 'Close'), '', () => { mounted?.park?.(); return press(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); });
       close.classList.add('setup-provider-action', 'setup-provider-update-close');
       installRow.controls.append(close);
-      installRow.item.append(el('p', 'setup-provider-note setup-provider-update-note', t('setup_surface.update_running', 'Updating in the page. When it has printed the new version, press Close; then Refresh. Tiles already running keep the version they started with; every launch after this gets the new one.')));
       installRow.item.append(terminal);
       mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
@@ -265,12 +266,6 @@ export function createProviderSurface(context) {
       });
       update.classList.add('setup-provider-action', 'setup-provider-update');
       installRow.controls.append(update);
-      const note = el('p', 'setup-provider-note setup-provider-update-note');
-      note.append(
-        el('code', 'setup-provider-command', provider.update || ''),
-        el('span', null, ' ' + t('setup_surface.update_note', 'runs here in the page. Tiles already running keep the version they started with; every launch after this gets the new one.')),
-      );
-      installRow.item.append(note);
     }
     if (install.current && install.action === 'manual' && install.manual) {
       const link = el('a', 'wk-action setup-provider-action setup-provider-manual', install.manual.label);
@@ -299,7 +294,20 @@ export function createProviderSurface(context) {
       mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
     }
-    stepRow(ready, ready.status === 'ready' ? t('setup_surface.ready_launch', 'Activated for Launch') : t('setup_surface.not_ready', 'Not yet'));
+    // THE SWITCH lives on the Ready step. Activated: Turn off, with the sentence that says
+    // exactly what it does and does not do. Off: Turn on. Neither touches a sign-in or a
+    // running tile, and both say so where the owner presses (owner, 2026-09-09).
+    const readyRow = stepRow(ready, ready.status === 'ready' ? t('setup_surface.ready_launch', 'Activated for Launch')
+      : ready.status === 'off' ? t('setup_surface.off', 'Off') : t('setup_surface.not_ready', 'Not yet'));
+    if (ready.status === 'ready') {
+      const turnOff = action(t('setup_surface.turn_off', 'Turn off'), '', () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/off`));
+      turnOff.classList.add('setup-provider-action', 'setup-provider-turn-off');
+      readyRow.controls.append(turnOff);
+    } else if (ready.status === 'off') {
+      const turnOn = control(ready, t('setup_surface.turn_on', 'Turn on'), () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/on`));
+      turnOn.classList.add('setup-provider-turn-on');
+      readyRow.controls.append(turnOn);
+    }
     card.append(head, flow, problem);
     host.append(card);
   };
@@ -329,12 +337,29 @@ export function createProviderSurface(context) {
       line.dataset.model = row.model; line.dataset.tier = row.tier;
       const name = el('td'); name.append(el('b', null, row.model));
       if (row.default) name.append(el('span', 'setup-provider-default', t('setup_surface.model_default_mark', 'the default')));
+      if (row.model_list) name.append(el('span', 'setup-provider-model-status', modelAvailabilityFact(row)));
       line.append(name, el('td', 'setup-provider-tier', tierWord(row.tier)), el('td', null, row.cost || ''), el('td', null, row.good_at || ''), el('td', null, row.not_good_at || ''));
       body.append(line);
     }
     table.append(thead, body);
     const scroll = el('div', 'setup-provider-table'); scroll.append(table);
     section.append(scroll);
+    const list = rows[0]?.model_list;
+    if (list && Array.isArray(list.models)) {
+      const catalogModels = new Set(rows.map((row) => row.model));
+      const candidates = list.models.filter((model) => model?.visibility === 'list' && model?.slug && !catalogModels.has(model.slug));
+      if (candidates.length) {
+        const extra = el('section', 'setup-provider-model-candidates');
+        extra.append(el('h4', '', t('setup_surface.model_candidates', 'Listed by the CLI, missing from the catalog')));
+        for (const candidate of candidates) {
+          const item = el('p', 'setup-provider-model-candidate');
+          item.dataset.model = candidate.slug;
+          item.append(el('b', null, candidate.slug), el('span', null, candidate.description ? ` — ${candidate.description}` : ''));
+          extra.append(item);
+        }
+        section.append(extra);
+      }
+    }
     host.append(section);
   };
 

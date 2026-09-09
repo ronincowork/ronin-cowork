@@ -130,6 +130,83 @@ test('bulk dismissal is exact-ID and preserves unread arrivals', async (t) => {
   await fs.rm(root, { recursive: true, force: true });
 });
 
+test('auto-force defaults to two minutes; an explicit 0 means never', async () => {
+  const queue = await import(`../src/message-queue.ts?autodefault=${Date.now()}`);
+  assert.equal(queue.autoForceMsFrom(undefined), 120_000);
+  assert.equal(queue.autoForceMsFrom(null), 120_000);
+  assert.equal(queue.autoForceMsFrom(''), 120_000);
+  assert.equal(queue.autoForceMsFrom(0), 0);
+  assert.equal(queue.autoForceMsFrom('0'), 0);
+  assert.equal(queue.autoForceMsFrom(120), 120_000);
+  assert.equal(queue.autoForceMsFrom('not a number'), 0);
+});
+
+test('bulk force is exact-ID, one pane at a time, and reports each outcome', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-bulkforce-'));
+  process.env.RONIN_MESSAGE_QUEUE_DIR = root;
+  const queue = await import(`../src/message-queue.ts?bulkforce=${Date.now()}`);
+  const target = await liveTarget(t, 'queue_bulkforce_target');
+  const wins = await queue.enqueueMessage(target, 'forced through', 'house');
+  const loses = await queue.enqueueMessage(target, 'forced and refused', 'house');
+  const unread = await queue.enqueueMessage(target, 'arrived after selection', 'house');
+  const order: string[] = [];
+  const delivery = {
+    safe: async () => ({ delivered: false, submitted: false, reason: 'unused' }),
+    force: async (_target: string, text: string) => {
+      order.push(text);
+      return text === 'forced through'
+        ? { delivered: true, submitted: true, reason: '' }
+        : { delivered: false, submitted: true, reason: 'the pane refused it' };
+    },
+  };
+  const result = await queue.forceMessages([wins.id, loses.id, wins.id, 'not-a-real-id'], delivery);
+  assert.deepEqual(order, ['forced through', 'forced and refused']);
+  assert.deepEqual(result.not_found, ['not-a-real-id']);
+  assert.deepEqual(result.outcomes.map((o: { id: string; delivered: boolean }) => [o.id, o.delivered]), [[wins.id, true], [loses.id, false]]);
+  const left = await queue.listQueuedMessages();
+  assert.deepEqual(left.map((item: { id: string }) => item.id).sort(), [loses.id, unread.id].sort());
+  assert.equal(left.find((item: { id: string }) => item.id === loses.id)?.state, 'failed');
+  assert.equal(left.find((item: { id: string }) => item.id === unread.id)?.attempts, 0);
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test('auto-force fires once per retained message after the owner\'s delay, never before, never for a missing target', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-autoforce-'));
+  process.env.RONIN_MESSAGE_QUEUE_DIR = root;
+  const queue = await import(`../src/message-queue.ts?autoforce=${Date.now()}`);
+  const { setControl } = await import('../src/tmux.js');
+  const target = await liveTarget(t, 'queue_autoforce_target');
+  await setControl(target, 'read'); // safe delivery holds; the message is Waiting
+  const item = await queue.enqueueMessage(target, 'stuck behind a dial', 'tell', 'sender');
+  let forced = 0;
+  const delivery = {
+    safe: async () => ({ delivered: false, submitted: false, reason: 'unused' }),
+    force: async () => { forced += 1; return { delivered: false, submitted: true, reason: 'pane never took it' }; },
+  };
+  const born = Date.parse(item.created_at);
+  // Off: the sweep only makes safe attempts, which the Control setting holds.
+  await queue.processMessageQueue({ now: born + 600_000, autoForceAfterMs: 0, delivery });
+  assert.equal(forced, 0);
+  // On, but younger than the delay: still held.
+  await queue.processMessageQueue({ now: born + 60_000, autoForceAfterMs: 120_000, delivery });
+  assert.equal(forced, 0);
+  assert.equal((await queue.listQueuedMessages(born + 60_000))[0].auto_forced_at, undefined);
+  // On and old enough: forced once, stamped, and the failure stays on the card.
+  await queue.processMessageQueue({ now: born + 120_000, autoForceAfterMs: 120_000, delivery });
+  assert.equal(forced, 1);
+  const after = (await queue.listQueuedMessages(born + 120_000))[0];
+  assert.equal(after.state, 'failed');
+  assert.equal(after.reason, 'pane never took it');
+  assert.equal(after.attempts, 1);
+  assert.equal(after.auto_forced_at, new Date(born + 120_000).toISOString());
+  assert.ok(after.auto_force_failed_at, 'a force that finished without delivering is marked for the one flash');
+  // Later sweeps do not force it again; only a manual press would.
+  await queue.processMessageQueue({ now: born + 240_000, autoForceAfterMs: 120_000, delivery });
+  await queue.processMessageQueue({ now: born + 480_000, autoForceAfterMs: 120_000, delivery });
+  assert.equal(forced, 1);
+  await fs.rm(root, { recursive: true, force: true });
+});
+
 test('safe delivery honors Control while explicit Force keeps its documented override', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-message-queue-control-'));
   process.env.RONIN_MESSAGE_QUEUE_DIR = root;

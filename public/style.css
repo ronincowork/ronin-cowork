@@ -6137,7 +6137,6 @@ button.wb-door:hover b {
 .setup-provider-date-list dd { margin: 0; }
 /* Refresh: the one control that asks outside this machine (each CLI's package source), so it sits by the dates, not in a step. */
 .setup-provider-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); margin-top: var(--space-5); }
-.setup-provider-update-note { grid-column: 2; }
 /* A stone's detail is two sections, top to bottom: Yours (the steps), then The catalog. */
 .setup-provider-yours, .setup-provider-catalog { display: grid; gap: var(--space-5); min-width: 0; }
 .setup-provider-catalog { margin-top: var(--space-8); padding-top: var(--space-7); border-top: var(--edge) solid var(--line); }
@@ -6332,8 +6331,12 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .sys-machine .mach-v { margin-left: auto; font: var(--text-2) var(--font-mono); color: var(--muted-2); }
 
 .mq-note { margin: var(--space-5) var(--space-5) 0; color: var(--muted-2); font-size: var(--text-3); }
-.mq-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) var(--space-5) 0; }
-.mq-tools .mq-dismiss-all { margin-left: auto; border-color: var(--bad); }
+.mq-tools { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2) var(--space-4); margin: var(--space-3) var(--space-5) 0; }
+.mq-tools-group { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.mq-tools-right { margin-left: auto; }
+.mq-tools .mq-dismiss-all { border-color: var(--bad); }
+.mq-autoforce[data-on="true"] { border-color: var(--warn); background: var(--well); }
+.mq-card.mq-selected { outline: var(--space-1) solid var(--accent, var(--warn)); outline-offset: calc(-1 * var(--space-1)); background: var(--well); }
 .mq-board { display: grid; gap: var(--space-4); padding: var(--space-5); overflow: auto; }
 .mq-empty { color: var(--muted); margin: 0; }
 .mq-card { border: var(--edge) solid var(--line-2); border-left: var(--space-1) solid var(--warn); border-radius: var(--radius-sm); padding: var(--space-5); background: var(--panel); }

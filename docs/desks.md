@@ -86,7 +86,13 @@ spawned; a failure is thrown, and launch does not fall back to a funnel checkout
 2. a fresh detached candidate at the line's tip (`old`); a candidate a crashed run left
    behind is removed first, never reused;
 3. merge the desk into the candidate. A conflict is aborted there, the desk is marked
-   blocked, a `conflict` receipt names the files; the line is untouched;
+   blocked, a `conflict` receipt names the files; the line is untouched. The candidate
+   starts at current `dev` and takes the accepted line first; when the **line itself**
+   conflicts with `dev`, the only place a resolution can live is a desk that already holds
+   both — cut from the line (`--source team`) or from `dev`, the other merged in and the
+   conflict resolved and committed there. Hand-in recognises such a desk (the line and `dev`
+   are both its ancestors) and builds the candidate from `dev` plus that desk alone; any
+   other desk gets a `conflict` receipt that names that route;
 4. `git update-ref refs/heads/<line> <candidate> <old>` — the compare-and-swap. If the
    line moved meanwhile, rebuild on the new tip (a `stale` receipt each time, up to three);
 5. `git reset --hard` the line's worktree to the line. Not `merge --ff-only`: `update-ref`
