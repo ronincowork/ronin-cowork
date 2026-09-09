@@ -2,7 +2,7 @@
 
 Discussion plan · 2026-09-09 · Team tmux · Reach: plan
 
-Ronin should let the owner direct work once, then read, hear, revisit, and reuse what the agents produce. tmux supplies the persistent working environment. The recording supplies a durable account. Readable scrolls, documents, catch-up, and voice make that account useful. Success means that the value of a model's work survives the terminal window without making the working environment sluggish.
+Ronin should let the owner direct work once, then read, hear, revisit, and reuse what the agents produce. tmux supplies the persistent working environment. The recording supplies a durable account. Readable scrolls, documents, catch-up, and Ronin-Koe make that account useful. The owner's clarified priority is Ronin-Koe; Wispr import is secondary. Success means that the value of a model's work survives the terminal window without making the working environment sluggish.
 
 This is a proposal for discussion, not an implementation commitment. Repository code, earlier investigations, and selected upstream documentation were read; no live performance measurements were taken and no recorder was enabled. Historical measurements below describe their dated experiments, not this machine's current performance.
 
@@ -71,13 +71,17 @@ One public tmux API does not require one congested transport for every kind of w
 
 There is another option worth investigating: provider-supported structured output or documented session records could supply message and tool boundaries more directly. Treat this as a later adapter study, not an assumed capability or a replacement for terminal evidence. Compare coverage, stability, resumability, and cost; preserve source labels when records disagree. Do not turn ordinary ANSI stripping into an alleged lossless transcript.
 
-**Wispr and voice**
+**Ronin-Koe: the first consumer to design around**
 
-The existing Wispr proposal is specifically a mirror of dictated history from the owner's Mac into Ronin. It is marked unbuilt and explicitly excludes voice-out and glossary work. It is useful input-side context, but does not produce agent transcripts.
+The owner's clarification centers this work on Ronin-Koe. Its existing MVP contract makes the premier flow concrete: tap a session and hear the agent's own words since the owner's last message. One-way listening comes first; conversational voice control is later. The reading should preserve questions needing an answer, omit the owner's words and tool noise, account for skipped code, preserve paragraph rhythm, and announce whether the agent is still working. The documented narration cap is about 1,200 characters. These are existing product decisions, not new questions for this plan.
 
-If Wispr Flow itself is intended here, the larger opportunity is to connect a dictated intention to the task, its resulting work, and the spoken account returned to the owner. Start with explicit task/session association; application name and timestamp alone are not proof that a dictation caused a particular action. The older proposal's browser access and live SQLite/WAL assumptions need revalidation before choosing an import method.
+The recording service owns the named reading (`cherry_pick`) and its freshness boundary; Koe consumes it through `read_output` and applies pronunciation polish. The August 26 documents say Koe's bundled projector was retired after its fixes returned to Services. Older architecture pages still describe that bundle: reconcile those pages rather than designing a second decoder into Koe again. No claim is made here that the historical MVP is currently running.
 
-If “Wispr” refers more broadly to the content-and-voice opportunity, the same output architecture works without that import. In either case, speech should consume the shared readable record. Pronunciation cleanup belongs at the voice boundary; selecting facts, summarizing, and omitting content should be explicit transformations with source references.
+The most important seam is freshness: the latest reply can still be on the live screen, while the settled record ends one screen earlier. Koe needs the right words and an honest working/finished stance. A missing boundary, an unsent draft, a stale recording, or an interrupted turn must not become a confidently spoken answer. The old raw-tape fallback's claim to freshness needs explicit validation while recording is parked; a file's existence does not prove it contains current output.
+
+Start with direct reading, not a model paraphrase. Authored briefings remain a separate later choice. The shared contract should identify source ranges, provisional content, truncation, and unavailable or incomplete history so the tile and the voice can make consistent claims. Koe should retain its script preview, stop behavior, and voice/pace choices. Track p95 tap-to-first-audio, freshness at the start of playback, and cancellation/worker teardown; the old MVP target of two seconds to first audio was a target awaiting formal capture, not a proven result.
+
+Wispr's separate history-mirror proposal is outside the first delivery. It can later supply input context without becoming a dependency of terminal capture or voice-out.
 
 **How to organize the next work**
 
@@ -85,11 +89,11 @@ These are proposed workstreams for later assignment, not newly launched sessions
 
 | Sequence | Workstream | Concrete output | Decision it enables |
 |---|---|---|---|
-| 1 | Product and content contract | Three walkthroughs: phone catch-up, another agent taking over, voice briefing; fidelity and freshness expectations for each | What we preserve and what we build first |
+| 1 | Product and content contract | Start with Koe push-to-hear; compare the same source in a phone tile and an agent catch-up read; specify freshness and missing-history behavior | The shared record's first acceptance contract |
 | 2 | tmux foundation audit — cowork | Current topology and ownership map; reconcile historical open threads; supported-version matrix | Whether existing PTY tiles need replacement or targeted work |
 | 3 | Recording bench — Services, with cowork latency observer | Frozen, permission-appropriate corpus and repeatable baseline; CPU/MB, memory, backlog, restart cost, missing/duplicate text | Which reconstruction approach is affordable and faithful |
 | 4 | Architecture comparison | Costed comparison of isolated incremental reconstruction, cheaper limited decoding, and possible structured adapters | One selected design with explicit compromises |
-| 5 | One vertical slice across both repos | One recorded session → readable tile → catch-up API → optional spoken reading, with source references | Whether the product loop earns expansion |
+| 5 | One vertical slice across cowork, Services, and Koe | One recorded session → shared reading → Koe push-to-hear, checked against the tile and catch-up API | Whether the product loop earns expansion |
 | 6 | Expansion | More providers, retention, timed playback, documents, authored briefings, optional Wispr association | What should become a default |
 
 The foundation audit should include reconnect and fallback behavior, uncertain command completion and duplicate mutation risk, viewer ownership, geometry authority, browser protocol versions, lifecycle receipts, and whether disabled capture leaves writers running. It should also correct old open threads that are already solved, rather than promoting their historical descriptions into new bug reports.
@@ -104,12 +108,12 @@ The old refactor proposed 15 sessions, 50 MB of tape, and health latency under 2
 
 **Choices for our discussion**
 
-My proposed first priority is reliable catch-up and a readable phone tile, followed by spoken catch-up from the same source. The choices that most affect the architecture are:
+My proposed first priority is reliable Koe push-to-hear backed by the same readable source used by tiles and agents. The choices that most affect the architecture are:
 
 1. Which sessions should be recorded, and for how long should raw evidence and readable history survive?
-2. Is the first promise readable dialogue, timed terminal replay, or both?
-3. How fresh must a spoken or readable update be, and can expensive summaries stay on demand?
-4. Does Wispr mean importing dictated intentions, or the broader voice loop?
+2. Can timed terminal replay follow the first delivery of readable and spoken dialogue?
+3. How fresh must a mid-turn spoken update be, and what should Koe say when the latest turn cannot be established?
+4. Which benchmark thresholds make the recording safe to restore, including phone audio latency and the cost to the working application?
 
 **Reading map**
 
@@ -120,5 +124,6 @@ My proposed first priority is reliable catch-up and a readable phone tile, follo
 - Browser interaction: `/home/glen3/dohyo/ronin-lab/wip/buildouts/BROWSER_TERMINAL_ARCHITECTURE_PRIMER.md` and `TMUX_BROWSER_CONTROL_RESEARCH.md` (September 8; source evidence, reproductions, and explicitly labeled hypotheses).
 - Pending work: `/home/glen3/dohyo/ronin-lab/plans/OPEN_THREADS.md`, especially 0.13, 0.14, 0.16, 4.53–4.55; historical status requires reconciliation.
 - Wispr proposal: `/home/glen3/dohyo/ronin-lab/wip/WISPR_MIRROR.md` (August 16; proposal, not implemented behavior).
+- Koe product and reading contracts: `/home/glen3/dohyo/ronin-koe/docs/MVP.md`, `docs/VOICE.md`, `docs/HANDOFF.md`, and `packages/rireki/README.md` (historical MVP and August 26 consolidation; current runtime not measured).
 
 This plan connects those documents; it does not replace their evidence or approve their implementation proposals.
