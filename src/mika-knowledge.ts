@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { chmod, mkdir, readFile, readdir, realpath, rename, stat, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, readdir, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storeDir } from './resources.js';
@@ -10,6 +10,8 @@ export const MIKA_TAXONOMY = path.join(ROOT, 'ronin_session_boot', 'house', 'mik
 const INDEX_NAME = 'MIKA_SOURCE_INDEX.md';
 const MANIFEST_NAME = 'mika-source-manifest.json';
 const SNAPSHOT_DIR = 'mika-source-snapshots';
+const CURRENT_NAME = 'mika-knowledge-current';
+const GENERATION = /^mika-knowledge-[0-9a-f]{16}-[0-9a-f-]{36}$/;
 
 export interface MikaTaxonomyNode { id: string; label: string; root: string }
 export interface MikaSourceEntry {
@@ -184,9 +186,21 @@ function renderIndex(nodes: MikaTaxonomyNode[], entries: Array<MikaSourceEntry &
 
 async function atomicWrite(file: string, text: string, mode: number): Promise<void> {
   const temp = `${file}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(temp, text, { encoding: 'utf8', mode });
-  await rename(temp, file);
-  await chmod(file, mode);
+  try {
+    await writeFile(temp, text, { encoding: 'utf8', mode });
+    await rename(temp, file);
+    await chmod(file, mode);
+  } finally {
+    await rm(temp, { force: true }).catch(() => {});
+  }
+}
+
+async function cleanOldGenerations(dir: string, keep: string): Promise<void> {
+  const rows = await readdir(dir, { withFileTypes: true });
+  await Promise.all(rows.flatMap((row) => {
+    if (row.name === keep || !row.isDirectory() || !GENERATION.test(row.name)) return [];
+    return [rm(path.join(dir, row.name), { recursive: true, force: true })];
+  }));
 }
 
 export async function compileMikaKnowledgeAt(dir: string, options: MikaKnowledgeOptions = {}): Promise<MikaKnowledgeBuild> {
@@ -206,29 +220,52 @@ export async function compileMikaKnowledgeAt(dir: string, options: MikaKnowledge
   if (previewBytes < budget.minimumPreviewBytes || bytes > budget.bytes || lines > budget.lines) {
     throw new Error(`Mika source index cannot fit all ${raw.length} sources within ${budget.bytes} bytes / ${budget.lines} lines.`);
   }
-  const snapshotDir = path.join(dir, SNAPSHOT_DIR);
-  await mkdir(snapshotDir, { recursive: true, mode: 0o700 });
-  const entries: MikaSourceEntry[] = [];
-  for (const row of raw) {
-    const snapshot = `${digest(row.ref)}.md`;
-    await atomicWrite(path.join(snapshotDir, snapshot), row.text, 0o400);
-    entries.push({ id: row.id, ref: row.ref, title: row.title, preview: capUtf8(row.fullPreview, previewBytes), node: row.node,
-      origin: row.origin, sha256: row.sha256, snapshot });
+  await mkdir(dir, { recursive: true, mode: 0o700 });
+  const base = await realpath(dir);
+  const uuid = randomUUID();
+  const generation = `mika-knowledge-${digest(index).slice(0, 16)}-${uuid}`;
+  const staging = path.join(base, `.${generation}.tmp`);
+  const published = path.join(base, generation);
+  let pointerPublished = false;
+  try {
+    await mkdir(path.join(staging, SNAPSHOT_DIR), { recursive: true, mode: 0o700 });
+    const entries: MikaSourceEntry[] = [];
+    for (const row of raw) {
+      const snapshot = `${digest(row.ref)}.md`;
+      await atomicWrite(path.join(staging, SNAPSHOT_DIR, snapshot), row.text, 0o400);
+      entries.push({ id: row.id, ref: row.ref, title: row.title, preview: capUtf8(row.fullPreview, previewBytes), node: row.node,
+        origin: row.origin, sha256: row.sha256, snapshot });
+    }
+    const body = JSON.stringify({ schema: 1, digest: digest(index), entries }, null, 2) + '\n';
+    await atomicWrite(path.join(staging, MANIFEST_NAME), body, 0o400);
+    await atomicWrite(path.join(staging, INDEX_NAME), index, 0o444);
+    await rename(staging, published);
+    await atomicWrite(path.join(base, CURRENT_NAME), `${generation}\n`, 0o400);
+    pointerPublished = true;
+    await cleanOldGenerations(base, generation);
+    return {
+      index: path.join(published, INDEX_NAME), manifest: path.join(published, MANIFEST_NAME), entries,
+      bytes, lines, previewBytes, digest: digest(index),
+    };
+  } finally {
+    await rm(staging, { recursive: true, force: true }).catch(() => {});
+    if (!pointerPublished) await rm(published, { recursive: true, force: true }).catch(() => {});
   }
-  const manifest = path.join(dir, MANIFEST_NAME);
-  const indexPath = path.join(dir, INDEX_NAME);
-  const body = JSON.stringify({ schema: 1, digest: digest(index), entries }, null, 2) + '\n';
-  await atomicWrite(manifest, body, 0o400);
-  await atomicWrite(indexPath, index, 0o444);
-  return { index: indexPath, manifest, entries, bytes, lines, previewBytes, digest: digest(index) };
 }
 
 export async function openMikaSourceAt(dir: string, ref: string): Promise<{ id: string; ref: string; text: string; sha256: string }> {
   if (!ref.startsWith('mika-source:') || ref.includes('\0')) throw new Error('Unknown Mika source reference.');
-  const manifest = JSON.parse(await readFile(path.join(dir, MANIFEST_NAME), 'utf8')) as { entries?: MikaSourceEntry[] };
+  const base = await realpath(dir);
+  const generation = (await readFile(path.join(base, CURRENT_NAME), 'utf8')).trim();
+  if (!GENERATION.test(generation)) throw new Error('Mika knowledge generation is invalid.');
+  const shelf = await realpath(path.join(base, generation));
+  if (!shelf.startsWith(`${base}${path.sep}`)) throw new Error('Mika knowledge generation escaped its shelf.');
+  const manifest = JSON.parse(await readFile(path.join(shelf, MANIFEST_NAME), 'utf8')) as { digest?: string; entries?: MikaSourceEntry[] };
+  const index = await readFile(path.join(shelf, INDEX_NAME), 'utf8');
+  if (!manifest.digest || digest(index) !== manifest.digest) throw new Error('Mika source index and manifest do not match.');
   const entry = manifest.entries?.find((row) => row.ref === ref);
   if (!entry || !/^[0-9a-f]{64}\.md$/.test(entry.snapshot)) throw new Error('Unknown Mika source reference.');
-  const root = await realpath(path.join(dir, SNAPSHOT_DIR));
+  const root = await realpath(path.join(shelf, SNAPSHOT_DIR));
   const file = await realpath(path.join(root, entry.snapshot));
   if (!file.startsWith(`${root}${path.sep}`)) throw new Error('Mika source reference escaped its shelf.');
   const text = new TextDecoder('utf-8', { fatal: true }).decode(await readFile(file));

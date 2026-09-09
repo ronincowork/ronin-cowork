@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { compileMikaKnowledgeAt, MIKA_INDEX_BUDGET, openMikaSourceAt, parseMikaTaxonomy } from '../src/mika-knowledge.js';
 
 const taxonomy = `schema = 1
@@ -62,6 +62,50 @@ test('Mika index contains every resolved source, owner wins, and shelf opens onl
     assert.match(opened.text, /Owner sentence wins/);
     await assert.rejects(openMikaSourceAt(out, 'docs/alpha.md'), /Unknown Mika source/);
     await assert.rejects(openMikaSourceAt(out, 'mika-source:../alpha.md'), /Unknown Mika source/);
+  } finally { await rm(temp, { recursive: true, force: true }); }
+});
+
+test('Mika publishes one internally consistent generation and removes the stale one', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-generation-'));
+  const stock = path.join(temp, 'stock');
+  const out = path.join(temp, 'out');
+  const tax = path.join(temp, 'taxonomy.toml');
+  try {
+    await mkdir(path.join(stock, 'docs'), { recursive: true });
+    await mkdir(path.join(stock, 'ronin_sops'), { recursive: true });
+    await writeFile(tax, taxonomy);
+    const source = path.join(stock, 'docs', 'one.md');
+    await writeFile(source, '# One\n\nFirst generation.');
+    const first = await compileMikaKnowledgeAt(out, { taxonomy: tax, stockRoot: stock, ownerRoots: { docs: '', ronin_sops: '' } });
+    await writeFile(source, '# One\n\nSecond generation.');
+    const second = await compileMikaKnowledgeAt(out, { taxonomy: tax, stockRoot: stock, ownerRoots: { docs: '', ronin_sops: '' } });
+    assert.notEqual(path.dirname(first.index), path.dirname(second.index));
+    await assert.rejects(readFile(first.index, 'utf8'), /ENOENT/);
+    assert.equal((await readdir(out)).filter((name) => name.startsWith('mika-knowledge-')).length, 2,
+      'one generation directory plus its current pointer remain');
+    assert.match((await openMikaSourceAt(out, 'mika-source:docs/one.md')).text, /Second generation/);
+
+    await chmod(second.index, 0o600);
+    await writeFile(second.index, '# tampered index\n');
+    await assert.rejects(openMikaSourceAt(out, 'mika-source:docs/one.md'), /index and manifest do not match/);
+  } finally { await rm(temp, { recursive: true, force: true }); }
+});
+
+test('a failed publication leaves no partial generation visible', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-partial-'));
+  const stock = path.join(temp, 'stock');
+  const out = path.join(temp, 'out');
+  const tax = path.join(temp, 'taxonomy.toml');
+  try {
+    await mkdir(path.join(stock, 'docs'), { recursive: true });
+    await mkdir(path.join(stock, 'ronin_sops'), { recursive: true });
+    await mkdir(path.join(out, 'mika-knowledge-current'), { recursive: true });
+    await writeFile(tax, taxonomy);
+    await writeFile(path.join(stock, 'docs', 'one.md'), '# One\n\nOne sentence.');
+    await assert.rejects(compileMikaKnowledgeAt(out, {
+      taxonomy: tax, stockRoot: stock, ownerRoots: { docs: '', ronin_sops: '' },
+    }));
+    assert.deepEqual((await readdir(out)).sort(), ['mika-knowledge-current']);
   } finally { await rm(temp, { recursive: true, force: true }); }
 });
 
