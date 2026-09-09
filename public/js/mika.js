@@ -24,7 +24,7 @@ import { showFailure } from './errors.js';
  * directory, cap exemption, posture and opening. None of those are public launch fields.
  */
 
-const MIKA = 'mika';
+const MIKA = 'mika_agent';
 
 /** What she is told when the button starts her and nobody has asked anything yet. */
 const OPENED_FROM_BAR =

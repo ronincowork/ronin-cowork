@@ -280,8 +280,8 @@ export function createCoworkView(options = {}) {
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
       const reading = readingsOf(member);
-      const mika = team === RONIN_HELPERS && member.name === 'mika';
-      return { key: member.name, label: agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null,
+      const mika = team === RONIN_HELPERS && member.name === 'mika_agent';
+      return { key: member.name, label: mika ? t('mika.name', 'Mika') : agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null,
         ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
         onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
@@ -363,7 +363,7 @@ export function createCoworkView(options = {}) {
     if (mikaPanel.hidden) return;
     // Return the borrowed ordinary Tile to its workspace pool. This detaches the quick
     // view only; the Tile's own End control remains the sole session-ending action.
-    if (mikaSeat) { seats[mikaSeat].pool.releaseBorrow('mika'); mikaSeat = ''; }
+    if (mikaSeat) { seats[mikaSeat].pool.releaseBorrow('mika_agent'); mikaSeat = ''; }
     if (selectorCards) { selectorCards.hidden = false; selectorCards.inert = false; selectorCards.removeAttribute('aria-hidden'); }
     mikaPanel.inert = true;
     mikaPanel.setAttribute('aria-hidden', 'true');
@@ -394,21 +394,21 @@ export function createCoworkView(options = {}) {
           if (result.status === 409 && result.data?.state === 'action_required'
             && result.data?.code === 'provider_confirmation_required') {
             await Promise.all([fetchSessions(), refreshTeams()]);
-            extras.add('mika');
+            extras.add('mika_agent');
             paint();
             return showMikaState('action_required');
           }
           return showMikaState('refused');
         }
         await Promise.all([fetchSessions(), refreshTeams()]);
-        extras.add('mika');
+        extras.add('mika_agent');
         paint(); // membership seats the ordinary session before the selector reveals it
-        const ordinaryHost = seats[seat].pool.borrow('mika');
+        const ordinaryHost = seats[seat].pool.borrow('mika_agent');
         if (!ordinaryHost) return showMikaState('refused');
         mikaStage.append(ordinaryHost); // move the normal Tile; do not manufacture another
         mikaSeat = seat;
         showMikaState('ready', `Workspace ${seat.slice(-1)}`);
-        if (context !== lastMikaContext) void request('/api/sessions/mika/send', { method: 'POST', json: { text: context } })
+        if (context !== lastMikaContext) void request('/api/sessions/mika_agent/send', { method: 'POST', json: { text: context } })
           .then((sent) => { if (sent.ok) lastMikaContext = context; });
       })
       .catch(() => showMikaState('refused'));
@@ -491,11 +491,11 @@ export function createCoworkView(options = {}) {
   };
   function placeMikaWorkspaceTwo() {
     const held = holds('workspace2');
-    if (held && !(held === 'mika' || (held === 'session' && seats.workspace2.pool.active === 'mika'))) {
+    if (held && !(held === 'mika_agent' || (held === 'session' && seats.workspace2.pool.active === 'mika_agent'))) {
       toast(t('mika.workspace_two_busy', 'Workspace 2 is in use. Move or close that work before opening Mika.'), false);
       return false;
     }
-    return putSession('mika', 'workspace2');
+    return putSession('mika_agent', 'workspace2');
   }
 
   /* ---------- one controller, two callers ---------- */
