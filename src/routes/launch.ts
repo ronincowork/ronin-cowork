@@ -44,14 +44,14 @@ import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentenc
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
-import { ensureMikaHome, MIKA_PROMPTS, MikaUnavailable, mikaRulesSource, mikaStartHereSource, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
+import { ensureMikaHome, MIKA_PROMPTS, MikaUnavailable, mikaRulesSource, mikaStartHereSource, mikaTipsSource, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
 import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
 import { isMikaTab } from '../mika-context.js';
 import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../ronin-helper.js';
 
 const MIKA_SESSION = 'mika_agent' as const;
 /** Her three commands, projected first on PATH. */
-const MIKA_TOOLS = ['lookup', 'wheres_waldo', 'show'] as const;
+const MIKA_TOOLS = ['lookup', 'owner_view', 'show'] as const;
 /** The rest of her PATH: a working shell and coreutils, and nothing of Ronin's own bin —
  *  the first Mika was born with ONLY her tools dir on PATH, so her CLI could not run a
  *  shell at all and reported her tools missing (2026-09-09). */
@@ -277,6 +277,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
   const launch = async (req: express.Request, res: express.Response, houseSeat?: 'mika', loader?: typeof RONIN_HELPER_LOADER): Promise<unknown> => {
     let mikaSelection: MikaSelection | undefined;
     let mikaHome = '';
+    let mikaTips = '';
     if (houseSeat === 'mika') {
       if (await sessionExists(MIKA_SESSION)) return res.json({ ok: true, name: MIKA_SESSION, already: true });
       try {
@@ -399,7 +400,10 @@ export function registerLaunch(app: express.Express): LaunchControl {
           const previousSentence = `Read first: ${resolvedSources.join(', ')}.`;
           const knowledge = await compileMikaKnowledgeAt(mikaHome);
           mikaKnowledgeIndex = knowledge.index;
-          sources.push(mikaRulesSource(), mikaStartHereSource(), mikaKnowledgeIndex);
+          // The owner's tips ride in as a document of her own: in the README, and on her
+          // Docs list so they open from her tile.
+          mikaTips = await mikaTipsSource();
+          sources.push(mikaRulesSource(), mikaTips, mikaStartHereSource(), mikaKnowledgeIndex);
           resolved.brief = resolved.brief.replace(previousSentence, `Read first: ${sources.join(', ')}.`);
         }
         const readme = await compileBirthReadmeAt(
@@ -485,6 +489,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
             : await checkoutAt(resolved.dir),
         await deriveTeams(resolved.tags),
         resolved.mandate,
+        mikaTips ? [mikaTips] : [],
       );
       }
       await setControl(resolved.name, resolved.dial);
@@ -689,7 +694,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const welcome = intent === 'setup_provider_ready' && (await roninHelperWelcomeState())?.state !== 'delivered';
       const prompt = [
         welcome ? MIKA_PROMPTS.setup_provider_ready : MIKA_PROMPTS.help,
-        tab ? `Help was opened in browser tab ${tab}: \`wheres_waldo ${tab}\` shows what the owner sees.` : '',
+        tab ? `Help was opened in browser tab ${tab}: \`owner_view ${tab}\` shows what the owner sees.` : '',
       ].filter(Boolean).join(' ');
       let status = 200;
       let body: Record<string, unknown> = {};

@@ -29,7 +29,7 @@ import { mikaShowHandlers } from './events.js';
 
 const MIKA = 'mika_agent';
 
-/* ---------- which browser tab — the id wheres_waldo and show address ----------
+/* ---------- which browser tab — the id owner_view and show address ----------
  * One id per browser tab, minted once and kept in sessionStorage so a reload keeps it.
  * Help reports this tab's view under it; Mika is told the id at birth. */
 const TAB_KEY = 'ronin-mika-tab';
@@ -46,7 +46,7 @@ export function mikaTab() {
   }
 }
 
-/** What this tab shows, for `wheres_waldo`: best effort, never blocking Help. */
+/** What this tab shows, for `owner_view`: best effort, never blocking Help. */
 export async function reportMikaView(view) {
   if (!view) return;
   try { await request(`/api/mika/context/${encodeURIComponent(mikaTab())}`, { method: 'PUT', json: { view } }); } catch (_) { /* Help does not wait on it */ }

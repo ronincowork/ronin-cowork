@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { chmod, lstat, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { ensureMikaHome, mikaStartHerePath } from '../src/mika-runtime.js';
+import { ensureMikaHome, mikaStartHerePath, mikaTipsSource } from '../src/mika-runtime.js';
+import { mkdir } from 'node:fs/promises';
 import { ensureRoninHelpersTeam, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../src/ronin-helper.js';
 import { mikaReadinessFromPane } from '../src/routes/launch.js';
 import { projectRoutineTools } from '../src/routine-tools.js';
@@ -38,7 +39,8 @@ test('a stale starter from an earlier release is refreshed from the shipped one,
 test('a cold Mika birth compiles one published knowledge index into its reading', async () => {
   const source = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
   assert.match(source, /const knowledge = await compileMikaKnowledgeAt\(mikaHome\)/);
-  assert.match(source, /sources\.push\(mikaRulesSource\(\), mikaStartHereSource\(\), mikaKnowledgeIndex\)/);
+  assert.match(source, /sources\.push\(mikaRulesSource\(\), mikaTips, mikaStartHereSource\(\), mikaKnowledgeIndex\)/);
+  assert.match(source, /mikaTips \? \[mikaTips\] : \[\],/, 'the tips are on her Docs list from birth');
   assert.match(source, /file === mikaKnowledgeIndex \|\| isShelfTeaching\(file\)/);
   assert.match(source, /const sources = houseSeat === 'mika' \? \[\] : resolvedSources/);
   assert.ok(source.indexOf('const knowledge = await compileMikaKnowledgeAt(mikaHome)') < source.indexOf('const readme = await compileBirthReadmeAt('));
@@ -113,15 +115,15 @@ test('Mika birth stays visible through the ordinary session Docs record', async 
   assert.match(tegami, /path\.join\(sessionDir\(key\), 'README\.md'\)/);
 });
 
-test('fresh Mika projection exposes exactly lookup, wheres_waldo, and show', async () => {
+test('fresh Mika projection exposes exactly lookup, owner_view, and show', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-tools-'));
   process.env.RONIN_SESSION_COMMANDS_DIR = path.join(root, 'commands');
   const projected = await projectRoutineTools('mika', [], '/usr/local/bin:/usr/bin:/bin', {
     includeTmux: false,
-    extraTools: ['lookup', 'wheres_waldo', 'show'],
+    extraTools: ['lookup', 'owner_view', 'show'],
   });
-  assert.deepEqual((await readdir(projected.dir)).sort(), ['lookup', 'show', 'wheres_waldo']);
-  assert.deepEqual(projected.delivered.sort(), ['lookup', 'show', 'wheres_waldo']);
+  assert.deepEqual((await readdir(projected.dir)).sort(), ['lookup', 'owner_view', 'show']);
+  assert.deepEqual(projected.delivered.sort(), ['lookup', 'owner_view', 'show']);
   assert.deepEqual(projected.missing, []);
   assert.equal(projected.path, `${projected.dir}:/usr/local/bin:/usr/bin:/bin`, 'her tools first, then a shell she can actually run; nothing of Ronin\'s own bin');
   delete process.env.RONIN_SESSION_COMMANDS_DIR;
@@ -129,9 +131,19 @@ test('fresh Mika projection exposes exactly lookup, wheres_waldo, and show', asy
 
 test('the cold launch projects exactly her three tools over a working system PATH', async () => {
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
-  assert.match(launch, /const MIKA_TOOLS = \['lookup', 'wheres_waldo', 'show'\] as const/);
+  assert.match(launch, /const MIKA_TOOLS = \['lookup', 'owner_view', 'show'\] as const/);
   assert.match(launch, /const MIKA_PARENT_PATH = '\/usr\/local\/bin:\/usr\/bin:\/bin'/);
   assert.match(launch, /houseSeat === 'mika' \? MIKA_PARENT_PATH : undefined/);
   assert.match(launch, /includeTmux: false, extraTools: \[\.\.\.MIKA_TOOLS\]/);
   assert.match(launch, /houseSeat === 'mika'\),/);
+});
+
+test("the owner's tips come from their session-boot shadow when one exists, else the shipped file", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-tips-'));
+  process.env.RONIN_SESSION_BOOT_DIR = path.join(root, 'shelf');
+  assert.match(await mikaTipsSource(), /ronin_session_boot\/house\/mika\/MIKA_TIPS\.md$/);
+  await mkdir(path.join(root, 'shelf', 'house', 'mika'), { recursive: true });
+  await writeFile(path.join(root, 'shelf', 'house', 'mika', 'MIKA_TIPS.md'), '# tips\n- owner note\n');
+  assert.equal(await mikaTipsSource(), path.join(root, 'shelf', 'house', 'mika', 'MIKA_TIPS.md'));
+  delete process.env.RONIN_SESSION_BOOT_DIR;
 });

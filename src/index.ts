@@ -216,7 +216,7 @@ app.get('/api/health', (_req, res) =>
 
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
-registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped wheres_waldo/show seam
+registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_view/show seam
 registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/provider-catalog, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
