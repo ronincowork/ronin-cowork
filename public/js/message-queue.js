@@ -38,11 +38,11 @@ function reasonOf(reason) {
 
 const attentionSeen = new Set();
 
-/** The only thing worth a flash: a message the two-minute auto-force already tried and
- *  that is still retained. A new arrival, a Waiting card, a missing target — none of these
- *  interrupt the owner; the tab's own warning emphasis carries them. */
+/** The only thing worth a flash: a message whose two-minute auto-force has FINISHED and did
+ *  not land, so there is a card to see. A force still in flight, a new arrival, a Waiting
+ *  card, a missing target — none of these interrupt the owner. */
 export const attentionIds = (messages) => messages
-  .filter((message) => message.auto_forced_at && (message.state === 'stuck' || message.state === 'failed'))
+  .filter((message) => message.auto_force_failed_at)
   .map((message) => message.id);
 
 export const reconcileMessageSelection = (selected, messages) => new Set(

@@ -29,8 +29,8 @@ test('only a message the auto-force already tried and that is still retained ear
   const displayed = [
     { id: 'fresh', state: 'stuck' },
     { id: 'failed-by-hand', state: 'failed' },
-    { id: 'gone', state: 'target_missing', auto_forced_at: '2026-09-09T10:00:00.000Z' },
-    { id: 'forced-and-stuck', state: 'failed', auto_forced_at: '2026-09-09T10:00:00.000Z' },
+    { id: 'force-in-flight', state: 'stuck', auto_forced_at: '2026-09-09T10:00:00.000Z' },
+    { id: 'forced-and-failed', state: 'failed', auto_forced_at: '2026-09-09T10:00:00.000Z', auto_force_failed_at: '2026-09-09T10:00:09.000Z' },
   ];
-  assert.deepEqual(attentionIds(displayed), ['forced-and-stuck']);
+  assert.deepEqual(attentionIds(displayed), ['forced-and-failed']);
 });

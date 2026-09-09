@@ -199,6 +199,7 @@ test('auto-force fires once per retained message after the owner\'s delay, never
   assert.equal(after.reason, 'pane never took it');
   assert.equal(after.attempts, 1);
   assert.equal(after.auto_forced_at, new Date(born + 120_000).toISOString());
+  assert.ok(after.auto_force_failed_at, 'a force that finished without delivering is marked for the one flash');
   // Later sweeps do not force it again; only a manual press would.
   await queue.processMessageQueue({ now: born + 240_000, autoForceAfterMs: 120_000, delivery });
   await queue.processMessageQueue({ now: born + 480_000, autoForceAfterMs: 120_000, delivery });
