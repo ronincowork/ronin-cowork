@@ -42,6 +42,13 @@ interpret the schema through `public/js/machine-settings-schema.js`.
 Runtime environment variables override server values for the running process. They are
 not written into the document.
 
+## Families
+
+A family names the server writer for one kind of configuration value. Each registry row's
+`lands.family` is the only declaration of where that setting is written; the writer map in
+`src/machine-settings.ts` is the server side of that contract. A registry coverage test
+keeps every declared family, including generated provider-model fields, paired with a writer.
+
 ## Stock and store resources
 
 `src/resources.ts` resolves shipped resources and the matching user store. A user file at
