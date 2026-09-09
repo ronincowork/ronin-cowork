@@ -152,11 +152,6 @@ export function createSetupView() {
   const ensureMika = async () => operational() ? readyMika('help') : null;
   const ensureAndPlaceMika = async () => {
     if (!operational()) return false;
-    const held = bench?.typeAt('workspace2');
-    if (held === TERMINAL_TYPE && bench.resourceAt('workspace2') !== MIKA_SESSION) {
-      toast(t('mika.workspace_two_busy', 'Workspace 2 is in use. Move or close that work before opening Mika.'), false);
-      return false;
-    }
     const ready = await ensureMika();
     if (!ready || (!ready.ok && ready.data?.state !== 'action_required')) {
       toast(t('mika.start_refused', 'Mika couldn’t start. Try again.'), false);
@@ -210,12 +205,11 @@ export function createSetupView() {
     if (selectorCards) selectorCards.hidden = true;
     mikaPanel.hidden = false;
     mikaStage.replaceChildren(loading);
-    const ready = await ensureMika();
-    if (!ready || (!ready.ok && ready.data?.state !== 'action_required')) {
+    const placed = await ensureAndPlaceMika();
+    if (!placed) {
       loading.textContent = t('mika.start_refused', 'Mika couldn’t start. Try again.');
       return;
     }
-    mikaPool.sync([MIKA_SESSION]);
     const host = mikaPool.borrow(MIKA_SESSION);
     if (host) mikaStage.replaceChildren(host);
   });
