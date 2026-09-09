@@ -87,6 +87,12 @@ test('a bundle is held to its shape', () => {
   assert.throws(() => parseBundle({ format: BUNDLE_FORMAT, name: 'x', files: [{ store: 'catalogs', path: 'PROJECT_ROOTS.md', text: '' }] }), /catalog file sits on/);
   assert.throws(() => parseBundle({ format: BUNDLE_FORMAT, name: 'x', files: [{ store: 'tools', path: 'tmux', text: '' }] }), /never supplies a guard/);
   assert.throws(() => parseBundle({ format: BUNDLE_FORMAT, name: 'x', files: [{ store: 'sops', path: 'a.md', text: 'x' }], entries: [{ catalog: 'MACROS.md', name: 'a', text: '## b\n' }] }), /own `## name` heading/);
+  // The provider catalog is entry-merged too, per `### <Vendor>` section, named by the id it declares.
+  const section = '### OpenAI\n\n- **provider:** `openai`\n- **cli:** `codex`\n\n| model | tier | default | cost | good at | not good at | launch |\n|---|---|---|---|---|---|---|\n| `gpt-7` | frontier | yes | $5 (2026-10) | a | b | `codex --model gpt-7` |\n';
+  assert.throws(() => parseBundle({ format: BUNDLE_FORMAT, name: 'x', entries: [{ catalog: 'MODEL_PROVIDERS.md', name: 'other', text: section }] }), /named by its `- \*\*provider:\*\* id`/);
+  assert.throws(() => parseBundle({ format: BUNDLE_FORMAT, name: 'x', entries: [{ catalog: 'MODEL_PROVIDERS.md', name: 'openai', text: '## OpenAI\n- **provider:** `openai`\n' }] }), /`### <Vendor>` heading/);
+  const provider = parseBundle({ format: BUNDLE_FORMAT, name: 'x', entries: [{ catalog: 'MODEL_PROVIDERS.md', name: 'openai', text: section }] });
+  assert.equal(provider.entries[0].catalog, 'MODEL_PROVIDERS.md');
   assert.throws(() => parseBundle({ format: BUNDLE_FORMAT, name: 'x', files: [] }), /holds nothing/);
   const b = bundle();
   assert.deepEqual(b.kinds, ['work'], 'an unruled kind is dropped, not fatal');

@@ -38,10 +38,13 @@ test('GET /api/provider-catalog is the catalog object, whole and dated', async (
   assert.equal(body.origin, 'stock');
   assert.equal(body.path, STOCK_CATALOG_MD);
   assert.match(body.updated, /^\d{4}-\d{2}-\d{2}$/);
-  assert.deepEqual(Object.keys(body).sort(), ['origin', 'path', 'providers', 'updated']);
+  assert.deepEqual(Object.keys(body).sort(), ['origin', 'path', 'providers', 'stock_updated', 'updated', 'withdrawn']);
+  assert.equal(body.stock_updated, body.updated, 'no owner copy: the one date is the shipped one');
+  assert.deepEqual(body.withdrawn, []);
   assert.ok(body.providers.length >= 5);
   for (const entry of body.providers) {
-    assert.deepEqual(Object.keys(entry).filter((key) => !['gbrainDisconnected', 'liveDangerously'].includes(key)).sort(), ['cli', 'label', 'models', 'provider']);
+    assert.deepEqual(Object.keys(entry).filter((key) => !['gbrainDisconnected', 'liveDangerously'].includes(key)).sort(), ['cli', 'label', 'models', 'origin', 'provider', 'shadowed']);
+    assert.equal(entry.origin, 'stock');
     assert.ok(entry.models.length > 0, `${entry.label} carries its models`);
   }
 });

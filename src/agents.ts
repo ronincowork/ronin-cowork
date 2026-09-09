@@ -14,6 +14,7 @@ export interface AgentScreen {
 export interface AgentOperations {
   install: string;
   update: { shell: string; argv: readonly string[] };
+  selfUpdates: boolean;
   version: readonly string[];
   session: {
     newIdFlag: string;
@@ -29,7 +30,9 @@ export const AGENTS = [
     label: 'Claude Code',
     operations: {
       install: 'npm install -g @anthropic-ai/claude-code',
-      update: { shell: 'npm install -g @anthropic-ai/claude-code@latest', argv: [] },
+      // Native installs update in the background: https://code.claude.com/docs/en/getting-started#auto-updates
+      update: { shell: '', argv: ['update'] },
+      selfUpdates: true,
       version: ['--version'],
       session: { newIdFlag: '--session-id', resume: ['--resume'], discovery: 'claude-history' },
     } as AgentOperations,
@@ -44,7 +47,9 @@ export const AGENTS = [
     label: 'Codex',
     operations: {
       install: 'npm install -g @openai/codex',
+      // OpenAI documents an explicit update, not automatic updates: https://developers.openai.com/codex/cli/
       update: { shell: 'npm install -g @openai/codex@latest', argv: [] },
+      selfUpdates: false,
       version: ['--version'],
       session: { newIdFlag: '', resume: ['resume'], discovery: 'codex-fds' },
     } as AgentOperations,
@@ -59,7 +64,9 @@ export const AGENTS = [
     label: 'Gemini CLI',
     operations: {
       install: 'npm install -g @google/gemini-cli',
-      update: { shell: '', argv: ['update'] },
+      // general.enableAutoUpdate defaults true: https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/settings.md
+      update: { shell: 'npm install -g @google/gemini-cli@latest', argv: [] },
+      selfUpdates: true,
       version: ['--version'],
       session: { newIdFlag: '', resume: ['--resume'], discovery: 'unsupported' },
     } as AgentOperations,
@@ -68,14 +75,17 @@ export const AGENTS = [
     initial: 'positional' as InitialPrompt,
     screen: { busy: [], asking: ['●\\s*\\d+\\.\\s'], ready: [] },
   },
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, version: ['--version'], session: { newIdFlag: '', resume: [], discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
+  // [cli] auto_update defaults true: https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], session: { newIdFlag: '', resume: [], discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
     label: 'Hermes',
     operations: {
       install: '',
+      // Vendor docs require an explicit update: https://github.com/NousResearch/hermes-agent/blob/main/website/docs/getting-started/updating.md
       update: { shell: '', argv: ['update'] },
+      selfUpdates: false,
       version: ['--version'],
       session: { newIdFlag: '', resume: ['--resume'], discovery: 'unsupported' },
     } as AgentOperations,

@@ -58,9 +58,21 @@ without a `launch` cell is a name in a list, not a launchable spec, and `npm run
 refuses it. `src/model-providers.ts` parses this shape and nothing else does.
 
 **Shadowing.** The shipped file is stock and an upgrade replaces it. A copy at
-`$(ronin-store catalogs)/MODEL_PROVIDERS.md` is the catalog for that machine, whole —
-this is how the owner keeps names and prices fresh without a code release, and how a
-private provider stays private. `docs/shadowing.md` has the rule.
+`$(ronin-store catalogs)/MODEL_PROVIDERS.md` is an **overlay** on it, merged per
+`### <Vendor>` section and keyed by the section's `provider` id — the entry-merge every
+`## name` catalog gets (`docs/shadowing.md`), at this file's heading level. A user section
+of a shipped id replaces that section whole and keeps its place; a new id appends after
+the shipped ones; a user section carrying `- **hidden:** yes`, or whose every `launch` cell
+is `—`, withdraws the shipped provider. Sections the owner did not write stay the shipped
+ones and keep improving with each release. Every entry the catalog serves carries its
+`origin` (`stock` | `user`) and `shadowed`, and the Model providers surface says it in
+words under each provider — *Shipped catalog · updated …*, *Yours · not in the shipped
+catalog*, or *Your copy of this section replaces the shipped one*, with the honest cost
+beside it: a section replaces whole, so one edited price forks the vendor's section until
+the owner takes the next shipped update. The catalog object carries both dates,
+`stock_updated` and the owner's copy's `updated`, never borrowing one for the other, and
+`withdrawn`, the shipped providers the copy set aside. Seed a copy with the house header
+(`seedUserCatalog`) or copy one section out of the shipped file to start from.
 
 **Keeping it fresh.** The catalog is a snapshot, not live data. The stock file is refreshed
 with each Ronin release: the release order in `docs/tarball.md` carries the step *refresh

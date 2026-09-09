@@ -30,8 +30,8 @@ globalThis.Node = FakeNode;
 globalThis.document = { createElement: (tag) => new FakeNode(tag), createElementNS: (_ns, tag) => new FakeNode(tag), querySelector: () => null, head: { append() {} } };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
-let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', providers: [
-  { provider: 'anthropic', cli: 'claude', label: 'Anthropic', models: [
+let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', stock_updated: '2026-09-08', withdrawn: [], providers: [
+  { provider: 'anthropic', cli: 'claude', label: 'Anthropic', origin: 'stock', shadowed: false, models: [
     { model: 'opus', tier: 'frontier', default: true, cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions', cmd: 'claude --model opus' },
     { model: 'haiku', tier: 'light', default: false, cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors', cmd: 'claude --model haiku' },
   ] },
@@ -39,7 +39,7 @@ let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '20
   { provider: 'pi', cli: 'pi', label: 'Pi', models: [{ model: 'pi-1', tier: 'standard', default: true, cost: 'free (2026-09)', good_at: 'chat', not_good_at: 'code', cmd: 'pi' }] },
 ] };
 let machine = { measured_at: '2026-09-08T11:00:00.000Z', activated_count: 1, providers: [
-  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, path: '/home/glen/.local/bin/claude', signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, askable: true, update: 'npm install -g @anthropic-ai/claude-code@latest', update_available: true },
+  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, path: '/home/glen/.local/bin/claude', signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, self_updates: true, askable: true, update: 'claude update', update_available: true },
   { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: false, activated: false, login_open: true, state: 'login_open', attachment: { type: 'session', key: 'provider_setup_codex', team: 'provider_setup', temporary: true } },
   { id: 'grok', label: 'Grok Build', from: 'xAI', installed: false, installable: true, install: 'npm install -g @xai-official/grok', activated: false, state: 'installable' },
 ] };
@@ -105,7 +105,7 @@ test('showing the surface measures once, then reads the catalog, and lists one s
   assert.deepEqual(stones.map((stone) => stone.attributes['data-activated']), ['true', 'false', 'false', 'false']);
   const dates = byClass(made.el, 'setup-provider-dates')[0];
   assert.equal(walk(dates).find((node) => node.tagName === 'SUMMARY').textContent, 'Check dates');
-  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.map((row) => row.children.map((cell) => cell.textContent)), [
+  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.filter((row) => !row.hidden).map((row) => row.children.map((cell) => cell.textContent)), [
     ['Catalog researched', '2026-09-08'],
     ['Machine measured', new Date('2026-09-08T11:00:00.000Z').toLocaleString()],
     ['Latest versions checked', new Date('2026-09-09T12:00:00.000Z').toLocaleString()],
@@ -142,15 +142,19 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   // The Installed step says the version, WHICH binary said it, and what Refresh last learned;
   // Update is the owner's press, named by what it runs.
   assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed 2.1.263 · 2.1.265 available · ~/.local/bin/claude');
+  assert.equal(byClass(steps[0], 'setup-provider-self-update-note')[0].textContent, 'Usually updates itself.');
   const update = byClass(steps[0], 'setup-provider-update')[0];
   assert.equal(update.textContent, 'Update to 2.1.265');
-  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^npm install -g @anthropic-ai\/claude-code@latest runs here in the page\. Tiles already running keep the version/);
+  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^claude update runs here in the page\. Tiles already running keep the version/);
   calls.length = 0;
   update.click();
+  assert.equal(update.disabled, true, 'the button closes immediately while its session is created');
+  assert.equal(update.textContent, 'Starting…');
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(calls[0], 'POST /api/setup/providers/claude/update');
   assert.equal(section.className, 'setup-provider-catalog');
   assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'The catalog');
+  assert.equal(byClass(section, 'setup-provider-provenance')[0].textContent, 'Shipped catalog · updated 2026-09-08', 'the section says which layer it came from');
   const facts = byClass(section, 'setup-provider-facts')[0].children;
   assert.deepEqual(facts.map((fact) => [fact.children[0].textContent, fact.children[1].textContent, fact.dataset.on]), [['Installed', 'yes', 'true'], ['Signed in', 'yes', 'true'], ['Activated', 'yes', 'true']]);
   const table = byClass(section, 'setup-provider-models')[0];
@@ -167,7 +171,8 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
   const saved = machine;
   machine = { ...machine, providers: [
     { ...machine.providers[0], update_open: true, attachment: { type: 'session', key: 'provider_setup_claude_update', team: 'provider_setup', temporary: true } },
-    { id: 'gemini', label: 'Gemini CLI', from: 'Google', installed: true, path: '/usr/bin/gemini', signed_in: false, activated: false, state: 'installed', version: '0.55.1', latest: null, updatable: true, askable: false, update: 'gemini update', update_available: false },
+    { id: 'gemini', label: 'Gemini CLI', from: 'Google', installed: true, path: '/usr/bin/gemini', signed_in: true, activated: true, state: 'activated', version: '0.59.0', latest: '0.59.0', updatable: true, askable: false, update: 'gemini update', update_available: false },
+    { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, path: '/usr/bin/codex', signed_in: false, activated: false, state: 'installed', version: '0.153.4', latest: '0.154.0', updatable: true, askable: true, update: 'npm install -g @openai/codex@latest', update_available: true },
   ] };
   try {
     const ctx = context();
@@ -185,7 +190,12 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(calls[0], 'POST /api/setup/providers/claude/close', 'the same Close as a sign-in ends it');
     byClass(made.el, 'sws-stone')[1].click();
-    assert.equal(byClass(byClass(made.el, 'setup-provider-step')[0], 'setup-provider-state')[0].textContent, 'Installed 0.55.1 · latest unknown: no package source to ask · /usr/bin/gemini');
+    const geminiStep = byClass(made.el, 'setup-provider-step')[0];
+    assert.equal(byClass(geminiStep, 'setup-provider-state')[0].textContent, 'Installed 0.59.0 · up to date · /usr/bin/gemini');
+    assert.equal(byClass(geminiStep, 'setup-provider-update').length, 0, 'an up-to-date provider offers no Update control');
+    byClass(made.el, 'sws-stone')[2].click();
+    const codexStep = byClass(made.el, 'setup-provider-step')[0];
+    assert.equal(byClass(codexStep, 'setup-provider-update').length, 0, 'an unauthenticated provider offers no Update control even when a newer version is known');
   } finally {
     machine = saved;
   }
@@ -223,16 +233,28 @@ test('a catalog provider no registry CLI serves keeps its catalog section and sa
   assert.deepEqual(walk(section).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['pi-1']);
 });
 
-test('an unmeasured machine and the owner\'s catalog copy are each said, never guessed', async () => {
+test('an unmeasured machine and the owner\'s catalog copy are each said, never guessed — and a shadowed section says so, with its cost', async () => {
   machine = { providers: [] };
-  catalog = { ...catalog, origin: 'user', updated: '2026-10-01' };
+  catalog = { ...catalog, origin: 'user', updated: '2026-10-01', withdrawn: [{ provider: 'xai', label: 'xAI' }], providers: [
+    { ...catalog.providers[0], origin: 'user', shadowed: true },
+    catalog.providers[1],
+    { ...catalog.providers[2], origin: 'user', shadowed: false },
+  ] };
   const made = surface.createProviderSurface(context());
   await made.show();
   const dates = byClass(made.el, 'setup-provider-dates')[0];
-  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.map((row) => row.children.map((cell) => cell.textContent)), [
-    ['Catalog researched', '2026-10-01'],
+  assert.deepEqual(byClass(dates, 'setup-provider-date-list')[0].children.filter((row) => !row.hidden).map((row) => row.children.map((cell) => cell.textContent)), [
+    ['Catalog researched', 'Shipped 2026-09-08 · your copy 2026-10-01'],
     ['Machine measured', 'Not measured yet'],
     ['Latest versions checked', 'Not checked yet — press Refresh'],
-  ]);
+    ['Withdrawn by your copy', 'xAI'],
+  ], 'two layers, two dates, neither borrowed; what the copy withdrew is named');
+  assert.equal(surface.providersSummary((await import('../public/js/form-steps.js')).providerCatalog()), '3 providers · 4 models · 0 activated here · catalog updated 2026-09-08 · 2 yours');
+  byClass(made.el, 'sws-stone')[0].click();
+  const from = byClass(made.el, 'setup-provider-provenance')[0];
+  assert.equal(from.dataset.origin, 'user'); assert.equal(from.dataset.shadowed, 'true');
+  assert.equal(from.textContent, 'Your copy of this section (updated 2026-10-01) replaces the shipped one (updated 2026-09-08). It stays yours until you take the next shipped update: one edited price forks the whole section.');
+  byClass(made.el, 'sws-stone')[2].click();
+  assert.equal(byClass(made.el, 'setup-provider-provenance')[0].textContent, 'Yours · not in the shipped catalog (your copy updated 2026-10-01)');
   assert.deepEqual(byClass(made.el, 'sws-stone').map((stone) => stone.attributes['data-provider']), ['anthropic', 'openai', 'pi'], 'with no registry rows every catalog provider is a stone of its own');
 });
