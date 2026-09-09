@@ -66,7 +66,8 @@ await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'
 
 const { parseArrangement, arrangementOf } = await import('../src/desks/arrangement.js');
 const { deriveAssignment, listDesks, readDesk, deskWorktree, candidateWorktree } = await import('../src/desks/registry.js');
-const { openDesk, syncDesk, closeDesk, discardDesk, handoffDesk, cwdIsInside } = await import('../src/desks/desk.js');
+const { openDesk, syncDesk, closeDesk, discardDesk, handoffDesk, cwdIsInside, certifyDesks } = await import('../src/desks/desk.js');
+const { deskStatus } = await import('../src/desks/registry.js');
 const { handIn } = await import('../src/desks/hand-in.js');
 const statusOf = async (repo: string, branch: string) => {
   const d = (await listDesks({ repo })).find((x) => x.branch === branch);
@@ -411,7 +412,19 @@ test('closeDesk keeps unresolved work named, closes only after hand-in, and reco
     stop: async () => assert.fail('plain close must not stop a session'),
   });
   assert.equal(occupied.action, 'kept');
-  assert.match(occupied.reason, /session wispr is running inside .*notify it to leave, then retry/);
+  assert.match(occupied.reason, /session wispr is running inside .*birth desk ends with the session — tejun-harakiri from inside it, or archive the session, then close/);
+  // Certification (owner, 2026-09-09): everything on the line means ending loses nothing;
+  // the desk the shell lives in is stay-or-go, never closable; another is closable.
+  const status = await deskStatus((await readDesk('cowork', 'team/comp/wispr'))!, await arrangementOf('cowork'));
+  const standing = certifyDesks([status], path.join(wispr, 'src'));
+  assert.equal(standing.certified, true);
+  assert.equal(standing.standing.length, 1);
+  assert.equal(standing.closable.length, 0);
+  const elsewhere = certifyDesks([status], cowork);
+  assert.equal(elsewhere.closable.length, 1);
+  assert.equal(elsewhere.standing.length, 0);
+  assert.equal(certifyDesks([{ ...status, dirty: true, dirty_files: ['x.txt'] }], cowork).certified, false);
+  assert.match(certifyDesks([{ ...status, ahead: 2 }], cowork).blocking[0]!.why, /2 commit\(s\) not on team\/comp\/dev/);
   assert.ok(existsSync(wispr), 'an occupied worktree remains mounted');
   let stopped = '';
   const gone = await closeDesk('cowork', 'team/comp/wispr', {

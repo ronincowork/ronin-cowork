@@ -51,14 +51,24 @@ facts on request.
 
 ### Finish the assignment
 
-For ordinary close, keep the desk until promotion reports its hand-in on local `dev`; do
-not poll. Corrections are another commit and hand-in on the same desk. A promoted desk may
-close while its Agent stays live at the project root, ready to get a fresh desk later.
+Your shell was opened inside your desk at birth and it stays there: the desk is where you
+live, not a place you visit, and nobody will ask you to leave it. Once your work is handed
+in there are exactly two states, and `tejun-desk status` certifies which one you are in.
 
-For final self-shutdown, run `tejun-harakiri`. It closes every clean desk whose tip is
-contained in its Team line — an `ACCEPTED` hand-in is enough; promotion and manual close
-are not required — then ends the Agent. Dirty, pending/rejected, unique, shared, or
-occupied work keeps everything alive and returns exact next actions; nothing is discarded.
+- **Certify first.** After your last hand-in, `tejun-desk status` must read `CERTIFIED
+  CLEAN`: no unsaved files, every commit on the Team line. From then on a termination at
+  any moment loses nothing. `NOT CERTIFIED` names what is still yours; commit and hand it
+  in.
+- **Stay.** Certified and parked. Hang tight; more work may come. A promotion notice
+  needs nothing from you — do not poll for it, and do not close the desk.
+- **Go.** `tejun-harakiri`. It closes every certified desk and ends you, together. Never
+  one without the other: the desk you are standing in cannot be closed while you live,
+  by you or by anyone. Dirty, pending/rejected, unique, shared, or occupied work keeps
+  everything alive and returns exact next actions; nothing is discarded.
+
+`tejun-desk close` is for a desk you are not standing in: a second repository's desk you
+opened alongside, or, for a lead, a desk whose session is already gone. Corrections after
+promotion are another commit and hand-in on the same desk.
 
 The house owns cleanup of candidates, locks, staging, temporary refs, and other managed
 scratch state. It never consumes a live desk during hand-in, and cleanup is not an Agent

@@ -1,7 +1,7 @@
 import { listSessions } from '../tmux.js';
 import { tmux } from '../tmux-client.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from '../desks/registry.js';
-import { closeDesk, discardDesk, handoffDesk, openDesk, syncDesk } from '../desks/desk.js';
+import { closeDesk, discardDesk, handoffDesk, openDesk, syncDesk, certifyDesks } from '../desks/desk.js';
 import { handIn, handInAssignment } from '../desks/hand-in.js';
 import { notifyLeads, replyToHandIn, teamOfLine } from '../desks/lead.js';
 import { acceptedSince, receiptById, receiptsForDesk, receiptsForLine } from '../desks/receipts.js';
@@ -135,8 +135,22 @@ async function main(): Promise<void> {
         if (!desks.length) die(session || Object.keys(filter).length ? `NO-DESK: nothing recorded for ${JSON.stringify(filter)}` : 'NO-DESK: no desks recorded on this box', 0);
         out(`${desks.length} desk(s)`);
         for (const d of desks) out(row(d));
-        const levelIdle = desks.filter((d) => d.state === 'open' && !d.dirty && d.ahead === 0);
-        if (levelIdle.length) out(`  level, idle desks you can close: ${levelIdle.map(deskId).join(', ')}`);
+        if (session && !str(flags.get('team')) && !str(flags.get('repo'))) {
+          // The caller's own desks: certify them. A birth desk — the one this shell lives
+          // in — is never "closable"; it is stay (parked) or go (tejun-harakiri), never
+          // closed under a live session (owner, 2026-09-09).
+          const c = certifyDesks(desks, process.cwd());
+          if (c.certified) {
+            out('  CERTIFIED CLEAN: everything is on the line; ending this Agent loses nothing.');
+            if (c.standing.length) out(`  standing in ${c.standing.map(deskId).join(', ')}: stay parked for more work, or go with tejun-harakiri — the desk ends with you, never before you`);
+            if (c.closable.length) out(`  closable without ending you (you are not standing in them): ${c.closable.map(deskId).join(', ')}`);
+          } else {
+            for (const b of c.blocking) out(`  NOT CERTIFIED: ${deskId(b.desk)} — ${b.why}; commit and hand in before you park or go`);
+          }
+        } else {
+          const levelIdle = desks.filter((d) => d.state === 'open' && !d.dirty && d.ahead === 0);
+          if (levelIdle.length) out(`  level, idle: ${levelIdle.map(deskId).join(', ')} (a desk closes with its session, or by a lead once the session is gone)`);
+        }
         for (const key of new Set(desks.map((d) => `${d.repo}\t${d.line}`))) {
           const [repo, line] = key.split('\t') as [string, string];
           const h = await queueHolder(repo, line);

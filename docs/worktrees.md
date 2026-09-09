@@ -127,8 +127,13 @@ Team promotion builds the combined candidate, advances `dev` by compare-and-swap
 restarts the live service, and performs deployment health checks. Failed post-restart
 health triggers the promotion recovery path and remains visible in its receipt. When it
 completes, promotion posts the moved line on the team wipeboard and tells each session
-whose hand-in rode in, in its tile, which receipts are now on `dev` and that the desk may
-be closed. A desk is finished when that notice arrives, not when its hand-in is accepted.
+whose hand-in rode in, in its tile, which receipts are now on `dev` and that its desk is
+finished and certified clean. A desk is finished when that notice arrives, not when its
+hand-in is accepted — and finished means parked, or ended with its session by
+`tejun-harakiri`; it is never closed under a live session. An Agent's shell is opened
+inside its desk at launch and stays there, so the desk it stands in ends with it, never
+before it. `tejun-desk close` is for a desk nobody is standing in: a second repository's
+desk, or a desk whose session is already gone.
 
 ## Desk lifecycle and recovery
 
@@ -170,10 +175,10 @@ anyone changing the code below.
   conflict, a lost compare-and-swap). Where a check remains it tells and does not block.
 - **The house closes what it opens.** `open` records what it creates; hand-in removes its
   candidate; promotion removes its own candidate and leaves the team line and desks as
-  they are (the next hand-in carries the line current, and a desk is closed by its session
-  once promotion has told it). Close refuses when a live session is still running inside
-  the worktree and tells the caller to notify that session to leave, then retry; it does
-  not move or message the session. Team retirement settles the line; startup finishes an
+  they are (the next hand-in carries the line current; a desk closes with its session by
+  `tejun-harakiri`, or by a lead once the session is gone). Close refuses when a live
+  session is still running inside the worktree and says why: a birth desk ends with its
+  session; it does not move or message the session, and never asks it to leave. Team retirement settles the line; startup finishes an
   interrupted transaction from the ledger. No cleanup chores for Agents or the owner.
 - **The house also absorbs junk it did not make.** `ronin-desk-audit` (read-only, six
   invariants, exit code) and `ronin-desk-settle --dry-run | --yes` (the reconciler: settles
