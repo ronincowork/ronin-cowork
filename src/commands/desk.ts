@@ -174,6 +174,14 @@ async function main(): Promise<void> {
         out(`  worktree ${d.worktree}`);
         out(`  dependencies ${d.dependency_location || 'none'}`);
         out(row(d));
+        // Open does its job and says what it did; it does not decide custody (owner,
+        // 2026-09-09: tools acknowledge, they do not hard-code behaviour). Reopening a
+        // desk that was handed off leaves custody with the holder, and every later verb
+        // answers NO-DESK for this session until a holder hands it back — so say so here,
+        // with the verb, rather than let OPENED read as "yours again".
+        const owners = d.owners?.length ? d.owners : [d.session];
+        if (owners.includes(session)) out(`  custody: ${owners.join(', ')}`);
+        else out(`  custody: ${owners.join(', ')} — not yours: sync, hand-in and close answer NO-DESK for ${session} until a holder runs  tejun-desk handoff ${deskId(d)} --to ${session}`);
         return;
       }
       case 'hand-in': {
