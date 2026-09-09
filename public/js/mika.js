@@ -125,6 +125,23 @@ export function createMikaHelpPanel({ selector, header, refreshHeader, createAct
   loading.className = 'setup-mika-loading';
   panel.append(stage);
   selector?.append(panel);
+  // While she is open, the selector header is a handle: drag it onto a workspace and she
+  // moves there as her ordinary tile, and the column is a selector again. Both drop
+  // payloads the workspace cells accept are offered — the surface drop every roster card
+  // carries, and the session-name drop the team pages take.
+  const SURFACE_DRAG = 'application/x-ronin-workbench-surface';
+  const SESSION_DRAG = 'text/x-ronin-session';
+  const headerEl = header?.el || null;
+  const onDragStart = (event) => {
+    if (!open || !event.dataTransfer) return;
+    event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: 'session.terminal', detail: { key: MIKA } }));
+    event.dataTransfer.setData(SESSION_DRAG, MIKA);
+    event.dataTransfer.setData('text/plain', t('mika.header', 'Mika, your helpful assistant'));
+    event.dataTransfer.effectAllowed = 'copyMove';
+  };
+  const onDragEnd = (event) => { if (open && event.dataTransfer?.dropEffect !== 'none') closeHelp(); };
+  headerEl?.addEventListener('dragstart', onDragStart);
+  headerEl?.addEventListener('dragend', onDragEnd);
   const close = createAction({ label: t('mika.close', 'Close'), size: 'compact' });
   close.el.hidden = true;
   header?.actions?.append(close.el);
@@ -137,6 +154,7 @@ export function createMikaHelpPanel({ selector, header, refreshHeader, createAct
     if (cards) cards.hidden = false;
     close.el.hidden = true;
     if (helpButton) helpButton.hidden = false;
+    if (headerEl) { headerEl.draggable = false; headerEl.classList.remove('wk-mika-handle'); }
     refreshHeader?.(); // the roster's own title comes back
     helpButton?.focus();
   };
@@ -148,6 +166,7 @@ export function createMikaHelpPanel({ selector, header, refreshHeader, createAct
     if (header?.title) header.title.textContent = t('mika.header', 'Mika, your helpful assistant');
     if (helpButton) helpButton.hidden = true;
     close.el.hidden = false;
+    if (headerEl) { headerEl.draggable = true; headerEl.classList.add('wk-mika-handle'); headerEl.title = t('mika.drag_hint', 'Drag onto a workspace to move Mika there'); }
     loading.textContent = t('mika.starting', '人 Starting Mika…');
     stage.replaceChildren(loading);
     if (view) void reportMikaView(view());
@@ -166,7 +185,7 @@ export function createMikaHelpPanel({ selector, header, refreshHeader, createAct
   // `show <tab> <surface>` from Mika: the operator names the workspace; only this tab answers.
   const onShow = (m) => { if (place && m.tab === mikaTab() && m.surface) place(m.workspace, m.surface); };
   mikaShowHandlers.add(onShow);
-  return { el: panel, open: openHelp, close: closeHelp, isOpen: () => open, destroy: () => { mikaShowHandlers.delete(onShow); close.el.remove(); } };
+  return { el: panel, open: openHelp, close: closeHelp, isOpen: () => open, destroy: () => { mikaShowHandlers.delete(onShow); headerEl?.removeEventListener('dragstart', onDragStart); headerEl?.removeEventListener('dragend', onDragEnd); close.el.remove(); } };
 }
 
 /** Mika's one ordinary tile on a workbench that has no team pools (Setup): a surface and a
