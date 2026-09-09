@@ -65,7 +65,7 @@ export const sessionBelongsToTeam = (session, team) => {
   const tags = session.tags || [];
   // Ordinary tmux tags use the house-normalized spelling; the reserved durable Team keeps
   // its explicit display identity. This is the one adapter between those existing stores.
-  return tags.includes(teamTag(team));
+  return tags.map(teamTag).includes(teamTag(team));
 };
 export const leadsTeam = (session, team) => (session.leads || []).includes(team);
 export function unassignedSessions() {
@@ -84,7 +84,13 @@ export function teamByName(name) {
   return roster ? { ...roster, durable: true } : { name, objective: '', durable: false };
 }
 export function teamsFromState() {
-  const durable = rosters.filter((r) => r.state !== 'archived').map((r) => ({ ...r, durable: true }));
+  const active = rosters.filter((r) => r.state !== 'archived');
+  const helper = active.find((r) => r.name === 'ronin_helpers')
+    || active.find((r) => teamTag(r.name) === 'ronin_helpers');
+  const durable = [
+    ...active.filter((r) => teamTag(r.name) !== 'ronin_helpers'),
+    ...(helper ? [{ ...helper, name: 'ronin_helpers', title: helper.title || 'Ronin Helpers' }] : []),
+  ].map((r) => ({ ...r, durable: true }));
   return [...durable.sort(blankLast('name')),
     { name: UNASSIGNED, objective: '', durable: false, holding: true }];
 }

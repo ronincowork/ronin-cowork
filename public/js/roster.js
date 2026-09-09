@@ -366,7 +366,7 @@ export function buildRoster(tile, host, options = {}) {
         });
       };
       const appendGroup = (g) => {
-        const mem = data.filter((s) => (s.tags || []).includes(teamTag(g)));
+        const mem = data.filter((s) => (s.tags || []).map(teamTag).includes(teamTag(g)));
         const block = document.createElement('div');
         block.className = 'home-group';
         list.appendChild(block);

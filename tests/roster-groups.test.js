@@ -21,3 +21,9 @@ test('canonical roster composition partitions the helper after ordinary and no-t
   assert.deepEqual(groups, ['alpha', 'zebra', 'ronin_helpers']);
   assert.deepEqual(partitionRosterGroups(groups), { ordinary: ['alpha', 'zebra'], helper: 'ronin_helpers' });
 });
+
+test('a stale uppercase helper tag canonicalizes into the one lowercase last group', () => {
+  const groups = rosterGroups([{ tags: ['RONIN_HELPERS'] }, { tags: ['ronin_helpers'] }], ['zeta']);
+  assert.deepEqual(groups, ['zeta', 'ronin_helpers']);
+  assert.equal(teamTag('RONIN_HELPERS'), 'ronin_helpers');
+});
