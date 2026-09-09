@@ -427,6 +427,36 @@ export function createCoworkView(options = {}) {
   root.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !mikaPanel.hidden) { event.preventDefault(); closeMika(); }
   });
+  // Visual-review fixture only: the direct staging URL must paint the composition before
+  // the owner touches anything. It never runs on the shipped root and never sends text.
+  const directPreview = location.pathname.startsWith('/staging/')
+    && new URLSearchParams(location.search).get('mika-preview') === 'open';
+  if (directPreview) window.setTimeout(() => {
+    extras.add('mika_agent');
+    syncPools(membersOfTeam(team));
+    const conversation = el('div', 'tw-mika-preview-conversation');
+    conversation.append(
+      el('p', 'tw-mika-preview-message', 'Mika is ready when you need help with Ronin.'),
+      el('p', 'tw-mika-preview-note', 'Visual preview — runtime unavailable.'),
+    );
+    const composer = el('form', 'tw-mika-preview-composer');
+    const input = document.createElement('textarea');
+    input.rows = 2;
+    input.placeholder = 'Ask Mika about Ronin…';
+    input.setAttribute('aria-label', 'Message Mika');
+    const send = document.createElement('button');
+    send.type = 'button';
+    send.textContent = 'Send';
+    composer.append(input, send);
+    mikaStage.replaceChildren(conversation, composer);
+    if (selectorCards) { selectorCards.hidden = true; selectorCards.inert = true; selectorCards.setAttribute('aria-hidden', 'true'); }
+    mikaPanel.hidden = false;
+    mikaPanel.inert = false;
+    mikaPanel.removeAttribute('aria-hidden');
+    selector.dataset.mika = 'open';
+    mikaOpen.el.hidden = false;
+    mikaHelp.el.setAttribute('aria-expanded', 'true');
+  }, 0);
   // A REMEMBERED PLACEMENT OUTLIVES THE SURFACE IT NAMED. `@new` and `@new-team` were
   // the retired board and the seven-field card; a workspace that still remembers one
   // opens its replacement rather than nothing.

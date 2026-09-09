@@ -67,6 +67,11 @@
   .tw-mika-stage { display: grid; flex: 1 1 auto; min-height: 0; }
   .tw-mika-stage > * { grid-area: 1 / 1; min-width: 0; min-height: 0; }
   .tw-mika-loading { display: grid; place-content: center; justify-items: center; gap: var(--space-3); padding: var(--space-5); color: var(--muted); text-align: center; }
+  .tw-mika-preview-conversation { min-height: 0; overflow-y: auto; padding: var(--space-4); }
+  .tw-mika-preview-message { max-width: 18rem; margin: 0; padding: var(--space-4); border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--fg); }
+  .tw-mika-preview-note { color: var(--muted); font-size: var(--text-2); }
+  .tw-mika-preview-composer { align-self: end; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); padding: var(--space-4); border-top: var(--edge) solid var(--line); background: var(--bg); }
+  .tw-mika-preview-composer textarea { min-width: 0; resize: none; }
   .tw-mika-spinner { display: inline-grid; place-items: center; width: var(--control-height); height: var(--control-height); color: var(--fg); font-size: var(--text-1); animation: tw-mika-turn 1.1s linear infinite; }
   .tw-mika-spinner[hidden] { visibility: hidden; }
   .tw-mika-loading[data-state='refused'] .tw-mika-spinner { animation: none; opacity: .55; }
