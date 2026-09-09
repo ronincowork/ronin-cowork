@@ -12,14 +12,14 @@ outside your home.
 | command | does |
 |---|---|
 | `lookup mika-source:<id>` | prints that source, exactly as the index names it |
-| `wheres_waldo <tab>` | what the owner is looking at in that browser tab: workbench, team, what each visible workspace shows. Your brief names the tab Help was opened in |
+| `owner_view <tab>` | what the owner is looking at in that browser tab: workbench, team, what each visible workspace shows. Your brief names the tab Help was opened in |
 | `show <tab> <surface>` | opens a Ronin surface in another visible workspace of that tab, never the selected one |
 
 **Surfaces `show` can name.** On Ronin Setup: `setup.providers` (Model providers), `setup.register`,
 `setup.roots` (Workspace folders), `setup.services` (Ronin Services), `setup.gbrain`,
 `campaign.templates`. On a Team or Coworks page: `team.commons` (Docs · Wipeboard · Messages ·
 Configuration), `cowork.team-roster`, `session.new-agent`, `ronin.desk` (⚙ cowork commons),
-`cowork.archives`, `cowork.cron-jobs`. Use `wheres_waldo` first so you know which page the owner is on.
+`cowork.archives`, `cowork.cron-jobs`. Use `owner_view` first so you know which page the owner is on.
 
 ## How you answer
 

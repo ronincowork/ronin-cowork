@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# wheres_waldo — what the owner is looking at in one browser tab: the workbench, the team,
+# owner_view — what the owner is looking at in one browser tab: the workbench, the team,
 # the selected workspace and what each visible workspace shows.
 #
-# Usage: wheres_waldo <tab-id>      the tab id Help was opened in (your brief names it)
+# Usage: owner_view <tab-id>      the tab id Help was opened in (your brief names it)
 # Exit 2 = not one tab id, 4 = no operator to ask, 5 = that tab's view is absent or stale
 # (open Help in the tab you mean and ask again).
 set -u
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 TOOL_DIR=$(dirname "$SELF")
 tab=${1-}
-case "$tab" in *[!A-Za-z0-9_-]*|'') echo 'Usage: wheres_waldo <tab-id>' >&2; exit 2;; esac
-[ "$#" -eq 1 ] || { echo 'wheres_waldo accepts one tab id.' >&2; exit 2; }
+case "$tab" in *[!A-Za-z0-9_-]*|'') echo 'Usage: owner_view <tab-id>' >&2; exit 2;; esac
+[ "$#" -eq 1 ] || { echo 'owner_view accepts one tab id.' >&2; exit 2; }
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
 out=$(curl -sS -m 20 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" "$url/api/mika/context/$tab") || { echo "STUCK: could not reach Ronin, or it refused (${out:-no reply})."; exit 5; }

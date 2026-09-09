@@ -51,7 +51,7 @@ import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeSta
 
 const MIKA_SESSION = 'mika_agent' as const;
 /** Her three commands, projected first on PATH. */
-const MIKA_TOOLS = ['lookup', 'wheres_waldo', 'show'] as const;
+const MIKA_TOOLS = ['lookup', 'owner_view', 'show'] as const;
 /** The rest of her PATH: a working shell and coreutils, and nothing of Ronin's own bin —
  *  the first Mika was born with ONLY her tools dir on PATH, so her CLI could not run a
  *  shell at all and reported her tools missing (2026-09-09). */
@@ -694,7 +694,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const welcome = intent === 'setup_provider_ready' && (await roninHelperWelcomeState())?.state !== 'delivered';
       const prompt = [
         welcome ? MIKA_PROMPTS.setup_provider_ready : MIKA_PROMPTS.help,
-        tab ? `Help was opened in browser tab ${tab}: \`wheres_waldo ${tab}\` shows what the owner sees.` : '',
+        tab ? `Help was opened in browser tab ${tab}: \`owner_view ${tab}\` shows what the owner sees.` : '',
       ].filter(Boolean).join(' ');
       let status = 200;
       let body: Record<string, unknown> = {};
