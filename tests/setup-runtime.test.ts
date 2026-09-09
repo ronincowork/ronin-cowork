@@ -92,6 +92,36 @@ test('an installed CLI\'s row says its version, what Refresh last learned of the
   assert.equal(row(after, 'codex').latest_checked_at, '2026-09-09T12:00:00.000Z');
   assert.equal(row(after, 'codex').update_available, true);
   assert.equal(row(after, 'claude').update_available, false, 'latest known but the installed version is not: no claim either way');
+  assert.equal(row(after, 'codex').askable, true, 'its update line names an npm package');
+  assert.equal(row(after, 'gemini').askable, false, 'gemini updates by its own subcommand: nothing to ask');
+});
+
+test('an update runs in a temporary provider_setup session shown like a sign-in, and the one Close ends whichever is open', async () => {
+  const facts = await measured({}, ['claude', 'codex']);
+  const opened: string[] = []; const closed: string[] = [];
+  const live = new Set<string>();
+  const ops = {
+    exists: async (name: string) => live.has(name),
+    open: async (_provider: string, name: string) => { live.add(name); },
+    openUpdate: async (_provider: string, name: string) => { opened.push(name); live.add(name); },
+    close: async (name: string) => { closed.push(name); live.delete(name); },
+  };
+  const first = await runtime.openProviderUpdate('codex', ops, available(['claude', 'codex']));
+  assert.deepEqual(first, { session: 'provider_setup_codex_update', opened: true });
+  assert.deepEqual(opened, ['provider_setup_codex_update']);
+  assert.deepEqual(await runtime.openProviderUpdate('codex', ops, available(['claude', 'codex'])), { session: 'provider_setup_codex_update', opened: false }, 'one at a time');
+  const shown = await runtime.setupRuntimeAnswer({}, facts, ops, undefined, catalog);
+  assert.equal(row(shown, 'codex').update_open, true);
+  assert.deepEqual(row(shown, 'codex').attachment, { type: 'session', key: 'provider_setup_codex_update', team: 'provider_setup', temporary: true }, 'the same attachment shape a sign-in gets');
+  assert.equal(row(shown, 'codex').state, 'installed', 'an update is not a sign-in state');
+  await assert.rejects(() => runtime.openProviderUpdate('gemini', ops, available(['claude', 'codex'])), /not installed/);
+  await assert.rejects(() => runtime.openProviderUpdate('nope', ops, available([])), /Unknown provider/);
+  await ops.open('codex', 'provider_setup_codex');
+  const both = await runtime.setupRuntimeAnswer({}, facts, ops, undefined, catalog);
+  assert.equal(row(both, 'codex').attachment?.key, 'provider_setup_codex', 'an open sign-in owns the attachment');
+  assert.deepEqual(await runtime.closeProviderLogin('codex', ops), { session: 'provider_setup_codex', closed: true });
+  assert.deepEqual(closed, ['provider_setup_codex', 'provider_setup_codex_update'], 'Close ends both through the one teardown; nothing outlives its window');
+  assert.deepEqual(await runtime.closeProviderLogin('codex', ops), { session: 'provider_setup_codex', closed: false });
 });
 
 test('a provider counts as activated only when the catalog gives it something to launch', async () => {

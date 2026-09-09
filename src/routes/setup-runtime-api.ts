@@ -6,13 +6,13 @@ import {
   completeProviderLogin,
   ensureInstalledRoots,
   openProviderLogin,
+  openProviderUpdate,
   setupRuntimeAnswer,
   createMorningBriefSchedule,
   morningBriefSchedules,
   writeSetupPreferences,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
-import { dispatchUpdate } from '../agent-install.js';
 import { measureAndRecordProviders, readProviderSummary } from '../provider-summary.js';
 import type { ProviderSummary } from '../model-providers.js';
 
@@ -55,14 +55,16 @@ export function registerSetupRuntime(app: express.Express): void {
     }
   });
 
-  // Update: the registry's update line in a tile, as Install runs. The owner's press.
+  // Update: the registry's update line in a temporary provider_setup session shown in the
+  // page, as a sign-in is; the same /close ends it. The owner's press.
   app.post('/api/setup/providers/:provider/update', async (req, res) => {
     try {
-      const started = await dispatchUpdate(String(req.params.provider));
-      if (started.outcome === 'refused') return res.status(400).json({ error: started.say });
-      res.json({ ok: true, ...started });
+      const result = await openProviderUpdate(String(req.params.provider));
+      const runtime = await answer();
+      const provider = runtime.providers.find((row) => row.id === String(req.params.provider));
+      res.json({ ok: true, opened: result.opened, session: result.session, attachment: provider?.attachment ?? null, runtime });
     } catch (error) {
-      res.status(500).json({ error: errMsg(error) });
+      res.status(400).json({ error: errMsg(error) });
     }
   });
 
