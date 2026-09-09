@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { ensureMikaHome, mikaStartHerePath } from '../src/mika-runtime.js';
 import { ensureRoninHelpersTeam, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../src/ronin-helper.js';
+import { mikaReadinessFromPane } from '../src/routes/launch.js';
 
 test('Mika home is a private stable store outside project-root selection', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-home-'));
@@ -47,6 +48,9 @@ test('selector readiness awaits the singleton and hides transport failures', asy
   assert.match(source, /if \(mikaStarting\) return mikaStarting/);
   assert.match(source, /state: 'ready'/);
   assert.match(source, /state: 'refused'/);
+  assert.match(source, /state: 'action_required', action: 'pending_user', code: 'provider_confirmation_required'/);
+  assert.match(source, /mikaReadinessFromPane\(await capturePane\('mika', 0\)\)/);
+  assert.doesNotMatch(source, /send-keys|pressEnter|deliverForce/);
   assert.doesNotMatch(source, /No such session: mika/);
   assert.match(source, /RONIN_HELPER_LOADER/);
   assert.match(source, /intent === 'setup_provider_ready'/);
@@ -72,6 +76,19 @@ test('ended Mika is not auto-resumed and the next readiness request uses a fresh
   assert.doesNotMatch(index, /launchControl\.ensureMika\(\)/);
   assert.match(launch, /if \(await sessionExists\('mika'\)\)/);
   assert.match(launch, /post\('\/api\/mika\/ready'/);
+});
+
+test('a live trust-pending Mika is observed, never relaunched', async () => {
+  const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
+  const liveCheck = launch.indexOf("if (await sessionExists('mika')) return observeLive(true)");
+  const launchCall = launch.indexOf("await launch({ body: { prompt } }");
+  assert.ok(liveCheck >= 0 && launchCall > liveCheck);
+  assert.match(launch, /ready\.state === 'starting' \? 202 : 409/);
+});
+
+test('native provider confirmation advances on the same pane from action required to ready', () => {
+  assert.equal(mikaReadinessFromPane('Do you trust the contents of this directory?\n› 1. Yes, continue\n  2. No'), 'action_required');
+  assert.equal(mikaReadinessFromPane('Welcome\n› Use /skills'), 'ready');
 });
 
 test('Mika birth stays visible through the ordinary session Docs record', async () => {
