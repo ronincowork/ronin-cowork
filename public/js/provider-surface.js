@@ -94,8 +94,11 @@ export function createProviderSurface(context) {
   // simply opening; opening only measures. What it found is said, changed or not.
   const refreshRow = el('div', 'setup-provider-refresh');
   const refreshNote = el('span', 'setup-fine', t('setup_surface.refresh_note', 'Measures this machine again and asks each installed CLI’s package source for its newest release.'));
+  const descriptionsRow = el('div', 'setup-provider-descriptions');
+  const descriptionsReason = el('span', 'setup-fine', t('setup_surface.descriptions_unavailable', 'Ronin Services required · model descriptions update not published yet.'));
+  descriptionsReason.id = 'setup-provider-descriptions-reason';
   const refreshOutcome = el('p', 'setup-fine setup-provider-refresh-outcome'); refreshOutcome.hidden = true;
-  dates.append(el('summary', null, t('setup_surface.check_dates', 'Check dates')), dateList, refreshRow, refreshOutcome);
+  dates.append(el('summary', null, t('setup_surface.check_dates', 'Check dates')), dateList, refreshRow, descriptionsRow, refreshOutcome);
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   const mikaAvailability = el('p', 'setup-fine setup-mika-availability');
   let opened = String(context.detail?.provider || context.detail?.key || '');
@@ -395,6 +398,13 @@ export function createProviderSurface(context) {
   });
   refresh.classList.add('setup-provider-action', 'setup-provider-refresh-action');
   refreshRow.append(refresh, refreshNote);
+  // Disabled, never hidden: this teaches the catalog-level capability without implying
+  // that Services activation is sufficient while its library bundle is still unpublished.
+  const updateDescriptions = action(t('setup_surface.update_descriptions', 'Update descriptions'), '', () => {});
+  updateDescriptions.classList.add('setup-provider-action', 'setup-provider-descriptions-action');
+  updateDescriptions.disabled = true;
+  updateDescriptions.setAttribute('aria-describedby', descriptionsReason.id);
+  descriptionsRow.append(updateDescriptions, descriptionsReason);
   /** The frame from whatever `runtime` holds now: the record, or the measure once it lands. */
   const paintFrom = async () => {
     disposeMount();

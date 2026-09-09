@@ -1902,6 +1902,8 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.providers_summary:** {providers} providers · {models} models · {activated} activated here
 - **setup_surface.providers_summary_dated:** {counts} · catalog updated {date}
 - **setup_surface.check_dates:** Check dates
+- **setup_surface.update_descriptions:** Update descriptions
+- **setup_surface.descriptions_unavailable:** Ronin Services required · model descriptions update not published yet.
 - **setup_surface.catalog_researched:** Catalog researched
 - **setup_surface.catalog_date_unstated:** Date not stated
 - **setup_surface.machine_measured:** Machine measured

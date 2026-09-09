@@ -120,6 +120,12 @@ test('showing the surface paints the stones from the record at once, measures be
   // its own door, never the plain measure — and it says what it found, changed or not.
   assert.equal(byClass(dates, 'setup-provider-refresh-action').length, 1, 'Refresh is inside Check dates');
   assert.equal(byClass(made.el, 'setup-provider-refresh').length, 1, 'and nowhere else');
+  const descriptions = byClass(dates, 'setup-provider-descriptions-action')[0];
+  assert.equal(descriptions.textContent, 'Update descriptions');
+  assert.equal(descriptions.disabled, true, 'the future catalog action is taught, never offered');
+  assert.equal(descriptions.attributes['aria-describedby'], 'setup-provider-descriptions-reason');
+  assert.equal(byClass(dates, 'setup-provider-descriptions')[0].textContent,
+    'Update descriptionsRonin Services required · model descriptions update not published yet.');
   calls.length = 0;
   byClass(dates, 'setup-provider-refresh-action')[0].click();
   await new Promise((resolve) => setTimeout(resolve, 0));
