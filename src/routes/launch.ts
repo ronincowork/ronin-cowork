@@ -463,7 +463,9 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (birthKey) rememberSessionKey(resolved.name, birthKey);
       if (resolved.tags.length) {
         await setTags(resolved.name, resolved.tags);
-        await announceTeamChanges(resolved.name, [], resolved.tags).catch(() => {});
+        // A house seat is on its team but has no board tools: the join notice would only
+        // tell Mika to run a command she does not have (owner, 2026-09-09: stripped down).
+        if (houseSeat !== 'mika') await announceTeamChanges(resolved.name, [], resolved.tags).catch(() => {});
       }
       if (form.team_lead && resolved.team) await setLeads(resolved.name, [resolved.team]);
       if (resolved.project_root && resolved.session_type !== 'bare_metal_agent') await setProjectRoot(resolved.name, resolved.project_root);
