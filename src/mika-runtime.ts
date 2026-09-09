@@ -42,7 +42,15 @@ export function mikaLevelFromAgents(agents: Record<string, unknown>): MikaLevel 
 const orderedLevels = (specs: readonly SessionLaunchSpec[]): MikaLevel[] =>
   MIKA_LEVELS.filter((level) => specs.some((spec) => spec.tier === level));
 
-/** Catalog/provider order is authority. Mika uses Light, with Standard as its sole fallback. */
+/**
+ * THE OWNER'S RULE (2026-09-09), and only this:
+ *  1. The default provider (⚙ sessions.default.provider) supplies Mika when it is signed in.
+ *     Inside it she takes the configured level (Light unless the owner moved it) and
+ *     cascades UP — Light → Standard → Frontier — never across to another provider.
+ *  2. No default, or the default is not signed in yet (first-run Setup): the first
+ *     operational provider in catalog order supplies her, with the same cascade.
+ * Providers are never compared for a better level.
+ */
 export function resolveMikaModel(input: {
   level: MikaLevel;
   generalProvider?: string;
@@ -52,18 +60,19 @@ export function resolveMikaModel(input: {
   const { level, specs, summary } = input;
   if (!summary) throw new MikaUnavailable('mika_provider_unmeasured', 'Provider readiness has not been measured. Check Model providers before Mika can start.', [], level);
   const operational = new Set(summary.operational);
-  // Mika is born with MCP disconnected. A row that cannot express that boundary is not
-  // actually launchable for this house seat.
-  const eligible = specs.filter((spec) => operational.has(spec.cli) && !!spec.gbrainDisconnected);
-  if (!eligible.length) throw new MikaUnavailable('mika_no_ready_provider', 'Mika needs a ready provider that can launch without external tools. Open Model providers.', [], level);
-  const firstProvider = eligible[0].provider;
-  const within = eligible.filter((spec) => spec.provider === firstProvider);
+  const eligible = specs.filter((spec) => operational.has(spec.cli));
+  if (!eligible.length) throw new MikaUnavailable('mika_no_ready_provider', 'Mika needs a signed-in model provider. Open Model providers.', [], level);
+  const general = input.generalProvider ?? '';
+  const generalReady = !!general && eligible.some((spec) => spec.provider === general);
+  const provider = generalReady ? general : eligible[0].provider;
+  const within = eligible.filter((spec) => spec.provider === provider);
   const available = orderedLevels(within);
-  const chosen = within.find((spec) => spec.tier === 'light') ?? within.find((spec) => spec.tier === 'standard');
+  const from = MIKA_LEVELS.indexOf(level);
+  const chosen = MIKA_LEVELS.slice(from).map((tier) => within.find((spec) => spec.tier === tier)).find(Boolean);
   if (!chosen) {
     throw new MikaUnavailable(
       'mika_no_model_at_level',
-      `The first ready provider (${firstProvider}) has neither a Light nor Standard Mika model.`,
+      `${provider} has no ${level} model or anything above it for Mika.`,
       available,
       level,
     );
@@ -73,7 +82,7 @@ export function resolveMikaModel(input: {
     provider: chosen.provider,
     model: chosen.model,
     resolved_level: chosen.tier,
-    provider_notice: null,
+    provider_notice: general && !generalReady ? 'default_provider_unavailable' : null,
     available_levels: available,
     spec: chosen,
   };
@@ -105,7 +114,14 @@ export async function resolveConfiguredMikaModel(): Promise<MikaSelection> {
 }
 
 export const mikaHomeDir = (): string => storeDir('mika_home');
-export const mikaStartHereSource = (): string => path.join(REPO_ROOT, 'ronin_session_boot', 'house', 'mika', 'START_HERE.md');
+export const mikaHouseDir = (): string => path.join(REPO_ROOT, 'ronin_session_boot', 'house', 'mika');
+export const mikaRulesSource = (): string => path.join(mikaHouseDir(), 'MIKA_RULES.md');
+export const mikaStartHereSource = (): string => path.join(mikaHouseDir(), 'START_HERE.md');
+/** What she is TOLD at birth, one line each; the long reading is in her README. */
+export const MIKA_PROMPTS = {
+  help: 'The owner opened Help without asking anything yet. Say hello in one line, say what you can do, and wait.',
+  setup_provider_ready: 'The owner just signed in their first model provider on Ronin Setup. Follow the Setup walkthrough in your README, starting with its first question.',
+} as const;
 export const mikaStartHerePath = (): string => path.join(mikaHomeDir(), 'START_HERE.md');
 
 /** Create once, then fail closed on links, ownership, permissions, or path substitution. */

@@ -1,8 +1,21 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# show — open a Ronin surface in another visible workspace of one browser tab, never the
+# one the owner has selected.
+#
+# Usage: show <tab-id> <surface>     e.g. show a1b2c3d4e5f6 setup.providers
+# Exit 2 = not one tab id and one surface, 4 = no operator to ask, 5 = refused (stale tab,
+# or no other visible workspace).
 set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
 tab=${1-}; surface=${2-}
 case "$tab" in *[!A-Za-z0-9_-]*|'') echo 'Usage: show <tab-id> <surface>' >&2; exit 2;; esac
 case "$surface" in *[!A-Za-z0-9@._:-]*|'') echo 'Usage: show <tab-id> <surface>' >&2; exit 2;; esac
 [ "$#" -eq 2 ] || { echo 'show accepts one tab id and one Ronin surface.' >&2; exit 2; }
-[ -n "${RONIN_SOCKET:-}" ] || { echo 'REFUSED: Ronin operator socket is unavailable.' >&2; exit 4; }
-exec /usr/bin/curl -fsS --unix-socket "$RONIN_SOCKET" -H 'content-type: application/json' -X POST http://ronin/api/mika/context/"$tab"/show -d "{\"surface\":\"$surface\"}"
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+out=$(curl -sS -m 20 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -H 'content-type: application/json' -X POST "$url/api/mika/context/$tab/show" -d "{\"surface\":\"$surface\"}") || { echo "STUCK: could not reach Ronin, or it refused (${out:-no reply})."; exit 5; }
+case "$out" in
+  *'"ok":true'*) echo "SHOWN $surface — $out"; exit 0 ;;
+  *) echo "REFUSED: $out"; exit 5 ;;
+esac

@@ -37,7 +37,7 @@ test('a corrupt starter fails honestly and is never replaced by route copy', asy
 test('a cold Mika birth compiles one published knowledge index into its reading', async () => {
   const source = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
   assert.match(source, /const knowledge = await compileMikaKnowledgeAt\(mikaHome\)/);
-  assert.match(source, /sources\.unshift\(mikaKnowledgeIndex\)/);
+  assert.match(source, /sources\.push\(mikaRulesSource\(\), mikaStartHereSource\(\), mikaKnowledgeIndex\)/);
   assert.match(source, /file === mikaKnowledgeIndex \|\| isShelfTeaching\(file\)/);
   assert.match(source, /const sources = houseSeat === 'mika' \? \[\] : resolvedSources/);
   assert.ok(source.indexOf('const knowledge = await compileMikaKnowledgeAt(mikaHome)') < source.indexOf('const readme = await compileBirthReadmeAt('));
@@ -55,7 +55,7 @@ test('selector readiness awaits the singleton and hides transport failures', asy
   assert.doesNotMatch(source, /No such session: mika/);
   assert.match(source, /RONIN_HELPER_LOADER/);
   assert.match(source, /intent === 'setup_provider_ready'/);
-  assert.match(source, /readMikaStartHere\(\)/);
+  assert.match(source, /MIKA_PROMPTS\.setup_provider_ready : MIKA_PROMPTS\.help/);
 });
 
 test('a ronin_helper start creates its ordinary Team idempotently', async () => {
@@ -110,19 +110,22 @@ test('Mika birth stays visible through the ordinary session Docs record', async 
 test('fresh Mika projection exposes exactly lookup, wheres_waldo, and show', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-tools-'));
   process.env.RONIN_SESSION_COMMANDS_DIR = path.join(root, 'commands');
-  const projected = await projectRoutineTools('mika', [], '', {
+  const projected = await projectRoutineTools('mika', [], '/usr/local/bin:/usr/bin:/bin', {
     includeTmux: false,
     extraTools: ['lookup', 'wheres_waldo', 'show'],
   });
   assert.deepEqual((await readdir(projected.dir)).sort(), ['lookup', 'show', 'wheres_waldo']);
   assert.deepEqual(projected.delivered.sort(), ['lookup', 'show', 'wheres_waldo']);
   assert.deepEqual(projected.missing, []);
-  assert.equal(projected.path, projected.dir, 'no parent shell/code/write PATH is exposed');
+  assert.equal(projected.path, `${projected.dir}:/usr/local/bin:/usr/bin:/bin`, 'her tools first, then a shell she can actually run; nothing of Ronin\'s own bin');
   delete process.env.RONIN_SESSION_COMMANDS_DIR;
 });
 
-test('the cold launch selects only the Mika allowlist and an exact PATH', async () => {
+test('the cold launch projects exactly her three tools over a working system PATH', async () => {
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
-  assert.match(launch, /includeTmux: false, extraTools: \['lookup', 'wheres_waldo', 'show'\]/);
+  assert.match(launch, /const MIKA_TOOLS = \['lookup', 'wheres_waldo', 'show'\] as const/);
+  assert.match(launch, /const MIKA_PARENT_PATH = '\/usr\/local\/bin:\/usr\/bin:\/bin'/);
+  assert.match(launch, /houseSeat === 'mika' \? MIKA_PARENT_PATH : undefined/);
+  assert.match(launch, /includeTmux: false, extraTools: \[\.\.\.MIKA_TOOLS\]/);
   assert.match(launch, /houseSeat === 'mika'\),/);
 });

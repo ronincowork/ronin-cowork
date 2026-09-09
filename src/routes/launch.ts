@@ -44,11 +44,18 @@ import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentenc
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { readTegami } from '../tegami-read.js';
 import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
-import { ensureMikaHome, MikaUnavailable, readMikaStartHere, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
+import { ensureMikaHome, MIKA_PROMPTS, MikaUnavailable, mikaRulesSource, mikaStartHereSource, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
 import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
+import { isMikaTab } from '../mika-context.js';
 import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../ronin-helper.js';
 
 const MIKA_SESSION = 'mika_agent' as const;
+/** Her three commands, projected first on PATH. */
+const MIKA_TOOLS = ['lookup', 'wheres_waldo', 'show'] as const;
+/** The rest of her PATH: a working shell and coreutils, and nothing of Ronin's own bin —
+ *  the first Mika was born with ONLY her tools dir on PATH, so her CLI could not run a
+ *  shell at all and reported her tools missing (2026-09-09). */
+const MIKA_PARENT_PATH = '/usr/local/bin:/usr/bin:/bin';
 
 /** The environment a newborn is handed beyond what the pane inherits: its projected
  *  command PATH with Ronin's own install bin dir behind it, and the operator socket that
@@ -194,7 +201,7 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
 }
 
 export interface LaunchControl {
-  ensureMika(intent?: 'help' | 'setup_provider_ready'): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: typeof MIKA_SESSION; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
+  ensureMika(intent?: 'help' | 'setup_provider_ready', tab?: string): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: typeof MIKA_SESSION; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
 }
 
 export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'action_required' {
@@ -377,8 +384,9 @@ export function registerLaunch(app: express.Express): LaunchControl {
       birthKey = `${resolved.name}-${Date.now()}`;
       birthDir = sessionRecordDir(birthKey);
       try {
-        // Mika's generated index replaces the ordinary startup shelf: it is the complete,
-        // bounded map of her admitted knowledge, and keeping both exceeds one-read birth.
+        // Mika's README replaces the ordinary startup shelf: her rules, the Setup
+        // walkthrough, and the generated source index — the complete, bounded map of her
+        // admitted knowledge. Her typed brief stays two sentences; the reading is here.
         const resolvedSources = [...resolved.birth_reading];
         const sources = houseSeat === 'mika' ? [] : resolvedSources;
         let mikaKnowledgeIndex = '';
@@ -389,7 +397,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
           const previousSentence = `Read first: ${resolvedSources.join(', ')}.`;
           const knowledge = await compileMikaKnowledgeAt(mikaHome);
           mikaKnowledgeIndex = knowledge.index;
-          sources.unshift(mikaKnowledgeIndex);
+          sources.push(mikaRulesSource(), mikaStartHereSource(), mikaKnowledgeIndex);
           resolved.brief = resolved.brief.replace(previousSentence, `Read first: ${sources.join(', ')}.`);
         }
         const readme = await compileBirthReadmeAt(
@@ -428,9 +436,9 @@ export function registerLaunch(app: express.Express): LaunchControl {
         ? await projectRoutineTools(
             resolved.name,
             resolved.routines,
-            houseSeat === 'mika' ? '' : undefined,
+            houseSeat === 'mika' ? MIKA_PARENT_PATH : undefined,
             houseSeat === 'mika'
-              ? { includeTmux: false, extraTools: ['lookup', 'wheres_waldo', 'show'] }
+              ? { includeTmux: false, extraTools: [...MIKA_TOOLS] }
               : {},
           )
         : null;
@@ -658,7 +666,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       send(body && typeof body === 'object' && (body as { ok?: boolean }).ok ? { ...body, team_from: teamFrom } : body);
     return launchJob(req, res, next);
   });
-  const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help'): Promise<MikaReady> => {
+  const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help', tab = ''): Promise<MikaReady> => {
     const metadata = { session: MIKA_SESSION, team: RONIN_HELPERS_TEAM, loader: RONIN_HELPER_LOADER };
     const observeLive = async (already: boolean): Promise<MikaReady> => {
       let providerState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
@@ -675,11 +683,10 @@ export function registerLaunch(app: express.Express): LaunchControl {
     if (mikaStarting) return mikaStarting;
     mikaStarting = (async () => {
       const welcome = intent === 'setup_provider_ready' && (await roninHelperWelcomeState())?.state !== 'delivered';
-      let prompt = '';
-      if (welcome) {
-        await ensureMikaHome();
-        prompt = await readMikaStartHere();
-      }
+      const prompt = [
+        welcome ? MIKA_PROMPTS.setup_provider_ready : MIKA_PROMPTS.help,
+        tab ? `Help was opened in browser tab ${tab}: \`wheres_waldo ${tab}\` shows what the owner sees.` : '',
+      ].filter(Boolean).join(' ');
       let status = 200;
       let body: Record<string, unknown> = {};
       const response = {
@@ -707,7 +714,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
   };
   app.post('/api/mika/ready', async (req, res) => {
     const intent = req.body?.intent === 'setup_provider_ready' ? 'setup_provider_ready' : 'help';
-    const ready = await ensureMika(intent);
+    const ready = await ensureMika(intent, isMikaTab(req.body?.tab) ? req.body.tab : '');
     res.status(ready.ok ? 200 : ready.state === 'starting' ? 202 : 409).json(ready);
   });
   return { ensureMika };

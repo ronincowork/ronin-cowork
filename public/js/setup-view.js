@@ -10,8 +10,8 @@ import { loadProjects, onProjects, projectData } from './home.js';
 import { t } from './lexicon.js';
 import { applyTheme, setCampaignTheme } from './theme.js';
 import { campaignById, campaigns, initialCampaignId, loadCampaigns, saveCampaign } from './campaigns.js';
-import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { readyMika } from './mika-ready.js';
+import { createMikaHelpPanel, createMikaTilePool } from './mika.js';
 import { toast } from './ui.js';
 
 const PROFILE = 'setup';
@@ -48,15 +48,12 @@ export function registerSetupWorkbench() {
 export function createSetupView() {
   registerSetupWorkbench();
   const { createSurface, createAction } = WorkspaceKit.primitives;
-  const { createTerminalTileHost } = WorkspaceKit.adapters;
   let ctx = null;
   let bench = null;
   // The native sign-in tile the Model providers surface mounts: the one shared implementation.
   const providerSessions = createProviderSetupSessionMount();
-  const mikaSurface = createSurface({ label: 'Mika', className: 'tw-terminal', flush: true, header: false });
-  const mikaPool = createWarmTerminalPool({
-    createHost: (options) => createTerminalTileHost(options), container: mikaSurface.content, streamCap: 1,
-  });
+  // Mika's ordinary tile: Help borrows it into the selector, the Mika card places it in Workspace 2.
+  const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   // APPEARANCE lives at the right of the TOP workbench header (#bar), seated there by
   // the ViewHost while Setup is active, the way the layout map is. A subtle phone /
   // desktop switcher picks WHICH surface is being set; light / dark then writes the
@@ -183,42 +180,27 @@ export function createSetupView() {
     onStateChange: save,
     onPlacement: save,
   });
-  const selector = bench.host.querySelector('.wk-workbench-selector');
-  const selectorCards = selector?.querySelector('.wk-workbench-selector-cards');
-  const mikaPanel = document.createElement('section');
-  mikaPanel.className = 'setup-mika-panel';
-  mikaPanel.hidden = true;
-  const mikaBar = document.createElement('header');
-  mikaBar.className = 'setup-mika-bar';
-  const mikaTitle = document.createElement('b'); mikaTitle.textContent = 'Mika';
-  const closeMika = createAction({ label: t('mika.close', 'Close'), size: 'compact' });
-  mikaBar.append(mikaTitle, closeMika.el);
-  const greeting = document.createElement('p'); greeting.textContent = t('mika.hello', 'Hi, I’m Mika. How can I help you?');
-  const mikaStage = document.createElement('div'); mikaStage.className = 'setup-mika-stage';
-  const loading = document.createElement('p'); loading.className = 'setup-mika-loading'; loading.textContent = t('mika.starting', '人 Starting Mika…');
-  mikaPanel.append(mikaBar, greeting, mikaStage);
-  selector?.append(mikaPanel);
-  const closeHelp = () => {
-    mikaPool.releaseBorrow(MIKA_SESSION);
-    mikaPanel.hidden = true;
-    if (selectorCards) selectorCards.hidden = false;
-    mikaHelp.el.focus();
-  };
-  closeMika.el.addEventListener('click', closeHelp);
-  mikaHelp.el.addEventListener('click', async () => {
-    if (!operational()) return;
-    if (selectorCards) selectorCards.hidden = true;
-    mikaPanel.hidden = false;
-    mikaStage.replaceChildren(loading);
-    const ready = await ensureMika();
-    if (!ready || (!ready.ok && ready.data?.state !== 'action_required')) {
-      loading.textContent = t('mika.start_refused', 'Mika couldn’t start. Try again.');
-      return;
-    }
-    mikaPool.sync([MIKA_SESSION]);
-    const host = mikaPool.borrow(MIKA_SESSION);
-    if (host) mikaStage.replaceChildren(host);
+  // ミ Help: Mika takes over the selector column with her ordinary tile borrowed in;
+  // Close hands it back. The same panel serves every workbench (mika.js).
+  const helpPanel = createMikaHelpPanel({
+    selector: bench.host.querySelector('.wk-workbench-selector'),
+    createAction, t, helpButton: mikaHelp.el,
+    ready: async () => {
+      const ready = await ensureMika();
+      if (!ready || (!ready.ok && ready.data?.state !== 'action_required')) return false;
+      mikaPool.sync([MIKA_SESSION]);
+      return true;
+    },
+    borrow: () => mikaPool.borrow(MIKA_SESSION),
+    release: () => mikaPool.releaseBorrow(MIKA_SESSION),
+    // Setup has one free workspace; whatever Mika shows lands there.
+    place: (_id, surface) => { bench?.place(surface, 'workspace2'); bench?.select('workspace2'); },
+    view: () => ({
+      workbench: 'setup', team: '', selected: bench.selected(),
+      workspaces: { workspace1: 'presets', workspace2: [bench.typeAt('workspace2'), bench.resourceAt('workspace2')].filter(Boolean).join(':') || 'empty' },
+    }),
   });
+  mikaHelp.el.addEventListener('click', () => { if (operational()) void helpPanel.open(); });
   return {
     el: bench.host,
     glyph: '人',
@@ -260,6 +242,6 @@ export function createSetupView() {
       save();
     },
     leave: () => bench.leave(),
-    destroy: () => { providerSessions.destroyAll(); mikaPool.destroyAll(); bench.leave(); ctx = null; },
+    destroy: () => { helpPanel.destroy(); providerSessions.destroyAll(); mikaPool.destroyAll(); bench.leave(); ctx = null; },
   };
 }

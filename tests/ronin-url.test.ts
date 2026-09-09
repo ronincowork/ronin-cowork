@@ -91,7 +91,9 @@ test('every agent-facing API caller connects through the one library and carries
     return /\bcurl\b/.test(body);
   });
   assert.deepEqual(callers.sort(), [
+    'lookup',
     'mika',
+    'show',
     'tejun-archive',
     'tejun-fork',
     'tejun-harakiri',
@@ -99,6 +101,7 @@ test('every agent-facing API caller connects through the one library and carries
     'tejun-session-set',
     'tejun-team-set',
     'tejun-teampage',
+    'wheres_waldo',
   ]);
   for (const name of callers) {
     const body = readFileSync(path.join(bin, name), 'utf8');

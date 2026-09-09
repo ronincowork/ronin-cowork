@@ -106,7 +106,7 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /hideShapeControl: true/);
   // Provider sign-in and the ordinary Mika agent each reuse their existing tile hosts.
   assert.match(setup, /mountProviderSetupSession: providerSessions\.mountProviderSetupSession/);
-  assert.match(setup, /createTerminalTileHost/);
+  assert.match(setup, /createMikaTilePool\(\)/);
   assert.match(setup, /TERMINAL_TYPE, 'workspace2', \{ key: MIKA_SESSION \}/);
   assert.match(setup, /environment\.setupRuntime = runtime\.ok \? runtime\.data : \{ providers: \[\] \};[\s\S]*bench\.refreshSelector\(\);[\s\S]*const stored/);
   assert.doesNotMatch(setup, /SetupRequirement|requirementState|flashCycle/);

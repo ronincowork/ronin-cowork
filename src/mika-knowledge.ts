@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { storeDir } from './resources.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const MIKA_INDEX_BUDGET = { bytes: 28_000, lines: 420, previewBytes: 160, minimumPreviewBytes: 24 } as const;
+export const MIKA_INDEX_BUDGET = { bytes: 24_000, lines: 400, previewBytes: 160, minimumPreviewBytes: 24 } as const;
 export const MIKA_TAXONOMY = path.join(ROOT, 'ronin_session_boot', 'house', 'mika', 'MIKA_PYRAMID.toml');
 const INDEX_NAME = 'MIKA_SOURCE_INDEX.md';
 const MANIFEST_NAME = 'mika-source-manifest.json';
@@ -144,7 +144,8 @@ async function resolvedEntries(nodes: MikaTaxonomyNode[], options: MikaKnowledge
     ]);
     const names = [...new Set([...stock.keys(), ...owner.keys()])]
       .filter((name) => !(node.root === 'ronin_catalogs' && name === 'MIKA_MACROS.md'))
-      .filter((name) => !(node.root === 'ronin_session_boot' && name === 'house/mika/MIKA_PYRAMID.toml'))
+      // Her own house folder is read whole at birth, never indexed as a source.
+      .filter((name) => !(node.root === 'ronin_session_boot' && name.startsWith('house/mika/')))
       .sort((a, b) => Buffer.from(a).compare(Buffer.from(b)));
     for (const relative of names) {
       const id = `${node.root}/${relative}`;

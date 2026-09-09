@@ -489,8 +489,9 @@ test('Mika house mechanics resolve without a session_role', async () => {
   assert.equal(mika.capExempt, true);
   assert.equal(mika.routines.every((routine) => !routine.enabled), true);
   assert.equal(mika.ack, false);
-  assert.match(mika.opening, /exact tools are lookup, wheres_waldo, and show/);
-  assert.match(mika.posture.join(' '), /cannot code, edit or write files, use Git or a shell/);
+  assert.equal(mika.opening, '{prompt}', 'nothing is typed at her beyond the request itself');
+  assert.match(mika.posture.join(' '), /^You are Mika, Ronin's help assistant: you explain and operate Ronin only\./);
+  assert.ok(mika.posture.join(' ').length < 260, 'two sentences typed; the rules live in her README');
   assert.match(mika.brief, /You are the Mika Assist/);
   assert.ok(!mika.birth_reading.some((file) => file.includes('MikaAssist')));
   assert.equal(mika.stated_by.capExempt[0]?.layer, 'house');

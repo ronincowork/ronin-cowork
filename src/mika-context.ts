@@ -3,8 +3,11 @@ import { broadcastEvent } from './ws/events.js';
 import { openMikaSourceAt } from './mika-knowledge.js';
 import { mikaHomeDir } from './mika-runtime.js';
 
-export const MIKA_VIEW_TTL_MS = 30_000;
+/** A Help view stays answerable for as long as one Mika read takes, and a bit; every
+ *  Help open reports afresh. */
+export const MIKA_VIEW_TTL_MS = 15 * 60_000;
 const TAB_RE = /^[A-Za-z0-9_-]{8,64}$/;
+export const isMikaTab = (value: unknown): value is string => typeof value === 'string' && TAB_RE.test(value);
 const WORKBENCHES = new Set(['campaign', 'cowork', 'team', 'setup', 'phone']);
 const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'] as const;
 

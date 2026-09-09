@@ -32,6 +32,7 @@ import { fetchSessions } from './api.js';
 import { helpersLast, RONIN_HELPERS } from './roster-groups.js';
 import { toast } from './ui.js';
 import { readyMika } from './mika-ready.js';
+import { createMikaHelpPanel } from './mika.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -307,30 +308,35 @@ export function createCoworkView(options = {}) {
   });
   rosterTitle = bench.selectorHeader?.title ?? null;
   root.append(bench.host);
-  const openMika = async () => {
-    if (mikaHelp.el.disabled) return;
-    mikaHelp.el.disabled = true;
-    mikaHelp.el.setAttribute('aria-busy', 'true');
-    try {
+  // ミ Help: Mika takes over the selector column — her ordinary tile, borrowed from the
+  // pool, no workspace changes hands — and Close puts the roster cards back. The Mika
+  // card under Ronin Helpers is the other door: the same session as a normal tile.
+  const helpPanel = createMikaHelpPanel({
+    selector: bench.host.querySelector('.wk-workbench-selector'),
+    createAction, t, helpButton: mikaHelp.el,
+    ready: async () => {
       const result = await readyMika('help');
       if ((!result.ok || result.data?.state !== 'ready')
         && !(result.status === 409 && result.data?.state === 'action_required'
-          && result.data?.code === 'provider_confirmation_required')) {
-        toast(t('mika.start_refused', 'Mika couldn’t start. Try again.'), false);
-        return;
-      }
+          && result.data?.code === 'provider_confirmation_required')) return false;
       await Promise.all([fetchSessions(), refreshTeams()]);
       extras.add('mika_agent');
       paint();
-      placeMikaWorkspaceTwo();
-    } catch (_) {
-      toast(t('mika.start_refused', 'Mika couldn’t start. Try again.'), false);
-    } finally {
-      mikaHelp.el.disabled = false;
-      mikaHelp.el.removeAttribute('aria-busy');
-    }
-  };
-  mikaHelp.el.addEventListener('click', () => { void openMika(); });
+      return seats.workspace2.pool.has('mika_agent');
+    },
+    borrow: () => seats.workspace2.pool.borrow('mika_agent'),
+    release: () => seats.workspace2.pool.releaseBorrow('mika_agent'),
+    place: (id, surface) => { if (seats[id]) putSurface(surface, id); },
+    view: () => ({
+      workbench: campaign ? 'cowork' : 'team', team: campaign ? '' : team, selected: bench.selected(),
+      workspaces: Object.fromEntries(bench.visibleIds().map((id) => {
+        const held = holds(id);
+        const shown = held && typeof held === 'object' ? [held.type, held.key].filter(Boolean).join(':') : held ? (surfaceIn(id) ? held : `session:${held}`) : 'empty';
+        return [id, shown];
+      })),
+    }),
+  });
+  mikaHelp.el.addEventListener('click', () => { void helpPanel.open(); });
   // A REMEMBERED PLACEMENT OUTLIVES THE SURFACE IT NAMED. `@new` and `@new-team` were
   // the retired board and the seven-field card; a workspace that still remembers one
   // opens its replacement rather than nothing.
@@ -741,6 +747,7 @@ export function createCoworkView(options = {}) {
       unsubscribe = null;
       teamPageHandlers.delete(onDraft);
       sessionsHandlers.delete(onSessions);
+      helpPanel.destroy();
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       for (const commons of Object.values(teamCommons)) commons.channels.destroy();
     },

@@ -18,23 +18,39 @@ test('Mika defaults to light and accepts only the three levels', () => {
   assert.throws(() => mikaLevelFromAgents({ jobs: { mikaassist: { level: 'cheap' } } }), MikaUnavailable);
 });
 
-test('provider order wins and the first operational provider uses Light', () => {
-  const specs = [spec('anthropic', 'claude', 'haiku', 'light'), spec('openai', 'codex', 'luna', 'light'), spec('openai', 'codex', 'terra', 'standard')];
-  const picked = resolveMikaModel({ level: 'light', generalProvider: 'openai', specs, summary: summary(['claude', 'codex']) });
-  assert.equal(picked.model, 'haiku');
-  const cross = resolveMikaModel({ level: 'standard', generalProvider: 'anthropic', specs, summary: summary(['claude', 'codex']) });
-  assert.equal(cross.model, 'haiku');
-  assert.equal(cross.provider_notice, null);
+test('the default provider supplies Mika and cascades Light → Standard → Frontier inside itself', () => {
+  const specs = [spec('anthropic', 'claude', 'haiku', 'light'), spec('openai', 'codex', 'sol', 'frontier'), spec('openai', 'codex', 'terra', 'standard')];
+  const both = summary(['claude', 'codex']);
+  const picked = resolveMikaModel({ level: 'light', generalProvider: 'openai', specs, summary: both });
+  assert.equal(picked.provider, 'openai');
+  assert.equal(picked.model, 'terra', 'no Light on the default provider: the next level up, never another provider');
+  assert.equal(picked.resolved_level, 'standard');
+  assert.equal(picked.provider_notice, null);
+  assert.deepEqual(picked.available_levels, ['standard', 'frontier']);
+  const standard = resolveMikaModel({ level: 'standard', generalProvider: 'anthropic', specs: [spec('anthropic', 'claude', 'opus', 'frontier'), ...specs], summary: both });
+  assert.equal(standard.model, 'opus', 'the configured level is the floor of the cascade');
+  const frontier = resolveMikaModel({ level: 'frontier', generalProvider: 'openai', specs, summary: both });
+  assert.equal(frontier.model, 'sol');
 });
 
-test('Standard is the sole fallback inside the first operational provider', () => {
-  const specs = [spec('openai', 'codex', 'terra', 'standard'), spec('openai', 'codex', 'sol', 'frontier')];
-  assert.equal(resolveMikaModel({ level: 'light', generalProvider: 'openai', specs, summary: summary(['codex']) }).model, 'terra');
+test('with no signed-in default provider the first operational provider in catalog order supplies Mika', () => {
+  const specs = [spec('anthropic', 'claude', 'haiku', 'light'), spec('openai', 'codex', 'luna', 'light')];
+  const setup = resolveMikaModel({ level: 'light', generalProvider: '', specs, summary: summary(['codex']) });
+  assert.equal(setup.provider, 'openai');
+  assert.equal(setup.model, 'luna');
+  assert.equal(setup.provider_notice, null, 'no default provider is not a notice');
+  const away = resolveMikaModel({ level: 'light', generalProvider: 'anthropic', specs, summary: summary(['codex']) });
+  assert.equal(away.model, 'luna');
+  assert.equal(away.provider_notice, 'default_provider_unavailable');
 });
 
-test('unmeasured, zero ready, and MCP-capable eligibility refuse distinctly', () => {
+test('a provider with nothing at or above the configured level refuses distinctly', () => {
+  const specs = [spec('openai', 'codex', 'luna', 'light'), spec('openai', 'codex', 'terra', 'standard')];
+  assert.throws(() => resolveMikaModel({ level: 'frontier', generalProvider: 'openai', specs, summary: summary(['codex']) }), (e: unknown) => e instanceof MikaUnavailable && e.code === 'mika_no_model_at_level');
+});
+
+test('unmeasured and zero ready providers refuse distinctly', () => {
   const row = spec('openai', 'codex', 'luna', 'light');
   assert.throws(() => resolveMikaModel({ level: 'light', specs: [row], summary: null }), (e: unknown) => e instanceof MikaUnavailable && e.code === 'mika_provider_unmeasured');
   assert.throws(() => resolveMikaModel({ level: 'light', specs: [row], summary: summary([]) }), (e: unknown) => e instanceof MikaUnavailable && e.code === 'mika_no_ready_provider');
-  assert.throws(() => resolveMikaModel({ level: 'light', specs: [{ ...row, gbrainDisconnected: undefined }], summary: summary(['codex']) }), (e: unknown) => e instanceof MikaUnavailable && e.code === 'mika_no_ready_provider');
 });
