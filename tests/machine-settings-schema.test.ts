@@ -40,12 +40,12 @@ test('a campaign registry row builds through the standing settings request path'
   });
 });
 
-test('legacy page paths have no dedicated route or setup branch', async () => {
+test('the retired setup page redirects narrowly and has no client setup branch', async () => {
   const [server, client] = await Promise.all([
     readFile(new URL('../src/index.ts', import.meta.url), 'utf8'),
     readFile(new URL('../public/js/main.js', import.meta.url), 'utf8'),
   ]);
-  assert.doesNotMatch(server, /app\.get\(['"]\/cowork-setup/);
+  assert.match(server, /app\.get\('\/cowork-setup', \(_req, res\) => res\.redirect\(302, '\/'\)\)/);
+  assert.doesNotMatch(server, /app\.get\('\*'/);
   assert.doesNotMatch(client, /cowork-setup|buildCoworkSetup|setup\.pending/);
-  assert.match(server, /Browser navigation always enters the workspace shell/);
 });

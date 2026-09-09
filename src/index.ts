@@ -181,6 +181,7 @@ app.get('/', (req, res) => {
   (isPhone(req) ? sendMobile : sendIndex)(req, res);
 });
 app.get('/index.html', sendIndex);
+app.get('/cowork-setup', (_req, res) => res.redirect(302, '/'));
 app.get('/m', sendMobile);
 app.get('/mobile.html', sendMobile);
 app.use(`/${assetVersion}`, express.static(PUBLIC, { immutable: true, maxAge: '1y', index: false }));
@@ -323,14 +324,6 @@ app.get('/raw/*', (req, res) => {
     if (code === 'ENOENT' || code === 'EISDIR') return res.status(404).json({ error: 'No such file.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
   });
-});
-
-// Browser navigation always enters the workspace shell. Named legacy pages need no route:
-// an extensionless path is just another way to arrive at the same client-side router.
-app.get('*', (req, res, next) => {
-  if (path.extname(req.path) || req.accepts(['html']) !== 'html') return next();
-  res.setHeader('Vary', 'User-Agent');
-  return (isPhone(req) ? sendMobile : sendIndex)(req, res);
 });
 
 const server = createServer(app);
