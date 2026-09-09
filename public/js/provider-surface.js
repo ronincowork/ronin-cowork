@@ -97,14 +97,7 @@ export function createProviderSurface(context) {
   const refreshOutcome = el('p', 'setup-fine setup-provider-refresh-outcome'); refreshOutcome.hidden = true;
   dates.append(el('summary', null, t('setup_surface.check_dates', 'Check dates')), dateList, refreshRow, refreshOutcome);
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
-  const mikaAvailability = el('section', 'setup-mika-availability');
-  const mikaAvailabilityStatus = el('p', 'setup-fine');
-  const openMikaHelp = action('Open Mika Help', '', () => {
-    try { sessionStorage.setItem('ronin.mika.help.open', '1'); } catch (_) {}
-    location.hash = '#/team/ronin_helpers';
-  });
-  mikaAvailability.append(el('strong', null, 'Mika welcome guide'), mikaAvailabilityStatus, openMikaHelp);
-  mikaAvailability.setAttribute('aria-label', 'Mika welcome guide availability');
+  const mikaAvailability = el('p', 'setup-fine setup-mika-availability');
   let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
   let runtime = { providers: [] };
@@ -367,8 +360,6 @@ export function createProviderSurface(context) {
     onSelectionChange: (id) => { opened = String(id || ''); },
   });
   stones.mount(out.content, { after: [dates, mikaAvailability, notice] });
-  // Availability is the first-run fact, not a footnote below a scrollable provider grid.
-  out.content.prepend(mikaAvailability);
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   const refresh = action(t('setup_surface.refresh', 'Refresh'), '', async () => {
     const before = runtime;
@@ -384,26 +375,24 @@ export function createProviderSurface(context) {
     disposeMount();
     context.environment.setupRuntime = runtime;
     const activatedNow = Number(runtime.activated_count || 0);
-    mikaAvailabilityStatus.textContent = activatedNow === 0
+    mikaAvailability.textContent = activatedNow === 0
       ? t('setup_surface.mika_waits', 'Mika becomes available after you install and sign in to a model provider. Registration, Ronin Services, and gbrain are optional next steps.')
       : activatedNow === 1 ? t('setup_surface.one_model_signed_in', '1 model signed in')
         : t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow });
     if (activatedNow > 0) {
-      mikaAvailabilityStatus.replaceChildren(el('span', 'tw-mika-spinner', '人'), el('span', '', t('mika.starting', 'Starting Mika…')));
-      mikaAvailabilityStatus.querySelector('.tw-mika-spinner')?.setAttribute('aria-hidden', 'true');
-      mikaAvailabilityStatus.setAttribute('role', 'status');
+      mikaAvailability.replaceChildren(el('span', 'tw-mika-spinner', '人'), el('span', '', t('mika.starting', 'Starting Mika…')));
+      mikaAvailability.querySelector('.tw-mika-spinner')?.setAttribute('aria-hidden', 'true');
+      mikaAvailability.setAttribute('role', 'status');
       const ready = await readyMika('setup_provider_ready');
       if (ready.ok && ready.data?.state === 'ready' && ready.data?.welcome_delivered === true) {
         try { sessionStorage.setItem('ronin.mika.help.open', '1'); } catch (_) {}
         location.hash = '#/team/ronin_helpers';
       } else if (ready.ok && ready.data?.state === 'ready') {
-        mikaAvailabilityStatus.textContent = activatedNow === 1
+        mikaAvailability.textContent = activatedNow === 1
           ? t('setup_surface.one_model_signed_in', '1 model signed in')
           : t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow });
-      } else if (ready.data?.simulated === true) {
-        mikaAvailabilityStatus.textContent = 'Preview only — Mika runtime unavailable.';
       } else {
-        mikaAvailabilityStatus.textContent = t('mika.start_refused', 'Mika couldn’t start. You can try Help again.');
+        mikaAvailability.textContent = t('mika.start_refused', 'Mika couldn’t start. You can try Help again.');
       }
     }
     await loadProviderCatalog();

@@ -804,14 +804,6 @@ export function createCoworkView(options = {}) {
       S.connectSession = (name) => connectSession(name);
       if (campaign) void refreshTeams().then(() => renderCards([]));
       else if (team !== loaded) void load(team);
-      if (team === RONIN_HELPERS) {
-        try {
-          if (sessionStorage.getItem('ronin.mika.help.open') === '1') {
-            sessionStorage.removeItem('ronin.mika.help.open');
-            window.setTimeout(() => mikaHelp.el.click(), 0);
-          }
-        } catch (_) {}
-      }
       void readRows();
       window.clearInterval(homeTimer);
       homeTimer = window.setInterval(() => void readRows(), 5000);
