@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# lookup — Mika's one way to a Ronin document: prints the source the index named.
+#
+# Usage: lookup mika-source:<exact-reference>
+# The reference is one of the `mika-source:` ids in the Mika source index she was born
+# with; the operator verifies it against that generation and prints the document. Exit 2 =
+# not one exact reference, 4 = no operator to ask, 5 = the operator refused (unknown id).
+set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+ref=${1-}
+case "$ref" in mika-source:*) ;; *) echo 'Usage: lookup mika-source:<exact-reference>' >&2; exit 2;; esac
+[ "$#" -eq 1 ] || { echo 'lookup accepts one exact reference.' >&2; exit 2; }
+case "$ref" in *[!A-Za-z0-9_./:-]*) echo 'A reference is letters, digits, _ . / - and the mika-source: prefix.' >&2; exit 2;; esac
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+out=$(curl -sS -m 20 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -H 'content-type: application/json' -X POST "$url/api/mika/source" -d "{\"ref\":\"$ref\"}") || { echo "STUCK: could not reach Ronin, or it refused (${out:-no reply})."; exit 5; }
+case "$out" in
+  *'"ok":true'*) printf '%s\n' "$out" | python3 -c 'import sys,json; print(json.load(sys.stdin)["source"]["text"], end="")' 2>/dev/null || printf '%s\n' "$out"; exit 0 ;;
+  *) echo "REFUSED: $out"; exit 5 ;;
+esac

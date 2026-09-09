@@ -5,6 +5,7 @@ import { storeDir } from './resources.js';
 import { listSessions } from './tmux.js';
 import { deliverForce, deliverSafe } from './send.js';
 import { onClock } from './jikan.js';
+import { readMachineSettingsSection } from './machine-settings.js';
 
 export type MessageState = 'pending' | 'stuck' | 'failed' | 'target_missing';
 export type MessageSource = 'tell' | 'wipeboard_notice' | 'owner' | 'house' | 'jikan';
@@ -22,9 +23,26 @@ export interface QueuedMessage {
   created_at: string;
   updated_at: string;
   expires_at: string;
+  /** Set once when the queue auto-forces the message on the owner's standing setting. */
+  auto_forced_at?: string;
 }
 
 const DIR = storeDir('message_queue');
+/** Polite for this long, then force: the default when the owner has not chosen. */
+export const AUTO_FORCE_DEFAULT_S = 120;
+
+/** The stored value → milliseconds. Absent means the default; an explicit 0 means never. */
+export const autoForceMsFrom = (value: unknown): number => {
+  if (value === undefined || value === null || value === '') return AUTO_FORCE_DEFAULT_S * 1_000;
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) * 1_000 : 0;
+};
+
+/** The owner's standing choice: force a retained message this old, once. */
+export async function readAutoForceAfterMs(): Promise<number> {
+  const section = await readMachineSettingsSection<{ auto_force_after_s?: unknown }>('messages', {});
+  return autoForceMsFrom(section.auto_force_after_s);
+}
 export const MESSAGE_TTL_MS = 60 * 60 * 1_000;
 export const TELL_TTL_MS = 30 * 60 * 1_000;
 export const WIPEBOARD_NOTICE_TTL_MS = 10 * 60 * 1_000;
@@ -142,6 +160,23 @@ export async function dismissMessages(ids: readonly string[]): Promise<{ dismiss
   return { dismissed, not_found };
 }
 
+export interface ForceOutcome { id: string; delivered: boolean; state?: MessageState; reason?: string }
+
+/** Force each named message in turn — exact IDs from the caller's snapshot, one live pane at a time. */
+export async function forceMessages(ids: readonly string[], delivery?: Delivery): Promise<{ outcomes: ForceOutcome[]; not_found: string[] }> {
+  const outcomes: ForceOutcome[] = [];
+  const not_found: string[] = [];
+  for (const id of [...new Set(ids)]) {
+    const exists = validId(id) && await fs.stat(file(id)).then(() => true, () => false);
+    if (!exists) { not_found.push(id); continue; }
+    const retained = await attemptMessage(id, 'force', delivery);
+    outcomes.push(retained === null
+      ? { id, delivered: true }
+      : { id, delivered: false, state: retained.state, reason: retained.reason });
+  }
+  return { outcomes, not_found };
+}
+
 interface Delivery {
   safe: typeof deliverSafe;
   force: typeof deliverForce;
@@ -220,13 +255,46 @@ export async function attemptMessage(
   }
 }
 
-export async function processMessageQueue(): Promise<void> {
-  for (const item of await listQueuedMessages()) {
-    if (item.state !== 'failed' && item.state !== 'target_missing') await attemptMessage(item.id, 'safe');
+export interface SweepOptions {
+  now?: number;
+  /** Override of the owner's setting, for tests; undefined reads the machine document. */
+  autoForceAfterMs?: number;
+  delivery?: Delivery;
+}
+
+const autoForceDue = (item: QueuedMessage, afterMs: number, now: number): boolean => afterMs > 0
+  && !item.auto_forced_at
+  && (item.state === 'stuck' || item.state === 'failed')
+  && now - Date.parse(item.created_at) >= afterMs;
+
+async function stamp(id: string, field: 'auto_forced_at', at: string): Promise<boolean> {
+  try {
+    const item = JSON.parse(await fs.readFile(file(id), 'utf8')) as QueuedMessage;
+    item[field] = at;
+    item.updated_at = at;
+    await write(item);
+    return true;
+  } catch { return false; }
+}
+
+/** One sweep: safe attempts for what is retryable, and — when the owner has switched it
+ *  on — one force for anything retained longer than their delay, exactly as if they had
+ *  pressed Force on that card. A message is auto-forced once; a failed force stays visible
+ *  with its reason and the time, and only a manual press tries again. */
+export async function processMessageQueue(options: SweepOptions = {}): Promise<void> {
+  const now = options.now ?? Date.now();
+  const afterMs = options.autoForceAfterMs ?? await readAutoForceAfterMs();
+  for (const item of await listQueuedMessages(now)) {
+    if (autoForceDue(item, afterMs, now)) {
+      // Stamp before the force so the one heads-up fires once, whether or not it lands.
+      if (await stamp(item.id, 'auto_forced_at', new Date(now).toISOString())) await attemptMessage(item.id, 'force', options.delivery);
+      continue;
+    }
+    if (item.state !== 'failed' && item.state !== 'target_missing') await attemptMessage(item.id, 'safe', options.delivery);
   }
 }
 
 export function startMessageQueue(): () => void {
   void processMessageQueue();
-  return onClock('message_queue', 2_000, processMessageQueue);
+  return onClock('message_queue', 2_000, () => processMessageQueue());
 }

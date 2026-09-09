@@ -222,6 +222,10 @@ export function buildMachineSettings(root, isShowing) {
     group(t('settei.group_capacity', 'capacity'));
     for (const row of fieldsIn((f) => f.lands?.family === 'session-max')) body.appendChild(row);
 
+    /* messages — the same leaf the Messages tab's switch sets */
+    group(t('settei.group_messages', 'messages'));
+    for (const row of fieldsIn((f) => f.lands?.family === 'messages')) body.appendChild(row);
+
     /* projects — shown, never edited here */
     group(t('settei.group_projects', 'projects · {n}', { n: set.projects.length }));
     for (const p of set.projects) {

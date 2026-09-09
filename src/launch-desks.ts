@@ -95,7 +95,7 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
 
 export function renderDeskBlock(a: Assignment): string {
   const width = Math.max(...a.desks.map((d) => d.repo.length));
-  const rows = a.desks.map((d) => `  ${d.repo.padEnd(width)}  ${d.worktree}  → ${d.line}${d.repo === a.primary ? '  (you start here)' : ''}`);
+  const rows = a.desks.map((d) => `  ${d.repo.padEnd(width)}  ${d.worktree}  → ${d.line}${d.repo === a.primary ? '  (you start here: your shell opens inside this desk, and the desk ends with you)' : ''}`);
   const n = a.desks.length;
   return [
     `Your assignment has ${n} desk${n === 1 ? '' : 's'}:`,

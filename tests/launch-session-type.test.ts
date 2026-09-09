@@ -140,9 +140,12 @@ test('the Mika door accepts words only and fixes every public birth input', () =
     dir: '/tmp',
   }), {
     session_type: 'cowork_agent',
-    name: 'mika',
-    tags: ['mika'],
+    name: 'mika_agent',
+    tags: ['ronin_helpers'],
+    mandate: { reach: 'discuss', recruit: 'nobody', output: ['ideas'] },
     prompt: '+system_help:',
+    launch_mode: 'configured',
+    gbrain_mode: 'disconnected',
   });
 });
 
@@ -171,3 +174,17 @@ test('the in-Team Agent form sends template behaviours and mandate, never a laun
 });
 
 test.after(() => server.close());
+
+/* A newborn's PATH: the session's own command directory first (its guards must win), then
+ * Ronin's install bin dir, then what the pane inherits. The pane inherits the SERVER's
+ * environment, and a server started by systemd or npm has no .profile and so no
+ * ~/.local/bin — so before this a tile launched by absolute path ran the CLI Ronin had
+ * installed while `codex` typed by name inside it found an older system copy (2026-09-09). */
+test('a newborn gets Ronin\'s install bin dir on its PATH, behind its own commands, never twice', async () => {
+  const { birthEnv } = await import('../src/routes/launch.js');
+  assert.deepEqual(birthEnv('/cmds/s1:/usr/bin', undefined, '/home/o/.local/bin', '/usr/bin'), { PATH: '/cmds/s1:/home/o/.local/bin:/usr/bin' });
+  assert.deepEqual(birthEnv(undefined, undefined, '/home/o/.local/bin', '/usr/bin:/bin'), { PATH: '/home/o/.local/bin:/usr/bin:/bin' }, 'no projected commands: still the bin dir, ahead of what the pane inherits');
+  assert.deepEqual(birthEnv('/cmds/s1:/home/o/.local/bin:/usr/bin', 'sock', '/home/o/.local/bin', '/usr/bin'), { PATH: '/cmds/s1:/home/o/.local/bin:/usr/bin', RONIN_SOCKET: 'sock' }, 'already there: left as it is');
+  assert.deepEqual(birthEnv(undefined, undefined, '/home/o/.local/bin', '/home/o/.local/bin:/usr/bin'), undefined, 'inherited PATH already carries it: nothing to say');
+  assert.deepEqual(birthEnv(undefined, 'sock', '', '/usr/bin'), { RONIN_SOCKET: 'sock' }, 'no bin dir known: PATH untouched');
+});

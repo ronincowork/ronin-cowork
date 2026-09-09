@@ -19,7 +19,8 @@ mechanical rather than a matter of taste:
 
 | | |
 |---|---|
-| **ミ Mika Assist** in the header | brings her tile forward, starting her if she is not up. Then you just talk to her |
+| **ミ Help** in the selector header of every workbench | Mika takes over the selector column: the header reads *Mika, your helpful assistant* with **Close** where Help was, the cards step aside, and only her conversation's text shows — no tile head, composer or greeting. Close puts the cards and the roster's title back. She is started if she is not up |
+| **Mika** card on Ronin Setup | the same session as a normal tile in Workspace 2 — it appears as soon as the first model provider is signed in |
 | **＋ include** on the ▣ Roots tab | hands her the include job in the same tile. It is no longer a form |
 | `+system_help: how do dials work?` typed anywhere | `ronin_bin/mika` routes it to her, wherever you typed it |
 | `+include: the cowork repo` | the same — `include` and `exclude` are aliases for `project_root` |
@@ -54,9 +55,52 @@ changes something the owner did not spell out themselves may use it.
 path spelled by hand** — `ronin-store <id>`, always. An assistant is exactly the actor most
 likely to helpfully guess a home directory.
 
+## Which model she runs on
+
+The owner's rule (2026-09-09), and only this. The **default provider** (⚙ → *sessions.default*)
+supplies her when it is signed in; inside it she takes the configured level (Light unless
+moved under ⚙ *Mika model level*) and cascades **up** — Light → Standard → Frontier — never
+across to another provider. When there is no default yet, or it is not signed in — the
+first-run Setup page — the **first operational provider in catalog order** supplies her with
+the same cascade. Providers are never compared for a better level. `src/mika-runtime.ts`.
+
+## Her mandate
+
+Reach **discuss**, recruit **nobody**, output **ideas** — fixed in her launch body
+(`mikaLaunchBody`, `src/routes/launch.ts`). She never plans a task and never proposes agents;
+a change she suggests goes through propose-and-confirm and Ronin's own doors.
+
+## Tips and tricks — teaching her as you go
+
+**The file: `ronin_session_boot/house/mika/MIKA_TIPS.md` in the cowork repo.** Add a bullet, commit, delete her, click Help: she reads it.
+
+`ronin_session_boot/house/mika/MIKA_TIPS.md` is the owner's bullet list of nuances: the
+things the documents state correctly but that still surprise ("the agent's Docs tab is
+empty because the agent never listed its documents"). It is compiled into her README at
+her next birth, right after her rules, and it is on her Docs list from birth, so it opens
+from her tile. Your own copy on the session-boot shelf (`ronin-store session_boot`, under
+`house/mika/`) wins over the shipped file.
+
+## Her birth
+
+She is born in her own private home (`ronin-store mika_home`), not in any project root, with
+every Routine off. Her birth README is the ordinary compiled packet with one difference: in
+place of the startup shelf it carries the **Mika source index** — the top of every document
+under `docs/`, `ronin_sops/`, `ronin_catalogs/`, `ronin_session_boot/` and `ronin_library/`,
+owner shadow winning, each with its `mika-source:` reference (`src/mika-knowledge.ts`, budgeted
+to one read). Her PATH is her three commands first, then a plain system PATH — a shell she can
+run, and nothing of Ronin's own bin:
+
+| command | does |
+|---|---|
+| `lookup mika-source:<id>` | prints that source, verified against the index she was born with |
+| `owner_view <tab>` | what the owner is looking at in that browser tab — Help reports the tab's view when it opens (`public/js/mika.js`), and her brief names the tab |
+| `show <tab> <surface>` | opens a Ronin surface in another visible workspace of that tab |
+
 ## She is a singleton
 
-One session named `mika`, tagged `mika`. The second request finds the first. Two of her
+One session named `mika_agent`, in the ordinary team `ronin_helpers` (**Ronin Helpers**),
+which her launch creates if it is missing and which deletes like any team. The second request finds the first. Two of her
 editing `PROJECT_ROOTS.md` at once is a real bug, and unlike a ladder marker a catalog
 write is not recomputed next turn.
 
@@ -114,12 +158,15 @@ Six things, and five of them are data:
 
 | | |
 |---|---|
-| `ronin_catalogs/session_roles/MikaAssist.md` | her definition — icon ミ, her posture, her opening, `cap: exempt`, `dir: {install}` |
+| `ronin_catalogs/session_roles/MikaAssist.md` | her definition — icon ミ, her posture, her opening, `cap: exempt`, `dir: {mika_home}` |
+| `src/mika-runtime.ts` · `src/mika-knowledge.ts` | which model (the rule above) · the source index compiled into her README |
+| `ronin_bin/lookup` · `owner_view` · `show` | her three commands, over the operator socket (`src/mika-context.ts`) |
+| `ronin_session_boot/house/mika/START_HERE.md` · `MIKA_RULES.md` · `MIKA_TIPS.md` | the Setup walkthrough, her rules, and the owner's tips — three sections of her README |
 | `ronin_catalogs/MIKA_MACROS.md` | her four jobs |
 | `ronin_catalogs/ACTIONS.md` | `propose-and-confirm` |
 | `ronin_catalogs/TOOLS.md` | the `mika` row |
 | `ronin_bin/mika` | the tool: send to her, or start her and then send |
-| `public/js/mika.js` | the ミ button: bring her tile forward, starting her if needed |
+| `public/js/mika.js` · `mika-ready.js` | the ミ Help panel every workbench shares, her Setup tile pool, and the one readiness controller over `POST /api/mika/ready` |
 
 Plus four one-line edits on the launch path so `cap:` is read, carried and honoured
 (`catalog.ts`, `spawn.ts`, `routes/launch.ts`, `tmux.ts`).

@@ -15,4 +15,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      # The unit floor probes a REAL tmux on a private socket (tests/coexistence.test.ts):
+      # a runner is exactly the fresh box a new user has, so it must carry the binary.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq tmux
       - run: npm run verify

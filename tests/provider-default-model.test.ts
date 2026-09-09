@@ -37,9 +37,9 @@ process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(temp, 'team_rosters');
 await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 
-/** The whole `agents` section as the owner's file would hold it. */
-async function agents(sessions: Record<string, unknown>): Promise<void> {
-  await fs.writeFile(path.join(temp, 'config', 'machine_settings.json'), JSON.stringify({ agents: { sessions } }));
+/** The whole `agents` section as the owner's file would hold it, and, when given, the setup section beside it. */
+async function agents(sessions: Record<string, unknown>, setup?: Record<string, unknown>): Promise<void> {
+  await fs.writeFile(path.join(temp, 'config', 'machine_settings.json'), JSON.stringify({ agents: { sessions }, ...(setup ? { setup } : {}) }));
 }
 
 const { resolveForm } = await import('../src/spawn.js');
@@ -183,6 +183,19 @@ test('an unknown provider is refused by name, and a provider beside a cmd is a c
     () => resolveForm(launch({ provider: 'anthropic', cmd: 'codex --model gpt-5.6-sol' }), new Set()),
     /provider OR a cmd/,
   );
+});
+
+test('a provider the owner turned off launches nothing new, in its own words; one never activated still launches into its own sign-in', async () => {
+  await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: {} }, { providers: { codex: { activated_at: '2026-09-05T00:00:00.000Z', off_at: '2026-09-09T10:00:00.000Z' } } });
+  await assert.rejects(
+    () => resolveForm(launch({ provider: 'openai', model: 'gpt-5.6-terra' }), new Set()),
+    (e: Error) => /Codex is turned off on this machine/.test(e.message) && /your sign-in is kept/.test(e.message) && !/Unknown model/.test(e.message),
+  );
+  await assert.rejects(() => resolveForm(launch(), new Set()), /turned off/, 'the install default rides the same refusal when its provider is off');
+  // Never activated is not off: no off_at, nothing recorded, no file — it launches, and the CLI asks to sign in in the tile.
+  await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: {} }, { providers: {} });
+  const r = await resolveForm(launch({ provider: 'anthropic', model: 'haiku' }), new Set());
+  assert.ok(r.cmd.startsWith('claude --model haiku'));
 });
 
 test('an agentless launch takes no provider resolution at all', async () => {

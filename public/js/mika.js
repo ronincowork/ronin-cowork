@@ -2,6 +2,9 @@
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
 import { showFailure } from './errors.js';
+import { WorkspaceKit } from './workspace-kit.js';
+import { createWarmTerminalPool } from './team-terminal-pool.js';
+import { mikaShowHandlers } from './events.js';
 
 /* ---------- ミ Mika Assist — the way to the house assistant ----------
  *
@@ -24,7 +27,30 @@ import { showFailure } from './errors.js';
  * directory, cap exemption, posture and opening. None of those are public launch fields.
  */
 
-const MIKA = 'mika';
+const MIKA = 'mika_agent';
+
+/* ---------- which browser tab — the id owner_view and show address ----------
+ * One id per browser tab, minted once and kept in sessionStorage so a reload keeps it.
+ * Help reports this tab's view under it; Mika is told the id at birth. */
+const TAB_KEY = 'ronin-mika-tab';
+export function mikaTab() {
+  try {
+    let id = sessionStorage.getItem(TAB_KEY);
+    if (!id || !/^[A-Za-z0-9_-]{8,64}$/.test(id)) {
+      id = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join('');
+      sessionStorage.setItem(TAB_KEY, id);
+    }
+    return id;
+  } catch (_) {
+    return `tab-${Math.random().toString(16).slice(2, 14)}`;
+  }
+}
+
+/** What this tab shows, for `owner_view`: best effort, never blocking Help. */
+export async function reportMikaView(view) {
+  if (!view) return;
+  try { await request(`/api/mika/context/${encodeURIComponent(mikaTab())}`, { method: 'PUT', json: { view } }); } catch (_) { /* Help does not wait on it */ }
+}
 
 /** What she is told when the button starts her and nobody has asked anything yet. */
 const OPENED_FROM_BAR =
@@ -72,4 +98,84 @@ export async function askMika(tile, ask) {
     showFailure('mika', e);
     return false;
   }
+}
+
+/* ---------- ミ Help — Mika takes over the selector column ----------
+ *
+ * One panel, one implementation, used by every workbench that has a selector: the cards
+ * step aside, Mika's ordinary tile is BORROWED into the column (no second viewer, no
+ * placement change in any workspace), and Close hands the tile back and shows the cards
+ * again. The greeting is painted by the page so the column is never blank while the
+ * server reports her as starting.
+ *
+ * `ready()` is the caller's readiness check (it returns truthy when she may be shown),
+ * `borrow()` returns her tile's element, `release()` gives it back.
+ */
+export function createMikaHelpPanel({ selector, header, refreshHeader, createAction, t, ready, borrow, release, helpButton, view, place }) {
+  const cards = selector?.querySelector('.wk-workbench-selector-cards') || null;
+  // The column is hers alone: no bar, no greeting, and the borrowed tile's head and
+  // composer are hidden by the panel's own CSS. The selector HEADER carries the
+  // conversation's title and its Close, where ミ Help was (owner, 2026-09-09).
+  const panel = document.createElement('section');
+  panel.className = 'setup-mika-panel';
+  panel.hidden = true;
+  const stage = document.createElement('div');
+  stage.className = 'setup-mika-stage';
+  const loading = document.createElement('p');
+  loading.className = 'setup-mika-loading';
+  panel.append(stage);
+  selector?.append(panel);
+  const close = createAction({ label: t('mika.close', 'Close'), size: 'compact' });
+  close.el.hidden = true;
+  header?.actions?.append(close.el);
+  let open = false;
+  const closeHelp = () => {
+    if (!open) return;
+    open = false;
+    release();
+    panel.hidden = true;
+    if (cards) cards.hidden = false;
+    close.el.hidden = true;
+    if (helpButton) helpButton.hidden = false;
+    refreshHeader?.(); // the roster's own title comes back
+    helpButton?.focus();
+  };
+  const openHelp = async () => {
+    if (open) return;
+    open = true;
+    if (cards) cards.hidden = true;
+    panel.hidden = false;
+    if (header?.title) header.title.textContent = t('mika.header', 'Mika, your helpful assistant');
+    if (helpButton) helpButton.hidden = true;
+    close.el.hidden = false;
+    loading.textContent = t('mika.starting', '人 Starting Mika…');
+    stage.replaceChildren(loading);
+    if (view) void reportMikaView(view());
+    let ok = false;
+    try { ok = await ready(); } catch (_) { ok = false; }
+    if (!open) return; // closed while she was starting
+    // A roster repaint while she started may have restored the roster's own title.
+    if (header?.title) header.title.textContent = t('mika.header', 'Mika, your helpful assistant');
+    if (!ok) { loading.textContent = t('mika.start_refused', 'Mika couldn’t start. Try again.'); return; }
+    const host = borrow();
+    if (host) stage.replaceChildren(host);
+    else loading.textContent = t('mika.start_refused', 'Mika couldn’t start. Try again.');
+  };
+  close.el.addEventListener('click', closeHelp);
+  panel.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeHelp(); });
+  // `show <tab> <surface>` from Mika: the operator names the workspace; only this tab answers.
+  const onShow = (m) => { if (place && m.tab === mikaTab() && m.surface) place(m.workspace, m.surface); };
+  mikaShowHandlers.add(onShow);
+  return { el: panel, open: openHelp, close: closeHelp, isOpen: () => open, destroy: () => { mikaShowHandlers.delete(onShow); close.el.remove(); } };
+}
+
+/** Mika's one ordinary tile on a workbench that has no team pools (Setup): a surface and a
+ *  one-stream warm pool over the shared terminal tile host. Help borrows from it and the
+ *  Mika card shows it as a normal Workspace tile. */
+export function createMikaTilePool() {
+  const surface = WorkspaceKit.primitives.createSurface({ label: 'Mika', className: 'tw-terminal', flush: true, header: false });
+  const pool = createWarmTerminalPool({
+    createHost: (options) => WorkspaceKit.adapters.createTerminalTileHost(options), container: surface.content, streamCap: 1,
+  });
+  return { surface, pool };
 }

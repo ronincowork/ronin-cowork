@@ -28,6 +28,11 @@ import { renderTeamConfiguration } from './team-configuration.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
 import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
+import { fetchSessions } from './api.js';
+import { helpersLast, RONIN_HELPERS } from './roster-groups.js';
+import { toast } from './ui.js';
+import { readyMika } from './mika-ready.js';
+import { createMikaHelpPanel } from './mika.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -153,6 +158,8 @@ export function createCoworkView(options = {}) {
   const liveSeats = () => bench?.visibleIds() || [];
 
   const rosterNote = el('span', 'tw-roster-note');
+  const mikaHelp = createAction({ label: t('mika.help', 'ミ Help'), size: 'compact', className: 'tw-mika-help' });
+  let helpPanel = null;
   const shapeBtn = document.getElementById('shapecycle');
   let rosterTitle = null;
 
@@ -273,23 +280,66 @@ export function createCoworkView(options = {}) {
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
       const reading = readingsOf(member);
-      return { key: member.name, label: agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null, onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
+      const mika = team === RONIN_HELPERS && member.name === 'mika_agent';
+      return { key: member.name, label: mika ? t('mika.name', 'Mika') : agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null,
+        ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
+        onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
-    teams: () => campaign ? [...teamsFromState().filter((candidate) => !candidate.holding), { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' }].map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' })) : [],
+    teams: () => campaign ? (() => {
+      const teams = teamsFromState().filter((candidate) => !candidate.holding);
+      const helper = teams.find((candidate) => candidate.name === RONIN_HELPERS);
+      const ordered = [
+        ...teams.filter((candidate) => candidate.name !== RONIN_HELPERS).sort((a, b) => helpersLast(a.name, b.name)),
+        { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' },
+        ...(helper ? [helper] : []),
+      ];
+      return ordered.map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' }));
+    })() : [],
   };
   bench = WorkspaceKit.workbench.create({
     profile: campaign ? WB_PROFILES.cowork : WB_PROFILES.team,
     tenant: { kind: campaign ? 'cowork' : 'team', team: () => team }, environment,
     defaultNode: (id) => seats[id].surface.el,
     label: campaign ? t('campaign', 'Campaign') : t('team.roster_title', 'Team Roster'),
-    title: () => campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : t('team.roster_title', 'Roster'),
-    actions: [rosterNote], shapeControl: shapeBtn, deferSelector: true,
+    // While ミ Help is open the column is Mika's, and every repaint says so.
+    title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : t('team.roster_title', 'Roster'),
+    actions: [rosterNote, mikaHelp], shapeControl: shapeBtn, deferSelector: true,
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,
     onStateChange: () => remember(), onPlacement: () => remember(),
   });
   rosterTitle = bench.selectorHeader?.title ?? null;
   root.append(bench.host);
+  // ミ Help: Mika takes over the selector column — her ordinary tile, borrowed from the
+  // pool, no workspace changes hands — and Close puts the roster cards back. The Mika
+  // card under Ronin Helpers is the other door: the same session as a normal tile.
+  helpPanel = createMikaHelpPanel({
+    selector: bench.host.querySelector('.wk-workbench-selector'),
+    header: bench.selectorHeader, refreshHeader: () => bench.refreshSelector(),
+    createAction, t, helpButton: mikaHelp.el,
+    ready: async () => {
+      const result = await readyMika('help');
+      if ((!result.ok || result.data?.state !== 'ready')
+        && !(result.status === 409 && result.data?.state === 'action_required'
+          && result.data?.code === 'provider_confirmation_required')) return false;
+      await Promise.all([fetchSessions(), refreshTeams()]);
+      extras.add('mika_agent');
+      paint();
+      return seats.workspace2.pool.has('mika_agent');
+    },
+    borrow: () => seats.workspace2.pool.borrow('mika_agent'),
+    release: () => seats.workspace2.pool.releaseBorrow('mika_agent'),
+    place: (id, surface) => { if (seats[id]) putSurface(surface, id); },
+    view: () => ({
+      workbench: campaign ? 'cowork' : 'team', team: campaign ? '' : team, selected: bench.selected(),
+      workspaces: Object.fromEntries(bench.visibleIds().map((id) => {
+        const held = holds(id);
+        const shown = held && typeof held === 'object' ? [held.type, held.key].filter(Boolean).join(':') : held ? (surfaceIn(id) ? held : `session:${held}`) : 'empty';
+        return [id, shown];
+      })),
+    }),
+  });
+  mikaHelp.el.addEventListener('click', () => { void helpPanel.open(); });
   // A REMEMBERED PLACEMENT OUTLIVES THE SURFACE IT NAMED. `@new` and `@new-team` were
   // the retired board and the seven-field card; a workspace that still remembers one
   // opens its replacement rather than nothing.
@@ -360,6 +410,14 @@ export function createCoworkView(options = {}) {
     remember();
     return true;
   };
+  function placeMikaWorkspaceTwo() {
+    const held = holds('workspace2');
+    if (held && !(held === 'mika_agent' || (held === 'session' && seats.workspace2.pool.active === 'mika_agent'))) {
+      toast(t('mika.workspace_two_busy', 'Workspace 2 is in use. Move or close that work before opening Mika.'), false);
+      return false;
+    }
+    return putSession('mika_agent', 'workspace2');
+  }
 
   /* ---------- one controller, two callers ---------- */
   // Everything that changes this page goes through arrange(): the C/T buttons and the
@@ -692,6 +750,7 @@ export function createCoworkView(options = {}) {
       unsubscribe = null;
       teamPageHandlers.delete(onDraft);
       sessionsHandlers.delete(onSessions);
+      helpPanel.destroy();
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       for (const commons of Object.values(teamCommons)) commons.channels.destroy();
     },

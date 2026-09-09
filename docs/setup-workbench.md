@@ -101,18 +101,20 @@ the reason sits in the same place.
 
 ## Model providers
 
-One stone per provider CLI Ronin knows, each wearing its state: **Activated**, **Sign-in
-open**, **Needs sign-in**, **Not installed**, or **Manual install**. Opening this surface
-measures the machine, so its facts are current when you look.
+One stone per provider CLI Ronin knows, each wearing its state: **Activated**, **Off**,
+**Sign-in open**, **Needs sign-in**, **Not installed**, or **Manual install**. Opening this surface
+paints the recorded facts immediately, then measures behind them and repaints when it lands.
 
-A provider's page is three numbered steps. A finished step wears a check and no control;
-the next unmet step owns the one control; a later step waits.
+A provider's page is three numbered steps. A finished step wears a check; the installed
+step also offers Update only when an activated provider has a newer version available and
+the registry knows how to update it. The next unmet step owns the setup control; a later
+step waits.
 
 | Step | What it measures | The control |
 |---|---|---|
 | **Install** | whether the CLI is on this machine | **Install** runs the provider's own install; a provider Ronin cannot install safely gets an **Install guide** link |
 | **Authenticate** | whether the provider is signed in here | **Authenticate** opens the provider's own sign-in in a tile on this surface; **Done** records it, **Close** leaves things as they were |
-| **Ready** | activation, which unlocks Teams, New Project and the preset stones | none; it is the result |
+| **Ready** | activation, which unlocks Teams, New Project and the preset stones | **Turn off** stops Ronin measuring, updating and launching the provider — tiles already running are not touched and the sign-in is kept; **Turn on** brings it back, and nothing needs signing in again |
 
 Below the steps sits what the catalog knows about the provider: its models, their tier and
 cost as read, and the default. Ronin only checks that a sign-in exists; it never reads a

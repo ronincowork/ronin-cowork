@@ -79,7 +79,7 @@ test('the brief carries every desk, the primary, the line, and the four words �
   const brief = buildBrief(profile, root, form, undefined, [], null, assignment);
   assert.match(brief, /^Born in cowork at \/w\/cowork\.$/m);
   assert.match(brief, /Your assignment has 2 desks:/);
-  assert.match(brief, /cowork\s+\/w\/cowork\/team\/comp\/fable\s+→ team\/comp\/dev\s+\(you start here\)/);
+  assert.match(brief, /cowork\s+\/w\/cowork\/team\/comp\/fable\s+→ team\/comp\/dev\s+\(you start here: your shell opens inside this desk, and the desk ends with you\)/);
   assert.match(brief, /services\s+\/w\/services\/team\/comp\/fable\s+→ team\/comp\/dev/);
   assert.match(brief, /Get, update, and hand in through tejun-desk; your Worktrees Routine is the contract\./);
   assert.doesNotMatch(brief, /BYOIN/, 'the brief states desks, not the Git contract the README already carries');

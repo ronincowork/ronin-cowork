@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# owner_view — what the owner is looking at in one browser tab: the workbench, the team,
+# the selected workspace and what each visible workspace shows.
+#
+# Usage: owner_view <tab-id>      the tab id Help was opened in (your brief names it)
+# Exit 2 = not one tab id, 4 = no operator to ask, 5 = that tab's view is absent or stale
+# (open Help in the tab you mean and ask again).
+set -u
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+tab=${1-}
+case "$tab" in *[!A-Za-z0-9_-]*|'') echo 'Usage: owner_view <tab-id>' >&2; exit 2;; esac
+[ "$#" -eq 1 ] || { echo 'owner_view accepts one tab id.' >&2; exit 2; }
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+out=$(curl -sS -m 20 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" "$url/api/mika/context/$tab") || { echo "STUCK: could not reach Ronin, or it refused (${out:-no reply})."; exit 5; }
+case "$out" in
+  *'"ok":true'*) printf '%s\n' "$out" | python3 -c 'import sys,json; print(json.load(sys.stdin)["report"])' 2>/dev/null || printf '%s\n' "$out"; exit 0 ;;
+  *) echo "REFUSED: $out"; exit 5 ;;
+esac

@@ -15,6 +15,10 @@ test('the mobile document holds only the mobile page, and the desktop document n
   ]);
   assert.doesNotMatch(mobile, /id="bar"|id="bootframe"|id="viewhost"|wk-workbench|workspace-kit\.css|boot-pending/);
   assert.match(mobile, /<div id="phone">\s*<header class="ph-bar">/);
+  // The document reads its own address before its first frame, so a tile address never
+  // paints the Teams bar first.
+  assert.match(mobile, /document\.documentElement\.dataset\.screen = 'inside'/);
+  assert.match(mobile, /<a class="ph-back" href="#\/" data-boot="inside"/);
   assert.match(mobile, /<script type="module" src="\/__RONIN_ASSET_VERSION__\/js\/phone\.js"><\/script>/);
   assert.doesNotMatch(index, /js\/phone\.js/);
   assert.doesNotMatch(main, /IS_PHONE|buildPhone|phone\.js/);

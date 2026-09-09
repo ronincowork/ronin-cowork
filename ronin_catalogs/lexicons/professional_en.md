@@ -497,6 +497,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.reach_alias:** · or {alias} (MagicDNS)
 - **settei.reach_ssh:** reach by ssh
 - **settei.group_capacity:** capacity
+- **settei.group_messages:** messages
 - **settei.group_projects:** projects · {n}
 - **settei.dir_gone:** ✕ {dir} is gone
 - **settei.projects_link:** Edit these in ▣ Workspace folders — this room only shows them.
@@ -587,6 +588,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.provider_off:** {name} — not on this machine
 - **forms.model_word:** {model} · {tier}
 - **forms.model_off:** {model} · {tier} — not on this machine
+- **forms.model_list_current:** {verdict} by your {cli} {client_version}{as_of}
+- **forms.model_list_stale:** {verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
@@ -1174,158 +1177,6 @@ The catalog entry goes. {dir} is not touched.
 - **stats.unreachable:** Stats could not be read.
 - **stats.unavailable:** Stats are not available on this install yet.
 
-## setup — cowork-setup.js (the one-time cowork_setup page)
-- **setup.campaign:** Campaign
-- **setup.campaign_lede:** The body of work this Ronin configuration serves.
-- **setup.campaign_name:** Campaign name
-- **setup.campaign_description:** Description
-- **setup.campaign_description_placeholder:** What this campaign is for
-- **setup.machine:** This machine
-- **setup.you:** You
-- **setup.you_lede:** The name Ronin and your Agents use when they address you.
-- **setup.workspace_folder:** Your first workspace folder
-- **setup.workspace_folder_lede:** Choose where an Agent should start. You can skip this and add one later.
-- **setup.folder_skipped:** Skip for now — add one from Campaign later
-- **setup.kind:** Kind
-- **setup.kind_lede:** What do you want to use this app for?
-- **setup.routine_bundles:** Routine Bundles
-- **setup.routine_bundles_lede:** Choose how much Ronin hands to each new Agent.
-- **setup.recommended_short:** recommended
-- **setup.bundle_nothing:** Nothing
-- **setup.bundle_nothing_copy:** Your agents start clean — no reading, no shared macros, no records. Just the CLI.
-- **setup.bundle_floor:** The floor
-- **setup.bundle_floor_copy:** Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra.
-- **setup.bundle_base:** Ronin Base
-- **setup.bundle_base_copy:** Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.
-- **setup.bundle_worktrees:** Ronin Worktrees
-- **setup.bundle_worktrees_copy:** Gives Agents the private-worktree mode. They use it only in Workspace folders that allow Ronin Worktrees; other repositories use their checkout and branches.
-- **setup.bundle_services:** Services
-- **setup.bundle_services_copy:** Adds your Services to every agent — voice, transcripts, machine care.
-- **setup.desk_profile:** Desk profile
-- **setup.desk_profile_hint:** The look, the words, and how much terminal detail your workspace shows.
-- **setup.desk_profile_stock:** Stock
-- **setup.step:** cowork setup · nothing is saved yet
-- **setup.connected:** YOU’RE CONNECTED
-- **setup.connected_tail:** — Ronin is live on your machine.
-- **setup.hero:** Make this coworkspace yours.
-- **setup.hero_lede:** Tell Ronin Cowork who you are, where your work lives, and which agents you want here. You can change all of this later.
-- **setup.running_on:** Running privately on {host}
-- **setup.this_machine:** this machine
-- **setup.stage_first:** First
-- **setup.stage_first_title:** Set up your coworkspace
-- **setup.identity:** Name your coworkspace
-- **setup.identity_lede:** This is how you’ll recognize this machine in your roster.
-- **setup.machine_name:** Coworkspace name
-- **setup.machine_name_hint:** The machine’s real hostname will not change.
-- **setup.machine_name_placeholder:** The workshop
-- **setup.owner_name:** What should Ronin call you?
-- **setup.owner_name_hint:** Mika and your working agents use this name.
-- **setup.owner_name_placeholder:** Your name
-- **setup.machine_details:** Machine details
-- **setup.cores:** {n} cores
-- **setup.memory:** {n} GB memory
-- **setup.agents:** Your agents
-- **setup.agents_lede:** Agents already found here are ready. Select any others you want RoninCoWork to add.
-- **setup.col_agent:** Agent
-- **setup.col_when_saved:** When you save
-- **setup.col_status:** Status
-- **setup.agent_ready:** Nothing—already ready.
-- **setup.agent_installed:** Installed
-- **setup.agent_install_if:** Install if selected.
-- **setup.agent_available:** Available to add
-- **setup.agent_needs_sudo:** Nothing—vendor installer needs sudo.
-- **setup.agent_manual:** Manual install
-- **setup.agent_details:** Installation details
-- **setup.agent_why_not:** Why Ronin can’t install it
-- **setup.agent_will_run:** {from}. RoninCoWork will run {command} on this machine.
-- **setup.defaults:** How new sessions should start
-- **setup.defaults_lede:** This is only the default. You can choose something different each time.
-- **setup.model:** Start new sessions with
-- **setup.model_hint:** Every model in Ronin’s provider catalog; what this machine cannot launch yet is greyed. A saved choice wins when one exists.
-- **setup.mika:** Mika uses
-- **setup.mika_hint:** The same catalog supplies this list. A light-tier model is recommended for Mika.
-- **setup.cap:** Maximum agent sessions
-- **setup.cap_hint:** ≈700 MB per agent. Ronin reserves 25% (minimum 2 GB). Shells don’t count.
-- **setup.cap_none:** No limit — allow any number
-- **setup.cap_estimate:** {n} — Ronin estimate for this {ram} GB machine
-- **setup.cap_n:** {n} agent sessions
-- **setup.services_lede:** Extra capabilities for your coworkspace, in beta today. Base RoninCoWork works fully without them.
-- **setup.optional:** Optional
-- **setup.services_intro_strong:** Keep the work on your machine, add the view around it.
-- **setup.services_intro:** Services add live agent plans, readable transcripts, voice, usage history, and long-term memory. It is early days for this side. Sharing your email is optional — it registers your interest, keeps you part of the Ronin community as it grows, and what is ready reaches you as it lands.
-- **setup.feature_gbrain:** Long-term agent memory
-- **setup.services_start:** Start Ronin Services activation
-- **setup.services_start_copy:** Ronin will send your email address, this terms version, and an activation request.
-- **setup.email:** Email for the confirmation
-- **setup.services_active:** Ronin Services are active
-- **setup.services_in_progress:** Ronin Services activation is already in progress
-- **setup.services_status:** Current status: {stage}.
-- **setup.email_recorded:** Email already recorded securely
-- **setup.activation_flow:** 1. Ronin emails a link → 2. You confirm the terms → 3. Services install.
-- **setup.terms:** Confirming accepts the Services terms: share anonymous operating measurements—never your code or conversations—and don’t resell the Services. Declining sends nothing.
-- **setup.gbrain_link:** Garry Tan’s open-source agent memory
-- **setup.gbrain_copy:** . Agents search it before answering and add to it as they work. To keep your data local and serve gbrain, Ronin provides a local embeddings model that requires about 0.3 GB.
-- **setup.gbrain_use:** Use gbrain memory
-- **setup.stage_then:** Then
-- **setup.stage_then_title:** Start your first project
-- **setup.project:** What would you like to work on first?
-- **setup.project_lede:** Leave it empty and add projects later from ▣ Roots — or give a folder and RoninCoWork registers it as your first project.
-- **setup.folder:** Working folder
-- **setup.folder_hint:** Pick from the suggestions or type the path — ~ is your home folder. It must already exist; RoninCoWork will not create or clone it.
-- **setup.git_repo:** Git repository:
-- **setup.git_unchecked:** Not checked yet — Git is optional
-- **setup.short_name:** Short name (Optional)
-- **setup.short_name_hint:** Left empty, the folder’s name is used. Lowercase letters, numbers, hyphens or underscores; at most 32 characters.
-- **setup.purpose:** What are you working on? (Optional)
-- **setup.purpose_hint:** One sentence gives agents useful context.
-- **setup.purpose_placeholder:** A customer support dashboard
-- **setup.review_stage:** When you save
-- **setup.review_lede:** Review what RoninCoWork will do.
-- **setup.review_owner:** Ronin will call you
-- **setup.review_ready:** Ready agents · detected
-- **setup.review_add:** RoninCoWork will install · consequence
-- **setup.review_model:** New sessions start with
-- **setup.review_gbrain:** gbrain memory
-- **setup.review_project:** First project
-- **setup.review_repo:** Git repository · detected
-- **setup.review_purpose:** What are you working on?
-- **setup.save:** Save and open RoninCoWork
-- **setup.save_note:** You can change these choices later.
-- **setup.use_value:** Use {value}
-- **setup.the_hostname:** the hostname
-- **setup.the_machine_user:** the machine user
-- **setup.none_detected:** None detected
-- **setup.install_in_tiles:** {agents} — install in visible tiles
-- **setup.no_model:** No runnable model detected
-- **setup.provider_default:** Ronin’s default provider
-- **setup.model_default:** the provider’s default model
-- **setup.provider_default_model:** {provider} · its default model
-- **setup.model_ronin_default:** Ronin’s default
-- **setup.services_already:** Already selected · {stage}
-- **setup.services_begin_for:** Begin activation for {email}
-- **setup.services_begin_after:** Begin activation after you enter an email
-- **setup.services_not_selected:** Not selected — nothing will be sent
-- **setup.gbrain_selected:** Add local embeddings model · about 0.3 GB
-- **setup.not_selected:** Not selected
-- **setup.project_derived:** Use "{name}" — the folder's name
-- **setup.project_skipped:** Skipped — add projects later from ▣ Roots
-- **setup.none:** None
-- **setup.no_description:** No description yet
-- **setup.git_checking:** Checking this folder…
-- **setup.folder_missing:** Folder does not exist
-- **setup.git_local:** Local Git repository
-- **setup.git_branch:** branch {branch}
-- **setup.folder_no_git:** Existing folder · Git is optional
-- **setup.err_folder_needed:** A project needs its working folder — add it, or clear the name to skip.
-- **setup.err_short_name:** The short name: lowercase letters, numbers, hyphens or underscores — or leave it empty.
-- **setup.err_folder_missing:** The working folder must already exist on this machine.
-- **setup.err_email:** Enter the email address for Services confirmation.
-- **setup.saving:** Saving…
-- **setup.note_activation:** Services activation needs attention in the workspace.
-- **setup.err_not_recorded:** could not record setup as finished — try Save again
-- **setup.note_installs:** Agent installs can be retried from Configuration.
-- **setup.saved:** Saved. Opening RoninCoWork…
-
 ## customize — customize-rail.js (the Customize rail's sections and resources)
 - **customize.sec_behavior:** Behavior
 - **customize.sec_people:** People & work
@@ -1437,8 +1288,15 @@ The catalog entry goes. {dir} is not touched.
 - **messages.select_message:** Select message to {target}
 - **messages.dismiss_selected:** Dismiss Selected
 - **messages.dismiss_selected_count:** Dismiss Selected ({count})
-- **messages.dismiss_wipeboard:** Dismiss Wipeboard Notices
-- **messages.dismiss_wipeboard_count:** Dismiss Wipeboard Notices ({count})
+- **messages.clear_selection:** Clear Selection ({count})
+- **messages.force_selected:** Force Selected
+- **messages.force_selected_count:** Force Selected ({count})
+- **messages.auto_force_off:** Auto-force after 2 min: off
+- **messages.auto_force_on:** Auto-force after {minutes} min: on
+- **messages.auto_force_set:** Stuck messages are forced after {minutes} minutes.
+- **messages.auto_force_cleared:** Stuck messages wait for you.
+- **messages.auto_forced_reason:** Auto-forced {age} ago — {reason}
+- **messages.forced_count:** {delivered} delivered · {retained} still retained.
 - **messages.dismiss_all:** Dismiss All
 - **messages.dismiss_all_count:** Dismiss All ({count})
 - **messages.trying:** Trying…
@@ -1449,7 +1307,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.dismissed_count:** {count} message(s) dismissed.
 - **messages.retained:** Still waiting — {reason}
 - **messages.action_failed:** Message action failed — {reason}
-- **messages.attention:** Check Team Commons → Messages
+- **messages.attention:** A message failed to send and was auto-forced after 2 minutes.
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update
@@ -1946,7 +1804,6 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.campaign_commons:** the commons
 - **glossary.cowork_commons:** cowork commons
 - **glossary.tab:** tab
-- **glossary.cowork_setup:** cowork setup
 - **glossary.locked:** Locked / Unlocked
 - **glossary.roster:** the roster
 - **glossary.team_roster:** Team record
@@ -2045,6 +1902,8 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.providers_summary:** {providers} providers · {models} models · {activated} activated here
 - **setup_surface.providers_summary_dated:** {counts} · catalog updated {date}
 - **setup_surface.check_dates:** Check dates
+- **setup_surface.update_descriptions:** Update descriptions
+- **setup_surface.descriptions_unavailable:** Ronin Services required · model descriptions update not published yet.
 - **setup_surface.catalog_researched:** Catalog researched
 - **setup_surface.catalog_date_unstated:** Date not stated
 - **setup_surface.machine_measured:** Machine measured
@@ -2054,6 +1913,7 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.
+- **setup_surface.model_candidates:** Listed by the CLI, missing from the catalog
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.fact_installed:** Installed
 - **setup_surface.fact_signed_in:** Signed in

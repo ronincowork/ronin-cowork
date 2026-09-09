@@ -38,7 +38,7 @@ const promotedLine = (r: PromotionReceipt): string =>
  *  originator itself; nobody waits for it to percolate). */
 export async function announcePromotion(r: PromotionReceipt, primary: string, fx: Effects, log: (line: string) => void): Promise<void> {
   if (r.kind !== 'team_promotion') return;
-  await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${promotedLine(r)}; ${r.restart ? 'restart and health passed' : 'no restart requested'}. Every desk: tejun-desk status says whether you are behind ${r.repos[0]?.target ?? 'dev'}; contributors have been told they can close.`);
+  await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${promotedLine(r)}; ${r.restart ? 'restart and health passed' : 'no restart requested'}. Every desk: tejun-desk status says whether you are behind ${r.repos[0]?.target ?? 'dev'}; each contributor has been told its desk is on ${r.repos[0]?.target ?? 'dev'}.`);
   if (!fx.tell) return;
   const per = new Map<string, string[]>();
   for (const repo of r.repos) {
@@ -52,7 +52,7 @@ export async function announcePromotion(r: PromotionReceipt, primary: string, fx
     for (const session of repo.sessions) if (!per.has(session)) per.set(session, [`${repo.repo} → ${repo.target}@${repo.candidate.slice(0, 7)}`]);
   }
   for (const [session, items] of per) {
-    const text = `from promotion: your hand-in is on ${r.repos[0]?.target ?? 'dev'} — ${items.join('; ')} [${r.id}]. The desk is finished: tejun-desk close <repo:branch> unless you still need it.`;
+    const text = `from promotion: your hand-in is on ${r.repos[0]?.target ?? 'dev'} — ${items.join('; ')} [${r.id}]. Your desk is finished and certified clean: stay parked for more work, or go with tejun-harakiri — the desk ends with you, never before you.`;
     try {
       log(`  told  ${session}: ${await fx.tell(session, text)}`);
     } catch (e) {

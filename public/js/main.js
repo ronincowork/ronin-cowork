@@ -11,7 +11,6 @@ import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome }
 import { build } from './layout.js';
 import { S, tiles } from './state.js';
 import { installTips } from './tips.js';
-import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
@@ -60,45 +59,6 @@ export async function init() {
   // a second paint: it is the one root token set this boot uses. The boot veil stays up
   // the static desktop bar (including its "2" shape control) before the phone decision.
   void restoreSkin(activeProfile()?.skin || '').catch((e) => console.warn('restore skin', e));
-
-  // FIRST LOAD. A fresh install lands here; everyone else never sees it.
-  //
-  // The test is the EXPLICIT birth key, never an inference. The first gate decided from
-  // "nobody has said who they are", fired on a box with months of sessions whose owner
-  // had simply never typed a name, and replaced the workspace at the workspace's own
-  // URL. The lessons are structural now:
-  //
-  //   1. A PROXY IS NOT A FACT. `setup.pending` is stamped by stampFreshInstall() the
-  //      moment ronin.json does not exist, cleared only by the page's own Save, and
-  //      nothing can re-arm it over HTTP.
-  //   2. ABSENCE MUST MEAN "DO NOT SHOW". A box that predates the key has no setup
-  //      section and stays quiet forever — and so does a failed read, because a wrong
-  //      answer must cost a missing page, never the product.
-  //
-  // `/cowork-setup` is the deliberate way back in: one surface, one route, one name.
-  {
-    const wants = location.pathname === '/cowork-setup';
-    const s = wants ? null : await request('/api/machine-settings');
-    if (wants || (s?.ok && s.data?.set?.setup?.pending === true)) {
-      if (location.pathname !== '/cowork-setup') history.replaceState(null, '', '/cowork-setup');
-      const host = document.createElement('div');
-      document.body.replaceChildren(host);
-      await buildCoworkSetup(host, (landing) => {
-        // THE LANDING CHOOSES WHAT GREETS THEM. Exiting to a bare pathname handed the
-        // person whatever localStorage happened to hold — on a fresh box, nothing, and
-        // on a box with two tabs, some other tab's tiles. `?tiles=` is the one-shot
-        // directive (js/state.js): honoured above both storages, written into this tab's
-        // own memory, then stripped from the address so a refresh keeps it and a bookmark
-        // never replays it. Empty is a real answer and means one empty tile — the commons,
-        // where ＋ New lives.
-        const q = new URLSearchParams({ tiles: (landing?.tiles ?? []).join(',') });
-        location.href = '/?' + q;
-      });
-      reveal();
-      return;
-    }
-  }
-
 
   // THE DESKTOP DOCUMENT. A phone never loads this page: the server sends mobile.html to a
   // phone-class User-Agent (src/index.ts), and /m is that document's own address. Nothing

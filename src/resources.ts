@@ -37,6 +37,9 @@ export const STORES: readonly Store[] = [
   store('memory', 'user', 'memory'),
   store('config', 'user', 'config'),
   store('campaigns', 'user', 'campaigns'),
+  // Mika's stable private working directory. It is deliberately not a project root and
+  // never follows the versioned install as releases move.
+  store('mika_home', 'user', 'mika'),
   store('koshi_weights', 'user', 'koshi_weights'),
   store('koshi_weights_service', 'user', 'koshi_weights_service'),
   store('gbrain_brain', 'user', 'gbrain_brain'),
@@ -248,7 +251,7 @@ export const entryPairs = (lines: string[]): Array<[string, string]> => {
   return out;
 };
 
-async function readUserCatalog(file: string): Promise<string> {
+export async function readUserCatalog(file: string): Promise<string> {
   try {
     return await readFile(path.join(storeDir('catalogs'), file), 'utf8');
   } catch (e) {
@@ -273,7 +276,7 @@ export function splitSections(raw: string, origin: Origin): CatalogSection[] {
 const isHidden = (s: CatalogSection): boolean =>
   s.lines.some((l) => /^-\s*\*\*hidden:\*\*\s*yes\b/i.test(l.trim()));
 
-function mergeSections(stock: CatalogSection[], user: CatalogSection[]): CatalogSection[] {
+export function mergeSections(stock: CatalogSection[], user: CatalogSection[]): CatalogSection[] {
   const byName = new Map(user.map((s) => [s.name, s] as const));
   const out: CatalogSection[] = [];
   const placed = new Set<string>();
@@ -334,22 +337,27 @@ const SHADOWABLE: Record<string, string> = {
   'TOOLS.md': 'an executable of yours that implements an action',
   'SAVED_LAUNCHES.md': 'a launcher form, filled in ahead of time and named',
   'SKINS.md': 'a look — a set of design tokens, and nothing else',
+  'MODEL_PROVIDERS.md': 'a model provider — its `### <Vendor>` section: the vendor id, the CLI, and one row per model',
 };
+/** The heading level a catalog's entries sit under: `## name` for most, `### <Vendor>` for the provider catalog. */
+export const sectionHead = (file: string): string => (file === 'MODEL_PROVIDERS.md' ? '###' : '##');
 
 export const isShadowable = (file: string): boolean => Object.hasOwn(SHADOWABLE, file);
 
 function newFileHeader(file: string): string {
   const what = SHADOWABLE[file] ?? 'your own entries';
+  const head = sectionHead(file);
+  const same = file === 'MODEL_PROVIDERS.md' ? '`- **provider:** id`' : `\`${head} name\``;
   const stock = file === 'SAVED_LAUNCHES.md' ? '' :
     `>\n> The shipped copy is \`ronin_catalogs/${file}\` — read it for the format and copy a\n` +
-    `> block out of it to start from. An entry here with the SAME \`## name\` REPLACES that\n` +
+    `> block out of it to start from. An entry here with the SAME ${same} REPLACES that\n` +
     `> one whole; a new name is added after them; \`- **hidden:** yes\` deletes one.\n`;
   return `# ${file.replace(/\.md$/, '')} — yours (user scope)
 
 > **Ronin made this file; Ronin never replaces it.** It lives outside every repo, an
 > upgrade cannot touch it, and an uninstall leaves it. Hand-edit it freely.
 >
-> One \`## <name>\` block per ${what}, with \`- **key:** value\` lines under it.
+> One \`${head} <name>\` block per ${what}, with \`- **key:** value\` lines under it.
 ${stock}>
 > The rule in full: \`docs/shadowing.md\`.
 `;

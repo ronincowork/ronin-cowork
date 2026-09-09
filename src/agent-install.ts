@@ -11,7 +11,8 @@ function agentPrefix(): string {
   return path.join(os.homedir(), '.local');
 }
 
-function agentBinDir(): string {
+/** Where Ronin's own Install and Update put a CLI's command: the owner's prefix, never root's. */
+export function agentBinDir(): string {
   return path.join(agentPrefix(), 'bin');
 }
 
@@ -22,7 +23,10 @@ function bundledNodeBin(): string | null {
 
 function installPreamble(): string[] {
   const nodeBin = bundledNodeBin();
-  const pathParts = ['$PATH', agentBinDir(), ...(nodeBin ? [nodeBin] : [])];
+  // Ronin's own bin dir goes FIRST: the line ends by running the CLI it just installed, and
+  // with the dir appended a system copy of the same name answered instead (0.151.0 printed
+  // after 0.153.4 landed, 2026-09-09). This is the install tile's PATH only.
+  const pathParts = [agentBinDir(), ...(nodeBin ? [nodeBin] : []), '$PATH'];
   return [`export npm_config_prefix=${shq(agentPrefix())}`, `export PATH=${shq(pathParts.join(':'), true)}`];
 }
 
@@ -91,4 +95,22 @@ async function one(
 
 function installLine(get: string, cmd: string): string {
   return [...installPreamble(), `${get} && ${cmd}`].join('; ');
+}
+
+/** The registry's update for a CLI as one shell line, or '' when it has none. */
+export function updateLineOf(spec: (typeof AGENTS)[number]): string {
+  return spec.operations.update.shell || (spec.operations.update.argv.length ? [spec.cmd, ...spec.operations.update.argv].join(' ') : '');
+}
+
+/**
+ * UPDATE — the same preamble as Install, the registry's update line, then the CLI's own
+ * version so the owner sees what landed. The preamble points npm at the owner's own prefix
+ * (no box needs root; the owner answers nothing) and puts that prefix's bin dir first so the
+ * version printed is the one just installed. It runs in a temporary provider_setup session
+ * shown in the page, opened and closed by src/setup-runtime.ts exactly as a sign-in is.
+ */
+export function updateCommand(spec: (typeof AGENTS)[number]): string {
+  const line = updateLineOf(spec);
+  if (!line) throw new Error(`nothing updates ${spec.label} from here yet`);
+  return [...installPreamble(), `${line} && ${spec.cmd} ${spec.operations.version.join(' ')}`].join('; ');
 }

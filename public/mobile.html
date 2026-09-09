@@ -21,7 +21,15 @@
     <!-- THE MOBILE DOCUMENT. A phone downloads this page and nothing else: no desktop bar,
          no workbench, no boot skeleton. The first frame the browser paints is the bar
          below, because there is nothing else in the document to paint; js/phone.js fills
-         the list and routes the screens. The server sends this at /m, and at / to a phone. -->
+         the list and routes the screens. The server sends this at /m, and at / to a phone.
+         The document reads its own address before that first frame: at the front door the
+         bar opens with the mark and "Teams"; inside a Team or on a tile it opens with ‹, so
+         the screen the address names is the first one painted, never the Teams bar first. -->
+    <script>
+      try {
+        if (/^#\/(?:m\/)?(?:t|d|s|team|feedback)(?:\/|$)/.test(location.hash)) document.documentElement.dataset.screen = 'inside';
+      } catch (e) {}
+    </script>
     <link rel="stylesheet" href="/__RONIN_ASSET_VERSION__/style.css" />
     <link rel="stylesheet" href="/__RONIN_ASSET_VERSION__/css/feedback.css" />
     <!-- modulepreloads:start -->
@@ -42,6 +50,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/phone.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/provenance.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/request.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/roster-groups.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/session-retire.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/shingo.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/state.js" />
@@ -80,10 +89,12 @@
   <body>
     <div id="phone">
       <header class="ph-bar">
-        <a class="brand brand-home" href="#/" aria-label="Ronin">
+        <a class="brand brand-home" href="#/" data-boot="teams" aria-label="Ronin">
           <img class="brand-mark" src="brand/nin-mark.svg" alt="" />
         </a>
-        <span class="ph-title">Teams</span>
+        <span class="ph-title" data-boot="teams">Teams</span>
+        <a class="ph-back" href="#/" data-boot="inside" title="Back">‹</a>
+        <span class="ph-title" data-boot="inside"></span>
       </header>
       <main class="ph-main"></main>
     </div>

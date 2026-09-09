@@ -95,6 +95,7 @@ await fs.writeFile(
 );
 
 const { resolveForm } = await import('../src/spawn.js');
+const { mikaLaunchBody } = await import('../src/routes/launch.js');
 type SpawnForm = import('../src/spawn.js').SpawnForm;
 
 /** What the ＋ New form posts: the axes, the picks, and the owner's words. */
@@ -479,18 +480,25 @@ test('QuarterBack is a session_role, pinned as the developer family\'s default l
 test('Mika house mechanics resolve without a session_role', async () => {
   const mika = await resolveForm({
     house_seat: 'mika',
-    name: 'mika',
+    name: 'mika_agent',
     prompt: '+system_help:',
   }, new Set());
   assert.equal(mika.session_role, '');
-  assert.equal(mika.name, 'mika');
-  assert.equal(mika.dir, process.cwd());
+  assert.equal(mika.name, 'mika_agent');
+  assert.match(mika.dir, /\/mika$/);
+  assert.equal(mika.project_root, 'mika_home');
   assert.equal(mika.capExempt, true);
+  assert.equal(mika.routines.every((routine) => !routine.enabled), true);
   assert.equal(mika.ack, false);
-  assert.match(mika.opening, /MIKA_MACROS\.md/);
+  assert.equal(mika.opening, '{prompt}', 'nothing is typed at her beyond the request itself');
+  // The launch prefixes "You are the Mika Assist." — with the posture that is the whole typed intro: two sentences.
+  assert.match(mika.brief, /^You are the Mika Assist\. You explain and operate Ronin only[^.]*\.\n/);
+  assert.equal((mika.brief.split('\n')[0].match(/\. /g) || []).length, 1, 'two sentences typed; the rules live in her README');
   assert.match(mika.brief, /You are the Mika Assist/);
   assert.ok(!mika.birth_reading.some((file) => file.includes('MikaAssist')));
   assert.equal(mika.stated_by.capExempt[0]?.layer, 'house');
+  const door = mikaLaunchBody({});
+  assert.deepEqual(door.mandate, { reach: 'discuss', recruit: 'nobody', output: ['ideas'] }, 'she discusses, recruits nobody, hands back ideas');
 });
 
 test('a name alone resolves the ordinary Cowork Agent birth', async () => {

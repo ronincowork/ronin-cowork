@@ -10,8 +10,7 @@ contracts remain available, but they are not prerequisites for installing or usi
 | What authority does Ronin have on this machine? | [How Ronin protects your machine and work](how-ronin-protects-you.md) |
 | Is this machine suitable, or should the user rent one? | [Rent or prepare a machine](rent-a-machine.md) |
 | How do I install without disturbing existing tmux work? | [Install Ronin](install.md) |
-| How do I launch from the new Setup workbench? | [Ronin Setup](setup-workbench.md) |
-| What will the legacy `cowork_setup` route ask, and what happens after Save? | [Get started](get-started.md) |
+| How do I finish first use and launch one working Agent? | [Get started](get-started.md) and [Ronin Setup](setup-workbench.md) |
 | Which model providers and models does Ronin offer, what does this machine have, and how do I sign one in? | [Model providers](model-providers.md) and [Provider sign-in](provider-sign-in.md) |
 
 ## Once the coworkspace is running
@@ -24,6 +23,7 @@ contracts remain available, but they are not prerequisites for installing or usi
 | How do parallel Agents avoid colliding in the same files? | [Ronin Worktrees](worktrees.md) |
 | How do session Control settings work? | [Session Control](session-control-dials.md) |
 | What does a new Agent read at birth, and why does it fit one read? | [The birth packet](birth-packet.md) |
+| What does Ronin let an Agent do, and what does it only tell it? | [The Agent's philosophy: a gas pedal and a brake pedal](agent-philosophy.md) |
 | How do I customize Ronin without editing shipped files? | [Customize](customize.md) and [shadowing](shadowing.md) |
 | What is a template, and how does my agent keep mine? | [Templates](templates.md) |
 | What has Ronin connected to? | [Services activation and the egress record](services-activation.md) |

@@ -91,7 +91,10 @@ test('every agent-facing API caller connects through the one library and carries
     return /\bcurl\b/.test(body);
   });
   assert.deepEqual(callers.sort(), [
+    'lookup',
     'mika',
+    'owner_view',
+    'show',
     'tejun-archive',
     'tejun-fork',
     'tejun-harakiri',

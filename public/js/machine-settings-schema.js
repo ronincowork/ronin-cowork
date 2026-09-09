@@ -6,7 +6,7 @@
  * leaf as data; this module knows how to READ that vocabulary — paths, seeds, option
  * sources, value shapes, the omission rule — and deliberately knows NO field. A field
  * name appearing in this file would be the second declaration the registry exists to
- * end. The renderers (js/cowork-setup.js, js/machine-settings.js) own furniture and layout; this
+ * end. The Machine Settings renderer owns furniture and layout; this
  * owns meaning.
  *
  * `ctx` is what a surface already fetched and chose: { record, home, rows }, where
@@ -68,6 +68,7 @@ export function initialOf(f, ctx) {
  */
 export function optionsOf(f, ctx) {
   if (f.options === 'desk_profiles') return (ctx.deskProfiles ?? []).map((p) => ({ label: p.label, value: p.name }));
+  if (Array.isArray(f.choices)) return f.choices.map((choice) => typeof choice === 'string' ? { label: choice, value: choice } : choice);
   return [];
 }
 
@@ -122,19 +123,19 @@ export function toRequests(schema, values) {
     const v = values[f.id];
     if (v === undefined || omitted(f, v)) continue;
     land(body(f.lands.family), f.lands.key, shaped(f, v));
-    if (f.setup_lands) land(body(f.setup_lands.family), f.setup_lands.key, shaped(f, v));
   }
 
-  return [...byFamily.entries()].map(([fam, json]) => {
-    const route = schema.families[fam];
-    return { family: fam, route: route.route, method: route.method, json: { family: fam, value: json } };
-  });
+  return [...byFamily.entries()].map(([fam, json]) => ({
+    family: fam,
+    route: '/api/machine-settings',
+    method: 'PATCH',
+    json: { family: fam, value: json },
+  }));
 }
 
 /** The request for ONE field's answer — how ⚙ saves a row by itself. */
 export function toRequest(schema, f, v) {
   const json = {};
   land(json, f.lands.key, shaped(f, v));
-  const route = schema.families[f.lands.family];
-  return { route: route.route, method: route.method, json: { family: f.lands.family, value: json } };
+  return { route: '/api/machine-settings', method: 'PATCH', json: { family: f.lands.family, value: json } };
 }

@@ -24,7 +24,7 @@ const catalog = await listProviderCatalog();
 const nobody = async () => false;
 /** One measured summary from a fixture machine: which CLIs are on PATH and which left a credential file. */
 const measured = (section: Record<string, unknown>, installed: string[], signedIn: string[] = []) =>
-  summary.measureProviders(section, { availability: available(installed), signedIn: async (id) => signedIn.includes(id), catalog, now: () => '2026-09-08T10:00:00.000Z' });
+  summary.measureProviders(section, { availability: available(installed), signedIn: async (id) => signedIn.includes(id), catalog, now: () => '2026-09-08T10:00:00.000Z', version: async (file) => (file === '/bin/codex' ? '0.151.0' : ''), modelList: async (id) => id === 'codex' ? { fetched_at: '2026-09-09T10:42:03Z', etag: 'e', client_version: '0.151.0', models: [{ slug: 'gpt-5.6-sol', display_name: 'Sol', description: '', visibility: 'list', priority: 1 }] } : null });
 const answer = async (section: Record<string, unknown>, installed: string[], signedIn: string[] = [], exists: (name: string) => Promise<boolean> = nobody) =>
   runtime.setupRuntimeAnswer(section, await measured(section, installed, signedIn), { exists }, undefined, catalog);
 const row = (a: Awaited<ReturnType<typeof answer>>, id: string) => a.providers.find((provider) => provider.id === id)!;
@@ -74,6 +74,92 @@ test('provider facts come from the measured summary: absent, installable, instal
   const absentButFile = await answer({}, [], ['claude']);
   assert.equal(row(absentButFile, 'claude').signed_in, false, 'a credential file without the CLI is not a usable provider');
   assert.equal(row(absentButFile, 'claude').state, 'installable');
+});
+
+test('an activated CLI\'s row says its version, what Refresh last learned of the newest, and whether Update means anything; one not activated says Installed and stops', async () => {
+  const on = { providers: { codex: { activated_at: '2026-09-05T00:00:00.000Z' }, claude: { activated_at: '2026-09-05T00:00:00.000Z' } } };
+  const facts = await measured(on, ['claude', 'codex']);
+  const before = await runtime.setupRuntimeAnswer(on, facts, { exists: nobody }, undefined, catalog);
+  assert.equal(row(before, 'codex').version, '0.151.0');
+  assert.equal(row(before, 'codex').model_list?.client_version, '0.151.0');
+  assert.equal(row(before, 'claude').version, null, 'a CLI that would not say is null, not a guess');
+  assert.equal(row(before, 'codex').latest, null, 'never asked yet');
+  assert.equal(row(before, 'codex').updatable, true, 'activated and the registry has an update line');
+  assert.equal(row(before, 'codex').update_available, false, 'no latest, no claim');
+  assert.equal(row(before, 'gemini').updatable, false, 'not installed: nothing to update');
+  assert.equal(row(before, 'gemini').update, null);
+  // Installed but not activated: nothing asked, nothing offered — not a stale version, not "not read".
+  const quiet = await measured({}, ['claude', 'codex']);
+  assert.deepEqual(quiet.versions, {}, 'no activated provider, no exec at all');
+  const idle = await runtime.setupRuntimeAnswer({}, { ...quiet, versions: { codex: '0.151.0' }, latest: { codex: { version: '0.153.4', checked_at: 'c' } } }, { exists: nobody }, undefined, catalog);
+  assert.equal(row(idle, 'codex').version, null, 'an earlier measurement is not printed as current');
+  assert.equal(row(idle, 'codex').latest, null);
+  assert.equal(row(idle, 'codex').updatable, false, 'no control for a provider Ronin is not using');
+  const after = await runtime.setupRuntimeAnswer(on, { ...facts, latest: { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' }, claude: { version: '2.1.265', checked_at: '2026-09-09T12:00:00.000Z' } } }, { exists: nobody }, undefined, catalog);
+  assert.equal(row(after, 'codex').latest, '0.153.4');
+  assert.equal(row(after, 'codex').latest_checked_at, '2026-09-09T12:00:00.000Z');
+  assert.equal(row(after, 'codex').update_available, true);
+  assert.equal(row(after, 'claude').update_available, false, 'latest known but the installed version is not: no claim either way');
+  assert.equal(row(after, 'codex').askable, true, 'its update line names an npm package');
+  assert.equal(row(after, 'gemini').askable, true, 'gemini has an npm package source even though the old argv update did not name it');
+});
+
+test('off is the one switch: it outranks a credential file and Done, spends nothing on the provider, keeps the sign-in, and on clears one field', async () => {
+  // Signed in by its own file AND recorded by Done — the two facts operational is derived
+  // from, neither of which can be unset. Off must still win.
+  const section = { providers: { codex: { activated_at: '2026-09-05T00:00:00.000Z', off_at: '2026-09-09T10:00:00.000Z' } } };
+  const facts = await summary.measureProviders(section, { availability: available(['claude', 'codex']), signedIn: async (id) => id === 'codex', catalog, now: () => '2026-09-09T10:01:00.000Z', version: async (file) => { if (file === '/bin/codex') throw new Error('codex was asked its version while off'); return ''; } });
+  assert.deepEqual(facts.signed_in, ['codex'], 'the credential file is still the fact — off is not sign-out');
+  assert.deepEqual(facts.operational, [], 'and it is not operational');
+  assert.deepEqual(facts.versions, {}, 'nothing was spent on it');
+  const shown = await runtime.setupRuntimeAnswer(section, facts, { exists: nobody }, undefined, catalog);
+  const codex = row(shown, 'codex');
+  assert.equal(codex.off, true); assert.equal(codex.off_at, '2026-09-09T10:00:00.000Z');
+  assert.equal(codex.state, 'off'); assert.equal(codex.activated, false);
+  assert.equal(codex.signed_in, true, 'the row still says signed in — the sign-in is kept');
+  assert.equal(codex.activated_at, '2026-09-05T00:00:00.000Z', 'Done is not forgotten either');
+  assert.equal(codex.updatable, false); assert.equal(codex.version, null);
+  assert.equal(shown.activated_count, 0, 'an off provider is not one Ronin can launch with');
+  // The switch itself: one field, Ronin's own, in the setup section — nothing else.
+  const state = await import('../src/machine-state.js');
+  assert.deepEqual(await runtime.setProviderOff('codex', true, () => '2026-09-09T11:00:00.000Z'), { provider: 'codex', off: true, off_at: '2026-09-09T11:00:00.000Z' });
+  let setup = await state.readSetupSection();
+  assert.equal((setup.providers as Record<string, { off_at?: string }>).codex.off_at, '2026-09-09T11:00:00.000Z');
+  assert.deepEqual(await runtime.setProviderOff('codex', false), { provider: 'codex', off: false, off_at: null });
+  setup = await state.readSetupSection();
+  assert.equal('off_at' in ((setup.providers as Record<string, object>).codex ?? {}), false, 'on deletes the one field');
+  await assert.rejects(() => runtime.setProviderOff('nope', true), /Unknown provider/);
+  const back = await summary.measureProviders({ providers: { codex: {} } }, { availability: available(['claude', 'codex']), signedIn: async (id) => id === 'codex', catalog, version: async () => '' });
+  assert.deepEqual(back.operational, ['codex'], 'turned back on, the kept sign-in makes it operational at once — no Authenticate');
+});
+
+test('an update runs in a temporary provider_setup session, and the one Close ends install, sign-in, and update', async () => {
+  const facts = await measured({}, ['claude', 'codex']);
+  const opened: string[] = []; const closed: string[] = [];
+  const live = new Set<string>();
+  const ops = {
+    exists: async (name: string) => live.has(name),
+    open: async (_provider: string, name: string) => { live.add(name); },
+    openUpdate: async (_provider: string, name: string) => { opened.push(name); live.add(name); },
+    close: async (name: string) => { closed.push(name); live.delete(name); },
+  };
+  const first = await runtime.openProviderUpdate('codex', ops, available(['claude', 'codex']));
+  assert.deepEqual(first, { session: 'provider_setup_codex_update', opened: true });
+  assert.deepEqual(opened, ['provider_setup_codex_update']);
+  assert.deepEqual(await runtime.openProviderUpdate('codex', ops, available(['claude', 'codex'])), { session: 'provider_setup_codex_update', opened: false }, 'one at a time');
+  const shown = await runtime.setupRuntimeAnswer({}, facts, ops, undefined, catalog);
+  assert.equal(row(shown, 'codex').update_open, true);
+  assert.deepEqual(row(shown, 'codex').attachment, { type: 'session', key: 'provider_setup_codex_update', team: 'provider_setup', temporary: true }, 'the same attachment shape a sign-in gets');
+  assert.equal(row(shown, 'codex').state, 'installed', 'an update is not a sign-in state');
+  await assert.rejects(() => runtime.openProviderUpdate('gemini', ops, available(['claude', 'codex'])), /not installed/);
+  await assert.rejects(() => runtime.openProviderUpdate('nope', ops, available([])), /Unknown provider/);
+  live.add('install_codex');
+  await ops.open('codex', 'provider_setup_codex');
+  const both = await runtime.setupRuntimeAnswer({}, facts, ops, undefined, catalog);
+  assert.equal(row(both, 'codex').attachment?.key, 'provider_setup_codex', 'an open sign-in owns the attachment');
+  assert.deepEqual(await runtime.closeProviderLogin('codex', ops), { session: 'provider_setup_codex', closed: true });
+  assert.deepEqual(closed, ['provider_setup_codex', 'provider_setup_codex_update', 'install_codex'], 'Close ends all three through the one teardown; nothing outlives its window');
+  assert.deepEqual(await runtime.closeProviderLogin('codex', ops), { session: 'provider_setup_codex', closed: false });
 });
 
 test('a provider counts as activated only when the catalog gives it something to launch', async () => {

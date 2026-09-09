@@ -10,8 +10,13 @@ import { loadProjects, onProjects, projectData } from './home.js';
 import { t } from './lexicon.js';
 import { applyTheme, setCampaignTheme } from './theme.js';
 import { campaignById, campaigns, initialCampaignId, loadCampaigns, saveCampaign } from './campaigns.js';
+import { readyMika } from './mika-ready.js';
+import { createMikaHelpPanel, createMikaTilePool } from './mika.js';
+import { toast } from './ui.js';
 
 const PROFILE = 'setup';
+const MIKA_SESSION = 'mika_agent';
+const TERMINAL_TYPE = 'session.terminal';
 // The selector's fixed order. Model providers comes first because it is the first job.
 const ORDER = Object.freeze([
   SETUP_SURFACE_TYPES.providers, SETUP_SURFACE_TYPES.register, SETUP_SURFACE_TYPES.roots,
@@ -31,16 +36,24 @@ const sameOrder = (a = [], b = []) => Array.isArray(a) && a.length === b.length 
 export function registerSetupWorkbench() {
   registerSetupSurfaces();
   registerPresetsSurface();
-  return WorkspaceKit.workbench.profiles.define(PROFILE, [PRESETS_TYPE, ...ORDER]);
+  const { library } = WorkspaceKit.workbench;
+  if (!library.has(TERMINAL_TYPE)) library.register({
+    type: TERMINAL_TYPE, header: 'terminal', className: 'wk-selector-entity',
+    discover: (_tenant, environment) => environment.sessions(),
+    create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail),
+  });
+  return WorkspaceKit.workbench.profiles.define(PROFILE, [PRESETS_TYPE, ...ORDER, TERMINAL_TYPE]);
 }
 
 export function createSetupView() {
   registerSetupWorkbench();
-  const { createSurface } = WorkspaceKit.primitives;
+  const { createSurface, createAction } = WorkspaceKit.primitives;
   let ctx = null;
   let bench = null;
   // The native sign-in tile the Model providers surface mounts: the one shared implementation.
   const providerSessions = createProviderSetupSessionMount();
+  // Mika's ordinary tile: Help borrows it into the selector, the Mika card places it in Workspace 2.
+  const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   // APPEARANCE lives at the right of the TOP workbench header (#bar), seated there by
   // the ViewHost while Setup is active, the way the layout map is. A subtle phone /
   // desktop switcher picks WHICH surface is being set; light / dark then writes the
@@ -108,6 +121,8 @@ export function createSetupView() {
       bench?.select('workspace2');
     },
   });
+  const mikaHelp = createAction({ label: t('mika.help', 'ミ Help'), size: 'compact' });
+  let helpPanel = null;
   const environment = {
     presets: (workspace) => createPresetsSurface({ environment: presetEnvironment(), workspace }),
     showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
@@ -117,6 +132,31 @@ export function createSetupView() {
     // What the person uses Ronin for: one persisted preference shared by Register and Presets.
     kinds: createKindsPreference(globalThis.localStorage, (kinds) => request('/api/setup/preferences', { method: 'PATCH', json: { kinds } })),
     mountProviderSetupSession: providerSessions.mountProviderSetupSession,
+    sessions: () => {
+      const enabled = Number(environment.setupRuntime?.activated_count || 0) > 0;
+      mikaHelp.el.disabled = !enabled;
+      return enabled ? [{
+        key: MIKA_SESSION, label: 'Mika', summary: t('mika.setup_card', 'Your Ronin welcome guide and general helper.'),
+        action: () => { void ensureAndPlaceMika(); },
+        onPointerEnter: () => { void ensureMika(); },
+      }] : [];
+    },
+    terminal: (_workspace, detail) => ({ el: mikaSurface.el, show: () => {
+      mikaPool.sync([MIKA_SESSION]);
+      mikaPool.show(detail.key || MIKA_SESSION, false);
+    } }),
+  };
+  const operational = () => Number(environment.setupRuntime?.activated_count || 0) > 0;
+  const ensureMika = async () => operational() ? readyMika('help') : null;
+  const ensureAndPlaceMika = async () => {
+    if (!operational()) return false;
+    const ready = await ensureMika();
+    if (!ready || (!ready.ok && ready.data?.state !== 'action_required')) {
+      toast(t('mika.start_refused', 'Mika couldn’t start. Try again.'), false);
+      return false;
+    }
+    mikaPool.sync([MIKA_SESSION]);
+    return bench?.place(TERMINAL_TYPE, 'workspace2', { key: MIKA_SESSION }) || false;
   };
   // viewportMode was the retired presentation toggle's memory; writing undefined drops
   // it from a stored visit so nobody stays in the stack it forced.
@@ -127,14 +167,37 @@ export function createSetupView() {
     environment,
     defaultNode: blank,
     label: t('setup.title', 'Ronin Setup'),
-    title: () => t('setup.title', 'Ronin Setup'),
+    title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : t('setup.title', 'Ronin Setup'),
     fixedWorkspaces: { workspace1: PRESETS_TYPE },
     selectorWorkspace: 'workspace2',
     selectorCurrent: true,
     selectorFilter: (type) => type !== PRESETS_TYPE,
+    actions: [mikaHelp],
     onStateChange: save,
     onPlacement: save,
   });
+  // ミ Help: Mika takes over the selector column with her ordinary tile borrowed in;
+  // Close hands it back. The same panel serves every workbench (mika.js).
+  helpPanel = createMikaHelpPanel({
+    selector: bench.host.querySelector('.wk-workbench-selector'),
+    header: bench.selectorHeader, refreshHeader: () => bench.refreshSelector(),
+    createAction, t, helpButton: mikaHelp.el,
+    ready: async () => {
+      const ready = await ensureMika();
+      if (!ready || (!ready.ok && ready.data?.state !== 'action_required')) return false;
+      mikaPool.sync([MIKA_SESSION]);
+      return true;
+    },
+    borrow: () => mikaPool.borrow(MIKA_SESSION),
+    release: () => mikaPool.releaseBorrow(MIKA_SESSION),
+    // Setup has one free workspace; whatever Mika shows lands there.
+    place: (_id, surface) => { bench?.place(surface, 'workspace2'); bench?.select('workspace2'); },
+    view: () => ({
+      workbench: 'setup', team: '', selected: bench.selected(),
+      workspaces: { workspace1: 'presets', workspace2: [bench.typeAt('workspace2'), bench.resourceAt('workspace2')].filter(Boolean).join(':') || 'empty' },
+    }),
+  });
+  mikaHelp.el.addEventListener('click', () => { if (operational()) void helpPanel.open(); });
   return {
     el: bench.host,
     glyph: '人',
@@ -155,6 +218,7 @@ export function createSetupView() {
       // Provider cards are catalog discovery, not a client fallback list. Publish the
       // shared runtime truth before restoring a remembered surface into workspace 2.
       bench.refreshSelector();
+      mikaHelp.el.disabled = !operational();
       const stored = context.viewState('setup') || {};
       // The Campaign's record is not read at boot on this page; fetch it once so the
       // light/dark icon shows the configured theme, not a guess.
@@ -175,6 +239,6 @@ export function createSetupView() {
       save();
     },
     leave: () => bench.leave(),
-    destroy: () => { providerSessions.destroyAll(); bench.leave(); ctx = null; },
+    destroy: () => { helpPanel.destroy(); providerSessions.destroyAll(); mikaPool.destroyAll(); bench.leave(); ctx = null; },
   };
 }

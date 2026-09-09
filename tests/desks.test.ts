@@ -66,7 +66,8 @@ await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'
 
 const { parseArrangement, arrangementOf } = await import('../src/desks/arrangement.js');
 const { deriveAssignment, listDesks, readDesk, deskWorktree, candidateWorktree } = await import('../src/desks/registry.js');
-const { openDesk, syncDesk, closeDesk, discardDesk, handoffDesk, cwdIsInside } = await import('../src/desks/desk.js');
+const { openDesk, syncDesk, closeDesk, discardDesk, handoffDesk, cwdIsInside, certifyDesks } = await import('../src/desks/desk.js');
+const { deskStatus } = await import('../src/desks/registry.js');
 const { handIn } = await import('../src/desks/hand-in.js');
 const statusOf = async (repo: string, branch: string) => {
   const d = (await listDesks({ repo })).find((x) => x.branch === branch);
@@ -354,6 +355,40 @@ test('handIn conflict: contained in the candidate, the line untouched, the desk 
   assert.ok(accepted.length >= 3);
 });
 
+test('a line that conflicts with dev is resolved by a desk holding both; any other desk is told that route', async () => {
+  // The line takes x.txt one way, dev the other: the accepted team delta now conflicts with dev.
+  await openDesk({ repo: 'cowork', session: 'lineside', team: 'comp' });
+  const lineside = deskWorktree('cowork', 'team/comp/lineside');
+  await syncDesk('cowork', 'team/comp/lineside');
+  await commitFile(lineside, 'x.txt', 'line\n');
+  assert.equal((await handIn('cowork', 'team/comp/lineside')).receipt.result, 'accepted');
+  await commitFile(cowork, 'x.txt', 'dev\n', 'dev takes x.txt another way');
+  const lineBefore = sh(cowork, ['rev-parse', 'team/comp/dev']);
+  // A desk that does not hold the resolution cannot get through, and is told the route.
+  const told = await handIn('cowork', 'team/comp/fable');
+  assert.equal(told.receipt.result, 'conflict');
+  assert.deepEqual(told.receipt.conflict_files, ['x.txt']);
+  assert.match(told.receipt.reason, /resolve it on a desk cut from team\/comp\/dev/);
+  assert.equal(sh(cowork, ['rev-parse', 'team/comp/dev']), lineBefore, 'the line did not move');
+  // The resolver: a desk from dev with the line merged in and the conflict settled.
+  await openDesk({ repo: 'cowork', session: 'resolver', team: 'comp' });
+  const resolver = deskWorktree('cowork', 'team/comp/resolver');
+  try { sh(resolver, ['merge', '--no-edit', 'team/comp/dev']); } catch { /* conflict expected */ }
+  await fs.writeFile(path.join(resolver, 'x.txt'), 'both\n');
+  sh(resolver, ['add', 'x.txt']);
+  sh(resolver, ['commit', '-q', '--no-edit', '-m', 'resolve x.txt against dev']);
+  const r = await handIn('cowork', 'team/comp/resolver');
+  assert.equal(r.receipt.result, 'accepted', r.receipt.reason);
+  const lineNow = sh(cowork, ['rev-parse', 'team/comp/dev']);
+  assert.notEqual(lineNow, lineBefore);
+  sh(cowork, ['merge-base', '--is-ancestor', 'dev', 'team/comp/dev']);
+  sh(cowork, ['merge-base', '--is-ancestor', lineBefore, 'team/comp/dev']);
+  assert.equal(sh(cowork, ['show', 'team/comp/dev:x.txt']), 'both');
+  // Promotion's own merge now applies cleanly.
+  sh(cowork, ['merge-tree', '--write-tree', 'dev', 'team/comp/dev']);
+  assert.equal((await statusOf('cowork', 'team/comp/resolver')).blocked, '');
+});
+
 test('closeDesk keeps unresolved work named, closes only after hand-in, and records lifecycle closure', async () => {
   const wispr = deskWorktree('cowork', 'team/comp/wispr');
   await syncDesk('cowork', 'team/comp/wispr');
@@ -377,7 +412,19 @@ test('closeDesk keeps unresolved work named, closes only after hand-in, and reco
     stop: async () => assert.fail('plain close must not stop a session'),
   });
   assert.equal(occupied.action, 'kept');
-  assert.match(occupied.reason, /session wispr is running inside .*notify it to leave, then retry/);
+  assert.match(occupied.reason, /session wispr is running inside .*birth desk ends with the session — tejun-harakiri from inside it, or archive the session, then close/);
+  // Certification (owner, 2026-09-09): everything on the line means ending loses nothing;
+  // the desk the shell lives in is stay-or-go, never closable; another is closable.
+  const status = await deskStatus((await readDesk('cowork', 'team/comp/wispr'))!, await arrangementOf('cowork'));
+  const standing = certifyDesks([status], path.join(wispr, 'src'));
+  assert.equal(standing.certified, true);
+  assert.equal(standing.standing.length, 1);
+  assert.equal(standing.closable.length, 0);
+  const elsewhere = certifyDesks([status], cowork);
+  assert.equal(elsewhere.closable.length, 1);
+  assert.equal(elsewhere.standing.length, 0);
+  assert.equal(certifyDesks([{ ...status, dirty: true, dirty_files: ['x.txt'] }], cowork).certified, false);
+  assert.match(certifyDesks([{ ...status, ahead: 2 }], cowork).blocking[0]!.why, /2 commit\(s\) not on team\/comp\/dev/);
   assert.ok(existsSync(wispr), 'an occupied worktree remains mounted');
   let stopped = '';
   const gone = await closeDesk('cowork', 'team/comp/wispr', {
@@ -411,6 +458,12 @@ test('handoff replaces explicit owners without moving the branch or worktree', a
   const lifecycle = await readManagedEvents({ repo: 'cowork' });
   assert.equal(lifecycle.events.at(-1)?.type, 'handed_off');
   assert.deepEqual(lifecycle.events.at(-1)?.objects[0]?.owner_sessions, ['successor', 'coowner']);
+  // Reopening by the old custodian is not a handoff back: custody stays where it was, and
+  // the status says so — the tool acknowledges, it does not decide (owner, 2026-09-09).
+  const reopened = await openDesk({ repo: 'cowork', session: 'custodian', team: 'comp' });
+  assert.equal(reopened.worktree, desk.worktree);
+  assert.deepEqual(reopened.owners, ['successor', 'coowner'], 'open never takes custody from a holder');
+  assert.ok(!reopened.owners!.includes('custodian'));
 });
 
 test('race: two hand-ins at once serialize on the line and both land; the ledger has both accepted, in order', async () => {

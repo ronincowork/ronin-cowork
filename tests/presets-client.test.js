@@ -69,8 +69,8 @@ test('the house slots are fixed core handles', () => {
 
 test('the approved resting-stone lines are verbatim and every stone has a glyph', () => {
   assert.deepEqual(presets.HOUSE_PRESETS.map(({ handle, description }) => [handle, description]), [
-    ['bare_metal', 'Start one to four agents, each in its own tile. Lock and load.'],
-    ['ronin_team', 'A Team Lead and two agents, born with the full Ronin team room.'],
+    ['bare_metal', 'Choose a provider and model for each native session, or leave it at Default.'],
+    ['ronin_team', 'Launch a Team Lead and open Team Configuration beside the team.'],
     ['staff_my_codebase', 'Point a team at a codebase and get its read on the stack.'],
     ['develop_new_project', 'A lead plus feature agents, each in its own worktree.'],
     ['personal_assistant', 'One assistant that remembers. Alone, or a lead that hires help.'],

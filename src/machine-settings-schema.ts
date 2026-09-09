@@ -17,8 +17,6 @@ export const MACHINE_SETTINGS_SCHEMA = {
       title: 'You',
       lede: 'One name, used by everything on the box that has to address you — the assistant, the roster, an agent writing you a note.',
     },
-    { id: 'kind', title: 'Kind', lede: 'What do you want to use this app for?' },
-    { id: 'routines', title: 'Routine Bundles', lede: 'Choose how much Ronin hands to each new Agent. You can change this later.' },
     {
       id: 'agents',
       title: 'Agents',
@@ -26,41 +24,27 @@ export const MACHINE_SETTINGS_SCHEMA = {
       custom: 'agents',
     },
     {
+      id: 'messages',
+      title: 'Messages',
+      lede: 'What Ronin does with an Agent message it could not deliver.',
+    },
+    {
       id: 'defaults',
       title: 'Defaults for new sessions',
       lede: 'A default is what a new session starts as, never what it is stuck with — every launch can pick something else.',
     },
-    { id: 'services', title: 'Optional', custom: 'services' },
   ],
 
   fields: [
     {
-      id: 'mainIntent', sec: 'kind', kind: 'choice', label: 'What do you want to use this app for?',
-      from: '', seed: 'open', lands: { family: 'bootstrap', key: 'kind' },
-      choices: ['coding', 'work', 'personal', 'household', 'social', 'school', 'open'],
-    },
-    {
-      id: 'routineBundle', sec: 'routines', kind: 'choice', label: 'Routine Bundles',
-      from: '', seed: 'worktrees', lands: { family: 'bootstrap', key: 'routine_bundle' },
-      choices: [
-        { value: 'nothing', labelKey: 'setup.bundle_nothing', copyKey: 'setup.bundle_nothing_copy', label: 'Nothing', copy: 'Your agents start clean — no reading, no shared macros, no records. Just the CLI.' },
-        { value: 'floor', labelKey: 'setup.bundle_floor', copyKey: 'setup.bundle_floor_copy', label: 'The floor', copy: 'Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra.' },
-        { value: 'base', labelKey: 'setup.bundle_base', copyKey: 'setup.bundle_base_copy', label: 'Ronin Base', copy: 'Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.' },
-        { value: 'worktrees', labelKey: 'setup.bundle_worktrees', copyKey: 'setup.bundle_worktrees_copy', label: 'Ronin Worktrees', recommended: true, copy: 'Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.' },
-        { value: 'services', labelKey: 'setup.bundle_services', copyKey: 'setup.bundle_services_copy', label: 'Services', services: true, copy: 'Adds your Services to every agent — voice, transcripts, machine care.' },
-      ],
-    },
-    {
       id: 'campaignName', sec: 'campaign', kind: 'text', ask: false,
       label: 'Campaign name', short: 'campaign name', placeholder: 'Ronin Home',
       from: 'set.campaign.name', lands: { family: 'campaign', key: 'name' }, omit: 'blank',
-      setup_lands: { family: 'bootstrap', key: 'title' },
     },
     {
       id: 'campaignDescription', sec: 'campaign', kind: 'text', ask: false,
       label: 'Description', short: 'campaign description', placeholder: 'What this campaign is for',
       from: 'set.campaign.description', lands: { family: 'campaign', key: 'description' }, omit: 'blank',
-      setup_lands: { family: 'bootstrap', key: 'description' },
     },
     {
       id: 'machineName',
@@ -112,7 +96,6 @@ export const MACHINE_SETTINGS_SCHEMA = {
       seed: 'models:first',
       shape: 'provider-model',
       lands: { family: 'agents', key: 'sessions.default' },
-      setup_lands: { family: 'bootstrap', key: 'provider_model' },
       omit: 'blank',
     },
     {
@@ -126,23 +109,36 @@ export const MACHINE_SETTINGS_SCHEMA = {
       options: 'desk_profiles',
       from: 'set.desk.profile',
       lands: { family: 'desk', key: 'profile' },
-      setup_lands: { family: 'bootstrap', key: 'desk_profile' },
       omit: 'blank',
     },
     {
       id: 'mika',
       sec: 'defaults',
       kind: 'select',
-      label: 'Which model answers Mika?',
-      short: 'answers Mika',
+      label: 'Mika model level',
+      short: 'Mika model level',
       aside: "Mika is Ronin's own helpful assistant",
-      hint: 'Mika is Ronin’s own assistant — she explains the house and runs small errands. She does not need your best model, and using one is how a helper gets expensive.',
-      options: 'models',
-      from: 'set.agents.jobs.mikaassist',
-      seed: 'models:light',
-      shape: 'provider-model',
-      lands: { family: 'agents', key: 'jobs.mikaassist' },
-      omit: 'blank',
+      hint: 'Light is recommended. Ronin uses your default provider, then another ready provider at the same level. It never changes levels without you.',
+      choices: [
+        { value: 'light', label: 'Light — recommended' },
+        { value: 'standard', label: 'Standard' },
+        { value: 'frontier', label: 'Frontier' },
+      ],
+      from: 'set.agents.jobs.mikaassist.level',
+      seed: 'light',
+      lands: { family: 'agents', key: 'jobs.mikaassist.level' },
+    },
+    {
+      id: 'autoForce',
+      sec: 'messages',
+      kind: 'number',
+      min: 0,
+      label: 'Force a stuck message after',
+      short: 'auto-force after',
+      hint: 'Seconds. A message still waiting or failed after this long is forced once, exactly as if you pressed Force on its card — past the target’s Control setting, a dialog, or someone’s draft. Polite until then. 120 unless you say otherwise; 0 = never. The Messages tab’s switch flips between the two.',
+      from: 'set.messages.auto_force_after_s',
+      shape: 'number',
+      lands: { family: 'messages', key: 'auto_force_after_s' },
     },
     {
       id: 'cap',
@@ -161,34 +157,11 @@ export const MACHINE_SETTINGS_SCHEMA = {
     },
   ],
 
-  families: {
-    owner: { method: 'PATCH', route: '/api/machine-settings' },
-    wanted: { method: 'PATCH', route: '/api/machine-settings' },
-    machine: { method: 'PATCH', route: '/api/machine-settings' },
-    agents: { method: 'PATCH', route: '/api/machine-settings' },
-    bootstrap: { method: 'PATCH', route: '/api/machine-settings' },
-    'session-max': { method: 'PATCH', route: '/api/machine-settings' },
-  },
-
   facts: [
     { label: 'this box', path: 'machine.host' },
     { label: 'cores', path: 'machine.cores' },
     { label: 'memory', path: 'machine.ram_gb', suffix: ' GB' },
   ],
-
-  services: {
-    features: [
-      ['Live status ladders', 'Every agent shows its plan and how far through it is — on the tile and in the roster. Stop asking how it is going.'],
-      ['Readable transcripts', 'Tiles become real text instead of a terminal mirror. Select it, copy it, scroll back through it — on your phone too.'],
-      ['Voice', 'Talk to a session instead of typing at it, and have it read back to you.'],
-      ['Stats', 'What every session spent, by model, over time.'],
-      ['gbrain', 'A memory your agents search before they answer, and write to as they work.'],
-    ],
-    terms: [
-      ['Share how it runs', 'How many sessions, which models, how long they ran. Never your code, and never what was typed — by you or by your agents. It is how we find out where the experience is bad and make it better for everyone.'],
-      ["Don't resell it", 'Use the services for your own work, commercial or not, as much as you like. Just don’t turn around and sell the services themselves.'],
-    ],
-  },
 
   scans: {
     keys: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY'],

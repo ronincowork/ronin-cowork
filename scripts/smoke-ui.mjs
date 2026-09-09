@@ -664,7 +664,8 @@ function mobileFirstPaintRecorder() {
     }
     const bar = document.querySelector('#phone > .ph-bar');
     if (bar && bar.getClientRects().length) {
-      window.__roninFirstPaint = { mobile: true, title: bar.querySelector('.ph-title')?.textContent?.trim() || '' };
+      const showing = (sel) => !!bar.querySelector(sel)?.getClientRects().length;
+      window.__roninFirstPaint = { mobile: true, title: [...bar.querySelectorAll('.ph-title')].find((n) => n.getClientRects().length)?.textContent?.trim() || '', mark: showing('.brand'), back: showing('.ph-back') };
       return;
     }
     requestAnimationFrame(tick);
@@ -673,12 +674,14 @@ function mobileFirstPaintRecorder() {
 }
 
 async function runPhonePass({ label, browser, contextOpts }) {
+  // [name, route, stall the first answer, the bar the first frame must show]
   const cases = [
-    ['/m', 'm', false],
-    ['/ as a phone', '', false],
-    ['/m with the first answer stalled', 'm', true],
+    ['/m', 'm', false, 'teams'],
+    ['/ as a phone', '', false, 'teams'],
+    ['/m with the first answer stalled', 'm', true, 'teams'],
+    ['/m at a tile address', `m#/s/${PROBE}/${PROBE}`, false, 'inside'],
   ];
-  for (const [name, route, stall] of cases) {
+  for (const [name, route, stall, opens] of cases) {
     const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
     await page.addInitScript(mobileFirstPaintRecorder);
     if (stall) {
@@ -694,8 +697,9 @@ async function runPhonePass({ label, browser, contextOpts }) {
     }
     await page.waitForTimeout(1500);
     const first = await page.evaluate(() => window.__roninFirstPaint || null);
-    if (first?.mobile) ok(`${label}: ${name} — first paint is the mobile bar ("${first.title}")`);
-    else bad(`${label}: ${name} — first paint is not the mobile bar (${JSON.stringify(first)})`);
+    const rightBar = opens === 'teams' ? first?.mark && !first.back : first?.back && !first.mark;
+    if (first?.mobile && rightBar) ok(`${label}: ${name} — first paint is the mobile bar, ${opens === 'teams' ? `the mark and "${first.title}"` : '‹ inside'}`);
+    else bad(`${label}: ${name} — first paint is not the ${opens} bar (${JSON.stringify(first)})`);
     const settled = await page.evaluate(() => ({
       mobile: !!document.querySelector('#phone > .ph-bar') && !!document.querySelector('#phone > .ph-main'),
       desktop: !!document.querySelector('#bar, #bootframe, #viewhost, .wk-workbench-layout, [data-workspace-view]'),

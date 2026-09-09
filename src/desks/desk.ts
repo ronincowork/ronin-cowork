@@ -162,6 +162,23 @@ interface CloseRuntime {
 
 const liveRuntime: CloseRuntime = { sessions: listSessions, cwd: sessionDir, stop: stopSessionTree };
 
+/**
+ * CERTIFIED CLEAN (owner, 2026-09-09): every desk has no unsaved files and every commit on
+ * its team line, so ending the Agent at any moment loses nothing. `standing` is the desk
+ * the caller's shell lives in — its birth desk — which closes only with the session;
+ * `closable` are certified desks the caller is not standing in.
+ */
+export function certifyDesks(desks: DeskStatus[], cwd: string): { certified: boolean; standing: DeskStatus[]; closable: DeskStatus[]; blocking: { desk: DeskStatus; why: string }[] } {
+  const open = desks.filter((d) => d.state === 'open');
+  const blocking = open.flatMap((d) => {
+    const why = d.dirty ? `unsaved files: ${d.dirty_files.join(', ')}` : d.ahead > 0 ? `${d.ahead} commit(s) not on ${d.line}` : '';
+    return why ? [{ desk: d, why }] : [];
+  });
+  const standing = open.filter((d) => cwdIsInside(d.worktree, cwd));
+  const closable = open.filter((d) => !d.dirty && d.ahead === 0 && !cwdIsInside(d.worktree, cwd));
+  return { certified: open.length > 0 && blocking.length === 0, standing, closable, blocking };
+}
+
 export function cwdIsInside(worktree: string, cwd: string): boolean {
   if (!worktree || !cwd) return false;
   const relative = path.relative(path.resolve(worktree), path.resolve(cwd));
@@ -197,7 +214,10 @@ async function closeDeskWithOptions(
   const blocking = inside.filter((name) => name !== withSession);
   if (blocking.length) {
     const who = blocking.length === 1 ? `session ${blocking[0]} is` : `sessions ${blocking.join(', ')} are`;
-    return { desk: st, action: 'kept', reason: `${who} running inside ${st.worktree}; notify ${blocking.length === 1 ? 'it' : 'them'} to leave, then retry` };
+    // A session's birth desk ends with the session — its shell was opened inside the
+    // worktree at launch and the harness keeps it there, so "leave" is not a thing it can
+    // do (owner, 2026-09-09: stay, or go with tejun-harakiri; never one without the other).
+    return { desk: st, action: 'kept', reason: `${who} running inside ${st.worktree}: a session's birth desk ends with the session — tejun-harakiri from inside it, or archive the session, then close` };
   }
   signal?.throwIfAborted();
   if (withSession && stopWithSession) await runtime.stop(withSession);

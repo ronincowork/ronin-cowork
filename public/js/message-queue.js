@@ -38,15 +38,27 @@ function reasonOf(reason) {
 
 const attentionSeen = new Set();
 
+/** One heads-up when a message is auto-forced after the delay. Not a claim that anything
+ *  is still stuck: the queue may already be empty, which is fine. A new arrival, a Waiting
+ *  card, or a missing target never flashes. */
+export const attentionIds = (messages) => messages
+  .filter((message) => message.auto_forced_at)
+  .map((message) => message.id);
+
 export const reconcileMessageSelection = (selected, messages) => new Set(
   messages.map((message) => message.id).filter((id) => selected.has(id)),
 );
 
 export const dismissalIds = (messages, selected, scope) => scope === 'all'
   ? messages.map((message) => message.id)
-  : scope === 'wipeboard'
-    ? messages.filter((message) => message.source === 'wipeboard_notice').map((message) => message.id)
   : messages.map((message) => message.id).filter((id) => selected.has(id));
+
+/** The selected cards Force can act on: everything but a missing target, which cannot be forced. */
+export const forceableIds = (messages, selected) => messages
+  .filter((message) => selected.has(message.id) && message.state !== 'target_missing')
+  .map((message) => message.id);
+
+export const AUTO_FORCE_SECONDS = 120;
 
 /** Watch independently of the queue tab; flash once when each retained problem appears. */
 export function watchMessageQueueAttention() {
@@ -54,11 +66,9 @@ export function watchMessageQueueAttention() {
     try {
       const response = await fetch('/api/messages');
       const body = await response.json();
-      const ids = new Set((Array.isArray(body.messages) ? body.messages : [])
-        .filter((message) => message.state === 'stuck' || message.state === 'failed' || message.state === 'target_missing')
-        .map((message) => message.id));
+      const ids = new Set(attentionIds(Array.isArray(body.messages) ? body.messages : []));
       if ([...ids].some((id) => !attentionSeen.has(id))) {
-        attention(t('messages.attention', 'Check Team Commons → Messages'));
+        attention(t('messages.attention', 'A message failed to send and was auto-forced after 2 minutes.'));
       }
       for (const id of [...attentionSeen]) if (!ids.has(id)) attentionSeen.delete(id);
       for (const id of ids) attentionSeen.add(id);
@@ -71,13 +81,56 @@ export function watchMessageQueueAttention() {
 
 export function buildMessageQueue(host, onCount = () => {}) {
   const note = el('p', 'mq-note', t('messages.note', 'This is every retained message on this Ronin machine. Try Again is gentle; Force gives it one determined shove. 😉'));
+  // Two groups. Left: choose and force. Right: dismiss. Nothing in between.
   const tools = el('div', 'mq-tools');
+  const left = el('div', 'mq-tools-group');
+  const right = el('div', 'mq-tools-group mq-tools-right');
   const selectAll = el('button', 'cc-btn', t('messages.select_all', 'Select All'));
+  const forceSelected = el('button', 'cc-btn mq-force', t('messages.force_selected', 'Force Selected'));
+  const autoForce = el('button', 'cc-btn mq-autoforce', t('messages.auto_force_off', 'Auto-force after 2 min: off'));
   const dismissSelected = el('button', 'cc-btn', t('messages.dismiss_selected', 'Dismiss Selected'));
-  const dismissWipeboard = el('button', 'cc-btn', t('messages.dismiss_wipeboard', 'Dismiss Wipeboard Notices'));
   const dismissAll = el('button', 'cc-btn mq-dismiss-all', t('messages.dismiss_all', 'Dismiss All'));
-  selectAll.type = dismissSelected.type = dismissWipeboard.type = dismissAll.type = 'button';
-  tools.append(selectAll, dismissSelected, dismissWipeboard, dismissAll);
+  selectAll.type = forceSelected.type = autoForce.type = dismissSelected.type = dismissAll.type = 'button';
+  autoForce.setAttribute('aria-pressed', 'false');
+  left.append(selectAll, forceSelected, autoForce);
+  right.append(dismissSelected, dismissAll);
+  tools.append(left, right);
+  let autoForceSeconds = AUTO_FORCE_SECONDS;
+  const paintAutoForce = () => {
+    const on = autoForceSeconds > 0;
+    autoForce.textContent = on
+      ? t('messages.auto_force_on', 'Auto-force after {minutes} min: on', { minutes: Math.max(1, Math.round(autoForceSeconds / 60)) })
+      : t('messages.auto_force_off', 'Auto-force after 2 min: off');
+    autoForce.setAttribute('aria-pressed', String(on));
+    autoForce.setAttribute('data-on', String(on));
+  };
+  const loadAutoForce = async () => {
+    try {
+      const response = await fetch('/api/machine-settings');
+      const body = await response.json();
+      autoForceSeconds = Number(body?.set?.messages?.auto_force_after_s ?? AUTO_FORCE_SECONDS) || 0;
+    } catch { autoForceSeconds = AUTO_FORCE_SECONDS; }
+    paintAutoForce();
+  };
+  autoForce.addEventListener('click', async () => {
+    const next = autoForceSeconds > 0 ? 0 : AUTO_FORCE_SECONDS;
+    autoForce.disabled = true;
+    try {
+      const response = await fetch('/api/machine-settings', {
+        method: 'PATCH', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ family: 'messages', value: { auto_force_after_s: next } }),
+      });
+      const body = await response.json();
+      if (!response.ok || body.ok === false) throw new Error(body.error || response.statusText);
+      autoForceSeconds = Number(body.auto_force_after_s ?? next) || 0;
+      paintAutoForce();
+      toast(autoForceSeconds > 0
+        ? t('messages.auto_force_set', 'Stuck messages are forced after {minutes} minutes.', { minutes: Math.round(autoForceSeconds / 60) })
+        : t('messages.auto_force_cleared', 'Stuck messages wait for you.'));
+    } catch (e) {
+      toast(t('messages.action_failed', 'Message action failed — {reason}', { reason: e.message }), false);
+    } finally { autoForce.disabled = false; }
+  });
   const board = el('div', 'mq-board');
   const empty = el('p', 'mq-empty', t('messages.empty', 'No messages are waiting.'));
   const reconnecting = status('mq-reconnecting');
@@ -108,12 +161,40 @@ export function buildMessageQueue(host, onCount = () => {}) {
     }
   };
 
+  const bulkForce = async (pressed) => {
+    const ids = forceableIds(messages, selected);
+    if (!ids.length) return;
+    const label = pressed.textContent;
+    pressed.disabled = true;
+    pressed.textContent = t('messages.forcing', 'Forcing…');
+    try {
+      const response = await fetch('/api/messages/force', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids }),
+      });
+      const body = await response.json();
+      if (!response.ok || body.ok === false) throw new Error(body.error || response.statusText);
+      const outcomes = Array.isArray(body.outcomes) ? body.outcomes : [];
+      const delivered = outcomes.filter((o) => o.delivered).length;
+      const retained = outcomes.length - delivered;
+      for (const o of outcomes) if (o.delivered) selected.delete(o.id);
+      toast(t('messages.forced_count', '{delivered} delivered · {retained} still retained.', { delivered, retained }), retained === 0);
+      await render();
+    } catch (e) {
+      toast(t('messages.action_failed', 'Message action failed — {reason}', { reason: e.message }), false);
+    } finally {
+      pressed.disabled = false;
+      pressed.textContent = label;
+    }
+  };
+
+  // Select All is a toggle: once every displayed card is chosen it reads Clear Selection.
   selectAll.addEventListener('click', () => {
-    selected = new Set(messages.map((message) => message.id));
+    const all = messages.length > 0 && messages.every((message) => selected.has(message.id));
+    selected = all ? new Set() : new Set(messages.map((message) => message.id));
     void render();
   });
+  forceSelected.addEventListener('click', () => void bulkForce(forceSelected));
   dismissSelected.addEventListener('click', () => void bulkDismiss('selected', dismissSelected));
-  dismissWipeboard.addEventListener('click', () => void bulkDismiss('wipeboard', dismissWipeboard));
   dismissAll.addEventListener('click', () => void bulkDismiss('all', dismissAll));
 
   const act = async (message, action, pressed, pending, method = 'POST') => {
@@ -154,17 +235,25 @@ export function buildMessageQueue(host, onCount = () => {}) {
     messages = Array.isArray(body.messages) ? body.messages : [];
     selected = reconcileMessageSelection(selected, messages);
     tools.hidden = !messages.length;
-    selectAll.textContent = t('messages.select_all_count', 'Select All ({count})', { count: messages.length });
-    dismissSelected.textContent = t('messages.dismiss_selected_count', 'Dismiss Selected ({count})', { count: selected.size });
-    dismissSelected.disabled = selected.size === 0;
-    const wipeboardCount = messages.filter((message) => message.source === 'wipeboard_notice').length;
-    dismissWipeboard.textContent = t('messages.dismiss_wipeboard_count', 'Dismiss Wipeboard Notices ({count})', { count: wipeboardCount });
-    dismissWipeboard.disabled = wipeboardCount === 0;
-    dismissAll.textContent = t('messages.dismiss_all_count', 'Dismiss All ({count})', { count: messages.length });
+    const paintCounts = () => {
+      const all = messages.length > 0 && messages.every((message) => selected.has(message.id));
+      selectAll.textContent = all
+        ? t('messages.clear_selection', 'Clear Selection ({count})', { count: messages.length })
+        : t('messages.select_all_count', 'Select All ({count})', { count: messages.length });
+      const forceable = forceableIds(messages, selected).length;
+      forceSelected.textContent = t('messages.force_selected_count', 'Force Selected ({count})', { count: forceable });
+      forceSelected.disabled = forceable === 0;
+      dismissSelected.textContent = t('messages.dismiss_selected_count', 'Dismiss Selected ({count})', { count: selected.size });
+      dismissSelected.disabled = selected.size === 0;
+      dismissAll.textContent = t('messages.dismiss_all_count', 'Dismiss All ({count})', { count: messages.length });
+      for (const card of board.querySelectorAll('.mq-card')) card.classList.toggle('mq-selected', selected.has(card.dataset.id));
+    };
+    paintCounts();
     onCount(messages.length);
     if (!messages.length) { board.append(empty); return; }
     for (const message of messages) {
-      const card = el('article', `mq-card mq-${message.state}`);
+      const card = el('article', `mq-card mq-${message.state}${selected.has(message.id) ? ' mq-selected' : ''}`);
+      card.dataset.id = message.id;
       const head = el('div', 'mq-head');
       const choice = el('label', 'mq-choice');
       const checkbox = el('input');
@@ -173,8 +262,7 @@ export function buildMessageQueue(host, onCount = () => {}) {
       checkbox.setAttribute('aria-label', t('messages.select_message', 'Select message to {target}', { target: message.target }));
       checkbox.addEventListener('change', () => {
         if (checkbox.checked) selected.add(message.id); else selected.delete(message.id);
-        dismissSelected.textContent = t('messages.dismiss_selected_count', 'Dismiss Selected ({count})', { count: selected.size });
-        dismissSelected.disabled = selected.size === 0;
+        paintCounts();
       });
       choice.append(checkbox);
       const waiting = message.state === 'stuck' && message.attempts === 0;
@@ -189,7 +277,9 @@ export function buildMessageQueue(host, onCount = () => {}) {
         el('dt', '', t('messages.attempts', 'Attempts')), el('dd', '', String(message.attempts)),
       );
       const text = el('pre', 'mq-text', message.text);
-      const reason = el('p', 'mq-reason', reasonOf(message.reason));
+      const reason = el('p', 'mq-reason', message.auto_forced_at
+        ? t('messages.auto_forced_reason', 'Auto-forced {age} ago — {reason}', { age: ageOf(message.auto_forced_at), reason: reasonOf(message.reason) })
+        : reasonOf(message.reason));
       const actions = el('div', 'mq-actions');
       const retry = el('button', 'cc-btn', t('messages.retry', 'Try Again'));
       const force = el('button', 'cc-btn mq-force', t('messages.force', 'Force'));
@@ -206,6 +296,7 @@ export function buildMessageQueue(host, onCount = () => {}) {
   };
   let timer = null;
   const enter = () => {
+    void loadAutoForce();
     void render();
     if (!timer) timer = setInterval(() => void render(), 2_000);
   };

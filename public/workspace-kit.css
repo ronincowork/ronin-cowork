@@ -52,9 +52,10 @@
   .wk-workbench-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
   .wk-workbench-cell.wk-workbench-selected { outline: var(--edge) solid var(--accent); outline-offset: calc(-1 * var(--edge)); }
 
-  .wk-workbench-selector { display: flex; min-width: 0; min-height: 0; }
+  .wk-workbench-selector { display: grid; min-width: 0; min-height: 0; overflow: hidden; }
   .wk-workbench-selector > * { flex: 1 1 auto; min-width: 0; min-height: 0; }
   .wk-workbench-selector-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); overflow-y: auto; }
+  .wk-workbench-selector-cards[hidden] { display: none; }
 
   .wk-workbench-selector-cards .wk-selector-utility { border-color: var(--define-line); box-shadow: inset var(--edge-2) 0 var(--define-line); }
   .wk-workbench-selector-cards .wk-selector-entity { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
@@ -73,6 +74,16 @@
   .wk-workbench-layout[data-workbench-profile='setup'] .wk-selector-group { margin: var(--space-5) var(--space-2) var(--space-2); color: var(--muted); font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
   .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-selector-cards .wk-card[aria-current='page'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
   body:has([data-workspace-view='setup']:not([hidden])) #shapecycle { display: none; }
+  /* ミ Help: Mika alone in the selector column — the conversation's text and nothing
+     else. The selector header carries her title and Close; the borrowed tile's head,
+     composer and keys row stay hidden here and come back untouched in a workspace. */
+  .setup-mika-panel { display: flex; grid-area: 1 / 1; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+  .setup-mika-panel[hidden] { display: none; }
+  .setup-mika-stage { display: flex; flex: 1 1 auto; min-height: 0; }
+  .setup-mika-stage > * { flex: 1 1 auto; min-width: 0; min-height: 0; }
+  .setup-mika-stage .wk-hosted-tile > :not(.tile-body) { display: none !important; }
+  .setup-mika-stage .wk-hosted-tile { border: 0; border-radius: 0; box-shadow: none; }
+  .setup-mika-loading { display: grid; place-items: center; color: var(--muted); }
 
   .team-agent-card .wk-card-summary { color: var(--fg-strong); font-weight: 600; }
   .team-agent-card .wk-card-meta { display: grid; gap: var(--space-2); margin-top: 0; padding-top: var(--space-3); }

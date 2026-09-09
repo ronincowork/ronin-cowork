@@ -6,6 +6,8 @@ import {
   completeProviderLogin,
   ensureInstalledRoots,
   openProviderLogin,
+  openProviderUpdate,
+  setProviderOff,
   setupRuntimeAnswer,
   createMorningBriefSchedule,
   morningBriefSchedules,
@@ -42,6 +44,44 @@ export function registerSetupRuntime(app: express.Express): void {
       res.status(500).json({ error: errMsg(error) });
     }
   });
+
+  // Refresh: the same measure, and then the one outbound ask — the newest release of each
+  // installed CLI whose update line names an npm package. A press, never a timer; each
+  // ask is an egress line. An ordinary measure keeps the last answer and its date.
+  app.post('/api/setup/providers/refresh', async (_req, res) => {
+    try {
+      res.json(await answer(await measureAndRecordProviders(undefined, {}, {})));
+    } catch (error) {
+      res.status(500).json({ error: errMsg(error) });
+    }
+  });
+
+  // Update: the registry's update line in a temporary provider_setup session shown in the
+  // page, as a sign-in is; the same /close ends it. The owner's press.
+  app.post('/api/setup/providers/:provider/update', async (req, res) => {
+    try {
+      const result = await openProviderUpdate(String(req.params.provider));
+      const runtime = await answer();
+      const provider = runtime.providers.find((row) => row.id === String(req.params.provider));
+      res.json({ ok: true, opened: result.opened, session: result.session, attachment: provider?.attachment ?? null, runtime });
+    } catch (error) {
+      res.status(400).json({ error: errMsg(error) });
+    }
+  });
+
+  // The switch: off means Ronin stops using the provider — not measured, not updated, not
+  // offered, not launched anew. The sign-in is kept and tiles already running run on. On
+  // clears the one field. Either way the machine is measured again so the record moves.
+  for (const [door, off] of [['off', true], ['on', false]] as const) {
+    app.post(`/api/setup/providers/:provider/${door}`, async (req, res) => {
+      try {
+        const result = await setProviderOff(String(req.params.provider), off);
+        res.json({ ok: true, ...result, runtime: await answer(await measureAndRecordProviders()) });
+      } catch (error) {
+        res.status(400).json({ error: errMsg(error) });
+      }
+    });
+  }
 
   app.post('/api/setup/providers/:provider/login', async (req, res) => {
     try {

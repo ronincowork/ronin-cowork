@@ -1,12 +1,14 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { listProviderCatalog, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
-import { activatedAt } from './provider-summary.js';
+import { listProviderCatalog, newerVersion, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { activatedAt, npmPackageOf, offAt } from './provider-summary.js';
 import { peekProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { rootDir } from './resources.js';
+import { runCommand } from './send.js';
 import { execFile as run } from './spawn-broker.js';
 import { collectBirthLines } from './sockets.js';
 import { createSession, killSessionTree, sessionExists, setLaunchStamp, setTags } from './tmux.js';
@@ -23,7 +25,7 @@ export const SETUP_PREFERENCE_KINDS = ['build', 'life', 'research'] as const;
 export type SetupPreferenceKind = typeof SETUP_PREFERENCE_KINDS[number];
 export interface SetupPreferences { kinds: SetupPreferenceKind[]; providers: string[] }
 interface SetupSection {
-  providers?: Record<string, { activated_at?: unknown }>;
+  providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>;
   preferences?: { kinds?: unknown; providers?: unknown };
   [key: string]: unknown;
 }
@@ -45,10 +47,32 @@ export interface SetupProviderState {
   signed_in: boolean;
   activated: boolean;
   activated_at: string | null;
+  /** Turned off by the owner: Ronin is not using this provider. The sign-in is kept; live tiles run on. */
+  off: boolean;
+  off_at: string | null;
   /** Catalog cells this CLI can launch; zero means it cannot count as activated. */
   models: number;
+  /** What the installed CLI said it is; null when not installed or it would not say. */
+  version: string | null;
+  /** Its CLI-owned model list, including the CLI version that fetched it; null when not measured. */
+  model_list: ProviderSummary['model_lists'][string] | null;
+  /** The newest release its package source listed at the last Refresh; null when never asked or unaskable. */
+  latest: string | null;
+  latest_checked_at: string | null;
+  /** Installed, and the registry knows how to update it — the Update control's condition. */
+  updatable: boolean;
+  /** The CLI's documented behavior: it normally updates itself without an owner action. */
+  self_updates: boolean;
+  /** The line Update runs, for the owner to read before pressing. */
+  update: string | null;
+  /** Latest is known and newer than what is installed. */
+  update_available: boolean;
+  /** Whether Refresh has a package source to ask for this CLI's newest release (its install line names an npm package). */
+  askable: boolean;
+  /** An update is running in its temporary provider_setup session; `attachment` shows it. */
+  update_open: boolean;
   attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
-  state: 'absent' | 'installable' | 'installed' | 'login_open' | 'activated';
+  state: 'absent' | 'installable' | 'installed' | 'login_open' | 'activated' | 'off';
 }
 
 export interface SetupRuntimeAnswer {
@@ -66,12 +90,16 @@ export interface SetupRuntimeAnswer {
 export interface ProviderSessionOps {
   exists(name: string): Promise<boolean>;
   open(provider: string, name: string): Promise<void>;
+  /** A shell session running the registry's update line for the provider, tagged as the sign-in is. */
+  openUpdate?(provider: string, name: string): Promise<void>;
   close(name: string): Promise<void>;
 }
 
 type Availability = Awaited<ReturnType<typeof listAgentAvailability>>;
 
 const sessionName = (provider: string) => `provider_setup_${provider}`;
+const updateSessionName = (provider: string) => `provider_setup_${provider}_update`;
+const installSessionName = (provider: string) => `install_${provider}`;
 
 export function setupPreferences(section: SetupSection): SetupPreferences {
   const selected = new Set(
@@ -121,6 +149,15 @@ const defaultSessionOps: ProviderSessionOps = {
     await setTags(name, [PROVIDER_SETUP_TEAM]);
     await setLaunchStamp(name, spec.id);
   },
+  async openUpdate(provider, name) {
+    const spec = AGENTS.find((agent) => agent.id === provider);
+    if (!spec) throw new Error(`Unknown provider "${provider}".`);
+    await mkdir(rootDir('user'), { recursive: true });
+    await createSession(name, rootDir('user'), { agent: false });
+    void collectBirthLines(name, true);
+    await setTags(name, [PROVIDER_SETUP_TEAM]);
+    await runCommand(name, updateCommand(spec));
+  },
   close: killSessionTree,
 };
 
@@ -139,12 +176,19 @@ export async function setupRuntimeAnswer(
   const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupProviderState> => {
     const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);
-    const loginOpen = await ops.exists(session);
+    const updateSession = updateSessionName(agent.id);
+    const [loginOpen, updateOpen] = await Promise.all([ops.exists(session), ops.exists(updateSession)]);
     const completed = activatedAt(section, agent.id);
+    const offSince = offAt(section, agent.id);
     const isInstalled = summary.installed.includes(agent.id);
     const signedIn = isInstalled && summary.signed_in.includes(agent.id);
     const models = entry?.models.length ?? 0;
-    const activated = isInstalled && (completed !== null || signedIn) && models > 0;
+    const activated = isInstalled && offSince === null && (completed !== null || signedIn) && models > 0;
+    // Not activated: nothing was asked and nothing is offered — Installed, and stop. A
+    // version from an earlier measurement is not printed as though it were current.
+    const version = activated ? summary.versions?.[agent.id] ?? null : null;
+    const latest = activated ? summary.latest?.[agent.id] ?? null : null;
+    const updateLine = activated ? updateLineOf(agent) : '';
     return {
       id: agent.id,
       provider: entry?.provider ?? '',
@@ -159,9 +203,24 @@ export async function setupRuntimeAnswer(
       signed_in: signedIn,
       activated,
       activated_at: completed,
+      off: offSince !== null,
+      off_at: offSince,
       models,
-      attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true } : null,
-      state: activated ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
+      version,
+      model_list: activated ? summary.model_lists?.[agent.id] ?? null : null,
+      latest: latest?.version ?? null,
+      latest_checked_at: latest?.checked_at ?? null,
+      updatable: activated && Boolean(updateLine),
+      self_updates: agent.operations.selfUpdates,
+      update: activated && updateLine ? updateLine : null,
+      update_available: Boolean(version && latest && newerVersion(version, latest.version)),
+      askable: npmPackageOf(agent.operations.install) !== '',
+      update_open: updateOpen,
+      // One attachment per provider: the sign-in when open, else the update. Both are the
+      // same temporary provider_setup session shape and the same Close ends either.
+      attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true }
+        : updateOpen ? { type: 'session', key: updateSession, team: PROVIDER_SETUP_TEAM, temporary: true } : null,
+      state: offSince !== null && isInstalled ? 'off' : activated ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
     };
   }));
   const activated_count = providers.filter((provider) => provider.activated).length;
@@ -201,12 +260,42 @@ export async function openProviderLogin(
   return { session, opened: true };
 }
 
+/**
+ * Close ends whichever temporary session the provider has open — install, sign-in, update,
+ * or any combination — through the one teardown. Nothing shown in the page outlives it.
+ */
 export async function closeProviderLogin(provider: string, ops: ProviderSessionOps = defaultSessionOps): Promise<{ session: string; closed: boolean }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
-  const session = sessionName(provider);
-  if (!(await ops.exists(session))) return { session, closed: false };
-  await ops.close(session);
-  return { session, closed: true };
+  let closed: string | null = null;
+  // Keep the long-standing sign-in name as the receipt when several exist; install joins
+  // the teardown without changing the close response callers already consume.
+  for (const session of [sessionName(provider), updateSessionName(provider), installSessionName(provider)]) {
+    if (!(await ops.exists(session))) continue;
+    await ops.close(session);
+    closed ??= session;
+  }
+  return { session: closed ?? sessionName(provider), closed: closed !== null };
+}
+
+/**
+ * Update: the registry's update line in a temporary provider_setup session, shown in the
+ * page like a sign-in and ended by the same Close. The owner's press, never Ronin's.
+ */
+export async function openProviderUpdate(
+  provider: string,
+  ops: ProviderSessionOps = defaultSessionOps,
+  availability?: Availability,
+): Promise<{ session: string; opened: boolean }> {
+  const spec = AGENTS.find((agent) => agent.id === provider);
+  if (!spec) throw new Error(`Unknown provider "${provider}".`);
+  if (!updateLineOf(spec)) throw new Error(`Nothing updates ${spec.label} from here yet.`);
+  const installed = (availability ?? await listAgentAvailability()).find((agent) => agent.id === provider)?.installed === true;
+  if (!installed) throw new Error(`${spec.label} is not installed on this machine; install it first.`);
+  if (!ops.openUpdate) throw new Error('This box cannot open an update session.');
+  const session = updateSessionName(provider);
+  if (await ops.exists(session)) return { session, opened: false };
+  await ops.openUpdate(provider, session);
+  return { session, opened: true };
 }
 
 export async function completeProviderLogin(
@@ -222,6 +311,22 @@ export async function completeProviderLogin(
   await record(provider, activated_at);
   await ops.close(session);
   return { session, activated_at };
+}
+
+/**
+ * THE SWITCH. Off writes Ronin's own `off_at` and nothing else — no vendor file, no
+ * session; on deletes it. What the record then says is measured, not assumed: the caller
+ * measures again so `operational` moves with the switch.
+ */
+export async function setProviderOff(provider: string, off: boolean, now = () => new Date().toISOString()): Promise<{ provider: string; off: boolean; off_at: string | null }> {
+  if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
+  let off_at: string | null = null;
+  await updateSection<SetupSection>('setup', (setup) => {
+    const current = { ...(setup.providers?.[provider] ?? {}) };
+    if (off) { off_at = now(); current.off_at = off_at; } else { delete current.off_at; }
+    return { ...setup, providers: { ...(setup.providers ?? {}), [provider]: current } };
+  });
+  return { provider, off, off_at };
 }
 
 async function recordProviderActivation(provider: string, activated_at: string): Promise<void> {

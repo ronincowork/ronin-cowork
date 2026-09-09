@@ -51,7 +51,7 @@ globalThis.fetch = async (url) => {
 };
 
 const steps = await import('../public/js/form-steps.js');
-const { orderedCatalog, catalogRows, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
+const { orderedCatalog, catalogRows, modelAvailabilityFact, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
 const schema = await import('../public/js/machine-settings-schema.js');
 const CATALOG = catalogRows(CATALOG_DOOR.providers);
 
@@ -69,6 +69,17 @@ test('the catalog is ordered with the providers this machine can launch first, i
   assert.equal(rows[1].cli_label, 'Claude Code');
   // A row whose CLI the machine has no row for is offered under its own id, never dropped.
   assert.equal(orderedCatalog([{ provider: 'nous', cli: 'hermes', model: 'x', tier: 'standard' }], [])[0].provider_label, 'nous');
+});
+
+test('a Codex list disables only a model disproved by the cache from the installed client version', () => {
+  const list = { fetched_at: '2026-09-09T10:42:03Z', client_version: '0.151.0', models: [{ slug: 'gpt-5.5', visibility: 'list' }] };
+  const current = orderedCatalog(CATALOG, [{ ...MACHINE.providers[1], version: '0.151.0', model_list: list }]).find((row) => row.model === 'gpt-5.6-sol');
+  assert.equal(current.listed, false);
+  assert.equal(current.model_list_current, true);
+  assert.match(modelAvailabilityFact(current), /^not listed by your Codex 0\.151\.0/);
+  const stale = orderedCatalog(CATALOG, [{ ...MACHINE.providers[1], version: '0.153.4', model_list: list }]).find((row) => row.model === 'gpt-5.6-sol');
+  assert.equal(stale.model_list_current, false);
+  assert.match(modelAvailabilityFact(stale), /you have 0\.153\.4 — not yet re-read$/);
 });
 
 test('the picker reads the two doors itself and offers every provider, disabling what is not on this machine', async () => {
@@ -122,6 +133,25 @@ test('a fixed provider drops the provider select: the row is the provider, the p
   assert.equal(off.modelSelect.options[1].disabled, true);
 });
 
+test('a provider the owner turned off is greyed with that word — never the false "not on this machine"', async () => {
+  const claude = MACHINE.providers[0];
+  const was = { ...claude };
+  Object.assign(claude, { installed: true, signed_in: true, activated: false, off: true });
+  try {
+    await loadProviderCatalog();
+    assert.deepEqual(orderedCatalog(CATALOG, MACHINE.providers).filter((row) => row.provider === 'anthropic').map((row) => [row.operational, row.off]), [[false, true], [false, true]]);
+    const pair = providerModelPair(() => ({ provider: '', model: '' }), () => {}, (_label, control) => control);
+    assert.equal(pair.providerSelect.options[2].textContent, 'Anthropic — turned off');
+    assert.equal(pair.providerSelect.options[2].disabled, true, 'disabled, never hidden');
+    assert.equal(pair.providerSelect.options[3].textContent, 'Google — not on this machine', 'absent keeps its own words');
+    const fixed = providerModelPair(() => ({ provider: 'anthropic', model: '' }), () => {}, (_label, control) => control, { fixed: 'anthropic' });
+    assert.equal(fixed.modelSelect.options[1].textContent, 'opus · frontier — turned off');
+  } finally {
+    Object.assign(claude, was); delete claude.off;
+    await loadProviderCatalog();
+  }
+});
+
 test('the registry seeds name catalog rows by tier, and only rows this machine can launch', () => {
   const rows = orderedCatalog(CATALOG, MACHINE.providers);
   assert.equal(schema.seedRow('models:first', rows).model, 'gpt-5.6-sol');
@@ -139,7 +169,7 @@ test('the registry seeds name catalog rows by tier, and only rows this machine c
 
 test('no client module keeps its own provider or model list, join, or vendor name', async () => {
   const read = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
-  for (const file of ['add-agent.js', 'campaign-defaults.js', 'team-configuration.js', 'machine-settings.js', 'cowork-setup.js', 'presets.js', 'new-agent.js', 'new-team-form.js']) {
+  for (const file of ['add-agent.js', 'campaign-defaults.js', 'team-configuration.js', 'machine-settings.js', 'presets.js', 'new-agent.js', 'new-team-form.js']) {
     const source = await read(file);
     assert.match(source, /providerModelPair/, `${file} calls the one picker`);
     assert.doesNotMatch(source, /session-launch-specs|launchSpecData|launchTable|new Option\([^)]*\b(?:provider|model)\b|Claude Code|Codex|anthropic|openai/, `${file} keeps no copy`);

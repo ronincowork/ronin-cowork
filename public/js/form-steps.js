@@ -262,7 +262,7 @@ export function templateTray(rows, current, onPick, { includeOwn = true } = {}) 
  * A surface calls `loadProviderCatalog()` when it is shown and paints from
  * `providerCatalog()`; a picker built before the first read paints again when it lands.
  */
-let catalog = { rows: [], machine: [], measured_at: '', origin: '', updated: '', loaded: false };
+let catalog = { rows: [], machine: [], measured_at: '', origin: '', updated: '', stock_updated: '', withdrawn: [], loaded: false };
 let inflight = null;
 
 export function loadProviderCatalog() {
@@ -274,6 +274,8 @@ export function loadProviderCatalog() {
       rows: orderedCatalog(catalogRows(providers), machine), machine,
       measured_at: runtime.ok ? String(runtime.data?.measured_at || '') : '',
       origin: read.ok ? String(read.data?.origin || '') : '', updated: read.ok ? String(read.data?.updated || '') : '',
+      stock_updated: read.ok ? String(read.data?.stock_updated || '') : '',
+      withdrawn: read.ok && Array.isArray(read.data?.withdrawn) ? read.data.withdrawn : [],
       loaded: true,
     };
     inflight = null;
@@ -282,13 +284,17 @@ export function loadProviderCatalog() {
   return inflight;
 }
 
-/** What every reader paints from: `{ rows, machine, measured_at, origin, updated, loaded }`. */
+/** What every reader paints from: `{ rows, machine, measured_at, origin, updated, stock_updated, withdrawn, loaded }`. */
 export const providerCatalog = () => catalog;
 
-/** The catalog's provider entries as flat model rows, each carrying its provider's id, CLI and label. Pure. */
+/**
+ * The catalog's provider entries as flat model rows, each carrying its provider's id, CLI,
+ * label, and which layer its section came from (`origin`: stock or user; `shadowed` when the
+ * owner's section replaced a shipped one) — so a surface can say it. Pure.
+ */
 export function catalogRows(providers = []) {
   return (Array.isArray(providers) ? providers : []).flatMap((entry) => (Array.isArray(entry?.models) ? entry.models : [])
-    .map((row) => ({ ...row, provider: entry.provider, cli: entry.cli, provider_label: entry.label || entry.provider })));
+    .map((row) => ({ ...row, provider: entry.provider, cli: entry.cli, provider_label: entry.label || entry.provider, origin: entry.origin || 'stock', shadowed: entry.shadowed === true })));
 }
 
 /**
@@ -302,7 +308,15 @@ export function catalogRows(providers = []) {
 export function orderedCatalog(rows = [], machine = []) {
   const marked = (Array.isArray(rows) ? rows : []).filter((row) => row?.provider && row?.model).map((row) => {
     const entry = (Array.isArray(machine) ? machine : []).find((item) => item?.id === row.cli) || null;
-    return { ...row, operational: entry?.activated === true, provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '' };
+    const list = entry?.model_list || null;
+    const measuredModel = Array.isArray(list?.models) ? list.models.find((model) => model?.slug === row.model) : null;
+    const modelListCurrent = Boolean(list?.client_version && entry?.version && list.client_version === entry.version);
+    // `off`: the owner turned the provider off — greyed with that word, never the false
+    // "not on this machine" (the house rule: disabled, never hidden; and never a lie).
+    return { ...row, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
+      provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '',
+      model_list: list, model_list_current: modelListCurrent, model_list_installed: entry?.version || '',
+      listed: list ? Boolean(measuredModel) : null };
   });
   const providers = [...new Set(marked.map((row) => row.provider))];
   const on = providers.filter((provider) => marked.some((row) => row.provider === provider && row.operational));
@@ -321,6 +335,24 @@ export function tierWord(tier) {
  * option it is a sentence squeezed into a line that cannot show it.
  */
 export const modelWord = (row) => t('forms.model_word', '{model} · {tier}', { model: row.model, tier: tierWord(row.tier) });
+
+/** A CLI list is evidence from the client version that fetched it; only a current list can refuse a row. */
+export const modelAvailabilityFact = (row) => {
+  const list = row.model_list;
+  if (!list) return '';
+  const verdict = row.listed ? 'listed' : 'not listed';
+  const asOf = list.fetched_at ? ` (as of ${list.fetched_at})` : '';
+  if (!row.model_list_current) return t('forms.model_list_stale', '{verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read', {
+    verdict, cli: row.cli_label || row.cli, client_version: list.client_version, as_of: asOf, installed_version: row.model_list_installed || '',
+  });
+  return t('forms.model_list_current', '{verdict} by your {cli} {client_version}{as_of}', {
+    verdict, cli: row.cli_label || row.cli, client_version: list.client_version, as_of: asOf,
+  });
+};
+export const modelAvailabilityWord = (row) => {
+  const fact = modelAvailabilityFact(row);
+  return fact ? `${modelWord(row)} — ${fact}` : modelWord(row);
+};
 
 /**
  * THE ONE PROVIDER → MODEL PICKER. Two selects, and either pick may stand alone: naming
@@ -346,13 +378,19 @@ export function providerModelPair(read, write, field, { fixed = '', classes = ''
     if (!fixed) {
       const seen = rows.filter((row, index) => rows.findIndex((other) => other.provider === row.provider) === index);
       providerSelect.replaceChildren(option(empty.provider, ''));
-      for (const row of seen) providerSelect.add(option(row.operational ? row.provider_label : t('forms.provider_off', '{name} — not on this machine', { name: row.provider_label }), row.provider, !row.operational));
+      for (const row of seen) providerSelect.add(option(row.operational ? row.provider_label : row.off ? t('forms.provider_turned_off', '{name} — turned off', { name: row.provider_label }) : t('forms.provider_off', '{name} — not on this machine', { name: row.provider_label }), row.provider, !row.operational));
       providerSelect.value = seen.some((row) => row.provider === current.provider) ? String(current.provider) : '';
     }
     const chosen = fixed || providerSelect.value;
     const offered = rows.filter((row) => row.provider === chosen);
     modelSelect.replaceChildren(option(empty.model, ''));
-    for (const row of offered) modelSelect.add(option(fixed && !row.operational ? t('forms.model_off', '{model} · {tier} — not on this machine', { model: row.model, tier: tierWord(row.tier) }) : modelWord(row), row.model, !row.operational));
+    for (const row of offered) {
+      const unavailable = row.model_list_current && row.listed === false;
+      const label = fixed && !row.operational
+        ? (row.off ? t('forms.model_turned_off', '{model} · {tier} — turned off', { model: row.model, tier: tierWord(row.tier) }) : t('forms.model_off', '{model} · {tier} — not on this machine', { model: row.model, tier: tierWord(row.tier) }))
+        : modelAvailabilityWord(row);
+      modelSelect.add(option(label, row.model, !row.operational || unavailable));
+    }
     modelSelect.value = offered.some((row) => row.model === current.model) ? String(current.model) : '';
     modelSelect.disabled = !chosen;
   };

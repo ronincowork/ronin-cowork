@@ -474,7 +474,7 @@ test('retired Services mutation handlers return 410 while registration routes re
 
 test('all browser mutation callers use registration; Services activation is read/poll/install only', async () => {
   const fs = await import('node:fs/promises');
-  for (const file of ['services-card.js', 'services-activation.js', 'campaign-routines.js', 'cowork-setup.js']) {
+  for (const file of ['services-card.js', 'services-activation.js', 'campaign-routines.js']) {
     const source = await fs.readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /['"]\/api\/services\/activation(?:\/resend|\/address)?['"][\s\S]{0,80}(?:method:\s*['"](?:POST|DELETE)|,\s*['"]DELETE)/, file);
   }

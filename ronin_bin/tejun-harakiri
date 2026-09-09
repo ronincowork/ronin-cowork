@@ -18,7 +18,7 @@ TOOL_DIR=$(dirname "$SELF")
 
 help() {
   cat <<'EOF'
-tejun-harakiri — safely close your assigned desks, then end this Agent
+tejun-harakiri — end this Agent and its desks together: the one way to go
 
 Usage:
   tejun-harakiri
