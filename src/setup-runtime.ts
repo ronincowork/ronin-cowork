@@ -94,6 +94,7 @@ type Availability = Awaited<ReturnType<typeof listAgentAvailability>>;
 
 const sessionName = (provider: string) => `provider_setup_${provider}`;
 const updateSessionName = (provider: string) => `provider_setup_${provider}_update`;
+const installSessionName = (provider: string) => `install_${provider}`;
 
 export function setupPreferences(section: SetupSection): SetupPreferences {
   const selected = new Set(
@@ -249,13 +250,15 @@ export async function openProviderLogin(
 }
 
 /**
- * Close ends whichever temporary provider_setup session the provider has open — a sign-in,
- * an update, or both — through the one teardown. Nothing in the team outlives its window.
+ * Close ends whichever temporary session the provider has open — install, sign-in, update,
+ * or any combination — through the one teardown. Nothing shown in the page outlives it.
  */
 export async function closeProviderLogin(provider: string, ops: ProviderSessionOps = defaultSessionOps): Promise<{ session: string; closed: boolean }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
   let closed: string | null = null;
-  for (const session of [sessionName(provider), updateSessionName(provider)]) {
+  // Keep the long-standing sign-in name as the receipt when several exist; install joins
+  // the teardown without changing the close response callers already consume.
+  for (const session of [sessionName(provider), updateSessionName(provider), installSessionName(provider)]) {
     if (!(await ops.exists(session))) continue;
     await ops.close(session);
     closed ??= session;

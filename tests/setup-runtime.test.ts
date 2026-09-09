@@ -99,7 +99,7 @@ test('an installed CLI\'s row says its version, what Refresh last learned of the
   assert.equal(row(after, 'gemini').askable, true, 'gemini has an npm package source even though the old argv update did not name it');
 });
 
-test('an update runs in a temporary provider_setup session shown like a sign-in, and the one Close ends whichever is open', async () => {
+test('an update runs in a temporary provider_setup session, and the one Close ends install, sign-in, and update', async () => {
   const facts = await measured({}, ['claude', 'codex']);
   const opened: string[] = []; const closed: string[] = [];
   const live = new Set<string>();
@@ -119,11 +119,12 @@ test('an update runs in a temporary provider_setup session shown like a sign-in,
   assert.equal(row(shown, 'codex').state, 'installed', 'an update is not a sign-in state');
   await assert.rejects(() => runtime.openProviderUpdate('gemini', ops, available(['claude', 'codex'])), /not installed/);
   await assert.rejects(() => runtime.openProviderUpdate('nope', ops, available([])), /Unknown provider/);
+  live.add('install_codex');
   await ops.open('codex', 'provider_setup_codex');
   const both = await runtime.setupRuntimeAnswer({}, facts, ops, undefined, catalog);
   assert.equal(row(both, 'codex').attachment?.key, 'provider_setup_codex', 'an open sign-in owns the attachment');
   assert.deepEqual(await runtime.closeProviderLogin('codex', ops), { session: 'provider_setup_codex', closed: true });
-  assert.deepEqual(closed, ['provider_setup_codex', 'provider_setup_codex_update'], 'Close ends both through the one teardown; nothing outlives its window');
+  assert.deepEqual(closed, ['provider_setup_codex', 'provider_setup_codex_update', 'install_codex'], 'Close ends all three through the one teardown; nothing outlives its window');
   assert.deepEqual(await runtime.closeProviderLogin('codex', ops), { session: 'provider_setup_codex', closed: false });
 });
 
