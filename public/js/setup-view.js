@@ -205,11 +205,12 @@ export function createSetupView() {
     if (selectorCards) selectorCards.hidden = true;
     mikaPanel.hidden = false;
     mikaStage.replaceChildren(loading);
-    const placed = await ensureAndPlaceMika();
-    if (!placed) {
+    const ready = await ensureMika();
+    if (!ready || (!ready.ok && ready.data?.state !== 'action_required')) {
       loading.textContent = t('mika.start_refused', 'Mika couldn’t start. Try again.');
       return;
     }
+    mikaPool.sync([MIKA_SESSION]);
     const host = mikaPool.borrow(MIKA_SESSION);
     if (host) mikaStage.replaceChildren(host);
   });

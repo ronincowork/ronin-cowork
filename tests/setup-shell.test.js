@@ -108,7 +108,10 @@ test('the fourth Setup workbench registers real lane surfaces in ruled order', a
   assert.match(setup, /mountProviderSetupSession: providerSessions\.mountProviderSetupSession/);
   assert.match(setup, /createTerminalTileHost/);
   assert.match(setup, /TERMINAL_TYPE, 'workspace2', \{ key: MIKA_SESSION \}/);
-  assert.match(setup, /const placed = await ensureAndPlaceMika\(\)/);
+  assert.match(setup, /action: \(\) => \{ void ensureAndPlaceMika\(\); \}/);
+  const helpHandler = setup.slice(setup.indexOf("mikaHelp.el.addEventListener('click'"), setup.indexOf("return {", setup.indexOf("mikaHelp.el.addEventListener('click'")));
+  assert.match(helpHandler, /await ensureMika\(\)/);
+  assert.doesNotMatch(helpHandler, /ensureAndPlaceMika|bench\.place/);
   assert.doesNotMatch(setup, /workspace_two_busy|Workspace 2 is in use/);
   assert.match(setup, /environment\.setupRuntime = runtime\.ok \? runtime\.data : \{ providers: \[\] \};[\s\S]*bench\.refreshSelector\(\);[\s\S]*const stored/);
   assert.doesNotMatch(setup, /SetupRequirement|requirementState|flashCycle/);
