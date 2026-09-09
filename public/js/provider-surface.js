@@ -299,7 +299,21 @@ export function createProviderSurface(context) {
       mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace, () => void paint());
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
     }
-    stepRow(ready, ready.status === 'ready' ? t('setup_surface.ready_launch', 'Activated for Launch') : t('setup_surface.not_ready', 'Not yet'));
+    // THE SWITCH lives on the Ready step. Activated: Turn off, with the sentence that says
+    // exactly what it does and does not do. Off: Turn on. Neither touches a sign-in or a
+    // running tile, and both say so where the owner presses (owner, 2026-09-09).
+    const readyRow = stepRow(ready, ready.status === 'ready' ? t('setup_surface.ready_launch', 'Activated for Launch')
+      : ready.status === 'off' ? t('setup_surface.off', 'Off') : t('setup_surface.not_ready', 'Not yet'));
+    if (ready.status === 'ready') {
+      const turnOff = action(t('setup_surface.turn_off', 'Turn off'), '', () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/off`));
+      turnOff.classList.add('setup-provider-action', 'setup-provider-turn-off');
+      readyRow.controls.append(turnOff);
+      readyRow.item.append(el('p', 'setup-provider-note setup-provider-switch-note', t('setup_surface.turn_off_note', 'Stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.')));
+    } else if (ready.status === 'off') {
+      const turnOn = control(ready, t('setup_surface.turn_on', 'Turn on'), () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/on`));
+      turnOn.classList.add('setup-provider-turn-on');
+      readyRow.controls.append(turnOn);
+    }
     card.append(head, flow, problem);
     host.append(card);
   };

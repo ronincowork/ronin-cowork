@@ -24,11 +24,25 @@ import { ensureInitialCampaign, initialCampaign, writeCampaignProviders } from '
 import { readSetupSection } from './machine-state.js';
 import { listProviderCatalog, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
 
-interface SetupSection { providers?: Record<string, { activated_at?: unknown }>; [key: string]: unknown }
+interface SetupSection { providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>; [key: string]: unknown }
 
 /** When the owner completed a sign-in through Done, as machine settings record it. */
 export function activatedAt(section: SetupSection, cli: string): string | null {
   const value = section.providers?.[cli]?.activated_at;
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+/**
+ * When the owner turned the provider OFF — Ronin's own mark, in Ronin's own record. It
+ * outranks both the CLI's credential file and `activated_at`, because `operational` is
+ * derived from those and neither can be unset: the file is the vendor's, and Done was
+ * pressed. Off means Ronin stops using the provider — not measured, not updated, not
+ * offered, not launched anew — and nothing else: no vendor file is touched, the sign-in
+ * is kept, and turning it back on clears this one field (owner, 2026-09-09: "stopping
+ * it does not mean signing it out; we keep the credentials, we just turn it quiet").
+ */
+export function offAt(section: SetupSection, cli: string): string | null {
+  const value = section.providers?.[cli]?.off_at;
   return typeof value === 'string' && value.trim() ? value : null;
 }
 
@@ -84,7 +98,7 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
   for (const agent of AGENTS) if (await signedIn(agent.id)) signed_in.push(agent.id);
   const launchable = new Set(catalog.filter((entry) => entry.models.length > 0).map((entry) => entry.cli));
   const operational = installed.filter((cli) =>
-    (signed_in.includes(cli) || activatedAt(section, cli) !== null) && launchable.has(cli));
+    offAt(section, cli) === null && (signed_in.includes(cli) || activatedAt(section, cli) !== null) && launchable.has(cli));
   // THE OWNER'S RULE (2026-09-09): a provider that is not activated gets nothing spent on
   // it — no exec, no ask, not a millisecond. Installed is enough to say "installed".
   // Gemini, installed and never signed in here, took 2.9s to say its version on every

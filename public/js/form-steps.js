@@ -308,7 +308,9 @@ export function catalogRows(providers = []) {
 export function orderedCatalog(rows = [], machine = []) {
   const marked = (Array.isArray(rows) ? rows : []).filter((row) => row?.provider && row?.model).map((row) => {
     const entry = (Array.isArray(machine) ? machine : []).find((item) => item?.id === row.cli) || null;
-    return { ...row, operational: entry?.activated === true, provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '' };
+    // `off`: the owner turned the provider off — greyed with that word, never the false
+    // "not on this machine" (the house rule: disabled, never hidden; and never a lie).
+    return { ...row, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true, provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '' };
   });
   const providers = [...new Set(marked.map((row) => row.provider))];
   const on = providers.filter((provider) => marked.some((row) => row.provider === provider && row.operational));
@@ -352,13 +354,13 @@ export function providerModelPair(read, write, field, { fixed = '', classes = ''
     if (!fixed) {
       const seen = rows.filter((row, index) => rows.findIndex((other) => other.provider === row.provider) === index);
       providerSelect.replaceChildren(option(empty.provider, ''));
-      for (const row of seen) providerSelect.add(option(row.operational ? row.provider_label : t('forms.provider_off', '{name} — not on this machine', { name: row.provider_label }), row.provider, !row.operational));
+      for (const row of seen) providerSelect.add(option(row.operational ? row.provider_label : row.off ? t('forms.provider_turned_off', '{name} — turned off', { name: row.provider_label }) : t('forms.provider_off', '{name} — not on this machine', { name: row.provider_label }), row.provider, !row.operational));
       providerSelect.value = seen.some((row) => row.provider === current.provider) ? String(current.provider) : '';
     }
     const chosen = fixed || providerSelect.value;
     const offered = rows.filter((row) => row.provider === chosen);
     modelSelect.replaceChildren(option(empty.model, ''));
-    for (const row of offered) modelSelect.add(option(fixed && !row.operational ? t('forms.model_off', '{model} · {tier} — not on this machine', { model: row.model, tier: tierWord(row.tier) }) : modelWord(row), row.model, !row.operational));
+    for (const row of offered) modelSelect.add(option(fixed && !row.operational ? (row.off ? t('forms.model_turned_off', '{model} · {tier} — turned off', { model: row.model, tier: tierWord(row.tier) }) : t('forms.model_off', '{model} · {tier} — not on this machine', { model: row.model, tier: tierWord(row.tier) })) : modelWord(row), row.model, !row.operational));
     modelSelect.value = offered.some((row) => row.model === current.model) ? String(current.model) : '';
     modelSelect.disabled = !chosen;
   };
