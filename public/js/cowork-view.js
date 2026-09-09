@@ -28,6 +28,7 @@ import { renderTeamConfiguration } from './team-configuration.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
 import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
+import { mikaViewContext } from './mika-context.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -109,6 +110,7 @@ export function createCoworkView(options = {}) {
   let unsubscribe = null;
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
+  let lastMikaContext = '';
   const readableTeam = (name) => String(teamByName(name)?.title ?? '').trim() || name;
   const setBarLabel = () => S.refreshWorkspaceHeader?.();
 
@@ -153,6 +155,7 @@ export function createCoworkView(options = {}) {
   const liveSeats = () => bench?.visibleIds() || [];
 
   const rosterNote = el('span', 'tw-roster-note');
+  const mikaHelp = createAction({ label: t('mika.help', 'ミ Help'), size: 'compact', className: 'tw-mika-help' });
   const shapeBtn = document.getElementById('shapecycle');
   let rosterTitle = null;
 
@@ -283,13 +286,52 @@ export function createCoworkView(options = {}) {
     defaultNode: (id) => seats[id].surface.el,
     label: campaign ? t('campaign', 'Campaign') : t('team.roster_title', 'Team Roster'),
     title: () => campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : t('team.roster_title', 'Roster'),
-    actions: [rosterNote], shapeControl: shapeBtn, deferSelector: true,
+    actions: [rosterNote, mikaHelp], shapeControl: shapeBtn, deferSelector: true,
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,
     onStateChange: () => remember(), onPlacement: () => remember(),
   });
   rosterTitle = bench.selectorHeader?.title ?? null;
   root.append(bench.host);
+  const selector = bench.host.querySelector('.wk-workbench-selector');
+  const selectorCards = selector?.querySelector('.wk-workbench-selector-cards');
+  const mikaPanel = el('section', 'tw-mika-panel');
+  const mikaBar = el('header', 'tw-mika-bar');
+  const mikaIntro = el('p', 'tw-mika-intro', t('mika.hello', 'Hi, I’m Mika. How can I help you?'));
+  const mikaClose = createAction({ label: t('mika.close', 'Close'), size: 'compact' });
+  const mikaHost = createTerminalTileHost({ mode: 'reduced', index: 8 });
+  mikaBar.append(el('b', null, t('mika.name', 'Mika')), mikaClose.el);
+  mikaPanel.id = 'mika-selector-chat';
+  mikaPanel.setAttribute('aria-label', t('mika.help_region', 'Mika Help'));
+  mikaPanel.hidden = true;
+  mikaPanel.append(mikaBar, mikaIntro, mikaHost.el);
+  selector?.append(mikaPanel);
+  mikaHelp.el.setAttribute('aria-expanded', 'false');
+  mikaHelp.el.setAttribute('aria-controls', mikaPanel.id);
+
+  const closeMika = () => {
+    if (mikaPanel.hidden) return;
+    mikaHost.park();
+    mikaPanel.hidden = true;
+    if (selectorCards) selectorCards.hidden = false;
+    mikaHelp.el.setAttribute('aria-expanded', 'false');
+    mikaHelp.el.focus();
+  };
+  const openMika = () => {
+    if (!mikaPanel.hidden) return closeMika();
+    if (selectorCards) selectorCards.hidden = true;
+    mikaPanel.hidden = false;
+    mikaHelp.el.setAttribute('aria-expanded', 'true');
+    const label = campaign ? t('campaign.coworks', 'Coworks') : `Team ${readableTeam(team)}`;
+    const context = mikaViewContext(label, view());
+    if (context !== lastMikaContext) void request('/api/sessions/mika/send', { method: 'POST', json: { text: context } })
+      .then((result) => { if (result.ok) lastMikaContext = context; });
+    const tile = mikaHost.mount('mika');
+    tile.composer?.focus?.();
+  };
+  mikaHelp.el.addEventListener('click', openMika);
+  mikaClose.el.addEventListener('click', closeMika);
+  mikaPanel.addEventListener('keydown', (event) => { if (event.key === 'Escape') { event.preventDefault(); closeMika(); } });
   // A REMEMBERED PLACEMENT OUTLIVES THE SURFACE IT NAMED. `@new` and `@new-team` were
   // the retired board and the seven-field card; a workspace that still remembers one
   // opens its replacement rather than nothing.
