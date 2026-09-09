@@ -1,12 +1,14 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
 import { listProviderCatalog, newerVersion, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
-import { activatedAt } from './provider-summary.js';
+import { activatedAt, npmPackageOf } from './provider-summary.js';
 import { peekProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { rootDir } from './resources.js';
+import { runCommand } from './send.js';
 import { execFile as run } from './spawn-broker.js';
 import { collectBirthLines } from './sockets.js';
 import { createSession, killSessionTree, sessionExists, setLaunchStamp, setTags } from './tmux.js';
@@ -58,6 +60,10 @@ export interface SetupProviderState {
   update: string | null;
   /** Latest is known and newer than what is installed. */
   update_available: boolean;
+  /** Whether Refresh has a package source to ask for this CLI's newest release (its update line names an npm package). */
+  askable: boolean;
+  /** An update is running in its temporary provider_setup session; `attachment` shows it. */
+  update_open: boolean;
   attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
   state: 'absent' | 'installable' | 'installed' | 'login_open' | 'activated';
 }
@@ -77,12 +83,15 @@ export interface SetupRuntimeAnswer {
 export interface ProviderSessionOps {
   exists(name: string): Promise<boolean>;
   open(provider: string, name: string): Promise<void>;
+  /** A shell session running the registry's update line for the provider, tagged as the sign-in is. */
+  openUpdate?(provider: string, name: string): Promise<void>;
   close(name: string): Promise<void>;
 }
 
 type Availability = Awaited<ReturnType<typeof listAgentAvailability>>;
 
 const sessionName = (provider: string) => `provider_setup_${provider}`;
+const updateSessionName = (provider: string) => `provider_setup_${provider}_update`;
 
 export function setupPreferences(section: SetupSection): SetupPreferences {
   const selected = new Set(
@@ -132,6 +141,15 @@ const defaultSessionOps: ProviderSessionOps = {
     await setTags(name, [PROVIDER_SETUP_TEAM]);
     await setLaunchStamp(name, spec.id);
   },
+  async openUpdate(provider, name) {
+    const spec = AGENTS.find((agent) => agent.id === provider);
+    if (!spec) throw new Error(`Unknown provider "${provider}".`);
+    await mkdir(rootDir('user'), { recursive: true });
+    await createSession(name, rootDir('user'), { agent: false });
+    void collectBirthLines(name, true);
+    await setTags(name, [PROVIDER_SETUP_TEAM]);
+    await runCommand(name, updateCommand(spec));
+  },
   close: killSessionTree,
 };
 
@@ -150,7 +168,8 @@ export async function setupRuntimeAnswer(
   const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupProviderState> => {
     const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);
-    const loginOpen = await ops.exists(session);
+    const updateSession = updateSessionName(agent.id);
+    const [loginOpen, updateOpen] = await Promise.all([ops.exists(session), ops.exists(updateSession)]);
     const completed = activatedAt(section, agent.id);
     const isInstalled = summary.installed.includes(agent.id);
     const signedIn = isInstalled && summary.signed_in.includes(agent.id);
@@ -158,7 +177,7 @@ export async function setupRuntimeAnswer(
     const activated = isInstalled && (completed !== null || signedIn) && models > 0;
     const version = isInstalled ? summary.versions?.[agent.id] ?? null : null;
     const latest = isInstalled ? summary.latest?.[agent.id] ?? null : null;
-    const updateLine = agent.operations.update.shell || (agent.operations.update.argv.length ? [agent.cmd, ...agent.operations.update.argv].join(' ') : '');
+    const updateLine = updateLineOf(agent);
     return {
       id: agent.id,
       provider: entry?.provider ?? '',
@@ -180,7 +199,12 @@ export async function setupRuntimeAnswer(
       updatable: isInstalled && Boolean(updateLine),
       update: isInstalled && updateLine ? updateLine : null,
       update_available: Boolean(version && latest && newerVersion(version, latest.version)),
-      attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true } : null,
+      askable: npmPackageOf(agent.operations.update.shell) !== '',
+      update_open: updateOpen,
+      // One attachment per provider: the sign-in when open, else the update. Both are the
+      // same temporary provider_setup session shape and the same Close ends either.
+      attachment: loginOpen ? { type: 'session', key: session, team: PROVIDER_SETUP_TEAM, temporary: true }
+        : updateOpen ? { type: 'session', key: updateSession, team: PROVIDER_SETUP_TEAM, temporary: true } : null,
       state: activated ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
     };
   }));
@@ -221,12 +245,40 @@ export async function openProviderLogin(
   return { session, opened: true };
 }
 
+/**
+ * Close ends whichever temporary provider_setup session the provider has open — a sign-in,
+ * an update, or both — through the one teardown. Nothing in the team outlives its window.
+ */
 export async function closeProviderLogin(provider: string, ops: ProviderSessionOps = defaultSessionOps): Promise<{ session: string; closed: boolean }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
-  const session = sessionName(provider);
-  if (!(await ops.exists(session))) return { session, closed: false };
-  await ops.close(session);
-  return { session, closed: true };
+  let closed: string | null = null;
+  for (const session of [sessionName(provider), updateSessionName(provider)]) {
+    if (!(await ops.exists(session))) continue;
+    await ops.close(session);
+    closed ??= session;
+  }
+  return { session: closed ?? sessionName(provider), closed: closed !== null };
+}
+
+/**
+ * Update: the registry's update line in a temporary provider_setup session, shown in the
+ * page like a sign-in and ended by the same Close. The owner's press, never Ronin's.
+ */
+export async function openProviderUpdate(
+  provider: string,
+  ops: ProviderSessionOps = defaultSessionOps,
+  availability?: Availability,
+): Promise<{ session: string; opened: boolean }> {
+  const spec = AGENTS.find((agent) => agent.id === provider);
+  if (!spec) throw new Error(`Unknown provider "${provider}".`);
+  if (!updateLineOf(spec)) throw new Error(`Nothing updates ${spec.label} from here yet.`);
+  const installed = (availability ?? await listAgentAvailability()).find((agent) => agent.id === provider)?.installed === true;
+  if (!installed) throw new Error(`${spec.label} is not installed on this machine; install it first.`);
+  if (!ops.openUpdate) throw new Error('This box cannot open an update session.');
+  const session = updateSessionName(provider);
+  if (await ops.exists(session)) return { session, opened: false };
+  await ops.openUpdate(provider, session);
+  return { session, opened: true };
 }
 
 export async function completeProviderLogin(

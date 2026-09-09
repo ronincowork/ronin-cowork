@@ -243,18 +243,23 @@ This surface is the one client that measures: showing it probes the machine and 
 the Campaign's summary; its catalog rows are the one picker's read, so the surface and
 every picker cannot disagree.
 
-**Versions, Refresh, Update.** An installed CLI's Install step says its version
-(*Installed 0.151.0*) and, once **Refresh** has asked, the newest release its package
-source lists (*0.153.4 available* · *up to date*). Refresh sits by the dates: it measures
-the machine again and asks the npm registry for each installed CLI whose registry update
-line names an npm package — one outbound request each, on the egress record, only on
-this press. A CLI updated by its own subcommand or its own installer is not asked and
-says nothing about latest. **Update** runs the registry's `operations.update` line in a
-tile exactly as Install does, with npm pointed at the owner's own prefix, so no box needs
-root and the owner answers nothing; it is the owner's press, never Ronin's. Tiles already
-running keep the binary they started with until they turn over; every launch after the
-update reads the new one. Some CLIs update themselves (Claude Code by default); their
-rows read *up to date* and the control has nothing to do.
+**Versions, Refresh, Update.** An installed CLI's Install step says its version, which
+binary said it, and, once **Refresh** has asked, the newest release its package source
+lists: *Installed 0.151.0 · 0.153.4 available · ~/.local/bin/codex*, or *up to date*, or
+*latest unknown: no package source to ask* for a CLI updated by its own subcommand or its
+own installer. Refresh lives inside **Check dates**, the box of what is known and when: it
+measures the machine again and asks the npm registry for each installed CLI whose registry
+update line names an npm package — one outbound request each, on the egress record, only
+on this press — and then says what it found with the time, *Checked … — unchanged* or the
+numbers that moved. **Update** runs the registry's `operations.update` line in a temporary
+`provider_setup` session shown in the page exactly as a sign-in is, and the same **Close**
+ends it; npm is pointed at the owner's own prefix, so no box needs root and the owner
+answers nothing. It is the owner's press, never Ronin's. Tiles already running keep the
+binary they started with until they turn over; every launch after the update reads the new
+one, by absolute path from the login shell's resolution, and by name too, because a newborn's
+PATH carries Ronin's install bin dir (`docs/operator-connection.md`). Some CLIs update
+themselves (Claude Code by default); their rows read *up to date* and the control has
+nothing to do.
 
 ## New-session integration contract
 
