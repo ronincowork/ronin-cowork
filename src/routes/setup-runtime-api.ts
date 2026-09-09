@@ -7,6 +7,7 @@ import {
   ensureInstalledRoots,
   openProviderLogin,
   openProviderUpdate,
+  setProviderOff,
   setupRuntimeAnswer,
   createMorningBriefSchedule,
   morningBriefSchedules,
@@ -67,6 +68,20 @@ export function registerSetupRuntime(app: express.Express): void {
       res.status(400).json({ error: errMsg(error) });
     }
   });
+
+  // The switch: off means Ronin stops using the provider — not measured, not updated, not
+  // offered, not launched anew. The sign-in is kept and tiles already running run on. On
+  // clears the one field. Either way the machine is measured again so the record moves.
+  for (const [door, off] of [['off', true], ['on', false]] as const) {
+    app.post(`/api/setup/providers/:provider/${door}`, async (req, res) => {
+      try {
+        const result = await setProviderOff(String(req.params.provider), off);
+        res.json({ ok: true, ...result, runtime: await answer(await measureAndRecordProviders()) });
+      } catch (error) {
+        res.status(400).json({ error: errMsg(error) });
+      }
+    });
+  }
 
   app.post('/api/setup/providers/:provider/login', async (req, res) => {
     try {

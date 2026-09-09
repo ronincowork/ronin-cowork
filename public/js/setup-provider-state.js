@@ -53,6 +53,13 @@ const signedInSentence = (provider) => {
 export function providerPresentation(provider) {
   const id = String(provider?.id || '');
   const label = String(provider?.label || id || 'This provider');
+  // Turned off by the owner: Ronin is not using it. Said in the owner's own terms — the
+  // sign-in is kept — so nobody fears that off meant signed out.
+  if (provider?.off && provider?.installed) return {
+    inventoryState: 'Off',
+    detail: `Turned off — Ronin is not using ${label}. Your sign-in is kept.`,
+    action: 'off',
+  };
   if (provider?.login_open) return {
     inventoryState: 'Sign-in open',
     detail: `Finish signing in to ${label} in the tile, then press Done. Close keeps things as they were.`,
@@ -100,6 +107,16 @@ export function providerReadiness(provider) {
   const installed = provider?.installed === true;
   const activated = provider?.activated === true;
   const loginOpen = provider?.login_open === true;
+  // Off: the sign-in step keeps saying what it measured (signed in, or not) and owns no
+  // control; the Ready step is the one current step, and its control is Turn on.
+  if (installed && provider?.off === true) {
+    const signed = provider?.signed_in === true || Boolean(provider?.activated_at);
+    return [
+      { key: 'installed', label: 'Install', status: 'installed', detail: '', command: '', action: 'none', manual: null, done: true, current: false },
+      { key: 'authenticated', label: 'Authenticate', status: signed ? 'recorded' : 'available', detail: signed ? signedInSentence(provider) : signInSentence(provider), action: 'none', done: signed, current: false },
+      { key: 'ready', label: 'Ready', status: 'off', detail: presentation.detail, action: 'turn_on', done: false, current: true },
+    ];
+  }
   const steps = [
     {
       key: 'installed', label: 'Install', status: installed ? 'installed' : 'not_installed',

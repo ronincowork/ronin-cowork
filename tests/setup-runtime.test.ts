@@ -103,6 +103,35 @@ test('an activated CLI\'s row says its version, what Refresh last learned of the
   assert.equal(row(after, 'gemini').askable, true, 'gemini has an npm package source even though the old argv update did not name it');
 });
 
+test('off is the one switch: it outranks a credential file and Done, spends nothing on the provider, keeps the sign-in, and on clears one field', async () => {
+  // Signed in by its own file AND recorded by Done — the two facts operational is derived
+  // from, neither of which can be unset. Off must still win.
+  const section = { providers: { codex: { activated_at: '2026-09-05T00:00:00.000Z', off_at: '2026-09-09T10:00:00.000Z' } } };
+  const facts = await summary.measureProviders(section, { availability: available(['claude', 'codex']), signedIn: async (id) => id === 'codex', catalog, now: () => '2026-09-09T10:01:00.000Z', version: async (file) => { if (file === '/bin/codex') throw new Error('codex was asked its version while off'); return ''; } });
+  assert.deepEqual(facts.signed_in, ['codex'], 'the credential file is still the fact — off is not sign-out');
+  assert.deepEqual(facts.operational, [], 'and it is not operational');
+  assert.deepEqual(facts.versions, {}, 'nothing was spent on it');
+  const shown = await runtime.setupRuntimeAnswer(section, facts, { exists: nobody }, undefined, catalog);
+  const codex = row(shown, 'codex');
+  assert.equal(codex.off, true); assert.equal(codex.off_at, '2026-09-09T10:00:00.000Z');
+  assert.equal(codex.state, 'off'); assert.equal(codex.activated, false);
+  assert.equal(codex.signed_in, true, 'the row still says signed in — the sign-in is kept');
+  assert.equal(codex.activated_at, '2026-09-05T00:00:00.000Z', 'Done is not forgotten either');
+  assert.equal(codex.updatable, false); assert.equal(codex.version, null);
+  assert.equal(shown.activated_count, 0, 'an off provider is not one Ronin can launch with');
+  // The switch itself: one field, Ronin's own, in the setup section — nothing else.
+  const state = await import('../src/machine-state.js');
+  assert.deepEqual(await runtime.setProviderOff('codex', true, () => '2026-09-09T11:00:00.000Z'), { provider: 'codex', off: true, off_at: '2026-09-09T11:00:00.000Z' });
+  let setup = await state.readSetupSection();
+  assert.equal((setup.providers as Record<string, { off_at?: string }>).codex.off_at, '2026-09-09T11:00:00.000Z');
+  assert.deepEqual(await runtime.setProviderOff('codex', false), { provider: 'codex', off: false, off_at: null });
+  setup = await state.readSetupSection();
+  assert.equal('off_at' in ((setup.providers as Record<string, object>).codex ?? {}), false, 'on deletes the one field');
+  await assert.rejects(() => runtime.setProviderOff('nope', true), /Unknown provider/);
+  const back = await summary.measureProviders({ providers: { codex: {} } }, { availability: available(['claude', 'codex']), signedIn: async (id) => id === 'codex', catalog, version: async () => '' });
+  assert.deepEqual(back.operational, ['codex'], 'turned back on, the kept sign-in makes it operational at once — no Authenticate');
+});
+
 test('an update runs in a temporary provider_setup session, and the one Close ends install, sign-in, and update', async () => {
   const facts = await measured({}, ['claude', 'codex']);
   const opened: string[] = []; const closed: string[] = [];

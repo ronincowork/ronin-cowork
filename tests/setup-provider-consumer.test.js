@@ -29,6 +29,17 @@ test('installed providers say what Authenticate does; signed-in providers say wh
   }
   const measured = providerPresentation({ id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, activated: true, signed_in: true, activated_at: null });
   assert.equal(measured.inventoryState, 'Activated');
+  // Off: the owner's word, and the sentence that keeps the sign-in from looking lost.
+  const off = providerPresentation({ id: 'codex', label: 'Codex', installed: true, signed_in: true, activated: false, off: true });
+  assert.equal(off.inventoryState, 'Off');
+  assert.equal(off.detail, 'Turned off — Ronin is not using Codex. Your sign-in is kept.');
+  assert.equal(off.action, 'off');
+  const offSteps = providerReadiness({ id: 'codex', label: 'Codex', installed: true, signed_in: true, activated: false, off: true });
+  assert.deepEqual(offSteps.map((step) => [step.key, step.status, step.done, step.current, step.action]), [
+    ['installed', 'installed', true, false, 'none'],
+    ['authenticated', 'recorded', true, false, 'none'],
+    ['ready', 'off', false, true, 'turn_on'],
+  ], 'off: the sign-in still reads as recorded and owns no control; Ready is the one current step and Turn on its control');
   assert.equal(measured.detail, 'Anthropic credentials are on this machine.');
   const recorded = providerPresentation({ id: 'codex', label: 'Codex', installed: true, activated: true, signed_in: false, activated_at: '2026-09-07T11:02:00.000Z' });
   assert.equal(recorded.detail, 'Sign-in recorded 2026-09-07. Codex asks again itself if it ever needs to.');

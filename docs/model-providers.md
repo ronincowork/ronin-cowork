@@ -255,6 +255,18 @@ This surface is the one client that measures: showing it probes the machine and 
 the Campaign's summary; its catalog rows are the one picker's read, so the surface and
 every picker cannot disagree.
 
+**Activation is the one switch.** It decides whether Ronin spends anything on a
+provider. **Turn off**, on the Ready step, writes Ronin's own `setup.providers.<cli>.off_at`
+and nothing else: the provider is then not measured, not asked for its latest, not offered
+an Update, greyed in every picker with the words *turned off*, and refused for new
+launches with its own sentence — *turned off on this machine; your sign-in is kept*. No
+vendor file is touched, the sign-in stays, and tiles already running run on; what the CLI
+does on its own in the background is not Ronin's business. **Turn on** deletes the field,
+and a provider still signed in by its file is operational again at once. `off_at` outranks
+both the credential file and `activated_at`, because `operational` is derived from those
+and neither can be unset. A provider never activated is not refused at launch; it opens
+its own sign-in in the tile, as it always has.
+
 **Versions, Refresh, Update — for activated providers only.** A provider that is not
 activated gets nothing spent on it (owner's rule, 2026-09-09): Ronin does not run it, does
 not ask its package source, and offers no control; its step says *Installed* and stops,

@@ -122,6 +122,25 @@ test('a fixed provider drops the provider select: the row is the provider, the p
   assert.equal(off.modelSelect.options[1].disabled, true);
 });
 
+test('a provider the owner turned off is greyed with that word — never the false "not on this machine"', async () => {
+  const claude = MACHINE.providers[0];
+  const was = { ...claude };
+  Object.assign(claude, { installed: true, signed_in: true, activated: false, off: true });
+  try {
+    await loadProviderCatalog();
+    assert.deepEqual(orderedCatalog(CATALOG, MACHINE.providers).filter((row) => row.provider === 'anthropic').map((row) => [row.operational, row.off]), [[false, true], [false, true]]);
+    const pair = providerModelPair(() => ({ provider: '', model: '' }), () => {}, (_label, control) => control);
+    assert.equal(pair.providerSelect.options[2].textContent, 'Anthropic — turned off');
+    assert.equal(pair.providerSelect.options[2].disabled, true, 'disabled, never hidden');
+    assert.equal(pair.providerSelect.options[3].textContent, 'Google — not on this machine', 'absent keeps its own words');
+    const fixed = providerModelPair(() => ({ provider: 'anthropic', model: '' }), () => {}, (_label, control) => control, { fixed: 'anthropic' });
+    assert.equal(fixed.modelSelect.options[1].textContent, 'opus · frontier — turned off');
+  } finally {
+    Object.assign(claude, was); delete claude.off;
+    await loadProviderCatalog();
+  }
+});
+
 test('the registry seeds name catalog rows by tier, and only rows this machine can launch', () => {
   const rows = orderedCatalog(CATALOG, MACHINE.providers);
   assert.equal(schema.seedRow('models:first', rows).model, 'gpt-5.6-sol');

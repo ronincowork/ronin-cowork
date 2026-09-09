@@ -162,6 +162,15 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   assert.equal(section.className, 'setup-provider-catalog');
   assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'The catalog');
   assert.equal(byClass(section, 'setup-provider-provenance')[0].textContent, 'Shipped catalog · updated 2026-09-08', 'the section says which layer it came from');
+  // The switch, on the Ready step: Turn off with the sentence that says what it does and does not do.
+  const ready = steps[2];
+  const turnOff = byClass(ready, 'setup-provider-turn-off')[0];
+  assert.equal(turnOff.textContent, 'Turn off');
+  assert.equal(byClass(ready, 'setup-provider-switch-note')[0].textContent, 'Stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.');
+  calls.length = 0;
+  turnOff.click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls[0], 'POST /api/setup/providers/claude/off');
   const facts = byClass(section, 'setup-provider-facts')[0].children;
   assert.deepEqual(facts.map((fact) => [fact.children[0].textContent, fact.children[1].textContent, fact.dataset.on]), [['Installed', 'yes', 'true'], ['Signed in', 'yes', 'true'], ['Activated', 'yes', 'true']]);
   const table = byClass(section, 'setup-provider-models')[0];
@@ -210,6 +219,37 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
     byClass(made.el, 'sws-stone')[3].click();
     const codexStep = byClass(made.el, 'setup-provider-step')[0];
     assert.equal(byClass(codexStep, 'setup-provider-update').length, 0, 'an unauthenticated provider offers no Update control even when a newer version is known');
+  } finally {
+    machine = saved;
+  }
+});
+
+test('an off provider wears Off, keeps its sign-in in view, and offers Turn on and nothing else', async () => {
+  const saved = machine;
+  machine = { ...machine, providers: [
+    { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, path: '/usr/bin/codex', signed_in: true, activated: false, activated_at: '2026-09-05T00:00:00.000Z', off: true, off_at: '2026-09-09T10:00:00.000Z', state: 'off', version: null, latest: null, updatable: false, askable: true, update: null, update_available: false },
+  ] };
+  try {
+    const ctx = context();
+    const made = surface.createProviderSurface(ctx);
+    await made.show(); await settle();
+    const stone = byClass(made.el, 'sws-stone')[0];
+    assert.equal(byClass(stone, 'sws-state')[0].textContent, 'Off');
+    stone.click();
+    const steps = byClass(made.el, 'setup-provider-step');
+    assert.deepEqual(steps.map((step) => [step.dataset.step, step.dataset.status, step.dataset.current]), [['installed', 'installed', 'false'], ['authenticated', 'recorded', 'false'], ['ready', 'off', 'true']]);
+    assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed', 'nothing was asked of it');
+    assert.equal(byClass(steps[0], 'setup-provider-update').length, 0, 'no Update');
+    assert.equal(byClass(steps[1], 'setup-provider-state')[0].textContent, 'Signed in', 'the sign-in is kept, and said');
+    assert.equal(byClass(steps[1], 'setup-provider-action').length, 0, 'no Authenticate');
+    assert.equal(byClass(steps[2], 'setup-provider-state')[0].textContent, 'Off');
+    assert.match(byClass(steps[2], 'setup-provider-note')[0].textContent, /Turned off — Ronin is not using Codex\. Your sign-in is kept\./);
+    const turnOn = byClass(steps[2], 'setup-provider-turn-on')[0];
+    assert.equal(turnOn.textContent, 'Turn on');
+    calls.length = 0;
+    turnOn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(calls[0], 'POST /api/setup/providers/codex/on');
   } finally {
     machine = saved;
   }
