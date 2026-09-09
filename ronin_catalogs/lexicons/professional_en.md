@@ -588,6 +588,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.provider_off:** {name} — not on this machine
 - **forms.model_word:** {model} · {tier}
 - **forms.model_off:** {model} · {tier} — not on this machine
+- **forms.model_list_current:** {verdict} by your {cli} {client_version}{as_of}
+- **forms.model_list_stale:** {verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
@@ -1305,7 +1307,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.dismissed_count:** {count} message(s) dismissed.
 - **messages.retained:** Still waiting — {reason}
 - **messages.action_failed:** Message action failed — {reason}
-- **messages.attention:** Check Team Commons → Messages
+- **messages.attention:** A message was forced after 2 min and still did not land — Team Commons → Messages
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update
@@ -1909,6 +1911,7 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.
+- **setup_surface.model_candidates:** Listed by the CLI, missing from the catalog
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.fact_installed:** Installed
 - **setup_surface.fact_signed_in:** Signed in

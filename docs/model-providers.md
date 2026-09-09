@@ -143,6 +143,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, and holding at least one model in the catalog |
 | `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
 | `versions` | what each operational/activated CLI said to the registry's `operations.version` argv, per CLI id; an installed but unactivated CLI is not run |
+| `model_lists` | each operational/activated CLI's own readable model list, including the fetching client version and date; currently Codex's `~/.codex/models_cache.json`; absent or malformed means not measured, never guessed |
 | `latest` | per CLI id, the newest release its npm package listed and when it was asked — asked only by **Refresh** on the Model providers surface, never by an ordinary measure, since each ask is an outbound request with its own egress line; kept until the next Refresh; absent for a CLI with no npm package to ask |
 
 `src/provider-summary.ts` measures and records it. It is written:
@@ -248,7 +249,13 @@ A stone opens that provider, top to bottom: **Yours**, the three measured steps 
 authenticate with the native sign-in tile, Done and Close · ready) read from the runtime
 row (`docs/setup-workbench.md`, *Activate a provider*); then **The catalog**, the three
 measured facts, dated, and the model table — model, tier, cost as read, good at, not good
-at — with the marked default said. The native sign-in tile is mounted through the
+at — with the marked default said. Where the CLI publishes its own model list, each row
+also says whether that fetching client version listed it, and models with `list`
+visibility that are absent from Ronin's catalog appear below as candidates with their
+CLI-supplied descriptions. A current list may grey a catalog row it does not list. A list
+whose `client_version` differs from the installed version is said as not yet re-read and
+never greys a row: the cache is shared and may have been written by an older Codex even
+when the installed binary can launch the model. The native sign-in tile is mounted through the
 workbench environment's one shared mount (`public/js/provider-setup-session.js`), which
 both Ronin Setup and Ronin Settings hand their environment, so it works on either seat.
 This surface is the one client that measures: showing it paints the Campaign's recorded

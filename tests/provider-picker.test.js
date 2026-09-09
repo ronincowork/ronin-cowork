@@ -51,7 +51,7 @@ globalThis.fetch = async (url) => {
 };
 
 const steps = await import('../public/js/form-steps.js');
-const { orderedCatalog, catalogRows, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
+const { orderedCatalog, catalogRows, modelAvailabilityFact, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
 const schema = await import('../public/js/machine-settings-schema.js');
 const CATALOG = catalogRows(CATALOG_DOOR.providers);
 
@@ -69,6 +69,17 @@ test('the catalog is ordered with the providers this machine can launch first, i
   assert.equal(rows[1].cli_label, 'Claude Code');
   // A row whose CLI the machine has no row for is offered under its own id, never dropped.
   assert.equal(orderedCatalog([{ provider: 'nous', cli: 'hermes', model: 'x', tier: 'standard' }], [])[0].provider_label, 'nous');
+});
+
+test('a Codex list disables only a model disproved by the cache from the installed client version', () => {
+  const list = { fetched_at: '2026-09-09T10:42:03Z', client_version: '0.151.0', models: [{ slug: 'gpt-5.5', visibility: 'list' }] };
+  const current = orderedCatalog(CATALOG, [{ ...MACHINE.providers[1], version: '0.151.0', model_list: list }]).find((row) => row.model === 'gpt-5.6-sol');
+  assert.equal(current.listed, false);
+  assert.equal(current.model_list_current, true);
+  assert.match(modelAvailabilityFact(current), /^not listed by your Codex 0\.151\.0/);
+  const stale = orderedCatalog(CATALOG, [{ ...MACHINE.providers[1], version: '0.153.4', model_list: list }]).find((row) => row.model === 'gpt-5.6-sol');
+  assert.equal(stale.model_list_current, false);
+  assert.match(modelAvailabilityFact(stale), /you have 0\.153\.4 — not yet re-read$/);
 });
 
 test('the picker reads the two doors itself and offers every provider, disabling what is not on this machine', async () => {

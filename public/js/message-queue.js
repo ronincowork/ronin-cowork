@@ -38,6 +38,13 @@ function reasonOf(reason) {
 
 const attentionSeen = new Set();
 
+/** The only thing worth a flash: a message whose two-minute auto-force has FINISHED and did
+ *  not land, so there is a card to see. A force still in flight, a new arrival, a Waiting
+ *  card, a missing target — none of these interrupt the owner. */
+export const attentionIds = (messages) => messages
+  .filter((message) => message.auto_force_failed_at)
+  .map((message) => message.id);
+
 export const reconcileMessageSelection = (selected, messages) => new Set(
   messages.map((message) => message.id).filter((id) => selected.has(id)),
 );
@@ -59,11 +66,9 @@ export function watchMessageQueueAttention() {
     try {
       const response = await fetch('/api/messages');
       const body = await response.json();
-      const ids = new Set((Array.isArray(body.messages) ? body.messages : [])
-        .filter((message) => message.state === 'stuck' || message.state === 'failed' || message.state === 'target_missing')
-        .map((message) => message.id));
+      const ids = new Set(attentionIds(Array.isArray(body.messages) ? body.messages : []));
       if ([...ids].some((id) => !attentionSeen.has(id))) {
-        attention(t('messages.attention', 'Check Team Commons → Messages'));
+        attention(t('messages.attention', 'A message was forced after 2 min and still did not land — Team Commons → Messages'));
       }
       for (const id of [...attentionSeen]) if (!ids.has(id)) attentionSeen.delete(id);
       for (const id of ids) attentionSeen.add(id);

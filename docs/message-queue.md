@@ -126,8 +126,10 @@ Configuration.
 - A retained message gives the channel warning emphasis.
 - Opening Team Commons selects the queue when it needs attention, unless an explicit
   channel link was requested.
-- A new retained problem produces one bounded notification: **Check Team Commons → Agent
-  Message Queue**. Polling does not repeat it.
+- The only notification is for a message whose two-minute auto-force finished and did not
+  land, so the card is there to see: **A message was forced after 2 min and still did not land**, once
+  per message. A new arrival, a Waiting card, or a missing target never flashes; the
+  channel's warning emphasis carries those.
 - Each card shows From, To, message type, state, age, attempts, text, reason, and the
   actions valid for that state.
 - The queue view is machine-wide. The toolbar is two groups. Left: **Select All**
@@ -143,7 +145,8 @@ Configuration.
 
 Each queue item contains `id`, `from`, `target`, `target_key`, `text`, `source`, `state`,
 `reason`, `attempts`, `created_at`, `updated_at`, and `expires_at`; `auto_forced_at` is
-present once the sweep has auto-forced it.
+present once the sweep has auto-forced it, and `auto_force_failed_at` once that force
+finished without delivering.
 
 The REST surface is:
 

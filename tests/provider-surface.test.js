@@ -149,10 +149,12 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   // The Installed step says the version, WHICH binary said it, and what Refresh last learned;
   // Update is the owner's press, named by what it runs.
   assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed 2.1.263 · 2.1.265 available · ~/.local/bin/claude');
-  assert.equal(byClass(steps[0], 'setup-provider-self-update-note')[0].textContent, 'Usually updates itself.');
+  // Every step's text sits in its copy column under the title — never a fourth child of the grid.
+  for (const step of steps) assert.deepEqual(step.children.map((node) => node.className), ['setup-provider-mark', 'setup-provider-copy', 'setup-provider-control'], `${step.dataset.step}: mark, copy, controls — nothing else`);
   const update = byClass(steps[0], 'setup-provider-update')[0];
   assert.equal(update.textContent, 'Update to 2.1.265');
-  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^claude update runs here in the page\. Tiles already running keep the version/);
+  assert.equal(byClass(steps[0], 'setup-provider-note')[0].textContent, 'Runs here in the page. Tiles already running keep the version they started with; every launch after this gets the new one.');
+  assert.equal(byClass(steps[0], 'setup-provider-command')[0].textContent, 'claude update', 'the line Update runs, under the text, as an install command sits');
   calls.length = 0;
   update.click();
   assert.equal(update.disabled, true, 'the button closes immediately while its session is created');
@@ -166,7 +168,8 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   const ready = steps[2];
   const turnOff = byClass(ready, 'setup-provider-turn-off')[0];
   assert.equal(turnOff.textContent, 'Turn off');
-  assert.equal(byClass(ready, 'setup-provider-switch-note')[0].textContent, 'Stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.');
+  assert.equal(byClass(ready, 'setup-provider-note')[0].textContent, 'Turn off stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.', 'the sentence sits under the title, above the control');
+  assert.deepEqual(ready.children.map((node) => node.className), ['setup-provider-mark', 'setup-provider-copy', 'setup-provider-control']);
   calls.length = 0;
   turnOff.click();
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -201,7 +204,8 @@ test('an update in progress is the same window-in-a-window as a sign-in, with th
     const step = byClass(made.el, 'setup-provider-step')[0];
     assert.ok(byClass(step, 'setup-provider-terminal')[0], 'in the Install step');
     assert.equal(byClass(step, 'setup-provider-update').length, 0, 'no second Update while one runs');
-    assert.match(byClass(step, 'setup-provider-update-note')[0].textContent, /press Close; then Refresh/);
+    assert.match(byClass(step, 'setup-provider-note')[0].textContent, /press Close, then Refresh/);
+    assert.deepEqual(step.children.map((node) => node.className), ['setup-provider-mark', 'setup-provider-copy', 'setup-provider-control', 'setup-provider-terminal'], 'the terminal is the one thing a grid may carry beyond its three columns');
     calls.length = 0;
     byClass(step, 'setup-provider-update-close')[0].click();
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -285,6 +289,32 @@ test('a catalog provider no registry CLI serves keeps its catalog section and sa
   assert.match(yours.textContent, /No CLI in Ronin’s registry serves this provider/);
   assert.equal(byClass(yours, 'setup-provider-step').length, 0);
   assert.deepEqual(walk(section).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['pi-1']);
+});
+
+test('a stale CLI list is dated and named without disproving a catalog row, and exposes catalog candidates', async () => {
+  const savedMachine = machine;
+  try {
+    machine = { measured_at: '2026-09-09T13:00:00.000Z', activated_count: 1, providers: [{
+      id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true,
+      state: 'activated', version: '0.153.4', model_list: {
+        fetched_at: '2026-09-09T06:00:00Z', etag: 'old', client_version: '0.151.0', models: [
+          { slug: 'gpt-5.5', display_name: 'GPT-5.5', description: 'General-purpose model.', visibility: 'list', priority: 2 },
+          { slug: 'gpt-5.3-codex-spark', display_name: 'Spark', description: 'Fast coding model.', visibility: 'list', priority: 1 },
+        ],
+      },
+    }] };
+    const made = surface.createProviderSurface(context());
+    await made.show(); await settle();
+    byClass(made.el, 'sws-stone')[0].click();
+    assert.equal(byClass(made.el, 'setup-provider-model-status')[0].textContent,
+      'not listed by Codex 0.151.0 (as of 2026-09-09T06:00:00Z), you have 0.153.4 — not yet re-read');
+    assert.deepEqual(byClass(made.el, 'setup-provider-model-candidate').map((item) => [item.dataset.model, item.textContent]), [
+      ['gpt-5.5', 'gpt-5.5 — General-purpose model.'],
+      ['gpt-5.3-codex-spark', 'gpt-5.3-codex-spark — Fast coding model.'],
+    ]);
+  } finally {
+    machine = savedMachine;
+  }
 });
 
 test('an unmeasured machine and the owner\'s catalog copy are each said, never guessed — and a shadowed section says so, with its cost', async () => {
