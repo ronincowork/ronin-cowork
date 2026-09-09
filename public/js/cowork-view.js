@@ -408,7 +408,7 @@ export function createCoworkView(options = {}) {
         mikaStage.append(ordinaryHost); // move the normal Tile; do not manufacture another
         mikaSeat = seat;
         showMikaState('ready', `Workspace ${seat.slice(-1)}`);
-        if (context !== lastMikaContext) void request('/api/sessions/mika_agent/send', { method: 'POST', json: { text: context } })
+        if (context !== lastMikaContext) void request('/api/mika/send', { method: 'POST', json: { text: context } })
           .then((sent) => { if (sent.ok) lastMikaContext = context; });
       })
       .catch(() => showMikaState('refused'));
