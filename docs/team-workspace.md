@@ -92,8 +92,12 @@ Membership is derived from each live session's `tags`. Team consumes
 `membersOfTeam(name)` from the shared Team controller; it keeps no private member array and
 does not read a roster `members` field. Membership is many-to-many and session-owned; a
 Team may exist from tags alone; removing a tag removes membership without killing the
-session. The **人** is a separate, hand-set designation (`leads`), toggled from any Tile's
-job menu ("人 make team lead" / "step down") through `POST /api/sessions/:name/team_lead`.
+session. The **人** is a separate, hand-set designation (`leads`), set by the owner in three
+places, all through `POST /api/sessions/:name/team_lead`: **Team commons → Team
+Configuration**, where each member row carries **Make Lead** (the lead's reads *Team
+Lead*); the same member list on a team's profile on the Coworks page; and the **Make Team
+Lead** checkbox on **＋ Add team member**, which replaces the current lead when that Agent
+launches. There is no lead control on a Tile.
 
 ### Durable Team record
 
