@@ -1,10 +1,21 @@
-# tmux and the value of recorded work
+# tmux: reliable sessions and usable recorded work
 
 Discussion plan · 2026-09-09 · Team tmux · Reach: plan
 
 Ronin should let the owner direct work once, then read, hear, revisit, and reuse what the agents produce. tmux supplies the persistent working environment. The recording supplies a durable account. Readable scrolls, documents, catch-up, and Ronin-Koe make that account useful. The owner's clarified priority is Ronin-Koe; Wispr import is secondary. Success means that the value of a model's work survives the terminal window without making the working environment sluggish.
 
 This is a proposal for discussion, not an implementation commitment. Repository code, earlier investigations, and selected upstream documentation were read; no live performance measurements were taken and no recorder was enabled. Historical measurements below describe their dated experiments, not this machine's current performance.
+
+**Two parallel tracks**
+
+The owner has separated the general tmux problem into two equally explicit tracks. They share boundaries and integration tests, but have different issues, solutions, and acceptance criteria. Neither is a subtask of the other.
+
+| Track | Central question | Scope | Success |
+|---|---|---|---|
+| A — tmux hosting and session lifecycle | Are we using tmux correctly and robustly as the engine of an application used by third parties? | VM, local server, and local Mac hosting; service ownership; browser connections; terminal interaction; sleep, restart, shutdown, and recovery | Predictable session behavior through connection and host lifecycle changes, with explicit recovery limits |
+| B — recording, readable content, and Koe | How do we make model output easy to read, navigate, respond to, and hear without slowing the application? | Capture, reconstruction, retention, readable tiles, agent catch-up, and Ronin-Koe | Fresh, attributable content shared by consumers, with bounded processing cost and responsive reading and voice |
+
+Track A can advance while the recorder remains parked. Track B can investigate frozen recordings and its content contract without waiting for a replacement terminal transport. Implementation proposals and progress should remain separate; shared changes require agreement on the interface between them.
 
 **The picture from above**
 
@@ -46,9 +57,29 @@ A terminal is a changing display. Cursor movements can replace earlier words; a 
 5. Browser integration has its own hazards: terminal replies confused with human input, stale browser/server combinations, shared copy-mode state, and resizing. Making transcripts fast will not automatically fix these.
 6. Historical open threads identify recovery metadata and leftover recorder pipes after parking as gaps. Their present implementation status needs a targeted audit before assigning fixes.
 
-**How advanced tmux should serve Ronin**
+**Track A — tmux hosting and session lifecycle**
 
 Keep tmux responsible for live processes, terminal state, and session mechanics. Give Ronin explicit ownership of session identity, routing, recovery records, capture policy, and content consumption.
+
+Ronin has grown from terminal-by-terminal access over SSH into a browser application. That is a valid direction for tmux, but the product now needs to own behavior that a person previously managed by hand. The existing control connection and PTY attachments are a reasonable foundation; optimality and third-party robustness still need evidence across the complete lifecycle.
+
+The viewing device and the execution host are separate roles, even when both happen to be the same Mac. The deployment matrix must cover a virtual machine, a local server, and a local Mac. A VM may itself be hosted on a sleeping laptop; calling it a VM does not make it always available.
+
+| Event | Session expectation | Ronin's required behavior to prove |
+|---|---|---|
+| Browser closes, sleeps, or loses its connection; execution host remains awake | Agent work continues | Reattach and catch up without duplicating sessions, replaying uncertain input, or changing ownership |
+| Viewing Mac sleeps; execution is on an awake remote VM or server | Remote agent work continues | Reconcile the view when the Mac wakes |
+| Mac hosting Ronin sleeps | Ordinary local execution pauses; external connections may expire | On wake, distinguish resumed work from interrupted or failed operations; reconnect without assuming the provider request survived |
+| VM is suspended or its physical host sleeps | Guest execution pauses; external connections may expire | Reconcile on resume, including clocks, timeouts, transport state, and pending input |
+| Ronin application restarts while tmux remains alive | Existing agent processes survive | Discover and reattach to the existing session engine |
+| Execution host shuts down, reboots, or loses power | Existing tmux and agent processes are lost | Start the required services and recover eligible work from durable metadata and provider-supported state; show what was interrupted |
+| tmux crashes or is stopped while the host stays up | Live terminal sessions are lost; child survival must not be assumed | Identify the loss and offer controlled recovery without claiming that a new tmux server restored the old processes |
+
+These are three different promises: **continuity** when the viewer disappears, **resumption** when execution was suspended, and **recovery** when processes were lost. Starting a service at boot is only startup; it does not restore an agent's conversation or its in-flight tools. Sleep and wake also require application handling, as described in [Apple's sleep/wake notification guidance](https://developer.apple.com/library/archive/qa/qa1340/_index.html). Native sleep tests need a dedicated test host; a scratch tmux server alone cannot isolate host sleep or shutdown.
+
+The browser must not own the lifetime of the tmux server. Closing the last tile should detach a viewer, not end agents. A deliberate session-end action is a different operation. Host startup, user login/logout, application restart, and tmux restart each need an explicit ownership policy. Continuous unattended work requires an awake execution host; local Mac operation must explain its pause and recovery behavior rather than imply the same availability as an always-on server.
+
+Current evidence is platform-specific: [the Linux tmux unit](../deploy/tmux-server.service) separates the session engine from the application's service cgroup, while [setup](../setup.sh) renders a [macOS launch agent](../deploy/com.ronin.plist) and prints loading instructions. This is not proof of equivalent lifecycle guarantees. Verify startup, logout, sleep/wake, restart, and recovery separately for each supported hosting arrangement. Recovery metadata must be written before a failure and should identify the session, provider resume reference, working directory, and relevant work record without depending on a surviving process.
 
 The existing control connection is the right foundation for commands and notifications. Upstream says a control client receives application output for windows in its attached session; the empty holder is therefore not an estate-wide output feed. A future output transport needs a deliberate subscription topology. Control output is application bytes, and does not include tmux's own copy-mode painting. [tmux control-mode documentation](https://github.com/tmux/tmux/wiki/Control-Mode)
 
@@ -58,7 +89,9 @@ The tmux manual gives us useful tools: hooks, format subscriptions, explicit IDs
 
 One public tmux API does not require one congested transport for every kind of work. Measure command queue delay before introducing separate connections for bulk operations or output. All server calls should still use the control-client abstraction, and non-tmux process starts the spawn broker.
 
-**Recommended direction for the recording**
+**Track B — recording, readable content, and Ronin-Koe**
+
+This track owns transforming terminal output into material people and agents can use. Its challenges are fidelity, freshness, navigation, response context, processing latency, and voice delivery. Solving service startup or replacing browser attachments does not by itself solve those challenges.
 
 - **Capture independently of viewers.** For sessions selected for recording, leaving the browser must not erase future catch-up. Keep capture cheap; defer expensive interpretation and summaries. Recording scope and retention remain owner decisions.
 - **Put reconstruction outside the web process.** Use bounded workers with CPU, memory, I/O, concurrency, and backlog limits. Process separation protects the event loop, but shared machine resources can still slow the application; limits and measurements remain necessary.
@@ -85,18 +118,23 @@ Wispr's separate history-mirror proposal is outside the first delivery. It can l
 
 **How to organize the next work**
 
-These are proposed workstreams for later assignment, not newly launched sessions. One integration owner should maintain this map and resolve the boundaries between the two repositories.
+These are proposed workstreams for later assignment, not newly launched sessions. Track A and Track B proceed in parallel, with separate findings, decisions, and test verdicts. The technical author maintains this map; tmux_assistant owns team coordination, hand-in review, verification follow-up, and promotion. Track A is primarily cowork work; Track B spans Services, cowork's readable surfaces, and Koe.
 
-| Sequence | Workstream | Concrete output | Decision it enables |
+| Track / stage | Workstream | Concrete output | Decision it enables |
 |---|---|---|---|
-| 1 | Product and content contract | Start with Koe push-to-hear; compare the same source in a phone tile and an agent catch-up read; specify freshness and missing-history behavior | The shared record's first acceptance contract |
-| 2 | tmux foundation audit — cowork | Current topology and ownership map; reconcile historical open threads; supported-version matrix | Whether existing PTY tiles need replacement or targeted work |
-| 3 | Recording bench — Services, with cowork latency observer | Frozen, permission-appropriate corpus and repeatable baseline; CPU/MB, memory, backlog, restart cost, missing/duplicate text | Which reconstruction approach is affordable and faithful |
-| 4 | Architecture comparison | Costed comparison of isolated incremental reconstruction, cheaper limited decoding, and possible structured adapters | One selected design with explicit compromises |
-| 5 | One vertical slice across cowork, Services, and Koe | One recorded session → shared reading → Koe push-to-hear, checked against the tile and catch-up API | Whether the product loop earns expansion |
-| 6 | Expansion | More providers, retention, timed playback, documents, authored briefings, optional Wispr association | What should become a default |
+| A1 | Hosting and lifecycle contract | VM, local server, and local Mac matrix; continuity, resumption, and recovery promises; current-versus-unproven behavior | What each supported deployment must guarantee |
+| A2 | tmux foundation audit and experiments | Topology and ownership map; supported-version matrix; connection, interaction, lifecycle, and recovery evidence | Whether existing PTY tiles need replacement or targeted work |
+| B1 | Product and content contract | Start with Koe push-to-hear; compare the same source in a phone tile and an agent catch-up read; specify freshness and missing-history behavior | The shared record's first acceptance contract |
+| B2 | Recording bench — Services, with cowork latency observer | Frozen, permission-appropriate corpus and repeatable baseline; CPU/MB, memory, backlog, restart cost, missing/duplicate text | Which reconstruction approach is affordable and faithful |
+| B3 | Architecture comparison | Costed comparison of isolated incremental reconstruction, cheaper limited decoding, and possible structured adapters | One selected design with explicit compromises |
+| Shared integration | One vertical slice across cowork, Services, and Koe | One recorded session → shared reading → Koe push-to-hear, checked against the tile and catch-up API through connection and host interruptions | Whether the two tracks work together without coupling their lifetimes |
+| B4 | Expansion | More providers, retention, timed playback, documents, authored briefings, optional Wispr association | What should become a default |
 
 The foundation audit should include reconnect and fallback behavior, uncertain command completion and duplicate mutation risk, viewer ownership, geometry authority, browser protocol versions, lifecycle receipts, and whether disabled capture leaves writers running. It should also correct old open threads that are already solved, rather than promoting their historical descriptions into new bug reports.
+
+The shared interface should carry stable session identity, output position, geometry and lifecycle events, and capture availability. A recorded account cannot restart an agent by itself; recovery metadata cannot substitute for readable history. After a host interruption, the transcript and Koe must identify a gap or resumed session rather than present a pre-interruption answer as newly completed work. Response controls must target the current live session and distinguish accepted input from uncertain delivery.
+
+Track A's acceptance evidence covers the hosting/lifecycle matrix and correct terminal interaction under several viewers. Track B's evidence covers content fidelity, freshness, usable reading and response behavior, resource bounds, and Koe delivery. Their shared integration gate checks that recording or voice failures do not stop live work, and that live-session failures leave durable history honestly readable once its serving host is available again.
 
 **Evidence required before restoring the recording**
 
@@ -108,12 +146,14 @@ The old refactor proposed 15 sessions, 50 MB of tape, and health latency under 2
 
 **Choices for our discussion**
 
-My proposed first priority is reliable Koe push-to-hear backed by the same readable source used by tiles and agents. The choices that most affect the architecture are:
+Track A's priority is a professional session lifecycle across all three hosting arrangements. Track B's first consumer priority is reliable Koe push-to-hear backed by the same readable source used by tiles and agents. The choices that most affect the architecture are:
 
-1. Which sessions should be recorded, and for how long should raw evidence and readable history survive?
-2. Can timed terminal replay follow the first delivery of readable and spoken dialogue?
-3. How fresh must a mid-turn spoken update be, and what should Koe say when the latest turn cannot be established?
-4. Which benchmark thresholds make the recording safe to restore, including phone audio latency and the cost to the working application?
+1. Track A: what startup, wake, logout, and recovery behavior should each hosting arrangement promise, and which recovery actions should be automatic?
+2. Track A: what evidence would justify changing the browser terminal transport rather than hardening the current integration?
+3. Track B: which sessions should be recorded, and for how long should raw evidence and readable history survive?
+4. Track B: can timed terminal replay follow the first delivery of readable and spoken dialogue?
+5. Track B: how fresh must a mid-turn spoken update be, and what should Koe say when the latest turn cannot be established?
+6. Shared: which benchmark thresholds make the recording safe to restore, including phone audio latency and the cost to the working application?
 
 **Reading map**
 

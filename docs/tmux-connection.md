@@ -3,6 +3,11 @@
 How this server talks to the tmux server, why it no longer starts a process per question,
 and how the Services parts are switched on and off. Written 2026-09-04, the day it landed.
 
+For the broader plan, read [tmux: reliable sessions and usable recorded work](tmux-content-strategy.md).
+It develops two parallel tracks: hosting and session lifecycle across VMs, local servers,
+and Macs; and recording for readable transcripts, agent catch-up, and Ronin-Koe.
+This page documents the existing connection implementation, not completion of those tracks.
+
 ## The problem it solved
 
 Every question to tmux — list sessions, capture a pane, read an option — used to start a
