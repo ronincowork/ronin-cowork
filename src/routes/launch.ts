@@ -22,7 +22,7 @@ import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
 import { routineChoices } from '../routines.js';
-import { classifyStatus, createActivityCache, type SessionStatus } from '../status.js';
+import { classifyStatus, createActivityCache } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
@@ -46,7 +46,7 @@ import { readTegami } from '../tegami-read.js';
 import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
 import { ensureMikaHome, MikaUnavailable, readMikaStartHere, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
 import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
-import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeDelivered, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../ronin-helper.js';
+import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../ronin-helper.js';
 
 /** The environment a newborn is handed beyond what the pane inherits: its projected
  *  command PATH with Ronin's own install bin dir behind it, and the operator socket that
@@ -192,7 +192,12 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
 }
 
 export interface LaunchControl {
-  ensureMika(intent?: 'help' | 'setup_provider_ready'): Promise<{ ok: boolean; state: 'ready' | 'refused'; session: 'mika'; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
+  ensureMika(intent?: 'help' | 'setup_provider_ready'): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: 'mika'; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
+}
+
+export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'action_required' {
+  const state = classifyStatus(text);
+  return state === 'awaiting-input' ? 'action_required' : state === null ? 'starting' : 'ready';
 }
 
 export function registerLaunch(app: express.Express): LaunchControl {
@@ -645,10 +650,21 @@ export function registerLaunch(app: express.Express): LaunchControl {
   });
   const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help'): Promise<MikaReady> => {
     const metadata = { session: 'mika' as const, team: RONIN_HELPERS_TEAM, loader: RONIN_HELPER_LOADER };
-    if (await sessionExists('mika')) return { ok: true, state: 'ready', already: true, ...metadata };
+    const observeLive = async (already: boolean): Promise<MikaReady> => {
+      let providerState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
+      try { providerState = mikaReadinessFromPane(await capturePane('mika', 0)); } catch { /* live but not yet drawable */ }
+      if (providerState === 'action_required') {
+        return { ok: false, state: 'action_required', action: 'pending_user', code: 'provider_confirmation_required', already, ...metadata };
+      }
+      if (providerState === 'starting') return { ok: false, state: 'starting', already, ...metadata };
+      const welcome = await roninHelperWelcomeState();
+      if (welcome?.state === 'pending') await recordRoninHelperWelcome(welcome.conversation, 'delivered');
+      return { ok: true, state: 'ready', already, welcome_delivered: welcome?.state === 'pending', ...metadata };
+    };
+    if (await sessionExists('mika')) return observeLive(true);
     if (mikaStarting) return mikaStarting;
     mikaStarting = (async () => {
-      const welcome = intent === 'setup_provider_ready' && !(await roninHelperWelcomeDelivered());
+      const welcome = intent === 'setup_provider_ready' && (await roninHelperWelcomeState())?.state !== 'delivered';
       let prompt = '';
       if (welcome) {
         await ensureMikaHome();
@@ -661,9 +677,9 @@ export function registerLaunch(app: express.Express): LaunchControl {
         json(value: unknown) { body = value && typeof value === 'object' ? value as Record<string, unknown> : {}; return value; },
       } as unknown as express.Response;
       await launch({ body: { prompt } } as express.Request, response, 'mika', RONIN_HELPER_LOADER);
-      if (status < 400 && body.ok === true && welcome) await recordRoninHelperWelcome(String(body.conversation ?? 'mika'));
+      if (status < 400 && body.ok === true && welcome) await recordRoninHelperWelcome(String(body.conversation ?? 'mika'), 'pending');
       return status < 400 && body.ok === true
-        ? { ok: true, state: 'ready' as const, already: body.already === true, welcome_delivered: welcome, ...metadata }
+        ? observeLive(body.already === true)
         : {
             ok: false,
             state: 'refused' as const,
@@ -682,7 +698,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
   app.post('/api/mika/ready', async (req, res) => {
     const intent = req.body?.intent === 'setup_provider_ready' ? 'setup_provider_ready' : 'help';
     const ready = await ensureMika(intent);
-    res.status(ready.ok ? 200 : 409).json(ready);
+    res.status(ready.ok ? 200 : ready.state === 'starting' ? 202 : 409).json(ready);
   });
   return { ensureMika };
 }
