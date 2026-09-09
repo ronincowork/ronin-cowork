@@ -56,11 +56,13 @@ export interface SetupProviderState {
   latest_checked_at: string | null;
   /** Installed, and the registry knows how to update it — the Update control's condition. */
   updatable: boolean;
+  /** The CLI's documented behavior: it normally updates itself without an owner action. */
+  self_updates: boolean;
   /** The line Update runs, for the owner to read before pressing. */
   update: string | null;
   /** Latest is known and newer than what is installed. */
   update_available: boolean;
-  /** Whether Refresh has a package source to ask for this CLI's newest release (its update line names an npm package). */
+  /** Whether Refresh has a package source to ask for this CLI's newest release (its install line names an npm package). */
   askable: boolean;
   /** An update is running in its temporary provider_setup session; `attachment` shows it. */
   update_open: boolean;
@@ -197,9 +199,10 @@ export async function setupRuntimeAnswer(
       latest: latest?.version ?? null,
       latest_checked_at: latest?.checked_at ?? null,
       updatable: isInstalled && Boolean(updateLine),
+      self_updates: agent.operations.selfUpdates,
       update: isInstalled && updateLine ? updateLine : null,
       update_available: Boolean(version && latest && newerVersion(version, latest.version)),
-      askable: npmPackageOf(agent.operations.update.shell) !== '',
+      askable: npmPackageOf(agent.operations.install) !== '',
       update_open: updateOpen,
       // One attachment per provider: the sign-in when open, else the update. Both are the
       // same temporary provider_setup session shape and the same Close ends either.

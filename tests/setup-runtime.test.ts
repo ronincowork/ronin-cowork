@@ -83,9 +83,12 @@ test('an installed CLI\'s row says its version, what Refresh last learned of the
   assert.equal(row(before, 'claude').version, null, 'a CLI that would not say is null, not a guess');
   assert.equal(row(before, 'codex').latest, null, 'never asked yet');
   assert.equal(row(before, 'codex').updatable, true, 'installed and the registry has an update line');
+  assert.equal(row(before, 'codex').self_updates, false, 'Codex requires an explicit update');
+  assert.equal(row(before, 'claude').self_updates, true, 'Claude Code usually updates itself');
   assert.equal(row(before, 'codex').update, 'npm install -g @openai/codex@latest');
   assert.equal(row(before, 'codex').update_available, false, 'no latest, no claim');
   assert.equal(row(before, 'gemini').updatable, false, 'not installed: nothing to update');
+  assert.equal(row(before, 'gemini').askable, true, 'its npm release source comes from the install line');
   assert.equal(row(before, 'gemini').update, null);
   const after = await runtime.setupRuntimeAnswer({}, { ...facts, latest: { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' }, claude: { version: '2.1.265', checked_at: '2026-09-09T12:00:00.000Z' } } }, { exists: nobody }, undefined, catalog);
   assert.equal(row(after, 'codex').latest, '0.153.4');
@@ -93,7 +96,7 @@ test('an installed CLI\'s row says its version, what Refresh last learned of the
   assert.equal(row(after, 'codex').update_available, true);
   assert.equal(row(after, 'claude').update_available, false, 'latest known but the installed version is not: no claim either way');
   assert.equal(row(after, 'codex').askable, true, 'its update line names an npm package');
-  assert.equal(row(after, 'gemini').askable, false, 'gemini updates by its own subcommand: nothing to ask');
+  assert.equal(row(after, 'gemini').askable, true, 'gemini has an npm package source even though the old argv update did not name it');
 });
 
 test('an update runs in a temporary provider_setup session shown like a sign-in, and the one Close ends whichever is open', async () => {

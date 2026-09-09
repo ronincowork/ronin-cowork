@@ -39,7 +39,7 @@ let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '20
   { provider: 'pi', cli: 'pi', label: 'Pi', models: [{ model: 'pi-1', tier: 'standard', default: true, cost: 'free (2026-09)', good_at: 'chat', not_good_at: 'code', cmd: 'pi' }] },
 ] };
 let machine = { measured_at: '2026-09-08T11:00:00.000Z', activated_count: 1, providers: [
-  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, path: '/home/glen/.local/bin/claude', signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, askable: true, update: 'npm install -g @anthropic-ai/claude-code@latest', update_available: true },
+  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, path: '/home/glen/.local/bin/claude', signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, self_updates: true, askable: true, update: 'claude update', update_available: true },
   { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: false, activated: false, login_open: true, state: 'login_open', attachment: { type: 'session', key: 'provider_setup_codex', team: 'provider_setup', temporary: true } },
   { id: 'grok', label: 'Grok Build', from: 'xAI', installed: false, installable: true, install: 'npm install -g @xai-official/grok', activated: false, state: 'installable' },
 ] };
@@ -142,11 +142,14 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   // The Installed step says the version, WHICH binary said it, and what Refresh last learned;
   // Update is the owner's press, named by what it runs.
   assert.equal(byClass(steps[0], 'setup-provider-state')[0].textContent, 'Installed 2.1.263 · 2.1.265 available · ~/.local/bin/claude');
+  assert.equal(byClass(steps[0], 'setup-provider-self-update-note')[0].textContent, 'Usually updates itself.');
   const update = byClass(steps[0], 'setup-provider-update')[0];
   assert.equal(update.textContent, 'Update to 2.1.265');
-  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^npm install -g @anthropic-ai\/claude-code@latest runs here in the page\. Tiles already running keep the version/);
+  assert.match(byClass(steps[0], 'setup-provider-update-note')[0].textContent, /^claude update runs here in the page\. Tiles already running keep the version/);
   calls.length = 0;
   update.click();
+  assert.equal(update.disabled, true, 'the button closes immediately while its session is created');
+  assert.equal(update.textContent, 'Starting…');
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(calls[0], 'POST /api/setup/providers/claude/update');
   assert.equal(section.className, 'setup-provider-catalog');

@@ -98,9 +98,9 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
   };
 }
 
-/** The npm package an update line installs, when the registry's update is `npm install -g <pkg>@latest`. */
-export function npmPackageOf(updateShell: string): string {
-  return /^npm install -g (\S+)@latest$/.exec(updateShell.trim())?.[1] ?? '';
+/** The npm package an install line names: the release source even when updating uses the CLI's own command. */
+export function npmPackageOf(installShell: string): string {
+  return /^npm install -g (\S+?)(?:@latest)?$/.exec(installShell.trim())?.[1] ?? '';
 }
 
 export interface LatestOps {
@@ -119,7 +119,7 @@ async function npmViewVersion(pkg: string): Promise<string> {
 
 /**
  * THE ONE OUTBOUND ASK: what is the newest release of each installed CLI. Only for a CLI
- * whose registry update line names an npm package — that is a source Ronin can ask by
+ * whose registry install line names an npm package — that is a source Ronin can ask by
  * name; a vendor page is not. Every ask is an egress line, answered or not. A CLI with no
  * such source is simply absent from the answer, and the surface says *latest unknown*.
  */
@@ -130,7 +130,7 @@ export async function latestVersions(installed: readonly string[], ops: LatestOp
   const out: ProviderSummary['latest'] = {};
   for (const agent of AGENTS) {
     if (!installed.includes(agent.id)) continue;
-    const pkg = npmPackageOf(agent.operations.update.shell);
+    const pkg = npmPackageOf(agent.operations.install);
     if (!pkg) continue;
     const started = Date.now();
     let version = '';

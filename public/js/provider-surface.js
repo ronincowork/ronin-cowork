@@ -192,6 +192,9 @@ export function createProviderSurface(context) {
     const installRow = stepRow(install, install.status === 'installed'
       ? installedState(provider)
       : install.action === 'manual' ? t('setup_surface.manual_install', 'Manual install') : t('setup_surface.not_installed', 'Not installed'));
+    if (install.status === 'installed' && provider.self_updates) {
+      installRow.item.append(el('p', 'setup-provider-note setup-provider-self-update-note', t('setup_surface.self_updates', 'Usually updates itself.')));
+    }
     // UPDATE — only for an installed CLI the registry knows how to update. It opens in the
     // page exactly as a sign-in does: a temporary provider_setup session, mounted here, and
     // the same Close ends it. Not the kaki primary (that is the current step's), so the
@@ -209,7 +212,19 @@ export function createProviderSurface(context) {
     // usable. Otherwise the row already says the complete fact: up to date, or not signed in.
     } else if (install.status === 'installed' && provider.activated && provider.updatable && provider.update_available) {
       const label = t('setup_surface.update_to', 'Update to {latest}', { latest: provider.latest });
-      const update = action(label, '', () => press(`/api/setup/providers/${encodeURIComponent(provider.id)}/update`));
+      const update = action(label, '', async () => {
+        update.disabled = true;
+        update.textContent = t('setup_surface.update_starting', 'Starting…');
+        const result = await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/update`, { method: 'POST', json: {} });
+        if (!result.ok) {
+          problem.textContent = result.message;
+          problem.hidden = false;
+          update.textContent = label;
+          update.disabled = false;
+          return;
+        }
+        await paint();
+      });
       update.classList.add('setup-provider-action', 'setup-provider-update');
       installRow.controls.append(update);
       const note = el('p', 'setup-provider-note setup-provider-update-note');

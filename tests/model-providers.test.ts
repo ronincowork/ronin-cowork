@@ -148,21 +148,23 @@ test('the summary is what was measured, dated, and survives the record round tri
   }, 'a summary recorded before versions existed reads back with empty maps, never undefined');
 });
 
-test('latest is asked only of a CLI whose update line names an npm package, and every ask is an egress line', async () => {
+test('latest is asked only of a CLI whose install line names an npm package, and every ask is an egress line', async () => {
   const asked: string[] = [];
   const egress: Array<Record<string, unknown>> = [];
   const latest = await summary.latestVersions(['claude', 'codex', 'gemini', 'hermes'], {
-    npmView: async (pkg) => { asked.push(pkg); if (pkg === '@openai/codex') return '0.153.4'; if (pkg === '@anthropic-ai/claude-code') throw new Error('offline'); return ''; },
+    npmView: async (pkg) => { asked.push(pkg); if (pkg === '@openai/codex') return '0.153.4'; if (pkg === '@google/gemini-cli') return '0.59.0'; if (pkg === '@anthropic-ai/claude-code') throw new Error('offline'); return ''; },
     egress: async (line) => { egress.push(line as unknown as Record<string, unknown>); },
     now: () => '2026-09-09T12:00:00.000Z',
   });
-  assert.deepEqual(asked, ['@anthropic-ai/claude-code', '@openai/codex'], 'gemini updates by its own subcommand and hermes by its own installer: no registry to ask, not asked');
-  assert.deepEqual(latest, { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' } }, 'an ask that failed leaves no answer — unknown, never guessed');
+  assert.deepEqual(asked, ['@anthropic-ai/claude-code', '@openai/codex', '@google/gemini-cli'], 'every npm-installed CLI is asked from its install source; hermes has no npm source');
+  assert.deepEqual(latest, { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' }, gemini: { version: '0.59.0', checked_at: '2026-09-09T12:00:00.000Z' } }, 'an ask that failed leaves no answer — unknown, never guessed');
   assert.deepEqual(egress.map((line) => [line.host, line.path, line.outcome, line.status]), [
     ['registry.npmjs.org', '/@anthropic-ai/claude-code', 'unreachable', 0],
     ['registry.npmjs.org', '/@openai/codex', 'ok', 200],
+    ['registry.npmjs.org', '/@google/gemini-cli', 'ok', 200],
   ], 'answered or not, each ask is on the egress record');
   assert.equal(summary.npmPackageOf('npm install -g @openai/codex@latest'), '@openai/codex');
+  assert.equal(summary.npmPackageOf('npm install -g @google/gemini-cli'), '@google/gemini-cli');
   assert.equal(summary.npmPackageOf(''), '');
   assert.equal(catalog.newerVersion('0.151.0', '0.153.4'), true);
   assert.equal(catalog.newerVersion('2.1.265', '2.1.265'), false);
