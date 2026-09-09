@@ -37,6 +37,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { loadProviderCatalog, modelAvailabilityFact, providerCatalog, tierWord } from './form-steps.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
+import { readyMika } from './mika-ready.js';
 
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
 
@@ -96,6 +97,7 @@ export function createProviderSurface(context) {
   const refreshOutcome = el('p', 'setup-fine setup-provider-refresh-outcome'); refreshOutcome.hidden = true;
   dates.append(el('summary', null, t('setup_surface.check_dates', 'Check dates')), dateList, refreshRow, refreshOutcome);
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
+  const mikaAvailability = el('p', 'setup-fine setup-mika-availability');
   let opened = String(context.detail?.provider || context.detail?.key || '');
   let mounted = null;
   let runtime = { providers: [] };
@@ -382,7 +384,7 @@ export function createProviderSurface(context) {
     renderDetail: (item, host) => paintProvider(item.id, host),
     onSelectionChange: (id) => { opened = String(id || ''); },
   });
-  stones.mount(out.content, { after: [dates, notice] });
+  stones.mount(out.content, { after: [dates, mikaAvailability, notice] });
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   const refresh = action(t('setup_surface.refresh', 'Refresh'), '', async () => {
     const before = runtime;
@@ -394,9 +396,31 @@ export function createProviderSurface(context) {
   refresh.classList.add('setup-provider-action', 'setup-provider-refresh-action');
   refreshRow.append(refresh, refreshNote);
   /** The frame from whatever `runtime` holds now: the record, or the measure once it lands. */
-  const paintFrom = () => {
+  const paintFrom = async () => {
     disposeMount();
     context.environment.setupRuntime = runtime;
+    const activatedNow = Number(runtime.activated_count || 0);
+    mikaAvailability.textContent = activatedNow === 0
+      ? t('setup_surface.mika_waits', 'Mika becomes available after you install and sign in to a model provider. Registration, Ronin Services, and gbrain are optional next steps.')
+      : activatedNow === 1 ? t('setup_surface.one_model_signed_in', '1 model signed in')
+        : t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow });
+    if (activatedNow > 0) {
+      mikaAvailability.replaceChildren(el('span', 'tw-mika-spinner', '人'), el('span', '', t('mika.starting', 'Starting Mika…')));
+      mikaAvailability.querySelector('.tw-mika-spinner')?.setAttribute('aria-hidden', 'true');
+      mikaAvailability.setAttribute('role', 'status');
+      const ready = await readyMika('setup_provider_ready');
+      if (ready.ok && ready.data?.state === 'ready' && ready.data?.welcome_delivered === true) {
+        try { sessionStorage.setItem('ronin.mika.help.open', '1'); } catch (_) {}
+        location.hash = '#/team/ronin_helpers';
+      } else if (ready.ok && ready.data?.state === 'ready') {
+        mikaAvailability.textContent = activatedNow === 1
+          ? t('setup_surface.one_model_signed_in', '1 model signed in')
+          : t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow });
+      } else {
+        mikaAvailability.textContent = t('mika.start_refused', 'Mika couldn’t start. You can try Help again.');
+      }
+    }
+    await loadProviderCatalog();
     context.workbench?.refreshSelector?.();
     paintDates();
     const rows = providerCatalog().rows;
@@ -417,8 +441,13 @@ export function createProviderSurface(context) {
   const showRecord = async () => {
     await loadProviderCatalog();
     const read = providerCatalog();
-    runtime = { providers: Array.isArray(read.machine) ? read.machine : [], measured_at: read.measured_at || '' };
-    paintFrom();
+    const providers = Array.isArray(read.machine) ? read.machine : [];
+    runtime = {
+      providers,
+      activated_count: providers.filter((provider) => provider?.activated === true).length,
+      measured_at: read.measured_at || '',
+    };
+    await paintFrom();
   };
   /**
    * The measure, behind the frame: this surface is the one reader that measures — every
@@ -433,7 +462,7 @@ export function createProviderSurface(context) {
     if (!result.ok) { say(result.message, true); return false; }
     runtime = result.data;
     await loadProviderCatalog();
-    paintFrom();
+    await paintFrom();
     return true;
   };
   /** After a press: the record at once, then the measure, awaited — a press is never the first frame. */

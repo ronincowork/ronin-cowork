@@ -66,6 +66,18 @@ test('seats are free: entry mounts nothing; the first show pays the one mount', 
   assert.equal(p.streamingCount, 1);
 });
 
+test('a quick surface borrows the one ordinary host without changing workspace state', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['mika_agent']);
+  const borrowed = p.borrow('mika_agent');
+  assert.equal(borrowed, h.records[0].el);
+  assert.equal(p.active, '', 'borrowing creates no workspace placement');
+  assert.deepEqual(h.records[0].opens, ['mika_agent']);
+  assert.equal(p.releaseBorrow('mika_agent'), true);
+  assert.equal(h.records[0].parks, 1, 'quick Close detaches only the viewer');
+});
+
 test('flipping inside the grace is warm — no reopen, no park', () => {
   const h = harness(); const c = clock();
   const p = pool(h, c);

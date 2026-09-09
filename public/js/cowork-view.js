@@ -28,7 +28,10 @@ import { renderTeamConfiguration } from './team-configuration.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
 import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
-import { mikaViewContext } from './mika-context.js';
+import { fetchSessions } from './api.js';
+import { helpersLast, RONIN_HELPERS } from './roster-groups.js';
+import { toast } from './ui.js';
+import { readyMika } from './mika-ready.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -110,7 +113,6 @@ export function createCoworkView(options = {}) {
   let unsubscribe = null;
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
-  let lastMikaContext = '';
   const readableTeam = (name) => String(teamByName(name)?.title ?? '').trim() || name;
   const setBarLabel = () => S.refreshWorkspaceHeader?.();
 
@@ -276,9 +278,21 @@ export function createCoworkView(options = {}) {
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
       const reading = readingsOf(member);
-      return { key: member.name, label: agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null, onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
+      const mika = team === RONIN_HELPERS && member.name === 'mika_agent';
+      return { key: member.name, label: mika ? t('mika.name', 'Mika') : agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null,
+        ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
+        onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
-    teams: () => campaign ? [...teamsFromState().filter((candidate) => !candidate.holding), { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' }].map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' })) : [],
+    teams: () => campaign ? (() => {
+      const teams = teamsFromState().filter((candidate) => !candidate.holding);
+      const helper = teams.find((candidate) => candidate.name === RONIN_HELPERS);
+      const ordered = [
+        ...teams.filter((candidate) => candidate.name !== RONIN_HELPERS).sort((a, b) => helpersLast(a.name, b.name)),
+        { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' },
+        ...(helper ? [helper] : []),
+      ];
+      return ordered.map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' }));
+    })() : [],
   };
   bench = WorkspaceKit.workbench.create({
     profile: campaign ? WB_PROFILES.cowork : WB_PROFILES.team,
@@ -293,45 +307,30 @@ export function createCoworkView(options = {}) {
   });
   rosterTitle = bench.selectorHeader?.title ?? null;
   root.append(bench.host);
-  const selector = bench.host.querySelector('.wk-workbench-selector');
-  const selectorCards = selector?.querySelector('.wk-workbench-selector-cards');
-  const mikaPanel = el('section', 'tw-mika-panel');
-  const mikaBar = el('header', 'tw-mika-bar');
-  const mikaIntro = el('p', 'tw-mika-intro', t('mika.hello', 'Hi, I’m Mika. How can I help you?'));
-  const mikaClose = createAction({ label: t('mika.close', 'Close'), size: 'compact' });
-  const mikaHost = createTerminalTileHost({ mode: 'reduced', index: 8 });
-  mikaBar.append(el('b', null, t('mika.name', 'Mika')), mikaClose.el);
-  mikaPanel.id = 'mika-selector-chat';
-  mikaPanel.setAttribute('aria-label', t('mika.help_region', 'Mika Help'));
-  mikaPanel.hidden = true;
-  mikaPanel.append(mikaBar, mikaIntro, mikaHost.el);
-  selector?.append(mikaPanel);
-  mikaHelp.el.setAttribute('aria-expanded', 'false');
-  mikaHelp.el.setAttribute('aria-controls', mikaPanel.id);
-
-  const closeMika = () => {
-    if (mikaPanel.hidden) return;
-    mikaHost.park();
-    mikaPanel.hidden = true;
-    if (selectorCards) selectorCards.hidden = false;
-    mikaHelp.el.setAttribute('aria-expanded', 'false');
-    mikaHelp.el.focus();
+  const openMika = async () => {
+    if (mikaHelp.el.disabled) return;
+    mikaHelp.el.disabled = true;
+    mikaHelp.el.setAttribute('aria-busy', 'true');
+    try {
+      const result = await readyMika('help');
+      if ((!result.ok || result.data?.state !== 'ready')
+        && !(result.status === 409 && result.data?.state === 'action_required'
+          && result.data?.code === 'provider_confirmation_required')) {
+        toast(t('mika.start_refused', 'Mika couldn’t start. Try again.'), false);
+        return;
+      }
+      await Promise.all([fetchSessions(), refreshTeams()]);
+      extras.add('mika_agent');
+      paint();
+      placeMikaWorkspaceTwo();
+    } catch (_) {
+      toast(t('mika.start_refused', 'Mika couldn’t start. Try again.'), false);
+    } finally {
+      mikaHelp.el.disabled = false;
+      mikaHelp.el.removeAttribute('aria-busy');
+    }
   };
-  const openMika = () => {
-    if (!mikaPanel.hidden) return closeMika();
-    if (selectorCards) selectorCards.hidden = true;
-    mikaPanel.hidden = false;
-    mikaHelp.el.setAttribute('aria-expanded', 'true');
-    const label = campaign ? t('campaign.coworks', 'Coworks') : `Team ${readableTeam(team)}`;
-    const context = mikaViewContext(label, view());
-    if (context !== lastMikaContext) void request('/api/sessions/mika/send', { method: 'POST', json: { text: context } })
-      .then((result) => { if (result.ok) lastMikaContext = context; });
-    const tile = mikaHost.mount('mika');
-    tile.composer?.focus?.();
-  };
-  mikaHelp.el.addEventListener('click', openMika);
-  mikaClose.el.addEventListener('click', closeMika);
-  mikaPanel.addEventListener('keydown', (event) => { if (event.key === 'Escape') { event.preventDefault(); closeMika(); } });
+  mikaHelp.el.addEventListener('click', () => { void openMika(); });
   // A REMEMBERED PLACEMENT OUTLIVES THE SURFACE IT NAMED. `@new` and `@new-team` were
   // the retired board and the seven-field card; a workspace that still remembers one
   // opens its replacement rather than nothing.
@@ -402,6 +401,14 @@ export function createCoworkView(options = {}) {
     remember();
     return true;
   };
+  function placeMikaWorkspaceTwo() {
+    const held = holds('workspace2');
+    if (held && !(held === 'mika_agent' || (held === 'session' && seats.workspace2.pool.active === 'mika_agent'))) {
+      toast(t('mika.workspace_two_busy', 'Workspace 2 is in use. Move or close that work before opening Mika.'), false);
+      return false;
+    }
+    return putSession('mika_agent', 'workspace2');
+  }
 
   /* ---------- one controller, two callers ---------- */
   // Everything that changes this page goes through arrange(): the C/T buttons and the

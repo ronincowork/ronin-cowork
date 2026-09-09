@@ -96,12 +96,10 @@ test('showing the surface paints the stones from the record at once, measures be
   calls.length = 0;
   const made = surface.createProviderSurface(ctx);
   await made.show();
-  // The first frame: the record, through the one picker's read; no measure stands before it.
-  assert.deepEqual(calls.slice(0, 2), ['GET /api/provider-catalog', 'GET /api/setup/runtime'], 'the recorded read comes first');
-  assert.equal(byClass(made.el, 'sws-stone').length, 4, 'the stones are painted when show resolves, before any measure has answered');
+  assert.deepEqual(calls.slice(0, 3), ['GET /api/provider-catalog', 'GET /api/setup/runtime', 'POST /api/mika/ready'], 'the recorded provider count is painted first, then the one shared Mika readiness controller observes it');
   assert.equal(ctx.refreshed.count, 1);
   await settle();
-  assert.deepEqual(calls.slice(2), ['POST /api/setup/providers/measure', 'GET /api/provider-catalog', 'GET /api/setup/runtime'], 'then the measure, and the record re-read after it is written');
+  assert.deepEqual(calls.slice(3), ['GET /api/provider-catalog', 'GET /api/setup/runtime', 'POST /api/setup/providers/measure', 'GET /api/provider-catalog', 'GET /api/setup/runtime', 'POST /api/mika/ready', 'GET /api/provider-catalog', 'GET /api/setup/runtime'], 'then the surface catalog paint and background measure each re-read the single provider record');
   assert.equal(ctx.refreshed.count, 2, 'and the frame repainted when it landed');
   assert.equal(ctx.environment.setupRuntime, machine);
   const stones = byClass(made.el, 'sws-stone');

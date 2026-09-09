@@ -52,15 +52,10 @@
   .wk-workbench-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
   .wk-workbench-cell.wk-workbench-selected { outline: var(--edge) solid var(--accent); outline-offset: calc(-1 * var(--edge)); }
 
-  .wk-workbench-selector { display: flex; min-width: 0; min-height: 0; }
+  .wk-workbench-selector { display: grid; min-width: 0; min-height: 0; overflow: hidden; }
   .wk-workbench-selector > * { flex: 1 1 auto; min-width: 0; min-height: 0; }
   .wk-workbench-selector-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); overflow-y: auto; }
   .wk-workbench-selector-cards[hidden] { display: none; }
-  .tw-mika-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
-  .tw-mika-panel[hidden] { display: none; }
-  .tw-mika-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); }
-  .tw-mika-intro { margin: 0; padding: var(--space-4); color: var(--fg); }
-  .tw-mika-panel > .wk-terminal-host { flex: 1 1 auto; min-height: 0; }
 
   .wk-workbench-selector-cards .wk-selector-utility { border-color: var(--define-line); box-shadow: inset var(--edge-2) 0 var(--define-line); }
   .wk-workbench-selector-cards .wk-selector-entity { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }

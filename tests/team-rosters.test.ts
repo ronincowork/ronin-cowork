@@ -89,5 +89,5 @@ test('creating over an existing roster is refused — editing is a different int
 test('dissolve deletes the roster and only the roster', async () => {
   await deleteTeamRoster('alpha');
   assert.equal(await readTeamRoster('alpha'), null);
-  await assert.rejects(() => deleteTeamRoster('alpha'), /has no roster/);
+  await deleteTeamRoster('alpha'); // idempotent for an already-empty/tag-only Team
 });
