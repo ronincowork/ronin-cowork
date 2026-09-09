@@ -15,6 +15,7 @@ const {
   initialCampaign,
   isValidCampaignId,
   listCampaigns,
+  populateHomeMachine,
   readCampaign,
   writeCampaign,
 } = await import('../src/campaigns.js');
@@ -60,6 +61,38 @@ test('campaign list order and archive state are deterministic', async () => {
 
 test('unknown campaign edits report the missing record', async () => {
   await assert.rejects(() => writeCampaign('missing', { title: 'Missing' }), /does not exist/);
+});
+
+test('setup changes only the home campaign behaviours and routines', async () => {
+  await createCampaign({
+    id: 'home_machine',
+    title: 'My existing home',
+    description: 'Keep this description',
+    desk_profile: 'professional',
+    config: { agent_defaults: {
+      provider: 'openai',
+      model: 'gpt-existing',
+      reach: 'execute',
+      recruit: 'nobody',
+      output: ['code'],
+      dial: 'read',
+      launch_mode: 'configured',
+    } },
+  });
+
+  const updated = await populateHomeMachine({ kind: 'coding', routine_bundle: 'nothing' });
+  assert.equal(updated.title, 'My existing home');
+  assert.equal(updated.description, 'Keep this description');
+  assert.equal(updated.desk_profile, 'professional');
+  assert.equal(updated.config.agent_defaults.provider, 'openai');
+  assert.equal(updated.config.agent_defaults.model, 'gpt-existing');
+  assert.equal(updated.config.agent_defaults.reach, 'execute');
+  assert.equal(updated.config.agent_defaults.recruit, 'nobody');
+  assert.deepEqual(updated.config.agent_defaults.output, ['code']);
+  assert.equal(updated.config.agent_defaults.dial, 'read');
+  assert.equal(updated.config.agent_defaults.launch_mode, 'configured');
+  assert.deepEqual(updated.config.agent_defaults.behaviours,
+    ['sops:github', 'sops:ronin_methodology', 'sops:teams']);
 });
 
 test.after(async () => fs.rm(root, { recursive: true, force: true }));

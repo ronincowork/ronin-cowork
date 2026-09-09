@@ -80,43 +80,24 @@ const KIND_BEHAVIOURS: Record<SetupKind, string[]> = {
 };
 
 export async function populateHomeMachine(input: {
-  title?: unknown;
-  description?: unknown;
-  desk_profile?: unknown;
-  provider?: unknown;
-  model?: unknown;
-  provider_model?: unknown;
   kind?: unknown;
   routine_bundle?: unknown;
 }): Promise<CampaignConfig> {
   const existing = await readCampaign('home_machine');
-  const campaign = existing ?? await createCampaign({
-    id: 'home_machine',
-    title: str(input.title, TITLE_MAX) || 'Ronin Home',
-    description: str(input.description, DESCRIPTION_MAX),
-    desk_profile: str(input.desk_profile, DESK_PROFILE_MAX),
-  });
+  const campaign = existing ?? await createCampaign(FRESH_CAMPAIGNS[0]!);
   const kind = (['open', 'coding', 'work', 'personal', 'household', 'social', 'school'] as const)
     .includes(input.kind as SetupKind) ? input.kind as SetupKind : 'open';
   const bundle = (['nothing', 'floor', 'base', 'worktrees', 'services'] as const)
     .includes(input.routine_bundle as SetupRoutineBundle)
     ? input.routine_bundle as SetupRoutineBundle : 'base';
   const { listRoutines } = await import('./resource-adapters.js');
-  const providerModel = bucket(input.provider_model);
   const routines = Object.fromEntries((await listRoutines()).map((row) =>
     [row.name, row.bundles.includes(bundle)]));
   return writeCampaign(campaign.id, {
-    title: str(input.title, TITLE_MAX) || campaign.title,
-    description: input.description === undefined ? campaign.description : str(input.description, DESCRIPTION_MAX),
-    desk_profile: input.desk_profile === undefined ? campaign.desk_profile : str(input.desk_profile, DESK_PROFILE_MAX),
     config: { agent_defaults: {
-      provider: str(input.provider ?? providerModel.provider, 120),
-      model: str(input.model ?? providerModel.model, 120),
-      reach: 'plan', recruit: 'propose agents', output: ['open'],
+      ...campaign.config.agent_defaults,
       routines,
       behaviours: KIND_BEHAVIOURS[kind],
-      dial: 'write',
-      launch_mode: 'live_dangerously',
     } },
   });
 }

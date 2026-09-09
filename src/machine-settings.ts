@@ -408,10 +408,8 @@ async function readSet(): Promise<Record<string, unknown>> {
   const koshi = await readSection<Record<string, unknown>>('koshi', {});
   const wipeboard = await readSection<Record<string, unknown>>('wipeboard', {});
   const campaigns = await readSection<Record<string, unknown>>('campaigns', {});
-  const firstCampaign = Object.entries(campaigns)
-    .sort(([a], [b]) => a.localeCompare(b))[0];
-  const campaignRecord = firstCampaign && firstCampaign[1] && typeof firstCampaign[1] === 'object'
-    ? firstCampaign[1] as Record<string, unknown> : {};
+  const { initialCampaign } = await import('./campaigns.js');
+  const campaignRecord = await initialCampaign();
   const setup = await readSetupSection();
   const roots = await listProjectRoots();
 
@@ -423,7 +421,7 @@ async function readSet(): Promise<Record<string, unknown>> {
 
   const activation = await readServicesActivation();
   return {
-    campaign: { name: typedStr(campaignRecord.title), description: typedStr(campaignRecord.description) },
+    campaign: { name: typedStr(campaignRecord?.title), description: typedStr(campaignRecord?.description) },
     campaigns,
     owner: { name: typedStr(owner.name) },
     machine: {
@@ -436,7 +434,7 @@ async function readSet(): Promise<Record<string, unknown>> {
     gbrain: { enabled: gbrain.enabled === true },
     koshi,
     wipeboard,
-    desk: { profile: typedStr(campaignRecord.desk_profile) },
+    desk: { profile: typedStr(campaignRecord?.desk_profile) },
     desks: { new_project: typedStr((await readDesksSection()).new_project) },
     wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))
       .filter((w) => typeof w?.kind === 'string' && typeof w?.name === 'string')
