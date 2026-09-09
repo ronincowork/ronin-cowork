@@ -2,7 +2,7 @@
 
 > A person can run the install command without an Agent. This file is for when the owner
 > hands the journey to an Agent already on the box: preserve the machine, establish the
-> private URL, help through `cowork_setup`, establish one provider, and prove one harmless
+> private URL, help through Ronin Setup, establish one provider, and prove one harmless
 > Agent exchange. The owner keeps every consequential and credential-bearing choice.
 
 The machine is one the owner already has and controls: a laptop, a home server, a VM they
@@ -49,8 +49,8 @@ steps below are not optional decoration.
 
 You are the owner's own Agent, outside Ronin. Installation is complete when the operator
 and the tmux server's cgroup boundary survive, the owner can reach the private URL with a known
-login posture, `cowork_setup` is saved, one provider is usable, and one new Agent answers
-a harmless prompt. You explain and verify; the owner answers setup choices and performs
+login posture, Ronin Setup is reachable, one provider is usable, and one new Agent answers
+a harmless prompt. You explain and verify; the owner makes their choices and performs
 login, billing, privilege, and credential-bearing actions.
 
 Preserve the box. Never end an existing tmux session or restart an existing tmux server.
@@ -226,17 +226,17 @@ sessions remain, the private URL answers, and the socket holder's cgroup ends in
 
 ## 6. Continue through first use
 
-Help the owner open the printed URL on their own device. A fresh install enters
-`cowork_setup`. Continue with [Get started](get-started.md): prepare the owner for the
-visible choices, let them Save, establish one provider using
+Help the owner open the printed URL on their own device. A fresh install opens Ronin Home;
+Machine Settings opens Ronin Setup. Continue with [Get started](get-started.md): establish
+one provider using
 [Provider sign-in](provider-sign-in.md), and prove one harmless Agent exchange.
 
-Stay available as a plain terminal for diagnosis. Do not fill the form in parallel, answer
+Stay available as a plain terminal for diagnosis. Do not answer
 provider dialogs, or infer success from an installed CLI or a launched process. Hand off
 only after the Agent visibly responds, or report the exact blocking state and safe next
 action.
 
-**What you should see:** `cowork_setup` saves, one provider is usable, and a newly created
+**What you should see:** Ronin Setup opens, one provider is usable, and a newly created
 Agent visibly answers one harmless prompt. Anything not exercised stays "not tested."
 
 Use this handover template:

@@ -43,6 +43,5 @@ renders exactly as before.
 | `rireki_view` | `public/js/desk-profile.js` → `S.output` | a NEW tile's Output, when nothing was saved for it; a tile's own choice is never overwritten |
 | `team_arrangement` | `public/js/cowork-view.js` | the Team cowork view, when a tab has no arrangement of its own |
 
-Two places pick: the ⚙ Configuration tab's *Desk profile* row (the registry leaf, a
-select) and the ⚙ desk's picker beside the skins (rows with blurbs and `origin`). Both
-write the same leaf.
+The ⚙ desk's picker beside the skins presents rows with blurbs and `origin` and writes
+the registry leaf.

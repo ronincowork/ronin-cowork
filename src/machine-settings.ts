@@ -192,10 +192,6 @@ const writeDesksSection = (value: { new_project?: string }) =>
   }));
 const writeWantedSection = (wanted: Array<{ kind: string; name: string }>) =>
   updateDocument((document) => { document.wanted = wanted; });
-const completeSetup = () => updateDocument((document) => {
-  const setup = ((document.setup ?? {}) as Record<string, unknown>) || {};
-  document.setup = { ...setup, pending: false, completed_at: new Date().toISOString() };
-});
 async function liveCount(): Promise<number> {
   try {
     const stdout = await tmux.run(['list-sessions', '-F', '#{session_name}']);
@@ -408,10 +404,8 @@ async function readSet(): Promise<Record<string, unknown>> {
   const koshi = await readSection<Record<string, unknown>>('koshi', {});
   const wipeboard = await readSection<Record<string, unknown>>('wipeboard', {});
   const campaigns = await readSection<Record<string, unknown>>('campaigns', {});
-  const firstCampaign = Object.entries(campaigns)
-    .sort(([a], [b]) => a.localeCompare(b))[0];
-  const campaignRecord = firstCampaign && firstCampaign[1] && typeof firstCampaign[1] === 'object'
-    ? firstCampaign[1] as Record<string, unknown> : {};
+  const { initialCampaign } = await import('./campaigns.js');
+  const campaignRecord = await initialCampaign();
   const setup = await readSetupSection();
   const roots = await listProjectRoots();
 
@@ -423,7 +417,7 @@ async function readSet(): Promise<Record<string, unknown>> {
 
   const activation = await readServicesActivation();
   return {
-    campaign: { name: typedStr(campaignRecord.title), description: typedStr(campaignRecord.description) },
+    campaign: { name: typedStr(campaignRecord?.title), description: typedStr(campaignRecord?.description) },
     campaigns,
     owner: { name: typedStr(owner.name) },
     machine: {
@@ -436,16 +430,12 @@ async function readSet(): Promise<Record<string, unknown>> {
     gbrain: { enabled: gbrain.enabled === true },
     koshi,
     wipeboard,
-    desk: { profile: typedStr(campaignRecord.desk_profile) },
+    desk: { profile: typedStr(campaignRecord?.desk_profile) },
     desks: { new_project: typedStr((await readDesksSection()).new_project) },
     wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))
       .filter((w) => typeof w?.kind === 'string' && typeof w?.name === 'string')
       .map((w) => ({ kind: w.kind as string, name: w.name as string })),
-    setup: {
-      pending: setup.pending === true,
-      stamped_at: setup.stamped_at ?? null,
-      completed_at: setup.completed_at ?? null,
-    },
+    setup,
     services: setteiServices(activation),
   };
 }
@@ -637,11 +627,7 @@ async function computeStatus(
       usable: Object.entries(agentsSeen).filter(([, a]) => a.installed).map(([n]) => n),
       ...jobStatus,
     },
-    setup: (set.setup as { pending: boolean; completed_at: string | null }).pending
-      ? 'first run has not been finished'
-      : (set.setup as { completed_at: string | null }).completed_at
-        ? `first run finished ${(set.setup as { completed_at: string }).completed_at}`
-        : 'not applicable — this install predates the first-run surface',
+    setup: 'Ronin Setup is always available in Machine Settings',
     subscription: servicesSubscription(servicesActivation),
   };
 }
@@ -705,8 +691,7 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
   const status = await computeStatus(set, observed);
   const needed = computeNeeded(set, observed);
   needed.push(...repositoryNeeds(set, status));
-  const setupFinished = Boolean((set.setup as { completed_at?: string } | undefined)?.completed_at);
-  if (setupFinished && !(await listProjectRoots()).some((root) => !root.archived)) {
+  if (!(await listProjectRoots()).some((root) => !root.archived)) {
     needed.push({
       leaf: 'workspace_folder',
       needs: 'a workspace folder where Agents can start',
@@ -727,55 +712,41 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
 const editString = (value: unknown): string | undefined =>
   typeof value === 'string' ? value : undefined;
 
-export async function writeMachineSettings(
-  family: string,
-  body: Record<string, unknown>,
-): Promise<unknown> {
-  if (family === 'setup') {
-    await completeSetup();
-    return { ok: true };
-  }
-  if (family === 'bootstrap') {
-    const { populateHomeMachine } = await import('./campaigns.js');
-    const campaign = await populateHomeMachine(body);
-    await writeDesksSection({
-      new_project: body.routine_bundle === 'worktrees' || body.routine_bundle === 'services'
-        ? 'managed' : 'none',
-    });
-    return { ok: true, campaign_id: campaign.id };
-  }
-  if (family === 'campaign') {
+type MachineSettingsWriter = (body: Record<string, unknown>) => Promise<unknown>;
+
+export const MACHINE_SETTINGS_WRITERS = {
+  campaign: async (body) => {
     const { writeCampaignSection } = await import('./campaigns.js');
     await writeCampaignSection({
       name: editString(body.name),
       description: editString(body.description),
     });
     return { ok: true };
-  }
-  if (family === 'owner') return { name: await writeOwner(String(body.name ?? '').trim()) };
-  if (family === 'machine') {
+  },
+  owner: async (body) => ({ name: await writeOwner(String(body.name ?? '').trim()) }),
+  machine: async (body) => {
     await writeMachineSection({
       name: editString(body.name),
       where: editString(body.where),
       monitor: typeof body.monitor === 'boolean' ? body.monitor : undefined,
     });
     return { ok: true };
-  }
-  if (family === 'desk') {
+  },
+  desk: async (body) => {
     const { writeDeskSection } = await import('./campaigns.js');
     await writeDeskSection({ profile: editString(body.profile) ?? '' });
     return { ok: true };
-  }
-  if (family === 'desks') {
+  },
+  desks: async (body) => {
     await writeDesksSection({ new_project: editString(body.new_project) ?? 'managed' });
     return { ok: true };
-  }
-  if (family === 'session-max') return { max: await writeMax(Number(body.max)) };
-  if (family === 'gbrain') {
+  },
+  'session-max': async (body) => ({ max: await writeMax(Number(body.max)) }),
+  gbrain: async (body) => {
     await writeGbrainSection({ enabled: body.enabled === true });
     return { ok: true };
-  }
-  if (family === 'wanted') {
+  },
+  wanted: async (body) => {
     const kinds = new Set(['agent', 'service', 'tool', 'key', 'set']);
     const wanted = (Array.isArray(body.wanted) ? body.wanted : [])
       .filter((item): item is { kind: string; name: string } => {
@@ -785,20 +756,20 @@ export async function writeMachineSettings(
       .map(({ kind, name }) => ({ kind, name }));
     await writeWantedSection(wanted);
     return { ok: true, wanted };
-  }
-  if (family === 'campaigns') {
+  },
+  campaigns: async (body) => {
     await updateDocument((document) => { document.campaigns = body.campaigns ?? {}; });
     return { ok: true };
-  }
-  if (family === 'record-section') {
+  },
+  'record-section': async (body) => {
     const key = String(body.key ?? '');
     if (!['sessions', 'owner', 'machine', 'agents', 'gbrain', 'desks', 'wanted', 'setup', 'koshi', 'wipeboard'].includes(key)) {
       throw new Error(`no machine-settings section named '${key}'`);
     }
     await updateDocument((document) => { document[key] = body.value ?? {}; });
     return { ok: true };
-  }
-  if (family === 'agents') {
+  },
+  agents: async (body) => {
     const prior = await readAgentsSection();
     const incomingSessions = (body.sessions ?? {}) as Record<string, unknown>;
     const priorSessions = (prior.sessions ?? {}) as Record<string, unknown>;
@@ -831,6 +802,16 @@ export async function writeMachineSettings(
       jobs: body.jobs === undefined ? prior.jobs : jobs,
     });
     return { ok: true };
+  },
+} satisfies Record<string, MachineSettingsWriter>;
+
+export async function writeMachineSettings(
+  family: string,
+  body: Record<string, unknown>,
+): Promise<unknown> {
+  if (Object.hasOwn(MACHINE_SETTINGS_WRITERS, family)) {
+    const writer = (MACHINE_SETTINGS_WRITERS as Record<string, MachineSettingsWriter>)[family];
+    return writer(body);
   }
   throw new Error(`no machine-settings family named '${family}'`);
 }

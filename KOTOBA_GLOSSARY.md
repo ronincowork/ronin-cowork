@@ -46,7 +46,6 @@ is a name a user learns. Everything not listed here is ordinary English and need
 | `session_roster` | **the roster**<!--g:glossary.roster--> | Every session on the machine. Never "the board". |
 | `MDEDIT` | **the Docs tab**<!--g:glossary.docs--> | The documents a session lists, opened in the tile. Say "list a doc". |
 | `wipeboard` | **wipeboard**<!--g:glossary.wipeboard--> | A team's shared board file. Never "the board". |
-| `cowork_setup` | **cowork setup**<!--g:glossary.cowork_setup--> | The first-run surface that shapes a new coworkspace. |
 | 🔒 / 🔓 | **Locked / Unlocked**<!--g:glossary.locked--> | Whether this view is attached to the live session. |
 
 ## Sessions and teams
