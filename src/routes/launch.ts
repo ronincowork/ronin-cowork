@@ -58,12 +58,12 @@ import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeSta
  *  absolute path ran the CLI Ronin installed while `codex` typed by name inside it found an
  *  older system copy (2026-09-09). The session's own command directory stays first: its
  *  guards (the tmux shim) must win over anything. Running tiles are untouched. */
-export function birthEnv(toolPath?: string, socket?: string, installBin: string = agentBinDir(), parentPath: string = process.env.PATH ?? ''): Record<string, string> | undefined {
+export function birthEnv(toolPath?: string, socket?: string, installBin: string = agentBinDir(), parentPath: string = process.env.PATH ?? '', exactPath = false): Record<string, string> | undefined {
   const env: Record<string, string> = {};
   const has = (p: string) => p.split(':').includes(installBin);
   if (toolPath) {
     const [own, ...rest] = toolPath.split(':');
-    env.PATH = has(toolPath) ? toolPath : [own, installBin, ...rest].filter(Boolean).join(':');
+    env.PATH = exactPath || has(toolPath) ? toolPath : [own, installBin, ...rest].filter(Boolean).join(':');
   } else if (installBin && !has(parentPath)) {
     env.PATH = [installBin, parentPath].filter(Boolean).join(':');
   }
@@ -422,7 +422,14 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const providerSession = newProviderSession(resolved.launchAgent, launch.argv);
       launch.argv = providerSession.argv;
       routineTools = resolved.agent
-        ? await projectRoutineTools(resolved.name, resolved.routines)
+        ? await projectRoutineTools(
+            resolved.name,
+            resolved.routines,
+            houseSeat === 'mika' ? '' : undefined,
+            houseSeat === 'mika'
+              ? { includeTmux: false, extraTools: ['lookup', 'wheres_waldo', 'show'] }
+              : {},
+          )
         : null;
       await createSession(resolved.name, resolved.dir, {
         agent: resolved.agent,
@@ -431,7 +438,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         // Told at birth, the way tmux tells every shell where its server is: the socket
         // this operator bound. A process that bound none (a dev run) says nothing, and the
         // newborn's tools use the default path.
-        env: birthEnv(routineTools?.path, boundOperatorSocket()),
+        env: birthEnv(routineTools?.path, boundOperatorSocket(), agentBinDir(), process.env.PATH ?? '', houseSeat === 'mika'),
         control: resolved.agent ? 'user' : undefined,
         key: birthKey || undefined,
         // The Services switch as resolved for THIS Agent at birth (campaign < team < form):

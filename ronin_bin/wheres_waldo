@@ -1,0 +1,7 @@
+#!/bin/bash
+set -u
+tab=${1-}
+case "$tab" in *[!A-Za-z0-9_-]*|'') echo 'Usage: wheres_waldo <tab-id>' >&2; exit 2;; esac
+[ "$#" -eq 1 ] || { echo 'wheres_waldo accepts one tab id.' >&2; exit 2; }
+[ -n "${RONIN_SOCKET:-}" ] || { echo 'REFUSED: Ronin operator socket is unavailable.' >&2; exit 4; }
+exec /usr/bin/curl -fsS --unix-socket "$RONIN_SOCKET" http://ronin/api/mika/context/"$tab"
