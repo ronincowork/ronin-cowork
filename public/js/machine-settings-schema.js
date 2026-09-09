@@ -68,6 +68,7 @@ export function initialOf(f, ctx) {
  */
 export function optionsOf(f, ctx) {
   if (f.options === 'desk_profiles') return (ctx.deskProfiles ?? []).map((p) => ({ label: p.label, value: p.name }));
+  if (Array.isArray(f.choices)) return f.choices.map((choice) => typeof choice === 'string' ? { label: choice, value: choice } : choice);
   return [];
 }
 

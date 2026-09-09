@@ -127,6 +127,8 @@ export interface CreateOpts {
   env?: Readonly<Record<string, string>>;
   key?: string;
   rireki?: boolean;
+  /** House seats with a security-significant cwd must fail rather than fall back. */
+  strictCwd?: boolean;
 }
 
 export async function createSession(name: string, dir?: string, opts: CreateOpts = {}): Promise<void> {
@@ -144,7 +146,7 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
   try {
     await tmux.run(build(true));
   } catch (err) {
-    if (cwd) {
+    if (cwd && !opts.strictCwd) {
       await tmux.run(build(false));
     } else {
       throw err;

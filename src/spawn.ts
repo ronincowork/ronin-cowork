@@ -231,12 +231,16 @@ export async function resolveForm(
     : null;
 
   const active = roots.filter((r) => !r.archived);
+  const houseRoot = form.house_seat === 'mika' ? {
+    name: 'mika_home', dir: profileDir(profile), remit: 'Ronin help only', match: [],
+    docs: [], plans: [], archived: false, campaign_id: campaignId,
+  } : undefined;
   const rosterRoot = roster?.project_root ? roots.find((r) => r.name === roster.project_root) : undefined;
-  const root = form.project_root
+  const root = houseRoot ?? (form.project_root
     ? roots.find((r) => r.name === form.project_root)
     : bareMetalAgent
       ? undefined
-      : (rosterRoot && !rosterRoot.archived ? rosterRoot : active[0]);
+      : (rosterRoot && !rosterRoot.archived ? rosterRoot : active[0]));
   if (form.project_root && !root) {
     throw new Error(`Unknown project_root "${form.project_root}" (see your PROJECT_ROOTS.md).`);
   }
@@ -248,7 +252,7 @@ export async function resolveForm(
         'Add or unarchive one in ⚙ Configuration, then launch again.',
     );
   }
-  await ensureShelf(roots.map((r) => r.name));
+  if (!houseRoot) await ensureShelf(roots.map((r) => r.name));
 
   const wanted = form.name ? sanitizeName(form.name) : '';
   if (form.name && !wanted) {
@@ -256,9 +260,12 @@ export async function resolveForm(
   }
 
   const agent = sessionType === 'terminal' ? false : bareMetalAgent ? true : profile.agent;
+  const routineAnswers = form.house_seat === 'mika'
+    ? Object.fromEntries(routineCatalog.map((routine) => [routine.name, false]))
+    : form.routines;
   const routines = resolveAgentRoutines(
     routineCatalog, campaign?.config.agent_defaults.routines,
-    roster?.routines, form.routines, agent,
+    roster?.routines, routineAnswers, agent,
   );
   const merged = mergeSessionDefaults(agentsSet.sessions as SessionsDefaults | undefined, campaign?.config.agent_defaults);
   const sessionsSet = merged.sessions;

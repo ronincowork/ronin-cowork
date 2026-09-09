@@ -10,7 +10,7 @@ import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
-import { listProviderCatalog, listSessionLaunchSpecs } from './model-providers.js';
+import { listProviderCatalog, listSessionLaunchSpecs, TIERS } from './model-providers.js';
 import { storeDir } from './resources.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import { execFile as brokerExecFile } from './spawn-broker.js';
@@ -260,6 +260,7 @@ export interface MachineSettingsJob {
   provider: string | null;
   model: string | null;
   key_env: string | null;
+  level?: string;
 }
 
 export interface MachineSettingsRecord {
@@ -396,6 +397,24 @@ const sessionDefaults = (v: unknown): Record<string, unknown> => ({
   by_provider: (v as Record<string, unknown>)?.by_provider ?? {},
 });
 
+const publicJobs = async (value: unknown): Promise<Record<string, unknown>> => {
+  const jobs = value && typeof value === 'object' && !Array.isArray(value)
+    ? { ...(value as Record<string, unknown>) } : {};
+  const named = jobs.mikaassist ?? jobs.mika;
+  const mika = named && typeof named === 'object' && !Array.isArray(named)
+    ? named as Record<string, unknown> : {};
+  if (typeof mika.level === 'string' && (TIERS as readonly string[]).includes(mika.level)) {
+    jobs.mikaassist = { level: mika.level };
+  } else if (mika.provider !== undefined || mika.model !== undefined) {
+    const pair = (await listSessionLaunchSpecs()).find((spec) => spec.provider === mika.provider && spec.model === mika.model);
+    jobs.mikaassist = pair ? { level: pair.tier } : { migration_choice_required: true };
+  } else {
+    jobs.mikaassist = { level: 'light' };
+  }
+  delete jobs.mika;
+  return jobs;
+};
+
 async function readSet(): Promise<Record<string, unknown>> {
   const owner = await readSection<Record<string, unknown>>('owner', {});
   const machine = await readMachineSection();
@@ -426,7 +445,7 @@ async function readSet(): Promise<Record<string, unknown>> {
     },
     sessions: { max: await readMax() },
     projects,
-    agents: { sessions: sessionDefaults(agents.sessions), jobs: (agents.jobs as unknown) ?? {} },
+    agents: { sessions: sessionDefaults(agents.sessions), jobs: await publicJobs(agents.jobs) },
     gbrain: { enabled: gbrain.enabled === true },
     koshi,
     wipeboard,
@@ -569,6 +588,7 @@ async function computeStatus(
   const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, MachineSettingsJob>;
   const jobStatus = Object.fromEntries(
     Object.entries(jobs).map(([name, j]) => {
+      if (name === 'mikaassist' && j?.level) return [name, `model level ${j.level}`];
       const needs = j?.key_env;
       const where = j?.provider ?? j?.outlet;
       if (needs && !keys[needs]) return [name, `pointed at ${where} — ${needs} not set`];
@@ -782,12 +802,20 @@ export const MACHINE_SETTINGS_WRITERS = {
     const jobs = { ...((prior.jobs ?? {}) as Record<string, unknown>) };
     for (const [name, value] of Object.entries((body.jobs ?? {}) as Record<string, unknown>)) {
       const job = (value ?? {}) as Record<string, unknown>;
-      jobs[name] = {
-        outlet: editString(job.outlet) ?? null,
-        provider: editString(job.provider) ?? null,
-        model: editString(job.model) ?? null,
-        key_env: editString(job.key_env) ?? null,
-      };
+      if (name === 'mikaassist') {
+        const level = editString(job.level);
+        if (!level || !(TIERS as readonly string[]).includes(level)) {
+          throw new Error('invalid_mika_level: choose light, standard, or frontier');
+        }
+        jobs[name] = { level };
+      } else {
+        jobs[name] = {
+          outlet: editString(job.outlet) ?? null,
+          provider: editString(job.provider) ?? null,
+          model: editString(job.model) ?? null,
+          key_env: editString(job.key_env) ?? null,
+        };
+      }
     }
     await writeAgentsSection({
       sessions: body.sessions === undefined ? priorSessions : {
