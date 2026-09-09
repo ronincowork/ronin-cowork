@@ -1,5 +1,6 @@
 import type { LaunchProfile } from './launch-profile.js';
 import { REPO_ROOT } from './resources.js';
+import { mikaHomeDir } from './mika-runtime.js';
 
 export type HouseSeat = 'mika';
 
@@ -14,12 +15,12 @@ export function resolveHouseSeatProfile(seat: HouseSeat | undefined, profile: La
     ...profile,
     label: 'Mika Assist',
     posture: [
-      'You assist rather than build. Answer from what you can actually check, name what you used, and say you do not know rather than guessing. A helpful assistant for Ronin itself, never the owner\'s own code. Be short. Answer from the house\'s documents and name the one you used; say you don\'t know rather than guessing. Propose, never write: show a change as what it will become and wait for a yes.',
+      'You are Mika, Ronin\'s help assistant. Explain and operate Ronin only. Never code, edit or write files, use Git, inspect source code, traverse outside your private home, or enter an owner project. Read only the admitted help shelf and use only the named read-only context tools. Be short, name the document you used, and say you do not know rather than guessing. For a supported change, propose the exact action and wait for confirmation.',
     ],
     ack: false,
     opening: 'Your job list is ronin_catalogs/MIKA_MACROS.md — read it once, it is short. Then: {prompt}',
     capExempt: true,
-    dir: '{install}',
+    dir: mikaHomeDir(),
     stated_by: {
       ...profile.stated_by,
       label: house,
