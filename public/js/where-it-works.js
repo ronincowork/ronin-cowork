@@ -13,7 +13,10 @@ export function createWhereItWorks(o = {}) {
   const rootSelect = el('select', 'wk-field-control'); rootRow.append(rootSelect); body.append(rootRow);
   const line = el('p', 'tw-config-note'); body.append(line);
   const list = el('div', 'tw-where-repos'); body.append(list);
-  const state = { roots: [], root: o.root || '', repos: [...(o.repos || [])], branches: { ...(o.branches || {}) }, worktreesOn: !!o.worktreesOn, editable: o.branchesEditable !== false };
+  // `roots` is seeded like every other option. A caller that already holds the list
+  // (team-configuration.js) gets its choices on the first paint; one that is still
+  // fetching (new-agent.js, new-team-form.js) passes nothing and calls setRoots later.
+  const state = { roots: [...(o.roots || [])], root: o.root || '', repos: [...(o.repos || [])], branches: { ...(o.branches || {}) }, worktreesOn: !!o.worktreesOn, editable: o.branchesEditable !== false };
   const rows = new Map();
   const changed = () => { paint(); o.onChange?.(); };
 
