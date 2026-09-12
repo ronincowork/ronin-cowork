@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { terminalInputRouter, terminalOwnsTarget, wireTerminalInput } from '../public/js/terminal-input.js';
+import fs from 'node:fs/promises';
+import { INTERRUPT, terminalInputRouter, terminalOwnsTarget, wireTerminalInput } from '../public/js/terminal-input.js';
 import { TileWire } from '../public/js/tilewire.js';
 import { tileInputAction } from '../src/viewer.ts';
 import { isTerminalReply } from '../src/ws/pty.ts';
@@ -87,4 +88,25 @@ test('mouse release passes through copy mode while typing remains quiet', () => 
   const scrolled = { inMode: true, appWantsMouse: false };
   assert.equal(tileInputAction(scrolled, '\x1b[<0;2;1m'), 'write');
   assert.equal(tileInputAction(scrolled, 'hello'), 'drop');
+});
+
+test('a typed ^C raises the retire sheet instead of reaching the pane', async () => {
+  const tile = await fs.readFile(new URL('../public/js/tile.js', import.meta.url), 'utf8');
+  assert.equal(INTERRUPT, '\x03');
+  // Held before the mode split, so the DVR rule cannot pass it through as a command key.
+  assert.match(tile, /if \(d === INTERRUPT && this\.session\) return void this\.kill\(\);\s*\n\s*return this\.locked \? this\.sendRaw\(d\) : this\.dvrInput\(d\);/);
+  // A held ^C repeats; one sheet per tile, never a stack.
+  assert.match(tile, /if \(document\.getElementById\(`endsession-\$\{this\.index\}`\)\) return;/);
+});
+
+test('the deliberate interrupt routes past the guard and still reaches the pane', async () => {
+  const [keys, pad] = await Promise.all([
+    fs.readFile(new URL('../public/js/keysrow.js', import.meta.url), 'utf8'),
+    fs.readFile(new URL('../public/js/pad.js', import.meta.url), 'utf8'),
+  ]);
+  // Both hand the byte to sendRaw, which is downstream of onUserData — so intercepting
+  // the keystroke never costs the two controls that exist to send it on purpose.
+  assert.match(keys, /\['\^C', .*, '\\x03'\]/);
+  assert.match(keys, /seq === null \? hooks\.latest\(\) : hooks\.sendRaw\(seq\)/);
+  assert.match(pad, /int: \{ label: .*, seq: '\\x03' \}/);
 });

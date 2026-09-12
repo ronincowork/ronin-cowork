@@ -34,3 +34,12 @@ export function wireTerminalInput(term, user, protocol) {
 export const terminalOwnsTarget = (terminalElement, target) => !!terminalElement
   && !!target
   && (target === terminalElement || terminalElement.contains(target));
+
+/**
+ * ^C. Typed into a pane it ends the Agent and takes the tmux session with it, with no
+ * confirmation and no way back, so the tile holds it and raises the retire sheet
+ * instead — see `Tile`'s onUserData. Interrupting is still reachable, deliberately by
+ * a route that cannot be a slip: the `^C` button on the keys row and a pad key bound
+ * to `int` both hand this byte straight to `sendRaw`.
+ */
+export const INTERRUPT = '\x03';
