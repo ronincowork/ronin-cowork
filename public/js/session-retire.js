@@ -48,7 +48,16 @@ export function createSubmitGate() {
 /** The tile trash boundary: exactly the two lifecycle choices, dismissible by Escape/scrim. */
 export function retireSession(name, tileIndex, onDone) {
   const submit = createSubmitGate();
-  const dlg = sheet({ id: `endsession-${tileIndex}`, cls: 'end-session-card', label: t('retire.sheet', 'Retire {name}', { name }) });
+  // Dismissal removes the node, not just the `open` class: ^C raises this sheet as
+  // readily as 🗑 does, and a scrim-tapped one left in the body would stack a dead
+  // `.ui-sheet` per press — including the `.ui-sheet.open` probe メ's Escape rule reads.
+  // Tile.kill reads the node's presence to keep one sheet per tile.
+  const dlg = sheet({
+    id: `endsession-${tileIndex}`,
+    cls: 'end-session-card',
+    label: t('retire.sheet', 'Retire {name}', { name }),
+    onClose: () => dlg.el.remove(),
+  });
   const title = document.createElement('h2');
   title.textContent = name;
   const copy = document.createElement('p');
@@ -95,7 +104,6 @@ export function retireSession(name, tileIndex, onDone) {
       return;
     }
     dlg.close();
-    dlg.el.remove();
     await onDone();
   };
   const safeShutdown = async () => {

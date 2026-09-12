@@ -11,6 +11,7 @@ import { installTextDrops } from './tiledroptext.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
+import { INTERRUPT } from './terminal-input.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { buildKeysRow } from './keysrow.js';
@@ -66,7 +67,13 @@ export class Tile {
     // 🔒 THE LOCKED VIEW — xterm, opened into the body after the panel, as before.
     this.term = new TermView(this.body, {
       // Locked: key-for-key to the host (the mirror, unchanged). Unlocked: DVR input rules.
-      onUserData: (d) => (this.locked ? this.sendRaw(d) : this.dvrInput(d)),
+      onUserData: (d) => {
+        // ^C is the one keystroke that never reaches the pane: it ends the Agent and
+        // its session outright, so it asks first (terminal-input.js). Both modes, since
+        // the DVR rule would pass it straight through as a command key.
+        if (d === INTERRUPT && this.session) return void this.kill();
+        return this.locked ? this.sendRaw(d) : this.dvrInput(d);
+      },
       onProtocolData: (d) => this.wire.sendTerminalReply(d),
       onResize: ({ cols, rows }) => this.wire.send({ t: 'r', c: cols, r: rows }),
       onSelection: (s) => {
@@ -536,6 +543,10 @@ export class Tile {
   async kill() {
     const name = this.session;
     if (!name) return;
+    // ^C raises this too, and a held ^C repeats: the sheet takes focus as it opens, but
+    // a repeat already queued can still reach xterm first. Dismissal removes the node
+    // (session-retire.js), so finding one means this tile's sheet is up — never a stack.
+    if (document.getElementById(`endsession-${this.index}`)) return;
     retireSession(name, this.index, async () => {
       this.detach();
       await fetchSessions();

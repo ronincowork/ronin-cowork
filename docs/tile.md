@@ -516,9 +516,21 @@ kill, and it used to stay lit and say nothing about why pressing it did nothing.
 **Locked** is key-for-key to the host: every keystroke round-trips to the tmux terminal
 exactly as `tmux attach` always did.
 
+**^C never reaches the pane.** Typed into a terminal it walks the agent out of its pane and
+takes the tmux session with it — an ending with no confirmation and no way back. So the tile
+holds it and raises the retire sheet instead (Archive · Delete · Hard Delete), the same sheet
+🗑 raises. Held before the locked/unlocked split, because the DVR rule would otherwise pass it
+straight through as a command key; and held only while the tile has a session, so an empty
+tile is unchanged. A held ^C repeats, and the sheet takes focus as it opens — `kill()` finds
+an existing `endsession-<index>` node and declines, so a repeat cannot stack a second sheet.
+
+**Interrupting is still there**, by a route that cannot be a slip: the `^C` button on the keys
+row (`keysrow.js`) and a pad key bound to `int` (`pad.js`) both hand `\x03` to `sendRaw`, which
+is downstream of the guard.
+
 **Unlocked** is the DVR rule (`public/js/dvr.js`, pure and tested). Printable text — typed or
-pasted — **parks locally** and shows in a thin strip over the tile. Command keys (^C, Esc,
-arrows, Tab, any control char) go straight through immediately. Enter sends the whole parcel
+pasted — **parks locally** and shows in a thin strip over the tile. Command keys (Esc, arrows,
+Tab, any control char bar the ^C held above) go straight through immediately. Enter sends the whole parcel
 as **one atomic write with the `\r` glued on**; a delayed `\r` on a timer is a message iOS can
 lose halfway. Backspace eats parked text first, and is a command key once the strip is empty.
 
