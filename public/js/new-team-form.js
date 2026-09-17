@@ -8,7 +8,7 @@ import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createStep, el, mandateWord, providerCatalog, readingRows, tagRow, templateTray, tierWord,
+  createStep, el, loadProviderCatalog, mandateWord, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab, seedReservedWorkspaceTab } from './workspace.js';
 
@@ -620,6 +620,10 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
         request('/api/launch-seed'),
         request('/api/templates/teams'),
         request('/api/project-roots'),
+        // The Team's inline Agent editor reads the shared provider catalog too. Load it
+        // here so a fresh New Team journey does not depend on another launch surface
+        // having happened to populate the module cache first.
+        loadProviderCatalog(),
       ]);
       templates = tray.ok && Array.isArray(tray.data) ? tray.data : [];
       roots = rootRows.ok && Array.isArray(rootRows.data) ? rootRows.data : [];

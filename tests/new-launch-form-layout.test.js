@@ -124,7 +124,7 @@ test('collapsible steps expose one full-width disclosure row and Team defaults u
 });
 
 test('Add Agent confirms a draft into a compact row with the one selector utility', async () => {
-  const agents = await source('team-agents.js');
+  const [agents, team] = await Promise.all([source('team-agents.js'), source('new-team-form.js')]);
   assert.match(agents, /let editor = null/);
   assert.match(agents, /if \(index < 0\) rows\(\)\.push\(saved\)/);
   assert.match(agents, /editor = null; changed\(\); paint\(\)/);
@@ -152,6 +152,9 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.match(agents, /model: row\.model/);
   assert.match(agents, /instructions: row\.assignment\.trim\(\)/);
   assert.doesNotMatch(agents, /team_lead|routines_/);
+  assert.match(team, /loadProviderCatalog\(\)/, 'New Team loads provider choices for its inline Agent editor');
+  assert.match(team, /Promise\.all\(\[[\s\S]*request\('\/api\/project-roots'\),[\s\S]*loadProviderCatalog\(\)/,
+    'provider choices load as part of entering the New Team surface');
 });
 
 test('New Team cast text is labelled and all cast selections belong to ask()', async () => {
