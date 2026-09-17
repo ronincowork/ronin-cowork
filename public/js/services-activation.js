@@ -9,6 +9,10 @@ const el = (tag, cls, text) => {
   return node;
 };
 
+export const showsConfirmationAddress = (state) => state?.stage === 'awaiting_email'
+  || state?.stage === 'expired'
+  || (state?.stage === 'error' && state?.error_at_stage === 'awaiting_email');
+
 export function installServicesStatus() {
   const trigger = document.getElementById('servicesstate');
   const unavailable = { setVisible() {} };
@@ -36,7 +40,9 @@ export function installServicesStatus() {
       : stage === 'expired' ? t('services.bar_expired', 'Services confirmation expired')
       : stage === 'error' ? t('services.bar_error', 'Ronin Services needs attention') : t('settei.ronin_services', 'Ronin Services');
     message.textContent = next?.error_message
-      || (next?.email_masked ? t('services.confirmation_address', 'Confirmation address: {email}', { email: next.email_masked }) : t('services.activation', 'Ronin Services activation'));
+      || (showsConfirmationAddress(next) && next?.email_masked
+        ? t('services.confirmation_address', 'Confirmation address: {email}', { email: next.email_masked })
+        : t('services.activation', 'Ronin Services activation'));
     check.hidden = !(stage === 'awaiting_email'
       || (stage === 'error' && next?.error_at_stage === 'awaiting_email'));
     resend.hidden = stage !== 'awaiting_email';
