@@ -13,6 +13,12 @@ export const showsConfirmationAddress = (state) => state?.stage === 'awaiting_em
   || state?.stage === 'expired'
   || (state?.stage === 'error' && state?.error_at_stage === 'awaiting_email');
 
+export const showsServicesHeader = (visible, stage, readyDismissed = false) => visible
+  && !['not_requested', 'cancelled'].includes(stage)
+  && !(stage === 'installed' && readyDismissed);
+
+const READY_HOLD_MS = 3000;
+
 export function installServicesStatus() {
   const trigger = document.getElementById('servicesstate');
   const unavailable = { setVisible() {} };
@@ -26,12 +32,32 @@ export function installServicesStatus() {
   const cancel = el('button', '', t('services.cancel_services', 'Cancel Ronin Services'));
   for (const item of [check, resend, change, cancel]) { item.type = 'button'; actions.append(item); }
   pop.append(message, actions); document.body.append(pop);
-  let state = null; let busy = false; let installTimer = null; let visible = false;
+  let state = null; let busy = false; let installTimer = null; let readyTimer = null;
+  let visible = false; let previousStage = null; let readyDismissed = false;
 
   const paint = (next) => {
     state = next;
     const stage = next?.stage || 'not_requested';
-    trigger.hidden = !visible || ['not_requested', 'cancelled'].includes(stage);
+    if (stage === 'installed' && previousStage !== 'installed') {
+      // A successful transition gets a short acknowledgement. An already-installed
+      // workspace starts quiet instead of restoring a permanent status badge.
+      readyDismissed = previousStage == null;
+      if (!readyDismissed) {
+        if (readyTimer) clearTimeout(readyTimer);
+        readyTimer = setTimeout(() => {
+          readyDismissed = true;
+          trigger.hidden = true;
+          pop.hidden = true;
+          trigger.setAttribute('aria-expanded', 'false');
+          readyTimer = null;
+        }, READY_HOLD_MS);
+      }
+    } else if (stage !== 'installed') {
+      if (readyTimer) clearTimeout(readyTimer);
+      readyTimer = null;
+      readyDismissed = false;
+    }
+    trigger.hidden = !showsServicesHeader(visible, stage, readyDismissed);
     trigger.classList.toggle('busy', busy || ['requesting', 'installing'].includes(stage));
     trigger.textContent = stage === 'installed' ? t('services.bar_ready', 'Services ready')
       : stage === 'installing' ? t('services.bar_installing', 'Installing Ronin Services…')
@@ -52,6 +78,9 @@ export function installServicesStatus() {
     // Installation is local work. Watch the local state only while it is running; this
     // never calls Shiwake and stops as soon as the installer reports ready or failed.
     if (stage === 'installing') installTimer = setTimeout(() => void refresh(), 3000);
+    // `setVisible()` can paint before the first local-state read; that placeholder is not
+    // a lifecycle transition and must not make an existing installation flash as new.
+    if (next) previousStage = stage;
   };
   const refresh = async () => {
     const result = await request('/api/services/activation', { cache: 'no-store' });
