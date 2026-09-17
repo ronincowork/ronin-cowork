@@ -78,34 +78,44 @@ export async function listSessions(): Promise<SessionInfo[]> {
       '-F',
       `#{session_name}\t#{${TITLE_OPT}}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}\t#{${RIREKI_OPT}}\t#{window_activity}\t#{@ronin-identity}`,
     ]);
-    return stdout
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => {
-        const [name, title, windows, attached, created, hasNote, tags, leads, key, agent, campaign, rireki, activity, identity] = line.split('\t');
-        return {
-          name,
-          title: title?.trim() || '',
-          windows: Number(windows) || 0,
-          attached: attached === '1',
-          created: Number(created) || 0,
-          hasNote: hasNote === '1',
-          tags: parseTags(tags),
-          leads: parseTags(leads),
-          key: key?.trim() || `${name}-${Number(created) || 0}`,
-          agent: agent?.trim() || '',
-          identity: parseSessionIdentity(identity),
-          campaign_id: campaign?.trim() || '',
-          rireki: rireki?.trim() !== 'off',
-          activity: Number(activity) || 0,
-        };
-      })
+    return parseSessionRows(stdout)
       .filter((s) => !s.name.startsWith(config.viewerPrefix))
       .sort((a, b) => a.name.localeCompare(b.name));
   } catch (err) {
     if (noServer(err)) return [];
     throw err;
   }
+}
+
+/**
+ * Decode only complete records from the one list-sessions format above. A control-mode
+ * escaping regression once left the separators inside the first field, and the browser
+ * announced the whole Mika record as one enormous session name. Launch validation cannot
+ * protect a read projection, so this boundary independently refuses malformed rows.
+ */
+export function parseSessionRows(stdout: string): SessionInfo[] {
+  return stdout.split('\n').filter(Boolean).flatMap((line) => {
+    const fields = line.split('\t');
+    if (fields.length !== 14) return [];
+    const [name, title, windows, attached, created, hasNote, tags, leads, key, agent, campaign, rireki, activity, identity] = fields;
+    if (!isValidName(name)) return [];
+    return [{
+      name,
+      title: title?.trim() || '',
+      windows: Number(windows) || 0,
+      attached: attached === '1',
+      created: Number(created) || 0,
+      hasNote: hasNote === '1',
+      tags: parseTags(tags),
+      leads: parseTags(leads),
+      key: key?.trim() || `${name}-${Number(created) || 0}`,
+      agent: agent?.trim() || '',
+      identity: parseSessionIdentity(identity),
+      campaign_id: campaign?.trim() || '',
+      rireki: rireki?.trim() !== 'off',
+      activity: Number(activity) || 0,
+    }];
+  });
 }
 
 export async function sessionExists(name: string): Promise<boolean> {
