@@ -109,12 +109,18 @@ else
 fi
 
 render_template() {  # render_template <template> — rendered text on stdout
-  local text
+  local text repo="$ROOT" node="$NODE_DIR" tmux="$TMUX_BIN" tmux_dir="$TMUX_DIR"
+  case "$1" in *.plist)
+    repo="$(printf '%s' "$repo" | sed 's/\&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
+    node="$(printf '%s' "$node" | sed 's/\&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
+    tmux="$(printf '%s' "$tmux" | sed 's/\&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
+    tmux_dir="$(printf '%s' "$tmux_dir" | sed 's/\&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
+  esac
   text="$(<"$1")"
-  text="$(subst_literal "$text" '__REPO_DIR__' "$ROOT")"
-  text="$(subst_literal "$text" '__NODE_DIR__' "$NODE_DIR")"
-  text="$(subst_literal "$text" '__TMUX_BIN__' "$TMUX_BIN")"
-  text="$(subst_literal "$text" '__TMUX_DIR__' "$TMUX_DIR")"
+  text="$(subst_literal "$text" '__REPO_DIR__' "$repo")"
+  text="$(subst_literal "$text" '__NODE_DIR__' "$node")"
+  text="$(subst_literal "$text" '__TMUX_BIN__' "$tmux")"
+  text="$(subst_literal "$text" '__TMUX_DIR__' "$tmux_dir")"
   printf '%s\n' "$text"
 }
 
@@ -165,24 +171,21 @@ elif [ "$OS" = "Darwin" ]; then
   tpl="$ROOT/deploy/com.ronin.plist"
   inst="$HOME/Library/LaunchAgents/com.ronin.plist"
   if [ -f "$HOME/Library/LaunchAgents/com.tmux-ronin.plist" ]; then
-    find_ "the retired launchd agent com.tmux-ronin.plist is still installed — run ./setup.sh and unload the old one"
+    find_ "the retired launchd agent com.tmux-ronin.plist is still installed — run ./setup.sh"
   fi
   if [ ! -f "$inst" ]; then
-    find_ "com.ronin.plist was never installed — run ./setup.sh, then launchctl load -w $inst"
+    find_ "com.ronin.plist was never installed — run ./setup.sh"
   elif ! diff -q <(render_template "$tpl") "$inst" >/dev/null 2>&1; then
-    find_ "installed com.ronin.plist is not the one in deploy/ — run ./setup.sh, then launchctl unload/load -w $inst"
+    find_ "installed com.ronin.plist is not the one in deploy/ — run ./setup.sh"
   else
     ok "com.ronin.plist matches deploy/"
   fi
-  # A matching file is not a running service, and on macOS the two come apart by
-  # DESIGN: setup.sh renders the agent and only PRINTS the `launchctl load` line, so
-  # "the plist is correct" is the expected state of a Mac where Ronin has never once
-  # started. Doctor used to stop at the file and call that clean.
+  # Setup both renders and starts the service; check the running state as well.
   if [ -f "$inst" ]; then
     if ! machine_operator_loaded; then
-      find_ "com.ronin.plist is rendered but never loaded — launchd does not know about it. Run: launchctl load -w $inst"
+      find_ "com.ronin.plist is installed but not loaded — run ./setup.sh"
     elif [ -z "$(machine_operator_pid)" ]; then
-      find_ "the com.ronin agent is loaded but not running — launchctl list shows no pid. Check: launchctl print gui/$(id -u)/$RONIN_UNIT"
+      find_ "the com.ronin agent is loaded but not running. Check: launchctl print $(machine_launchd_domain)/$RONIN_UNIT"
     else
       ok "the com.ronin agent is loaded and running (pid $(machine_operator_pid))"
     fi
@@ -580,9 +583,7 @@ machine_linger_on; case $? in
   *) find_ "linger is OFF — every --user service stops at logout, so Ronin is absent whenever nobody is signed in. remedy: sudo $(machine_linger_action)" ;;
 esac
 
-# The verified Tailscale HTTPS route is part of a successful install. Doctor therefore
-# treats a missing exact mapping as a finding; internal HTTP remains only the loopback
-# transport between Serve and the operator.
+# Tailscale HTTPS is optional; local HTTP does not require a Serve mapping.
 if ! command -v tailscale >/dev/null 2>&1; then
   note "no tailscale here — no tailnet door to check"
 elif ! served="$(ronin_served_url "$PORT" "$HOSTIP" 4810 2>/dev/null)"; then
@@ -590,7 +591,7 @@ elif ! served="$(ronin_served_url "$PORT" "$HOSTIP" 4810 2>/dev/null)"; then
 elif [ -n "$served" ]; then
   ok "a tailnet door serves this install — $served"
 else
-  find_ "required Tailscale HTTPS address on port 4810 is missing; run setup again after checking Tailscale Serve permission"
+  note "Tailscale HTTPS is not configured; local HTTP remains available"
 fi
 
 # ---- the box itself: can it survive a busy hour? ------------------------------------

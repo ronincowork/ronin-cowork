@@ -102,8 +102,8 @@ if [ "$want_swap" = 1 ]; then
   fi
 fi
 if [ "$serve_failed" -ne 0 ]; then
-  printf '  ! Ronin was not activated because its required HTTPS address could not be established\n'
-  exit 11
+  printf '  ! Tailscale HTTPS is unavailable; Ronin will still offer local HTTP access\n'
+  optional_failed=1
 fi
 if [ "$optional_failed" -ne 0 ]; then
   printf '  ! Ronin will continue using the machine settings that did succeed\n'

@@ -1,17 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  macOS launchd agent template for ronin (use a Mac as your home server).
-  Fill the three placeholders, install, and load (a bundled release: NODE_DIR is
-  $PWD/vendor/node/bin and TMUX_DIR is $PWD/vendor/bin; a checkout: resolve both
-  from PATH as below):
-
-    sed -e "s#__REPO_DIR__#$PWD#" \
-        -e 's#__NODE_DIR__#'"$(dirname "$(readlink -f "$(command -v node)")")"'#' \
-        -e 's#__TMUX_DIR__#'"$(dirname "$(command -v tmux)")"'#' \
-        deploy/com.ronin.plist > ~/Library/LaunchAgents/com.ronin.plist
-    launchctl load -w ~/Library/LaunchAgents/com.ronin.plist
-
-  (setup.sh prints these steps for you on macOS.)
+  macOS launchd agent template. setup.sh renders paths, installs this file in
+  ~/Library/LaunchAgents, and starts Ronin in the owner's launchd domain.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
