@@ -263,7 +263,7 @@ export function templateTray(rows, current, onPick, { includeOwn = true } = {}) 
  */
 let catalog = { rows: [], providers: [], machine: [], measured_at: '', origin: '', updated: '', stock_updated: '', withdrawn: [], loaded: false };
 let inflight = null;
-const CLI_MODEL_INVENTORY = new Set(['claude', 'codex']);
+const CLI_MODEL_INVENTORY = new Set(['claude', 'codex', 'grok']);
 
 export function loadProviderCatalog() {
   if (inflight) return inflight;

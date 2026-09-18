@@ -31,7 +31,7 @@ import { mergeSections, readUserCatalog, STOCK_DIR, storeDir, type CatalogSectio
 export const CATALOG_FILE = 'MODEL_PROVIDERS.md';
 export const TIERS = ['light', 'standard', 'frontier'] as const;
 export type Tier = typeof TIERS[number];
-export const CLI_MODEL_INVENTORY = new Set(['claude', 'codex']);
+export const CLI_MODEL_INVENTORY = new Set(['claude', 'codex', 'grok']);
 
 export interface SessionLaunchSpec {
   /** The vendor id a launch names: `anthropic`, `openai`, … */
