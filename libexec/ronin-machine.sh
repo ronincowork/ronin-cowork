@@ -114,6 +114,23 @@ machine_operator_unit() {
 # The launchd agent's file, whatever it is called here.
 machine_operator_plist() { printf '%s/Library/LaunchAgents/%s.plist' "$HOME" "$(machine_operator_unit)"; }
 
+# Reuse the installed job's domain; an SSH-only Mac has no GUI login domain.
+machine_launchd_domain() {
+  local label="${1:-$(machine_operator_unit)}" uid domain
+  uid="$(id -u)"
+  for domain in "gui/$uid" "user/$uid"; do
+    if launchctl print "$domain/$label" >/dev/null 2>&1; then
+      printf '%s' "$domain"
+      return
+    fi
+  done
+  if launchctl print "gui/$uid" >/dev/null 2>&1; then
+    printf 'gui/%s' "$uid"
+  else
+    printf 'user/%s' "$uid"
+  fi
+}
+
 # Which tree does the INSTALLED operator serve? Empty means "cannot tell" — nothing is
 # installed, or this box has no manager to ask — and a caller must never read that as
 # "not this tree". That conflation is what made a Mac update land and never go live.
@@ -133,14 +150,13 @@ machine_operator_workdir() {
   esac
 }
 
-# The running operator's PID, or empty when it is not up. `launchctl list` has printed
-# the same three columns — PID, last exit status, label — across every macOS that has a
-# LaunchAgent, and prints `-` for a job that is loaded but not running.
+# The running operator's PID, or empty when it is not up.
 machine_operator_pid() {
   local pid=""
   case "$(machine_service_kind)" in
     systemd) pid="$(systemctl --user show "$(machine_operator_unit)" -p MainPID --value 2>/dev/null || true)" ;;
-    launchd) pid="$(launchctl list 2>/dev/null | awk -v l="$(machine_operator_unit)" '$3 == l { print $1 }')" ;;
+    launchd) pid="$(launchctl print "$(machine_launchd_domain)/$(machine_operator_unit)" 2>/dev/null |
+                     awk '$1 == "pid" && $2 == "=" && $3 ~ /^[0-9]+$/ { print $3; exit }')" ;;
   esac
   case "$pid" in ""|0|-) return 0 ;; esac
   printf '%s' "$pid"
@@ -151,8 +167,7 @@ machine_operator_pid() {
 machine_operator_loaded() {
   case "$(machine_service_kind)" in
     systemd) systemctl --user cat "$(machine_operator_unit)" >/dev/null 2>&1 ;;
-    launchd) launchctl list 2>/dev/null |
-               awk -v l="$(machine_operator_unit)" '$3 == l { f = 1 } END { exit !f }' ;;
+    launchd) launchctl print "$(machine_launchd_domain)/$(machine_operator_unit)" >/dev/null 2>&1 ;;
     *)       return 2 ;;
   esac
 }
@@ -163,6 +178,6 @@ machine_operator_loaded() {
 machine_operator_restart_action() {
   case "$(machine_service_kind)" in
     systemd) printf 'systemctl --user restart %s' "$(machine_operator_unit)" ;;
-    launchd) printf 'launchctl kickstart -k gui/%s/%s' "$(id -u)" "$(machine_operator_unit)" ;;
+    launchd) printf 'launchctl kickstart -k %s/%s' "$(machine_launchd_domain)" "$(machine_operator_unit)" ;;
   esac
 }

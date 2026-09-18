@@ -84,9 +84,10 @@ export function decodeTmuxOutput(value: string): string {
     String.fromCharCode(Number.parseInt(octal, 8)));
 }
 
+// Machine-readable rows contain tabs: non-UTF-8 tmux clients replace them with underscores.
 function defaultExec(file: string, args: readonly string[], timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile(file, [...args], { encoding: 'utf8', timeout: timeoutMs }, (error, stdout, stderr) => {
+    execFile(file, ['-u', ...args], { encoding: 'utf8', timeout: timeoutMs }, (error, stdout, stderr) => {
       if (error) {
         const text = String(stderr || error.message).replace(/\r?\n$/, '');
         reject(new Error(text));
@@ -99,7 +100,7 @@ function defaultExec(file: string, args: readonly string[], timeoutMs: number): 
 
 const DEFAULT_DEPENDENCIES: Dependencies = {
   exec: defaultExec,
-  spawnControl: () => spawn('tmux', ['-C', 'attach-session', '-t', `=${TMUX_CONTROL_HOLDER}`], {
+  spawnControl: () => spawn('tmux', ['-u', '-C', 'attach-session', '-t', `=${TMUX_CONTROL_HOLDER}`], {
     stdio: ['pipe', 'pipe', 'pipe'],
   }) as ChildProcessWithoutNullStreams,
   setTimer: (handler, delayMs) => setTimeout(handler, delayMs),

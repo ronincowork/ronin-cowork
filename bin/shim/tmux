@@ -11,6 +11,14 @@ if [ -x "$REAL_DIR/../../vendor/tmux" ]; then
   REAL="$REAL_DIR/../../vendor/tmux"
 else
   REAL=/usr/bin/tmux
+  if [ "$(uname -s)" = Darwin ]; then
+    for candidate in /opt/homebrew/bin/tmux /usr/local/bin/tmux /usr/bin/tmux; do
+      if [ -x "$candidate" ] && [ ! "$candidate" -ef "$SELF" ]; then
+        REAL="$candidate"
+        break
+      fi
+    done
+  fi
 fi
 
 for arg in "$@"; do

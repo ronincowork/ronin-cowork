@@ -99,6 +99,9 @@ test('the banner keeps identity framed and the URL whole on its own copyable lin
     encoding: 'utf8',
   });
   assert.ok(out.split('\n').includes(`  ${url}`));
+  assert.ok(out.split('\n').includes('  http://127.0.0.1:4810'));
+  assert.match(out, /another device connected to your Tailscale network/);
+  assert.match(out, /On this computer only/);
   assert.doesNotMatch(out, /WHAT CHANGED OUTSIDE/);
   assert.match(out, /Next: open Machine Settings/);
   assert.match(out, /Install details: \/tmp\/report\.log/);
@@ -154,4 +157,22 @@ test('an unrecorded .env gets the resolved address once; a rerun does not add a 
   assert.equal(call(dir, 'ronin_bind', dir), '127.0.0.1');
   call(dir, 'ronin_record_bind', dir);
   assert.equal(fs.readFileSync(path.join(dir, '.env'), 'utf8'), once);
+});
+
+
+test('local-only arrival names the actual backend port without an HTTPS address', () => {
+  const dir = box('', '3776');
+  const out = call(dir, 'ronin_banner', dir, '');
+  assert.match(out, /http:\/\/127\.0\.0\.1:3776/);
+  assert.match(out, /On this computer only/);
+  assert.doesNotMatch(out, /https:\/\//);
+});
+
+test('a custom non-loopback bind is printed honestly instead of promising localhost', () => {
+  const dir = box('');
+  fs.appendFileSync(path.join(dir, '.env'), 'BIND=10.0.0.2\n');
+  const out = call(dir, 'ronin_banner', dir, '');
+  assert.match(out, /HTTP address \(your custom BIND setting\)/);
+  assert.match(out, /http:\/\/10\.0\.0\.2:4810/);
+  assert.doesNotMatch(out, /On this computer only/);
 });

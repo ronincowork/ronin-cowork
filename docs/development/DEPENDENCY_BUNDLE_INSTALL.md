@@ -48,25 +48,27 @@ match) is exactly what makes the WSL path painless.
 
 The public installer (`scripts/get-ronin`, fetched raw and piped to sh) selects the
 platform artifact, verifies its checksum, installs it, and runs setup. The bundle supplies
-Node, tmux, and application dependencies. Tailscale must be installed and signed in;
-setup explains the outstanding administrator changes before applying them.
+Node, tmux, and application dependencies. Setup explains outstanding administrator
+changes before applying them. For access from other devices, the owner supplies an
+installed, signed-in Tailscale; local use does not require it.
 
-The successful browser destination is `https://<machine>.<tailnet>.ts.net:4810`.
-Access is controlled by Tailscale. A missing service, HTTPS mapping, or failed readiness
-check is incomplete setup, not an alternative address. On a local graphical Linux desktop,
-`libexec/ronin-open-browser` opens the verified URL as a convenience; its failure does not
-invalidate a working URL.
+A standard installation binds to loopback and prints `http://127.0.0.1:<backend-port>`
+for a browser on the computer running Ronin. When Tailscale HTTPS is available and
+verified, setup also prints `https://<machine>.<tailnet>.ts.net:4810` for this computer
+or another authorized tailnet device. Missing Tailscale or an unavailable HTTPS route
+does not prevent local installation. On a local graphical desktop,
+`libexec/ronin-open-browser` opens the local URL as a convenience.
 
 - **Linux:** services use user-level systemd units. The tmux unit runs the bundled binary
   (`deploy/tmux-server.service`, `__TMUX_BIN__`); the application resolves tmux through
   `vendor/bin` (`deploy/ronin.service`, `__TMUX_DIR__`).
-- **macOS:** setup renders the launchd agent from `deploy/com.ronin.plist`. Creating the
-  plist alone is not a running installation; follow any reported activation requirement
-  before expecting a verified URL.
+- **macOS:** setup renders, loads, and starts the per-user launchd agent from
+  `deploy/com.ronin.plist`. It uses the GUI domain when available, otherwise the user
+  domain for an SSH installation. There is no laptop/server choice or manual activation
+  step. A per-user agent does not promise service before login after a reboot.
 - **Windows (WSL2):** enable WSL2, then use the Linux artifact matching its architecture.
-  The Linux environment needs a working service manager and Tailscale setup. Verify the
-  machine-name HTTPS address from the Windows browser; do not infer access from unpacking
-  the artifact.
+  The Linux environment needs a working service manager. Verify the printed address
+  from the intended browser; do not infer access from unpacking the artifact.
 
 ## Where every byte is pinned
 
