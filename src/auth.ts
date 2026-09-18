@@ -80,6 +80,11 @@ export function cookieToken(header: string | undefined): string | undefined {
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+/** A browser password has no username. Advertise Basic auth only when it really exists. */
+export function unauthorizedUpgradeResponse(basicAuth: boolean): string {
+  return `HTTP/1.1 401 Unauthorized\r\n${basicAuth ? 'WWW-Authenticate: Basic realm="tmux-ronin"\r\n' : ''}\r\n`;
+}
+
 let cached: { rec: AuthRecord | null; mtime: number } | null = null;
 export function authRecord(): AuthRecord | null {
   let mtime = 0;

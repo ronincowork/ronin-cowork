@@ -18,6 +18,7 @@ import {
   loginSucceeded,
   makeToken,
   passwordAuthEnabled,
+  unauthorizedUpgradeResponse,
   verifyRecord,
 } from './auth.js';
 import { cleanupViewers, listSessions } from './tmux.js';
@@ -380,7 +381,7 @@ const wss = new WebSocketServer({
 
 server.on('upgrade', (req, socket, head) => {
   if (!checkAuth(req.headers)) {
-    socket.write('HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm="tmux-ronin"\r\n\r\n');
+    socket.write(unauthorizedUpgradeResponse(authEnabled));
     socket.destroy();
     return;
   }
