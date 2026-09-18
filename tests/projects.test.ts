@@ -48,12 +48,13 @@ test('the house places and returns whole projects and notices only after each re
   const file = path.join(dir, 'tegami.md');
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(file, '# TEGAMI\n\n```json\n{"objective":"keep","projects":[],"ladder":[]}\n```\n');
+  const reminder = 'Update your work record to reflect your current position, then continue the active assignment. This reminder does not replace the task or create a stopping point.';
   const notices: string[] = [];
   const notify = async (_session: string, text: string) => { notices.push(text); };
 
   const placed = await moveTegamiProject({ direction: 'place', session: 'worker', project }, notify);
   assert.deepEqual(placed, { project, projectsRemaining: 1, focus: project.id });
-  assert.deepEqual(notices, ['check your work record']);
+  assert.deepEqual(notices, [reminder]);
   assert.match(await fs.readFile(file, 'utf8'), /"objective": "keep"/);
 
   const other = { ...project, id: 'virtual-kanban/8', title: 'Next' };
@@ -64,5 +65,5 @@ test('the house places and returns whole projects and notices only after each re
   assert.deepEqual(returned, { project, projectsRemaining: 1, focus: other.id });
   const body = JSON.parse((await fs.readFile(file, 'utf8')).match(/```json\n([\s\S]*?)\n```/)![1]);
   assert.deepEqual(body.at, { project: other.id });
-  assert.deepEqual(notices, ['check your work record', 'check your work record', 'check your work record']);
+  assert.deepEqual(notices, [reminder, reminder, reminder]);
 });
