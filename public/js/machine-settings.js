@@ -140,10 +140,10 @@ export function buildMachineSettings(root, isShowing) {
         ? t('forms.reason_not_listed', 'not listed by your {cli} {client_version}', { cli: item.cli_label || item.cli, client_version: item.model_list?.client_version || '' })
         : t('forms.reason_not_on_machine', 'not on this machine');
     const fields = fixed ? [
-      { key: 'model', label: f.short ?? f.label, blank: t('settei.none_set', '— none set —'), options: catalog.filter((item) => item.provider === fixed).map((item) => ({ v: item.model, l: item.model, word: item.tier, sub: modelAvailabilityFact(item), off: item.operational && item.listed !== false ? '' : reason(item) })) },
+      { key: 'model', label: f.short ?? f.label, blank: t('settei.none_set', '— none set —'), options: catalog.filter((item) => item.provider === fixed).map((item) => ({ v: item.model, l: item.model, word: item.tier, sub: modelAvailabilityFact(item), off: item.selectable ? '' : (item.operational ? modelAvailabilityFact(item) : reason(item)) })) },
     ] : [
       { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('settei.none_set', '— none set —'), options: providers.map((item) => ({ v: item.provider, l: item.provider_label, off: item.operational ? '' : reason(item) })) },
-      { key: 'model', label: t('forms.model', 'Model'), blank: t('settei.none_set', '— none set —'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: item.model, word: item.tier, sub: modelAvailabilityFact(item), off: item.operational && item.listed !== false ? '' : reason(item) })) },
+      { key: 'model', label: t('forms.model', 'Model'), blank: t('settei.none_set', '— none set —'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: item.model, word: item.tier, sub: modelAvailabilityFact(item), off: item.selectable ? '' : (item.operational ? modelAvailabilityFact(item) : reason(item)) })) },
     ];
     const pair = ask([{ group: fixed ? '' : t('new_agent.model_package', 'Model'), fields }], {
       value: picked,

@@ -1,10 +1,10 @@
 # MODEL_PROVIDERS — the provider catalog (stock; yours shadows it)
 
 > **This file is stock, and an upgrade replaces it.** It is the one record of every model
-> provider Ronin offers and every model each provides, whether or not this machine has
-> the provider installed. Every picker, every launch and every provider fact on screen
-> reads from here or from the Campaign's measured provider summary; other documents link here instead of maintaining
-> another provider/model inventory. Nothing in here executes.
+> provider Ronin offers, its launch mechanics, and optional descriptive metadata for
+> models Ronin knows how to describe. The signed-in provider CLI owns the live model
+> inventory; Refresh captures that account-specific list in Campaign settings. Pickers
+> and launches use the captured CLI list, enriched by matching rows here. Nothing in here executes.
 >
 > **To keep names fresh without a code release,** copy this file to your catalogs store
 > (`$(ronin-store catalogs)/MODEL_PROVIDERS.md`) and edit it there. Each provider section in the owner copy
@@ -14,8 +14,8 @@
 
 ## Keeping it fresh
 
-Everything below is a snapshot, not live data: the models a vendor lists, the prices it
-publishes and the words about what each model is good at were read on the date above.
+Everything below is descriptive metadata, not an availability list: prices and the words
+about what each known model is good at were read on the date above.
 The stock catalog is refreshed with each Ronin release (the release order in
 `docs/development/tarball.md` has the step: re-read prices and models, bump `updated`). A shadow copy
 in your catalogs store is yours to refresh, and carries its own `updated` line. Ronin

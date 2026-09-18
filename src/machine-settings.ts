@@ -9,7 +9,7 @@ import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
-import { listProviderCatalog, listSessionLaunchSpecs, TIERS } from './model-providers.js';
+import { listProviderCatalog, listSessionLaunchSpecs, parseProviderSummary, TIERS } from './model-providers.js';
 import { storeDir } from './resources.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import { execFile as brokerExecFile } from './spawn-broker.js';
@@ -23,6 +23,15 @@ const MACHINE_SETTINGS_FILE = () => path.join(storeDir('config'), 'machine_setti
 const MAX_OPT = '@ronin-session-max';
 const OWNER_OPT = '@ronin-owner';
 const NO_LIMIT = 0;
+const recordedProviderSummary = async () => {
+  const campaigns = await readMachineSettingsSection<Record<string, unknown>>('campaigns', {});
+  for (const value of Object.values(campaigns)) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
+    const summary = parseProviderSummary((value as Record<string, unknown>).providers);
+    if (summary) return summary;
+  }
+  return null;
+};
 let writeQueue = Promise.resolve();
 let legacyImport: Promise<Record<string, unknown>> | null = null;
 const documents = new Map<string, { stamp: string; value: Promise<Record<string, unknown>> }>();
@@ -395,8 +404,8 @@ const publicJobs = async (value: unknown): Promise<Record<string, unknown>> => {
   if (typeof mika.level === 'string' && (TIERS as readonly string[]).includes(mika.level)) {
     jobs.mikaassist = { level: mika.level };
   } else if (mika.provider !== undefined || mika.model !== undefined) {
-    const pair = (await listSessionLaunchSpecs()).find((spec) => spec.provider === mika.provider && spec.model === mika.model);
-    jobs.mikaassist = pair ? { level: pair.tier } : { migration_choice_required: true };
+    const pair = (await listSessionLaunchSpecs(await recordedProviderSummary())).find((spec) => spec.provider === mika.provider && spec.model === mika.model);
+    jobs.mikaassist = pair && pair.tier ? { level: pair.tier } : { migration_choice_required: true };
   } else {
     jobs.mikaassist = { level: 'light' };
   }
@@ -713,7 +722,7 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
     status,
     needed,
     schema: { ...MACHINE_SETTINGS_SCHEMA, fields: [...MACHINE_SETTINGS_SCHEMA.fields,
-      ...providerModelFields([...new Set((await listSessionLaunchSpecs()).map((s) => s.provider))])] },
+      ...providerModelFields([...new Set((await listSessionLaunchSpecs(await recordedProviderSummary())).map((s) => s.provider))])] },
   };
 }
 

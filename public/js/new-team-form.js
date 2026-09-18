@@ -8,7 +8,7 @@ import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createStep, el, loadProviderCatalog, mandateWord, providerCatalog, readingRows, tagRow, templateTray, tierWord,
+  createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab, seedReservedWorkspaceTab } from './workspace.js';
 
@@ -71,10 +71,8 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     v: row.model, l: row.model, word: tierWord(row.tier), sub: row.cost || '',
     off: !row.operational
       ? (row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'))
-      : row.model_list_current && row.listed === false
-        ? t('forms.reason_not_listed', 'not listed by your {cli} {client_version}', {
-          cli: row.cli_label || row.cli, client_version: row.model_list?.client_version || row.model_list_installed || '',
-        })
+      : !row.selectable
+        ? modelAvailabilityFact(row)
         : undefined,
   }));
 

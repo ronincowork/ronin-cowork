@@ -263,6 +263,7 @@ export function templateTray(rows, current, onPick, { includeOwn = true } = {}) 
  */
 let catalog = { rows: [], providers: [], machine: [], measured_at: '', origin: '', updated: '', stock_updated: '', withdrawn: [], loaded: false };
 let inflight = null;
+const CLI_MODEL_INVENTORY = new Set(['claude', 'codex']);
 
 export function loadProviderCatalog() {
   if (inflight) return inflight;
@@ -315,8 +316,20 @@ export function orderedCatalog(rows = [], machine = []) {
     return { ...row, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
       provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '',
       model_list: list, model_list_current: modelListCurrent, model_list_installed: entry?.version || '',
-      listed: list ? Boolean(measuredModel) : null };
+      listed: list ? Boolean(measuredModel) : null,
+      selectable: entry?.activated === true && (list ? Boolean(measuredModel) : !CLI_MODEL_INVENTORY.has(row.cli)) };
   });
+  for (const entry of Array.isArray(machine) ? machine : []) {
+    const base = marked.find((row) => row.cli === entry?.id);
+    if (!base || !Array.isArray(entry?.model_list?.models)) continue;
+    const known = new Set(marked.filter((row) => row.cli === entry.id).map((row) => row.model));
+    for (const model of entry.model_list.models) {
+      if (model?.visibility !== 'list' || !model?.slug || known.has(model.slug)) continue;
+      marked.push({ ...base, model: model.slug, tier: '', default: false, cost: '',
+        good_at: model.description || '', not_good_at: '', origin: 'cli', shadowed: false,
+        listed: true, selectable: entry.activated === true });
+    }
+  }
   const providers = [...new Set(marked.map((row) => row.provider))];
   const on = providers.filter((provider) => marked.some((row) => row.provider === provider && row.operational));
   return [...on, ...providers.filter((provider) => !on.includes(provider))].flatMap((provider) => marked.filter((row) => row.provider === provider));
@@ -335,10 +348,11 @@ export function tierWord(tier) {
  */
 export const modelWord = (row) => t('forms.model_word', '{model} · {tier}', { model: row.model, tier: tierWord(row.tier) });
 
-/** A CLI list is evidence from the client version that fetched it; only a current list can refuse a row. */
+/** The persisted CLI list is the availability authority; its dates say exactly when it was captured. */
 export const modelAvailabilityFact = (row) => {
   const list = row.model_list;
-  if (!list) return '';
+  if (!list) return CLI_MODEL_INVENTORY.has(row.cli)
+    ? t('forms.model_list_unknown', 'Availability has not been read from your {cli} yet', { cli: row.cli_label || row.cli }) : '';
   const verdict = row.listed ? 'listed' : 'not listed';
   const asOf = list.fetched_at ? ` (as of ${list.fetched_at})` : '';
   if (!row.model_list_current) return t('forms.model_list_stale', '{verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read', {
@@ -384,7 +398,7 @@ export function providerModelPair(read, write, field, { fixed = '', classes = ''
     const offered = rows.filter((row) => row.provider === chosen);
     modelSelect.replaceChildren(option(empty.model, ''));
     for (const row of offered) {
-      const unavailable = row.model_list_current && row.listed === false;
+      const unavailable = row.selectable !== true;
       const label = fixed && !row.operational
         ? (row.off ? t('forms.model_turned_off', '{model} · {tier} — turned off', { model: row.model, tier: tierWord(row.tier) }) : t('forms.model_off', '{model} · {tier} — not on this machine', { model: row.model, tier: tierWord(row.tier) }))
         : modelAvailabilityWord(row);
