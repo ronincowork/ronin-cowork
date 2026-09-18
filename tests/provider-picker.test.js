@@ -129,7 +129,7 @@ test('a fixed provider drops the provider select: the row is the provider, the p
   assert.deepEqual(draft, { provider: 'openai', model: '' });
   // A fixed provider this machine cannot launch says so on each row rather than hiding them.
   const off = providerModelPair(() => ({ provider: 'google', model: '' }), () => {}, (_label, control) => control, { fixed: 'google' });
-  assert.match(off.modelSelect.options[1].textContent, /^native/);
+  assert.match(off.modelSelect.options[1].textContent, /^Native/);
   assert.equal(off.modelSelect.options[1].disabled, true);
 });
 
@@ -145,7 +145,7 @@ test('a provider the owner turned off is greyed with that word — never the fal
     assert.equal(pair.providerSelect.options[2].disabled, true, 'disabled, never hidden');
     assert.equal(pair.providerSelect.options[3].textContent, 'Google — not on this machine', 'absent keeps its own words');
     const fixed = providerModelPair(() => ({ provider: 'anthropic', model: '' }), () => {}, (_label, control) => control, { fixed: 'anthropic' });
-    assert.match(fixed.modelSelect.options[1].textContent, /^native/);
+    assert.match(fixed.modelSelect.options[1].textContent, /^Native/);
   } finally {
     Object.assign(claude, was); delete claude.off;
     await loadProviderCatalog();

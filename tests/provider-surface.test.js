@@ -166,7 +166,7 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   assert.deepEqual(walk(table).filter((node) => node.tagName === 'TH').map((node) => node.textContent), ['Model', 'Tier', 'Cost', 'Good at', 'Not good at']);
   const rows = walk(table).filter((node) => node.tagName === 'TR' && node.dataset.model);
   assert.deepEqual(rows.map((row) => row.children.map((cell) => cell.textContent)), [
-    ['nativethe defaultThe CLI chooses the model', '', '', 'the CLI choosing its own configured or current default model', 'pinning a particular model'],
+    ['Nativethe defaultThe CLI chooses the model', '', '', 'the CLI choosing its own configured or current default model', 'pinning a particular model'],
     ['opuslisted by your Claude Code 2.1.263 (as of 2026-09-08)', 'frontier', '$5 in · $25 out per M tokens (2026-06)', 'long agentic coding runs', 'quick throwaway questions'],
     ['haikulisted by your Claude Code 2.1.263 (as of 2026-09-08)', 'light', '$1 in · $5 out per M tokens (2026-06)', 'fast sub-agents', 'large refactors'],
   ]);
