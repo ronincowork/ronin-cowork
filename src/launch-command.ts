@@ -89,5 +89,6 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
   const installed = dflt?.provider && dflt?.model
     ? specs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
     : undefined;
-  return { cmd: installed ?? defaultAgentCommand(), source: 'system' };
+  const providerNative = dflt?.provider ? providerDefault(specs, dflt.provider)?.cmd : undefined;
+  return { cmd: installed ?? providerNative ?? defaultAgentCommand(), source: 'system' };
 }
