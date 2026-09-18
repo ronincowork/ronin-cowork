@@ -6059,11 +6059,14 @@ button.wb-door:hover b {
 .setup-provider-facts dd { margin: 0; color: var(--fg-strong); font-weight: 600; }
 .setup-provider-facts div[data-on='true'] dd { color: var(--ok); }
 .setup-provider-table { overflow-x: auto; max-width: 100%; }
-.setup-provider-models { width: 100%; min-width: calc(var(--space-12) * 10); border-collapse: collapse; font-size: var(--text-5); }
+.setup-provider-models { width: 100%; min-width: calc(var(--space-12) * 10); table-layout: fixed; border-collapse: collapse; font-size: var(--text-5); }
 .setup-provider-models th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--muted); font-weight: 600; border-bottom: var(--edge) solid var(--line-2); }
-.setup-provider-models td { padding: var(--space-3); vertical-align: top; border-bottom: var(--edge) solid var(--line); }
-.setup-provider-models td:first-child { white-space: nowrap; }
+.setup-provider-models td { padding: var(--space-3); vertical-align: top; border-bottom: var(--edge) solid var(--line); overflow-wrap: anywhere; }
+.setup-provider-models th:nth-child(1) { width: 22%; }
+.setup-provider-models th:nth-child(2) { width: 10%; }
+.setup-provider-models th:nth-child(3) { width: 20%; }
 .setup-provider-models td b { color: var(--fg-strong); font-weight: 600; }
+.setup-provider-model-status { display: block; margin-top: var(--space-2); color: var(--muted-2); font-size: var(--text-3); line-height: 1.35; }
 .setup-provider-default { display: block; margin-top: var(--space-1); color: var(--muted); font-size: var(--text-2); }
 .setup-provider-tier { color: var(--muted-2); font-size: var(--text-2); letter-spacing: .06em; text-transform: uppercase; }
 .setup-kinds { display: grid; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
