@@ -8,7 +8,7 @@ import { t } from './lexicon.js';
 import { request } from './request.js';
 import { ask } from './ask.js';
 import { ruledRows } from './glyphs.js';
-import { createStep, loadProviderCatalog, mandateWord, modelAvailabilityFact, providerCatalog, tierWord } from './form-steps.js';
+import { createStep, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, tierWord } from './form-steps.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
@@ -35,7 +35,7 @@ const providerRows = () => {
     .map((row) => ({ v: row.provider, l: row.provider_label || row.provider, off: row.operational ? '' : reason(row) }));
 };
 const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider)
-  .map((row) => ({ v: row.model, l: row.model, word: tierWord(row.tier), sub: modelAvailabilityFact(row) || row.cost || '', off: row.selectable ? '' : (row.operational ? modelAvailabilityFact(row) : reason(row)) }));
+  .map((row) => ({ v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: modelAvailabilityFact(row) || row.cost || '', off: row.selectable ? '' : (row.operational ? modelAvailabilityFact(row) : reason(row)) }));
 
 export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   host.replaceChildren();

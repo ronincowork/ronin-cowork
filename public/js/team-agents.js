@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
-import { createStep, el, mandateWord, modelAvailabilityFact, providerCatalog, tierWord } from './form-steps.js';
+import { createStep, el, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, tierWord } from './form-steps.js';
 import { finalizeTeamName, sanitizeTeamName } from './new-team-draft.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -56,7 +56,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
         off: item.operational ? undefined : item.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
       }));
     const modelRows = (provider) => providerCatalog().rows.filter((item) => item.provider === provider).map((item) => ({
-      v: item.model, l: item.model, word: tierWord(item.tier), sub: item.cost || '',
+      v: item.model, l: modelLabel(item), word: tierWord(item.tier), sub: item.cost || '',
       off: !item.operational
         ? (item.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'))
       : !item.selectable
@@ -99,7 +99,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
     rows().forEach((row, index) => {
       const card = el('div', 'ntf-agent-row'); const words = el('div', 'ntf-agent-row-words');
       words.append(el('b', null, row.name || t('new_team.unnamed_agent', 'unnamed Agent')));
-      const details = [row.assignment, `${mandateWord(row.reach)} · ${mandateWord(row.recruit)} · ${row.output.map(mandateWord).join(', ')}`, [row.provider, row.model].filter(Boolean).join(' · ')].filter(Boolean);
+      const details = [row.assignment, `${mandateWord(row.reach)} · ${mandateWord(row.recruit)} · ${row.output.map(mandateWord).join(', ')}`, [row.provider, row.model ? modelLabel(row) : ''].filter(Boolean).join(' · ')].filter(Boolean);
       words.append(el('small', null, details.join(' — ')));
       const edit = createAction({ label: t('edit', 'Edit'), size: 'compact', action: () => openEditor(row, index) });
       const drop = createAction({
