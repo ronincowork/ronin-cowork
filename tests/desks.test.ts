@@ -79,6 +79,8 @@ const { casRef, revParse } = await import('../src/desks/git.js');
 const { lockDir, withLineLock, queueHolder } = await import('../src/desks/queue.js');
 const { readManagedEvents } = await import('../src/desks/lifecycle-ledger.js');
 const { createTeamRoster } = await import('../src/team-rosters.js');
+const { acceptedLaunchBody, spawnFormFromLaunchBody } = await import('../src/routes/launch.js');
+const { prepareLaunchDesks, resolveLaunchDesks } = await import('../src/launch-desks.js');
 
 await createTeamRoster('comp', { objective: 'desks', project_root: 'cowork', branch: '' });
 await createTeamRoster('multi', { objective: 'two repos', project_root: 'cowork', repos: ['cowork', 'koe'], branch: '' });
@@ -125,6 +127,20 @@ test('deriveAssignment: a team desks only its ticked repositories; nothing ticke
   assert.equal(direct.primary, 'koe');
   const absent = await deriveAssignment({ session: 'p', team: '', project_root: 'plain' });
   assert.deepEqual(absent.desks.map((d) => d.repo), ['plain'], 'candidate planning preserves an absent profile for resolver normalization');
+});
+
+test('a request-selected managed repository outside Born in reaches resolution and receives a desk', async () => {
+  const accepted = acceptedLaunchBody({
+    session_type: 'cowork_agent', name: 'outside-root', team: 'comp', project_root: 'koe', repos: ['services'],
+  });
+  const form = spawnFormFromLaunchBody(accepted.body);
+  const resolved = await resolveLaunchDesks({
+    session: form.name!, team: form.team!, project_root: form.project_root!, agent: true, repos: form.repos,
+  });
+  assert.deepEqual(resolved.assignment?.desks.map((row) => row.repo), ['services']);
+  const prepared = await prepareLaunchDesks(resolved.assignment!);
+  assert.equal(prepared.desks[0]?.repo, 'services');
+  assert.equal((await readDesk('services', prepared.desks[0]!.branch))?.worktree, prepared.desks[0]?.worktree);
 });
 
 test('openDesk: cut from current local dev, mounted, exact base recorded; the team line is review-only', async () => {

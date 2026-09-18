@@ -73,7 +73,7 @@ test('Where it works keeps birthplace separate and offers all workspaces to Cowo
   assert.match(form, /draft\.type === 'bare_metal_agent' \? \['provider', 'model', 'root', 'launchMode'\]/,
     'bare-metal Agents choose one birthplace and are not offered additional workspaces');
   assert.match(form, /if \(!touched\.repos\) draft\.repos = draft\.root \? \[draft\.root\] : \[\]/);
-  assert.match(form, /\[draft\.root, \.\.\.\(selected\?\.repos \|\| \[\]\)\]/);
+  assert.match(form, /draft\.repos = workspaceRepos\(\{ root: draft\.root, teamRepos:/);
   assert.doesNotMatch(form, /no auto desk|extra sessions/i);
 });
 

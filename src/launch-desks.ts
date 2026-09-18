@@ -44,17 +44,28 @@ export function primaryWorkLocation(repositories: ResolvedWorktreesRepository[],
     ?? '';
 }
 
-export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
-  const opener = (await import('./desks/desk.js')) as { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> };
+export async function prepareLaunchDesks(
+  a: Assignment,
+  suppliedOpener?: { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> },
+): Promise<Assignment> {
+  const opener = suppliedOpener ?? (await import('./desks/desk.js')) as { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> };
   const desks: RepoDesk[] = [];
   for (const candidate of a.desks) {
-    const openedDesk = await opener.openDesk({
-      repo: candidate.repo,
-      session: a.session,
-      team: a.team,
-      assignment: a.id,
-      branch: candidate.branch,
-    });
+    let openedDesk: RepoDesk;
+    try {
+      openedDesk = await opener.openDesk({
+        repo: candidate.repo,
+        session: a.session,
+        team: a.team,
+        assignment: a.id,
+        branch: candidate.branch,
+      });
+    } catch (error) {
+      const kept = desks.length
+        ? ` Already opened: ${desks.map((desk) => `${desk.repo}:${desk.branch} at ${desk.worktree}`).join(', ')}.`
+        : ' No desks were opened.';
+      throw new Error(`Failed to open selected managed workspace ${candidate.repo}: ${String((error as Error)?.message ?? error)}.${kept}`);
+    }
     desks.push({
       repo: openedDesk.repo, root: openedDesk.root, branch: openedDesk.branch,
       worktree: openedDesk.worktree, line: openedDesk.line, mode: openedDesk.mode,

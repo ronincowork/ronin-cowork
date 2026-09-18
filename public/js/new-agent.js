@@ -32,6 +32,14 @@ export function templateEntryPlan({ currentKind, kindTouched = false, templates 
   return { kind, template: row.name };
 }
 
+export function workspaceRepos({ root = '', teamRepos = [], current = [], touched = false } = {}) {
+  return touched ? [...current] : [...new Set([root, ...teamRepos].filter(Boolean))];
+}
+
+export function coworkWorkspacePayload(repos = []) {
+  return { repos: [...repos] };
+}
+
 export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
@@ -271,9 +279,10 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     if (key === 'team' || key === 'teamName') {
       draft.teamMode = value.team === 'new' ? 'new' : value.team === 'none' ? 'none' : 'existing';
       draft.team = draft.teamMode === 'existing' ? value.teamName : '';
-      touched.repos = false;
-      const selected = teams.find((row) => row.name === draft.team);
-      draft.repos = [...new Set([draft.root, ...(draft.teamMode === 'existing' ? selected?.repos || [] : [])].filter(Boolean))];
+      if (!touched.repos) {
+        const selected = teams.find((row) => row.name === draft.team);
+        draft.repos = workspaceRepos({ root: draft.root, teamRepos: draft.teamMode === 'existing' ? selected?.repos || [] : [] });
+      }
       void loadSeed();
     }
     paintFoot(); paintActions();
@@ -461,7 +470,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
         : {
           session_type: 'cowork_agent', name, team, project_root: draft.root,
           instructions: draft.instructions.trim(), provider: draft.provider, model: draft.model,
-          ...(touched.repos && Array.isArray(draft.repos) ? { repos: draft.repos } : {}),
+          ...coworkWorkspacePayload(draft.repos),
           mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output },
           behaviours: [...draft.books],
           launch_mode: draft.launchMode,
@@ -530,7 +539,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     if (!touched.root && value('project_root')) draft.root = value('project_root');
     if (!touched.repos) {
       const selected = draft.teamMode === 'existing' ? teams.find((row) => row.name === draft.team) : null;
-      draft.repos = [...new Set([draft.root, ...(selected?.repos || [])].filter(Boolean))];
+      draft.repos = workspaceRepos({ root: draft.root, teamRepos: selected?.repos || [] });
     }
     if (!touched.mandate) {
       for (const key of ['reach', 'recruit']) if (value(key)) draft[key] = value(key);

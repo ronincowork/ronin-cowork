@@ -13,6 +13,7 @@ process.env.BIND = '127.0.0.1';
 const { registerLaunch } = await import('../src/routes/launch.js');
 const { acceptedLaunchBody } = await import('../src/routes/launch.js');
 const { mikaLaunchBody } = await import('../src/routes/launch.js');
+const { spawnFormFromLaunchBody } = await import('../src/routes/launch.js');
 
 const app = express();
 app.use(express.json());
@@ -97,6 +98,14 @@ test('cowork kind and behaviours survive body acceptance while unusable shapes a
   assert.equal(ignored.body.kind, undefined);
   assert.equal(ignored.body.behaviours, undefined);
   assert.deepEqual(ignored.ignored, ['behaviours', 'kind']);
+});
+
+test('explicit workspace selection, including empty, survives request acceptance into the resolver form', () => {
+  const selected = acceptedLaunchBody({ session_type: 'cowork_agent', name: 'proof', project_root: 'ronin_lab', repos: ['ronin_cowork'] });
+  assert.deepEqual(spawnFormFromLaunchBody(selected.body).repos, ['ronin_cowork']);
+
+  const empty = acceptedLaunchBody({ session_type: 'cowork_agent', name: 'proof', team: 'team-with-defaults', project_root: 'ronin_lab', repos: [] });
+  assert.deepEqual(spawnFormFromLaunchBody(empty.body).repos, [], 'an explicit empty selection cannot fall back to Team repositories');
 });
 
 test('settled launch enums are accepted and their retired keys are receipt-only', () => {

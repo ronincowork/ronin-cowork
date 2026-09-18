@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks } from '../src/launch-desks.js';
+import { prepareLaunchDesks, primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks } from '../src/launch-desks.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { bootFiles } from '../src/birth-readme.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
@@ -121,4 +121,23 @@ test('the desk capability points at the managed arrangement page and the Routine
   assert.match(core, /discard refuses while any live Agent stands in the desk/);
   assert.match(core, /Hard Delete action/);
   await assert.rejects(readFile(path.join(repo, 'ronin_catalogs', 'routines', 'ronin_worktrees.md')), /ENOENT/);
+});
+
+test('desk preparation names a failed repository and every earlier allocation without rolling it back', async () => {
+  const opened: string[] = [];
+  const planned = {
+    ...assignment,
+    desks: [
+      { ...assignment.desks[0], repo: 'first', branch: 'team/comp/agent-first', worktree: '/w/first/agent' },
+      { ...assignment.desks[1], repo: 'second', branch: 'team/comp/agent-second', worktree: '/w/second/agent' },
+    ],
+  };
+  await assert.rejects(() => prepareLaunchDesks(planned, {
+    openDesk: async (input) => {
+      if (input.repo === 'second') throw new Error('working branch dev does not exist');
+      opened.push(input.repo);
+      return { ...planned.desks[0], repo: input.repo, mounted: true } as never;
+    },
+  }), /Failed to open selected managed workspace second: working branch dev does not exist\. Already opened: first:team\/comp\/agent-first at \/w\/first\/agent\./);
+  assert.deepEqual(opened, ['first'], 'the successful allocation remains and no rollback is attempted');
 });

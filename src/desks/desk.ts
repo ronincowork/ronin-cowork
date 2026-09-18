@@ -37,8 +37,8 @@ export async function ensureLine(a: RepoArrangement, team: string): Promise<Team
   const line = lineFor(a, team);
   if (!team) return line;
   if (!(await branchExists(a.dir, line.branch))) {
-  const base = await revParse(a.dir, `refs/heads/${a.working}`);
-  if (!base) {
+    const base = await revParse(a.dir, `refs/heads/${a.working}`);
+    if (!base) {
       throw new Error(`${a.repo}: working branch '${a.working}' does not exist`);
     }
     await git(a.dir, ['branch', line.branch, base]);
