@@ -104,16 +104,16 @@ async function performAgentHardDelete(name: string, progress: (value: ShutdownPr
   const ending = await inspectSessionEnding(name, 'hard_delete');
   signal.throwIfAborted();
   progress({ phase: 'checking_desks', message: `Checking assigned worktrees (${ending.desks.length} found)`, desk_count: ending.desks.length });
-  progress({ phase: 'checking_safety', message: 'Owner confirmed destructive removal; preserving desk evidence', desk_count: ending.desks.length });
-  progress({ phase: 'closing_desks', message: `Preserving evidence and deleting owned desks (0/${ending.desks.length})`, desk_count: ending.desks.length });
+  progress({ phase: 'checking_safety', message: 'Owner confirmed destructive removal; preserving worktree evidence', desk_count: ending.desks.length });
+  progress({ phase: 'closing_desks', message: `Preserving evidence and deleting owned worktrees (0/${ending.desks.length})`, desk_count: ending.desks.length });
   const disposition = await ignoreEndingRequest(ending, name, signal);
   signal.throwIfAborted(); // an expired operation may preserve evidence, but may never later kill the Agent
-  progress({ phase: 'closing_desks', message: `Preserving evidence and deleting owned desks (${ending.desks.length}/${ending.desks.length})`, desk_count: ending.desks.length });
+  progress({ phase: 'closing_desks', message: `Preserving evidence and deleting owned worktrees (${ending.desks.length}/${ending.desks.length})`, desk_count: ending.desks.length });
   progress({ phase: 'ending_agent', message: `Hard deleting Agent ${name}`, desk_count: ending.desks.length });
   await killSessionTree(name, { signal, timeoutMs: 4_000 });
   emitSessionEnd(name, key);
   count('ended', { name, end: 'deleted' });
-  progress({ phase: 'complete', message: `Agent ${name} and ${ending.desks.length} owned desk(s) hard deleted; destructive evidence preserved`, desk_count: ending.desks.length });
+  progress({ phase: 'complete', message: `Agent ${name} and ${ending.desks.length} owned worktree(s) hard deleted; destructive evidence preserved`, desk_count: ending.desks.length });
   return { closed: disposition.closed, quarantined: disposition.quarantined };
 }
 

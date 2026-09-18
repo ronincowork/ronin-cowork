@@ -249,7 +249,7 @@ async function main(): Promise<void> {
       case 'close': {
         if (!session) die('NO-SESSION: not inside a session and no --session', 3);
         if (flags.get('with-session')) {
-          if (positional[0]) await pickOne(session, positional[0], 'close'); // validate the named desk, then close the whole assignment
+          if (positional[0]) await pickOne(session, positional[0], 'close'); // validate the named worktree, then close the whole assignment
           try {
             const result = await shutdownAgent(session);
             out(`CLOSED ${result.closed.join(', ') || 'no worktrees'} — session ${session} ended`);
@@ -260,7 +260,7 @@ async function main(): Promise<void> {
           }
         }
         const targets = positional[0] ? [await pickOne(session, positional[0], 'close')] : await mine(session, '');
-          if (!targets.length) die(`NO-DESK: ${session} has no open worktree`, 3);
+        if (!targets.length) die(`NO-DESK: ${session} has no open worktree`, 3);
         let kept = false;
         for (const d of targets) {
           const o = await closeDesk(d.repo, d.branch);
