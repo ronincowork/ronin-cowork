@@ -32,16 +32,16 @@ globalThis.document = { createDocumentFragment: () => new FakeNode('fragment'), 
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
 let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', stock_updated: '2026-09-08', withdrawn: [], providers: [
-  { provider: 'anthropic', cli: 'claude', label: 'Anthropic', origin: 'stock', shadowed: false, models: [
+  { provider: 'anthropic', cli: 'claude', native: 'claude', label: 'Anthropic', origin: 'stock', shadowed: false, models: [
     { model: 'opus', tier: 'frontier', default: true, cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions', cmd: 'claude --model opus' },
     { model: 'haiku', tier: 'light', default: false, cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors', cmd: 'claude --model haiku' },
   ] },
-  { provider: 'openai', cli: 'codex', label: 'OpenAI', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', default: true, cost: '$5 in · $30 out per M tokens (2026-09)', good_at: 'the hardest coding', not_good_at: 'bulk loops', cmd: 'codex --model gpt-5.6-sol' }] },
-  { provider: 'pi', cli: 'pi', label: 'Pi', models: [{ model: 'pi-1', tier: 'standard', default: true, cost: 'free (2026-09)', good_at: 'chat', not_good_at: 'code', cmd: 'pi' }] },
+  { provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', default: true, cost: '$5 in · $30 out per M tokens (2026-09)', good_at: 'the hardest coding', not_good_at: 'bulk loops', cmd: 'codex --model gpt-5.6-sol' }] },
+  { provider: 'pi', cli: 'pi', native: 'pi', label: 'Pi', models: [{ model: 'pi-1', tier: 'standard', default: true, cost: 'free (2026-09)', good_at: 'chat', not_good_at: 'code', cmd: 'pi' }] },
   { provider: 'openrouter', cli: 'openrouter', label: 'OpenRouter', maturity: 'comingSoon', models: [] },
 ] };
 let machine = { measured_at: '2026-09-08T11:00:00.000Z', activated_count: 1, providers: [
-  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, path: '/home/glen/.local/bin/claude', signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, self_updates: true, askable: true, update: 'claude update', update_available: true },
+  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, path: '/home/glen/.local/bin/claude', signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, self_updates: true, askable: true, update: 'claude update', update_available: true, model_list: { client_version: '2.1.263', fetched_at: '2026-09-08', models: [{ slug: 'opus', visibility: 'list' }, { slug: 'haiku', visibility: 'list' }] } },
   { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: false, activated: false, login_open: true, state: 'login_open', attachment: { type: 'session', key: 'provider_setup_codex', team: 'provider_setup', temporary: true } },
   { id: 'grok', label: 'Grok Build', from: 'xAI', installed: false, installable: true, install: 'npm install -g @xai-official/grok', activated: false, state: 'installable' },
 ] };
@@ -108,13 +108,13 @@ test('showing the surface paints and measures one stone per registry CLI plus ca
   assert.deepEqual(stones.map((stone) => stone.attributes['data-provider']), ['claude', 'codex', 'grok', 'pi', 'openrouter']);
   assert.deepEqual(stones.map((stone) => byClass(stone, 'sws-label')[0].textContent), ['Claude Code', 'Codex', 'Grok Build', 'Pi', 'OpenRouter']);
   assert.deepEqual(stones.slice(0, 4).map((stone) => byClass(stone, 'sws-state')[0].textContent), ['Activated', 'Sign-in open', 'Not installed', 'No CLI']);
-  assert.deepEqual(stones.slice(0, 4).map((stone) => byClass(stone, 'sws-secondary')[0].textContent), ['Anthropic · 2 models', 'OpenAI · 1 models', 'xAI', 'Pi · 1 models']);
+  assert.deepEqual(stones.slice(0, 4).map((stone) => byClass(stone, 'sws-secondary')[0].textContent), ['Anthropic · 3 models', 'OpenAI · 1 models', 'xAI', 'Pi · 1 models']);
   assert.deepEqual(stones.map((stone) => stone.attributes['data-activated']), ['true', 'false', 'false', 'false', 'false']);
   assert.equal(stones[4].disabled, true);
   assert.equal(byClass(stones[4], 'status-marker')[0].textContent, 'Coming soon');
   assert.equal(byClass(made.el, 'setup-provider-dates').length, 0, 'application updates do not belong on provider setup');
   assert.equal(byClass(made.el, 'setup-provider-intro').length, 0);
-  assert.equal(surface.providersSummary((await import('../public/js/form-steps.js')).providerCatalog()), '3 providers · 4 models · 1 activated here · catalog updated 2026-09-08');
+  assert.equal(surface.providersSummary((await import('../public/js/form-steps.js')).providerCatalog()), '3 providers · 5 models · 1 activated here · catalog updated 2026-09-08');
 });
 
 test('a stone opens Yours — the three steps as Setup measures them — then The catalog with the dated facts and the model table', async () => {
@@ -166,8 +166,9 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   assert.deepEqual(walk(table).filter((node) => node.tagName === 'TH').map((node) => node.textContent), ['Model', 'Tier', 'Cost', 'Good at', 'Not good at']);
   const rows = walk(table).filter((node) => node.tagName === 'TR' && node.dataset.model);
   assert.deepEqual(rows.map((row) => row.children.map((cell) => cell.textContent)), [
-    ['opusthe default', 'frontier', '$5 in · $25 out per M tokens (2026-06)', 'long agentic coding runs', 'quick throwaway questions'],
-    ['haiku', 'light', '$1 in · $5 out per M tokens (2026-06)', 'fast sub-agents', 'large refactors'],
+    ['nativethe defaultThe CLI chooses the model', '', '', 'the CLI choosing its own configured or current default model', 'pinning a particular model'],
+    ['opuslisted by your Claude Code 2.1.263 (as of 2026-09-08)', 'frontier', '$5 in · $25 out per M tokens (2026-06)', 'long agentic coding runs', 'quick throwaway questions'],
+    ['haikulisted by your Claude Code 2.1.263 (as of 2026-09-08)', 'light', '$1 in · $5 out per M tokens (2026-06)', 'fast sub-agents', 'large refactors'],
   ]);
   assert.ok(byClass(section, 'setup-provider-table')[0], 'the table scrolls in its own box');
 });
@@ -274,10 +275,10 @@ test('a catalog provider no registry CLI serves keeps its catalog section and sa
   assert.equal(walk(yours).find((node) => node.tagName === 'H2').textContent, 'Pi');
   assert.match(yours.textContent, /No CLI in Ronin’s registry serves this provider/);
   assert.equal(byClass(yours, 'setup-provider-step').length, 0);
-  assert.deepEqual(walk(section).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['pi-1']);
+  assert.deepEqual(walk(section).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['native']);
 });
 
-test('a stale CLI list is dated and named without exposing models absent from that CLI inventory', async () => {
+test('a stale CLI list still leaves only Native when none of its ids match catalog launch rows', async () => {
   const savedMachine = machine;
   try {
     machine = { measured_at: '2026-09-09T13:00:00.000Z', activated_count: 1, providers: [{
@@ -292,8 +293,7 @@ test('a stale CLI list is dated and named without exposing models absent from th
     const made = surface.createProviderSurface(context());
     await made.show(); await settle();
     byClass(made.el, 'sws-stone')[0].click();
-    assert.equal(byClass(made.el, 'setup-provider-model-status')[0].textContent,
-      'not listed by Codex 0.151.0 (as of 2026-09-09T06:00:00Z), you have 0.153.4 — not yet re-read');
+    assert.equal(byClass(made.el, 'setup-provider-model-status')[0].textContent, 'The CLI chooses the model');
     assert.deepEqual(byClass(made.el, 'setup-provider-model-candidate'), []);
   } finally {
     machine = savedMachine;
@@ -310,7 +310,7 @@ test('an unmeasured machine and the owner\'s catalog copy remain factual in prov
   const made = surface.createProviderSurface(context());
   await made.show(); await settle();
   assert.equal(byClass(made.el, 'setup-provider-dates').length, 0);
-  assert.equal(surface.providersSummary((await import('../public/js/form-steps.js')).providerCatalog()), '3 providers · 4 models · 0 activated here · catalog updated 2026-09-08 · 2 yours');
+  assert.equal(surface.providersSummary((await import('../public/js/form-steps.js')).providerCatalog()), '3 providers · 3 models · 0 activated here · catalog updated 2026-09-08 · 2 yours');
   byClass(made.el, 'sws-stone')[0].click();
   const from = byClass(made.el, 'setup-provider-provenance')[0];
   assert.equal(from.dataset.origin, 'user'); assert.equal(from.dataset.shadowed, 'true');

@@ -62,7 +62,7 @@ test('the stock catalog names every provider with its CLI, its tiers and a marke
     codex: captured(openai.models.map((row) => row.model)),
     grok: captured(providers.find((entry) => entry.cli === 'grok')!.models.map((row) => row.model)),
   } });
-  assert.deepEqual(flat.slice(0, 4).map((row) => row.cmd), ['claude --model opus', 'claude --model fable', 'claude --model sonnet', 'claude --model haiku']);
+  assert.deepEqual(flat.slice(0, 5).map((row) => row.cmd), ['claude', 'claude --model opus', 'claude --model fable', 'claude --model sonnet', 'claude --model haiku']);
   assert.equal(flat.find((row) => row.cmd === 'claude --model opus')?.liveDangerously, '--dangerously-skip-permissions', 'the launch flags ride every cell');
 });
 

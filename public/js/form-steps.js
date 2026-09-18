@@ -314,7 +314,7 @@ export function orderedCatalog(rows = [], machine = []) {
     const entry = (Array.isArray(machine) ? machine : []).find((item) => item?.id === base.cli) || null;
     marked.push({ ...base, model: NATIVE_MODEL, tier: '', default: true, cost: '',
       good_at: t('forms.native_good_at', 'the CLI choosing its own configured or current default model'),
-      not_good_at: t('forms.native_not_good_at', 'pinning a particular model'), origin: 'cli', shadowed: false,
+      not_good_at: t('forms.native_not_good_at', 'pinning a particular model'),
       operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
       provider_label: base.provider_label || base.provider, cli_label: entry?.label || base.cli || '',
       model_list: entry?.model_list || null, model_list_current: true, model_list_installed: entry?.version || '',

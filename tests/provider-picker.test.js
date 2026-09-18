@@ -26,23 +26,23 @@ globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener()
 
 // GET /api/provider-catalog: the catalog's origin and date, then one entry per provider.
 const CATALOG_DOOR = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', providers: [
-  { provider: 'anthropic', cli: 'claude', label: 'Anthropic', models: [
+  { provider: 'anthropic', cli: 'claude', native: 'claude', label: 'Anthropic', models: [
     { model: 'opus', tier: 'frontier', default: true, cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions', cmd: 'claude --model opus' },
     { model: 'haiku', tier: 'light', default: false, cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors', cmd: 'claude --model haiku' },
   ] },
-  { provider: 'openai', cli: 'codex', label: 'OpenAI', models: [
+  { provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', models: [
     { model: 'gpt-5.6-sol', tier: 'frontier', default: true, cost: '$5 in · $30 out per M tokens (2026-09)', good_at: 'the hardest coding', not_good_at: 'bulk loops', cmd: 'codex --model gpt-5.6-sol' },
   ] },
-  { provider: 'google', cli: 'gemini', label: 'Google', models: [
+  { provider: 'google', cli: 'gemini', native: 'gemini', label: 'Google', models: [
     { model: 'gemini-3.8-flash', tier: 'standard', default: true, cost: '$0.75 in · $3.75 out per M tokens (2026-09)', good_at: 'fast everyday coding', not_good_at: 'the deepest reasoning', cmd: 'gemini --model gemini-3.8-flash' },
   ] },
 ] };
 const MACHINE = {
   measured_at: '2026-09-08T11:00:00.000Z',
   providers: [
-    { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, signed_in: false, activated: false },
-    { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true },
-    { id: 'gemini', label: 'Gemini CLI', from: 'Google', installed: false, signed_in: false, activated: false },
+    { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, signed_in: false, activated: false, version: 'test', model_list: { client_version: 'test', fetched_at: '2026-09-08', models: [{ slug: 'opus', visibility: 'list' }, { slug: 'haiku', visibility: 'list' }] } },
+    { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true, version: 'test', model_list: { client_version: 'test', fetched_at: '2026-09-08', models: [{ slug: 'gpt-5.6-sol', visibility: 'list' }] } },
+    { id: 'gemini', label: 'Gemini CLI', from: 'Google', installed: false, signed_in: false, activated: false, version: 'test', model_list: { client_version: 'test', fetched_at: '2026-09-08', models: [{ slug: 'gemini-3.8-flash', visibility: 'list' }] } },
   ],
 };
 globalThis.fetch = async (url) => {
@@ -63,20 +63,20 @@ test('the catalog door flattens to rows that carry their provider, CLI and the c
 
 test('the catalog is ordered with the providers this machine can launch first, in catalog order within', () => {
   const rows = orderedCatalog(CATALOG, MACHINE.providers);
-  assert.deepEqual(rows.map((row) => `${row.provider}/${row.model}`), ['openai/gpt-5.6-sol', 'anthropic/opus', 'anthropic/haiku', 'google/gemini-3.8-flash']);
-  assert.deepEqual(rows.map((row) => row.operational), [true, false, false, false]);
+  assert.deepEqual(rows.map((row) => `${row.provider}/${row.model}`), ['openai/native', 'openai/gpt-5.6-sol', 'anthropic/native', 'anthropic/opus', 'anthropic/haiku', 'google/native', 'google/gemini-3.8-flash']);
+  assert.deepEqual(rows.map((row) => row.operational), [true, true, false, false, false, false, false]);
   assert.equal(rows[0].provider_label, 'OpenAI', 'the catalog\'s label, not the machine row\'s');
-  assert.equal(rows[1].cli_label, 'Claude Code');
+  assert.equal(rows[2].cli_label, 'Claude Code');
   // A row whose CLI the machine has no row for is offered under its own id, never dropped.
-  assert.equal(orderedCatalog([{ provider: 'nous', cli: 'hermes', model: 'x', tier: 'standard' }], [])[0].provider_label, 'nous');
+  assert.equal(orderedCatalog([{ provider: 'nous', cli: 'hermes', native: 'hermes', model: 'x', tier: 'standard' }], [])[0].provider_label, 'nous');
 });
 
-test('a Codex list disables only a model disproved by the cache from the installed client version', () => {
-  const list = { fetched_at: '2026-09-09T10:42:03Z', client_version: '0.151.0', models: [{ slug: 'gpt-5.5', visibility: 'list' }] };
+test('a Codex list is the named-model inventory and retains its capture version', () => {
+  const list = { fetched_at: '2026-09-09T10:42:03Z', client_version: '0.151.0', models: [{ slug: 'gpt-5.6-sol', visibility: 'list' }] };
   const current = orderedCatalog(CATALOG, [{ ...MACHINE.providers[1], version: '0.151.0', model_list: list }]).find((row) => row.model === 'gpt-5.6-sol');
-  assert.equal(current.listed, false);
+  assert.equal(current.listed, true);
   assert.equal(current.model_list_current, true);
-  assert.match(modelAvailabilityFact(current), /^not listed by your Codex 0\.151\.0/);
+  assert.match(modelAvailabilityFact(current), /^listed by your Codex 0\.151\.0/);
   const stale = orderedCatalog(CATALOG, [{ ...MACHINE.providers[1], version: '0.153.4', model_list: list }]).find((row) => row.model === 'gpt-5.6-sol');
   assert.equal(stale.model_list_current, false);
   assert.match(modelAvailabilityFact(stale), /you have 0\.153\.4 — not yet re-read$/);
@@ -106,15 +106,15 @@ test('naming a provider offers its models as id and tier alone — no descriptio
   const pair = providerModelPair(() => draft, (provider, model) => { draft.provider = provider; draft.model = model; }, (_label, control) => control);
   assert.equal(pair.providerSelect.value, 'anthropic');
   assert.equal(pair.modelSelect.disabled, false);
-  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['default', 'opus · frontier — Availability has not been read from your Claude Code yet', 'haiku · light — Availability has not been read from your Claude Code yet']);
-  assert.deepEqual(pair.modelSelect.options.map((option) => option.disabled), [false, true, true], 'Anthropic is installed but not activated here');
+  assert.deepEqual(pair.modelSelect.options.map((option) => option.value), ['', 'native', 'opus', 'haiku']);
+  assert.deepEqual(pair.modelSelect.options.map((option) => option.disabled), [false, true, true, true], 'Anthropic is installed but not activated here');
   pair.modelSelect.value = 'haiku'; pair.modelSelect.fire('change');
   assert.deepEqual(draft, { provider: 'anthropic', model: 'haiku' });
   // Changing the provider clears the model: the pick is the provider's default until said otherwise.
   pair.providerSelect.value = 'openai'; pair.providerSelect.fire('change');
   assert.deepEqual(draft, { provider: 'openai', model: '' });
-  assert.deepEqual(pair.modelSelect.options.map((option) => option.value), ['', 'gpt-5.6-sol']);
-  assert.equal(pair.modelSelect.options[1].disabled, true, 'an uncaptured CLI inventory cannot be selected');
+  assert.deepEqual(pair.modelSelect.options.map((option) => option.value), ['', 'native', 'gpt-5.6-sol']);
+  assert.equal(pair.modelSelect.options[1].disabled, false, 'native remains selectable');
 });
 
 test('a fixed provider drops the provider select: the row is the provider, the pick is the model alone', async () => {
@@ -123,13 +123,13 @@ test('a fixed provider drops the provider select: the row is the provider, the p
   const pair = providerModelPair(() => draft, (provider, model) => { draft.provider = provider; draft.model = model; }, (label, control) => { control.setAttribute('aria-label', label); return control; }, { fixed: 'openai', blank: { model: '— none set —' } });
   assert.deepEqual(pair.el.children, [pair.modelSelect]);
   assert.equal(pair.modelSelect.attributes['aria-label'], 'model');
-  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['— none set —', 'gpt-5.6-sol · frontier — Availability has not been read from your Codex yet']);
+  assert.deepEqual(pair.modelSelect.options.map((option) => option.value), ['', 'native', 'gpt-5.6-sol']);
   assert.equal(pair.modelSelect.value, 'gpt-5.6-sol');
   pair.modelSelect.value = ''; pair.modelSelect.fire('change');
   assert.deepEqual(draft, { provider: 'openai', model: '' });
   // A fixed provider this machine cannot launch says so on each row rather than hiding them.
   const off = providerModelPair(() => ({ provider: 'google', model: '' }), () => {}, (_label, control) => control, { fixed: 'google' });
-  assert.equal(off.modelSelect.options[1].textContent, 'gemini-3.8-flash · standard — not on this machine');
+  assert.match(off.modelSelect.options[1].textContent, /^native/);
   assert.equal(off.modelSelect.options[1].disabled, true);
 });
 
@@ -139,13 +139,13 @@ test('a provider the owner turned off is greyed with that word — never the fal
   Object.assign(claude, { installed: true, signed_in: true, activated: false, off: true });
   try {
     await loadProviderCatalog();
-    assert.deepEqual(orderedCatalog(CATALOG, MACHINE.providers).filter((row) => row.provider === 'anthropic').map((row) => [row.operational, row.off]), [[false, true], [false, true]]);
+    assert.deepEqual(orderedCatalog(CATALOG, MACHINE.providers).filter((row) => row.provider === 'anthropic').map((row) => [row.operational, row.off]), [[false, true], [false, true], [false, true]]);
     const pair = providerModelPair(() => ({ provider: '', model: '' }), () => {}, (_label, control) => control);
     assert.equal(pair.providerSelect.options[2].textContent, 'Anthropic — turned off');
     assert.equal(pair.providerSelect.options[2].disabled, true, 'disabled, never hidden');
     assert.equal(pair.providerSelect.options[3].textContent, 'Google — not on this machine', 'absent keeps its own words');
     const fixed = providerModelPair(() => ({ provider: 'anthropic', model: '' }), () => {}, (_label, control) => control, { fixed: 'anthropic' });
-    assert.equal(fixed.modelSelect.options[1].textContent, 'opus · frontier — turned off');
+    assert.match(fixed.modelSelect.options[1].textContent, /^native/);
   } finally {
     Object.assign(claude, was); delete claude.off;
     await loadProviderCatalog();
@@ -154,10 +154,10 @@ test('a provider the owner turned off is greyed with that word — never the fal
 
 test('the registry seeds name catalog rows by tier, and only rows this machine can launch', () => {
   const rows = orderedCatalog(CATALOG, MACHINE.providers);
-  assert.equal(schema.seedRow('models:first', rows).model, 'gpt-5.6-sol');
-  assert.equal(schema.seedRow('models:light', rows).model, 'gpt-5.6-sol', 'no launchable light row: the first answer stands');
+  assert.equal(schema.seedRow('models:first', rows).model, 'native');
+  assert.equal(schema.seedRow('models:light', rows).model, 'native', 'no launchable light row: Native stands');
   const allOn = orderedCatalog(CATALOG, MACHINE.providers.map((row) => ({ ...row, activated: true })));
-  assert.equal(schema.seedRow('models:first', allOn).model, 'opus', 'the first provider’s marked default, not its first row');
+  assert.equal(schema.seedRow('models:first', allOn).model, 'native');
   assert.equal(schema.seedRow('models:light', allOn).model, 'haiku');
   assert.equal(schema.seedRow('models:first', orderedCatalog(CATALOG, [])), null);
   assert.equal(schema.initialOf({ seed: 'models:light' }, { record: {}, rows: allOn }), 'anthropic\thaiku');

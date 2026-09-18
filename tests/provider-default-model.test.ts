@@ -135,20 +135,18 @@ test("the owner's scenario: default is OpenAI, the launch says anthropic, and it
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]);
 });
 
-test('a provider with no preference set falls back to its default row in the provider catalog', async () => {
+test('a provider with no preference set delegates the model to that provider CLI', async () => {
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-terra' }, by_provider: {} });
-  // Anthropic's row marked `default` in ronin_catalogs/MODEL_PROVIDERS.md is `opus`. The fallback
-  // is what makes the setting optional rather than a thing you must fill in before the
-  // feature works at all.
+  // Native is what makes the setting optional without Ronin guessing account entitlement.
   const r = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(r.cmd.startsWith('claude --model opus'), `expected the catalog default, got "${r.cmd}"`);
+  assert.ok(r.cmd.startsWith('claude --strict-mcp-config'), `expected the provider-native launch, got "${r.cmd}"`);
   // Nobody stated the model, so it reads as the system's answer, not the owner's.
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'system', source: 'src/spawn.ts' }]);
   // An explicit null is the same as absent: the owner cleared the row, they did not
   // express a preference.
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-terra' }, by_provider: { anthropic: null } });
   const cleared = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(cleared.cmd.startsWith('claude --model opus'), `cleared must fall back too, got "${cleared.cmd}"`);
+  assert.ok(cleared.cmd.startsWith('claude --strict-mcp-config'), `cleared must fall back too, got "${cleared.cmd}"`);
 });
 
 test('naming no provider still lands on the install default — the general default is untouched', async () => {
