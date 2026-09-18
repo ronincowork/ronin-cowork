@@ -681,24 +681,13 @@ function createSetupInstallationsSurface(context) {
     ...context,
     onInstallationsState: (values) => context.environment?.onInstallationsState?.(values),
   });
-  const content = page.el.querySelector('.wk-surface-content');
-  const lock = el('p', 'setup-registration-lock', t('setup_surface.installations_locked', '🔒 You need to register with an email address before you can install Ronin Services. You can still browse what is available.'));
-  content?.prepend(lock);
-  const applyLock = (locked) => {
-    page.el.dataset.registrationLocked = String(locked);
-    lock.hidden = !locked;
-    for (const control of page.el.querySelectorAll('.sws-detail button, .sws-detail input, .sws-detail select, .sws-detail textarea')) {
-      const register = control.matches('.setup-services-step-action[data-step="register"]');
-      if (!register) control.disabled = locked;
-    }
-  };
-  const observer = new MutationObserver(() => applyLock(page.el.dataset.registrationLocked === 'true'));
-  if (content) observer.observe(content, { childList: true, subtree: true });
+  // Setup chooses and sequences the shared page; it does not change the page's controls.
+  // The shared Services model owns the Install, Turn on, and Restart gates in every
+  // workbench, and the server independently enforces the same capabilities.
   return { el: page.el, show: async () => {
     await loadCampaigns();
-    applyLock(!servicesReady(context.environment?.setupRuntime));
     await page.enter();
-  }, destroy: () => { observer.disconnect(); page.destroy?.(); } };
+  }, destroy: () => page.destroy?.() };
 }
 
 export function setupSurfaceDefinitions() {

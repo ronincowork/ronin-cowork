@@ -471,6 +471,10 @@ test('Setup has one Installations card, Account has no gbrain tab, and Machine S
   ]);
   assert.match(surfaces, /definition\(SETUP_SURFACE_TYPES\.installations, t\('campaign_view\.installations', 'Installations'\), createSetupInstallationsSurface\)/);
   assert.match(surfaces, /createInstallationsSurface\(selected, \{[\s\S]*onInstallationsState: \(values\) => context\.environment\?\.onInstallationsState\?\.\(values\)/);
+  const setupInstallations = surfaces.match(/function createSetupInstallationsSurface\(context\) \{[\s\S]*?\n\}/)?.[0] || '';
+  assert.ok(setupInstallations, 'Setup keeps a thin adapter around the shared Installations surface');
+  assert.doesNotMatch(setupInstallations, /\.disabled\s*=|registrationLocked|MutationObserver|querySelectorAll/,
+    'Setup may sequence the shared page but must not override its controls');
   assert.doesNotMatch(setupView, /SETUP_SURFACE_TYPES\.(?:services|gbrain)/);
   assert.doesNotMatch(account, /id: 'gbrain'/);
   assert.match(machine, /tickRow\(observed\.ronin\.services\.includes\('gbrain'\)/, 'the measured gbrain row remains');

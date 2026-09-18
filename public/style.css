@@ -5918,8 +5918,6 @@ button.wb-door:hover b {
 .setup-bounty-project h4, .setup-bounty-project p { margin: 0; }
 .setup-bounty-detail { display: grid; gap: var(--space-5); padding: var(--space-6); }
 .setup-bounty-detail h3, .setup-bounty-detail h4, .setup-bounty-detail p { margin: 0; }
-.setup-registration-lock { margin: 0; padding: var(--space-3) var(--space-5); border-bottom: var(--edge) solid var(--line); color: var(--muted-2); }
-.setup-registration-lock[hidden] { display: none; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='false'] { opacity: .48; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='true'] .wk-card-heading { font-weight: 750; }
 .wk-workbench-host [data-registration-locked='true'] .wk-card-heading::after { content: '  🔒'; font-size: .8em; }
