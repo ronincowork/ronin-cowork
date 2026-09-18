@@ -62,15 +62,20 @@ for (const file of [...files].sort((a, b) => fs.statSync(b).size - fs.statSync(a
 
 const runShard = (bucket, index) => new Promise((resolve) => {
   const runRoot = fs.mkdtempSync(path.join(os.tmpdir(), `ronin-test-${index + 1}-`));
-  const tmuxRoot = path.join(runRoot, 't');
-  fs.mkdirSync(tmuxRoot);
+  // fixture-teardown owns TMPDIR inside Node's test workers. Roots that must span every
+  // file in this shard therefore live beside it, not underneath it.
+  const homeRoot = fs.mkdtempSync(`/tmp/ronin-test-home-${index + 1}-`);
+  const tmuxRoot = fs.mkdtempSync(`/tmp/ronin-test-tmux-${index + 1}-`);
   // Short and under /tmp on purpose: a Unix socket path is capped at 107 bytes.
   const serversRoot = fs.mkdtempSync(`/tmp/ronin-testserver-${index + 1}-`);
   const testEnv = {
     ...process.env,
     BIND: process.env.BIND || '127.0.0.1',
+    HOME: homeRoot,
     TMPDIR: runRoot,
     TMUX_TMPDIR: tmuxRoot,
+    RONIN_USER_ROOT: path.join(homeRoot, 'ronin'),
+    RONIN_DATA_ROOT: path.join(homeRoot, '.ronin'),
     RONIN_TESTSERVER_ROOT: serversRoot,
     RONIN_TEST_RUNNER: '1',
     TSX_DISABLE_CACHE: '1',
@@ -83,8 +88,8 @@ const runShard = (bucket, index) => new Promise((resolve) => {
     stdio: 'inherit',
     env: testEnv,
   });
-  child.on('error', (error) => resolve({ status: 1, error, runRoot, tmuxRoot, serversRoot }));
-  child.on('exit', (code, signal) => resolve({ status: code ?? 1, signal, runRoot, tmuxRoot, serversRoot }));
+  child.on('error', (error) => resolve({ status: 1, error, runRoot, homeRoot, tmuxRoot, serversRoot }));
+  child.on('exit', (code, signal) => resolve({ status: code ?? 1, signal, runRoot, homeRoot, tmuxRoot, serversRoot }));
 });
 
 const results = await Promise.all(buckets.map(runShard));
@@ -129,6 +134,7 @@ for (const [index, result] of results.entries()) {
   }
   fs.rmSync(result.serversRoot, { recursive: true, force: true });
   fs.rmSync(result.tmuxRoot, { recursive: true, force: true });
+  fs.rmSync(result.homeRoot, { recursive: true, force: true });
   const leaked = fs.readdirSync(result.runRoot);
   fs.rmSync(result.runRoot, { recursive: true, force: true });
   if (leaked.length) {

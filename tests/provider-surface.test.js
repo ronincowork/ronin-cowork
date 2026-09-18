@@ -148,7 +148,7 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(calls[0], 'POST /api/setup/providers/claude/update');
   assert.equal(section.className, 'setup-provider-catalog');
-  assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'The catalog');
+  assert.equal(byClass(section, 'setup-provider-eyebrow')[0].textContent, 'Models');
   assert.equal(byClass(section, 'setup-provider-provenance')[0].textContent, 'Shipped catalog · updated 2026-09-08', 'the section says which layer it came from');
   // The switch, on the Ready step: Turn off with the sentence that says what it does and does not do.
   const ready = steps[2];
@@ -277,7 +277,7 @@ test('a catalog provider no registry CLI serves keeps its catalog section and sa
   assert.deepEqual(walk(section).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['pi-1']);
 });
 
-test('a stale CLI list is dated and named without disproving a catalog row, and exposes catalog candidates', async () => {
+test('a stale CLI list is dated and named without exposing models absent from that CLI inventory', async () => {
   const savedMachine = machine;
   try {
     machine = { measured_at: '2026-09-09T13:00:00.000Z', activated_count: 1, providers: [{
@@ -294,10 +294,7 @@ test('a stale CLI list is dated and named without disproving a catalog row, and 
     byClass(made.el, 'sws-stone')[0].click();
     assert.equal(byClass(made.el, 'setup-provider-model-status')[0].textContent,
       'not listed by Codex 0.151.0 (as of 2026-09-09T06:00:00Z), you have 0.153.4 — not yet re-read');
-    assert.deepEqual(byClass(made.el, 'setup-provider-model-candidate').map((item) => [item.dataset.model, item.textContent]), [
-      ['gpt-5.5', 'gpt-5.5 — General-purpose model.'],
-      ['gpt-5.3-codex-spark', 'gpt-5.3-codex-spark — Fast coding model.'],
-    ]);
+    assert.deepEqual(byClass(made.el, 'setup-provider-model-candidate'), []);
   } finally {
     machine = savedMachine;
   }

@@ -143,7 +143,7 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.doesNotMatch(agents, /switch:[^\n]+word:/);
   assert.match(agents, /density: 'tight'/);
   assert.match(agents, /tierWord\(item\.tier\)/);
-  assert.match(agents, /forms\.reason_not_listed/);
+  assert.match(agents, /modelAvailabilityFact/);
   assert.doesNotMatch(agents, /forms\.provider_off|forms\.provider_turned_off|machine\?\.state|modelWord\([^)]*\)\.split/);
   assert.match(agents, /box\.append\(actions\.el, field/);
   assert.doesNotMatch(agents, /wk-button/);
@@ -191,7 +191,7 @@ test('New Team routes each selector region through ask() and leaves Templates br
   assert.match(form, /many: true, shape: 'tall', options: shelfRows/);
   assert.equal((form.match(/density: 'tight'/g) || []).length, 2, 'both defaults regions use launch density');
   assert.match(form, /tierWord\(row\.tier\)/);
-  assert.match(form, /forms\.reason_not_listed/);
+  assert.match(form, /modelAvailabilityFact/);
   assert.doesNotMatch(form, /forms\.provider_off|forms\.provider_turned_off|machine\?\.state|modelWord\([^)]*\)\.split/);
   assert.match(form, /templateTray\(offered\(\)/);
   assert.doesNotMatch(form, /kindTiles|providerModelPair|mandateSelect|dialRowMulti|wayTiles|bookShelves|createWhereItWorks|fs-routine/);

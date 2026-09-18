@@ -23,6 +23,11 @@ import os from 'node:os';
 import path from 'node:path';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-provider-test-'));
+const listed = (slugs: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: 'test', client_version: 'test', models: slugs.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list', priority })) });
+const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude', 'codex'], signed_in: ['claude', 'codex'], operational: ['claude', 'codex'], activated_count: 2, paths: {}, versions: {}, latest: {}, model_lists: {
+  claude: listed(['opus', 'fable', 'sonnet', 'haiku']),
+  codex: listed(['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5']),
+} };
 const catalogs = path.join(temp, 'catalogs');
 await fs.mkdir(catalogs, { recursive: true });
 await fs.writeFile(
@@ -39,7 +44,7 @@ await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 
 /** The whole `agents` section as the owner's file would hold it, and, when given, the setup section beside it. */
 async function agents(sessions: Record<string, unknown>, setup?: Record<string, unknown>): Promise<void> {
-  await fs.writeFile(path.join(temp, 'config', 'machine_settings.json'), JSON.stringify({ agents: { sessions }, ...(setup ? { setup } : {}) }));
+  await fs.writeFile(path.join(temp, 'config', 'machine_settings.json'), JSON.stringify({ agents: { sessions }, campaigns: { home_machine: { title: 'Ronin Home', state: 'active', providers, config: {} } }, ...(setup ? { setup } : {}) }));
 }
 
 const { resolveForm } = await import('../src/spawn.js');
@@ -86,6 +91,7 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
   const document = JSON.parse(await fs.readFile(file, 'utf8'));
   document.campaigns = { work: {
     title: 'Work',
+    providers,
     config: { defaults: { provider: 'anthropic', model: 'opus' } },
   } };
   await fs.writeFile(file, JSON.stringify(document));
@@ -106,6 +112,7 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
   // A half-pair is no default: ⚙'s pair answers, and the Campaign is not guessed for.
   const withHalf = JSON.parse(await fs.readFile(file, 'utf8'));
   withHalf.campaigns.half = {
+    providers,
     title: 'Half',
     config: { defaults: { provider: 'anthropic' } },
   };

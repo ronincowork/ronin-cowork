@@ -56,7 +56,12 @@ test('the stock catalog names every provider with its CLI, its tiers and a marke
   assert.equal(anthropic.models.find((row) => row.model === 'haiku')?.tier, 'light');
   const openai = providers.find((entry) => entry.provider === 'openai')!;
   assert.equal(catalog.providerDefault(openai.models, 'openai')?.model, 'gpt-5.6-sol');
-  const flat = await catalog.listSessionLaunchSpecs();
+  const captured = (models: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: '', client_version: 'test', models: models.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list' as const, priority })) });
+  const flat = await catalog.listSessionLaunchSpecs({ model_lists: {
+    claude: captured(['opus', 'fable', 'sonnet', 'haiku']),
+    codex: captured(openai.models.map((row) => row.model)),
+    grok: captured(providers.find((entry) => entry.cli === 'grok')!.models.map((row) => row.model)),
+  } });
   assert.deepEqual(flat.slice(0, 4).map((row) => row.cmd), ['claude --model opus', 'claude --model fable', 'claude --model sonnet', 'claude --model haiku']);
   assert.equal(flat.find((row) => row.cmd === 'claude --model opus')?.liveDangerously, '--dangerously-skip-permissions', 'the launch flags ride every cell');
 });
@@ -123,7 +128,11 @@ test("the owner's copy is an overlay: a section of a shipped id replaces it in p
     assert.deepEqual(read.providers[0].models.map((m) => m.cmd), ['claude --model fable'], 'the section replaced whole — the shipped rows do not merge in');
     assert.ok(read.providers[1].models.length >= 3, 'the shipped OpenAI rows are exactly as shipped');
     assert.deepEqual(read.withdrawn, [{ provider: 'google', label: 'Google' }, { provider: 'xai', label: 'xAI' }], 'both tombstone forms withdraw, in shipped order, and the withdrawn are named');
-    const cmds = (await catalog.listSessionLaunchSpecs()).map((row) => row.cmd);
+    const listed = (models: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: '', client_version: 'test', models: models.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list' as const, priority })) });
+    const cmds = (await catalog.listSessionLaunchSpecs({ model_lists: {
+      claude: listed(['fable']),
+      codex: listed(['gpt-5.6-sol', 'ex-1']),
+    } })).map((row) => row.cmd);
     assert.ok(cmds.includes('codex --model gpt-5.6-sol') && cmds.includes('claude --model fable') && cmds.includes('codex --profile example --model ex-1'));
     assert.ok(!cmds.some((cmd) => cmd.startsWith('gemini') || cmd.startsWith('grok')), 'withdrawn providers launch nothing');
   } finally {

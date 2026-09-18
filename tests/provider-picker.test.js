@@ -106,7 +106,7 @@ test('naming a provider offers its models as id and tier alone — no descriptio
   const pair = providerModelPair(() => draft, (provider, model) => { draft.provider = provider; draft.model = model; }, (_label, control) => control);
   assert.equal(pair.providerSelect.value, 'anthropic');
   assert.equal(pair.modelSelect.disabled, false);
-  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['default', 'opus · frontier', 'haiku · light']);
+  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['default', 'opus · frontier — Availability has not been read from your Claude Code yet', 'haiku · light — Availability has not been read from your Claude Code yet']);
   assert.deepEqual(pair.modelSelect.options.map((option) => option.disabled), [false, true, true], 'Anthropic is installed but not activated here');
   pair.modelSelect.value = 'haiku'; pair.modelSelect.fire('change');
   assert.deepEqual(draft, { provider: 'anthropic', model: 'haiku' });
@@ -114,7 +114,7 @@ test('naming a provider offers its models as id and tier alone — no descriptio
   pair.providerSelect.value = 'openai'; pair.providerSelect.fire('change');
   assert.deepEqual(draft, { provider: 'openai', model: '' });
   assert.deepEqual(pair.modelSelect.options.map((option) => option.value), ['', 'gpt-5.6-sol']);
-  assert.equal(pair.modelSelect.options[1].disabled, false);
+  assert.equal(pair.modelSelect.options[1].disabled, true, 'an uncaptured CLI inventory cannot be selected');
 });
 
 test('a fixed provider drops the provider select: the row is the provider, the pick is the model alone', async () => {
@@ -123,7 +123,7 @@ test('a fixed provider drops the provider select: the row is the provider, the p
   const pair = providerModelPair(() => draft, (provider, model) => { draft.provider = provider; draft.model = model; }, (label, control) => { control.setAttribute('aria-label', label); return control; }, { fixed: 'openai', blank: { model: '— none set —' } });
   assert.deepEqual(pair.el.children, [pair.modelSelect]);
   assert.equal(pair.modelSelect.attributes['aria-label'], 'model');
-  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['— none set —', 'gpt-5.6-sol · frontier']);
+  assert.deepEqual(pair.modelSelect.options.map((option) => option.textContent), ['— none set —', 'gpt-5.6-sol · frontier — Availability has not been read from your Codex yet']);
   assert.equal(pair.modelSelect.value, 'gpt-5.6-sol');
   pair.modelSelect.value = ''; pair.modelSelect.fire('change');
   assert.deepEqual(draft, { provider: 'openai', model: '' });
