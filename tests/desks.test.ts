@@ -266,8 +266,8 @@ test('openDesk keeps managed branch names private and reports the checkout route
     assert.notEqual(desk.branch, branch);
     assert.equal(desk.mounted, true);
   }
-  await assert.rejects(openDesk({ repo: 'koe', session: 'x', team: '' }), /koe uses its checkout at .*no managed desk was opened/);
-  await assert.rejects(openDesk({ repo: 'plain', session: 'x', team: '' }), /plain uses its checkout at .*no managed desk was opened/);
+  await assert.rejects(openDesk({ repo: 'koe', session: 'x', team: '' }), /koe uses its checkout at .*no managed worktree was opened/);
+  await assert.rejects(openDesk({ repo: 'plain', session: 'x', team: '' }), /plain uses its checkout at .*no managed worktree was opened/);
 });
 
 test('status is derived from git now: a commit makes the desk ahead, a saved file makes it dirty', async () => {
@@ -445,7 +445,7 @@ test('closeDesk keeps unresolved work named, closes only after hand-in, and reco
     stop: async () => assert.fail('plain close must not stop a session'),
   });
   assert.equal(occupied.action, 'kept');
-  assert.match(occupied.reason, /session wispr is running inside .*birth desk ends with the session — session_end from inside it, or archive the session, then close/);
+  assert.match(occupied.reason, /session wispr is running inside .*birth worktree ends with the session — session_end from inside it, or archive the session, then close/);
   // Certification (owner, 2026-09-09): everything on the line means ending loses nothing;
   // the desk the shell lives in is stay-or-go, never closable; another is closable.
   const status = await deskStatus((await readDesk('cowork', 'team/comp/wispr'))!, await arrangementOf('cowork'));

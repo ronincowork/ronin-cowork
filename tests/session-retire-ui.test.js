@@ -69,17 +69,17 @@ test('submit gate rejects duplicate clicks until success or failure restores it'
 test('safe shutdown publishes immediate and polled phases through success', async () => {
   const seen = [];
   const rows = [
-    { id: 'op', state: 'running', phase: 'checking_desks', message: 'Checking assigned desks (2 found)' },
-    { id: 'op', state: 'running', phase: 'closing_desks', message: 'Closing safe desks (2/2)' },
-    { id: 'op', state: 'complete', phase: 'complete', message: 'Agent a and 2 assigned desk(s) closed' },
+    { id: 'op', state: 'running', phase: 'checking_desks', message: 'Checking assigned worktrees (2 found)' },
+    { id: 'op', state: 'running', phase: 'closing_desks', message: 'Closing safe worktrees (2/2)' },
+    { id: 'op', state: 'complete', phase: 'complete', message: 'Agent a and 2 assigned worktree(s) closed' },
   ];
   const result = await runShutdownPolling('a', {
     start: async () => ({ id: 'op', state: 'running', phase: 'resolving_agent', message: 'Resolving Agent a' }),
     poll: async () => rows.shift(), wait: async () => {}, onProgress: (row) => seen.push(row.message),
   });
   assert.equal(seen[0], 'Resolving Agent…');
-  assert.ok(seen.includes('Checking assigned desks (2 found)'));
-  assert.ok(seen.includes('Closing safe desks (2/2)'));
+  assert.ok(seen.includes('Checking assigned worktrees (2 found)'));
+  assert.ok(seen.includes('Closing safe worktrees (2/2)'));
   assert.equal(result.state, 'complete');
 });
 

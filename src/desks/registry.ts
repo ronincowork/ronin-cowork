@@ -63,7 +63,7 @@ export async function writeDesk(rec: DeskRecord): Promise<DeskRecord> {
 
 export async function updateDesk(repo: string, branch: string, patch: Partial<DeskRecord>): Promise<DeskRecord> {
   const cur = await readDesk(repo, branch);
-  if (!cur) throw new Error(`no desk recorded for ${repo}:${branch}`);
+  if (!cur) throw new Error(`no worktree recorded for ${repo}:${branch}`);
   return writeDesk({ ...cur, ...patch });
 }
 
@@ -114,7 +114,7 @@ export async function deskStatus(rec: DeskRecord, a: RepoArrangement): Promise<D
   const lineWorkingDistance = line_tip && working_tip ? await aheadBehind(dir, line_tip, working_tip) : { ahead: 0, behind: 0 };
   let blocked = rec.blocked;
   if (!blocked && !tip) blocked = 'branch is gone';
-  else if (!blocked && rec.state === 'open' && !mounted) blocked = 'worktree is not mounted — desk open remounts it';
+  else if (!blocked && rec.state === 'open' && !mounted) blocked = 'worktree is not mounted — worktree-desk open remounts it';
   return {
     ...rec,
     worktree: mounted ? wt!.path : rec.worktree,

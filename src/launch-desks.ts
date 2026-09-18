@@ -80,10 +80,10 @@ export async function prepareLaunchDesks(
 
 export function renderDeskBlock(a: Assignment): string {
   const width = Math.max(...a.desks.map((d) => d.repo.length));
-  const rows = a.desks.map((d) => `  ${d.repo.padEnd(width)}  ${d.worktree}  → ${d.line}${d.repo === a.primary ? '  (you start here: your shell opens inside this desk, and the desk ends with you)' : ''}`);
+  const rows = a.desks.map((d) => `  ${d.repo.padEnd(width)}  ${d.worktree}  → ${d.line}${d.repo === a.primary ? '  (you start here: your shell opens inside this worktree, and the worktree ends with you)' : ''}`);
   const n = a.desks.length;
   return [
-    `Your assignment has ${n} desk${n === 1 ? '' : 's'}:`,
+    `Your assignment has ${n} managed worktree${n === 1 ? '' : 's'}:`,
     ...rows,
     'Get, update, and hand in through worktree-desk; read the worktree-root page before your first write.',
   ].join('\n');

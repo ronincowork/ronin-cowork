@@ -1,6 +1,8 @@
-# Managed desk construction
+# Managed worktree construction
 
-The HTTP desk surface owns these mechanics. `worktree-desk` calls it and prints its reply.
+The internal HTTP desk surface owns these managed-worktree mechanics. `worktree-desk` calls
+it and prints its reply. In this document, backticked/type-level `desk` names are persisted
+compatibility identifiers; the product term is **worktree**.
 What a session is told is
 `ronin_catalogs/behaviours/conditional/worktree-root.md`. This page is the tool-side reference:
 what is recorded where, what each operation does to git, and what it refuses.
@@ -10,8 +12,8 @@ what is recorded where, what each operation does to git, and what it refuses.
 ## The words, used strictly
 
 A **branch** is a bookmark. A **worktree** is a folder with its own HEAD and index. A
-**desk** is one repository's branch and worktree opened together, `repo:branch`
-(`cowork:team/comp/fable`). An **assignment** is what a session is changing — one desk per
+An internal **desk record** is one repository's branch and worktree opened together,
+`repo:branch` (`cowork:team/comp/fable`). An **assignment** is what a session is changing — one worktree per
 participating repository. A **funnel point** (`dev`, `team/<t>/dev`) is merged into and
 never written into. A **candidate** is the throwaway worktree a hand-in is built in.
 **Commit** preserves; **hand-in** publishes to the team line; **team promotion** is the

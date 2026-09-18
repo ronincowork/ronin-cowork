@@ -36,7 +36,7 @@ These exact files are the source catalog for the virtual `YOUR TOOLS` view:
 | Core | `edges.md` | live cross-session and Team communication/read tool |
 | Core | `work-record.md` | live personal record, document, and held-project tool |
 | Core | `agent_session.md` | live Agent/session inspection and lifecycle tools |
-| Core | `worktree-desk.md` | live desk tool and managed-worktree teaching available to every Cowork Agent |
+| Core | `worktree-desk.md` | live worktree tool and managed-worktree teaching available to every Cowork Agent |
 | Core | `machine-settings.md` | typed Campaign, installation, provider, and machine settings |
 | Core | `cowork_team.md` | live Cowork Team roster, project, custody, and member-status tools; designated-lead teaching is conditionally embedded |
 | Conditional | `ronin-host.md` | advanced host inspection and guarded restart tool |
@@ -77,7 +77,7 @@ when its class is eligible for delivery.
 |---|---|
 | `installation:<name>` | that system installation is on for this birth |
 | `behaviour:<name>` | that behaviour is selected and available for this birth |
-| `arrangement:managed` | the resolved assignment holds a managed desk, or any work location is a managed worktree — the birth root alone does not decide |
+| `arrangement:managed` | the resolved assignment holds a managed worktree, or any work location is a managed worktree — the birth root alone does not decide |
 | `arrangement:checkout` | the Agent works in checkouts only |
 | `connected` | MCP is on |
 | `campaign` | born into a Campaign, so Machine and Campaign settings are a surface this Agent has |

@@ -103,7 +103,7 @@ async function performAgentHardDelete(name: string, progress: (value: ShutdownPr
   const key = await sessionKey(name);
   const ending = await inspectSessionEnding(name, 'hard_delete');
   signal.throwIfAborted();
-  progress({ phase: 'checking_desks', message: `Checking assigned desks (${ending.desks.length} found)`, desk_count: ending.desks.length });
+  progress({ phase: 'checking_desks', message: `Checking assigned worktrees (${ending.desks.length} found)`, desk_count: ending.desks.length });
   progress({ phase: 'checking_safety', message: 'Owner confirmed destructive removal; preserving desk evidence', desk_count: ending.desks.length });
   progress({ phase: 'closing_desks', message: `Preserving evidence and deleting owned desks (0/${ending.desks.length})`, desk_count: ending.desks.length });
   const disposition = await ignoreEndingRequest(ending, name, signal);

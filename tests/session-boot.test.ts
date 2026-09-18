@@ -32,7 +32,7 @@ test('every assisted session is handed the tool overview built from its selected
     const text = await readFile(lesson, 'utf8');
     assert.equal(text, overview, 'the fragment is the rendered overview, byte for byte');
     // The lesson is derived from the folder: every stock bundle, its priority tools, its help route.
-    for (const label of ['Edges', 'Work Record', 'Agent session', 'Worktree desk', 'Machine settings', 'Cowork Team']) {
+    for (const label of ['Edges', 'Work Record', 'Agent session', 'Managed worktree', 'Machine settings', 'Cowork Team']) {
       assert.match(text, new RegExp(`^### ${label}$`, 'm'));
     }
     assert.match(text, /`work-record project create`/);

@@ -16,7 +16,7 @@ route depends on the task, not on who is reading.
 | Track work and coordinate Agents | [Work record](using-ronin/work-record.md), [Team Kanban](using-ronin/team-kanban.md), and [wipeboards](using-ronin/wipeboards.md) |
 | Stop, clear, copy, or close | [Terminal controls](using-ronin/terminal-controls.md) |
 | Archive or restore an Agent | [Archived sessions](using-ronin/archived-sessions.md) |
-| Use a private branch and hand work in | [Managed desks](using-ronin/desks.md) |
+| Use a private branch and hand work in | [Managed worktrees](using-ronin/desks.md) |
 | Change my appearance or Agent guidance | [Customize Ronin](getting-started/customize.md) |
 | Add optional Services or understand what they send | [Ronin Services](getting-started/services-activation.md) |
 | Check the install or troubleshoot the machine | [Operating guides](operating/README.md), including [install health](operating/install-health.md) and [private access](operating/vpn.md) |

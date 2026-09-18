@@ -68,7 +68,7 @@ const { resolveForm } = await import('../src/spawn.js');
 // The Team works in cowork; its papers, and this Agent's birth root, are the ronin_lab checkout.
 await createTeamRoster('papers', { objective: 'write it up from the code', project_root: 'ronin_lab', repos: ['cowork'], branch: '' });
 
-test('an Agent born in a checkout with a managed desk is projected the desk kit', async () => {
+test('an Agent born in a checkout with a managed worktree is projected the worktree kit', async () => {
   const resolved = await resolveForm({ project_root: 'ronin_lab', team: 'papers', prompt: 'Write it up.' }, new Set());
   assert.equal(resolved.project_root, 'ronin_lab', 'born in the checkout');
   assert.deepEqual(resolved.assignment?.desks.map((desk) => desk.repo), ['cowork'], 'assigned one desk in the managed repository');

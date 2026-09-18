@@ -98,7 +98,7 @@ export function auditManagedState(input: ManagedAuditInput): ManagedAuditResult 
       if (projectedRepo && projectedRepo !== repo.repo) continue;
       const actual = observed.get(key);
       if (!actual) {
-        findings.push(finding('agreement', 'projected_desk_missing', repo.repo, desk.id, 'ledger says the desk is active but no managed worktree observation matches it'));
+        findings.push(finding('agreement', 'projected_desk_missing', repo.repo, desk.id, 'ledger says the worktree is active but no managed worktree observation matches it'));
         continue;
       }
       if (desk.path && desk.path !== actual.path) findings.push(finding('agreement', 'managed_path_mismatch', repo.repo, desk.id, `ledger path ${desk.path} differs from ${actual.path}`));
@@ -111,7 +111,7 @@ export function auditManagedState(input: ManagedAuditInput): ManagedAuditResult 
     const projectedPaths = new Set(input.projection.desks.flatMap((desk) => desk.path ? [desk.path] : []));
     for (const managedPath of repo.managed_paths) {
       if (!projectedPaths.has(managedPath) && !repo.desks.some((desk) => desk.path === managedPath)) {
-        findings.push(finding('agreement', 'unrecorded_managed_path', repo.repo, managedPath, 'managed root contains a path absent from ledger and observed desks'));
+        findings.push(finding('agreement', 'unrecorded_managed_path', repo.repo, managedPath, 'managed root contains a path absent from ledger and observed worktrees'));
       }
     }
 
@@ -139,15 +139,15 @@ export function auditManagedState(input: ManagedAuditInput): ManagedAuditResult 
     for (const desk of repo.desks) {
       const allDead = desk.owners.length === 0 || desk.owners.every((owner) => !repo.live_sessions_from_registry.includes(owner));
       if (desk.contained_in_dev && allDead) {
-        findings.push(finding('lifecycle_closure', 'contained_dead_desk', repo.repo, desk.id, 'non-live desk is contained in dev and due for settlement'));
+        findings.push(finding('lifecycle_closure', 'contained_dead_desk', repo.repo, desk.id, 'non-live worktree is contained in dev and due for settlement'));
       }
       if (allDead && (desk.dirty_files.length > 0 || !desk.contained_in_dev) && !quarantined.has(`${repo.repo}\0${desk.id}`)) {
         findings.push(finding('no_orphaned_edits', 'dead_owner_unique_work', repo.repo, desk.id, `dead owners leave ${desk.dirty_files.length} dirty file(s) or commits outside dev without visible custody`));
       }
       if (!desk.constructed_from_current_dev && desk.source_kind !== 'team_line') {
-        findings.push(finding('current_construction', 'base_not_current_dev', repo.repo, desk.id, `desk was constructed from ${desk.base_sha || '<unknown>'}, not the then-current dev tip`));
+        findings.push(finding('current_construction', 'base_not_current_dev', repo.repo, desk.id, `worktree was constructed from ${desk.base_sha || '<unknown>'}, not the then-current dev tip`));
       }
-      if (desk.dev_behind >= 20) findings.push(finding('current_construction', 'desk_lag', repo.repo, desk.id, `${desk.dev_behind} commits behind dev`, 'notice'));
+      if (desk.dev_behind >= 20) findings.push(finding('current_construction', 'desk_lag', repo.repo, desk.id, `worktree is ${desk.dev_behind} commits behind dev`, 'notice'));
       if (desk.team_behind >= 20) findings.push(finding('current_construction', 'team_lag', repo.repo, desk.id, `${desk.team_behind} commits behind the team line`, 'notice'));
     }
 

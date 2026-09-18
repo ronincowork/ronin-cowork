@@ -27,7 +27,7 @@ async function freshCandidate(a: RepoArrangement, line: string, sha: string): Pr
 
 export async function handIn(repo: string, branch: string, opts: { maxRetries?: number; projectId?: string } = {}): Promise<HandInOutcome> {
   const rec = await readDesk(repo, branch);
-  if (!rec) throw new Error(`no desk recorded for ${repo}:${branch}`);
+  if (!rec) throw new Error(`no worktree recorded for ${repo}:${branch}`);
   const a = await arrangementOf(repo);
   const line = lineFor(a, rec.team);
   const at = () => new Date().toISOString();
@@ -37,8 +37,8 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
   });
 
   const st = await deskStatus(rec, a);
-  if (!st.tip) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: 'desk branch is gone' })), notices: [], tidy: emptyTidy() };
-  if (!desksManaged(a)) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: `${repo} uses its checkout; hand-in applies only to managed desks` })), notices: [], tidy: emptyTidy() };
+  if (!st.tip) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: 'worktree branch is gone' })), notices: [], tidy: emptyTidy() };
+  if (!desksManaged(a)) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: `${repo} uses its checkout; hand-in applies only to managed worktrees` })), notices: [], tidy: emptyTidy() };
   const workingBase = await revParse(a.dir, `refs/heads/${a.working}`);
   if (!workingBase) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: `working branch '${a.working}' does not exist` })), notices: [], tidy: emptyTidy() };
   const lineBase = await revParse(a.dir, `refs/heads/${line.branch}`);
@@ -66,20 +66,20 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
           const holdsWorking = await isAncestor(a.dir, `refs/heads/${a.working}`, tip);
           if (!holdsLine || !holdsWorking) {
             return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old,
-              reason: `accepted team delta conflicts with current ${a.working} — resolve it on a desk cut from ${line.branch} (worktree-desk open <repo:branch> --source team), sync that desk with ${a.working} (worktree-desk sync), commit the resolution, and hand that desk in`,
+              reason: `accepted Team delta conflicts with current ${a.working} — resolve it on a worktree cut from ${line.branch} (worktree-desk open <repo:branch> --source team), sync that worktree with ${a.working} (worktree-desk sync), commit the resolution, and hand that worktree in`,
               conflict_files: accepted.conflicts }));
           }
           cand = await freshCandidate(a, line.branch, working);
           const resolved = await mergeInto(cand, branch, `Hand in ${branch} to ${line.branch} (${rec.session}), resolving the line against current ${a.working}`);
           if (!resolved.ok) {
-            await updateDesk(repo, branch, { blocked: `hand-in conflicts with current ${a.working} on ${resolved.conflicts.length} file(s) — update the desk and resolve` });
+            await updateDesk(repo, branch, { blocked: `hand-in conflicts with current ${a.working} on ${resolved.conflicts.length} file(s) — update the worktree and resolve` });
             return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old, conflict_files: resolved.conflicts }));
           }
           resolvedByDesk = true;
         }
         const incoming = resolvedByDesk ? { ok: true, conflicts: [] as string[] } : await mergeInto(cand, branch, `Hand in ${branch} to ${line.branch} (${rec.session})`);
         if (!incoming.ok) {
-          await updateDesk(repo, branch, { blocked: `hand-in conflicts with current ${a.working} plus ${line.branch} on ${incoming.conflicts.length} file(s) — update the desk and resolve` });
+          await updateDesk(repo, branch, { blocked: `hand-in conflicts with current ${a.working} plus ${line.branch} on ${incoming.conflicts.length} file(s) — update the worktree and resolve` });
           return appendReceipt(receipt({ result: 'conflict', source_tip: tip, expected_old: old, conflict_files: incoming.conflicts }));
         }
         const candSha = await revParse(cand, 'HEAD');

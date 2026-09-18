@@ -680,14 +680,14 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## desks — desks.js (the ⑂ desk readings: tile head, roster column, Team page)
 - **desks.detached:** (detached)
 - **desks.worktree:** worktree {path}
-- **desks.count_one:** 1 desk
-- **desks.count_many:** {n} desks
+- **desks.count_one:** 1 worktree
+- **desks.count_many:** {n} worktrees
 - **desks.pending_n:** {n} pending
 - **desks.private_n:** {n} private
 - **desks.dirty_n:** {n} dirty
 - **desks.parked_n:** {n} parked
 - **desks.blocked_n:** {n} blocked
-- **desks.none:** No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI.
+- **desks.none:** No managed worktree listed yet. A coding launch opens selected worktrees; the session lists its repositories in TEGAMI.
 - **desks.line:** → {line}
 - **desks.ahead:** ahead {n}
 - **desks.behind:** behind {n}

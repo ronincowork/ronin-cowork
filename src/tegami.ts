@@ -88,7 +88,7 @@ function seedShell(
 > YOUR **repos** list is started from the checkout the new-session box put you in. It is
 > not limited to that project_root: add, remove, or change entries as you work across other
 > repositories. Keep every worktree and branch current. The worktree is the important
-> live coordinate: it tells the owner which private desk this session is actually using;
+> live coordinate: it tells the owner which private worktree this session is actually using;
 > the branch remains supporting Git detail.
 >
 > YOUR **ladder** — the rungs, and which one you are on. Phases hold legs. Name a phase

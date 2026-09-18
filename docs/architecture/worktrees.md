@@ -25,14 +25,14 @@ One fact determines the result for each repository, its own `RONIN_REPO`:
 
 There is no Agent-side arrangement switch. The birth packet teaches both approaches and
 names each selected repository's arrangement; `worktree-desk open <repo>` names the route
-for a repository encountered later. The desk capability is available to every Cowork Agent
+for a repository encountered later. The worktree capability is available to every Cowork Agent
 so later managed work needs no new loadout. Resolution remains per repository, so one
 assignment may contain both a worktree root and a checkout.
 
 New Agent keeps **Born in** separate from **Workspaces**. Workspaces lists every registered
 Workspace Folder, defaults Born in to selected, and allows that default to be removed.
 Before birth, launch uses an existing checkout for every selected direct repository and
-opens a desk for every selected managed repository. Born in alone does not allocate a desk.
+opens a worktree for every selected managed repository. Born in alone does not allocate a worktree.
 
 `src/worktrees-resolution.ts` owns the pure 2×2 decision. Its input contains the resolved
 Agent capability, normalized repository applicability, checkout location, branch profile,
@@ -77,13 +77,12 @@ answer as `worktrees: enabled|disabled`. Other consumers must not compare `desks
 
 A managed launch never silently falls back to a shared funnel checkout when opening its
 worktree fails. The launch is refused with the reason. Direct repositories remain direct
-and are not represented as missing desks. The Agent does not ask `worktree-desk` to decide
+and are not represented as missing worktrees. The Agent does not ask `worktree-desk` to decide
 again; the 2×2 result is already in its brief.
 
-An assignment can span several repositories. A desk is the repository-specific internal
-record joining a session, branch, worktree, and integration line. The user-facing capability
-and Project Root setting are called Worktrees; **desk** remains internal vocabulary where
-that larger coordination record is meant.
+An assignment can span several repositories. A worktree is the user-facing repository work
+location. Internally, the persisted `desk` record joins a session, branch, worktree, and
+integration line; that compatibility identifier does not surface as product terminology.
 
 ## Working and integration lines
 
@@ -117,15 +116,15 @@ target line, builds in a disposable candidate worktree, and advances the line wi
 compare-and-swap only after admission succeeds. Receipts record the source, candidate,
 resulting line, and contributing session.
 
-A hand-in moves the line and nothing else: no desk, the handing-in one included, is
-merged or rewritten by it. A desk takes in accepted work only when its session runs
+A hand-in moves the line and nothing else: no worktree, the handing-in one included, is
+merged or rewritten by it. A worktree takes in accepted work only when its session runs
 `worktree-desk sync`, which defaults to local `dev`. An explicit `--source team` merges
-the shared Team line; `--source lead` resolves a lead-owned desk; `--source <repo:branch>`
-selects a particular same-repository desk. Each operation resolves one exact commit,
+the shared Team line; `--source lead` resolves a lead-owned worktree; `--source <repo:branch>`
+selects a particular same-repository worktree. Each operation resolves one exact commit,
 merges committed history only, and reports source SHA and destination before/after HEAD.
-Ambiguous lead desks require an explicit desk. Source files, custody, and the hand-in
+Ambiguous lead worktrees require an explicit worktree. Source files, custody, and the hand-in
 destination are unchanged. This is opt-in adoption, never a side effect of hand-in.
-After `ACCEPTED` the desk’s tip is contained in the line’s new merge commit; the desk
+After `ACCEPTED` the worktree’s tip is contained in the line’s new merge commit; the worktree
 itself has not moved and may still lack other Team work. The tool then tells the team lead itself,
 in the lead's tile (or on the team wipeboard when the tile cannot take it); a team with no
 lead gets one sentence back saying nobody was told.
@@ -148,24 +147,24 @@ Team promotion builds the combined candidate, advances `dev` by compare-and-swap
 restarts the live service, and performs deployment health checks. Failed post-restart
 health triggers the promotion recovery path and remains visible in its receipt. When it
 completes, promotion posts the moved line on the team wipeboard and tells each session
-whose hand-in rode in, in its tile, which receipts are now on `dev` and that its desk is
-finished and certified clean. A desk is finished when that notice arrives, not when its
+whose hand-in rode in, in its tile, which receipts are now on `dev` and that its worktree is
+finished and certified clean. A worktree is finished when that notice arrives, not when its
 hand-in is accepted — and finished means parked, or ended with its session by
 `session_end`; it is never closed under a live session. An Agent's shell is opened
-inside its desk at launch and stays there, so the desk it stands in ends with it, never
-before it. `worktree-desk close` is for a desk nobody is standing in: a second repository's
-desk, or a desk whose session is already gone.
+inside its worktree at launch and stays there, so the worktree it stands in ends with it,
+never before it. `worktree-desk close` is for a worktree nobody is standing in: a second
+repository's worktree, or a worktree whose session is already gone.
 
-## Desk lifecycle and recovery
+## Worktree lifecycle and recovery
 
-The current desk tools can open, inspect, synchronize, hand in, close/park, recover, and
-explicitly discard repository desks. A branch without a mounted worktree is represented as
+The current worktree tools can open, inspect, synchronize, hand in, close/park, recover, and
+explicitly discard repository worktrees. A branch without a mounted worktree is represented as
 parked recovery state. The registry and receipts keep that state visible; no lifecycle
 operation silently deletes an unintegrated branch or user files.
 
 Use `worktree-desk status --assignment` to inspect the current assignment and `worktree-desk
 receipts` to inspect publication history. `worktree-desk discard --confirm "DISCARD repo:branch"` is the explicit path
-that abandons an unintegrated desk. Funnel recovery is separate: dirty integration
+that abandons an unintegrated worktree. Funnel recovery is separate: dirty integration
 worktrees are preserved to named recovery refs and receipts before cleanup.
 
 ## Invariants for contributors
@@ -180,7 +179,7 @@ worktrees are preserved to named recovery refs and receipts before cleanup.
 - Keep Project Root controls thin: they edit the repository profile but do not implement
   launch, branch, worktree, or promotion policy.
 - Do not edit funnel-point worktrees directly.
-- Use focused checks at the private desk. The lead owns the full `npm run verify` verdict
+- Use focused checks in the private worktree. The lead owns the full `npm run verify` verdict
   at the combined integration/release gate; see [verification guidance](../development/verification.md).
 - Do not delete worktrees, branches, registry rows, receipts, or recovery state implicitly.
 

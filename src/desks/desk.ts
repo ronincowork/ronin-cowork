@@ -22,7 +22,7 @@ export async function syncthingHazard(dir: string): Promise<string> {
     if (existsSync(path.join(d, '.stfolder'))) {
       const ignore = await readFile(path.join(d, '.stignore'), 'utf8').catch(() => '');
       const ignored = ignore.split('\n').some((l) => /^\s*(\(\?d\))?\/?\.git\s*$/.test(l));
-      return ignored ? '' : `${d} is a Syncthing share whose .stignore does not exclude .git — add it on every machine before opening a desk here`;
+      return ignored ? '' : `${d} is a Syncthing share whose .stignore does not exclude .git — add it on every machine before opening a worktree here`;
     }
     const up = path.dirname(d);
     if (up === d) return '';
@@ -66,10 +66,10 @@ export interface OpenInput {
 export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   const a = await arrangementOf(input.repo);
   if (!desksManaged(a)) {
-    throw new Error(`${a.repo} uses its checkout at ${a.dir}; no managed desk was opened`);
+    throw new Error(`${a.repo} uses its checkout at ${a.dir}; no managed worktree was opened`);
   }
   const hazard = await syncthingHazard(a.dir);
-  if (hazard) console.warn(`${hazard}; opening the requested desk anyway.`);
+  if (hazard) console.warn(`${hazard}; opening the requested worktree anyway.`);
   const line = await ensureLine(a, input.team);
   let branch = input.branch || (input.team ? teamDeskBranch(input.team, input.session) : soloDeskBranch(input.session));
   if (isFunnel(a, line, branch)) {
@@ -131,7 +131,7 @@ export async function adoptLine(rec: DeskRecord, a: RepoArrangement, by: string,
     const lineChanged = await changedFiles(a.dir, st.tip, line_sha);
     const overlap = lineChanged.filter((f) => st.dirty_files.includes(f));
     await updateDesk(rec.repo, rec.branch, { pending: { line_sha, by, at: new Date().toISOString(), overlap } });
-    return { ...base, kind: overlap.length ? 'pending_overlap' : 'pending', files: overlap, reason: !st.mounted ? 'destination desk is unmounted' : 'destination has unsaved changes' };
+    return { ...base, kind: overlap.length ? 'pending_overlap' : 'pending', files: overlap, reason: !st.mounted ? 'destination worktree is unmounted' : 'destination has unsaved changes' };
   }
   const m = await mergeInto(st.worktree, line_sha, `Update ${rec.branch} from ${source} at ${line_sha.slice(0, 10)}`);
   if (!m.ok) {
@@ -151,7 +151,7 @@ export async function syncDesk(
   sessions: () => Promise<Array<{ name: string; leads: string[] }>> = listSessions,
 ): Promise<DeskNotice> {
   const rec = await readDesk(repo, branch);
-  if (!rec) throw new Error(`no desk recorded for ${repo}:${branch}`);
+  if (!rec) throw new Error(`no worktree recorded for ${repo}:${branch}`);
   const a = await arrangementOf(repo);
   let ref: string;
   let sourceDirty = false;
@@ -160,7 +160,7 @@ export async function syncDesk(
   else {
     let candidates: DeskStatus[];
     if (source === 'lead') {
-      if (!rec.team) throw new Error('this desk has no Team; name the source repo:branch');
+      if (!rec.team) throw new Error('this worktree has no Team; name the source repo:branch');
       const leads = (await sessions()).filter((s) => s.leads.includes(rec.team)).map((s) => s.name);
       if (!leads.length) throw new Error(`Team ${rec.team} has no live lead; name the source repo:branch`);
       candidates = (await listDesks({ repo })).filter((d) =>
@@ -168,12 +168,12 @@ export async function syncDesk(
     } else {
       const colon = source.indexOf(':');
       if (colon < 1 || !source.slice(colon + 1)) {
-        throw new Error('sync --source expects dev, team, lead, or an exact repo:branch desk');
+        throw new Error('sync --source expects dev, team, lead, or an exact repo:branch worktree');
       }
       if (source.slice(0, colon) !== repo) throw new Error(`source must belong to repository ${repo}`);
       candidates = (await listDesks({ repo })).filter((d) => d.branch === source.slice(colon + 1));
     }
-    if (!candidates.length) throw new Error(`no source desk for ${source} in ${repo}; name an existing repo:branch`);
+    if (!candidates.length) throw new Error(`no source worktree for ${source} in ${repo}; name an existing repo:branch`);
     if (candidates.length > 1) throw new Error(`source ${source} is ambiguous; choose ${candidates.map((d) => `${d.repo}:${d.branch}`).join(', ')}`);
     ref = candidates[0]!.branch;
     sourceDirty = candidates[0]!.dirty;
@@ -232,7 +232,7 @@ async function closeDeskWithOptions(
 ): Promise<CloseOutcome> {
   signal?.throwIfAborted();
   const rec = await readDesk(repo, branch);
-  if (!rec) return { desk: null, action: 'kept', reason: 'no desk is recorded' };
+  if (!rec) return { desk: null, action: 'kept', reason: 'no worktree is recorded' };
   const a = await arrangementOf(repo);
   const st = await deskStatus(rec, a);
   if (st.dirty) return { desk: st, action: 'kept', reason: `unsaved files: ${st.dirty_files.join(', ')}` };
@@ -241,7 +241,7 @@ async function closeDeskWithOptions(
   const sessions = await runtime.sessions();
   if (withSession) {
     const owners = rec.owners?.length ? rec.owners : [rec.session];
-    if (!owners.includes(withSession)) return { desk: st, action: 'kept', reason: `session ${withSession} does not own this desk` };
+    if (!owners.includes(withSession)) return { desk: st, action: 'kept', reason: `session ${withSession} does not own this worktree` };
     if (!sessions.some((session) => session.name === withSession)) return { desk: st, action: 'kept', reason: `session ${withSession} is not live` };
   }
   const inside: string[] = [];
@@ -254,7 +254,7 @@ async function closeDeskWithOptions(
     // A session's birth desk ends with the session — its shell was opened inside the
     // worktree at launch and the harness keeps it there, so "leave" is not a thing it can
     // do (owner, 2026-09-09: stay, or go with session_end; never one without the other).
-    return { desk: st, action: 'kept', reason: `${who} running inside ${st.worktree}: a session's birth desk ends with the session — session_end from inside it, or archive the session, then close` };
+    return { desk: st, action: 'kept', reason: `${who} running inside ${st.worktree}: a session's birth worktree ends with the session — session_end from inside it, or archive the session, then close` };
   }
   signal?.throwIfAborted();
   if (withSession && stopWithSession) await runtime.stop(withSession);
@@ -294,7 +294,7 @@ export async function closeDeskForShutdown(repo: string, branch: string, session
 
 export async function handoffDesk(repo: string, branch: string, successors: string[]): Promise<DeskStatus> {
   const rec = await readDesk(repo, branch);
-  if (!rec) throw new Error(`no desk recorded for ${repo}:${branch}`);
+  if (!rec) throw new Error(`no worktree recorded for ${repo}:${branch}`);
   const owners = [...new Set(successors.map((owner) => owner.trim()).filter(Boolean))];
   if (!owners.length) throw new Error('handoff requires at least one successor owner');
   const prior = rec.owners?.length ? rec.owners : [rec.session];

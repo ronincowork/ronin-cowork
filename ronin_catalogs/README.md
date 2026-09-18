@@ -79,7 +79,7 @@ listed once, in the definition; do not add an owner field to each member.
 `capabilities/<name>.md` is one Agent capability: the question it answers, a `## Tools`
 table of the actual tools that answer it (each with its authority, whether it is taught at
 birth, and its help route), and the teaching around them. `requires:` names the launch facts
-that select it — an installation on, a behaviour selected, a managed desk, a connection, a
+that select it — an installation on, a behaviour selected, a managed worktree, a connection, a
 Campaign, a Team, the lead designation — and blank selects it for every Cowork Agent. A
 capability may list several tools or one; the birth overview is rendered from the
 selected documents and names only tools that exist on this box. `capabilities/README.md`

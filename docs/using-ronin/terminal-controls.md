@@ -82,7 +82,7 @@ Selecting/copying neither unlocks the Tile nor sends input to the CLI.
 
 Close opens the existing Archive / Delete / Hard Delete sheet. Read the consequences
 there. Archive requires supported conversation identity and resume. Delete checks the
-Agent's desks. Hard Delete requires its separate explicit confirmation. Hide view only
+Agent's managed worktrees. Hard Delete requires its separate explicit confirmation. Hide view only
 hides the Tile and keeps the Agent running.
 
 ## Implementation ownership

@@ -110,7 +110,7 @@ async function deskNote(r: { assignment?: unknown; project_root?: string; agent?
   const root = (await listProjectRoots()).find((x) => x.name === r.project_root);
   if (!root) return '';
   const a = await readArrangement(root.name, root.dir).catch(() => null);
-  if (!a) return `no desk — ${root.name}'s RONIN_REPO could not be read`;
+  if (!a) return `no worktree — ${root.name}'s RONIN_REPO could not be read`;
   if (a.source === 'absent') return `checkout — ${root.name} has no RONIN_REPO`;
   if (a.desks !== 'managed') return `no Worktree — ${root.name} uses its checkout at ${root.dir}; edit directly there`;
   return '';

@@ -121,7 +121,7 @@ The Team roster has exactly three Project areas: Inbox, Done, and Backlog. Assig
 an Inbox Project whole to an Agent. Restore moves a Team-held Done or Backlog Project to
 Inbox. Custody movement never changes stage, status, exit, ladder, or evidence.
 
-Associate a hand-in explicitly with `worktree-desk hand-in <desk> --project <id>`. An
+Associate a hand-in explicitly with `worktree-desk hand-in <repo:branch> --project <id>`. An
 accepted receipt records that ID and prompts `work-record project advance <id> --to
 LANDING`; it does not run the command. A successful promotion follows the same receipt ID
 back to the canonical Project and prompts `work-record project done <id>`. No association
