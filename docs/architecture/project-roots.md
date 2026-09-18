@@ -15,7 +15,7 @@ The resolved Agent instruction names both authorities explicitly. For example:
 Born in workspace-folder-handle: ronin_lab at path: /path/to/ronin_lab.
 ```
 
-The path may then resolve to a separate managed desk for the Agent. That desk is a working
+The path may then resolve to a separate managed worktree for the Agent. That worktree is a working
 location, not another Workspace Folder and not another handle.
 
 ## Installed starting folders
@@ -237,7 +237,7 @@ remains.
 The Workspace Folder editor reads these four profile fields live from `RONIN_REPO`. `mode=reviewed`
 means work collects on `working` before the owner's final PR to `stable`; `mode=direct` means
 accepted work publishes on `stable` itself. The Worktrees choice is the repository's alone:
-`desks=managed` makes the folder a **worktree root** and its Agents work at managed desks;
+`desks=managed` makes the folder a **worktree root** and its Agents work in managed worktrees;
 `desks=none` makes it a **checkout**. No Agent-side switch exists; the Agent is told which
 the folder is and reads the matching page. A worktree by itself is only Git isolation; a
 worktree root adds the private branch, internal desk record, assignment reading, and

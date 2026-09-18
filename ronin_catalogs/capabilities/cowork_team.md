@@ -35,7 +35,7 @@ not own or duplicate it.
 | `session_check` | read: one live session by exact name | | `session_check --help` |
 | `session_set` | write: a member's Team membership, lead designation, or project root | | `session_set --help` |
 
-Desk assignment and Team broadcast remain in their own capability bundles; this tool does
+Worktree assignment and Team broadcast remain in their own capability bundles; this tool does
 not duplicate them. Read-only Team enumeration belongs to `edges team`.
 
 ## Team work

@@ -70,7 +70,7 @@ carries the teaching around them. A capability lists one or more actual tools; a
 be surfaced by more than one bundle.
 
 Each document's `requires:` line names the launch facts that select its teaching: a system
-installation being on, a behaviour being selected, a managed desk in the resolved
+installation being on, a behaviour being selected, a managed worktree in the resolved
 assignment, MCP being connected, a Campaign, a Team, or the lead designation. The five
 Cowork bundles ship with Ronin; Ronin Host, Ronin Services, gbrain, Trello, Perplexity and
 future add-ons are one more file each, gated the same way. Nothing in the resolver knows a

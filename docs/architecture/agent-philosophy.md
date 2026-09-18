@@ -44,7 +44,7 @@ is the one place; these are the pieces.
 
 | Piece | Where |
 |---|---|
-| *Honey, not sticks* — no refusals beyond what git itself cannot do; a check tells, it does not block | [`worktrees.md`](worktrees.md), "Desk lifecycle and recovery" |
+| *Honey, not sticks* — no refusals beyond what git itself cannot do; a check tells, it does not block | [`worktrees.md`](worktrees.md), "Worktree lifecycle and recovery" |
 | *Measured, never asked* — tmux is the authority on whether tmux runs | `libexec/ronin-coexist.sh`, the existence probe |
 | *Disclosed, not asked* — adoption of an existing tmux server is recorded in the install report and does not wait for a yes | `setup.sh`, the coexistence preflight |
 | *Explained, approved once* — first install names outstanding machine settings before activation and applies them through one sudo process; the application holds no root | `setup.sh`, `libexec/ronin-machine-apply` |

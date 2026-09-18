@@ -63,7 +63,8 @@ runtime parts, while Agent capabilities teach tools (`docs/architecture/tool-sur
 | `desk_profile` | **desk profile**<!--g:glossary.desk_profile--> | The owner's standing defaults: skin, words, layout. |
 | harakiri | **harakiri**<!--g:glossary.harakiri--> | A session ends itself. |
 | `@ronin_note` | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
-| desk | **desk** | A managed private branch and worktree with explicit custody. |
+| Desk | **Desk** | The engagement context containing Teams, Agents, and work. It is not a Git worktree. |
+| worktree | **worktree** | A private working folder and branch with explicit custody for managed repository work. |
 | hand-in | **hand in** | Admit committed work to Team review. Never say “push.” |
 | commit | **commit** | A private checkpoint on a managed worktree; it publishes nothing. |
 | push | **Git push** | Remote Git publication only; never the name for hand-in or promotion. |

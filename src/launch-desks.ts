@@ -63,7 +63,7 @@ export async function prepareLaunchDesks(
     } catch (error) {
       const kept = desks.length
         ? ` Already opened: ${desks.map((desk) => `${desk.repo}:${desk.branch} at ${desk.worktree}`).join(', ')}.`
-        : ' No desks were opened.';
+        : ' No worktrees were opened.';
       throw new Error(`Failed to open selected managed workspace ${candidate.repo}: ${String((error as Error)?.message ?? error)}.${kept}`);
     }
     desks.push({

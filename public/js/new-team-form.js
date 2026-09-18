@@ -261,7 +261,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   const whereSummary = () => t('where.summary', 'born in {root} · {repos}', {
     root: draft.root || t('team_config.default', 'Default'),
     repos: draft.repos.length ? t('where.roots', 'also in {list}', { list: draft.repos.join(', ') })
-      : t('where.none', 'no auto desk'),
+      : t('where.none', 'no auto worktree'),
   });
 
   /* ---- step 5 · Team kit ---- */

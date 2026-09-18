@@ -76,7 +76,7 @@ its location with `bin/ronin-store archived_sessions`; never spell the path in c
 | Request | Result |
 |---|---|
 | `POST /api/sessions/:name/archive` | Persist the resumable manifest and stop the Agent; refuses while it owns an open desk |
-| `DELETE /api/sessions/:name` | Coordinated close of safe assigned desks followed by Agent deletion |
+| `DELETE /api/sessions/:name` | Coordinated close of safe assigned worktrees followed by Agent deletion |
 | `POST /api/sessions/:name/shutdown` | Immediately start observable safe Delete, or exact-confirmed Hard Delete; returns an operation id |
 | `GET /api/session-shutdowns/:id` | Current phase, desk count, terminal success, or actionable blockers |
 | `GET /api/archived-sessions` | Roster-safe rows: `id`, `name`, `archived_at`, `agent` |

@@ -63,7 +63,7 @@ Separate live runtime facts, durable authorities, and projections. Start with th
   [Session identity](architecture/session-identity.md), [Worktrees](architecture/worktrees.md).
 - Code: [tmux-client.ts](../src/tmux-client.ts), [spawn-broker.ts](../src/spawn-broker.ts),
   [session-archive.ts](../src/session-archive.ts), [machine-settings.ts](../src/machine-settings.ts),
-  [desk lifecycle](../src/desks/lifecycle-ledger.ts).
+  [worktree lifecycle](../src/desks/lifecycle-ledger.ts).
 - Tests: [tmux-client.test.ts](../tests/tmux-client.test.ts),
   [spawn-broker.test.ts](../tests/spawn-broker.test.ts), [session-archive.test.ts](../tests/session-archive.test.ts),
   [desks.test.ts](../tests/desks.test.ts).

@@ -99,7 +99,7 @@ Ronin. Their `prestart`/`predev` command calls `scripts/prepare-dev-services.ts`
 resolver is `src/dev-services.ts`. It reads the registered `ronin_cowork` and
 `ronin_services` Workspace Folders and each repository's declared working branch.
 Only the mounted Cowork global working checkout receives automatic placement; a
-private desk, candidate, preview, or `VERSION`-stamped release does not.
+private worktree, candidate, preview, or `VERSION`-stamped release does not.
 
 For global dev, preparation calls the Services working checkout's existing
 `bin/dev-sync <cowork-working-checkout>`. The source must be at its working tip with

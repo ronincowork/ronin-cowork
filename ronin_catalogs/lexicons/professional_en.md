@@ -1773,7 +1773,7 @@ The catalog entry goes. {dir} is not touched.
 - **where.summary:** born in {root} · {repos}
 - **where.desks:** desks in {list}
 - **where.checkouts:** works in {list}
-- **where.none:** no auto desk
+- **where.none:** no auto worktree
 - **team_config.default:** Default
 - **team_config.worktrees_mode:** Agent work mode
 - **team_config.worktrees_on:** Own worktree where the Workspace folder allows it
