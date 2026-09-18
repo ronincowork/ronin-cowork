@@ -5940,6 +5940,12 @@ button.wb-door:hover b {
 .setup-field input:not([type='checkbox']), .setup-field select, .setup-field textarea { width: 100%; box-sizing: border-box; }
 .setup-field:has(input[type='checkbox']) { grid-template-columns: 1fr auto; align-items: center; }
 .setup-lede, .setup-fine, .setup-notice, .setup-state { margin: 0; }
+.password-surface { width: min(100%, 42rem); margin: 0 auto; }
+.password-intro, .password-recovery, .password-form { display: grid; gap: var(--space-3); }
+.password-intro h2, .password-recovery h3 { margin: 0; }
+.password-form { padding: var(--space-4); border: var(--edge) solid var(--line); background: var(--raise); }
+.password-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.password-notice:empty { display: none; }
 .setup-services-compact { align-content: start; width: min(100%, 42rem); margin: 0 auto; gap: var(--space-9); }
 .setup-services-intro { display: grid; gap: var(--space-9); }
 .setup-services-beta { display: grid; gap: var(--space-3); border-left: var(--edge-2) solid var(--kaki); padding: var(--space-3) var(--space-6); }

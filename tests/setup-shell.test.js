@@ -39,7 +39,7 @@ test('Ronin Home and Setup share the same persisted light and dark control', asy
   assert.match(workspace, /options\.ramRpm\?\.setVisible\(next\.header\?\.ram === true\)/);
   assert.match(workspace, /options\.servicesStatus\?\.setVisible\(next\.header\?\.services === true\)/);
   assert.match(ram, /return \{ setVisible\(next\) \{ visible = next === true; paint\(\); \} \}/, 'the poller supplies facts while the active view owns visibility');
-  assert.match(services, /trigger\.hidden = !visible \|\|/);
+  assert.match(services, /trigger\.hidden = !showsServicesHeader\(visible, stage, readyDismissed\)/);
   assert.match(contract, /WORKBENCH_HEADER = Object\.freeze\([\s\S]*shape: true,[\s\S]*ram: true,[\s\S]*services: true,[\s\S]*feedback: true/);
 });
 

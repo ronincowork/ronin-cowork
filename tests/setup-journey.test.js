@@ -17,9 +17,10 @@ test('a ready provider opens the first unfinished developer step', () => {
 });
 
 test('the explicit scene selector can inspect every stable scene', () => {
-  assert.equal(SETUP_SCENES.length, 6);
-  assert.equal(new Set(SETUP_SCENES.map(({ id }) => id)).size, 6);
+  assert.equal(SETUP_SCENES.length, 7);
+  assert.equal(new Set(SETUP_SCENES.map(({ id }) => id)).size, 7);
   assert.equal(setupJourney({ activated_count: 2 }, 1).id, 'provider');
-  assert.equal(setupJourney({ activated_count: 0 }, 6).id, 'launch');
+  assert.equal(setupJourney({ activated_count: 0 }, 5).id, 'password');
+  assert.equal(setupJourney({ activated_count: 0 }, 7).id, 'launch');
   assert.equal(setupJourney({ activated_count: 0 }, 99).id, 'provider');
 });

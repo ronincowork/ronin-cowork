@@ -135,6 +135,27 @@
         }
       ]
     },
+    "library.setup.password": {
+      "copy": [
+        {
+          "id": "password-intro",
+          "kind": "title",
+          "eyebrow": "One installation",
+          "heading": "Choose browser access",
+          "body": "A browser password protects the same Ronin work through both its local address and its Tailscale HTTPS address."
+        },
+        {
+          "id": "password-network",
+          "kind": "instruction",
+          "body": "Turning the password off does not change which network addresses can reach Ronin."
+        },
+        {
+          "id": "password-recovery",
+          "kind": "instruction",
+          "body": "If you forget it, mint a temporary recovery code on the machine running Ronin. Ronin HQ never receives your password."
+        }
+      ]
+    },
     "library.setup.launch": {
       "copy": [
         {

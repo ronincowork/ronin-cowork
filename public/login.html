@@ -139,11 +139,11 @@
                  placeholder="XXXXX-XXXXX-XXXXX-XXXXX" />
           <button id="rcgo" type="button">Log in with code</button>
           <p class="ui-status" id="rcmsg" role="status"></p>
-          <small>Mint one on the host with <code>bin/ronin-recovery</code>. Valid 30 minutes, one use.</small>
+          <small>Forgot the password? On the machine running Ronin, open a terminal in the Ronin installation and run <code>bin/ronin-recovery</code>. Enter the code here. It works without the old password, is valid for 30 minutes, and can be used once.</small>
         </div>
       </details>
 
-      <small>Set or change the password on the host with <code>bin/ronin-passwd</code>. The session lasts 30 days on this device; changing the password ends every session.</small>
+      <small>The browser Password page can change this setting after login. From the machine running Ronin, <code>bin/ronin-passwd</code> can also set or clear it. The session lasts 30 days on this device; changing the password ends other browser sessions.</small>
     </form>
     <script>
       const $ = (id) => document.getElementById(id);
