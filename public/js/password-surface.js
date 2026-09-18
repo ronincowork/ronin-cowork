@@ -2,7 +2,6 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
-import { field } from './ui.js';
 import { t } from './lexicon.js';
 
 export const PASSWORD_SURFACE_TYPE = 'machine.password';
@@ -15,38 +14,59 @@ const el = (tag, cls = '', text = null) => {
 };
 
 export function createPasswordSurface(context = {}) {
-  const surface = WorkspaceKit.primitives.createSurface({ label: t('password.title', 'Password') });
-  const body = el('div', 'setup-surface-body password-surface');
-  const intro = el('section', 'password-intro');
+  const { createSurface, createAction, createActionBar, createNotice } = WorkspaceKit.primitives;
+  const surface = createSurface({ label: t('password.title', 'Password') });
+  const body = el('div', 'setup-surface-body setup-register-compact password-surface');
+  const intro = el('section', 'setup-register-welcome');
   intro.append(
+    el('span', 'setup-register-eyebrow', t('password.eyebrow', 'Access control')),
     el('h2', '', t('password.heading', 'Browser password')),
     el('p', 'setup-lede', t('password.explain', 'One password protects this Ronin installation through both its local HTTP and Tailscale HTTPS addresses.')),
   );
+  const access = el('section', 'setup-register-group password-access');
+  access.append(el('h3', '', t('password.access', 'Browser access')));
   const selectorHost = el('div', 'password-selector');
-  const form = el('form', 'password-form');
+  const form = el('form', 'setup-form setup-register-form password-form');
   form.hidden = true;
+  const formGroup = el('section', 'setup-register-group password-form-group');
+  formGroup.append(el('h3', '', t('password.choose', 'Choose a password')));
   const first = el('input'); first.type = 'password'; first.autocomplete = 'new-password';
   const second = el('input'); second.type = 'password'; second.autocomplete = 'new-password';
-  const firstField = field(first, { label: t('password.new', 'New password') });
-  const secondField = field(second, { label: t('password.confirm', 'Confirm password') });
-  firstField.el.classList.add('setup-field'); secondField.el.classList.add('setup-field');
-  const save = WorkspaceKit.primitives.createAction({ label: t('password.save', 'Save password'), kind: 'primary', action: () => {} });
+  const passwordLine = (label, control, id) => {
+    const row = el('label', 'setup-field setup-register-input');
+    const validation = el('small', 'setup-notice password-validation');
+    control.id = id; control.required = true;
+    validation.id = `${id}-validation`;
+    control.setAttribute('aria-describedby', validation.id);
+    validation.setAttribute('role', 'status'); validation.setAttribute('aria-live', 'polite');
+    row.append(el('span', 'setup-register-question', label), control, validation);
+    return { row, validation };
+  };
+  const firstField = passwordLine(t('password.new', 'New password'), first, 'ronin-new-password');
+  const secondField = passwordLine(t('password.confirm', 'Confirm new password'), second, 'ronin-confirm-password');
+  formGroup.append(firstField.row, secondField.row);
+  const save = createAction({ label: t('password.save', 'Save password'), kind: 'primary', action: () => {} });
   save.el.type = 'submit';
-  const cancel = WorkspaceKit.primitives.createAction({ label: t('password.cancel', 'Cancel'), action: () => closeForm() });
-  const formActions = el('div', 'password-actions'); formActions.append(save.el, cancel.el);
-  form.append(firstField.el, secondField.el, formActions);
+  const cancel = createAction({ label: t('password.cancel', 'Cancel'), action: () => closeForm() });
+  const formActions = createActionBar({ label: t('password.save_actions', 'Save password actions'), actions: [cancel, save] });
+  const send = el('div', 'setup-register-send');
+  send.append(formActions.el);
+  form.append(formGroup, send);
 
-  const change = WorkspaceKit.primitives.createAction({ label: t('password.change', 'Change password'), action: () => openForm('change') });
-  const changeRow = el('div', 'password-actions'); changeRow.append(change.el); changeRow.hidden = true;
-  const note = el('p', 'setup-notice password-notice'); note.setAttribute('role', 'status'); note.setAttribute('aria-live', 'polite');
+  const change = createAction({ label: t('password.change', 'Change password'), action: () => openForm('change') });
+  const changeRow = createActionBar({ label: t('password.change_actions', 'Password actions'), actions: [change] });
+  changeRow.el.hidden = true;
+  const note = createNotice();
+  note.el.setAttribute('role', 'status'); note.el.setAttribute('aria-live', 'polite');
   const reach = el('p', 'setup-fine', t('password.off_warning', 'When password protection is Off, anyone who can reach an allowed Ronin address can use it. This does not change network binding or Tailscale access.'));
   const basic = el('p', 'setup-fine'); basic.hidden = true;
-  const recovery = el('section', 'password-recovery');
+  const recovery = el('section', 'setup-register-group password-recovery');
   recovery.append(
     el('h3', '', t('password.forgotten', 'Forgotten password')),
     el('p', 'setup-fine', t('password.recovery_help', 'On the machine running Ronin, open a terminal in the Ronin installation and run bin/ronin-recovery. Enter the one-time code under “Use a recovery code” on the login page. It works without the old password and expires after 30 minutes.')),
   );
-  body.append(intro, selectorHost, form, changeRow, note, reach, basic, recovery);
+  access.append(selectorHost, changeRow.el, note.el, reach, basic);
+  body.append(intro, access, form, recovery);
   surface.content.append(body);
 
   let saved = false;
@@ -54,11 +74,16 @@ export function createPasswordSurface(context = {}) {
   let mode = '';
   let selector = null;
 
-  const say = (text, bad = false) => { note.textContent = text || ''; note.dataset.tone = bad ? 'failed' : 'success'; };
+  const say = (text, bad = false) => note.set(text ? (bad ? 'failed' : 'success') : '', text || '');
+  const validate = (field, message = '') => {
+    field.validation.textContent = message;
+    field.row.querySelector('input').setAttribute('aria-invalid', String(Boolean(message)));
+  };
   function closeForm() {
     mode = '';
     form.hidden = true;
     first.value = ''; second.value = '';
+    validate(firstField); validate(secondField);
   }
   function openForm(next) {
     mode = next;
@@ -69,7 +94,7 @@ export function createPasswordSurface(context = {}) {
   const paint = (state) => {
     saved = state?.required === true;
     selector?.set('required', saved);
-    changeRow.hidden = !saved;
+    changeRow.el.hidden = !saved;
     reach.hidden = saved;
     basic.hidden = state?.basic !== true;
     basic.textContent = t('password.basic_kept', 'Legacy Basic authentication is also configured. Turning this password Off does not remove that separate restriction.');
@@ -102,8 +127,15 @@ export function createPasswordSurface(context = {}) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (busy) return;
-    if (first.value.length < 8) { say(t('password.too_short', 'Use at least 8 characters.'), true); first.focus(); return; }
-    if (first.value !== second.value) { say(t('password.no_match', 'The two passwords do not match.'), true); second.focus(); return; }
+    validate(firstField); validate(secondField);
+    if (first.value.length < 8) {
+      validate(firstField, t('password.too_short', 'Use at least 8 characters.'));
+      first.focus(); return;
+    }
+    if (first.value !== second.value) {
+      validate(secondField, t('password.no_match', 'The two passwords do not match.'));
+      second.focus(); return;
+    }
     busy = true; save.el.disabled = true; cancel.el.disabled = true;
     say(mode === 'change' ? t('password.changing', 'Changing password…') : t('password.enabling', 'Turning password protection on…'));
     const result = await request('/api/password', { method: 'PUT', json: { password: first.value, confirm: second.value } });

@@ -60,6 +60,13 @@ test('Setup and Settings register the same ERABI Password surface without a seco
   ]);
   assert.match(surface, /export const PASSWORD_SURFACE_TYPE = 'machine\.password'/);
   assert.match(surface, /ask\(\[\{[\s\S]*key: 'required'[\s\S]*switch:/, 'Require a password is an ERABI switch');
+  assert.doesNotMatch(surface, /from '\.\/ui\.js'/, 'the surface does not mix legacy form furniture with WorkspaceKit');
+  assert.match(surface, /setup-register-compact password-surface/, 'the page uses the established Register composition');
+  assert.match(surface, /setup-field setup-register-input/);
+  assert.match(surface, /setup-register-question/);
+  assert.doesNotMatch(surface, /createField|createForm/, 'password inputs do not switch to WorkspaceKit field furniture');
+  assert.match(surface, /createActionBar\(\{/);
+  assert.match(surface, /createNotice\(\)/);
   assert.match(surface, /selector\.set\('required', saved\)/, 'the reading follows saved state, not an optimistic press');
   assert.match(surface, /method: 'PUT'[\s\S]*password: first\.value, confirm: second\.value/);
   assert.match(surface, /method: 'DELETE'/);
