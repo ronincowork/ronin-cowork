@@ -36,7 +36,7 @@ import { ask } from './ask.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
-import { loadProviderCatalog, modelAvailabilityFact, providerCatalog, tierWord } from './form-steps.js';
+import { loadProviderCatalog, modelAvailabilityFact, modelLabel, providerCatalog, tierWord } from './form-steps.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
 import { createStatusMarker } from './status-marker.js';
 
@@ -327,10 +327,10 @@ export function createProviderSurface(context) {
     host.append(card);
   };
 
-  /* ---- 2 · THE CATALOG: the measured facts, then every model the catalog lists ---- */
+  /* ---- 2 · MODELS: the persisted CLI inventory, enriched by catalog descriptions ---- */
   const paintCatalog = (rows, entry, host) => {
     const section = el('section', 'setup-provider-catalog');
-    section.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_catalog', 'The catalog')));
+    section.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_models', 'Models')));
     const facts = el('dl', 'setup-provider-facts');
     for (const [label, on] of [
       [t('setup_surface.fact_installed', 'Installed'), entry?.installed === true],
@@ -338,6 +338,23 @@ export function createProviderSurface(context) {
       [t('setup_surface.fact_activated', 'Activated'), entry?.activated === true],
     ]) { const fact = el('div'); fact.dataset.on = String(on); fact.append(el('dt', null, label), el('dd', null, yesNo(on))); facts.append(fact); }
     section.append(facts);
+    if (entry) {
+      const tools = el('div', 'setup-provider-model-tools');
+      const captured = entry.model_list?.fetched_at
+        ? t('setup_surface.models_captured', 'Models captured {date}', { date: entry.model_list.fetched_at })
+        : t('setup_surface.models_not_captured', 'Models not captured yet');
+      const status = el('p', 'setup-fine', captured);
+      const refresh = action(t('setup_surface.refresh_models', 'Refresh models'), '', async () => {
+        refresh.disabled = true;
+        refresh.textContent = t('setup_surface.refreshing_models', 'Refreshing…');
+        if (!await measure(true)) {
+          refresh.disabled = false;
+          refresh.textContent = t('setup_surface.refresh_models', 'Refresh models');
+        }
+      });
+      tools.append(status, refresh);
+      section.append(tools);
+    }
     if (!rows.length) { section.append(el('p', 'setup-fine', t('setup_surface.no_models', 'The catalog lists no models for this provider.'))); host.append(section); return; }
     const from = el('p', 'setup-fine setup-provider-provenance', provenance(rows));
     from.dataset.origin = rows[0].origin || 'stock'; from.dataset.shadowed = String(rows[0].shadowed === true);
@@ -350,7 +367,7 @@ export function createProviderSurface(context) {
     for (const row of rows) {
       const line = el('tr');
       line.dataset.model = row.model; line.dataset.tier = row.tier;
-      const name = el('td'); name.append(el('b', null, row.model));
+      const name = el('td'); name.append(el('b', null, modelLabel(row)));
       if (row.default) name.append(el('span', 'setup-provider-default', t('setup_surface.model_default_mark', 'the default')));
       if (row.model_list) name.append(el('span', 'setup-provider-model-status', modelAvailabilityFact(row)));
       line.append(name, el('td', 'setup-provider-tier', tierWord(row.tier)), el('td', null, row.cost || ''), el('td', null, row.good_at || ''), el('td', null, row.not_good_at || ''));

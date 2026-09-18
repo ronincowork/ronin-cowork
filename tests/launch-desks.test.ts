@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks } from '../src/launch-desks.js';
+import { prepareLaunchDesks, primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks } from '../src/launch-desks.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { bootFiles } from '../src/birth-readme.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
@@ -78,6 +78,7 @@ test('the brief carries every desk, the primary, the line, and the four words â€
   const root = { name: 'cowork', dir: '/w/cowork', match: [], remit: '' } as unknown as Parameters<typeof buildBrief>[1];
   const rows = [{ repo: 'cowork', project_root: 'cowork', worktrees: 'enabled', mode: 'managed', location: '/w/cowork', branches: { working: 'dev', stable: 'master' }, managed: assignment.desks[0], reason: 'worktree_root', provenance: { repository: 'RONIN_REPO' } }] as const;
   const brief = buildBrief(profile, root, form, undefined, [], null, assignment, [...rows]);
+  assert.match(brief, /Repository approaches: read .*checkout\.md.*read .*worktree-root\.md/);
   assert.match(brief, /Born in workspace-folder-handle: cowork at path: \/w\/cowork\. Arrangement: worktree root/);
   assert.match(brief, /Your assignment has 2 desks:/);
   assert.match(brief, /cowork\s+\/w\/cowork\/team\/comp\/fable\s+â†’ team\/comp\/dev\s+\(you start here: your shell opens inside this desk, and the desk ends with you\)/);
@@ -87,6 +88,8 @@ test('the brief carries every desk, the primary, the line, and the four words â€
 
   const none = buildBrief(profile, root, form, undefined, [], null, null);
   assert.doesNotMatch(none, /desk/i, 'a launch with no assignment is told nothing about desks');
+  assert.match(none, /Repository approaches: read .*checkout\.md.*read .*worktree-root\.md/,
+    'every Cowork Agent is taught both repository approaches before later assignments');
 });
 
 test('conditional arrangement pages are fact-selected for birth', async () => {
@@ -118,4 +121,23 @@ test('the desk capability points at the managed arrangement page and the Routine
   assert.match(core, /discard refuses while any live Agent stands in the desk/);
   assert.match(core, /Hard Delete action/);
   await assert.rejects(readFile(path.join(repo, 'ronin_catalogs', 'routines', 'ronin_worktrees.md')), /ENOENT/);
+});
+
+test('desk preparation names a failed repository and every earlier allocation without rolling it back', async () => {
+  const opened: string[] = [];
+  const planned = {
+    ...assignment,
+    desks: [
+      { ...assignment.desks[0], repo: 'first', branch: 'team/comp/agent-first', worktree: '/w/first/agent' },
+      { ...assignment.desks[1], repo: 'second', branch: 'team/comp/agent-second', worktree: '/w/second/agent' },
+    ],
+  };
+  await assert.rejects(() => prepareLaunchDesks(planned, {
+    openDesk: async (input) => {
+      if (input.repo === 'second') throw new Error('working branch dev does not exist');
+      opened.push(input.repo);
+      return { ...planned.desks[0], repo: input.repo, mounted: true } as never;
+    },
+  }), /Failed to open selected managed workspace second: working branch dev does not exist\. Already opened: first:team\/comp\/agent-first at \/w\/first\/agent\./);
+  assert.deepEqual(opened, ['first'], 'the successful allocation remains and no rollback is attempted');
 });

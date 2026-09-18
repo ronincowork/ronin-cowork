@@ -14,7 +14,7 @@
  * reads the record and never probes. Agent installs run in a tile with no completion hook,
  * so a fresh install shows on the next probe or the next Ronin start, dated.
  */
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { appendEgress, type EgressLine } from './activation/egress.js';
@@ -65,7 +65,7 @@ export interface MeasureOps {
   /** What the installed CLI printed to the registry's version argv, given its path; '' when it would not say. The first dotted number in it is the version. */
   version?: (path: string, argv: readonly string[]) => Promise<string>;
   /** The CLI-owned model list, or null when this CLI has no readable list. */
-  modelList?: (cli: string) => Promise<CliModelList | null>;
+  modelList?: (cli: string, home?: string, file?: string, version?: string) => Promise<CliModelList | null>;
 }
 
 /** The first dotted number a `--version` line carries, or ''. */
@@ -85,8 +85,48 @@ export async function installedVersion(file: string, argv: readonly string[]): P
   }
 }
 
-/** Read a CLI-owned model list. Codex is the only registry CLI with one today. */
-export async function cliModelList(cli: string, home = os.homedir()): Promise<CliModelList | null> {
+/** Turn the stable, human-readable output of `grok models` into its live inventory. */
+export function grokModelList(text: string, clientVersion = ''): CliModelList | null {
+  if (/you are not authenticated/i.test(text)) return null;
+  const start = text.split(/\r?\n/).findIndex((line) => /^Available models:\s*$/i.test(line.trim()));
+  if (start < 0) return null;
+  const models = text.split(/\r?\n/).slice(start + 1).flatMap((line, priority) => {
+    const match = /^\s*(?:\*|-)\s+(.+?)(?:\s+\(default\))?\s*$/.exec(line);
+    if (!match) return [];
+    const slug = match[1].trim();
+    return slug ? [{ slug, display_name: slug, description: '', visibility: 'list' as const, priority }] : [];
+  });
+  if (!models.length) return null;
+  return { fetched_at: new Date().toISOString(), etag: '', client_version: clientVersion, models };
+}
+
+/** Read the model inventory owned or printed by a CLI; never infer entitlement from Ronin's catalog. */
+export async function cliModelList(cli: string, home = os.homedir(), file = '', clientVersion = ''): Promise<CliModelList | null> {
+  if (cli === 'claude') {
+    try {
+      const dir = path.join(home, '.claude', 'cache', 'model-catalog');
+      const files = (await readdir(dir)).filter((name) => name.endsWith('-cc.json')).sort();
+      const file = files.at(-1);
+      if (!file) return null;
+      const raw = JSON.parse(await readFile(path.join(dir, file), 'utf8')) as Record<string, any>;
+      const models = raw?.catalog?.config?.models;
+      if (!Array.isArray(models)) return null;
+      return {
+        fetched_at: new Date(Number(raw.fetchedAt)).toISOString(), etag: file, client_version: `catalog-${raw.version}`,
+        models: models.filter((model) => model && typeof model.id === 'string').map((model, priority) => ({
+          slug: model.id, display_name: String(model.name || model.short_name || model.id),
+          description: String(model.description || ''), visibility: 'list', priority,
+        })),
+      };
+    } catch { return null; }
+  }
+  if (cli === 'grok') {
+    if (!file) return null;
+    try {
+      const { stdout, stderr } = await execFile(file, ['models'], { timeout: 20_000 });
+      return grokModelList(`${stdout}\n${stderr}`, clientVersion);
+    } catch { return null; }
+  }
   if (cli !== 'codex') return null;
   try {
     const raw = JSON.parse(await readFile(path.join(home, '.codex', 'models_cache.json'), 'utf8')) as Record<string, unknown>;
@@ -125,7 +165,7 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
   for (const [id, found] of asked) if (found) versions[id] = found;
   const model_lists: Record<string, CliModelList> = {};
   const lists = await Promise.all(AGENTS.filter((agent) => operational.includes(agent.id))
-    .map(async (agent) => [agent.id, await modelList(agent.id)] as const));
+    .map(async (agent) => [agent.id, await modelList(agent.id, undefined, paths[agent.id], versions[agent.id])] as const));
   for (const [id, list] of lists) if (list) model_lists[id] = list;
   return {
     measured_at: (ops.now ?? (() => new Date().toISOString()))(),

@@ -471,6 +471,10 @@ test('Setup has one Installations card, Account has no gbrain tab, and Machine S
   ]);
   assert.match(surfaces, /definition\(SETUP_SURFACE_TYPES\.installations, t\('campaign_view\.installations', 'Installations'\), createSetupInstallationsSurface\)/);
   assert.match(surfaces, /createInstallationsSurface\(selected, \{[\s\S]*onInstallationsState: \(values\) => context\.environment\?\.onInstallationsState\?\.\(values\)/);
+  const setupInstallations = surfaces.match(/function createSetupInstallationsSurface\(context\) \{[\s\S]*?\n\}/)?.[0] || '';
+  assert.ok(setupInstallations, 'Setup keeps a thin adapter around the shared Installations surface');
+  assert.doesNotMatch(setupInstallations, /\.disabled\s*=|registrationLocked|MutationObserver|querySelectorAll/,
+    'Setup may sequence the shared page but must not override its controls');
   assert.doesNotMatch(setupView, /SETUP_SURFACE_TYPES\.(?:services|gbrain)/);
   assert.doesNotMatch(account, /id: 'gbrain'/);
   assert.match(machine, /tickRow\(observed\.ronin\.services\.includes\('gbrain'\)/, 'the measured gbrain row remains');
@@ -486,6 +490,18 @@ test('legacy Services mutation entry points explicitly retire to registration', 
   assert.match(source, /app\.post\('\/api\/services\/activation'[\s\S]*status\(410\)/);
   assert.match(source, /Registration recovery moved to \/api\/setup\/registration\/recovery/);
   assert.match(source, /Registration deletion moved to \/api\/setup\/registration/);
+});
+
+test('Register resend confirmation remains wired from its button to the live recovery action', async () => {
+  const fs = await import('node:fs/promises');
+  const [surface, api] = await Promise.all([
+    fs.readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
+    fs.readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8'),
+  ]);
+  assert.match(surface, /resend_registration[\s\S]*\/api\/setup\/registration\/recovery[\s\S]*action: 'resend'/,
+    'the visible Resend confirmation action posts the recovery request');
+  assert.match(api, /action === 'resend'\) await resend\(\)/,
+    'the live recovery route dispatches that request to HQ resend');
 });
 
 test('retired Services mutation handlers return 410 while registration routes remain live', async () => {

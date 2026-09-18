@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { openTestServer, closeTestServer } from './helpers/testserver.js';
 import assert from 'node:assert/strict';
 import { EventEmitter, once } from 'node:events';
 import { PassThrough } from 'node:stream';
@@ -297,4 +298,30 @@ test('an importing process exits after its command leaves the control connection
   ], { cwd: process.cwd(), timeout: 2_000, encoding: 'utf8' });
   assert.equal(stdout, '');
   assert.equal(stderr, '');
+});
+
+test('C locale preserves session fields through direct and control clients', async () => {
+  const server = await openTestServer(`utf8-${process.pid}`);
+  try {
+    await server.run('new-session', '-d', '-s', 'probe', '/bin/sleep', '300');
+    const source = `
+      import assert from 'node:assert/strict';
+      import { tmux } from './src/tmux-client.ts';
+      const row = ['probe', '', '1', '0', '123', '0', '', '', '', '', '', '', '123', '{"name":"Mika"}'].join('\\t');
+      const args = ['display-message', '-p', '-t', '=probe:', row];
+      assert.equal(await tmux.run(args), row);
+      await tmux.connect();
+      assert.equal(tmux.state(), 'up');
+      assert.equal(await tmux.run(args), row);
+      process.exit(0);
+    `;
+    await promisify(execFile)(process.execPath, [
+      '--import', 'tsx', '--input-type=module', '-e', source,
+    ], {
+      cwd: process.cwd(), timeout: 10_000,
+      env: { ...process.env, PATH: `${server.root}:${process.env.PATH}`, LC_ALL: 'C' },
+    });
+  } finally {
+    await closeTestServer(server);
+  }
 });

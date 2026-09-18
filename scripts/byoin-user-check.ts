@@ -12,11 +12,13 @@ const find = (msg: string, remedy: string) => {
   findings++;
 };
 
-const exists = async (p: string) => !!(await stat(p).catch(() => null));
+const absent = (error: unknown): boolean => (error as NodeJS.ErrnoException)?.code === 'ENOENT';
+const exists = async (p: string) => {
+  try { await stat(p); return true; }
+  catch (error) { if (absent(error)) return false; throw error; }
+};
 const mdFiles = async (dir: string): Promise<string[]> =>
-  (await readdir(dir).catch(() => [] as string[])).filter((f) => f.endsWith('.md'));
-
-const REQUIRED: Record<string, { keys: string[]; unless?: (e: { get: (k: string) => string }) => boolean }> = {};
+  (await readdir(dir).catch((error) => { if (absent(error)) return [] as string[]; throw error; })).filter((f) => f.endsWith('.md'));
 
 async function checkCatalogFile(dir: string, file: string, label: string): Promise<void> {
   looked++;
@@ -31,25 +33,14 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
       );
     return;
   }
-  const req = REQUIRED[file];
   for (const s of sections) {
-    const get = (k: string) => entryValue(s.lines, k);
     if (entryValue(s.lines, 'hidden').toLowerCase() === 'yes') continue; // a deliberate hide
-    if (!req) continue;
-    if (req.unless?.({ get })) continue;
-    for (const k of req.keys) {
-      if (!get(k))
-        find(
-          `${label}: your entry "${s.name}" has no \`${k}:\` line, so the reader DROPS it — it will not appear on any surface`,
-          `add \`- **${k}:** …\` (the shipped ronin_catalogs/${file} shows every field), or \`- **hidden:** yes\` if hiding it was the intent`,
-        );
-    }
   }
 }
 
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
   const kinds: DefinitionKind[] = [
-    'lexicons', 'desk_profiles', 'templates/agents', 'templates/teams',
+    'lexicons', 'desk_profiles', 'installations', 'capabilities', 'templates/agents', 'templates/teams',
   ];
   for (const kind of kinds) {
     const dir = path.join(catalogsDir, kind);
@@ -72,18 +63,37 @@ async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
       );
     }
   }
+
+  const behaviourDir = storeDir('ways');
+  if (await exists(behaviourDir)) {
+    const listed = new Set((await readDefinitions('behaviours')).filter((row) => row.origin === 'user').map((row) => path.resolve(row.file)));
+    const walk = async (dir: string): Promise<void> => {
+      for (const entry of await readdir(dir, { withFileTypes: true })) {
+        const file = path.join(dir, entry.name);
+        if (entry.isDirectory()) await walk(file);
+        else if (entry.name.endsWith('.md') && entry.name.toLowerCase() !== 'readme.md') {
+          looked++;
+          if (!listed.has(path.resolve(file))) find(
+            `behaviours/${path.relative(behaviourDir, file)} (yours) does not surface`,
+            'put it under floor, conditional, selected, or sought; make its `scope` match that directory; and include at least one `- **key:** value` line',
+          );
+        }
+      }
+    };
+    await walk(behaviourDir);
+  }
 }
 async function checkShadowStore(id: string, stockDir: string): Promise<void> {
   const dir = storeDir(id);
   if (!(await exists(dir))) return;
   const walk = async (d: string, rel = ''): Promise<void> => {
-    for (const e of await readdir(d, { withFileTypes: true }).catch(() => [])) {
+    for (const e of await readdir(d, { withFileTypes: true })) {
       const r = rel ? `${rel}/${e.name}` : e.name;
       if (e.isDirectory()) await walk(path.join(d, e.name), r);
-      else if (e.name.endsWith('.md')) {
+      else if (e.name.endsWith('.md') && e.name.toLowerCase() !== 'readme.md') {
         looked++;
         const p = path.join(d, e.name);
-        const body = (await readFile(p, 'utf8').catch(() => '')).trim();
+        const body = (await readFile(p, 'utf8')).trim();
         if (!body)
           find(
             `${id} store: ${r} is empty — it shadows (or adds to) ${stockDir}/ but says nothing`,
@@ -98,6 +108,8 @@ async function checkShadowStore(id: string, stockDir: string): Promise<void> {
 const catalogsDir = storeDir('catalogs');
 if (await exists(catalogsDir)) {
   for (const f of await mdFiles(catalogsDir)) {
+    // These catalogs have dedicated readers and do not use `## name` sections.
+    if (f === 'MODEL_PROVIDERS.md' || f === 'TOOLS.md') continue;
     await checkCatalogFile(catalogsDir, f, `${f} (yours)`);
   }
   await checkDefinitionsSurface(catalogsDir);
@@ -109,6 +121,6 @@ await checkShadowStore('session_boot', 'ronin_session_boot');
 if (!looked) {
   console.log('  ok    byoin_user_check — no user customization on this box yet (nothing to check is a clean pass)');
 } else if (!findings) {
-  console.log(`  ok    byoin_user_check — ${looked} customization file(s)/entr(ies) looked at, all surface`);
+  console.log(`  ok    byoin_user_check — ${looked} customization file(s)/entr(ies) checked; no unreadable, empty, or rejected definitions found`);
 }
 process.exit(findings ? 1 : 0);

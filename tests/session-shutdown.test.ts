@@ -54,6 +54,20 @@ test('dirty, pending, rejected, unique, shared, and occupied desks block the who
   assert.deepEqual(log, [], 'preflight refusal closes no desk and does not end the Agent');
 });
 
+test('a legacy direct desk is preserved without recommending managed hand-in', async () => {
+  const log: string[] = [];
+  await assert.rejects(() => shutdownAgent('agent', () => {}, ops([
+    desk({ mode: 'direct', ahead: 1, line: 'team/t/dev' }),
+  ], log)), (e: unknown) => {
+    assert.ok(e instanceof ShutdownRefused);
+    assert.match(e.message, /belongs to a checkout repository/);
+    assert.match(e.message, /worktree-desk handoff/);
+    assert.doesNotMatch(e.message, /worktree-desk hand-in/);
+    return true;
+  });
+  assert.deepEqual(log, []);
+});
+
 test('an unexpected close failure leaves the Agent alive', async () => {
   const log: string[] = [];
   const harness = ops([desk()], log);

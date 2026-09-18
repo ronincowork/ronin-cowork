@@ -18,6 +18,7 @@ import {
   loginSucceeded,
   makeToken,
   passwordAuthEnabled,
+  unauthorizedUpgradeResponse,
   verifyRecord,
 } from './auth.js';
 import { cleanupViewers, listSessions } from './tmux.js';
@@ -27,6 +28,7 @@ import { publishMax, publishOwner } from './machine-state.js';
 import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
+import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions } from './routes/sessions-api.js';
 import { registerTeams } from './routes/teams-api.js';
 import { registerDocs } from './routes/docs-api.js';
@@ -228,6 +230,7 @@ app.get('/api/health', (_req, res) =>
 );
 
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
+registerPasswordSettings(app, issueSession); // /api/password — saved browser password setting, behind the same gate
 app.use(countBrowserTool);
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
 registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_view/show seam
@@ -378,7 +381,7 @@ const wss = new WebSocketServer({
 
 server.on('upgrade', (req, socket, head) => {
   if (!checkAuth(req.headers)) {
-    socket.write('HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm="tmux-ronin"\r\n\r\n');
+    socket.write(unauthorizedUpgradeResponse(authEnabled));
     socket.destroy();
     return;
   }

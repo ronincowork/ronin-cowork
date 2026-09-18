@@ -35,12 +35,15 @@ export function prBody(input: { receipt: PromotionReceipt; repo: string; subject
     ? `the post-restart deployment health checks ran ${health.checks.map((c) => `\`${c.name}\` ${c.status}`).join(', ')}`
     : 'no deployment health block on the receipt';
   const what = input.subjects.length ? input.subjects.map((s) => `- ${s}`).join('\n') : '- (no commits since the stable line)';
+  const verification = proof?.passed
+    ? `Promotion carries a passing repository proof for this exact head (\`${input.head.slice(0, 12)}\`). GitHub verification remains the release verdict.`
+    : `Promoted through the team line by \`${input.receipt.by}\` at this exact head (\`${input.head.slice(0, 12)}\`). This receipt carries no repository proof; GitHub verification is the release verdict.`;
   return [
     '## What this changes',
     '',
     what,
     '',
-    `Promoted through the team line by \`${input.receipt.by}\`; the one full repository BYOIN ran on this exact head (\`${input.head.slice(0, 12)}\`) before \`${input.receipt.team}\`'s line entered the working line. This PR consumes that proof; it is not the first full check.`,
+    verification,
     '',
     '## Promotion receipt',
     '',
@@ -49,10 +52,10 @@ export function prBody(input: { receipt: PromotionReceipt; repo: string; subject
     '```',
     '',
     `- [x] the receipt's \`state\` is \`${input.receipt.state}\` and its candidate is this PR's head SHA (\`${input.head.slice(0, 12)}\`)`,
-    '- [ ] GitHub `verify` is green for this PR (receipt verified, then the `--gates` rerun)',
-    skips.length
+    '- [ ] GitHub `verify` is green for this PR',
+    proof && skips.length
       ? `- [x] SKIPs in the receipt's proof: ${skips.join(', ')} — repository-only mode does not drive a live UI; ${healthLine}`
-      : '- [x] no SKIP in the receipt\'s proof',
+      : proof ? '- [x] no SKIP in the receipt\'s proof' : '- [ ] no repository proof is attached to this promotion receipt',
     '',
     '🤖 Opened by `ronin-promote pr` from the promotion ledger.',
   ].join('\n');

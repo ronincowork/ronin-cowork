@@ -11,6 +11,7 @@ import { readFile } from 'node:fs/promises';
 import { maskEmail, publicState } from '../src/activation/state.js';
 import { EgressRefused } from '../src/activation/transport.js';
 import { servicesSubscription, setteiServices } from '../src/machine-settings.js';
+import { showsConfirmationAddress, showsServicesHeader } from '../public/js/services-activation.js';
 
 test('an address is masked for display and never shown back in full', () => {
   assert.equal(maskEmail('person@example.com'), 'p*****@example.com');
@@ -82,6 +83,26 @@ test('workspace status checks Shiwake only after the owner presses Check status'
     'the Shiwake poll endpoint appears only in the Check status click handler');
   assert.match(source, /visibilityState[\s\S]*refresh/,
     'returning to the page may refresh local state without polling Shiwake');
+});
+
+test('the dropdown stops showing a confirmation address once confirmation is complete', () => {
+  assert.equal(showsConfirmationAddress({ stage: 'awaiting_email' }), true);
+  assert.equal(showsConfirmationAddress({ stage: 'expired' }), true);
+  assert.equal(showsConfirmationAddress({ stage: 'error', error_at_stage: 'awaiting_email' }), true);
+  for (const stage of ['verified', 'installing', 'installed']) {
+    assert.equal(showsConfirmationAddress({ stage }), false, `${stage} has no pending confirmation address`);
+  }
+});
+
+test('the Services header finishes as a transient acknowledgement, not a permanent badge', () => {
+  assert.equal(showsServicesHeader(true, 'awaiting_email'), true);
+  assert.equal(showsServicesHeader(true, 'installing'), true);
+  assert.equal(showsServicesHeader(true, 'installed', false), true,
+    'the transition into installed may briefly acknowledge success');
+  assert.equal(showsServicesHeader(true, 'installed', true), false,
+    'once acknowledged, Services ready leaves the header');
+  assert.equal(showsServicesHeader(false, 'installing'), false,
+    'workspace header visibility still owns the whole control');
 });
 
 test('EgressRefused exists as its own kind, so a blocked call is not read as a network fault', () => {

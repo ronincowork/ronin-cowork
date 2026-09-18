@@ -36,7 +36,7 @@ These exact files are the source catalog for the virtual `YOUR TOOLS` view:
 | Core | `edges.md` | live cross-session and Team communication/read tool |
 | Core | `work-record.md` | live personal record, document, and held-project tool |
 | Core | `agent_session.md` | live Agent/session inspection and lifecycle tools |
-| Core | `worktree-desk.md` | live desk tool, with managed-desk teaching selected by arrangement |
+| Core | `worktree-desk.md` | live desk tool and managed-worktree teaching available to every Cowork Agent |
 | Core | `machine-settings.md` | typed Campaign, installation, provider, and machine settings |
 | Core | `cowork_team.md` | live Cowork Team roster, project, custody, and member-status tools; designated-lead teaching is conditionally embedded |
 | Conditional | `ronin-host.md` | advanced host inspection and guarded restart tool |

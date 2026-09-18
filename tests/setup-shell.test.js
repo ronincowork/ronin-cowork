@@ -39,7 +39,7 @@ test('Ronin Home and Setup share the same persisted light and dark control', asy
   assert.match(workspace, /options\.ramRpm\?\.setVisible\(next\.header\?\.ram === true\)/);
   assert.match(workspace, /options\.servicesStatus\?\.setVisible\(next\.header\?\.services === true\)/);
   assert.match(ram, /return \{ setVisible\(next\) \{ visible = next === true; paint\(\); \} \}/, 'the poller supplies facts while the active view owns visibility');
-  assert.match(services, /trigger\.hidden = !visible \|\|/);
+  assert.match(services, /trigger\.hidden = !showsServicesHeader\(visible, stage, readyDismissed\)/);
   assert.match(contract, /WORKBENCH_HEADER = Object\.freeze\([\s\S]*shape: true,[\s\S]*ram: true,[\s\S]*services: true,[\s\S]*feedback: true/);
 });
 
@@ -161,6 +161,8 @@ test('the existing workbench can pin a Setup workspace and aim selector cards at
   assert.match(workbench, /options\.selectorWorkspace \|\| selected/);
   assert.match(workbench, /options\.selectorFilter/);
   assert.match(workbench, /options\.selectorCurrent/);
+  assert.match(workbench, /options\.selectorCurrent === 'placed'[\s\S]*locations\(definition\.type, resource\)/,
+    'a workbench may mark every selector card represented in its visible workspaces');
   assert.doesNotMatch(workbench, /setupRequirement|is-requirement|requirementFlash/);
   assert.match(workbench, /definition\.groupKey/);
   assert.match(workbench, /INTERACTIVE_DESCENDANT/);

@@ -24,6 +24,13 @@ test('the body is the template shape: what changed, the receipt fence CI parses,
   assert.ok(!body.includes('ronin_cowork'), 'the public receipt uses public repo names');
 });
 
+test('the body does not claim a BYOIN proof when the promotion receipt has none', () => {
+  const withoutProof = { ...receipt, proofs: [] } as PromotionReceipt;
+  const body = prBody({ receipt: withoutProof, repo: 'ronin_cowork', subjects: ['Change'], head: HEAD });
+  assert.match(body, /carries no repository proof/);
+  assert.ok(!body.includes('full repository BYOIN'));
+});
+
 test('title: the one subject, or the count', () => {
   assert.equal(prTitle(['Fix the thing'], 'dev', 'master'), 'Fix the thing');
   assert.equal(prTitle(['a', 'b', 'c'], 'dev', 'master'), 'dev → master: 3 commits');

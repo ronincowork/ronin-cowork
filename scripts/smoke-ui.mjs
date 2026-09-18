@@ -95,15 +95,18 @@ function startProbe() {
   return true;
 }
 
-function stopProbe() {
+function stopProbe({ stale = false } = {}) {
   // Opening the probe in a Workbench tile creates one or more grouped grid_* viewer
   // sessions. Killing only the root leaves those grouped sessions alive, so every UI
-  // gate can add another "Gate Probe" to the owner's server. Snapshot this probe's
-  // exact tmux group and retire every member; no unrelated session is eligible.
-  const rows = tmux(['list-sessions', '-F', '#{session_name}\t#{session_group}']) || '';
-  const owned = rows.split('\n')
-    .map((line) => line.split('\t'))
-    .filter(([name, group]) => name && (name === PROBE || group === PROBE))
+  // gate can add another "Gate Probe" to the owner's server. At startup, also retire a
+  // prior crashed gate, but only when its exact private marker proves ownership.
+  const rows = tmux(['list-sessions', '-F', '#{session_name}\t#{session_group}\t#{@ronin_note}']) || '';
+  const parsed = rows.split('\n').map((line) => line.split('\t'));
+  const roots = new Set(parsed
+    .filter(([name, , note]) => name === PROBE || (stale && /^gate_probe_\d+$/.test(name) && note === 'throwaway — the render gate, killed when it finishes'))
+    .map(([name]) => name));
+  const owned = parsed
+    .filter(([name, group]) => name && (roots.has(name) || roots.has(group)))
     .map(([name]) => name);
   for (const name of owned.reverse()) tmux(['kill-session', '-t', `=${name}`]);
 }
@@ -908,6 +911,7 @@ process.on('exit', stopProbe);
 for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
   process.on(sig, () => process.exit(sig === 'SIGINT' ? 130 : 143));
 }
+stopProbe({ stale: true });
 probeAvailable = startProbe();
 if (!probeAvailable) {
   console.error(

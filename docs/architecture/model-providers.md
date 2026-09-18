@@ -130,7 +130,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, and holding at least one model in the catalog |
 | `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
 | `versions` | what each operational/activated CLI said to the registry's `operations.version` argv, per CLI id; an installed but unactivated CLI is not run |
-| `model_lists` | each operational/activated CLI's own readable model list, including the fetching client version and date; currently Codex's `~/.codex/models_cache.json`; absent or malformed means not measured, never guessed |
+| `model_lists` | each operational/activated CLI's own readable model list, including the fetching client version and date; Claude and Codex publish caches, while Grok publishes `grok models`; absent, unauthenticated or malformed means Native only, never guessed |
 | `latest` | per CLI id, the newest release its npm package listed and when it was asked — asked only by **Refresh** on the Model providers surface, never by an ordinary measure, since each ask is an outbound request with its own egress line; kept until the next Refresh; absent for a CLI with no npm package to ask |
 
 `src/provider-summary.ts` measures and records it. It is written:
@@ -150,6 +150,12 @@ Settings mount that attachment on the provider page, including first-run sign-in
 available after the binary appears, until Cancel ends the session and measures again.
 There is no completion hook in the installer; closing the tile, reopening Model providers,
 or restarting Ronin refreshes the measured installation and credential facts.
+
+Every launchable provider declares a `native` command in the durable catalog. Native is
+always its default launch and passes no model choice to the CLI. Named launch rows become
+selectable only when that CLI's captured `model_lists` record contains the exact id; the
+catalog may enrich that reported id with tier, cost and descriptions, but cannot make an
+unreported model available. With no readable CLI inventory, Native is the only choice.
 
 ## Provider and agent are different axes
 
@@ -216,7 +222,7 @@ probes), joined on the catalog's own `cli` field, and it offers:
   Ronin offers, and a greyed row says *not on this machine*.
 
 Either pick may stand alone: a provider with no model resolves to that provider's marked
-default server-side; both blank is the level above's answer (the Team's, the Campaign's,
+Native server-side; both blank is the level above's answer (the Team's, the Campaign's,
 the install's). A row whose provider is fixed (⚙'s *Preferred <provider> model*, Mika) is
 the same control with the provider select dropped. The registry's seeds read the same
 rows: `models:first` is the marked default of the first launchable provider, `models:light`
@@ -238,14 +244,12 @@ and when this machine was last measured.
 A stone opens that provider, top to bottom: **Yours**, the three measured steps (install ·
 authenticate with the native sign-in tile, Done and Cancel · ready) read from the runtime
 row (`docs/getting-started/setup-workbench.md`, *Activate a provider*); then **The catalog**, the three
-measured facts, dated, and the model table — model, tier, cost as read, good at, not good
-at — with the marked default said. Where the CLI publishes its own model list, each row
-also says whether that fetching client version listed it, and models with `list`
-visibility that are absent from Ronin's catalog appear below as candidates with their
-CLI-supplied descriptions. A current list may grey a catalog row it does not list. A list
-whose `client_version` differs from the installed version is said as not yet re-read and
-never greys a row: the cache is shared and may have been written by an older Codex even
-when the installed binary can launch the model. The native sign-in tile is mounted through the
+measured facts, dated, and the launchable model table. Native is first and marked as the
+default. Every named row came from the captured CLI inventory; matching catalog metadata
+adds its tier, cost, good-at and not-good-at descriptions, while an uncatalogued CLI model
+keeps the CLI's description. Catalog-only names never enter this table or a selector. A
+list whose `client_version` differs from the installed version is said as not yet re-read;
+Refresh replaces the Campaign's captured inventory. The native sign-in tile is mounted through the
 workbench environment's one shared mount (`public/js/provider-setup-session.js`), which
 both Ronin Setup and Ronin Settings hand their environment, so it works on either seat.
 This surface is the one client that measures: showing it paints the Campaign's recorded

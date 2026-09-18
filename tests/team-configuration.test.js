@@ -31,12 +31,12 @@ globalThis.document = { createElement: (tag) => new FakeNode(tag), createDocumen
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {}, location: { hash: '' } };
 
 const catalog = { origin: 'stock', providers: [
-  { provider: 'anthropic', cli: 'claude', label: 'Anthropic', models: [{ model: 'opus', tier: 'frontier', cmd: 'claude --model opus' }] },
-  { provider: 'openai', cli: 'codex', label: 'OpenAI', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', cmd: 'codex --model gpt-5.6-sol' }] },
+  { provider: 'anthropic', cli: 'claude', native: 'claude', label: 'Anthropic', models: [{ model: 'opus', tier: 'frontier', cmd: 'claude --model opus' }] },
+  { provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', cmd: 'codex --model gpt-5.6-sol' }] },
 ] };
 const machine = { measured_at: '2026-09-13T00:00:00.000Z', providers: [
-  { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true },
-  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: false, signed_in: false, activated: false },
+  { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true, version: 'test', model_list: { client_version: 'test', fetched_at: '2026-09-13', models: [{ slug: 'gpt-5.6-sol', visibility: 'list' }] } },
+  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: false, signed_in: false, activated: false, version: 'test', model_list: { client_version: 'test', fetched_at: '2026-09-13', models: [{ slug: 'opus', visibility: 'list' }] } },
 ] };
 const ways = [{ name: 'mandates', label: 'Mandates', blurb: '' }, { name: 'buildout', label: 'Buildout', blurb: 'Write the plan beside the work.' }];
 const roots = { roots: [

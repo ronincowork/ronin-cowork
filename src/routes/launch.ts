@@ -40,6 +40,7 @@ import { resolveLaunchSeed, shownLaunchSeed } from '../launch-seed.js';
 import type { SessionsDefaults } from '../launch-command.js';
 import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentence, type PacketReport } from '../birth-readme.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
+import type { HouseSeat } from '../house-seats.js';
 import { readTegami } from '../tegami-read.js';
 import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
 import { ensureMikaHome, MIKA_PROMPTS, MikaUnavailable, mikaRulesSource, mikaStartHereSource, mikaTipsSource, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
@@ -173,6 +174,35 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   return { body, ignored: [...ignored].sort() };
 }
 
+export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat?: HouseSeat): SpawnForm {
+  const sessionType = String(body.session_type);
+  const team = String(body.team ?? '').trim();
+  return {
+    session_type: sessionType as SpawnForm['session_type'],
+    house_seat: houseSeat,
+    team: team || undefined,
+    team_lead: body.team_lead === true,
+    prompt: String(body.instructions ?? body.prompt ?? '').trim(),
+    name: String(body.name ?? '').trim(),
+    project_root: String(body.project_root ?? '').trim() || undefined,
+    cmd: String(body.cmd ?? '').trim() || undefined,
+    model: String(body.model ?? '').trim() || undefined,
+    provider: String(body.provider ?? '').trim() || undefined,
+    launch_mode: body.launch_mode === 'configured' || body.launch_mode === 'live_dangerously' ? body.launch_mode : undefined,
+    mandate: sessionType === 'cowork_agent' && body.mandate !== undefined ? mandate(body.mandate) : undefined,
+    campaign_id: String(body.campaign_id ?? '').trim() || undefined,
+    kind: typeof body.kind === 'string' ? body.kind : undefined,
+    behaviours: Array.isArray(body.behaviours) ? body.behaviours.map(String) : undefined,
+    template: typeof body.template === 'string' ? body.template : undefined,
+    tags: Array.isArray(body.tags) ? body.tags.map(String) : [],
+    seed: Array.isArray(body.seed) ? body.seed.map(String) : [],
+    inject: String(body.inject ?? '').trim() || undefined,
+    reference: String(body.reference ?? '').trim() || undefined,
+    desk: body.desk === 'own' || body.desk === 'none' ? body.desk : undefined,
+    repos: Array.isArray(body.repos) ? body.repos.map(String) : undefined,
+  };
+}
+
 export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, 'provider' | 'model'>): Record<string, unknown> {
   const source = input && typeof input === 'object' && !Array.isArray(input)
     ? input as Record<string, unknown>
@@ -296,34 +326,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         return res.status(400).json({ error: 'A `bare_metal_agent` requires `project_root` for its working directory; it is placement, not Ronin birth material.' });
       }
     }
-    const team = String(req.body?.team ?? '').trim();
-    const form: SpawnForm = {
-      session_type: sessionType as SpawnForm['session_type'],
-      house_seat: houseSeat,
-      team: team || undefined,
-      team_lead: req.body?.team_lead === true,
-      prompt: String(req.body?.instructions ?? req.body?.prompt ?? '').trim(),
-      name,
-      project_root: String(req.body?.project_root ?? '').trim() || undefined,
-      cmd: String(req.body?.cmd ?? '').trim() || undefined,
-      model: String(req.body?.model ?? '').trim() || undefined,
-      provider: String(req.body?.provider ?? '').trim() || undefined,
-      launch_mode: req.body?.launch_mode === 'configured' || req.body?.launch_mode === 'live_dangerously'
-        ? req.body.launch_mode
-        : undefined,
-      mandate: sessionType === 'cowork_agent' && req.body?.mandate !== undefined
-        ? mandate(req.body.mandate)
-        : undefined,
-      campaign_id: String(req.body?.campaign_id ?? '').trim() || undefined,
-      kind: typeof req.body?.kind === 'string' ? req.body.kind : undefined,
-      behaviours: Array.isArray(req.body?.behaviours) ? req.body.behaviours.map(String) : undefined,
-      template: typeof req.body?.template === 'string' ? req.body.template : undefined,
-      tags: Array.isArray(req.body?.tags) ? req.body.tags.map(String) : [],
-      seed: Array.isArray(req.body?.seed) ? req.body.seed.map(String) : [],
-      inject: String(req.body?.inject ?? '').trim() || undefined,
-      reference: String(req.body?.reference ?? '').trim() || undefined,
-      desk: req.body?.desk === 'own' || req.body?.desk === 'none' ? req.body.desk : undefined,
-    };
+    const form = spawnFormFromLaunchBody(req.body, houseSeat);
 
     let resolved;
     let launch: { argv: string[]; parked: boolean } = { argv: [], parked: false };
@@ -352,14 +355,8 @@ export function registerLaunch(app: express.Express): LaunchControl {
     if (resolved.assignment) {
       try {
         resolved.assignment = await prepareLaunchDesks(resolved.assignment);
-        if (!resolved.assignment.desks.length) {
-          resolved.assignment = null;
-          resolved.dir = (await listProjectRoots()).find((root) => root.name === resolved.project_root)?.dir ?? resolved.dir;
-        }
       } catch (e) {
-        console.warn(`[launch] desk preparation warning: ${String((e as Error)?.message ?? e)}`);
-        resolved.assignment = null;
-        resolved.dir = (await listProjectRoots()).find((root) => root.name === resolved.project_root)?.dir ?? resolved.dir;
+        return res.status(400).json({ error: `Could not prepare selected managed workspace: ${String((e as Error)?.message ?? e)}` });
       }
     }
 

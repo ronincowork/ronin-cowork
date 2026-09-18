@@ -21,7 +21,6 @@ export function createWorkspaceFoldersSurface({
   onShow = () => {},
   environment = null,
   workspace = 'workspace2',
-  onboardingExtras = false,
 } = {}) {
   const surface = WorkspaceKit.primitives.createSurface({
     label: t('cowork.tab_roots', 'Workspace folders'),
@@ -33,7 +32,7 @@ export function createWorkspaceFoldersSurface({
   if (rootHost !== surface.content) surface.content.append(rootHost);
 
   let room = null;
-  const onboarding = presentation === 'stones' && onboardingExtras ? createGithubWorkspaceSetup({
+  const github = presentation === 'stones' ? createGithubWorkspaceSetup({
     environment,
     workspace,
     onStateChange: () => room?.updateExtraItems(),
@@ -52,7 +51,7 @@ export function createWorkspaceFoldersSurface({
     () => campaignId?.() || '',
     presentation ? {
       presentation,
-      extraItems: onboarding?.items || [],
+      extraItems: github?.items || [],
       onSelection: (id) => environment?.onWorkspaceFolderChosen?.(id),
     } : {},
   );
@@ -60,10 +59,10 @@ export function createWorkspaceFoldersSurface({
   return {
     el: surface.el,
     show: () => {
-      void onboarding?.show();
+      void github?.show();
       room.enter();
       onShow();
     },
-    destroy: () => onboarding?.destroy(),
+    destroy: () => github?.destroy(),
   };
 }

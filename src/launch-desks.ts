@@ -44,45 +44,37 @@ export function primaryWorkLocation(repositories: ResolvedWorktreesRepository[],
     ?? '';
 }
 
-export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
-  let opener: { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> };
-  try {
-    opener = (await import('./desks/desk.js')) as typeof opener;
-  } catch (e) {
-    console.warn(`Desk preparation is unavailable; launching from the project checkout: ${(e as Error)?.message ?? e}`);
-    return { ...a, desks: [] };
-  }
-  let opened: Assignment;
-  try {
-    const desks: RepoDesk[] = [];
-    for (const candidate of a.desks) {
-      const openedDesk = await opener.openDesk({
+export async function prepareLaunchDesks(
+  a: Assignment,
+  suppliedOpener?: { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> },
+): Promise<Assignment> {
+  const opener = suppliedOpener ?? (await import('./desks/desk.js')) as { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> };
+  const desks: RepoDesk[] = [];
+  for (const candidate of a.desks) {
+    let openedDesk: RepoDesk;
+    try {
+      openedDesk = await opener.openDesk({
         repo: candidate.repo,
         session: a.session,
         team: a.team,
         assignment: a.id,
         branch: candidate.branch,
       });
-      desks.push({
-        repo: openedDesk.repo,
-        root: openedDesk.root,
-        branch: openedDesk.branch,
-        worktree: openedDesk.worktree,
-        line: openedDesk.line,
-        mode: openedDesk.mode,
-        session: openedDesk.session,
-        team: openedDesk.team,
-        assignment: openedDesk.assignment,
-        state: openedDesk.state,
-        opened_at: openedDesk.opened_at,
-      });
+    } catch (error) {
+      const kept = desks.length
+        ? ` Already opened: ${desks.map((desk) => `${desk.repo}:${desk.branch} at ${desk.worktree}`).join(', ')}.`
+        : ' No desks were opened.';
+      throw new Error(`Failed to open selected managed workspace ${candidate.repo}: ${String((error as Error)?.message ?? error)}.${kept}`);
     }
-    opened = { ...a, desks };
-    await writeAssignment(opened);
-  } catch (e) {
-    console.warn(`Could not open the desks for ${a.id}; launching from the project checkout: ${(e as Error)?.message ?? e}`);
-    return { ...a, desks: [] };
+    desks.push({
+      repo: openedDesk.repo, root: openedDesk.root, branch: openedDesk.branch,
+      worktree: openedDesk.worktree, line: openedDesk.line, mode: openedDesk.mode,
+      session: openedDesk.session, team: openedDesk.team, assignment: openedDesk.assignment,
+      state: openedDesk.state, opened_at: openedDesk.opened_at,
+    });
   }
+  const opened = { ...a, desks };
+  await writeAssignment(opened);
   return opened;
 }
 

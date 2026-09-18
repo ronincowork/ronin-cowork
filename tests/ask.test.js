@@ -148,6 +148,22 @@ test('a many field keeps its tray open, ticks stones, and reads names or a count
   assert.equal(optNamed(form, 'open').attributes['aria-selected'], 'false');
 });
 
+test('New Agent workspace interactions send the shown default, preserve an explicit empty answer, and survive Team changes', async () => {
+  const { coworkWorkspacePayload, workspaceRepos } = await import('../public/js/new-agent.js');
+  const options = [{ v: 'ronin_lab', l: 'Ronin Lab' }, { v: 'ronin_cowork', l: 'Ronin Cowork' }];
+  const shown = workspaceRepos({ root: 'ronin_lab', teamRepos: ['ronin_cowork'] });
+  const form = ask([{ fields: [{ key: 'repos', label: 'Workspaces', many: true, options }] }], { value: { repos: shown } });
+
+  assert.deepEqual(coworkWorkspacePayload(form.value().repos), { repos: ['ronin_lab', 'ronin_cowork'] },
+    'the untouched selection shown in the form, including Born in, is sent');
+  stoneFor(form, 'repos').click();
+  optNamed(form, 'Ronin Lab').click();
+  optNamed(form, 'Ronin Cowork').click();
+  assert.deepEqual(coworkWorkspacePayload(form.value().repos), { repos: [] }, 'explicit deselection is sent as []');
+  assert.deepEqual(workspaceRepos({ root: 'ronin_lab', teamRepos: ['other'], current: form.value().repos, touched: true }), [],
+    'a later Team change preserves the owner-edited selection');
+});
+
 test('a square stone carries a glyph and a ruled word; the caption carries the sentence', () => {
   const { form } = build();
   stoneFor(form, 'reach').click();

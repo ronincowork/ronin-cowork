@@ -56,16 +56,15 @@ test('failed means dev untouched; interrupted means some ref moved — and only 
 });
 
 test('the ledger: temp+rename writes, oldest-first listing, blocking and last-good lookups', async () => {
-  const a = R.newReceipt({ team: 'comp', repos: [repo('cowork')], by: 'test' });
+  const a = R.newReceipt({ id: '20260101T000000Z-promote-comp-aaaa', team: 'comp', repos: [repo('cowork')], by: 'test' });
   await R.writeReceipt(a);
   assert.deepEqual(await R.readReceipt(a.id), a);
   assert.equal(await R.readReceipt('nope'), null);
   const files = await fs.readdir(root);
   assert.ok(files.every((f) => f.endsWith('.json')), `no temp files left behind: ${files}`);
 
-  // ids are time-prefixed; force distinct stamps so order is not luck.
-  await new Promise((res) => setTimeout(res, 1100));
-  let b = R.newReceipt({ team: 'comp', repos: [repo('cowork')], by: 'test' });
+  // Explicit ordered ids prove ledger ordering without waiting for the wall clock.
+  let b = R.newReceipt({ id: '20260101T000001Z-promote-comp-bbbb', team: 'comp', repos: [repo('cowork')], by: 'test' });
   b = R.advanceState(R.advanceState(R.advanceState(R.advanceState(b, 'proving'), 'advancing'), 'restarting'), 'complete');
   await R.writeReceipt(b);
   const other = R.newReceipt({ team: 'wispr', repos: [], by: 'test' });

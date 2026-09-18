@@ -1,9 +1,9 @@
 /**
- * DESK KNOWLEDGE FOLLOWS THE ASSIGNMENT, BUT THE TOOL IS UNIVERSAL. An Agent born in a checkout
- * (a lab of documents) whose Team has ticked a managed repository is assigned a desk
+ * BOTH REPOSITORY APPROACHES AND THE DESK TOOL ARE UNIVERSAL TEACHING. An Agent born in a checkout
+ * (a repository of documents) whose Team has ticked a managed repository is assigned a desk
  * there, and its brief says "Get, update, and hand in through worktree-desk". The command
- * capability is selected as teaching there. The shipped `worktree-desk` executable is a
- * Cowork tool and remains callable even when no managed desk selects that teaching.
+ * capability is taught to every Cowork Agent so a later managed assignment needs no loadout
+ * change. The shipped `worktree-desk` executable is likewise always callable.
  * Real git in a temp dir, every store redirected; no tmux, no socket.
  */
 import test from 'node:test';
@@ -15,6 +15,8 @@ import { execFileSync } from 'node:child_process';
 
 process.env.BIND ??= '127.0.0.1';
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-launch-desk-tools-'));
+const listed = (slugs: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: 'test', client_version: 'test', models: slugs.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list', priority })) });
+const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude'], signed_in: ['claude'], operational: ['claude'], activated_count: 1, paths: {}, versions: {}, latest: {}, model_lists: { claude: listed(['fable']) } };
 process.env.RONIN_CATALOGS_DIR = path.join(tmp, 'catalogs');
 process.env.RONIN_DESKS_DIR = path.join(tmp, 'desks');
 process.env.RONIN_WORKTREES_DIR = path.join(tmp, 'worktrees');
@@ -44,18 +46,18 @@ async function makeRepo(name: string, roninRepo: string | null): Promise<string>
 
 // A managed repository (worktree root) and a checkout of documents with no arrangement.
 const cowork = await makeRepo('cowork', 'mode=reviewed\nworking=dev\nstable=master\ndesks=managed\n');
-const lab = await makeRepo('lab', null);
+const roninLab = await makeRepo('ronin_lab', null);
 
 await fs.mkdir(process.env.RONIN_CATALOGS_DIR!, { recursive: true });
 await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'), [
   '# roots', '',
   '## cowork', `- **dir:** ${cowork}`, '- **remit:** the code', '',
-  '## lab', `- **dir:** ${lab}`, '- **remit:** the papers', '',
+  '## ronin_lab', `- **dir:** ${roninLab}`, '- **remit:** the papers', '',
 ].join('\n'));
 await fs.mkdir(path.join(tmp, 'config'), { recursive: true });
 await fs.writeFile(path.join(tmp, 'config', 'machine_settings.json'), JSON.stringify({
   agents: { sessions: { default: { provider: 'anthropic', model: 'fable' } } },
-  campaigns: { home_machine: { title: 'Ronin Home', state: 'active', config: { agent_defaults: {} } } },
+  campaigns: { home_machine: { title: 'Ronin Home', state: 'active', providers, config: { agent_defaults: {} } } },
 }));
 await fs.mkdir(path.join(tmp, 'shelf', 'all'), { recursive: true });
 await fs.writeFile(path.join(tmp, 'shelf', 'all', 'ALL_BOOK.md'), '# ALL_BOOK.md');
@@ -63,12 +65,12 @@ await fs.writeFile(path.join(tmp, 'shelf', 'all', 'ALL_BOOK.md'), '# ALL_BOOK.md
 const { createTeamRoster } = await import('../src/team-rosters.js');
 const { resolveForm } = await import('../src/spawn.js');
 
-// The Team works in cowork; its papers, and this Agent's birth root, are the lab checkout.
-await createTeamRoster('papers', { objective: 'write it up from the code', project_root: 'lab', repos: ['cowork'], branch: '' });
+// The Team works in cowork; its papers, and this Agent's birth root, are the ronin_lab checkout.
+await createTeamRoster('papers', { objective: 'write it up from the code', project_root: 'ronin_lab', repos: ['cowork'], branch: '' });
 
 test('an Agent born in a checkout with a managed desk is projected the desk kit', async () => {
-  const resolved = await resolveForm({ project_root: 'lab', team: 'papers', prompt: 'Write it up.' }, new Set());
-  assert.equal(resolved.project_root, 'lab', 'born in the checkout');
+  const resolved = await resolveForm({ project_root: 'ronin_lab', team: 'papers', prompt: 'Write it up.' }, new Set());
+  assert.equal(resolved.project_root, 'ronin_lab', 'born in the checkout');
   assert.deepEqual(resolved.assignment?.desks.map((desk) => desk.repo), ['cowork'], 'assigned one desk in the managed repository');
   assert.ok(resolved.work_locations.some((row) => row.repo === 'cowork' && row.mode === 'managed'), 'the desk is a managed location');
   assert.match(resolved.brief, /hand in through worktree-desk/, 'the brief tells the Agent to use the desk tool');
@@ -77,9 +79,9 @@ test('an Agent born in a checkout with a managed desk is projected the desk kit'
   assert.equal(resolved.capability_tools.filter((tool) => tool === 'worktree-desk').length, 1, 'one executable carries the whole desk kit');
 });
 
-test('an Agent born in a checkout with no desk still receives the Cowork desk tool without its teaching', async () => {
-  const resolved = await resolveForm({ project_root: 'lab', prompt: 'Read the papers.' }, new Set());
+test('an Agent born in a checkout with no desk still receives universal desk teaching and its tool', async () => {
+  const resolved = await resolveForm({ project_root: 'ronin_lab', prompt: 'Read the papers.' }, new Set());
   assert.equal(resolved.assignment, null);
-  assert.equal(resolved.capabilities.find((row) => row.name === 'worktree-desk')?.selected, false, 'no managed work means no desk teaching');
+  assert.equal(resolved.capabilities.find((row) => row.name === 'worktree-desk')?.selected, true, 'desk teaching is ready for later managed work');
   assert.ok(resolved.capability_tools.includes('worktree-desk'), 'work context does not withhold an installed Cowork tool');
 });

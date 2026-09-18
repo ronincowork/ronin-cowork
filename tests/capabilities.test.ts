@@ -214,7 +214,7 @@ test('the stock capability documents are well-formed and carry no retired vocabu
   assert.deepEqual(by.edges.requires, []);
   assert.deepEqual(by['work-record'].requires, []);
   assert.deepEqual(by.agent_session.requires, []);
-  assert.deepEqual(by['worktree-desk'].requires, ['arrangement:managed']);
+  assert.deepEqual(by['worktree-desk'].requires, []);
   assert.deepEqual(by['machine-settings'].requires, ['campaign']);
   assert.deepEqual(by.cowork_team.requires, []);
   assert.deepEqual(by['ronin-host'].requires, []);

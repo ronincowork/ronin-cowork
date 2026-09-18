@@ -62,18 +62,18 @@ test('choosing New team requires a valid name before any session type can launch
   assert.doesNotMatch(form, /unnamed new team is no team|isCowork\(\) && team/);
 });
 
-test('Where it works keeps birthplace separate and offers additional workspaces only to Cowork Agents', async () => {
+test('Where it works keeps birthplace separate and offers all workspaces to Cowork Agents', async () => {
   const form = await source('new-agent.js');
   assert.match(form, /request\('\/api\/project-roots\/detail'\)/);
   assert.match(form, /rootRows\.data\?\.roots/);
   assert.doesNotMatch(form, /worktrees/);
   assert.match(form, /v: row\.name, l: row\.title \|\| row\.name/, 'root choices submit the Workspace Folder handle and display the optional title');
   assert.match(form, /label: t\('where\.born_in', 'Born in'\), options: rootRows/);
-  assert.match(form, /label: t\('where\.additional', 'Additional workspaces'\), many: true, after: 'root', options: \(value\) => rootRows\(\)\.filter\(\(row\) => row\.v !== value\.root\)/);
+  assert.match(form, /label: t\('new_agent\.workspaces', 'Workspaces'\), many: true, after: 'root', options: rootRows/);
   assert.match(form, /draft\.type === 'bare_metal_agent' \? \['provider', 'model', 'root', 'launchMode'\]/,
     'bare-metal Agents choose one birthplace and are not offered additional workspaces');
-  assert.match(form, /draft\.repos = \[\]/);
-  assert.match(form, /filter\(\(name\) => name && name !== draft\.root\)/);
+  assert.match(form, /if \(!touched\.repos\) draft\.repos = draft\.root \? \[draft\.root\] : \[\]/);
+  assert.match(form, /draft\.repos = workspaceRepos\(\{ root: draft\.root, teamRepos:/);
   assert.doesNotMatch(form, /no auto desk|extra sessions/i);
 });
 
@@ -124,7 +124,7 @@ test('collapsible steps expose one full-width disclosure row and Team defaults u
 });
 
 test('Add Agent confirms a draft into a compact row with the one selector utility', async () => {
-  const agents = await source('team-agents.js');
+  const [agents, team] = await Promise.all([source('team-agents.js'), source('new-team-form.js')]);
   assert.match(agents, /let editor = null/);
   assert.match(agents, /if \(index < 0\) rows\(\)\.push\(saved\)/);
   assert.match(agents, /editor = null; changed\(\); paint\(\)/);
@@ -143,7 +143,7 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.doesNotMatch(agents, /switch:[^\n]+word:/);
   assert.match(agents, /density: 'tight'/);
   assert.match(agents, /tierWord\(item\.tier\)/);
-  assert.match(agents, /forms\.reason_not_listed/);
+  assert.match(agents, /modelAvailabilityFact/);
   assert.doesNotMatch(agents, /forms\.provider_off|forms\.provider_turned_off|machine\?\.state|modelWord\([^)]*\)\.split/);
   assert.match(agents, /box\.append\(actions\.el, field/);
   assert.doesNotMatch(agents, /wk-button/);
@@ -152,6 +152,9 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.match(agents, /model: row\.model/);
   assert.match(agents, /instructions: row\.assignment\.trim\(\)/);
   assert.doesNotMatch(agents, /team_lead|routines_/);
+  assert.match(team, /loadProviderCatalog\(\)/, 'New Team loads provider choices for its inline Agent editor');
+  assert.match(team, /Promise\.all\(\[[\s\S]*request\('\/api\/project-roots'\),[\s\S]*loadProviderCatalog\(\)/,
+    'provider choices load as part of entering the New Team surface');
 });
 
 test('New Team cast text is labelled and all cast selections belong to ask()', async () => {
@@ -188,7 +191,7 @@ test('New Team routes each selector region through ask() and leaves Templates br
   assert.match(form, /many: true, shape: 'tall', options: shelfRows/);
   assert.equal((form.match(/density: 'tight'/g) || []).length, 2, 'both defaults regions use launch density');
   assert.match(form, /tierWord\(row\.tier\)/);
-  assert.match(form, /forms\.reason_not_listed/);
+  assert.match(form, /modelAvailabilityFact/);
   assert.doesNotMatch(form, /forms\.provider_off|forms\.provider_turned_off|machine\?\.state|modelWord\([^)]*\)\.split/);
   assert.match(form, /templateTray\(offered\(\)/);
   assert.doesNotMatch(form, /kindTiles|providerModelPair|mandateSelect|dialRowMulti|wayTiles|bookShelves|createWhereItWorks|fs-routine/);

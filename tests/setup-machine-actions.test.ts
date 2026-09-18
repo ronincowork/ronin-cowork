@@ -53,7 +53,7 @@ test('declining stops before sudo', async () => {
   await assert.rejects(readFile(marker));
 });
 
-test('required Tailscale HTTPS failure stops installation before activation', async () => {
+test('Tailscale HTTPS failure leaves local installation available', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'ronin-machine-partial-'));
   const tty = path.join(dir, 'tty');
   await writeFile(tty, 'yes\n');
@@ -62,14 +62,11 @@ test('required Tailscale HTTPS failure stops installation before activation', as
   await command(dir, 'loginctl', '[ "$1" = show-user ] && echo yes; exit 0');
   await command(dir, 'tailscale', 'exit 1');
 
-  await assert.rejects(
-    exec(helper, ['--linger', 'owner', '--serve', '100.84.187.69', '4810'], {
-      env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, RONIN_SETUP_TTY: tty },
-    }),
-    (error: any) => error.code === 11 &&
-      /Tailscale HTTPS was not configured/.test(error.stdout) &&
-      /not activated/.test(error.stdout),
-  );
+  const { stdout } = await exec(helper, ['--linger', 'owner', '--serve', '100.84.187.69', '4810'], {
+    env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, RONIN_SETUP_TTY: tty },
+  });
+  assert.match(stdout, /Tailscale HTTPS was not configured/);
+  assert.match(stdout, /still offer local HTTP access/);
 });
 
 test('an optional linger failure is retained as a warning without blocking activation', async () => {

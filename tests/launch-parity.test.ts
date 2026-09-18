@@ -28,6 +28,11 @@ import os from 'node:os';
 import path from 'node:path';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-parity-test-'));
+const listed = (slugs: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: 'test', client_version: 'test', models: slugs.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list', priority })) });
+const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude', 'codex'], signed_in: ['claude', 'codex'], operational: ['claude', 'codex'], activated_count: 2, paths: {}, versions: {}, latest: {}, model_lists: {
+  claude: listed(['opus', 'fable', 'sonnet', 'haiku']),
+  codex: listed(['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5']),
+} };
 const catalogs = path.join(temp, 'catalogs');
 await fs.mkdir(catalogs, { recursive: true });
 // The owner's own root list. `dir` is the temp root itself so nothing reaches a real
@@ -64,11 +69,13 @@ await fs.writeFile(
       home_machine: {
         title: 'Ronin Home',
         state: 'active',
+        providers,
         config: { installations: { gbrain: false }, defaults: {} },
       },
       gbrain_connected: {
         title: 'Gbrain connected',
         state: 'archived',
+        providers,
         config: { installations: { gbrain: true }, defaults: { behaviours: ['gbrain'] } },
       },
     },

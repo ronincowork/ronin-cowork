@@ -191,7 +191,7 @@ export async function moveTegamiProject(
   }
   parsed.body.projects = valid;
   await replaceLetterBlock(file, text, parsed, parsed.body);
-  await notify(input.session, 'check your work record');
+  await notify(input.session, 'Update your work record to reflect your current position, then continue the active assignment. This reminder does not replace the task or create a stopping point.');
   return { project, projectsRemaining: valid.length, focus: valid[0]?.id ?? 'none' };
 }
 

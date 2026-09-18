@@ -2,12 +2,17 @@
 - **label:** Worktree desk
 - **blurb:** How do I preserve and hand in repository work held in a managed desk?
 - **class:** cowork
-- **requires:** arrangement:managed
+- **requires:**
 - **order:** 40
 
-Reach for this bundle because you hold a managed desk: a private branch and worktree leased
-to you. Status, sync, commit, and hand-in are distinct; none is Git push. Read
-`ronin_catalogs/behaviours/conditional/worktree-root.md` before the first write.
+Reach for this bundle when a repository uses managed worktrees or a later assignment needs
+a managed desk. A managed desk is a private branch and worktree leased to you. Status,
+sync, commit, and hand-in are distinct; none is Git push. Read
+`ronin_catalogs/behaviours/conditional/worktree-root.md` before writing in a managed desk.
+
+If `worktree-desk open` reports that the repository uses its checkout, use ordinary Git in
+that checkout and read `ronin_catalogs/behaviours/conditional/checkout.md`; no desk or
+hand-in applies there.
 
 **Hand in** means submit committed desk work to the Team review line with
 `worktree-desk hand-in`; it does not promote or push.

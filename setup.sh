@@ -59,7 +59,7 @@ fi
 if command -v tailscale >/dev/null; then
   echo "    tailscale: $(command -v tailscale)"
 else
-  echo "    tailscale: not found (required for the private HTTPS address)"
+  echo "    tailscale: not found (local HTTP access is available)"
 fi
 
 # --- coexistence preflight: before dependency, rc, option, or unit mutations ---
@@ -92,14 +92,6 @@ if [ "$OS" = Linux ] && { [ "$MACHINE_ONLY" -eq 1 ] || [ -z "${RONIN_MACHINE_PRE
     MACHINE_APPLY_ARGS+=(--linger "$(id -un)")
   fi
   TAILSCALE_IP="$(command -v tailscale >/dev/null 2>&1 && tailscale ip -4 2>/dev/null | head -1 || true)"
-  if [ -z "$TAILSCALE_IP" ]; then
-    out ""
-    out "  Ronin needs Tailscale to create its private HTTPS address."
-    out "  Install or sign in to Tailscale, then run the Ronin install command again."
-    out "  Install details: $RONIN_SETUP_LOG"
-    out ""
-    exit 1
-  fi
   PREFLIGHT_SERVED="$(ronin_served_url "$RONIN_PREFLIGHT_PORT" "$RONIN_PREFLIGHT_BIND" 4810)"
   if [ -z "$PREFLIGHT_SERVED" ] && [ -n "$TAILSCALE_IP" ]; then
     MACHINE_APPLY_ARGS+=(--serve "$RONIN_PREFLIGHT_BIND" "$RONIN_PREFLIGHT_PORT")
@@ -505,13 +497,19 @@ subst_literal() {
 
 # render_unit <template> <destination>
 render_unit() {
-  local src="$1" dest="$2" text
+  local src="$1" dest="$2" text repo="$REPO_DIR" node="$NODE_DIR" tmux="$TMUX_BIN" tmux_dir="$TMUX_DIR"
   [ -f "$src" ] || { echo "ERROR: unit template not found: $src"; exit 1; }
+  case "$src" in *.plist)
+    repo="$(printf '%s' "$repo" | sed 's/\&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
+    node="$(printf '%s' "$node" | sed 's/\&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
+    tmux="$(printf '%s' "$tmux" | sed 's/\&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
+    tmux_dir="$(printf '%s' "$tmux_dir" | sed 's/\&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
+  esac
   text="$(<"$src")"                       # command substitution eats trailing newlines
-  text="$(subst_literal "$text" '__REPO_DIR__' "$REPO_DIR")"
-  text="$(subst_literal "$text" '__NODE_DIR__' "$NODE_DIR")"
-  text="$(subst_literal "$text" '__TMUX_BIN__' "$TMUX_BIN")"
-  text="$(subst_literal "$text" '__TMUX_DIR__' "$TMUX_DIR")"
+  text="$(subst_literal "$text" '__REPO_DIR__' "$repo")"
+  text="$(subst_literal "$text" '__NODE_DIR__' "$node")"
+  text="$(subst_literal "$text" '__TMUX_BIN__' "$tmux")"
+  text="$(subst_literal "$text" '__TMUX_DIR__' "$tmux_dir")"
   # A template that grows a placeholder setup.sh doesn't know about would otherwise
   # install a unit with a literal __THING__ in it. Say so; don't fail the install.
   if [[ "$text" =~ __[A-Z][A-Z0-9_]*__ ]]; then
@@ -553,80 +551,57 @@ if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null; then
   echo "    logs:   journalctl --user -u ronin -f"
   echo "    status: systemctl --user status ronin"
 elif [ "$OS" = "Darwin" ]; then
+  . "$REPO_DIR/libexec/ronin-machine.sh"
   LA_DIR="$HOME/Library/LaunchAgents"
   mkdir -p "$LA_DIR"
   echo "==> rendering launchd agent from deploy/com.ronin.plist"
   render_unit "$REPO_DIR/deploy/com.ronin.plist" "$LA_DIR/com.ronin.plist"
-  echo "    load it with:  launchctl load -w $LA_DIR/com.ronin.plist"
+  chmod 644 "$LA_DIR/com.ronin.plist"
+  LA_DOMAIN="$(machine_launchd_domain com.ronin)"
   if [ -f "$LA_DIR/com.tmux-ronin.plist" ]; then
-    echo "    old agent found (renamed 2026-08-19) — retire it with:"
-    echo "      launchctl unload -w $LA_DIR/com.tmux-ronin.plist && rm $LA_DIR/com.tmux-ronin.plist"
+    OLD_DOMAIN="$(machine_launchd_domain com.tmux-ronin)"
+    if launchctl print "$OLD_DOMAIN/com.tmux-ronin" >/dev/null 2>&1; then
+      launchctl bootout "$OLD_DOMAIN/com.tmux-ronin"
+    fi
+    rm "$LA_DIR/com.tmux-ronin.plist"
   fi
+  if launchctl print "$LA_DOMAIN/com.ronin" >/dev/null 2>&1; then
+    launchctl bootout "$LA_DOMAIN/com.ronin"
+  fi
+  launchctl enable "$LA_DOMAIN/com.ronin"
+  launchctl bootstrap "$LA_DOMAIN" "$LA_DIR/com.ronin.plist"
+  launchctl kickstart "$LA_DOMAIN/com.ronin"
+  echo "==> Ronin installed and started automatically"
+  echo "    status: launchctl print $LA_DOMAIN/com.ronin"
 else
   echo "==> No systemd/launchd detected. Start manually with: npm start"
 fi
 
-# Work out this server's URLs so you don't have to guess them. The address is the
-# recorded one, not a fresh probe: what .env says is what the socket will bind, so it is
-# what the banner prints and what `tailscale serve` is mapped at. Loopback is a door on
-# this box only — nothing to serve, no tailnet name to print.
-BACKEND_IP="$(ronin_bind "$REPO_DIR")"; IP="$BACKEND_IP"; FQDN=""
-[ "$IP" = 127.0.0.1 ] && IP=""
-if command -v tailscale >/dev/null; then
-  FQDN="$(tailscale status --json 2>/dev/null | "$NODE_DIR/node" -e \
-    'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write((JSON.parse(d).Self.DNSName||"").replace(/\.$/,""))}catch{}})' 2>/dev/null || true)"
+# Both platforms offer local HTTP and, when configured, private Tailscale HTTPS.
+BACKEND_IP="$(ronin_bind "$REPO_DIR")"
+export RONIN_BACKEND_HOST="$BACKEND_IP" RONIN_PUBLIC_PORT=4810
+PORT="$(ronin_port "$REPO_DIR")"
+HTTP_URL="$(ronin_http_url "$REPO_DIR")"
+OPEN_URL="$(ronin_open_url "$REPO_DIR" "$PORT")"
+if [ "$OS" = Darwin ] && [ -z "$OPEN_URL" ] &&
+   command -v tailscale >/dev/null 2>&1 && tailscale ip -4 >/dev/null 2>&1; then
+  tailscale serve --bg --https=4810 "$HTTP_URL" || true
+  OPEN_URL="$(ronin_open_url "$REPO_DIR" "$PORT")"
 fi
 
-
-# The box, and the address it names, are shared with bin/ronin-welcome (the banner
-# library, sourced above at the .env block), so redrawing it after `tailscale serve`
-# runs cannot drift from what was printed here. One implementation of "which door is
-# open", and it asks the machine rather than assuming: serve needs a sudo this script
-# does not have.
-# ONE definition of each question about the box, shared with bin/ronin-doctor: what
-# setup OFFERS and what doctor FINDS MISSING must be the same test, or a person is told
-# two different things about one machine.
-# shellcheck source=libexec/ronin-machine.sh
-. "$REPO_DIR/libexec/ronin-machine.sh"
-export RONIN_IP="${IP:-}" RONIN_FQDN="${FQDN:-}" RONIN_BACKEND_HOST="$BACKEND_IP" RONIN_PUBLIC_PORT=4810
-PORT="$(ronin_port "$REPO_DIR")"
-OPEN_URL="$(ronin_open_url "$REPO_DIR" "$PORT")"
-TAILSCALE_IP="$(command -v tailscale >/dev/null 2>&1 && tailscale ip -4 2>/dev/null | head -1 || true)"
-if [ -z "$TAILSCALE_IP" ] || [ -z "$FQDN" ] || [ "$OPEN_URL" != "https://$FQDN:4810" ]; then
+if ! "$NODE_DIR/node" "$REPO_DIR/libexec/ronin-wait-ready.cjs" "$HTTP_URL"; then
   out ""
-  out "  Ronin could not establish https://${FQDN:-<machine-name>}:4810."
-  out "  Check that Tailscale is signed in and permits Serve, then run the install again."
+  out "  Ronin is installed, but it did not start answering at:"
+  out "  $HTTP_URL"
   out "  Install details: $RONIN_SETUP_LOG"
   out ""
   exit 1
 fi
-
-# The closing greeting is a readiness claim. Use the selected URL's actual protocol,
-# require /api/health to answer before printing it, then ask a local graphical OS to
-# open the page. Browser-opening failures remain non-fatal.
-# Linux only, deliberately: macOS renders the launchd agent but the user loads it by
-# hand, so setup.sh has no moment where the service is observably ready to open.
-if [ "$OS" = "Linux" ]; then
-  if "$NODE_DIR/node" "$REPO_DIR/libexec/ronin-wait-ready.cjs" "$OPEN_URL"; then
-    "$REPO_DIR/libexec/ronin-open-browser" "$OPEN_URL" || true
-  else
-    out ""
-    out "  Ronin is installed, but its HTTPS address did not pass the health check:"
-    out "  $OPEN_URL"
-    out "  Install details: $RONIN_SETUP_LOG"
-    out ""
-    exit 1
-  fi
+if [ -n "$OPEN_URL" ] && ! "$NODE_DIR/node" "$REPO_DIR/libexec/ronin-wait-ready.cjs" "$OPEN_URL"; then
+  out "  Tailscale HTTPS is not answering yet. Ronin is available over HTTP on this computer."
+  OPEN_URL=""
 fi
-
-if [ "$OS" = Darwin ]; then
-  out ""
-  out "  Ronin is installed, but it is not running yet on this Mac."
-  out "  Run: launchctl load -w $HOME/Library/LaunchAgents/com.ronin.plist"
-  out "  Install details: $RONIN_SETUP_LOG"
-  out ""
-  exit 0
-fi
+"$REPO_DIR/libexec/ronin-open-browser" "$HTTP_URL" || true
 
 MACHINE_WARNING=""
 if [ -n "${RONIN_MACHINE_RESULT:-}" ] && [ -s "$RONIN_MACHINE_RESULT" ]; then

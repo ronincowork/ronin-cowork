@@ -13,6 +13,7 @@ import {
   loginSucceeded,
   makeRecord,
   makeToken,
+  unauthorizedUpgradeResponse,
   verifyRecord,
 } from '../src/auth.js';
 
@@ -64,4 +65,13 @@ test('the limiter allows five failures a minute, then forgives', () => {
   assert.equal(loginAllowed(addr, t0), false, 'sixth attempt inside the minute is refused');
   assert.equal(loginAllowed(addr, t0 + 61_000), true, 'the minute passes and the door reopens');
   loginSucceeded(addr);
+});
+
+test('a rejected password-only WebSocket never asks the browser for a Basic username', () => {
+  const passwordOnly = unauthorizedUpgradeResponse(false);
+  assert.match(passwordOnly, /^HTTP\/1\.1 401 Unauthorized\r\n/);
+  assert.doesNotMatch(passwordOnly, /WWW-Authenticate|Basic realm/);
+
+  const legacyBasic = unauthorizedUpgradeResponse(true);
+  assert.match(legacyBasic, /WWW-Authenticate: Basic realm="tmux-ronin"/);
 });

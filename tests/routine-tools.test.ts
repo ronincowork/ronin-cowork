@@ -104,30 +104,21 @@ test('projected ronin_bin tools resolve the symlink and reach the repository and
       return { code: err.code ?? 1, out: (err.stdout ?? '') + (err.stderr ?? '') };
     }
   };
-  const helpTools = [
-    'work-record', 'worktree-desk', 'edges', 'team',
-    'session_check', 'session_create', 'session_set', 'session_archive', 'session_restore',
-    'session_end',
-  ];
-  for (const command of helpTools) {
-    for (const flag of ['-h', '--help']) {
-      reached.length = 0;
-      const help = await run([command, flag]);
-      assert.equal(help.code, 0, `${command} ${flag}: ${help.out}`);
-      assert.match(help.out, new RegExp(command.replace('_', '.')), `${command} identifies itself`);
-      assert.match(help.out, /Usage:/, `${command} gives syntax`);
-      assert.match(help.out, /Related:/, `${command} names related discovery`);
-      if (command === 'session_create') {
-        assert.deepEqual(reached, ['/api/provider-catalog', '/api/setup/runtime', '/api/launch-seed']);
-        assert.match(help.out, new RegExp(`${helpFacts.provider}/${helpFacts.model}`));
-      } else {
-        assert.equal(reached.length, 0, `${command} help never contacts the operator`);
-      }
-    }
-    const invalidHelp = await run([command, '--help', 'extra']);
-    assert.notEqual(invalidHelp.code, 0, `${command} refuses surplus help arguments`);
-    assert.match(invalidHelp.out, new RegExp(`Run ${command.replace('_', '.')} --help`));
+  // Help parsing is shared by these wrappers and has its own command-level tests. One
+  // projected representative proves that the symlink route reaches that parser without
+  // paying for the same -h/--help/invalid subprocess matrix for every command here.
+  for (const flag of ['-h', '--help']) {
+    reached.length = 0;
+    const help = await run(['work-record', flag]);
+    assert.equal(help.code, 0, `work-record ${flag}: ${help.out}`);
+    assert.match(help.out, /work.record/);
+    assert.match(help.out, /Usage:/);
+    assert.match(help.out, /Related:/);
+    assert.equal(reached.length, 0, 'local help never contacts the operator');
   }
+  const invalidHelp = await run(['work-record', '--help', 'extra']);
+  assert.notEqual(invalidHelp.code, 0, 'projected wrapper refuses surplus help arguments');
+  assert.match(invalidHelp.out, /Run work.record --help/);
   reached.length = 0;
   const hostHelp = await run(['ronin-host', '--help']);
   assert.equal(hostHelp.code, 0, hostHelp.out);

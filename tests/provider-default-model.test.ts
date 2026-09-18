@@ -23,6 +23,11 @@ import os from 'node:os';
 import path from 'node:path';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-provider-test-'));
+const listed = (slugs: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: 'test', client_version: 'test', models: slugs.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list', priority })) });
+const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude', 'codex'], signed_in: ['claude', 'codex'], operational: ['claude', 'codex'], activated_count: 2, paths: {}, versions: {}, latest: {}, model_lists: {
+  claude: listed(['opus', 'fable', 'sonnet', 'haiku']),
+  codex: listed(['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5']),
+} };
 const catalogs = path.join(temp, 'catalogs');
 await fs.mkdir(catalogs, { recursive: true });
 await fs.writeFile(
@@ -39,7 +44,7 @@ await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 
 /** The whole `agents` section as the owner's file would hold it, and, when given, the setup section beside it. */
 async function agents(sessions: Record<string, unknown>, setup?: Record<string, unknown>): Promise<void> {
-  await fs.writeFile(path.join(temp, 'config', 'machine_settings.json'), JSON.stringify({ agents: { sessions }, ...(setup ? { setup } : {}) }));
+  await fs.writeFile(path.join(temp, 'config', 'machine_settings.json'), JSON.stringify({ agents: { sessions }, campaigns: { home_machine: { title: 'Ronin Home', state: 'active', providers, config: {} } }, ...(setup ? { setup } : {}) }));
 }
 
 const { resolveForm } = await import('../src/spawn.js');
@@ -86,6 +91,7 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
   const document = JSON.parse(await fs.readFile(file, 'utf8'));
   document.campaigns = { work: {
     title: 'Work',
+    providers,
     config: { defaults: { provider: 'anthropic', model: 'opus' } },
   } };
   await fs.writeFile(file, JSON.stringify(document));
@@ -106,6 +112,7 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
   // A half-pair is no default: ⚙'s pair answers, and the Campaign is not guessed for.
   const withHalf = JSON.parse(await fs.readFile(file, 'utf8'));
   withHalf.campaigns.half = {
+    providers,
     title: 'Half',
     config: { defaults: { provider: 'anthropic' } },
   };
@@ -128,20 +135,18 @@ test("the owner's scenario: default is OpenAI, the launch says anthropic, and it
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]);
 });
 
-test('a provider with no preference set falls back to its default row in the provider catalog', async () => {
+test('a provider with no preference set delegates the model to that provider CLI', async () => {
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-terra' }, by_provider: {} });
-  // Anthropic's row marked `default` in ronin_catalogs/MODEL_PROVIDERS.md is `opus`. The fallback
-  // is what makes the setting optional rather than a thing you must fill in before the
-  // feature works at all.
+  // Native is what makes the setting optional without Ronin guessing account entitlement.
   const r = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(r.cmd.startsWith('claude --model opus'), `expected the catalog default, got "${r.cmd}"`);
+  assert.ok(r.cmd.startsWith('claude --strict-mcp-config'), `expected the provider-native launch, got "${r.cmd}"`);
   // Nobody stated the model, so it reads as the system's answer, not the owner's.
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'system', source: 'src/spawn.ts' }]);
   // An explicit null is the same as absent: the owner cleared the row, they did not
   // express a preference.
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-terra' }, by_provider: { anthropic: null } });
   const cleared = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(cleared.cmd.startsWith('claude --model opus'), `cleared must fall back too, got "${cleared.cmd}"`);
+  assert.ok(cleared.cmd.startsWith('claude --strict-mcp-config'), `cleared must fall back too, got "${cleared.cmd}"`);
 });
 
 test('naming no provider still lands on the install default — the general default is untouched', async () => {

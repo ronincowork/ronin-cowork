@@ -120,11 +120,19 @@ ronin_served_url() {
   ' || true
 }
 
-# The only address an install may print is the verified Tailscale HTTPS mapping.
+# The optional private HTTPS address, only when Serve maps to this installation.
 ronin_open_url() {
   local root="$1" port="$2"
   : "$root"
   ronin_served_url "$port" "${RONIN_BACKEND_HOST:-${RONIN_IP:-}}" "${RONIN_PUBLIC_PORT:-4810}"
+}
+
+# Address reachable from a browser on the computer running Ronin.
+# Preserve explicit owner binds; wildcard listeners also accept loopback.
+ronin_http_url() {
+  local host="$(ronin_bind "$1")"
+  case "$host" in 0.0.0.0) host=127.0.0.1 ;; ::) host='[::1]' ;; *:*) host="[$host]" ;; esac
+  printf 'http://%s:%s' "$host" "$(ronin_port "$1")"
 }
 
 ronin_banner() { # <root> <url> [report] [warning]
@@ -148,10 +156,21 @@ ronin_banner() { # <root> <url> [report] [warning]
   printf '  │  %s%*s│\n' "$l1" $(( inner - 2 - w1 )) ""
   printf '  │%*s│\n' "$inner" ""
   printf '  ╰%s╯\n\n' "$bar"
-  printf '  Open Ronin:\n'
-  if [ -t 1 ]; then printf '  \033[1m%s\033[0m\n\n' "$url"; else printf '  %s\n\n' "$url"; fi
+  if [ -n "$url" ]; then
+    printf '  On this computer or another device connected to your Tailscale network:\n'
+    printf '  %s\n\n' "$url"
+  fi
+  if [ "$(uname -s)" = Darwin ]; then
+    local http_url="$(ronin_http_url "$root")"
+    case "$http_url" in
+      http://127.*|http://localhost:*|http://\[::1\]:*)
+        printf '  On this computer only (no Tailscale needed):\n' ;;
+      *) printf '  HTTP address (your custom BIND setting):\n' ;;
+    esac
+    printf '  %s\n\n' "$http_url"
+  fi
+  [ -n "$url" ] || printf '  Tailscale HTTPS is not configured.\n\n'
   printf '  Next: open Machine Settings to set up your first Agent.\n'
-  printf '  Access is controlled by Tailscale.\n'
   [ -z "$warning" ] || printf '\n  Warning: %s\n' "$warning"
   [ -z "$report" ] || printf '\n  Install details: %s\n' "$report"
   printf '\n'

@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { arrangementOf } from './arrangement.js';
+import { arrangementOf, desksManaged } from './arrangement.js';
 import { lineDirty, refreshLine } from './desk.js';
 import { casRef, isAncestor, mergeInto, revParse, worktreeAddDetached, worktreeRemove } from './git.js';
 import { withLineLock } from './queue.js';
@@ -38,6 +38,11 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
 
   const st = await deskStatus(rec, a);
   if (!st.tip) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: 'desk branch is gone' })), notices: [], tidy: emptyTidy() };
+  if (!desksManaged(a)) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: `${repo} uses its checkout; hand-in applies only to managed desks` })), notices: [], tidy: emptyTidy() };
+  const workingBase = await revParse(a.dir, `refs/heads/${a.working}`);
+  if (!workingBase) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: `working branch '${a.working}' does not exist` })), notices: [], tidy: emptyTidy() };
+  const lineBase = await revParse(a.dir, `refs/heads/${line.branch}`);
+  if (!lineBase) return { receipt: await appendReceipt(receipt({ result: 'refused', reason: `Team line '${line.branch}' does not exist` })), notices: [], tidy: emptyTidy() };
 
   const out = await withLineLock(repo, line.branch, async (): Promise<HandInReceipt> => {
     try {
@@ -47,6 +52,7 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
         const old = await revParse(a.dir, `refs/heads/${line.branch}`);
         const tip = await revParse(a.dir, `refs/heads/${branch}`);
         const working = await revParse(a.dir, `refs/heads/${a.working}`);
+        if (!working) return appendReceipt(receipt({ result: 'refused', reason: `working branch '${a.working}' does not exist` }));
         let cand = await freshCandidate(a, line.branch, working);
         const accepted = await mergeInto(cand, line.branch, `Add accepted ${line.branch} delta to current ${a.working}`);
         let resolvedByDesk = false;
