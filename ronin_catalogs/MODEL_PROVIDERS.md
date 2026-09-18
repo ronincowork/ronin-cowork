@@ -10,7 +10,7 @@
 > (`$(ronin-store catalogs)/MODEL_PROVIDERS.md`) and edit it there. Each provider section in the owner copy
 > replaces that provider section; other shipped providers keep receiving updates; an upgrade never touches it.
 
-- **updated:** 2026-09-09
+- **updated:** 2026-09-18
 
 ## Keeping it fresh
 
@@ -101,6 +101,7 @@ refused by Codex in the new tile, and Ronin never substitutes.
 | `gpt-5.6-sol` | frontier | yes | $5 in · $30 out per M tokens (2026-09) | the hardest coding and reasoning work; OpenAI's flagship tier | bulk or latency-sensitive loops where Terra matches it for less |
 | `gpt-5.6-terra` | standard | | $2 in · $12 out per M tokens (2026-09) | everyday agentic coding at roughly half the flagship price | the very hardest problems, where Sol still leads |
 | `gpt-5.6-luna` | light | | $0.20 in · $1.20 out per M tokens (2026-09) | fast, cheap sub-agents, drafts and high-volume routine tasks | deep multi-step reasoning and large refactors |
+| `gpt-5.3-codex-spark` | light | | ChatGPT Pro research preview · separate usage limits (2026-09) | near-instant, real-time iteration on code | deep reasoning, non-text work, API-key launches, or accounts whose Codex model list does not include it |
 
 | model | launch |
 |---|---|
@@ -108,6 +109,7 @@ refused by Codex in the new tile, and Ronin never substitutes.
 | `gpt-5.6-sol` | `codex --model gpt-5.6-sol` |
 | `gpt-5.6-terra` | `codex --model gpt-5.6-terra` |
 | `gpt-5.6-luna` | `codex --model gpt-5.6-luna` |
+| `gpt-5.3-codex-spark` | `codex --model gpt-5.3-codex-spark` |
 
 ### Google
 
