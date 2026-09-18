@@ -8,7 +8,7 @@ import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, kindTiles, loadProviderCatalog, mandateWord, providerCatalog, readingRows, tagRow, templateTray, tierWord,
+  createStep, el, kindTiles, loadProviderCatalog, mandateWord, modelAvailabilityFact, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
@@ -236,8 +236,8 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       v: row.model, l: row.model, word: tierWord(row.tier), sub: row.cost || '',
       off: !row.operational
         ? t('forms.reason_not_on_machine', 'not on this machine')
-        : row.model_list_current && row.listed === false
-          ? t('forms.reason_not_listed', 'not listed by your {cli} {client_version}', { cli: row.cli_label || row.cli, client_version: machine?.version || '' }).trim()
+        : !row.selectable
+          ? modelAvailabilityFact(row)
           : undefined,
     };
   });

@@ -6058,6 +6058,7 @@ button.wb-door:hover b {
 .setup-provider-facts dt { color: var(--muted); }
 .setup-provider-facts dd { margin: 0; color: var(--fg-strong); font-weight: 600; }
 .setup-provider-facts div[data-on='true'] dd { color: var(--ok); }
+.setup-provider-model-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-5); }
 .setup-provider-table { overflow-x: auto; max-width: 100%; }
 .setup-provider-models { width: 100%; min-width: calc(var(--space-12) * 10); table-layout: fixed; border-collapse: collapse; font-size: var(--text-5); }
 .setup-provider-models th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--muted); font-weight: 600; border-bottom: var(--edge) solid var(--line-2); }

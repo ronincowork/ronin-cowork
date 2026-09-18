@@ -14,7 +14,7 @@
  * reads the record and never probes. Agent installs run in a tile with no completion hook,
  * so a fresh install shows on the next probe or the next Ronin start, dated.
  */
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { appendEgress, type EgressLine } from './activation/egress.js';
@@ -87,6 +87,24 @@ export async function installedVersion(file: string, argv: readonly string[]): P
 
 /** Read a CLI-owned model list. Codex is the only registry CLI with one today. */
 export async function cliModelList(cli: string, home = os.homedir()): Promise<CliModelList | null> {
+  if (cli === 'claude') {
+    try {
+      const dir = path.join(home, '.claude', 'cache', 'model-catalog');
+      const files = (await readdir(dir)).filter((name) => name.endsWith('-cc.json')).sort();
+      const file = files.at(-1);
+      if (!file) return null;
+      const raw = JSON.parse(await readFile(path.join(dir, file), 'utf8')) as Record<string, any>;
+      const models = raw?.catalog?.config?.models;
+      if (!Array.isArray(models)) return null;
+      return {
+        fetched_at: new Date(Number(raw.fetchedAt)).toISOString(), etag: file, client_version: `catalog-${raw.version}`,
+        models: models.filter((model) => model && typeof model.id === 'string').map((model, priority) => ({
+          slug: model.id, display_name: String(model.name || model.short_name || model.id),
+          description: String(model.description || ''), visibility: 'list', priority,
+        })),
+      };
+    } catch { return null; }
+  }
   if (cli !== 'codex') return null;
   try {
     const raw = JSON.parse(await readFile(path.join(home, '.codex', 'models_cache.json'), 'utf8')) as Record<string, unknown>;

@@ -35,7 +35,7 @@ const providerRows = () => {
     .map((row) => ({ v: row.provider, l: row.provider_label || row.provider, off: row.operational ? '' : reason(row) }));
 };
 const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider)
-  .map((row) => ({ v: row.model, l: row.model, word: tierWord(row.tier), sub: modelAvailabilityFact(row) || row.cost || '', off: row.operational && row.listed !== false ? '' : reason(row) }));
+  .map((row) => ({ v: row.model, l: row.model, word: tierWord(row.tier), sub: modelAvailabilityFact(row) || row.cost || '', off: row.selectable ? '' : (row.operational ? modelAvailabilityFact(row) : reason(row)) }));
 
 export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   host.replaceChildren();

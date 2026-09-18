@@ -6,7 +6,7 @@ import { listProjectRoots, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from '.
 import { listSessionLaunchSpecs } from './model-providers.js';
 import { agentSpec } from './agents.js';
 import { readAgentsSection, readSetupSection } from './machine-state.js';
-import { offAt } from './provider-summary.js';
+import { offAt, readProviderSummary } from './provider-summary.js';
 import { storeDir } from './resources.js';
 import { contributionReading, listBehaviours, listInstallations } from './resource-adapters.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
@@ -226,14 +226,14 @@ export async function resolveForm(
   const coworkAgent = sessionType === 'cowork_agent';
   const bareMetalAgent = sessionType === 'bare_metal_agent';
   const campaignId = coworkAgent ? (form.campaign_id || await initialCampaignId()) : '';
-  const [roots, launchSpecs, agentsSet, campaign, installationCatalog, behaviourCatalog] = await Promise.all([
+  const [roots, agentsSet, campaign, installationCatalog, behaviourCatalog] = await Promise.all([
     listProjectRoots(),
-    listSessionLaunchSpecs(),
     readAgentsSection(),
     coworkAgent ? readCampaign(campaignId) : null,
     listInstallations(),
     listBehaviours(),
   ]);
+  const launchSpecs = await listSessionLaunchSpecs(campaign?.providers ?? await readProviderSummary());
   const preset = await templateProvenance(coworkAgent ? form : {});
   if (form.team && !isTeamName(form.team)) {
     throw new Error(`A team name is lowercase letters, digits, _ and - (it is also the tag): "${form.team}".`);

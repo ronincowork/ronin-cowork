@@ -392,7 +392,7 @@ function renderRows(host, state, key, addLabel) {
           : t('forms.reason_not_on_machine', 'not on this machine');
       const pair = ask([{ group: t('new_agent.model_package', 'Model'), fields: [
         { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('campaign_view.provider_default', 'Default provider'), options: providers.map((item) => ({ v: item.provider, l: item.provider_label, off: item.operational ? '' : reason(item) })) },
-        { key: 'model', label: t('forms.model', 'Model'), blank: t('campaign_view.model_default', 'Default model'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: item.model, word: item.tier, sub: modelAvailabilityFact(item), off: item.operational && item.listed !== false ? '' : reason(item) })) },
+        { key: 'model', label: t('forms.model', 'Model'), blank: t('campaign_view.model_default', 'Default model'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: item.model, word: item.tier, sub: modelAvailabilityFact(item), off: item.selectable ? '' : (item.operational ? modelAvailabilityFact(item) : reason(item)) })) },
       ] }], { value: { provider: row.provider || '', model: row.model || '' }, density: 'tight', onChange: (value) => { row.provider = value.provider; row.model = value.model; } });
       const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
       remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });

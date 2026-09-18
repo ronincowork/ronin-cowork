@@ -31,6 +31,7 @@ import { mergeSections, readUserCatalog, STOCK_DIR, storeDir, type CatalogSectio
 export const CATALOG_FILE = 'MODEL_PROVIDERS.md';
 export const TIERS = ['light', 'standard', 'frontier'] as const;
 export type Tier = typeof TIERS[number];
+export const CLI_MODEL_INVENTORY = new Set(['claude', 'codex']);
 
 export interface SessionLaunchSpec {
   /** The vendor id a launch names: `anthropic`, `openai`, … */
@@ -41,7 +42,8 @@ export interface SessionLaunchSpec {
   model: string;
   /** The complete interactive command for this model. */
   cmd: string;
-  tier: Tier;
+  /** Empty for a model discovered from a CLI before Ronin has descriptive metadata for it. */
+  tier: Tier | '';
   /** The row a launch naming this provider and no model gets when no preference is set. */
   default: boolean;
   /** The vendor's public list price, dated — a reading, not a contract. */
@@ -262,8 +264,30 @@ export async function listProviderCatalog(): Promise<ProviderCatalogEntry[]> {
 }
 
 /** Every launch cell, flat, in catalog order: what the pickers and the launch resolve over. */
-export async function listSessionLaunchSpecs(): Promise<SessionLaunchSpec[]> {
-  return (await listProviderCatalog()).flatMap((entry) => entry.models);
+const discoveredCommand = (models: readonly SessionLaunchSpec[], model: string): string => {
+  const argv = models[0]?.cmd.match(/^(.*?\s--model(?:=|\s+))(\S+)(.*)$/);
+  return argv && /^[A-Za-z0-9._:-]+$/.test(model) ? `${argv[1]}${model}${argv[3]}` : '';
+};
+
+/** The CLI owns the live model inventory; catalog rows only enrich models it reports. */
+export function modelsAvailableToUser(entries: readonly ProviderCatalogEntry[], summary: ProviderSummary | null = null): ProviderCatalogEntry[] {
+  return entries.map((entry) => {
+    const list = summary?.model_lists?.[entry.cli];
+    if (!list) return CLI_MODEL_INVENTORY.has(entry.cli) ? { ...entry, models: [] } : entry;
+    const catalog = new Map(entry.models.map((model) => [model.model, model]));
+    const models = list.models.filter((model) => model.visibility === 'list').flatMap((model) => {
+      const known = catalog.get(model.slug);
+      if (known) return [known];
+      const cmd = discoveredCommand(entry.models, model.slug);
+      return cmd ? [{ ...entry.models[0], model: model.slug, cmd, tier: '' as const, default: false,
+        cost: '', good_at: model.description, not_good_at: '' }] : [];
+    });
+    return { ...entry, models };
+  });
+}
+
+export async function listSessionLaunchSpecs(summary: ProviderSummary | null = null): Promise<SessionLaunchSpec[]> {
+  return modelsAvailableToUser(await listProviderCatalog(), summary).flatMap((entry) => entry.models);
 }
 
 /** A provider's own default row: the one marked `default`, else its first. */
