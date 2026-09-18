@@ -52,7 +52,6 @@ export function createSetupView() {
   const themeToggle = createThemeToggle();
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
   const environment = {
-    setupOnboardingExtras: true,
     onGithubAuthenticated: () => { completion.github = true; paint(); },
     onWorkspaceFolderChosen: () => { completion.roots = true; save(); paint(); },
     onInstallationsState: (values) => { installationsComplete = Object.values(values || {}).some((value) => value === true); paint(); },
