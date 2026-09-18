@@ -6179,8 +6179,6 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-card[data-warning='true'] { border-color: var(--warn); }
 .wk-card[data-stale='true'] { opacity: .72; }
 .wk-card[data-variant='dotted'] { border-style: dashed; background: transparent; }
-.wk-card.campaign-mika-card { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, var(--panel)); }
-.wk-card.campaign-mika-card .wk-card-title { color: var(--bad); }
 .wk-card-heading { margin: 0; color: var(--fg-strong); font-size: var(--text-5); }
 .wk-card-summary { margin: var(--space-3) 0 0; color: var(--muted-2); font-size: var(--text-3); }
 .wk-card-meta { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: auto; padding-top: var(--space-5); color: var(--muted); font-size: var(--text-2); }

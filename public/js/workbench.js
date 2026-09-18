@@ -269,8 +269,13 @@ export function createWorkbench(options = {}) {
       const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: typeof offer.action === 'function' ? offer.action : () => place(definition.type, options.selectorWorkspace || selected, detail) });
       card.el.dataset.workbenchOfferType = definition.type;
       if (options.selectorCurrent) {
-        const target = options.selectorWorkspace || selected;
-        const current = typeAt(target) === definition.type && resourceAt(target) === String(detail.key || '');
+        const resource = String(detail.key || '');
+        const current = options.selectorCurrent === 'placed'
+          ? locations(definition.type, resource).some((id) => visibleIds().includes(id))
+          : (() => {
+              const target = options.selectorWorkspace || selected;
+              return typeAt(target) === definition.type && resourceAt(target) === resource;
+            })();
         if (current) card.el.setAttribute('aria-current', 'page');
       }
       // A readable title is display text, not identity. Consumers such as the render gate

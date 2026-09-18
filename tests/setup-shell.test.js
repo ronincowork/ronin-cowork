@@ -161,6 +161,8 @@ test('the existing workbench can pin a Setup workspace and aim selector cards at
   assert.match(workbench, /options\.selectorWorkspace \|\| selected/);
   assert.match(workbench, /options\.selectorFilter/);
   assert.match(workbench, /options\.selectorCurrent/);
+  assert.match(workbench, /options\.selectorCurrent === 'placed'[\s\S]*locations\(definition\.type, resource\)/,
+    'a workbench may mark every selector card represented in its visible workspaces');
   assert.doesNotMatch(workbench, /setupRequirement|is-requirement|requirementFlash/);
   assert.match(workbench, /definition\.groupKey/);
   assert.match(workbench, /INTERACTIVE_DESCENDANT/);

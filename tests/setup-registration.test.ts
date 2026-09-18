@@ -492,6 +492,18 @@ test('legacy Services mutation entry points explicitly retire to registration', 
   assert.match(source, /Registration deletion moved to \/api\/setup\/registration/);
 });
 
+test('Register resend confirmation remains wired from its button to the live recovery action', async () => {
+  const fs = await import('node:fs/promises');
+  const [surface, api] = await Promise.all([
+    fs.readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
+    fs.readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8'),
+  ]);
+  assert.match(surface, /resend_registration[\s\S]*\/api\/setup\/registration\/recovery[\s\S]*action: 'resend'/,
+    'the visible Resend confirmation action posts the recovery request');
+  assert.match(api, /action === 'resend'\) await resend\(\)/,
+    'the live recovery route dispatches that request to HQ resend');
+});
+
 test('retired Services mutation handlers return 410 while registration routes remain live', async () => {
   const handlers = new Map<string, Function>();
   const app = {

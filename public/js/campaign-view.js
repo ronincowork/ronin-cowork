@@ -159,7 +159,6 @@ export function createCampaignView() {
       key: MIKA_SESSION,
       label: 'Mika',
       summary: t('mika.setup_card', 'Your Ronin welcome guide and general helper.'),
-      className: 'campaign-mika-card',
       action: () => { void ensureAndPlaceMika(bench.selected()); },
       onPointerEnter: () => { void readyMika('help'); },
     }],
@@ -194,7 +193,7 @@ export function createCampaignView() {
   densityToggle.el.addEventListener('click', () => { thinSelectorCards = !thinSelectorCards; paintDensityToggle(); save(); });
   const mikaHelp = WorkspaceKit.primitives.createAction({ label: t('mika.help', 'ミ Help'), size: 'compact' });
   let helpPanel = null;
-  bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign.settings_short_title', 'Settings'), title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : t('campaign.settings_short_title', 'Settings'), actions: [densityToggle, mikaHelp], shapeControl: document.getElementById('shapecycle'), onStateChange: save, onPlacement: save });
+  bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign.settings_short_title', 'Settings'), title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : t('campaign.settings_short_title', 'Settings'), actions: [densityToggle, mikaHelp], shapeControl: document.getElementById('shapecycle'), selectorCurrent: 'placed', onStateChange: save, onPlacement: save });
   paintDensityToggle();
   installBehaviourReader(bench, TYPES.document);
   helpPanel = createMikaHelpPanel({
