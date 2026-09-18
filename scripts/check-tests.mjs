@@ -105,6 +105,7 @@ if (liveBefore && liveAfter !== liveBefore) {
 }
 let runnerFailed = false;
 for (const [index, result] of results.entries()) {
+  console.log(`  shard ${index + 1}/${SHARDS}: exit ${result.status}${result.signal ? ` (${result.signal})` : ''}`);
   if (result.error) {
     console.error(`FAILED — shard ${index + 1} did not start: ${result.error.message}`);
     runnerFailed = true;
