@@ -362,7 +362,10 @@ export function tierWord(tier) {
  * Campaign's Model providers surface, where there is room for the whole table. In an
  * option it is a sentence squeezed into a line that cannot show it.
  */
-export const modelWord = (row) => t('forms.model_word', '{model} · {tier}', { model: row.model, tier: tierWord(row.tier) });
+export const modelLabel = (row) => row?.model === NATIVE_MODEL ? t('forms.model_native', 'Native') : String(row?.model || '');
+export const modelWord = (row) => row?.model === NATIVE_MODEL || !row?.tier
+  ? modelLabel(row)
+  : t('forms.model_word', '{model} · {tier}', { model: modelLabel(row), tier: tierWord(row.tier) });
 
 /** The persisted CLI list is the availability authority; its dates say exactly when it was captured. */
 export const modelAvailabilityFact = (row) => {
@@ -416,7 +419,7 @@ export function providerModelPair(read, write, field, { fixed = '', classes = ''
     for (const row of offered) {
       const unavailable = row.selectable !== true;
       const label = fixed && !row.operational
-        ? (row.off ? t('forms.model_turned_off', '{model} · {tier} — turned off', { model: row.model, tier: tierWord(row.tier) }) : t('forms.model_off', '{model} · {tier} — not on this machine', { model: row.model, tier: tierWord(row.tier) }))
+        ? (row.off ? t('forms.model_turned_off', '{model} — turned off', { model: modelWord(row) }) : t('forms.model_off', '{model} — not on this machine', { model: modelWord(row) }))
         : modelAvailabilityWord(row);
       modelSelect.add(option(label, row.model, !row.operational || unavailable));
     }

@@ -3,7 +3,7 @@
 import { t } from './lexicon.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { loadProviderCatalog, providerCatalog, modelAvailabilityFact } from './form-steps.js';
+import { loadProviderCatalog, providerCatalog, modelAvailabilityFact, modelLabel } from './form-steps.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 
@@ -52,7 +52,7 @@ export function createAgentDefaultsSurface(campaign) {
     const questions = ask([
       { group: t('new_agent.model_package', 'Model'), fields: [
         { key: 'provider', label: t('campaign_view.col_provider', 'Provider'), blank: t('campaign_view.provider_default', 'Default provider'), options: providers.map((row) => ({ v: row.provider, l: row.provider_label, off: row.operational ? '' : reason(row) })) },
-        { key: 'model', label: t('campaign_view.col_model', 'Preferred model'), blank: t('campaign_view.model_default', 'Default model'), after: 'provider', options: (value) => catalog.filter((row) => row.provider === value.provider).map((row) => ({ v: row.model, l: row.model, word: row.tier, sub: modelAvailabilityFact(row), off: row.selectable ? '' : (row.operational ? modelAvailabilityFact(row) : reason(row)) })) },
+        { key: 'model', label: t('campaign_view.col_model', 'Preferred model'), blank: t('campaign_view.model_default', 'Default model'), after: 'provider', options: (value) => catalog.filter((row) => row.provider === value.provider).map((row) => ({ v: row.model, l: modelLabel(row), word: row.tier, sub: modelAvailabilityFact(row), off: row.selectable ? '' : (row.operational ? modelAvailabilityFact(row) : reason(row)) })) },
       ] },
       { group: t('mandate', 'Mandate'), fields: [
         { key: 'reach', label: t('campaign_view.default_reach', 'Reach'), options: CHOICES.reach.map((value) => ({ v: value, l: optionLabel(value) })) },
@@ -90,6 +90,6 @@ export function createAgentDefaultsSurface(campaign) {
 
 export function defaultsSummary(campaign) {
   const defaults = bucket(campaign?.config?.defaults);
-  const model = [defaults.provider, defaults.model].filter(Boolean).join(' · ') || t('campaign_view.provider_default', 'Default provider');
+  const model = [defaults.provider, defaults.model ? modelLabel(defaults) : ''].filter(Boolean).join(' · ') || t('campaign_view.provider_default', 'Default provider');
   return t('campaign_view.defaults_summary', '{model} · {reach}', { model, reach: defaults.reach || 'open' });
 }

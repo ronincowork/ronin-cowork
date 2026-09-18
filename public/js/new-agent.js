@@ -8,7 +8,7 @@ import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, kindTiles, loadProviderCatalog, mandateWord, modelAvailabilityFact, providerCatalog, readingRows, tagRow, templateTray, tierWord,
+  createStep, el, kindTiles, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
@@ -233,7 +233,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider).map((row) => {
     const machine = providerCatalog().machine.find((item) => item.id === row.cli);
     return {
-      v: row.model, l: row.model, word: tierWord(row.tier), sub: row.cost || '',
+      v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: row.cost || '',
       off: !row.operational
         ? t('forms.reason_not_on_machine', 'not on this machine')
         : !row.selectable
@@ -387,7 +387,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     if (isCowork() && draft.books.length) rows.push([t('behaviours', 'Behaviours'), tagRow(draft.books.map((text) => ({ text, on: true })))]);
     rows.push([t('launch_mode.head', 'launch mode'), launchModes().find((row) => row.v === draft.launchMode)?.l || draft.launchMode]);
     rows.push([t('add_agent.place', 'place'), draft.root]);
-    if (hasAgent()) rows.push([t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')]);
+    if (hasAgent()) rows.push([t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${modelLabel(draft)}` : ''}` : t('forms.default', 'default')]);
     return rows;
   }
   function paintFoot() {

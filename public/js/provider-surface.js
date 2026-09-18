@@ -36,7 +36,7 @@ import { ask } from './ask.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
-import { loadProviderCatalog, modelAvailabilityFact, providerCatalog, tierWord } from './form-steps.js';
+import { loadProviderCatalog, modelAvailabilityFact, modelLabel, providerCatalog, tierWord } from './form-steps.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
 import { createStatusMarker } from './status-marker.js';
 
@@ -367,7 +367,7 @@ export function createProviderSurface(context) {
     for (const row of rows) {
       const line = el('tr');
       line.dataset.model = row.model; line.dataset.tier = row.tier;
-      const name = el('td'); name.append(el('b', null, row.model));
+      const name = el('td'); name.append(el('b', null, modelLabel(row)));
       if (row.default) name.append(el('span', 'setup-provider-default', t('setup_surface.model_default_mark', 'the default')));
       if (row.model_list) name.append(el('span', 'setup-provider-model-status', modelAvailabilityFact(row)));
       line.append(name, el('td', 'setup-provider-tier', tierWord(row.tier)), el('td', null, row.cost || ''), el('td', null, row.good_at || ''), el('td', null, row.not_good_at || ''));

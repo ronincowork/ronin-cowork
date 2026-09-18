@@ -8,7 +8,7 @@ import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, providerCatalog, readingRows, tagRow, templateTray, tierWord,
+  createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab, seedReservedWorkspaceTab } from './workspace.js';
 
@@ -68,7 +68,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       return { v: row.provider, l: row.cli_label || row.provider_label || row.provider, off: unavailable || undefined };
     });
   const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider).map((row) => ({
-    v: row.model, l: row.model, word: tierWord(row.tier), sub: row.cost || '',
+    v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: row.cost || '',
     off: !row.operational
       ? (row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'))
       : !row.selectable
@@ -371,7 +371,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     foot.append(readingRows([
       [t('kind', 'Kind'), draft.kind],
       [t('behaviours', 'Behaviours'), draft.books.length ? tagRow(draft.books.map((text) => ({ text, on: true }))) : ''],
-      [t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')],
+      [t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${modelLabel(draft)}` : ''}` : t('forms.default', 'default')],
       [t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode],
       [t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`],
       [t('add_agent.still_asked', 'still asked'), tagRow([
