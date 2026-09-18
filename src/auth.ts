@@ -115,8 +115,8 @@ export async function clearPassword(): Promise<void> {
 }
 
 export async function authStatus(): Promise<{ set: boolean }> {
-  const a = await readCredential<Record<string, unknown>>('auth', {});
-  return { set: typeof a.hash === 'string' };
+  const a = await readCredential<Record<string, unknown> | null>('auth', null);
+  return { set: typeof a?.hash === 'string' };
 }
 
 const failures = new Map<string, { n: number; resetAt: number }>();

@@ -23,6 +23,7 @@ import { openLaunchForm } from './workspace.js';
 import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { WORKBENCH_HEADER } from './workspace-contract.js';
+import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
 
 const PROFILE = 'campaign';
 const MIKA_SESSION = 'mika_agent';
@@ -60,6 +61,7 @@ const currently = {
 
 function registerCampaignSurfaces() {
   registerSetupSurfaces();
+  registerPasswordSurface();
   registerFeedbackSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
@@ -93,7 +95,7 @@ function registerCampaignSurfaces() {
   // its beta card is hidden from discovery. Themes now have their stable home in Ronin Desk.
   profiles.define(PROFILE, [
     TERMINAL_TYPE,
-    TYPES.identity, TYPES.roots, TYPES.defaults, TYPES.installations, TYPES.providers, TYPES.document,
+    TYPES.identity, TYPES.roots, TYPES.defaults, TYPES.installations, TYPES.providers, PASSWORD_SURFACE_TYPE, TYPES.document,
     SETUP_SURFACE_TYPES.register,
     SETUP_SURFACE_TYPES.launchOwn, TYPES.machine,
     ...(MULTIPLE_CAMPAIGNS_ENABLED ? [TYPES.create] : []),

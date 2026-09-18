@@ -10,6 +10,7 @@ import { PRESETS_TYPE, createKindsPreference, registerPresetsSurface } from './p
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { reserveWorkspaceTab } from './workspace.js';
 import { createThemeToggle } from './theme-toggle.js';
+import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
 
 const PROFILE = 'setup';
 // Release toggles: unfinished programs stay out of Setup without changing the workbench.
@@ -27,6 +28,7 @@ const GARDEN_CONTENT_URL = '/content/setup-garden.v2.json';
 
 function registerSetupWorkbench() {
   registerSetupSurfaces();
+  registerPasswordSurface();
   registerGardenCanvas();
   registerPresetsSurface();
   return WorkspaceKit.workbench.profiles.define(PROFILE, [GARDEN_CANVAS_TYPE, PRESETS_TYPE, ...ORDER]);
@@ -44,6 +46,7 @@ export function createSetupView() {
   let completionLoaded = false;
   let completion = { registered: false, github: false, roots: false };
   let installationsComplete = false;
+  let passwordLoaded = false;
   let launchComplete = false;
   let sceneOverride = 1;
   const providerSessions = createProviderSetupSessionMount();
@@ -56,6 +59,7 @@ export function createSetupView() {
     onGithubAuthenticated: () => { completion.github = true; paint(); },
     onWorkspaceFolderChosen: () => { completion.roots = true; save(); paint(); },
     onInstallationsState: (values) => { installationsComplete = Object.values(values || {}).some((value) => value === true); paint(); },
+    onPasswordState: () => { passwordLoaded = true; paint(); },
     onSetupLaunched: () => { launchComplete = true; paint(); },
     setupRuntime: null,
     onSetupRuntime: (next) => { runtime = next; environment.setupRuntime = next; paint(); },
@@ -110,6 +114,7 @@ export function createSetupView() {
     if (scene.type === SETUP_SURFACE_TYPES.register) return completion.registered || kinds.get().length > 0;
     if (scene.type === SETUP_SURFACE_TYPES.roots) return completion.github || completion.roots;
     if (scene.type === SETUP_SURFACE_TYPES.installations) return installationsComplete;
+    if (scene.type === PASSWORD_SURFACE_TYPE) return passwordLoaded;
     if (scene.type === SETUP_SURFACE_TYPES.launchOwn) return launchComplete;
     return false;
   };

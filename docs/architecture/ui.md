@@ -444,9 +444,10 @@ agent is behind a pane.
 ## Login
 
 `/login` (`public/login.html`) is the one pre-auth page: self-contained on purpose,
-same visual language, same theme switch. The password is set on the host with
-`bin/ronin-passwd`; the command calls the authenticated operator HTTP surface and prints
-its reply. The password prompt remains local and does not echo.
+same visual language, same theme switch. The shared Password work surface in Setup and
+Settings enables, changes and disables the saved browser password; changing it replaces
+the current browser's session while ending every other browser session. The host-side
+`bin/ronin-passwd` remains an independent set/clear authority. Password fields do not echo.
 
 **Three doors, one session.** Passkey, password and recovery code all end by minting the
 same HttpOnly `<expiry>.<hmac>` cookie, signed by the secret stored beside the scrypt
