@@ -160,13 +160,15 @@ ronin_banner() { # <root> <url> [report] [warning]
     printf '  On this computer or another device connected to your Tailscale network:\n'
     printf '  %s\n\n' "$url"
   fi
-  local http_url="$(ronin_http_url "$root")"
-  case "$http_url" in
-    http://127.*|http://localhost:*|http://\[::1\]:*)
-      printf '  On this computer only (no Tailscale needed):\n' ;;
-    *) printf '  HTTP address (your custom BIND setting):\n' ;;
-  esac
-  printf '  %s\n\n' "$http_url"
+  if [ "$(uname -s)" = Darwin ]; then
+    local http_url="$(ronin_http_url "$root")"
+    case "$http_url" in
+      http://127.*|http://localhost:*|http://\[::1\]:*)
+        printf '  On this computer only (no Tailscale needed):\n' ;;
+      *) printf '  HTTP address (your custom BIND setting):\n' ;;
+    esac
+    printf '  %s\n\n' "$http_url"
+  fi
   [ -n "$url" ] || printf '  Tailscale HTTPS is not configured.\n\n'
   printf '  Next: open Machine Settings to set up your first Agent.\n'
   [ -z "$warning" ] || printf '\n  Warning: %s\n' "$warning"

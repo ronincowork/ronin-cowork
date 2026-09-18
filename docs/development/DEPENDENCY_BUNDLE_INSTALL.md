@@ -52,9 +52,9 @@ Node, tmux, and application dependencies. Setup explains outstanding administrat
 changes before applying them. For access from other devices, the owner supplies an
 installed, signed-in Tailscale; local use does not require it.
 
-A standard installation binds to loopback and prints `http://127.0.0.1:<backend-port>`
-for a browser on the computer running Ronin. When Tailscale HTTPS is available and
-verified, setup also prints `https://<machine>.<tailnet>.ts.net:4810` for this computer
+A standard installation binds to loopback. On macOS, setup prints
+`http://127.0.0.1:<backend-port>` for a browser on that Mac. Linux omits this local
+address from the greeting. When Tailscale HTTPS is available and verified, setup prints `https://<machine>.<tailnet>.ts.net:4810` for this computer
 or another authorized tailnet device. Missing Tailscale or an unavailable HTTPS route
 does not prevent local installation. On a local graphical desktop,
 `libexec/ronin-open-browser` opens the local URL as a convenience.

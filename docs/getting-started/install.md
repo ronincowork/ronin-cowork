@@ -171,7 +171,7 @@ SKIP into a failure. A SKIP names what could not run, why, and what evidence sta
 
 **What you should see:** setup names whether it started or adopted the default tmux
 server, reports every outside-the-home change or refusal, starts the operator, and prints
-the local URL and, when available, verified Tailscale HTTPS URL. With no headless browser, the journal says the render check was
+the verified Tailscale HTTPS URL when available. macOS also prints the local HTTP URL. With no headless browser, the journal says the render check was
 skipped because boot and version are the proof; it does not call the UI broken.
 
 On macOS, setup writes, loads, and starts the per-user LaunchAgent automatically.
@@ -179,7 +179,7 @@ It uses the GUI domain when available, otherwise the user domain for an SSH inst
 There is no laptop/server question. A per-user agent does not promise service before
 login after a reboot.
 
-A standard install prints **Local HTTP — on this computer only**:
+A standard macOS install also prints **Local HTTP — on this computer only**:
 `http://127.0.0.1:<backend-port>`. If the backend port is `3776`, the local URL uses
 `3776`. Opening this address on another computer reaches that other computer, not Ronin.
 

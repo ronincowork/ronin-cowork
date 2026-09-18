@@ -22,6 +22,7 @@ function box(serveStatus: string, port = '4810') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ronin-banner-'));
   fs.writeFileSync(path.join(dir, 'tailscale'), `#!/bin/sh\ncat <<'EOF'\n${serveStatus}\nEOF\n`, { mode: 0o755 });
   fs.writeFileSync(path.join(dir, '.env'), `PORT=${port}\n`);
+  fs.writeFileSync(path.join(dir, 'uname'), '#!/bin/sh\necho Darwin\n', { mode: 0o755 });
   return dir;
 }
 
@@ -108,6 +109,10 @@ test('the banner keeps identity framed and the URL whole on its own copyable lin
   const [top, bottom] = [out.split('\n').find((l) => l.includes('╭'))!, out.split('\n').find((l) => l.includes('╰'))!];
   // 人 is double-width; a frame that does not measure it is a frame with a ragged edge.
   assert.equal([...top].length, [...bottom].length);
+  fs.writeFileSync(path.join(dir, 'uname'), '#!/bin/sh\necho Linux\n', { mode: 0o755 });
+  const linux = call(dir, 'ronin_banner', dir, url);
+  assert.ok(linux.split('\n').includes(`  ${url}`));
+  assert.doesNotMatch(linux, /http:\/\/|On this computer only/);
 });
 
 // BIND_DETERMINISM: the address Ronin binds is a recorded fact, not a value re-derived
