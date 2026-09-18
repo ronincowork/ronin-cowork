@@ -70,9 +70,9 @@ function registerCampaignSurfaces() {
     discover: (_tenant, environment) => environment.sessions(),
     create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail),
   });
-  add({ type: TYPES.identity, header: 'surface', label: () => t('campaign', 'Campaign'), summary: (_tenant, e) => currently.identity(e), create: ({ environment: e }) => { const surface = createCampaignIdentitySurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
+  add({ type: TYPES.identity, header: 'surface', label: () => t('campaign', 'Desk'), summary: (_tenant, e) => currently.identity(e), create: ({ environment: e }) => { const surface = createCampaignIdentitySurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
   add({ type: TYPES.profile, header: 'surface', label: () => t('cowork.tab_profile', 'Desk profile'), summary: (_tenant, e) => currently.profile(e), create: ({ environment: e }) => { const surface = createDeskProfileSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
-  add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Workspace folders'), summary: (_tenant, e) => currently.roots(e), create: ({ workspace, environment: e }) => createWorkspaceFoldersSurface({
+  add({ type: TYPES.roots, header: 'surface', label: () => t('campaign_view.workspaces', 'Workspaces'), summary: (_tenant, e) => currently.roots(e), create: ({ workspace, environment: e }) => createWorkspaceFoldersSurface({
     campaignId: () => e.selected()?.id || '',
     connected: (host) => e.entered() && host.isConnected,
     presentation: 'stones',
@@ -87,19 +87,18 @@ function registerCampaignSurfaces() {
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.
-  add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'Themes · Account · Archived · Messages · Help desk · Keypad · Desk.'), create: ({ environment: e }) => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk'), campaign: e.selected }); return e.progressive({ el: surface.el, show: () => surface.select(surface.current() || 'themes') }); } });
+  add({ type: TYPES.machine, header: 'channels', label: () => t('campaign_view.machine', 'Machine'), summary: () => t('campaign_view.machine_summary', 'Themes · Account · Archived · Messages · Help · Keypad · Health.'), create: ({ environment: e }) => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('campaign_view.machine', 'Machine'), campaign: e.selected }); return e.progressive({ el: surface.el, show: () => surface.select(surface.current() || 'themes') }); } });
   // — teams and agents — in the forms' own boxes, by kind. The session-roles card that once
-  if (MULTIPLE_CAMPAIGNS_ENABLED) add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Team and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
-  // New Campaign is not registered while multiple Campaigns are off.
+  if (MULTIPLE_CAMPAIGNS_ENABLED) add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Desk'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Team and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
+  // New Desk is not registered while multiple Campaigns are off.
   // Desk profile remains registered so a remembered workspace can still restore it, but
   // its beta card is hidden from discovery. Themes now have their stable home in Ronin Desk.
   profiles.define(PROFILE, [
     TERMINAL_TYPE,
-    TYPES.identity, TYPES.roots, TYPES.defaults, TYPES.installations, TYPES.providers, PASSWORD_SURFACE_TYPE, TYPES.document,
-    SETUP_SURFACE_TYPES.register,
-    SETUP_SURFACE_TYPES.launchOwn, TYPES.machine,
+    TYPES.machine, PASSWORD_SURFACE_TYPE, TYPES.installations, TYPES.providers,
+    SETUP_SURFACE_TYPES.register, SETUP_SURFACE_TYPES.launchOwn, FEEDBACK_TYPE,
+    TYPES.identity, TYPES.defaults, TYPES.roots, TYPES.document,
     ...(MULTIPLE_CAMPAIGNS_ENABLED ? [TYPES.create] : []),
-    FEEDBACK_TYPE,
   ]);
 }
 
@@ -118,7 +117,7 @@ export function createCampaignView() {
   const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   const progressive = (surface) => {
     const coordinated = progressiveSurface({
-      loading: () => WorkspaceKit.primitives.setSurfaceState(surface.el, 'loading', t('campaign_view.loading', 'Loading Campaign…')),
+      loading: () => WorkspaceKit.primitives.setSurfaceState(surface.el, 'loading', t('campaign_view.loading', 'Loading Desk…')),
       // The wrapper set the loading state, so the wrapper clears it: a surface whose show()
       // does not touch its own state — the Ronin Desk's tab select — stayed on "Loading
       // Campaign…" over a painted body (live, 2026-09-04).
@@ -127,7 +126,7 @@ export function createCampaignView() {
     campaignSurfaces.add(coordinated);
     // A surface placed AFTER the Campaign arrived — a card clicked or dragged onto an
     // open page — is created here, past the one settle() in enter(). Settle it now, or it
-    // says "Loading Campaign…" until the page is left and re-entered (owner, 2026-09-04).
+    // says "Loading Desk…" until the page is left and re-entered (owner, 2026-09-04).
     if (campaignRead) coordinated.settle();
     return { ...surface, show: coordinated.show };
   };
@@ -193,7 +192,15 @@ export function createCampaignView() {
   densityToggle.el.addEventListener('click', () => { thinSelectorCards = !thinSelectorCards; paintDensityToggle(); save(); });
   const mikaHelp = WorkspaceKit.primitives.createAction({ label: t('mika.help', 'ミ Help'), size: 'compact' });
   let helpPanel = null;
-  bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign.settings_short_title', 'Settings'), title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : t('campaign.settings_short_title', 'Settings'), actions: [densityToggle, mikaHelp], shapeControl: document.getElementById('shapecycle'), selectorCurrent: 'placed', onStateChange: save, onPlacement: save });
+  bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign.settings_short_title', 'Settings'), title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : t('campaign.settings_short_title', 'Settings'), actions: [densityToggle, mikaHelp], shapeControl: document.getElementById('shapecycle'), selectorCurrent: 'placed', onSelectorRefresh: (cards) => {
+    for (const [type, label] of [
+      [TYPES.machine, t('campaign_view.machine_settings', 'Machine Settings')],
+      [TYPES.identity, t('campaign_view.desk_settings', 'Desk Settings')],
+    ]) {
+      const first = cards.querySelector(`[data-workbench-offer-type="${type}"]`);
+      if (first) first.before(elem('h3', 'wk-selector-group', label));
+    }
+  }, onStateChange: save, onPlacement: save });
   paintDensityToggle();
   installBehaviourReader(bench, TYPES.document);
   helpPanel = createMikaHelpPanel({

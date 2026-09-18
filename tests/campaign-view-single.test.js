@@ -50,7 +50,7 @@ test('Settings carries Setup capabilities and starts with Mika beside an empty w
   assert.match(source, /createMikaHelpPanel/);
   assert.doesNotMatch(source, /campaign-mika-card/, 'Mika is not highlighted independently of workspace placement');
   assert.match(source, /selectorCurrent: 'placed'/, 'Settings highlights every card represented in a visible workspace');
-  assert.match(source, /profiles\.define\(PROFILE, \[\s*TERMINAL_TYPE,\s*TYPES\.identity/, 'Mika is the first Settings selector card');
+  assert.match(source, /profiles\.define\(PROFILE, \[\s*TERMINAL_TYPE,\s*TYPES\.machine/, 'Mika is the first Settings selector card');
   assert.match(source, /bench\.setCount\(2\)/);
   assert.match(source, /ensureAndPlaceMika\('workspace1'\)/);
   assert.match(source, /bench\.restoreDefault\('workspace2'\)/);

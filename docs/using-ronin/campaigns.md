@@ -1,6 +1,12 @@
-# Campaigns
+# Desks (stored as Campaigns)
 
-Campaigns are keyed records inside `machine_settings.json`. Each record has a stable id,
+A Desk is the engagement containing Teams, Agents, and work. It is not a Git worktree.
+The Settings workbench separates Machine Settings (machine controls, password,
+installed integrations, and model providers) from Desk Settings (Desk identity,
+Team and Agent defaults, and Workspaces). This grouping changes presentation, not
+storage or inheritance.
+
+Desks remain keyed Campaign records inside `machine_settings.json`. Each record has a stable id,
 title, description, desk profile, resolved desk choices, state, creation timestamp, and
 agent, Cowork, and template defaults.
 

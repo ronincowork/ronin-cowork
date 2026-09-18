@@ -5,8 +5,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **label:** Professional
 - **blurb:** The plain words. Every other lexicon falls through to these.
 - **desk_profile:** desk profile
-- **campaign:** Campaign
-- **campaigns:** Campaigns
+- **campaign:** Desk
+- **campaigns:** Desks
 - **add_agent.card:** Add Agent to Team
 - **add_agent.card_summary:** The Team answers the rest.
 - **add_agent.title:** Add Agent to Team
@@ -39,21 +39,21 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.none:** —
 - **installations:** Installations
 - **defaults:** Defaults
-- **campaign.name:** Campaign name
+- **campaign.name:** Desk name
 - **campaign.name_placeholder:** Ronin Home
 - **campaign.description:** Description
-- **campaign.description_placeholder:** What this campaign is for
+- **campaign.description_placeholder:** What this desk is for
 - **campaign.commons:** Campaign commons
 - **campaign.view:** Campaign view
 - **campaign.commons_short:** Commons
 - **campaign.cowork_view:** Teams View
 - **campaign.coworks:** Teams
 - **campaign.cowork:** Team
-- **campaign.new:** New Campaign
-- **campaign.create:** Create Campaign
+- **campaign.new:** New Desk
+- **campaign.create:** Create Desk
 - **campaign.none:** No Campaigns yet.
 - **campaign.saving:** saving…
-- **campaign.name_needed:** A Campaign needs a name.
+- **campaign.name_needed:** A Desk needs a name.
 - **campaign.profile_hint:** Sets the words, the skin and the templates this Campaign opens with.
 - **campaign.read_failed:** Could not read Campaigns — {message}
 - **campaign.archive:** Archive
@@ -196,7 +196,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roots_summary:** The folders this Campaign is allowed to work in.
 - **campaign_view.templates_summary:** The Team templates this Campaign offers.
 - **campaign_view.new_summary:** Set the stage. It creates no Team and launches no Agent.
-- **campaign_view.none_selected:** No Campaign selected.
+- **campaign_view.none_selected:** No Desk selected.
 - **campaign_view.no_profiles:** No desk profiles on this install.
 - **campaign_view.no_description:** No description yet.
 - **campaign_view.no_profile:** As stock — none chosen.
@@ -208,7 +208,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.new_project_worktrees_help:** Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for folders added later; change an existing repository on its Workspace folder card below.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
-- **campaign_view.head:** Campaign: {name}
+- **campaign_view.head:** Desk: {name}
 - **campaign_view.presets:** Presets
 - **campaign_view.presets_help:** A preset copies all of its components into this Campaign. Change any one of them afterwards; the preset is not consulted again.
 - **campaign_view.apply:** Apply
@@ -1980,3 +1980,8 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.authentication_title_hint:** Choose a title
 
 - **setup_surface.title_before_done:** To finish, give this authentication a title.
+
+- **campaign_view.machine:** Machine
+- **campaign_view.workspaces:** Workspaces
+- **campaign_view.machine_settings:** Machine Settings
+- **campaign_view.desk_settings:** Desk Settings
