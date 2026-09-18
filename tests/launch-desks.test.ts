@@ -78,6 +78,7 @@ test('the brief carries every desk, the primary, the line, and the four words â€
   const root = { name: 'cowork', dir: '/w/cowork', match: [], remit: '' } as unknown as Parameters<typeof buildBrief>[1];
   const rows = [{ repo: 'cowork', project_root: 'cowork', worktrees: 'enabled', mode: 'managed', location: '/w/cowork', branches: { working: 'dev', stable: 'master' }, managed: assignment.desks[0], reason: 'worktree_root', provenance: { repository: 'RONIN_REPO' } }] as const;
   const brief = buildBrief(profile, root, form, undefined, [], null, assignment, [...rows]);
+  assert.match(brief, /Repository approaches: read .*checkout\.md.*read .*worktree-root\.md/);
   assert.match(brief, /Born in workspace-folder-handle: cowork at path: \/w\/cowork\. Arrangement: worktree root/);
   assert.match(brief, /Your assignment has 2 desks:/);
   assert.match(brief, /cowork\s+\/w\/cowork\/team\/comp\/fable\s+â†’ team\/comp\/dev\s+\(you start here: your shell opens inside this desk, and the desk ends with you\)/);
@@ -87,6 +88,8 @@ test('the brief carries every desk, the primary, the line, and the four words â€
 
   const none = buildBrief(profile, root, form, undefined, [], null, null);
   assert.doesNotMatch(none, /desk/i, 'a launch with no assignment is told nothing about desks');
+  assert.match(none, /Repository approaches: read .*checkout\.md.*read .*worktree-root\.md/,
+    'every Cowork Agent is taught both repository approaches before later assignments');
 });
 
 test('conditional arrangement pages are fact-selected for birth', async () => {

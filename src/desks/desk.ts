@@ -37,12 +37,9 @@ export async function ensureLine(a: RepoArrangement, team: string): Promise<Team
   const line = lineFor(a, team);
   if (!team) return line;
   if (!(await branchExists(a.dir, line.branch))) {
-    const base = await revParse(a.dir, `refs/heads/${a.working}`);
-    if (!base) {
-      console.warn(`${a.repo}: working line '${a.working}' does not exist; using the checkout's current commit.`);
-      const current = await revParse(a.dir, 'HEAD');
-      await git(a.dir, ['branch', line.branch, current]);
-      return ensureLine(a, team);
+  const base = await revParse(a.dir, `refs/heads/${a.working}`);
+  if (!base) {
+      throw new Error(`${a.repo}: working branch '${a.working}' does not exist`);
     }
     await git(a.dir, ['branch', line.branch, base]);
   }
@@ -69,7 +66,7 @@ export interface OpenInput {
 export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   const a = await arrangementOf(input.repo);
   if (!desksManaged(a)) {
-    console.warn(`${a.repo} does not select managed desks; opening the requested desk anyway.`);
+    throw new Error(`${a.repo} uses its checkout at ${a.dir}; no managed desk was opened`);
   }
   const hazard = await syncthingHazard(a.dir);
   if (hazard) console.warn(`${hazard}; opening the requested desk anyway.`);
@@ -82,7 +79,7 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   }
 
   const existing = await readDesk(a.repo, branch);
-  const workingBase = await revParse(a.dir, `refs/heads/${a.working}`) || await revParse(a.dir, 'HEAD');
+  const workingBase = await revParse(a.dir, `refs/heads/${a.working}`);
   const sourceRef = input.source === 'team' ? line.branch : a.working;
   const sourceSha = input.source === 'team' ? await revParse(a.dir, `refs/heads/${sourceRef}`) : workingBase;
   if (!sourceSha) throw new Error(`source '${sourceRef}' does not exist`);

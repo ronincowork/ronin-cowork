@@ -45,44 +45,25 @@ export function primaryWorkLocation(repositories: ResolvedWorktreesRepository[],
 }
 
 export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
-  let opener: { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> };
-  try {
-    opener = (await import('./desks/desk.js')) as typeof opener;
-  } catch (e) {
-    console.warn(`Desk preparation is unavailable; launching from the project checkout: ${(e as Error)?.message ?? e}`);
-    return { ...a, desks: [] };
+  const opener = (await import('./desks/desk.js')) as { openDesk: (i: { repo: string; session: string; team: string; assignment?: string; branch?: string }) => Promise<RepoDesk> };
+  const desks: RepoDesk[] = [];
+  for (const candidate of a.desks) {
+    const openedDesk = await opener.openDesk({
+      repo: candidate.repo,
+      session: a.session,
+      team: a.team,
+      assignment: a.id,
+      branch: candidate.branch,
+    });
+    desks.push({
+      repo: openedDesk.repo, root: openedDesk.root, branch: openedDesk.branch,
+      worktree: openedDesk.worktree, line: openedDesk.line, mode: openedDesk.mode,
+      session: openedDesk.session, team: openedDesk.team, assignment: openedDesk.assignment,
+      state: openedDesk.state, opened_at: openedDesk.opened_at,
+    });
   }
-  let opened: Assignment;
-  try {
-    const desks: RepoDesk[] = [];
-    for (const candidate of a.desks) {
-      const openedDesk = await opener.openDesk({
-        repo: candidate.repo,
-        session: a.session,
-        team: a.team,
-        assignment: a.id,
-        branch: candidate.branch,
-      });
-      desks.push({
-        repo: openedDesk.repo,
-        root: openedDesk.root,
-        branch: openedDesk.branch,
-        worktree: openedDesk.worktree,
-        line: openedDesk.line,
-        mode: openedDesk.mode,
-        session: openedDesk.session,
-        team: openedDesk.team,
-        assignment: openedDesk.assignment,
-        state: openedDesk.state,
-        opened_at: openedDesk.opened_at,
-      });
-    }
-    opened = { ...a, desks };
-    await writeAssignment(opened);
-  } catch (e) {
-    console.warn(`Could not open the desks for ${a.id}; launching from the project checkout: ${(e as Error)?.message ?? e}`);
-    return { ...a, desks: [] };
-  }
+  const opened = { ...a, desks };
+  await writeAssignment(opened);
   return opened;
 }
 

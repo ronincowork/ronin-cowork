@@ -352,14 +352,8 @@ export function registerLaunch(app: express.Express): LaunchControl {
     if (resolved.assignment) {
       try {
         resolved.assignment = await prepareLaunchDesks(resolved.assignment);
-        if (!resolved.assignment.desks.length) {
-          resolved.assignment = null;
-          resolved.dir = (await listProjectRoots()).find((root) => root.name === resolved.project_root)?.dir ?? resolved.dir;
-        }
       } catch (e) {
-        console.warn(`[launch] desk preparation warning: ${String((e as Error)?.message ?? e)}`);
-        resolved.assignment = null;
-        resolved.dir = (await listProjectRoots()).find((root) => root.name === resolved.project_root)?.dir ?? resolved.dir;
+        return res.status(400).json({ error: `Could not prepare selected managed workspace: ${String((e as Error)?.message ?? e)}` });
       }
     }
 

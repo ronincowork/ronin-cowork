@@ -156,6 +156,12 @@ export function buildBrief(
     ...mandateLines,
   ];
   if (birthContract.length) parts.push(birthContract.join('\n'));
+  if ((form.session_type ?? 'cowork_agent') === 'cowork_agent') {
+    parts.push(
+      `Repository approaches: read ${CHECKOUT_SOP} when a repository uses its shared checkout; ` +
+      `read ${WORKTREE_SOP} when it uses managed worktrees. The repository's RONIN_REPO decides which applies.`,
+    );
+  }
   if (workLocations.length) parts.push(renderWorkLocations(workLocations, roster?.branches ?? {}));
   if (root) {
     const arrangement = workLocations.find((row) => row.repo === root.name);

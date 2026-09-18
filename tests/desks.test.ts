@@ -244,14 +244,14 @@ test('an accepted worktree-desk hand-in ends with one project-update reminder', 
   assert.equal(output.trimEnd().split('\n').at(-1), reminder);
 });
 
-test('openDesk reports restrictive inputs and proceeds with a private branch', async () => {
+test('openDesk keeps managed branch names private and reports the checkout route for direct repositories', async () => {
   for (const branch of ['dev', 'team/comp/dev', 'master']) {
     const desk = await openDesk({ repo: 'cowork', session: `x-${branch.replaceAll('/', '-')}`, team: 'comp', branch });
     assert.notEqual(desk.branch, branch);
     assert.equal(desk.mounted, true);
   }
-  assert.equal((await openDesk({ repo: 'koe', session: 'x', team: '' })).mounted, true);
-  assert.equal((await openDesk({ repo: 'plain', session: 'x', team: '' })).mounted, true);
+  await assert.rejects(openDesk({ repo: 'koe', session: 'x', team: '' }), /koe uses its checkout at .*no managed desk was opened/);
+  await assert.rejects(openDesk({ repo: 'plain', session: 'x', team: '' }), /plain uses its checkout at .*no managed desk was opened/);
 });
 
 test('status is derived from git now: a commit makes the desk ahead, a saved file makes it dirty', async () => {

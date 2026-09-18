@@ -163,7 +163,9 @@ export async function closeAssignedDesks(
     }
     if (desk.ahead > 0) {
       reasons.push(`${desk.ahead} unique commit(s) are not contained in ${desk.line}`);
-      actions.push(`run worktree-desk hand-in ${id(desk)}; a pending or rejected hand-in must be resolved before retrying session_end`);
+      actions.push(desk.mode === 'direct'
+        ? `this legacy desk belongs to a checkout repository; preserve it or transfer custody with worktree-desk handoff ${id(desk)} --to <session>`
+        : `run worktree-desk hand-in ${id(desk)}; a pending or rejected hand-in must be resolved before retrying session_end`);
     }
     const otherOwners = (desk.owners?.length ? desk.owners : [desk.session]).filter((owner) => owner !== session);
     if (otherOwners.length) {

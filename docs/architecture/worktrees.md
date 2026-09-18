@@ -20,13 +20,19 @@ One fact determines the result for each repository, its own `RONIN_REPO`:
 
 | The Workspace Folder declares | Result | The page the Agent is pointed at |
 |---|---|---|
-| `desks=none`, or no `RONIN_REPO` | a **checkout**: work on the repository's working line with ordinary Git; announce files; no hand-in | `ronin_catalogs/behaviours/conditional/checkout.md` |
+| `desks=none`, or no `RONIN_REPO` | a **checkout**: work on its current branch with ordinary Git; announce files; no hand-in | `ronin_catalogs/behaviours/conditional/checkout.md` |
 | `desks=managed` | a **worktree root**: the Agent's managed branch and worktree, commit, hand-in, the lead's promotion | `ronin_catalogs/behaviours/conditional/worktree-root.md` |
 
-There is no Agent-side answer. The birth packet names the birth root's arrangement, and
-`worktree-desk open <repo>` names any other root's. The desk procedure and tools are in an
-Agent's command lookup only in a worktree root. Resolution is per repository, so one
+There is no Agent-side arrangement switch. The birth packet teaches both approaches and
+names each selected repository's arrangement; `worktree-desk open <repo>` names the route
+for a repository encountered later. The desk capability is available to every Cowork Agent
+so later managed work needs no new loadout. Resolution remains per repository, so one
 assignment may contain both a worktree root and a checkout.
+
+New Agent keeps **Born in** separate from **Workspaces**. Workspaces lists every registered
+Workspace Folder, defaults Born in to selected, and allows that default to be removed.
+Before birth, launch uses an existing checkout for every selected direct repository and
+opens a desk for every selected managed repository. Born in alone does not allocate a desk.
 
 `src/worktrees-resolution.ts` owns the pure 2×2 decision. Its input contains the resolved
 Agent capability, normalized repository applicability, checkout location, branch profile,

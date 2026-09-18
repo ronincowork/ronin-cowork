@@ -62,18 +62,18 @@ test('choosing New team requires a valid name before any session type can launch
   assert.doesNotMatch(form, /unnamed new team is no team|isCowork\(\) && team/);
 });
 
-test('Where it works keeps birthplace separate and offers additional workspaces only to Cowork Agents', async () => {
+test('Where it works keeps birthplace separate and offers all workspaces to Cowork Agents', async () => {
   const form = await source('new-agent.js');
   assert.match(form, /request\('\/api\/project-roots\/detail'\)/);
   assert.match(form, /rootRows\.data\?\.roots/);
   assert.doesNotMatch(form, /worktrees/);
   assert.match(form, /v: row\.name, l: row\.title \|\| row\.name/, 'root choices submit the Workspace Folder handle and display the optional title');
   assert.match(form, /label: t\('where\.born_in', 'Born in'\), options: rootRows/);
-  assert.match(form, /label: t\('where\.additional', 'Additional workspaces'\), many: true, after: 'root', options: \(value\) => rootRows\(\)\.filter\(\(row\) => row\.v !== value\.root\)/);
+  assert.match(form, /label: t\('new_agent\.workspaces', 'Workspaces'\), many: true, after: 'root', options: rootRows/);
   assert.match(form, /draft\.type === 'bare_metal_agent' \? \['provider', 'model', 'root', 'launchMode'\]/,
     'bare-metal Agents choose one birthplace and are not offered additional workspaces');
-  assert.match(form, /draft\.repos = \[\]/);
-  assert.match(form, /filter\(\(name\) => name && name !== draft\.root\)/);
+  assert.match(form, /if \(!touched\.repos\) draft\.repos = draft\.root \? \[draft\.root\] : \[\]/);
+  assert.match(form, /\[draft\.root, \.\.\.\(selected\?\.repos \|\| \[\]\)\]/);
   assert.doesNotMatch(form, /no auto desk|extra sessions/i);
 });
 
