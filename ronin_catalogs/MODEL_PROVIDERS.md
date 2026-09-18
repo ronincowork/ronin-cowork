@@ -35,6 +35,7 @@ One `### <Vendor label>` section per provider. Its fields:
 |---|---|
 | `provider` | the vendor id a launch names (`anthropic`, `openai`, …) and the key of `agents.sessions.by_provider` |
 | `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, …) — the join between this catalog and what the machine measures |
+| `native` | the complete ordinary CLI command with model choice delegated to that CLI |
 | `gbrain_disconnected` | the CLI's disconnected-launch flag; scope varies by CLI (see docs/agents), and absence refuses explicit disconnected launches |
 | `live_dangerously` | the CLI's additive flag for the Dangerously launch mode; a provider without one refuses that mode |
 | `maturity` | optional display status: `beta` or `comingSoon`; a provider with no launch rows remains visible only as an unavailable catalog card |
@@ -45,19 +46,22 @@ Then one table, one row per model, **in the order the picker offers them**:
 |---|---|
 | `model` | the model id passed to the CLI, unchanged — its real name, never a euphemism |
 | `tier` | **light** · **standard** · **frontier**: the cost and capability band, as the vendor prices it |
-| `default` | `yes` on the one row a launch that names this provider and no model gets when ⚙ Configuration holds no preference for it; the first row when no row says so |
+| `default` | optional descriptive metadata retained for a reported model; Native, not this marker, is the provider's launch default |
 | `cost` | the vendor's public list price per million tokens, input · output, with the month it was read — a reading, not a contract |
 | `good at` · `not good at` | one line each, from the vendor's own positioning and the public record |
 | `launch` | the complete interactive command for that model — the `session_launch_spec` cell |
 
-Adding a provider is a section; adding a model is a row; never a code path. A provider that
-fills no `light` row simply offers none. Prices move: the date beside each cost says when
-it was read, and a stale reading is dated, never guessed.
+Adding a provider is a section; adding model metadata is a row; never a code path. Native
+is always offered. A named row is offered only when the CLI's captured inventory reports
+that exact id; the row enriches it but never grants availability. A provider that fills no
+`light` row simply offers none. Prices move: the date beside each cost says when it was
+read, and a stale reading is dated, never guessed.
 
 ### Anthropic
 
 - **provider:** `anthropic`
 - **cli:** `claude`
+- **native:** `claude`
 - **gbrain_disconnected:** `--strict-mcp-config`
 - **live_dangerously:** `--dangerously-skip-permissions`
 
@@ -87,6 +91,7 @@ that Claude launch, not only gbrain.
 
 - **provider:** `openai`
 - **cli:** `codex`
+- **native:** `codex`
 - **gbrain_disconnected:** `-c mcp_servers.gbrain.enabled=false`
 - **live_dangerously:** `--dangerously-bypass-approvals-and-sandbox`
 
@@ -115,6 +120,7 @@ refused by Codex in the new tile, and Ronin never substitutes.
 
 - **provider:** `google`
 - **cli:** `gemini`
+- **native:** `gemini`
 - **live_dangerously:** `--yolo`
 
 Model ids are passed unchanged to Gemini CLI's `--model` option. The free tier serves
@@ -139,6 +145,7 @@ first real launch of each is the proof, per `docs/architecture/model-providers.m
 
 - **provider:** `xai`
 - **cli:** `grok`
+- **native:** `grok`
 
 Model ids are passed unchanged to Grok Build's `-m` option. Grok Build declares neither
 an MCP-off flag nor a Dangerously flag, so it launches configured and connected only.
@@ -158,6 +165,7 @@ Written from xAI's published CLI overview and price list, not yet exercised thro
 
 - **provider:** `nous`
 - **cli:** `hermes`
+- **native:** `hermes chat --provider nous`
 
 Hermes Agent runs any provider; these rows are its own Hermes models through the Nous
 Portal (`hermes setup --portal` signs in). Model ids are passed unchanged to

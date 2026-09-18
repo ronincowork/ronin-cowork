@@ -12,7 +12,7 @@ export interface MikaSelection {
   requested_level: MikaLevel;
   provider: string;
   model: string;
-  resolved_level: MikaLevel;
+  resolved_level: MikaLevel | 'native';
   provider_notice: 'default_provider_unavailable' | 'default_provider_has_no_level' | null;
   available_levels: MikaLevel[];
   spec: SessionLaunchSpec;
@@ -68,7 +68,8 @@ export function resolveMikaModel(input: {
   const within = eligible.filter((spec) => spec.provider === provider);
   const available = orderedLevels(within);
   const from = MIKA_LEVELS.indexOf(level);
-  const chosen = MIKA_LEVELS.slice(from).map((tier) => within.find((spec) => spec.tier === tier)).find(Boolean);
+  const named = MIKA_LEVELS.slice(from).map((tier) => within.find((spec) => spec.tier === tier)).find(Boolean);
+  const chosen = named ?? (available.length === 0 ? within.find((spec) => spec.model === 'native') : undefined);
   if (!chosen) {
     throw new MikaUnavailable(
       'mika_no_model_at_level',
@@ -81,7 +82,7 @@ export function resolveMikaModel(input: {
     requested_level: level,
     provider: chosen.provider,
     model: chosen.model,
-    resolved_level: chosen.tier as MikaLevel,
+    resolved_level: chosen.model === 'native' ? 'native' : chosen.tier as MikaLevel,
     provider_notice: general && !generalReady ? 'default_provider_unavailable' : null,
     available_levels: available,
     spec: chosen,

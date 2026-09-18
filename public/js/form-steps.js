@@ -263,7 +263,7 @@ export function templateTray(rows, current, onPick, { includeOwn = true } = {}) 
  */
 let catalog = { rows: [], providers: [], machine: [], measured_at: '', origin: '', updated: '', stock_updated: '', withdrawn: [], loaded: false };
 let inflight = null;
-const CLI_MODEL_INVENTORY = new Set(['claude', 'codex', 'grok']);
+const NATIVE_MODEL = 'native';
 
 export function loadProviderCatalog() {
   if (inflight) return inflight;
@@ -294,7 +294,7 @@ export const providerCatalog = () => catalog;
  */
 export function catalogRows(providers = []) {
   return (Array.isArray(providers) ? providers : []).flatMap((entry) => (Array.isArray(entry?.models) ? entry.models : [])
-    .map((row) => ({ ...row, provider: entry.provider, cli: entry.cli, provider_label: entry.label || entry.provider, origin: entry.origin || 'stock', shadowed: entry.shadowed === true })));
+    .map((row) => ({ ...row, provider: entry.provider, cli: entry.cli, native: entry.native || '', provider_label: entry.label || entry.provider, origin: entry.origin || 'stock', shadowed: entry.shadowed === true })));
 }
 
 /**
@@ -306,19 +306,35 @@ export function catalogRows(providers = []) {
  * the tests feed it rows.
  */
 export function orderedCatalog(rows = [], machine = []) {
-  const marked = (Array.isArray(rows) ? rows : []).filter((row) => row?.provider && row?.model).map((row) => {
+  const source = (Array.isArray(rows) ? rows : []).filter((row) => row?.provider && row?.model);
+  const marked = [];
+  for (const provider of [...new Set(source.map((row) => row.provider))]) {
+    const base = source.find((row) => row.provider === provider);
+    if (!base?.native) continue;
+    const entry = (Array.isArray(machine) ? machine : []).find((item) => item?.id === base.cli) || null;
+    marked.push({ ...base, model: NATIVE_MODEL, tier: '', default: true, cost: '',
+      good_at: t('forms.native_good_at', 'the CLI choosing its own configured or current default model'),
+      not_good_at: t('forms.native_not_good_at', 'pinning a particular model'), origin: 'cli', shadowed: false,
+      operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
+      provider_label: base.provider_label || base.provider, cli_label: entry?.label || base.cli || '',
+      model_list: entry?.model_list || null, model_list_current: true, model_list_installed: entry?.version || '',
+      listed: true, selectable: entry?.activated === true });
+  }
+  for (const row of source) {
     const entry = (Array.isArray(machine) ? machine : []).find((item) => item?.id === row.cli) || null;
     const list = entry?.model_list || null;
+    if (!list) continue;
     const measuredModel = Array.isArray(list?.models) ? list.models.find((model) => model?.slug === row.model) : null;
+    if (!measuredModel) continue;
     const modelListCurrent = Boolean(list?.client_version && entry?.version && list.client_version === entry.version);
     // `off`: the owner turned the provider off — greyed with that word, never the false
     // "not on this machine" (the house rule: disabled, never hidden; and never a lie).
-    return { ...row, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
+    marked.push({ ...row, default: false, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
       provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '',
       model_list: list, model_list_current: modelListCurrent, model_list_installed: entry?.version || '',
       listed: list ? Boolean(measuredModel) : null,
-      selectable: entry?.activated === true && (list ? Boolean(measuredModel) : !CLI_MODEL_INVENTORY.has(row.cli)) };
-  });
+      selectable: entry?.activated === true });
+  }
   for (const entry of Array.isArray(machine) ? machine : []) {
     const base = marked.find((row) => row.cli === entry?.id);
     if (!base || !Array.isArray(entry?.model_list?.models)) continue;
@@ -350,9 +366,9 @@ export const modelWord = (row) => t('forms.model_word', '{model} · {tier}', { m
 
 /** The persisted CLI list is the availability authority; its dates say exactly when it was captured. */
 export const modelAvailabilityFact = (row) => {
+  if (row.model === NATIVE_MODEL) return t('forms.model_native_fact', 'The CLI chooses the model');
   const list = row.model_list;
-  if (!list) return CLI_MODEL_INVENTORY.has(row.cli)
-    ? t('forms.model_list_unknown', 'Availability has not been read from your {cli} yet', { cli: row.cli_label || row.cli }) : '';
+  if (!list) return t('forms.model_list_unknown', 'Availability has not been read from your {cli} yet', { cli: row.cli_label || row.cli });
   const verdict = row.listed ? 'listed' : 'not listed';
   const asOf = list.fetched_at ? ` (as of ${list.fetched_at})` : '';
   if (!row.model_list_current) return t('forms.model_list_stale', '{verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read', {
