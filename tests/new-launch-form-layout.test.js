@@ -19,6 +19,8 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.match(form, /className: 'na-questions',[\s\S]*density: 'tight'/);
   assert.doesNotMatch(form, /key: 'template'.*Apply Template/);
   assert.match(form, /Cowork Agent[\s\S]*Bare-metal Agent[\s\S]*Terminal/);
+  assert.match(form, /Born with Ronin capabilities, behaviors, and assigned Team\./);
+  assert.match(form, /A raw tmux pane, no agent launched, and nothing sent to it\./);
   assert.match(form, /Session type/);
   assert.match(form, /agent_body', 'Agent'/);
   assert.match(form, /Name · required/);

@@ -638,11 +638,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.card_summary:** Session type first — the drawn launch form.
 - **new_agent.new_session:** New session
 - **new_agent.type_cowork:** Cowork Agent
-- **new_agent.type_cowork_sub:** Born with everything Ronin provides on this box.
+- **new_agent.type_cowork_sub:** Born with Ronin capabilities, behaviors, and assigned Team.
 - **new_agent.type_bare:** Bare-metal Agent
 - **new_agent.type_bare_sub:** The provider’s agent and nothing else.
 - **new_agent.type_terminal:** Terminal
-- **new_agent.type_terminal_sub:** A raw tmux pane. No agent is launched and nothing is sent to it.
+- **new_agent.type_terminal_sub:** A raw tmux pane, no agent launched, and nothing sent to it.
 - **new_agent.name_model_kind:** Name, model & kind
 - **new_agent.name_model:** Name & model
 - **new_agent.name_where_model:** Name, where & model
