@@ -19,6 +19,28 @@ feature is all a feature file should contain.
 The style of the product is unchanged and deliberate: dense, dark-first, pro-tool,
 Japanese marks as identity. This page is about how that style is CARRIED, not what it is.
 
+## Surface data ownership
+
+A Workbench entry restores its shape and seats before network reads complete. The surface
+definition is the data boundary: `create()` draws its stable shell, and `show()` or
+`enter()` starts only the reads needed by that surface. It paints saved or already-known
+values first when it can, then enriches choices or status as those reads return. A page
+must not await a catalog for an unopened surface, and a summary must use a light index
+rather than a detail or launch-assembly route.
+
+The current Workbench boundaries are:
+
+| Workbench | Entry/selector reads | Reads owned by a placed surface |
+|---|---|---|
+| Ronin Settings | Desk record; light Workspace Folder index for its count | Defaults: provider catalog + Campaign-default options; Workspace Folders: root details; Installations, Model Providers, and Machine tabs: their own routes |
+| New Project | none | New Agent and New Team each load their own launch seed, templates, Teams, and Workspace Folders |
+| Ronin Setup | garden content and the small completion facts used by its journey selector | the selected Setup surface's own registration, provider, folder, installation, password, or launch data |
+| Cowork / Team | sessions and Team records because they are the selector and seats | commons tabs, New Agent, archive, Cron jobs, documents, and optional Services read on entry to that surface |
+
+`public/js/workbench.js` calls a placed instance's `show()` synchronously. Async work stays
+inside that method; it never becomes a Workbench-wide readiness gate. Shared caches may
+deduplicate the same catalog, but may not broaden what a surface requests.
+
 ## The cascade
 
 `public/style.css` is one file in four `@layer`s — `vendor, foundations, ui, app` —

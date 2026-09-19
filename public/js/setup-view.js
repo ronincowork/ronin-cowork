@@ -217,30 +217,8 @@ export function createSetupView() {
     header: { actions: [themeToggle] },
     title: () => 'Ronin Setup',
     mount: (_host, context) => { ctx = context; },
-    enter: async (context) => {
+    enter: (context) => {
       ctx = context;
-      if (!runtime) {
-        const result = await request('/api/setup/runtime', { cache: 'no-store' });
-        runtime = result.ok ? result.data : { providers: [], activated_count: 0 };
-        environment.setupRuntime = runtime;
-        environment.kinds.hydrate(runtime?.preferences?.kinds || []);
-      }
-      if (!completionLoaded) {
-        const [registration, github] = await Promise.all([
-          request('/api/setup/registration', { cache: 'no-store' }),
-          request('/api/setup/github', { cache: 'no-store' }),
-        ]);
-        completion = {
-          registered: registration.ok && registration.data?.registered === true,
-          github: github.ok && github.data?.authenticated === true,
-          roots: false,
-        };
-        completionLoaded = true;
-      }
-      if (!gardenContent) {
-        const result = await request(GARDEN_CONTENT_URL);
-        gardenContent = normalizeGardenCanvasCatalog(result.ok ? result.data : { schema_version: 2, canvases: {} });
-      }
       const { state: entry } = context.workbenchEntry();
       completion.roots = entry.setupCompletion?.roots === true;
       sceneOverride = Number(entry.sceneOverride) || defaultScene().number;
@@ -248,6 +226,35 @@ export function createSetupView() {
       bench.place(GARDEN_CANVAS_TYPE, 'workspace1');
       paint();
       open(sceneOverride);
+      if (!runtime) {
+        void request('/api/setup/runtime', { cache: 'no-store' }).then((result) => {
+          runtime = result.ok ? result.data : { providers: [], activated_count: 0 };
+          environment.setupRuntime = runtime;
+          environment.kinds.hydrate(runtime?.preferences?.kinds || []);
+          paint();
+        });
+      }
+      if (!completionLoaded) {
+        void Promise.all([
+          request('/api/setup/registration', { cache: 'no-store' }),
+          request('/api/setup/github', { cache: 'no-store' }),
+        ]).then(([registration, github]) => {
+          completion = {
+            registered: registration.ok && registration.data?.registered === true,
+            github: github.ok && github.data?.authenticated === true,
+            roots: completion.roots,
+          };
+          completionLoaded = true;
+          paint();
+        });
+      }
+      if (!gardenContent) {
+        void request(GARDEN_CONTENT_URL).then((result) => {
+          gardenContent = normalizeGardenCanvasCatalog(result.ok ? result.data : { schema_version: 2, canvases: {} });
+          paintedSceneId = null;
+          selectGarden(activeScene());
+        });
+      }
     },
     leave: () => bench.leave(),
     destroy: () => { providerSessions.destroyAll(); bench.leave(); ctx = null; },

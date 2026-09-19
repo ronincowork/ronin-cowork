@@ -19,7 +19,9 @@ test('Campaign defaults use ask() and Output keeps multi-select semantics', asyn
   assert.doesNotMatch(source, /key: 'dial'|ruledRows\('dial'|default_dial/, 'the legacy Control default has no surface');
   assert.doesNotMatch(source, /key: 'features'/);
   assert.match(source, /key: 'behaviours'.*many: true/);
-  assert.match(source, /request\(`\/api\/launch-seed/);
+  assert.match(source, /paint\(\);[\s\S]*?request\(`\/api\/campaign-default-options/,
+    'saved defaults paint before their small option catalogs arrive');
+  assert.doesNotMatch(source, /\/api\/launch-seed/, 'defaults do not assemble an Agent launch');
   assert.match(source, /shape: 'tall'/);
   assert.doesNotMatch(source, /textarea/);
   assert.match(source, /trayHost: questionsRow/, 'the launch-mode tray drops below the row, so neighbouring groups stay anchored');

@@ -110,7 +110,6 @@ export function createLaunchView() {
         seats: { workspace1: TYPES.agent },
       });
       bench.enter(resolved);
-      await refreshTeams();
       for (const [workspace, held] of Object.entries(resolved.seats || {})) {
         const type = typeof held === 'object' ? held.type : held;
         if (!Object.values(TYPES).includes(type)) continue;

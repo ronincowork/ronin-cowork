@@ -28,17 +28,13 @@ test('the fixed Campaign identity does not render its id', async () => {
   assert.match(source, /if \(id\) id\.control\.value/);
 });
 
-test('a Campaign surface placed after the Campaign read is settled at creation, not left loading', async () => {
+test('Campaign surfaces paint directly and are repainted when the Campaign record arrives', async () => {
   const source = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
-  assert.match(source, /campaignRead = true;\s*\n\s*for \(const surface of campaignSurfaces\) surface\.settle\(\);/);
-  assert.match(source, /campaignSurfaces\.add\(coordinated\);[\s\S]*?if \(campaignRead\) coordinated\.settle\(\);/);
-});
-
-test('the Campaign page clears the loading state it set before it paints a surface', async () => {
-  // The Ronin Desk surface's show() is a tab select that never touches surface state; the
-  // wrapper that said "Loading Campaign…" is the one that must take it back.
-  const source = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
-  assert.match(source, /paint: \(\.\.\.args\) => \{ WorkspaceKit\.primitives\.setSurfaceState\(surface\.el, null, ''\); return surface\.show\?\.\(\.\.\.args\); \}/);
+  assert.doesNotMatch(source, /progressiveSurface|campaignSurfaces|campaignRead/);
+  assert.match(source, /loadCampaigns\(\)\.then[\s\S]*?bench\.place\(type, workspace/);
+  assert.doesNotMatch(source, /\/api\/setup\/runtime|\/api\/machine-settings/,
+    'Settings entry does not prefetch data for unopened surfaces');
+  assert.match(source, /\/api\/project-roots\$\{query\}/, 'selector root count uses the light catalog, not repository detail assembly');
 });
 
 test('Settings carries Setup capabilities and first opens with Defaults beside Workspace folders', async () => {
