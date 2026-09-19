@@ -22,7 +22,7 @@ function setSurfaceState(root, state = null, message = '') {
   }
 }
 
-function createSurface(options = {}) {
+export function createSurface(options = {}) {
   const el = node('section', `wk-surface${options.className ? ` ${options.className}` : ''}`);
   if (options.label) el.setAttribute('aria-label', options.label);
   if (options.collapsible) el.dataset.collapsible = '';

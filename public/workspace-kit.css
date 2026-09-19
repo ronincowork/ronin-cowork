@@ -113,7 +113,76 @@
      lives in the Kit's layer so the generic field treatment cannot win by layer order. */
   .ui-bar-place .wk-tab-name { width: 100%; max-width: none; height: auto; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; text-align: center; }
   .ui-bar-place .wk-tab-name:focus-visible { outline: var(--edge-2) solid currentColor; outline-offset: var(--space-1); border-radius: var(--radius-xs); }
-  .wk-channel-service-grow { flex: 1 1 auto; }
+
+  /* ── THE TAB SET ──────────────────────────────────────────────────────────────────
+     SELECTED IS A SHAPE, NOT A LINE (owner, 2026-09-19). The bar is the surface's warm
+     head band; unselected tabs are words lying on it. The selected tab rises to the
+     PANEL'S OWN PLANE and covers the band's bottom edge, so the tab and its panel are
+     one continuous surface and it is the only tab with no line under it. Nothing here
+     underlines anything, and nothing changes size when a tab lights up — colour only,
+     so the row never reflows under the pointer. */
+  .wk-tabset > .wk-tabset-bar { display: flex; flex: 0 0 auto; align-items: stretch; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4) 0; background: var(--cowork-head-bg); border-bottom: var(--cowork-surface-head-edge) solid var(--cowork-head-line); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+
+  /* The scroller holds the tabs and two edge overlays. The overlays are absolute so they
+     take no layout width: a mask that pushed the tabs would change what is cut. */
+  .wk-tabset-scroller { position: relative; display: flex; flex: 1 1 auto; min-width: 0; }
+  .wk-tabset-scroll { flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .wk-tabset-scroll::-webkit-scrollbar { display: none; }
+  .wk-tabset-row { display: flex; align-items: stretch; gap: var(--space-2); height: 100%; }
+
+  .wk-tabset-tab { position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; gap: var(--space-2); scroll-snap-align: start; border: var(--edge) solid transparent; border-bottom: var(--cowork-surface-head-edge) solid transparent; border-radius: var(--radius-md) var(--radius-md) 0 0; background: transparent; color: var(--cowork-head-muted); padding: var(--space-3) var(--space-6); font: inherit; white-space: nowrap; cursor: pointer; transition: background-color var(--motion-quick) var(--ease), border-color var(--motion-quick) var(--ease), color var(--motion-quick) var(--ease); }
+  .wk-tabset-tab[hidden] { display: none; }
+  .wk-tabset-tab:hover:not(:disabled):not([aria-selected='true']) { background: color-mix(in srgb, var(--panel) 45%, transparent); color: var(--cowork-head-fg); }
+  /* The selected tab IS the panel: same fill, and its bottom edge painted in that fill
+     so it erases the band's line beneath it. */
+  .wk-tabset-tab[aria-selected='true'] { background: var(--panel); color: var(--fg-strong); border-color: var(--kaki); box-shadow: 0 var(--cowork-surface-head-edge) 0 var(--panel); }
+  .wk-tabset-tab:disabled { opacity: .5; cursor: default; }
+  .wk-tabset-tab:focus-visible { outline: var(--edge-2) solid var(--focus-ring); outline-offset: calc(-1 * var(--edge-2)); }
+
+  /* A BADGE IS INFORMATION; ATTENTION IS EMPHASIS ON IT. A tab holding something that
+     can be counted says the number, and attention colours that number — a bare mark that
+     needs explaining has failed. The dot is only for a tab with nothing to count.
+     Neither is ever a weight change: bolding the label widened it and shoved every tab
+     to its right sideways. */
+  .wk-tabset-badge { border-radius: var(--radius-pill); background: var(--well); color: var(--muted); padding: var(--space-1) var(--space-3); font-size: var(--text-1); font-variant-numeric: tabular-nums; }
+  .wk-tabset-badge[hidden] { display: none; }
+  .wk-tabset-tab[data-attention='true'] .wk-tabset-badge { background: var(--cowork-head-attention); color: var(--panel); }
+  .wk-tabset-tab[data-attention='true'][aria-selected='true'] .wk-tabset-badge { background: var(--kaki); color: var(--on-strong); }
+  /* The corner mark takes no layout space, so a tab with no count never changes width. */
+  .wk-tabset-dot { position: absolute; top: var(--space-2); right: var(--space-3); width: var(--space-3); height: var(--space-3); border-radius: var(--radius-pill); background: transparent; }
+  .wk-tabset-tab[data-attention='true']:has(.wk-tabset-badge[hidden]) .wk-tabset-dot { background: var(--cowork-head-attention); }
+  .wk-tabset-tab[data-attention='true'][aria-selected='true']:has(.wk-tabset-badge[hidden]) .wk-tabset-dot { background: var(--kaki); }
+
+  /* BOTH CUT EDGES SAY SO. The gradient fades the tabs into the band exactly where they
+     are cut; the chevron inside it is the only way a pointer with no horizontal wheel
+     can reach a tab that has scrolled off, so it is drawn on hover devices only. */
+  .wk-tabset-edge { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; width: var(--space-11); opacity: 0; transition: opacity var(--motion-quick) var(--ease); pointer-events: none; }
+  .wk-tabset-edge[data-side='left'] { left: 0; justify-content: flex-start; background: linear-gradient(to right, var(--cowork-head-bg), transparent); }
+  .wk-tabset-edge[data-side='right'] { right: 0; justify-content: flex-end; background: linear-gradient(to left, var(--cowork-head-bg), transparent); }
+  .wk-tabset-scroller[data-edge='left'] .wk-tabset-edge[data-side='left'],
+  .wk-tabset-scroller[data-edge='right'] .wk-tabset-edge[data-side='right'],
+  .wk-tabset-scroller[data-edge='both'] .wk-tabset-edge { opacity: 1; }
+  .wk-tabset-chevron { display: none; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--cowork-head-fg); padding: 0 var(--space-2); font: inherit; line-height: 1; cursor: pointer; }
+  @media (hover: hover) {
+    .wk-tabset-scroller[data-edge='left'] .wk-tabset-edge[data-side='left'] .wk-tabset-chevron,
+    .wk-tabset-scroller[data-edge='right'] .wk-tabset-edge[data-side='right'] .wk-tabset-chevron,
+    .wk-tabset-scroller[data-edge='both'] .wk-tabset-chevron { display: block; pointer-events: auto; }
+  }
+
+  .wk-tabset-actions { display: flex; align-items: center; flex: 0 0 auto; gap: var(--space-3); }
+  .wk-tabset-actions:empty { display: none; }
+  .wk-tabset-actions .wk-action { min-height: 0; padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
+
+  /* The panel owns fill and one scroll region; what it holds keeps its own padding. */
+  .wk-tabset > .wk-surface-content { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+  .wk-tabset-panel { width: 100%; flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .wk-tabset-panel[hidden] { display: none; }
+  .wk-tabset-panel[data-flush='true'] { overflow: hidden; }
+
+  @media (pointer: coarse) {
+    .wk-tabset > .wk-tabset-bar { --band: calc(32px + 2 * var(--space-3) + var(--edge)); min-height: var(--band); }
+  }
+
   .wk-layout-map { display: flex; align-items: stretch; gap: var(--space-1); height: 1.5rem; width: 4.5rem; padding: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); }
   .wk-layout-map-slot { flex: 1 1 auto; min-width: .5rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); padding: 0; cursor: pointer; touch-action: none; }
   .wk-layout-map-slot[aria-checked='true'] { background: var(--aiiro); border-color: var(--aiiro); }
