@@ -45,6 +45,7 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.match(form, /identityRow\.append\(nameField, teamQuestions\.el\)/);
   assert.match(form, /stepTop\.body\.replaceChildren\(identityRow, questions\.el, instructionsField\)/);
   assert.doesNotMatch(form, /providerModelStones|na-choice-stone|na-mini-stone|stones: true/);
+  assert.match(form, /key: 'behaviours'[\s\S]*density: 'tight', exposed: true/, 'opening Tools and skills exposes its only selector immediately');
 });
 
 test('both workbench entrances use the canonical New Agent form with contextual Team default', async () => {

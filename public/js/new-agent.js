@@ -344,7 +344,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
       options: availableBehaviours().map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading,
         off: row.required ? t('team_config.required', 'Required for each new Agent') : '' })),
-    }] }], { value: { behaviours: draft.books }, density: 'tight', onChange: (value) => {
+    }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
     shelvesHost.replaceChildren(picker.el);
