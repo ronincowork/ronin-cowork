@@ -293,22 +293,18 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     { group: t('new_agent.model_package', 'Model'), fields: [
       { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('forms.default', 'Default'), options: providerRows },
       { key: 'model', label: t('forms.model', 'Model'), blank: t('forms.default', 'Default'), after: 'provider', options: (value) => modelRows(value.provider) },
+      { key: 'teamLead', label: t('new_agent.make_team_lead', 'Make team lead'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] },
     ] },
     { group: t('mandate', 'Mandate'), fields: [
       { key: 'reach', label: t('reach', 'Reach'), options: mandateRows(REACH) },
       { key: 'recruit', label: t('recruit', 'Recruit'), options: mandateRows(RECRUIT) },
       { key: 'output', label: t('output', 'Output'), many: true, options: mandateRows(OUTPUT) },
     ] },
-    { group: t('new_agent.team_role', 'Team role'), fields: [
-      { key: 'teamLead', label: t('new_agent.make_team_lead', 'Make team lead'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] },
-    ] },
     { group: t('where.label', 'Where it works'), fields: [
       { key: 'root', label: t('where.born_in', 'Born in'), options: rootRows },
       { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root', options: rootRows },
+      { key: 'launchMode', label: t('launch_mode.head', 'Launch mode'), options: launchModes },
     ] },
-    { group: t('launch_mode.head', 'Launch mode'), fields: [{
-      key: 'launchMode', label: t('launch_mode.head', 'Launch mode'), options: launchModes,
-    }] },
   ], {
     value: { provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, teamLead: draft.teamLead, root: draft.root, repos: draft.repos, launchMode: draft.launchMode },
     className: 'na-questions',

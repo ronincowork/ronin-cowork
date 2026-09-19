@@ -70,14 +70,12 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
       { group: t('new_agent.model_package', 'Model'), fields: [
         { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('forms.default', 'Default'), options: providerRows },
         { key: 'model', label: t('forms.model', 'Model'), blank: t('forms.default', 'Default'), after: 'provider', options: (value) => modelRows(value.provider) },
+        { key: 'teamLead', label: t('new_agent.make_team_lead', 'Make team lead'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] },
       ] },
       { group: t('mandate', 'Mandate'), fields: [
         { key: 'reach', label: t('reach', 'Reach'), options: mandateRows(REACH) },
         { key: 'recruit', label: t('recruit', 'Recruit'), options: mandateRows(RECRUIT) },
         { key: 'output', label: t('output', 'Output'), many: true, options: mandateRows(OUTPUT) },
-      ] },
-      { group: t('new_agent.team_role', 'Team role'), fields: [
-        { key: 'teamLead', label: t('new_agent.make_team_lead', 'Make team lead'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] },
       ] },
     ], {
       value: { ...row, teamLead: row.team_lead === true },
