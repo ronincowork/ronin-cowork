@@ -42,6 +42,10 @@ const { workspaceTarget, navigateWorkspace, normalizeWorkbenchState } = Workspac
 
 Current load-bearing contracts:
 
+Workbench profiles, per-surface data requirements, restoration, and structured launches
+are specified together in [Workbench construction](workbench.md). This page owns the Kit
+beneath that contract.
+
 - `WorkspaceKit.workbench.create({ profile, tenant, environment, defaultNode })` is the
   only public Workbench constructor. Consumers register reusable surface types in the
   shared `library`, define a named profile as a list of type ids, and provide tenant

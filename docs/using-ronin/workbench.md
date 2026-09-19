@@ -5,9 +5,10 @@ Ronin has Campaign, Cowork, Team, and Setup workbenches. Setup fixes Presets in 
 and opens its ordered selector surfaces in workspace 2; the other workbenches retain their
 ordinary two/four arrangement.
 
-This is the guide for an agent using Ronin. It explains where things are and how to find
-them. The builder and designer contract lives in Ronin Lab; you do not need its frontend,
-layout, or styling details to use a Workbench.
+This is the guide for an Agent using Ronin. It explains where things are and how to find
+them. The implemented builder contract lives in Ronin Cowork's
+[Workbench construction document](../architecture/workbench.md); you do not need its
+frontend, data-loading, or state details to use a Workbench.
 
 The vocabulary comes from `ronin_catalogs/lexicons/professional_en.md`. In particular:
 

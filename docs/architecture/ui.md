@@ -19,27 +19,9 @@ feature is all a feature file should contain.
 The style of the product is unchanged and deliberate: dense, dark-first, pro-tool,
 Japanese marks as identity. This page is about how that style is CARRIED, not what it is.
 
-## Surface data ownership
-
-A Workbench entry restores its shape and seats before network reads complete. The surface
-definition is the data boundary: `create()` draws its stable shell, and `show()` or
-`enter()` starts only the reads needed by that surface. It paints saved or already-known
-values first when it can, then enriches choices or status as those reads return. A page
-must not await a catalog for an unopened surface, and a summary must use a light index
-rather than a detail or launch-assembly route.
-
-The current Workbench boundaries are:
-
-| Workbench | Entry/selector reads | Reads owned by a placed surface |
-|---|---|---|
-| Ronin Settings | Desk record; light Workspace Folder index for its count | Defaults: provider catalog + Campaign-default options; Workspace Folders: root details; Installations, Model Providers, and Machine tabs: their own routes |
-| New Project | none | New Agent and New Team each load their own launch seed, templates, Teams, and Workspace Folders |
-| Ronin Setup | garden content and the small completion facts used by its journey selector | the selected Setup surface's own registration, provider, folder, installation, password, or launch data |
-| Cowork / Team | sessions and Team records because they are the selector and seats | commons tabs, New Agent, archive, Cron jobs, documents, and optional Services read on entry to that surface |
-
-`public/js/workbench.js` calls a placed instance's `show()` synchronously. Async work stays
-inside that method; it never becomes a Workbench-wide readiness gate. Shared caches may
-deduplicate the same catalog, but may not broaden what a surface requests.
+Workbench surface construction, data ownership, restoration, and structured launches are
+one contract: [Workbench construction](workbench.md). This page owns the shared visual,
+interaction, transport, and failure rules those surfaces use.
 
 ## The cascade
 
@@ -337,27 +319,9 @@ a `destroy()` owner at that moment, not speculatively.
 
 ### Workbench entry state
 
-A Workbench entry has three sources with one precedence order:
-
-1. a one-shot structured launch;
-2. that browser tab's remembered Workbench state;
-3. the destination's first-open defaults.
-
-`workspace.js` owns the structured-launch contract. A caller declares the destination,
-route parameter, `replace` or `overlay`, and the requested Workbench state. It never
-temporarily edits the source tab's remembered state. The destination receives a structured
-instruction in its URL, removes it before resolving the entry, and saves the resulting
-ordinary Workbench state.
-Refresh therefore restores the latest state and cannot replay the launch instruction.
-
-`replace` replaces the complete seat map while retaining unrelated destination
-preferences; `overlay` changes only the named seats and fields. Destinations still validate
-surface types against their profile before placement. Missing, malformed, mismatched, or
-unavailable instructions fall back to remembered state and then first-open defaults.
-
-Every programmatic Workbench launch uses `openWorkbenchTab()`. Feature code does not clone
-`sessionStorage`, patch another destination's state temporarily, or add route-specific
-restore branches.
+The precedence and ownership of first-open defaults, remembered refresh state, and
+one-shot structured launches live in
+[Workbench construction](workbench.md#entry-refresh-and-intentional-launch).
 
 The retired embedded Commons' rooms lived in one pane registry consumed by its tab
 strip. A row carried a full label and an optional compact label for the

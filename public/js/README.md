@@ -72,7 +72,7 @@ below describes implementation ownership; use the surface index above to find a 
 | `events.js` | the `/events` socket, birth/death chips, `openSessionSomewhere` |
 | `home.js` | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault` (the provider catalog is form-steps.js's) |
 | `form-steps.js` | the drawn form idiom, and THE ONE PICKER — `providerModelPair`, `loadProviderCatalog`, `orderedCatalog` |
-| Workbench surface definitions | The data boundary: `create()` builds the surface and its `show()`/`enter()` starts only that surface's reads. A Workbench entry paints and seats first; it must not await catalogs for unopened surfaces. Shared selector summaries may read their own light indexes, never a detail or launch-assembly endpoint. |
+| Workbench surface definitions | The data boundary: `create()` builds the surface and its `show()`/`enter()` starts only that surface's reads. [Workbench construction](../../docs/architecture/workbench.md) owns the per-profile inventory, first-open/refresh/structured-launch rules, and dependency contract. |
 | `provider-surface.js` | THE ONE MODEL PROVIDERS SURFACE, seated by Ronin Setup and Ronin Settings — per provider, Yours (the steps and the sign-in tile) then The catalog |
 | `provider-setup-session.js` | the native sign-in tile's one mount, handed to both workbench environments |
 | `garden-canvas-model.js` / `garden-canvas.js` | versioned four-region catalog normalization and the dumb Setup Workspace 1 canvas painter; Setup owns lookup, transitions, and action/media handling |
