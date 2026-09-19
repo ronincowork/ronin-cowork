@@ -82,11 +82,17 @@ test('Where it works keeps birthplace separate and offers all workspaces to Cowo
 });
 
 test('the old New Agent selector implementation and CSS are deleted', async () => {
-  const [parts, css] = await Promise.all([source('form-steps.js'), readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8')]);
+  const [parts, css, askCss] = await Promise.all([
+    source('form-steps.js'),
+    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
+    readFile(new URL('../public/css/ask.css', import.meta.url), 'utf8'),
+  ]);
   assert.doesNotMatch(parts, /providerModelStones/);
   await assert.rejects(source('where-it-works.js'), 'the details popover is gone: Where it works is two ERABI questions everywhere');
   assert.doesNotMatch(css, /na-choice-stone|na-stone|na-mandate-grid|na-model-picker|na-workspace-stone/);
   assert.match(css, /\.na-surface :is\(\.wk-field, \.ask\)\[hidden\] \{ display: none; \}/);
+  assert.match(askCss, /\.ask\[data-exposed='true'\] \.ask-tall \{ height: calc\(var\(--ask-h\) \* 2\); overflow: hidden; \}/,
+    'exposed tall ERABI cards keep one height instead of growing with wrapped names');
 });
 
 test('New Team folds Kind and Template into one optional first row', async () => {
