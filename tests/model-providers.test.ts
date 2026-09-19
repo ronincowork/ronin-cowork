@@ -34,6 +34,7 @@ test('the stock catalog names every provider with its CLI, its tiers and a marke
     assert.ok(AGENTS.some((agent) => agent.id === entry.cli), `${entry.label}: cli ${entry.cli} is in src/agents.ts`);
     assert.ok(entry.models.length > 0, `${entry.label} offers a model`);
     assert.ok(entry.models.filter((row) => row.default).length <= 1, `${entry.label} marks at most one default`);
+    assert.deepEqual(entry.launch_modes, ['configured', 'live_dangerously'], `${entry.label} maps Native and Dangerously`);
     for (const row of entry.models) {
       assert.ok((catalog.TIERS as readonly string[]).includes(row.tier), `${row.model}: tier ${row.tier}`);
       assert.match(row.cost, /\(\d{4}-\d{2}\)/, `${row.model}: the cost reading is dated`);

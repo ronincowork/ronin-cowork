@@ -108,8 +108,8 @@ first real launch of each is the proof, per `docs/architecture/model-providers.m
 - **provider:** `xai`
 - **cli:** `grok`
 
-Model ids are passed unchanged to Grok Build's `-m` option. Grok Build declares no
-Dangerously flag, so it launches configured only.
+Model ids are passed unchanged to Grok Build's `-m` option. Its Agent page maps
+Dangerously to Grok's canonical `--always-approve` spelling.
 Written from xAI's published CLI overview and price list, not yet exercised through Ronin.
 
 | model | tier | default | cost | good at | not good at |
@@ -124,7 +124,7 @@ Written from xAI's published CLI overview and price list, not yet exercised thro
 
 Hermes Agent runs any provider; these rows are its own Hermes models through the Nous
 Portal (`hermes setup --portal` signs in). Model ids are passed unchanged to
-`hermes chat -m`. Hermes declares no Dangerously flag.
+`hermes chat -m`. Its Agent page maps Dangerously to Hermes's `--yolo` spelling.
 Written from Nous's published CLI reference; the Portal lists no public per-token price,
 and none of these cells has yet been exercised through Ronin.
 

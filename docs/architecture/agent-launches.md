@@ -41,12 +41,12 @@ they are deliberately adopted.
 The Launch mode field calls ordinary approval behavior **Native**. It says nothing about
 the separate Model field. If a model is selected, Ronin uses the Model command while
 leaving approval behavior native.
-**Dangerously** appears only when the selected provider's Agent page declares a dangerous
-command. This permits future CLIs to expose only the modes they actually implement.
+Every currently launchable Agent maps **Dangerously** to its own approval-bypass command.
+Future CLIs must declare that mapping before Ronin offers the mode.
 
 ## Open thread: provider-specific launch modes
 
-The shared Launch mode vocabulary stays **Native** and **Dangerously**. Providers also
+The shared Launch mode vocabulary is **Native** and **Dangerously**. Providers also
 offer intermediate policies—Claude permission modes, Codex approval/sandbox policies,
 Gemini `auto_edit` and `plan`, and Grok approval modes—but Ronin does not expose them yet.
 Their meanings do not line up cleanly, so they must not be squeezed into a misleading
