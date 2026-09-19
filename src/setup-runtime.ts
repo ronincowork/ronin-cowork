@@ -118,7 +118,7 @@ export interface SetupRuntimeAnswer {
   measured_at: string;
   roots: Array<{ name: string; label: string; dir: string }>;
   gbrain: { installed: boolean; active: boolean };
-  services: { installed: boolean; activated: boolean; switched_on: boolean; active: boolean };
+  services: { installed: boolean; switched_on: boolean; active: boolean };
   preferences: SetupPreferences;
 }
 
@@ -286,9 +286,8 @@ export async function setupRuntimeAnswer(
     },
     services: {
       installed: installed?.services.installed ?? false,
-      activated: installed?.services.activated ?? false,
       switched_on: installed?.services.switched_on ?? false,
-      active: Boolean(installed?.services.installed && installed.services.activated && installed.services.switched_on && installed.services.loaded.length),
+      active: Boolean(installed?.services.installed && installed.services.switched_on && installed.services.loaded.length),
     },
     preferences: setupPreferences(section),
   };

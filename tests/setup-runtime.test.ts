@@ -188,14 +188,16 @@ test('runtime dependency facts distinguish installed from active gbrain and Serv
     cowork: { release: null, commit: 'abc', dirty: false, startedAt: 'now' },
     services: {
       parts: ['gbrain', 'koe'], loaded: ['gbrain'], parked: [], installed: true,
-      restart_needed: false, activated: true, stage: 'active', switched_on: true,
+      restart_needed: false, stage: 'active', switched_on: true,
     },
     routines: [],
   };
   const facts = await measured({}, []);
   const answer = await runtime.setupRuntimeAnswer({}, facts, { exists: nobody }, installed, catalog);
   assert.deepEqual(answer.gbrain, { installed: true, active: true });
-  assert.deepEqual(answer.services, { installed: true, activated: true, switched_on: true, active: true });
+  // Installed is the gate: a box cannot hold Ronin Services without a registration, so
+  // there is no separate activated fact for a surface to ask about.
+  assert.deepEqual(answer.services, { installed: true, switched_on: true, active: true });
   const parked = await runtime.setupRuntimeAnswer({}, facts, { exists: nobody }, {
     ...installed, services: { ...installed.services, loaded: [], switched_on: false },
   }, catalog);

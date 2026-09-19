@@ -9,7 +9,7 @@ import { buildSystemPanel } from './system.js';
 import { buildArchives } from './archives.js';
 import { refreshHome } from './home.js';
 import { askMika } from './mika.js';
-import { S, serviceOff, capabilityOn } from './state.js';
+import { S, serviceOff } from './state.js';
 import { t } from './lexicon.js';
 import { buildMessageQueue } from './message-queue.js';
 import { choice } from './campaign-desk.js';
@@ -246,11 +246,11 @@ export function coworkCommons(options = {}) {
     { id: 'help', label: t('cowork.tab_help', 'Help desk') },
     { id: 'keypad', label: t('cowork.tab_keypad', 'Keypad') },
   ].filter((c) => (!wanted || wanted.has(c.id)) && (c.id !== 'themes' || options.campaign))
-    // STATS IS ON OR IT IS NOT. Ronin Services needs a registration to install and a
-    // capability must be installed to be switched on, so a tab asks one question and
-    // takes the answer: the room behind it never re-tests the box's entitlement.
-    .map((c) => (c.id === 'health' && !capabilityOn('usage_stats')
-      ? { ...c, panel: services[c.id], disabled: true, title: t('cowork.tab_health_off', 'Stats is not switched on. Ronin Settings → Installations.') }
+    // Stats is off only when its service is not installed, the same test and the same
+    // words the Account rows above use. `serviceOff` takes a pane name: this tab's id is
+    // `health`, the pane is `stats`.
+    .map((c) => (c.id === 'health' && serviceOff('stats')
+      ? { ...c, panel: services[c.id], disabled: true, title: t('commons.tab_off', '{tab} — off, this service is not installed.', { tab: c.label }) }
       : { ...c, panel: services[c.id] }));
   // The tab set's `select` enters the room it lands on, by click, keyboard or code alike,
   // so nothing here patches `select` or listens on the strip to make up for it.
