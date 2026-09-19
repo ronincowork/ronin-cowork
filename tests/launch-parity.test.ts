@@ -187,7 +187,7 @@ test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async
   assert.equal(bare.session_type, 'bare_metal_agent');
   assert.equal(bare.agent, true);
   assert.ok(bare.cmd, 'the provider CLI is resolved');
-  assert.doesNotMatch(bare.cmd, /dangerously/, 'bare metal uses provider configuration unless explicitly changed');
+  assert.doesNotMatch(bare.cmd, /dangerously/, 'bare metal uses Native unless Dangerously is explicitly selected');
   assert.equal(bare.cmd, 'claude', 'no model selection is the Agent CLI’s Native command');
   assert.equal(bare.launch_mode, 'configured');
   assert.ok(bare.launchAgent, 'the launched provider is stamped');
