@@ -14,11 +14,10 @@ const source = async (path) => readFile(new URL(`../${path}`, import.meta.url), 
 
 test('a capability is on or it is not, and one helper answers', async () => {
   const state = await source('public/js/state.js');
-  assert.match(state, /export const capabilityOn = \(name\) => \{/);
-  assert.match(state, /const running = S\.installedServices\?\.capabilities\?\.running;/);
-  // An operator that predates the field answers nothing, which reads as on — the same
-  // convention serviceMissing already follows.
-  assert.match(state, /Array\.isArray\(running\) \? running\.includes\(name\) : true/);
+  assert.match(state, /export const capabilityOn = \(name\) =>\s*!!S\.installedServices\?\.capabilities\?\.running\?\.includes\(name\)/);
+  // Not being in the running list is the whole of being off: no fallback for an older
+  // answer shape, and nothing to migrate.
+  assert.doesNotMatch(state, /capabilityOn[\s\S]{0,200}: true/);
 });
 
 test('the Stats tab is unselectable when Stats is not switched on', async () => {
