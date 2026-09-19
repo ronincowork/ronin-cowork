@@ -81,7 +81,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
       return input;
     };
     const launchModes = [
-      { v: 'configured', l: t('launch_mode.configured', 'Native'), sub: t('launch_mode.configured_sub', 'Use the provider CLI normally; a selected model is the only launch override.') },
+      { v: 'configured', l: t('launch_mode.configured', 'Native'), sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
       { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'), sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') },
     ];
     const defaultsRow = el('div', 'tw-config-wide');

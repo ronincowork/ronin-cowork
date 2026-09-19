@@ -4,15 +4,32 @@ Ronin separates provider facts from Agent CLI commands. The provider catalog say
 provider, CLI and model belong together. Each [`docs/agents`](../agents/README.md) page is
 the one executable authority for how that CLI is launched.
 
-## The standard permutations
+## Two independent choices
+
+New Agent has two fields that can each say **Native**. Native is local to that field: it
+means Ronin supplies no override on that axis.
+
+| Model | Launch mode | Result |
+|---|---|---|
+| Native | Native | Bare CLI command; the CLI chooses its model and approval behavior. |
+| Native | Dangerously | No model argument; use the CLI's approval-bypass form. |
+| Named model | Native | Pass that model; do not override approval behavior. |
+| Named model | Dangerously | Pass that model and use the CLI's approval-bypass form. |
+
+Thus `Model: Native` does not prevent `Launch mode: Dangerously`, and `Launch mode:
+Native` does not prevent an explicit model. Only Native + Native produces the bare CLI
+command. Resume is separate: it revives a known provider conversation and is not either
+a model choice or a launch mode.
+
+## The standard command forms
 
 Every Agent page declares JSON argv arrays for the same set of permutations:
 
 | Form | Meaning |
 |---|---|
-| Native | The CLI executable with no model or permission instruction: for example `codex`. |
-| Model | Native plus the selected provider model. |
-| Dangerously | The CLI's supported approval-bypass form, recorded as a complete command for Native and Model. |
+| Native command | The CLI executable with neither axis overridden: for example `codex`. |
+| Model command | The command with an explicit provider model. |
+| Dangerous commands | The CLI's approval-bypass form, recorded separately with Native or named-model selection. |
 | Resume | The CLI's resume prefix plus a provider conversation id. |
 | New session id | An optional modifier used when Ronin can assign the provider conversation id. |
 | Initial prompt | Whether the launch accepts the brief as a positional argument. |
@@ -21,10 +38,24 @@ Every Agent page declares JSON argv arrays for the same set of permutations:
 page lists useful alternatives separately, but Ronin does not own or expose them until
 they are deliberately adopted.
 
-The UI calls the ordinary mode **Native**. If a model is selected in the separate Model
-field, Ronin uses the Model command; Native means it adds no permission-mode override.
+The Launch mode field calls ordinary approval behavior **Native**. It says nothing about
+the separate Model field. If a model is selected, Ronin uses the Model command while
+leaving approval behavior native.
 **Dangerously** appears only when the selected provider's Agent page declares a dangerous
 command. This permits future CLIs to expose only the modes they actually implement.
+
+## Open thread: provider-specific launch modes
+
+The shared Launch mode vocabulary stays **Native** and **Dangerously**. Providers also
+offer intermediate policies—Claude permission modes, Codex approval/sandbox policies,
+Gemini `auto_edit` and `plan`, and Grok approval modes—but Ronin does not expose them yet.
+Their meanings do not line up cleanly, so they must not be squeezed into a misleading
+universal label.
+
+If adopted later, each mode needs a short provider-specific form label, a complete command
+template in that Agent page, and an end-to-end lifecycle and safety check. The form must
+derive those choices from the selected provider just as it derives Dangerously today.
+Until then, the Agent pages retain them under upstream alternatives for drift review.
 
 ## Resolution
 

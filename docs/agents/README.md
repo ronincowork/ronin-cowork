@@ -16,8 +16,9 @@ CLI. Models, prices and owner overrides belong to the
 [provider catalog](../../ronin_catalogs/MODEL_PROVIDERS.md), parsed only by
 `src/model-providers.ts`. Do not copy model tables into these pages.
 
-Each Agent page is the executable authority for its Native, Model, Dangerously, Resume,
-new-session-id and initial-prompt permutations. `src/agent-launches.ts` reads those argv
+Each Agent page is the executable authority for its no-model/model and
+native-approval/dangerous command combinations, plus Resume, new-session-id and
+initial-prompt forms. `src/agent-launches.ts` reads those argv
 fields; unsupported forms are `—`. This keeps the commands we use in one auditable place
 beside the upstream alternatives we deliberately do not use. `src/agents.ts` owns
 install/update/version and identity-discovery adapters. Each Agent page also owns its

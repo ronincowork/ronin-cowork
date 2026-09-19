@@ -15,15 +15,16 @@ Version: **1.0.24**. Installed version checked; current upstream guide reviewed,
 
 ## Ronin launch sequence
 
-The declarations above are executable documentation. Native means exactly `grok`, with
-no model or permission instruction.
+The declarations above are executable documentation. Model: Native plus Launch mode:
+Native means exactly `grok`; each Native applies only to its field.
 
-| Ronin choice | Command core |
-|---|---|
-| Native | `grok` |
-| Model | `grok --model <model>` |
-| Dangerously | Not exposed by Ronin |
-| Resume | Not used by Ronin; exact identity discovery is unsupported |
+| Model | Launch mode | Command core |
+|---|---|---|
+| Native | Native | `grok` |
+| Named | Native | `grok --model <model>` |
+| Either | Dangerously | Not exposed by Ronin |
+
+Resume is separate and not used by Ronin; exact identity discovery is unsupported.
 
 Ronin appends the initial brief positionally. Upstream Grok accepts `--resume`,
 `--continue`, `--always-approve`, `--permission-mode bypassPermissions`, explicit session

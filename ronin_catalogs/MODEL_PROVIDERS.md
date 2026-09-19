@@ -43,13 +43,13 @@ Then one table, one row per model, **in the order the picker offers them**:
 |---|---|
 | `model` | the model id passed to the CLI, unchanged — its real name, never a euphemism |
 | `tier` | **light** · **standard** · **frontier**: the cost and capability band, as the vendor prices it |
-| `default` | optional descriptive metadata retained for a reported model; Native, not this marker, is the provider's launch default |
+| `default` | optional descriptive metadata retained for a reported model; it does not change what Model: Native means |
 | `cost` | the vendor's public list price per million tokens, input · output, with the month it was read — a reading, not a contract |
 | `good at` · `not good at` | one line each, from the vendor's own positioning and the public record |
 
 Adding a provider is a section; adding model metadata is a row; never a code path. The
-matching `docs/agents/<cli>.md` page owns Native, Model, Dangerously and Resume commands. Native
-is always offered. A named row is offered only when the CLI's captured inventory reports
+matching `docs/agents/<cli>.md` page owns bare, model, dangerous and resume commands. Model:
+Native is always offered and means no model override. A named row is offered only when the CLI's captured inventory reports
 that exact id; the row enriches it but never grants availability. A provider that fills no
 `light` row simply offers none. Prices move: the date beside each cost says when it was
 read, and a stale reading is dated, never guessed.

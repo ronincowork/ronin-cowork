@@ -61,7 +61,7 @@ export function createAgentDefaultsSurface(campaign) {
       ] },
       { group: t('campaign_view.defaults_runtime', 'Runtime'), fields: [
         { key: 'launch_mode', label: t('launch_mode.head', 'Launch mode'), options: [
-          { v: 'configured', l: optionLabel('configured'), sub: t('launch_mode.configured_sub', 'Use the provider CLI normally; a selected model is the only launch override.') },
+          { v: 'configured', l: optionLabel('configured'), sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
           { v: 'live_dangerously', l: optionLabel('live_dangerously'), sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') },
         ] },
       ] },

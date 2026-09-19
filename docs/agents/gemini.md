@@ -15,16 +15,17 @@ Version: **0.60.0**. Installed version and current CLI help inspected; complete 
 
 ## Ronin launch sequence
 
-The declarations above are executable documentation. Native means exactly `gemini`, with
-no model or approval instruction.
+The declarations above are executable documentation. Native + Native means exactly
+`gemini`; each Native applies only to its Model or Launch mode field.
 
-| Ronin choice | Command core |
-|---|---|
-| Native | `gemini` |
-| Model | `gemini --model <model>` |
-| Native · Dangerously | `gemini --approval-mode=yolo` |
-| Model · Dangerously | `gemini --model <model> --approval-mode=yolo` |
-| Resume syntax | `gemini --resume <session>` |
+| Model | Launch mode | Command core |
+|---|---|---|
+| Native | Native | `gemini` |
+| Named | Native | `gemini --model <model>` |
+| Native | Dangerously | `gemini --approval-mode=yolo` |
+| Named | Dangerously | `gemini --model <model> --approval-mode=yolo` |
+
+Resume syntax is separate: `gemini --resume <session>`.
 
 Ronin appends the initial brief positionally. The CLI accepts resume syntax, but Ronin
 does not yet discover an exact Gemini conversation identity, so Archive refuses before

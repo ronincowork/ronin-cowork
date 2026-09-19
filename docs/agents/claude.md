@@ -16,15 +16,17 @@ Version: **2.1.277**. Installed version checked; provider input documentation re
 ## Ronin launch sequence
 
 These declarations above are executable documentation: Ronin reads them to construct the
-process argv. Native means exactly `claude`, with no model or permission instruction.
+process argv. Native + Native means exactly `claude`; each Native applies only to its
+Model or Launch mode field.
 
-| Ronin choice | Command core |
-|---|---|
-| Native | `claude` |
-| Model | `claude --model <model>` |
-| Native · Dangerously | `claude --dangerously-skip-permissions` |
-| Model · Dangerously | `claude --model <model> --dangerously-skip-permissions` |
-| Resume | `claude --resume <session-id>` |
+| Model | Launch mode | Command core |
+|---|---|---|
+| Native | Native | `claude` |
+| Named | Native | `claude --model <model>` |
+| Native | Dangerously | `claude --dangerously-skip-permissions` |
+| Named | Dangerously | `claude --model <model> --dangerously-skip-permissions` |
+
+Resume is separate: `claude --resume <session-id>`.
 
 For a new Ronin session, the lifecycle envelope inserts `--session-id <new-uuid>` after
 the executable and appends the initial brief positionally. Those are lifecycle mechanics,

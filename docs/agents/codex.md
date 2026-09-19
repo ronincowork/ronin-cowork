@@ -15,16 +15,17 @@ Version: **0.153.4**. Installed version and tagged upstream input source reviewe
 
 ## Ronin launch sequence
 
-The declarations above are executable documentation. Native means exactly `codex`, with
-no model, permission, or MCP instruction.
+The declarations above are executable documentation. Native + Native means exactly
+`codex`; each Native applies only to its Model or Launch mode field.
 
-| Ronin choice | Command core |
-|---|---|
-| Native | `codex` |
-| Model | `codex --model <model>` |
-| Native · Dangerously | `codex --dangerously-bypass-approvals-and-sandbox` |
-| Model · Dangerously | `codex --model <model> --dangerously-bypass-approvals-and-sandbox` |
-| Resume | `codex resume <session-id>` |
+| Model | Launch mode | Command core |
+|---|---|---|
+| Native | Native | `codex` |
+| Named | Native | `codex --model <model>` |
+| Native | Dangerously | `codex --dangerously-bypass-approvals-and-sandbox` |
+| Named | Dangerously | `codex --model <model> --dangerously-bypass-approvals-and-sandbox` |
+
+Resume is separate: `codex resume <session-id>`.
 
 For a new session Ronin appends the initial brief positionally. Codex owns the new
 conversation identity; Ronin discovers the exact identity after launch rather than
