@@ -5,27 +5,22 @@ import { readFile } from 'node:fs/promises';
 const source = async (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 /**
- * ONE GATE, NOT CHECKS DOWN THE STREET (owner, 2026-09-19). Ronin Services cannot be
- * installed without a registration, and a capability cannot be switched on unless it is
- * installed — so ON MEANS IT WORKS. A surface asks that one question and takes the
- * answer; no room behind a tab re-tests the box's entitlement, and no tab invents its own
- * sentence about why a feature is missing.
+ * THE GATE IS INSTALLED, YES OR NO (owner, 2026-09-19). Ronin Services cannot be
+ * installed without a registration, so installed means it works. Nothing downstream asks
+ * a second question, and no tab invents its own sentence about why a feature is missing.
  */
 
-test('a capability is on or it is not, and one helper answers', async () => {
-  const state = await source('public/js/state.js');
-  assert.match(state, /export const capabilityOn = \(name\) =>\s*!!S\.installedServices\?\.capabilities\?\.running\?\.includes\(name\)/);
-  // Not being in the running list is the whole of being off: no fallback for an older
-  // answer shape, and nothing to migrate.
-  assert.doesNotMatch(state, /capabilityOn[\s\S]{0,200}: true/);
-});
-
-test('the Stats tab is unselectable when Stats is not switched on', async () => {
-  const commons = await source('public/js/cowork-commons.js');
-  assert.match(commons, /import \{ S, serviceOff, capabilityOn \} from '\.\/state\.js'/);
-  assert.match(commons, /c\.id === 'health' && !capabilityOn\('usage_stats'\)/);
-  // Installed and unusable: the tab keeps its place and names what is missing.
-  assert.match(commons, /disabled: true, title: t\('cowork\.tab_health_off'/);
+test('the Stats tab is unselectable only when its service is not installed', async () => {
+  const [commons, state] = await Promise.all([source('public/js/cowork-commons.js'), source('public/js/state.js')]);
+  // serviceOff takes a PANE name; this tab's id is `health` and the pane is `stats`.
+  assert.match(state, /PANE_SERVICE = \{[^}]*stats: 'counting'/);
+  assert.match(commons, /c\.id === 'health' && serviceOff\('stats'\)/);
+  // The same test and the same words the Account rows beside it already use.
+  assert.match(commons, /disabled: true, title: t\('commons\.tab_off'/);
+  assert.match(commons, /if \(serviceOff\(r\.id\)\) \{/);
+  // No second question about entitlement, and no helper of its own to ask it with.
+  assert.doesNotMatch(commons, /capabilityOn|entitle/i);
+  assert.doesNotMatch(state, /capabilityOn/);
 });
 
 test('the Stats room reports what the machine said, never a guess of its own', async () => {
