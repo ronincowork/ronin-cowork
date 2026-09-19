@@ -50,7 +50,7 @@ export const SERVICE_COMPONENTS = Object.freeze([
   { id: 'terminal_transcript', label: 'Terminal transcript', status: 'comingSoon', needs: 'Records terminal activity for transcript views and downstream summaries.' },
   { id: 'voice_hotwords', label: 'Voice & Hotwords', status: 'comingSoon', needs: 'Adds voice tools and corrections for words dictation commonly mishears.' },
   { id: 'usage_stats', label: 'Usage stats', status: 'beta', needs: 'Keeps local usage counts without storing transcript content.' },
-  { id: 'machine_status', label: 'Machine status', status: 'beta', needs: 'Shows this box\'s memory, swap and load in the header.' },
+  { id: 'machine_status', label: 'Machine status', status: 'beta', needs: 'Shows memory, swap and load for this box in the header.' },
   { id: 'project_coordinator', label: 'Project coordinator', status: 'beta', needs: 'Watches active projects and prompts Agents to keep status and summaries current.' },
   { id: 'local_weights', label: 'Local weights', status: 'beta', needs: 'Provides locally stored model weights for features that need them.' },
 ]);
@@ -392,7 +392,7 @@ async function inlineServicesMark(host) {
   host.querySelector('svg')?.setAttribute('aria-hidden', 'true');
 }
 
-/** Ronin Services: beta intro, stable lifecycle, then six persistent feature controls. */
+/** Ronin Services: beta intro, stable lifecycle, then seven persistent feature controls. */
 export function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
   const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);

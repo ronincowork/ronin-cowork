@@ -1,7 +1,7 @@
 import { readMachineSettingsSection, writeMachineSettings } from './machine-settings.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
 import { parseProviderSummary, type ProviderSummary } from './model-providers.js';
-import { SERVICE_CAPABILITY_PARTS } from './parts.js';
+import { CAPABILITY_ON_BY_DEFAULT, SERVICE_CAPABILITY_PARTS } from './parts.js';
 
 async function readCampaigns(): Promise<Record<string, unknown>> {
   return readMachineSettingsSection<Record<string, unknown>>('campaigns', {});
@@ -92,12 +92,10 @@ const DESK_VALUE_MAX = 120;
 const bucket = (v: unknown): Record<string, unknown> =>
   v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 
-/** A new Campaign's capability map: every capability written down, all off except the ones
- * that are on by default. Machine status is one: the header gauge predates its switch, so
- * the switch arriving must not turn the gauge off. */
-const CAPABILITIES_ON_BY_DEFAULT = new Set(['machine_status']);
+/** A new Campaign writes every capability down, reading what a missing choice means from
+ * the parts layer rather than inventing a default of its own. */
 const emptyServiceCapabilities = (): Record<string, boolean> =>
-  Object.fromEntries(Object.keys(SERVICE_CAPABILITY_PARTS).map((name) => [name, CAPABILITIES_ON_BY_DEFAULT.has(name)]));
+  Object.fromEntries(Object.keys(SERVICE_CAPABILITY_PARTS).map((name) => [name, CAPABILITY_ON_BY_DEFAULT.has(name)]));
 
 const capabilitySettings = (raw: Record<string, boolean>): Record<string, boolean> => {
   const capabilityKeys = new Set(Object.keys(SERVICE_CAPABILITY_PARTS));
@@ -112,8 +110,7 @@ const capabilitySettings = (raw: Record<string, boolean>): Record<string, boolea
   out.terminal_transcript = explicit('terminal_transcript', false);
   out.voice_hotwords = explicit('voice_hotwords', false);
   out.usage_stats = explicit('usage_stats', raw.counting === true);
-  // Machine status is on unless it is switched off: the header gauge predates its switch.
-  out.machine_status = explicit('machine_status', true);
+  out.machine_status = explicit('machine_status', CAPABILITY_ON_BY_DEFAULT.has('machine_status'));
   out.project_coordinator = explicit('project_coordinator', raw.koshi === true);
   out.local_weights = explicit('local_weights', false);
   return out;
