@@ -227,6 +227,7 @@
   .fs-step-help { margin: 0; color: var(--muted); font-size: var(--form-note); line-height: 1.5; }
   .na-defaults-note > p { margin: 0; }
   .na-defaults-links { margin-top: var(--space-1) !important; font-weight: 700; }
+  .na-defaults-links a { color: inherit; font: inherit; text-decoration: none; }
   .fs-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: .07em; }
   .fs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 4), 1fr)); gap: var(--space-3); }
 
