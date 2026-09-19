@@ -10,7 +10,7 @@ import { launchTeamAgents } from './team-loader.js';
 import {
   createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab, seedReservedWorkspaceTab } from './workspace.js';
+import { closeWorkspaceTab, openWorkbenchTab, reserveWorkspaceTab } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -496,8 +496,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
         born: born.length ? born.join(', ') : t('forms.none', 'none'),
         names: refused.map(({ row }) => row.name).join(', '),
       }));
-      seedReservedWorkspaceTab(launchTab, 'team', { tabName: '' });
-      openWorkspaceTab('team', name, launchTab);
+      openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
       return;
     }
     notice.set('', '');
@@ -505,8 +504,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     // The reserved tab cloned the opener's sessionStorage when it was opened. A Team tab
     // name belongs to that older tab, not to the Team born here; clear it so the new page
     // falls back to the roster title (and ultimately the Team name).
-    seedReservedWorkspaceTab(launchTab, 'team', { tabName: '' });
-    openWorkspaceTab('team', name, launchTab);
+    openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
     await created?.(name);
     await consumed?.();
   }

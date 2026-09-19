@@ -71,11 +71,12 @@ test('the integrated Setup/Cowork adapters use the ordinary launch routes', asyn
   ]);
   assert.match(setup, /reserveLaunchTab: reserveWorkspaceTab/);
   assert.match(cowork, /reserveLaunchTab: reserveWorkspaceTab/);
-  assert.match(cowork, /customize: \(\{ template, user_message \} = \{\}\) => openWorkspaceStateTab\(ctx, 'launch'/);
+  assert.match(cowork, /customize: \(\{ template, user_message \} = \{\}\) => openWorkbenchTab\(\{ destination: 'launch', mode: 'overlay'/);
   assert.doesNotMatch(cowork, /customize: \(\) => ctx\?\.navigate\('launch'\)/);
-  assert.match(workspace, /context\.patchViewState\(view, viewPatch\);[\s\S]*reserveWorkspaceTab\(\);[\s\S]*context\.patchViewState\(view, restore\);[\s\S]*openWorkspaceTab\(view, param, tab\)/);
-  assert.match(launchView, /customize\.template\.shelf === 'agents' \? TYPES\.agent : TYPES\.team/);
-  assert.match(launchView, /template: customize\.template\.name, prompt: String\(customize\.user_message/);
+  assert.match(workspace, /openWorkbenchTab[\s\S]*consumeWorkbenchLaunch[\s\S]*resolveWorkbenchState/);
+  assert.match(cowork, /template\?\.shelf === 'agents' \? 'launch\.agent' : 'launch\.team'/);
+  assert.match(cowork, /detail: \{ template: template\?\.name \|\| '', prompt: String\(user_message/);
+  assert.match(launchView, /bench\.place\(type, workspace, typeof held === 'object' \? held\.detail \|\| held : \{\}\)/);
   assert.match(agentForm, /templateEntryPlan\(\{ currentKind: draft\.kind, kindTouched: draft\.kindTouched, templates, template: detail\.template \}\);[\s\S]*if \(entry\.template\) applyTemplate\(entry\.template\)/);
   assert.match(teamForm, /applyTemplate\(detail\.template\)/);
   assert.match(launch, /request\('\/api\/launch'/);

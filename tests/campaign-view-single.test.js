@@ -55,6 +55,9 @@ test('Settings carries Setup capabilities and starts with Mika beside an empty w
   assert.match(source, /ensureAndPlaceMika\('workspace1'\)/);
   assert.match(source, /bench\.restoreDefault\('workspace2'\)/);
   assert.doesNotMatch(source, /const DEFAULT_VIEW/);
+  assert.match(source, /const \{ state: entry, launched \} = context\.workbenchEntry\(\)/,
+    'Settings resolves intentional launches before remembered and first-open state');
+  assert.doesNotMatch(source, /context\.param === 'defaults'/, 'Settings has no link-specific restoration branch');
 });
 
 test('Campaign delegates Workspace folders assembly with scope and no future-root arrangement default', async () => {

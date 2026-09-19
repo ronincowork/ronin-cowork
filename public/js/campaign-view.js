@@ -19,7 +19,7 @@ import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js'
 import { readyMika } from './mika-ready.js';
 import { createMikaHelpPanel, createMikaTilePool } from './mika.js';
 import { toast } from './ui.js';
-import { openLaunchForm } from './workspace.js';
+import { openWorkbenchTab } from './workspace.js';
 import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { WORKBENCH_HEADER } from './workspace-contract.js';
@@ -152,7 +152,9 @@ export function createCampaignView() {
     setupRuntime: null,
     mountProviderSetupSession: providerSessions.mountProviderSetupSession,
     showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
-    openLaunchForm: ({ kind, seed = {} } = {}) => openLaunchForm(ctx, { kind, seed }),
+    openLaunchForm: ({ kind, seed = {} } = {}) => openWorkbenchTab({ destination: 'launch', param: kind, mode: 'overlay', state: {
+      selected: 'workspace1', seats: { workspace1: { type: `launch.${kind}`, detail: seed } },
+    } }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     sessions: () => [{
       key: MIKA_SESSION,
@@ -224,17 +226,22 @@ export function createCampaignView() {
       campaignRead = false;
       for (const surface of campaignSurfaces) surface.begin();
       const stored = context.viewState('campaign') || {};
+      const { state: entry, launched } = context.workbenchEntry();
       thinSelectorCards = stored.selectorDensity !== 'thick';
       paintDensityToggle();
-      const typed = teamWorkspaceState(context.state, stored, bench.declaration);
-      bench.enter({ ...typed, ...stored });
-      for (const id of bench.ids) { const type = LEGACY[typed.seats[id]] || typed.seats[id]; if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id); }
+      const typed = teamWorkspaceState(context.state, entry, bench.declaration);
+      bench.enter({ ...typed, ...entry });
+      for (const id of bench.ids) {
+        const held = typed.seats[id];
+        const type = typeof held === 'object' ? held.type : LEGACY[held] || held;
+        if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id, typeof held === 'object' ? held : {});
+      }
       bench.setCount(2);
-      if (!context.viewState('campaign')?.opened) {
+      if (!launched && !context.viewState('campaign')?.opened) {
         bench.select('workspace1');
         ctx?.patchViewState('campaign', { opened: true });
       }
-      if (!stored.mikaDefaultV1) {
+      if (!launched && !stored.mikaDefaultV1) {
         bench.restoreDefault('workspace2');
         void ensureAndPlaceMika('workspace1');
         ctx?.patchViewState('campaign', { mikaDefaultV1: true });

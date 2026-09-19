@@ -16,7 +16,7 @@ import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { openWorkspaceStateTab, openWorkspaceTab, reserveWorkspaceTab, seedReservedWorkspaceTab } from './workspace.js';
+import { openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { PRESETS_TYPE, createPresetsSurface, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { refreshDesks } from './desks.js';
@@ -311,14 +311,9 @@ export function createCoworkView(options = {}) {
           openTeamDefaults: (name) => {
             if (!name) return;
             if (!campaign && name === team) putCommons(oppositeSeat(id), 'team-configuration');
-            else openWorkspaceStateTab(ctx, 'team', { count: 2, selected: 'workspace1', seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: '' } }, name);
+            else openWorkbenchTab({ destination: 'team', param: name, mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: DISMISSED_WORKSPACE } } });
           },
-          openDeskDefaults: () => {
-            const settingsTab = reserveWorkspaceTab();
-            if (!settingsTab) return;
-            seedReservedWorkspaceTab(settingsTab, 'campaign', { count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' } });
-            openWorkspaceTab('campaign', '', settingsTab);
-          },
+          openDeskDefaults: () => openWorkbenchTab({ destination: 'campaign', mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' } } }),
           connect: async (name) => {
             await fetchSessions();
             return connectSession(name, id);
@@ -330,7 +325,9 @@ export function createCoworkView(options = {}) {
       return { el: newAgentBySeat[id].el, show: (detail) => void newAgentBySeat[id].enter(detail) };
     },
     presets: (id) => createPresetsSurface({ environment: {
-      customize: ({ template, user_message } = {}) => openWorkspaceStateTab(ctx, 'launch', { customize: { template, user_message: String(user_message || '') } }),
+      customize: ({ template, user_message } = {}) => openWorkbenchTab({ destination: 'launch', mode: 'overlay', state: {
+        selected: 'workspace1', seats: { workspace1: { type: template?.shelf === 'agents' ? 'launch.agent' : 'launch.team', detail: { template: template?.name || '', prompt: String(user_message || '') } } },
+      } }),
       launch: launchPresetPlan,
       launchUrl: presetLaunchUrl,
       reserveLaunchTab: reserveWorkspaceTab,
@@ -832,13 +829,14 @@ export function createCoworkView(options = {}) {
       stopMessageAttention = watchMessageQueueAttention();
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = campaign ? '' : context.param || context.state?.team || '';
-      thinSelectorCards = context.viewState(viewKey)?.[campaign ? 'teamCardDensity' : 'agentCardDensity'] !== 'thick';
+      const { state: entry } = context.workbenchEntry();
+      thinSelectorCards = entry[campaign ? 'teamCardDensity' : 'agentCardDensity'] !== 'thick';
       paintDensityToggle();
       setBarLabel();
-      const typed = teamWorkspaceState(context.state, context.viewState(viewKey), bench.declaration);
+      const typed = teamWorkspaceState(context.state, entry, bench.declaration);
       // What each workspace remembers holding; the old one-seat focusedSession lands in
       // the first workspace, once. With nothing remembered: the lead left, the commons right.
-      bench.enter({ arrangement: typed.arrangement, count: context.viewState(viewKey)?.count, selected: context.viewState(viewKey)?.selected });
+      bench.enter({ arrangement: typed.arrangement, count: entry.count, selected: entry.selected });
       remembered = { ...typed.seats };
       if (!Object.keys(remembered).length) remembered = typed.focusedSession ? { workspace1: typed.focusedSession } : {};
       const members = restorationMembers();

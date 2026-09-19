@@ -237,10 +237,10 @@ export function createSetupView() {
         const result = await request(GARDEN_CONTENT_URL);
         gardenContent = normalizeGardenCanvasCatalog(result.ok ? result.data : { schema_version: 2, canvases: {} });
       }
-      const stored = context.viewState('setup') || {};
-      completion.roots = stored.setupCompletion?.roots === true;
-      sceneOverride = defaultScene().number;
-      bench.enter({ ...stored, count: 2, arrangement: { ...ARRANGEMENT, widths: stored.arrangement?.widths || ARRANGEMENT.widths } });
+      const { state: entry } = context.workbenchEntry();
+      completion.roots = entry.setupCompletion?.roots === true;
+      sceneOverride = Number(entry.sceneOverride) || defaultScene().number;
+      bench.enter({ ...entry, count: 2, arrangement: { ...ARRANGEMENT, widths: entry.arrangement?.widths || ARRANGEMENT.widths } });
       bench.setCount(2);
       bench.place(GARDEN_CANVAS_TYPE, 'workspace1');
       paint();

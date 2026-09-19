@@ -83,6 +83,17 @@ If a remembered surface is no longer available at the current scope, its workspa
 back empty. Check the discovery column: it is the current answer to what can be opened
 here.
 
+## Intentional openings
+
+Some links open a Workbench for a specific task. They may choose its initial surfaces and
+selected workspace—for example, **Desk defaults** opens Defaults beside Launch your own.
+That intentional arrangement wins for the first opening only. From then on it is an
+ordinary Workbench arrangement: moving or replacing surfaces is remembered, and refreshing
+returns to the latest arrangement rather than replaying the original link.
+
+An ordinary Workbench link carries no requested arrangement. It recalls what that browser
+tab remembered, or uses the Workbench's first-open defaults when nothing has been remembered.
+
 ## The permanent surface head
 
 Every discovery column and surface keeps a visible head of the same depth. Depending on

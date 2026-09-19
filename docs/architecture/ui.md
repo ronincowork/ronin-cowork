@@ -313,6 +313,30 @@ a `destroy()` owner at that moment, not speculatively.
 
 ## Navigation
 
+### Workbench entry state
+
+A Workbench entry has three sources with one precedence order:
+
+1. a one-shot structured launch;
+2. that browser tab's remembered Workbench state;
+3. the destination's first-open defaults.
+
+`workspace.js` owns the structured-launch contract. A caller declares the destination,
+route parameter, `replace` or `overlay`, and the requested Workbench state. It never
+temporarily edits the source tab's remembered state. The destination receives an opaque
+URL token, claims the corresponding short-lived browser-storage payload once, removes the
+token from its URL, resolves the entry, and saves the resulting ordinary Workbench state.
+Refresh therefore restores the latest state and cannot replay the launch instruction.
+
+`replace` replaces the complete seat map while retaining unrelated destination
+preferences; `overlay` changes only the named seats and fields. Destinations still validate
+surface types against their profile before placement. Missing, expired, mismatched, or
+unavailable instructions fall back to remembered state and then first-open defaults.
+
+Every programmatic Workbench launch uses `openWorkbenchTab()`. Feature code does not clone
+`sessionStorage`, patch another destination's state temporarily, or add route-specific
+restore branches.
+
 The retired embedded Commons' rooms lived in one pane registry consumed by its tab
 strip. A row carried a full label and an optional compact label for the
 402px strip, and a hint. A new room is one registry row plus one feature module;

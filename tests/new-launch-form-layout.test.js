@@ -63,8 +63,7 @@ test('both workbench entrances use the canonical New Agent form with contextual 
   assert.match(cowork, /profiles\.define\(WB_PROFILES\.team, \[WB_TYPES\.commons, WB_TYPES\.kanban, WB_TYPES\.terminal, WB_TYPES\.newAgent/);
   assert.match(cowork, /const newAgentBySeat = \{\};[\s\S]*newAgent: \(id, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{[\s\S]*consumed,[\s\S]*team: \(\) =>/);
   assert.match(cowork, /openTeamDefaults:[\s\S]*putCommons\(oppositeSeat\(id\), 'team-configuration'\)/);
-  assert.match(cowork, /openDeskDefaults:[\s\S]*reserveWorkspaceTab\(\)[\s\S]*seedReservedWorkspaceTab\(settingsTab, 'campaign',[\s\S]*workspace1: 'campaign\.defaults'[\s\S]*workspace2: 'setup\.launch-own'[\s\S]*openWorkspaceTab\('campaign', '', settingsTab\)/,
-    'Desk defaults overwrites remembered Settings surfaces in the reserved destination tab');
+  assert.match(cowork, /openDeskDefaults: \(\) => openWorkbenchTab\(\{ destination: 'campaign', mode: 'replace',[\s\S]*workspace1: 'campaign\.defaults'[\s\S]*workspace2: 'setup\.launch-own'/);
   assert.match(cowork, /connect: async \(name\) => \{\s*await fetchSessions\(\);\s*return connectSession\(name, id\)/);
   assert.match(cowork, /const live = new Set\(S\.sessions\.map/, 'a newborn is not discarded against the slower home reading');
   assert.match(cowork, /'team\.add-agent': WB_TYPES\.newAgent/);
@@ -235,6 +234,6 @@ test('New Team checks names only for a cast and opens partial Teams with exact r
   assert.match(form, /if \(picks\.length\) \{[\s\S]*request\('\/api\/sessions'/);
   assert.match(form, /const born = outcomes\.filter\(\(\{ result \}\) => result\?\.ok\)/);
   assert.match(form, /Team created\. Launched \{launched\} of \{total\} Agents: \{born\}\. Failed: \{names\}/);
-  assert.match(form, /if \(refused\.length\) \{[\s\S]*seedReservedWorkspaceTab\(launchTab, 'team',[\s\S]*openWorkspaceTab\('team', name, launchTab\);[\s\S]*return;/);
+  assert.match(form, /if \(refused\.length\) \{[\s\S]*openWorkbenchTab\(\{ destination: 'team', param: name, mode: 'overlay',[\s\S]*return;/);
   assert.doesNotMatch(form, /if \(refused\.length\) \{\s*closeWorkspaceTab/);
 });

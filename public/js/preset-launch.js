@@ -1,6 +1,6 @@
 /* Browser adapter from the Presets shell to Ronin's ordinary launch routes. */
 import { request } from './request.js';
-import { seedReservedWorkspaceTab } from './workspace.js';
+import { workbenchLaunchUrl } from './workspace.js';
 import { launchTeamAgents } from './team-loader.js';
 
 const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 34);
@@ -166,12 +166,12 @@ export function presetWorkspaceState(plan) {
   return Object.keys(seats).length ? { count: plan.count, seats, ...(plan.arrangement ? { arrangement: plan.arrangement } : {}) } : null;
 }
 
-export function presetLaunchUrl(data = {}, plan = null, tab = null) {
+export function presetLaunchUrl(data = {}, plan = null) {
   const url = new URL(location.href);
   const team = data.urlView === 'team' && data.team;
   const view = team ? 'team' : 'cowork';
   const workspaceState = presetWorkspaceState(plan);
-  if (workspaceState) seedReservedWorkspaceTab(tab, view, workspaceState);
+  if (workspaceState) return workbenchLaunchUrl({ destination: view, param: team ? data.team : '', mode: 'replace', state: workspaceState });
   url.hash = team ? `#/team/${encodeURIComponent(data.team)}` : '#/cowork';
   return url.href;
 }

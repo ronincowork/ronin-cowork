@@ -80,6 +80,9 @@ Current load-bearing contracts:
   not permission for new consumers to add another rail or selection engine.
 - Navigation uses `workspaceTarget()` and `navigateWorkspace()`. Views use shell state,
   `viewState()` and `patchViewState()` rather than private history or storage engines.
+  Cross-tab Workbench doors use `openWorkbenchTab()`; destinations consume and resolve its
+  one-shot state before restoration. Feature modules do not seed another tab's storage or
+  temporarily mutate the source tab to influence a launch.
 
 ## CSS and skin governance
 

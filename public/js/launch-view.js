@@ -14,27 +14,6 @@ const PROFILE = 'launch';
 const TYPES = Object.freeze({ team: 'launch.team', agent: 'launch.agent', help: 'launch.help', document: 'document' });
 const node = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
-/** Pure entry decision: Customize wins; a generic preload is one-shot behind it. */
-export function launchEntryPlan(stored = {}) {
-  const customize = stored.customize && typeof stored.customize === 'object' ? stored.customize : null;
-  if (customize?.template?.name && ['teams', 'agents'].includes(customize.template.shelf)) {
-    return { kind: 'customize', placements: [{
-      workspace: 'workspace1', type: customize.template.shelf === 'agents' ? TYPES.agent : TYPES.team,
-      detail: { template: customize.template.name, prompt: String(customize.user_message || '') },
-    }], clear: ['customize'] };
-  }
-  const preload = stored.preload && typeof stored.preload === 'object' ? stored.preload : null;
-  const seed = preload?.seed && typeof preload.seed === 'object' ? preload.seed : {};
-  if (preload?.kind === 'template') return { kind: 'template', placements: [
-    { workspace: 'workspace1', type: TYPES.agent, detail: seed },
-    { workspace: 'workspace2', type: TYPES.team, detail: seed },
-  ], clear: ['preload'] };
-  if (preload && ['agent', 'team'].includes(preload.kind)) return {
-    kind: preload.kind, placements: [{ workspace: 'workspace1', type: TYPES[preload.kind], detail: seed }], clear: ['preload'],
-  };
-  return { kind: '', placements: [], clear: preload ? ['preload'] : [] };
-}
-
 function registerLaunchSurfaces() {
   registerFeedbackSurface();
   const { library, profiles } = WorkspaceKit.workbench;
@@ -127,37 +106,21 @@ export function createLaunchView() {
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {
       ctx = context;
-      const stored = context.viewState('launch') || {};
-      const entry = launchEntryPlan(stored);
-      bench.enter(stored);
+      const { state: resolved } = context.workbenchEntry();
+      bench.enter(resolved);
       await refreshTeams();
       let placed = false;
-      for (const [workspace, held] of Object.entries(stored.seats || {})) {
+      for (const [workspace, held] of Object.entries(resolved.seats || {})) {
         const type = typeof held === 'object' ? held.type : held;
         if (!Object.values(TYPES).includes(type)) continue;
-        bench.place(type, workspace);
+        bench.place(type, workspace, typeof held === 'object' ? held.detail || held : {});
         placed = true;
-      }
-      if (entry.kind === 'customize') {
-        const placement = entry.placements[0];
-        bench.place(placement.type, placement.workspace, placement.detail);
-        bench.select('workspace1');
-        context.patchViewState('launch', { customize: null });
-        placed = true;
-      } else if (entry.kind) {
-        if (entry.kind === 'template') bench.setCount(2);
-        for (const placement of entry.placements) bench.place(placement.type, placement.workspace, placement.detail);
-        bench.select('workspace1');
-        context.patchViewState('launch', { preload: null });
-        placed = true;
-      } else if (entry.clear.includes('preload')) {
-        context.patchViewState('launch', { preload: null });
       }
       // Arriving from the root page with nothing remembered: the Agent form, since that
       // is what most arrivals want, and the Team card is one click beside it.
       if (!placed) bench.place(TYPES.agent, 'workspace1');
       // The cards read left-to-right like the page does; drag it back and that sticks.
-      if (!stored.arrangement) bench.arrangement.move('selector', 0);
+      if (!resolved.arrangement) bench.arrangement.move('selector', 0);
       bench.refreshSelector();
       save();
     },
