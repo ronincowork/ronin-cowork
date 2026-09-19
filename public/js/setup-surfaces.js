@@ -604,6 +604,7 @@ export function createGbrainSurface(context) {
   const host = el('div', 'setup-surface-body'); out.content.append(host);
   const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
     presentation: 'setup',
+    maturity: context.installationMaturity,
     installationControls: context.installationControls,
     availability: () => {
       const runtime = context.environment?.setupRuntime;

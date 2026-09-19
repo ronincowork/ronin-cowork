@@ -32,25 +32,29 @@ export function createInstallationsSurface(campaign, context = {}) {
     const provided = Array.isArray(installation.provides) ? installation.provides : [];
     return provided.length > 0 && provided.every((name) => defaultBehaviours.includes(name));
   };
-  const stateWord = (installation) => available(installation) ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off');
+  const comingSoon = (installation) => installation.maturity === 'comingSoon';
+  const stateWord = (installation) => comingSoon(installation) ? t('status.coming_soon', 'Coming soon')
+    : available(installation) ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off');
 
   const servicesReady = () => values.ronin_services === true && (installed?.services?.parts || []).length > 0;
   const gated = (name) => (name === 'trello' || name === 'perplexity') && !servicesReady();
+  const blockedReason = (installation) => comingSoon(installation) ? t('status.coming_soon', 'Coming soon')
+    : gated(installation.name) ? t('campaign_view.services_required', 'Ronin Services required') : '';
   const itemFor = (installation) => ({
     ...installation,
     id: installation.name,
     label: installation.label || installation.name,
     marker: createStatusMarker(installation.maturity),
     state: stateWord(installation),
-    attrs: gated(installation.name)
-      ? { 'data-gated': 'true', title: t('campaign_view.services_required', 'Ronin Services required') }
+    attrs: blockedReason(installation)
+      ? { 'data-gated': 'true', title: blockedReason(installation) }
       : {},
   });
   const refreshStoneMarks = () => {
     for (const installation of catalog) {
       const stone = stoneSurface.el.querySelector(`[data-sws-id="${installation.name}"]`);
       if (!stone) continue;
-      const reason = gated(installation.name) ? t('campaign_view.services_required', 'Ronin Services required') : '';
+      const reason = blockedReason(installation);
       const state = stone.querySelector('.sws-state');
       if (state) state.textContent = stateWord(installation);
       stone.toggleAttribute('data-gated', Boolean(reason));
@@ -91,7 +95,7 @@ export function createInstallationsSurface(campaign, context = {}) {
   };
 
   const featureProviderControls = (installation) => {
-    const reason = gated(installation.name) ? t('campaign_view.services_required', 'Ronin Services required') : '';
+    const reason = blockedReason(installation);
     const notice = el('p', 'setup-notice');
     const unavailable = el('p', 'setup-gbrain-hint', t('campaign_view.turn_available_on', 'turn Available on first'));
     const availableQuestion = ask([{ fields: [{
@@ -134,6 +138,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     const controls = installation.effect === 'provider' ? featureProviderControls(installation) : null;
     const sharedContext = {
       ...context,
+      installationMaturity: installation.maturity,
       tenant: { ...(context.tenant || {}), campaign: campaign()?.id },
       installationControls: controls,
       onInstallationChange: (name, on) => {
