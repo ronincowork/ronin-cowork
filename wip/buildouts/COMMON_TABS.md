@@ -64,14 +64,16 @@ underline.
    so `.tw-config` pads, `.twb` scrolls its own thread, `.tw-docs` is flush, and
    `.tw-messages` has no rules at all.
 
-### Why the Machine surface is hard to find
+### What the Machine surface is carrying
 
-The owner cannot see "the Ronin Desk". Traced:
+The Desk commons is the **Machine** work surface in Settings, under the "Machine
+Settings" group heading — confirmed by the owner. `coworkCommons()` has exactly one call
+site, `campaign-view.js:90`, and it overrides the module's own
+`t('cowork.commons', 'Ronin Desk')` default, so "Ronin Desk" is a name in the source that
+never reaches the screen. Machine is the name; the default goes with cut 8.
 
-- `coworkCommons()` has **exactly one call site**: `campaign-view.js:90`, registered as
-  the **Machine** surface in the Settings workbench, under the "Machine Settings" group
-  heading. `t('cowork.commons', 'Ronin Desk')` is a default that this one call site
-  overrides — **the words "Ronin Desk" never reach the screen.**
+What that one surface is carrying:
+
 - It builds **nine** tabs; `MACHINE_TABS` renders **seven**. `profile` (Desk profile) and
   `roots` (Workspace folders) are constructed on every call and filtered out at the only
   call site — they became surfaces of their own and their panes were never removed.
@@ -280,7 +282,8 @@ and nothing calls — the utility absorbs them and that module's `tabs()` is del
    owns all three. **Delete the `profile` and `roots` panes**, which no call site renders.
    Correct the card summary to the tabs that exist, in the order they appear. Decide the
    dead `S.showCoworkCommons` hook: wire it, or delete it and the pad's `open`/`isOpen`
-   with it.
+   with it. The surface keeps the name **Machine**; the unused `'Ronin Desk'` default goes
+   with cut 8.
 4. **Cron jobs badge** (`team-jikan.js`). Report through `watch`; delete the
    `.closest('.wk-channel-surface')` reach-through and `public/style.css:594`.
 5. **Workbench header slot** (`workbench.js:208-222`). Dismiss appends to
