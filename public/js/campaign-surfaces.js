@@ -38,7 +38,7 @@ const el = (tag, cls, text) => {
  */
 export function createCampaignIdentitySurface(campaign) {
   const { createSurface, createField } = WorkspaceKit.primitives;
-  const surface = createSurface({ label: t('campaign', 'Campaign'), className: 'cv-surface' });
+  const surface = createSurface({ label: t('campaign', 'Desk'), className: 'cv-surface' });
   const head = surface.header;
   const body = el('div', 'cv-body');
   surface.content.append(body);
@@ -51,8 +51,8 @@ export function createCampaignIdentitySurface(campaign) {
     body.append(f.el);
     return { control, f };
   };
-  const title = make(t('campaign.name', 'Campaign name'), el('input'), t('campaign_view.name_help', 'On the door, the browser tab and the address.'), 120, t('campaign.name_placeholder', 'My campaign'));
-  const description = make(t('campaign.description', 'Description'), el('textarea'), t('campaign_view.description_help', 'What this body of work is for. Shown on its card.'), 500, t('campaign.description_placeholder', 'What this campaign is for'));
+  const title = make(t('campaign.name', 'Desk name'), el('input'), t('campaign_view.name_help', 'On the door, the browser tab and the address.'), 120, t('campaign.name_placeholder', 'My desk'));
+  const description = make(t('campaign.description', 'Description'), el('textarea'), t('campaign_view.description_help', 'What this body of work is for. Shown on its card.'), 500, t('campaign.description_placeholder', 'What this desk is for'));
   description.control.rows = 3;
   const id = MULTIPLE_CAMPAIGNS_ENABLED
     ? make(t('campaign_view.id', 'Id'), el('input'), t('campaign_view.id_help', 'Fixed once created — printed on every record that points here, so it cannot change.'))
@@ -68,7 +68,7 @@ export function createCampaignIdentitySurface(campaign) {
     f.setValidation('pending', t('campaign.saving', 'saving…'));
     const r = await saveCampaign(row.id, fields);
     f.setValidation(r.ok ? 'valid' : 'invalid', r.ok ? t('settei.saved', 'saved') : r.message);
-    // Every surface reads the one Campaign name; tell them rather than making them poll.
+    // Every surface reads the one Desk name; tell them rather than making them poll.
     if (r.ok) window.dispatchEvent(new CustomEvent('ronin:campaign-change', { detail: { name: title.control.value.trim() } }));
   };
   title.control.addEventListener('change', () => void save({ title: title.control.value }, title.f));
@@ -78,22 +78,22 @@ export function createCampaignIdentitySurface(campaign) {
     el: surface.el,
     enter: () => {
       const row = campaign();
-      head.title.textContent = row?.title ? t('campaign_view.head', 'Campaign: {name}', { name: row.title }) : t('campaign', 'Campaign');
+      head.title.textContent = row?.title ? t('campaign_view.head', 'Desk: {name}', { name: row.title }) : t('campaign', 'Desk');
       title.control.value = row?.title || '';
       description.control.value = row?.description || '';
       if (id) id.control.value = row?.id || '';
       title.f.setValidation('', '');
       description.f.setValidation('', '');
-      surface.setState(row ? null : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));
+      surface.setState(row ? null : 'empty', row ? '' : t('campaign_view.none_selected', 'No Desk selected.'));
     },
   };
 }
 
 
-/** New Campaign: the stage is set here and nothing else is born with it. */
+/** New Desk: the stage is set here and nothing else is born with it. */
 export function createNewCampaignSurface(onCreated) {
   const { createSurface } = WorkspaceKit.primitives;
-  const label = t('campaign.new', 'New Campaign');
+  const label = t('campaign.new', 'New Desk');
   const surface = createSurface({ label, className: 'cv-surface' });
   const form = el('form', 'cv-body');
   surface.content.append(form);
@@ -107,8 +107,8 @@ export function createNewCampaignSurface(onCreated) {
     form.append(f.el);
     return { control, f };
   };
-  const title = make(t('campaign.name', 'Campaign name'), el('input'), 120, t('campaign.name_placeholder', 'My campaign'));
-  const description = make(t('campaign.description', 'Description'), el('textarea'), 500, t('campaign.description_placeholder', 'What this campaign is for'));
+  const title = make(t('campaign.name', 'Desk name'), el('input'), 120, t('campaign.name_placeholder', 'My desk'));
+  const description = make(t('campaign.description', 'Description'), el('textarea'), 500, t('campaign.description_placeholder', 'What this desk is for'));
   description.control.rows = 3;
 
   const select = el('select', 'cv-input');
@@ -116,7 +116,7 @@ export function createNewCampaignSurface(onCreated) {
   profileField.el.classList.add('cv-field');
   form.append(profileField.el);
 
-  const create = el('button', 'cv-button', t('campaign.create', 'Create Campaign'));
+  const create = el('button', 'cv-button', t('campaign.create', 'Create Desk'));
   create.type = 'submit';
   create.dataset.primary = 'true';
   const actions = el('div', 'cv-actions');
@@ -125,7 +125,7 @@ export function createNewCampaignSurface(onCreated) {
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    if (!title.control.value.trim()) return title.f.say(t('campaign.name_needed', 'A Campaign needs a name.'), true);
+    if (!title.control.value.trim()) return title.f.say(t('campaign.name_needed', 'A Desk needs a name.'), true);
     title.f.say(t('campaign.saving', 'saving…'));
     void onCreated({ title: title.control.value, description: description.control.value, desk_profile: select.value })
       .then((r) => {

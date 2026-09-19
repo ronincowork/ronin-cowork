@@ -27,7 +27,7 @@ import { count } from '../counts.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
-import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields, listServices } from '../sockets.js';
+import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
@@ -110,7 +110,7 @@ async function deskNote(r: { assignment?: unknown; project_root?: string; agent?
   const root = (await listProjectRoots()).find((x) => x.name === r.project_root);
   if (!root) return '';
   const a = await readArrangement(root.name, root.dir).catch(() => null);
-  if (!a) return `no desk — ${root.name}'s RONIN_REPO could not be read`;
+  if (!a) return `no worktree — ${root.name}'s RONIN_REPO could not be read`;
   if (a.source === 'absent') return `checkout — ${root.name} has no RONIN_REPO`;
   if (a.desks !== 'managed') return `no Worktree — ${root.name} uses its checkout at ${root.dir}; edit directly there`;
   return '';
@@ -413,7 +413,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
           error: `Could not find ${resolved.cmd.trim().split(/\s+/)[0]} on this machine. Install it from ⚙ Configuration, then launch again.`,
         });
       }
-      const providerSession = newProviderSession(resolved.launchAgent, launch.argv);
+      const providerSession = await newProviderSession(resolved.launchAgent, launch.argv);
       launch.argv = providerSession.argv;
       routineTools = resolved.agent
         ? await projectRoutineTools(
@@ -543,11 +543,9 @@ export function registerLaunch(app: express.Express): LaunchControl {
           missing: capability.missing,
         })),
         installations: resolved.installations.map((installation) => {
-          const services = new Set(listServices());
           const missing = installation.enabled
             ? [
                 ...installation.tools.filter((tool) => routineTools?.missing.includes(tool)).map((tool) => `tool:${tool}`),
-                ...installation.mcp.filter((name) => !services.has(name)).map((name) => `mcp:${name}`),
               ]
             : [];
           return {

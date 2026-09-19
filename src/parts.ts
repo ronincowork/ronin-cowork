@@ -51,9 +51,17 @@ export const SERVICE_CAPABILITY_PARTS = Object.freeze({
   terminal_transcript: ['rireki'],
   voice_hotwords: ['koe'],
   usage_stats: ['counting'],
+  machine_status: ['machine'],
   project_coordinator: ['koshi'],
   local_weights: ['koshi_weights'],
 } as const);
+
+/**
+ * WHAT A MISSING CHOICE MEANS, and the only place it is decided. A Campaign records what
+ * the owner switched; it does not carry the defaults for what runs. A capability named
+ * here runs until it is switched off: Task manager, Usage stats and Machine status.
+ */
+export const CAPABILITY_ON_BY_DEFAULT: ReadonlySet<string> = new Set(['task_manager', 'usage_stats', 'machine_status']);
 
 /** Which installation claims each part; the first claim wins, in catalog order. */
 export function partClaims(installations: Pick<InstallationRow, 'name' | 'parts'>[]): Map<string, string> {
@@ -76,16 +84,22 @@ export function partsToLoad<T extends { name: string; parked?: string }>(
   // this startup plan; neither routes nor browser code repeat the implementation map.
   const capabilities = Object.entries(SERVICE_CAPABILITY_PARTS)
     .map(([name, names]) => ({ name, parts: [...names] }));
+  const chosen = (name: string) => (Object.prototype.hasOwnProperty.call(selected, name)
+    ? selected[name] === true : CAPABILITY_ON_BY_DEFAULT.has(name));
   const selectedPart = new Set<string>(capabilities
-    .filter(({ name }) => selected[name] === true)
+    .filter(({ name }) => chosen(name))
     .flatMap(({ parts: names }) => names));
+  // A part that no capability maps has no component to switch: its installation's own
+  // switch governs it alone. Without this, claiming such a part would park it whether the
+  // switch was on or off.
+  const capabilityParts = new Set<string>(capabilities.flatMap(({ parts: names }) => names));
   const plan: PartsPlan<T> = { load: [], parked: [], capabilities };
   for (const part of parts) {
     const installation = claims.get(part.name);
     if (part.parked) plan.parked.push({ name: part.name, reason: part.parked });
     else if (installation && on[installation] !== true) plan.parked.push({ name: part.name, installation, reason: 'master_off' });
     else if (part.name === 'counting' && (!installation || !selectedPart.has(part.name))) plan.parked.push({ name: part.name, ...(installation ? { installation } : {}), reason: 'component_off' });
-    else if (installation && !selectedPart.has(part.name)) plan.parked.push({ name: part.name, installation, reason: 'component_off' });
+    else if (installation && capabilityParts.has(part.name) && !selectedPart.has(part.name)) plan.parked.push({ name: part.name, installation, reason: 'component_off' });
     else plan.load.push(part);
   }
   return plan;

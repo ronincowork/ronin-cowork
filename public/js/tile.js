@@ -219,7 +219,9 @@ export class Tile {
     // and 📄 stayed lit, claiming the previous session's docs until the roster poll redrew.
     // `syncTileHead`, not `syncHeader` — the reading pass without another server fetch.
     syncTileHead(this);
-    if (this.ladderOpen) this.drawLadder();
+    // An open Work Record is a reading snapshot. Replacing it on this polling clock
+    // flashes the panel and resets the owner's scroll position. Keep the refreshed
+    // value cached; closing and reopening the panel draws that latest value.
     if (!this.tegami) this.closeLadder();
   }
 

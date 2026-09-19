@@ -15,6 +15,7 @@ import { listDeskProfiles } from '../src/desk-profiles.js';
 import { listLexicons } from '../src/lexicon-catalog.js';
 import { catalogUpdated, parseProviderCatalog, STOCK_CATALOG_MD, TIERS } from '../src/model-providers.js';
 import { AGENTS } from '../src/agents.js';
+import { readAgentLaunches, renderLaunch } from '../src/agent-launches.js';
 import { resolveBehaviourBooks } from '../src/behaviours.js';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -160,14 +161,17 @@ if (!/^\d{4}-\d{2}-\d{2}$/.test(updated)) fail('MODEL_PROVIDERS.md: the header c
     const at = `MODEL_PROVIDERS.md: ${entry.label}`;
     if (providers.has(entry.provider)) fail(`${at}: provider id "${entry.provider}" is used by two sections`);
     providers.add(entry.provider);
-    // A coming-soon section is display inventory, not a launch promise. With no launch
-    // rows it may name the future CLI without inventing an executable registry entry.
+    // A coming-soon section is display inventory, not a launch promise.
     if (entry.maturity === 'comingSoon' && entry.models.length === 0) continue;
     if (clis.has(entry.cli)) fail(`${at}: cli "${entry.cli}" is served by two sections`);
     clis.add(entry.cli);
     const agent = AGENTS.find((row) => row.id === entry.cli);
     if (!agent) { fail(`${at}: cli "${entry.cli}" is not in src/agents.ts`); continue; }
-    if (!entry.models.length) fail(`${at}: offers no model with a launch cell`);
+    if (!entry.models.length) fail(`${at}: offers no model rows`);
+    let launches;
+    try { launches = await readAgentLaunches(entry.cli); }
+    catch (error) { fail(`${at}: ${(error as Error).message}`); continue; }
+    if (launches.native[0] !== agent.cmd) fail(`${at}: Native does not start with the registered CLI "${agent.cmd}"`);
     if (entry.models.filter((row) => row.default).length > 1) fail(`${at}: more than one row says default`);
     for (const row of entry.models) {
       const here = `${at} · ${row.model}`;
@@ -177,16 +181,13 @@ if (!/^\d{4}-\d{2}-\d{2}$/.test(updated)) fail('MODEL_PROVIDERS.md: the header c
       if (!row.good_at.trim()) fail(`${here}: no "good at"`);
       if (!row.not_good_at.trim()) fail(`${here}: no "not good at"`);
       if (!/\(\d{4}-\d{2}\)/.test(row.cost)) fail(`${here}: the cost reading carries no (YYYY-MM) date`);
-      if (row.cmd.split(/\s+/)[0] !== agent.cmd) fail(`${here}: launch "${row.cmd}" does not start with the ${entry.cli} CLI "${agent.cmd}"`);
-      if (!row.cmd.includes(row.model)) fail(`${here}: launch "${row.cmd}" does not name the model it is listed under`);
+      const argv = renderLaunch(launches.model, { provider: entry.provider, model: row.model });
+      if (argv[0] !== agent.cmd) fail(`${here}: Model launch does not start with the ${entry.cli} CLI "${agent.cmd}"`);
+      if (!argv.includes(row.model)) fail(`${here}: Model launch does not name the model it is listed under`);
     }
   }
   const openai = catalog.find((entry) => entry.provider === 'openai');
   if (!openai || openai.models.length < 2) fail('MODEL_PROVIDERS.md: OpenAI must offer more than one real model choice');
-  for (const row of openai?.models ?? []) {
-    const expected = `codex --model ${row.model}`;
-    if (row.cmd !== expected) fail(`MODEL_PROVIDERS.md: openai · ${row.model} must launch "${expected}", got "${row.cmd}"`);
-  }
 }
 
 for (const f of FILES) await deadLinks(f);

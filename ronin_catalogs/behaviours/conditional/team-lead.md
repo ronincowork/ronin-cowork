@@ -21,7 +21,7 @@ resolves its own Campaign and Team context and reads its own packet; it does not
 the caller's conversation. Create a Team-held Project before delegating substantial work,
 then move that one canonical Project with `team project assign` rather than copying it.
 
-For code work, assign a managed desk from `dev` for new work or from the Team line when the
+For code work, assign a managed worktree from `dev` for new work or from the Team line when the
 Agent is joining work already in flight. The desk source changes where the private branch
 starts, not where it hands in. Review coherent Team work, ask the owner before promotion,
 and promote the Team line once rather than landing a refactor piecemeal. **Promote** means

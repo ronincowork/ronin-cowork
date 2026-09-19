@@ -40,7 +40,7 @@ export function coworkWorkspacePayload(repos = []) {
   return { repos: [...repos] };
 }
 
-export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null } = {}) {
+export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, openTeamDefaults = null, openDeskDefaults = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const freshDraft = () => {
@@ -50,6 +50,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
       teamMode: entryTeam ? 'existing' : 'none', team: entryTeam || '', newTeam: '',
       reach: 'open', recruit: 'open', output: ['open'], launchMode: 'configured',
+      teamLead: false,
       books: [], root: '', repos: [],
       expanded: {},
     };
@@ -107,9 +108,9 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const typeHost = el('div', 'fs-pair');
   const templateHost = el('div', 'na-template-tray');
   const TYPES = () => [
-    { key: 'cowork_agent', label: t('new_agent.type_cowork', 'Cowork Agent'), sub: t('new_agent.type_cowork_sub', 'Born into Ronin with its installation, selected behaviours, reading and Team.') },
+    { key: 'cowork_agent', label: t('new_agent.type_cowork', 'Cowork Agent'), sub: t('new_agent.type_cowork_sub', 'Born with Ronin capabilities, behaviors, and assigned Team.') },
     { key: 'bare_metal_agent', label: t('new_agent.type_bare', 'Bare-metal Agent'), sub: t('new_agent.type_bare_sub', 'The provider’s agent and nothing else from Ronin.') },
-    { key: 'terminal', label: t('new_agent.type_terminal', 'Terminal'), sub: t('new_agent.type_terminal_sub', 'A raw tmux pane. No agent is launched and nothing is sent to it.') },
+    { key: 'terminal', label: t('new_agent.type_terminal', 'Terminal'), sub: t('new_agent.type_terminal_sub', 'A raw tmux pane, no agent launched, and nothing sent to it.') },
   ];
   function paintTypes() {
     typeHost.replaceChildren();
@@ -245,12 +246,15 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const teamRows = () => teams.map((row) => ({ v: row.name, l: String(row.title ?? '').trim() || row.name, sub: row.name }));
   const rootRows = () => roots.map((row) => ({ v: row.name, l: row.title || row.name, sub: row.title ? row.name : '' }));
   const mandateRows = (values) => values.map((value) => ({ v: value, l: mandateWord(value) }));
-  const launchModes = () => [
-    { v: 'configured', l: t('launch_mode.configured', 'Model provider configuration'),
-      sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
-    { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'),
-      sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
-  ];
+  const launchModes = () => {
+    const supported = providerCatalog().providers.find((row) => row.provider === draft.provider)?.launch_modes || ['configured'];
+    return [
+      { v: 'configured', l: t('launch_mode.configured', 'Native'),
+        sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
+      ...(supported.includes('live_dangerously') ? [{ v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'),
+        sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') }] : []),
+    ];
+  };
   const newTeamField = () => {
     const input = el('input'); input.type = 'text'; input.spellcheck = false; input.autocapitalize = 'off'; input.value = draft.newTeam;
     input.placeholder = t('new_team.name_placeholder', 'lowercase, digits, - _');
@@ -262,9 +266,31 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     return input;
   };
   const identityRow = el('div', 'na-identity-row');
+  const defaultsNote = el('div', 'fs-step-help na-defaults-note');
+  const defaultsLink = (label, href, open) => {
+    const link = el('a', null, label);
+    link.href = href;
+    if (open) link.addEventListener('click', (event) => { event.preventDefault(); open(); });
+    return link;
+  };
+  const paintDefaultsNote = () => {
+    defaultsNote.replaceChildren();
+    const hasTeam = draft.teamMode !== 'none';
+    const teaching = el('p', null, hasTeam
+      ? t('new_agent.defaults_cascade_team', 'Defaults cascade from Desk → Team → this Agent. Changes on this form apply only to this Agent.')
+      : t('new_agent.defaults_cascade_desk', 'Defaults cascade from Desk → this Agent. Changes on this form apply only to this Agent.'));
+    const links = el('p', 'na-defaults-links');
+    if (hasTeam) links.append(defaultsLink(t('new_agent.team_defaults', 'Team defaults'), `#/team/${encodeURIComponent(chosenTeam())}`, openTeamDefaults ? () => openTeamDefaults(chosenTeam()) : null), ' · ');
+    links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'), '#/campaign', openDeskDefaults));
+    defaultsNote.append(teaching, links);
+  };
   const onQuestionChange = (value, key) => {
-    if ('provider' in value) { draft.provider = value.provider; draft.model = value.model; }
+    if ('provider' in value) {
+      draft.provider = value.provider; draft.model = value.model;
+      if (!providerCatalog().providers.find((row) => row.provider === draft.provider)?.launch_modes?.includes(draft.launchMode)) draft.launchMode = 'configured';
+    }
     if ('reach' in value) { draft.reach = value.reach; draft.recruit = value.recruit; draft.output = value.output; }
+    if ('teamLead' in value) draft.teamLead = value.teamLead === true;
     if ('root' in value) { draft.root = value.root; draft.repos = [...value.repos]; }
     if ('launchMode' in value) draft.launchMode = value.launchMode;
     if (key === 'provider' || key === 'model') touched.model = true;
@@ -285,12 +311,13 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       }
       void loadSeed();
     }
-    paintFoot(); paintActions();
+    paintDefaultsNote(); paintFoot(); paintActions();
   };
   const questions = ask([
     { group: t('new_agent.model_package', 'Model'), fields: [
       { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('forms.default', 'Default'), options: providerRows },
       { key: 'model', label: t('forms.model', 'Model'), blank: t('forms.default', 'Default'), after: 'provider', options: (value) => modelRows(value.provider) },
+      { key: 'teamLead', label: t('new_agent.make_team_lead', 'Make team lead'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] },
     ] },
     { group: t('mandate', 'Mandate'), fields: [
       { key: 'reach', label: t('reach', 'Reach'), options: mandateRows(REACH) },
@@ -300,12 +327,10 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     { group: t('where.label', 'Where it works'), fields: [
       { key: 'root', label: t('where.born_in', 'Born in'), options: rootRows },
       { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root', options: rootRows },
+      { key: 'launchMode', label: t('launch_mode.mode', 'Mode'), options: launchModes },
     ] },
-    { group: t('launch_mode.head', 'Launch mode'), fields: [{
-      key: 'launchMode', label: t('launch_mode.head', 'Launch mode'), options: launchModes,
-    }] },
   ], {
-    value: { provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, root: draft.root, repos: draft.repos, launchMode: draft.launchMode },
+    value: { provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, teamLead: draft.teamLead, root: draft.root, repos: draft.repos, launchMode: draft.launchMode },
     className: 'na-questions',
     density: 'tight',
     onChange: onQuestionChange,
@@ -329,7 +354,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     onChange: onQuestionChange,
   });
   const syncQuestions = () => {
-    questions.set({ provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, root: draft.root, repos: draft.repos || [], launchMode: draft.launchMode });
+    questions.set({ provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, teamLead: draft.teamLead, root: draft.root, repos: draft.repos || [], launchMode: draft.launchMode });
     teamQuestions.set({ team: teamChoice(), teamName: draft.team });
   };
   void loadProviderCatalog().then(() => questions.paint());
@@ -343,7 +368,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
       options: availableBehaviours().map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading,
         off: row.required ? t('team_config.required', 'Required for each new Agent') : '' })),
-    }] }], { value: { behaviours: draft.books }, density: 'tight', onChange: (value) => {
+    }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
     shelvesHost.replaceChildren(picker.el);
@@ -383,6 +408,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     ];
     if (isCowork()) {
       rows.push([t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`]);
+      rows.push([t('new_agent.make_team_lead', 'Make team lead'), draft.teamLead ? t('forms.on', 'On') : t('forms.off', 'Off')]);
     }
     if (isCowork() && draft.books.length) rows.push([t('behaviours', 'Behaviours'), tagRow(draft.books.map((text) => ({ text, on: true })))]);
     rows.push([t('launch_mode.head', 'launch mode'), launchModes().find((row) => row.v === draft.launchMode)?.l || draft.launchMode]);
@@ -472,6 +498,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
           instructions: draft.instructions.trim(), provider: draft.provider, model: draft.model,
           ...coworkWorkspacePayload(draft.repos),
           mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output },
+          team_lead: draft.teamLead,
           behaviours: [...draft.books],
           launch_mode: draft.launchMode,
           ...(draft.template ? { template: draft.template } : {}),
@@ -568,12 +595,14 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     teamQuestions.show(isCowork() ? null : ['team']);
     teamQuestions.el.hidden = false;
     questions.el.hidden = draft.type === 'terminal';
+    defaultsNote.hidden = draft.type === 'terminal';
     instructionsField.hidden = !hasAgent();
     paintTypes();
     paintLeanNote();
     paintKinds();
     paintTray();
     syncQuestions();
+    paintDefaultsNote();
     paintShelves();
     paintFolds();
     paintActions();
@@ -589,7 +618,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   stepPayload.body.append(foot, actions.el);
   stepPayload.setCollapsed(true, t('forms.payload_summary', 'Review what Launch will create'), true);
   identityRow.append(nameField, teamQuestions.el);
-  stepTop.body.replaceChildren(identityRow, questions.el, instructionsField);
+  stepTop.body.replaceChildren(identityRow, questions.el, defaultsNote, instructionsField);
   const form = el('div', 'ntf-form');
   form.append(stepType.el, stepTop.el, stepLoadout.el, stepPayload.el);
   // Save as template sits UNDER the reading, for the same reason as on New Team: the

@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { setupDefaultView } from '../public/js/campaign-home.js';
 import { workspaceHeaderScope } from '../public/js/workspace-header.js';
-import { WORKSPACE_STATE_KEY, seedReservedWorkspaceTab } from '../public/js/workspace.js';
 
 const source = async (path) => readFile(new URL(`../public/${path}`, import.meta.url), 'utf8');
 
@@ -76,10 +75,9 @@ test('phone Setup workspaces keep one common viewport height for stone rail scro
 });
 
 test('launch actions reuse the nin mark, never the Team Roster torii, and open tabs', async () => {
-  const [primitives, kit, roster, workspace, agent, team, add] = await Promise.all([
+  const [primitives, kit, roster, workspace, agent, team] = await Promise.all([
     source('js/workspace-primitives.js'), source('workspace-kit.css'), source('js/team-roster-surface.js'),
     source('js/workspace.js'), source('js/new-agent.js'), source('js/new-team-form.js'),
-    source('js/add-agent.js'),
   ]);
   assert.match(primitives, /brand\/nin-mark\.svg/);
   assert.match(kit, /\.wk-action\[data-launch='true'\] \{ border-color: var\(--kaki\); background: var\(--raise\);/);
@@ -88,31 +86,13 @@ test('launch actions reuse the nin mark, never the Team Roster torii, and open t
   assert.match(workspace, /window\.open\(url\.href, '_blank', 'noopener'\)/);
   for (const caller of [agent, team]) {
     assert.match(caller, /launch: true/);
-    assert.match(caller, /openWorkspaceTab/);
+    assert.match(caller, /openWorkspaceTab|openWorkbenchTab/);
   }
-  // An Agent added from inside a Team workbench takes the workspace its form is on, in
-  // this tab (Glen, 2026-09-08); the launch mark is the same.
-  assert.match(add, /launch: true/);
-  assert.match(add, /if \(!deskNote\) connect\?\.\(born\);/);
-  assert.doesNotMatch(add, /leadNote|team_lead|leadership/);
-  assert.doesNotMatch(add, /openWorkspaceTab|reserveWorkspaceTab/);
 });
 
-test('a newly raised Team tab drops the opener tab name before navigation', async () => {
-  const stored = new Map([[WORKSPACE_STATE_KEY, JSON.stringify({
-    version: 3,
-    views: { team: { tabName: 'dynamic island provider', count: 2 } },
-  })]]);
-  const tab = { sessionStorage: {
-    getItem: (key) => stored.get(key) ?? null,
-    setItem: (key, value) => stored.set(key, value),
-  } };
-
-  assert.equal(seedReservedWorkspaceTab(tab, 'team', { tabName: '' }), true);
-  assert.deepEqual(JSON.parse(stored.get(WORKSPACE_STATE_KEY)).views.team, { tabName: '', count: 2 });
-
+test('a newly raised Team tab carries a one-shot instruction to drop the opener tab name', async () => {
   const form = await source('js/new-team-form.js');
-  assert.match(form, /seedReservedWorkspaceTab\(launchTab, 'team', \{ tabName: '' \}\);\s*openWorkspaceTab\('team', name, launchTab\);/);
+  assert.match(form, /openWorkbenchTab\(\{ destination: 'team', param: name, mode: 'overlay', state: \{ tabName: '' \} \}, launchTab\)/);
 });
 
 test('edited Cowork and Team workbench labels become the exact tab title', async () => {
@@ -121,7 +101,7 @@ test('edited Cowork and Team workbench labels become the exact tab title', async
   ]);
   assert.match(cowork, /return name \? \{ bare: name \} : fallback/);
   assert.match(cowork, /patchViewState\(viewKey, \{ tabName:/);
-  assert.match(cowork, /get: \(\) => ctx\?\.viewState\(viewKey\)\?\.tabName[\s\S]*campaign \? coworkIdentity\.tabLabel : readableTeam\(team\)/);
+  assert.match(cowork, /get: \(\) => ctx\?\.viewState\(viewKey\)\?\.tabName[\s\S]*campaign \? teamsLabel : readableTeam\(team\)/);
   assert.match(kit, /\.ui-bar-place \.wk-tab-name \{[^}]*background: transparent;[^}]*color: inherit;/);
 });
 
@@ -132,7 +112,7 @@ test('Cowork Team and Team Agent cards toggle between names-only and the full re
   ]);
   assert.match(view, /\[campaign \? 'teamCardDensity' : 'agentCardDensity'\]: thinSelectorCards \? 'thin' : 'thick'/);
   assert.match(view, /let thinSelectorCards = true;/);
-  assert.match(view, /context\.viewState\(viewKey\)\?\.\[campaign \? 'teamCardDensity' : 'agentCardDensity'\] !== 'thick'/);
+  assert.match(view, /entry\[campaign \? 'teamCardDensity' : 'agentCardDensity'\] !== 'thick'/);
   assert.match(view, /mark: member\.team_lead \? '人' : null,[\s\S]*thinSelectorCards \? \{\} : \{ summary: reading\.step, metadata: reading\.lines \}/,
     'the lead mark remains while names-only mode removes the rest of the reading');
   assert.match(view, /thinSelectorCards \? \{\} : \{ summary: item\.objective \|\| '' \}/);
@@ -149,7 +129,7 @@ test('Campaign remembers density while Setup stays in the names-only selector', 
   ]);
   assert.match(campaign, /let thinSelectorCards = true;/);
   assert.match(campaign, /selectorDensity: thinSelectorCards \? 'thin' : 'thick'/);
-  assert.match(campaign, /thinSelectorCards = stored\.selectorDensity !== 'thick'/);
+  assert.match(campaign, /thinSelectorCards = entry\.selectorDensity !== 'thick'/);
   assert.match(campaign, /host\.dataset\.selectorDensity = thinSelectorCards \? 'thin' : 'thick'/);
   assert.match(campaign, /actions: \[densityToggle, mikaHelp\]/);
   assert.match(setup, /bench\.host\.dataset\.selectorDensity = 'thin'/);
@@ -207,7 +187,7 @@ test('the Setup workbench registers real surfaces and maps each scene to workspa
   assert.match(setup, /request\('\/api\/setup\/runtime', \{ cache: 'no-store' \}\)/);
   assert.doesNotMatch(setup, /SetupRequirement|requirementState|flashCycle/);
   assert.match(setup, /const SCENES = Object\.freeze\(SETUP_SCENES/);
-  assert.match(setup, /scene\.type !== SETUP_SURFACE_TYPES\.bounty/);
+  assert.match(setup, /scene\.type !== 'setup\.bounty'/);
   assert.doesNotMatch(setup, /SETUP_SURFACE_TYPES\.(?:services|gbrain)/);
   assert.doesNotMatch(setup, /SETUP_SURFACE_TYPES\.templates/);
   const providers = await source('js/provider-surface.js');
@@ -223,7 +203,7 @@ test('Setup is the one public destination and has no parallel preview route', as
   ]);
   assert.match(setup, /const PROFILE = 'setup'/);
   assert.match(setup, /patchViewState\('setup'/);
-  assert.match(setup, /context\.viewState\('setup'\)/);
+  assert.match(setup, /context\.workbenchEntry\(\)/);
   assert.doesNotMatch(kit, /data-setup-viewport|setup-header-toggle/);
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
   assert.doesNotMatch(main, /setup2|createSetup2View/);

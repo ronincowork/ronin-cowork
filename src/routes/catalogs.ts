@@ -5,7 +5,7 @@ import { projectRootsOfSessions } from '../tmux.js';
 import { listSkins } from '../skin-catalog.js';
 import { listLexicons, resolveLexicon } from '../lexicon-catalog.js';
 import { activeDeskProfileName, listDeskProfiles } from '../desk-profiles.js';
-import { initialCampaign } from '../campaigns.js';
+import { initialCampaign, readCampaign } from '../campaigns.js';
 import { listWays } from '../resources.js';
 import { listSessionReadings } from '../session-readings.js';
 import { listAgentAvailability } from '../agents.js';
@@ -32,10 +32,12 @@ import {
   savedLaunchFields,
 } from '../resources.js';
 import {
+  listBehaviours,
   listAgentTemplates,
   listInstallations,
   listTeamTemplates,
 } from '../resource-adapters.js';
+import { availableBehaviours } from '../instruction-cascade.js';
 import { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } from '../templates.js';
 import { browseFolders, createFolder, withRegisteredRoots } from '../folder-browser.js';
 
@@ -85,6 +87,24 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/ways', async (_req, res) => {
     try {
       res.json(await listWays());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  app.get('/api/campaign-default-options', async (req, res) => {
+    try {
+      const campaign_id = String(req.query.campaign_id ?? '').trim() || (await initialCampaign())?.id || '';
+      const campaign = campaign_id ? await readCampaign(campaign_id) : null;
+      if (!campaign) return res.status(404).json({ error: `Unknown Campaign: ${campaign_id || '(none)'}.` });
+      const [installations, behaviours] = await Promise.all([listInstallations(), listBehaviours()]);
+      const available = availableBehaviours(installations, campaign.config.installations, behaviours);
+      res.json({
+        available,
+        behaviours: behaviours.filter((row) => row.scope === 'selected').map((row) => ({
+          name: row.name, label: row.label, blurb: row.blurb, reading: row.page,
+        })),
+      });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

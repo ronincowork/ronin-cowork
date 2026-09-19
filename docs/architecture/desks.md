@@ -1,6 +1,8 @@
-# Managed desk construction
+# Managed worktree construction
 
-The HTTP desk surface owns these mechanics. `worktree-desk` calls it and prints its reply.
+The internal HTTP desk surface owns these managed-worktree mechanics. `worktree-desk` calls
+it and prints its reply. In this document, backticked/type-level `desk` names are persisted
+compatibility identifiers; the product term is **worktree**.
 What a session is told is
 `ronin_catalogs/behaviours/conditional/worktree-root.md`. This page is the tool-side reference:
 what is recorded where, what each operation does to git, and what it refuses.
@@ -10,8 +12,8 @@ what is recorded where, what each operation does to git, and what it refuses.
 ## The words, used strictly
 
 A **branch** is a bookmark. A **worktree** is a folder with its own HEAD and index. A
-**desk** is one repository's branch and worktree opened together, `repo:branch`
-(`cowork:team/comp/fable`). An **assignment** is what a session is changing — one desk per
+An internal **desk record** is one repository's branch and worktree opened together,
+`repo:branch` (`cowork:team/comp/fable`). An **assignment** is what a session is changing — one worktree per
 participating repository. A **funnel point** (`dev`, `team/<t>/dev`) is merged into and
 never written into. A **candidate** is the throwaway worktree a hand-in is built in.
 **Commit** preserves; **hand-in** publishes to the team line; **team promotion** is the
@@ -98,8 +100,8 @@ spawned; a failure is thrown, and launch does not fall back to a funnel checkout
    report that the ref advanced but its working files did not;
 6. append the `accepted` receipt; record it on the desk; clear the block.
 
-Hand-in updates no private desk and writes no pending marker on a sibling. The submitting
-Agent's tip is contained in the Team line, but its desk does not automatically gain other
+Hand-in updates no private worktree and writes no pending marker on a sibling. The submitting
+Agent's tip is contained in the Team line, but its worktree does not automatically gain other
 Team commits. Each Agent chooses when and what to adopt through sync.
 
 ## Sync
@@ -114,7 +116,7 @@ revision is merged; unsaved source edits are excluded and the acknowledgement sa
 It reports the source ref/SHA and destination before/after HEAD. A contained commit is a
 no-op. A dirty or unmounted destination stays pending; a merge conflict is aborted and
 reports the files. Neither changes the destination's files. Resolving the reported commit
-belongs on the private desk. A subsequent sync selects its source afresh from its arguments.
+belongs on the private worktree. A subsequent sync selects its source afresh from its arguments.
 Custody, source refs, and the hand-in line are unchanged. Sync does not promote or certify
 private work as reviewed.
 
@@ -152,8 +154,8 @@ or below it, close keeps the desk and tells the caller to notify that session to
 then retry. It does not message, relocate, stop, or retry for the caller. Otherwise the
 worktree, branch, and desk row are removed. `handoffDesk` changes explicit owners without
 moving work. `session_end`, safe live-session Delete, and `--with-session` use the
-coordinated end: all assigned desks and ownership checks run first, clean Team-contained
-desks are removed, then the Agent is stopped. An ACCEPTED hand-in is immediately eligible
+coordinated end: all assigned worktrees and ownership checks run first, clean Team-contained
+worktrees are removed, then the Agent is stopped. An ACCEPTED hand-in is immediately eligible
 when its clean tip is contained in the Team line; global-dev promotion and a second manual
 close are not prerequisites. Any dirty, unique, pending/rejected, shared, unmounted, or
 occupied desk refuses the whole preflight and messages the Agent with exact next actions.

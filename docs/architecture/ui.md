@@ -19,6 +19,10 @@ feature is all a feature file should contain.
 The style of the product is unchanged and deliberate: dense, dark-first, pro-tool,
 Japanese marks as identity. This page is about how that style is CARRIED, not what it is.
 
+Workbench surface construction, data ownership, restoration, and structured launches are
+one contract: [Workbench construction](workbench.md). This page owns the shared visual,
+interaction, transport, and failure rules those surfaces use.
+
 ## The cascade
 
 `public/style.css` is one file in four `@layer`s — `vendor, foundations, ui, app` —
@@ -313,6 +317,12 @@ a `destroy()` owner at that moment, not speculatively.
 
 ## Navigation
 
+### Workbench entry state
+
+The precedence and ownership of first-open defaults, remembered refresh state, and
+one-shot structured launches live in
+[Workbench construction](workbench.md#entry-refresh-and-intentional-launch).
+
 The retired embedded Commons' rooms lived in one pane registry consumed by its tab
 strip. A row carried a full label and an optional compact label for the
 402px strip, and a hint. A new room is one registry row plus one feature module;
@@ -531,7 +541,7 @@ host.append(form.el);   // form.value() · form.set(key, v) or set({…}) · for
 | Spec key | Meaning |
 |---|---|
 | `group` · `fields` | a named group and the fields it keeps together |
-| — | a stone never repeats its group head: the head carries the question (a sentence), the stone's label a noun ("Register as", "Feature"); a field whose label equals its head is drawn with the label "Answer" |
+| — | the consumer owns each stone's noun; ERABI preserves an explicit field label even when it equals the group heading (Team stays Team, Model stays Model) |
 | `key` · `label` | the answer's name in the value; the label over the stone, through `t()` |
 | `options` | rows `{ v, l, sub?, off?, glyph?, word? }` or a function of the current value — `sub` reads in the caption, `off` is why the stone is greyed (disabled, never hidden), `glyph` sits on a square, `word` is the rectangle's short line (tier, worktree) |
 | `blank` | the empty answer's word, drawn as a stone; omit it and there is no blank |

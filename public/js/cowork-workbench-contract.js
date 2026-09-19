@@ -1,11 +1,4 @@
-/* Pure Cowork-workbench rules: identity and roster order, kept outside the DOM. */
-
-export const coworkWorkbenchIdentity = (teamsLabel = 'Teams') => Object.freeze({
-  kind: 'cowork',
-  selectorLabel: teamsLabel,
-  selectorAriaLabel: teamsLabel,
-  tabLabel: teamsLabel,
-});
+/* Pure Cowork-workbench roster order, kept outside the DOM. */
 
 /** Ordinary Teams sort by stable key; the no-team landing and Ronin helpers stay at the foot. */
 export function orderCoworkTeams(teams = [], options = {}) {

@@ -8,7 +8,6 @@
 - **reading_off:** —
 - **ways:** —
 - **tools:** —
-- **parts:** —
-- **mcp:** —
+- **parts:** gbrain
 - **requires:** —
 - **order:** 20

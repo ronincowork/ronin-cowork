@@ -14,7 +14,7 @@ the real thing and says what is wrong in minutes, not hours.
 1. **The lead owns the preview.** One dedicated disposable staging branch and worktree,
    one preview process on its own port, separate from the live service. No staging Agent
    exists; nobody else serves, restarts or edits that worktree.
-2. **An Agent offers a candidate, never a file.** Keep the private desk as the source,
+2. **An Agent offers a candidate, never a file.** Keep the private worktree as the source,
    commit one coherent candidate, and send the lead: your session, the repository, the
    exact commit, the surfaces it changes, and which earlier candidate it supersedes.
    This is a message to the lead, not a hand-in, and it creates no receipt.

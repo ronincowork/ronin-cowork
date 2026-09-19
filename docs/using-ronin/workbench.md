@@ -5,9 +5,10 @@ Ronin has Campaign, Cowork, Team, and Setup workbenches. Setup fixes Presets in 
 and opens its ordered selector surfaces in workspace 2; the other workbenches retain their
 ordinary two/four arrangement.
 
-This is the guide for an agent using Ronin. It explains where things are and how to find
-them. The builder and designer contract lives in Ronin Lab; you do not need its frontend,
-layout, or styling details to use a Workbench.
+This is the guide for an Agent using Ronin. It explains where things are and how to find
+them. The implemented builder contract lives in Ronin Cowork's
+[Workbench construction document](../architecture/workbench.md); you do not need its
+frontend, data-loading, or state details to use a Workbench.
 
 The vocabulary comes from `ronin_catalogs/lexicons/professional_en.md`. In particular:
 
@@ -52,6 +53,13 @@ four numbered workspaces. With four, workspace 3 is below workspace 1 and worksp
 below workspace 2. The discovery column may appear on the left, in the center, or on the
 right according to the saved arrangement.
 
+The small surface map in the app bar is the Workbench in miniature. Its blocks show the
+current column order and relative widths. Click a block to hide or restore that column,
+drag a block to reorder the columns, and drag the divider between the full-size columns
+to resize them. The map changes proportion as you resize, so it always shows the actual
+arrangement rather than a fixed icon. Ronin remembers order, visibility, and widths
+together.
+
 One workspace is selected at a time. Its visible selection mark answers: “Where will the
 next surface open?” Selecting a workspace does not change what it already holds.
 
@@ -79,9 +87,24 @@ Ronin remembers the Workbench arrangement for that route: whether it has two or 
 workspaces, where its columns sit, which workspace is selected, and what each workspace
 holds. Returning or refreshing recalls that arrangement.
 
+Settings first opens with **Defaults** in workspace 1 and **Workspace folders** in
+workspace 2. That is only its first-open floor; once rearranged, refresh restores the
+remembered arrangement instead of applying the floor again.
+
 If a remembered surface is no longer available at the current scope, its workspace comes
 back empty. Check the discovery column: it is the current answer to what can be opened
 here.
+
+## Intentional openings
+
+Some links open a Workbench for a specific task. They may choose its initial surfaces and
+selected workspace—for example, **Desk defaults** opens Defaults beside Launch your own.
+That intentional arrangement wins for the first opening only. From then on it is an
+ordinary Workbench arrangement: moving or replacing surfaces is remembered, and refreshing
+returns to the latest arrangement rather than replaying the original link.
+
+An ordinary Workbench link carries no requested arrangement. It recalls what that browser
+tab remembered, or uses the Workbench's first-open defaults when nothing has been remembered.
 
 ## The permanent surface head
 

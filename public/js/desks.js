@@ -50,7 +50,7 @@ export const desksOf = (name) => (name && data.get(name)) || null;
 
 const worktreeName = (worktree) => String(worktree || '').replace(/[\\/]+$/, '').split(/[\\/]/).filter(Boolean).pop() || '';
 
-/** The ⑂ label: one desk says its worktree name; several say how many; none says `?`. */
+/** The ⑂ label: one worktree says its folder name; several say how many; none says `?`. */
 export function deskLabel(entry) {
   const desks = entry?.desks || [];
   if (desks.length === 1) return '⑂ ' + (worktreeName(desks[0].worktree) || desks[0].branch || t('desks.detached', '(detached)'));
@@ -59,13 +59,13 @@ export function deskLabel(entry) {
 
 /**
  * The roll-up sentence — only the parts that are non-zero, so a plain single checkout
- * reads `1 desk` and a busy assignment reads `2 desks · 1 pending · 3 private · 1 parked`.
- * Null when nothing is known, so a row can leave the column empty rather than say `0 desks`.
+ * reads `1 worktree` and a busy assignment reads `2 worktrees · 1 pending · 3 private · 1 parked`.
+ * Null when nothing is known, so a row can leave the column empty rather than say `0 worktrees`.
  */
 export function deskReadout(entry) {
   const r = entry?.rollup;
   if (!r || !r.desks) return null;
-  const parts = [r.desks === 1 ? t('desks.count_one', '1 desk') : t('desks.count_many', '{n} desks', { n: r.desks })];
+  const parts = [r.desks === 1 ? t('desks.count_one', '1 worktree') : t('desks.count_many', '{n} worktrees', { n: r.desks })];
   if (r.pending) parts.push(t('desks.pending_n', '{n} pending', { n: r.pending }));
   if (r.private) parts.push(t('desks.private_n', '{n} private', { n: r.private }));
   if (r.dirty) parts.push(t('desks.dirty_n', '{n} dirty', { n: r.dirty }));
@@ -74,10 +74,10 @@ export function deskReadout(entry) {
   return parts.join(' · ');
 }
 
-/** One line per desk, for the expanded inspection. The worktree is the live coordinate. */
+/** One line per worktree, for the expanded inspection. The worktree is the live coordinate. */
 export function deskTip(entry) {
   const desks = entry?.desks || [];
-  if (!desks.length) return t('desks.none', 'No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI.');
+  if (!desks.length) return t('desks.none', 'No managed worktree listed yet. A coding launch opens selected worktrees; the session lists its repositories in TEGAMI.');
   return clampTip(desks.map((d) => {
     const bits = [`${d.short || d.repo} — ${d.branch || t('desks.detached', '(detached)')}`];
     if (d.worktree) bits.push(t('desks.worktree', 'worktree {path}', { path: d.worktree }));

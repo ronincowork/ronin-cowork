@@ -50,6 +50,7 @@ export const SERVICE_COMPONENTS = Object.freeze([
   { id: 'terminal_transcript', label: 'Terminal transcript', status: 'comingSoon', needs: 'Records terminal activity for transcript views and downstream summaries.' },
   { id: 'voice_hotwords', label: 'Voice & Hotwords', status: 'comingSoon', needs: 'Adds voice tools and corrections for words dictation commonly mishears.' },
   { id: 'usage_stats', label: 'Usage stats', status: 'beta', needs: 'Keeps local usage counts without storing transcript content.' },
+  { id: 'machine_status', label: 'Machine status', status: 'beta', needs: 'Shows memory, swap and load for this box in the header.' },
   { id: 'project_coordinator', label: 'Project coordinator', status: 'beta', needs: 'Watches active projects and prompts Agents to keep status and summaries current.' },
   { id: 'local_weights', label: 'Local weights', status: 'beta', needs: 'Provides locally stored model weights for features that need them.' },
 ]);
@@ -60,20 +61,6 @@ export function serviceComponentRows(installed, masterOn) {
     v: component.id,
     off: parked.has(component.id) ? 'Currently unavailable' : !masterOn ? 'Turn on Running services first' : '',
   }));
-}
-
-/** The only furniture shared by Services and gbrain. */
-export function setupExplainer({ usedFor, requires, use }) {
-  const details = el('details', 'setup-explainer');
-  const summary = el('summary', '', t('setup_surface.about', 'About this'));
-  const body = el('div', 'setup-explainer-body');
-  for (const [heading, copy] of [
-    [t('setup_surface.used_for', 'What this is used for'), usedFor],
-    [t('setup_surface.requires', 'What is required'), requires],
-    [t('setup_surface.how', 'How to use it'), use],
-  ]) body.append(el('h3', '', heading), el('p', '', copy));
-  details.append(summary, body);
-  return details;
 }
 
 function createRegisterSurface(context) {
@@ -405,7 +392,7 @@ async function inlineServicesMark(host) {
   host.querySelector('svg')?.setAttribute('aria-hidden', 'true');
 }
 
-/** Ronin Services: beta intro, stable lifecycle, then six persistent feature controls. */
+/** Ronin Services: beta intro, stable lifecycle, then seven persistent feature controls. */
 export function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
   const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);
@@ -679,6 +666,7 @@ function createSetupInstallationsSurface(context) {
   const page = createInstallationsSurface(selected, {
     ...context,
     onInstallationsState: (values) => context.environment?.onInstallationsState?.(values),
+    createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
   });
   // Setup chooses and sequences the shared page; it does not change the page's controls.
   // The shared Services model owns the Install, Turn on, and Restart gates in every

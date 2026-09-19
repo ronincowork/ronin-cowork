@@ -46,6 +46,6 @@ which workflow knowledge is taught.
 - **Create** is the common visible-delegation path. Its `--prompt` gives the newborn's
   exact purpose; the canonical launch resolver supplies only Campaign/Team context and
   reports `BORN` or `REFUSED`.
-- **End** runs the custody preflight and ends this Agent only after every assigned desk is
+- **End** runs the custody preflight and ends this Agent only after every assigned worktree is
   safe; nothing is discarded. **Archive** is distinct: it keeps the session resumable and
   leaves desk custody unchanged; **restore** brings one back.

@@ -22,7 +22,7 @@ function setSurfaceState(root, state = null, message = '') {
   }
 }
 
-function createSurface(options = {}) {
+export function createSurface(options = {}) {
   const el = node('section', `wk-surface${options.className ? ` ${options.className}` : ''}`);
   if (options.label) el.setAttribute('aria-label', options.label);
   if (options.collapsible) el.dataset.collapsible = '';
@@ -142,82 +142,6 @@ function createReservedSurface(label = 'Reserved') {
   const surface = createSurface({ label });
   surface.el.dataset.reserved = '';
   return surface;
-}
-
-const CHANNEL_SERVICES = ['chat', 'wipeboard', 'docs', 'team-configuration'];
-
-function createChannelSurface(options = {}) {
-  const surface = createSurface({ label: options.label || t('workspace.channels', 'Team channels'), header: false });
-  surface.el.classList.add('wk-channel-surface');
-  const tabs = node('div', 'wk-channel-service-tabs');
-  tabs.setAttribute('role', 'tablist');
-  const title = node('strong', 'wk-channel-service-title', options.label || t('workspace.channels', 'Team channels'));
-  tabs.append(title);
-  const services = new Map();
-  const buttons = new Map();
-  // One literal key per team service, so the gate can see each of them.
-  const TEAM_LABELS = () => ({
-    chat: t('workspace.channel_chat', 'Chat'),
-    wipeboard: t('workspace.channel_wipeboard', 'Wipeboard'),
-    docs: t('workspace.channel_docs', 'Docs'),
-    kanban: t('workspace.channel_task_manager', 'Task Manager'),
-    'team-configuration': t('workspace.channel_team_configuration', 'Team Configuration'),
-  });
-  const channels = Array.isArray(options.channels) && options.channels.length
-    ? options.channels.map((c) => ({ id: String(c.id), label: c.label || c.id }))
-    : CHANNEL_SERVICES.map((id) => ({ id, label: TEAM_LABELS()[id] ?? id[0].toUpperCase() + id.slice(1) }));
-  const ids = channels.map((c) => c.id);
-  const first = ids[0];
-  for (const { id, label: tabLabel } of channels) {
-    const button = node('button', 'wk-channel-service-tab', tabLabel);
-    button.type = 'button';
-    button.dataset.service = id;
-    button.setAttribute('role', 'tab');
-    const service = node('div', 'wk-channel-service');
-    service.setAttribute('role', 'tabpanel');
-    service.dataset.service = id;
-    const mounted = options.services?.[id];
-    if (mounted?.el instanceof Node) service.append(mounted.el);
-    else if (mounted instanceof Node) service.append(mounted);
-    // No transcript, composer, protocol or prompt is implied by the Chat tab.
-    if (id === 'chat' && !service.childNodes.length) service.dataset.reserved = '';
-    button.addEventListener('click', () => select(id));
-    buttons.set(id, button);
-    services.set(id, service);
-    tabs.append(button);
-    surface.content.append(service);
-  }
-  // way to the left") — the same row, no new one.
-  if (Array.isArray(options.actions) && options.actions.length) {
-    for (const action of [...options.actions].reverse()) if (action instanceof Node) tabs.prepend(action);
-  }
-  surface.el.prepend(tabs);
-  let current = first;
-  const select = (requested) => {
-    const id = ids.includes(requested) ? requested : first;
-    current = id;
-    for (const [name, button] of buttons) {
-      const on = name === id;
-      button.setAttribute('aria-selected', String(on));
-      button.tabIndex = on ? 0 : -1;
-      services.get(name).hidden = !on;
-    }
-    return id;
-  };
-  select(options.selected);
-  const invoke = (hook, context) => {
-    for (const id of ids) {
-      const mounted = options.services?.[id];
-      if (mounted && !(mounted instanceof Node)) mounted[hook]?.(services.get(id), context);
-    }
-  };
-  return {
-    ...surface, tabs, services, select, current: () => current,
-    mount: (context) => invoke('mount', context),
-    enter: (context) => invoke('enter', context),
-    leave: () => invoke('leave'),
-    destroy: () => invoke('destroy'),
-  };
 }
 
 function createExplorerRail(options = {}) {
@@ -490,8 +414,6 @@ export const WorkspacePrimitives = Object.freeze({
   createActionBar,
   createMetadata,
   createReservedSurface,
-  channelServices: CHANNEL_SERVICES,
-  createChannelSurface,
   createExplorerRail,
   createNotice,
   createField,

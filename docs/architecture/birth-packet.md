@@ -110,7 +110,7 @@ Session Boot contributes only applicable resolved files:
 |---|---|
 | `all/` | Every Cowork Agent. This stock shelf is intentionally limited to Ronin Utility and the rendered KOTOBA glossary. |
 | `routine/...` | Exact files named by enabled or disabled installation/feature contribution declarations. |
-| `<service>_connected/` and `house/` | Declared directory or file references, gated by their connection or house facts. Merely existing does not select them. |
+| `<service>_connected/` and `house/` | Declared directory or file references selected by their feature or house facts. The legacy connected name does not assert runtime health. |
 | Owner `root/<project_root>/` | Live contents for the resolved project root. Stock cannot define owner project roots. |
 | Explicit launch seeds | Exact additional source paths supplied by the launch. |
 

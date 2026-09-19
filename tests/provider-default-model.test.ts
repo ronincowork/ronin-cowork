@@ -139,14 +139,14 @@ test('a provider with no preference set delegates the model to that provider CLI
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-terra' }, by_provider: {} });
   // Native is what makes the setting optional without Ronin guessing account entitlement.
   const r = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(r.cmd.startsWith('claude --strict-mcp-config'), `expected the provider-native launch, got "${r.cmd}"`);
+  assert.equal(r.cmd, 'claude', `expected the provider-native launch, got "${r.cmd}"`);
   // Nobody stated the model, so it reads as the system's answer, not the owner's.
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'system', source: 'src/spawn.ts' }]);
   // An explicit null is the same as absent: the owner cleared the row, they did not
   // express a preference.
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-terra' }, by_provider: { anthropic: null } });
   const cleared = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(cleared.cmd.startsWith('claude --strict-mcp-config'), `cleared must fall back too, got "${cleared.cmd}"`);
+  assert.equal(cleared.cmd, 'claude', `cleared must fall back too, got "${cleared.cmd}"`);
 });
 
 test('naming no provider still lands on the install default — the general default is untouched', async () => {

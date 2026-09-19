@@ -17,13 +17,14 @@ const optionLabel = (value) => ({
   open: t('campaign_view.option_open', 'Open'), discuss: t('campaign_view.option_discuss', 'Discuss'), plan: t('campaign_view.option_plan', 'Plan'), execute: t('campaign_view.option_execute', 'Execute'),
   nobody: t('campaign_view.option_nobody', 'Nobody'), 'propose agents': t('campaign_view.option_propose', 'Propose Agents'), 'staff agents': t('campaign_view.option_staff', 'Staff Agents'),
   'a plan': t('campaign_view.option_a_plan', 'A plan'), ideas: t('campaign_view.option_ideas', 'Ideas'), code: t('campaign_view.option_code', 'Code'), 'an artifact': t('campaign_view.option_artifact', 'An artifact'), 'the team': t('campaign_view.option_team', 'The Team'), 'no code': t('campaign_view.option_no_code', 'No code'),
-  configured: t('launch_mode.configured', 'Model provider configuration'), live_dangerously: t('launch_mode.live', 'Dangerously'),
+  configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously'),
 })[value] || value;
 
 export function createAgentDefaultsSurface(campaign) {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('campaign_view.defaults', 'Defaults'), className: 'cv-surface' });
   const body = el('div', 'cv-body'); surface.content.append(body);
+  let edited = null;
 
   function paint(seed = null) {
     const row = campaign(); body.replaceChildren();
@@ -43,7 +44,7 @@ export function createAgentDefaultsSurface(campaign) {
         : t('forms.reason_not_on_machine', 'not on this machine');
     const availableNames = new Set(list(seed?.available));
     const availableBehaviours = list(seed?.behaviours).filter((behaviour) => availableNames.has(behaviour.name));
-    let picked = {
+    let picked = edited || {
       provider: String(current.provider || ''), model: String(current.model || ''),
       reach: current.reach || CHOICES.reach[0], recruit: current.recruit || CHOICES.recruit[0],
       output: list(current.output), launch_mode: current.launch_mode || CHOICES.launch_mode[0],
@@ -61,15 +62,15 @@ export function createAgentDefaultsSurface(campaign) {
       ] },
       { group: t('campaign_view.defaults_runtime', 'Runtime'), fields: [
         { key: 'launch_mode', label: t('launch_mode.head', 'Launch mode'), options: [
-          { v: 'configured', l: optionLabel('configured'), sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
-          { v: 'live_dangerously', l: optionLabel('live_dangerously'), sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
+          { v: 'configured', l: optionLabel('configured'), sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
+          { v: 'live_dangerously', l: optionLabel('live_dangerously'), sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') },
         ] },
       ] },
       { group: t('campaign_view.default_behaviours', 'Behaviours'), fields: [{
         key: 'behaviours', label: t('campaign_view.default_behaviours', 'Behaviours'), many: true, shape: 'tall',
         options: availableBehaviours.map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading })),
       }] },
-    ], { value: picked, trayHost: questionsRow, onChange: (value) => { picked = value; } });
+    ], { value: picked, trayHost: questionsRow, onChange: (value) => { picked = value; edited = value; } });
     questionsRow.append(questions.el); form.append(questionsRow);
     const actions = el('div', 'cv-default-actions');
     const save = el('button', 'cv-save', t('panels.save', 'Save')); save.type = 'submit'; actions.append(notice.el, save); form.append(actions); body.append(form);
@@ -78,14 +79,20 @@ export function createAgentDefaultsSurface(campaign) {
       const next = { ...current, ...picked, behaviours: list(picked.behaviours) };
       const result = await saveCampaign(row.id, { config: { defaults: next } });
       notice.set(result.ok ? 'success' : 'failed', result.ok ? t('settei.saved', 'saved') : result.message); save.disabled = false;
-      if (result.ok) paint(seed);
+      if (result.ok) { edited = null; paint(seed); }
     });
   }
 
-  return { el: surface.el, enter: () => void Promise.all([
-    loadProviderCatalog(),
-    request(`/api/launch-seed?campaign_id=${encodeURIComponent(campaign()?.id || '')}`),
-  ]).then(([, seedResult]) => paint(seedResult.ok ? seedResult.data : null)) };
+  let generation = 0;
+  return { el: surface.el, enter: () => {
+    const current = ++generation;
+    paint();
+    if (!campaign()) return;
+    void Promise.all([
+      loadProviderCatalog(),
+      request(`/api/campaign-default-options?campaign_id=${encodeURIComponent(campaign()?.id || '')}`),
+    ]).then(([, options]) => { if (current === generation) paint(options.ok ? options.data : null); });
+  } };
 }
 
 export function defaultsSummary(campaign) {

@@ -51,13 +51,14 @@ test('legacy provider identity is inferred only from the executable argv', async
   assert.equal(providerFromArgv(['/bin/bash']), '');
 });
 
-test('provider lifecycle syntax comes from the agent registry', async () => {
+test('provider lifecycle syntax comes from the Agent document', async () => {
   const { AGENTS, newProviderSession } = await import('../src/agents.js');
-  const stamped = newProviderSession('claude', ['/bin/claude', '--model', 'opus', 'brief']);
+  const { readAgentLaunches } = await import('../src/agent-launches.js');
+  const stamped = await newProviderSession('claude', ['/bin/claude', '--model', 'opus', 'brief']);
   assert.match(stamped.id, /^[0-9a-f-]{36}$/);
   assert.deepEqual(stamped.argv, ['/bin/claude', '--session-id', stamped.id, '--model', 'opus', 'brief']);
-  assert.deepEqual(AGENTS.find((agent) => agent.id === 'codex')?.operations.session.resume, ['resume']);
-  assert.deepEqual(AGENTS.find((agent) => agent.id === 'gemini')?.operations.session.resume, ['--resume']);
+  assert.deepEqual((await readAgentLaunches('codex')).resume, ['codex', 'resume', '{session_id}']);
+  assert.deepEqual((await readAgentLaunches('gemini')).resume, ['gemini', '--resume', '{session_id}']);
   assert.equal(AGENTS.find((agent) => agent.id === 'gemini')?.operations.session.discovery, 'unsupported');
 });
 

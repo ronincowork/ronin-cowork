@@ -2,19 +2,47 @@
 
 - **stop_keys:** Escape
 - **clear_keys:** C-c
+- **launch_native:** ["codex"]
+- **launch_model:** ["codex", "--model", "{model}"]
+- **launch_native_dangerously:** ["codex", "--dangerously-bypass-approvals-and-sandbox"]
+- **launch_model_dangerously:** ["codex", "--model", "{model}", "--dangerously-bypass-approvals-and-sandbox"]
+- **launch_resume:** ["codex", "resume", "{session_id}"]
+- **launch_new_session_id:** —
+- **launch_initial:** positional
 
 CLI id: `codex`. Catalog provider: OpenAI. Reviewed 2026-09-14.
 Version: **0.153.4**. Installed version and tagged upstream input source reviewed; no live turn interrupted.
+
+## Ronin launch sequence
+
+The declarations above are executable documentation. Native + Native means exactly
+`codex`; each Native applies only to its Model or Launch mode field.
+
+| Model | Launch mode | Command core |
+|---|---|---|
+| Native | Native | `codex` |
+| Named | Native | `codex --model <model>` |
+| Native | Dangerously | `codex --dangerously-bypass-approvals-and-sandbox` |
+| Named | Dangerously | `codex --model <model> --dangerously-bypass-approvals-and-sandbox` |
+
+Resume is separate: `codex resume <session-id>`.
+
+For a new session Ronin appends the initial brief positionally. Codex owns the new
+conversation identity; Ronin discovers the exact identity after launch rather than
+supplying one in argv.
+
+Upstream also offers `--approve-for-me`, explicit sandbox policies, and approval policies.
+Ronin does not currently expose those as launch choices; `--approve-for-me` is a safer
+automation candidate to evaluate separately from full bypass.
 
 Codex accepts the initial brief positionally. Ronin discovers the conversation from
 matching rollout/writer-lock file descriptors and archives/resumes that exact identity.
 The registry owns resume syntax. Settings/auth remain in the CLI's own configuration;
 [the Codex account Behavior](../operating/codex-account.md) owns the default billing policy.
 
-The catalog's disconnected mode disables the named gbrain server only. Other configured
-MCP servers remain enabled. Configuration overrides merge; an empty server object is
-not a reliable global disable. Dangerously adds the catalog's approval/sandbox bypass
-flag for this launch; configured mode leaves the command unchanged.
+Dangerously adds the catalog's approval/sandbox bypass flag for this launch; configured
+mode leaves the command unchanged. Ronin never adds an MCP override at Agent launch;
+Codex reads its own user configuration.
 
 Stop sends Escape. Clear sends Ctrl+C once, as selected by the owner. Ronin does not
 inspect the CLI state first; native Ctrl+C may clear a draft, interrupt activity, or
@@ -28,7 +56,7 @@ provider-specific shortcut or a second Enter.
 
 Services' `gbrain/setup.sh`, `uninstall.sh`, and `doctor.sh` own gbrain registration,
 removal and checks. The setup uses the Codex MCP command and token environment reference.
-There is no generic all-server on/off mechanism in this integration.
+Agent launch does not provision or switch that registration.
 
 ## Sign-in particulars
 

@@ -6,7 +6,6 @@ import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
-import { createServicesSurface, createGbrainSurface } from './setup-surfaces.js';
 import { completeInstallationMap as completeMap } from './installation-map.js';
 import { createStatusMarker } from './status-marker.js';
 
@@ -142,9 +141,7 @@ export function createInstallationsSurface(campaign, context = {}) {
         refreshStoneMarks();
       },
     };
-    const page = installation.id === 'ronin_services'
-      ? createServicesSurface(sharedContext)
-      : installation.id === 'gbrain' ? createGbrainSurface(sharedContext) : null;
+    const page = context.createInstallationSurface?.(installation.id, sharedContext) || null;
     if (page) {
       host.append(page.el);
       void page.show?.();

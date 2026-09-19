@@ -76,6 +76,7 @@ export const serviceParked = (svc) => Array.isArray(S.installedServices?.parked)
 
 /** Is the service that owns this commons PANE absent? A pane not listed is core. */
 export const serviceOff = (pane) => serviceMissing(PANE_SERVICE[pane]);
+
 export const tiles = [];
 // The 🔒/🔓 switch (changed ONLY by the button):
 // LOCKED  = the original lock-step mirror, wired to NOTHING new. Scroll and every

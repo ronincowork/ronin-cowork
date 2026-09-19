@@ -350,13 +350,13 @@ test('every notice points at the one action and names no path to carry', () => {
 test('a Team move explains desk custody without changing it', () => {
   assert.match(
     W.teamLeaveNotice('old_team', 'ignored', ['ronin_cowork:team/old_team/agent']),
-    /open "old_team" desks did not move:[\s\S]*hand them in to "old_team"[\s\S]*hand-ins still go to "old_team"'s lead/,
+    /open "old_team" worktrees did not move:[\s\S]*hand them in to "old_team"[\s\S]*hand-ins still go to "old_team"'s lead/,
   );
   assert.match(
     W.teamJoinNotice('new_team', 'ignored', ['lead'], ['ronin_cowork:team/old_team/agent']),
-    /Existing desks do not move with Team membership:[\s\S]*worktree-desk open <repo> --source team[\s\S]*new desk hands in to this Team's lead/,
+    /Existing worktrees do not move with Team membership:[\s\S]*worktree-desk open <repo> --source team[\s\S]*new worktree hands in to this Team's lead/,
   );
-  assert.match(W.teamLeaveNotice('old_team', 'ignored', []), /no open "old_team" desks to settle/);
+  assert.match(W.teamLeaveNotice('old_team', 'ignored', []), /no open "old_team" worktrees to settle/);
 });
 
 test('legacy single-file wipeboards are ignored, never read, never listed', async () => {

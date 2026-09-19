@@ -47,7 +47,7 @@ writer of server truth. Desktop and phone share feature modules but have separat
 
 - Start at the [visible-surface ownership index](../public/js/README.md#visible-surface-ownership-index)
   for the UI → route → state → test path, then its detailed module map.
-- Contracts: [UI](architecture/ui.md), [Workbench](using-ronin/workbench.md),
+- Contracts: [UI](architecture/ui.md), [Workbench construction](architecture/workbench.md), [Workbench use](using-ronin/workbench.md),
   [UI wording](products/kokugo.md), [Agent glossary](../KOTOBA_GLOSSARY.md).
 - Shared boundaries: [request.js](../public/js/request.js), [ui.js](../public/js/ui.js),
   [state.js](../public/js/state.js). Entries: [main.js](../public/js/main.js), [phone.js](../public/js/phone.js).
@@ -63,7 +63,7 @@ Separate live runtime facts, durable authorities, and projections. Start with th
   [Session identity](architecture/session-identity.md), [Worktrees](architecture/worktrees.md).
 - Code: [tmux-client.ts](../src/tmux-client.ts), [spawn-broker.ts](../src/spawn-broker.ts),
   [session-archive.ts](../src/session-archive.ts), [machine-settings.ts](../src/machine-settings.ts),
-  [desk lifecycle](../src/desks/lifecycle-ledger.ts).
+  [worktree lifecycle](../src/desks/lifecycle-ledger.ts).
 - Tests: [tmux-client.test.ts](../tests/tmux-client.test.ts),
   [spawn-broker.test.ts](../tests/spawn-broker.test.ts), [session-archive.test.ts](../tests/session-archive.test.ts),
   [desks.test.ts](../tests/desks.test.ts).

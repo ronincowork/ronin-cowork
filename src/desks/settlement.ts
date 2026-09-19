@@ -43,7 +43,7 @@ export function classifyResidue(item: ResidueObservation): SettlementItem {
     return { ...item, classification: 'stale_registry_row', action: 'remove_row', safe: true, reason: 'registry row names no branch or worktree' };
   }
   if (item.kind === 'assignment' && item.exists === false) {
-    return { ...item, classification: 'stale_assignment', action: 'remove_row', safe: true, reason: 'assignment has no surviving managed desk' };
+    return { ...item, classification: 'stale_assignment', action: 'remove_row', safe: true, reason: 'assignment has no surviving managed worktree' };
   }
   if (item.kind === 'directory' && item.empty) {
     return { ...item, classification: 'empty_scaffold', action: 'remove_directory', safe: true, reason: 'empty managed scaffold carries no work' };

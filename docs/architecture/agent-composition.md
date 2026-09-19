@@ -59,7 +59,7 @@ assignment + inherited defaults + installed and measured facts
 ```
 
 Applicability must remain explicit. For example, selecting software-development behavior
-does not manufacture a managed desk: the Worktree Desk capability applies only when the
+does not manufacture a managed worktree: the Managed Worktree capability applies only when the
 chosen project root and repository declaration resolve managed work. Likewise, enabling
 an installation may make tools, behaviors, and skills available without making the
 installation itself a behavior.

@@ -10,7 +10,7 @@ import { launchTeamAgents } from './team-loader.js';
 import {
   createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab, seedReservedWorkspaceTab } from './workspace.js';
+import { closeWorkspaceTab, openWorkbenchTab, reserveWorkspaceTab } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -113,6 +113,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       assignment: pick.instructions || '',
       provider: pick.provider || '',
       model: pick.model || '',
+      team_lead: pick.team_lead === true,
       ...(pick.mandate ? {
         reach: pick.mandate.reach,
         recruit: pick.mandate.recruit,
@@ -261,7 +262,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   const whereSummary = () => t('where.summary', 'born in {root} · {repos}', {
     root: draft.root || t('team_config.default', 'Default'),
     repos: draft.repos.length ? t('where.roots', 'also in {list}', { list: draft.repos.join(', ') })
-      : t('where.none', 'no auto desk'),
+      : t('where.none', 'no auto worktree'),
   });
 
   /* ---- step 5 · Team kit ---- */
@@ -279,23 +280,25 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   // and delivered nowhere. Raised with the lead; the record keeps its default.
   /* Launch mode is an agent default like the model: it lands in the next Agent form and
      the hand has the last word. js/new-agent.js carries the whole argument. */
-  const LAUNCH_MODES = () => [
-    { key: 'configured', label: t('launch_mode.configured', 'Model provider configuration'),
-      sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
-    { key: 'live_dangerously', label: t('launch_mode.live', 'Dangerously'),
-      sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
-  ];
+  const LAUNCH_MODES = () => {
+    const supported = providerCatalog().providers.find((row) => row.provider === draft.provider)?.launch_modes || ['configured'];
+    return [{ key: 'configured', label: t('launch_mode.configured', 'Native'),
+      sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
+    ...(supported.includes('live_dangerously') ? [{ key: 'live_dangerously', label: t('launch_mode.live', 'Dangerously'),
+      sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') }] : [])];
+  };
   const kitHost = el('div');
   let kitQuestions = null;
   let kitSignature = '';
   function paintKitQuestions() {
-    const signature = JSON.stringify(availableBehaviours().map((row) => row.name));
+    const signature = JSON.stringify([availableBehaviours().map((row) => row.name), draft.provider, LAUNCH_MODES().map((row) => row.key)]);
+    if (!LAUNCH_MODES().some((row) => row.key === draft.launchMode)) draft.launchMode = 'configured';
     if (signature !== kitSignature) {
       kitQuestions?.destroy();
       const shelfRows = (rows) => rows.map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading }));
       kitQuestions = ask([
         { group: t('launch_mode.head', 'Launch mode'), fields: [{
-          key: 'launchMode', label: t('launch_mode.head', 'Launch mode'),
+          key: 'launchMode', label: t('launch_mode.mode', 'Mode'),
           options: LAUNCH_MODES().map((row) => ({ v: row.key, l: row.label, sub: row.sub })),
         }] },
         { group: t('behaviours', 'Behaviours'), fields: [{
@@ -493,8 +496,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
         born: born.length ? born.join(', ') : t('forms.none', 'none'),
         names: refused.map(({ row }) => row.name).join(', '),
       }));
-      seedReservedWorkspaceTab(launchTab, 'team', { tabName: '' });
-      openWorkspaceTab('team', name, launchTab);
+      openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
       return;
     }
     notice.set('', '');
@@ -502,8 +504,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     // The reserved tab cloned the opener's sessionStorage when it was opened. A Team tab
     // name belongs to that older tab, not to the Team born here; clear it so the new page
     // falls back to the roster title (and ultimately the Team name).
-    seedReservedWorkspaceTab(launchTab, 'team', { tabName: '' });
-    openWorkspaceTab('team', name, launchTab);
+    openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
     await created?.(name);
     await consumed?.();
   }

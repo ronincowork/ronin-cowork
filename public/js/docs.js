@@ -3,7 +3,10 @@ import { request } from './request.js';
 import { status } from './ui.js';
 import { homeData } from './home.js';
 import { t } from './lexicon.js';
+import { nextTabIndex } from './workspace-tabs.js';
 import { DOC_MIME } from './team-drag.js';
+
+let docsSequence = 0; // one id per shelf, so four tiles' lists never collide
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
 export function buildDocs(tile, root, isShowing, only = null, reposFirst = () => []) {
@@ -17,24 +20,48 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   /* ---------- the rectangular shelf tabs, then the list ---------- */
   let shelf = 'tracked';
   const shelves = { plans: null, docs: null }; // fetched on demand, kept for the session
+  // THE SHELF IS THREE TABS OVER ONE PANEL. The three pills carried `role="tab"` with no
+  // tabpanel and no `aria-controls` — tabs that controlled nothing, and no keyboard. The
+  // list below them is the panel, so it is named as one, and the arrow keys come from the
+  // tab set's own decision rather than a third engine written here.
   const pills = document.createElement('div');
   pills.className = 'dc-pills';
   pills.setAttribute('role', 'tablist');
+  const list = document.createElement('div');
+  list.className = 'dc-list';
+  list.id = `dc-list-${++docsSequence}`;
+  list.setAttribute('role', 'tabpanel');
   const pill = {};
   for (const [id, label] of [['tracked', t('docs.pill_tracked', 'Tracked')], ['plans', t('docs.pill_plans', 'Plans')], ['docs', t('docs.pill_docs', 'Docs')]]) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'dc-pill';
+    b.id = `${list.id}-${id}`;
     b.setAttribute('role', 'tab');
+    b.setAttribute('aria-controls', list.id);
     b.textContent = label;
     b.addEventListener('click', () => { shelf = id; sig = null; paintPills(); refresh(true); });
     pill[id] = b;
     pills.append(b);
   }
-  const paintPills = () => { for (const [id, b] of Object.entries(pill)) b.setAttribute('aria-selected', String(id === shelf)); };
+  const shelves_ = () => Object.values(pill);
+  const paintPills = () => {
+    for (const [id, b] of Object.entries(pill)) {
+      const on = id === shelf;
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+      if (on) list.setAttribute('aria-labelledby', b.id);
+    }
+  };
+  // Focus moves; Enter or Space chooses, because choosing a shelf refetches.
+  pills.addEventListener('keydown', (event) => {
+    const row = shelves_();
+    const to = row[nextTabIndex(event.key, row.indexOf(document.activeElement), row.length)];
+    if (!to) return;
+    event.preventDefault();
+    to.focus();
+  });
   paintPills();
-  const list = document.createElement('div');
-  list.className = 'dc-list';
 
   /* ---------- the editor ---------- */
   const ed = document.createElement('div');

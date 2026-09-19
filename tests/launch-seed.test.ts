@@ -6,7 +6,7 @@ import type { CampaignConfig } from '../src/campaigns.js';
 import type { BehaviourRow, InstallationRow } from '../src/resource-adapters.js';
 import type { TeamRoster } from '../src/team-rosters.js';
 
-const contribution = { label: '', blurb: '', origin: 'stock', shadowed: false, reading: [], reading_off: [], tools: [], mcp: [], parts: [] } as const;
+const contribution = { label: '', blurb: '', origin: 'stock', shadowed: false, reading: [], reading_off: [], tools: [], parts: [] } as const;
 const installations: InstallationRow[] = [
   { ...contribution, name: 'ronin_services', effect: 'system', provides: [], requires: [], reading_off: ['routine/ronin_services/OFF.md'] },
   { ...contribution, name: 'gbrain', effect: 'provider', provides: ['gbrain'], requires: [] },

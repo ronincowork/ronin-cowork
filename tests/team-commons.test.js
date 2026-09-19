@@ -7,9 +7,9 @@ const source = async (path) => readFile(new URL(`../${path}`, import.meta.url), 
 test('Commons opens on its separate Roster and keeps Configuration separate', async () => {
   const view = await source('public/js/cowork-view.js');
   assert.match(view, /label: t\('team\.commons', 'Commons'\)/);
-  assert.match(view, /channels: \[\s*\{ id: 'roster'/);
+  assert.match(view, /tabs: \[\s*\{ id: 'roster'/);
   assert.match(view, /selected: 'roster'/);
-  assert.match(view, /services: \{ roster: service\(roster\)[\s\S]*'team-configuration': service\(config\)/);
+  assert.match(view, /\{ id: 'roster'[^}]*panel: service\(roster\) \}[\s\S]*\{ id: 'team-configuration'[^}]*panel: service\(config\) \}/);
   assert.match(view, /commons\.roster\.replaceChildren\(members\)/);
   assert.match(view, /commons\.config\.replaceChildren\(config\)/);
   assert.doesNotMatch(view, /commons\.config\.replaceChildren\(members, config\)/);
@@ -22,9 +22,10 @@ test('Task Manager is offered only when available and its Commons tab stays pres
   assert.match(view, /WB_PROFILES\.team, \[WB_TYPES\.commons, WB_TYPES\.kanban,/);
   assert.match(view, /request\('\/api\/installed'/);
   assert.match(view, /kanbanOffers: \(\) => kanbanGate\.available \? \[\{/);
-  assert.match(view, /commons\.kanbanTab\.disabled = false/);
+  assert.match(view, /commons\.channels\.setAvailable\('kanban', \{ on: true, title: '' \}\)/);
+  assert.doesNotMatch(view, /kanbanTab/, 'no consumer reaches a tab node');
   assert.match(view, /item\.channels\.select\('kanban'\)/);
-  assert.match(view, /workspace\.channel_task_manager', 'Task Manager'/);
+  assert.match(view, /workspace\.tab_task_manager', 'Task Manager'/);
 });
 
 test('Roster expands live readings and actions; Launch uses the paired workspace and Close retires', async () => {

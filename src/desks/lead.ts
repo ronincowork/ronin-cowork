@@ -58,7 +58,7 @@ export function leadMessage(n: LeadNotice): string {
   if (n.result === 'accepted') {
     return `hand-in ${n.receiptId} by ${n.session} is on ${n.line} (${(n.lineSha ?? '').slice(0, 10)})${n.projectId ? ` for Project ${n.projectId}` : ''}. Your job: review the team line and promote it to dev when it is coherent — bin/ronin-promote ${n.team}. worktree-desk receipts --line --accepted lists what it carries.`;
   }
-  return `hand-in ${n.receiptId} by ${n.session} CONFLICTS with ${n.line}${n.files?.length ? ` on ${n.files.join(', ')}` : ''}. Your job: adjudicate — the line is untouched; the desk is blocked until you rule.`;
+  return `hand-in ${n.receiptId} by ${n.session} CONFLICTS with ${n.line}${n.files?.length ? ` on ${n.files.join(', ')}` : ''}. Your job: adjudicate — the line is untouched; the worktree is blocked until you rule.`;
 }
 
 export type Delivery = { to: string; how: 'house-send' | 'wipeboard' | 'self'; detail: string };

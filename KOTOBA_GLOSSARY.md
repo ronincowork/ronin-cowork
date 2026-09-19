@@ -33,11 +33,11 @@ runtime parts, while Agent capabilities teach tools (`docs/architecture/tool-sur
 | root destination | **Ronin Home** | The root page and its browser title. |
 | root layout | **Three Blocks** | Home's Settings, Teams, and New Project doors. |
 | Setup workbench | **Ronin Setup** | First-use workbench. |
-| Campaign workbench | **Ronin Settings** | Ongoing Campaign configuration workbench. |
+| Desk workbench | **Ronin Settings** | Ongoing Desk configuration workbench. |
 | stone work surface | **stone work surface** | Select a collection item: stones move to a left rail, details open on the right. Reused by Presets, Workspace Folders, and Model Providers. |
 | tile | **tile**<!--g:glossary.tile--> | One cell showing one session. Never "pane". |
 | `workspace` | **workspace**<!--g:glossary.workspace--> | One slot of the coworkspace. It holds a tile or a commons. |
-| `campaign_commons` | **the commons**<!--g:glossary.campaign_commons--> | The campaign's shared surface. |
+| `campaign_commons` | **the commons**<!--g:glossary.campaign_commons--> | The Desk's shared surface. |
 | `team_commons` | **team commons**<!--g:glossary.team_commons--> | Roster, Docs, Wipeboard, Messages, Cron jobs, Configuration. |
 | `cowork_commons` | **cowork commons**<!--g:glossary.cowork_commons--> | Machine, account, desk profile, Workspace Folders. |
 | `admin_desk` | **the desk**<!--g:glossary.desk--> | Everything about this install, behind ⚙. |
@@ -63,7 +63,8 @@ runtime parts, while Agent capabilities teach tools (`docs/architecture/tool-sur
 | `desk_profile` | **desk profile**<!--g:glossary.desk_profile--> | The owner's standing defaults: skin, words, layout. |
 | harakiri | **harakiri**<!--g:glossary.harakiri--> | A session ends itself. |
 | `@ronin_note` | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
-| desk | **desk** | A managed private branch and worktree with explicit custody. |
+| Desk | **Desk** | The engagement context containing Teams, Agents, and work. It is not a Git worktree. |
+| worktree | **worktree** | A private working folder and branch with explicit custody for managed repository work. |
 | hand-in | **hand in** | Admit committed work to Team review. Never say “push.” |
-| commit | **commit** | A private checkpoint on a managed desk; it publishes nothing. |
+| commit | **commit** | A private checkpoint on a managed worktree; it publishes nothing. |
 | push | **Git push** | Remote Git publication only; never the name for hand-in or promotion. |

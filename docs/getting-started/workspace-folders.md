@@ -42,7 +42,7 @@ When a Workspace Folder is a repository, you choose how Agents work inside it.
 
 | Choice | What each Agent gets | Suits |
 |---|---|---|
-| [Managed desk](../using-ronin/desks.md) | Its own branch and working tree | Active code editing, and several Agents at once |
+| [Managed worktree](../using-ronin/desks.md) | Its own branch and working tree | Active code editing, and several Agents at once |
 | Shared checkout | The one working tree, on whatever branch it is on | Notes, research, plans, and reading |
 
 Prefer desks whenever the work is code and more than one Agent may touch it. Parallel
@@ -77,6 +77,6 @@ stops being offered when you start something new.
 ## Related
 
 - [Ronin Setup](setup-workbench.md) — the first-run door, and every page behind it
-- [Managed desks](../using-ronin/desks.md) — private branches for Agents in a repository
+- [Managed worktrees](../using-ronin/desks.md) — private branches for Agents in a repository
 - [Workspace Folders — construction](../architecture/project-roots.md) — the handle, the
   record, and how session identity resolves it

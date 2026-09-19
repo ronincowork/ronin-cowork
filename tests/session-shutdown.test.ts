@@ -22,7 +22,7 @@ function ops(desks: DeskStatus[], log: string[]): ShutdownOps {
   };
 }
 
-test('accepted clean team-contained desks take the automatic close-all then end fast path', async () => {
+test('accepted clean team-contained worktrees take the automatic close-all then end fast path', async () => {
   const log: string[] = [];
   const phases: string[] = [];
   const result = await shutdownAgent('agent', (p) => phases.push(`${p.phase}:${p.message}`), ops([
@@ -30,8 +30,8 @@ test('accepted clean team-contained desks take the automatic close-all then end 
   ], log));
   assert.deepEqual(result.closed, ['ronin:team/t/agent', 'lab:team/t/agent-lab']);
   assert.deepEqual(log, ['close:ronin:team/t/agent', 'close:lab:team/t/agent-lab', 'stop:agent']);
-  assert.ok(phases.some((p) => /checking_desks:Checking assigned desks \(2 found\)/.test(p)));
-  assert.match(phases.at(-1)!, /complete:Agent agent and 2 assigned desk\(s\) closed/);
+  assert.ok(phases.some((p) => /checking_desks:Checking assigned worktrees \(2 found\)/.test(p)));
+  assert.match(phases.at(-1)!, /complete:Agent agent and 2 assigned worktree\(s\) closed/);
 });
 
 test('dirty, pending, rejected, unique, shared, and occupied desks block the whole transaction actionably', async () => {

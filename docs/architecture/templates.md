@@ -94,7 +94,7 @@ A handful ships — one or two a kind, so every launch form has something on the
 **the Ronin library on ronincowork.com is where the rest live**. Four
 projects: **Staff My Codebase** 🎬 for code, **Morning Brief** ☕ for work, **Health &
 Fitness** 🏃 for yourself, **Dinner Party** 🕯 for the house; and five people: the Personal
-Assistant 📇 (gbrain on, born into its own team), the System Administrator 🔧, the Office
+Assistant 📇 (gbrain teaching selected, born into its own team), the System Administrator 🔧, the Office
 Manager ⚙, the Housekeeper 🔑 and the Training Coach 🏋. The first project to try is Staff
 My Codebase: a code coordinator born as the marked lead, and an assessor that surveys your
 codebase, staffs one specialist per service into the team, and hands you a crew — its
@@ -144,4 +144,4 @@ carries a `sha256` per bundle and the install refuses a document that does not m
 **Yours, outward.** A team card's *Download as a bundle* (or `bin/ronin-bundle pack <team>`)
 builds the same document from this install — your copies only, since what ships is on every
 install — for a library of your own or for the public one. The code is `src/bundles.ts`;
-the door is `src/routes/library-api.ts`; the surface is `public/js/campaign-templates.js`.
+the door is `src/routes/library-api.ts`; there is currently no Workbench surface for it.

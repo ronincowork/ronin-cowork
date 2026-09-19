@@ -64,8 +64,6 @@ export interface CapabilityFacts {
   installations: ReadonlySet<string>;
   /** Behaviours selected and available for this birth. */
   behaviours: ReadonlySet<string>;
-  /** MCP is on (the connected half of a connection). */
-  connected: boolean;
   /** Born into a Campaign, so Machine and Campaign settings are a surface this Agent has. */
   campaign: boolean;
   team: boolean;
@@ -85,7 +83,7 @@ export interface ResolvedCapability extends CapabilityRow {
 }
 
 export const CAPABILITY_CLASSES: readonly CapabilityClass[] = ['cowork', 'feature', 'integration'];
-export const REQUIREMENT_WORDS = ['installation', 'behaviour', 'arrangement', 'connected', 'campaign', 'team', 'lead'] as const;
+export const REQUIREMENT_WORDS = ['installation', 'behaviour', 'arrangement', 'campaign', 'team', 'lead'] as const;
 
 const cell = (text: string): string => text.trim().replace(/^`|`$/g, '').trim();
 const blank = (value: string): boolean => !value || /^[–—-]$/.test(value.trim());
@@ -161,8 +159,6 @@ export function checkRequirement(requirement: string, facts: CapabilityFacts): s
     case 'arrangement':
       if (value !== 'managed' && value !== 'checkout') return `unknown arrangement "${value}"`;
       return facts.arrangement === value ? '' : `no ${value} arrangement`;
-    case 'connected':
-      return facts.connected ? '' : 'not connected';
     case 'campaign':
       return facts.campaign ? '' : 'no Campaign';
     case 'team':

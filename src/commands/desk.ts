@@ -99,7 +99,7 @@ function noticeLine(n: DeskNotice): string {
       : `  ${n.repo}:${n.desk} merged ${source}; HEAD ${n.before_sha} → ${n.after_sha}`;
     case 'pending': return `  ${n.repo}:${n.desk} (${n.session}) did not merge ${source}: ${n.reason || 'update pending'}; HEAD unchanged at ${n.before_sha}, files untouched`;
     case 'pending_overlap': return `  ${n.repo}:${n.desk} (${n.session}) did not merge ${source}: ${n.reason}; overlaps ${n.files.join(', ')}; HEAD unchanged at ${n.before_sha}, files untouched`;
-    case 'conflict': return `  ${n.repo}:${n.desk} (${n.session}) conflicts with ${source} on ${n.files.join(', ')} — merge aborted; HEAD unchanged at ${n.before_sha}, files untouched; resolve the reported commit on this private desk`;
+    case 'conflict': return `  ${n.repo}:${n.desk} (${n.session}) conflicts with ${source} on ${n.files.join(', ')} — merge aborted; HEAD unchanged at ${n.before_sha}, files untouched; resolve the reported commit in this private worktree`;
   }
 }
 
@@ -116,8 +116,8 @@ async function mine(session: string, value: string): Promise<DeskStatus[]> {
 
 async function pickOne(session: string, value: string, verb: string): Promise<DeskStatus> {
   const desks = await mine(session, value);
-  if (!desks.length) die(value ? `NO-DESK: ${session} has no open desk matching ${value}` : `NO-DESK: ${session} has no open desk`, 3);
-  if (desks.length > 1) die(`WHICH-DESK: ${session} has ${desks.map((d) => deskId(d)).join(', ')} — name repo:branch (worktree-desk ${verb} <repo:branch>)`, 2);
+  if (!desks.length) die(value ? `NO-DESK: ${session} has no open worktree matching ${value}` : `NO-DESK: ${session} has no open worktree`, 3);
+  if (desks.length > 1) die(`WHICH-DESK: ${session} has worktrees ${desks.map((d) => deskId(d)).join(', ')} — name repo:branch (worktree-desk ${verb} <repo:branch>)`, 2);
   return desks[0]!;
 }
 
@@ -136,8 +136,8 @@ async function main(): Promise<void> {
           const selector = parseRepoBranchSelector(positional[0]);
           desks = desks.filter((d) => matchesRepoBranchSelector(d, selector));
         }
-        if (!desks.length) die(session || Object.keys(filter).length ? `NO-DESK: nothing recorded for ${JSON.stringify(filter)}` : 'NO-DESK: no desks recorded on this box', 0);
-        out(`${desks.length} desk(s)`);
+        if (!desks.length) die(session || Object.keys(filter).length ? `NO-DESK: no worktree recorded for ${JSON.stringify(filter)}` : 'NO-DESK: no worktrees recorded on this box', 0);
+        out(`${desks.length} worktree(s)`);
         for (const d of desks) out(row(d));
         if (session && !str(flags.get('team')) && !str(flags.get('repo'))) {
           // The caller's own desks: certify them. A birth desk — the one this shell lives
@@ -146,14 +146,14 @@ async function main(): Promise<void> {
           const c = certifyDesks(desks, process.cwd());
           if (c.certified) {
             out('  CERTIFIED CLEAN: everything is on the line; ending this Agent loses nothing.');
-            if (c.standing.length) out(`  standing in ${c.standing.map(deskId).join(', ')}: stay parked for more work, or go with session_end — the desk ends with you, never before you`);
+            if (c.standing.length) out(`  standing in ${c.standing.map(deskId).join(', ')}: stay parked for more work, or go with session_end — the worktree ends with you, never before you`);
             if (c.closable.length) out(`  closable without ending you (you are not standing in them): ${c.closable.map(deskId).join(', ')}`);
           } else {
             for (const b of c.blocking) out(`  NOT CERTIFIED: ${deskId(b.desk)} — ${b.why}; commit and hand in before you park or go`);
           }
         } else {
           const levelIdle = desks.filter((d) => d.state === 'open' && !d.dirty && d.ahead === 0);
-          if (levelIdle.length) out(`  level, idle: ${levelIdle.map(deskId).join(', ')} (a desk closes with its session, or by a lead once the session is gone)`);
+          if (levelIdle.length) out(`  level, idle: ${levelIdle.map(deskId).join(', ')} (a worktree closes with its session, or by a lead once the session is gone)`);
         }
         for (const key of new Set(desks.map((d) => `${d.repo}\t${d.line}`))) {
           const [repo, line] = key.split('\t') as [string, string];
@@ -193,7 +193,7 @@ async function main(): Promise<void> {
         let targets: DeskStatus[];
         if (flags.get('assignment')) {
           targets = await mine(session, positional[0] ?? '');
-          if (!targets.length) die(`NO-DESK: ${session} has no open desk`, 3);
+          if (!targets.length) die(`NO-DESK: ${session} has no open worktree`, 3);
         } else targets = [await pickOne(session, positional[0] ?? '', 'hand-in')];
         const projectId = str(flags.get('project'));
         if (projectId) {
@@ -210,7 +210,7 @@ async function main(): Promise<void> {
             out(projectId
               ? `  Code handed in for Project ${projectId}. Project state is unchanged. Next: work-record project advance ${projectId} --to LANDING.`
               : '  Code handed in. No Project was associated; Project state is unchanged.');
-            out(`  desk is ${tidy.desk.ahead === 0 ? 'level with the line' : `${tidy.desk.ahead} commit(s) ahead of the line`}`);
+            out(`  worktree is ${tidy.desk.ahead === 0 ? 'level with the line' : `${tidy.desk.ahead} commit(s) ahead of the line`}`);
             out(tidy.unsaved_files.length ? `  not handed in: ${tidy.unsaved_files.join(', ')}` : '  no unsaved or untracked files');
             out(`  NEXT: line moved; run worktree-desk status ${deskId(d)}; if it reports a dev update, run worktree-desk sync ${deskId(d)}`);
           }
@@ -242,17 +242,17 @@ async function main(): Promise<void> {
         out(`${verdict} ${deskId(d)}`);
         out(noticeLine(n));
         out(n.source_dirty
-          ? '  Committed work only. Source desk has unsaved changes; they were not copied. Source desk and hand-in destination unchanged.'
+          ? '  Committed work only. Source worktree has unsaved changes; they were not copied. Source worktree and hand-in destination unchanged.'
           : '  Committed work only. Source branch and hand-in destination unchanged.');
         process.exit(n.kind === 'adopted' ? 0 : 4);
       }
       case 'close': {
         if (!session) die('NO-SESSION: not inside a session and no --session', 3);
         if (flags.get('with-session')) {
-          if (positional[0]) await pickOne(session, positional[0], 'close'); // validate the named desk, then close the whole assignment
+          if (positional[0]) await pickOne(session, positional[0], 'close'); // validate the named worktree, then close the whole assignment
           try {
             const result = await shutdownAgent(session);
-            out(`CLOSED ${result.closed.join(', ') || 'no desks'} — session ${session} ended`);
+            out(`CLOSED ${result.closed.join(', ') || 'no worktrees'} — session ${session} ended`);
             return;
           } catch (e) {
             if (e instanceof ShutdownRefused) die(`REFUSED: ${e.message}`, 4);
@@ -260,7 +260,7 @@ async function main(): Promise<void> {
           }
         }
         const targets = positional[0] ? [await pickOne(session, positional[0], 'close')] : await mine(session, '');
-        if (!targets.length) die(`NO-DESK: ${session} has no open desk`, 3);
+        if (!targets.length) die(`NO-DESK: ${session} has no open worktree`, 3);
         let kept = false;
         for (const d of targets) {
           const o = await closeDesk(d.repo, d.branch);
@@ -288,7 +288,7 @@ async function main(): Promise<void> {
           if (cwdIsInside(d.worktree, await sessionDir(live.name))) occupants.push(live.name);
         }
         if (occupants.length) {
-          die(`OCCUPIED: ${occupants.join(', ')} ${occupants.length === 1 ? 'is' : 'are'} running inside ${d.worktree}; nothing was deleted. Use Hard Delete if you want to remove the Agent and its desks together.`, 4);
+          die(`OCCUPIED: ${occupants.join(', ')} ${occupants.length === 1 ? 'is' : 'are'} running inside ${d.worktree}; nothing was deleted. Use Hard Delete if you want to remove the Agent and its worktrees together.`, 4);
         }
         const expected = `DISCARD ${deskId(d)}`;
         if (confirmation !== expected) die(`CONFIRM: discard deletes ${deskId(d)} and every commit only it holds — say --confirm "${expected}"`, 4);

@@ -120,7 +120,7 @@ function isInside(worktree: string, cwd: string): boolean {
 
 export function formatShutdownBlockers(blockers: ShutdownBlocker[]): string {
   return [
-    'Agent shutdown was refused; no desk was closed and the Agent remains live.',
+    'Agent shutdown was refused; no worktree was closed and the Agent remains live.',
     ...blockers.map((blocker) => `- ${blocker.desk}: ${blocker.reasons.join('; ')}. NEXT: ${blocker.next_action}`),
   ].join('\n');
 }
@@ -137,7 +137,7 @@ export async function closeAssignedDesks(
   const closeMs = limits.closeTimeoutMs ?? 40_000;
   progress({ phase: 'resolving_agent', message: `Resolving Agent ${session}` });
   const desks = await bounded('assigned desk lookup', deadline, readMs, now, (signal) => ops.desks(session, signal));
-  progress({ phase: 'checking_desks', message: `Checking assigned desks (${desks.length} found)`, desk_count: desks.length });
+  progress({ phase: 'checking_desks', message: `Checking assigned worktrees (${desks.length} found)`, desk_count: desks.length });
   progress({ phase: 'checking_safety', message: 'Checking dirty, unhanded, shared, and occupied state', desk_count: desks.length });
 
   const live = await bounded('live Agent lookup', deadline, readMs, now, (signal) => ops.liveSessions(signal));
@@ -164,17 +164,17 @@ export async function closeAssignedDesks(
     if (desk.ahead > 0) {
       reasons.push(`${desk.ahead} unique commit(s) are not contained in ${desk.line}`);
       actions.push(desk.mode === 'direct'
-        ? `this legacy desk belongs to a checkout repository; preserve it or transfer custody with worktree-desk handoff ${id(desk)} --to <session>`
+        ? `this legacy worktree belongs to a checkout repository; preserve it or transfer custody with worktree-desk handoff ${id(desk)} --to <session>`
         : `run worktree-desk hand-in ${id(desk)}; a pending or rejected hand-in must be resolved before retrying session_end`);
     }
     const otherOwners = (desk.owners?.length ? desk.owners : [desk.session]).filter((owner) => owner !== session);
     if (otherOwners.length) {
       reasons.push(`shared with ${otherOwners.join(', ')}`);
-      actions.push(`run worktree-desk handoff ${id(desk)} --to ${otherOwners.join(',')} to leave it with the remaining owner(s)`);
+      actions.push(`run worktree-desk handoff ${id(desk)} --to ${otherOwners.join(',')} to leave the worktree with the remaining owner(s)`);
     }
     if (!desk.mounted) {
       reasons.push('worktree is not mounted, so its state cannot be safely closed');
-      actions.push(`run worktree-desk status ${id(desk)} and restore or hand off the desk before retrying`);
+      actions.push(`run worktree-desk status ${id(desk)} and restore or hand off the worktree before retrying`);
     }
     const occupants = cwdRows.filter((row) => row.name !== session && isInside(desk.worktree, row.cwd)).map((row) => row.name);
     if (occupants.length) {
@@ -185,16 +185,16 @@ export async function closeAssignedDesks(
   }
   if (blockers.length) throw new ShutdownRefused(blockers);
 
-  progress({ phase: 'closing_desks', message: `Closing safe desks (0/${desks.length})`, desk_count: desks.length });
+  progress({ phase: 'closing_desks', message: `Closing safe worktrees (0/${desks.length})`, desk_count: desks.length });
   const closed: string[] = [];
   for (const desk of desks) {
-    if (now() >= deadline) throw new ShutdownExpired('desk close');
+    if (now() >= deadline) throw new ShutdownExpired('worktree close');
     const outcome = await bounded(`closing ${id(desk)}`, deadline, closeMs, now, (signal) => ops.close(desk, session, signal));
     if (outcome.action !== 'closed') {
-      throw new Error(`Shutdown stopped after closing ${closed.length}/${desks.length} desks; Agent remains live. ${id(desk)}: ${outcome.reason}`);
+      throw new Error(`Shutdown stopped after closing ${closed.length}/${desks.length} worktrees; Agent remains live. ${id(desk)}: ${outcome.reason}`);
     }
     closed.push(id(desk));
-    progress({ phase: 'closing_desks', message: `Closing safe desks (${closed.length}/${desks.length})`, desk_count: desks.length });
+    progress({ phase: 'closing_desks', message: `Closing safe worktrees (${closed.length}/${desks.length})`, desk_count: desks.length });
   }
   return { session, closed };
 }
@@ -213,6 +213,6 @@ export async function shutdownAgent(
   if (remaining <= 0) throw new ShutdownExpired('ending Agent');
   progress({ phase: 'ending_agent', message: `Ending Agent ${session}`, desk_count: result.closed.length });
   await bounded('ending Agent', now() + remaining, limits.stopTimeoutMs ?? 20_000, now, (signal) => ops.stop(session, signal));
-  progress({ phase: 'complete', message: `Agent ${session} and ${result.closed.length} assigned desk(s) closed`, desk_count: result.closed.length });
+  progress({ phase: 'complete', message: `Agent ${session} and ${result.closed.length} assigned worktree(s) closed`, desk_count: result.closed.length });
   return result;
 }

@@ -42,6 +42,10 @@
   .ask[data-exposed='true'] .ask-tray { border: 0; background: transparent; padding: 0; }
   .ask[data-exposed='true'] .ask-opt { height: auto; min-height: var(--ask-h); overflow: visible; }
   .ask[data-exposed='true'] .ask-name { display: block; overflow: visible; -webkit-line-clamp: unset; }
+  /* Exposed removes clipping for ordinary choices, but tall shelf cards keep ERABI's one
+     fixed geometry: short and wrapped names align, as do their bottom-right read glyphs. */
+  .ask[data-exposed='true'] .ask-tall { height: calc(var(--ask-h) * 2); overflow: hidden; }
+  .ask[data-exposed='true'] .ask-tall .ask-name { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 4; }
   .ask-filter { justify-self: start; width: calc(var(--ask-w) + var(--space-12)); max-width: 100%; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; font-size: var(--form-note); }
   .ask-options { display: flex; flex-wrap: wrap; gap: var(--ask-gap); }
   .ask-empty { color: var(--dim); font-size: var(--form-note); }

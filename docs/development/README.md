@@ -5,7 +5,7 @@ start with the [documentation index](../README.md#evaluate-install-and-use-ronin
 
 - [Contributor map](../contributor-map.md): seven change areas and exact ownership.
 - [CONTRIBUTING](../../CONTRIBUTING.md): contribution and review workflow.
-- [Development method](ronin-methodology.md): managed desks, hand-in, and preview workflow.
+- [Development method](ronin-methodology.md): managed worktrees, hand-in, and preview workflow.
 - [Release](release.md): producing releases and the install/update boundary.
 - [Dependency bundle](DEPENDENCY_BUNDLE_INSTALL.md): bundled runtime construction.
 - [Release packaging](tarball.md): release coordination and verification.

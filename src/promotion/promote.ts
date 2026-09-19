@@ -72,7 +72,7 @@ export async function announcePromotion(r: PromotionReceipt, primary: string, fx
   }
   for (const [session, items] of per) {
     const next = [...(projects.get(session) ?? [])].map((id) => ` Project ${id} state is unchanged. Next: work-record project done ${id}.`).join('');
-    const text = `from promotion: your hand-in is on ${r.repos[0]?.target ?? 'dev'} — ${items.join('; ')} [${r.id}].${next} Your desk is finished and certified clean: stay parked for more work, or go with session_end — the desk ends with you, never before you.`;
+    const text = `from promotion: your hand-in is on ${r.repos[0]?.target ?? 'dev'} — ${items.join('; ')} [${r.id}].${next} Your worktree is finished and certified clean: stay parked for more work, or go with session_end — the worktree ends with you, never before you.`;
     try {
       log(`  told  ${session}: ${await fx.tell(session, text)}`);
     } catch (e) {

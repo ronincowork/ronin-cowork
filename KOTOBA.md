@@ -31,7 +31,7 @@ These terms follow [Tools and Agent capabilities](docs/architecture/tool-surface
 | Skill | Provider-native teaching or adaptation, without unique Ronin business authority |
 | Assignment | The work and explicit designations given to an Agent, including Team lead |
 | Agent composition | Resolved tool capabilities, behaviors, mandate, skills, and assignment, with provenance and teaching |
-| Scope | Where a fact or rule applies; distinguish Campaign/Team inheritance, behavior delivery scope, and resource storage/shadowing |
+| Scope | Where a fact or rule applies; distinguish Desk/Team inheritance, behavior delivery scope, and resource storage/shadowing |
 | Installation | An installed facility that can make tools, guidance, or service parts available; see [Installations](docs/architecture/installations.md) |
 | Preset / template | Editable starting values for a launch; see [Templates](docs/architecture/templates.md) |
 
@@ -47,8 +47,8 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Surface | A visible UI held in a workspace; contributor change areas are navigation categories, not UI objects or directories |
 | Workspace | A numbered browser slot holding a tile or another surface |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
-| Ronin Home / Ronin Setup / Ronin Settings | Home destination, first-use workbench, and ongoing Campaign configuration workbench |
-| Campaign | Context for Teams and inherited configuration ([Campaigns](docs/using-ronin/campaigns.md)) |
+| Ronin Home / Ronin Setup / Ronin Settings | Home destination, first-use workbench, and ongoing Desk configuration workbench |
+| Desk | Engagement context for Teams and inherited configuration; internal compatibility identifiers retain `campaign` ([Desks](docs/using-ronin/campaigns.md)) |
 | Team (`team`) | A group of sessions; stock UI says Team, with Team Commons for its shared surfaces |
 | Team record (`team_roster`) | Durable Team identity, defaults, and held work; membership and leads derive from sessions ([Team workspace](docs/architecture/team-workspace.md)) |
 | Session | A running Cowork Agent, bare-metal Agent, or terminal; archived sessions have separate restore manifests ([Session identity](docs/architecture/session-identity.md)) |
@@ -58,7 +58,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Wipeboard / message queue / Cron jobs | Team announcements, pending session delivery, and scheduled requests; distinct stores and delivery lifecycles |
 | Ronin Lab | A Workspace Folder for ideas, research, plans, and notes across or before projects; users and Ronin creators each have their own Lab, rather than a code repository for one specific project |
 | Workspace Folder (`project_root`) | A registered folder Ronin may work in; not a browser workspace ([Workspace folders](docs/architecture/project-roots.md)) |
-| Managed desk | Private worktree and branch with explicit custody; distinct from the UI's desk/settings and a desk profile ([Worktrees](docs/architecture/worktrees.md)) |
+| Worktree | Private working folder and branch with explicit custody for managed repository work; distinct from an engagement Desk and a Desk profile ([Worktrees](docs/architecture/worktrees.md)) |
 | Commit / hand-in / promotion / Git push | Private checkpoint / admission to Team review / admission to global dev / remote publication; not synonyms |
 | Desk profile | Owner-selected presentation defaults ([Desk profiles](docs/architecture/desk-profiles.md)) |
 

@@ -5,8 +5,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **label:** Professional
 - **blurb:** The plain words. Every other lexicon falls through to these.
 - **desk_profile:** desk profile
-- **campaign:** Campaign
-- **campaigns:** Campaigns
+- **campaign:** Desk
+- **campaigns:** Desks
 - **add_agent.card:** Add Agent to Team
 - **add_agent.card_summary:** The Team answers the rest.
 - **add_agent.title:** Add Agent to Team
@@ -39,21 +39,21 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.none:** —
 - **installations:** Installations
 - **defaults:** Defaults
-- **campaign.name:** Campaign name
+- **campaign.name:** Desk name
 - **campaign.name_placeholder:** Ronin Home
 - **campaign.description:** Description
-- **campaign.description_placeholder:** What this campaign is for
+- **campaign.description_placeholder:** What this desk is for
 - **campaign.commons:** Campaign commons
 - **campaign.view:** Campaign view
 - **campaign.commons_short:** Commons
 - **campaign.cowork_view:** Teams View
 - **campaign.coworks:** Teams
 - **campaign.cowork:** Team
-- **campaign.new:** New Campaign
-- **campaign.create:** Create Campaign
+- **campaign.new:** New Desk
+- **campaign.create:** Create Desk
 - **campaign.none:** No Campaigns yet.
 - **campaign.saving:** saving…
-- **campaign.name_needed:** A Campaign needs a name.
+- **campaign.name_needed:** A Desk needs a name.
 - **campaign.profile_hint:** Sets the words, the skin and the templates this Campaign opens with.
 - **campaign.read_failed:** Could not read Campaigns — {message}
 - **campaign.archive:** Archive
@@ -196,7 +196,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roots_summary:** The folders this Campaign is allowed to work in.
 - **campaign_view.templates_summary:** The Team templates this Campaign offers.
 - **campaign_view.new_summary:** Set the stage. It creates no Team and launches no Agent.
-- **campaign_view.none_selected:** No Campaign selected.
+- **campaign_view.none_selected:** No Desk selected.
 - **campaign_view.no_profiles:** No desk profiles on this install.
 - **campaign_view.no_description:** No description yet.
 - **campaign_view.no_profile:** As stock — none chosen.
@@ -208,7 +208,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.new_project_worktrees_help:** Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for folders added later; change an existing repository on its Workspace folder card below.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
-- **campaign_view.head:** Campaign: {name}
+- **campaign_view.head:** Desk: {name}
 - **campaign_view.presets:** Presets
 - **campaign_view.presets_help:** A preset copies all of its components into this Campaign. Change any one of them afterwards; the preset is not consulted again.
 - **campaign_view.apply:** Apply
@@ -410,16 +410,17 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.payload_band:** New launch payload — what this raise will send
 - **forms.payload_band_agent:** New launch payload — what this launch will send
 - **launch_mode.head:** launch mode
-- **launch_mode.configured:** Model provider configuration
-- **launch_mode.configured_sub:** Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.
+- **launch_mode.mode:** Mode
+- **launch_mode.configured:** Native
+- **launch_mode.configured_sub:** Do not override the provider CLI’s approval behavior. Model selection is separate.
 - **launch_mode.live:** Dangerously
-- **launch_mode.live_sub:** Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.
+- **launch_mode.live_sub:** Use that provider CLI’s own approval-bypass launch.
 - **help.title:** Help
 - **help.card_summary:** What each step means, beside the step you are on.
 - **help.top_body:** The name is the only thing you must give, and it is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for, and it narrows the templates below to the ones that suit it.
 - **help.template_body:** A template fills part of the form in and stops. Its answers become yours the moment they land — nothing stays linked, and you can change any of it. An Agent template is a loadout for one session; a Team template is a cast, and picking one lands its Agents as rows you can edit. Make your own fills nothing in, and going back to it empties what a template wrote.
 - **help.mandate_body:** How far this Agent goes before it checks in, whether it may build out a team, and what it hands back. Output takes as many answers as you mean — a plan AND the team AND no code — and nothing argues with a combination. Open means no requirement. None of it is enforced: the mandate is carried in the Agent’s letter and read by it, not imposed on it.
-- **help.loadout_body:** Launch mode decides what Ronin appends to the command that starts this Agent. Features add facilities or taught practices; behaviours say how ordinary work should be done.
+- **help.loadout_body:** Model and Launch mode are independent. Native means no override in that field; only Native model plus Native launch mode is the bare CLI command. Features add facilities or taught practices; behaviours say how ordinary work should be done.
 - **help.agents:** Agents
 - **help.agents_body:** The Agents this Team is raised with. A row is short on purpose — a name and what that Agent does — and opens for its mandate when you want it. 人 marks the lead; this form offers one, though a running Team may gain more. Raising creates the Team and then births every named row, the lead last. A Team with no rows is ordinary and raises fine.
 - **help.installations:** What an Installation is
@@ -598,6 +599,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.provider:** model provider
 - **forms.model:** model
 - **forms.none:** —
+- **forms.on:** On
+- **forms.off:** Off
 - **forms.always:** always
 - **forms.campaign:** campaign
 - **forms.campaign_on:** campaign on
@@ -632,14 +635,18 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## new_agent — new-agent.js (the drawn launch form, staged beside the ＋ New board)
 - **new_agent.title:** New Agent
 - **new_agent.model_package:** Model
+- **new_agent.defaults_cascade_team:** Defaults cascade from Desk → Team → this Agent. Changes on this form apply only to this Agent.
+- **new_agent.defaults_cascade_desk:** Defaults cascade from Desk → this Agent. Changes on this form apply only to this Agent.
+- **new_agent.team_defaults:** Team defaults
+- **new_agent.desk_defaults:** Desk defaults
 - **new_agent.card_summary:** Session type first — the drawn launch form.
 - **new_agent.new_session:** New session
 - **new_agent.type_cowork:** Cowork Agent
-- **new_agent.type_cowork_sub:** Born with everything Ronin provides on this box.
+- **new_agent.type_cowork_sub:** Born with Ronin capabilities, behaviors, and assigned Team.
 - **new_agent.type_bare:** Bare-metal Agent
 - **new_agent.type_bare_sub:** The provider’s agent and nothing else.
 - **new_agent.type_terminal:** Terminal
-- **new_agent.type_terminal_sub:** A raw tmux pane. No agent is launched and nothing is sent to it.
+- **new_agent.type_terminal_sub:** A raw tmux pane, no agent launched, and nothing sent to it.
 - **new_agent.name_model_kind:** Name, model & kind
 - **new_agent.name_model:** Name & model
 - **new_agent.name_where_model:** Name, where & model
@@ -662,6 +669,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.session:** session
 - **new_agent.created_first:** (created first)
 - **new_agent.blank_note:** A blank field is an answer, not a gap.
+- **new_agent.team_role:** Team role
+- **new_agent.make_team_lead:** Make team lead
+- **new_agent.team_lead:** Team lead
 - **new_agent.worktrees_mode:** Agent work mode
 - **new_agent.worktrees_on:** Own worktree where the Workspace folder allows it
 - **new_agent.worktrees_off:** Use the project checkout and its branches
@@ -680,14 +690,14 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## desks — desks.js (the ⑂ desk readings: tile head, roster column, Team page)
 - **desks.detached:** (detached)
 - **desks.worktree:** worktree {path}
-- **desks.count_one:** 1 desk
-- **desks.count_many:** {n} desks
+- **desks.count_one:** 1 worktree
+- **desks.count_many:** {n} worktrees
 - **desks.pending_n:** {n} pending
 - **desks.private_n:** {n} private
 - **desks.dirty_n:** {n} dirty
 - **desks.parked_n:** {n} parked
 - **desks.blocked_n:** {n} blocked
-- **desks.none:** No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI.
+- **desks.none:** No managed worktree listed yet. A coding launch opens selected worktrees; the session lists its repositories in TEGAMI.
 - **desks.line:** → {line}
 - **desks.ahead:** ahead {n}
 - **desks.behind:** behind {n}
@@ -1773,7 +1783,7 @@ The catalog entry goes. {dir} is not touched.
 - **where.summary:** born in {root} · {repos}
 - **where.desks:** desks in {list}
 - **where.checkouts:** works in {list}
-- **where.none:** no auto desk
+- **where.none:** no auto worktree
 - **team_config.default:** Default
 - **team_config.worktrees_mode:** Agent work mode
 - **team_config.worktrees_on:** Own worktree where the Workspace folder allows it
@@ -1980,3 +1990,8 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.authentication_title_hint:** Choose a title
 
 - **setup_surface.title_before_done:** To finish, give this authentication a title.
+
+- **campaign_view.machine:** Machine
+- **campaign_view.workspaces:** Workspaces
+- **campaign_view.machine_settings:** Machine Settings
+- **campaign_view.desk_settings:** Desk Settings

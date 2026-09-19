@@ -106,7 +106,7 @@ export async function listSessionReadings(): Promise<SessionReadingRow[]> {
     blurb: 'all · generated at birth from the selected capability documents',
     content: renderCapabilitiesOverview(await resolveCapabilities({
       arrangement: 'managed', installations: new Set(), behaviours: new Set(),
-      connected: true, campaign: true, team: true, lead: true, everything: true,
+      campaign: true, team: true, lead: true, everything: true,
     })),
     level: 'all',
     origin: 'stock',

@@ -33,7 +33,7 @@ test('all Workbench defaults share the quiet Ronin surface', async () => {
 test('New Team is consumed only after complete creation and destination opening', async () => {
   const [form, cowork] = await Promise.all([source('new-team-form.js'), source('cowork-view.js')]);
   assert.match(form, /\{ created = null, consumed = null, embedded = false \}/);
-  assert.match(form, /openWorkspaceTab\('team', name, launchTab\);\s*await created\?\.\(name\);\s*await consumed\?\.\(\);/);
+  assert.match(form, /openWorkbenchTab\(\{ destination: 'team', param: name, mode: 'overlay', state: \{ tabName: '' \} \}, launchTab\);\s*await created\?\.\(name\);\s*await consumed\?\.\(\);/);
   const partial = form.slice(form.indexOf('if (refused.length)'), form.indexOf("notice.set('', '')"));
   assert.doesNotMatch(partial, /consumed/);
   assert.match(cowork, /create: \(\{ workspace, environment, consumed \}\) => environment\.newTeamForm\(workspace, consumed\)/);
@@ -44,7 +44,7 @@ test('New Agent consumes its workbench form only after a successful handoff', as
   const [form, cowork, setup] = await Promise.all([
     source('new-agent.js'), source('cowork-view.js'), source('setup-surfaces.js'),
   ]);
-  assert.match(form, /\{ connect = null, consumed = null, embedded = false, team = null \}/);
+  assert.match(form, /\{ connect = null, consumed = null, embedded = false, team = null,[^}]+ \}/);
   assert.match(form, /if \(connect\) await connect\(born\);\s*else openWorkspaceTab\([^;]+;\s*clearAfterLaunch\(\);\s*await consumed\?\.\(\);/);
   assert.match(cowork, /create: \(\{ workspace, environment, consumed \}\) => environment\.newAgent\(workspace, consumed\)/);
   assert.match(cowork, /createNewAgentView\(WorkspaceKit, \{\s*consumed,/);

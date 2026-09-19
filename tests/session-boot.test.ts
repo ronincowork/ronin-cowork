@@ -13,7 +13,7 @@ import { resolveConditionalBehaviours, resolveFloorBehaviours } from '../src/beh
 
 /** The fullest overview: every stock capability document selected, every listed tool present. */
 const fullOverview = async (): Promise<string> => renderCapabilitiesOverview(await resolveCapabilities(
-  { arrangement: 'managed', installations: new Set(), behaviours: new Set(), connected: true, campaign: true, team: true, lead: true, everything: true },
+  { arrangement: 'managed', installations: new Set(), behaviours: new Set(), campaign: true, team: true, lead: true, everything: true },
   { present: async () => true },
 ));
 
@@ -25,14 +25,14 @@ test('every assisted session is handed the tool overview built from its selected
   process.env.RONIN_CATALOGS_DIR = path.join(temp, 'catalogs');
   try {
     const overview = await fullOverview();
-    const boot = await bootFiles('', false, [], overview);
+    const boot = await bootFiles('', [], overview);
     const lesson = boot.find((file) => path.basename(file) === CAPABILITIES_READING);
     assert.ok(lesson, `the boot shelf should carry ${CAPABILITIES_READING}`);
     assert.equal(lesson, path.join(temp, 'generated', CAPABILITIES_READING));
     const text = await readFile(lesson, 'utf8');
     assert.equal(text, overview, 'the fragment is the rendered overview, byte for byte');
     // The lesson is derived from the folder: every stock bundle, its priority tools, its help route.
-    for (const label of ['Edges', 'Work Record', 'Agent session', 'Worktree desk', 'Machine settings', 'Cowork Team']) {
+    for (const label of ['Edges', 'Work Record', 'Agent session', 'Managed worktree', 'Machine settings', 'Cowork Team']) {
       assert.match(text, new RegExp(`^### ${label}$`, 'm'));
     }
     assert.match(text, /`work-record project create`/);
@@ -55,7 +55,7 @@ test('every assisted session is handed the tool overview built from its selected
     const brief = buildBrief(profile, undefined, form, undefined, boot);
     assert.match(brief, new RegExp(`Read first: .*${CAPABILITIES_READING}`));
     // No overview, no fragment: a birth that resolved no capabilities hands over none.
-    const bare = await bootFiles('', false, []);
+    const bare = await bootFiles('', []);
     assert.ok(!bare.some((file) => path.basename(file) === CAPABILITIES_READING));
   } finally {
     if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
@@ -71,9 +71,9 @@ test('the universal shelf carries vocabulary and navigation, not optional abilit
   const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
   process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
   try {
-    // No root, no role, no task, MCP off — the barest assisted launch still reads the
+    // No root, no role, no task — the barest assisted launch still reads the
     // universal set. A blank axis omits only its own level.
-    const boot = await bootFiles('', false);
+    const boot = await bootFiles('');
     const names = boot.map((file) => path.basename(file));
     for (const required of ['RONIN_UTILITY.md', 'KOTOBA_GLOSSARY.md']) {
       assert.ok(names.includes(required), `the universal boot shelf should contain ${required}`);
@@ -113,6 +113,8 @@ test('every selector phrase has an exact meaning in floor or capability teaching
   assert.ok(!terms.includes('Fork it') && !terms.includes('New Agent'), 'ambiguous Agent creation aliases stay out of the selector');
   assert.match(selector, /term === 'Create new session \(Agent\)'[^\n]+classList\.add\('session-create'\)/);
   assert.match(style, /\.terminal-hint-row\.session-create[^}]+var\(--kaki\)/);
+  assert.match(style, /\.terminal-hints summary[^}]+font-size: var\(--text-3\)/, 'hint cards use compact selector typography');
+  assert.match(style, /\.terminal-hints h3[^}]+font-size: var\(--text-3\)/, 'Hints heading uses compact selector typography');
   const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   for (const term of terms) assert.match(teaching, new RegExp(`\\*\\*${escaped(term)}\\*\\*`, 'i'), `${term} needs an exact meaning`);
   assert.match(teaching, /AN OWNER ASKING FOR AN AGENT ALWAYS MEANS:[\s\S]*IT NEVER MEANS SPAWN A CLI-INTERNAL SUB-AGENT/);
@@ -139,13 +141,13 @@ test('the real stock shelf compiles to one read: contracts first, glossary last,
   try {
     await mkdir(path.join(temp, 'ways', 'floor'), { recursive: true });
     await writeFile(path.join(temp, 'ways', 'floor', 'user-intro.md'), `# User intro\n\n- **scope:** floor\n\n## About the user\n\n${'a'.repeat(180)}\n${'b'.repeat(180)}\n`);
-    // The largest stock birth: every Routine on, MCP on, every capability bundle selected
+    // The largest stock birth: every Routine on and every capability bundle selected
     // with every listed tool present.
     const applied = [
       ...await resolveFloorBehaviours(),
       ...await resolveConditionalBehaviours({ arrangement: 'managed', team: true, lead: true }),
     ].map((row) => row.file);
-    const boot = [...applied, ...await bootFiles('', true, [
+    const boot = [...applied, ...await bootFiles('', [
       'routine/ronin_services/SERVICES_ABILITIES.md',
       'routine/ronin_host/HOST_ABILITIES.md',
     ], await fullOverview(), 'newborn')];
@@ -243,7 +245,7 @@ test('a referenced session is caught up on through the tape, pane peek as fallba
   assert.match(brief, /edges control login_fix/);
 });
 
-test('a service-signed *_connected level rides the MCP toggle', async () => {
+test('a selected feature delivers its declared legacy-named connected level', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
   const oldShelf = process.env.RONIN_SESSION_BOOT_DIR;
   const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
@@ -256,15 +258,9 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
     await mkdir(path.join(temp, 'shelf', 'notes'), { recursive: true });
     await writeFile(path.join(temp, 'shelf', 'notes', 'LOOSE.md'), '# not a level');
 
-    const connected = (await bootFiles('', true, ['gbrain_connected/'])).map((f) => path.basename(f));
-    assert.ok(connected.includes('GBRAIN_TOOLS.md'), 'MCP on should read the service-signed level');
-    assert.ok(!connected.includes('LOOSE.md'), 'a directory that is not a level is not read');
-
-    const disconnected = (await bootFiles('', false, ['gbrain_connected/'])).map((f) => path.basename(f));
-    assert.ok(
-      !disconnected.includes('GBRAIN_TOOLS.md'),
-      'MCP off must read no connected level — tools and know-how ride the one choice',
-    );
+    const selected = (await bootFiles('', ['gbrain_connected/'])).map((f) => path.basename(f));
+    assert.ok(selected.includes('GBRAIN_TOOLS.md'), 'the selected feature should read its declared level');
+    assert.ok(!selected.includes('LOOSE.md'), 'a directory that is not a declared level is not read');
   } finally {
     if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;
     else process.env.RONIN_SESSION_BOOT_DIR = oldShelf;
@@ -286,11 +282,11 @@ test('only enabled installation contributions add startup reading', async () => 
     await mkdir(path.join(temp, 'shelf', 'routine', 'gbrain'), { recursive: true });
     await writeFile(path.join(temp, 'shelf', 'routine', 'gbrain', 'GBRAIN.md'), '# gbrain');
 
-    const base = (await bootFiles('', false, ['routine/ronin_base/BASE.md'])).map((f) => path.basename(f));
+    const base = (await bootFiles('', ['routine/ronin_base/BASE.md'])).map((f) => path.basename(f));
     assert.ok(base.includes('BASE.md'));
     assert.ok(!base.includes('GBRAIN.md'), 'an unselected Routine contributes no reading');
 
-    const none = (await bootFiles('', false, [])).map((f) => path.basename(f));
+    const none = (await bootFiles('', [])).map((f) => path.basename(f));
     assert.ok(!none.includes('BASE.md') && !none.includes('GBRAIN.md'));
   } finally {
     if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;

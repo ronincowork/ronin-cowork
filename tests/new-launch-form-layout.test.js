@@ -19,17 +19,22 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.match(form, /className: 'na-questions',[\s\S]*density: 'tight'/);
   assert.doesNotMatch(form, /key: 'template'.*Apply Template/);
   assert.match(form, /Cowork Agent[\s\S]*Bare-metal Agent[\s\S]*Terminal/);
+  assert.match(form, /Born with Ronin capabilities, behaviors, and assigned Team\./);
+  assert.match(form, /A raw tmux pane, no agent launched, and nothing sent to it\./);
   assert.match(form, /Session type/);
   assert.match(form, /agent_body', 'Agent'/);
   assert.match(form, /Name · required/);
   assert.match(form, /group: t\('new_agent\.model_package', 'Model'\)/);
   assert.match(form, /after: 'provider'/);
+  assert.match(form, /group: t\('new_agent\.model_package', 'Model'\), fields: \[[\s\S]*key: 'provider'[\s\S]*key: 'model'[\s\S]*key: 'teamLead'[\s\S]*\] \},[\s\S]*group: t\('mandate', 'Mandate'\)/);
   assert.match(form, /group: t\('mandate', 'Mandate'\)/);
   assert.doesNotMatch(form, /key: '(?:reach|recruit|output)'[^\n]+shape: 'square'/);
   assert.match(form, /group: t\('squad', 'Team'\)/);
-  assert.doesNotMatch(form, /teamLead|team_lead|leadership/);
+  assert.match(form, /key: 'teamLead'.*Make team lead.*switch: \[t\('forms\.on', 'On'\), t\('forms\.off', 'Off'\)\]/);
   assert.doesNotMatch(form, /switch: \[[^\]]+\], word:/);
   assert.match(form, /group: t\('where\.label', 'Where it works'\)/);
+  assert.match(form, /group: t\('where\.label', 'Where it works'\), fields: \[[\s\S]*key: 'root'[\s\S]*key: 'repos'[\s\S]*key: 'launchMode'/);
+  assert.match(form, /key: 'launchMode', label: t\('launch_mode\.mode', 'Mode'\)/);
   assert.match(form, /many: true, after: 'root'/);
   assert.match(form, /questions\.show\(draft\.type === 'terminal' \? \[\] : draft\.type === 'bare_metal_agent' \? \['provider', 'model', 'root', 'launchMode'\] : null\)/);
   assert.match(form, /session_type: 'bare_metal_agent'[\s\S]*launch_mode: draft\.launchMode/);
@@ -40,8 +45,15 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.match(form, /stepPayload\.setNumber\(order\.length \+ 1\)/);
   assert.match(form, /key: 'payload'.*Payload/);
   assert.match(form, /identityRow\.append\(nameField, teamQuestions\.el\)/);
-  assert.match(form, /stepTop\.body\.replaceChildren\(identityRow, questions\.el, instructionsField\)/);
+  assert.match(form, /Defaults cascade from Desk → Team → this Agent\. Changes on this form apply only to this Agent\./);
+  assert.match(form, /Defaults cascade from Desk → this Agent\. Changes on this form apply only to this Agent\./);
+  assert.match(form, /const links = el\('p', 'na-defaults-links'\)/);
+  assert.match(form, /defaultsLink\(t\('new_agent\.team_defaults', 'Team defaults'\)/);
+  assert.match(form, /defaultsLink\(t\('new_agent\.desk_defaults', 'Desk defaults'\)/);
+  assert.match(form, /defaultsNote\.hidden = draft\.type === 'terminal'/);
+  assert.match(form, /stepTop\.body\.replaceChildren\(identityRow, questions\.el, defaultsNote, instructionsField\)/);
   assert.doesNotMatch(form, /providerModelStones|na-choice-stone|na-mini-stone|stones: true/);
+  assert.match(form, /key: 'behaviours'[\s\S]*density: 'tight', exposed: true/, 'opening Tools and skills exposes its only selector immediately');
 });
 
 test('both workbench entrances use the canonical New Agent form with contextual Team default', async () => {
@@ -50,9 +62,12 @@ test('both workbench entrances use the canonical New Agent form with contextual 
   assert.doesNotMatch(cowork, /WB_TYPES\.addAgent|addAgentBySeat|environment\.addAgent/);
   assert.match(cowork, /profiles\.define\(WB_PROFILES\.team, \[WB_TYPES\.commons, WB_TYPES\.kanban, WB_TYPES\.terminal, WB_TYPES\.newAgent/);
   assert.match(cowork, /const newAgentBySeat = \{\};[\s\S]*newAgent: \(id, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{[\s\S]*consumed,[\s\S]*team: \(\) =>/);
+  assert.match(cowork, /openTeamDefaults:[\s\S]*putCommons\(oppositeSeat\(id\), 'team-configuration'\)/);
+  assert.match(cowork, /openDeskDefaults: \(\) => openWorkbenchTab\(\{ destination: 'campaign', mode: 'replace',[\s\S]*workspace1: 'campaign\.defaults'[\s\S]*workspace2: 'setup\.launch-own'/);
   assert.match(cowork, /connect: async \(name\) => \{\s*await fetchSessions\(\);\s*return connectSession\(name, id\)/);
   assert.match(cowork, /const live = new Set\(S\.sessions\.map/, 'a newborn is not discarded against the slower home reading');
-  assert.match(cowork, /'team\.add-agent': WB_TYPES\.newAgent/);
+  assert.doesNotMatch(cowork, /legacyTypes|team\.add-agent|@new-team|@team-roster/,
+    'restoration uses canonical Workbench surface types only');
 });
 
 test('choosing New team requires a valid name before any session type can launch', async () => {
@@ -78,11 +93,19 @@ test('Where it works keeps birthplace separate and offers all workspaces to Cowo
 });
 
 test('the old New Agent selector implementation and CSS are deleted', async () => {
-  const [parts, css] = await Promise.all([source('form-steps.js'), readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8')]);
+  const [parts, css, askCss] = await Promise.all([
+    source('form-steps.js'),
+    readFile(new URL('../public/css/launch-forms.css', import.meta.url), 'utf8'),
+    readFile(new URL('../public/css/ask.css', import.meta.url), 'utf8'),
+  ]);
   assert.doesNotMatch(parts, /providerModelStones/);
   await assert.rejects(source('where-it-works.js'), 'the details popover is gone: Where it works is two ERABI questions everywhere');
   assert.doesNotMatch(css, /na-choice-stone|na-stone|na-mandate-grid|na-model-picker|na-workspace-stone/);
   assert.match(css, /\.na-surface :is\(\.wk-field, \.ask\)\[hidden\] \{ display: none; \}/);
+  assert.match(css, /\.na-defaults-links a \{ color: inherit; font: inherit; text-decoration: none; \}/,
+    'defaults remain links without browser link typography');
+  assert.match(askCss, /\.ask\[data-exposed='true'\] \.ask-tall \{ height: calc\(var\(--ask-h\) \* 2\); overflow: hidden; \}/,
+    'exposed tall ERABI cards keep one height instead of growing with wrapped names');
 });
 
 test('New Team folds Kind and Template into one optional first row', async () => {
@@ -97,7 +120,7 @@ test('New Team folds Kind and Template into one optional first row', async () =>
   assert.match(form, /templateTray\(offered\(\), draft\.template, \(name\) => applyTemplate\(name\)\)/, 'the tray includes its No template reset');
   assert.match(form, /Name & instructions/);
   assert.match(agents, /＋ Add Agent/);
-  assert.doesNotMatch(agents, /Team lead|team_lead|\.lead/);
+  assert.match(agents, /key: 'teamLead'.*Make team lead.*switch: \[t\('forms\.on', 'On'\), t\('forms\.off', 'Off'\)\]/);
   assert.doesNotMatch(agents, /Add Lead Agent|Add Team Agent/);
 });
 
@@ -132,6 +155,7 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.match(agents, /ntf-agent-row/);
   assert.match(agents, /const questions = ask\(\[/);
   assert.match(agents, /group: t\('new_agent\.model_package', 'Model'\)/);
+  assert.match(agents, /group: t\('new_agent\.model_package', 'Model'\), fields: \[[\s\S]*key: 'provider'[\s\S]*key: 'model'[\s\S]*key: 'teamLead'[\s\S]*\] \},[\s\S]*group: t\('mandate', 'Mandate'\)/);
   assert.match(agents, /group: t\('mandate', 'Mandate'\)/);
   assert.match(agents, /const mandateRows = \(values\) => values\.map/);
   assert.match(agents, /options: mandateRows\(REACH\)/);
@@ -139,7 +163,7 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.match(agents, /many: true, options: mandateRows\(OUTPUT\)/);
   assert.doesNotMatch(agents, /shape: 'square'|ruledRows|glyph:/);
   assert.match(agents, /many: true/);
-  assert.doesNotMatch(agents, /switch:/);
+  assert.match(agents, /key: 'teamLead'.*switch:/);
   assert.doesNotMatch(agents, /switch:[^\n]+word:/);
   assert.match(agents, /density: 'tight'/);
   assert.match(agents, /tierWord\(item\.tier\)/);
@@ -151,7 +175,8 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.match(agents, /provider: row\.provider/);
   assert.match(agents, /model: row\.model/);
   assert.match(agents, /instructions: row\.assignment\.trim\(\)/);
-  assert.doesNotMatch(agents, /team_lead|routines_/);
+  assert.match(agents, /team_lead: row\.team_lead === true/);
+  assert.doesNotMatch(agents, /routines_/);
   assert.match(team, /loadProviderCatalog\(\)/, 'New Team loads provider choices for its inline Agent editor');
   assert.match(team, /Promise\.all\(\[[\s\S]*request\('\/api\/project-roots'\),[\s\S]*loadProviderCatalog\(\)/,
     'provider choices load as part of entering the New Team surface');
@@ -181,6 +206,7 @@ test('New Team routes each selector region through ask() and leaves Templates br
   assert.match(form, /ruledRows\('kind', \['open', \.\.\.KINDS\]/);
   assert.match(form, /const whereQuestions = ask\(/);
   assert.match(form, /kitQuestions = ask\(/);
+  assert.match(form, /key: 'launchMode', label: t\('launch_mode\.mode', 'Mode'\)/);
   assert.match(form, /after: 'provider'/);
   assert.match(form, /after: 'root'/);
   assert.match(form, /row: branchField/);
@@ -209,6 +235,6 @@ test('New Team checks names only for a cast and opens partial Teams with exact r
   assert.match(form, /if \(picks\.length\) \{[\s\S]*request\('\/api\/sessions'/);
   assert.match(form, /const born = outcomes\.filter\(\(\{ result \}\) => result\?\.ok\)/);
   assert.match(form, /Team created\. Launched \{launched\} of \{total\} Agents: \{born\}\. Failed: \{names\}/);
-  assert.match(form, /if \(refused\.length\) \{[\s\S]*seedReservedWorkspaceTab\(launchTab, 'team',[\s\S]*openWorkspaceTab\('team', name, launchTab\);[\s\S]*return;/);
+  assert.match(form, /if \(refused\.length\) \{[\s\S]*openWorkbenchTab\(\{ destination: 'team', param: name, mode: 'overlay',[\s\S]*return;/);
   assert.doesNotMatch(form, /if \(refused\.length\) \{\s*closeWorkspaceTab/);
 });

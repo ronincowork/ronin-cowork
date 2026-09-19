@@ -9,7 +9,7 @@ export const WORKBENCH_IDS = Object.freeze(['workspace1', 'workspace2', 'workspa
 const LOWER = new Set(['workspace3', 'workspace4']);
 const COLUMN_OF = Object.freeze({ workspace1: 'workspace1', workspace3: 'workspace1', workspace2: 'workspace2', workspace4: 'workspace2' });
 const SURFACE_DRAG = 'application/x-ronin-workbench-surface';
-const HEADER_KINDS = new Set(['surface', 'channels', 'terminal']);
+const HEADER_KINDS = new Set(['surface', 'tabs', 'terminal']);
 const INTERACTIVE_DESCENDANT = [
   'a[href]', 'area[href]', 'button', 'input', 'select', 'textarea', 'summary',
   '[contenteditable]:not([contenteditable="false"])',
@@ -205,13 +205,15 @@ export function createWorkbench(options = {}) {
     value.el.dataset.workbenchSurface = type;
     if (resource) value.el.dataset.workbenchResource = resource;
     instanceNodes.set(value.el, id);
-    const required = definition.header === 'surface' ? '.wk-surface-header' : definition.header === 'channels' ? '.wk-channel-service-tabs' : null;
+    const required = definition.header === 'surface' ? '.wk-surface-header' : definition.header === 'tabs' ? '.wk-tabset-bar' : null;
     if (required && !value.el.querySelector(`:scope > ${required}`)) throw new Error(`${type} did not use its ${definition.header} Workbench header`);
     if (definition.header === 'terminal') {
       value.el.querySelector('.tile-head .minimize')?.addEventListener('click', () => dismiss(id));
     } else {
-      const host = definition.header === 'channels'
-        ? value.el.querySelector(':scope > .wk-channel-service-tabs')
+      // A tabbed surface has an actions slot of its own; nothing is ever interleaved
+      // into the tab row.
+      const host = definition.header === 'tabs'
+        ? value.el.querySelector(':scope > .wk-tabset-bar .wk-tabset-actions')
         : value.el.querySelector(':scope > .wk-surface-header .wk-surface-header-actions');
       if (host) {
         const title = t('workspace.close_surface', 'Close this work surface');

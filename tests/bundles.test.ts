@@ -42,7 +42,6 @@ const BEHAVIOUR = `# Weekly Review
 - **reading:** —
 - **scope:** selected
 - **tools:** tejun-review
-- **mcp:** —
 - **installation:** —
 - **order:** 90
 

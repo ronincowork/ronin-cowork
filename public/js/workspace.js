@@ -4,6 +4,7 @@ import { WorkspacePrimitives } from './workspace-primitives.js';
 export const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
 export const WORKSPACE_STATE_VERSION = 3;
 const PREVIOUS_WORKSPACE_STATE_KEY = 'ronin.workspace.v1';
+const WORKBENCH_LAUNCH_PARAM = 'ronin-launch';
 
 const text = (value) => (typeof value === 'string' ? value : '');
 
@@ -124,41 +125,56 @@ export function openWorkspaceTab(view, param = '', reserved = null) {
   return window.open(url.href, '_blank', 'noopener');
 }
 
-/** Seed one destination namespace into the browser's cloned tab state, then restore source state. */
-export function openWorkspaceStateTab(context, view, viewPatch, param = '') {
-  if (!context?.patchViewState || !context?.viewState || !viewPatch || typeof viewPatch !== 'object') return null;
-  const previous = context.viewState(view) || {};
-  const restore = Object.fromEntries(Object.keys(viewPatch).map((key) => [key, previous[key]]));
-  context.patchViewState(view, viewPatch);
-  const tab = reserveWorkspaceTab();
-  context.patchViewState(view, restore);
-  if (!tab) return null;
-  return openWorkspaceTab(view, param, tab);
+/**
+ * Build a destination URL with a one-shot Workbench arrangement. `replace` replaces
+ * seats, while `overlay` changes only named seats.
+ */
+export function workbenchLaunchUrl({ destination, param = '', mode = 'replace', state = {} } = {}) {
+  if (!destination || !['replace', 'overlay'].includes(mode) || !state || typeof state !== 'object') return null;
+  const url = new URL(location.href);
+  url.searchParams.set(WORKBENCH_LAUNCH_PARAM, JSON.stringify({ destination, param: text(param), mode, state }));
+  url.hash = hashFor(destination, param);
+  return url.href;
 }
 
-/** Patch the already-reserved destination tab after an asynchronous launch resolves. */
-export function seedReservedWorkspaceTab(tab, view, viewPatch) {
-  if (!tab?.sessionStorage || !view || !viewPatch || typeof viewPatch !== 'object') return false;
-  try {
-    const raw = tab.sessionStorage.getItem(WORKSPACE_STATE_KEY) ?? tab.sessionStorage.getItem(PREVIOUS_WORKSPACE_STATE_KEY);
-    const state = migrateWorkspaceState(JSON.parse(raw || 'null'));
-    state.views[view] = { ...(state.views[view] || {}), ...viewPatch };
-    tab.sessionStorage.setItem(WORKSPACE_STATE_KEY, JSON.stringify(state));
-    return true;
-  } catch (_) {
-    return false;
+export function openWorkbenchTab(spec = {}, reserved = null) {
+  const url = workbenchLaunchUrl(spec);
+  if (!url) return openWorkspaceTab(spec.destination, spec.param || '', reserved);
+  if (reserved) {
+    reserved.location.replace(url);
+    return reserved;
   }
+  return window.open(url, '_blank', 'noopener');
 }
 
-/** Setup's Agent and Team doors preload the existing launch workbench; they never submit. */
-export function openLaunchForm(context, { kind, seed = {} } = {}) {
-  if (!['agent', 'team'].includes(kind) || !seed || typeof seed !== 'object') return null;
-  return openWorkspaceStateTab(context, 'launch', { preload: { kind, seed } }, kind);
+/** Claim and remove this tab's structured launch before restoration. Refresh therefore
+ * sees only the arrangement the Workbench saved after applying it. */
+export function consumeWorkbenchLaunch(destination, param = '') {
+  const url = new URL(location.href);
+  const raw = url.searchParams.get(WORKBENCH_LAUNCH_PARAM) || '';
+  if (!raw) return null;
+  url.searchParams.delete(WORKBENCH_LAUNCH_PARAM);
+  history.replaceState(history.state, '', url.href);
+  try {
+    const launch = JSON.parse(raw);
+    if (launch?.destination !== destination || text(launch?.param) !== text(param)) return null;
+    if (!['replace', 'overlay'].includes(launch?.mode) || !launch.state || typeof launch.state !== 'object') return null;
+    return Object.freeze({ mode: launch.mode, state: launch.state });
+  } catch (_) { return null; }
 }
 
-/** Templates have two existing forms and trays, not a third invented launch form. */
-export function openTemplateLaunchForm(context) {
-  return openWorkspaceStateTab(context, 'launch', { preload: { kind: 'template', seed: {} } }, 'template');
+/** Resolve one Workbench entry. Remembered state wins over first-open defaults; a
+ * structured launch then replaces or overlays seats and explicitly named state. */
+export function resolveWorkbenchState(remembered = {}, launch = null, defaults = {}) {
+  const prior = remembered && typeof remembered === 'object' ? remembered : {};
+  const floor = defaults && typeof defaults === 'object' ? defaults : {};
+  const base = { ...floor, ...prior, seats: { ...(floor.seats || {}), ...(prior.seats || {}) } };
+  if (!launch?.state || !['replace', 'overlay'].includes(launch.mode)) return base;
+  const patch = launch.state;
+  const seats = launch.mode === 'replace'
+    ? { ...(patch.seats || {}) }
+    : { ...(base.seats || {}), ...(patch.seats || {}) };
+  return { ...base, ...patch, seats };
 }
 
 /**
@@ -263,7 +279,12 @@ export function createWorkspace(host, options = {}) {
     const next = views.get(id);
     if (!next) throw new Error(`workspace has no safe ${safeView} view`);
     const param = text(nav.param);
-    const context = { id, param, state, navigate, patchState, viewState, patchViewState };
+    let launchClaimed = false, launch = null;
+    const workbenchEntry = (defaults = {}) => {
+      if (!launchClaimed) { launch = consumeWorkbenchLaunch(id, param); launchClaimed = true; }
+      return { state: resolveWorkbenchState(viewState(id), launch, defaults), launched: launch !== null };
+    };
+    const context = { id, param, state, navigate, patchState, viewState, patchViewState, workbenchEntry };
     const changed = !active || active.id !== id || active.param !== param;
     if (active && active.view !== next) {
       invoke(active.id, 'leave', () => active.view.leave?.());

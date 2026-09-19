@@ -28,20 +28,16 @@ test('the fixed Campaign identity does not render its id', async () => {
   assert.match(source, /if \(id\) id\.control\.value/);
 });
 
-test('a Campaign surface placed after the Campaign read is settled at creation, not left loading', async () => {
+test('Campaign surfaces paint directly and are repainted when the Campaign record arrives', async () => {
   const source = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
-  assert.match(source, /campaignRead = true;\s*\n\s*for \(const surface of campaignSurfaces\) surface\.settle\(\);/);
-  assert.match(source, /campaignSurfaces\.add\(coordinated\);[\s\S]*?if \(campaignRead\) coordinated\.settle\(\);/);
+  assert.doesNotMatch(source, /progressiveSurface|campaignSurfaces|campaignRead/);
+  assert.match(source, /loadCampaigns\(\)\.then[\s\S]*?bench\.place\(type, workspace/);
+  assert.doesNotMatch(source, /\/api\/setup\/runtime|\/api\/machine-settings/,
+    'Settings entry does not prefetch data for unopened surfaces');
+  assert.match(source, /\/api\/project-roots\$\{query\}/, 'selector root count uses the light catalog, not repository detail assembly');
 });
 
-test('the Campaign page clears the loading state it set before it paints a surface', async () => {
-  // The Ronin Desk surface's show() is a tab select that never touches surface state; the
-  // wrapper that said "Loading Campaign…" is the one that must take it back.
-  const source = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
-  assert.match(source, /paint: \(\.\.\.args\) => \{ WorkspaceKit\.primitives\.setSurfaceState\(surface\.el, null, ''\); return surface\.show\?\.\(\.\.\.args\); \}/);
-});
-
-test('Settings carries Setup capabilities and starts with Mika beside an empty workspace', async () => {
+test('Settings carries Setup capabilities and first opens with Defaults beside Workspace folders', async () => {
   const source = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
   for (const type of ['register', 'launchOwn']) {
     assert.match(source, new RegExp(`SETUP_SURFACE_TYPES\\.${type}`));
@@ -50,11 +46,14 @@ test('Settings carries Setup capabilities and starts with Mika beside an empty w
   assert.match(source, /createMikaHelpPanel/);
   assert.doesNotMatch(source, /campaign-mika-card/, 'Mika is not highlighted independently of workspace placement');
   assert.match(source, /selectorCurrent: 'placed'/, 'Settings highlights every card represented in a visible workspace');
-  assert.match(source, /profiles\.define\(PROFILE, \[\s*TERMINAL_TYPE,\s*TYPES\.identity/, 'Mika is the first Settings selector card');
-  assert.match(source, /bench\.setCount\(2\)/);
-  assert.match(source, /ensureAndPlaceMika\('workspace1'\)/);
-  assert.match(source, /bench\.restoreDefault\('workspace2'\)/);
+  assert.match(source, /profiles\.define\(PROFILE, \[\s*TERMINAL_TYPE,\s*TYPES\.machine/, 'Mika is the first Settings selector card');
+  assert.match(source, /workbenchEntry\(\{\s*count: 2, selected: 'workspace1',\s*seats: \{ workspace1: TYPES\.defaults, workspace2: TYPES\.roots \}/);
+  assert.doesNotMatch(source, /mikaDefaultV1|bench\.setCount\(2\)|bench\.restoreDefault\('workspace2'\)/,
+    'no initializer may overwrite remembered Settings state');
   assert.doesNotMatch(source, /const DEFAULT_VIEW/);
+  assert.match(source, /const \{ state: entry \} = context\.workbenchEntry\(\{/,
+    'Settings resolves intentional launches before remembered and first-open state');
+  assert.doesNotMatch(source, /context\.param === 'defaults'/, 'Settings has no link-specific restoration branch');
 });
 
 test('Campaign delegates Workspace folders assembly with scope and no future-root arrangement default', async () => {

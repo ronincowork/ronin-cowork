@@ -5,7 +5,7 @@ import { MikaUnavailable, mikaLevelFromAgents, resolveMikaModel } from '../src/m
 
 const spec = (provider: string, cli: string, model: string, tier: Tier): SessionLaunchSpec => ({
   provider, cli, model, tier, cmd: `${cli} --model ${model}`, default: false,
-  cost: '', good_at: '', not_good_at: '', gbrainDisconnected: '--no-mcp',
+  cost: '', good_at: '', not_good_at: '',
 });
 const summary = (operational: string[]): ProviderSummary => ({
   measured_at: '2026-09-09T00:00:00Z', installed: operational, signed_in: operational,

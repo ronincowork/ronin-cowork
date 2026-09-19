@@ -2,7 +2,7 @@
 
 Individual contributors and Agents normally run only the checks relevant to their change.
 They do not need to run `npm run verify` before committing or handing in. The full suite
-can take many minutes; repeating it on each private desk spends that time without proving
+can take many minutes; repeating it on each private worktree spends that time without proving
 the combined Team change.
 
 ## During implementation and hand-in
@@ -39,7 +39,7 @@ when the changes or outstanding failures justify it. Do not describe a failed or
 run as green. Promotion's restart and health checks do not replace this repository verdict.
 
 GitHub also runs verification on pull-request heads. CI evidence should be reported as
-CI evidence; contributors do not need to duplicate that full run on their private desks.
+CI evidence; contributors do not need to duplicate that full run on their private worktrees.
 
 ## What the commands do
 

@@ -18,7 +18,7 @@ process.env.RONIN_TOOLS_DIR = path.join(temp, 'own-tools');
 
 const routine = (name: string, enabled: boolean, tools: string[]): ResolvedContribution => ({
   name, label: name, blurb: '', origin: 'stock', shadowed: false,
-  reading: [], tools, mcp: [], parts: [], requires: [],
+  reading: [], tools, parts: [], requires: [],
   enabled, stated_by: 'campaign', required_by: [],
 } satisfies ContributionRow & ResolvedContribution);
 
@@ -133,7 +133,7 @@ test('projected ronin_bin tools resolve the symlink and reach the repository and
   }
   assert.match(deskHelp, /--source dev\|team/);
   assert.match(deskHelp, /only\s+destructive form/);
-  assert.match(deskHelp, /refuses an occupied\s+desk without changing anything/);
+  assert.match(deskHelp, /refuses an occupied\s+worktree without changing anything/);
   assert.match(deskHelp, /Hard Delete action/);
   assert.match(deskHelp, /None performs Git push/);
 

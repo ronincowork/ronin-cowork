@@ -6,14 +6,13 @@
  * — the catalog entry merge described in `docs/architecture/shadowing.md`, so adding one provider or one
  * row does not fork the seven the owner did not touch. A user section of a stock id
  * replaces that section whole and keeps its place; a new id appends; a user section that
- * says `- **hidden:** yes`, or whose every launch cell is `—`, withdraws the stock one.
+ * says `- **hidden:** yes` withdraws the stock one.
  * Every entry carries its `origin` and whether it shadowed a shipped section, so a surface
  * can SAY which layer a cell came from — a shadow nobody can see is the fault this replaces.
  * Each provider section carries the vendor id a launch names and the id of the CLI that
  * serves it (`src/agents.ts`), so the two are joined here, in data, and nowhere else. Each
  * model row carries its tier, a dated cost reading, what it is good at and not good at,
- * whether it is the provider's default, and the complete launch command — the
- * session_launch_spec.
+ * and whether it is the provider's default. The matching Agent page owns commands.
  *
  * Each file's header carries `- **updated:** YYYY-MM-DD`, the day its prices, models and
  * descriptions were last read from the public record. It is a snapshot, refreshed with each
@@ -27,6 +26,7 @@
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { mergeSections, readUserCatalog, STOCK_DIR, storeDir, type CatalogSection, type Origin } from './resources.js';
+import { commandText, readAgentLaunches, renderLaunch } from './agent-launches.js';
 
 export const CATALOG_FILE = 'MODEL_PROVIDERS.md';
 export const TIERS = ['light', 'standard', 'frontier'] as const;
@@ -50,8 +50,7 @@ export interface SessionLaunchSpec {
   cost: string;
   good_at: string;
   not_good_at: string;
-  liveDangerously?: string;
-  gbrainDisconnected?: string;
+  dangerousCmd?: string;
 }
 
 export interface ProviderCatalogEntry {
@@ -67,8 +66,8 @@ export interface ProviderCatalogEntry {
   maturity?: string;
   /** Complete ordinary CLI launch with model choice delegated to the CLI. */
   native?: string;
-  liveDangerously?: string;
-  gbrainDisconnected?: string;
+  nativeDangerousCmd?: string;
+  launch_modes?: Array<'configured' | 'live_dangerously'>;
   models: SessionLaunchSpec[];
 }
 
@@ -82,7 +81,7 @@ export interface ProviderCatalog {
   /** The stock file's own `updated` day, whichever layer `path` names. */
   stock_updated: string;
   providers: ProviderCatalogEntry[];
-  /** Shipped providers the owner's copy withdrew — by `- **hidden:** yes`, or every launch cell `—`. */
+  /** Shipped providers the owner's copy withdrew with `- **hidden:** yes`. */
   withdrawn: Array<{ provider: string; label: string }>;
 }
 
@@ -101,9 +100,6 @@ export function catalogUpdated(raw: string): string {
   const preamble = raw.split(/^### /m)[0] ?? '';
   return /^-\s*\*\*updated:\*\*\s*(\d{4}-\d{2}-\d{2})\s*$/m.exec(preamble)?.[1] ?? '';
 }
-
-/** A launch cell that says there is nothing to launch: the tombstone form of a row. */
-const isTombstone = (cell: string): boolean => /^[—–-]$/.test(cell.trim());
 
 /**
  * The file's `### <Vendor>` sections as catalog sections, keyed by the `provider` id the
@@ -133,38 +129,16 @@ function parseProviderSection(section: CatalogSection): ProviderCatalogEntry | n
 }
 
 /**
- * A user section withdraws the shipped provider of its id in either tombstone form: the
- * house's `- **hidden:** yes`, or every launch cell `—` — a table's way of saying nothing
- * here launches.
+ * A user section withdraws the shipped provider of its id with the house's hidden marker.
  */
 function isWithdrawal(section: CatalogSection): boolean {
   if (section.origin !== 'user') return false;
-  if (section.lines.some((l) => /^-\s*\*\*hidden:\*\*\s*yes\b/i.test(l.trim()))) return true;
-  const cells = launchCells(section.lines.join('\n'));
-  return cells.length > 0 && cells.every(isTombstone);
-}
-
-/** Every `launch` cell in a section's tables, unquoted, in order. */
-function launchCells(section: string): string[] {
-  const out: string[] = [];
-  let header: string[] = [];
-  for (const line of section.split('\n')) {
-    if (!line.includes('|')) { header = []; continue; }
-    const cells = cellsOf(line);
-    if (cells.length < 2) continue;
-    if (/^model$/i.test(cells[0])) { header = cells.map((c) => c.toLowerCase()); continue; }
-    if (!header.length || isSeparator(cells)) continue;
-    const at = header.indexOf('launch');
-    if (at > 0 && cells[at] !== undefined) out.push(unquote(cells[at]));
-  }
-  return out;
+  return section.lines.some((l) => /^-\s*\*\*hidden:\*\*\s*yes\b/i.test(l.trim()));
 }
 
 /**
- * One `### <Vendor>` section per provider; under it `- **provider:**`, `- **cli:**` and the
- * launch-mode flags, then one or more tables whose header begins with `model`. A section
- * may spread a model's columns over several tables (facts in one, `launch` in another);
- * they are joined by model id, and the first table's row order is the picker's order.
+ * One `### <Vendor>` section per provider with provider/model facts. Agent documents own
+ * executable launch grammar; this parser deliberately creates no commands.
  * This reads ONE file; `readProviderCatalog` layers the owner's copy on stock.
  */
 export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): ProviderCatalogEntry[] {
@@ -174,10 +148,7 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
     const provider = field(section, 'provider');
     const cli = field(section, 'cli');
     if (!label || !provider || !cli) continue;
-    const liveDangerously = field(section, 'live_dangerously');
-    const gbrainDisconnected = field(section, 'gbrain_disconnected');
     const maturity = field(section, 'maturity');
-    const native = field(section, 'native');
     const rows = new Map<string, Record<string, string>>();
     let header: string[] = [];
     for (const line of section.split('\n')) {
@@ -197,25 +168,18 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
     }
     const models: SessionLaunchSpec[] = [];
     for (const [model, row] of rows) {
-      const cmd = unquote(row.launch ?? '');
-      if (!cmd || isTombstone(cmd)) continue; // a model with no launch cell is a name, not a session_launch_spec
       models.push({
-        provider, cli, model, cmd,
+        provider, cli, model, cmd: '',
         tier: asTier((row.tier ?? '').toLowerCase()),
         default: /^yes$/i.test(row.default ?? ''),
         cost: row.cost ?? '',
         good_at: row['good at'] ?? '',
         not_good_at: row['not good at'] ?? '',
-        ...(liveDangerously ? { liveDangerously } : {}),
-        ...(gbrainDisconnected ? { gbrainDisconnected } : {}),
       });
     }
     out.push({
       provider, cli, label, origin, shadowed: false, models,
-      ...(liveDangerously ? { liveDangerously } : {}),
-      ...(gbrainDisconnected ? { gbrainDisconnected } : {}),
       ...(maturity ? { maturity } : {}),
-      ...(native ? { native } : {}),
     });
   }
   return out;
@@ -232,8 +196,7 @@ async function exists(file: string): Promise<boolean> {
  * The catalog as this machine resolves it: stock, with the owner's copy laid over it per
  * provider section. A missing or empty owner's copy is the ordinary path and yields exactly
  * the shipped list. The merge is the house's (`mergeSections`): a user section of a stock id
- * replaces it in place, a new id appends, `- **hidden:** yes` withdraws — and for this file
- * so does a section whose every launch cell is `—`, the tombstone a table can carry.
+ * replaces it in place, a new id appends, and `- **hidden:** yes` withdraws it.
  */
 export async function readProviderCatalog(): Promise<ProviderCatalog> {
   const user = userCatalogMd();
@@ -251,7 +214,7 @@ export async function readProviderCatalog(): Promise<ProviderCatalog> {
       continue;
     }
     const entry = parseProviderSection(section);
-    if (entry) providers.push(entry);
+    if (entry) providers.push(await attachAgentLaunches(entry));
   }
   return {
     origin: hasUser ? 'user' : 'stock',
@@ -267,7 +230,30 @@ export async function listProviderCatalog(): Promise<ProviderCatalogEntry[]> {
   return (await readProviderCatalog()).providers;
 }
 
-/** Every launch cell, flat, in catalog order: what the pickers and the launch resolve over. */
+/** Attach executable commands from the Agent page that owns this CLI's launch grammar. */
+async function attachAgentLaunches(entry: ProviderCatalogEntry): Promise<ProviderCatalogEntry> {
+  if (!entry.models.length) return entry;
+  const grammar = await readAgentLaunches(entry.cli);
+  const values = (model = '') => ({ provider: entry.provider, model });
+  return {
+    ...entry,
+    native: commandText(renderLaunch(grammar.native, values())),
+    launch_modes: grammar.nativeDangerously.length || grammar.modelDangerously.length
+      ? ['configured', 'live_dangerously'] : ['configured'],
+    ...(grammar.nativeDangerously.length
+      ? { nativeDangerousCmd: commandText(renderLaunch(grammar.nativeDangerously, values())) }
+      : {}),
+    models: entry.models.map((row) => ({
+      ...row,
+      cmd: commandText(renderLaunch(grammar.model, values(row.model))),
+      ...(grammar.modelDangerously.length
+        ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, values(row.model))) }
+        : {}),
+    })),
+  };
+}
+
+/** Derive a newly discovered model through the already-resolved Agent command grammar. */
 const discoveredCommand = (models: readonly SessionLaunchSpec[], model: string): string => {
   const argv = models[0]?.cmd.match(/^(.*?\s(?:--model|-m)(?:=|\s+))(\S+)(.*)$/);
   return argv && /^[A-Za-z0-9._:-]+$/.test(model) ? `${argv[1]}${model}${argv[3]}` : '';
@@ -277,7 +263,9 @@ const discoveredCommand = (models: readonly SessionLaunchSpec[], model: string):
 const nativeSpec = (entry: ProviderCatalogEntry): SessionLaunchSpec | null => {
   const base = entry.models[0];
   if (!base || !entry.native) return null;
-  return { ...base, model: NATIVE_MODEL, cmd: entry.native, tier: '', default: true, cost: '',
+  return { ...base, model: NATIVE_MODEL, cmd: entry.native,
+    ...(entry.nativeDangerousCmd ? { dangerousCmd: entry.nativeDangerousCmd } : { dangerousCmd: undefined }),
+    tier: '', default: true, cost: '',
     good_at: 'the CLI choosing its own configured or current default model',
     not_good_at: 'pinning a particular model' };
 };

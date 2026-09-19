@@ -8,21 +8,19 @@ globalThis.document = { createElement: () => new FakeNode(), querySelector: () =
 globalThis.location = { href: 'https://ronin.test/#/setup', hash: '#/setup' };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
-const { openLaunchForm, openTemplateLaunchForm } = await import('../public/js/workspace.js');
-const { launchEntryPlan } = await import('../public/js/launch-view.js');
+const { openWorkbenchTab } = await import('../public/js/workspace.js');
 const { templateEntryPlan } = await import('../public/js/new-agent.js');
 const { presetLaunchUrl } = await import('../public/js/preset-launch.js');
-const { DISMISSED_WORKSPACE, teamWorkspaceState, workspaceMaySeedDefault } = await import('../public/js/workspace-contract.js');
+const { DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault } = await import('../public/js/workspace-contract.js');
 
 function harness(blocked = false) {
   const state = { launch: { seats: { workspace4: 'launch.help' }, untouched: { exact: true } } };
   const before = JSON.stringify(state);
-  const cloned = [];
-  let tabs = 0;
+  let tabs = 0, opened = '';
   globalThis.window = {
-    open: () => {
+    open: (url) => {
       tabs += 1;
-      cloned.push(structuredClone(state));
+      opened = url;
       return blocked ? null : { opener: {}, location: { replace(url) { this.url = url; } } };
     },
   };
@@ -30,50 +28,31 @@ function harness(blocked = false) {
     viewState: (view) => state[view],
     patchViewState: (view, patch) => { state[view] = { ...state[view], ...patch }; },
   };
-  return { state, before, cloned, context, tabs: () => tabs };
+  return { state, before, context, tabs: () => tabs, opened: () => opened };
 }
+
+const launchFrom = (url) => JSON.parse(new URL(url).searchParams.get('ronin-launch'));
 
 for (const [kind, type] of [['agent', 'launch.agent'], ['team', 'launch.team']]) {
   test(`Launch-your-own ${kind} opens one tab, preserves source state, and seats the existing form`, () => {
     const h = harness();
-    const tab = openLaunchForm(h.context, { kind, seed: {} });
+    const tab = openWorkbenchTab({ destination: 'launch', param: kind, mode: 'overlay', state: {
+      selected: 'workspace1', seats: { workspace1: { type, detail: {} } },
+    } });
     assert.ok(tab);
     assert.equal(h.tabs(), 1);
     assert.equal(JSON.stringify(h.state), h.before);
-    const plan = launchEntryPlan(h.cloned[0].launch);
-    assert.equal(plan.kind, kind);
-    assert.deepEqual(plan.placements, [{ workspace: 'workspace1', type, detail: {} }]);
-    assert.deepEqual(plan.clear, ['preload']);
+    const payload = launchFrom(h.opened());
+    assert.deepEqual(payload.state, { selected: 'workspace1', seats: { workspace1: { type, detail: {} } } });
   });
 }
 
-test('Template opens both existing template-bearing forms with no invented handle', () => {
-  const h = harness();
-  assert.ok(openTemplateLaunchForm(h.context));
-  assert.equal(h.tabs(), 1);
-  assert.equal(JSON.stringify(h.state), h.before);
-  assert.deepEqual(launchEntryPlan(h.cloned[0].launch).placements, [
-    { workspace: 'workspace1', type: 'launch.agent', detail: {} },
-    { workspace: 'workspace2', type: 'launch.team', detail: {} },
-  ]);
-});
-
-test('popup blocking returns null and still restores the source byte-for-byte', () => {
+test('a null window proxy leaves source state untouched and the destination URL complete', () => {
   const h = harness(true);
-  assert.equal(openLaunchForm(h.context, { kind: 'agent', seed: {} }), null);
+  assert.equal(openWorkbenchTab({ destination: 'launch', param: 'agent', mode: 'overlay', state: { seats: {} } }), null);
   assert.equal(h.tabs(), 1);
   assert.equal(JSON.stringify(h.state), h.before);
-});
-
-test('Customize has explicit precedence and generic preload remains one-shot', () => {
-  const customize = { template: { shelf: 'teams', name: 'health_and_fitness' }, user_message: 'Help.' };
-  const plan = launchEntryPlan({ customize, preload: { kind: 'agent', seed: {} } });
-  assert.equal(plan.kind, 'customize');
-  assert.deepEqual(plan.clear, ['customize']);
-  assert.deepEqual(plan.placements, [{
-    workspace: 'workspace1', type: 'launch.team', detail: { template: 'health_and_fitness', prompt: 'Help.' },
-  }]);
-  assert.deepEqual(launchEntryPlan({ preload: { kind: 'agent', seed: {} } }).clear, ['preload']);
+  assert.equal(launchFrom(h.opened()).destination, 'launch');
 });
 
 test('door adapters make zero launch or Team-roster submissions', () => {
@@ -82,9 +61,8 @@ test('door adapters make zero launch or Team-roster submissions', () => {
   let submissions = 0;
   globalThis.fetch = async () => { submissions += 1; throw new Error('must not submit'); };
   try {
-    openLaunchForm(h.context, { kind: 'agent', seed: {} });
-    openLaunchForm(h.context, { kind: 'team', seed: {} });
-    openTemplateLaunchForm(h.context);
+    openWorkbenchTab({ destination: 'launch', param: 'agent', state: {} });
+    openWorkbenchTab({ destination: 'launch', param: 'team', state: {} });
     assert.equal(submissions, 0);
   } finally { globalThis.fetch = beforeFetch; }
 });
@@ -102,35 +80,34 @@ test('Customize preload falls back honestly for missing templates and preserves 
   assert.deepEqual(templateEntryPlan({ currentKind: 'coding', kindTouched: true, templates: [personal], template: personal.name }), { kind: 'coding', template: '' });
 });
 
-test('a reserved launch tab receives exact Cowork seating without changing source state', () => {
+test('a preset launch carries exact Cowork seating without changing source state', () => {
   const source = JSON.stringify({ version: 3, views: { cowork: { untouched: true } } });
-  let destination = source;
-  const tab = { sessionStorage: { getItem: () => destination, setItem: (_key, value) => { destination = value; } } };
   const plan = { count: 2, seats: [
     { workspace: 'workspace1', type: 'session', key: 'doc_agent' },
     { workspace: 'workspace2', type: 'document', key: 'README.md', root: 'ronin_lab', path: 'README.md' },
   ] };
-  const url = presetLaunchUrl({ urlView: 'cowork' }, plan, tab);
+  const url = presetLaunchUrl({ urlView: 'cowork' }, plan);
+  assert.match(url, /ronin-launch=/);
   assert.match(url, /#\/cowork$/);
   assert.equal(source, JSON.stringify({ version: 3, views: { cowork: { untouched: true } } }));
-  const stored = JSON.parse(destination).views.cowork;
-  assert.deepEqual(stored, { untouched: true, count: 2, seats: {
+  const stored = launchFrom(url).state;
+  assert.deepEqual(stored, { count: 2, seats: {
     workspace1: 'doc_agent', workspace2: { type: 'document', key: 'README.md', root: 'ronin_lab', path: 'README.md' },
   } });
-  assert.deepEqual(teamWorkspaceState({}, stored).seats, stored.seats);
+  assert.deepEqual(normalizeWorkbenchState(stored).seats, stored.seats);
 });
 
 test('an explicitly dismissed workspace stays blank while an uninitialized seat may seed its default', () => {
-  const restored = teamWorkspaceState({}, { seats: { workspace1: DISMISSED_WORKSPACE } });
+  const restored = normalizeWorkbenchState({ seats: { workspace1: DISMISSED_WORKSPACE } });
   assert.equal(restored.seats.workspace1, DISMISSED_WORKSPACE);
   assert.equal(workspaceMaySeedDefault(restored.seats.workspace1), false);
   assert.equal('workspace2' in restored.seats, false);
   assert.equal(workspaceMaySeedDefault(restored.seats.workspace2), true);
 });
 
-test('blocked popup and destination storage failure leave seating transport harmless', () => {
+test('structured launch URLs do not depend on browser storage', () => {
   const plan = { count: 1, seats: [{ workspace: 'workspace1', type: 'session', key: 'agent' }] };
-  assert.doesNotThrow(() => presetLaunchUrl({ urlView: 'cowork' }, plan, null));
-  const denied = { sessionStorage: { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); } } };
-  assert.doesNotThrow(() => presetLaunchUrl({ urlView: 'cowork' }, plan, denied));
+  globalThis.localStorage = { setItem() { throw new Error('denied'); } };
+  const url = presetLaunchUrl({ urlView: 'cowork' }, plan);
+  assert.equal(launchFrom(url).state.seats.workspace1, 'agent');
 });
