@@ -16,7 +16,7 @@ import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { openWorkspaceStateTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { openWorkspaceStateTab, openWorkspaceTab, reserveWorkspaceTab, seedReservedWorkspaceTab } from './workspace.js';
 import { PRESETS_TYPE, createPresetsSurface, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { refreshDesks } from './desks.js';
@@ -313,7 +313,12 @@ export function createCoworkView(options = {}) {
             if (!campaign && name === team) putCommons(oppositeSeat(id), 'team-configuration');
             else openWorkspaceStateTab(ctx, 'team', { count: 2, selected: 'workspace1', seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: '' } }, name);
           },
-          openDeskDefaults: () => openWorkspaceStateTab(ctx, 'campaign', { count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' } }),
+          openDeskDefaults: () => {
+            const settingsTab = reserveWorkspaceTab();
+            if (!settingsTab) return;
+            seedReservedWorkspaceTab(settingsTab, 'campaign', { count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' } });
+            openWorkspaceTab('campaign', '', settingsTab);
+          },
           connect: async (name) => {
             await fetchSessions();
             return connectSession(name, id);

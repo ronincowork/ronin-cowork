@@ -63,7 +63,8 @@ test('both workbench entrances use the canonical New Agent form with contextual 
   assert.match(cowork, /profiles\.define\(WB_PROFILES\.team, \[WB_TYPES\.commons, WB_TYPES\.kanban, WB_TYPES\.terminal, WB_TYPES\.newAgent/);
   assert.match(cowork, /const newAgentBySeat = \{\};[\s\S]*newAgent: \(id, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{[\s\S]*consumed,[\s\S]*team: \(\) =>/);
   assert.match(cowork, /openTeamDefaults:[\s\S]*putCommons\(oppositeSeat\(id\), 'team-configuration'\)/);
-  assert.match(cowork, /openDeskDefaults:[\s\S]*workspace1: 'campaign\.defaults'[\s\S]*workspace2: 'setup\.launch-own'/);
+  assert.match(cowork, /openDeskDefaults:[\s\S]*reserveWorkspaceTab\(\)[\s\S]*seedReservedWorkspaceTab\(settingsTab, 'campaign',[\s\S]*workspace1: 'campaign\.defaults'[\s\S]*workspace2: 'setup\.launch-own'[\s\S]*openWorkspaceTab\('campaign', '', settingsTab\)/,
+    'Desk defaults overwrites remembered Settings surfaces in the reserved destination tab');
   assert.match(cowork, /connect: async \(name\) => \{\s*await fetchSessions\(\);\s*return connectSession\(name, id\)/);
   assert.match(cowork, /const live = new Set\(S\.sessions\.map/, 'a newborn is not discarded against the slower home reading');
   assert.match(cowork, /'team\.add-agent': WB_TYPES\.newAgent/);
