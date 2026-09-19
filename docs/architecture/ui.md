@@ -330,7 +330,7 @@ Refresh therefore restores the latest state and cannot replay the launch instruc
 
 `replace` replaces the complete seat map while retaining unrelated destination
 preferences; `overlay` changes only the named seats and fields. Destinations still validate
-surface types against their profile before placement. Missing, expired, mismatched, or
+surface types against their profile before placement. Missing, malformed, mismatched, or
 unavailable instructions fall back to remembered state and then first-open defaults.
 
 Every programmatic Workbench launch uses `openWorkbenchTab()`. Feature code does not clone

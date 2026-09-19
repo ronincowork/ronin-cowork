@@ -79,6 +79,10 @@ Ronin remembers the Workbench arrangement for that route: whether it has two or 
 workspaces, where its columns sit, which workspace is selected, and what each workspace
 holds. Returning or refreshing recalls that arrangement.
 
+Settings first opens with **Defaults** in workspace 1 and **Workspace folders** in
+workspace 2. That is only its first-open floor; once rearranged, refresh restores the
+remembered arrangement instead of applying the floor again.
+
 If a remembered surface is no longer available at the current scope, its workspace comes
 back empty. Check the discovery column: it is the current answer to what can be opened
 here.

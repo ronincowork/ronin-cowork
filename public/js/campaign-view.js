@@ -226,7 +226,10 @@ export function createCampaignView() {
       campaignRead = false;
       for (const surface of campaignSurfaces) surface.begin();
       const stored = context.viewState('campaign') || {};
-      const { state: entry, launched } = context.workbenchEntry();
+      const { state: entry } = context.workbenchEntry({
+        count: 2, selected: 'workspace1',
+        seats: { workspace1: TYPES.defaults, workspace2: TYPES.roots },
+      });
       thinSelectorCards = stored.selectorDensity !== 'thick';
       paintDensityToggle();
       const typed = teamWorkspaceState(context.state, entry, bench.declaration);
@@ -236,16 +239,6 @@ export function createCampaignView() {
         const type = typeof held === 'object' ? held.type : LEGACY[held] || held;
         if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id, typeof held === 'object' ? held : {});
       }
-      bench.setCount(2);
-      if (!launched && !context.viewState('campaign')?.opened) {
-        bench.select('workspace1');
-        ctx?.patchViewState('campaign', { opened: true });
-      }
-      if (!launched && !stored.mikaDefaultV1) {
-        bench.restoreDefault('workspace2');
-        void ensureAndPlaceMika('workspace1');
-        ctx?.patchViewState('campaign', { mikaDefaultV1: true });
-      } else if (bench.isDefault('workspace1')) void ensureAndPlaceMika('workspace1');
       bench.refreshSelector(); save();
       if (!environment.setupRuntime) {
         const runtime = await request('/api/setup/runtime', { cache: 'no-store' });

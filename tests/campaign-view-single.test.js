@@ -41,7 +41,7 @@ test('the Campaign page clears the loading state it set before it paints a surfa
   assert.match(source, /paint: \(\.\.\.args\) => \{ WorkspaceKit\.primitives\.setSurfaceState\(surface\.el, null, ''\); return surface\.show\?\.\(\.\.\.args\); \}/);
 });
 
-test('Settings carries Setup capabilities and starts with Mika beside an empty workspace', async () => {
+test('Settings carries Setup capabilities and first opens with Defaults beside Workspace folders', async () => {
   const source = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
   for (const type of ['register', 'launchOwn']) {
     assert.match(source, new RegExp(`SETUP_SURFACE_TYPES\\.${type}`));
@@ -51,11 +51,11 @@ test('Settings carries Setup capabilities and starts with Mika beside an empty w
   assert.doesNotMatch(source, /campaign-mika-card/, 'Mika is not highlighted independently of workspace placement');
   assert.match(source, /selectorCurrent: 'placed'/, 'Settings highlights every card represented in a visible workspace');
   assert.match(source, /profiles\.define\(PROFILE, \[\s*TERMINAL_TYPE,\s*TYPES\.machine/, 'Mika is the first Settings selector card');
-  assert.match(source, /bench\.setCount\(2\)/);
-  assert.match(source, /ensureAndPlaceMika\('workspace1'\)/);
-  assert.match(source, /bench\.restoreDefault\('workspace2'\)/);
+  assert.match(source, /workbenchEntry\(\{\s*count: 2, selected: 'workspace1',\s*seats: \{ workspace1: TYPES\.defaults, workspace2: TYPES\.roots \}/);
+  assert.doesNotMatch(source, /mikaDefaultV1|bench\.setCount\(2\)|bench\.restoreDefault\('workspace2'\)/,
+    'no initializer may overwrite remembered Settings state');
   assert.doesNotMatch(source, /const DEFAULT_VIEW/);
-  assert.match(source, /const \{ state: entry, launched \} = context\.workbenchEntry\(\)/,
+  assert.match(source, /const \{ state: entry \} = context\.workbenchEntry\(\{/,
     'Settings resolves intentional launches before remembered and first-open state');
   assert.doesNotMatch(source, /context\.param === 'defaults'/, 'Settings has no link-specific restoration branch');
 });
