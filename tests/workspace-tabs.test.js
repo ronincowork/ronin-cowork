@@ -126,3 +126,22 @@ test('a tab with nothing to count carries no badge, so no pill trails its label'
   // must answer to an empty badge as well as a hidden one.
   assert.match(kit, /:has\(\.wk-tabset-badge\[hidden\], \.wk-tabset-badge:empty\) \.wk-tabset-dot/);
 });
+
+test('choosing a tab enters it, even on a surface nobody calls enter() on', async () => {
+  const tabs = await source('public/js/workspace-tabs.js');
+  // The Machine surface only ever calls select(); its rooms build on their first enter,
+  // so a select that did not enter left every tab empty.
+  assert.match(tabs, /if \(entered \|\| live\) chosen\.service\?\.enter\?\.\(context\)/);
+  // The one select that must not enter is the construction select, or a page load fetches.
+  const tail = tabs.slice(tabs.lastIndexOf('select(options.selected'));
+  assert.match(tail, /select\(options\.selected \?\? firstSelectable\(\)\);\s*live = true;/);
+});
+
+test('the Machine surface reaches its rooms through select alone', async () => {
+  const [campaign, commons] = await Promise.all([source('public/js/campaign-view.js'), source('public/js/cowork-commons.js')]);
+  assert.match(campaign, /show: \(\) => surface\.select\(surface\.current\(\) \|\| 'themes'\)/);
+  // Each room is built by `once` on its first enter, which is what select must trigger.
+  assert.match(commons, /const once = \(build\) => \{/);
+  assert.match(commons, /const enterAll = \(rooms\) => \(\) => \{ for \(const r of rooms\(\) \|\| \[\]\) r\?\.enter\?\.\(\); \}/);
+  assert.match(commons, /\.map\(\(c\) => \(\{ \.\.\.c, panel: services\[c\.id\] \}\)\)/);
+});

@@ -49,6 +49,6 @@ test('select is the one path, so the pad reaches the tab exactly as a click does
   // `open()` calls select, which enters the panel and scrolls the tab into view — the pad
   // gets the same treatment as a pointer, with no second route into the strip.
   assert.match(tabs, /button\.addEventListener\('click', \(\) => select\(id\)\)/);
-  assert.match(tabs, /if \(entered\) chosen\.service\?\.enter\?\.\(context\)/);
+  assert.match(tabs, /if \(entered \|\| live\) chosen\.service\?\.enter\?\.\(context\)/);
   assert.match(tabs, /current: \(\) => current/);
 });

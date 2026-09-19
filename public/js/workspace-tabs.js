@@ -153,6 +153,12 @@ export function createTabbedSurface(options = {}) {
   let current = '';
   let context = null;
   let entered = false;
+  // CHOOSING A TAB IS SHOWING IT. Every select after construction enters the panel it
+  // lands on, whether the surface was handed an explicit `enter` or not — a consumer that
+  // only ever calls `select` (the Machine surface does) would otherwise show a tab whose
+  // room has never been built. The one select that must not enter is the construction
+  // select below, so a page load still fetches nothing.
+  let live = false;
 
   /** Build a panel's service the first time its tab is shown; a throw leaves the surface usable. */
   const build = (entry) => {
@@ -185,7 +191,7 @@ export function createTabbedSurface(options = {}) {
     paint();
     const chosen = entries.get(usable);
     build(chosen);
-    if (entered) chosen.service?.enter?.(context);
+    if (entered || live) chosen.service?.enter?.(context);
     chosen.button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     if (usable !== previous) options.onSelect?.(usable, previous);
     return usable;
@@ -317,5 +323,6 @@ export function createTabbedSurface(options = {}) {
     },
   };
   select(options.selected ?? firstSelectable());
+  live = true;
   return api;
 }
