@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { createSurfaceHeader } from './workspace-primitives.js';
 
 const COLUMNS = [
   { key: 'IDEAS', label: 'Ideas', worker: 'lead' },
@@ -90,6 +91,14 @@ export function moveMessage(project, toStage, leadName, now = new Date()) {
 
 export function createTeamKanban(options = {}) {
   const root = node('div', 'tk-kanban');
+  // Task Manager is still beta. Use the Kit's standard surface header so that warning is
+  // part of the surface, above every board state, rather than a one-off badge competing
+  // with the cards or disappearing when the board rerenders.
+  const beta = createSurfaceHeader({
+    label: t('team_kanban.beta', 'Beta'),
+  });
+  beta.el.classList.add('tk-beta');
+  beta.el.setAttribute('aria-label', t('team_kanban.beta_label', 'Task Manager beta'));
   const legend = node('div', 'tk-legend');
   for (const [status, label] of [['green', 'ready to move'], ['yellow', 'working'], ['red', 'blocked']]) {
     const item = node('span'); item.append(node('i', `tk-dot ${status}`), document.createTextNode(label)); legend.append(item);
@@ -109,7 +118,7 @@ export function createTeamKanban(options = {}) {
   const topline = node('div', 'tk-topline');
   topline.append(controls, notice, legend);
   const board = node('div', 'tk-board');
-  root.append(topline, board);
+  root.append(beta.el, topline, board);
 
   let team = '';
   let projects = [];
