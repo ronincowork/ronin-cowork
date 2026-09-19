@@ -213,6 +213,13 @@ export function coworkCommons(options = {}) {
     card.removeAttribute('role'); // a card in a tab is not a dialog
     padMissing.remove();
     keypad.append(card);
+    // THE CARD NOW LIVES IN THIS TAB, so the pad's own sheet is no longer the truth about
+    // whether the keypad is on screen — this tab is. Both hooks therefore answer from the
+    // tab set: `open` selects the Keypad tab, `isOpen` reports whether it is the one
+    // showing. Before this runs the card is still in the sheet and padpanel.js's own
+    // open/isOpen are correct, so the bridge is built exactly when it becomes true.
+    S.padPanel.open = () => { surface?.select('keypad'); };
+    S.padPanel.isOpen = showing('keypad');
     return true;
   };
 
