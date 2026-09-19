@@ -246,12 +246,15 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const teamRows = () => teams.map((row) => ({ v: row.name, l: String(row.title ?? '').trim() || row.name, sub: row.name }));
   const rootRows = () => roots.map((row) => ({ v: row.name, l: row.title || row.name, sub: row.title ? row.name : '' }));
   const mandateRows = (values) => values.map((value) => ({ v: value, l: mandateWord(value) }));
-  const launchModes = () => [
-    { v: 'configured', l: t('launch_mode.configured', 'Model provider configuration'),
-      sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
-    { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'),
-      sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
-  ];
+  const launchModes = () => {
+    const supported = providerCatalog().providers.find((row) => row.provider === draft.provider)?.launch_modes || ['configured'];
+    return [
+      { v: 'configured', l: t('launch_mode.configured', 'Native'),
+        sub: t('launch_mode.configured_sub', 'Use the provider CLI normally; a selected model is the only launch override.') },
+      ...(supported.includes('live_dangerously') ? [{ v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'),
+        sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') }] : []),
+    ];
+  };
   const newTeamField = () => {
     const input = el('input'); input.type = 'text'; input.spellcheck = false; input.autocapitalize = 'off'; input.value = draft.newTeam;
     input.placeholder = t('new_team.name_placeholder', 'lowercase, digits, - _');
@@ -264,7 +267,10 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   };
   const identityRow = el('div', 'na-identity-row');
   const onQuestionChange = (value, key) => {
-    if ('provider' in value) { draft.provider = value.provider; draft.model = value.model; }
+    if ('provider' in value) {
+      draft.provider = value.provider; draft.model = value.model;
+      if (!providerCatalog().providers.find((row) => row.provider === draft.provider)?.launch_modes?.includes(draft.launchMode)) draft.launchMode = 'configured';
+    }
     if ('reach' in value) { draft.reach = value.reach; draft.recruit = value.recruit; draft.output = value.output; }
     if ('teamLead' in value) draft.teamLead = value.teamLead === true;
     if ('root' in value) { draft.root = value.root; draft.repos = [...value.repos]; }

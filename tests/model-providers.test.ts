@@ -49,7 +49,8 @@ test('the stock catalog names every provider with its CLI, its tiers and a marke
   }, 'a coming-soon provider is catalog data but has no launch rows');
   const anthropic = providers.find((entry) => entry.provider === 'anthropic')!;
   assert.equal(anthropic.label, 'Anthropic');
-  assert.equal(anthropic.liveDangerously, '--dangerously-skip-permissions');
+  assert.deepEqual(anthropic.launch_modes, ['configured', 'live_dangerously']);
+  assert.equal(anthropic.nativeDangerousCmd, 'claude --dangerously-skip-permissions');
   assert.deepEqual(anthropic.models.map((row) => row.model), ['opus', 'fable', 'sonnet', 'haiku'], 'row order is picker order');
   assert.equal(catalog.providerDefault(anthropic.models, 'anthropic')?.model, 'opus');
   assert.equal(anthropic.models.find((row) => row.model === 'haiku')?.tier, 'light');
@@ -62,10 +63,10 @@ test('the stock catalog names every provider with its CLI, its tiers and a marke
     grok: captured(providers.find((entry) => entry.cli === 'grok')!.models.map((row) => row.model)),
   } });
   assert.deepEqual(flat.slice(0, 5).map((row) => row.cmd), ['claude', 'claude --model opus', 'claude --model fable', 'claude --model sonnet', 'claude --model haiku']);
-  assert.equal(flat.find((row) => row.cmd === 'claude --model opus')?.liveDangerously, '--dangerously-skip-permissions', 'the launch flags ride every cell');
+  assert.equal(flat.find((row) => row.cmd === 'claude --model opus')?.dangerousCmd, 'claude --model opus --dangerously-skip-permissions');
 });
 
-test('a section may split facts and launch cells over tables, joined by model id; a row without a launch cell is a name, not a spec', () => {
+test('a provider section parses model facts without owning CLI command syntax', () => {
   const parsed = catalog.parseProviderCatalog([
     '# a catalog', '', '### Example Vendor', '',
     '- **provider:** `example`', '- **cli:** `claude`', '- **live_dangerously:** `--go`', '',
@@ -83,10 +84,10 @@ test('a section may split facts and launch cells over tables, joined by model id
   ].join('\n'));
   assert.deepEqual(parsed.map((entry) => entry.provider), ['example', 'wide'], 'a section without a cli is no provider');
   const example = parsed[0]!;
-  assert.deepEqual(example.models.map((row) => row.model), ['b', 'a'], 'the facts table sets the order; named-only has no launch cell');
+  assert.deepEqual(example.models.map((row) => row.model), ['b', 'a', 'named-only'], 'the facts table sets model order');
   assert.equal(example.models[1]?.default, true);
   assert.equal(example.models[0]?.tier, 'light');
-  assert.equal(example.models[0]?.liveDangerously, '--go');
+  assert.equal(example.models[0]?.cmd, '', 'commands are attached from the Agent document only');
   assert.equal(catalog.providerDefault(example.models, 'example')?.model, 'a', 'the marked default beats the first row');
   assert.equal(catalog.providerDefault(parsed[1]!.models, 'wide')?.model, 'w');
   assert.equal(catalog.providerDefault(example.models, 'nobody'), undefined);
@@ -121,19 +122,19 @@ test("the owner's copy is an overlay: a section of a shipped id replaces it in p
     assert.equal(read.updated, '', 'the copy has no updated line and says so');
     assert.match(read.stock_updated, /^\d{4}-\d{2}-\d{2}$/, 'the shipped date is carried beside it, never borrowed for it');
     assert.deepEqual(read.providers.map((p) => [p.provider, p.origin, p.shadowed]), [
-      ['anthropic', 'user', true], ['openai', 'stock', false], ['nous', 'stock', false], ['openrouter', 'stock', false], ['example', 'user', false],
-    ], 'anthropic replaced in place; openai and nous untouched; xai hidden and google tombstoned are gone; example appended');
+      ['anthropic', 'user', true], ['openai', 'stock', false], ['google', 'user', true], ['nous', 'stock', false], ['openrouter', 'stock', false], ['example', 'user', false],
+    ], 'anthropic and google replace in place; xai is hidden; example appends');
     assert.equal(read.providers[0].label, 'Anthropic (mine)', 'the heading is the copy\'s, the key was the id');
     assert.deepEqual(read.providers[0].models.map((m) => m.cmd), ['claude --model fable'], 'the section replaced whole — the shipped rows do not merge in');
     assert.ok(read.providers[1].models.length >= 3, 'the shipped OpenAI rows are exactly as shipped');
-    assert.deepEqual(read.withdrawn, [{ provider: 'google', label: 'Google' }, { provider: 'xai', label: 'xAI' }], 'both tombstone forms withdraw, in shipped order, and the withdrawn are named');
+    assert.deepEqual(read.withdrawn, [{ provider: 'xai', label: 'xAI' }], 'the explicit hidden marker withdraws a provider');
     const listed = (models: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: '', client_version: 'test', models: models.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list' as const, priority })) });
     const cmds = (await catalog.listSessionLaunchSpecs({ model_lists: {
       claude: listed(['fable']),
       codex: listed(['gpt-5.6-sol', 'ex-1']),
     } })).map((row) => row.cmd);
-    assert.ok(cmds.includes('codex --model gpt-5.6-sol') && cmds.includes('claude --model fable') && cmds.includes('codex --profile example --model ex-1'));
-    assert.ok(!cmds.some((cmd) => cmd.startsWith('gemini') || cmd.startsWith('grok')), 'withdrawn providers launch nothing');
+    assert.ok(cmds.includes('codex --model gpt-5.6-sol') && cmds.includes('claude --model fable') && cmds.includes('codex --model ex-1'));
+    assert.ok(!cmds.some((cmd) => cmd.startsWith('grok')), 'withdrawn providers launch nothing');
   } finally {
     await rm(mine, { force: true });
   }

@@ -1,9 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { execFile } from './spawn-broker.js';
+import { readAgentLaunches, renderLaunch } from './agent-launches.js';
 
 const pexec = execFile;
-
-export type InitialPrompt = 'positional' | 'none';
 
 export interface AgentScreen {
   busy: readonly string[];
@@ -17,8 +16,6 @@ export interface AgentOperations {
   selfUpdates: boolean;
   version: readonly string[];
   session: {
-    newIdFlag: string;
-    resume: readonly string[];
     discovery: 'claude-history' | 'codex-fds' | 'unsupported';
   };
 }
@@ -34,11 +31,10 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: true,
       version: ['--version'],
-      session: { newIdFlag: '--session-id', resume: ['--resume'], discovery: 'claude-history' },
+      session: { discovery: 'claude-history' },
     } as AgentOperations,
     parked: '',
     credentials: ['.claude/.credentials.json'],
-    initial: 'positional' as InitialPrompt,
     screen: { busy: ['esc to interrupt'], asking: ['❯\\s*\\d+\\.\\s'], ready: ['^\\s*[│┃]?\\s*❯'] },
   },
   {
@@ -51,11 +47,10 @@ export const AGENTS = [
       update: { shell: 'npm install -g @openai/codex@latest', argv: [] },
       selfUpdates: false,
       version: ['--version'],
-      session: { newIdFlag: '', resume: ['resume'], discovery: 'codex-fds' },
+      session: { discovery: 'codex-fds' },
     } as AgentOperations,
     parked: '',
     credentials: ['.codex/auth.json'],
-    initial: 'positional' as InitialPrompt,
     screen: { busy: ['esc to interrupt'], asking: ['›\\s*\\d+\\.\\s'], ready: ['^\\s*›(?:\\s|$)'] },
   },
   {
@@ -68,15 +63,14 @@ export const AGENTS = [
       update: { shell: 'npm install -g @google/gemini-cli@latest', argv: [] },
       selfUpdates: true,
       version: ['--version'],
-      session: { newIdFlag: '', resume: ['--resume'], discovery: 'unsupported' },
+      session: { discovery: 'unsupported' },
     } as AgentOperations,
     parked: '',
     credentials: ['.gemini/oauth_creds.json'],
-    initial: 'positional' as InitialPrompt,
     screen: { busy: [], asking: ['●\\s*\\d+\\.\\s'], ready: [] },
   },
   // [cli] auto_update defaults true: https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], session: { newIdFlag: '', resume: [], discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], session: { discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
@@ -87,9 +81,8 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: false,
       version: ['--version'],
-      session: { newIdFlag: '', resume: ['--resume'], discovery: 'unsupported' },
+      session: { discovery: 'unsupported' },
     } as AgentOperations,
-    initial: 'none' as InitialPrompt,
     credentials: [],
     parked: "Ronin cannot install this one yet — Nous's own installer needs system packages it has to ask you for, and does not finish without them. Install it from their site and it appears here.",
     screen: { busy: [], asking: [], ready: [] },
@@ -145,23 +138,27 @@ export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv
   const probed = (await listAgentAvailability()).find((a) => a.cmd === bare);
   const bin = probed?.path || (head.includes('/') ? head : '');
   if (!bin) return { argv: [], parked: false };
-  if (spec?.initial === 'positional' && brief) return { argv: [bin, ...rest, brief], parked: false };
+  const grammar = spec ? await readAgentLaunches(spec.id) : null;
+  if (grammar?.initial === 'positional' && brief) return { argv: [bin, ...rest, brief], parked: false };
   return { argv: [bin, ...rest], parked: !!brief };
 }
 
-export function newProviderSession(agent: string, argv: readonly string[]): { argv: string[]; id: string } {
+export async function newProviderSession(agent: string, argv: readonly string[]): Promise<{ argv: string[]; id: string }> {
   const spec = AGENTS.find((a) => a.id === agent);
-  const flag = spec?.operations.session.newIdFlag;
-  if (!flag) return { argv: [...argv], id: '' };
+  if (!spec) return { argv: [...argv], id: '' };
+  const grammar = await readAgentLaunches(spec.id);
+  if (!grammar.newSessionId.length) return { argv: [...argv], id: '' };
   const id = randomUUID();
-  return { argv: [argv[0], flag, id, ...argv.slice(1)], id };
+  return { argv: [argv[0], ...renderLaunch(grammar.newSessionId, { session_id: id }), ...argv.slice(1)], id };
 }
 
 export async function resumeAgentArgv(agent: string, id: string): Promise<string[]> {
   const spec = AGENTS.find((a) => a.id === agent);
-  if (!spec?.operations.session.resume.length) return [];
+  if (!spec) return [];
+  const grammar = await readAgentLaunches(spec.id);
+  if (!grammar.resume.length) return [];
   const launch = await launchArgv(spec.cmd, '');
-  return launch.argv.length ? [launch.argv[0], ...spec.operations.session.resume, id] : [];
+  return launch.argv.length ? renderLaunch(grammar.resume, { session_id: id }).map((part, index) => index === 0 ? launch.argv[0]! : part) : [];
 }
 
 export function agentSpec(id: string): (typeof AGENTS)[number] | undefined {

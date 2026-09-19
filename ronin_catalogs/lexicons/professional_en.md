@@ -410,10 +410,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.payload_band:** New launch payload — what this raise will send
 - **forms.payload_band_agent:** New launch payload — what this launch will send
 - **launch_mode.head:** launch mode
-- **launch_mode.configured:** Model provider configuration
-- **launch_mode.configured_sub:** Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.
+- **launch_mode.configured:** Native
+- **launch_mode.configured_sub:** Use the provider CLI normally; a selected model is the only launch override.
 - **launch_mode.live:** Dangerously
-- **launch_mode.live_sub:** Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.
+- **launch_mode.live_sub:** Use that provider CLI’s own approval-bypass launch.
 - **help.title:** Help
 - **help.card_summary:** What each step means, beside the step you are on.
 - **help.top_body:** The name is the only thing you must give, and it is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for, and it narrows the templates below to the ones that suit it.

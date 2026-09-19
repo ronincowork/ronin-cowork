@@ -280,17 +280,19 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   // and delivered nowhere. Raised with the lead; the record keeps its default.
   /* Launch mode is an agent default like the model: it lands in the next Agent form and
      the hand has the last word. js/new-agent.js carries the whole argument. */
-  const LAUNCH_MODES = () => [
-    { key: 'configured', label: t('launch_mode.configured', 'Model provider configuration'),
-      sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
-    { key: 'live_dangerously', label: t('launch_mode.live', 'Dangerously'),
-      sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
-  ];
+  const LAUNCH_MODES = () => {
+    const supported = providerCatalog().providers.find((row) => row.provider === draft.provider)?.launch_modes || ['configured'];
+    return [{ key: 'configured', label: t('launch_mode.configured', 'Native'),
+      sub: t('launch_mode.configured_sub', 'Use the provider CLI normally; a selected model is the only launch override.') },
+    ...(supported.includes('live_dangerously') ? [{ key: 'live_dangerously', label: t('launch_mode.live', 'Dangerously'),
+      sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') }] : [])];
+  };
   const kitHost = el('div');
   let kitQuestions = null;
   let kitSignature = '';
   function paintKitQuestions() {
-    const signature = JSON.stringify(availableBehaviours().map((row) => row.name));
+    const signature = JSON.stringify([availableBehaviours().map((row) => row.name), draft.provider, LAUNCH_MODES().map((row) => row.key)]);
+    if (!LAUNCH_MODES().some((row) => row.key === draft.launchMode)) draft.launchMode = 'configured';
     if (signature !== kitSignature) {
       kitQuestions?.destroy();
       const shelfRows = (rows) => rows.map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading }));

@@ -17,7 +17,7 @@ const optionLabel = (value) => ({
   open: t('campaign_view.option_open', 'Open'), discuss: t('campaign_view.option_discuss', 'Discuss'), plan: t('campaign_view.option_plan', 'Plan'), execute: t('campaign_view.option_execute', 'Execute'),
   nobody: t('campaign_view.option_nobody', 'Nobody'), 'propose agents': t('campaign_view.option_propose', 'Propose Agents'), 'staff agents': t('campaign_view.option_staff', 'Staff Agents'),
   'a plan': t('campaign_view.option_a_plan', 'A plan'), ideas: t('campaign_view.option_ideas', 'Ideas'), code: t('campaign_view.option_code', 'Code'), 'an artifact': t('campaign_view.option_artifact', 'An artifact'), 'the team': t('campaign_view.option_team', 'The Team'), 'no code': t('campaign_view.option_no_code', 'No code'),
-  configured: t('launch_mode.configured', 'Model provider configuration'), live_dangerously: t('launch_mode.live', 'Dangerously'),
+  configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously'),
 })[value] || value;
 
 export function createAgentDefaultsSurface(campaign) {
@@ -61,8 +61,8 @@ export function createAgentDefaultsSurface(campaign) {
       ] },
       { group: t('campaign_view.defaults_runtime', 'Runtime'), fields: [
         { key: 'launch_mode', label: t('launch_mode.head', 'Launch mode'), options: [
-          { v: 'configured', l: optionLabel('configured'), sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
-          { v: 'live_dangerously', l: optionLabel('live_dangerously'), sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
+          { v: 'configured', l: optionLabel('configured'), sub: t('launch_mode.configured_sub', 'Use the provider CLI normally; a selected model is the only launch override.') },
+          { v: 'live_dangerously', l: optionLabel('live_dangerously'), sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') },
         ] },
       ] },
       { group: t('campaign_view.default_behaviours', 'Behaviours'), fields: [{

@@ -39,7 +39,7 @@ change area to its code, UI, stores, Services, documentation, and tests.
 | How do configuration and owner customizations resolve? | [Installations](architecture/installations.md), [shadowing](architecture/shadowing.md), and [templates](architecture/templates.md) |
 | Where do state and work live? | [State inventory](state-inventory.md), [coordination trace](coordination-trace.md), and [Workspace Folders](architecture/project-roots.md) |
 | How does the server run terminals and optional parts? | [Runtime connection](architecture/tmux-connection.md) and [Services contracts](https://github.com/ronincowork/ronin-services/blob/dev/README.md#understand-or-change-services) |
-| How are provider CLIs integrated? | [Agent integrations](agents/README.md) and [provider registry](architecture/model-providers.md) |
+| How are provider CLIs integrated and launched? | [Agent launch method](architecture/agent-launches.md), [Agent integrations](agents/README.md), and [provider catalog](architecture/model-providers.md) |
 | How do I contribute and verify a change? | [CONTRIBUTING](../CONTRIBUTING.md), [Agent route](../AGENTS.md), and [development references](development/README.md) |
 | Where does a new file or directory belong? | [Repository layout and ownership](architecture/repository-layout.md) |
 

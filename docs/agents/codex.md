@@ -2,9 +2,37 @@
 
 - **stop_keys:** Escape
 - **clear_keys:** C-c
+- **launch_native:** ["codex"]
+- **launch_model:** ["codex", "--model", "{model}"]
+- **launch_native_dangerously:** ["codex", "--dangerously-bypass-approvals-and-sandbox"]
+- **launch_model_dangerously:** ["codex", "--model", "{model}", "--dangerously-bypass-approvals-and-sandbox"]
+- **launch_resume:** ["codex", "resume", "{session_id}"]
+- **launch_new_session_id:** —
+- **launch_initial:** positional
 
 CLI id: `codex`. Catalog provider: OpenAI. Reviewed 2026-09-14.
 Version: **0.153.4**. Installed version and tagged upstream input source reviewed; no live turn interrupted.
+
+## Ronin launch sequence
+
+The declarations above are executable documentation. Native means exactly `codex`, with
+no model, permission, or MCP instruction.
+
+| Ronin choice | Command core |
+|---|---|
+| Native | `codex` |
+| Model | `codex --model <model>` |
+| Native · Dangerously | `codex --dangerously-bypass-approvals-and-sandbox` |
+| Model · Dangerously | `codex --model <model> --dangerously-bypass-approvals-and-sandbox` |
+| Resume | `codex resume <session-id>` |
+
+For a new session Ronin appends the initial brief positionally. Codex owns the new
+conversation identity; Ronin discovers the exact identity after launch rather than
+supplying one in argv.
+
+Upstream also offers `--approve-for-me`, explicit sandbox policies, and approval policies.
+Ronin does not currently expose those as launch choices; `--approve-for-me` is a safer
+automation candidate to evaluate separately from full bypass.
 
 Codex accepts the initial brief positionally. Ronin discovers the conversation from
 matching rollout/writer-lock file descriptors and archives/resumes that exact identity.

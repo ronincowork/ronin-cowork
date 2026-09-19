@@ -188,7 +188,7 @@ test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async
   assert.equal(bare.agent, true);
   assert.ok(bare.cmd, 'the provider CLI is resolved');
   assert.doesNotMatch(bare.cmd, /dangerously/, 'bare metal uses provider configuration unless explicitly changed');
-  assert.equal(bare.cmd, 'claude --model fable', 'bare metal uses the ordinary provider command');
+  assert.equal(bare.cmd, 'claude', 'no model selection is the Agent CLI’s Native command');
   assert.equal(bare.launch_mode, 'configured');
   assert.ok(bare.launchAgent, 'the launched provider is stamped');
   assert.equal(bare.brief, '', 'Ronin composes no brief');
@@ -301,7 +301,7 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
 });
 
 
-test('launch_mode preserves provider configuration or appends the declared bypass flag', async () => {
+test('launch_mode selects the Agent document’s Native or Dangerously command', async () => {
   const configured = await resolveForm(commonsForm({
     provider: 'anthropic', model: 'opus', launch_mode: 'configured',
   }), new Set());
@@ -322,7 +322,7 @@ test('launch_mode preserves provider configuration or appends the declared bypas
 
   await assert.rejects(
     () => resolveForm(commonsForm({ cmd: 'custom-agent', launch_mode: 'live_dangerously' }), new Set()),
-    /declares no `live_dangerously:` flag/,
+    /declares no Dangerously command/,
   );
 });
 

@@ -2,6 +2,13 @@
 
 - **stop_keys:** C-c
 - **clear_keys:** C-c
+- **launch_native:** ["hermes", "chat", "--provider", "{provider}"]
+- **launch_model:** ["hermes", "chat", "--provider", "{provider}", "-m", "{model}"]
+- **launch_native_dangerously:** —
+- **launch_model_dangerously:** —
+- **launch_resume:** ["hermes", "--resume", "{session_id}"]
+- **launch_new_session_id:** —
+- **launch_initial:** none
 
 CLI id: `hermes`. Catalog provider: Nous Research and other inference providers. Reviewed 2026-09-14.
 Version: **not installed**. Documentation only; installed behavior is not certified.

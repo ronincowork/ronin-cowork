@@ -413,7 +413,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
           error: `Could not find ${resolved.cmd.trim().split(/\s+/)[0]} on this machine. Install it from ⚙ Configuration, then launch again.`,
         });
       }
-      const providerSession = newProviderSession(resolved.launchAgent, launch.argv);
+      const providerSession = await newProviderSession(resolved.launchAgent, launch.argv);
       launch.argv = providerSession.argv;
       routineTools = resolved.agent
         ? await projectRoutineTools(

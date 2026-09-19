@@ -81,8 +81,8 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
       return input;
     };
     const launchModes = [
-      { v: 'configured', l: t('launch_mode.configured', 'Model provider configuration'), sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
-      { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'), sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
+      { v: 'configured', l: t('launch_mode.configured', 'Native'), sub: t('launch_mode.configured_sub', 'Use the provider CLI normally; a selected model is the only launch override.') },
+      { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'), sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') },
     ];
     const defaultsRow = el('div', 'tw-config-wide');
     const agentDefaults = ask([

@@ -2,9 +2,33 @@
 
 - **stop_keys:** C-c
 - **clear_keys:** C-c
+- **launch_native:** ["grok"]
+- **launch_model:** ["grok", "--model", "{model}"]
+- **launch_native_dangerously:** —
+- **launch_model_dangerously:** —
+- **launch_resume:** —
+- **launch_new_session_id:** —
+- **launch_initial:** positional
 
 CLI id: `grok`. Catalog provider: xAI. Reviewed 2026-09-14.
 Version: **1.0.24**. Installed version checked; current upstream guide reviewed, not claimed to match every installed-version menu.
+
+## Ronin launch sequence
+
+The declarations above are executable documentation. Native means exactly `grok`, with
+no model or permission instruction.
+
+| Ronin choice | Command core |
+|---|---|
+| Native | `grok` |
+| Model | `grok --model <model>` |
+| Dangerously | Not exposed by Ronin |
+| Resume | Not used by Ronin; exact identity discovery is unsupported |
+
+Ronin appends the initial brief positionally. Upstream Grok accepts `--resume`,
+`--continue`, `--always-approve`, `--permission-mode bypassPermissions`, explicit session
+IDs, and reasoning-effort controls. These are recorded here for drift review but are not
+Ronin standards until their lifecycle and safety behavior are exercised end to end.
 
 The initial brief is positional. Install/update/version operations are in the registry.
 Resume syntax and exact conversation discovery remain unsupported; Archive refuses.

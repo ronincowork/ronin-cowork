@@ -315,10 +315,10 @@ export async function resolveForm(
   }
   const launchMode = agent ? (form.launch_mode ?? parentSeed?.seeds.launch_mode.value ?? 'configured') as LaunchMode : 'configured';
   if (launchMode === 'live_dangerously') {
-    if (!spec?.liveDangerously) {
-      throw new Error('This launch command declares no `live_dangerously:` flag in the provider catalog, so it cannot launch Dangerously (see ronin_catalogs/MODEL_PROVIDERS.md).');
+    if (!spec?.dangerousCmd) {
+      throw new Error(`docs/agents/${spec?.cli ?? 'unknown'}.md declares no Dangerously command for this launch.`);
     }
-    cmd = `${cmd} ${spec.liveDangerously}`;
+    cmd = spec.dangerousCmd;
   }
   const explicit: StatedBy[] = [{ layer: 'launch', source: 'launch request' }];
   const system: StatedBy[] = [{ layer: 'system', source: 'src/spawn.ts' }];
