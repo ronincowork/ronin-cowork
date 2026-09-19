@@ -77,6 +77,15 @@ test('the board stays square, fixed, manually refreshed, and free of pills and e
   assert.match(moduleSource, /tw-agent-density-lines/);
 });
 
+test('the beta notice is a prominent Workspace Kit header above every board state', () => {
+  assert.match(moduleSource, /import \{ createSurfaceHeader \} from '\.\/workspace-primitives\.js'/);
+  assert.match(moduleSource, /const beta = createSurfaceHeader\(\{/);
+  assert.match(moduleSource, /team_kanban\.beta', 'Beta'/);
+  assert.match(moduleSource, /root\.append\(beta\.el, topline, board\)/);
+  assert.match(workspaceCss, /\.tk-beta > \.wk-surface-header-title \{ font-size: var\(--text-6\)/);
+  assert.doesNotMatch(workspaceCss, /\.tk-beta[^}]*#[0-9a-f]/i, 'the beta header uses house tokens, not an invented color');
+});
+
 test('card expansion and owner opening are sibling controls, never nested interactions', () => {
   assert.match(moduleSource, /node\('button', 'tk-card-toggle'\)/);
   assert.doesNotMatch(moduleSource, /card\.setAttribute\('role', 'button'\)|card\.tabIndex/);
