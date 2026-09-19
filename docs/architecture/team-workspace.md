@@ -136,7 +136,7 @@ not thrown away; the Coworks page's copy of the tab keeps the same rule. **Save*
 - `docs/architecture/team-workspace.md` — this persistent implementation and resume contract.
 
 Shared seams touched for Team, by authorization: `public/js/terminal-tile-host.js`
-(`actions` ride the Tile head), `workspace-primitives.js` (`createChannelSurface({
+(`actions` ride the Tile head), `workspace-tabs.js` (`createTabbedSurface({
 actions })`, `current()`), and `events.js` (`teamPageHandlers`). Team leadership is
 managed from the roster; the terminal head does not edit the session's role.
 
@@ -169,8 +169,8 @@ pointer handlers, width state, or geometry CSS.
 
 ### CSS boundary
 
-`public/workspace-kit.css` owns `.wk-workbench-*`, `.wk-layout-*`, the layout map, and
-the compact-card rule. `public/css/team-workspace.css` styles Team semantics only: the
+`public/workspace-kit.css` owns `.wk-workbench-*`, `.wk-layout-*`, `.wk-tabset-*`, the
+layout map, and the compact-card rule. `public/css/team-workspace.css` styles Team semantics only: the
 roster header, cards, the C/T button, configuration readings, drop targets. It must not
 select `.wk-*` internals or restyle `.tile-head`.
 
@@ -203,7 +203,7 @@ from what the tab remembered.
   Cowork ID as a reading, plus editable readable title, purpose and launch defaults. Membership remains on
   Agents and is deliberately absent from this form.
 
-The tab strip carries **T** at its right end through `createChannelSurface({ actions })`.
+The tab bar carries **T** in its actions slot through `createTabbedSurface({ actions })`.
 
 ### The three headers
 

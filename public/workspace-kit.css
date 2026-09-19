@@ -172,6 +172,7 @@
   .wk-tabset-actions { display: flex; align-items: center; flex: 0 0 auto; gap: var(--space-3); }
   .wk-tabset-actions:empty { display: none; }
   .wk-tabset-actions .wk-action { min-height: 0; padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
+  .wk-surface-dismiss { font-size: var(--text-4); line-height: 1; }
 
   /* The panel owns fill and one scroll region; what it holds keeps its own padding. */
   .wk-tabset > .wk-surface-content { display: flex; flex-direction: column; padding: 0; overflow: hidden; }

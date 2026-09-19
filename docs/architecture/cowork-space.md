@@ -70,7 +70,7 @@ Rules that make them peers:
 - **Every head is one depth** — `--row-head` (41px). The tile head wraps rather than clips
   when a workspace is squeezed; the strip's **T** stands at tab height.
 - **A surface is a Kit surface** (`docs/architecture/workspace-kit.md`): `createTerminalTileHost` for a
-  terminal tile, `createChannelSurface` for anything with a strip. A new surface is a new
+  terminal tile, `createTabbedSurface` for anything with tabs. A new surface is a new
   call of one of those, never a new frame.
 - **A surface's words go through `t()`** and its nouns through KOTOBA + the glossary
   (`docs/products/kokugo.md`).
@@ -154,7 +154,7 @@ New Session, Docs and Wipeboard live in the cowork-space surfaces named above.
 - The Kit's contract: `docs/architecture/workspace-kit.md`.
 # Message delivery
 
-Team Commons' **Agent message queue** channel shows inbound session messages that have not
+Team Commons' **Messages** tab shows inbound session messages that have not
 cleared. It is the visible half of the durable delivery flow; see `docs/architecture/message-queue.md`.
 Delivered messages disappear, while stuck and failed messages offer **Try Again**,
 **Force**, and **Dismiss**.

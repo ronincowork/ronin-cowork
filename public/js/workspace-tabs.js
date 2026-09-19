@@ -200,15 +200,6 @@ export function createTabbedSurface(options = {}) {
   };
 
   /* ---------- state a consumer may change, all through here ---------- */
-  function setHidden(id, on = true) {
-    const entry = entries.get(String(id));
-    if (!entry) return;
-    entry.button.hidden = !!on;
-    if (on && entry.id === current) select(firstSelectable());
-    else paint();
-    measure();
-  }
-
   function setAvailable(id, state = {}) {
     const entry = entries.get(String(id));
     if (!entry) return;
@@ -223,13 +214,6 @@ export function createTabbedSurface(options = {}) {
     if (!on && entry.id === current) select(firstSelectable());
     else paint();
   }
-
-  const setLabel = (id, text) => {
-    const entry = entries.get(String(id));
-    if (!entry) return;
-    entry.label.textContent = text ?? '';
-    measure();
-  };
 
   /** A count beside the label. Its box is always present, so arriving shifts nothing. */
   const setBadge = (id, text, title) => {
@@ -303,18 +287,11 @@ export function createTabbedSurface(options = {}) {
   const api = {
     ...surface,
     el: surface.el,
-    bar,
-    row,
-    actions,
     select,
     current: () => current,
-    has: (id) => entries.has(String(id)),
-    setLabel,
     setBadge,
     setAttention,
     setAvailable,
-    setHidden,
-    measure,
     mount: (ctx) => { context = ctx ?? context; },
     enter: (ctx) => {
       context = ctx ?? context;

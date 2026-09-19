@@ -17,7 +17,7 @@ import { saveCampaign } from './campaigns.js';
 import { setCampaignTheme, setTheme } from './theme.js';
 
 export function coworkCommons(options = {}) {
-  const { createChannelSurface } = WorkspaceKit.primitives;
+  const { createTabbedSurface } = WorkspaceKit.primitives;
 
   const node = (tag, cls, text) => {
     const d = document.createElement(tag);
@@ -166,22 +166,6 @@ export function coworkCommons(options = {}) {
   const accountRooms = once(() => { showAccount(accountShowing); return []; });
   const accountEnter = () => { accountRooms(); showAccount(accountShowing); };
 
-  /* ---- ◫ Desk profile ---- */
-  const profile = pane('profile', 'cc-stack');
-  const profileRooms = once(() => {
-    profile.append(appBox(app.profile));
-    return [app];
-  });
-
-  /* ---- ▣ Project roots ---- */
-  const roots = pane('roots');
-  const rootsRooms = once(() => {
-    const proj = room('desk-proj');
-    roots.append(proj);
-    // No tile of its own: projectroots falls back to the active tile for its ask.
-    return [buildProjectRoots(proj, showing('roots'), null)];
-  });
-
   /* ---- Archived — retained here; the Team roster moved to the Cowork workbench. ---- */
   const seatAdapter = { index: 'cc', connect: (name) => (S.connectSession ? S.connectSession(name) : atTile((tile) => tile.connect(name))) };
   const archivesPane = pane('archives');
@@ -229,8 +213,6 @@ export function coworkCommons(options = {}) {
     card.removeAttribute('role'); // a card in a tab is not a dialog
     padMissing.remove();
     keypad.append(card);
-    S.padPanel.open = () => S.showCoworkCommons?.('keypad');
-    S.padPanel.isOpen = showing('keypad');
     return true;
   };
 
@@ -240,50 +222,33 @@ export function coworkCommons(options = {}) {
     themes: service(themes, paintThemes),
     health: service(health, enterAll(healthRooms)),
     account: service(account, accountEnter),
-    profile: service(profile, enterAll(profileRooms)),
-    roots: service(roots, enterAll(rootsRooms)),
     archives: service(archivesPane, enterAll(archivesRooms)),
     messages: service(messages, enterAll(messageRooms)),
     help: service(help, enterAll(helpRooms)),
     keypad: service(keypad, () => { if (mountPad()) S.padPanel.render?.(); }),
   };
-  // machine's tabs and leaves out the two it already has as surfaces of its own.
+  // The caller names the tabs it wants; Desk profile and Workspace folders are surfaces
+  // of their own (js/campaign-view.js) and are no longer built here at all.
   const wanted = Array.isArray(options.tabs) && options.tabs.length ? new Set(options.tabs) : null;
-  const channels = [
+  const tabs = [
     { id: 'themes', label: t('cowork.tab_themes', 'Themes') },
     { id: 'health', label: t('cowork.tab_health', 'Desk') },
     { id: 'account', label: t('cowork.tab_account', 'Account') },
-    { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
-    { id: 'roots', label: t('cowork.tab_roots', 'Workspace folders') },
     { id: 'archives', label: t('cowork.tab_archives', 'Archived') },
     { id: 'messages', label: t('cowork.tab_messages', 'Messages') },
     { id: 'help', label: t('cowork.tab_help', 'Help desk') },
     { id: 'keypad', label: t('cowork.tab_keypad', 'Keypad') },
-  ].filter((c) => (!wanted || wanted.has(c.id)) && (c.id !== 'themes' || options.campaign));
-  surface = createChannelSurface({
-    label: options.label || t('cowork.commons', 'Ronin Desk'),
-    channels,
-    selected: channels[0]?.id || 'health',
-    services,
+  ].filter((c) => (!wanted || wanted.has(c.id)) && (c.id !== 'themes' || options.campaign))
+    .map((c) => ({ ...c, panel: services[c.id] }));
+  // The tab set's `select` enters the room it lands on, by click, keyboard or code alike,
+  // so nothing here patches `select` or listens on the strip to make up for it.
+  surface = createTabbedSurface({
+    label: options.label,
+    tabs,
+    selected: tabs[0]?.id || 'health',
   });
   surface.el.classList.add('cc');
-  // Entering a tab is the room's `enter` — the strip's select does not call the hook, so
-  // the surface does it: what the desk's `show()` did per row, per tab here.
-  const rawSelect = surface.select;
-  surface.select = (id) => {
-    const picked = rawSelect(id);
-    services[picked]?.enter?.();
-    return picked;
-  };
-  surface.tabs.addEventListener('click', (e) => {
-    const tab = e.target.closest('.wk-channel-service-tab');
-    if (tab) services[surface.current()]?.enter?.();
-  });
-  // THE PAD'S OPEN/ISOPEN MEAN THIS TAB NOW (set in `mountPad`): `S.padPanel.open()` (a
-  // bound pad key, the pad's own ask) shows the cowork commons on Keypad wherever the page
-  // can show it — `S.showCoworkCommons` is set by the page (team-view.js / layout.js);
-  // `isOpen` is the pad key handler's "you are working the pad" test (layout.js).
-  // Nothing is entered here: the first `select` — the cowork destination's enter, or the
-  // team page's putCowork — enters the landing tab, so no room fetches on a page load.
+  // Nothing is entered here: the first `select` — the destination's enter — enters the
+  // landing tab, so no room fetches on a page load.
   return surface;
 }

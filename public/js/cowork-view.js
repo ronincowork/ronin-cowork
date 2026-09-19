@@ -80,12 +80,12 @@ function registerWorkbenchCatalog() {
   registerPresetsSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
-  add({ type: WB_TYPES.commons, header: 'channels', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Commons'), summary: () => t('team.commons_summary', 'See Roster / Docs / Wipeboard / Task Manager / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
-  add({ type: WB_TYPES.kanban, header: 'channels', className: 'wk-selector-utility', discover: (_tenant, environment) => environment.kanbanOffers(), create: ({ workspace, environment }) => environment.teamKanban(workspace) });
-  add({ type: WB_TYPES.desk, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), create: ({ workspace, environment }) => environment.desk(workspace) });
+  add({ type: WB_TYPES.commons, header: 'tabs', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Commons'), summary: () => t('team.commons_summary', 'See Roster / Docs / Wipeboard / Task Manager / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
+  add({ type: WB_TYPES.kanban, header: 'tabs', className: 'wk-selector-utility', discover: (_tenant, environment) => environment.kanbanOffers(), create: ({ workspace, environment }) => environment.teamKanban(workspace) });
+  add({ type: WB_TYPES.desk, header: 'tabs', label: () => t('cowork.commons', 'Ronin Desk'), create: ({ workspace, environment }) => environment.desk(workspace) });
   add({ type: WB_TYPES.terminal, header: 'terminal', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
   add({ type: WB_TYPES.roster, header: 'surface', className: 'wk-selector-utility', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
-  add({ type: WB_TYPES.cron, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.channel_cron_jobs', 'Cron jobs'), summary: () => t('team_jikan.all_teams_summary', 'Scheduled messages across every team'), create: ({ workspace, environment }) => environment.cron(workspace) });
+  add({ type: WB_TYPES.cron, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_cron_jobs', 'Cron jobs'), summary: () => t('team_jikan.all_teams_summary', 'Scheduled messages across every team'), create: ({ workspace, environment }) => environment.cron(workspace) });
   // old new agent workspaces have been made obsolete by yours". The seven-field card and
   // the ＋ New board are gone from this bench and from the repository; a workspace that
   // remembers one resolves to its replacement through `legacyTypes`.
@@ -103,7 +103,7 @@ export function createCoworkView(options = {}) {
   const campaign = options.kind === 'cowork';
   const viewKey = campaign ? 'cowork' : 'team';
   const coworkIdentity = coworkWorkbenchIdentity(t('campaign.coworks', 'Teams'));
-  const { createSurface, createChannelSurface, createAction } = WorkspaceKit.primitives;
+  const { createSurface, createTabbedSurface, createAction } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { DISMISSED_WORKSPACE, teamWorkspaceState, workspaceMaySeedDefault } = WorkspaceKit.contract;
   const root = el('main', 'tw-view');
@@ -196,8 +196,14 @@ export function createCoworkView(options = {}) {
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
   // Each workspace owns its rendered Commons instance and local presentation state.
   const createTeamCommons = (id) => {
+    // Declared first: the rooms below report their counts to the strip through it.
+    let channels = null;
     const wipeboard = createTeamWipeboard();
-    const jikan = createTeamJikan();
+    // A room reports its own count rather than reaching through the DOM for its tab.
+    const jikan = createTeamJikan({
+      onCount: ({ scheduled, paused }) => channels?.setBadge('cron-jobs', `${scheduled} / ${paused}`,
+        t('workspace.tab_cron_count', '{scheduled} scheduled, {paused} paused', { scheduled, paused })),
+    });
     const docsPane = el('div', 'home-docs tw-docs');
     const docs = buildDocs(null, docsPane, () => entered && docsPane.isConnected,
       (name) => membersOfTeam(team).some((m) => m.name === name), () => teamByName(team)?.repos || []);
@@ -214,41 +220,44 @@ export function createCoworkView(options = {}) {
       unavailable: (message) => updateKanbanAvailability({ available: false, message }),
     });
     const messages = el('div', 'tw-messages');
-    const messageLabel = t('workspace.channel_agent_message_queue', 'Messages');
-    let messageTab = null;
+    const messageLabel = t('workspace.tab_agent_message_queue', 'Messages');
+    // THE COUNT IS THE SIGNAL. What is waiting is a number, so the tab says the number and
+    // attention colours it; nothing here reaches for a tab node or changes a label's weight.
     let retainedCount = 0;
     let chooseQueueOnOpen = false;
     const paintMessageAttention = () => {
-      if (!messageTab) return;
-      messageTab.dataset.attention = String(retainedCount > 0);
-      messageTab.textContent = messageLabel;
+      if (!channels) return;
+      channels.setBadge('agent-message-queue', retainedCount || '',
+        retainedCount ? t('workspace.tab_messages_waiting', '{count} waiting to enter a live session', { count: retainedCount }) : '');
+      channels.setAttention('agent-message-queue', retainedCount > 0);
       if (chooseQueueOnOpen) {
         if (retainedCount > 0) channels.select('agent-message-queue');
         chooseQueueOnOpen = false;
       }
     };
     const messageQueue = buildMessageQueue(messages, (count) => { retainedCount = count; paintMessageAttention(); });
-    const channels = createChannelSurface({
+    channels = createTabbedSurface({
       label: t('team.commons', 'Commons'),
-      channels: [
-        { id: 'roster', label: t('workspace.channel_roster', 'Roster') },
-        { id: 'docs', label: t('workspace.channel_docs', 'Docs') },
-        { id: 'wipeboard', label: t('workspace.channel_wipeboard', 'Wipeboard') },
-        { id: 'agent-message-queue', label: messageLabel },
-        { id: 'kanban', label: t('workspace.channel_task_manager', 'Task Manager') },
-        { id: 'cron-jobs', label: t('workspace.channel_cron_jobs', 'Cron jobs') },
-        { id: 'team-configuration', label: t('workspace.channel_team_configuration', 'Configuration') },
+      tabs: [
+        { id: 'roster', label: t('workspace.tab_roster', 'Roster'), panel: service(roster) },
+        { id: 'docs', label: t('workspace.tab_docs', 'Docs'), panel: docsService },
+        { id: 'wipeboard', label: t('workspace.tab_wipeboard', 'Wipeboard'), panel: wipeboard },
+        // The queue polls while the Commons is on screen, not only while its own tab is —
+        // its count is how you learn something is waiting. That is what `watch` is for;
+        // the panel itself has no hooks, so nothing stops the poll on a tab change.
+        { id: 'agent-message-queue', label: messageLabel, panel: messages, watch: () => { messageQueue.enter(); return messageQueue.leave; } },
+        { id: 'kanban', label: t('workspace.tab_task_manager', 'Task Manager'), panel: kanban },
+        { id: 'cron-jobs', label: t('workspace.tab_cron_jobs', 'Cron jobs'), panel: jikan },
+        { id: 'team-configuration', label: t('workspace.tab_team_configuration', 'Configuration'), panel: service(config) },
       ],
       selected: 'roster',
-      services: { roster: service(roster), wipeboard, docs: docsService, 'agent-message-queue': { el: messages, mount: () => {}, enter: messageQueue.enter, leave: messageQueue.leave, destroy: messageQueue.destroy }, 'cron-jobs': jikan, kanban, 'team-configuration': service(config) },
+      // Choosing any tab by hand answers the queue's standing request to be opened next.
+      onSelect: () => { chooseQueueOnOpen = false; },
     });
-    messageTab = channels.tabs.querySelector('[data-service="agent-message-queue"]');
-    const kanbanTab = channels.tabs.querySelector('[data-service="kanban"]');
-    channels.tabs.addEventListener('click', () => { chooseQueueOnOpen = false; });
     paintMessageAttention();
     channels.el.dataset.workbenchSurface = COMMONS;
     return {
-      el: channels.el, channels, wipeboard, jikan, kanban, kanbanTab, docs, roster, config, messageQueue,
+      el: channels.el, channels, wipeboard, jikan, kanban, docs, roster, config, messageQueue,
       attendQueueOnOpen: () => {
         chooseQueueOnOpen = true;
         if (retainedCount > 0) paintMessageAttention();
@@ -271,7 +280,7 @@ export function createCoworkView(options = {}) {
   // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
   // surface rather than the one tab left in a strip.
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamRosterSurface()])) : {};
-  const cronBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => { const surface = createSurface({ label: t('workspace.channel_cron_jobs', 'Cron jobs'), className: 'tw-cron' }); const room = createTeamJikan({ universal: true, teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }); surface.content.append(room.el); return [id, { el: surface.el, room }]; })) : {};
+  const cronBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => { const surface = createSurface({ label: t('workspace.tab_cron_jobs', 'Cron jobs'), className: 'tw-cron' }); const room = createTeamJikan({ universal: true, teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }); surface.content.append(room.el); return [id, { el: surface.el, room }]; })) : {};
   // seated in a workspace, grouped by Team of record, each row's act a labelled button.
   // A rehydrated session lands in the workspace whose surface woke it, like a birth.
   const archivesBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => {
@@ -285,7 +294,7 @@ export function createCoworkView(options = {}) {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(campaign ? WB_TYPES.roster : WB_TYPES.commons, workspace)),
     teamCommons: (id) => ({ el: teamCommons[id].el, show: (detail = {}) => { const item = teamCommons[id]; if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
     kanbanOffers: () => kanbanGate.available ? [{
-      label: t('workspace.channel_task_manager', 'Task Manager'),
+      label: t('workspace.tab_task_manager', 'Task Manager'),
       summary: t('team_kanban.card_summary', 'The Team’s work, from Ideas through Done'),
     }] : [],
     teamKanban: (id) => ({ el: teamCommons[id].el, show: () => {
@@ -374,8 +383,9 @@ export function createCoworkView(options = {}) {
       : { available: false, message: String(next?.message || KANBAN_NOT_INSTALLED) };
     for (const commons of Object.values(teamCommons)) {
       commons.kanban.setAvailability(kanbanGate);
-      commons.kanbanTab.disabled = false;
-      commons.kanbanTab.title = '';
+      // The tab keeps its place whether or not the Task Manager is installed, so the row
+      // never re-orders under the pointer when it arrives.
+      commons.channels.setAvailable('kanban', { on: true, title: '' });
     }
     bench.refreshSelector();
   };
@@ -646,7 +656,7 @@ export function createCoworkView(options = {}) {
       if (holding) { surface.content.replaceChildren(roster); return; }
       if (recordMoved || !configNode) {
         configNode = el('section', 'league-team-config');
-        configNode.append(el('h3', 'league-team-roster-title', t('workspace.channel_team_configuration', 'Team Configuration')));
+        configNode.append(el('h3', 'league-team-roster-title', t('workspace.tab_team_configuration', 'Team Configuration')));
         const fields = el('div', null); configNode.append(fields);
         renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: async () => {
           await refreshTeams();
@@ -740,7 +750,7 @@ export function createCoworkView(options = {}) {
       if (!roster) { renderTeamConfiguration(commons.config, null, { createAction }); continue; }
       const fields = el('div');
       const config = el('section', 'league-team-config');
-      config.append(el('h3', 'league-team-roster-title', t('workspace.channel_team_configuration', 'Configuration')), fields);
+      config.append(el('h3', 'league-team-roster-title', t('workspace.tab_team_configuration', 'Configuration')), fields);
       commons.config.replaceChildren(config);
       renderTeamConfiguration(fields, { ...roster, durable: true }, { createAction, onSaved: async (saved) => {
         await refreshTeams();

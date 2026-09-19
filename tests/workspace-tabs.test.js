@@ -55,8 +55,8 @@ test('one select path serves click, keyboard and code, and panels build on first
   assert.match(tabs, /button\.addEventListener\('click', \(\) => select\(id\)\)/);
   assert.match(tabs, /if \(entry\.built\) return entry\.service;/);
   assert.match(tabs, /typeof declared === 'function' \? declared\(\) : declared/);
-  // A watch feeds an off-screen tab's badge, so entering every panel is never the price
-  // of keeping a counter truthful.
+  // A watch keeps an off-screen room running, so entering every panel is never the price
+  // of learning something is waiting.
   assert.match(tabs, /entry\.declared\.watch\(report, context\)/);
   assert.match(tabs, /for \(const entry of order\) if \(entry\.built\) entry\.service\?\.destroy\?\.\(\)/);
   assert.match(tabs, /observer\?\.disconnect\(\)/);

@@ -205,13 +205,15 @@ export function createWorkbench(options = {}) {
     value.el.dataset.workbenchSurface = type;
     if (resource) value.el.dataset.workbenchResource = resource;
     instanceNodes.set(value.el, id);
-    const required = definition.header === 'surface' ? '.wk-surface-header' : definition.header === 'channels' ? '.wk-channel-service-tabs' : null;
+    const required = definition.header === 'surface' ? '.wk-surface-header' : definition.header === 'tabs' ? '.wk-tabset-bar' : null;
     if (required && !value.el.querySelector(`:scope > ${required}`)) throw new Error(`${type} did not use its ${definition.header} Workbench header`);
     if (definition.header === 'terminal') {
       value.el.querySelector('.tile-head .minimize')?.addEventListener('click', () => dismiss(id));
     } else {
-      const host = definition.header === 'channels'
-        ? value.el.querySelector(':scope > .wk-channel-service-tabs')
+      // A tabbed surface has an actions slot of its own; nothing is ever interleaved
+      // into the tab row.
+      const host = definition.header === 'tabs'
+        ? value.el.querySelector(':scope > .wk-tabset-bar .wk-tabset-actions')
         : value.el.querySelector(':scope > .wk-surface-header .wk-surface-header-actions');
       if (host) {
         const title = t('workspace.close_surface', 'Close this work surface');

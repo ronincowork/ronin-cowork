@@ -65,14 +65,28 @@ Current load-bearing contracts:
   resolves the type through the active profile and shared library. The library factory is
   called per workspace/resource; returning one node for two workspaces is refused. The
   selector and drag/drop both call this same placement path.
-- `createTerminalTileHost({ mode, actions })` and `createChannelSurface({ actions })`
-  take consumer actions for their own header row (a tile head, a tab strip) — the Team
-  page's C/T flip rides there, so no feature reaches into a Tile.
+- `createTerminalTileHost({ mode, actions })` and `createTabbedSurface({ actions })`
+  take consumer actions for their own header row (a tile head, a tab bar) — the Team
+  page's C/T flip rides there, so no feature reaches into a Tile. A tabbed surface keeps
+  its actions in `.wk-tabset-actions`; nothing is interleaved into the tab row.
 - `createTerminalTileHost({ mode: 'full' | 'reduced' })` is the only terminal host. Full
   mode preserves the genuine existing Tile—including header, Torii, controls,
   terminal, tape and composer—unchanged.
-- `createChannelSurface({ services })` owns tabs and invocation. Services are
-  `{ el, mount, enter, leave, destroy }`. Chat remains reserved and inert.
+- `createTabbedSurface({ tabs })` is the one tab strip and owns the shape, the
+  selection, the scrolling and the lifecycle. Each tab declares `{ id, label, panel }`,
+  where `panel` is a Node, a service `{ el, mount, enter, leave, destroy }` or a factory
+  `() => service` built the first time its tab is shown. A tab may add `watch(report)`,
+  which runs while the surface is entered whatever tab is on, so a room that must keep
+  polling to report a count does not have to be the selected one.
+  `select` is one path for click, keyboard and code: it leaves the outgoing panel, builds
+  and enters the incoming one, and scrolls it into view. Tab state — `setBadge`,
+  `setAttention`, `setAvailable` — changes only through the returned API; no consumer
+  queries a tab node. A hidden, unavailable or unknown id falls back to the first
+  selectable tab rather than leaving the surface blank.
+  **Selected is a shape, not a line**: the selected tab takes the panel's own fill and
+  covers the bar's rule with a `box-shadow`, so it is the only tab with no line under it.
+  Nothing in the Kit marks a selection with an underline. The bar carries tabs and
+  actions and no surface name.
 - `team-controller.js` is the only Team projection. Membership and leads are derived live
   from sessions; `team_roster` stores durable Team metadata/defaults, never membership.
 - ExplorerRail currently routes both programmatic `setSections()` reconciliation and user
@@ -119,8 +133,8 @@ symmetry. Existing hooks must be idempotent. Repeated navigation must not multip
 subscriptions, listeners, observers, timers, keyboard handlers, terminal instances, or
 composers.
 
-Terminal views park the canonical host on `leave()` and destroy it on `destroy()`. Channel
-services run through `createChannelSurface`; features do not build a second tab/service
+Terminal views park the canonical host on `leave()` and destroy it on `destroy()`. Tab
+panels run through `createTabbedSurface`; features do not build a second tab/panel
 lifecycle. Team-controller selectors remain authoritative. Its subscribers currently
 receive an unused deep-copied `snapshot()` carrying a revision counter after refresh;
 consumers should not treat that payload as a second state source.
@@ -133,7 +147,7 @@ Every consumer must:
 2. Treat the Surface header as permanent structure. `createSurface({ label, actions })`
    supplies the standard fixed-height, fixed-color header automatically. `header: false`
    is reserved for a specialized permanent head already supplied by the same composition:
-   a terminal Tile head, channel tab strip, or discovery-column head.
+   a terminal Tile head, tab bar, or discovery-column head.
 3. Use Kit actions, bars, metadata, forms, fields, notices, Surfaces and cards rather than
    hand-building generic equivalents.
 4. Use named layouts and their responsive contracts. Feature CSS may express meaning, not
