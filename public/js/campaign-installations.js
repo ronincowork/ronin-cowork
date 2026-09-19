@@ -100,6 +100,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     const unavailable = el('p', 'setup-gbrain-hint', t('campaign_view.turn_available_on', 'turn Available on first'));
     const availableQuestion = ask([{ fields: [{
       key: 'available', label: t('campaign_view.available', 'Available'), switch: [t('campaign_view.on', 'On'), t('campaign_view.off', 'Off')],
+      off: reason,
     }] }], {
       className: 'campaign-installation-switch', value: { available: available(installation) },
       onChange: async (answer) => {
@@ -111,6 +112,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     });
     const defaultQuestion = ask([{ fields: [{
       key: 'defaultForAll', label: t('campaign_view.default_for_all_agents', 'Default for all Agents'), switch: [t('campaign_view.on', 'On'), t('campaign_view.off', 'Off')],
+      off: reason,
     }] }], {
       className: 'campaign-installation-switch', value: { defaultForAll: defaultForAll(installation) },
       onChange: async (answer) => {
