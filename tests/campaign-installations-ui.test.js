@@ -4,12 +4,13 @@ import { readFile } from 'node:fs/promises';
 
 test('Campaign Installations is the shared stone surface with the Setup Services and gbrain pages', async () => {
   const source = await readFile(new URL('../public/js/campaign-installations.js', import.meta.url), 'utf8');
+  const campaign = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
   assert.match(source, /createStoneWorkSurface/);
   assert.match(source, /\['ronin_services', 'gbrain', 'trello', 'perplexity'\]/);
   assert.match(source, /createStatusMarker\(installation\.maturity\)/);
   assert.doesNotMatch(source, /INSTALLATION_STATUS/);
-  assert.match(source, /createServicesSurface\(sharedContext\)/);
-  assert.match(source, /createGbrainSurface\(sharedContext\)/);
+  assert.match(source, /context\.createInstallationSurface\?\.\(installation\.id, sharedContext\)/);
+  assert.match(campaign, /createInstallationSurface: \(id, shared\) => id === 'ronin_services' \? createServicesSurface\(shared\) : id === 'gbrain' \? createGbrainSurface\(shared\) : null/);
   assert.match(source, /key: 'available'.*switch: \[t\('campaign_view\.on', 'On'\), t\('campaign_view\.off', 'Off'\)\]/);
   assert.match(source, /key: 'defaultForAll'.*switch: \[t\('campaign_view\.on', 'On'\), t\('campaign_view\.off', 'Off'\)\]/);
   assert.match(source, /turn Available on first/);

@@ -401,7 +401,7 @@ test('a line that conflicts with dev is resolved by a desk holding both; any oth
   const told = await handIn('cowork', 'team/comp/fable');
   assert.equal(told.receipt.result, 'conflict');
   assert.deepEqual(told.receipt.conflict_files, ['x.txt']);
-  assert.match(told.receipt.reason, /resolve it on a desk cut from team\/comp\/dev/);
+  assert.match(told.receipt.reason, /resolve it on a worktree cut from team\/comp\/dev/);
   assert.equal(sh(cowork, ['rev-parse', 'team/comp/dev']), lineBefore, 'the line did not move');
   // The resolver: a desk from dev with the line merged in and the conflict settled.
   await openDesk({ repo: 'cowork', session: 'resolver', team: 'comp' });
@@ -424,7 +424,7 @@ test('a line that conflicts with dev is resolved by a desk holding both; any oth
 
 test('closeDesk keeps unresolved work named, closes only after hand-in, and records lifecycle closure', async () => {
   const wispr = deskWorktree('cowork', 'team/comp/wispr');
-  await syncDesk('cowork', 'team/comp/wispr');
+  await syncDesk('cowork', 'team/comp/wispr', 'team');
   await fs.writeFile(path.join(wispr, 'draft.txt'), 'half done\n');
   await commitFile(wispr, 'd.txt', 'committed, not handed in\n');
   await fs.writeFile(path.join(wispr, 'draft2.txt'), 'still typing\n');
@@ -500,8 +500,8 @@ test('handoff replaces explicit owners without moving the branch or worktree', a
 });
 
 test('race: two hand-ins at once serialize on the line and both land; the ledger has both accepted, in order', async () => {
-  const p = await openDesk({ repo: 'cowork', session: 'p', team: 'comp' });
-  const q = await openDesk({ repo: 'cowork', session: 'q', team: 'comp' });
+  const p = await openDesk({ repo: 'cowork', session: 'p', team: 'comp', source: 'team' });
+  const q = await openDesk({ repo: 'cowork', session: 'q', team: 'comp', source: 'team' });
   await commitFile(p.worktree, 'p.txt', 'p\n');
   await commitFile(q.worktree, 'q.txt', 'q\n');
   const before = sh(cowork, ['rev-parse', 'team/comp/dev']);
@@ -567,7 +567,7 @@ test('crash mid-hand-in: a candidate left behind by a crashed run is rebuilt, no
   const gitBin = path.join(tmp, 'trace-git');
   await fs.mkdir(gitBin, { recursive: true });
   await fs.writeFile(path.join(gitBin, 'git'), `#!/bin/sh\nprintf '%s\\n' "$*" >> "$RONIN_GIT_TRACE"\nexec '${realGit}' "$@"\n`, { mode: 0o755 });
-  const r = await openDesk({ repo: 'cowork', session: 'after', team: 'comp' });
+  const r = await openDesk({ repo: 'cowork', session: 'after', team: 'comp', source: 'team' });
   await commitFile(r.worktree, 'after.txt', 'after the crash\n');
   const oldPath = process.env.PATH;
   process.env.PATH = `${gitBin}:${oldPath}`;
@@ -650,7 +650,7 @@ test('sync preserves dirty destinations and aborts conflicting teammate merges w
   assert.equal(await fs.readFile(path.join(target.worktree, 'sync-conflict.txt'), 'utf8'), 'mine\n');
   assert.equal(sh(cowork, ['rev-parse', peer.branch]), peerTip);
   await assert.rejects(syncDesk('cowork', target.branch, 'services:some/desk'), /must belong to repository cowork/);
-  await assert.rejects(syncDesk('cowork', target.branch, 'cowork:missing/desk'), /no source desk/);
+  await assert.rejects(syncDesk('cowork', target.branch, 'cowork:missing/desk'), /no source worktree/);
   await assert.rejects(syncDesk('cowork', target.branch, 'typo'), /expects dev, team, lead/);
   assert.equal(sh(target.worktree, ['rev-parse', 'HEAD']), ownTip);
 });
@@ -667,7 +667,7 @@ test('sync CLI acknowledges exact source, changed versus unchanged HEAD, and exc
   const first = runSync();
   assert.match(first, /^MERGED /);
   assert.ok(first.includes(`merged ${peer.branch}@${sha}; HEAD ${target.tip} →`));
-  assert.match(first, /Source desk has unsaved changes; they were not copied/);
+  assert.match(first, /Source worktree has unsaved changes; they were not copied/);
   const second = runSync();
   assert.match(second, /^UP-TO-DATE /);
   assert.ok(second.includes(`already contains ${peer.branch}@${sha}; HEAD unchanged at`));
