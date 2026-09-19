@@ -46,8 +46,11 @@ test('arrows wrap at both ends and other keys move nothing', () => {
 
 test('the tab set is the one strip, reachable from the Kit namespace', async () => {
   const kit = await source('public/js/workspace-kit.js');
+  const workbench = await source('public/js/workbench.js');
   assert.match(kit, /import \{ createTabbedSurface \} from '\.\/workspace-tabs\.js'/);
   assert.match(kit, /primitives: Object\.freeze\(\{ \.\.\.WorkspacePrimitives, createTabbedSurface \}\)/);
+  assert.match(workbench, /HEADER_KINDS = new Set\(\['surface', 'tabs', 'terminal'\]\)/);
+  assert.doesNotMatch(workbench, /header === 'channels'/);
 });
 
 test('one select path serves click, keyboard and code, and panels build on first show', async () => {
