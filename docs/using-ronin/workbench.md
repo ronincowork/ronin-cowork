@@ -53,6 +53,13 @@ four numbered workspaces. With four, workspace 3 is below workspace 1 and worksp
 below workspace 2. The discovery column may appear on the left, in the center, or on the
 right according to the saved arrangement.
 
+The small surface map in the app bar is the Workbench in miniature. Its blocks show the
+current column order and relative widths. Click a block to hide or restore that column,
+drag a block to reorder the columns, and drag the divider between the full-size columns
+to resize them. The map changes proportion as you resize, so it always shows the actual
+arrangement rather than a fixed icon. Ronin remembers order, visibility, and widths
+together.
+
 One workspace is selected at a time. Its visible selection mark answers: “Where will the
 next surface open?” Selecting a workspace does not change what it already holds.
 

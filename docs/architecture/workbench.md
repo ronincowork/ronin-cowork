@@ -27,6 +27,40 @@ The definition's `create()` draws the stable shell. Its returned `show()` or `en
 starts only that surface's reads. `leave()` parks active work and `destroy()` releases
 surface-lifetime resources. See [the common lifecycle](workspace-kit.md#lifecycle-contract).
 
+## The surface map and live arrangement
+
+The surface map in the app bar is a miniature live model of the whole Workbench, not
+merely a visibility menu. Each block represents an arrangement slot: a workspace column
+or the discovery column. Its order and proportional width match the full Workbench.
+
+The one arrangement state is `{ order, hidden, widths }`:
+
+- **Show or hide:** click a map block. The last visible slot cannot be hidden, so the
+  Workbench can never become an empty page.
+- **Reorder:** drag a map block past a neighbor's midpoint. With the keyboard, focus a
+  block and use Shift+Left or Shift+Right. The full columns move immediately, including
+  their contents; surfaces are not destroyed or recreated.
+- **Resize:** drag the divider between full-size Workbench columns, or focus that divider
+  and use Left or Right. The adjacent column yields symmetrically. Minimum widths and the
+  70% maximum trim the movement rather than refusing it. The surface map redraws during
+  the drag, so its block proportions are the live resizing readout rather than a separate
+  approximation.
+- **Remember:** widths are stored by slot name, not position. A reordered slot carries
+  its width; a hidden slot returns at its previous width; refresh restores the complete
+  arrangement.
+
+Visible widths are normalized across the remaining slots, and the frame writes each
+slot's `compact` or `full` width class from its measured pixels. This lets a surface adapt
+its reading without owning layout geometry. On phones the same ordered arrangement
+becomes the responsive stack; desktop divider dragging is not imitated as a touch-only
+second control.
+
+`public/js/workspace-arrangement.js` owns the pure state transitions,
+`public/js/workspace-layouts.js` owns column geometry and accessible dividers, and
+`createLayoutMap()` in `public/js/workspace-primitives.js` renders the map. The ViewHost
+mounts it for any active view exposing `arrangement`. A destination supplies slot names
+and content only; it must not implement its own hiding, ordering, resizing, or persistence.
+
 ## Paint and data rule
 
 A Workbench entry restores its shape and seats before network reads complete. A surface
