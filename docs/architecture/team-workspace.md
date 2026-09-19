@@ -36,9 +36,9 @@ one on leave so no transport survives outside the entered destination.
 ## `#/team/:name` user flow
 
 1. The router enters Team with `name` as the route parameter.
-2. Team normalizes tab state through `teamWorkspaceState(state, viewState, declaration)`:
+2. Team normalizes tab state through `normalizeWorkbenchState(viewState, declaration)`:
    the column **arrangement** (order · hidden · widths) and the **seats** (what each
-   workspace held: a member, or `@commons`).
+   workspace held: a member, or a canonical Workbench surface type).
 3. The managed Workbench restores the arrangement; the Kit's layout map in the app bar
    shows it.
 4. The shared Team controller refreshes durable and live readings; live members are

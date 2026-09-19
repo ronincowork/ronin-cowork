@@ -13,7 +13,7 @@ test('every ruled mandate word and kind has one glyph, and an unknown word has n
 
 test('no consumer keeps its own glyph table for a ruled axis', async () => {
   const read = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8').catch(() => '');
-  for (const file of ['new-agent.js', 'new-team-form.js', 'team-agents.js', 'campaign-defaults.js', 'team-configuration.js', 'setup-surfaces.js', 'add-agent.js']) {
+  for (const file of ['new-agent.js', 'new-team-form.js', 'team-agents.js', 'campaign-defaults.js', 'team-configuration.js', 'setup-surfaces.js']) {
     const source = await read(file);
     if (!source.includes("from './ask.js'")) continue;
     assert.doesNotMatch(source, /glyphs?: \[['"]/, `${file} reads glyphs from glyphs.js, not an inline list`);

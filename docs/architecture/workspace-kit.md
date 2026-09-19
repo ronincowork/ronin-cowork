@@ -37,10 +37,14 @@ Consume the facade where possible:
 const { createSurface, createCard, createAction } = WorkspaceKit.primitives;
 const { library, profiles, create } = WorkspaceKit.workbench;
 const { createTerminalTileHost } = WorkspaceKit.adapters;
-const { workspaceTarget, navigateWorkspace, teamWorkspaceState } = WorkspaceKit.contract;
+const { workspaceTarget, navigateWorkspace, normalizeWorkbenchState } = WorkspaceKit.contract;
 ```
 
 Current load-bearing contracts:
+
+Workbench profiles, per-surface data requirements, restoration, and structured launches
+are specified together in [Workbench construction](workbench.md). This page owns the Kit
+beneath that contract.
 
 - `WorkspaceKit.workbench.create({ profile, tenant, environment, defaultNode })` is the
   only public Workbench constructor. Consumers register reusable surface types in the

@@ -479,8 +479,8 @@ test('Setup has one Installations card, Account has no gbrain tab, and Machine S
   assert.doesNotMatch(account, /id: 'gbrain'/);
   assert.match(machine, /tickRow\(observed\.ronin\.services\.includes\('gbrain'\)/, 'the measured gbrain row remains');
   assert.doesNotMatch(machine, /settei\.use_gbrain|family: 'gbrain'/);
-  assert.match(installations, /createServicesSurface\(sharedContext\)/);
-  assert.match(installations, /createGbrainSurface\(sharedContext\)/);
+  assert.match(installations, /context\.createInstallationSurface\?\.\(installation\.id, sharedContext\)/);
+  assert.match(surfaces, /createInstallationSurface: \(id, shared\) => id === 'ronin_services' \? createServicesSurface\(shared\) : id === 'gbrain' \? createGbrainSurface\(shared\) : null/);
   assert.match(installations, /stoneSurface\.select\('ronin_services'\)/);
   assert.match(installations, /context\.onInstallationsState\?\.\(\{ \.\.\.values \}\)/, 'Setup completion follows the saved installation map');
 });

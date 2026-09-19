@@ -1,15 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { coworkWorkbenchIdentity, orderCoworkTeams } from '../public/js/cowork-workbench-contract.js';
-
-test('Cowork workbench identity consistently names the Teams collection', () => {
-  assert.deepEqual(coworkWorkbenchIdentity('Teams'), {
-    kind: 'cowork',
-    selectorLabel: 'Teams',
-    selectorAriaLabel: 'Teams',
-    tabLabel: 'Teams',
-  });
-});
+import { orderCoworkTeams } from '../public/js/cowork-workbench-contract.js';
 
 test('Cowork roster keeps ordinary Teams readable and the special destinations last', () => {
   const noTeam = { name: '__none__', title: 'Ronin: no team' };

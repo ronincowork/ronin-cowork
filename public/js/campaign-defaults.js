@@ -24,6 +24,7 @@ export function createAgentDefaultsSurface(campaign) {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('campaign_view.defaults', 'Defaults'), className: 'cv-surface' });
   const body = el('div', 'cv-body'); surface.content.append(body);
+  let edited = null;
 
   function paint(seed = null) {
     const row = campaign(); body.replaceChildren();
@@ -43,7 +44,7 @@ export function createAgentDefaultsSurface(campaign) {
         : t('forms.reason_not_on_machine', 'not on this machine');
     const availableNames = new Set(list(seed?.available));
     const availableBehaviours = list(seed?.behaviours).filter((behaviour) => availableNames.has(behaviour.name));
-    let picked = {
+    let picked = edited || {
       provider: String(current.provider || ''), model: String(current.model || ''),
       reach: current.reach || CHOICES.reach[0], recruit: current.recruit || CHOICES.recruit[0],
       output: list(current.output), launch_mode: current.launch_mode || CHOICES.launch_mode[0],
@@ -69,7 +70,7 @@ export function createAgentDefaultsSurface(campaign) {
         key: 'behaviours', label: t('campaign_view.default_behaviours', 'Behaviours'), many: true, shape: 'tall',
         options: availableBehaviours.map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading })),
       }] },
-    ], { value: picked, trayHost: questionsRow, onChange: (value) => { picked = value; } });
+    ], { value: picked, trayHost: questionsRow, onChange: (value) => { picked = value; edited = value; } });
     questionsRow.append(questions.el); form.append(questionsRow);
     const actions = el('div', 'cv-default-actions');
     const save = el('button', 'cv-save', t('panels.save', 'Save')); save.type = 'submit'; actions.append(notice.el, save); form.append(actions); body.append(form);
@@ -78,14 +79,20 @@ export function createAgentDefaultsSurface(campaign) {
       const next = { ...current, ...picked, behaviours: list(picked.behaviours) };
       const result = await saveCampaign(row.id, { config: { defaults: next } });
       notice.set(result.ok ? 'success' : 'failed', result.ok ? t('settei.saved', 'saved') : result.message); save.disabled = false;
-      if (result.ok) paint(seed);
+      if (result.ok) { edited = null; paint(seed); }
     });
   }
 
-  return { el: surface.el, enter: () => void Promise.all([
-    loadProviderCatalog(),
-    request(`/api/launch-seed?campaign_id=${encodeURIComponent(campaign()?.id || '')}`),
-  ]).then(([, seedResult]) => paint(seedResult.ok ? seedResult.data : null)) };
+  let generation = 0;
+  return { el: surface.el, enter: () => {
+    const current = ++generation;
+    paint();
+    if (!campaign()) return;
+    void Promise.all([
+      loadProviderCatalog(),
+      request(`/api/campaign-default-options?campaign_id=${encodeURIComponent(campaign()?.id || '')}`),
+    ]).then(([, options]) => { if (current === generation) paint(options.ok ? options.data : null); });
+  } };
 }
 
 export function defaultsSummary(campaign) {

@@ -144,4 +144,4 @@ carries a `sha256` per bundle and the install refuses a document that does not m
 **Yours, outward.** A team card's *Download as a bundle* (or `bin/ronin-bundle pack <team>`)
 builds the same document from this install — your copies only, since what ships is on every
 install — for a library of your own or for the public one. The code is `src/bundles.ts`;
-the door is `src/routes/library-api.ts`; the surface is `public/js/campaign-templates.js`.
+the door is `src/routes/library-api.ts`; there is currently no Workbench surface for it.

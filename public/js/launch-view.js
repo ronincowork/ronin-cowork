@@ -12,8 +12,6 @@ import { WORKBENCH_HEADER } from './workspace-contract.js';
 
 const PROFILE = 'launch';
 const TYPES = Object.freeze({ team: 'launch.team', agent: 'launch.agent', help: 'launch.help', document: 'document' });
-const node = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
-
 function registerLaunchSurfaces() {
   registerFeedbackSurface();
   const { library, profiles } = WorkspaceKit.workbench;
@@ -106,21 +104,17 @@ export function createLaunchView() {
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {
       ctx = context;
-      const { state: resolved } = context.workbenchEntry();
+      const { state: resolved } = context.workbenchEntry({
+        count: 2, selected: 'workspace1',
+        arrangement: { order: ['selector', 'workspace1', 'workspace2'] },
+        seats: { workspace1: TYPES.agent },
+      });
       bench.enter(resolved);
-      await refreshTeams();
-      let placed = false;
       for (const [workspace, held] of Object.entries(resolved.seats || {})) {
         const type = typeof held === 'object' ? held.type : held;
         if (!Object.values(TYPES).includes(type)) continue;
         bench.place(type, workspace, typeof held === 'object' ? held.detail || held : {});
-        placed = true;
       }
-      // Arriving from the root page with nothing remembered: the Agent form, since that
-      // is what most arrivals want, and the Team card is one click beside it.
-      if (!placed) bench.place(TYPES.agent, 'workspace1');
-      // The cards read left-to-right like the page does; drag it back and that sticks.
-      if (!resolved.arrangement) bench.arrangement.move('selector', 0);
       bench.refreshSelector();
       save();
     },

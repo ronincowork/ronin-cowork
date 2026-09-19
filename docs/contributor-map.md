@@ -47,7 +47,7 @@ writer of server truth. Desktop and phone share feature modules but have separat
 
 - Start at the [visible-surface ownership index](../public/js/README.md#visible-surface-ownership-index)
   for the UI → route → state → test path, then its detailed module map.
-- Contracts: [UI](architecture/ui.md), [Workbench](using-ronin/workbench.md),
+- Contracts: [UI](architecture/ui.md), [Workbench construction](architecture/workbench.md), [Workbench use](using-ronin/workbench.md),
   [UI wording](products/kokugo.md), [Agent glossary](../KOTOBA_GLOSSARY.md).
 - Shared boundaries: [request.js](../public/js/request.js), [ui.js](../public/js/ui.js),
   [state.js](../public/js/state.js). Entries: [main.js](../public/js/main.js), [phone.js](../public/js/phone.js).

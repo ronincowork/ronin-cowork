@@ -49,13 +49,6 @@ tabs by declaring a tab list.
    Making them lazy means giving those three rooms a `watch`, or replaying the last team
    reading when a panel is finally built. Neither is free, and neither belongs in the
    same cut as the wiring.
-5. **`WB_TYPES.desk` is registered and unimplemented** (`cowork-view.js:85`). It is
-   labelled `t('cowork.commons', 'Ronin Desk')` and calls `environment.desk(workspace)`,
-   which the environment object does not define; the legacy id `COWORK` maps onto it
-   (`cowork-view.js:428`), so a remembered workspace holding it throws on placement. It
-   is in no profile, so nothing offers it. Decide: implement it or delete both the
-   registration and the legacy mapping. **Not a regression from this work** — it was
-   already broken.
 
 ## Ownership boundaries
 
@@ -68,7 +61,8 @@ tabs by declaring a tab list.
 ## Checks
 
 Desk: `npm run check:css`, `npm run check:modules`, `npm run check:tests`. The first two
-sit at their pre-existing counts (38 and 18); neither names a file this work touches.
+sit at the team line's own counts (38 and 10); neither names anything this work added.
+`cowork-view.js` breaches the 700-line ceiling on the team line already.
 
 `npm run workbench:ui` and `npm run visual:ui` need Playwright, which is **not installed
 on this desk**. They are the lead/staging gate, and the browser evidence for the

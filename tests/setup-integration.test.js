@@ -82,7 +82,8 @@ test('the integrated Setup/Cowork adapters use the ordinary launch routes', asyn
   assert.match(launch, /request\('\/api\/launch'/);
   assert.match(launch, /request\('\/api\/team-rosters'/);
   assert.match(workspace, /window\.open\(url\.href, '_blank', 'noopener'\)/);
-  assert.match(setup, /openLaunchForm: \(\) => ctx\?\.navigate\('launch'\)/);
+  assert.match(setup, /showNewSession: \(prompt\) => \{[\s\S]*workbenchLaunchUrl\(\{ destination: 'launch', mode: 'overlay'/);
+  assert.doesNotMatch(setup, /openLaunchForm|patchViewState\('launch', \{ prompt/);
   assert.match(cowork, /createDocumentWorkspaceAdapter\(\{ root: detail\.root, path: detail\.path \|\| detail\.key \}\)/);
   assert.match(cowork, /profiles\.define\(WB_PROFILES\.cowork, \[[^\]]*WB_TYPES\.document[^\]]*\]\)/);
   assert.match(cowork, /type: WB_TYPES\.document[^\n]*discover: \(\) => \[\]/);
@@ -125,12 +126,12 @@ test('Agent + Editable Doc launch receipt retains the selected registered root f
 
 test('all inventoried launch families use the shared launch marker and no Team Roster torii', async () => {
   const files = await Promise.all([
-    source('new-agent.js'), source('new-team-form.js'), source('add-agent.js'),
+    source('new-agent.js'), source('new-team-form.js'),
     source('team-roster-surface.js'), source('cowork-view.js'), source('presets.js'),
   ]);
-  for (const text of files.slice(0, 5)) assert.match(text, /launch: true/);
-  assert.match(files[5], /label: 'Launch'/);
-  assert.doesNotMatch(files[3], /'torii', '⛩'/);
+  for (const text of files.slice(0, 4)) assert.match(text, /launch: true/);
+  assert.match(files[4], /label: 'Launch'/);
+  assert.doesNotMatch(files[2], /'torii', '⛩'/);
 });
 
 test('Setup surfaces consume one runtime contract and open Presets only through Launch Your Own', async () => {

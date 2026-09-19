@@ -1,10 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 
-// The cowork commons' tab words, as a draft names them. A PLAIN CONSTANT here, not an
-// import from cowork-commons.js: that module reaches state.js (DOM at top level) and this
-const COWORK_TABS = { health: 'health', account: 'account', profile: 'profile', roots: 'roots', roster: 'roster', archives: 'archives', help: 'help', keypad: 'keypad' };
-
 const COLUMNS = ['workspace1', 'roster', 'workspace2'];
 const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'];
 const TABS = { wipeboard: 'wipeboard', docs: 'docs', kanban: 'kanban', config: 'team-configuration', 'team-configuration': 'team-configuration' };
@@ -25,9 +21,6 @@ export function parseDraft(tokens = [], me = '') {
       if (what === 'commons') {
         if (tab && !TABS[tab]) { errors.push(`${key}: no commons tab "${tab}"`); continue; }
         draft[key] = { commons: true, tab: tab ? TABS[tab] : '', doc: rest.join(':') || '' };
-      } else if (what === 'cowork') {
-        if (tab && !COWORK_TABS[tab]) { errors.push(`${key}: no cowork tab "${tab}"`); continue; }
-        draft[key] = { cowork: true, tab: tab ? COWORK_TABS[tab] : '' };
       } else if (what === 'new' || what === 'terminal' || what === 'empty') draft[key] = { [what]: true };
       else if (what) draft[key] = { session: what === 'me' ? me : what };
       else errors.push(`${key}: say what goes there`);
@@ -84,7 +77,6 @@ export function createArranger(verbs) {
       if (!want) continue;
       if (want.surface) { if (verbs.putSurface(want.surface, ws, want.tab)) did.push(`${ws} ${want.surface}`); else did.push(`${ws}: no surface ${want.surface}`); }
       else if (want.commons) { verbs.putCommons(ws, want.tab, want.doc); did.push(`${ws} commons${want.tab ? ':' + want.tab : ''}`); }
-      else if (want.cowork) { verbs.putCowork(ws, want.tab); did.push(`${ws} cowork${want.tab ? ':' + want.tab : ''}`); }
       else if (want.session) { if (verbs.putSession(want.session, ws)) did.push(`${ws} ${want.session}`); else did.push(`${ws}: no session ${want.session}`); }
       else if (want.new) { verbs.putNew(ws); did.push(`${ws} new`); }
       else if (want.terminal) { verbs.putTerminal(ws); did.push(`${ws} terminal`); }

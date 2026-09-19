@@ -19,6 +19,10 @@ feature is all a feature file should contain.
 The style of the product is unchanged and deliberate: dense, dark-first, pro-tool,
 Japanese marks as identity. This page is about how that style is CARRIED, not what it is.
 
+Workbench surface construction, data ownership, restoration, and structured launches are
+one contract: [Workbench construction](workbench.md). This page owns the shared visual,
+interaction, transport, and failure rules those surfaces use.
+
 ## The cascade
 
 `public/style.css` is one file in four `@layer`s — `vendor, foundations, ui, app` —
@@ -315,27 +319,9 @@ a `destroy()` owner at that moment, not speculatively.
 
 ### Workbench entry state
 
-A Workbench entry has three sources with one precedence order:
-
-1. a one-shot structured launch;
-2. that browser tab's remembered Workbench state;
-3. the destination's first-open defaults.
-
-`workspace.js` owns the structured-launch contract. A caller declares the destination,
-route parameter, `replace` or `overlay`, and the requested Workbench state. It never
-temporarily edits the source tab's remembered state. The destination receives a structured
-instruction in its URL, removes it before resolving the entry, and saves the resulting
-ordinary Workbench state.
-Refresh therefore restores the latest state and cannot replay the launch instruction.
-
-`replace` replaces the complete seat map while retaining unrelated destination
-preferences; `overlay` changes only the named seats and fields. Destinations still validate
-surface types against their profile before placement. Missing, expired, mismatched, or
-unavailable instructions fall back to remembered state and then first-open defaults.
-
-Every programmatic Workbench launch uses `openWorkbenchTab()`. Feature code does not clone
-`sessionStorage`, patch another destination's state temporarily, or add route-specific
-restore branches.
+The precedence and ownership of first-open defaults, remembered refresh state, and
+one-shot structured launches live in
+[Workbench construction](workbench.md#entry-refresh-and-intentional-launch).
 
 The retired embedded Commons' rooms lived in one pane registry consumed by its tab
 strip. A row carried a full label and an optional compact label for the
