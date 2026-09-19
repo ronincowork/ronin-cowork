@@ -104,12 +104,13 @@ const capabilitySettings = (raw: Record<string, boolean>): Record<string, boolea
     .filter(([key]) => !knownParts.has(key) && !capabilityKeys.has(key)));
   const explicit = (name: string, fallback: boolean): boolean =>
     Object.prototype.hasOwnProperty.call(raw, name) ? raw[name] === true : fallback;
-  // Explicit capability choices win. Otherwise either legacy half selects the indivisible
-  // Task manager; historical recorder and voice state never imply those safe-off choices.
-  out.task_manager = explicit('task_manager', raw.michi === true || raw.kanban === true);
+  // An explicit choice always wins. Where there is none, the parts layer says what the
+  // capability does: Task manager, Usage stats and Machine status run until switched off,
+  // so the legacy per-part flags no longer decide them.
+  out.task_manager = explicit('task_manager', CAPABILITY_ON_BY_DEFAULT.has('task_manager'));
   out.terminal_transcript = explicit('terminal_transcript', false);
   out.voice_hotwords = explicit('voice_hotwords', false);
-  out.usage_stats = explicit('usage_stats', raw.counting === true);
+  out.usage_stats = explicit('usage_stats', CAPABILITY_ON_BY_DEFAULT.has('usage_stats'));
   out.machine_status = explicit('machine_status', CAPABILITY_ON_BY_DEFAULT.has('machine_status'));
   out.project_coordinator = explicit('project_coordinator', raw.koshi === true);
   out.local_weights = explicit('local_weights', false);
@@ -119,9 +120,12 @@ const capabilitySettings = (raw: Record<string, boolean>): Record<string, boolea
 const serviceSettings = (v: unknown): { parts: Record<string, boolean> } => {
   const value = bucket(v);
   return {
+    // A Campaign with no choices recorded gets the stock map, and the stock map is what
+    // the parts layer says. Nothing is seeded here: a second hand-written default is how
+    // a Campaign ends up deciding what runs.
     parts: Object.prototype.hasOwnProperty.call(value, 'parts')
       ? capabilitySettings(booleanMap(value.parts))
-      : { ...emptyServiceCapabilities(), task_manager: true, usage_stats: false, project_coordinator: true },
+      : emptyServiceCapabilities(),
   };
 };
 

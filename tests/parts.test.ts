@@ -23,10 +23,11 @@ test('Services off parks every part the installation claims; unclaimed parts sti
 });
 
 test('Services on loads only selected claimed parts and never their siblings', () => {
+  // Usage stats and Machine status carry no choice here, and both run until switched off.
   const plan = partsToLoad(onDisk, installations, { ronin_services: true }, { task_manager: true });
-  assert.deepEqual(plan.load.map((p) => p.name), ['gbrain', 'kanban', 'machine', 'michi']);
+  assert.deepEqual(plan.load.map((p) => p.name), ['counting', 'gbrain', 'kanban', 'machine', 'michi']);
   assert.deepEqual(plan.parked.map(({ name, reason }) => ({ name, reason })),
-    ['counting', 'koe', 'koshi', 'koshi_weights', 'rireki'].map((name) => ({ name, reason: 'component_off' })));
+    ['koe', 'koshi', 'koshi_weights', 'rireki'].map((name) => ({ name, reason: 'component_off' })));
   assert.deepEqual(plan.capabilities.find(({ name }) => name === 'task_manager'), {
     name: 'task_manager', parts: ['michi', 'kanban'],
   });

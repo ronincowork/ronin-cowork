@@ -59,10 +59,9 @@ export const SERVICE_CAPABILITY_PARTS = Object.freeze({
 /**
  * WHAT A MISSING CHOICE MEANS, and the only place it is decided. A Campaign records what
  * the owner switched; it does not carry the defaults for what runs. A capability named
- * here runs until it is switched off — Machine status is one, because the header gauge
- * predates its switch and a switch arriving is no reason for it to go dark.
+ * here runs until it is switched off: Task manager, Usage stats and Machine status.
  */
-export const CAPABILITY_ON_BY_DEFAULT: ReadonlySet<string> = new Set(['machine_status']);
+export const CAPABILITY_ON_BY_DEFAULT: ReadonlySet<string> = new Set(['task_manager', 'usage_stats', 'machine_status']);
 
 /** Which installation claims each part; the first claim wins, in catalog order. */
 export function partClaims(installations: Pick<InstallationRow, 'name' | 'parts'>[]): Map<string, string> {
