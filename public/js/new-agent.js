@@ -309,7 +309,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     { group: t('where.label', 'Where it works'), fields: [
       { key: 'root', label: t('where.born_in', 'Born in'), options: rootRows },
       { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root', options: rootRows },
-      { key: 'launchMode', label: t('launch_mode.head', 'Launch mode'), options: launchModes },
+      { key: 'launchMode', label: t('launch_mode.mode', 'Mode'), options: launchModes },
     ] },
   ], {
     value: { provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, teamLead: draft.teamLead, root: draft.root, repos: draft.repos, launchMode: draft.launchMode },
@@ -350,7 +350,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
       options: availableBehaviours().map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading,
         off: row.required ? t('team_config.required', 'Required for each new Agent') : '' })),
-    }] }], { value: { behaviours: draft.books }, density: 'tight', onChange: (value) => {
+    }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
     shelvesHost.replaceChildren(picker.el);

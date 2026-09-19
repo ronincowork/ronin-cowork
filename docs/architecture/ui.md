@@ -531,7 +531,7 @@ host.append(form.el);   // form.value() · form.set(key, v) or set({…}) · for
 | Spec key | Meaning |
 |---|---|
 | `group` · `fields` | a named group and the fields it keeps together |
-| — | a stone never repeats its group head: the head carries the question (a sentence), the stone's label a noun ("Register as", "Feature"); a field whose label equals its head is drawn with the label "Answer" |
+| — | the consumer owns each stone's noun; ERABI preserves an explicit field label even when it equals the group heading (Team stays Team, Model stays Model) |
 | `key` · `label` | the answer's name in the value; the label over the stone, through `t()` |
 | `options` | rows `{ v, l, sub?, off?, glyph?, word? }` or a function of the current value — `sub` reads in the caption, `off` is why the stone is greyed (disabled, never hidden), `glyph` sits on a square, `word` is the rectangle's short line (tier, worktree) |
 | `blank` | the empty answer's word, drawn as a stone; omit it and there is no blank |
