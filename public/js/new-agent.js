@@ -50,6 +50,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
       teamMode: entryTeam ? 'existing' : 'none', team: entryTeam || '', newTeam: '',
       reach: 'open', recruit: 'open', output: ['open'], launchMode: 'configured',
+      teamLead: false,
       books: [], root: '', repos: [],
       expanded: {},
     };
@@ -265,6 +266,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const onQuestionChange = (value, key) => {
     if ('provider' in value) { draft.provider = value.provider; draft.model = value.model; }
     if ('reach' in value) { draft.reach = value.reach; draft.recruit = value.recruit; draft.output = value.output; }
+    if ('teamLead' in value) draft.teamLead = value.teamLead === true;
     if ('root' in value) { draft.root = value.root; draft.repos = [...value.repos]; }
     if ('launchMode' in value) draft.launchMode = value.launchMode;
     if (key === 'provider' || key === 'model') touched.model = true;
@@ -297,6 +299,9 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       { key: 'recruit', label: t('recruit', 'Recruit'), options: mandateRows(RECRUIT) },
       { key: 'output', label: t('output', 'Output'), many: true, options: mandateRows(OUTPUT) },
     ] },
+    { group: t('new_agent.team_role', 'Team role'), fields: [
+      { key: 'teamLead', label: t('new_agent.make_team_lead', 'Make team lead'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] },
+    ] },
     { group: t('where.label', 'Where it works'), fields: [
       { key: 'root', label: t('where.born_in', 'Born in'), options: rootRows },
       { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root', options: rootRows },
@@ -305,7 +310,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       key: 'launchMode', label: t('launch_mode.head', 'Launch mode'), options: launchModes,
     }] },
   ], {
-    value: { provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, root: draft.root, repos: draft.repos, launchMode: draft.launchMode },
+    value: { provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, teamLead: draft.teamLead, root: draft.root, repos: draft.repos, launchMode: draft.launchMode },
     className: 'na-questions',
     density: 'tight',
     onChange: onQuestionChange,
@@ -329,7 +334,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     onChange: onQuestionChange,
   });
   const syncQuestions = () => {
-    questions.set({ provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, root: draft.root, repos: draft.repos || [], launchMode: draft.launchMode });
+    questions.set({ provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, teamLead: draft.teamLead, root: draft.root, repos: draft.repos || [], launchMode: draft.launchMode });
     teamQuestions.set({ team: teamChoice(), teamName: draft.team });
   };
   void loadProviderCatalog().then(() => questions.paint());
@@ -383,6 +388,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     ];
     if (isCowork()) {
       rows.push([t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`]);
+      rows.push([t('new_agent.make_team_lead', 'Make team lead'), draft.teamLead ? t('forms.on', 'On') : t('forms.off', 'Off')]);
     }
     if (isCowork() && draft.books.length) rows.push([t('behaviours', 'Behaviours'), tagRow(draft.books.map((text) => ({ text, on: true })))]);
     rows.push([t('launch_mode.head', 'launch mode'), launchModes().find((row) => row.v === draft.launchMode)?.l || draft.launchMode]);
@@ -472,6 +478,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
           instructions: draft.instructions.trim(), provider: draft.provider, model: draft.model,
           ...coworkWorkspacePayload(draft.repos),
           mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output },
+          team_lead: draft.teamLead,
           behaviours: [...draft.books],
           launch_mode: draft.launchMode,
           ...(draft.template ? { template: draft.template } : {}),
