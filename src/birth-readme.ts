@@ -170,13 +170,12 @@ async function levelFiles(stock: string, user: string): Promise<string[]> {
   return (await resolveFiles({ stock, user, symlinks: true })).map((file) => file.path);
 }
 
-async function declaredFiles(refs: readonly string[], mcpOn: boolean): Promise<string[]> {
+async function declaredFiles(refs: readonly string[]): Promise<string[]> {
   const user = userShelf();
   const out: string[] = [];
   for (const raw of refs) {
     const ref = raw.trim().replace(/^\/+/, '');
     if (!ref || ref.includes('..') || path.isAbsolute(raw)) continue;
-    if (ref.endsWith('_connected/') && !mcpOn) continue;
     if (!ref.startsWith('routine/') && !ref.startsWith('house/') && !/^[a-z0-9_-]+_connected\/$/.test(ref)) continue;
     if (ref.endsWith('/')) {
       out.push(...await levelFiles(path.join(STOCK, ref), path.join(user, ref)));
@@ -197,7 +196,6 @@ async function declaredFiles(refs: readonly string[], mcpOn: boolean): Promise<s
 
 export async function bootFiles(
   projectRoot: string,
-  mcpOn = true,
   routineReading: string[] = [],
   capabilitiesOverview?: string,
   session = '',
@@ -214,7 +212,7 @@ export async function bootFiles(
   // (Owner's ruling 2026-09-04, after a lexicon inlined ahead of the contracts pushed
   // them past line 1,997 of a 121 KB packet.)
   const selected = [
-    ...await declaredFiles(routineReading, mcpOn),
+    ...await declaredFiles(routineReading),
     ...universal.filter((file) => !isGlossary(file)),
     ...(projectRoot
       ? (await resolveFiles({ stock: '', user: path.join(user, 'root', projectRoot), symlinks: true }))

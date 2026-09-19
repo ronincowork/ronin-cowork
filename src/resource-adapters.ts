@@ -92,7 +92,6 @@ export interface ContributionRow extends Pick<Row, 'name' | 'origin' | 'shadowed
   reading: string[];
   reading_off: string[];
   tools: string[];
-  mcp: string[];
   /** Services parts this contribution runs inside the server; loaded only while its switch is on. */
   parts: string[];
 }
@@ -134,7 +133,7 @@ const contribution = (d: Definition): ContributionRow => ({
   label: d.get('label') || d.name, blurb: d.get('blurb'),
   reading: splitDefinitionList(d.get('reading')), reading_off: splitDefinitionList(d.get('reading_off')),
   tools: splitDefinitionList(d.get('tools')),
-  mcp: splitDefinitionList(d.get('mcp')), parts: splitDefinitionList(d.get('parts')),
+  parts: splitDefinitionList(d.get('parts')),
 });
 
 export async function listInstallations(): Promise<InstallationRow[]> {

@@ -21,7 +21,7 @@ const STOCK = path.join(REPO, 'ronin_catalogs', 'capabilities');
 
 const none: CapabilityFacts = {
   arrangement: 'none', installations: new Set(), behaviours: new Set(),
-  connected: false, campaign: false, team: false, lead: false,
+  campaign: false, team: false, lead: false,
 };
 const everything = (tool: string) => Promise.resolve(tool !== 'absent_tool');
 
@@ -47,9 +47,9 @@ async function withUserCatalogs<T>(run: (dir: string) => Promise<T>): Promise<T>
 test('every requirement word reads one launch fact, and an unknown word never holds', () => {
   const facts: CapabilityFacts = {
     arrangement: 'managed', installations: new Set(['ronin_services']), behaviours: new Set(['ronin_host']),
-    connected: true, campaign: true, team: true, lead: true,
+    campaign: true, team: true, lead: true,
   };
-  for (const requirement of ['installation:ronin_services', 'behaviour:ronin_host', 'arrangement:managed', 'connected', 'campaign', 'team', 'lead']) {
+  for (const requirement of ['installation:ronin_services', 'behaviour:ronin_host', 'arrangement:managed', 'campaign', 'team', 'lead']) {
     assert.equal(checkRequirement(requirement, facts), '', `${requirement} holds`);
     assert.notEqual(checkRequirement(requirement, none), '', `${requirement} fails on the bare launch`);
   }
@@ -110,7 +110,7 @@ test('work context selects knowledge while Cowork tools stay available and featu
     'work context cannot substitute for feature enablement');
 
   const lead = await resolveCapabilities(
-    { arrangement: 'managed', installations: new Set(), behaviours: new Set(['ronin_host']), connected: true, campaign: true, team: true, lead: true },
+    { arrangement: 'managed', installations: new Set(), behaviours: new Set(['ronin_host']), campaign: true, team: true, lead: true },
     { rows, present: everything },
   );
   assert.ok(lead.every((item) => item.selected), lead.map((item) => `${item.name}:${item.reason}`).join(' '));
@@ -169,7 +169,7 @@ test('the folder is the catalog: an owner file shadows a stock name whole, a new
     await mkdir(path.join(dir, 'capabilities'), { recursive: true });
     await writeFile(path.join(dir, 'capabilities', 'edges.md'), '# Edges, mine\n- **label:** My edges\n- **requires:** team\n');
     await writeFile(path.join(dir, 'capabilities', 'trello.md'), [
-      '# Trello', '- **label:** Trello', '- **class:** integration', '- **requires:** behaviour:trello, connected', '',
+      '# Trello', '- **label:** Trello', '- **class:** integration', '- **requires:** behaviour:trello', '',
       '## Tools', '', '| Tool | Authority | Teach |', '|---|---|---|', '| `trello_cards` | read | priority |', '',
     ].join('\n'));
     await writeFile(path.join(dir, 'capabilities', 'agent_session.md'), '# Gone\n- **hidden:** yes\n');
@@ -182,11 +182,11 @@ test('the folder is the catalog: an owner file shadows a stock name whole, a new
     assert.deepEqual(edges.tools, [], 'the shadow replaces the stock file whole, table included');
     const trello = rows.find((item) => item.name === 'trello')!;
     assert.equal(trello.class, 'integration');
-    assert.deepEqual(trello.requires, ['behaviour:trello', 'connected']);
+    assert.deepEqual(trello.requires, ['behaviour:trello']);
     assert.equal(trello.tools[0]?.name, 'trello_cards');
     assert.ok(!rows.some((item) => item.name === 'agent_session'), 'hidden withdraws a stock definition');
     const resolved = await resolveCapabilities(
-      { ...none, behaviours: new Set(['trello']), connected: true },
+      { ...none, behaviours: new Set(['trello']) },
       { rows, present: async (tool) => tool === 'trello_cards' },
     );
     assert.equal(resolved.find((item) => item.name === 'trello')?.selected, true);
@@ -207,7 +207,7 @@ test('the stock capability documents are well-formed and carry no retired vocabu
     assert.ok(item.tools.length > 0, `${item.name} groups at least one actual tool`);
     assert.doesNotMatch(text, /tejun|MACROS\.md|ACTIONS\.md|\+\w+:/, `${item.name} teaches no retired name`);
     assert.doesNotMatch(text, /initial revision|revision-aware|revision counter is|reclaim|park a project|a verdict of|the decider/i, `${item.name} carries no retired project field`);
-    for (const requirement of item.requires) assert.equal(checkRequirement(requirement, { ...none, everything: false, arrangement: 'managed', installations: new Set(['x', 'ronin_services']), behaviours: new Set(['x', 'ronin_host', 'gbrain', 'trello', 'perplexity']), connected: true, campaign: true, team: true, lead: true }), '', `${item.name} requires ${requirement}`);
+    for (const requirement of item.requires) assert.equal(checkRequirement(requirement, { ...none, everything: false, arrangement: 'managed', installations: new Set(['x', 'ronin_services']), behaviours: new Set(['x', 'ronin_host', 'gbrain', 'trello', 'perplexity']), campaign: true, team: true, lead: true }), '', `${item.name} requires ${requirement}`);
     for (const tool of item.tools) assert.match(tool.name, /^[a-z][a-z0-9_-]*$/, `${item.name}: ${tool.command}`);
   }
   const by = Object.fromEntries(rows.map((item) => [item.name, item]));
@@ -251,7 +251,7 @@ test('optional capabilities are absent until their individual predicates hold', 
   const bare = await resolveCapabilities({ ...none, campaign: true }, { rows, present: async () => true });
   assert.equal(bare.find((row) => row.name === 'ronin-host')?.selected, true);
   assert.equal(bare.find((row) => row.name === 'mika')?.selected, false);
-  const selected = await resolveCapabilities({ ...none, campaign: true, connected: true,
+  const selected = await resolveCapabilities({ ...none, campaign: true,
     installations: new Set(['ronin_services']), behaviours: new Set() },
   { rows, present: async () => true });
   for (const name of ['ronin-host', 'mika']) {

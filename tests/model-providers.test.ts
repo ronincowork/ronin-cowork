@@ -49,7 +49,6 @@ test('the stock catalog names every provider with its CLI, its tiers and a marke
   }, 'a coming-soon provider is catalog data but has no launch rows');
   const anthropic = providers.find((entry) => entry.provider === 'anthropic')!;
   assert.equal(anthropic.label, 'Anthropic');
-  assert.equal(anthropic.gbrainDisconnected, '--strict-mcp-config');
   assert.equal(anthropic.liveDangerously, '--dangerously-skip-permissions');
   assert.deepEqual(anthropic.models.map((row) => row.model), ['opus', 'fable', 'sonnet', 'haiku'], 'row order is picker order');
   assert.equal(catalog.providerDefault(anthropic.models, 'anthropic')?.model, 'opus');

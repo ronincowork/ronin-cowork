@@ -62,13 +62,12 @@ Launch facts select the levels:
 
 | Level | Selected by | Who stocks it |
 |---|---|---|
-| `<service>_connected/` | a chosen feature's declaration plus the live connection | a connected service seeds its own signed reading |
+| `<service>_connected/` | a chosen feature's declaration; the legacy name does not assert runtime health | a service seeds its own signed reading |
 | `root/<project_root>/` | the root picked at launch | the owner only — stock cannot know a machine's directories |
 | `routine/<name>/FILE.md` | each system installation at birth (its on-page or off-page) and each chosen feature | stock and owner readings, selected explicitly by the catalog |
 
-The toggle governs both halves of a connection: launched
-off, a session gets neither a service's tools nor a word about them. These levels add up
-rather than override: root, connection, installations and behaviours are fixed
+Selection governs teaching only; Agent launch never reconfigures an MCP server. These levels add up
+rather than override: root, installations and behaviours are fixed
 at birth and compiled into one README. Work-specific reading is selected separately
 as `behaviours`; the behaviours that are on join that same birth reading once and are not a
 mutable shelf axis. A T2 file that would help every session is mis-shelved and belongs up

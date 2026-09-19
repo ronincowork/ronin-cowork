@@ -4,7 +4,6 @@
 - **installation:** gbrain
 - **reading:** gbrain_connected/
 - **tools:** —
-- **mcp:** gbrain
 - **order:** 110
 
 > Stock Behavior. Your own copy in the ways store (`ronin-store ways` → `gbrain.md`) replaces
@@ -27,18 +26,16 @@
 refusal is the single-writer design holding, not a fault to work around — the hunt for the
 CLI has already cost one session a turn, and its debrief says so.
 
-## The toggle (＋ New: gbrain on / off)
+## Selection and launch
 
-Per session, chosen at launch, mechanical like the dial. **On** (default): the CLI launches
-with its own config — the brain and any other MCP connectors are reachable — and the
-session's boot reading includes the connected shelf (`gbrain_connected/`), so it is born knowing how
-to use what it can reach. **Off**: the session launches with **no MCP servers at all** —
-not just the brain — and reads no connected shelf either; tools and know-how ride the one
-choice. It cannot be flipped mid-session; that is a relaunch. An agent
-never proposes off on its own initiative — only when the owner's words asked for it.
+Selecting this Behavior teaches the Agent how to use gbrain and includes the declared
+`gbrain_connected/` reading. It does not alter Agent launch: Ronin never installs,
+registers, enables, disables, or overrides an MCP server while starting an Agent. Every
+provider starts with its ordinary command and reads its own user configuration. The
+gbrain service owns one-time provider registration during setup.
 
-The feature is selected in Campaign, Team, or Agent defaults only while its provider
-installation is available. A running Agent never changes.
+The Behavior is selectable in Campaign, Team, or Agent defaults only while its provider
+installation is available. Changing the selection does not reconfigure a running Agent.
 
 ## What you may do with the brain
 

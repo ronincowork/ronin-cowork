@@ -99,7 +99,7 @@ test('conditional arrangement pages are fact-selected for birth', async () => {
   process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
   process.env.RONIN_CATALOGS_DIR = path.join(temp, 'catalogs');
   try {
-    const without = (await bootFiles('', false, [])).map((f) => path.basename(f));
+    const without = (await bootFiles('', [])).map((f) => path.basename(f));
     assert.ok(!without.includes('worktree-root.md'));
     assert.ok(!without.includes('checkout.md'));
     const contract = await readFile(path.join(process.cwd(), 'ronin_catalogs/behaviours', 'conditional', 'worktree-root.md'), 'utf8');

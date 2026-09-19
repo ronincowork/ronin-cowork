@@ -37,7 +37,6 @@ Then one `### <Vendor>` section per provider. The section's fields:
 |---|---|
 | `provider` | the vendor id a launch names (`anthropic`, `openai`, `google`, `xai`, `nous`) and the key of `agents.sessions.by_provider` |
 | `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, `gemini`, `grok`, `hermes`) |
-| `gbrain_disconnected` | the CLI's disconnected-launch flag; its scope is provider-specific (Codex disables named gbrain only), and an undeclared flag refuses an explicit disconnected launch |
 | `live_dangerously` | the CLI's additive flag for the Dangerously launch mode; a provider without one refuses that mode |
 
 The `provider` and `cli` fields are the join between the two things Ronin knows about a
@@ -406,7 +405,7 @@ the shipped catalog.
 5. Add one provider section with its `provider` and `cli` fields and one row per model,
    with real model ids; mark the default row; fill tier, cost, good at and not good at.
 6. Make permission/sandbox policy explicit in the launch cell and declare the
-   `live_dangerously` and `gbrain_disconnected` flags the CLI has.
+   `live_dangerously` flag the CLI has.
 7. Run `npm run check:catalogs` and the focused provider tests affected by the change.
    Leave full `npm run verify` to the lead's combined gate unless an earlier run is
    explicitly requested ([verification guidance](../development/verification.md)).

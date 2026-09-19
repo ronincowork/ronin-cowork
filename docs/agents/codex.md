@@ -11,10 +11,9 @@ matching rollout/writer-lock file descriptors and archives/resumes that exact id
 The registry owns resume syntax. Settings/auth remain in the CLI's own configuration;
 [the Codex account Behavior](../operating/codex-account.md) owns the default billing policy.
 
-The catalog's disconnected mode disables the named gbrain server only. Other configured
-MCP servers remain enabled. Configuration overrides merge; an empty server object is
-not a reliable global disable. Dangerously adds the catalog's approval/sandbox bypass
-flag for this launch; configured mode leaves the command unchanged.
+Dangerously adds the catalog's approval/sandbox bypass flag for this launch; configured
+mode leaves the command unchanged. Ronin never adds an MCP override at Agent launch;
+Codex reads its own user configuration.
 
 Stop sends Escape. Clear sends Ctrl+C once, as selected by the owner. Ronin does not
 inspect the CLI state first; native Ctrl+C may clear a draft, interrupt activity, or
@@ -28,7 +27,7 @@ provider-specific shortcut or a second Enter.
 
 Services' `gbrain/setup.sh`, `uninstall.sh`, and `doctor.sh` own gbrain registration,
 removal and checks. The setup uses the Codex MCP command and token environment reference.
-There is no generic all-server on/off mechanism in this integration.
+Agent launch does not provision or switch that registration.
 
 ## Sign-in particulars
 

@@ -188,7 +188,7 @@ test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async
   assert.equal(bare.agent, true);
   assert.ok(bare.cmd, 'the provider CLI is resolved');
   assert.doesNotMatch(bare.cmd, /dangerously/, 'bare metal uses provider configuration unless explicitly changed');
-  assert.match(bare.cmd, /--strict-mcp-config/, 'bare metal does not inherit Ronin gbrain');
+  assert.equal(bare.cmd, 'claude --model fable', 'bare metal uses the ordinary provider command');
   assert.equal(bare.launch_mode, 'configured');
   assert.ok(bare.launchAgent, 'the launched provider is stamped');
   assert.equal(bare.brief, '', 'Ronin composes no brief');
@@ -199,7 +199,7 @@ test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async
   assert.equal(bare.team_objective, '', 'the Team roster does not resolve into the launch');
 });
 
-test('a Cowork Agent disconnects globally configured gbrain when its installation is off', async () => {
+test('an unavailable gbrain changes teaching without changing the provider command', async () => {
   const cowork = await resolveForm(commonsForm({
     session_type: 'cowork_agent',
     name: 'gbrain-off-proof',
@@ -209,13 +209,12 @@ test('a Cowork Agent disconnects globally configured gbrain when its installatio
   const gbrain = cowork.installations.find((installation) => installation.name === 'gbrain');
 
   assert.equal(gbrain?.enabled, false, 'the receipt source says the gbrain installation is off');
-  assert.match(cowork.cmd, /-c mcp_servers\.gbrain\.enabled=false/,
-    'the resolved command enforces the same disconnected truth at provider startup');
+  assert.equal(cowork.cmd, 'codex --model gpt-5.6-terra');
   assert.ok(!cowork.behaviours.some((behaviour) => behaviour.book === 'gbrain'),
     'no gbrain behaviour is delivered while its installation is off');
 });
 
-test('a Cowork Agent preserves provider configuration when gbrain is available and selected', async () => {
+test('a selected gbrain changes teaching without changing the provider command', async () => {
   const cowork = await resolveForm(commonsForm({
     session_type: 'cowork_agent',
     campaign_id: 'gbrain_connected',
@@ -226,8 +225,7 @@ test('a Cowork Agent preserves provider configuration when gbrain is available a
   const gbrain = cowork.installations.find((installation) => installation.name === 'gbrain');
 
   assert.equal(gbrain?.enabled, true, 'the receipt source says the gbrain installation is on');
-  assert.doesNotMatch(cowork.cmd, /mcp_servers\.gbrain\.enabled=false/,
-    'the selected connected behaviour leaves the provider gbrain configuration available');
+  assert.equal(cowork.cmd, 'codex --model gpt-5.6-terra');
   assert.ok(cowork.behaviours.some((behaviour) => behaviour.book === 'gbrain'),
     'the selected gbrain behaviour is delivered');
 });
@@ -295,8 +293,6 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
   assert.match(commons.cmd, /fable/, 'the configured session default answers, not the role');
 
   // EXPLICIT — the owner named one, and it beats every layer. Same input, same answer.
-  // The resolved cmd may carry the provider's own MCP-off flags on the end, because this
-  // launch resolves the brain off; that is the mechanism's business and rides both alike.
   const pick = 'claude --model haiku';
   const c2 = await resolveForm(commonsForm({ cmd: pick }), new Set());
   const f2 = await resolveForm(forkitForm({ cmd: pick }), new Set());
@@ -309,21 +305,20 @@ test('launch_mode preserves provider configuration or appends the declared bypas
   const configured = await resolveForm(commonsForm({
     provider: 'anthropic', model: 'opus', launch_mode: 'configured',
   }), new Set());
-  assert.equal(configured.cmd, 'claude --model opus --strict-mcp-config');
+  assert.equal(configured.cmd, 'claude --model opus');
   assert.equal(configured.launch_mode, 'configured');
   assert.deepEqual(configured.stated_by.launch_mode, [{ layer: 'launch', source: 'launch request' }]);
 
   const dangerous = await resolveForm(commonsForm({
     provider: 'anthropic', model: 'opus', launch_mode: 'live_dangerously',
   }), new Set());
-  assert.equal(dangerous.cmd, 'claude --model opus --dangerously-skip-permissions --strict-mcp-config');
+  assert.equal(dangerous.cmd, 'claude --model opus --dangerously-skip-permissions');
   assert.equal(dangerous.launch_mode, 'live_dangerously');
 
   const bareDangerous = await resolveForm(commonsForm({
     session_type: 'bare_metal_agent', provider: 'openai', model: 'gpt-5.6-terra', launch_mode: 'live_dangerously',
   }), new Set());
   assert.match(bareDangerous.cmd, /--dangerously-bypass-approvals-and-sandbox/);
-  assert.match(bareDangerous.cmd, /mcp_servers\.gbrain\.enabled=false/);
 
   await assert.rejects(
     () => resolveForm(commonsForm({ cmd: 'custom-agent', launch_mode: 'live_dangerously' }), new Set()),

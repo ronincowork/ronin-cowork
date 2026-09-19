@@ -9,6 +9,5 @@
 - **ways:** —
 - **tools:** —
 - **parts:** —
-- **mcp:** —
 - **requires:** —
 - **order:** 20

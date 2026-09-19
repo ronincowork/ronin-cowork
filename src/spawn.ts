@@ -38,7 +38,7 @@ const CORE_CONTRIBUTION: ResolvedContribution = {
   name: 'cowork_agent', origin: 'stock', shadowed: false, label: 'Cowork Agent', blurb: '',
   reading: [], reading_off: [],
   tools: ['edges', 'session_create', 'session_end', 'session_archive', 'session_restore', 'session_check', 'session_set', 'work-record', 'ronin-url'],
-  mcp: [], parts: [], enabled: true, stated_by: 'conditional', required_by: [],
+  parts: [], enabled: true, stated_by: 'conditional', required_by: [],
 };
 
 export interface SpawnForm {
@@ -87,8 +87,6 @@ export interface Resolved {
   opening: string;
   posture: string[];
   label: string;
-  mcpAlways: boolean;
-  mcpDefault: boolean;
   team_objective: string;
   team_branch: string;
   team_wipeboard: string;
@@ -207,13 +205,12 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
 
 async function bootReading(
   projectRoot: string,
-  mcpOn: boolean,
   routineReading: string[] = [],
   capabilitiesOverview?: string,
   session = '',
   soughtOverview?: string,
 ): Promise<string[]> {
-  return bootFiles(projectRoot, mcpOn, routineReading, capabilitiesOverview, session, soughtOverview);
+  return bootFiles(projectRoot, routineReading, capabilitiesOverview, session, soughtOverview);
 }
 
 export async function resolveForm(
@@ -323,43 +320,6 @@ export async function resolveForm(
     }
     cmd = `${cmd} ${spec.liveDangerously}`;
   }
-  const contributionMcp = contributions
-    .filter((contribution) => contribution.enabled)
-    .flatMap((contribution) => contribution.mcp);
-  // Bare metal never receives Campaign or Team defaults. A Cowork Agent receives gbrain
-  // only when the behaviour is both available and selected; every other Agent launch
-  // explicitly disconnects the provider's globally configured gbrain.
-  const gbrainAnswer = bareMetalAgent
-    ? 'disconnected' as const
-    : agent
-      ? cascade.selected.includes('gbrain') ? 'connected' as const : 'disconnected' as const
-      : undefined;
-  const mcpWanted = profile.mcpAlways || contributionMcp.length > 0
-    ? true
-    : gbrainAnswer === 'connected'
-      ? true
-      : gbrainAnswer === 'disconnected'
-        ? false
-        : profile.mcpDefault;
-  const askedOff = gbrainAnswer === 'disconnected';
-  let mcpOffWanted = askedOff;
-  if (askedOff && profile.mcpAlways) {
-    throw new Error(
-      'This Agent is born connected (`mcp: always`) — ' +
-        'it cannot be launched with MCP off.',
-    );
-  }
-  if (mcpOffWanted && !spec?.gbrainDisconnected) {
-    if (askedOff) {
-      throw new Error(
-        'This launch command declares no `gbrain_disconnected:` tokens in the provider catalog, ' +
-          'so it cannot launch with gbrain disconnected (see ronin_catalogs/MODEL_PROVIDERS.md).',
-      );
-    }
-    mcpOffWanted = false;
-  }
-  if (mcpOffWanted) cmd = `${cmd} ${spec!.gbrainDisconnected}`;
-
   const explicit: StatedBy[] = [{ layer: 'launch', source: 'launch request' }];
   const system: StatedBy[] = [{ layer: 'system', source: 'src/spawn.ts' }];
   const rosterSource: StatedBy[] = roster
@@ -378,14 +338,6 @@ export async function resolveForm(
     : chosen.source === 'settei_provider'
       ? [{ layer: 'system', source: form.provider && merged.providerOwn(form.provider) ? `#/campaign (${campaign?.id ?? form.campaign_id}: defaults)` : '⚙ Configuration (agents.sessions)' }]
       : system;
-  const defaultMcpWasUndeliverable = agent && !mcpWanted && !mcpOffWanted;
-  const mcpSource: StatedBy[] = !agent
-    ? profile.stated_by.agent
-    : defaultMcpWasUndeliverable
-      ? system
-      : cascade.selected.includes('gbrain')
-        ? [{ layer: cascade.behaviour_layer, source: `${cascade.behaviour_layer} behaviours` }]
-        : profile.stated_by.mcpDefault;
   const unique = (...groups: StatedBy[][]): StatedBy[] => {
     const seen = new Set<string>();
     return groups.flat().filter((item) => {
@@ -431,7 +383,6 @@ export async function resolveForm(
         arrangement,
         installations: new Set(installations.filter((installation) => installation.enabled).map((installation) => installation.name)),
         behaviours: new Set(cascade.selected),
-        connected: !mcpOffWanted,
         campaign: !!campaign,
         team: !!form.team,
         lead: !!form.team_lead && !!form.team,
@@ -440,7 +391,6 @@ export async function resolveForm(
   const shelfReading = coworkAgent && agent
     ? await bootReading(
         root.name,
-        !mcpOffWanted,
         enabledReading,
         form.house_seat === 'mika' ? undefined : renderCapabilitiesOverview(capabilities),
         name,
@@ -508,8 +458,6 @@ export async function resolveForm(
     opening: profile.opening,
     posture: profile.posture,
     label: profile.label,
-    mcpAlways: profile.mcpAlways,
-    mcpDefault: profile.mcpDefault,
     team_objective: roster?.objective ?? '',
     team_branch: roster?.branch ?? '',
     team_wipeboard: roster?.wipeboard ?? '',
@@ -551,8 +499,6 @@ export async function resolveForm(
       opening: profile.stated_by.opening,
       posture: profile.stated_by.posture,
       label: profile.stated_by.label,
-      mcpAlways: profile.stated_by.mcpAlways,
-      mcpDefault: profile.stated_by.mcpDefault,
       team_objective: rosterSource,
       team_branch: rosterSource,
       team_wipeboard: rosterSource,

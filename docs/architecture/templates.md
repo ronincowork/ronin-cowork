@@ -94,7 +94,7 @@ A handful ships — one or two a kind, so every launch form has something on the
 **the Ronin library on ronincowork.com is where the rest live**. Four
 projects: **Staff My Codebase** 🎬 for code, **Morning Brief** ☕ for work, **Health &
 Fitness** 🏃 for yourself, **Dinner Party** 🕯 for the house; and five people: the Personal
-Assistant 📇 (gbrain on, born into its own team), the System Administrator 🔧, the Office
+Assistant 📇 (gbrain teaching selected, born into its own team), the System Administrator 🔧, the Office
 Manager ⚙, the Housekeeper 🔑 and the Training Coach 🏋. The first project to try is Staff
 My Codebase: a code coordinator born as the marked lead, and an assessor that surveys your
 codebase, staffs one specialist per service into the team, and hands you a crew — its

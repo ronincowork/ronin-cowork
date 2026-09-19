@@ -9,6 +9,5 @@
 - **ways:** —
 - **tools:** —
 - **parts:** —
-- **mcp:** —
 - **requires:** ronin_services
 - **order:** 30

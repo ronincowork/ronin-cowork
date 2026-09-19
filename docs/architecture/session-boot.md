@@ -14,20 +14,20 @@ shelf**, because pasting a project's whole catalog is what made the packet unrea
 | put it in | and it reaches |
 |---|---|
 | `all/` | every session, always |
-| `<service>_connected/` (e.g. `gbrain_connected/`) | only when a chosen feature declares that level and its connection is on |
+| `<service>_connected/` (e.g. `gbrain_connected/`) | when a selected feature declares that legacy-named level; selection supplies teaching, not a runtime connection claim |
 | `root/<project_root>/` | only sessions working in that directory |
 | `routine/<name>/FILE.md` | only when an installation's or a feature's definition names that file — `reading:` when it is on, `reading_off:` when it is off (the page that says what the owner is working without, and where the switch is) |
 | `ronin_catalogs/capabilities/<bundle>.md` | not a shelf level but the source of the generated **tool overview**: each capability bundle whose `requires:` predicates hold for this birth is rendered as one entry — title, blurb, the projected priority tools, help route, and the path of the full document (`ronin_catalogs/capabilities/README.md`) |
 
-The levels are **additive, not a hierarchy**. Root, connection, installations and behaviours are
+The levels are **additive, not a hierarchy**. Root, installations and behaviours are
 independent launch facts; their files compile into one birth README
 and nothing overrides another level. Work-specific reading uses the separate
 `behaviours` choice: each behaviour that is on joins that same birth reading once.
 There is no mutable role level and no live re-delivery observer.
 
-The connected level makes the launch decision govern both halves of a connection: off
-means neither tools nor connection reading. A connected directory is not broadcast merely
-because it exists; a chosen feature's definition must select it.
+A legacy-named connected directory is not broadcast merely because it exists; a selected
+feature's definition must name it. Its inclusion teaches the feature and does not assert
+that an external connection is currently healthy.
 
 ## The two halves
 

@@ -51,7 +51,6 @@ export interface SessionLaunchSpec {
   good_at: string;
   not_good_at: string;
   liveDangerously?: string;
-  gbrainDisconnected?: string;
 }
 
 export interface ProviderCatalogEntry {
@@ -68,7 +67,6 @@ export interface ProviderCatalogEntry {
   /** Complete ordinary CLI launch with model choice delegated to the CLI. */
   native?: string;
   liveDangerously?: string;
-  gbrainDisconnected?: string;
   models: SessionLaunchSpec[];
 }
 
@@ -175,7 +173,6 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
     const cli = field(section, 'cli');
     if (!label || !provider || !cli) continue;
     const liveDangerously = field(section, 'live_dangerously');
-    const gbrainDisconnected = field(section, 'gbrain_disconnected');
     const maturity = field(section, 'maturity');
     const native = field(section, 'native');
     const rows = new Map<string, Record<string, string>>();
@@ -207,13 +204,11 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
         good_at: row['good at'] ?? '',
         not_good_at: row['not good at'] ?? '',
         ...(liveDangerously ? { liveDangerously } : {}),
-        ...(gbrainDisconnected ? { gbrainDisconnected } : {}),
       });
     }
     out.push({
       provider, cli, label, origin, shadowed: false, models,
       ...(liveDangerously ? { liveDangerously } : {}),
-      ...(gbrainDisconnected ? { gbrainDisconnected } : {}),
       ...(maturity ? { maturity } : {}),
       ...(native ? { native } : {}),
     });

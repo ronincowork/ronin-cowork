@@ -11,9 +11,8 @@ launch and uses it for archive/resume; the registry owns the arguments. Credenti
 locations are registry data. [Provider sign-in](../getting-started/provider-sign-in.md) owns the owner
 handoff and credential-handling rules.
 
-Dangerously and disconnected mode use the catalog's additive flags. Disconnected is
-coarse: it excludes other MCP servers as well as gbrain. Connected means the CLI's own
-configuration applies; it does not install or authenticate a server.
+Dangerously uses the catalog's additive flag. Ronin does not alter MCP configuration at
+Agent launch; Claude starts with its ordinary command and reads its own user configuration.
 
 Stop and Clear both send Escape once, as selected by the owner. The current CLI state
 determines whether it clears input, interrupts activity, or dismisses a dialog; Ronin

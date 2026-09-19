@@ -10,9 +10,8 @@ The initial brief is positional. The registry declares resume syntax but exact l
 conversation identity discovery is unsupported; Ronin refuses Archive before stopping
 the session. Installation and update arguments are in the registry.
 
-The catalog declares a Dangerously option. It declares no disconnected-mode flag, so
-an explicit disconnected launch is refused. No Gemini MCP registration adapter is
-implemented in Services' gbrain setup. Do not treat connected as provisioned.
+The catalog declares a Dangerously option. No Gemini MCP registration adapter is
+implemented in Services' gbrain setup, and Agent launch does not provision one.
 
 Stop and Clear send Ctrl+C once. The official keyboard reference documents `edit.clear`
 as clearing all input text. The same key can interrupt a request or quit on empty input;

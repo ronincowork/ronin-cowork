@@ -27,7 +27,7 @@ import { count } from '../counts.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
-import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields, listServices } from '../sockets.js';
+import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
@@ -543,11 +543,9 @@ export function registerLaunch(app: express.Express): LaunchControl {
           missing: capability.missing,
         })),
         installations: resolved.installations.map((installation) => {
-          const services = new Set(listServices());
           const missing = installation.enabled
             ? [
                 ...installation.tools.filter((tool) => routineTools?.missing.includes(tool)).map((tool) => `tool:${tool}`),
-                ...installation.mcp.filter((name) => !services.has(name)).map((name) => `mcp:${name}`),
               ]
             : [];
           return {

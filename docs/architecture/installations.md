@@ -23,8 +23,8 @@ have none of Ronin.
 | **Defaults** | the behaviours a new Team starts from | the next New Team form and a teamless Agent form; existing Teams are untouched |
 
 An installation definition (`ronin_catalogs/installations/<name>.md`) has one of two
-effects. A `system` installation contributes its reading, tools, server parts, and
-connections to every Cowork Agent when on, and its `reading_off` page when off. A
+effects. A `system` installation contributes its reading, tools, and server parts to every
+Cowork Agent when on, and its `reading_off` page when off. A
 `provider` installation makes its named behaviours available to choose. The
 effect name is implementation vocabulary; the owner still sees an Installation.
 
@@ -37,7 +37,7 @@ restart, and a running Agent never changes.
 Campaign defaults → Team → Agent carries one kind of choice: a **behaviour**. A behaviour
 can say how ordinary work should be done or add a facility and its taught practice. Its
 definition in `ronin_catalogs/behaviours/<name>.md` may name an installation and carry
-reading, Behaviors, tools, and an MCP connection. Capability documents conditionally select
+reading, Behaviors, and tools. Capability documents conditionally select
 knowledge, emphasis, and tool-job teaching for the Build Brief.
 
 An installation-gated behaviour appears on forms only while its installation and every
@@ -71,7 +71,7 @@ be surfaced by more than one bundle.
 
 Each document's `requires:` line names the launch facts that select its teaching: a system
 installation being on, a behaviour being selected, a managed worktree in the resolved
-assignment, MCP being connected, a Campaign, a Team, or the lead designation. The five
+assignment, a Campaign, a Team, or the lead designation. The five
 Cowork bundles ship with Ronin; Ronin Host, Ronin Services, gbrain, Trello, Perplexity and
 future add-ons are one more file each, gated the same way. Nothing in the resolver knows a
 bundle by name.
@@ -105,7 +105,8 @@ One resolver runs before the Agent process exists:
 7. One packet and receipt record the result, with `stated_by` naming
    `installation · campaign · team · agent · conditional`.
 
-The same result feeds the birth README, command directory, MCP connections, and receipt.
+The same result feeds the birth README, command directory, and receipt. Provider-native
+MCP configuration is outside Agent launch resolution.
 
 ## Catalog definitions
 

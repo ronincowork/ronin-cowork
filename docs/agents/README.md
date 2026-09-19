@@ -20,7 +20,7 @@ CLI. Models, prices, launch rows and owner overrides belong to the
 owns its executable `stop_keys` and `clear_keys` fields. Ronin reads that page when an
 action is requested. Values are tmux key names (`C-c` means Ctrl+C); multiple keys are
 space-separated and sent in order. Change the Agent page to change its mapping.
-The catalog currently owns additive launch-mode and MCP-disconnect flags. Integration
+The catalog currently owns additive launch-mode flags. Integration
 pages link those definitions rather than creating another executable command table.
 Services own service installation/removal; their provider-specific registration syntax
 is identified from the integration pages below. Moving that syntax across repositories

@@ -36,7 +36,6 @@ One `### <Vendor label>` section per provider. Its fields:
 | `provider` | the vendor id a launch names (`anthropic`, `openai`, …) and the key of `agents.sessions.by_provider` |
 | `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, …) — the join between this catalog and what the machine measures |
 | `native` | the complete ordinary CLI command with model choice delegated to that CLI |
-| `gbrain_disconnected` | the CLI's disconnected-launch flag; scope varies by CLI (see docs/agents), and absence refuses explicit disconnected launches |
 | `live_dangerously` | the CLI's additive flag for the Dangerously launch mode; a provider without one refuses that mode |
 | `maturity` | optional display status: `beta` or `comingSoon`; a provider with no launch rows remains visible only as an unavailable catalog card |
 
@@ -62,7 +61,6 @@ read, and a stale reading is dated, never guessed.
 - **provider:** `anthropic`
 - **cli:** `claude`
 - **native:** `claude`
-- **gbrain_disconnected:** `--strict-mcp-config`
 - **live_dangerously:** `--dangerously-skip-permissions`
 
 Model ids are Claude Code's own aliases, passed unchanged to its `--model` option; each
@@ -84,15 +82,11 @@ The `launch` column, in the same row order:
 | `sonnet` | `claude --model sonnet` |
 | `haiku` | `claude --model haiku` |
 
-**Anthropic warning:** its MCP control is coarse. Disconnected disables **all** MCP for
-that Claude launch, not only gbrain.
-
 ### OpenAI
 
 - **provider:** `openai`
 - **cli:** `codex`
 - **native:** `codex`
-- **gbrain_disconnected:** `-c mcp_servers.gbrain.enabled=false`
 - **live_dangerously:** `--dangerously-bypass-approvals-and-sandbox`
 
 Model ids are passed unchanged to Codex's `--model` option. Sol, Terra and Luna are
@@ -124,8 +118,7 @@ refused by Codex in the new tile, and Ronin never substitutes.
 - **live_dangerously:** `--yolo`
 
 Model ids are passed unchanged to Gemini CLI's `--model` option. The free tier serves
-Flash models only; Pro needs a paid plan. Gemini CLI declares no MCP-off flag, so it
-cannot launch disconnected. These cells are written from Google's published CLI
+Flash models only; Pro needs a paid plan. These cells are written from Google's published CLI
 reference and price list and have not yet been exercised end to end through Ronin; the
 first real launch of each is the proof, per `docs/architecture/model-providers.md`.
 
@@ -147,8 +140,8 @@ first real launch of each is the proof, per `docs/architecture/model-providers.m
 - **cli:** `grok`
 - **native:** `grok`
 
-Model ids are passed unchanged to Grok Build's `-m` option. Grok Build declares neither
-an MCP-off flag nor a Dangerously flag, so it launches configured and connected only.
+Model ids are passed unchanged to Grok Build's `-m` option. Grok Build declares no
+Dangerously flag, so it launches configured only.
 Written from xAI's published CLI overview and price list, not yet exercised through Ronin.
 
 | model | tier | default | cost | good at | not good at | launch |
@@ -169,7 +162,7 @@ Written from xAI's published CLI overview and price list, not yet exercised thro
 
 Hermes Agent runs any provider; these rows are its own Hermes models through the Nous
 Portal (`hermes setup --portal` signs in). Model ids are passed unchanged to
-`hermes chat -m`. Hermes declares neither an MCP-off flag nor a Dangerously flag.
+`hermes chat -m`. Hermes declares no Dangerously flag.
 Written from Nous's published CLI reference; the Portal lists no public per-token price,
 and none of these cells has yet been exercised through Ronin.
 
