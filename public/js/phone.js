@@ -214,7 +214,7 @@ export async function buildPhone() {
     if (main.querySelector('.ph-launch-form:not([hidden])')) return;
     // And never repaint what has not moved: rebuilding identical cards detaches the node
     // under a finger mid-tap — a tap that does nothing.
-    const signature = [team, teamLabel({ ...teamByName(team), name: team })].concat(membersOfTeam(team).map((member) => [member.name, member.title].join('|'))).join('\n');
+    const signature = [team, teamLabel({ ...teamByName(team), name: team })].concat(membersOfTeam(team).map((member) => [member.name, member.title, member.team_lead === true].join('|'))).join('\n');
     if (signature === agentsPainted) return;
     agentsPainted = signature;
     teamBar(team);
@@ -224,6 +224,12 @@ export async function buildPhone() {
       card.href = sessionHash(team, member.name);
       const line = el('div', 'ph-card-line');
       line.append(el('span', 'ph-card-name', agentLabel(member)));
+      if (member.team_lead) {
+        const lead = el('span', 'ph-card-note', '人');
+        lead.title = t('league.team_lead', 'Team Lead');
+        lead.setAttribute('aria-label', t('league.team_lead', 'Team Lead'));
+        line.append(lead);
+      }
       card.append(line);
       list.append(card);
     }

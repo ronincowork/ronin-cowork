@@ -27,3 +27,9 @@ test('the mobile document holds only the mobile page, and the desktop document n
   assert.match(server, /res\.setHeader\('Vary', 'User-Agent'\)/);
   assert.match(server, /isPhone\(req\) \? sendMobile : sendIndex/);
 });
+
+test('the mobile Team list marks every Team lead with the shared hito mark', async () => {
+  const phone = await source('public/js/phone.js');
+  assert.match(phone, /member\.team_lead === true/);
+  assert.match(phone, /if \(member\.team_lead\) \{[\s\S]*el\('span', 'ph-card-note', '人'\)[\s\S]*league\.team_lead/);
+});
