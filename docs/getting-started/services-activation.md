@@ -18,9 +18,11 @@ Follow the next action shown. If confirmation is pending, open the email on any 
 return to **Check status**. Use Register to resend or correct the address. If installation
 fails after confirmation, retry installation; you do not need to request another identity.
 
-Registration, installation, and switching on are distinct. Already installed parts can be
-available without registration; particular features such as Stats require the registration
-credential. Choosing **No communication** changes communication preferences, not entitlement.
+Registration comes first: Ronin Services cannot be installed without it. Installing and
+switching on are the steps after. Once a feature is installed and switched on it works —
+nothing asks for the registration credential a second time. Task manager, Usage stats and
+Machine status are on unless you switch them off; the rest start off. Choosing
+**No communication** changes communication preferences, not entitlement.
 
 The operator restart is separate from your Agent terminal sessions. After a restart, check
 the displayed Services state instead of assuming the switch alone proves a feature loaded.
