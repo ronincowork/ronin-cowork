@@ -79,13 +79,17 @@ export function partsToLoad<T extends { name: string; parked?: string }>(
   const selectedPart = new Set<string>(capabilities
     .filter(({ name }) => selected[name] === true)
     .flatMap(({ parts: names }) => names));
+  // A part that no capability maps has no component to switch: its installation's own
+  // switch governs it alone. Without this, claiming such a part would park it whether the
+  // switch was on or off.
+  const capabilityParts = new Set<string>(capabilities.flatMap(({ parts: names }) => names));
   const plan: PartsPlan<T> = { load: [], parked: [], capabilities };
   for (const part of parts) {
     const installation = claims.get(part.name);
     if (part.parked) plan.parked.push({ name: part.name, reason: part.parked });
     else if (installation && on[installation] !== true) plan.parked.push({ name: part.name, installation, reason: 'master_off' });
     else if (part.name === 'counting' && (!installation || !selectedPart.has(part.name))) plan.parked.push({ name: part.name, ...(installation ? { installation } : {}), reason: 'component_off' });
-    else if (installation && !selectedPart.has(part.name)) plan.parked.push({ name: part.name, installation, reason: 'component_off' });
+    else if (installation && capabilityParts.has(part.name) && !selectedPart.has(part.name)) plan.parked.push({ name: part.name, installation, reason: 'component_off' });
     else plan.load.push(part);
   }
   return plan;

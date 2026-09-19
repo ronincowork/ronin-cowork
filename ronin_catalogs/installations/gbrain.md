@@ -8,6 +8,6 @@
 - **reading_off:** —
 - **ways:** —
 - **tools:** —
-- **parts:** —
+- **parts:** gbrain
 - **requires:** —
 - **order:** 20
