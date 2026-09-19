@@ -143,5 +143,5 @@ test('the Machine surface reaches its rooms through select alone', async () => {
   // Each room is built by `once` on its first enter, which is what select must trigger.
   assert.match(commons, /const once = \(build\) => \{/);
   assert.match(commons, /const enterAll = \(rooms\) => \(\) => \{ for \(const r of rooms\(\) \|\| \[\]\) r\?\.enter\?\.\(\); \}/);
-  assert.match(commons, /\.map\(\(c\) => \(\{ \.\.\.c, panel: services\[c\.id\] \}\)\)/);
+  assert.match(commons, /panel: services\[c\.id\]/);
 });

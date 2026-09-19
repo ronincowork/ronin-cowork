@@ -27,7 +27,12 @@ async function load(){
  const r=await request('/api/tomodachi/tool-calls',{cache:'no-store'});
  if(r.ok){report=r.data;const sources=['agent','user_desktop','user_mobile','trello','system'];
  callRows=Object.entries(report.tools).map(([tool,group])=>({tool,group,period:sources.map(source=>source==='trello'&&group!=='Work record'?null:(report.counts.find(row=>row.tool===tool&&row.source===source)?.count??0))}));
- render();}else body.textContent='Stats are not available on this install yet.';
+ render();}
+ // THE TAB DOES NOT ASK WHETHER STATS IS ALLOWED — it cannot be reached unless the
+ // capability is switched on. A failure here is a real one, so it says what the machine
+ // said rather than substituting a guess of its own. The sentence this replaces read as
+ // "we have not built it", so the honest response was to wait when the truth was a switch.
+ else body.textContent=r.message||'Stats could not be read.';
  loading=false;refresh.disabled=false;
 }
 return {enter:load,load};

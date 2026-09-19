@@ -76,6 +76,19 @@ export const serviceParked = (svc) => Array.isArray(S.installedServices?.parked)
 
 /** Is the service that owns this commons PANE absent? A pane not listed is core. */
 export const serviceOff = (pane) => serviceMissing(PANE_SERVICE[pane]);
+
+/**
+ * IS THIS CAPABILITY ON? The one question a surface asks about an optional capability.
+ * Ronin Services cannot be installed without a registration and a capability cannot be
+ * switched on unless it is installed, so ON MEANS IT WORKS — nothing downstream re-asks
+ * whether the box is entitled. `capabilities.running` is the machine's own answer for
+ * what is switched on and loaded. An operator that predates the field answers nothing,
+ * which reads as on, like every other service fact here.
+ */
+export const capabilityOn = (name) => {
+  const running = S.installedServices?.capabilities?.running;
+  return Array.isArray(running) ? running.includes(name) : true;
+};
 export const tiles = [];
 // The 🔒/🔓 switch (changed ONLY by the button):
 // LOCKED  = the original lock-step mirror, wired to NOTHING new. Scroll and every
