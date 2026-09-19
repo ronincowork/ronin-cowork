@@ -31,5 +31,5 @@ test('the mobile document holds only the mobile page, and the desktop document n
 test('the mobile Team list marks every Team lead with the shared hito mark', async () => {
   const phone = await source('public/js/phone.js');
   assert.match(phone, /member\.team_lead === true/);
-  assert.match(phone, /if \(member\.team_lead\) \{[\s\S]*el\('span', 'ph-card-note', '人'\)[\s\S]*league\.team_lead/);
+  assert.match(phone, /const identity = el\('span', 'ph-card-identity'\)[\s\S]*if \(member\.team_lead\) \{[\s\S]*el\('span', 'home-job lead', '人'\)[\s\S]*identity\.append\(lead\)[\s\S]*identity\.append\(el\('span', 'ph-card-name'/);
 });

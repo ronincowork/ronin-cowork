@@ -6322,6 +6322,12 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   justify-content: space-between;
   gap: var(--space-3);
 }
+#phone .ph-card-identity {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: var(--space-3);
+}
 #phone .ph-card-name {
   min-width: 0;
   color: var(--fg-strong);

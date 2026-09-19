@@ -223,13 +223,15 @@ export async function buildPhone() {
       const card = el('a', 'ph-card');
       card.href = sessionHash(team, member.name);
       const line = el('div', 'ph-card-line');
-      line.append(el('span', 'ph-card-name', agentLabel(member)));
+      const identity = el('span', 'ph-card-identity');
       if (member.team_lead) {
-        const lead = el('span', 'ph-card-note', '人');
+        const lead = el('span', 'home-job lead', '人');
         lead.title = t('league.team_lead', 'Team Lead');
         lead.setAttribute('aria-label', t('league.team_lead', 'Team Lead'));
-        line.append(lead);
+        identity.append(lead);
       }
+      identity.append(el('span', 'ph-card-name', agentLabel(member)));
+      line.append(identity);
       card.append(line);
       list.append(card);
     }
