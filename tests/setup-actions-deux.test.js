@@ -16,12 +16,11 @@ const { DISMISSED_WORKSPACE, teamWorkspaceState, workspaceMaySeedDefault } = awa
 function harness(blocked = false) {
   const state = { launch: { seats: { workspace4: 'launch.help' }, untouched: { exact: true } } };
   const before = JSON.stringify(state);
-  const launches = new Map();
-  globalThis.localStorage = { setItem: (key, value) => launches.set(key, value), getItem: (key) => launches.get(key) ?? null, removeItem: (key) => launches.delete(key) };
-  let tabs = 0;
+  let tabs = 0, opened = '';
   globalThis.window = {
-    open: () => {
+    open: (url) => {
       tabs += 1;
+      opened = url;
       return blocked ? null : { opener: {}, location: { replace(url) { this.url = url; } } };
     },
   };
@@ -29,8 +28,10 @@ function harness(blocked = false) {
     viewState: (view) => state[view],
     patchViewState: (view, patch) => { state[view] = { ...state[view], ...patch }; },
   };
-  return { state, before, launches, context, tabs: () => tabs };
+  return { state, before, context, tabs: () => tabs, opened: () => opened };
 }
+
+const launchFrom = (url) => JSON.parse(new URL(url).searchParams.get('ronin-launch'));
 
 for (const [kind, type] of [['agent', 'launch.agent'], ['team', 'launch.team']]) {
   test(`Launch-your-own ${kind} opens one tab, preserves source state, and seats the existing form`, () => {
@@ -41,17 +42,17 @@ for (const [kind, type] of [['agent', 'launch.agent'], ['team', 'launch.team']])
     assert.ok(tab);
     assert.equal(h.tabs(), 1);
     assert.equal(JSON.stringify(h.state), h.before);
-    const payload = JSON.parse([...h.launches.values()][0]);
+    const payload = launchFrom(h.opened());
     assert.deepEqual(payload.state, { selected: 'workspace1', seats: { workspace1: { type, detail: {} } } });
   });
 }
 
-test('popup blocking returns null and still restores the source byte-for-byte', () => {
+test('a null window proxy leaves source state untouched and the destination URL complete', () => {
   const h = harness(true);
   assert.equal(openWorkbenchTab({ destination: 'launch', param: 'agent', mode: 'overlay', state: { seats: {} } }), null);
   assert.equal(h.tabs(), 1);
   assert.equal(JSON.stringify(h.state), h.before);
-  assert.equal(h.launches.size, 0);
+  assert.equal(launchFrom(h.opened()).destination, 'launch');
 });
 
 test('door adapters make zero launch or Team-roster submissions', () => {
@@ -81,8 +82,6 @@ test('Customize preload falls back honestly for missing templates and preserves 
 
 test('a preset launch carries exact Cowork seating without changing source state', () => {
   const source = JSON.stringify({ version: 3, views: { cowork: { untouched: true } } });
-  const launches = new Map();
-  globalThis.localStorage = { setItem: (key, value) => launches.set(key, value), getItem: (key) => launches.get(key) ?? null, removeItem: (key) => launches.delete(key) };
   const plan = { count: 2, seats: [
     { workspace: 'workspace1', type: 'session', key: 'doc_agent' },
     { workspace: 'workspace2', type: 'document', key: 'README.md', root: 'ronin_lab', path: 'README.md' },
@@ -91,7 +90,7 @@ test('a preset launch carries exact Cowork seating without changing source state
   assert.match(url, /ronin-launch=/);
   assert.match(url, /#\/cowork$/);
   assert.equal(source, JSON.stringify({ version: 3, views: { cowork: { untouched: true } } }));
-  const stored = JSON.parse([...launches.values()][0]).state;
+  const stored = launchFrom(url).state;
   assert.deepEqual(stored, { count: 2, seats: {
     workspace1: 'doc_agent', workspace2: { type: 'document', key: 'README.md', root: 'ronin_lab', path: 'README.md' },
   } });
@@ -106,8 +105,9 @@ test('an explicitly dismissed workspace stays blank while an uninitialized seat 
   assert.equal(workspaceMaySeedDefault(restored.seats.workspace2), true);
 });
 
-test('missing or denied structured-launch storage leaves preset URL generation harmless', () => {
+test('structured launch URLs do not depend on browser storage', () => {
   const plan = { count: 1, seats: [{ workspace: 'workspace1', type: 'session', key: 'agent' }] };
   globalThis.localStorage = { setItem() { throw new Error('denied'); } };
-  assert.doesNotThrow(() => presetLaunchUrl({ urlView: 'cowork' }, plan));
+  const url = presetLaunchUrl({ urlView: 'cowork' }, plan);
+  assert.equal(launchFrom(url).state.seats.workspace1, 'agent');
 });

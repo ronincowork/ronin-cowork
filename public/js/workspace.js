@@ -5,8 +5,6 @@ export const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
 export const WORKSPACE_STATE_VERSION = 3;
 const PREVIOUS_WORKSPACE_STATE_KEY = 'ronin.workspace.v1';
 const WORKBENCH_LAUNCH_PARAM = 'ronin-launch';
-const WORKBENCH_LAUNCH_PREFIX = 'ronin.workbench.launch.';
-const WORKBENCH_LAUNCH_MAX_AGE = 5 * 60 * 1000;
 
 const text = (value) => (typeof value === 'string' ? value : '');
 
@@ -127,26 +125,14 @@ export function openWorkspaceTab(view, param = '', reserved = null) {
   return window.open(url.href, '_blank', 'noopener');
 }
 
-const launchToken = () => globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-const launchStore = () => {
-  try { return globalThis.localStorage || null; } catch (_) { return null; }
-};
-
 /**
- * Open a destination with a one-shot Workbench arrangement. The payload is shared only
- * long enough for the destination tab to claim it; its URL carries an opaque token, not
- * surface data. `replace` replaces seats, while `overlay` changes only named seats.
+ * Build a destination URL with a one-shot Workbench arrangement. `replace` replaces
+ * seats, while `overlay` changes only named seats.
  */
 export function workbenchLaunchUrl({ destination, param = '', mode = 'replace', state = {} } = {}) {
   if (!destination || !['replace', 'overlay'].includes(mode) || !state || typeof state !== 'object') return null;
-  const store = launchStore();
-  if (!store) return null;
-  const token = launchToken();
-  try {
-    store.setItem(`${WORKBENCH_LAUNCH_PREFIX}${token}`, JSON.stringify({ destination, param: text(param), mode, state, createdAt: Date.now() }));
-  } catch (_) { return null; }
   const url = new URL(location.href);
-  url.searchParams.set(WORKBENCH_LAUNCH_PARAM, token);
+  url.searchParams.set(WORKBENCH_LAUNCH_PARAM, JSON.stringify({ destination, param: text(param), mode, state }));
   url.hash = hashFor(destination, param);
   return url.href;
 }
@@ -158,32 +144,21 @@ export function openWorkbenchTab(spec = {}, reserved = null) {
     reserved.location.replace(url);
     return reserved;
   }
-  const tab = window.open(url, '_blank', 'noopener');
-  if (!tab) {
-    const token = new URL(url).searchParams.get(WORKBENCH_LAUNCH_PARAM);
-    if (token) { try { launchStore()?.removeItem(`${WORKBENCH_LAUNCH_PREFIX}${token}`); } catch (_) { /* storage became unavailable */ } }
-  }
-  return tab;
+  return window.open(url, '_blank', 'noopener');
 }
 
 /** Claim and remove this tab's structured launch before restoration. Refresh therefore
  * sees only the arrangement the Workbench saved after applying it. */
 export function consumeWorkbenchLaunch(destination, param = '') {
   const url = new URL(location.href);
-  const token = url.searchParams.get(WORKBENCH_LAUNCH_PARAM) || '';
-  if (!token) return null;
+  const raw = url.searchParams.get(WORKBENCH_LAUNCH_PARAM) || '';
+  if (!raw) return null;
   url.searchParams.delete(WORKBENCH_LAUNCH_PARAM);
   history.replaceState(history.state, '', url.href);
-  const store = launchStore();
-  if (!store) return null;
-  const key = `${WORKBENCH_LAUNCH_PREFIX}${token}`;
-  let raw = '';
-  try { raw = store.getItem(key) || ''; store.removeItem(key); } catch (_) { return null; }
   try {
     const launch = JSON.parse(raw);
     if (launch?.destination !== destination || text(launch?.param) !== text(param)) return null;
     if (!['replace', 'overlay'].includes(launch?.mode) || !launch.state || typeof launch.state !== 'object') return null;
-    if (!Number.isFinite(launch.createdAt) || Date.now() - launch.createdAt > WORKBENCH_LAUNCH_MAX_AGE) return null;
     return Object.freeze({ mode: launch.mode, state: launch.state });
   } catch (_) { return null; }
 }

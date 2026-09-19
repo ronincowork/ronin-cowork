@@ -323,9 +323,9 @@ A Workbench entry has three sources with one precedence order:
 
 `workspace.js` owns the structured-launch contract. A caller declares the destination,
 route parameter, `replace` or `overlay`, and the requested Workbench state. It never
-temporarily edits the source tab's remembered state. The destination receives an opaque
-URL token, claims the corresponding short-lived browser-storage payload once, removes the
-token from its URL, resolves the entry, and saves the resulting ordinary Workbench state.
+temporarily edits the source tab's remembered state. The destination receives a structured
+instruction in its URL, removes it before resolving the entry, and saves the resulting
+ordinary Workbench state.
 Refresh therefore restores the latest state and cannot replay the launch instruction.
 
 `replace` replaces the complete seat map while retaining unrelated destination
