@@ -121,6 +121,9 @@ export function createTabbedSurface(options = {}) {
     const label = node('span', 'wk-tabset-label', declared.label ?? id);
     const badge = node('span', 'wk-tabset-badge');
     badge.setAttribute('aria-hidden', 'true');
+    // A tab with nothing to count has no badge at all. Left visible, an empty one paints
+    // its fill and padding as a small pill after the label — a dash nobody asked for.
+    badge.hidden = true;
     button.append(dot, label, badge);
     if (declared.title) button.title = declared.title;
     const panel = node('div', 'wk-tabset-panel');

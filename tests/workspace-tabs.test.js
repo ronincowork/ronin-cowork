@@ -114,3 +114,15 @@ test('one selected treatment: kaki, and the orphaned Home strip is gone', async 
   // ~120 lines no module rendered; its edge-mask treatment lives in the Kit's tab set now.
   assert.doesNotMatch(style, /home-tabs|home-tabrow|home-x/);
 });
+
+test('a tab with nothing to count carries no badge, so no pill trails its label', async () => {
+  const [tabs, kit] = await Promise.all([source('public/js/workspace-tabs.js'), source('public/workspace-kit.css')]);
+  // The badge has fill, padding and a pill radius; left visible while empty it reads as a
+  // dash after the label on every tab that never reports a count.
+  const built = tabs.slice(tabs.indexOf("const badge = node('span', 'wk-tabset-badge')"), tabs.indexOf('button.append('));
+  assert.match(built, /badge\.hidden = true;/, 'a badge starts hidden and is shown only by setBadge');
+  assert.match(kit, /\.wk-tabset-badge\[hidden\], \.wk-tabset-badge:empty \{ display: none; \}/);
+  // The corner mark stands in for a tab that needs attention but has no number, so it
+  // must answer to an empty badge as well as a hidden one.
+  assert.match(kit, /:has\(\.wk-tabset-badge\[hidden\], \.wk-tabset-badge:empty\) \.wk-tabset-dot/);
+});

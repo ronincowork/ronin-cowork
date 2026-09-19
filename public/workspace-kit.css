@@ -145,13 +145,13 @@
      Neither is ever a weight change: bolding the label widened it and shoved every tab
      to its right sideways. */
   .wk-tabset-badge { border-radius: var(--radius-pill); background: var(--well); color: var(--muted); padding: var(--space-1) var(--space-3); font-size: var(--text-1); font-variant-numeric: tabular-nums; }
-  .wk-tabset-badge[hidden] { display: none; }
+  .wk-tabset-badge[hidden], .wk-tabset-badge:empty { display: none; }
   .wk-tabset-tab[data-attention='true'] .wk-tabset-badge { background: var(--cowork-head-attention); color: var(--panel); }
   .wk-tabset-tab[data-attention='true'][aria-selected='true'] .wk-tabset-badge { background: var(--kaki); color: var(--on-strong); }
   /* The corner mark takes no layout space, so a tab with no count never changes width. */
   .wk-tabset-dot { position: absolute; top: var(--space-2); right: var(--space-3); width: var(--space-3); height: var(--space-3); border-radius: var(--radius-pill); background: transparent; }
-  .wk-tabset-tab[data-attention='true']:has(.wk-tabset-badge[hidden]) .wk-tabset-dot { background: var(--cowork-head-attention); }
-  .wk-tabset-tab[data-attention='true'][aria-selected='true']:has(.wk-tabset-badge[hidden]) .wk-tabset-dot { background: var(--kaki); }
+  .wk-tabset-tab[data-attention='true']:has(.wk-tabset-badge[hidden], .wk-tabset-badge:empty) .wk-tabset-dot { background: var(--cowork-head-attention); }
+  .wk-tabset-tab[data-attention='true'][aria-selected='true']:has(.wk-tabset-badge[hidden], .wk-tabset-badge:empty) .wk-tabset-dot { background: var(--kaki); }
 
   /* BOTH CUT EDGES SAY SO. The gradient fades the tabs into the band exactly where they
      are cut; the chevron inside it is the only way a pointer with no horizontal wheel
