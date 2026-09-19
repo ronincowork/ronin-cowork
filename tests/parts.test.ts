@@ -62,7 +62,8 @@ test('the stock Ronin Services installation claims the recorder', async () => {
   assert.equal(claims.get('kanban'), 'ronin_services');
   assert.equal(claims.get('rireki'), 'ronin_services');
   assert.equal(claims.get('koshi'), 'ronin_services');
-  assert.equal(claims.get('machine'), undefined, 'the Host part is unclaimed and always loads');
+  // Machine status was the last part governed by nothing: switched off, it kept serving.
+  assert.equal(claims.get('machine'), 'ronin_services');
 });
 
 test('discoverParts lists directories with a register entry, and nothing else', async () => {

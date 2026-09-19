@@ -51,6 +51,7 @@ export const SERVICE_CAPABILITY_PARTS = Object.freeze({
   terminal_transcript: ['rireki'],
   voice_hotwords: ['koe'],
   usage_stats: ['counting'],
+  machine_status: ['machine'],
   project_coordinator: ['koshi'],
   local_weights: ['koshi_weights'],
 } as const);

@@ -65,9 +65,10 @@ test('campaigns share the machine configuration document', async () => {
     terminal_transcript: false,
     voice_hotwords: false,
     usage_stats: false,
+    machine_status: true,
     project_coordinator: false,
     local_weights: false,
-  }, 'new Campaigns make all six capability defaults explicitly off');
+  }, 'new Campaigns make every capability default explicit; Machine status alone starts on');
   assert.equal((await readCampaign('alpha'))?.title, 'Alpha');
 
   await writeCampaign('alpha', { description: 'Current body of work' });
@@ -81,6 +82,7 @@ test('campaigns share the machine configuration document', async () => {
     terminal_transcript: false,
     voice_hotwords: false,
     usage_stats: false,
+    machine_status: true,
     project_coordinator: false,
     local_weights: false,
   });
@@ -93,9 +95,10 @@ test('campaigns share the machine configuration document', async () => {
     terminal_transcript: false,
     voice_hotwords: false,
     usage_stats: true,
+    machine_status: true,
     project_coordinator: false,
     local_weights: false,
-  }, 'an explicit mixed map drops raw ids, completes all six, and preserves only unknown keys');
+  }, 'an explicit mixed map drops raw ids, completes every capability, and preserves only unknown keys');
   assert.equal(edited?.created_at, created.created_at);
 
   const document = JSON.parse(
