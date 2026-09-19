@@ -303,7 +303,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     { group: t('where.label', 'Where it works'), fields: [
       { key: 'root', label: t('where.born_in', 'Born in'), options: rootRows },
       { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root', options: rootRows },
-      { key: 'launchMode', label: t('launch_mode.head', 'Launch mode'), options: launchModes },
+      { key: 'launchMode', label: t('launch_mode.mode', 'Mode'), options: launchModes },
     ] },
   ], {
     value: { provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, teamLead: draft.teamLead, root: draft.root, repos: draft.repos, launchMode: draft.launchMode },

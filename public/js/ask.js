@@ -80,8 +80,9 @@ let trayIds = 0;
 export function ask(groups = [], { value = {}, onChange = null, className = '', density = 'loose', trayHost = null, exposed = false } = {}) {
   const spec = (Array.isArray(groups) ? groups : []).map((group) => {
     const label = group.group || group.label || '';
-    // A stone never repeats its group head: the head carries the question, the stone a noun.
-    return { label, fields: (group.fields || []).map((field) => ({ ...field, label: field.label === label && label ? t('ask.answer', 'Answer') : field.label, shape: ['square', 'tall'].includes(field.shape) ? field.shape : 'rect' })) };
+    // The consumer owns the stone's noun. An equal group heading does not turn it into the
+    // generic "Answer" — Team stays Team and Model stays Model.
+    return { label, fields: (group.fields || []).map((field) => ({ ...field, shape: ['square', 'tall'].includes(field.shape) ? field.shape : 'rect' })) };
   });
   const nested = (field) => (Array.isArray(field.then) ? field.then : []).map((child) => ({ ...child, parent: field.key, when: child.when, shape: child.shape === 'square' ? 'square' : 'rect' }));
   const fields = spec.flatMap((group) => [...group.fields.flatMap((field) => [field, ...nested(field)])]);

@@ -296,7 +296,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       const shelfRows = (rows) => rows.map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading }));
       kitQuestions = ask([
         { group: t('launch_mode.head', 'Launch mode'), fields: [{
-          key: 'launchMode', label: t('launch_mode.head', 'Launch mode'),
+          key: 'launchMode', label: t('launch_mode.mode', 'Mode'),
           options: LAUNCH_MODES().map((row) => ({ v: row.key, l: row.label, sub: row.sub })),
         }] },
         { group: t('behaviours', 'Behaviours'), fields: [{

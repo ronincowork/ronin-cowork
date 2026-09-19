@@ -32,6 +32,7 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.doesNotMatch(form, /switch: \[[^\]]+\], word:/);
   assert.match(form, /group: t\('where\.label', 'Where it works'\)/);
   assert.match(form, /group: t\('where\.label', 'Where it works'\), fields: \[[\s\S]*key: 'root'[\s\S]*key: 'repos'[\s\S]*key: 'launchMode'/);
+  assert.match(form, /key: 'launchMode', label: t\('launch_mode\.mode', 'Mode'\)/);
   assert.match(form, /many: true, after: 'root'/);
   assert.match(form, /questions\.show\(draft\.type === 'terminal' \? \[\] : draft\.type === 'bare_metal_agent' \? \['provider', 'model', 'root', 'launchMode'\] : null\)/);
   assert.match(form, /session_type: 'bare_metal_agent'[\s\S]*launch_mode: draft\.launchMode/);
@@ -185,6 +186,7 @@ test('New Team routes each selector region through ask() and leaves Templates br
   assert.match(form, /ruledRows\('kind', \['open', \.\.\.KINDS\]/);
   assert.match(form, /const whereQuestions = ask\(/);
   assert.match(form, /kitQuestions = ask\(/);
+  assert.match(form, /key: 'launchMode', label: t\('launch_mode\.mode', 'Mode'\)/);
   assert.match(form, /after: 'provider'/);
   assert.match(form, /after: 'root'/);
   assert.match(form, /row: branchField/);

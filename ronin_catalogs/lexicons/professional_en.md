@@ -410,6 +410,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.payload_band:** New launch payload — what this raise will send
 - **forms.payload_band_agent:** New launch payload — what this launch will send
 - **launch_mode.head:** launch mode
+- **launch_mode.mode:** Mode
 - **launch_mode.configured:** Model provider configuration
 - **launch_mode.configured_sub:** Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.
 - **launch_mode.live:** Dangerously
