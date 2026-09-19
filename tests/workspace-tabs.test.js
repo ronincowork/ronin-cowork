@@ -81,3 +81,36 @@ test('nothing selected is marked with an underline, and the bar keeps one centre
   assert.ok(!block.includes('.wk-tabset-word'));
   assert.doesNotMatch(block, /font-weight: 700/, 'attention never changes a label\'s weight');
 });
+
+test('a seat builds its Commons on first use, and a late seat is handed the reading', async () => {
+  const view = await source('public/js/cowork-view.js');
+  assert.match(view, /const commonsFor = \(id\) => \{/);
+  assert.doesNotMatch(view, /Object\.fromEntries\(Object\.keys\(seats\)\.map\(\(id\) => \[id, createTeamCommons\(id\)\]\)\)/,
+    'four seats no longer build seven rooms each at construction');
+  assert.match(view, /teamCommons: \(id\) => \(\{ el: commonsFor\(id\)\.el/);
+  // Built late, it still gets the gate, the mount and the reading the other seats hold.
+  assert.match(view, /made\.channels\.mount\(ctx\)/);
+  assert.match(view, /made\.kanban\.setAvailability\(kanbanGate\)/);
+  assert.match(view, /if \(painterReady\) \{\s*seenConfig = '';\s*seenRecord = '';\s*paint\(\);/);
+  // Every loop that pushes a reading walks the seats that exist, never the four names.
+  assert.doesNotMatch(view, /Object\.values\(teamCommons\)/);
+});
+
+test('the Docs shelf names the panel it controls and moves by arrow', async () => {
+  const docs = await source('public/js/docs.js');
+  assert.match(docs, /import \{ nextTabIndex \} from '\.\/workspace-tabs\.js'/, 'one engine, reused');
+  assert.match(docs, /list\.setAttribute\('role', 'tabpanel'\)/);
+  assert.match(docs, /b\.setAttribute\('aria-controls', list\.id\)/);
+  assert.match(docs, /if \(on\) list\.setAttribute\('aria-labelledby', b\.id\)/);
+  assert.match(docs, /b\.tabIndex = on \? 0 : -1/);
+  assert.match(docs, /pills\.addEventListener\('keydown'/);
+});
+
+test('one selected treatment: kaki, and the orphaned Home strip is gone', async () => {
+  const [style, campaignHome] = await Promise.all([source('public/style.css'), source('public/css/campaign-home.css')]);
+  assert.match(style, /\.dc-pill\[aria-selected='true'\][^}]*border-color: var\(--kaki\)/);
+  assert.match(style, /#phone \.ph-seg-item\[aria-current='page'\][^}]*border-color: var\(--kaki\)/);
+  assert.match(campaignHome, /\.cv-pill\[aria-pressed='true'\][^}]*border-color: var\(--kaki\)/);
+  // ~120 lines no module rendered; its edge-mask treatment lives in the Kit's tab set now.
+  assert.doesNotMatch(style, /home-tabs|home-tabrow|home-x/);
+});

@@ -256,7 +256,30 @@ export function createCoworkView(options = {}) {
       },
     };
   };
-  const teamCommons = Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamCommons(id)]));
+  // A SEAT'S COMMONS IS BUILT WHEN THAT SEAT FIRST SHOWS ONE. Three of the four
+  // workspaces usually never do, and a Commons is seven rooms — a wipeboard, a cron room,
+  // a doc shelf, a kanban and a message queue among them. A seat built late is handed the
+  // reading the others already have by forcing the next paint to redo its work.
+  const commonsBySeat = {};
+  let painterReady = false; // `paint` and its memo are declared below this point
+  const builtCommons = () => Object.values(commonsBySeat);
+  const commonsFor = (id) => {
+    if (!commonsBySeat[id]) {
+      const made = createTeamCommons(id);
+      commonsBySeat[id] = made;
+      made.channels.mount(ctx);
+      made.channels.setAvailable('kanban', { on: true, title: '' });
+      made.kanban.setAvailability(kanbanGate);
+      // Force the memo to miss so the new seat gets the reading the others hold. Before
+      // the painter exists there is no reading yet, and the first paint covers it.
+      if (painterReady) {
+        seenConfig = '';
+        seenRecord = '';
+        paint();
+      }
+    }
+    return commonsBySeat[id];
+  };
   const extras = new Set();
   // its roster exists, so the form that made it hands the workspace over to it and goes
   // back to empty. Staffing happens from inside the Team, through Add Agent.
@@ -281,13 +304,13 @@ export function createCoworkView(options = {}) {
   })) : {};
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(campaign ? WB_TYPES.roster : WB_TYPES.commons, workspace)),
-    teamCommons: (id) => ({ el: teamCommons[id].el, show: (detail = {}) => { const item = teamCommons[id]; if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
+    teamCommons: (id) => ({ el: commonsFor(id).el, show: (detail = {}) => { const item = commonsFor(id); if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
     kanbanOffers: () => kanbanGate.available ? [{
       label: t('workspace.tab_task_manager', 'Task Manager'),
       summary: t('team_kanban.card_summary', 'The Team’s work, from Ideas through Done'),
     }] : [],
-    teamKanban: (id) => ({ el: teamCommons[id].el, show: () => {
-      const item = teamCommons[id];
+    teamKanban: (id) => ({ el: commonsFor(id).el, show: () => {
+      const item = commonsFor(id);
       item.channels.enter(ctx);
       item.channels.select('kanban');
     } }),
@@ -370,7 +393,7 @@ export function createCoworkView(options = {}) {
     kanbanGate = next?.available === true
       ? { available: true, message: '' }
       : { available: false, message: String(next?.message || KANBAN_NOT_INSTALLED) };
-    for (const commons of Object.values(teamCommons)) {
+    for (const commons of builtCommons()) {
       commons.kanban.setAvailability(kanbanGate);
       // The tab keeps its place whether or not the Task Manager is installed, so the row
       // never re-orders under the pointer when it arrives.
@@ -714,7 +737,7 @@ export function createCoworkView(options = {}) {
     if (!rowsMoved && !recordMoved) return;
     seenConfig = signature;
     seenRecord = record;
-    for (const [id, commons] of Object.entries(teamCommons)) {
+    for (const [id, commons] of Object.entries(commonsBySeat)) {
       const changed = () => { commons.channels.setState(); paint(); };
       const members = buildTeamMembers(team, {
         onChanged: changed,
@@ -753,13 +776,14 @@ export function createCoworkView(options = {}) {
     renderConfig(roster.durable ? roster : null, members);
     // THE BOARD IS ASSUMED: the roster's wipeboard id, or the team's own name for a
     // tag-only team. The server creates it on open, so the slice never meets a void.
-    for (const commons of Object.values(teamCommons)) {
+    for (const commons of builtCommons()) {
       commons.wipeboard.setBoard(team === UNASSIGNED ? '' : (roster.durable && roster.wipeboard) || team);
       commons.kanban.setTeam(team === UNASSIGNED ? '' : team);
       // JIKAN is by active team: the tag-only or durable team, and its live members for the To list.
       commons.jikan.setTeam(team === UNASSIGNED ? '' : team, members.map((m) => m.name));
     }
   };
+  painterReady = true;
 
   async function load(name) {
     if (!name) {
@@ -803,7 +827,7 @@ export function createCoworkView(options = {}) {
     placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),
     mount: (_host, context) => {
       ctx = context;
-      for (const commons of Object.values(teamCommons)) commons.channels.mount(context);
+      for (const commons of builtCommons()) commons.channels.mount(context);
       unsubscribe = subscribe(() => {
         if (!entered) return;
         refreshLeagueTeamSurfaces();
@@ -860,7 +884,7 @@ export function createCoworkView(options = {}) {
       window.clearInterval(reportTimer);
       // No transport survives outside the entered Team destination.
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
-      for (const commons of Object.values(teamCommons)) commons.channels.leave();
+      for (const commons of builtCommons()) commons.channels.leave();
       S.showNewSession = null;
       S.connectSession = null;
       bench.leave();
@@ -876,7 +900,7 @@ export function createCoworkView(options = {}) {
       sessionsHandlers.delete(onSessions);
       helpPanel.destroy();
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
-      for (const commons of Object.values(teamCommons)) commons.channels.destroy();
+      for (const commons of builtCommons()) commons.channels.destroy();
     },
   };
 }

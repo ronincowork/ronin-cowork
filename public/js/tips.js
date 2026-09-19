@@ -114,13 +114,13 @@ function dockFor(el, boxWidth) {
   if (!head) return null;
   // The thing to clear: whatever the control is inside that already hangs below the
   // header (メ's drop, the Commons tab strip), else the header itself.
-  const anchor = el.closest('.tmore, .home-tabs') || head;
+  const anchor = el.closest('.tmore') || head;
   // THE DIVIDER between the anchor's two groups, in DOM order. The header's is its
   // `.grow` spacer; the tab strip's is the ✕, which carries `margin-left: auto` and so
   // IS that strip's spacer — which puts a tab's help under the tabs and ✕'s help under
   // ✕, each on its own end. メ's drop has no divider of its own and falls back to the
   // header's, because メ is one of the right-hand group whatever it contains.
-  const split = anchor.querySelector('.grow, .home-x') || head.querySelector('.grow');
+  const split = anchor.querySelector('.grow') || head.querySelector('.grow');
   const onLeft = split ? !!(split.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING) : true;
   const a = anchor.getBoundingClientRect();
   const host = (tile || head).getBoundingClientRect();
