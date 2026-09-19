@@ -27,7 +27,7 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.match(form, /group: t\('mandate', 'Mandate'\)/);
   assert.doesNotMatch(form, /key: '(?:reach|recruit|output)'[^\n]+shape: 'square'/);
   assert.match(form, /group: t\('squad', 'Team'\)/);
-  assert.doesNotMatch(form, /teamLead|team_lead|leadership/);
+  assert.match(form, /key: 'teamLead'.*Make team lead.*switch: \[t\('forms\.on', 'On'\), t\('forms\.off', 'Off'\)\]/);
   assert.doesNotMatch(form, /switch: \[[^\]]+\], word:/);
   assert.match(form, /group: t\('where\.label', 'Where it works'\)/);
   assert.match(form, /many: true, after: 'root'/);
@@ -97,7 +97,7 @@ test('New Team folds Kind and Template into one optional first row', async () =>
   assert.match(form, /templateTray\(offered\(\), draft\.template, \(name\) => applyTemplate\(name\)\)/, 'the tray includes its No template reset');
   assert.match(form, /Name & instructions/);
   assert.match(agents, /＋ Add Agent/);
-  assert.doesNotMatch(agents, /Team lead|team_lead|\.lead/);
+  assert.match(agents, /key: 'teamLead'.*Make team lead.*switch: \[t\('forms\.on', 'On'\), t\('forms\.off', 'Off'\)\]/);
   assert.doesNotMatch(agents, /Add Lead Agent|Add Team Agent/);
 });
 
@@ -139,7 +139,7 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.match(agents, /many: true, options: mandateRows\(OUTPUT\)/);
   assert.doesNotMatch(agents, /shape: 'square'|ruledRows|glyph:/);
   assert.match(agents, /many: true/);
-  assert.doesNotMatch(agents, /switch:/);
+  assert.match(agents, /key: 'teamLead'.*switch:/);
   assert.doesNotMatch(agents, /switch:[^\n]+word:/);
   assert.match(agents, /density: 'tight'/);
   assert.match(agents, /tierWord\(item\.tier\)/);
@@ -151,7 +151,8 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.match(agents, /provider: row\.provider/);
   assert.match(agents, /model: row\.model/);
   assert.match(agents, /instructions: row\.assignment\.trim\(\)/);
-  assert.doesNotMatch(agents, /team_lead|routines_/);
+  assert.match(agents, /team_lead: row\.team_lead === true/);
+  assert.doesNotMatch(agents, /routines_/);
   assert.match(team, /loadProviderCatalog\(\)/, 'New Team loads provider choices for its inline Agent editor');
   assert.match(team, /Promise\.all\(\[[\s\S]*request\('\/api\/project-roots'\),[\s\S]*loadProviderCatalog\(\)/,
     'provider choices load as part of entering the New Team surface');

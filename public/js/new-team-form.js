@@ -113,6 +113,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       assignment: pick.instructions || '',
       provider: pick.provider || '',
       model: pick.model || '',
+      team_lead: pick.team_lead === true,
       ...(pick.mandate ? {
         reach: pick.mandate.reach,
         recruit: pick.mandate.recruit,

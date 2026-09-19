@@ -598,6 +598,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.provider:** model provider
 - **forms.model:** model
 - **forms.none:** —
+- **forms.on:** On
+- **forms.off:** Off
 - **forms.always:** always
 - **forms.campaign:** campaign
 - **forms.campaign_on:** campaign on
@@ -662,6 +664,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.session:** session
 - **new_agent.created_first:** (created first)
 - **new_agent.blank_note:** A blank field is an answer, not a gap.
+- **new_agent.team_role:** Team role
+- **new_agent.make_team_lead:** Make team lead
+- **new_agent.team_lead:** Team lead
 - **new_agent.worktrees_mode:** Agent work mode
 - **new_agent.worktrees_on:** Own worktree where the Workspace folder allows it
 - **new_agent.worktrees_off:** Use the project checkout and its branches

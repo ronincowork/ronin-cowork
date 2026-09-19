@@ -50,6 +50,19 @@ test('one refused launch does not stop the other rows', async () => {
   assert.deepEqual(outcomes.map(({ result }) => result.ok), [false, true]);
 });
 
+test('multiple marked rows remain team leads and launch after ordinary rows', async () => {
+  const calls = [];
+  const request = async (_url, options) => { calls.push(options.json); return { ok: true }; };
+  await launchTeamAgents(request, 'dinner', [
+    { name: 'first_lead', team_lead: true, instructions: 'lead', mandate: {} },
+    { name: 'member', team_lead: false, instructions: 'work', mandate: {} },
+    { name: 'second_lead', team_lead: true, instructions: 'lead too', mandate: {} },
+  ]);
+  assert.deepEqual(calls.map(({ name, team_lead }) => [name, team_lead]), [
+    ['member', false], ['first_lead', true], ['second_lead', true],
+  ]);
+});
+
 test('a bare-metal row is placement, not birth material', async () => {
   const calls = [];
   const request = async (url, options) => { calls.push({ url, body: options.json }); return { ok: true }; };
