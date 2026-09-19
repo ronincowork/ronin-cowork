@@ -47,8 +47,9 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.match(form, /identityRow\.append\(nameField, teamQuestions\.el\)/);
   assert.match(form, /Defaults cascade from Desk → Team → this Agent\. Changes on this form apply only to this Agent\./);
   assert.match(form, /Defaults cascade from Desk → this Agent\. Changes on this form apply only to this Agent\./);
-  assert.match(form, /if \(hasTeam\) defaultsNote\.append\(el\('b', null, t\('new_agent\.team_defaults', 'Team defaults'\)\), ' · '\)/);
-  assert.match(form, /defaultsNote\.append\(el\('b', null, t\('new_agent\.desk_defaults', 'Desk defaults'\)\)\)/);
+  assert.match(form, /const links = el\('p', 'na-defaults-links'\)/);
+  assert.match(form, /defaultsLink\(t\('new_agent\.team_defaults', 'Team defaults'\)/);
+  assert.match(form, /defaultsLink\(t\('new_agent\.desk_defaults', 'Desk defaults'\)/);
   assert.match(form, /defaultsNote\.hidden = draft\.type === 'terminal'/);
   assert.match(form, /stepTop\.body\.replaceChildren\(identityRow, questions\.el, defaultsNote, instructionsField\)/);
   assert.doesNotMatch(form, /providerModelStones|na-choice-stone|na-mini-stone|stones: true/);
@@ -61,6 +62,8 @@ test('both workbench entrances use the canonical New Agent form with contextual 
   assert.doesNotMatch(cowork, /WB_TYPES\.addAgent|addAgentBySeat|environment\.addAgent/);
   assert.match(cowork, /profiles\.define\(WB_PROFILES\.team, \[WB_TYPES\.commons, WB_TYPES\.kanban, WB_TYPES\.terminal, WB_TYPES\.newAgent/);
   assert.match(cowork, /const newAgentBySeat = \{\};[\s\S]*newAgent: \(id, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{[\s\S]*consumed,[\s\S]*team: \(\) =>/);
+  assert.match(cowork, /openTeamDefaults:[\s\S]*putCommons\(oppositeSeat\(id\), 'team-configuration'\)/);
+  assert.match(cowork, /openDeskDefaults:[\s\S]*workspace1: 'campaign\.defaults'[\s\S]*workspace2: 'setup\.launch-own'/);
   assert.match(cowork, /connect: async \(name\) => \{\s*await fetchSessions\(\);\s*return connectSession\(name, id\)/);
   assert.match(cowork, /const live = new Set\(S\.sessions\.map/, 'a newborn is not discarded against the slower home reading');
   assert.match(cowork, /'team\.add-agent': WB_TYPES\.newAgent/);

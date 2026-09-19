@@ -308,6 +308,12 @@ export function createCoworkView(options = {}) {
         const view = createNewAgentView(WorkspaceKit, {
           consumed,
           team: () => (campaign || team === UNASSIGNED ? '' : team),
+          openTeamDefaults: (name) => {
+            if (!name) return;
+            if (!campaign && name === team) putCommons(oppositeSeat(id), 'team-configuration');
+            else openWorkspaceStateTab(ctx, 'team', { count: 2, selected: 'workspace1', seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: '' } }, name);
+          },
+          openDeskDefaults: () => openWorkspaceStateTab(ctx, 'campaign', { count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' } }),
           connect: async (name) => {
             await fetchSessions();
             return connectSession(name, id);

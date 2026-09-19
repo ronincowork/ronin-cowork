@@ -113,6 +113,8 @@ test('every selector phrase has an exact meaning in floor or capability teaching
   assert.ok(!terms.includes('Fork it') && !terms.includes('New Agent'), 'ambiguous Agent creation aliases stay out of the selector');
   assert.match(selector, /term === 'Create new session \(Agent\)'[^\n]+classList\.add\('session-create'\)/);
   assert.match(style, /\.terminal-hint-row\.session-create[^}]+var\(--kaki\)/);
+  assert.match(style, /\.terminal-hints summary[^}]+font-size: var\(--text-3\)/, 'hint cards use compact selector typography');
+  assert.match(style, /\.terminal-hints h3[^}]+font-size: var\(--text-3\)/, 'Hints heading uses compact selector typography');
   const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   for (const term of terms) assert.match(teaching, new RegExp(`\\*\\*${escaped(term)}\\*\\*`, 'i'), `${term} needs an exact meaning`);
   assert.match(teaching, /AN OWNER ASKING FOR AN AGENT ALWAYS MEANS:[\s\S]*IT NEVER MEANS SPAWN A CLI-INTERNAL SUB-AGENT/);

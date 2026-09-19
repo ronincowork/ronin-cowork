@@ -6629,8 +6629,8 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 
 /* Desktop selector reference. Mobile actions use the existing composer keys row. */
 .terminal-hints { display: flex; flex-direction: column; flex: 0 0 auto; max-height: 70%; overflow-y: auto; margin: var(--space-3); font-family: var(--font-ui); font-size: var(--text-3); line-height: 1.5; overflow-wrap: normal; }
-.terminal-hints summary { cursor: pointer; color: var(--fg-strong); font-size: var(--text-5); font-weight: 600; }
-.terminal-hints h3 { margin: 0; font-size: var(--text-5); font-weight: 600; color: var(--fg-strong); }
+.terminal-hints summary { cursor: pointer; color: var(--fg-strong); font-size: var(--text-3); font-weight: 600; }
+.terminal-hints h3 { margin: 0; font-size: var(--text-3); font-weight: 600; color: var(--fg-strong); }
 .terminal-hints > details { flex: 0 0 auto; min-width: 0; margin-top: var(--space-2); padding: var(--space-4); }
 .agent-vocabulary-hints[open] { flex: 0 1 auto; min-height: calc(1.5em + 2 * var(--space-4)); overflow-y: auto; }
 .agent-vocabulary-hints .terminal-hint-row strong { flex: 0 1 7rem; }
