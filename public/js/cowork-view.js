@@ -11,7 +11,7 @@ import { createTeamJikan } from './team-jikan.js';
 import { buildMessageQueue, watchMessageQueueAttention } from './message-queue.js';
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { buildArchives } from './archives.js';
-import { homeData, refreshHome, statusLabel } from './home.js';
+import { refreshHome, statusLabel } from './home.js';
 import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
@@ -32,7 +32,7 @@ import { RONIN_HELPERS } from './roster-groups.js';
 import { toast } from './ui.js';
 import { readyMika } from './mika-ready.js';
 import { createMikaHelpPanel } from './mika.js';
-import { coworkWorkbenchIdentity, createCampaignIdentity, orderCoworkTeams } from './campaign.js';
+import { orderCoworkTeams } from './cowork-workbench-contract.js';
 import { retireSession } from './session-retire.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { createTeamKanban, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
@@ -69,10 +69,7 @@ const currentWorkStep = (letter) => {
   return { label: letter.chip?.text || rung.phase || '', text: legs[legIndex]?.title || rung.phase || '' };
 };
 
-const COMMONS = '@commons';
-const COWORK = '@cowork';
-const NEW = '@new';
-const WB_TYPES = Object.freeze({ commons: 'team.commons', kanban: 'team.kanban', cron: 'cowork.cron-jobs', desk: 'ronin.desk', document: 'document', terminal: 'session.terminal', roster: 'cowork.team-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent', team: 'team.profile', archives: 'cowork.archives' });
+const WB_TYPES = Object.freeze({ commons: 'team.commons', kanban: 'team.kanban', cron: 'cowork.cron-jobs', document: 'document', terminal: 'session.terminal', roster: 'cowork.team-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent', team: 'team.profile', archives: 'cowork.archives' });
 const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 
 function registerWorkbenchCatalog() {
@@ -82,13 +79,9 @@ function registerWorkbenchCatalog() {
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: WB_TYPES.commons, header: 'channels', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Commons'), summary: () => t('team.commons_summary', 'See Roster / Docs / Wipeboard / Task Manager / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
   add({ type: WB_TYPES.kanban, header: 'channels', className: 'wk-selector-utility', discover: (_tenant, environment) => environment.kanbanOffers(), create: ({ workspace, environment }) => environment.teamKanban(workspace) });
-  add({ type: WB_TYPES.desk, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), create: ({ workspace, environment }) => environment.desk(workspace) });
   add({ type: WB_TYPES.terminal, header: 'terminal', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
   add({ type: WB_TYPES.roster, header: 'surface', className: 'wk-selector-utility', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
   add({ type: WB_TYPES.cron, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.channel_cron_jobs', 'Cron jobs'), summary: () => t('team_jikan.all_teams_summary', 'Scheduled messages across every team'), create: ({ workspace, environment }) => environment.cron(workspace) });
-  // old new agent workspaces have been made obsolete by yours". The seven-field card and
-  // the ＋ New board are gone from this bench and from the repository; a workspace that
-  // remembers one resolves to its replacement through `legacyTypes`.
   // Drawn contracts: ronin-lab `concepts/new-team.html` and `concepts/new-agent-condensed.html`.
   add({ type: WB_TYPES.newTeamForm, header: 'surface', className: 'wk-selector-utility wk-selector-group-after', label: () => t('new_team.title', 'New Team'), summary: () => t('new_team.card_summary', 'Template · kit · lead — the drawn form.'), variant: 'dotted', create: ({ workspace, environment, consumed }) => environment.newTeamForm(workspace, consumed) });
   add({ type: WB_TYPES.newAgent, header: 'surface', className: 'wk-selector-utility', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment, consumed }) => environment.newAgent(workspace, consumed) });
@@ -102,12 +95,11 @@ export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
   const campaign = options.kind === 'cowork';
   const viewKey = campaign ? 'cowork' : 'team';
-  const coworkIdentity = coworkWorkbenchIdentity(t('campaign.coworks', 'Teams'));
+  const teamsLabel = t('campaign.coworks', 'Teams');
   const { createSurface, createChannelSurface, createAction } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
-  const { DISMISSED_WORKSPACE, teamWorkspaceState, workspaceMaySeedDefault } = WorkspaceKit.contract;
+  const { DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault } = WorkspaceKit.contract;
   const root = el('main', 'tw-view');
-  root.dataset.coworkKind = campaign ? coworkIdentity.kind : 'team';
   let ctx = null;
   let stopMessageAttention = null;
   let team = '';
@@ -246,7 +238,7 @@ export function createCoworkView(options = {}) {
     const kanbanTab = channels.tabs.querySelector('[data-service="kanban"]');
     channels.tabs.addEventListener('click', () => { chooseQueueOnOpen = false; });
     paintMessageAttention();
-    channels.el.dataset.workbenchSurface = COMMONS;
+    channels.el.dataset.workbenchSurface = WB_TYPES.commons;
     return {
       el: channels.el, channels, wipeboard, jikan, kanban, kanbanTab, docs, roster, config, messageQueue,
       attendQueueOnOpen: () => {
@@ -257,9 +249,6 @@ export function createCoworkView(options = {}) {
   };
   const teamCommons = Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamCommons(id)]));
   const extras = new Set();
-  const campaignIdentity = createCampaignIdentity((name) => {
-    if (entered && campaign) renderCards([]);
-  });
   // its roster exists, so the form that made it hands the workspace over to it and goes
   // back to empty. Staffing happens from inside the Team, through Add Agent.
   const newTeamFormBySeat = {};
@@ -357,9 +346,9 @@ export function createCoworkView(options = {}) {
     profile: campaign ? WB_PROFILES.cowork : WB_PROFILES.team,
     tenant: { kind: campaign ? 'cowork' : 'team', team: () => team }, environment,
     defaultNode: (id) => seats[id].surface.el,
-    label: campaign ? coworkIdentity.selectorLabel : t('team.roster_title', 'Team Roster'),
+    label: campaign ? teamsLabel : t('team.roster_title', 'Team Roster'),
     // While ミ Help is open the column is Mika's, and every repaint says so.
-    title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : campaign ? coworkIdentity.selectorLabel : t('team.roster_title', 'Roster'),
+    title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : campaign ? teamsLabel : t('team.roster_title', 'Roster'),
     actions: [densityToggle.el, rosterNote, mikaHelp], shapeControl: shapeBtn, deferSelector: true,
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,
@@ -389,7 +378,7 @@ export function createCoworkView(options = {}) {
   if (campaign) {
     const selector = bench.host.querySelector('.wk-workbench-selector');
     selector?.setAttribute('role', 'navigation');
-    selector?.setAttribute('aria-label', coworkIdentity.selectorAriaLabel);
+    selector?.setAttribute('aria-label', teamsLabel);
   }
   root.append(bench.host);
   // ミ Help: Mika takes over the selector column — her ordinary tile, borrowed from the
@@ -422,17 +411,12 @@ export function createCoworkView(options = {}) {
     }),
   });
   mikaHelp.el.addEventListener('click', () => { void helpPanel.open(); });
-  // A REMEMBERED PLACEMENT OUTLIVES THE SURFACE IT NAMED. `@new` and `@new-team` were
-  // the retired board and the seven-field card; a workspace that still remembers one
-  // opens its replacement rather than nothing.
-  const legacyTypes = { [COMMONS]: WB_TYPES.commons, [COWORK]: WB_TYPES.desk, [NEW]: WB_TYPES.newAgent, 'session.new': WB_TYPES.newAgent, 'team.add-agent': WB_TYPES.newAgent, '@new-team': WB_TYPES.newTeamForm, 'cowork.new-team': WB_TYPES.newTeamForm, '@team-roster': WB_TYPES.roster };
   const tokenOf = (node) => node?.dataset?.workbenchSurface || '';
   /** Which surface token this cell holds, or '' for its own seat. */
   const heldSurface = (id) => tokenOf(cellHolding(id));
   // A remembered surface keeps its tab and document too: a preset seats the commons on
   // the Wipeboard or Cron jobs, and a document beside its agent, in the tab it opens.
-  const surfaceRequest = (token) => token && typeof token === 'object' ? { type: token.type, detail: { key: token.key || '', root: token.root || '', path: token.path || '', ...(token.tab ? { tab: token.tab } : {}), ...(token.doc ? { doc: token.doc } : {}) } } : token?.startsWith('@team:') ? { type: WB_TYPES.team, detail: { key: token.slice(6) } } : { type: legacyTypes[token] || token, detail: {} };
-  const whereIs = (token) => { const request = surfaceRequest(token); return bench?.locations(request.type, request.detail.key)[0] || ''; };
+  const surfaceRequest = (token) => token && typeof token === 'object' ? { type: token.type, detail: { key: token.key || '', root: token.root || '', path: token.path || '', ...(token.tab ? { tab: token.tab } : {}), ...(token.doc ? { doc: token.doc } : {}) } } : { type: token || '', detail: {} };
   /** A surface other than the seat's own is in this workspace. */
   const surfaceIn = (id) => !bench?.isDefault(id);
   const holds = (id) => surfaceIn(id) ? heldSurface(id) : seats[id].pool.active;
@@ -452,8 +436,7 @@ export function createCoworkView(options = {}) {
   const lead = () => membersOfTeam(team).find((m) => m.team_lead)?.name || '';
   const oppositeSeat = (id) => ({ workspace1: 'workspace2', workspace2: 'workspace1', workspace3: 'workspace4', workspace4: 'workspace3' })[id] || 'workspace1';
 
-  const putCommons = (id, tab = '', doc = '') => putSurface(COMMONS, id, tab, doc);
-  const putCowork = (id, tab = '') => putSurface(COWORK, id, tab);
+  const putCommons = (id, tab = '', doc = '') => putSurface(WB_TYPES.commons, id, tab, doc);
   // `edges page … workspace1=new` still says "the door work starts at"; that door is
   // the drawn New Agent now (TOOLS.md's `new` word is unchanged for the owner).
   const putNew = (id) => putSurface(WB_TYPES.newAgent, id);
@@ -520,7 +503,6 @@ export function createCoworkView(options = {}) {
     moveColumn: (name, index) => bench.arrangement.move(name === 'roster' ? 'selector' : name, index),
     putSession: (name, ws) => putSession(name, ws, false),
     putCommons,
-    putCowork,
     putNew,
     putSurface,
     putTerminal,
@@ -565,8 +547,8 @@ export function createCoworkView(options = {}) {
     noteTimer = window.setTimeout(() => { rosterNote.textContent = ''; }, 6000);
   };
 
-  /** Fill each empty workspace: what it remembers first, else the defaults — the lead
-   *  left, the commons right. Runs on enter AND when the roster arrives, since on a cold
+  /** Fill each empty workspace from remembered state, or place the lead on first entry.
+   *  Runs on enter AND when the roster arrives, since on a cold
    *  reload the roster is not known yet at enter. */
   let remembered = {};
   const seatTheTeam = () => {
@@ -701,7 +683,7 @@ export function createCoworkView(options = {}) {
     };
   };
   function renderCards(members) {
-    if (rosterTitle) rosterTitle.textContent = campaign ? coworkIdentity.selectorLabel : t('team.roster_title', 'Roster');
+    if (rosterTitle) rosterTitle.textContent = campaign ? teamsLabel : t('team.roster_title', 'Roster');
     bench.refreshSelector();
   }
 
@@ -798,14 +780,14 @@ export function createCoworkView(options = {}) {
     header: WORKBENCH_HEADER,
     // The owner's per-tab name; Teams defaults to its page name, a Team to the Team name.
     title: ({ param, viewState }) => {
-      const fallback = campaign ? coworkIdentity.tabLabel : (readableTeam(param || team) || t('team.team', 'Team'));
+      const fallback = campaign ? teamsLabel : (readableTeam(param || team) || t('team.team', 'Team'));
       const name = viewState?.(viewKey)?.tabName;
       return name ? { bare: name } : fallback;
     },
     tabName: {
       // The island edits the name it owns; a default is a real value, selectable and editable.
-      get: () => ctx?.viewState(viewKey)?.tabName || (campaign ? coworkIdentity.tabLabel : readableTeam(team) || t('team.team', 'Team')),
-      placeholder: () => campaign ? coworkIdentity.tabLabel : readableTeam(team) || t('team.team', 'Team'),
+      get: () => ctx?.viewState(viewKey)?.tabName || (campaign ? teamsLabel : readableTeam(team) || t('team.team', 'Team')),
+      placeholder: () => campaign ? teamsLabel : readableTeam(team) || t('team.team', 'Team'),
       set: (value) => { ctx?.patchViewState(viewKey, { tabName: String(value || '').trim() }); },
     },
     placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),
@@ -833,12 +815,9 @@ export function createCoworkView(options = {}) {
       thinSelectorCards = entry[campaign ? 'teamCardDensity' : 'agentCardDensity'] !== 'thick';
       paintDensityToggle();
       setBarLabel();
-      const typed = teamWorkspaceState(context.state, entry, bench.declaration);
-      // What each workspace remembers holding; the old one-seat focusedSession lands in
-      // the first workspace, once. With nothing remembered: the lead left, the commons right.
+      const typed = normalizeWorkbenchState(entry, bench.declaration);
       bench.enter({ arrangement: typed.arrangement, count: entry.count, selected: entry.selected });
       remembered = { ...typed.seats };
-      if (!Object.keys(remembered).length) remembered = typed.focusedSession ? { workspace1: typed.focusedSession } : {};
       const members = restorationMembers();
       syncPools(members);
       ensureLeadHot(members);

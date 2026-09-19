@@ -169,7 +169,7 @@ test('the registry seeds name catalog rows by tier, and only rows this machine c
 
 test('no client module keeps its own provider or model list, join, or vendor name', async () => {
   const read = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
-  for (const file of ['add-agent.js', 'campaign-defaults.js', 'team-configuration.js', 'machine-settings.js', 'presets.js', 'new-agent.js', 'new-team-form.js']) {
+  for (const file of ['campaign-defaults.js', 'team-configuration.js', 'machine-settings.js', 'presets.js', 'new-agent.js', 'new-team-form.js']) {
     const source = await read(file);
     if (source.includes("from './ask.js'")) assert.match(source, /ask\(/, `${file} asks through the one selector utility`);
     assert.match(source, /providerCatalog\(\)|providerModelPair/, `${file} reads or calls the shared provider catalog`);

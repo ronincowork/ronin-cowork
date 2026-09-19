@@ -62,20 +62,6 @@ export function serviceComponentRows(installed, masterOn) {
   }));
 }
 
-/** The only furniture shared by Services and gbrain. */
-export function setupExplainer({ usedFor, requires, use }) {
-  const details = el('details', 'setup-explainer');
-  const summary = el('summary', '', t('setup_surface.about', 'About this'));
-  const body = el('div', 'setup-explainer-body');
-  for (const [heading, copy] of [
-    [t('setup_surface.used_for', 'What this is used for'), usedFor],
-    [t('setup_surface.requires', 'What is required'), requires],
-    [t('setup_surface.how', 'How to use it'), use],
-  ]) body.append(el('h3', '', heading), el('p', '', copy));
-  details.append(summary, body);
-  return details;
-}
-
 function createRegisterSurface(context) {
   const out = surface(t('setup_surface.register', 'Register'));
   const body = el('div', 'setup-surface-body setup-register-compact');
@@ -679,6 +665,7 @@ function createSetupInstallationsSurface(context) {
   const page = createInstallationsSurface(selected, {
     ...context,
     onInstallationsState: (values) => context.environment?.onInstallationsState?.(values),
+    createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
   });
   // Setup chooses and sequences the shared page; it does not change the page's controls.
   // The shared Services model owns the Install, Turn on, and Restart gates in every

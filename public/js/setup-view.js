@@ -8,7 +8,7 @@ import { GARDEN_CANVAS_TYPE, registerGardenCanvas } from './garden-canvas.js';
 import { normalizeGardenCanvasCatalog } from './garden-canvas-model.js';
 import { PRESETS_TYPE, createKindsPreference, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
-import { reserveWorkspaceTab } from './workspace.js';
+import { reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
 
@@ -16,7 +16,7 @@ const PROFILE = 'setup';
 // Release toggles: unfinished programs stay out of Setup without changing the workbench.
 export const SETUP_FEATURES = Object.freeze({ bounty: false });
 const SCENES = Object.freeze(SETUP_SCENES
-  .filter((scene) => SETUP_FEATURES.bounty || scene.type !== SETUP_SURFACE_TYPES.bounty)
+  .filter((scene) => SETUP_FEATURES.bounty || scene.type !== 'setup.bounty')
   .map((scene, index) => Object.freeze({ ...scene, number: index + 1 })));
 const ORDER = Object.freeze(SCENES.map((scene) => scene.type));
 const ARRANGEMENT = Object.freeze({
@@ -70,8 +70,12 @@ export function createSetupView() {
     setPathNote: (path_note) => request('/api/setup/preferences', { method: 'PATCH', json: { path_note } }),
     setIdentityChoice: (identity_choice) => request('/api/setup/preferences', { method: 'PATCH', json: { identity_choice } }),
     mountProviderSetupSession: providerSessions.mountProviderSetupSession,
-    showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
-    openLaunchForm: () => ctx?.navigate('launch'),
+    showNewSession: (prompt) => {
+      const url = workbenchLaunchUrl({ destination: 'launch', mode: 'overlay', state: {
+        selected: 'workspace1', seats: { workspace1: { type: 'launch.agent', detail: { prompt: String(prompt || '') } } },
+      } });
+      if (url) location.assign(url);
+    },
     onGardenCanvas: (next) => {
       garden = next;
       garden.controls.replaceChildren();
@@ -241,7 +245,6 @@ export function createSetupView() {
       completion.roots = entry.setupCompletion?.roots === true;
       sceneOverride = Number(entry.sceneOverride) || defaultScene().number;
       bench.enter({ ...entry, count: 2, arrangement: { ...ARRANGEMENT, widths: entry.arrangement?.widths || ARRANGEMENT.widths } });
-      bench.setCount(2);
       bench.place(GARDEN_CANVAS_TYPE, 'workspace1');
       paint();
       open(sceneOverride);

@@ -283,7 +283,7 @@ export function coworkCommons(options = {}) {
   // bound pad key, the pad's own ask) shows the cowork commons on Keypad wherever the page
   // can show it — `S.showCoworkCommons` is set by the page (team-view.js / layout.js);
   // `isOpen` is the pad key handler's "you are working the pad" test (layout.js).
-  // Nothing is entered here: the first `select` — the cowork destination's enter, or the
-  // team page's putCowork — enters the landing tab, so no room fetches on a page load.
+  // Nothing is entered here: the cowork destination's first `select` enters the landing
+  // tab, so no room fetches on a page load.
   return surface;
 }

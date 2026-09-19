@@ -66,7 +66,8 @@ test('both workbench entrances use the canonical New Agent form with contextual 
   assert.match(cowork, /openDeskDefaults: \(\) => openWorkbenchTab\(\{ destination: 'campaign', mode: 'replace',[\s\S]*workspace1: 'campaign\.defaults'[\s\S]*workspace2: 'setup\.launch-own'/);
   assert.match(cowork, /connect: async \(name\) => \{\s*await fetchSessions\(\);\s*return connectSession\(name, id\)/);
   assert.match(cowork, /const live = new Set\(S\.sessions\.map/, 'a newborn is not discarded against the slower home reading');
-  assert.match(cowork, /'team\.add-agent': WB_TYPES\.newAgent/);
+  assert.doesNotMatch(cowork, /legacyTypes|team\.add-agent|@new-team|@team-roster/,
+    'restoration uses canonical Workbench surface types only');
 });
 
 test('choosing New team requires a valid name before any session type can launch', async () => {

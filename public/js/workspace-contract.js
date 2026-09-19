@@ -36,12 +36,8 @@ export function navigateWorkspace(context, target, options = {}) {
   return context.navigate(target.view, { ...options, param: text(target.param) });
 }
 
-export function teamWorkspaceState(state = {}, viewState = null, declaration = null) {
+export function normalizeWorkbenchState(viewState = null, declaration = null) {
   const view = viewState && typeof viewState === 'object' ? viewState : {};
-  const stored = view.arrangement || null;
-  const legacy = (state.widths || state.surfaces) ? { widths: state.widths, surfaces: state.surfaces } : null;
-  // SEATS: which member is up in which workspace slot, by slot name. The one-seat
-  // `focusedSession` of the shell's top-level state is read once, into the first seat.
   const seats = {};
   for (const [slot, value] of Object.entries(view.seats && typeof view.seats === 'object' ? view.seats : {})) {
     if (text(value)) seats[slot] = value;
@@ -54,10 +50,7 @@ export function teamWorkspaceState(state = {}, viewState = null, declaration = n
     });
   }
   return Object.freeze({
-    team: text(state.team),
-    mode: state.teamMode === 'sessions' ? 'sessions' : 'team',
-    focusedSession: text(state.focusedSession),
     seats: Object.freeze(seats),
-    arrangement: declaration ? migrateWorkbenchState(stored || legacy, declaration) : null,
+    arrangement: declaration ? migrateWorkbenchState(view.arrangement, declaration) : null,
   });
 }

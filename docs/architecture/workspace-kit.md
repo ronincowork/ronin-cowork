@@ -37,7 +37,7 @@ Consume the facade where possible:
 const { createSurface, createCard, createAction } = WorkspaceKit.primitives;
 const { library, profiles, create } = WorkspaceKit.workbench;
 const { createTerminalTileHost } = WorkspaceKit.adapters;
-const { workspaceTarget, navigateWorkspace, teamWorkspaceState } = WorkspaceKit.contract;
+const { workspaceTarget, navigateWorkspace, normalizeWorkbenchState } = WorkspaceKit.contract;
 ```
 
 Current load-bearing contracts:

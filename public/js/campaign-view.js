@@ -15,11 +15,10 @@ import { request } from './request.js';
 import { coworkCommons } from './cowork-commons.js';
 import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
 import { progressiveSurface } from './progressive-surface.js';
-import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
+import { SETUP_SURFACE_TYPES, createGbrainSurface, createServicesSurface, registerSetupSurfaces } from './setup-surfaces.js';
 import { readyMika } from './mika-ready.js';
 import { createMikaHelpPanel, createMikaTilePool } from './mika.js';
 import { toast } from './ui.js';
-import { openWorkbenchTab } from './workspace.js';
 import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { WORKBENCH_HEADER } from './workspace-contract.js';
@@ -28,12 +27,9 @@ import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surfa
 const PROFILE = 'campaign';
 const MIKA_SESSION = 'mika_agent';
 const TERMINAL_TYPE = 'session.terminal';
-// the machine's own half — account, health — is the Admin Desk's.
-// defaults · Project roots lead, and they are the four the page opens on.
-const TYPES = Object.freeze({ machine: 'campaign.machine', templates: 'campaign.templates', defaults: 'campaign.defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', installations: 'campaign.installations', providers: PROVIDER_SURFACE_TYPE, profile: 'campaign.desk-profile', create: 'campaign.new', document: 'document' });
+const TYPES = Object.freeze({ machine: 'campaign.machine', defaults: 'campaign.defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', installations: 'campaign.installations', providers: PROVIDER_SURFACE_TYPE, profile: 'campaign.desk-profile', create: 'campaign.new', document: 'document' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
-const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.templates, 'campaign.team-templates': TYPES.templates, 'campaign.session-roles': TYPES.templates, '@new-campaign': TYPES.create });
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
 /**
@@ -82,17 +78,17 @@ function registerCampaignSurfaces() {
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Team and Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return e.progressive({ el: surface.el, show: () => surface.enter() }); } });
   add({ type: TYPES.document, header: 'surface', label: () => t('docs.frame_title', 'Document'), discover: () => [], create: ({ detail, environment: e }) => e.document(detail) });
   // CONTROL_BUNDLES build-out for the bundle model behind it.
-  add({ type: TYPES.installations, header: 'surface', label: () => t('campaign_view.installations', 'Installations'), summary: (_tenant, e) => installationsSummary(e.selected()), create: (context) => { const surface = createInstallationsSurface(context.environment.selected, context); return context.environment.progressive({ el: surface.el, show: () => surface.enter(), destroy: () => surface.destroy() }); } });
+  add({ type: TYPES.installations, header: 'surface', label: () => t('campaign_view.installations', 'Installations'), summary: (_tenant, e) => installationsSummary(e.selected()), create: (context) => { const surface = createInstallationsSurface(context.environment.selected, {
+    ...context,
+    createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
+  }); return context.environment.progressive({ el: surface.el, show: () => surface.enter(), destroy: () => surface.destroy() }); } });
   add(providerSurfaceDefinition()); // Model providers — the one surface Ronin Setup also seats; provider-surface.js
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.
   add({ type: TYPES.machine, header: 'channels', label: () => t('campaign_view.machine', 'Machine'), summary: () => t('campaign_view.machine_summary', 'Themes · Account · Archived · Messages · Help · Keypad · Health.'), create: ({ environment: e }) => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('campaign_view.machine', 'Machine'), campaign: e.selected }); return e.progressive({ el: surface.el, show: () => surface.select(surface.current() || 'themes') }); } });
-  // — teams and agents — in the forms' own boxes, by kind. The session-roles card that once
   if (MULTIPLE_CAMPAIGNS_ENABLED) add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Desk'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Team and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
   // New Desk is not registered while multiple Campaigns are off.
-  // Desk profile remains registered so a remembered workspace can still restore it, but
-  // its beta card is hidden from discovery. Themes now have their stable home in Ronin Desk.
   profiles.define(PROFILE, [
     TERMINAL_TYPE,
     TYPES.machine, PASSWORD_SURFACE_TYPE, TYPES.installations, TYPES.providers,
@@ -105,7 +101,7 @@ function registerCampaignSurfaces() {
 export function createCampaignView() {
   registerCampaignSurfaces();
   const { createSurface } = WorkspaceKit.primitives;
-  const { teamWorkspaceState } = WorkspaceKit.contract;
+  const { normalizeWorkbenchState } = WorkspaceKit.contract;
   let ctx = null, entered = false, bench = null;
   let loadGeneration = 0;
   let campaignRead = false; // the Campaign record has arrived for this entry
@@ -151,10 +147,6 @@ export function createCampaignView() {
     progressive,
     setupRuntime: null,
     mountProviderSetupSession: providerSessions.mountProviderSetupSession,
-    showNewSession: (prompt) => { ctx?.patchViewState('launch', { prompt: String(prompt || '') }); ctx?.navigate('launch'); },
-    openLaunchForm: ({ kind, seed = {} } = {}) => openWorkbenchTab({ destination: 'launch', param: kind, mode: 'overlay', state: {
-      selected: 'workspace1', seats: { workspace1: { type: `launch.${kind}`, detail: seed } },
-    } }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     sessions: () => [{
       key: MIKA_SESSION,
@@ -225,18 +217,17 @@ export function createCampaignView() {
       const generation = ++loadGeneration;
       campaignRead = false;
       for (const surface of campaignSurfaces) surface.begin();
-      const stored = context.viewState('campaign') || {};
       const { state: entry } = context.workbenchEntry({
         count: 2, selected: 'workspace1',
         seats: { workspace1: TYPES.defaults, workspace2: TYPES.roots },
       });
-      thinSelectorCards = stored.selectorDensity !== 'thick';
+      thinSelectorCards = entry.selectorDensity !== 'thick';
       paintDensityToggle();
-      const typed = teamWorkspaceState(context.state, entry, bench.declaration);
+      const typed = normalizeWorkbenchState(entry, bench.declaration);
       bench.enter({ ...typed, ...entry });
       for (const id of bench.ids) {
         const held = typed.seats[id];
-        const type = typeof held === 'object' ? held.type : LEGACY[held] || held;
+        const type = typeof held === 'object' ? held.type : held;
         if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id, typeof held === 'object' ? held : {});
       }
       bench.refreshSelector(); save();
