@@ -45,7 +45,12 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.match(form, /stepPayload\.setNumber\(order\.length \+ 1\)/);
   assert.match(form, /key: 'payload'.*Payload/);
   assert.match(form, /identityRow\.append\(nameField, teamQuestions\.el\)/);
-  assert.match(form, /stepTop\.body\.replaceChildren\(identityRow, questions\.el, instructionsField\)/);
+  assert.match(form, /Defaults cascade from Desk → Team → this Agent\. Changes on this form apply only to this Agent\./);
+  assert.match(form, /Defaults cascade from Desk → this Agent\. Changes on this form apply only to this Agent\./);
+  assert.match(form, /if \(hasTeam\) defaultsNote\.append\(el\('b', null, t\('new_agent\.team_defaults', 'Team defaults'\)\), ' · '\)/);
+  assert.match(form, /defaultsNote\.append\(el\('b', null, t\('new_agent\.desk_defaults', 'Desk defaults'\)\)\)/);
+  assert.match(form, /defaultsNote\.hidden = draft\.type === 'terminal'/);
+  assert.match(form, /stepTop\.body\.replaceChildren\(identityRow, questions\.el, defaultsNote, instructionsField\)/);
   assert.doesNotMatch(form, /providerModelStones|na-choice-stone|na-mini-stone|stones: true/);
   assert.match(form, /key: 'behaviours'[\s\S]*density: 'tight', exposed: true/, 'opening Tools and skills exposes its only selector immediately');
 });

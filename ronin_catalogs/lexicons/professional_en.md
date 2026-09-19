@@ -635,6 +635,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## new_agent — new-agent.js (the drawn launch form, staged beside the ＋ New board)
 - **new_agent.title:** New Agent
 - **new_agent.model_package:** Model
+- **new_agent.defaults_cascade_team:** Defaults cascade from Desk → Team → this Agent. Changes on this form apply only to this Agent.
+- **new_agent.defaults_cascade_desk:** Defaults cascade from Desk → this Agent. Changes on this form apply only to this Agent.
+- **new_agent.team_defaults:** Team defaults
+- **new_agent.desk_defaults:** Desk defaults
 - **new_agent.card_summary:** Session type first — the drawn launch form.
 - **new_agent.new_session:** New session
 - **new_agent.type_cowork:** Cowork Agent

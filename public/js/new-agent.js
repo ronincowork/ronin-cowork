@@ -266,6 +266,16 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     return input;
   };
   const identityRow = el('div', 'na-identity-row');
+  const defaultsNote = el('p', 'fs-step-help na-defaults-note');
+  const paintDefaultsNote = () => {
+    defaultsNote.replaceChildren();
+    const hasTeam = draft.teamMode !== 'none';
+    defaultsNote.append(hasTeam
+      ? t('new_agent.defaults_cascade_team', 'Defaults cascade from Desk → Team → this Agent. Changes on this form apply only to this Agent.')
+      : t('new_agent.defaults_cascade_desk', 'Defaults cascade from Desk → this Agent. Changes on this form apply only to this Agent.'), ' ');
+    if (hasTeam) defaultsNote.append(el('b', null, t('new_agent.team_defaults', 'Team defaults')), ' · ');
+    defaultsNote.append(el('b', null, t('new_agent.desk_defaults', 'Desk defaults')));
+  };
   const onQuestionChange = (value, key) => {
     if ('provider' in value) {
       draft.provider = value.provider; draft.model = value.model;
@@ -293,7 +303,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       }
       void loadSeed();
     }
-    paintFoot(); paintActions();
+    paintDefaultsNote(); paintFoot(); paintActions();
   };
   const questions = ask([
     { group: t('new_agent.model_package', 'Model'), fields: [
@@ -577,12 +587,14 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     teamQuestions.show(isCowork() ? null : ['team']);
     teamQuestions.el.hidden = false;
     questions.el.hidden = draft.type === 'terminal';
+    defaultsNote.hidden = draft.type === 'terminal';
     instructionsField.hidden = !hasAgent();
     paintTypes();
     paintLeanNote();
     paintKinds();
     paintTray();
     syncQuestions();
+    paintDefaultsNote();
     paintShelves();
     paintFolds();
     paintActions();
@@ -598,7 +610,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   stepPayload.body.append(foot, actions.el);
   stepPayload.setCollapsed(true, t('forms.payload_summary', 'Review what Launch will create'), true);
   identityRow.append(nameField, teamQuestions.el);
-  stepTop.body.replaceChildren(identityRow, questions.el, instructionsField);
+  stepTop.body.replaceChildren(identityRow, questions.el, defaultsNote, instructionsField);
   const form = el('div', 'ntf-form');
   form.append(stepType.el, stepTop.el, stepLoadout.el, stepPayload.el);
   // Save as template sits UNDER the reading, for the same reason as on New Team: the
