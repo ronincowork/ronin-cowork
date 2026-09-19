@@ -10,7 +10,7 @@
 > (`$(ronin-store catalogs)/MODEL_PROVIDERS.md`) and edit it there. Each provider section in the owner copy
 > replaces that provider section; other shipped providers keep receiving updates; an upgrade never touches it.
 
-- **updated:** 2026-09-18
+- **updated:** 2026-09-19
 
 ## Keeping it fresh
 
