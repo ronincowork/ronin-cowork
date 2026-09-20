@@ -4,14 +4,22 @@ import { consumeWorkbenchLaunch, navigateToWorkspaceFolders, openWorkbenchTab, r
 
 test('Workspace Folder navigation preserves Settings and seats the shared surface', () => {
   let written = null;
+  let state = null;
   let destination = '';
   const existing = { count: 4, selected: 'workspace1', seats: { workspace1: 'campaign.defaults' }, selectorDensity: 'thick' };
   assert.equal(navigateToWorkspaceFolders({
+    id: 'settings',
+    param: 'providers',
     viewState: () => existing,
+    patchState: (value) => { state = value; },
     patchViewState: (id, value) => { assert.equal(id, 'campaign'); written = value; },
     navigate: (id) => { destination = id; return true; },
-  }), true);
+  }, { origin: { kind: 'preset', workspace: 'workspace1', preset: 'ronin_team' } }), true);
   assert.equal(destination, 'campaign');
+  assert.deepEqual(state, { returnTo: {
+    view: 'settings', param: 'providers',
+    origin: { kind: 'preset', workspace: 'workspace1', preset: 'ronin_team' },
+  } });
   assert.deepEqual(written, {
     count: 4, selected: 'workspace2', selectorDensity: 'thick',
     seats: { workspace1: 'campaign.defaults', workspace2: 'campaign.project-roots' },

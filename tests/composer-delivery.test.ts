@@ -58,7 +58,8 @@ test('one Ronin box request submits even if copy mode reopens after the paste', 
   assert.equal(screen.match(/SUBMITTED:one press/g)?.length, 1, screen);
   assert.equal((await fetch(`http://127.0.0.1:${address.port}/api/messages`).then((r) => r.json())).messages.length, 0);
   assert.equal(tmux.state(), 'up');
-  assert.equal(await server.run('display-message', '-p', '-t', '=composer_target:', '#{pane_in_mode}'), '1');
+  assert.equal(await server.run('display-message', '-p', '-t', '=composer_target:', '#{pane_in_mode}'), '0',
+    'delivery leaves copy mode so the real Enter reaches the application');
 });
 
 test('complete messages preserve paste boundaries and one final Enter even when the reader is delayed', async (t) => {
