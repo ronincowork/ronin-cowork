@@ -194,8 +194,10 @@
   --bar-nav-size: var(--text-7);
   --bar-value-fg: var(--bar-nav-fg);
   --bar-value-size: var(--bar-nav-size);
-  --bar-place-bg: #090a0c;
-  --bar-place-fg: var(--on-strong);
+  /* The centre title is part of the active Workbench header. Keep its fill and ink on
+     the same scope pair as surface headers so Team, Teams and Settings cannot drift. */
+  --bar-place-bg: var(--cowork-head-bg);
+  --bar-place-fg: var(--cowork-head-fg);
   --bar-brand-mark-h: 27px;
   --bar-brand-track: -0.005em;
 
