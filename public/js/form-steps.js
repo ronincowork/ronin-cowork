@@ -284,6 +284,21 @@ export function loadProviderCatalog() {
   return inflight;
 }
 
+export const providerCatalogHandlers = new Set();
+
+/** Drop the cached join and repaint consumers after a persisted inventory completion. */
+export function reloadProviderCatalog() {
+  inflight = null;
+  return loadProviderCatalog().then((value) => {
+    for (const handler of providerCatalogHandlers) handler(value);
+    return value;
+  });
+}
+
+window.addEventListener('ronin:provider-inventory', (event) => {
+  if (event.detail?.state === 'complete') void reloadProviderCatalog();
+});
+
 /** What every reader paints from: `{ rows, providers, machine, measured_at, origin, updated, stock_updated, withdrawn, loaded }`. */
 export const providerCatalog = () => catalog;
 

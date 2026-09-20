@@ -320,12 +320,20 @@ export interface ProviderSummary {
   versions: Record<string, string>;
   /** A CLI-owned model list, stamped by the CLI version that fetched it. */
   model_lists: Record<string, CliModelList>;
+  /** The completed state of each installed CLI inventory read. Missing means an older, unmeasured record. */
+  model_inventory?: Record<string, ProviderInventoryStatus>;
   /**
    * The newest version its package source offers, asked only on Refresh — never on an
    * ordinary measure, since each ask is an outbound request with an egress line. Kept
    * from the last Refresh until the next; absent for a CLI with no source Ronin can ask.
    */
   latest: Record<string, { version: string; checked_at: string }>;
+}
+
+export type ProviderInventoryState = 'unmeasured' | 'ready' | 'unavailable' | 'invalid';
+export interface ProviderInventoryStatus {
+  state: ProviderInventoryState;
+  checked_at: string;
 }
 
 export interface CliModelList {
@@ -380,6 +388,23 @@ export function parseProviderSummary(value: unknown): ProviderSummary | null {
     if (models.length !== item.models.length) continue;
     model_lists[id] = { fetched_at: item.fetched_at, etag: item.etag, client_version: item.client_version, models };
   }
+  const rawInventory = v.model_inventory && typeof v.model_inventory === 'object' && !Array.isArray(v.model_inventory)
+    ? v.model_inventory as Record<string, unknown> : {};
+  const model_inventory: Record<string, ProviderInventoryStatus> = {};
+  for (const id of idList(v.installed)) {
+    const row = rawInventory[id];
+    const item = row && typeof row === 'object' && !Array.isArray(row) ? row as Record<string, unknown> : null;
+    const state = item?.state;
+    const checked_at = item?.checked_at;
+    if (state === 'ready' || state === 'unavailable' || state === 'invalid' || state === 'unmeasured') {
+      model_inventory[id] = {
+        state: state === 'ready' && !model_lists[id] ? 'invalid' : state,
+        checked_at: typeof checked_at === 'string' ? checked_at : '',
+      };
+    } else {
+      model_inventory[id] = { state: model_lists[id] ? 'ready' : 'unmeasured', checked_at: model_lists[id]?.fetched_at ?? '' };
+    }
+  }
   return {
     measured_at: v.measured_at,
     installed: idList(v.installed),
@@ -389,6 +414,7 @@ export function parseProviderSummary(value: unknown): ProviderSummary | null {
     paths,
     versions,
     model_lists,
+    model_inventory,
     latest,
   };
 }
