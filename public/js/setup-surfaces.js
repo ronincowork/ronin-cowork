@@ -343,19 +343,10 @@ function createRootsSurface(context) {
     workspace: context.workspace,
     onShow: () => notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench),
   });
-  const host = page.el.querySelector('.wk-surface-content') || page.el;
-  const stopFooter = mountSetupStepFooter(host, context.environment, {
-    id: 'workspace', number: 3, pending: 'Not answered yet', complete: 'Complete — found on this machine',
-    actions: () => [
-      { label: 'I don’t use GitHub', action: () => context.environment?.answerSetupStep?.('workspace', 'not_now') },
-      { label: 'Connect GitHub', kind: 'primary', action: () => page.el.querySelector('.setup-roots-github-stone')?.click() },
-    ],
-    answeredActions: () => [
-      { label: 'Look again', quiet: 'link', action: () => context.environment?.scanSetupProgress?.() },
-      { label: 'Next step', kind: 'primary', action: () => context.environment?.nextSetupStep?.() },
-    ],
-  });
-  return { ...page, destroy: () => { stopFooter(); page.destroy?.(); } };
+  // The header zone carries step 3's state and its picks (see workspace-folders-surface.js),
+  // so the step footer that used to ask at the bottom is retired — one place to answer, and
+  // the top bar already owns 'look at this machine again'.
+  return page;
 }
 
 function createBountySurface(context) {
