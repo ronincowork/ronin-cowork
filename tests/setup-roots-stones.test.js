@@ -130,6 +130,25 @@ test('the Setup form keeps the real fields and reads as sections, while Campaign
   assert.doesNotMatch(roots, /setInterval|poll/, 'the roots surface has no background repaint loop');
 });
 
+test('Workspace Folder creation reuses object-ID normalization and house confirmation sheets', async () => {
+  const [roots, picker, ui, css] = await Promise.all([
+    source('public/js/projectroots.js'), source('public/js/folder-picker.js'),
+    source('public/js/ui.js'), source('public/style.css'),
+  ]);
+  assert.match(roots, /import \{ finalizeTeamName, sanitizeTeamName \} from '\.\/new-team-draft\.js'/);
+  assert.match(roots, /sanitizeTeamName\(handleInput\.value\)\.slice\(0, 32\)/);
+  assert.match(roots, /finalizeTeamName\(handleInput\.value\)\.slice\(0, 32\)/);
+  assert.match(roots, /handleInput\.maxLength = 32/);
+  assert.match(roots, /confirmDialog\(\{/);
+  assert.match(picker, /confirmDialog\(\{/);
+  assert.doesNotMatch(roots, /confirm\(t\('roots\.profile_confirm'/);
+  assert.doesNotMatch(picker, /\bconfirm\(/);
+  assert.match(ui, /export function confirmDialog/);
+  assert.match(ui, /cls: 'ui-confirm-card'/);
+  assert.match(css, /\.ui-confirm-copy \{[^}]*overflow-wrap: anywhere/);
+  assert.match(css, /\.pr-err \{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere/s);
+});
+
 test('roots carry no parallel stone DOM or CSS presentation and the detail rhythm uses kaki rules', async () => {
   const [roots, css] = await Promise.all([
     source('public/js/projectroots.js'),

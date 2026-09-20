@@ -1,6 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { consumeWorkbenchLaunch, openWorkbenchTab, resolveWorkbenchState } from '../public/js/workspace.js';
+import { consumeWorkbenchLaunch, navigateToWorkspaceFolders, openWorkbenchTab, resolveWorkbenchState } from '../public/js/workspace.js';
+
+test('Workspace Folder navigation preserves Settings and seats the shared surface', () => {
+  let written = null;
+  let destination = '';
+  const existing = { count: 4, selected: 'workspace1', seats: { workspace1: 'campaign.defaults' }, selectorDensity: 'thick' };
+  assert.equal(navigateToWorkspaceFolders({
+    viewState: () => existing,
+    patchViewState: (id, value) => { assert.equal(id, 'campaign'); written = value; },
+    navigate: (id) => { destination = id; return true; },
+  }), true);
+  assert.equal(destination, 'campaign');
+  assert.deepEqual(written, {
+    count: 4, selected: 'workspace2', selectorDensity: 'thick',
+    seats: { workspace1: 'campaign.defaults', workspace2: 'campaign.project-roots' },
+  });
+});
 
 test('Workbench entry precedence is structured launch, remembered state, then first-open defaults', () => {
   const defaults = { count: 2, selected: 'workspace1', seats: { workspace1: 'default.one', workspace2: 'default.two' } };

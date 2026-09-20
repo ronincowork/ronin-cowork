@@ -277,11 +277,13 @@ test('Ronin Team and Agent + Editable Doc ask Where from the one list of workspa
 
 test('Where lists every tracked workspace folder and refills in place when one is kept', async () => {
   let listener = null;
+  const navigated = [];
   let tracked = [{ name: 'ronin_lab' }, { name: 'project_one' }, { name: 'site' }];
   const surface = presets.createPresetsSurface({ environment: {
     presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [{ name: 'ronin_lab', label: 'Ronin Lab' }, { name: 'project_one', label: 'Project One' }] } }),
     trackedRoots: () => tracked,
     onTrackedRoots: (fn) => { listener = fn; return () => {}; },
+    navigateToSurface: (type, detail) => navigated.push({ type, detail }),
     loadPresetSlots: () => null,
     launch: async () => ({ ok: false }),
   } });
@@ -300,7 +302,24 @@ test('Where lists every tracked workspace folder and refills in place when one i
   assert.ok(reading.textContent.includes('site'), 'the choice survives the refill');
   reading.click(); options = [...surface.el.walk()].filter((node) => String(node.className).split(' ').includes('ask-opt'));
   assert.deepEqual(options.map((row) => row.textContent), ['Ronin Lab', 'Project One', 'site', 'shiwake'], 'the kept folder is a choice at once');
-  assert.ok([...surface.el.walk()].some((node) => node.tagName === 'BUTTON' && node.textContent === '＋ workspace folder'), 'the door to keep another folder sits beside Where');
+  const addFolder = [...surface.el.walk()].find((node) => node.tagName === 'BUTTON' && node.textContent === '＋ workspace folder');
+  assert.ok(addFolder, 'the door to keep another folder sits beside Where');
+  addFolder.click();
+  assert.deepEqual(navigated, [{ type: 'setup.roots', detail: {} }], 'the shared host navigation opens Workspace Folders');
+});
+
+test('production Presets hosts provide shared Workspace Folder navigation and the live catalog', async () => {
+  const [setup, cowork] = await Promise.all([
+    readFile(new URL('../public/js/setup-view.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/js/cowork-view.js', import.meta.url), 'utf8'),
+  ]);
+  for (const host of [setup, cowork]) {
+    assert.match(host, /trackedRoots: \(\) => projectData/);
+    assert.match(host, /onTrackedRoots: onProjects/);
+    assert.match(host, /navigateToSurface:/);
+  }
+  assert.match(setup, /navigateToSurface: \(type\) => openSurface\(type\)/);
+  assert.match(cowork, /navigateToSurface: \(type\) => type === 'setup\.roots' && navigateToWorkspaceFolders\(ctx\)/);
 });
 
 test('Code Stack Eval keeps ticked folders on Apply and evaluates the chosen one', async () => {
