@@ -345,7 +345,7 @@ export function createCoworkView(options = {}) {
       return { key: member.name, label: mika ? t('mika.name', 'Mika') : agentTitle(member), className: 'team-agent-card',
         mark: member.team_lead ? '人' : null,
         summary: reading.step, metadata: reading.lines,
-        ...(campaign ? { action: () => openWorkspaceTab('agent', member.name) } : {}),
+        action: () => openAgentWorkbench(member.name),
         ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
         onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
@@ -703,6 +703,15 @@ export function createCoworkView(options = {}) {
     bench.refreshSelector();
   }
 
+  // Agent activation leaves seating to drag. Reserve the tab while the click is still
+  // the active user gesture; if the browser refuses it, use the ViewHost transition so
+  // the action cannot silently do nothing.
+  function openAgentWorkbench(name) {
+    const tab = reserveWorkspaceTab();
+    if (tab) return openWorkspaceTab('agent', name, tab);
+    return ctx?.navigate?.('agent', { param: name }) ?? false;
+  }
+
   // team configuration on and off"). Every tick and publish lands here; the panel is
   // torn down only when configSignature says something it draws actually moved.
   // Two signatures, because the two panels move for different reasons: the member rows
@@ -727,7 +736,7 @@ export function createCoworkView(options = {}) {
         onFailed: (message) => commons.channels.setState('failed', message),
         idPrefix: id,
         reading: readingsOf,
-        onOpen: (member) => openWorkspaceTab('agent', member.name),
+        onOpen: (member) => openAgentWorkbench(member.name),
         onClose: (member) => retireSession(member.name, `commons-${id}-${member.name}`, async () => {
           await Promise.all([fetchSessions(), refreshTeams()]);
           paint();
