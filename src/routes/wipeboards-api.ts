@@ -1,6 +1,6 @@
 import type express from 'express';
 import { isValidName, listSessions, sessionExists, teamsInPlay } from '../tmux.js';
-import { attemptMessage, enqueueMessage } from '../message-queue.js';
+import { enqueueMessage } from '../message-queue.js';
 import {
   appendPost,
   boardExists,
@@ -81,9 +81,8 @@ async function fanOut(board: string, post: Post, from: string): Promise<Record<s
       unaddressed++;
       continue;
     }
-    const queued = await enqueueMessage(m.name, notice, 'wipeboard_notice');
-    const retained = await attemptMessage(queued.id, 'safe');
-    results[m.name] = retained ? `queued — ${retained.reason}` : 'notified';
+    await enqueueMessage(m.name, notice, 'wipeboard_notice');
+    results[m.name] = 'queued';
   }
   if (unaddressed) results['(not addressed)'] = `${unaddressed} other(s) — they see it when they check`;
   return results;
@@ -185,9 +184,8 @@ export function registerWipeboards(app: express.Express): void {
         const members = await boardMembers(name);
         const roll = members.map((m) => m.name);
         for (const m of members) {
-          const q = await enqueueMessage(m.name, teamJoinNotice(name, boardPath(name), roll), 'wipeboard_notice');
-          const retained = await attemptMessage(q.id, 'safe');
-          results[m.name] = retained ? `queued — ${retained.reason}` : 'notified';
+          await enqueueMessage(m.name, teamJoinNotice(name, boardPath(name), roll), 'wipeboard_notice');
+          results[m.name] = 'queued';
         }
       }
       res.json({ ok: true, id: post.id, results });
@@ -260,9 +258,8 @@ export async function announceTeamChanges(
       const notice = join
         ? teamJoinNotice(t, file, (await boardMembers(t)).map((m) => m.name), deskIds(desks.filter((desk) => desk.team !== t)))
         : teamLeaveNotice(t, file, deskIds(desks.filter((desk) => desk.team === t)));
-      const q = await enqueueMessage(session, notice, 'wipeboard_notice');
-      const retained = await attemptMessage(q.id, 'safe');
-      results[t] = retained ? `queued — ${retained.reason}` : 'notified';
+      await enqueueMessage(session, notice, 'wipeboard_notice');
+      results[t] = 'queued';
     }
   }
   return results;

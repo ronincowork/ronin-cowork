@@ -63,18 +63,4 @@ test('session identity distinguishes CLI from inference provider and model', () 
   assert.equal(parseSessionIdentity('{"cli":"codex"}'), undefined);
 });
 
-test('a control waits for the paste transaction without joining its typing grace', async () => {
-  const { withMessageTarget } = await import('../src/message-queue.js');
-  const calls: string[] = [];
-  let release!: () => void;
-  let entered!: () => void;
-  const started = new Promise<void>((resolve) => { entered = resolve; });
-  const hold = new Promise<void>((resolve) => { release = resolve; });
-  const paste = withMessageTarget('birth', async () => { calls.push('paste'); entered(); await hold; calls.push('Enter'); });
-  await started;
-  const clear = withMessageTarget('birth', async () => { calls.push('Clear'); });
-  release(); await Promise.all([paste, clear]);
-  assert.deepEqual(calls, ['paste', 'Enter', 'Clear']);
-});
-
 test.after(async () => { await fs.rm(temp, { recursive: true, force: true }); });

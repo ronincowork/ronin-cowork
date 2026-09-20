@@ -1,7 +1,7 @@
 import type express from 'express';
 import { homedir } from 'node:os';
 import { addJob, isValidJobId, isValidTeam, listAllJobs, listJobs, nextRun, parseWhen, removeJob, setJob, startJikan, updateJob, type Door } from '../jikan.js';
-import { attemptMessage, enqueueMessage } from '../message-queue.js';
+import { enqueueMessage } from '../message-queue.js';
 import { listSessions } from '../tmux.js';
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
@@ -9,7 +9,7 @@ const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(hom
 export const houseDoor: Door = {
   now: () => Date.now(),
   sessions: async () => (await listSessions()).map((s) => ({ name: s.name, tags: s.tags, leads: s.leads })),
-  deliver: async (target, text) => ((await attemptMessage((await enqueueMessage(target, text, 'jikan')).id, 'safe')) ? 'queued' : 'delivered'),
+  deliver: async (target, text) => { await enqueueMessage(target, text, 'jikan'); return 'queued'; },
 };
 
 export function registerJikan(app: express.Express): void {

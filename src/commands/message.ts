@@ -1,4 +1,4 @@
-import { deliverMessage, MessageRefused, pendingTellsFrom, type MessageSource } from '../message-queue.js';
+import { enqueueMessage, type MessageSource } from '../message-queue.js';
 import { messageSender } from '../message-sender.js';
 import { isValidName } from '../tmux.js';
 
@@ -14,21 +14,5 @@ if (!isValidName(target) || !text) {
 const from = source === 'tell'
   ? await messageSender()
   : undefined;
-try {
-  if (source === 'tell') {
-    const sender = from ?? 'Agent';
-    const pending = await pendingTellsFrom(sender, target);
-    if (pending.length) console.warn(`WARNING: ${pending.length} unresolved tell(s) from '${sender}' to '${target}' remain visible in Messages; sending this one too.`);
-  }
-  const retained = await deliverMessage(target, text, source, from);
-  console.log(retained
-    ? `QUEUED for '${target}': ${retained.reason} (message ${retained.id})`
-    : `DELIVERED to '${target}'.`);
-} catch (error) {
-  if (error instanceof MessageRefused) {
-    console.error(`REFUSED: ${error.message}`);
-    process.exitCode = 4;
-  } else {
-    throw error;
-  }
-}
+const item = await enqueueMessage(target, text, source, from);
+console.log(`QUEUED for '${target}' (message ${item.id}).`);

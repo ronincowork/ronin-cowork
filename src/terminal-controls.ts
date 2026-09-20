@@ -4,7 +4,6 @@ import { readMachineSettingsSection, updateDocument } from './machine-settings.j
 import { agentSpec } from './agents.js';
 import { exactPane, listSessions } from './tmux.js';
 import { tmux } from './tmux-client.js';
-import { withMessageTarget } from './message-queue.js';
 
 export const CONTROL_DEFAULTS = Object.freeze({ clear: 'Ctrl+Shift+Backspace', close: 'Ctrl+Shift+X', stop: 'Escape' });
 export type TerminalIntent = keyof typeof CONTROL_DEFAULTS;
@@ -60,10 +59,8 @@ export function registerTerminalControls(app: Express): void {
     try { keys = await agentControlKeys(session.identity?.cli || session.agent, intent); }
     catch (e) { return res.status(422).json({ error: (e as Error).message }); }
     try {
-      await withMessageTarget(session.key, async () => {
-        await tmux.run(['send-keys', '-t', exactPane(session.name), '-X', 'cancel']).catch(() => {});
-        await tmux.run(['send-keys', '-t', exactPane(session.name), ...keys]);
-      });
+      await tmux.run(['send-keys', '-t', exactPane(session.name), '-X', 'cancel']).catch(() => {});
+      await tmux.run(['send-keys', '-t', exactPane(session.name), ...keys]);
       res.json({ ok: true });
     } catch (e) { res.status(409).json({ error: (e as Error).message }); }
   });

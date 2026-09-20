@@ -5,7 +5,7 @@ import { RIREKI_DIR, sessionKey } from './session-dir.js';
 import { readTeamRoster } from './team-rosters.js';
 import type { SessionInfo } from './tmux.js';
 import { mandate, type Mandate } from './agent-defaults.js';
-import { deliverMessage } from './message-queue.js';
+import { enqueueMessage } from './message-queue.js';
 import { normalizeProject, type Project } from './projects.js';
 
 export type TegamiProject = Project;
@@ -161,7 +161,7 @@ export interface MoveTegamiProjectResult {
 /** The house's only cross-letter project write. Roster mutation stays with its caller. */
 export async function moveTegamiProject(
   input: MoveTegamiProjectInput,
-  notify: (session: string, text: string) => Promise<unknown> = (session, text) => deliverMessage(session, text, 'house'),
+  notify: (session: string, text: string) => Promise<unknown> = (session, text) => enqueueMessage(session, text, 'house'),
 ): Promise<MoveTegamiProjectResult> {
   const file = tegamiPath(await sessionKey(input.session));
   const text = await fs.readFile(file, 'utf8');

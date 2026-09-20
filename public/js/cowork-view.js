@@ -8,7 +8,7 @@ import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { createTeamJikan } from './team-jikan.js';
-import { buildMessageQueue, watchMessageQueueAttention } from './message-queue.js';
+import { buildMessageQueue } from './message-queue.js';
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { buildArchives } from './archives.js';
 import { onProjects, projectData, refreshHome, statusLabel } from './home.js';
@@ -101,7 +101,6 @@ export function createCoworkView(options = {}) {
   const { DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault } = WorkspaceKit.contract;
   const root = el('main', 'tw-view');
   let ctx = null;
-  let stopMessageAttention = null;
   let team = '';
   let loaded = ''; // the team whose roster reading is currently drawn
   let unsubscribe = null;
@@ -848,8 +847,6 @@ export function createCoworkView(options = {}) {
       entered = true;
       void readKanbanAvailability();
       seenConfig = ''; // a fresh entry always paints the configuration once
-      stopMessageAttention?.();
-      stopMessageAttention = watchMessageQueueAttention();
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = campaign ? '' : context.param || context.state?.team || '';
       const { state: entry } = context.workbenchEntry();
@@ -884,8 +881,6 @@ export function createCoworkView(options = {}) {
       // Leaving the destination closes every Team transport; the seats remember what
       // they held and get it back on re-entry.
       entered = false;
-      stopMessageAttention?.();
-      stopMessageAttention = null;
       disarmPrewarm();
       window.clearInterval(homeTimer);
       window.clearInterval(reportTimer);
@@ -899,8 +894,6 @@ export function createCoworkView(options = {}) {
     },
     destroy: () => {
       entered = false;
-      stopMessageAttention?.();
-      stopMessageAttention = null;
       unsubscribe?.();
       unsubscribe = null;
       teamPageHandlers.delete(onDraft);

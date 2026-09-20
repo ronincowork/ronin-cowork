@@ -97,5 +97,4 @@ Controls act on the identity stored with the session. They do not detect the pro
 from terminal output. Model is the model selected at launch; an in-CLI model switch does
 not change the CLI control adapter. Older sessions use their existing CLI launch stamp;
 unidentified terminals have no guessed Stop/Clear adapter. Their local Clear, Copy, and
-confirmed Close still work. A control waits only for an already-started queued paste and
-its Enter to finish, never for the message queue's typing grace.
+confirmed Close still work. Controls and the best-effort queue are independent terminal inputs.

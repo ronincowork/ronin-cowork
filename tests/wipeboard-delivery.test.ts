@@ -7,7 +7,7 @@ import { closeTestServer, openTestServer } from './helpers/testserver.js';
 
 const repo = path.resolve(import.meta.dirname, '..');
 
-test('a wipeboard notice uses direct delivery and submits on an isolated Codex-style pane', async (t) => {
+test('a wipeboard notice enters the shared queue before the worker submits it', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-wipeboard-delivery-'));
   const server = await openTestServer('wipeboard_delivery', { onPath: true });
   const queueDirBefore = process.env.RONIN_MESSAGE_QUEUE_DIR;
@@ -22,13 +22,14 @@ test('a wipeboard notice uses direct delivery and submits on an isolated Codex-s
 
   const queue = await import(`../src/message-queue.ts?board=${Date.now()}`);
   const notice = 'WIPEBOARD team — @sender posted. Run: edges wipeboard';
-  assert.equal(await queue.deliverMessage('board_notice_target', notice, 'wipeboard_notice'), null);
+  await queue.enqueueMessage('board_notice_target', notice, 'wipeboard_notice');
+  await queue.processMessageQueue();
   const stdout = await server.run('capture-pane', '-p', '-t', '=board_notice_target:');
   assert.match(stdout, new RegExp(`SUBMITTED:${notice}`));
 
   const direct = await fs.readFile(path.join(repo, 'src/commands/message.ts'), 'utf8');
   const board = await fs.readFile(path.join(repo, 'src/commands/wipeboard.ts'), 'utf8');
-  assert.match(direct, /deliverMessage\(target, text, source/);
-  assert.match(board, /deliverMessage\(session, message, 'wipeboard_notice'\)/);
+  assert.match(direct, /enqueueMessage\(target, text, source/);
+  assert.match(board, /enqueueMessage\(session, message, 'wipeboard_notice'\)/);
   assert.doesNotMatch(board, /message-cli/);
 });

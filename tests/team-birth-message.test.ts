@@ -27,7 +27,7 @@ test('birth records membership without terminal input; later joins still submit 
   }
   const { ensureBoard, readBoard } = await import('../src/wipeboards.js');
   const { announceTeamChanges } = await import('../src/routes/wipeboards-api.js');
-  const { listQueuedMessages } = await import('../src/message-queue.js');
+  const { listQueuedMessages, processMessageQueue } = await import('../src/message-queue.js');
   await ensureBoard('birth_crew');
   await announceTeamChanges('newborn', [], ['birth_crew'], { notifyAgent: false });
   assert.equal((await readBoard('birth_crew')).posts.length, 1);
@@ -35,7 +35,8 @@ test('birth records membership without terminal input; later joins still submit 
   assert.equal(await fs.readFile(input, 'utf8').catch(() => ''), '', 'no second message or Enter at birth');
 
   const later = await announceTeamChanges('newborn', [], ['birth_crew']);
-  assert.equal(later.birth_crew, 'notified');
+  assert.equal(later.birth_crew, 'queued');
+  await processMessageQueue();
   let received = '';
   for (let i = 0; i < 50; i++) {
     received = await fs.readFile(input, 'utf8').catch(() => '');
