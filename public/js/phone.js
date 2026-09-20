@@ -23,6 +23,7 @@ import { S } from './state.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFeedbackSurface } from './feedback.js';
+import { applyWorkbenchAppearance } from './workspace-contract.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -310,6 +311,9 @@ export async function buildPhone() {
   /* ---------- the router ---------- */
   const render = () => {
     const next = routeFromHash();
+    applyWorkbenchAppearance(next.screen === 'teams' ? 'cowork'
+      : next.screen === 'terminal' ? 'agent'
+        : next.screen === 'feedback' ? '' : 'team');
     const staysOnDocs = next.screen === 'docs' && next.team === route.team;
     if (route.screen === 'docs' && !staysOnDocs && !leaveDocs()) {
       location.hash = docsHash(route.team); // the owner kept unsaved typing; stay

@@ -109,9 +109,9 @@ export function createTeamKanban(options = {}) {
   const refreshButton = node('button', 'tk-refresh', '↻');
   refreshButton.type = 'button';
   refreshButton.setAttribute('aria-label', 'Refresh Task Manager');
-  const foldButton = node('button', 'tw-agent-density tk-fold');
+  const foldButton = node('button', 'tk-fold');
   foldButton.type = 'button';
-  const foldLines = node('span', 'tw-agent-density-lines');
+  const foldLines = node('span', 'wk-density-lines');
   foldLines.append(node('i'), node('i'));
   foldButton.append(foldLines);
   controls.append(refreshButton, foldButton);
