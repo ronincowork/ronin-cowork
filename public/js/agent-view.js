@@ -152,7 +152,7 @@ export function createAgentView() {
     }
   };
   return {
-    el: root, glyph: '•', arrangement: bench.arrangement, header: WORKBENCH_HEADER,
+    el: root, glyph: '•', appearance: 'agent', arrangement: bench.arrangement, header: WORKBENCH_HEADER,
     title: ({ param }) => param || t('agent.workbench', 'Agent'),
     mount: (_host, ctx) => { context = ctx; unsubscribe = subscribe(() => { if (entered) { bench.refreshSelector(); for (const item of membership.values()) item.render(); } }); },
     enter: (ctx) => {

@@ -48,12 +48,17 @@
   --kaki-hint: #6f300e;
   --kaki-tint: #f2a566;
 
-  --cowork-head-bg: var(--kaki-hint);
-  --cowork-head-fg: var(--on-strong);
-  --cowork-head-muted: #d9b8ab;
+  --team-workbench-head-bg: var(--kaki-hint);
+  --team-workbench-head-fg: var(--on-strong);
+  --team-workbench-head-muted: #d9b8ab;
+  --team-workbench-head-line: var(--define-line);
+
+  --cowork-head-bg: var(--team-workbench-head-bg);
+  --cowork-head-fg: var(--team-workbench-head-fg);
+  --cowork-head-muted: var(--team-workbench-head-muted);
   --cowork-head-attention: var(--kiiro);
 
-  --cowork-head-line: var(--define-line);
+  --cowork-head-line: var(--team-workbench-head-line);
   --cowork-surface-head-edge: var(--edge);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
@@ -194,10 +199,9 @@
   --bar-nav-size: var(--text-7);
   --bar-value-fg: var(--bar-nav-fg);
   --bar-value-size: var(--bar-nav-size);
-  /* The centre title is part of the active Workbench header. Keep its fill and ink on
-     the same scope pair as surface headers so Team, Teams and Settings cannot drift. */
-  --bar-place-bg: var(--cowork-head-bg);
-  --bar-place-fg: var(--cowork-head-fg);
+  /* The dynamic island belongs to the application bar, not the Workbench below it. */
+  --bar-place-bg: #090a0c;
+  --bar-place-fg: var(--on-strong);
   --bar-brand-mark-h: 27px;
   --bar-brand-track: -0.005em;
 
@@ -225,10 +229,9 @@
 
 :root[data-theme='light'] {
 
-  --cowork-head-bg: var(--kaki-tint);
-  --cowork-head-fg: #201a0e;
-
-  --cowork-head-muted: #4f2e1b;
+  --team-workbench-head-bg: var(--kaki-tint);
+  --team-workbench-head-fg: #201a0e;
+  --team-workbench-head-muted: #4f2e1b;
   --cowork-head-attention: #7a2f10;
   --bg: #f4f2ec;
   --bg-2: #eae7df;
@@ -324,19 +327,26 @@
   --term-input-fg: #2c2e36;
 }
 
-:root[data-scope='campaign'] {
+:root:is([data-workbench='campaign'], [data-workbench='setup'], [data-workbench='launch']) {
   --cowork-head-bg: var(--scope-campaign-head-bg);
   --cowork-head-line: var(--scope-graphite);
   --cowork-surface-head-edge: var(--space-1);
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
 }
-:root[data-scope='teams'] {
+:root[data-workbench='cowork'] {
   --cowork-head-bg: var(--scope-teams-head-bg);
   --cowork-head-line: var(--aiiro);
   --cowork-surface-head-edge: var(--space-1);
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
+}
+:root:is([data-workbench='team'], [data-workbench='agent']) {
+  --cowork-head-bg: var(--team-workbench-head-bg);
+  --cowork-head-line: var(--team-workbench-head-line);
+  --cowork-surface-head-edge: var(--edge);
+  --cowork-head-fg: var(--team-workbench-head-fg);
+  --cowork-head-muted: var(--team-workbench-head-muted);
 }
 
 
