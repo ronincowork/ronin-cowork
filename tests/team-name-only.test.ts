@@ -123,9 +123,11 @@ test('the seed door tolerates a pre-cut behaviour shape without inventing an ele
   await fs.writeFile(file, raw, 'utf8');
   const response = await fetch(`${base}/api/launch-seed?team=installation-cascade`);
   assert.equal(response.status, 200);
-  const seed = await response.json() as { seeds: { behaviours: { value: string[] } }; behaviours: Array<{ name: string; on: boolean }> };
+  const seed = await response.json() as { seeds: { behaviours: { value: string[] } }; behaviours: Array<{ name: string; scope: string; on: boolean }> };
   assert.deepEqual(seed.seeds.behaviours.value, []);
-  assert.equal(seed.behaviours.some((row) => row.name === 'mandates'), false);
+  const mandates = seed.behaviours.find((row) => row.name === 'mandates');
+  assert.equal(mandates?.scope, 'floor');
+  assert.equal(mandates?.on, false, 'floor guidance is visible but never added to the elective seed');
   assert.equal(await fs.readFile(file, 'utf8'), raw, 'the seed read performs no migration');
 });
 

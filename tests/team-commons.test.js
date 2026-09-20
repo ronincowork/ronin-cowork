@@ -16,10 +16,12 @@ test('Commons opens on its separate Roster and keeps Configuration separate', as
 });
 
 test('Task Manager is offered only when available and its Commons tab stays present', async () => {
-  const view = await source('public/js/cowork-view.js');
-  assert.match(view, /kanban: 'team\.kanban'/);
-  assert.match(view, /type: WB_TYPES\.kanban[\s\S]*environment\.kanbanOffers\(\)/);
-  assert.match(view, /WB_PROFILES\.team, \[WB_TYPES\.commons, WB_TYPES\.kanban,/);
+  const [view, catalog] = await Promise.all([
+    source('public/js/cowork-view.js'), source('public/js/workbench-catalog.js'),
+  ]);
+  assert.match(catalog, /kanban: 'team\.kanban'/);
+  assert.match(catalog, /type: WORKBENCH_TYPES\.kanban[\s\S]*e\.kanbanOffers\(\)/);
+  assert.match(catalog, /WORKBENCH_PROFILES\.team, \[WORKBENCH_TYPES\.commons, WORKBENCH_TYPES\.kanban,/);
   assert.match(view, /request\('\/api\/installed'/);
   assert.match(view, /kanbanOffers: \(\) => kanbanGate\.available \? \[\{/);
   assert.match(view, /commons\.channels\.setAvailable\('kanban', \{ on: true, title: '' \}\)/);
@@ -34,7 +36,8 @@ test('Roster expands live readings; its Launch opens the Agent workbench while C
   ]);
   assert.match(view, /workspace1: 'workspace2', workspace2: 'workspace1', workspace3: 'workspace4', workspace4: 'workspace3'/);
   assert.match(view, /openOwner: \(name\) => arrange\(\{ \[oppositeSeat\(id\)\]: \{ session: name \} \}\)/);
-  assert.match(view, /onOpen: \(member\) => openWorkspaceTab\('agent', member\.name\)/);
+  assert.match(view, /onOpen: \(member\) => openAgentWorkbench\(member\.name\)/);
+  assert.match(view, /function openAgentWorkbench\(name\)[\s\S]*reserveWorkspaceTab\(\)[\s\S]*openWorkspaceTab\('agent', name, tab\)/);
   assert.match(view, /reading: readingsOf/);
   assert.match(view, /configSignature\(team\) \+ JSON\.stringify\(members\.map\(\(member\) => readingsOf\(member\)\.lines\)\)/);
   // The member rows follow the live readings; the Configuration tab follows the saved record alone,
@@ -55,7 +58,7 @@ test('Roster expands live readings; its Launch opens the Agent workbench while C
   assert.match(members, /toggle\.setAttribute\('aria-controls', detail\.id\)/);
   assert.match(members, /toggle\.addEventListener\('click', \(\) => \{[\s\S]*detail\.hidden = !expanded;/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
-  assert.match(view, /campaign \? \{ action: \(\) => openWorkspaceTab\('agent', member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
+  assert.match(view, /campaign \? \{ action: \(\) => openAgentWorkbench\(member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
   assert.match(workbench, /card\.el\.addEventListener\('dragstart',[\s\S]*JSON\.stringify\(\{ type: definition\.type, detail \}\)/, 'drag still carries the terminal surface and Agent resource to a workspace');
   assert.match(css, /\.league-team-member-actions \{[^}]*flex-wrap: wrap;[^}]*justify-content: flex-end;/);
   for (const label of ['Archive', 'Delete', 'Hard Delete']) assert.match(retirement, new RegExp(`'${label}'`));
