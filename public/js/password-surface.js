@@ -122,7 +122,6 @@ export function createPasswordSurface(context = {}) {
     busy = false;
     if (!result.ok) { say(result.message, true); selector.set('required', saved); return; }
     closeForm(); paint(result.data); say(t('password.off_saved', 'Password protection is Off.'));
-    context.environment?.onPasswordChoice?.(false);
   };
 
   form.addEventListener('submit', async (event) => {
@@ -145,7 +144,6 @@ export function createPasswordSurface(context = {}) {
     const changed = mode === 'change';
     closeForm(); paint(result.data);
     say(changed ? t('password.changed', 'Password changed. Other browser sessions have been logged out.') : t('password.on_saved', 'Password protection is On.'));
-    context.environment?.onPasswordChoice?.(true);
   });
 
   const show = async () => {

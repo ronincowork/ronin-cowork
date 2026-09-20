@@ -14,16 +14,10 @@ async function writeCampaigns(campaigns: Record<string, unknown>): Promise<void>
 export interface CampaignSettings {
   installations: Record<string, boolean>;
   services: { parts: Record<string, boolean> };
-  setup: { answers: SetupAnswers };
   defaults: AgentDefaults;
   cowork_defaults: Record<string, unknown>;
   template_defaults: Record<string, unknown>;
 }
-
-export const SETUP_STEP_IDS = ['provider', 'register', 'workspace', 'installations', 'password'] as const;
-export type SetupStepId = typeof SETUP_STEP_IDS[number];
-export type SetupAnswer = 'acted' | 'not_now';
-export type SetupAnswers = Partial<Record<SetupStepId, SetupAnswer>>;
 
 export interface CampaignDeskSettings {
   skin: string;
@@ -59,7 +53,6 @@ export interface CampaignEdit {
   config?: {
     installations?: Record<string, boolean>;
     services?: { parts?: Record<string, boolean> };
-    setup?: { answers?: SetupAnswers };
     defaults?: Partial<AgentDefaults>;
     cowork_defaults?: Record<string, unknown>;
     template_defaults?: Record<string, unknown>;
@@ -136,12 +129,6 @@ const serviceSettings = (v: unknown): { parts: Record<string, boolean> } => {
   };
 };
 
-const setupSettings = (v: unknown): { answers: SetupAnswers } => {
-  const answers = bucket(bucket(v).answers);
-  return { answers: Object.fromEntries(SETUP_STEP_IDS.flatMap((id) =>
-    answers[id] === 'acted' || answers[id] === 'not_now' ? [[id, answers[id]]] : [])) };
-};
-
 const settings = (v: unknown): CampaignSettings => {
   const c = bucket(v);
   const defaults = bucket(c.defaults);
@@ -149,7 +136,6 @@ const settings = (v: unknown): CampaignSettings => {
   return {
     installations: booleanMap(c.installations),
     services: serviceSettings(c.services),
-    setup: setupSettings(c.setup),
     defaults: agentDefaults(settled ? defaults : { ...defaults, behaviours: undefined }),
     cowork_defaults: bucket(c.cowork_defaults),
     template_defaults: bucket(c.template_defaults),
@@ -318,8 +304,6 @@ export async function writeCampaign(id: string, edit: CampaignEdit): Promise<Cam
               ? existing.config.installations : await completeInstallations(edit.config.installations),
             services: edit.config.services === undefined
               ? existing.config.services : serviceSettings(edit.config.services),
-            setup: edit.config.setup === undefined
-              ? existing.config.setup : setupSettings(edit.config.setup),
             defaults: edit.config.defaults === undefined
               ? existing.config.defaults : await completeAgentDefaults(edit.config.defaults),
             cowork_defaults: edit.config.cowork_defaults === undefined

@@ -6,12 +6,11 @@ import { workspaceHeaderScope } from '../public/js/workspace-header.js';
 
 const source = async (path) => readFile(new URL(`../public/${path}`, import.meta.url), 'utf8');
 
-test('Ronin Home routes the Machine door from persisted Campaign Setup answers', () => {
-  assert.equal(setupDefaultView(null), 'setup');
-  assert.equal(setupDefaultView({ config: { setup: { answers: { provider: 'acted' } } } }), 'setup');
-  assert.equal(setupDefaultView({ config: { setup: { answers: {
-    provider: 'acted', register: 'not_now', workspace: 'acted', installations: 'not_now', password: 'acted',
-  } } } }), 'campaign');
+test('Ronin Home defaults Machine Settings from the activated-provider threshold', () => {
+  assert.equal(setupDefaultView(0), 'setup');
+  assert.equal(setupDefaultView(1), 'campaign');
+  assert.equal(setupDefaultView(2), 'campaign');
+  assert.equal(setupDefaultView(7), 'campaign');
 });
 
 test('Ronin Home names the place and gates Teams and New Project on runtime readiness', async () => {
@@ -152,19 +151,18 @@ test('the existing workbench can pin a Setup workspace and aim selector cards at
   assert.match(workbench, /cell\.addEventListener\('pointerdown',[\s\S]*select\(id\);[\s\S]*}, true\)/);
 });
 
-test('Setup progression uses persisted answers, not operational guesses, and one gated Next in Workspace 2', async () => {
+test('Setup progression is selected card, factual checks, and one gated Next in Workspace 2', async () => {
   const [setup, style] = await Promise.all([source('js/setup-view.js'), source('style.css')]);
   assert.match(setup, /createAction\(\{ label: 'Next', launch: true, action: \(\) => advance\(\) \}\)/, 'Next uses the Launch-format action');
   assert.match(setup, /active\.number < SCENES\.length && sceneComplete\(active\)/, 'Next exists only for a complete non-final selected card');
   assert.match(setup, /\[data-workspace="workspace2"\] > \.wk-surface > \.wk-surface-header \.wk-surface-header-actions/, 'Next sits at the top-right of Workspace 2');
   assert.match(setup, /actions\.prepend\(nextAction\.el\)/);
   assert.match(setup, /garden\.controls\.replaceChildren\(\);[\s\S]*garden\.controls\.hidden = true/, 'Workspace 1 cannot retain the progression action');
-  assert.match(setup, /const sceneComplete = \(scene\) => \{[\s\S]*Boolean\(scene\?\.id && answers\[scene\.id\]\)/);
-  assert.match(setup, /saveCampaign\(campaign\.id, \{ config: \{ setup: \{ answers:/);
-  assert.match(setup, /firstUnansweredSetupStep\(selectedCampaign\(\)\)/);
-  assert.match(setup, /seatNotNow\(\['provider', 'register', 'workspace', 'installations', 'password'\]/);
-  assert.doesNotMatch(setup, /completion\.(?:registered|github|roots)|installationsComplete|launchComplete/,
-    'machine facts never answer a Setup step for the person');
+  assert.match(setup, /SETUP_SURFACE_TYPES\.providers\) return Number\(runtime\?\.activated_count \|\| 0\) > 0/);
+  assert.match(setup, /SETUP_SURFACE_TYPES\.register\) return completion\.registered \|\| kinds\.get\(\)\.length > 0/);
+  assert.match(setup, /SETUP_SURFACE_TYPES\.roots\) return completion\.github \|\| completion\.roots/);
+  assert.match(setup, /SETUP_SURFACE_TYPES\.installations\) return installationsComplete/);
+  assert.match(setup, /SETUP_SURFACE_TYPES\.launchOwn\) return launchComplete/);
   assert.doesNotMatch(setup, /data\.stepState|flashSelector|setup-selector-pulse/);
   assert.match(style, /data-workbench-profile='setup'[\s\S]*?\.wk-card\[aria-current='page'\][^}]*background: var\(--kaki\)/, 'only the selected card gets the orange fill');
   assert.match(setup, /mark\.className = 'wk-card-mark';[\s\S]*mark\.textContent = '✓';[\s\S]*heading\.prepend\(mark\)/, 'completion uses the stock visible card mark');

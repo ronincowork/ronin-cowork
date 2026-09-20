@@ -8,9 +8,7 @@ storage or inheritance.
 
 Desks remain keyed Campaign records inside `machine_settings.json`. Each record has a stable id,
 title, description, desk profile, resolved desk choices, state, creation timestamp, and
-agent, Cowork, and template defaults. It also holds one explicit Setup answer for each
-first-use step: `acted` or `not_now`. These answers record the person's completion intent;
-they do not claim that a provider or other machine capability is currently ready.
+agent, Cowork, and template defaults.
 
 `src/campaigns.ts` validates and normalizes Campaign values. It reads and writes through
 `readMachineSettings()` and `writeMachineSettings()` and owns no file path.

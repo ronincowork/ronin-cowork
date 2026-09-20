@@ -146,7 +146,6 @@ export function createInstallationsSurface(campaign, context = {}) {
       onInstallationChange: (name, on) => {
         values = { ...values, [name]: on };
         refreshStoneMarks();
-        context.onInstallationChange?.(name, on);
       },
     };
     const page = context.createInstallationSurface?.(installation.id, sharedContext) || null;
