@@ -325,7 +325,7 @@ export function createCoworkView(options = {}) {
       return { key: member.name, label: mika ? t('mika.name', 'Mika') : agentTitle(member), className: 'team-agent-card',
         mark: member.team_lead ? '人' : null,
         summary: reading.step, metadata: reading.lines,
-        action: () => openAgentWorkbench(member.name),
+        ...(campaign ? { action: () => openAgentWorkbench(member.name) } : {}),
         ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
         onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
