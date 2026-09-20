@@ -23,6 +23,7 @@ import { execFile } from './spawn-broker.js';
 import { ensureInitialCampaign, initialCampaign, writeCampaignProviders } from './campaigns.js';
 import { readSetupSection } from './machine-state.js';
 import { listProviderCatalog, parseProviderSummary, type CliModelList, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { broadcastEvent } from './ws/events.js';
 
 interface SetupSection { providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>; [key: string]: unknown }
 
@@ -164,9 +165,14 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
     .map(async (agent) => [agent.id, versionIn(await version(paths[agent.id], agent.operations.version))] as const));
   for (const [id, found] of asked) if (found) versions[id] = found;
   const model_lists: Record<string, CliModelList> = {};
+  const model_inventory: NonNullable<ProviderSummary['model_inventory']> = {};
   const lists = await Promise.all(AGENTS.filter((agent) => operational.includes(agent.id))
     .map(async (agent) => [agent.id, await modelList(agent.id, undefined, paths[agent.id], versions[agent.id])] as const));
-  for (const [id, list] of lists) if (list) model_lists[id] = list;
+  for (const [id, list] of lists) {
+    if (list) model_lists[id] = list;
+    model_inventory[id] = { state: list ? 'ready' : 'unavailable', checked_at: (ops.now ?? (() => new Date().toISOString()))() };
+  }
+  for (const id of installed) model_inventory[id] ??= { state: 'unavailable', checked_at: (ops.now ?? (() => new Date().toISOString()))() };
   return {
     measured_at: (ops.now ?? (() => new Date().toISOString()))(),
     installed, signed_in, operational,
@@ -174,6 +180,7 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
     paths,
     versions,
     model_lists,
+    model_inventory,
     latest: {},
   };
 }
@@ -250,4 +257,52 @@ export async function measureAndRecordProviders(section?: SetupSection, ops: Mea
   summary.latest = refresh ? await latestVersions(summary.operational, refresh) : (previous?.latest ?? {});
   await recordProviderSummary(summary);
   return summary;
+}
+
+export interface ProviderInventoryNeed {
+  needed: boolean;
+  providers: string[];
+}
+
+/** Installed, usable CLIs whose inventory has never completed or whose saved result is structurally invalid. */
+export function providerInventoryNeed(summary: ProviderSummary | null): ProviderInventoryNeed {
+  if (!summary) return { needed: false, providers: [] };
+  const providers = summary.operational.filter((id) => {
+    const state = summary.model_inventory?.[id]?.state ?? (summary.model_lists?.[id] ? 'ready' : 'unmeasured');
+    return state === 'unmeasured' || state === 'invalid' || (state === 'ready' && !summary.model_lists?.[id]);
+  });
+  return { needed: providers.length > 0, providers };
+}
+
+export interface ProviderInventoryCompletion {
+  state: 'complete' | 'failed';
+  summary: ProviderSummary | null;
+  providers: string[];
+}
+
+let inventoryRefresh: Promise<ProviderInventoryCompletion> | null = null;
+
+/**
+ * The one background inventory refresh. Concurrent Setup callers share this flight; the
+ * completed Campaign write is announced on `/events` so already-open model pickers repaint.
+ */
+export function refreshProviderInventory(section?: SetupSection, ops: MeasureOps = {}): Promise<ProviderInventoryCompletion> {
+  if (inventoryRefresh) return inventoryRefresh;
+  inventoryRefresh = (async () => {
+    const before = await readProviderSummary();
+    const providers = providerInventoryNeed(before).providers;
+    try {
+      const summary = await measureAndRecordProviders(section, ops);
+      const completion: ProviderInventoryCompletion = { state: 'complete', summary, providers };
+      broadcastEvent({ t: 'provider-inventory', state: completion.state, measured_at: summary.measured_at, providers });
+      return completion;
+    } catch {
+      const completion: ProviderInventoryCompletion = { state: 'failed', summary: null, providers };
+      broadcastEvent({ t: 'provider-inventory', state: completion.state, providers });
+      return completion;
+    } finally {
+      inventoryRefresh = null;
+    }
+  })();
+  return inventoryRefresh;
 }

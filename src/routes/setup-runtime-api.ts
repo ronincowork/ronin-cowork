@@ -24,7 +24,7 @@ import {
   closeGitSetupSession,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
-import { measureAndRecordProviders, readProviderSummary } from '../provider-summary.js';
+import { measureAndRecordProviders, readProviderSummary, refreshProviderInventory } from '../provider-summary.js';
 import type { ProviderSummary } from '../model-providers.js';
 import { readUserIntro, writeUserIntro } from '../user-intro.js';
 
@@ -60,7 +60,9 @@ export function registerSetupRuntime(app: express.Express): void {
   // other reader takes GET /api/setup/runtime, which is the record.
   app.post('/api/setup/providers/measure', async (_req, res) => {
     try {
-      res.json(await answer(await measureAndRecordProviders()));
+      const completion = await refreshProviderInventory();
+      if (completion.state === 'failed' || !completion.summary) throw new Error('Provider inventory refresh failed.');
+      res.json(await answer(completion.summary));
     } catch (error) {
       res.status(500).json({ error: errMsg(error) });
     }
