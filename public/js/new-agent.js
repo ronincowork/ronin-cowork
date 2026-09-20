@@ -363,23 +363,27 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   /* ---- 7 · Loadout ---- */
   const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('behaviours', 'Behaviors'), onToggle: () => toggle('loadout') });
   const behaviourRows = () => seed?.behaviours || [];
-  const shelvesHost = el('div');
+  const shelvesHost = el('div', 'na-behaviour-sections');
   function paintShelves() {
     const general = behaviourRows().filter((row) => row.scope === 'selected' && row.available === true && !row.installation);
     const automatic = behaviourRows().filter((row) => row.scope === 'floor');
     const conditional = behaviourRows().filter((row) => row.scope === 'conditional');
-    const edit = (row) => ({ name: row.name, scope: row.scope, create: !row.name });
-    const row = (item, off = '') => ({ v: item.name || '+', l: item.label || item.name, sub: item.blurb || '', read: item.reading, edit: edit(item), off });
-    const createOwn = row({ name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: t('behaviours.add_own_blurb', 'Create a Behavior in your owner store.'), scope: 'selected' });
+    const edit = (row) => ({ name: row.name, scope: row.scope, create: !row.name, edit: Boolean(row.name) });
+    const row = (item, availability = '') => ({
+      v: item.name || '+', l: item.label || item.name, sub: item.blurb || '', read: item.reading, edit: edit(item),
+      off: typeof availability === 'string' ? availability : availability.off || '',
+      disabled: typeof availability === 'object' && availability.disabled === true,
+    });
+    const createOwn = row({ name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: '', scope: 'selected' });
     createOwn.action = ({ source }) => window.dispatchEvent(new CustomEvent('ronin:edit-behaviour', { detail: { scope: 'selected', create: true, source } }));
-    const picker = ask([{ group: t('behaviours.available', 'Behaviors'), fields: [{
+    const picker = ask([{ group: t('behaviours.available', 'Optional'), fields: [{
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
       options: [...general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')), createOwn],
     }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
     const readonly = (label, key, rows, reason) => ask([{ group: label, fields: [{ key, label, many: true, shape: 'tall', options: rows.map((item) => row(item, reason(item))) }] }], { value: { [key]: [] }, density: 'tight', exposed: true });
-    const auto = readonly(t('behaviours.auto', 'Auto Selected'), 'automatic', automatic, () => t('behaviours.auto_reason', 'Guaranteed for every Cowork Agent'));
+    const auto = readonly(t('behaviours.auto', 'All Cowork Agents'), 'automatic', automatic, () => ({ disabled: true }));
     const conditions = readonly(t('behaviours.conditional', 'Conditional'), 'conditional', conditional, (item) => item.requires?.length ? `${t('behaviours.applies_when', 'Applied when')}: ${item.requires.join(', ')}` : t('behaviours.conditional_reason', 'Ronin applies this when its condition matches'));
     shelvesHost.replaceChildren(picker.el, auto.el, conditions.el);
   }

@@ -13,12 +13,12 @@ const node = (tag, cls = '', text = '') => { const out = document.createElement(
 const keyOf = (row) => `${row.scope}:${row.name}`;
 
 function group(row) {
-  if (row.scope === 'floor') return t('behaviours.auto', 'Auto Selected');
+  if (row.scope === 'floor') return t('behaviours.auto', 'All Cowork Agents');
   if (row.scope === 'conditional') return t('behaviours.conditional', 'Conditional');
-  return t('behaviours.available', 'Behaviors');
+  return t('behaviours.available', 'Optional');
 }
 
-function editor(row, host, refresh) {
+function editor(row, host, refresh, startEditing = false) {
   let reading = null;
   let dirty = false;
   let editing = false;
@@ -31,7 +31,7 @@ function editor(row, host, refresh) {
   const readingHost = node('div', 'bh-reading');
   const area = node('textarea', 'bh-text'); area.spellcheck = false; area.autocapitalize = 'off'; area.hidden = true;
   const actions = node('div', 'bh-actions');
-  const toggle = node('button', 'wk-action', t('behaviours.view_edit', 'View/Edit'));
+  const toggle = node('button', 'wk-action', t('behaviours.edit', 'Edit'));
   const save = node('button', 'wk-action', t('panels.save', 'Save')); save.disabled = true;
   const saveAs = node('button', 'wk-action', t('behaviours.save_as', 'Save As'));
   const saveAsForm = node('form', 'bh-save-as'); saveAsForm.hidden = true;
@@ -68,6 +68,7 @@ function editor(row, host, refresh) {
     if (!editing) readingHost.replaceChildren(renderMarkdownDocument(area.value));
     save.disabled = !editing || !reading?.name;
     toggle.setAttribute('aria-pressed', String(editing));
+    toggle.textContent = editing ? t('behaviours.view', 'View') : t('behaviours.edit', 'Edit');
   };
   const load = async () => {
     const mine = ++generation;
@@ -79,7 +80,7 @@ function editor(row, host, refresh) {
     const result = await request(`/api/ways/${encodeURIComponent(row.scope)}/${encodeURIComponent(row.name)}`, { cache: 'no-store' });
     if (mine !== generation) return;
     if (!result.ok) { say(result.message, true); return; }
-    reading = result.data; area.value = reading.text || ''; dirty = false; paintMode(); say('');
+    reading = result.data; area.value = reading.text || ''; dirty = false; editing = startEditing; paintMode(); if (editing) area.focus(); say('');
   };
   toggle.addEventListener('click', () => { editing = !editing; paintMode(); if (editing) area.focus(); else toggle.focus(); });
   area.addEventListener('input', () => { dirty = true; say(''); });
@@ -116,7 +117,7 @@ function editor(row, host, refresh) {
 export function createBehaviourSurface(initial = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('behaviours.title', 'Behaviors'), className: 'behaviour-surface' });
   let rows = [];
-  const stones = createStoneWorkSurface({ className: 'behaviour-stones', renderDetail: (item, host) => editor(item.row, host, refresh) });
+  const stones = createStoneWorkSurface({ className: 'behaviour-stones', renderDetail: (item, host) => editor(item.row, host, refresh, initial.edit === true && keyOf(item.row) === `${initial.scope}:${initial.name}`) });
   const intro = node('div', 'sws-intro');
   intro.append(node('h2', '', t('behaviours.title', 'Behaviors')), node('p', '', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')));
   stones.mount(surface.content, { before: [intro] });
@@ -126,7 +127,7 @@ export function createBehaviourSurface(initial = {}) {
     const stones = ordered.map((row) => ({ id: keyOf(row), label: row.label || row.name, group: group(row), secondary: row.blurb || '', state: row.origin === 'user' ? t('behaviours.yours', 'Yours') : '', row }));
     const addAt = stones.findLastIndex((item) => item.row.scope === 'selected') + 1;
     stones.splice(addAt, 0, {
-      id: 'selected:+', label: t('behaviours.add_own', 'Add Your Own'), group: t('behaviours.available', 'Behaviors'), secondary: t('behaviours.add_own_blurb', 'Create a Behavior in your owner store.'), className: 'sws-add', row: { name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: t('behaviours.add_own_blurb', 'Create a Behavior in your owner store.'), scope: 'selected', origin: 'user', requires: [] },
+      id: 'selected:+', label: t('behaviours.add_own', 'Add Your Own'), group: t('behaviours.available', 'Optional'), secondary: '', className: 'sws-add', row: { name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: '', scope: 'selected', origin: 'user', requires: [] },
     });
     return stones;
   };
