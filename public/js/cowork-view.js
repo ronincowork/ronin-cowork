@@ -88,7 +88,7 @@ function registerWorkbenchCatalog() {
   add({ type: WB_TYPES.archives, header: 'surface', className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
   add({ type: WB_TYPES.document, header: 'surface', label: () => t('docs.frame_title', 'Document'), discover: () => [], create: ({ detail, environment }) => environment.document(detail) });
   add({ type: WB_TYPES.team, header: 'surface', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
-  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, WB_TYPES.document, PRESETS_TYPE, FEEDBACK_TYPE]);
+  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.terminal, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, WB_TYPES.document, PRESETS_TYPE, FEEDBACK_TYPE]);
   profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.kanban, WB_TYPES.terminal, WB_TYPES.newAgent, FEEDBACK_TYPE]);
 }
 export function createCoworkView(options = {}) {
@@ -359,12 +359,13 @@ export function createCoworkView(options = {}) {
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
-    sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
+    sessions: () => (campaign ? unassignedSessions() : membersOfTeam(team)).map((member) => {
       const reading = readingsOf(member);
       const mika = team === RONIN_HELPERS && member.name === 'mika_agent';
       return { key: member.name, label: mika ? t('mika.name', 'Mika') : agentTitle(member), className: `team-agent-card${thinSelectorCards ? ' selector-card-thin' : ''}`,
         mark: member.team_lead ? '人' : null,
         ...(thinSelectorCards ? {} : { summary: reading.step, metadata: reading.lines }),
+        ...(campaign ? { action: () => openWorkspaceTab('agent', member.name) } : {}),
         ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
         onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),

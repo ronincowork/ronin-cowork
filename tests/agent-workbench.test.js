@@ -16,6 +16,8 @@ test('Agent profile reuses the shared Self, Commons, membership, Task Manager an
   const text = await source('agent-view.js');
   assert.match(text, /self: 'session\.terminal'/);
   assert.match(text, /profiles\.define\(PROFILE, \[TYPES\.self, TYPES\.commons, TYPES\.teams, TYPES\.tasks, TYPES\.document, FEEDBACK_TYPE\]\)/);
+  assert.match(text, /sessions: \(\) => agent \? \[\{ key: agent, label: agent \}\] : \[\]/);
+  assert.match(text, /terminal: \(id, detail\) =>/);
   assert.match(text, /createWarmTerminalPool/);
   assert.match(text, /createTabbedSurface/);
   assert.match(text, /createTeamKanban/);
