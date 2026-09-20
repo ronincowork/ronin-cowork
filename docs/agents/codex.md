@@ -51,8 +51,10 @@ exit at an empty prompt. Whole browser drafts clear locally.
 Complete messages use the shared bracketed-paste transport before Enter. Codex's
 [`handle_paste`](https://github.com/openai/codex/blob/rust-v0.153.4/codex-rs/tui/src/bottom_pane/chat_composer.rs)
 clears paste-burst Enter suppression after an explicit paste; raw character bursts
-can instead treat Enter as a newline. This is terminal protocol handling, not a
-provider-specific shortcut or a second Enter.
+can instead treat Enter as a newline. Submission is a real tmux Enter key action after
+the bracketed paste completes; a pasted carriage return is data, not that action. Copy-mode
+cancellation and Enter share one tmux command queue. This is terminal protocol handling,
+not a provider-specific shortcut, delay, or second Enter.
 
 Services' `gbrain/setup.sh`, `uninstall.sh`, and `doctor.sh` own gbrain registration,
 removal and checks. The setup uses the Codex MCP command and token environment reference.

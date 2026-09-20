@@ -2,8 +2,6 @@ import { randomUUID } from 'node:crypto';
 import { exactPane } from './tmux.js';
 import { tmux } from './tmux-client.js';
 
-const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
-
 export interface PromptRead {
   found: boolean;
   text: string | null;
@@ -41,7 +39,6 @@ export interface PaneIO {
   read(): Promise<string>;
   type(text: string): Promise<void>;
   enter(): Promise<void>;
-  wait(ms: number): Promise<void>;
 }
 
 const pasteToPane = async (name: string, text: string, bracketed: boolean) => {
@@ -59,14 +56,18 @@ const typeText = async (name: string, text: string) => {
   // Explicit paste boundaries prevent a CLI from treating Enter as pasted text.
   await pasteToPane(name, text, true);
 };
-// Send the Enter byte directly to the pane. send-keys routes through tmux copy
-// mode, which a viewer can reopen during the pause and consume this key instead.
-const pressEnter = (name: string) => pasteToPane(name, '\r', false);
+/** Cancel copy mode and submit as one tmux command queue. Enter is a key action, never
+ * pasted data; keeping both commands in one request leaves no viewer race between them. */
+export const submitCommand = (name: string): string[] => [
+  'send-keys', '-t', exactPane(name), '-X', 'cancel',
+  ';',
+  'send-keys', '-t', exactPane(name), 'Enter',
+];
+const pressEnter = (name: string) => tmux.run(submitCommand(name));
 const paneIO = (name: string): PaneIO => ({
   read: () => capturePane(name),
   type: (text) => typeText(name, text).then(() => undefined),
   enter: () => pressEnter(name).then(() => undefined),
-  wait: sleep,
 });
 
 /** All safety decisions precede typing. Once started, every message ends with Enter. */
@@ -79,10 +80,9 @@ export async function deliverSafe(name: string, text: string, onAttempt?: () => 
 }
 
 /** Composer sends and the two-minute override use this same text-then-Enter operation.
- * The short pause lets the CLI finish accepting pasted text. No screen reads or retries. */
+ * Tmux completes the bracketed paste command before the atomic cancel+Enter command. */
 export async function deliverForce(name: string, text: string, io: PaneIO = paneIO(name)): Promise<DeliveryResult> {
   await io.type(text);
-  await io.wait(300);
   await io.enter();
   return { delivered: true, submitted: true, reason: 'text and Enter sent' };
 }

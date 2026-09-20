@@ -12,16 +12,17 @@ Later membership changes still send their notices through this queue.
 
 ## One send operation
 
-Delivery means **paste the text, pause 300 ms, press Enter**. A private tmux buffer
+Delivery means **paste the text, then press Enter**. A private tmux buffer
 uses `paste-buffer -p -r` to mark the paste boundary when the CLI requests bracketed
 paste and preserve embedded newlines. The buffer is deleted after use. Enter is sent
-separately, outside that boundary, as a carriage-return byte directly to the pane.
-It bypasses tmux key handling: a viewer reopening scroll/copy mode after the paste
-cannot consume the submission Enter. Raw `send-keys -l` does not mark a paste; a pause
-alone cannot prevent a busy CLI from treating the following Enter as pasted text. There are no screen checks between them, no
+separately, outside that boundary, as a real tmux `Enter` key action. Copy-mode
+cancellation and Enter share one tmux command queue, so a viewer cannot reopen copy mode
+between those operations and consume the submission. A carriage return sent through
+`paste-buffer` is still pasted data and is not a keypress. Raw `send-keys -l` does not
+mark a paste, and a fixed pause cannot repair either boundary. There are no screen checks between them, no
 fingerprints, no prompt-disappearance verification, and no repeated Enter loop.
 
-Success means Ronin sent text and Enter, not that the Agent has processed the message.
+Success means tmux accepted the text paste and the actual Enter key command, not that the Agent has processed the message.
 A terminal transport error remains visible in Messages.
 
 ## Preflight and the two-minute limit
