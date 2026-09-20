@@ -6058,18 +6058,16 @@ button.wb-door:hover b {
 .setup-step-footer .wk-action[data-kind='quiet'] { background: transparent; color: var(--muted-2); }
 .setup-step-footer .wk-action[data-kind='link'] { border-color: transparent; background: transparent; color: var(--muted); padding-inline: var(--space-2); text-decoration: underline; }
 /* THE SETUP HEADER ZONE. It sits in the work surface's own content box and adds no inset of
-   its own, so the state line, the picks, the stone phalanx below and the surface footer all
-   begin on one left edge. A hairline divides the zone from the phalanx rather than a box:
-   a box spends kaki on a container, and kaki is what marks a chosen stone. The slot keeps
-   its fixed height, so the phalanx stays level from step to step whatever the state says. */
+   its own, so its state line and its picks begin on the same left edge as the surface's own
+   title and footer. A hairline divides the zone from the phalanx rather than a box: a box
+   spends kaki on a container, and kaki is what marks a chosen stone. The slot keeps its
+   fixed height, so the phalanx stays level from step to step whatever the state says.
+
+   The zone styles the zone and nothing else. It never reaches past its own slot to lay out
+   the phalanx below — the phalanx is the work surface's, identical on a surface that carries
+   a zone and one that does not, and a change up here must never move a stone down there. */
 .sws-header:has(> .setup-zone) { box-sizing: border-box; border-bottom: var(--edge) solid var(--line); }
 .setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-9); box-sizing: border-box; width: 100%; min-width: 0; height: 100%; overflow: hidden; padding: var(--space-6) 0 0; }
-/* PILOT — Model providers is the only surface carrying a zone today, so only its phalanx
-   leaves the centre and joins that edge. The rail's 2px is focus-ring room, not indent, so
-   it is pulled back out; the host's own padding still keeps the overhang off the wall. */
-.sws-host:has(> .sws-header > .setup-zone) > .sws { padding-top: var(--space-9); }
-.sws-host:has(> .sws-header > .setup-zone) .sws:not([data-open='true']) .sws-rail { justify-content: flex-start; margin-inline-start: calc(-1 * var(--edge-2)); }
-.sws-host:has(> .sws-header > .setup-zone) .sws-grid { justify-content: flex-start; }
 .setup-zone-state { min-height: calc(var(--form-input) * 1.4 * 2); max-width: 40rem; margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: 500; line-height: 1.4; }
 .setup-zone-options { width: auto; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
