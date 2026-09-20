@@ -19,7 +19,7 @@ async function response(): Promise<SetupProgress> {
     steps: SETUP_STEP_IDS.map((id, index) => ({ id, number: index + 1, answered: Boolean(answers[id]), answer: answers[id] || '' })),
     facts: campaign.config.setup.facts,
     scanning: scanFlight !== null,
-    scanned_at: scannedAt || campaign.config.setup.facts.checked_at || campaign.providers?.measured_at || '',
+    scanned_at: scannedAt || campaign.config.setup.facts.checked_at || '',
     ...(scanReason ? { reason: scanReason } : {}),
   };
 }
@@ -64,7 +64,8 @@ export function startSetupProgressScan(): Promise<void> {
 
 export async function readSetupProgress({ automatic = false } = {}): Promise<SetupProgress> {
   const campaign = await ensureInitialCampaign();
-  if (automatic && Object.keys(campaign.config.setup.answers).length === 0) void startSetupProgressScan();
+  const missingFacts = typeof campaign.config.setup.facts.tailscale !== 'boolean';
+  if (automatic && (Object.keys(campaign.config.setup.answers).length === 0 || missingFacts)) void startSetupProgressScan();
   return response();
 }
 
