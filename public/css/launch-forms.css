@@ -317,4 +317,13 @@
   .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--dim); font-style: normal; }
 
+  /* Behaviors library/editor — the shared stone surface supplies responsive geometry. */
+  .behaviour-surface .sws-detail { min-width: 0; }
+  .bh-title { margin: 0; }
+  .bh-summary, .bh-meta, .bh-status, .na-behaviour-intro { color: var(--muted); }
+  .bh-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0; }
+  .bh-text { box-sizing: border-box; width: 100%; min-height: calc(var(--space-12) * 8); resize: vertical; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-4); font-family: var(--font-mono); line-height: 1.5; }
+  .bh-text:disabled { opacity: 1; background: var(--raise); }
+  .bh-status[data-bad='true'] { color: var(--bad); }
+
 }

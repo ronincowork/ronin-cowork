@@ -62,8 +62,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **squad:** Team
 - **player_one:** Lead session
 - **team_kit:** Shared toolkit
-- **loadout:** Tools and skills
-- **behaviours:** Behaviours
+- **loadout:** Behaviors
+- **behaviours:** Behaviors
 - **glossary.installation:** installation
 - **glossary.behaviour:** behaviour
 - **glossary.installations:** Installations
@@ -242,7 +242,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.default_reach:** Reach
 - **campaign_view.default_recruit:** Recruit
 - **campaign_view.default_output:** Output
-- **campaign_view.default_behaviours:** Behaviours
+- **campaign_view.default_behaviours:** Behaviors
 - **campaign_view.behaviours_help:** One shelf:name book per line.
 - **campaign_view.defaults_summary:** {model} · {reach}
 - **campaign_view.option_open:** Open
@@ -425,8 +425,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **help.agents_body:** The Agents this Team is raised with. A row is short on purpose — a name and what that Agent does — and opens for its mandate when you want it. 人 marks the lead; this form offers one, though a running Team may gain more. Raising creates the Team and then births every named row, the lead last. A Team with no rows is ordinary and raises fine.
 - **help.installations:** What an Installation is
 - **help.installations_body:** An Installation is a system-level switch in the Campaign. A system installation joins every Cowork Agent; a provider installation makes its behaviours available for Teams and Agents to choose.
-- **help.behaviours:** What a Behaviour is
-- **help.behaviours_body:** A Behaviour says how the owner wants ordinary work done. Each is one short page delivered at birth when selected. Mandate teaching belongs to every Cowork Agent's Ronin floor; behaviours are additions the owner may choose.
+- **help.behaviours:** What a Behavior is
+- **help.behaviours_body:** Behaviors are specific guidance given to Agents at birth. Write it Down, Planning, Team work, Visual Staging, and Working with the User are selectable; Auto Selected and Conditional Behaviors are applied by Ronin when their rules match.
 - **help.type:** New session
 - **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born with everything Ronin provides on this box. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a shell with no agent. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
 - **help.top:** Name & kind
@@ -440,7 +440,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **help.where:** Who and where
 - **help.where_body:** The provider and model that open, and the folder they open in. The folder is where work starts, not a fence: an Agent reaches whatever it is asked to reach. A Team’s branch is the line its Agents hand work in to, and the lead promotes from it; blank means the Team’s own line.
 - **help.mandate:** Mandate
-- **help.loadout:** Tools and skills
+- **help.loadout:** Behaviors
 - **help.kit:** Shared toolkit
 - **help.kit_body:** What every Agent raised on this Team starts with. All of it lands in the next Agent form as an ordinary editable value — none of it is a constraint, and changing it here never touches a session already running.
 - **new_team.common:** Common instructions
@@ -1994,4 +1994,23 @@ The catalog entry goes. {dir} is not touched.
 - **campaign_view.machine:** Machine
 - **campaign_view.workspaces:** Workspaces
 - **campaign_view.machine_settings:** Machine Settings
+
+## behaviours — behaviour-surface.js
+- **behaviours.title:** Behaviors
+- **behaviours.card_summary:** Guidance Agents receive at birth, including automatic and conditional Behaviors.
+- **behaviours.intro:** Behaviors are specific guidance given to Agents at birth.
+- **behaviours.available:** Available Behaviors
+- **behaviours.auto:** Auto Selected
+- **behaviours.conditional:** Conditional
+- **behaviours.requires:** When
+- **behaviours.yours:** Yours
+- **behaviours.stock:** Ronin
+- **behaviours.view_edit:** View/Edit
+- **behaviours.save_as:** Save As
+- **behaviours.add_own:** Add Your Own
+- **behaviours.add_own_blurb:** Create a Behavior in your owner store.
+- **behaviours.shadow_warning:** Saving this Ronin Behavior makes it yours. Later Ronin improvements to this Behavior will not reach your copy. Continue?
+- **behaviours.save_as_name:** New Behavior name (lowercase with underscores):
+- **ask.view_edit:** View/Edit
+- **ask.view_edit_behaviour:** View or edit this Behavior
 - **campaign_view.desk_settings:** Desk Settings

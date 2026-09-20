@@ -1,7 +1,7 @@
-# Recruit
+# Team work
 
-- **label:** Recruit
-- **blurb:** Propose or staff a Team with explicit boundaries and coordination.
+- **label:** Team work
+- **blurb:** Propose or staff a Team with explicit ownership and coordination.
 - **installation:** —
 - **order:** 30
 - **scope:** selected

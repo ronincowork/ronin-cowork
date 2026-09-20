@@ -14,5 +14,5 @@
 - **mandate:** execute · staff agents · open
 
 ### codebase assessor
-- **instructions:** Survey the codebase, resolve it into services, and staff one specialist per service into this team — the codebase_team Behavior is your procedure.
+- **instructions:** Survey the codebase, resolve it into at most six real services, staff one specialist per service into this team, and report the cast and any gaps to the coordinator.
 - **mandate:** execute · staff agents · the team

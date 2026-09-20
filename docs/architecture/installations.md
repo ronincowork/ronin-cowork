@@ -45,11 +45,11 @@ requirement are on. A launch request naming an unavailable behaviour is born wit
 the birth receipt names it as undelivered and birth still succeeds. Providerless
 behaviours are always on offer.
 
-Every Cowork Agent receives mandate teaching from the Ronin floor. The selected stock shelf includes `buildout`, `recruit`,
-`write_it_down`, `more_checkpoints`, `report_before_fixing`, `visual_staging`,
-`gbrain`, `trello`, and `perplexity`. A Team's required behaviours cannot
+Every Cowork Agent receives mandate teaching from the Ronin floor. The general selected stock shelf displays Write it Down,
+Planning, Team work, Visual Staging, and Working with the User. Installation-owned Behaviors such as
+`gbrain`, `trello`, and `perplexity` remain separate. A Team's required behaviours cannot
 be removed on an Agent form. Every form uses the same tall, wrapping behaviour stone;
-its separate read glyph opens the definition page without changing the choice.
+its separate View/Edit action opens the definition beside the unchanged form.
 
 There is no inherit control and no reach-down. A Campaign default fills the next form;
 a Team saves complete selected and required lists; an Agent launch may supply its own

@@ -1,9 +1,11 @@
-# Report before fixing
+# Working with the User
 
-- **label:** Report before fixing
-- **blurb:** Report the failure and evidence, then wait before fixing.
+- **label:** Working with the User
+- **blurb:** Keep the user informed and stop for their decision when it is required.
 - **installation:** —
 - **order:** 50
 - **scope:** selected
 
-When something is broken, report what failed and the evidence first, then wait for direction. Do not add workaround patches while waiting.
+Keep the user informed with concrete evidence and clear next steps. When something is broken,
+report what failed and the evidence first, then wait for direction before changing the agreed
+scope. Do not add workaround patches while waiting.

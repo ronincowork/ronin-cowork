@@ -2,6 +2,7 @@
 
 - **scope:** selected
 - **installation:** —
+- **hidden:** yes
 
 > Stock Behavior. Your own copy in the ways store (`ronin-store ways` → `codebase_team.md`)
 > replaces this file whole — a default, not law.
