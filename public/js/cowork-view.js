@@ -17,7 +17,7 @@ import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
 import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
-import { PRESETS_TYPE, createPresetsSurface, registerPresetsSurface } from './presets.js';
+import { PRESETS_TYPE, createPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { refreshDesks } from './desks.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
@@ -26,7 +26,7 @@ import { renderTeamConfiguration } from './team-configuration.js';
 import { workbenchView } from './workspace-contract.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
-import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
+import { createFeedbackSurface } from './feedback.js';
 import { fetchSessions } from './api.js';
 import { RONIN_HELPERS } from './roster-groups.js';
 import { toast } from './ui.js';
@@ -36,6 +36,7 @@ import { orderCoworkTeams } from './cowork-workbench-contract.js';
 import { retireSession } from './session-retire.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { createTeamKanban, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
+import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -69,28 +70,6 @@ const currentWorkStep = (letter) => {
   return { label: letter.chip?.text || rung.phase || '', text: legs[legIndex]?.title || rung.phase || '' };
 };
 
-const WB_TYPES = Object.freeze({ commons: 'team.commons', kanban: 'team.kanban', cron: 'cowork.cron-jobs', document: 'document', terminal: 'session.terminal', roster: 'cowork.team-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent', team: 'team.profile', archives: 'cowork.archives' });
-const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
-
-function registerWorkbenchCatalog() {
-  registerFeedbackSurface();
-  registerPresetsSurface();
-  const { library, profiles } = WorkspaceKit.workbench;
-  const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
-  add({ type: WB_TYPES.commons, header: 'tabs', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Commons'), summary: () => t('team.commons_summary', 'See Roster / Docs / Wipeboard / Task Manager / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
-  add({ type: WB_TYPES.kanban, header: 'tabs', className: 'wk-selector-utility', discover: (_tenant, environment) => environment.kanbanOffers(), create: ({ workspace, environment }) => environment.teamKanban(workspace) });
-  add({ type: WB_TYPES.terminal, header: 'terminal', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
-  add({ type: WB_TYPES.roster, header: 'surface', className: 'wk-selector-utility', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
-  add({ type: WB_TYPES.cron, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_cron_jobs', 'Cron jobs'), summary: () => t('team_jikan.all_teams_summary', 'Scheduled messages across every team'), create: ({ workspace, environment }) => environment.cron(workspace) });
-  // Drawn contracts: ronin-lab `concepts/new-team.html` and `concepts/new-agent-condensed.html`.
-  add({ type: WB_TYPES.newTeamForm, header: 'surface', className: 'wk-selector-utility wk-selector-group-after', label: () => t('new_team.title', 'New Team'), summary: () => t('new_team.card_summary', 'Template · kit · lead — the drawn form.'), variant: 'dotted', create: ({ workspace, environment, consumed }) => environment.newTeamForm(workspace, consumed) });
-  add({ type: WB_TYPES.newAgent, header: 'surface', className: 'wk-selector-utility', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment, consumed }) => environment.newAgent(workspace, consumed) });
-  add({ type: WB_TYPES.archives, header: 'surface', className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
-  add({ type: WB_TYPES.document, header: 'surface', label: () => t('docs.frame_title', 'Document'), discover: () => [], create: ({ detail, environment }) => environment.document(detail) });
-  add({ type: WB_TYPES.team, header: 'surface', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
-  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.terminal, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, WB_TYPES.document, PRESETS_TYPE, FEEDBACK_TYPE]);
-  profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.kanban, WB_TYPES.terminal, WB_TYPES.newAgent, FEEDBACK_TYPE]);
-}
 export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
   const campaign = options.kind === 'cowork';
