@@ -1,6 +1,6 @@
 # Trello
 - **label:** Trello
-- **blurb:** Makes the Trello behaviour available when its connection exists.
+- **blurb:** A planned connection that would let selected Agents work with Trello boards through a dedicated Behavior. It is not available yet and cannot be enabled.
 - **effect:** provider
 - **maturity:** comingSoon
 - **provides:** trello

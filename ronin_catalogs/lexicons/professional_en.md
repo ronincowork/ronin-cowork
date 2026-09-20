@@ -359,6 +359,15 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.sell_stats:** Usage history — what your sessions did, counted over time, never their content.
 - **campaign_view.available:** Available
 - **campaign_view.unavailable:** Unavailable
+- **campaign_view.status_unreadable:** Status unreadable
+- **campaign_view.not_installed:** Not installed
+- **campaign_view.not_configured:** Not configured
+- **campaign_view.no_installation_description:** No description is available.
+- **campaign_view.read_more:** Read more
+- **campaign_view.loading_guide:** Opening guide…
+- **campaign_view.guide_read_failed:** The guide could not be read. Try again.
+- **campaign_view.installations_read_failed:** Installations could not be read. Nothing was changed; try again.
+- **campaign_view.installation_status_read_failed:** Installation status could not be read. Choices are shown, but their machine status is unknown.
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
 - **campaign_view.rt_worktrees:** Ronin worktrees
@@ -391,6 +400,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_home.up_to_date:** Up to date
 - **campaign_home.update_available:** {version} available
 - **setup.provider_gate:** Activate one model provider in Machine Setup to use this.
+- **setup.not_now:** Not now
+- **setup.fine_for_now:** Fine for now
 - **setup.title:** Ronin Setup
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup

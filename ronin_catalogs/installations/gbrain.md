@@ -1,6 +1,6 @@
 # gbrain
 - **label:** gbrain
-- **blurb:** Makes the gbrain behaviour available.
+- **blurb:** A planned shared, searchable memory for Agents. It is not available yet, so it cannot be enabled or made a default.
 - **effect:** provider
 - **maturity:** comingSoon
 - **provides:** gbrain

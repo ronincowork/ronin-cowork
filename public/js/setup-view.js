@@ -12,6 +12,10 @@ import { reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
 import { onProjects, projectData } from './home.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
+import { campaignById, loadCampaigns, normalizeSelection, saveCampaign } from './campaigns.js';
+import { firstUnansweredSetupStep, setupAnswers as readSetupAnswers } from './setup-progress.js';
+import { t } from './lexicon.js';
+import { toast } from './ui.js';
 
 const PROFILE = 'setup';
 // Release toggles: unfinished programs stay out of Setup without changing the workbench.
@@ -44,23 +48,24 @@ export function createSetupView() {
   let gardenContent = null;
   let providerSurface = null;
   let paintedSceneId = null;
-  let completionLoaded = false;
-  let completion = { registered: false, github: false, roots: false };
-  let installationsComplete = false;
-  let passwordLoaded = false;
-  let launchComplete = false;
+  let answers = {};
+  let savingAnswer = false;
+  let enterGeneration = 0;
   let sceneOverride = 1;
   const providerSessions = createProviderSetupSessionMount();
   const kinds = createKindsPreference(globalThis.localStorage, (next) => request('/api/setup/preferences', { method: 'PATCH', json: { kinds: next } }));
   const nextAction = WorkspaceKit.primitives.createAction({ label: 'Next', launch: true, action: () => advance() });
+  const notNowAction = WorkspaceKit.primitives.createAction({ label: t('setup.not_now', 'Not now'), action: () => { void answerActive('not_now', true); } });
   const themeToggle = createThemeToggle();
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
   const environment = {
-    onGithubAuthenticated: () => { completion.github = true; paint(); },
-    onWorkspaceFolderChosen: () => { completion.roots = true; save(); paint(); },
-    onInstallationsState: (values) => { installationsComplete = Object.values(values || {}).some((value) => value === true); paint(); },
-    onPasswordState: () => { passwordLoaded = true; paint(); },
-    onSetupLaunched: () => { launchComplete = true; paint(); },
+    onGithubAuthenticated: () => {},
+    onWorkspaceFolderChosen: () => { void answerStep('workspace', 'acted'); },
+    onInstallationsState: () => {},
+    onInstallationChoice: () => { void answerStep('installations', 'acted'); },
+    onPasswordChoice: (required) => { void answerStep('password', required ? 'acted' : 'not_now'); },
+    onRegistrationChoice: (answer) => { void answerStep('register', answer); },
+    onProviderChoice: (answer) => { void answerStep('provider', answer); },
     setupRuntime: null,
     onSetupRuntime: (next) => { runtime = next; environment.setupRuntime = next; paint(); },
     kinds,
@@ -109,24 +114,43 @@ export function createSetupView() {
       openSurface(action);
     },
   };
-  const save = () => ctx?.patchViewState('setup', { ...bench.snapshot(), sceneOverride, setupCompletion: { roots: completion.roots } });
+  const selectedCampaign = () => campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
+  const answerStep = async (step, answer, move = false) => {
+    const campaign = selectedCampaign();
+    if (!campaign || savingAnswer || answers[step]) return false;
+    savingAnswer = true;
+    const result = await saveCampaign(campaign.id, { config: { setup: { answers: { ...answers, [step]: answer } } } });
+    savingAnswer = false;
+    if (!result.ok) {
+      toast(result.message || 'Setup could not save that choice. Try again.', false);
+      return false;
+    }
+    answers = readSetupAnswers(selectedCampaign());
+    paint();
+    if (move) advance();
+    return true;
+  };
+  const answerActive = (answer, move = false) => answerStep(activeScene()?.id, answer, move);
+  const save = () => ctx?.patchViewState('setup', { ...bench.snapshot(), sceneOverride });
   const defaultScene = () => SCENES.find((scene) => !sceneComplete(scene)) || SCENES[SCENES.length - 1];
   const sceneAt = (number) => SCENES[Number(number) - 1] || defaultScene();
   const activeScene = () => sceneAt(sceneOverride);
   const sceneComplete = (scene) => {
-    if (scene.type === SETUP_SURFACE_TYPES.providers) return Number(runtime?.activated_count || 0) > 0;
-    if (scene.type === SETUP_SURFACE_TYPES.register) return completion.registered || kinds.get().length > 0;
-    if (scene.type === SETUP_SURFACE_TYPES.roots) return completion.github || completion.roots;
-    if (scene.type === SETUP_SURFACE_TYPES.installations) return installationsComplete;
-    if (scene.type === PASSWORD_SURFACE_TYPE) return passwordLoaded;
-    if (scene.type === SETUP_SURFACE_TYPES.launchOwn) return launchComplete;
-    return false;
+    return Boolean(scene?.id && answers[scene.id]);
   };
   const seatNext = (visible) => {
     if (!visible) { nextAction.el.remove(); return; }
     const actions = bench?.host.querySelector('[data-workspace="workspace2"] > .wk-surface > .wk-surface-header .wk-surface-header-actions');
     if (!actions) return;
     actions.prepend(nextAction.el);
+  };
+  const seatNotNow = (visible) => {
+    if (!visible) { notNowAction.el.remove(); return; }
+    const actions = bench?.host.querySelector('[data-workspace="workspace2"] > .wk-surface > .wk-surface-header .wk-surface-header-actions');
+    if (!actions) return;
+    notNowAction.el.textContent = activeScene()?.id === 'workspace'
+      ? t('setup.fine_for_now', 'Fine for now') : t('setup.not_now', 'Not now');
+    actions.prepend(notNowAction.el);
   };
   const selectGarden = (scene) => {
     if (!garden || !gardenContent || !scene || paintedSceneId === scene.id) return false;
@@ -138,6 +162,7 @@ export function createSetupView() {
     const active = activeScene();
     const canAdvance = active.number < SCENES.length && sceneComplete(active);
     seatNext(canAdvance);
+    seatNotNow(['provider', 'register', 'workspace', 'installations', 'password'].includes(active.id) && !sceneComplete(active));
     for (const card of bench?.host.querySelectorAll('[data-workbench-offer-type]') || []) {
       delete card.dataset.sceneRelevant;
       const position = ORDER.indexOf(card.dataset.workbenchOfferType);
@@ -225,11 +250,17 @@ export function createSetupView() {
     header: { actions: [themeToggle] },
     title: () => 'Ronin Setup',
     mount: (_host, context) => { ctx = context; },
-    enter: (context) => {
+    enter: async (context) => {
+      const generation = ++enterGeneration;
       ctx = context;
       const { state: entry } = context.workbenchEntry();
-      completion.roots = entry.setupCompletion?.roots === true;
-      sceneOverride = Number(entry.sceneOverride) || defaultScene().number;
+      await loadCampaigns();
+      if (generation !== enterGeneration) return;
+      answers = readSetupAnswers(selectedCampaign());
+      const first = firstUnansweredSetupStep(selectedCampaign());
+      sceneOverride = first
+        ? (SCENES.find((scene) => scene.id === first)?.number || 1)
+        : Number(entry.sceneOverride) || 1;
       bench.enter({ ...entry, count: 2, arrangement: { ...ARRANGEMENT, widths: entry.arrangement?.widths || ARRANGEMENT.widths } });
       bench.place(GARDEN_CANVAS_TYPE, 'workspace1');
       paint();
@@ -242,20 +273,6 @@ export function createSetupView() {
           paint();
         });
       }
-      if (!completionLoaded) {
-        void Promise.all([
-          request('/api/setup/registration', { cache: 'no-store' }),
-          request('/api/setup/github', { cache: 'no-store' }),
-        ]).then(([registration, github]) => {
-          completion = {
-            registered: registration.ok && registration.data?.registered === true,
-            github: github.ok && github.data?.authenticated === true,
-            roots: completion.roots,
-          };
-          completionLoaded = true;
-          paint();
-        });
-      }
       if (!gardenContent) {
         void request(GARDEN_CONTENT_URL).then((result) => {
           gardenContent = normalizeGardenCanvasCatalog(result.ok ? result.data : { schema_version: 2, canvases: {} });
@@ -264,7 +281,7 @@ export function createSetupView() {
         });
       }
     },
-    leave: () => bench.leave(),
-    destroy: () => { providerSessions.destroyAll(); bench.leave(); ctx = null; },
+    leave: () => { enterGeneration += 1; bench.leave(); },
+    destroy: () => { enterGeneration += 1; providerSessions.destroyAll(); bench.leave(); ctx = null; },
   };
 }

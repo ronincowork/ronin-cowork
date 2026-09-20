@@ -5,6 +5,8 @@ import { request } from './request.js';
 import { createReleaseUpdateController, packageReading } from './release-update-controller.js';
 import { createSenmaida } from './senmaida.js';
 import { createThemeToggle } from './theme-toggle.js';
+import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
+import { setupIsComplete } from './setup-progress.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -21,7 +23,7 @@ function DOORS() {
   ];
 }
 
-export const setupDefaultView = (activatedCount) => Number(activatedCount) >= 1 ? 'campaign' : 'setup';
+export const setupDefaultView = (campaign) => setupIsComplete(campaign) ? 'campaign' : 'setup';
 
 /** The machine door's house mark: a wheel with eight broad teeth, recognisably admin
  * without importing a platform emoji or turning into a literal vehicle silhouette. */
@@ -78,13 +80,14 @@ export function createCampaignHome() {
   let entered = false;
   let activatedCount = 0;
   let runtimeKnown = false;
+  let setupCampaign = null;
 
   function paintDoors() {
     doors.replaceChildren();
     for (const door of DOORS()) {
       const card = el('a', 'ch-door');
       const locked = door.key !== 'campaign' && (!runtimeKnown || activatedCount < 1);
-      const route = door.key === 'campaign' ? setupDefaultView(activatedCount) : door.route;
+      const route = door.key === 'campaign' ? setupDefaultView(setupCampaign) : door.route;
       const name = door.key === 'campaign' && route === 'setup'
         ? t('campaign_home.machine_setup', 'Machine Setup') : door.name;
       const reading = door.key === 'campaign' && route === 'setup'
@@ -137,10 +140,11 @@ export function createCampaignHome() {
       ctx = context;
       entered = true;
       paintDoors();
-      void request('/api/setup/runtime', { cache: 'no-store' }).then((result) => {
+      void Promise.all([request('/api/setup/runtime', { cache: 'no-store' }), loadCampaigns()]).then(([result]) => {
         if (!entered) return;
         runtimeKnown = result.ok;
         activatedCount = result.ok ? Number(result.data?.activated_count) || 0 : 0;
+        setupCampaign = campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
         paintDoors();
       });
     },

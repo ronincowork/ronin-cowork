@@ -221,7 +221,7 @@ function createRegisterSurface(context) {
     notice.textContent = result.ok
       ? anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.confirm_email', 'Registration saved. Confirm your email to complete registration.')
       : result.message;
-    if (result.ok) { current = result.data; paint(); }
+    if (result.ok) { current = result.data; paint(); context.environment?.onRegistrationChoice?.('acted'); }
   });
   registerAction.dataset.launch = 'true';
   const sendLabel = registerAction.textContent;
@@ -246,6 +246,7 @@ function createRegisterSurface(context) {
     paintIdentityMode();
     const identity = identityMode.value.value === 'no_thanks' ? 'declined' : identityMode.value.value;
     if (identity) void context.environment?.setIdentityChoice?.(identity);
+    if (identity === 'declined') context.environment?.onRegistrationChoice?.('not_now');
   });
   paintIdentityMode();
   form.append(welcome, registrationIntro, about, fit, send);
@@ -435,7 +436,9 @@ export function createServicesSurface(context) {
     const chosen = new Set(selected);
     const capabilities = { ...(row.config?.services?.parts || {}) };
     for (const component of SERVICE_COMPONENTS) capabilities[component.id] = chosen.has(component.id);
-    return saveCampaign(row.id, { config: { services: { parts: capabilities } } });
+    const result = await saveCampaign(row.id, { config: { services: { parts: capabilities } } });
+    if (result.ok) context.environment?.onInstallationChoice?.();
+    return result;
   };
   /** Restart: ask, then read the restart off the machine — /api/installed's startedAt changes when Ronin is back.
    *  A refusal answers in the tool's own words; no answer means Ronin went down, which is the restart happening. */
@@ -502,6 +505,7 @@ export function createServicesSurface(context) {
           const result = item.act === 'switch_on' || item.act === 'switch_off' ? await switchServices(item.act === 'switch_on')
             : await request(item.act === 'install' ? '/api/services/install' : '/api/services/activation/poll', { method: 'POST', json: {} });
           if (!result.ok) said = result.message;
+          else context.environment?.onInstallationChoice?.();
           await show();
         });
         button.classList.add('setup-services-step-action');
@@ -667,6 +671,7 @@ function createSetupInstallationsSurface(context) {
   const page = createInstallationsSurface(selected, {
     ...context,
     onInstallationsState: (values) => context.environment?.onInstallationsState?.(values),
+    onInstallationChange: () => context.environment?.onInstallationChoice?.(),
     createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
   });
   // Setup chooses and sequences the shared page; it does not change the page's controls.

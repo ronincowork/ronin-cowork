@@ -129,7 +129,22 @@
   .garden-media-body { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; gap: var(--space-6); }
   .garden-media-body h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-9); font-weight: 600; line-height: 1.25; letter-spacing: -.012em; }
   .garden-media-frame, .garden-media-video { width: 100%; height: 100%; min-height: 0; border: var(--edge) solid var(--line); border-radius: var(--radius-md); background: var(--panel); }
-  .garden-media-doc { min-height: 0; margin: 0; overflow: auto; white-space: pre-wrap; color: var(--fg); font-family: var(--font-mono); font-size: var(--text-3); line-height: 1.7; }
+  .garden-media-doc { min-height: 0; overflow: auto; color: var(--fg); font-size: var(--text-3); line-height: 1.7; }
+  .markdown-reader { max-width: 72ch; margin: 0 auto; }
+  .markdown-reader > :first-child { margin-top: 0; }
+  .markdown-reader > :last-child { margin-bottom: 0; }
+  .markdown-reader :is(h1, h2, h3, h4, h5, h6) { margin: 1.4em 0 .45em; color: var(--fg-strong); line-height: 1.2; }
+  .markdown-reader :is(p, ul, ol, blockquote, pre) { margin: 0 0 1em; }
+  .markdown-reader :is(ul, ol) { padding-left: 1.6em; }
+  .markdown-reader blockquote { padding-left: 1em; border-left: var(--edge) solid var(--line); color: var(--muted-2); }
+  .markdown-reader :not(pre) > code { padding: .1em .35em; border-radius: var(--radius-hair); background: var(--well); font-family: var(--font-mono); }
+  .markdown-reader pre { overflow: auto; padding: var(--space-5); border-radius: var(--radius-xs); background: var(--well); white-space: pre; }
+  .markdown-reader pre code { font-family: var(--font-mono); }
+  .markdown-reader a { color: var(--accent); text-underline-offset: .15em; }
+  @media (max-width: 44rem) {
+    .markdown-reader { max-width: none; }
+    .markdown-reader pre { padding: var(--space-4); }
+  }
   .garden-media-external { justify-self: start; color: var(--kaki-lift); font-size: var(--text-3); }
 
   /* Kind marks. Mitred joins and square caps, the cut from the nin frame. */
