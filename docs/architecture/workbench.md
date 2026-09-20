@@ -17,7 +17,9 @@ smallest reads needed to paint itself.
 application-chrome declaration. It supplies the shared header capabilities and one of the
 explicit Campaign, Setup, New Project, Cowork, Team, or Agent appearances; a view may also
 supply its dynamic-island reading. `workspace-header.js` applies that declaration, while
-surface factories remain ignorant of header colour.
+surface factories remain ignorant of header colour. The desktop and phone routers both
+apply appearance through `applyWorkbenchAppearance()`; responsive documents consume the
+same chrome tokens rather than maintaining another palette.
 
 - A **library definition** gives one stable type a header kind, discovery reading, and
   `create(context)` factory.

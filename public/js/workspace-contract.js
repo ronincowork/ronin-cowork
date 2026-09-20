@@ -14,6 +14,13 @@ export const WORKBENCH_HEADER = Object.freeze({
 });
 export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'cowork', 'team', 'agent']);
 
+/** Apply the declared Workbench appearance at the document boundary. Desktop and phone
+ * routers share this writer; surfaces only consume the resulting chrome tokens. */
+export function applyWorkbenchAppearance(appearance, root = document.documentElement) {
+  if (WORKBENCH_APPEARANCES.includes(appearance)) root.dataset.workbench = appearance;
+  else delete root.dataset.workbench;
+}
+
 /** One declaration for every managed Workbench's application chrome. Feature views
  * provide content and, when useful, an island reading; the base owns capabilities and
  * appearance identity. */
