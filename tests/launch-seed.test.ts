@@ -38,12 +38,14 @@ test('teamless seed exposes available behaviours and the fixed residue', () => {
   assert.deepEqual(seed.still_asked, ['session_type', 'name', 'instructions']);
 });
 
-test('Team complete lists replace Campaign defaults and carry Team provenance', () => {
+test('Team complete elective lists replace Campaign defaults while floor guidance remains visible', () => {
   const seed = resolveLaunchSeed(sources(team));
   assert.deepEqual(seed.seeds.behaviours.value, ['write_it_down']);
   assert.equal(seed.seeds.behaviours.stated_by[0]?.layer, 'team');
   assert.equal(seed.seeds.project_root.stated_by[0]?.layer, 'conditional');
-  assert.equal(seed.behaviours.some((row) => row.name === 'mandates'), false);
+  const mandates = seed.behaviours.find((row) => row.name === 'mandates');
+  assert.equal(mandates?.scope, 'floor');
+  assert.equal(mandates?.on, false, 'floor guidance is visible but never part of the Team elective list');
 });
 
 test('an unavailable requested behaviour is reported, never refused', () => {
