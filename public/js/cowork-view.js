@@ -11,12 +11,12 @@ import { createTeamJikan } from './team-jikan.js';
 import { buildMessageQueue, watchMessageQueueAttention } from './message-queue.js';
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { buildArchives } from './archives.js';
-import { refreshHome, statusLabel } from './home.js';
+import { onProjects, projectData, refreshHome, statusLabel } from './home.js';
 import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { PRESETS_TYPE, createPresetsSurface, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { refreshDesks } from './desks.js';
@@ -352,6 +352,9 @@ export function createCoworkView(options = {}) {
       launch: launchPresetPlan,
       launchUrl: presetLaunchUrl,
       reserveLaunchTab: reserveWorkspaceTab,
+      trackedRoots: () => projectData,
+      onTrackedRoots: onProjects,
+      navigateToSurface: (type) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx),
     }, workspace: id }),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),

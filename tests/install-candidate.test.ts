@@ -7,8 +7,15 @@ import test from 'node:test';
 import { openTestServer, closeTestServer } from './helpers/testserver.js';
 
 const updater = fs.readFileSync('bin/ronin-update', 'utf8');
+const installer = fs.readFileSync('scripts/get-ronin', 'utf8');
 const lifecycle = updater.slice(updater.indexOf('CANDIDATE_PID=""'), updater.indexOf('# Which package this run moves:'));
 const gate = updater.slice(updater.indexOf('# --- gate the CANDIDATE'), updater.indexOf('# A public install is one uninterrupted journey.'));
+
+test('the download scratch root leaves room for the macOS candidate tmux socket', () => {
+  assert.match(installer, /WORK="\$\(mktemp -d \/tmp\/ronin\.XXXXXX\)"/);
+  const longestCandidateSocket = `/tmp/ronin.${'X'.repeat(6)}/tmux/candidate/tmux-${'9'.repeat(20)}/candidate`;
+  assert.ok(Buffer.byteLength(longestCandidateSocket) < 104, `${longestCandidateSocket} must fit macOS sockaddr_un.sun_path`);
+});
 
 for (const fail of [false, true]) {
   test(`candidate ${fail ? 'failure' : 'success'} closes its server and preserves an existing server`, async t => {

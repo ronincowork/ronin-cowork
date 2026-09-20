@@ -9,6 +9,7 @@ import { normalizeGardenCanvasCatalog } from './garden-canvas-model.js';
 import { PRESETS_TYPE, createKindsPreference, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
+import { onProjects, projectData } from './home.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
 
@@ -64,6 +65,9 @@ export function createSetupView() {
     onSetupRuntime: (next) => { runtime = next; environment.setupRuntime = next; paint(); },
     kinds,
     runtime: () => runtime || {},
+    trackedRoots: () => projectData,
+    onTrackedRoots: onProjects,
+    navigateToSurface: (type) => openSurface(type),
     launch: launchPresetPlan,
     launchUrl: presetLaunchUrl,
     reserveLaunchTab: reserveWorkspaceTab,
@@ -102,10 +106,7 @@ export function createSetupView() {
         providerSurface?.openFirst();
         return;
       }
-      const scene = SCENES.find((candidate) => candidate.type === action);
-      if (!scene) return;
-      sceneOverride = scene.number;
-      open(scene.number);
+      openSurface(action);
     },
   };
   const save = () => ctx?.patchViewState('setup', { ...bench.snapshot(), sceneOverride, setupCompletion: { roots: completion.roots } });
@@ -174,6 +175,13 @@ export function createSetupView() {
     paint();
     save();
   };
+  function openSurface(type) {
+    const scene = SCENES.find((candidate) => candidate.type === type);
+    if (!scene) return false;
+    sceneOverride = scene.number;
+    open(scene.number);
+    return true;
+  }
   function advance() {
     if (!sceneComplete(activeScene())) return;
     const next = SCENES[activeScene().number];

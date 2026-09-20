@@ -104,7 +104,8 @@ export function createGithubWorkspaceSetup({ environment, workspace = 'workspace
     account = github.account || '';
     state.textContent = !installed ? t('roots.github_missing', 'GitHub CLI is not installed.')
       : authenticated ? t('roots.github_connected', 'Connected to GitHub as {account}.', { account: account || 'your account' })
-        : t('roots.github_not_connected', 'GitHub is not connected on this machine.');
+        : github.state === 'unreadable' ? (github.problem || t('roots.github_unreadable', 'Ronin could not verify GitHub authentication.'))
+          : t('roots.github_not_connected', 'GitHub is not connected on this machine.');
     cloneState.textContent = authenticated
       ? t('roots.github_clone_ready', 'GitHub is connected. Enter the repository you want to clone.')
       : t('roots.github_clone_needs_auth', 'Authenticate GitHub first.');
@@ -116,7 +117,7 @@ export function createGithubWorkspaceSetup({ environment, workspace = 'workspace
     remove.disabled = removing || connecting || Boolean(mounted);
     const steps = [
       [installStep, installed, !installed, installed ? t('roots.github_installed', 'Installed') : github.installing ? t('roots.github_installing', 'Installing…') : t('roots.github_not_installed', 'Not installed')],
-      [authStep, authenticated, installed && !authenticated, authenticated ? t('roots.github_signed_in', 'Signed in as {account}', { account }) : installed ? t('roots.github_not_signed_in', 'Not signed in') : t('roots.github_after_install', 'After install')],
+      [authStep, authenticated, installed && !authenticated, authenticated ? t('roots.github_signed_in', 'Signed in as {account}', { account }) : github.state === 'unreadable' ? t('roots.github_auth_unreadable', 'Could not verify') : installed ? t('roots.github_not_signed_in', 'Not signed in') : t('roots.github_after_install', 'After install')],
       [readyStep, authenticated, false, authenticated ? t('roots.github_ready', 'Ready to clone') : t('roots.github_not_ready', 'Not yet')],
     ];
     steps.forEach(([part, complete, current, value], index) => {

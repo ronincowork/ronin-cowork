@@ -1,12 +1,13 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
-import { status } from './ui.js';
+import { confirmDialog, status } from './ui.js';
 import { loadProjects } from './home.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFolderPicker } from './folder-picker.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { ask } from './ask.js';
+import { finalizeTeamName, sanitizeTeamName } from './new-team-draft.js';
 
 export function buildProjectRoots(root, isShowing, campaignId = () => '', options = {}) {
   const { createAction } = WorkspaceKit.primitives;
@@ -119,6 +120,15 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     // field. The independent display title is ordinary editable presentation.
     const handleInput = mk(t('roots.f_handle', 'Workspace Folder handle'), 'name', existing.name, t('roots.f_handle_hint', 'The stable handle used by sessions and tools, such as ronin_lab.'), 'ronin_lab');
     handleInput.disabled = !creating;
+    handleInput.maxLength = 32;
+    if (creating) {
+      handleInput.addEventListener('input', () => {
+        const caret = handleInput.selectionStart;
+        handleInput.value = sanitizeTeamName(handleInput.value).slice(0, 32);
+        handleInput.setSelectionRange(caret, caret);
+      });
+      handleInput.addEventListener('blur', () => { handleInput.value = finalizeTeamName(handleInput.value).slice(0, 32); });
+    }
     if (stones && !creating) handleInput.closest('label').hidden = true; // the detail head already says it
     mk(t('roots.f_title', 'display title'), 'title', existing.title, t('roots.f_title_hint', 'The name shown on screen. Changing it never changes the handle or directory.'), t('roots.f_title_placeholder', 'optional'));
     const dirInput = mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Where the Agent starts and discovers project instructions.'), '');
@@ -229,6 +239,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         body[i.dataset.key] = i.value.trim();
       });
       const name = creating ? body.name : existing.name;
+      if (creating && !name) { err.say(t('roots.handle_needed', 'Give this Workspace Folder a handle.'), 'bad'); handleInput.focus(); return; }
       delete body.name; // on an edit the route already carries the handle; on an add it rides the body
       let proposedProfile = null;
       if (profileFields) {
@@ -257,7 +268,12 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
             `stable=${p.stable}`,
             `worktrees=${p.worktrees}`,
           ].join('\n');
-          if ((creating || JSON.stringify(proposedProfile) !== JSON.stringify(profileFields.before)) && !confirm(t('roots.profile_confirm', 'Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.', { before: line(profileFields.before), after: line(proposedProfile) }))) return;
+          if ((creating || JSON.stringify(proposedProfile) !== JSON.stringify(profileFields.before)) && !await confirmDialog({
+            label: t('roots.profile_confirm_title', 'Confirm repository settings'),
+            message: t('roots.profile_confirm', 'Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.', { before: line(profileFields.before), after: line(proposedProfile) }),
+            confirmLabel: t('roots.profile_confirm_action', 'Use these settings'),
+            cancelLabel: t('roots.cancel_folder', 'Cancel'),
+          })) return;
         }
       }
       save.disabled = true;
