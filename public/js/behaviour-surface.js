@@ -13,12 +13,12 @@ const node = (tag, cls = '', text = '') => { const out = document.createElement(
 const keyOf = (row) => `${row.scope}:${row.name}`;
 
 function group(row) {
-  if (row.scope === 'floor') return t('behaviours.auto', 'All Cowork Agents');
+  if (row.scope === 'floor') return t('behaviours.auto', 'Auto Selected');
   if (row.scope === 'conditional') return t('behaviours.conditional', 'Conditional');
-  return t('behaviours.available', 'Optional');
+  return t('behaviours.available', 'Behaviors');
 }
 
-function editor(row, host, refresh, startEditing = false) {
+function editor(row, host, refresh) {
   let reading = null;
   let dirty = false;
   let editing = false;
@@ -31,7 +31,7 @@ function editor(row, host, refresh, startEditing = false) {
   const readingHost = node('div', 'bh-reading');
   const area = node('textarea', 'bh-text'); area.spellcheck = false; area.autocapitalize = 'off'; area.hidden = true;
   const actions = node('div', 'bh-actions');
-  const toggle = node('button', 'wk-action', t('behaviours.edit', 'Edit'));
+  const toggle = node('button', 'wk-action', t('behaviours.view_edit', 'View/Edit'));
   const save = node('button', 'wk-action', t('panels.save', 'Save')); save.disabled = true;
   const saveAs = node('button', 'wk-action', t('behaviours.save_as', 'Save As'));
   const saveAsForm = node('form', 'bh-save-as'); saveAsForm.hidden = true;
@@ -69,7 +69,6 @@ function editor(row, host, refresh, startEditing = false) {
     if (!editing) readingHost.replaceChildren(renderMarkdownDocument(area.value));
     save.disabled = !editing || !reading?.name;
     toggle.setAttribute('aria-pressed', String(editing));
-    toggle.textContent = editing ? t('behaviours.view', 'View') : t('behaviours.edit', 'Edit');
   };
   const load = async () => {
     const mine = ++generation;
@@ -118,7 +117,7 @@ function editor(row, host, refresh, startEditing = false) {
 export function createBehaviourSurface(initial = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('behaviours.title', 'Behaviors'), className: 'behaviour-surface' });
   let rows = [];
-  const stones = createStoneWorkSurface({ className: 'behaviour-stones', renderDetail: (item, host) => editor(item.row, host, refresh, initial.edit === true && keyOf(item.row) === `${initial.scope}:${initial.name}`) });
+  const stones = createStoneWorkSurface({ className: 'behaviour-stones', renderDetail: (item, host) => editor(item.row, host, refresh) });
   const intro = node('div', 'sws-intro');
   intro.append(node('h2', '', t('behaviours.title', 'Behaviors')), node('p', '', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')));
   stones.mount(surface.content, { before: [intro] });

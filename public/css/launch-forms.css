@@ -337,6 +337,5 @@
   .bh-save-as label { display: grid; flex: 1 1 calc(var(--space-12) * 5); gap: var(--space-1); color: var(--muted); font-size: var(--form-note); }
   .bh-name { box-sizing: border-box; min-height: 40px; border: var(--edge) solid var(--line-2); background: var(--well); color: var(--fg); padding: var(--space-2) var(--space-3); font: inherit; }
   .bh-status[data-bad='true'] { color: var(--bad); }
-  .na-behaviour-sections > .ask + .ask { margin-top: var(--space-6); }
 
 }

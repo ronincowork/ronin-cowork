@@ -363,7 +363,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   /* ---- 7 · Loadout ---- */
   const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('behaviours', 'Behaviors'), onToggle: () => toggle('loadout') });
   const behaviourRows = () => seed?.behaviours || [];
-  const shelvesHost = el('div', 'na-behaviour-sections');
+  const shelvesHost = el('div');
   function paintShelves() {
     const general = behaviourRows().filter((row) => row.scope === 'selected' && row.available === true && !row.installation);
     const automatic = behaviourRows().filter((row) => row.scope === 'floor');
@@ -383,7 +383,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
     const readonly = (label, key, rows, reason) => ask([{ group: label, fields: [{ key, label, many: true, shape: 'tall', options: rows.map((item) => row(item, reason(item))) }] }], { value: { [key]: [] }, density: 'tight', exposed: true });
-    const auto = readonly(t('behaviours.auto', 'All Cowork Agents'), 'automatic', automatic, () => ({ disabled: true }));
+    const auto = readonly(t('behaviours.auto', 'Auto Selected'), 'automatic', automatic, () => t('behaviours.auto_reason', 'Guaranteed for every Cowork Agent'));
     const conditions = readonly(t('behaviours.conditional', 'Conditional'), 'conditional', conditional, (item) => item.requires?.length ? `${t('behaviours.applies_when', 'Applied when')}: ${item.requires.join(', ')}` : t('behaviours.conditional_reason', 'Ronin applies this when its condition matches'));
     shelvesHost.replaceChildren(picker.el, auto.el, conditions.el);
   }

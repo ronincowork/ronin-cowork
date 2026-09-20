@@ -2008,8 +2008,9 @@ The catalog entry goes. {dir} is not touched.
 - **behaviours.title:** Behaviors
 - **behaviours.card_summary:** Optional, System, and Conditional guidance Agents receive at birth.
 - **behaviours.intro:** Behaviors are specific guidance given to Agents at birth.
-- **behaviours.available:** Optional
-- **behaviours.auto:** All Cowork Agents
+- **behaviours.available:** Behaviors
+- **behaviours.auto:** Auto Selected
+- **behaviours.auto_reason:** Guaranteed for every Cowork Agent
 - **behaviours.conditional:** Conditional
 - **behaviours.conditional_reason:** Ronin applies this when its condition matches
 - **behaviours.applies_when:** Applied when
@@ -2018,8 +2019,6 @@ The catalog entry goes. {dir} is not touched.
 - **behaviours.yours:** Yours
 - **behaviours.stock:** Ronin
 - **behaviours.view_edit:** View/Edit
-- **behaviours.edit:** Edit
-- **behaviours.view:** View
 - **behaviours.save_as:** Save As
 - **behaviours.add_own:** Add Your Own
 - **behaviours.add_own_blurb:** Create a Behavior in your owner store.
