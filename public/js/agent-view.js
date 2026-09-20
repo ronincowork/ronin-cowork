@@ -107,6 +107,10 @@ export function createAgentView() {
   };
   const environment = {
     agent: () => agent,
+    // session.terminal is a shared Workbench surface. Its library definition discovers
+    // candidates through sessions() and creates them through terminal(); every profile
+    // that offers it supplies both halves of that environment contract.
+    sessions: () => agent ? [{ key: agent, label: agent }] : [],
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => { seats[id].pool.sync([agent]); seats[id].pool.show(detail.key || agent, false); } }),
     commons: (id, detail) => makeCommons(id, detail.key || agent),
     teams: (id, detail) => {

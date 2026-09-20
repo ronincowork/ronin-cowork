@@ -315,7 +315,10 @@ if [ "$MODE" = "rollback" ]; then
 fi
 
 # --- install ---
-WORK="$(mktemp -d)"
+# The candidate gate nests ronin-testserver's wrapper and tmux socket below WORK.
+# Keep the actual gate root short: macOS sockaddr_un paths are limited to 104 bytes,
+# while its per-user TMPDIR can already consume most of that budget.
+WORK="$(mktemp -d /tmp/ronin.XXXXXX)"
 CANDIDATE_PID=""
 CANDIDATE_SERVER=""
 candidate_server_close() {

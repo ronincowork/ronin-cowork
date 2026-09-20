@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { orderCoworkTeams } from '../public/js/cowork-workbench-contract.js';
+
+const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 
 test('Cowork roster keeps ordinary Teams readable and the special destinations last', () => {
   const noTeam = { name: '__none__', title: 'Ronin: no team' };
@@ -21,4 +24,11 @@ test('Cowork roster omits a held helper and does not invent a no-team destinatio
     { name: 'plain', title: 'Plain' },
   ], { helperName: 'helper' });
   assert.deepEqual(ordered.map((team) => team.name), ['plain']);
+});
+
+test('Cowork discovery offers existing no-Team Agents as ordinary Agent destination doors', async () => {
+  const text = await source('cowork-view.js');
+  assert.match(text, /profiles\.define\(WB_PROFILES\.cowork, \[[^\]]*WB_TYPES\.terminal/);
+  assert.match(text, /sessions: \(\) => \(campaign \? unassignedSessions\(\) : membersOfTeam\(team\)\)\.map/);
+  assert.match(text, /campaign \? \{ action: \(\) => openWorkspaceTab\('agent', member\.name\) \} : \{\}/);
 });

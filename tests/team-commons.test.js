@@ -28,13 +28,13 @@ test('Task Manager is offered only when available and its Commons tab stays pres
   assert.match(view, /workspace\.tab_task_manager', 'Task Manager'/);
 });
 
-test('Roster expands live readings and actions; Launch uses the paired workspace and Close retires', async () => {
-  const [view, members, retirement, css] = await Promise.all([
-    source('public/js/cowork-view.js'), source('public/js/team-members.js'), source('public/js/session-retire.js'), source('public/css/team-workspace.css'),
+test('Roster expands live readings; its Launch opens the Agent workbench while Close retires', async () => {
+  const [view, members, retirement, css, workbench] = await Promise.all([
+    source('public/js/cowork-view.js'), source('public/js/team-members.js'), source('public/js/session-retire.js'), source('public/css/team-workspace.css'), source('public/js/workbench.js'),
   ]);
   assert.match(view, /workspace1: 'workspace2', workspace2: 'workspace1', workspace3: 'workspace4', workspace4: 'workspace3'/);
   assert.match(view, /openOwner: \(name\) => arrange\(\{ \[oppositeSeat\(id\)\]: \{ session: name \} \}\)/);
-  assert.match(view, /onOpen: \(member\) => putSession\(member\.name, oppositeSeat\(id\)\)/);
+  assert.match(view, /onOpen: \(member\) => openWorkspaceTab\('agent', member\.name\)/);
   assert.match(view, /reading: readingsOf/);
   assert.match(view, /configSignature\(team\) \+ JSON\.stringify\(members\.map\(\(member\) => readingsOf\(member\)\.lines\)\)/);
   // The member rows follow the live readings; the Configuration tab follows the saved record alone,
@@ -53,7 +53,10 @@ test('Roster expands live readings and actions; Launch uses the paired workspace
   assert.match(css, /\.league-team-member-detail\[hidden\] \{ display: none; \}/);
   assert.match(members, /toggle\.setAttribute\('aria-expanded', 'false'\)/);
   assert.match(members, /toggle\.setAttribute\('aria-controls', detail\.id\)/);
+  assert.match(members, /toggle\.addEventListener\('click', \(\) => \{[\s\S]*detail\.hidden = !expanded;/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
+  assert.match(view, /campaign \? \{ action: \(\) => openWorkspaceTab\('agent', member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
+  assert.match(workbench, /card\.el\.addEventListener\('dragstart',[\s\S]*JSON\.stringify\(\{ type: definition\.type, detail \}\)/, 'drag still carries the terminal surface and Agent resource to a workspace');
   assert.match(css, /\.league-team-member-actions \{[^}]*flex-wrap: wrap;[^}]*justify-content: flex-end;/);
   for (const label of ['Archive', 'Delete', 'Hard Delete']) assert.match(retirement, new RegExp(`'${label}'`));
 });
