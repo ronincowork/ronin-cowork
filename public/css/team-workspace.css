@@ -48,8 +48,7 @@
     --tk-control-size: var(--space-8);
     height: 100%; min-height: 0; overflow: auto; background: var(--bg-2); container: team-kanban / inline-size;
   }
-  .tk-beta { color: var(--kaki); text-transform: uppercase; }
-  .tk-beta > .wk-surface-header-title { font-size: var(--text-6); letter-spacing: var(--tk-heading-track); }
+  .tk-beta { color: var(--kaki); font-size: var(--text-2); font-weight: 700; letter-spacing: var(--tk-heading-track); text-transform: uppercase; }
   .tk-topline { display: flex; align-items: center; gap: var(--space-6); min-height: var(--tk-notice-line); padding: var(--space-4) var(--space-5) 0; }
   .tk-topline[hidden] { display: none; }
   .tk-controls { display: flex; flex: none; align-items: center; gap: var(--space-2); }

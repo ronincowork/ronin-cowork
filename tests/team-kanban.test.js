@@ -77,12 +77,13 @@ test('the board stays square, fixed, manually refreshed, and free of pills and e
   assert.match(moduleSource, /tw-agent-density-lines/);
 });
 
-test('the beta notice is a prominent Workspace Kit header above every board state', () => {
-  assert.match(moduleSource, /import \{ createSurfaceHeader \} from '\.\/workspace-primitives\.js'/);
-  assert.match(moduleSource, /const beta = createSurfaceHeader\(\{/);
+test('the beta notice stays in Task Manager content rather than creating a second page header', () => {
+  assert.doesNotMatch(moduleSource, /createSurfaceHeader/);
+  assert.match(moduleSource, /const beta = node\('span', 'tk-beta'/);
   assert.match(moduleSource, /team_kanban\.beta', 'Beta'/);
-  assert.match(moduleSource, /root\.append\(beta\.el, topline, board\)/);
-  assert.match(workspaceCss, /\.tk-beta > \.wk-surface-header-title \{ font-size: var\(--text-6\)/);
+  assert.match(moduleSource, /topline\.append\(beta, controls, notice, legend\)/);
+  assert.match(moduleSource, /root\.append\(topline, board\)/);
+  assert.doesNotMatch(workspaceCss, /\.tk-beta > \.wk-surface-header-title/);
   assert.doesNotMatch(workspaceCss, /\.tk-beta[^}]*#[0-9a-f]/i, 'the beta header uses house tokens, not an invented color');
 });
 
