@@ -15,7 +15,6 @@ import { createThemeToggle } from './theme-toggle.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
 import { campaignById, loadCampaigns, normalizeSelection, saveCampaign } from './campaigns.js';
 import { firstUnansweredSetupStep, setupAnswers as readSetupAnswers } from './setup-progress.js';
-import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
 import { t } from './lexicon.js';
 import { toast } from './ui.js';
 
@@ -60,20 +59,6 @@ export function createSetupView() {
   const nextAction = WorkspaceKit.primitives.createAction({ label: 'Next', launch: true, action: () => advance() });
   const notNowAction = WorkspaceKit.primitives.createAction({ label: t('setup.not_now', 'Not now'), action: () => { void answerActive('not_now', true); } });
   const themeToggle = createThemeToggle();
-  const setupStepsHeader = document.createElement('span');
-  setupStepsHeader.className = 'setup-steps-header';
-  const refreshSetupStepsHeader = () => {
-    const campaign = selectedCampaign();
-    const marks = setupStepMarks(campaign);
-    const answered = marks.filter((step) => step.answered).length;
-    const next = marks.find((step) => step.next);
-    const reading = document.createElement('span');
-    reading.className = 'ui-sr';
-    reading.textContent = next
-      ? `${answered} of ${marks.length} Setup steps complete. Next: ${next.label}.`
-      : 'Setup completed.';
-    setupStepsHeader.replaceChildren(createSetupStepsBar(campaign), reading);
-  };
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
   const environment = {
     onGithubAuthenticated: () => {},
@@ -188,7 +173,6 @@ export function createSetupView() {
     return true;
   };
   const paint = () => {
-    refreshSetupStepsHeader();
     const active = activeScene();
     const canAdvance = active.number < SCENES.length && sceneComplete(active);
     seatNext(canAdvance);
@@ -276,7 +260,7 @@ export function createSetupView() {
   return {
     el: bench.host,
     glyph: '人',
-    ...workbenchView('setup', { header: { actions: [setupStepsHeader, themeToggle] } }),
+    ...workbenchView('setup', { header: { actions: [themeToggle] } }),
     title: () => 'Ronin Setup',
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {
