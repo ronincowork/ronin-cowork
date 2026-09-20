@@ -6057,7 +6057,7 @@ button.wb-door:hover b {
 .setup-step-answer[data-answered='true'] b { color: var(--setup-mark); }
 .setup-step-footer .wk-action[data-kind='quiet'] { background: transparent; color: var(--muted-2); }
 .setup-step-footer .wk-action[data-kind='link'] { border-color: transparent; background: transparent; color: var(--muted); padding-inline: var(--space-2); text-decoration: underline; }
-.setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-9); width: 100%; min-width: 0; height: var(--sws-header-height, clamp(6rem, 15dvh, 9rem)); overflow: hidden; }
+.setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-9); box-sizing: border-box; width: 100%; min-width: 0; height: var(--sws-header-height, clamp(6rem, 15dvh, 9rem)); overflow: hidden; border: var(--edge) solid var(--kaki); border-radius: var(--radius-xs); }
 .setup-zone-state { min-height: calc(var(--form-input) * 1.4 * 2); max-width: 40rem; margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: 500; line-height: 1.4; }
 .setup-zone-options { width: auto; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
