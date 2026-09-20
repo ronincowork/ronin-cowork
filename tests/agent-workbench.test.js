@@ -12,14 +12,15 @@ test('Agent is a first-class Workbench destination with its own state namespace'
   assert.match(workspace, /views: \{[^\n]*agent: \{\}/);
 });
 
-test('Agent profile reuses the shared Self, Commons, membership, Task Manager and generic surfaces', async () => {
+test('Agent profile reuses Self, pure Documents, membership, Task Manager and generic surfaces', async () => {
   const text = await source('agent-view.js');
   assert.match(text, /self: 'session\.terminal'/);
-  assert.match(text, /profiles\.define\(PROFILE, \[TYPES\.self, TYPES\.commons, TYPES\.teams, TYPES\.tasks, TYPES\.document, FEEDBACK_TYPE\]\)/);
-  assert.match(text, /sessions: \(\) => agent \? \[\{ key: agent, label: agent \}\] : \[\]/);
+  assert.match(text, /profiles\.define\(PROFILE, \[TYPES\.self, TYPES\.documents, TYPES\.teams, TYPES\.tasks, TYPES\.document, FEEDBACK_TYPE\]\)/);
+  assert.match(text, /sessions: \(\) => agent \? \[\{ key: agent, label: t\('agent\.self', 'Self'\) \}\] : \[\]/);
   assert.match(text, /terminal: \(id, detail\) =>/);
   assert.match(text, /createWarmTerminalPool/);
-  assert.match(text, /createTabbedSurface/);
+  assert.doesNotMatch(text, /createTabbedSurface/);
+  assert.match(text, /createSurface\(\{ label: t\('workspace\.tab_docs', 'Documents'\)/);
   assert.match(text, /createTeamKanban/);
   assert.match(text, /setTeamMembership/);
   assert.doesNotMatch(text, /request\([^\n]*\/teams[^\n]*membership/);
@@ -28,7 +29,7 @@ test('Agent profile reuses the shared Self, Commons, membership, Task Manager an
 test('Agent first-open and structured seats use the ordinary terminal surface token', async () => {
   const text = await source('agent-view.js');
   assert.match(text, /workspace1: \{ type: TYPES\.self, key: agent \}/);
-  assert.match(text, /workspace2: \{ type: TYPES\.commons, key: agent \}/);
+  assert.match(text, /workspace2: \{ type: TYPES\.documents, key: agent \}/);
   assert.match(text, /context\.workbenchEntry\(defaults\)/);
   assert.match(text, /normalizeWorkbenchState\(state, bench\.declaration\)/);
 });

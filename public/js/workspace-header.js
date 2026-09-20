@@ -58,6 +58,11 @@ export function installWorkspaceHeader(workspace) {
       } else if (active?.id === 'launch') {
         place.textContent = t('campaign_home.launch', 'New Project');
         place.title = '';
+      } else if (active?.view?.island) {
+        place.textContent = typeof active.view.island === 'function'
+          ? active.view.island({ id: active.id, param: active.param })
+          : String(active.view.island);
+        place.title = '';
       } else {
         place.replaceChildren();
         place.title = '';

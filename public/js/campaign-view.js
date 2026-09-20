@@ -20,7 +20,7 @@ import { createMikaHelpPanel, createMikaTilePool } from './mika.js';
 import { toast } from './ui.js';
 import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
-import { WORKBENCH_HEADER } from './workspace-contract.js';
+import { workbenchView } from './workspace-contract.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
 import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
 import { returnFromWorkspaceFolders } from './workspace.js';
@@ -153,23 +153,10 @@ export function createCampaignView() {
     return bench?.place(TERMINAL_TYPE, workspace, { key: MIKA_SESSION }) || false;
   };
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
-  let thinSelectorCards = true;
-  const save = () => ctx?.patchViewState('campaign', { ...bench.snapshot(), selectorDensity: thinSelectorCards ? 'thin' : 'thick' });
-  const densityToggle = WorkspaceKit.primitives.createAction({ label: '', size: 'compact', className: 'tw-agent-density' });
-  const densityLines = elem('span', 'tw-agent-density-lines');
-  densityLines.append(elem('i'), elem('i'));
-  densityToggle.el.replaceChildren(densityLines);
-  const paintDensityToggle = () => {
-    if (bench?.host) bench.host.dataset.selectorDensity = thinSelectorCards ? 'thin' : 'thick';
-    densityToggle.el.dataset.lines = thinSelectorCards ? 'two' : 'one';
-    densityToggle.el.title = thinSelectorCards ? 'Show full Settings cards' : 'Show Settings names only';
-    densityToggle.el.setAttribute('aria-label', densityToggle.el.title);
-    densityToggle.el.setAttribute('aria-pressed', String(thinSelectorCards));
-  };
-  densityToggle.el.addEventListener('click', () => { thinSelectorCards = !thinSelectorCards; paintDensityToggle(); save(); });
+  const save = () => ctx?.patchViewState('campaign', bench.snapshot());
   const mikaHelp = WorkspaceKit.primitives.createAction({ label: t('mika.help', 'ミ Help'), size: 'compact' });
   let helpPanel = null;
-  bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign.settings_short_title', 'Settings'), title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : t('campaign.settings_short_title', 'Settings'), actions: [densityToggle, mikaHelp], shapeControl: document.getElementById('shapecycle'), selectorCurrent: 'placed', onSelectorRefresh: (cards) => {
+  bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign.settings_short_title', 'Settings'), title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : t('campaign.settings_short_title', 'Settings'), actions: [mikaHelp], shapeControl: document.getElementById('shapecycle'), selectorCurrent: 'placed', onSelectorRefresh: (cards) => {
     for (const [type, label] of [
       [TYPES.machine, t('campaign_view.machine_settings', 'Machine Settings')],
       [TYPES.identity, t('campaign_view.desk_settings', 'Desk Settings')],
@@ -178,7 +165,6 @@ export function createCampaignView() {
       if (first) first.before(elem('h3', 'wk-selector-group', label));
     }
   }, onStateChange: save, onPlacement: save });
-  paintDensityToggle();
   installBehaviourReader(bench, TYPES.document);
   helpPanel = createMikaHelpPanel({
     selector: bench.host.querySelector('.wk-workbench-selector'), header: bench.selectorHeader,
@@ -191,7 +177,7 @@ export function createCampaignView() {
   });
   mikaHelp.el.addEventListener('click', () => { void helpPanel.open(); });
   return {
-    el: bench.host, glyph: '⛩', appearance: 'campaign', arrangement: bench.arrangement, header: WORKBENCH_HEADER,
+    el: bench.host, glyph: '⛩', ...workbenchView('campaign'), arrangement: bench.arrangement,
     title: () => t('campaign.settings_short_title', 'Settings'),
     placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),
     mount: (_host, context) => { ctx = context; },
@@ -202,8 +188,6 @@ export function createCampaignView() {
         count: 2, selected: 'workspace1',
         seats: { workspace1: TYPES.defaults, workspace2: TYPES.roots },
       });
-      thinSelectorCards = entry.selectorDensity !== 'thick';
-      paintDensityToggle();
       const typed = normalizeWorkbenchState(entry, bench.declaration);
       bench.enter({ ...typed, ...entry });
       for (const id of bench.ids) {

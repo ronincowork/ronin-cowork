@@ -1,5 +1,6 @@
 /* Ronin Setup — the lightweight first-use workbench. */
 import { WorkspaceKit } from './workspace-kit.js';
+import { workbenchView } from './workspace-contract.js';
 import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
 import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { request } from './request.js';
@@ -254,14 +255,12 @@ export function createSetupView() {
       save();
     },
   });
-  bench.host.dataset.selectorDensity = 'thin';
   bench.host.querySelector('.wk-workbench-selector-cards')?.addEventListener('click', () => queueMicrotask(() => bench.select('workspace2')));
 
   return {
     el: bench.host,
     glyph: '人',
-    appearance: 'setup',
-    header: { actions: [themeToggle] },
+    ...workbenchView('setup', { header: { actions: [themeToggle] } }),
     title: () => 'Ronin Setup',
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {

@@ -10,10 +10,11 @@ import { refreshHome } from './home.js';
 import { request } from './request.js';
 import { S } from './state.js';
 import { t } from './lexicon.js';
-import { WORKBENCH_HEADER, DISMISSED_WORKSPACE } from './workspace-contract.js';
+import { workbenchView, DISMISSED_WORKSPACE } from './workspace-contract.js';
+import { agentTitle } from './team-members.js';
 
 const PROFILE = 'agent';
-const TYPES = Object.freeze({ self: 'session.terminal', commons: 'agent.commons', teams: 'agent.team-membership', tasks: 'agent.task-manager', document: 'document' });
+const TYPES = Object.freeze({ self: 'session.terminal', documents: 'agent.documents', teams: 'agent.team-membership', tasks: 'agent.task-manager', document: 'document' });
 const el = (tag, cls = '', text = '') => { const out = document.createElement(tag); if (cls) out.className = cls; if (text) out.textContent = text; return out; };
 const memberships = (name) => (S.sessions.find((row) => row.name === name)?.tags || []).map(String).sort();
 
@@ -21,10 +22,10 @@ function registerAgentCatalog() {
   registerFeedbackSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
-  add({ type: TYPES.commons, header: 'tabs', className: 'wk-selector-utility', label: () => t('agent.commons', 'Commons'), summary: () => t('agent.commons_summary', 'Docs and Task Manager'), discover: (_tenant, environment) => [{ key: environment.agent() }], create: ({ workspace, detail, environment }) => environment.commons(workspace, detail) });
+  add({ type: TYPES.documents, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_docs', 'Documents'), summary: () => t('agent.documents_summary', 'Documents tracked by this Agent'), discover: (_tenant, environment) => [{ key: environment.agent() }], create: ({ workspace, detail, environment }) => environment.documents(workspace, detail) });
   add({ type: TYPES.teams, header: 'surface', className: 'wk-selector-utility', label: () => t('agent.team_membership', 'Team membership'), summary: () => t('agent.team_membership_summary', 'Add or remove this Agent from installed Teams'), discover: (_tenant, environment) => [{ key: environment.agent() }], create: ({ workspace, detail, environment }) => environment.teams(workspace, detail) });
   add({ type: TYPES.tasks, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_task_manager', 'Task Manager'), discover: (_tenant, environment) => environment.taskOffers(), create: ({ workspace, detail, environment }) => environment.tasks(workspace, detail) });
-  profiles.define(PROFILE, [TYPES.self, TYPES.commons, TYPES.teams, TYPES.tasks, TYPES.document, FEEDBACK_TYPE]);
+  profiles.define(PROFILE, [TYPES.self, TYPES.documents, TYPES.teams, TYPES.tasks, TYPES.document, FEEDBACK_TYPE]);
 }
 
 function createMembershipSurface(agent, changed) {
@@ -75,7 +76,7 @@ export function createAgentView() {
     seats[id] = { surface, pool, blank: blank(id) };
   }
 
-  const commons = new Map(), membership = new Map(), tasks = new Map();
+  const documents = new Map(), membership = new Map(), tasks = new Map();
   const makeTaskManager = (id, team) => {
     const key = `${id}\0${team}`;
     if (tasks.has(key)) return tasks.get(key);
@@ -84,44 +85,33 @@ export function createAgentView() {
     manager.setTeam(team); manager.setAvailability(availability); surface.content.append(manager.el);
     const made = { el: surface.el, show: () => manager.enter(), manager }; tasks.set(key, made); return made;
   };
-  const makeCommons = (id, name = agent) => {
+  const makeDocuments = (id, name = agent) => {
     const key = `${id}\0${name}`;
-    if (commons.has(key)) return commons.get(key);
+    if (documents.has(key)) return documents.get(key);
+    const surface = WorkspaceKit.primitives.createSurface({ label: t('workspace.tab_docs', 'Documents'), className: 'home-docs tw-docs', flush: true });
     const docsPane = el('div', 'home-docs tw-docs');
     const docs = buildDocs(null, docsPane, () => entered && docsPane.isConnected, (candidate) => candidate === name);
-    const docsService = { el: docsPane, enter: () => { void refreshHome(); docs.enter(); }, leave() {}, destroy() {} };
-    const taskHost = el('div', 'tw-kanban');
-    let current = null;
-    const taskService = { el: taskHost, enter: () => {
-      const team = memberships(agent)[0] || '';
-      taskHost.replaceChildren(); current = null;
-      if (!team) taskHost.append(el('p', 'league-team-empty', t('agent.no_team_tasks', 'Join a Team to use its Task Manager.')));
-      else { current = makeTaskManager(`${id}-commons`, team); taskHost.append(current.el); current.show(); }
-    }, leave: () => current?.manager.leave(), destroy: () => current?.manager.destroy() };
-    const tabs = WorkspaceKit.primitives.createTabbedSurface({ label: t('agent.commons', 'Commons'), tabs: [
-      { id: 'docs', label: t('workspace.tab_docs', 'Docs'), panel: docsService },
-      { id: 'kanban', label: t('workspace.tab_task_manager', 'Task Manager'), panel: taskService },
-    ], selected: 'docs' });
-    const made = { el: tabs.el, show: (detail = {}) => { tabs.enter(context); if (detail.tab) tabs.select(detail.tab); } };
-    commons.set(key, made); return made;
+    surface.content.append(docsPane);
+    const made = { el: surface.el, show: () => { void refreshHome(); docs.enter(); } };
+    documents.set(key, made); return made;
   };
   const environment = {
     agent: () => agent,
     // session.terminal is a shared Workbench surface. Its library definition discovers
     // candidates through sessions() and creates them through terminal(); every profile
     // that offers it supplies both halves of that environment contract.
-    sessions: () => agent ? [{ key: agent, label: agent }] : [],
+    sessions: () => agent ? [{ key: agent, label: t('agent.self', 'Self') }] : [],
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => { seats[id].pool.sync([agent]); seats[id].pool.show(detail.key || agent, false); } }),
-    commons: (id, detail) => makeCommons(id, detail.key || agent),
+    documents: (id, detail) => makeDocuments(id, detail.key || agent),
     teams: (id, detail) => {
       const key = `${id}\0${detail.key || agent}`;
-      if (!membership.has(key)) membership.set(key, createMembershipSurface(detail.key || agent, () => { bench.refreshSelector(); for (const item of commons.values()) item.show(); }));
+      if (!membership.has(key)) membership.set(key, createMembershipSurface(detail.key || agent, () => { bench.refreshSelector(); for (const item of documents.values()) item.show(); }));
       return membership.get(key);
     },
     taskOffers: () => memberships(agent).map((team) => ({ key: team, label: t('agent.team_tasks', '{team} Task Manager', { team }), summary: t('agent.team_tasks_summary', 'Projects held by {team}', { team }) })),
     tasks: (id, detail) => makeTaskManager(id, detail.key),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
-    feedback: () => createFeedbackSurface(() => bench.place(TYPES.commons, bench.selected(), { key: agent })),
+    feedback: () => createFeedbackSurface(() => bench.place(TYPES.documents, bench.selected(), { key: agent })),
   };
   bench = WorkspaceKit.workbench.create({
     profile: PROFILE, tenant: { kind: 'agent', name: () => agent }, environment,
@@ -140,19 +130,22 @@ export function createAgentView() {
     for (const item of tasks.values()) item.manager.setAvailability(availability);
   };
   const restore = () => {
-    const defaults = { count: 2, selected: 'workspace1', seats: { workspace1: { type: TYPES.self, key: agent }, workspace2: { type: TYPES.commons, key: agent } } };
+    const defaults = { count: 2, selected: 'workspace1', seats: { workspace1: { type: TYPES.self, key: agent }, workspace2: { type: TYPES.documents, key: agent } } };
     const { state } = context.workbenchEntry(defaults);
     const typed = WorkspaceKit.contract.normalizeWorkbenchState(state, bench.declaration);
-    bench.enter({ arrangement: typed.arrangement, count: state.count, selected: state.selected });
+    bench.enter({ arrangement: typed.arrangement, count: state.count, selected: state.selected, selectorDensity: state.selectorDensity });
     for (const id of bench.visibleIds()) {
-      const held = typed.seats[id];
+      const remembered = typed.seats[id];
+      const held = typeof remembered === 'string' && remembered === 'agent.commons'
+        ? TYPES.documents
+        : remembered?.type === 'agent.commons' ? { ...remembered, type: TYPES.documents } : remembered;
       if (held === DISMISSED_WORKSPACE) continue;
       if (typeof held === 'string') bench.place(held, id);
       else if (held?.type) bench.place(held.type, id, held);
     }
   };
   return {
-    el: root, glyph: '•', appearance: 'agent', arrangement: bench.arrangement, header: WORKBENCH_HEADER,
+    el: root, glyph: '•', ...workbenchView('agent', { island: ({ param }) => agentTitle({ name: param }) }), arrangement: bench.arrangement,
     title: ({ param }) => param || t('agent.workbench', 'Agent'),
     mount: (_host, ctx) => { context = ctx; unsubscribe = subscribe(() => { if (entered) { bench.refreshSelector(); for (const item of membership.values()) item.render(); } }); },
     enter: (ctx) => {

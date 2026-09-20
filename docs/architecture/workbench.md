@@ -13,6 +13,12 @@ smallest reads needed to paint itself.
 
 `public/js/workbench.js` owns the shared library and frame.
 
+`workbenchView(appearance, options)` in `public/js/workspace-contract.js` is the one
+application-chrome declaration. It supplies the shared header capabilities and one of the
+explicit Campaign, Setup, New Project, Cowork, Team, or Agent appearances; a view may also
+supply its dynamic-island reading. `workspace-header.js` applies that declaration, while
+surface factories remain ignorant of header colour.
+
 - A **library definition** gives one stable type a header kind, discovery reading, and
   `create(context)` factory.
 - A **profile** lists the library types one destination may place.
@@ -22,6 +28,8 @@ smallest reads needed to paint itself.
   two workspaces creates two rendered instances; data authorities may still be shared.
 - `place(type, workspace, detail)` is the only placement path used by clicks, drag/drop,
   restoration, and programmatic openings.
+- The frame owns the selector's compact/expanded action and persists `selectorDensity`
+  beside shape, selection, arrangement, and seats. Profiles do not build another toggle.
 
 The definition's `create()` draws the stable shell. Its returned `show()` or `enter()`
 starts only that surface's reads. `leave()` parks active work and `destroy()` releases
@@ -199,7 +207,8 @@ service reads finish. Team membership and Task Manager choices enrich independen
 | Surface | Required data and owner |
 |---|---|
 | Self | route Agent plus the shared terminal host and transport |
-| Agent Commons | the Agent's Docs; Task Manager uses the first current Team when that tab enters |
+| Agent Documents | the Agent's tracked documents in one untabbed work surface |
+| Agent Task Manager | one separately offered Task Manager for each current Team |
 | Team membership | Team records and live session tags from `team-controller.js`; writes use the canonical session-membership route |
 | Task Manager | installed capability fact and the selected Team's derived Project view |
 | Document / Feedback | each shared surface's own read or submission |

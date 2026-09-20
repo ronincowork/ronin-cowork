@@ -32,7 +32,7 @@ test('Ronin Home and Setup share the same persisted light and dark control', asy
   assert.match(home, /header: \{ actions: \[themeToggle\] \}/);
   assert.doesNotMatch(home, /ronin-home-active/);
   assert.match(setup, /const themeToggle = createThemeToggle\(\)/);
-  assert.match(setup, /header: \{ actions: \[themeToggle\] \}/);
+  assert.match(setup, /workbenchView\('setup', \{ header: \{ actions: \[themeToggle\] \} \}\)/);
   assert.match(toggle, /import\('\.\/theme\.js'\)[\s\S]*setTheme\(dark \? 'light' : 'dark'\)/);
   assert.match(toggle, /aria-pressed/);
   assert.match(workspace, /shapeControl\.hidden = next\.header\?\.shape !== true/, 'undeclared pane count stays absent');
@@ -108,33 +108,28 @@ test('edited Cowork and Team workbench labels become the exact tab title', async
 });
 
 test('Cowork Team and Team Agent cards toggle between names-only and the full reading', async () => {
-  const [view, css] = await Promise.all([
+  const [view, workbench, css] = await Promise.all([
     readFile(new URL('../public/js/cowork-view.js', import.meta.url), 'utf8'),
-    readFile(new URL('../public/css/team-workspace.css', import.meta.url), 'utf8'),
+    readFile(new URL('../public/js/workbench.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/workspace-kit.css', import.meta.url), 'utf8'),
   ]);
-  assert.match(view, /\[campaign \? 'teamCardDensity' : 'agentCardDensity'\]: thinSelectorCards \? 'thin' : 'thick'/);
   assert.match(view, /let thinSelectorCards = true;/);
-  assert.match(view, /entry\[campaign \? 'teamCardDensity' : 'agentCardDensity'\] !== 'thick'/);
+  assert.match(view, /onSelectorDensityChange: \(value\) => \{ thinSelectorCards = value !== 'thick'; \}/);
   assert.match(view, /mark: member\.team_lead \? '人' : null,[\s\S]*thinSelectorCards \? \{\} : \{ summary: reading\.step, metadata: reading\.lines \}/,
     'the lead mark remains while names-only mode removes the rest of the reading');
   assert.match(view, /thinSelectorCards \? \{\} : \{ summary: item\.objective \|\| '' \}/);
-  assert.match(view, /dataset\.lines = thinSelectorCards \? 'two' : 'one'/);
-  assert.match(view, /host\.dataset\.selectorDensity = thinSelectorCards \? 'thin' : 'thick'/);
-  assert.match(view, /actions: \[densityToggle\.el, rosterNote, mikaHelp\]/);
-  assert.match(css, /\.selector-card-thin\s*\{[^}]*padding:/s);
+  assert.match(workbench, /densityToggle\.el\.addEventListener\('click'/);
   assert.match(css, /\.wk-workbench-host\[data-selector-density='thin'\] \.wk-workbench-selector-cards > \.wk-card \.wk-card-summary/);
 });
 
-test('Campaign remembers density while Setup stays in the names-only selector', async () => {
-  const [campaign, setup] = await Promise.all([
-    source('js/campaign-view.js'), source('js/setup-view.js'),
+test('the base Workbench owns selector density for every profile', async () => {
+  const [workbench, contract, kitCss] = await Promise.all([
+    source('js/workbench.js'), source('js/workspace-contract.js'), source('workspace-kit.css'),
   ]);
-  assert.match(campaign, /let thinSelectorCards = true;/);
-  assert.match(campaign, /selectorDensity: thinSelectorCards \? 'thin' : 'thick'/);
-  assert.match(campaign, /thinSelectorCards = entry\.selectorDensity !== 'thick'/);
-  assert.match(campaign, /host\.dataset\.selectorDensity = thinSelectorCards \? 'thin' : 'thick'/);
-  assert.match(campaign, /actions: \[densityToggle, mikaHelp\]/);
-  assert.match(setup, /bench\.host\.dataset\.selectorDensity = 'thin'/);
+  assert.match(contract, /workbenchView\(appearance, options = \{\}\)/);
+  assert.match(workbench, /headers: \{ selector: \{ actions: \[densityToggle, \.\.\.\(options\.actions \|\| \[\]\)\] \} \}/);
+  assert.match(workbench, /snapshot = \(\) => \(\{ count, selected, selectorDensity,/);
+  assert.match(kitCss, /\.wk-workbench-host\[data-selector-density='thin'\]/);
 });
 
 test('the existing workbench can pin a Setup workspace and aim selector cards at the selected work surface', async () => {

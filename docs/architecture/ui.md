@@ -69,7 +69,8 @@ and could not get a radius right.
 | elevation | `--scrim` `--shadow-menu` `--shadow-sheet` | |
 | bar navigation | `--bar-nav-bg/fg/hover/focus` · `--bar-value-fg` | the shared clickable label and its non-clickable context value |
 
-Each Workbench view declares its appearance to the outer ViewHost. `workspace-header.js`
+Each Workbench view uses `workbenchView()` to declare its appearance and shared header
+capabilities to the outer ViewHost. `workspace-header.js`
 applies that declaration once; workspace and selector headers inherit it, while individual
 work surfaces remain ignorant of colour and the application bar's dynamic island stays
 neutral. Campaign, Setup, and New Project use graphite, the Cowork collection uses aiiro,

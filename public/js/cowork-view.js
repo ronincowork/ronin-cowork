@@ -23,7 +23,7 @@ import { refreshDesks } from './desks.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
 import { renderTeamConfiguration } from './team-configuration.js';
-import { WORKBENCH_HEADER } from './workspace-contract.js';
+import { workbenchView } from './workspace-contract.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
 import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
@@ -159,26 +159,6 @@ export function createCoworkView(options = {}) {
 
   const rosterNote = el('span', 'tw-roster-note');
   let thinSelectorCards = true;
-  const densityToggle = createAction({ label: '', size: 'compact', className: 'tw-agent-density' });
-  const densityLines = el('span', 'tw-agent-density-lines');
-  densityLines.append(el('i'), el('i'));
-  densityToggle.el.replaceChildren(densityLines);
-  const paintDensityToggle = () => {
-    if (bench?.host) bench.host.dataset.selectorDensity = thinSelectorCards ? 'thin' : 'thick';
-    densityToggle.el.dataset.lines = thinSelectorCards ? 'two' : 'one';
-    densityToggle.el.title = thinSelectorCards
-      ? `Show full ${campaign ? 'Team' : 'Agent'} cards`
-      : `Show ${campaign ? 'Team' : 'Agent'} names only`;
-    densityToggle.el.setAttribute('aria-label', densityToggle.el.title);
-    densityToggle.el.setAttribute('aria-pressed', String(thinSelectorCards));
-  };
-  densityToggle.el.addEventListener('click', () => {
-    thinSelectorCards = !thinSelectorCards;
-    paintDensityToggle();
-    bench?.refreshSelector();
-    remember();
-  });
-  paintDensityToggle();
   const mikaHelp = createAction({ label: t('mika.help', 'ミ Help'), size: 'compact', className: 'tw-mika-help' });
   let helpPanel = null;
   const shapeBtn = document.getElementById('shapecycle');
@@ -387,7 +367,8 @@ export function createCoworkView(options = {}) {
     label: campaign ? teamsLabel : t('team.roster_title', 'Team Roster'),
     // While ミ Help is open the column is Mika's, and every repaint says so.
     title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : campaign ? teamsLabel : t('team.roster_title', 'Roster'),
-    actions: [densityToggle.el, rosterNote, mikaHelp], shapeControl: shapeBtn, deferSelector: true,
+    actions: [rosterNote, mikaHelp], shapeControl: shapeBtn, deferSelector: true,
+    onSelectorDensityChange: (value) => { thinSelectorCards = value !== 'thick'; },
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,
     onStateChange: () => remember(), onPlacement: (_snapshot, change) => {
@@ -469,7 +450,7 @@ export function createCoworkView(options = {}) {
       (surfaceIn(id) ? snapshot?.seats?.[id] : seats[id].pool.active) || remembered[id]
     ]).filter(([, value]) => value));
     remembered = { ...seatState };
-    ctx?.patchViewState(viewKey, { ...snapshot, [campaign ? 'teamCardDensity' : 'agentCardDensity']: thinSelectorCards ? 'thin' : 'thick', seats: seatState });
+    ctx?.patchViewState(viewKey, { ...snapshot, seats: seatState });
     reportView();
   };
   const lead = () => membersOfTeam(team).find((m) => m.team_lead)?.name || '';
@@ -814,10 +795,9 @@ export function createCoworkView(options = {}) {
   }
 
   return {
-    el: root, glyph: campaign ? '⛩' : '人', appearance: campaign ? 'cowork' : 'team',
+    el: root, glyph: campaign ? '⛩' : '人', ...workbenchView(campaign ? 'cowork' : 'team'),
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: bench.arrangement,
-    header: WORKBENCH_HEADER,
     // The owner's per-tab name; Teams defaults to its page name, a Team to the Team name.
     title: ({ param, viewState }) => {
       const fallback = campaign ? teamsLabel : (readableTeam(param || team) || t('team.team', 'Team'));
@@ -850,11 +830,10 @@ export function createCoworkView(options = {}) {
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = campaign ? '' : context.param || context.state?.team || '';
       const { state: entry } = context.workbenchEntry();
-      thinSelectorCards = entry[campaign ? 'teamCardDensity' : 'agentCardDensity'] !== 'thick';
-      paintDensityToggle();
       setBarLabel();
       const typed = normalizeWorkbenchState(entry, bench.declaration);
-      bench.enter({ arrangement: typed.arrangement, count: entry.count, selected: entry.selected });
+      bench.enter({ arrangement: typed.arrangement, count: entry.count, selected: entry.selected,
+        selectorDensity: entry.selectorDensity || entry[campaign ? 'teamCardDensity' : 'agentCardDensity'] });
       remembered = { ...typed.seats };
       const members = restorationMembers();
       syncPools(members);

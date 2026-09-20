@@ -36,7 +36,7 @@ not four layout systems.
 | Campaign | Campaign settings and Campaign-level resources |
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
 | Team | that Team's Agents, Commons, and launch surface |
-| Agent | Self, Agent Commons, Team membership, and Task Managers for the Agent's Teams |
+| Agent | Self, Documents, Team membership, and separate Task Managers for the Agent's Teams |
 | Setup | pinned Presets plus Register, providers, roots, Services, gbrain, and Templates |
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
