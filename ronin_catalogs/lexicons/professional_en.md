@@ -2006,7 +2006,7 @@ The catalog entry goes. {dir} is not touched.
 
 ## behaviours — behaviour-surface.js
 - **behaviours.title:** Behaviors
-- **behaviours.card_summary:** Optional, System, and Conditional guidance Agents receive at birth.
+- **behaviours.card_summary:** Optional, All Cowork Agents, and Conditional guidance Agents receive at birth.
 - **behaviours.intro:** Behaviors are specific guidance given to Agents at birth.
 - **behaviours.available:** Optional
 - **behaviours.auto:** All Cowork Agents
