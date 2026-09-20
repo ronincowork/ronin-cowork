@@ -370,14 +370,16 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const conditional = behaviourRows().filter((row) => row.scope === 'conditional');
     const edit = (row) => ({ name: row.name, scope: row.scope, create: !row.name });
     const row = (item, off = '') => ({ v: item.name || '+', l: item.label || item.name, sub: item.blurb || '', read: item.reading, edit: edit(item), off });
+    const createOwn = row({ name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: t('behaviours.add_own_blurb', 'Create a Behavior in your owner store.'), scope: 'selected' });
+    createOwn.action = ({ source }) => window.dispatchEvent(new CustomEvent('ronin:edit-behaviour', { detail: { scope: 'selected', create: true, source } }));
     const picker = ask([{ group: t('behaviours.available', 'Behaviors'), fields: [{
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
-      options: [...general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')), row({ name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: t('behaviours.add_own_blurb', 'Create a Behavior in your owner store.'), scope: 'selected' }, t('behaviours.create_action', 'Create in the Behaviors work surface'))],
+      options: [...general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')), createOwn],
     }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
     const readonly = (label, key, rows, reason) => ask([{ group: label, fields: [{ key, label, many: true, shape: 'tall', options: rows.map((item) => row(item, reason(item))) }] }], { value: { [key]: [] }, density: 'tight', exposed: true });
-    const auto = readonly(t('behaviours.system', 'System'), 'automatic', automatic, () => t('behaviours.system_reason', 'Guaranteed for every Cowork Agent'));
+    const auto = readonly(t('behaviours.auto', 'Auto Selected'), 'automatic', automatic, () => t('behaviours.auto_reason', 'Guaranteed for every Cowork Agent'));
     const conditions = readonly(t('behaviours.conditional', 'Conditional'), 'conditional', conditional, (item) => item.requires?.length ? `${t('behaviours.applies_when', 'Applied when')}: ${item.requires.join(', ')}` : t('behaviours.conditional_reason', 'Ronin applies this when its condition matches'));
     shelvesHost.replaceChildren(picker.el, auto.el, conditions.el);
   }

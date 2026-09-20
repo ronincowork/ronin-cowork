@@ -1,6 +1,6 @@
 # Team work
 
-- **label:** Team work
+- **label:** Team Work
 - **blurb:** Propose or staff a Team with explicit ownership and coordination.
 - **installation:** —
 - **order:** 30
