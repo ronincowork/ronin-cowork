@@ -103,7 +103,8 @@ export function createPasswordSurface(context = {}) {
       picks: [addPassword, { label: 'No password', action: () => context.environment?.answerSetupStep?.('password', 'not_now') }],
     });
   };
-  if (zone) body.append(zone.el);
+  // Seated beside the body, not inside it — see the note in setup-surfaces.js.
+  if (zone) surface.content.append(zone.el);
   body.append(intro, access, form, recovery);
   surface.content.append(body);
 

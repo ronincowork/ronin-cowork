@@ -5728,7 +5728,12 @@ button.wb-door:hover b {
 .cs-gbrain-choice a { color: var(--kaki); }
 
 /* Ronin Setup workspace-2 surfaces: sparse first face, detail on selection. */
-.setup-surface-body { display: grid; gap: var(--space-5); padding: var(--space-6); min-width: 0; }
+/* No inline padding: a Setup surface's body begins on the surface's own content edge, the
+   same edge its title, its header zone and any phalanx below use. It used to sit 12px inside
+   that, which at full width read as a 12px mistake rather than a margin; where the body is
+   also capped to a reading measure it still centres, and a clearly narrower column reads as
+   the choice it is. */
+.setup-surface-body { display: grid; gap: var(--space-5); padding: var(--space-6) 0; min-width: 0; }
 .setup-explainer { margin: var(--space-5) var(--space-6) 0; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); }
 .setup-explainer > summary { cursor: pointer; padding: var(--space-4); font-weight: 650; }
 .setup-explainer-body { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); padding: 0 var(--space-4) var(--space-4); }
@@ -6105,7 +6110,7 @@ button.wb-door:hover b {
 .setup-return-done { color: var(--setup-mark); }
 @media (max-width: 700px) {
   .setup-explainer-body { grid-template-columns: 1fr; }
-  .setup-surface-body { padding: var(--space-4); }
+  .setup-surface-body { padding: var(--space-4) 0; }
   .setup-services-benefit { grid-template-columns: 1fr; }
   .setup-gbrain-answer { grid-template-columns: 1fr; }
   .setup-explainer { margin: var(--space-4) var(--space-4) 0; }

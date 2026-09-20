@@ -330,7 +330,10 @@ function createRegisterSurface(context) {
       ],
     });
   };
-  if (zone) body.append(zone.el);
+  // The zone is the SURFACE's top window, so it is seated beside the body, not inside it:
+  // the body is a document capped to a reading measure and centred, and a zone that rode
+  // inside it would sit at a different edge on every step. Beside it, all five match.
+  if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
   return { el: out.el, show: async () => {
     const routeKind = context.environment?.kinds?.get?.()[0] || '';
