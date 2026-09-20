@@ -30,16 +30,17 @@ export function createLaunchView() {
   });
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(TYPES.team, workspace)),
-    team: (workspace) => {
+    team: (workspace, _detail, consumed) => {
       if (!teamBySeat[workspace]) {
         teamBySeat[workspace] = createNewTeamFormView(WorkspaceKit, {
+          consumed,
           created: async () => { await refreshTeams(); bench.refreshSelector(); },
         });
       }
       return seated(teamBySeat[workspace]);
     },
-    agent: (workspace) => {
-      if (!agentBySeat[workspace]) agentBySeat[workspace] = createNewAgentView(WorkspaceKit, {});
+    agent: (workspace, _detail, consumed) => {
+      if (!agentBySeat[workspace]) agentBySeat[workspace] = createNewAgentView(WorkspaceKit, { consumed });
       return seated(agentBySeat[workspace]);
     },
     help: (workspace) => {

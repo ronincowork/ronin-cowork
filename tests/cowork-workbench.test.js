@@ -27,10 +27,10 @@ test('Cowork roster omits a held helper and does not invent a no-team destinatio
 });
 
 test('Cowork discovery offers existing no-Team Agents as ordinary Agent destination doors', async () => {
-  const text = await source('cowork-view.js');
-  assert.match(text, /profiles\.define\(WB_PROFILES\.cowork, \[[^\]]*WB_TYPES\.terminal/);
+  const [text, catalog] = await Promise.all([source('cowork-view.js'), source('workbench-catalog.js')]);
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.cowork, \[[^\]]*WORKBENCH_TYPES\.terminal/);
   assert.match(text, /sessions: \(\) => \(campaign \? unassignedSessions\(\) : membersOfTeam\(team\)\)\.map/);
-  assert.match(text, /campaign \? \{ action: \(\) => openWorkspaceTab\('agent', member\.name\) \} : \{\}/);
+  assert.match(text, /campaign \? \{ action: \(\) => openAgentWorkbench\(member\.name\) \} : \{\}/);
 });
 
 test('Cowork launches use the standalone handoff while Team launches retain in-page seating', async () => {
