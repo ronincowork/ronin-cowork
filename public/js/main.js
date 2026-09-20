@@ -77,6 +77,7 @@ export async function init() {
     // field is gone; this changes a tab/workbench label only, never a Team or Agent.
     nameSlot: document.getElementById('viewplace'),
     mapSlot: document.getElementById('viewmap'),
+    leadingSlot: document.getElementById('viewleading'),
     actionsSlot: document.getElementById('viewactions'),
     ramRpm,
     servicesStatus,
