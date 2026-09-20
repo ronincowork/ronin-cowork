@@ -237,8 +237,9 @@ export function createInstallationsSurface(campaign, context = {}) {
       // installed is not an answer, so Good to go has to give one before it moves on, or the
       // step is left hollow behind us.
       zone.paint({ state: 'Installed.', picks: [goodToGo(async () => {
-        await environment?.answerSetupStep?.('installations', 'acted');
-        environment?.nextSetupStep?.();
+        // answerSetupStep reports whether the PATCH landed. Advancing regardless would leave
+        // the step hollow AND carry the person past the failure without showing it.
+        if (await environment?.answerSetupStep?.('installations', 'acted')) environment?.nextSetupStep?.();
       })] });
       return;
     }
