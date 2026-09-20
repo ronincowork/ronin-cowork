@@ -120,6 +120,7 @@ source view, or add link-specific restoration branches.
 | New Project | New Agent in workspace 1 | Links may replace or overlay New Agent/New Team and carry prompt or template detail |
 | Ronin Setup | Garden in workspace 1; active journey surface in workspace 2 | Journey actions select a Setup surface without another restoration path |
 | Cowork / Team | Restored seats, otherwise its empty/member seating rules | Team Configuration, documents, commons tabs, and New Agent may be addressed in seat detail |
+| Agent | Self in workspace 1; Agent Commons in workspace 2 | A successful standalone launch replaces the seats and focuses the authoritative returned Agent as Self |
 
 ## Surface inventory and required data
 
@@ -189,6 +190,19 @@ and seats. Optional feature status is independent and must not hold the frame.
 | New Agent / New Team | canonical launch form and its dependencies listed above |
 | Archived sessions | archive manifests when shown |
 | Presets / Document / Feedback | the shared surface's own reads |
+
+### Agent (`agent` profile)
+
+The route parameter is the tenant Agent. Its terminal can paint before Team and optional
+service reads finish. Team membership and Task Manager choices enrich independently.
+
+| Surface | Required data and owner |
+|---|---|
+| Self | route Agent plus the shared terminal host and transport |
+| Agent Commons | the Agent's Docs; Task Manager uses the first current Team when that tab enters |
+| Team membership | Team records and live session tags from `team-controller.js`; writes use the canonical session-membership route |
+| Task Manager | installed capability fact and the selected Team's derived Project view |
+| Document / Feedback | each shared surface's own read or submission |
 
 ## Change checklist
 

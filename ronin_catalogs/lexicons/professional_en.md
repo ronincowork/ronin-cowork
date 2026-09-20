@@ -1898,6 +1898,17 @@ The catalog entry goes. {dir} is not touched.
 - **league.launch_team:** Launch
 - **league.ronin:** Ronin: no team
 - **league.no_ronin:** No Rōnin Agents
+- **agent.workbench:** Agent
+- **agent.self:** Self
+- **agent.commons:** Commons
+- **agent.commons_summary:** Docs and Task Manager
+- **agent.team_membership:** Team membership
+- **agent.team_membership_summary:** Add or remove this Agent from installed Teams
+- **agent.join_team:** Join
+- **agent.no_teams:** No Teams are installed.
+- **agent.no_team_tasks:** Join a Team to use its Task Manager.
+- **agent.team_tasks:** {team} Task Manager
+- **agent.team_tasks_summary:** Projects held by {team}
 - **league.team_roster_removing:** Removing {session} from {team}…
 - **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
