@@ -319,11 +319,10 @@
   .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--dim); font-style: normal; }
 
-  /* Behaviors library/editor — the shared stone surface supplies responsive geometry. */
+  /* Behaviors library/viewer — the shared stone surface supplies responsive geometry. */
   .behaviour-surface .sws-detail { min-width: 0; }
   .bh-title { margin: 0; }
   .bh-summary, .bh-meta, .bh-status, .na-behaviour-intro { color: var(--muted); }
-  .bh-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0; }
   .bh-view-only { display: inline-block; margin: var(--space-3) 0; }
   .bh-reading { min-width: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-4); }
   .markdown-reader { color: var(--fg); line-height: 1.55; }
@@ -331,11 +330,6 @@
   .markdown-reader :is(pre, code) { font-family: var(--font-mono); }
   .markdown-reader pre { max-width: 100%; overflow: auto; border: var(--edge) solid var(--line-2); background: var(--well); padding: var(--space-4); }
   .markdown-reader a { color: var(--kaki); }
-  .bh-text { box-sizing: border-box; width: 100%; min-height: calc(var(--space-12) * 8); resize: vertical; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-4); font-family: var(--font-mono); line-height: 1.5; }
-  .bh-save-as { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: end; margin-top: var(--space-4); }
-  .bh-save-as[hidden] { display: none; }
-  .bh-save-as label { display: grid; flex: 1 1 calc(var(--space-12) * 5); gap: var(--space-1); color: var(--muted); font-size: var(--form-note); }
-  .bh-name { box-sizing: border-box; min-height: 40px; border: var(--edge) solid var(--line-2); background: var(--well); color: var(--fg); padding: var(--space-2) var(--space-3); font: inherit; }
   .bh-status[data-bad='true'] { color: var(--bad); }
 
 }

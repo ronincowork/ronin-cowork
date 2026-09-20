@@ -2008,7 +2008,7 @@ The catalog entry goes. {dir} is not touched.
 - **behaviours.title:** Behaviors
 - **behaviours.card_summary:** Optional, System, and Conditional guidance Agents receive at birth.
 - **behaviours.intro:** Behaviors are specific guidance given to Agents at birth.
-- **behaviours.available:** Behaviors
+- **behaviours.available:** Optional
 - **behaviours.auto:** All Cowork Agents
 - **behaviours.conditional:** Conditional
 - **behaviours.conditional_reason:** Ronin applies this when its condition matches
