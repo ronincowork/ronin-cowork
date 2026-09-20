@@ -391,6 +391,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_home.up_to_date:** Up to date
 - **campaign_home.update_available:** {version} available
 - **setup.provider_gate:** Activate one model provider in Machine Setup to use this.
+- **setup.not_now:** Not now
+- **setup.fine_for_now:** Fine for now
 - **setup.title:** Ronin Setup
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup

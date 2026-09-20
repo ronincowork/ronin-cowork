@@ -9,14 +9,10 @@ export const SETUP_SCENES = Object.freeze([
   { id: 'launch', label: 'Launch', type: 'setup.launch-own', canvas: 'library.setup.launch' },
 ].map((scene, index) => Object.freeze({ ...scene, number: index + 1 })));
 
-export function automaticSetupScene(runtime = {}) {
-  return Number(runtime?.activated_count || 0) > 0 ? 3 : 1;
-}
-
-export function setupJourney(runtime = {}, sceneOverride = 0) {
+export function setupJourney(sceneOverride = 0) {
   const requested = Number(sceneOverride);
   const number = Number.isInteger(requested) && requested >= 1 && requested <= SETUP_SCENES.length
     ? requested
-    : automaticSetupScene(runtime);
+    : 1;
   return SETUP_SCENES[number - 1];
 }

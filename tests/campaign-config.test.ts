@@ -101,6 +101,13 @@ test('campaigns share the machine configuration document', async () => {
   }, 'an explicit mixed map drops raw ids, completes every capability, and preserves only unknown keys');
   assert.equal(edited?.created_at, created.created_at);
 
+  await writeCampaign('alpha', { config: { setup: { answers: {
+    provider: 'acted', register: 'not_now', workspace: 'later' as never,
+  } } } });
+  assert.deepEqual((await readCampaign('alpha'))?.config.setup.answers, { provider: 'acted', register: 'not_now' });
+  await writeCampaign('alpha', { config: { defaults: { provider: 'openai' } } });
+  assert.deepEqual((await readCampaign('alpha'))?.config.setup.answers, { provider: 'acted', register: 'not_now' }, 'unrelated config edits preserve Setup intent');
+
   const document = JSON.parse(
     await fs.readFile(path.join(root, 'machine_settings.json'), 'utf8'),
   ) as Record<string, unknown>;
