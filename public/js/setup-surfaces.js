@@ -649,7 +649,7 @@ function createLaunchOwnSurface(context) {
     const views = [item.id === 'team' ? createEmbeddedNewTeamFormView(WorkspaceKit, {}) : createEmbeddedNewAgentView(WorkspaceKit, {})];
     host.append(...views.map((view) => view.el));
     for (const view of views) void view.enter({});
-    return () => { for (const view of views) view.el.remove(); };
+    return () => { for (const view of views) { view.destroy?.(); view.el.remove(); } };
   };
   const stones = createStoneWorkSurface({
     items: [
