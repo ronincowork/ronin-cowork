@@ -5,7 +5,6 @@ import { RIREKI_DIR, sessionKey } from './session-dir.js';
 import { readTeamRoster } from './team-rosters.js';
 import type { SessionInfo } from './tmux.js';
 import { mandate, type Mandate } from './agent-defaults.js';
-import { enqueueMessage } from './message-queue.js';
 import { normalizeProject, type Project } from './projects.js';
 
 export type TegamiProject = Project;
@@ -161,7 +160,6 @@ export interface MoveTegamiProjectResult {
 /** The house's only cross-letter project write. Roster mutation stays with its caller. */
 export async function moveTegamiProject(
   input: MoveTegamiProjectInput,
-  notify: (session: string, text: string) => Promise<unknown> = (session, text) => enqueueMessage(session, text, 'house'),
 ): Promise<MoveTegamiProjectResult> {
   const file = tegamiPath(await sessionKey(input.session));
   const text = await fs.readFile(file, 'utf8');
@@ -191,7 +189,6 @@ export async function moveTegamiProject(
   }
   parsed.body.projects = valid;
   await replaceLetterBlock(file, text, parsed, parsed.body);
-  await notify(input.session, 'Update your work record to reflect your current position, then continue the active assignment. This reminder does not replace the task or create a stopping point.');
   return { project, projectsRemaining: valid.length, focus: valid[0]?.id ?? 'none' };
 }
 
