@@ -1,7 +1,7 @@
 /* Runtime-checked workspace state and navigation values for Kit consumers. */
 import { migrateWorkbenchState } from './workspace-arrangement.js';
 export const WORKSPACE_DESTINATIONS = Object.freeze([
-  'campaign', 'cowork', 'team', 'customize', 'commons', 'configuration',
+  'campaign', 'cowork', 'team', 'agent', 'customize', 'commons', 'configuration',
 ]);
 
 /** Shared header capabilities for a movable workbench. Static views opt into only

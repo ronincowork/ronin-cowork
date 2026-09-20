@@ -14,6 +14,7 @@ import { installTips } from './tips.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
+import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createCampaignView } from './campaign-view.js';
 import { createSetupView } from './setup-view.js';
@@ -96,6 +97,9 @@ export async function init() {
   guard('register the Customize destination', () => installCustomize(workspace));
   // Cowork collection and Team detail are two scopes of the same discovery workbench.
   guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
+  // A standalone Agent is a first-class Workbench tenant. Launch handoff opens this
+  // destination; Setup does not own a private redirect or seating path.
+  guard('register the Agent destination', () => workspace.register('agent', createAgentView()));
   // over one Campaign selection the other two inherit. Registered after Cowork because
   // its Campaign door opens that Campaign's Cowork collection, and guarded like every other: the landing
   // page failing must cost the owner a page, never their terminals. `safeView` is this
