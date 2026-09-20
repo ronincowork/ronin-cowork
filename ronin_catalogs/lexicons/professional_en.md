@@ -2016,5 +2016,4 @@ The catalog entry goes. {dir} is not touched.
 - **behaviours.requires:** When
 - **behaviours.yours:** Yours
 - **behaviours.stock:** Ronin
-- **behaviours.add_own:** Add Your Own
 - **campaign_view.desk_settings:** Desk Settings

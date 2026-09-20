@@ -48,22 +48,17 @@ export function createBehaviourSurface(initial = {}) {
   const items = () => {
     const visible = rows.filter((row) => row.scope === 'floor' || row.scope === 'conditional' || (row.scope === 'selected' && !row.installation && (GENERAL.has(row.name) || row.origin === 'user')));
     const ordered = ['selected', 'floor', 'conditional'].flatMap((scope) => visible.filter((row) => row.scope === scope));
-    const stones = ordered.map((row) => ({ id: keyOf(row), label: row.label || row.name, group: group(row), secondary: row.blurb || '', state: row.origin === 'user' ? t('behaviours.yours', 'Yours') : '', row }));
-    const addAt = stones.findLastIndex((item) => item.row.scope === 'selected') + 1;
-    stones.splice(addAt, 0, {
-      id: 'selected:+', label: t('behaviours.add_own', 'Add Your Own'), group: t('behaviours.available', 'Optional'), secondary: '', className: 'sws-add', disabled: true, row: { name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: '', scope: 'selected', origin: 'user', requires: [] },
-    });
-    return stones;
+    return ordered.map((row) => ({ id: keyOf(row), label: row.label || row.name, group: group(row), secondary: row.blurb || '', state: row.origin === 'user' ? t('behaviours.yours', 'Yours') : '', row }));
   };
   async function refresh(select = '') {
     surface.setState('loading', t('customize.reading', 'reading…'));
     const result = await request('/api/ways', { cache: 'no-store' });
     if (!result.ok || !Array.isArray(result.data)) { surface.setState('failed', result.message || t('customize.not_a_list', 'the route did not answer with a list')); return; }
     rows = result.data; stones.setItems(items()); surface.setState(null, '');
-    const wanted = select || (initial.create ? 'selected:+' : initial.scope && initial.name ? `${initial.scope}:${initial.name}` : '');
+    const wanted = select || (initial.scope && initial.name ? `${initial.scope}:${initial.name}` : '');
     if (wanted) stones.select(wanted);
   }
-  return { el: surface.el, show: (detail = {}) => { if (detail.scope && (detail.name || detail.create)) initial = detail; void refresh(); }, enter: () => void refresh(), destroy: () => stones.destroy() };
+  return { el: surface.el, show: (detail = {}) => { if (detail.scope && detail.name) initial = detail; void refresh(); }, enter: () => void refresh(), destroy: () => stones.destroy() };
 }
 
 export function registerBehaviourSurface() {

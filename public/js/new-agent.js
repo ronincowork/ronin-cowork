@@ -375,11 +375,9 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       off: typeof availability === 'string' ? availability : availability.off || '',
       disabled: typeof availability === 'object' && availability.disabled === true,
     });
-    const createOwn = row({ name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: '', scope: 'selected' });
-    createOwn.disabled = true;
     const picker = ask([{ group: t('behaviours.available', 'Optional'), fields: [{
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
-      options: [...general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')), createOwn],
+      options: general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')),
     }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
