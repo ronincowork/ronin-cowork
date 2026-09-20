@@ -1,5 +1,6 @@
 # WORKTREE ROOT — get, update, and hand in
 
+- **label:** Managed worktree
 - **scope:** conditional
 - **requires:** arrangement:managed
 - **installation:** —

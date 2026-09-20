@@ -2014,11 +2014,15 @@ The catalog entry goes. {dir} is not touched.
 
 ## behaviours — behaviour-surface.js
 - **behaviours.title:** Behaviors
-- **behaviours.card_summary:** Guidance Agents receive at birth, including automatic and conditional Behaviors.
+- **behaviours.card_summary:** Optional, System, and Conditional guidance Agents receive at birth.
 - **behaviours.intro:** Behaviors are specific guidance given to Agents at birth.
-- **behaviours.available:** Available Behaviors
+- **behaviours.available:** Behaviors
 - **behaviours.auto:** Auto Selected
+- **behaviours.auto_reason:** Guaranteed for every Cowork Agent
 - **behaviours.conditional:** Conditional
+- **behaviours.conditional_reason:** Ronin applies this when its condition matches
+- **behaviours.applies_when:** Applied when
+- **behaviours.create_action:** Create in the Behaviors work surface
 - **behaviours.requires:** When
 - **behaviours.yours:** Yours
 - **behaviours.stock:** Ronin
@@ -2028,6 +2032,11 @@ The catalog entry goes. {dir} is not touched.
 - **behaviours.add_own_blurb:** Create a Behavior in your owner store.
 - **behaviours.shadow_warning:** Saving this Ronin Behavior makes it yours. Later Ronin improvements to this Behavior will not reach your copy. Continue?
 - **behaviours.save_as_name:** New Behavior name (lowercase with underscores):
+- **behaviours.create:** Create
+- **behaviours.name_invalid:** Use lowercase letters, digits, and underscores.
+- **behaviours.shadow_title:** Make this Behavior yours?
+- **behaviours.discard_title:** Discard Behavior changes?
+- **behaviours.discard:** Discard
 - **ask.view_edit:** View/Edit
 - **ask.view_edit_behaviour:** View or edit this Behavior
 - **campaign_view.desk_settings:** Desk Settings
