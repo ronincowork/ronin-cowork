@@ -40,6 +40,12 @@ import {
 import { availableBehaviours } from '../instruction-cascade.js';
 import { removeUserTemplate, saveAgentTemplate, saveTeamTemplate } from '../templates.js';
 import { browseFolders, createFolder, withRegisteredRoots } from '../folder-browser.js';
+import {
+  BehaviourDocumentError,
+  createBehaviourDocument,
+  readBehaviourDocument,
+  updateBehaviourDocument,
+} from '../behaviour-documents.js';
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
@@ -92,6 +98,21 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
+  app.get('/api/ways/:scope/:name', async (req, res) => {
+    try { res.json(await readBehaviourDocument(req.params.scope, req.params.name)); }
+    catch (e) { res.status(e instanceof BehaviourDocumentError ? e.status : 500).json({ error: errMsg(e) }); }
+  });
+
+  app.post('/api/ways', async (req, res) => {
+    try { res.status(201).json(await createBehaviourDocument(req.body ?? {})); }
+    catch (e) { res.status(e instanceof BehaviourDocumentError ? e.status : 500).json({ error: errMsg(e) }); }
+  });
+
+  app.put('/api/ways/:scope/:name', async (req, res) => {
+    try { res.json(await updateBehaviourDocument({ ...req.body, scope: req.params.scope, name: req.params.name })); }
+    catch (e) { res.status(e instanceof BehaviourDocumentError ? e.status : 500).json({ error: errMsg(e) }); }
+  });
+
   app.get('/api/campaign-default-options', async (req, res) => {
     try {
       const campaign_id = String(req.query.campaign_id ?? '').trim() || (await initialCampaign())?.id || '';
@@ -101,8 +122,8 @@ export function registerCatalogs(app: express.Express): void {
       const available = availableBehaviours(installations, campaign.config.installations, behaviours);
       res.json({
         available,
-        behaviours: behaviours.filter((row) => row.scope === 'selected').map((row) => ({
-          name: row.name, label: row.label, blurb: row.blurb, reading: row.page,
+        behaviours: behaviours.filter((row) => row.scope === 'selected' && !row.installation).map((row) => ({
+          name: row.name, label: row.label, blurb: row.blurb, reading: row.page, scope: row.scope,
         })),
       });
     } catch (e) {

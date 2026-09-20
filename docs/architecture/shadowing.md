@@ -79,6 +79,11 @@ The one exception is the resolver itself. It is `src/` code, and `src/` reaches 
 running operator only when the owner restarts (`docs/repo-to-operator.md`). Changing the
 *mechanism* needs a restart; using it does not.
 
+The Behaviors Settings editor uses the same rule through a typed server authority. Save on
+a stock Behavior explicitly creates the same scoped relative file in the owner `ways` store;
+Save on an owner Behavior updates only that file; Save As is create-only and cannot replace a
+stock or owner identity. The browser never receives or constructs an owner-store path.
+
 ## What an upgrade can and cannot touch
 
 - **Can:** everything in `ronin_catalogs/`. Assume it is replaced.

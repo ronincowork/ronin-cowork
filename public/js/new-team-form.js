@@ -296,7 +296,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     if (!LAUNCH_MODES().some((row) => row.key === draft.launchMode)) draft.launchMode = 'configured';
     if (signature !== kitSignature) {
       kitQuestions?.destroy();
-      const shelfRows = (rows) => rows.map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading }));
+      const shelfRows = (rows) => rows.filter((row) => !row.installation).map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading, edit: { name: row.name, scope: row.scope || 'selected' } }));
       kitQuestions = ask([
         { group: t('launch_mode.head', 'Launch mode'), fields: [{
           key: 'launchMode', label: t('launch_mode.mode', 'Mode'),

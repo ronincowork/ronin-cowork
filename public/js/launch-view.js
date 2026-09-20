@@ -9,11 +9,13 @@ import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from '.
 import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { WORKBENCH_HEADER } from './workspace-contract.js';
+import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
 
 const PROFILE = 'launch';
-const TYPES = Object.freeze({ team: 'launch.team', agent: 'launch.agent', help: 'launch.help', document: 'document' });
+const TYPES = Object.freeze({ team: 'launch.team', agent: 'launch.agent', help: 'launch.help', behaviours: BEHAVIOUR_SURFACE_TYPE, document: 'document' });
 function registerLaunchSurfaces() {
   registerFeedbackSurface();
+  registerBehaviourSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({
@@ -41,7 +43,7 @@ function registerLaunchSurfaces() {
     variant: 'dotted',
     create: ({ environment, workspace }) => environment.help(workspace),
   });
-  profiles.define(PROFILE, [TYPES.team, TYPES.agent, TYPES.help, TYPES.document, FEEDBACK_TYPE]);
+  profiles.define(PROFILE, [TYPES.team, TYPES.agent, TYPES.help, TYPES.behaviours, TYPES.document, FEEDBACK_TYPE]);
 }
 
 export function createLaunchView() {
@@ -92,7 +94,7 @@ export function createLaunchView() {
     onStateChange: save,
     onPlacement: save,
   });
-  installBehaviourReader(bench, TYPES.document);
+  installBehaviourReader(bench, TYPES.document, TYPES.behaviours);
 
   return {
     el: bench.host,

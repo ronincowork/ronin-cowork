@@ -22,11 +22,12 @@ import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { WORKBENCH_HEADER } from './workspace-contract.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
+import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
 
 const PROFILE = 'campaign';
 const MIKA_SESSION = 'mika_agent';
 const TERMINAL_TYPE = 'session.terminal';
-const TYPES = Object.freeze({ machine: 'campaign.machine', defaults: 'campaign.defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', installations: 'campaign.installations', providers: PROVIDER_SURFACE_TYPE, profile: 'campaign.desk-profile', create: 'campaign.new', document: 'document' });
+const TYPES = Object.freeze({ machine: 'campaign.machine', behaviours: BEHAVIOUR_SURFACE_TYPE, defaults: 'campaign.defaults', roots: 'campaign.project-roots', identity: 'campaign.identity', installations: 'campaign.installations', providers: PROVIDER_SURFACE_TYPE, profile: 'campaign.desk-profile', create: 'campaign.new', document: 'document' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
@@ -58,6 +59,7 @@ function registerCampaignSurfaces() {
   registerSetupSurfaces();
   registerPasswordSurface();
   registerFeedbackSurface();
+  registerBehaviourSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({
@@ -91,7 +93,7 @@ function registerCampaignSurfaces() {
   // New Desk is not registered while multiple Campaigns are off.
   profiles.define(PROFILE, [
     TERMINAL_TYPE,
-    TYPES.machine, PASSWORD_SURFACE_TYPE, TYPES.installations, TYPES.providers,
+    TYPES.machine, TYPES.behaviours, PASSWORD_SURFACE_TYPE, TYPES.installations, TYPES.providers,
     SETUP_SURFACE_TYPES.register, FEEDBACK_TYPE,
     TYPES.identity, TYPES.defaults, TYPES.roots, SETUP_SURFACE_TYPES.launchOwn, TYPES.document,
     ...(MULTIPLE_CAMPAIGNS_ENABLED ? [TYPES.create] : []),

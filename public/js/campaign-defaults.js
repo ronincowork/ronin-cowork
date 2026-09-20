@@ -68,7 +68,7 @@ export function createAgentDefaultsSurface(campaign) {
       ] },
       { group: t('campaign_view.default_behaviours', 'Behaviours'), fields: [{
         key: 'behaviours', label: t('campaign_view.default_behaviours', 'Behaviours'), many: true, shape: 'tall',
-        options: availableBehaviours.map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading })),
+        options: availableBehaviours.map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading, edit: { name: row.name, scope: row.scope || 'selected' } })),
       }] },
     ], { value: picked, trayHost: questionsRow, onChange: (value) => { picked = value; edited = value; } });
     questionsRow.append(questions.el); form.append(questionsRow);

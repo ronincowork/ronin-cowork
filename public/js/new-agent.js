@@ -361,20 +361,20 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   void loadProviderCatalog().then(() => questions.paint());
 
   /* ---- 7 · Loadout ---- */
-  const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('loadout', 'Tools and skills'), onToggle: () => toggle('loadout') });
+  const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('behaviours', 'Behaviors'), onToggle: () => toggle('loadout') });
   const availableBehaviours = () => (seed?.behaviours || []).filter((row) => row.available === true);
   const shelvesHost = el('div');
   function paintShelves() {
     const picker = ask([{ group: t('behaviours', 'Behaviours'), fields: [{
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
-      options: availableBehaviours().map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading,
+      options: availableBehaviours().filter((row) => !row.installation).map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading, edit: { name: row.name, scope: row.scope || 'selected' },
         off: row.required ? t('team_config.required', 'Required for each new Agent') : '' })),
     }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
     shelvesHost.replaceChildren(picker.el);
   }
-  stepLoadout.body.append(shelvesHost);
+  stepLoadout.body.append(el('p', 'na-behaviour-intro', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')), shelvesHost);
 
   /* ---- the plan: which steps exist for this type and door ---- */
   const steps = {
