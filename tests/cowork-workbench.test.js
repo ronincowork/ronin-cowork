@@ -32,3 +32,8 @@ test('Cowork discovery offers existing no-Team Agents as ordinary Agent destinat
   assert.match(text, /sessions: \(\) => \(campaign \? unassignedSessions\(\) : membersOfTeam\(team\)\)\.map/);
   assert.match(text, /campaign \? \{ action: \(\) => openWorkspaceTab\('agent', member\.name\) \} : \{\}/);
 });
+
+test('Cowork launches use the standalone handoff while Team launches retain in-page seating', async () => {
+  const text = await source('cowork-view.js');
+  assert.match(text, /connect: campaign \? null : async \(name\) => \{[\s\S]*fetchSessions\(\);[\s\S]*connectSession\(name, id\)/);
+});

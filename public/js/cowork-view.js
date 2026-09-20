@@ -335,7 +335,10 @@ export function createCoworkView(options = {}) {
             else openWorkbenchTab({ destination: 'team', param: name, mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: DISMISSED_WORKSPACE } } });
           },
           openDeskDefaults: () => openWorkbenchTab({ destination: 'campaign', mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' } } }),
-          connect: async (name) => {
+          // A Team launch hands its workspace to the newborn. Cowork has no Team-local
+          // seat contract: its successful no-Team launch opens the standalone Agent
+          // destination through new-agent's shared launch handoff.
+          connect: campaign ? null : async (name) => {
             await fetchSessions();
             return connectSession(name, id);
           },
