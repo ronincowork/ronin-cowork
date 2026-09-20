@@ -65,9 +65,9 @@ test('every core seating case uses only real receipt objects and missing objects
 });
 
 test('the integrated Setup/Cowork adapters use the ordinary launch routes', async () => {
-  const [setup, cowork, launch, workspace, launchView, agentForm, teamForm] = await Promise.all([
+  const [setup, cowork, launch, workspace, launchView, agentForm, teamForm, catalog] = await Promise.all([
     source('setup-view.js'), source('cowork-view.js'), source('preset-launch.js'), source('workspace.js'),
-    source('launch-view.js'), source('new-agent.js'), source('new-team-form.js'),
+    source('launch-view.js'), source('new-agent.js'), source('new-team-form.js'), source('workbench-catalog.js'),
   ]);
   assert.match(setup, /reserveLaunchTab: reserveWorkspaceTab/);
   assert.match(cowork, /reserveLaunchTab: reserveWorkspaceTab/);
@@ -85,9 +85,9 @@ test('the integrated Setup/Cowork adapters use the ordinary launch routes', asyn
   assert.match(setup, /showNewSession: \(prompt\) => \{[\s\S]*workbenchLaunchUrl\(\{ destination: 'launch', mode: 'overlay'/);
   assert.doesNotMatch(setup, /openLaunchForm|patchViewState\('launch', \{ prompt/);
   assert.match(cowork, /createDocumentWorkspaceAdapter\(\{ root: detail\.root, path: detail\.path \|\| detail\.key \}\)/);
-  assert.match(cowork, /profiles\.define\(WB_PROFILES\.cowork, \[[^\]]*WB_TYPES\.document[^\]]*\]\)/);
-  assert.match(cowork, /type: WB_TYPES\.document[^\n]*discover: \(\) => \[\]/);
-  assert.doesNotMatch(cowork, /profiles\.define\(WB_PROFILES\.team, \[[^\]]*WB_TYPES\.document/);
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.cowork, \[[^\]]*WORKBENCH_TYPES\.document[^\]]*\]\)/);
+  assert.match(catalog, /type: WORKBENCH_TYPES\.document[^\n]*discover: \(\) => \[\]/);
+  assert.doesNotMatch(catalog, /profiles\.define\(WORKBENCH_PROFILES\.team, \[[^\]]*WORKBENCH_TYPES\.document/);
   assert.match(cowork, /const restorationMembers = \(\) => campaign && !team \? unassignedSessions\(\) : membersOfTeam\(team\)/);
   assert.match(cowork, /syncPools\(restorationMembers\(\)\)/);
   const docs = await source('docs.js');

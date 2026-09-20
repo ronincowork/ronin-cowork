@@ -57,14 +57,14 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
 });
 
 test('both workbench entrances use the canonical New Agent form with contextual Team default', async () => {
-  const cowork = await source('cowork-view.js');
+  const [cowork, catalog] = await Promise.all([source('cowork-view.js'), source('workbench-catalog.js')]);
   assert.doesNotMatch(cowork, /createAddAgentView/);
   assert.doesNotMatch(cowork, /WB_TYPES\.addAgent|addAgentBySeat|environment\.addAgent/);
-  assert.match(cowork, /profiles\.define\(WB_PROFILES\.team, \[WB_TYPES\.commons, WB_TYPES\.kanban, WB_TYPES\.terminal, WB_TYPES\.newAgent/);
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.team, \[WORKBENCH_TYPES\.commons, WORKBENCH_TYPES\.kanban, WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.newAgent/);
   assert.match(cowork, /const newAgentBySeat = \{\};[\s\S]*newAgent: \(id, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{[\s\S]*consumed,[\s\S]*team: \(\) =>/);
   assert.match(cowork, /openTeamDefaults:[\s\S]*putCommons\(oppositeSeat\(id\), 'team-configuration'\)/);
   assert.match(cowork, /openDeskDefaults: \(\) => openWorkbenchTab\(\{ destination: 'campaign', mode: 'replace',[\s\S]*workspace1: 'campaign\.defaults'[\s\S]*workspace2: 'setup\.launch-own'/);
-  assert.match(cowork, /connect: async \(name\) => \{\s*await fetchSessions\(\);\s*return connectSession\(name, id\)/);
+  assert.match(cowork, /connect: campaign \? null : async \(name\) => \{\s*await fetchSessions\(\);\s*return connectSession\(name, id\)/);
   assert.match(cowork, /const live = new Set\(S\.sessions\.map/, 'a newborn is not discarded against the slower home reading');
   assert.doesNotMatch(cowork, /legacyTypes|team\.add-agent|@new-team|@team-roster/,
     'restoration uses canonical Workbench surface types only');

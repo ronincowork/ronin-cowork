@@ -31,22 +31,27 @@ test('all Workbench defaults share the quiet Ronin surface', async () => {
 });
 
 test('New Team is consumed only after complete creation and destination opening', async () => {
-  const [form, cowork] = await Promise.all([source('new-team-form.js'), source('cowork-view.js')]);
+  const [form, cowork, catalog, launch] = await Promise.all([
+    source('new-team-form.js'), source('cowork-view.js'), source('workbench-catalog.js'), source('launch-view.js'),
+  ]);
   assert.match(form, /\{ created = null, consumed = null, embedded = false \}/);
   assert.match(form, /if \(launched\.length\) openLaunchHandoff\(\{ team: name, sessions: launched \}, launchTab\);[\s\S]*await created\?\.\(name\);\s*await consumed\?\.\(\);/);
   const partial = form.slice(form.indexOf('if (refused.length)'), form.indexOf("notice.set('', '')"));
   assert.doesNotMatch(partial, /consumed/);
-  assert.match(cowork, /create: \(\{ workspace, environment, consumed \}\) => environment\.newTeamForm\(workspace, consumed\)/);
+  assert.match(catalog, /environment\.newTeamForm\(workspace, consumed\)/);
   assert.match(cowork, /createNewTeamFormView\(WorkspaceKit, \{ consumed,/);
+  assert.match(launch, /team: \(workspace, _detail, consumed\)[\s\S]*createNewTeamFormView\(WorkspaceKit, \{\s*consumed,/);
 });
 
 test('New Agent consumes its workbench form only after a successful handoff', async () => {
-  const [form, cowork, setup] = await Promise.all([
+  const [form, cowork, setup, catalog, launch] = await Promise.all([
     source('new-agent.js'), source('cowork-view.js'), source('setup-surfaces.js'),
+    source('workbench-catalog.js'), source('launch-view.js'),
   ]);
   assert.match(form, /\{ connect = null, consumed = null, embedded = false, team = null,[^}]+ \}/);
   assert.match(form, /if \(connect\) await connect\(born\);\s*else openLaunchHandoff\([^;]+;\s*clearAfterLaunch\(\);\s*await consumed\?\.\(\);/);
-  assert.match(cowork, /create: \(\{ workspace, environment, consumed \}\) => environment\.newAgent\(workspace, consumed\)/);
+  assert.match(catalog, /environment\.newAgent\(workspace, consumed\)/);
   assert.match(cowork, /createNewAgentView\(WorkspaceKit, \{\s*consumed,/);
+  assert.match(launch, /agent: \(workspace, _detail, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{ consumed \}\)/);
   assert.doesNotMatch(setup, /createEmbeddedNewAgentView\([^)]*consumed/);
 });
