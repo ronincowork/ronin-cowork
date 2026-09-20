@@ -6057,6 +6057,13 @@ button.wb-door:hover b {
 .setup-step-answer[data-answered='true'] b { color: var(--setup-mark); }
 .setup-step-footer .wk-action[data-kind='quiet'] { background: transparent; color: var(--muted-2); }
 .setup-step-footer .wk-action[data-kind='link'] { border-color: transparent; background: transparent; color: var(--muted); padding-inline: var(--space-2); text-decoration: underline; }
+.setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-9); width: 100%; min-width: 0; height: var(--sws-header-height, clamp(6rem, 15dvh, 9rem)); overflow: hidden; }
+.setup-zone-state { min-height: calc(var(--form-input) * 1.4 * 2); max-width: 40rem; margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: 500; line-height: 1.4; }
+.setup-zone-options { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.setup-zone-pick { display: flex; flex: 0 0 140px; flex-direction: column; justify-content: center; width: 140px; height: 40px; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--panel); color: var(--fg); padding: var(--space-2) var(--space-4); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease); }
+.setup-zone-pick:hover { border-color: var(--kaki); }
+.setup-zone-pick[aria-pressed='true'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); background: color-mix(in srgb, var(--kaki) 7%, var(--panel)); }
+.setup-zone-pick-name { display: block; overflow: hidden; color: var(--fg-strong); font-size: var(--form-input); font-weight: 500; line-height: 1.2; white-space: nowrap; text-overflow: ellipsis; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
    were five separate things. The lean is one angle shared by every mark and never changes
    with state — only the fill moves, so the row cannot reflow as answers land. */
