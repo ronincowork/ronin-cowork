@@ -3,7 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { mountSetupStepFooter } from './setup-step-footer.js';
+import { createSetupZoneSlot, goodToGo } from './setup-zone.js';
 
 export const PASSWORD_SURFACE_TYPE = 'machine.password';
 
@@ -67,6 +67,43 @@ export function createPasswordSurface(context = {}) {
     el('p', 'setup-fine', t('password.recovery_help', 'On the machine running Ronin, open a terminal in the Ronin installation and run bin/ronin-recovery. Enter the one-time code under “Use a recovery code” on the login page. It works without the old password and expires after 30 minutes.')),
   );
   access.append(selectorHost, changeRow.el, note.el, reach, basic);
+  /**
+   * Step 5's header zone. Tailscale is a fact about this machine, read from the Setup scan
+   * (progress.facts.tailscale). It is three-valued on purpose: absent means the scan has not
+   * said yet, which is not the same as saying Tailscale is missing, so the zone declines to
+   * claim either until it knows.
+   */
+  const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
+  let passwordRequired = false;
+  const paintZone = () => {
+    if (!zone) return;
+    const progress = context.environment?.setupProgress?.();
+    const step = progress?.steps?.find((entry) => entry.id === 'password');
+    const tailscale = progress?.facts?.tailscale;
+    if (step?.answered) {
+      zone.paint({
+        state: passwordRequired ? 'Password set.' : 'Tailnet only. No password.',
+        picks: [goodToGo(() => context.environment?.nextSetupStep?.())],
+      });
+      return;
+    }
+    const addPassword = { label: 'Add password', action: () => openForm('enable') };
+    if (tailscale === true) {
+      zone.paint({
+        state: 'Tailnet available. Add a password as well?',
+        picks: [
+          { label: 'Tailnet only', action: () => context.environment?.answerSetupStep?.('password', 'not_now') },
+          addPassword,
+        ],
+      });
+      return;
+    }
+    zone.paint({
+      state: tailscale === false ? 'Tailnet not available on this machine.' : 'Checking how you reach this machine\u2026',
+      picks: [addPassword, { label: 'No password', action: () => context.environment?.answerSetupStep?.('password', 'not_now') }],
+    });
+  };
+  if (zone) body.append(zone.el);
   body.append(intro, access, form, recovery);
   surface.content.append(body);
 
@@ -100,10 +137,15 @@ export function createPasswordSurface(context = {}) {
     basic.hidden = state?.basic !== true;
     basic.textContent = t('password.basic_kept', 'Legacy Basic authentication is also configured. Turning this password Off does not remove that separate restriction.');
     context.environment?.onPasswordState?.({ required: saved, basic: state?.basic === true });
+    passwordRequired = saved;
+    paintZone();
   };
 
-  selector = ask([{ group: t('password.access', 'Browser access'), fields: [{
-    key: 'required', label: t('password.require', 'Require a password'), switch: [t('password.on', 'On'), t('password.off', 'Off')],
+  // No group head: the section's own h3 already says 'Browser access', and the head repeated
+  // it word for word directly beneath. The label is shortened to fit the shared stone rather
+  // than stretch it — it was ellipsing to 'Require a passw…'.
+  selector = ask([{ fields: [{
+    key: 'required', label: t('password.require', 'Require password'), switch: [t('password.on', 'On'), t('password.off', 'Off')],
   }] }], {
     value: { required: false },
     onChange: (next) => {
@@ -155,14 +197,7 @@ export function createPasswordSurface(context = {}) {
     if (!result.ok) { say(result.message, true); return; }
     paint(result.data); say('');
   };
-  const stopFooter = context.environment?.answerSetupStep ? mountSetupStepFooter(body, context.environment, {
-    id: 'password', number: 5, pending: 'Not answered yet', complete: 'Answered',
-    actions: () => [
-      { label: 'Set a password', quiet: 'quiet', action: () => openForm('enable') },
-      { label: 'Tailnet is enough', kind: 'primary', action: () => context.environment?.answerSetupStep?.('password', 'not_now') },
-    ],
-  }) : () => {};
-  return { el: surface.el, show, destroy: () => { stopFooter(); selector.destroy(); } };
+  return { el: surface.el, show, destroy: () => selector.destroy() };
 }
 
 export function passwordSurfaceDefinition() {

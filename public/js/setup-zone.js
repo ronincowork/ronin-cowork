@@ -62,6 +62,19 @@ export function createSetupZone({ className = '' } = {}) {
 }
 
 /**
+ * The same zone for a step whose surface is a document rather than a stone work surface.
+ * A stone surface already has `.sws-header` to seat it in; this is that slot, at the same
+ * height, so the two kinds of step keep one rhythm.
+ */
+export function createSetupZoneSlot(options) {
+  const zone = createSetupZone(options);
+  const slot = document.createElement('div');
+  slot.className = 'setup-zone-slot';
+  slot.append(zone.el);
+  return { el: slot, paint: zone.paint };
+}
+
+/**
  * The pick every answered step ends on: one stone that moves to the next step. The step
  * says what it is good to go *from* in its own state line, so the words here never change.
  */

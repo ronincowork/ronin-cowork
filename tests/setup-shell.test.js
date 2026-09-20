@@ -156,7 +156,8 @@ test('Setup progression paints the server record and leaves completion actions i
   assert.doesNotMatch(setup, /nextAction|notNowAction|seatNext|seatNotNow/, 'the surface header owns no hidden progression controls');
   assert.match(setup, /garden\.controls\.replaceChildren\(\);[\s\S]*garden\.controls\.hidden = true/, 'Workspace 1 cannot retain the progression action');
   assert.doesNotMatch(setup, /saveCampaign|setupAnswers|providers\/measure/, 'the client neither writes Campaign answers nor researches the machine');
-  assert.match(style, /\.setup-step-footer \{/);
+  assert.match(style, /\.setup-zone \{/, 'Setup answers in the header zone, not a per-step footer');
+  assert.doesNotMatch(style, /\.setup-step-footer \{/, 'the per-step footer is retired');
   assert.match(style, /\.setup-scan\[data-state='scanning'\]/);
   assert.doesNotMatch(setup, /data\.stepState|flashSelector|setup-selector-pulse/);
   assert.match(style, /data-workbench-profile='setup'[\s\S]*?\.wk-card\[aria-current='page'\][^}]*background: var\(--kaki\)/, 'only the selected card gets the orange fill');

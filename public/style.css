@@ -6051,12 +6051,6 @@ button.wb-door:hover b {
 .setup-scan[data-state='scanning'] .setup-scan-word { color: var(--setup-mark); }
 .setup-scan[data-state='failed'] .setup-scan-word { color: var(--bad-soft); }
 .setup-scan-word:empty { display: none; }
-.setup-step-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); margin-top: var(--space-9); padding-top: var(--space-7); border-top: var(--edge) solid var(--line); }
-.setup-step-answer { margin: 0; margin-right: auto; color: var(--muted); font-size: var(--text-3); }
-.setup-step-answer b { color: var(--fg-strong); font-weight: 650; }
-.setup-step-answer[data-answered='true'] b { color: var(--setup-mark); }
-.setup-step-footer .wk-action[data-kind='quiet'] { background: transparent; color: var(--muted-2); }
-.setup-step-footer .wk-action[data-kind='link'] { border-color: transparent; background: transparent; color: var(--muted); padding-inline: var(--space-2); text-decoration: underline; }
 /* THE SETUP HEADER ZONE. It sits in the work surface's own content box and adds no inset of
    its own, so its state line and its picks begin on the same left edge as the surface's own
    title and footer. A hairline divides the zone from the phalanx rather than a box: a box
@@ -6074,8 +6068,11 @@ button.wb-door:hover b {
    (launch-forms.css, owner 2026-09-13) — the line lifts, nothing fills, and the words stay
    put, because the zone is a region to read, not a control to press. */
 .sws-header:has(> .setup-zone) { box-sizing: border-box; }
+/* A step whose surface is a document, not a phalanx, seats the zone in this instead of
+   .sws-header. Same height, so both kinds of step keep one rhythm down the five. */
+.setup-zone-slot { display: flex; flex: 0 0 auto; align-items: flex-start; box-sizing: border-box; min-width: 0; block-size: var(--sws-header-height, clamp(6rem, 15dvh, 9rem)); overflow: hidden; }
 .setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-9); box-sizing: border-box; width: 100%; min-width: 0; height: calc(100% - var(--space-9)); overflow: hidden; border-bottom: var(--edge) solid var(--line); padding: var(--space-6) 0 0; transition: border-color var(--motion-quick) var(--ease); }
-.sws-header:has(> .setup-zone):hover > .setup-zone { border-bottom-color: var(--kaki); }
+:is(.sws-header, .setup-zone-slot):has(> .setup-zone):hover > .setup-zone { border-bottom-color: var(--kaki); }
 .setup-zone-state { min-height: calc(var(--form-input) * 1.4 * 2); max-width: 40rem; margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: 500; line-height: 1.4; }
 .setup-zone-options { width: auto; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles

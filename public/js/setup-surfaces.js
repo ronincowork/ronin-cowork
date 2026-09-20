@@ -16,7 +16,7 @@ import { HOUSE_PRESETS, PRESETS_TYPE, buildLaunchPlan, initialControls, seatingP
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { createInstallationsSurface } from './campaign-installations.js';
-import { mountSetupStepFooter } from './setup-step-footer.js';
+import { createSetupZoneSlot, goodToGo } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
 
 // Model providers is the one surface two workbenches seat (provider-surface.js); its type
@@ -309,15 +309,29 @@ function createRegisterSurface(context) {
       if (result.ok) { current = result.data; paint(); }
     }));
     notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
+    paintZone();
   };
+  /** Step 2's header zone. Registering is the decision; the form below is how it is done. */
+  const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
+  const paintZone = () => {
+    if (!zone) return;
+    if (current?.status === 'registered') {
+      zone.paint({ state: 'Registration complete.', picks: [goodToGo(() => context.environment?.nextSetupStep?.())] });
+      return;
+    }
+    const declinedAlready = context.environment?.setupProgress?.()?.steps?.find((step) => step.id === 'register')?.answer === 'not_now';
+    zone.paint({
+      state: 'Register to join the community and share your experience — it makes Ronin better for everyone.',
+      picks: [
+        { label: 'Register', action: () => registerAction.click() },
+        { label: 'No thank you',
+          chosen: declinedAlready,
+          action: () => { identityMode.set('no_thanks'); void context.environment?.answerSetupStep?.('register', 'not_now'); } },
+      ],
+    });
+  };
+  if (zone) body.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
-  const stopFooter = mountSetupStepFooter(body, context.environment, {
-    id: 'register', number: 2, pending: 'Not answered yet', complete: 'Answered',
-    actions: () => [
-      { label: 'No thank you', action: () => { identityMode.set('no_thanks'); void context.environment?.answerSetupStep?.('register', 'not_now'); } },
-      { label: 'Send registration', kind: 'primary', action: () => registerAction.click() },
-    ],
-  });
   return { el: out.el, show: async () => {
     const routeKind = context.environment?.kinds?.get?.()[0] || '';
     kind.set({ build: 'build_software', life: 'life_assistants', research: 'research_writing', other: 'other' }[routeKind] || '');
@@ -332,7 +346,7 @@ function createRegisterSurface(context) {
       userIntro.hidden = Boolean(userIntroText.value.trim());
     }
     paint();
-  }, destroy: stopFooter };
+  }, destroy: () => {} };
 }
 
 function createRootsSurface(context) {
@@ -686,21 +700,14 @@ function createSetupInstallationsSurface(context) {
     onInstallationChange: () => context.environment?.onInstallationChoice?.(),
     createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
   });
-  const host = page.el.querySelector('.wk-surface-content') || page.el;
-  const stopFooter = mountSetupStepFooter(host, context.environment, {
-    id: 'installations', number: 4, pending: 'Not answered yet', complete: 'Answered',
-    actions: () => [
-      { label: 'No, I’m good', action: () => context.environment?.answerSetupStep?.('installations', 'not_now') },
-      { label: 'Keep these installations', kind: 'primary', action: () => context.environment?.answerSetupStep?.('installations', 'acted') },
-    ],
-  });
+  // Step 4 answers in its header zone (see campaign-installations.js); the footer is retired.
   // Setup chooses and sequences the shared page; it does not change the page's controls.
   // The shared Services model owns the Install, Turn on, and Restart gates in every
   // workbench, and the server independently enforces the same capabilities.
   return { el: page.el, show: async () => {
     await loadCampaigns();
     await page.enter();
-  }, destroy: () => { stopFooter(); page.destroy?.(); } };
+  }, destroy: () => { page.destroy?.(); } };
 }
 
 export function setupSurfaceDefinitions() {
