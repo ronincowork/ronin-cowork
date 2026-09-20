@@ -325,7 +325,6 @@
   .bh-summary, .bh-meta, .bh-status, .na-behaviour-intro { color: var(--muted); }
   .bh-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0; }
   .bh-view-only { display: inline-block; margin: var(--space-3) 0; }
-  .na-behaviour-sections > .ask + .ask { margin-top: var(--space-6); }
   .bh-reading { min-width: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-4); }
   .markdown-reader { color: var(--fg); line-height: 1.55; }
   .markdown-reader > :first-child { margin-top: 0; }
