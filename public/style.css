@@ -6037,6 +6037,7 @@ button.wb-door:hover b {
    it is the same shape in a selector column and in a header; a consumer that needs
    another size sets it under its own class, as the card does below. */
 .setup-steps-bar { --slab: var(--space-10); --slab-w: 16px; --slab-gap: var(--space-1); --slab-type: var(--text-3); --skew: -14deg; display: flex; align-items: center; flex: 0 0 auto; gap: var(--slab-gap); }
+.setup-steps-header { display: inline-flex; align-items: center; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
    were five separate things. The lean is one angle shared by every mark and never changes
    with state — only the fill moves, so the row cannot reflow as answers land. */
