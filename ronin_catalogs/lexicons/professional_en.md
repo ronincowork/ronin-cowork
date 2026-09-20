@@ -1076,6 +1076,7 @@ The catalog entry goes. {dir} is not touched.
 - **roots.github_not_installed:** Not installed
 - **roots.github_signed_in:** Signed in as {account}
 - **roots.github_not_signed_in:** Not signed in
+- **roots.github_auth_unreadable:** Could not verify
 - **roots.github_after_install:** After install
 - **roots.github_ready:** Ready to clone
 - **roots.github_not_ready:** Not yet
@@ -1087,6 +1088,7 @@ The catalog entry goes. {dir} is not touched.
 - **roots.github_missing:** GitHub CLI is not installed.
 - **roots.github_connected:** Connected to GitHub as {account}.
 - **roots.github_not_connected:** GitHub is not connected on this machine.
+- **roots.github_unreadable:** Ronin could not verify GitHub authentication.
 - **roots.github_waiting:** Finish GitHub authentication in the window first.
 - **roots.github_clone_stone:** Clone a repository
 - **roots.github_clone_state:** Authenticate first
