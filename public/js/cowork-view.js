@@ -35,6 +35,7 @@ import { createMikaHelpPanel } from './mika.js';
 import { orderCoworkTeams } from './cowork-workbench-contract.js';
 import { retireSession } from './session-retire.js';
 import { installBehaviourReader } from './behaviour-reader.js';
+import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
 import { createTeamKanban, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
 
 const el = (tag, cls, text) => {
@@ -75,6 +76,7 @@ const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 function registerWorkbenchCatalog() {
   registerFeedbackSurface();
   registerPresetsSurface();
+  registerBehaviourSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: WB_TYPES.commons, header: 'tabs', className: 'wk-selector-utility', label: () => t('team.commons_card', 'Commons'), summary: () => t('team.commons_summary', 'See Roster / Docs / Wipeboard / Task Manager / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
@@ -88,8 +90,8 @@ function registerWorkbenchCatalog() {
   add({ type: WB_TYPES.archives, header: 'surface', className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
   add({ type: WB_TYPES.document, header: 'surface', label: () => t('docs.frame_title', 'Document'), discover: () => [], create: ({ detail, environment }) => environment.document(detail) });
   add({ type: WB_TYPES.team, header: 'surface', className: 'wk-selector-entity', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
-  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.terminal, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, WB_TYPES.document, PRESETS_TYPE, FEEDBACK_TYPE]);
-  profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.kanban, WB_TYPES.terminal, WB_TYPES.newAgent, FEEDBACK_TYPE]);
+  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.cron, WB_TYPES.team, WB_TYPES.terminal, WB_TYPES.newTeamForm, WB_TYPES.newAgent, WB_TYPES.archives, WB_TYPES.document, BEHAVIOUR_SURFACE_TYPE, PRESETS_TYPE, FEEDBACK_TYPE]);
+  profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.kanban, WB_TYPES.terminal, WB_TYPES.newAgent, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
 }
 export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
@@ -365,6 +367,7 @@ export function createCoworkView(options = {}) {
     // While ミ Help is open the column is Mika's, and every repaint says so.
     title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : campaign ? teamsLabel : t('team.roster_title', 'Roster'),
     actions: [rosterNote, mikaHelp], deferSelector: true,
+    selectorFilter: (type) => type !== BEHAVIOUR_SURFACE_TYPE,
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,
     onStateChange: () => remember(), onPlacement: (_snapshot, change) => {

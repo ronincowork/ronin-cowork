@@ -13,7 +13,7 @@ const node = (tag, cls = '', text = '') => { const out = document.createElement(
 const keyOf = (row) => `${row.scope}:${row.name}`;
 
 function group(row) {
-  if (row.scope === 'floor') return t('behaviours.auto', 'Auto Selected');
+  if (row.scope === 'floor') return t('behaviours.auto', 'All Cowork Agents');
   if (row.scope === 'conditional') return t('behaviours.conditional', 'Conditional');
   return t('behaviours.available', 'Behaviors');
 }

@@ -437,7 +437,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **help.installations:** What an Installation is
 - **help.installations_body:** An Installation is a system-level switch in the Campaign. A system installation joins every Cowork Agent; a provider installation makes its behaviours available for Teams and Agents to choose.
 - **help.behaviours:** What a Behavior is
-- **help.behaviours_body:** Behaviors are specific guidance given to Agents at birth. Write it Down, Planning, Team work, Visual Staging, and Working with the User are selectable; Auto Selected and Conditional Behaviors are applied by Ronin when their rules match.
+- **help.behaviours_body:** Behaviors are specific guidance given to Agents at birth. Write it Down, Planning, Team Work, Visual Staging, and Working with the User are selectable; All Cowork Agents and Conditional Behaviors are applied by Ronin when their rules match.
 - **help.type:** New session
 - **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born with everything Ronin provides on this box. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a shell with no agent. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
 - **help.top:** Name & kind
@@ -2009,8 +2009,7 @@ The catalog entry goes. {dir} is not touched.
 - **behaviours.card_summary:** Optional, System, and Conditional guidance Agents receive at birth.
 - **behaviours.intro:** Behaviors are specific guidance given to Agents at birth.
 - **behaviours.available:** Behaviors
-- **behaviours.auto:** Auto Selected
-- **behaviours.auto_reason:** Guaranteed for every Cowork Agent
+- **behaviours.auto:** All Cowork Agents
 - **behaviours.conditional:** Conditional
 - **behaviours.conditional_reason:** Ronin applies this when its condition matches
 - **behaviours.applies_when:** Applied when
