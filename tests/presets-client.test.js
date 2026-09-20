@@ -305,7 +305,9 @@ test('Where lists every tracked workspace folder and refills in place when one i
   const addFolder = [...surface.el.walk()].find((node) => node.tagName === 'BUTTON' && node.textContent === '＋ workspace folder');
   assert.ok(addFolder, 'the door to keep another folder sits beside Where');
   addFolder.click();
-  assert.deepEqual(navigated, [{ type: 'setup.roots', detail: {} }], 'the shared host navigation opens Workspace Folders');
+  assert.deepEqual(navigated, [{ type: 'setup.roots', detail: {
+    origin: { kind: 'preset', workspace: 'workspace1', preset: 'ronin_team' },
+  } }], 'the shared host can return from Workspace Folders to this Preset');
 });
 
 test('production Presets hosts provide shared Workspace Folder navigation and the live catalog', async () => {
@@ -318,8 +320,10 @@ test('production Presets hosts provide shared Workspace Folder navigation and th
     assert.match(host, /onTrackedRoots: onProjects/);
     assert.match(host, /navigateToSurface:/);
   }
-  assert.match(setup, /navigateToSurface: \(type\) => openSurface\(type\)/);
-  assert.match(cowork, /navigateToSurface: \(type\) => type === 'setup\.roots' && navigateToWorkspaceFolders\(ctx\)/);
+  assert.match(setup, /navigateToSurface: \(type, detail = \{\}\) => \{[\s\S]*detail\.origin[\s\S]*openSurface\(type\)/,
+    'Setup retains the origin needed to return to the open Preset');
+  assert.match(cowork, /navigateToSurface: \(type, detail\) => type === 'setup\.roots' && navigateToWorkspaceFolders\(ctx, detail\)/,
+    'Cowork forwards navigation detail to the shared Workspace Folders route');
 });
 
 test('Code Stack Eval keeps ticked folders on Apply and evaluates the chosen one', async () => {

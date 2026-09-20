@@ -11,7 +11,8 @@ test('Setup and Settings use the same Workspace Folders stone presentation', asy
     source('public/js/workspace-folders-surface.js'),
   ]);
   assert.match(setup, /createWorkspaceFoldersSurface\(\{[\s\S]*presentation: 'stones'/);
-  assert.match(campaign, /createWorkspaceFoldersSurface\(\{[\s\S]*presentation: 'stones'[\s\S]*environment: e,[\s\S]*workspace,/);
+  assert.match(campaign, /campaignRoots: \(\{ workspace \}\) => createWorkspaceFoldersSurface\(\{[\s\S]*presentation: 'stones',[\s\S]*environment,[\s\S]*workspace,/,
+    'Settings delegates its live environment and workspace to the shared stone surface');
   assert.doesNotMatch(campaign, /worktreesDefault/);
   assert.match(shared, /presentation === 'stones' \? createGithubWorkspaceSetup/);
   assert.match(shared, /presentation \? \{[\s\S]*presentation,[\s\S]*extraItems: github\?\.items \|\| \[\],[\s\S]*onSelection: \(id\) => environment\?\.onWorkspaceFolderChosen\?\.\(id\),[\s\S]*\} : \{\}/);
