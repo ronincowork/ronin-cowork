@@ -56,14 +56,12 @@ const typeText = async (name: string, text: string) => {
   // Explicit paste boundaries prevent a CLI from treating Enter as pasted text.
   await pasteToPane(name, text, true);
 };
-/** Cancel copy mode and submit as one tmux command queue. Enter is a key action, never
- * pasted data; keeping both commands in one request leaves no viewer race between them. */
-export const submitCommand = (name: string): string[] => [
-  'send-keys', '-t', exactPane(name), '-X', 'cancel',
-  ';',
-  'send-keys', '-t', exactPane(name), 'Enter',
-];
-const pressEnter = (name: string) => tmux.run(submitCommand(name));
+/** Leave copy mode when it is active, then unconditionally submit with a real key action.
+ * `-X cancel` can fail outside copy mode, so it must never gate the Enter command. */
+const pressEnter = async (name: string) => {
+  await tmux.run(['send-keys', '-t', exactPane(name), '-X', 'cancel']).catch(() => {});
+  await tmux.run(['send-keys', '-t', exactPane(name), 'Enter']);
+};
 const paneIO = (name: string): PaneIO => ({
   read: () => capturePane(name),
   type: (text) => typeText(name, text).then(() => undefined),
@@ -80,7 +78,7 @@ export async function deliverSafe(name: string, text: string, onAttempt?: () => 
 }
 
 /** Composer sends and the two-minute override use this same text-then-Enter operation.
- * Tmux completes the bracketed paste command before the atomic cancel+Enter command. */
+ * Tmux completes the bracketed paste command before copy-mode cancellation and Enter. */
 export async function deliverForce(name: string, text: string, io: PaneIO = paneIO(name)): Promise<DeliveryResult> {
   await io.type(text);
   await io.enter();
