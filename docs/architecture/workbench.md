@@ -12,6 +12,11 @@ smallest reads needed to paint itself.
 ## Library, profile, tenant, instance
 
 `public/js/workbench.js` owns the shared library and frame.
+`public/js/workbench-catalog.js` is the canonical registration and profile catalog for
+Ronin Settings, New Project, Cowork, Team, and Agent. Destination modules provide tenant
+data and surface factories through their environment; they do not register another copy
+of those types or profile lists. Ronin Setup's ordered journey profile remains with its
+Setup controller because journey progress, rather than destination choice, determines it.
 
 `workbenchView(appearance, options)` in `public/js/workspace-contract.js` is the one
 application-chrome declaration. It supplies the shared header capabilities and one of the
