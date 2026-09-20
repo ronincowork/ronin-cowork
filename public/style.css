@@ -6065,9 +6065,17 @@ button.wb-door:hover b {
 
    The zone styles the zone and nothing else. It never reaches past its own slot to lay out
    the phalanx below — the phalanx is the work surface's, identical on a surface that carries
-   a zone and one that does not, and a change up here must never move a stone down there. */
-.sws-header:has(> .setup-zone) { box-sizing: border-box; border-bottom: var(--edge) solid var(--line); }
-.setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-9); box-sizing: border-box; width: 100%; min-width: 0; height: 100%; overflow: hidden; padding: var(--space-6) 0 0; }
+   a zone and one that does not, and a change up here must never move a stone down there.
+
+   The rule is drawn on the zone rather than on the slot, and the zone is one step shorter
+   than the slot it sits in. That leftover step is the clearance under the rule: it belongs
+   to the header's own box, so the line stands clear of the stones without the header ever
+   reaching down to space them. Hover takes the rule to kaki the way a fold's hairline does
+   (launch-forms.css, owner 2026-09-13) — the line lifts, nothing fills, and the words stay
+   put, because the zone is a region to read, not a control to press. */
+.sws-header:has(> .setup-zone) { box-sizing: border-box; }
+.setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-9); box-sizing: border-box; width: 100%; min-width: 0; height: calc(100% - var(--space-9)); overflow: hidden; border-bottom: var(--edge) solid var(--line); padding: var(--space-6) 0 0; transition: border-color var(--motion-quick) var(--ease); }
+.sws-header:has(> .setup-zone):hover > .setup-zone { border-bottom-color: var(--kaki); }
 .setup-zone-state { min-height: calc(var(--form-input) * 1.4 * 2); max-width: 40rem; margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: 500; line-height: 1.4; }
 .setup-zone-options { width: auto; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
