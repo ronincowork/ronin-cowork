@@ -99,6 +99,7 @@ export function createLaunchView() {
   return {
     el: bench.host,
     glyph: '＋',
+    appearance: 'launch',
     arrangement: bench.arrangement,
     header: WORKBENCH_HEADER,
     placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),

@@ -260,6 +260,7 @@ export function createSetupView() {
   return {
     el: bench.host,
     glyph: '人',
+    appearance: 'setup',
     header: { actions: [themeToggle] },
     title: () => 'Ronin Setup',
     mount: (_host, context) => { ctx = context; },

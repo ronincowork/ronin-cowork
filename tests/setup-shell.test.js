@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { setupDefaultView } from '../public/js/campaign-home.js';
-import { workspaceHeaderScope } from '../public/js/workspace-header.js';
+import { workspaceHeaderAppearance } from '../public/js/workspace-header.js';
 
 const source = async (path) => readFile(new URL(`../public/${path}`, import.meta.url), 'utf8');
 
@@ -47,7 +47,7 @@ test('Setup and Settings share the machine-settings island without a right heade
   const [html, header, main, style] = await Promise.all([
     source('index.html'), source('js/workspace-header.js'), source('js/main.js'), source('style.css'),
   ]);
-  assert.equal(workspaceHeaderScope({ id: 'setup' }), 'campaign');
+  assert.equal(workspaceHeaderAppearance({ id: 'setup', view: { appearance: 'setup' } }), 'setup');
   assert.doesNotMatch(html, /id="viewname"/);
   assert.match(main, /nameSlot: document\.getElementById\('viewplace'\)/);
   assert.match(header, /workspace\.navigate\(setup \? 'campaign' : 'setup'\)/);

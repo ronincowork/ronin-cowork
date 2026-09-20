@@ -5,13 +5,8 @@ import { t } from './lexicon.js';
 const readable = (name = '') => String(name).split(/[_-]+/).filter(Boolean)
   .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 
-/** One scope name owns the whole header treatment; routes never paint it themselves. */
-export const workspaceHeaderScope = (active) => {
-  if (active?.id === 'team' && active.param) return 'team';
-  if (active?.id === 'cowork') return 'teams';
-  if (active?.id === 'campaign' || active?.id === 'setup' || active?.id === 'launch') return 'campaign';
-  return '';
-};
+/** The active Workbench declares its appearance; routes and surfaces never infer it. */
+export const workspaceHeaderAppearance = (active) => active?.view?.appearance || '';
 
 export function installWorkspaceHeader(workspace) {
   const ronin = document.getElementById('brandbtn');
@@ -36,9 +31,9 @@ export function installWorkspaceHeader(workspace) {
 
   const refresh = () => {
     const active = workspace.active;
-    const scope = workspaceHeaderScope(active);
-    if (scope) document.documentElement.dataset.scope = scope;
-    else delete document.documentElement.dataset.scope;
+    const appearance = workspaceHeaderAppearance(active);
+    if (appearance) document.documentElement.dataset.workbench = appearance;
+    else delete document.documentElement.dataset.workbench;
     const landing = !active || active.id === 'home';
     if (separator) separator.hidden = landing;
     if (coworkers) coworkers.hidden = landing;

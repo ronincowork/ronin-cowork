@@ -815,7 +815,7 @@ export function createCoworkView(options = {}) {
   }
 
   return {
-    el: root, glyph: campaign ? '⛩' : '人',
+    el: root, glyph: campaign ? '⛩' : '人', appearance: campaign ? 'cowork' : 'team',
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: bench.arrangement,
     header: WORKBENCH_HEADER,
