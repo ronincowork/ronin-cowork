@@ -266,7 +266,7 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
           const opt = optionStone(f, row, say);
           if (row.read || row.edit) {
             const wrap = el('span', 'ask-opt-wrap');
-            const read = el('button', 'ask-read', row.edit ? t('ask.view_edit', 'View/Edit') : t('ask.read', 'Read'));
+            const read = el('button', row.edit ? 'ask-read ask-edit' : 'ask-read', row.edit ? t('ask.view_edit', 'View/Edit') : t('ask.read', 'Read'));
             read.type = 'button';
             read.title = row.edit ? t('ask.view_edit_behaviour', 'View or edit this Behavior') : t('ask.read_behaviour', 'Read this behaviour');
             read.setAttribute('aria-label', `${row.edit ? t('ask.view_edit', 'View/Edit') : t('ask.read', 'Read')} ${row.l}`);

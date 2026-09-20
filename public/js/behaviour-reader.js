@@ -14,9 +14,9 @@ export function installBehaviourReader(bench, type = 'document', editType = 'cam
     const name = String(event.detail?.name || '');
     const scope = String(event.detail?.scope || '');
     const source = event.detail?.source;
-    if (!name || !scope || !(source instanceof Node) || !bench.host.contains(source)) return;
+    if ((!name && event.detail?.create !== true) || !scope || !(source instanceof Node) || !bench.host.contains(source)) return;
     const workspace = source.closest('[data-workspace]')?.dataset.workspace || bench.selected();
-    bench.place(editType, BESIDE[workspace] || 'workspace2', { name, scope });
+    bench.place(editType, BESIDE[workspace] || 'workspace2', { name, scope, create: event.detail?.create === true });
   };
   window.addEventListener('ronin:edit-behaviour', edit);
   return () => { window.removeEventListener('ronin:read-document', read); window.removeEventListener('ronin:edit-behaviour', edit); };

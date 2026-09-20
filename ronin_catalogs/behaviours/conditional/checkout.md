@@ -1,5 +1,6 @@
 # CHECKOUT — work on the repository's working line
 
+- **label:** Checkout
 - **scope:** conditional
 - **requires:** arrangement:checkout
 - **installation:** —

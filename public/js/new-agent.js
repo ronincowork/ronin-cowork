@@ -362,17 +362,24 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
 
   /* ---- 7 · Loadout ---- */
   const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('behaviours', 'Behaviors'), onToggle: () => toggle('loadout') });
-  const availableBehaviours = () => (seed?.behaviours || []).filter((row) => row.available === true);
+  const behaviourRows = () => seed?.behaviours || [];
   const shelvesHost = el('div');
   function paintShelves() {
-    const picker = ask([{ group: t('behaviours', 'Behaviours'), fields: [{
+    const general = behaviourRows().filter((row) => row.scope === 'selected' && row.available === true && !row.installation);
+    const automatic = behaviourRows().filter((row) => row.scope === 'floor');
+    const conditional = behaviourRows().filter((row) => row.scope === 'conditional');
+    const edit = (row) => ({ name: row.name, scope: row.scope, create: !row.name });
+    const row = (item, off = '') => ({ v: item.name || '+', l: item.label || item.name, sub: item.blurb || '', read: item.reading, edit: edit(item), off });
+    const picker = ask([{ group: t('behaviours.available', 'Behaviors'), fields: [{
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
-      options: availableBehaviours().filter((row) => !row.installation).map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading, edit: { name: row.name, scope: row.scope || 'selected' },
-        off: row.required ? t('team_config.required', 'Required for each new Agent') : '' })),
+      options: [...general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')), row({ name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: t('behaviours.add_own_blurb', 'Create a Behavior in your owner store.'), scope: 'selected' }, t('behaviours.create_action', 'Create in the Behaviors work surface'))],
     }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
-    shelvesHost.replaceChildren(picker.el);
+    const readonly = (label, key, rows, reason) => ask([{ group: label, fields: [{ key, label, many: true, shape: 'tall', options: rows.map((item) => row(item, reason(item))) }] }], { value: { [key]: [] }, density: 'tight', exposed: true });
+    const auto = readonly(t('behaviours.system', 'System'), 'automatic', automatic, () => t('behaviours.system_reason', 'Guaranteed for every Cowork Agent'));
+    const conditions = readonly(t('behaviours.conditional', 'Conditional'), 'conditional', conditional, (item) => item.requires?.length ? `${t('behaviours.applies_when', 'Applied when')}: ${item.requires.join(', ')}` : t('behaviours.conditional_reason', 'Ronin applies this when its condition matches'));
+    shelvesHost.replaceChildren(picker.el, auto.el, conditions.el);
   }
   stepLoadout.body.append(el('p', 'na-behaviour-intro', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')), shelvesHost);
 
