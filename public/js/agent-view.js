@@ -4,7 +4,7 @@ import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamKanban, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
 import { refreshTeams, setTeamMembership, subscribe, teamsFromState } from './team-controller.js';
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
-import { createFeedbackSurface, FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
+import { createFeedbackSurface } from './feedback.js';
 import { fetchSessions } from './api.js';
 import { refreshHome } from './home.js';
 import { request } from './request.js';
@@ -12,21 +12,12 @@ import { S } from './state.js';
 import { t } from './lexicon.js';
 import { workbenchView, DISMISSED_WORKSPACE } from './workspace-contract.js';
 import { agentTitle } from './team-members.js';
+import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
 
-const PROFILE = 'agent';
-const TYPES = Object.freeze({ self: 'session.terminal', documents: 'agent.documents', teams: 'agent.team-membership', tasks: 'agent.task-manager', document: 'document' });
+const PROFILE = WORKBENCH_PROFILES.agent;
+const TYPES = Object.freeze({ self: WORKBENCH_TYPES.terminal, documents: WORKBENCH_TYPES.agentDocuments, teams: WORKBENCH_TYPES.agentTeams, tasks: WORKBENCH_TYPES.agentTasks, document: WORKBENCH_TYPES.document, feedback: WORKBENCH_TYPES.feedback });
 const el = (tag, cls = '', text = '') => { const out = document.createElement(tag); if (cls) out.className = cls; if (text) out.textContent = text; return out; };
 const memberships = (name) => (S.sessions.find((row) => row.name === name)?.tags || []).map(String).sort();
-
-function registerAgentCatalog() {
-  registerFeedbackSurface();
-  const { library, profiles } = WorkspaceKit.workbench;
-  const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
-  add({ type: TYPES.documents, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_docs', 'Documents'), summary: () => t('agent.documents_summary', 'Documents tracked by this Agent'), discover: (_tenant, environment) => [{ key: environment.agent() }], create: ({ workspace, detail, environment }) => environment.documents(workspace, detail) });
-  add({ type: TYPES.teams, header: 'surface', className: 'wk-selector-utility', label: () => t('agent.team_membership', 'Team membership'), summary: () => t('agent.team_membership_summary', 'Add or remove this Agent from installed Teams'), discover: (_tenant, environment) => [{ key: environment.agent() }], create: ({ workspace, detail, environment }) => environment.teams(workspace, detail) });
-  add({ type: TYPES.tasks, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_task_manager', 'Task Manager'), discover: (_tenant, environment) => environment.taskOffers(), create: ({ workspace, detail, environment }) => environment.tasks(workspace, detail) });
-  profiles.define(PROFILE, [TYPES.self, TYPES.documents, TYPES.teams, TYPES.tasks, TYPES.document, FEEDBACK_TYPE]);
-}
 
 function createMembershipSurface(agent, changed) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('agent.team_membership', 'Team membership'), className: 'agent-team-membership' });
@@ -58,7 +49,7 @@ function createMembershipSurface(agent, changed) {
 }
 
 export function createAgentView() {
-  registerAgentCatalog();
+  registerWorkbenchCatalog();
   const root = el('main', 'tw-view agent-workbench');
   const seats = {};
   let bench = null, context = null, agent = '', unsubscribe = null, entered = false;
@@ -156,6 +147,6 @@ export function createAgentView() {
     },
     leave: () => { entered = false; bench.leave(); for (const seat of Object.values(seats)) seat.pool.destroyAll(); },
     destroy: () => { entered = false; unsubscribe?.(); for (const seat of Object.values(seats)) seat.pool.destroyAll(); },
-    placeFeedback: () => bench.place(FEEDBACK_TYPE, bench.selected()),
+    placeFeedback: () => bench.place(TYPES.feedback, bench.selected()),
   };
 }
