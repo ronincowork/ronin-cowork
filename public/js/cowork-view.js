@@ -158,10 +158,8 @@ export function createCoworkView(options = {}) {
   const liveSeats = () => bench?.visibleIds() || [];
 
   const rosterNote = el('span', 'tw-roster-note');
-  let thinSelectorCards = true;
   const mikaHelp = createAction({ label: t('mika.help', 'ミ Help'), size: 'compact', className: 'tw-mika-help' });
   let helpPanel = null;
-  const shapeBtn = document.getElementById('shapecycle');
   let rosterTitle = null;
 
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
@@ -344,9 +342,9 @@ export function createCoworkView(options = {}) {
     sessions: () => (campaign ? unassignedSessions() : membersOfTeam(team)).map((member) => {
       const reading = readingsOf(member);
       const mika = team === RONIN_HELPERS && member.name === 'mika_agent';
-      return { key: member.name, label: mika ? t('mika.name', 'Mika') : agentTitle(member), className: `team-agent-card${thinSelectorCards ? ' selector-card-thin' : ''}`,
+      return { key: member.name, label: mika ? t('mika.name', 'Mika') : agentTitle(member), className: 'team-agent-card',
         mark: member.team_lead ? '人' : null,
-        ...(thinSelectorCards ? {} : { summary: reading.step, metadata: reading.lines }),
+        summary: reading.step, metadata: reading.lines,
         ...(campaign ? { action: () => openWorkspaceTab('agent', member.name) } : {}),
         ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
         onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
@@ -356,8 +354,7 @@ export function createCoworkView(options = {}) {
         helperName: RONIN_HELPERS,
         noTeam: { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' },
       });
-      return ordered.map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name),
-        className: thinSelectorCards ? 'selector-card-thin' : '', ...(thinSelectorCards ? {} : { summary: item.objective || '' }) }));
+      return ordered.map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' }));
     })() : [],
   };
   bench = WorkspaceKit.workbench.create({
@@ -367,8 +364,7 @@ export function createCoworkView(options = {}) {
     label: campaign ? teamsLabel : t('team.roster_title', 'Team Roster'),
     // While ミ Help is open the column is Mika's, and every repaint says so.
     title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : campaign ? teamsLabel : t('team.roster_title', 'Roster'),
-    actions: [rosterNote, mikaHelp], shapeControl: shapeBtn, deferSelector: true,
-    onSelectorDensityChange: (value) => { thinSelectorCards = value !== 'thick'; },
+    actions: [rosterNote, mikaHelp], deferSelector: true,
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,
     onStateChange: () => remember(), onPlacement: (_snapshot, change) => {

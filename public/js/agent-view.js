@@ -116,7 +116,7 @@ export function createAgentView() {
   bench = WorkspaceKit.workbench.create({
     profile: PROFILE, tenant: { kind: 'agent', name: () => agent }, environment,
     defaultNode: (id) => seats[id].blank, label: t('agent.workbench', 'Agent'), title: () => agent || t('agent.workbench', 'Agent'),
-    shapeControl: document.getElementById('shapecycle'), selectorCurrent: 'placed',
+    selectorCurrent: 'placed',
     onStateChange: (snapshot) => remember(snapshot), onPlacement: (snapshot, change) => remember(snapshot, change),
   });
   root.append(bench.host);

@@ -148,7 +148,7 @@ export function createWorkbench(options = {}) {
   densityToggle.el.addEventListener('click', () => setSelectorDensity(selectorDensity === 'thin' ? 'thick' : 'thin', true));
   paintDensity();
 
-  const shape = options.shapeControl || document.getElementById('shapecycle');
+  const shape = document.getElementById('shapecycle');
   const paintShape = () => {
     if (!shape) return;
     shape.textContent = String(count);

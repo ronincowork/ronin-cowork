@@ -107,17 +107,15 @@ test('edited Cowork and Team workbench labels become the exact tab title', async
   assert.match(kit, /\.ui-bar-place \.wk-tab-name \{[^}]*background: transparent;[^}]*color: inherit;/);
 });
 
-test('Cowork Team and Team Agent cards toggle between names-only and the full reading', async () => {
+test('Cowork cards always expose their reading while the base controls compact presentation', async () => {
   const [view, workbench, css] = await Promise.all([
     readFile(new URL('../public/js/cowork-view.js', import.meta.url), 'utf8'),
     readFile(new URL('../public/js/workbench.js', import.meta.url), 'utf8'),
     readFile(new URL('../public/workspace-kit.css', import.meta.url), 'utf8'),
   ]);
-  assert.match(view, /let thinSelectorCards = true;/);
-  assert.match(view, /onSelectorDensityChange: \(value\) => \{ thinSelectorCards = value !== 'thick'; \}/);
-  assert.match(view, /mark: member\.team_lead \? '人' : null,[\s\S]*thinSelectorCards \? \{\} : \{ summary: reading\.step, metadata: reading\.lines \}/,
-    'the lead mark remains while names-only mode removes the rest of the reading');
-  assert.match(view, /thinSelectorCards \? \{\} : \{ summary: item\.objective \|\| '' \}/);
+  assert.match(view, /mark: member\.team_lead \? '人' : null,[\s\S]*summary: reading\.step, metadata: reading\.lines/);
+  assert.match(view, /summary: item\.objective \|\| ''/);
+  assert.doesNotMatch(view, /thinSelectorCards|selector-card-thin|onSelectorDensityChange/);
   assert.match(workbench, /densityToggle\.el\.addEventListener\('click'/);
   assert.match(css, /\.wk-workbench-host\[data-selector-density='thin'\] \.wk-workbench-selector-cards > \.wk-card \.wk-card-summary/);
 });
