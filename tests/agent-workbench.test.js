@@ -13,9 +13,11 @@ test('Agent is a first-class Workbench destination with its own state namespace'
 });
 
 test('Agent profile reuses Self, pure Documents, membership, Task Manager and generic surfaces', async () => {
-  const text = await source('agent-view.js');
-  assert.match(text, /self: 'session\.terminal'/);
-  assert.match(text, /profiles\.define\(PROFILE, \[TYPES\.self, TYPES\.documents, TYPES\.teams, TYPES\.tasks, TYPES\.document, FEEDBACK_TYPE\]\)/);
+  const [text, catalog] = await Promise.all([source('agent-view.js'), source('workbench-catalog.js')]);
+  assert.match(text, /self: WORKBENCH_TYPES\.terminal/);
+  assert.match(text, /registerWorkbenchCatalog\(\)/);
+  assert.doesNotMatch(text, /profiles\.define|library\.register/, 'Agent owns no private profile or catalog');
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.agent, \[WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.agentDocuments, WORKBENCH_TYPES\.agentTeams, WORKBENCH_TYPES\.agentTasks, WORKBENCH_TYPES\.document, FEEDBACK_TYPE\]\)/);
   assert.match(text, /sessions: \(\) => agent \? \[\{ key: agent, label: t\('agent\.self', 'Self'\) \}\] : \[\]/);
   assert.match(text, /terminal: \(id, detail\) =>/);
   assert.match(text, /createWarmTerminalPool/);
