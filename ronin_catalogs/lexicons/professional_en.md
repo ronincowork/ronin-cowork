@@ -2010,9 +2010,9 @@ The catalog entry goes. {dir} is not touched.
 - **behaviours.intro:** Behaviors are specific guidance given to Agents at birth.
 - **behaviours.available:** Optional
 - **behaviours.auto:** All Cowork Agents
+- **behaviours.auto_included:** All Ronin Agents include these
+- **behaviours.bare_metal_excludes:** Exclude by using a bare metal Agent.
 - **behaviours.conditional:** Conditional
-- **behaviours.conditional_reason:** Ronin applies this when its condition matches
-- **behaviours.applies_when:** Applied when
 - **behaviours.requires:** When
 - **behaviours.yours:** Yours
 - **behaviours.stock:** Ronin

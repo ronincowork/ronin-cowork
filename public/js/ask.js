@@ -18,6 +18,7 @@
  * is the reason the stone is greyed (disabled, never hidden), `glyph` sits on a square,
  * `word` is the rectangle's short second line (tier, worktree, checkout). `read` is a
  * document path; ERABI draws its separate read glyph and emits `ronin:read-document`.
+ * `disabled` makes an option unavailable without inventing a visible reason.
  * `after` names the
  * field this one depends on: when that one changes, this answer clears and its options are
  * asked again. `row(option, value)` draws a control that belongs to a chosen option — a branch
@@ -154,7 +155,8 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
     const on = field.many ? state[field.key].includes(row.v) : String(state[field.key]) === String(row.v);
     if (!row.action) opt.setAttribute('aria-selected', String(on));
     else opt.dataset.askAction = 'true';
-    if (row.off) { opt.setAttribute('aria-disabled', 'true'); opt.title = row.off; }
+    if (row.off || row.disabled) opt.setAttribute('aria-disabled', 'true');
+    if (row.off) opt.title = row.off;
     if (field.shape === 'square' && (row.glyph || row.blank)) opt.append(el('i', 'ask-glyph', row.glyph || '○'));
     const name = el('b', 'ask-name');
     name.append(snake(row.l));
@@ -162,7 +164,7 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
     if (field.shape === 'rect' && row.word) opt.append(el('small', 'ask-word', row.word));
     opt.addEventListener('mouseenter', () => say(row));
     opt.addEventListener('focus', () => say(row));
-    opt.addEventListener('click', () => { if (row.off) { say(row); return; } if (row.action) { row.action({ source: root, row }); return; } choose(field, row, opt); });
+    opt.addEventListener('click', () => { if (row.off || row.disabled) { say(row); return; } if (row.action) { row.action({ source: root, row }); return; } choose(field, row, opt); });
     optionNodes.push({ field, row, node: opt });
     return opt;
   };

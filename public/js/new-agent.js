@@ -369,7 +369,8 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const automatic = behaviourRows().filter((row) => row.scope === 'floor');
     const conditional = behaviourRows().filter((row) => row.scope === 'conditional');
     const row = (item, availability = '') => ({
-      v: item.name || '+', l: item.label || item.name, sub: item.blurb || '', read: item.reading,
+      v: item.name || '+', l: item.label || item.name,
+      sub: typeof availability === 'object' && Object.hasOwn(availability, 'sub') ? availability.sub : item.blurb || '', read: item.reading,
       view: item.name ? { name: item.name, scope: item.scope } : null,
       off: typeof availability === 'string' ? availability : availability.off || '',
       disabled: typeof availability === 'object' && availability.disabled === true,
@@ -382,10 +383,13 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
-    const readonly = (label, key, rows, reason) => ask([{ group: label, fields: [{ key, label, many: true, shape: 'tall', options: rows.map((item) => row(item, reason(item))) }] }], { value: { [key]: [] }, density: 'tight', exposed: true });
-    const auto = readonly(t('behaviours.auto', 'All Cowork Agents'), 'automatic', automatic, () => ({ disabled: true }));
-    const conditions = readonly(t('behaviours.conditional', 'Conditional'), 'conditional', conditional, (item) => item.requires?.length ? `${t('behaviours.applies_when', 'Applied when')}: ${item.requires.join(', ')}` : t('behaviours.conditional_reason', 'Ronin applies this when its condition matches'));
-    shelvesHost.replaceChildren(picker.el, auto.el, conditions.el);
+    const readonly = (label, key, rows, reason) => ask([{ group: label, fields: [{ key, label, many: true, shape: 'tall', options: rows.map((item) => row(item, reason(item))) }] }], { value: { [key]: [] }, className: 'na-behaviour-readonly', density: 'tight', exposed: true });
+    const auto = readonly(`${t('behaviours.auto', 'All Cowork Agents')} (${t('behaviours.auto_included', 'All Ronin Agents include these')})`, 'automatic', automatic,
+      () => ({ disabled: true, sub: '' }));
+    const conditions = readonly(t('behaviours.conditional', 'Conditional'), 'conditional', conditional, () => ({ disabled: true, sub: '' }));
+    const autoSection = el('div', 'na-behaviour-section');
+    autoSection.append(auto.el, el('p', 'na-behaviour-note', t('behaviours.bare_metal_excludes', 'Exclude by using a bare metal Agent.')));
+    shelvesHost.replaceChildren(picker.el, autoSection, conditions.el);
   }
   stepLoadout.body.append(el('p', 'na-behaviour-intro', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')), shelvesHost);
 
