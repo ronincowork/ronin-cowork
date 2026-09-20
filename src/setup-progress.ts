@@ -3,9 +3,10 @@ import { discoverExecutable } from './agents.js';
 import { measureAndRecordProviders, providerInventoryNeed, refreshProviderInventory } from './provider-summary.js';
 import { githubSetupAnswer } from './setup-runtime.js';
 import { broadcastEvent } from './ws/events.js';
+import { tailnetIp } from './machine-settings.js';
 
-export interface SetupProgressStep { id: typeof SETUP_STEP_IDS[number]; number: number; answered: boolean }
-export interface SetupProgress { steps: SetupProgressStep[]; scanning: boolean; scanned_at: string; reason?: string }
+export interface SetupProgressStep { id: typeof SETUP_STEP_IDS[number]; number: number; answered: boolean; answer: SetupAnswer | '' }
+export interface SetupProgress { steps: SetupProgressStep[]; facts: { tailscale?: boolean; checked_at?: string }; scanning: boolean; scanned_at: string; reason?: string }
 
 let scanFlight: Promise<void> | null = null;
 let scannedAt = '';
@@ -15,9 +16,10 @@ async function response(): Promise<SetupProgress> {
   const campaign = await ensureInitialCampaign();
   const answers = campaign.config.setup.answers;
   return {
-    steps: SETUP_STEP_IDS.map((id, index) => ({ id, number: index + 1, answered: Boolean(answers[id]) })),
+    steps: SETUP_STEP_IDS.map((id, index) => ({ id, number: index + 1, answered: Boolean(answers[id]), answer: answers[id] || '' })),
+    facts: campaign.config.setup.facts,
     scanning: scanFlight !== null,
-    scanned_at: scannedAt || campaign.providers?.measured_at || '',
+    scanned_at: scannedAt || campaign.config.setup.facts.checked_at || campaign.providers?.measured_at || '',
     ...(scanReason ? { reason: scanReason } : {}),
   };
 }
@@ -30,6 +32,7 @@ async function performScan(): Promise<void> {
   const reasons: string[] = [];
   let provider = false;
   let workspace = false;
+  const tailscale = tailnetIp() !== '127.0.0.1';
   const [providers, github, git] = await Promise.all([
     measureAndRecordProviders().then((value) => {
       provider = value.activated_count > 0;
@@ -45,10 +48,8 @@ async function performScan(): Promise<void> {
   const answers = { ...campaign.config.setup.answers };
   if (provider && !answers.provider) answers.provider = 'acted';
   if (workspace && !answers.workspace) answers.workspace = 'acted';
-  if (JSON.stringify(answers) !== JSON.stringify(campaign.config.setup.answers)) {
-    await writeCampaign(campaign.id, { config: { setup: { answers } } });
-  }
   scannedAt = new Date().toISOString();
+  await writeCampaign(campaign.id, { config: { setup: { answers, facts: { tailscale, checked_at: scannedAt } } } });
   scanReason = reasons.join(' ');
 }
 
@@ -71,7 +72,7 @@ export async function answerSetupProgress(step: string, answer: SetupAnswer): Pr
   if (!SETUP_STEP_IDS.includes(step as typeof SETUP_STEP_IDS[number])) throw new Error(`Unknown Setup step "${step}".`);
   if (answer !== 'acted' && answer !== 'not_now') throw new Error('Answer must be acted or not_now.');
   const campaign = await ensureInitialCampaign();
-  await writeCampaign(campaign.id, { config: { setup: { answers: { ...campaign.config.setup.answers, [step]: answer } } } });
+  await writeCampaign(campaign.id, { config: { setup: { answers: { ...campaign.config.setup.answers, [step]: answer }, facts: campaign.config.setup.facts } } });
   await publish();
   return response();
 }

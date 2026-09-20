@@ -149,14 +149,15 @@ test('the existing workbench can pin a Setup workspace and aim selector cards at
   assert.match(workbench, /cell\.addEventListener\('pointerdown',[\s\S]*select\(id\);[\s\S]*}, true\)/);
 });
 
-test('Setup progression paints the server record and leaves completion actions in each surface footer', async () => {
+test('Setup progression paints the server record into fixed surface header zones', async () => {
   const [setup, style] = await Promise.all([source('js/setup-view.js'), source('style.css')]);
   assert.match(setup, /request\('\/api\/setup\/progress', \{ cache: 'no-store' \}\)/);
   assert.match(setup, /setupProgressHandlers\.add\(onProgress\)/);
   assert.doesNotMatch(setup, /nextAction|notNowAction|seatNext|seatNotNow/, 'the surface header owns no hidden progression controls');
   assert.match(setup, /garden\.controls\.replaceChildren\(\);[\s\S]*garden\.controls\.hidden = true/, 'Workspace 1 cannot retain the progression action');
   assert.doesNotMatch(setup, /saveCampaign|setupAnswers|providers\/measure/, 'the client neither writes Campaign answers nor researches the machine');
-  assert.match(style, /\.setup-step-footer \{/);
+  assert.match(style, /\.setup-zone \{/);
+  assert.match(style, /\.setup-zone-pick \{[^}]*width: 140px;[^}]*height: 40px;/);
   assert.match(style, /\.setup-scan\[data-state='scanning'\]/);
   assert.doesNotMatch(setup, /data\.stepState|flashSelector|setup-selector-pulse/);
   assert.match(style, /data-workbench-profile='setup'[\s\S]*?\.wk-card\[aria-current='page'\][^}]*background: var\(--kaki\)/, 'only the selected card gets the orange fill');
