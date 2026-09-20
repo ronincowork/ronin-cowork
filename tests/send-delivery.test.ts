@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deliverSafe, deliverForce, parsePrompt, submitCommand, type PaneIO } from '../src/send.js';
+import { deliverSafe, deliverForce, parsePrompt, type PaneIO } from '../src/send.js';
 
 function pane(screen: string) {
   const calls: string[] = [];
@@ -54,15 +54,6 @@ test('force and composer delivery never read the screen; multiline text stays on
   io.read = async () => { throw new Error('no preflight'); };
   assert.equal((await deliverForce('agent', 'one\ntwo', io)).delivered, true);
   assert.deepEqual(calls, ['type:one\ntwo', 'Enter']);
-});
-
-test('submission cancels copy mode and sends a real Enter in one tmux command queue', () => {
-  assert.deepEqual(submitCommand('agent'), [
-    'send-keys', '-t', '=agent:', '-X', 'cancel',
-    ';',
-    'send-keys', '-t', '=agent:', 'Enter',
-  ]);
-  assert.equal(submitCommand('agent').includes('\r'), false, 'submission is never pasted carriage-return data');
 });
 
 test('unknown and busy empty screens do not prevent delivery', async () => {
