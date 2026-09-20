@@ -85,10 +85,6 @@
   --kaki-lift: #e08163;
   --aiiro: #274a78;
 
-  /* The answered mark on the Setup card. Same reason as the Garden Canvas below: kaki
-     on white fails at small sizes, so the light skin fills with the deeper kaki-lift. */
-  --setup-mark: var(--kaki);
-
   /* Garden Canvas. Kaki on white fails at 14px, so the light skin fills with
      the deeper kaki-lift; the horizon is quieter on a cream ground. */
   --gc-cta-bg: var(--kaki);
@@ -277,7 +273,6 @@
   --shadow-menu: 0 8px 24px rgb(30 30 30 / 18%);
   --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
   --kaki-lift: #a34e2f;
-  --setup-mark: var(--kaki-lift);
 
   --gc-cta-bg: var(--kaki-lift);
   --gc-cta-ink: var(--on-strong);
@@ -6031,35 +6026,6 @@ button.wb-door:hover b {
 .setup-provider-terminal { grid-column: 1 / -1; height: min(30rem, 50dvh); min-height: 0; overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--term-bg); }
 .setup-provider-terminal > .wk-terminal-host, .setup-provider-terminal .tile { height: 100%; min-height: 0; max-height: 100%; }
 .setup-provider-terminal .tile > .tile-head { display: none; }
-/* THE DOOR BACK TO SETUP, at the head of Machine Settings. A selector card like any other,
-   so hover, focus ring and both densities come for free. The word sits left, the bar sits
-   right, on one row. The slabs carry their own numbers, so nothing counts itself out in
-   words — a counter beside them would say the same thing twice. */
-.setup-return-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); min-width: 0; }
-/* THE WIDTH DECIDES THE BAR, THE DENSITY DECIDES THE WORDS. Both signals already exist: the
-   frame marks the column data-width='compact' below the selector slot's declared 176px
-   (js/workbench.js), and the density is the column's own collapsed/expanded switch. */
-.setup-return-steps { --slab: var(--space-10); --slab-w: 16px; --slab-gap: var(--space-1); --slab-type: var(--text-3); --skew: -14deg; display: flex; align-items: center; flex: 0 0 auto; gap: var(--slab-gap); }
-[data-selector-density='thick'] .setup-return-steps { --slab: var(--space-11); --slab-w: 20px; --slab-gap: var(--space-2); --slab-type: var(--text-4); }
-.wk-layout-surface[data-width='compact'] .setup-return-steps { --slab: var(--space-9); --slab-w: 13px; --slab-gap: var(--space-1); --slab-type: var(--text-2); }
-/* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
-   were five separate things. The lean is one angle shared by every slab and never changes
-   with state — only the fill moves, so the row cannot reflow as answers land. */
-.setup-return-step { display: grid; place-items: center; flex: 0 0 auto; width: var(--slab-w); height: var(--slab); box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: transparent; color: var(--muted); font-size: var(--slab-type); font-weight: 650; line-height: 1; font-variant-numeric: tabular-nums; transform: skewX(var(--skew)); transition: background-color var(--motion-quick) var(--ease), border-color var(--motion-quick) var(--ease), color var(--motion-quick) var(--ease); }
-/* The numeral stands upright inside the leaning slab. */
-.setup-return-step::before { content: attr(data-n); display: block; transform: skewX(calc(-1 * var(--skew))); }
-.setup-return-step[data-answered='true'] { border-color: var(--setup-mark); background: var(--setup-mark); color: var(--on-strong); }
-/* Where the card opens: hollow, kaki-edged. Colour and edge, never an underline. */
-.setup-return-step[data-next='true'] { border-color: var(--setup-mark); color: var(--setup-mark); }
-/* THE NEXT STEP, NAMED, ON EVERY EXPANDED CARD. The name alone: a "Next:" label says what
-   the kaki-edged slab already says, and on a narrow column it ate the width the name needs.
-   It is deliberately not .wk-card-summary, which the collapsed density hides. */
-.setup-return-next { margin: var(--space-4) 0 0; min-width: 0; color: var(--muted); font-size: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-selector-density='thin'] .setup-return-next { display: none; }
-/* COMPLETE IS TWO WORDS. No bar: five filled slabs on a finished card say nothing the
-   sentence does not. The card also drops to the utility edge, so finished Setup stops
-   asking for attention without leaving the column. */
-.setup-return-done { color: var(--setup-mark); }
 @media (max-width: 700px) {
   .setup-explainer-body { grid-template-columns: 1fr; }
   .setup-surface-body { padding: var(--space-4); }
