@@ -706,11 +706,10 @@ export function createCoworkView(options = {}) {
     bench.refreshSelector();
   }
 
-  // Agent activation leaves seating to drag. Direct roster doors default to a standalone
-  // tab; Team Commons Launch supplies ordinary/modifier intent so its usual click stays
-  // in this ViewHost while Command/Ctrl-click reserves a tab during the user gesture.
-  function openAgentWorkbench(name, { newTab = true } = {}) {
-    if (!newTab) return ctx?.navigate?.('agent', { param: name }) ?? false;
+  // Agent activation leaves seating to drag. Reserve the tab while the click is still
+  // the active user gesture; if the browser refuses it, use the ViewHost transition so
+  // the action cannot silently do nothing.
+  function openAgentWorkbench(name) {
     const tab = reserveWorkspaceTab();
     if (tab) return openWorkspaceTab('agent', name, tab);
     return ctx?.navigate?.('agent', { param: name }) ?? false;
@@ -740,7 +739,7 @@ export function createCoworkView(options = {}) {
         onFailed: (message) => commons.channels.setState('failed', message),
         idPrefix: id,
         reading: readingsOf,
-        onOpen: (member, intent) => openAgentWorkbench(member.name, intent),
+        onOpen: (member) => openAgentWorkbench(member.name),
         onClose: (member) => retireSession(member.name, `commons-${id}-${member.name}`, async () => {
           await Promise.all([fetchSessions(), refreshTeams()]);
           paint();

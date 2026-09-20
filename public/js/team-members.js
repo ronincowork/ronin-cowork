@@ -43,7 +43,7 @@ export const buildTeamMembers = (name, options = {}) => {
     );
     identity.append(mark, words);
     if (holding) { row.append(identity); list.append(row); continue; }
-    const launch = options.onOpen ? createAction({ label: t('league.launch_agent', 'Launch'), size: 'compact', action: (event) => options.onOpen(member, { newTab: event.metaKey || event.ctrlKey }) }) : null;
+    const launch = options.onOpen ? createAction({ label: t('league.launch_agent', 'Launch'), size: 'compact', action: () => options.onOpen(member) }) : null;
     const rename = createAction({ label: t('league.rename_agent', 'Rename'), size: 'compact', action: async () => {
       const currentTitle = agentTitle(member);
       const wanted = window.prompt(t('league.rename_agent_prompt', 'Edit Agent title'), currentTitle);
