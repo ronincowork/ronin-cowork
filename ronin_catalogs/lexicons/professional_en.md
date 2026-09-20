@@ -1073,16 +1073,24 @@ The catalog entry goes. {dir} is not touched.
 - **roots.stone_repo_no_remote:** Repository · no remote
 - **roots.stone_repo_worktrees:** Repository · Worktrees
 - **roots.stone_repo_checkout:** Repository · checkout
-- **roots.github_auth_stone:** Authenticate GitHub
+- **roots.git_access:** Git access
+- **roots.git_access_available:** Access available
+- **roots.git_access_unavailable:** Access unavailable
+- **roots.git_access_not_checked:** Not checked
+- **roots.git_access_check_failed:** Check failed
+- **roots.git_access_checking:** Checking…
+- **roots.git_access_check:** Check access
+- **roots.git_access_not_checked_detail:** Ronin has not checked read access to this repository’s origin.
+- **roots.github_auth_stone:** GitHub CLI
 - **roots.github_auth_state:** Connect account
 - **roots.github_auth_connected_state:** Connected{account}
 - **roots.github_auth_unavailable_state:** Install GitHub CLI
 - **roots.github_auth_heading:** GitHub CLI
-- **roots.github_auth_lede:** Install GitHub CLI, authenticate your account, then clone repositories.
+- **roots.github_auth_lede:** GitHub CLI is Ronin’s recommended guided connection. Existing Git credentials, SSH, and other Git connections remain available.
 - **roots.github_install:** Install
 - **roots.github_install_step:** Install
 - **roots.github_auth_step:** Authenticate
-- **roots.github_ready_step:** Ready
+- **roots.github_ready_step:** Connected
 - **roots.github_installed:** Installed
 - **roots.github_installing:** Installing…
 - **roots.github_not_installed:** Not installed
@@ -1090,9 +1098,11 @@ The catalog entry goes. {dir} is not touched.
 - **roots.github_not_signed_in:** Not signed in
 - **roots.github_auth_unreadable:** Could not verify
 - **roots.github_after_install:** After install
-- **roots.github_ready:** Ready to clone
-- **roots.github_not_ready:** Not yet
+- **roots.github_ready:** GitHub CLI connected
+- **roots.github_not_ready:** Not connected
 - **roots.github_connect:** Connect GitHub
+- **roots.git_other_method:** Use another method
+- **roots.git_other_open:** Use your preferred Git or SSH setup here, then return to the Workspace Folder and check Git access.
 - **roots.github_remove_auth:** Remove authentication
 - **roots.github_removing_auth:** Removing GitHub authentication…
 - **roots.github_done:** Done
@@ -1103,12 +1113,12 @@ The catalog entry goes. {dir} is not touched.
 - **roots.github_unreadable:** Ronin could not verify GitHub authentication.
 - **roots.github_waiting:** Finish GitHub authentication in the window first.
 - **roots.github_clone_stone:** Clone a repository
-- **roots.github_clone_state:** Authenticate first
-- **roots.github_clone_ready_state:** Ready to clone
+- **roots.github_clone_state:** Uses existing Git access
+- **roots.github_clone_ready_state:** Uses existing Git access
 - **roots.github_clone_heading:** Clone a repository
 - **roots.github_clone_lede:** Clone a GitHub repository and add its folder as a Ronin workspace.
-- **roots.github_clone_needs_auth:** Authenticate GitHub first.
-- **roots.github_clone_ready:** GitHub is connected. Enter the repository you want to clone.
+- **roots.github_clone_needs_auth:** Cloning uses this machine’s existing Git access.
+- **roots.github_clone_ready:** Cloning uses this machine’s existing Git access. GitHub CLI is optional.
 - **roots.github_repository:** GitHub repository
 - **roots.github_clone:** Clone and add workspace
 - **roots.github_cloning:** Cloning repository…
