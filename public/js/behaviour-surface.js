@@ -67,7 +67,7 @@ export function registerBehaviourSurface() {
     type: BEHAVIOUR_SURFACE_TYPE,
     header: 'surface',
     label: () => t('behaviours.title', 'Behaviors'),
-    summary: () => t('behaviours.card_summary', 'Optional, System, and Conditional guidance Agents receive at birth.'),
+    summary: () => t('behaviours.card_summary', 'Optional, All Cowork Agents, and Conditional guidance Agents receive at birth.'),
     create: ({ detail }) => createBehaviourSurface(detail),
   });
 }

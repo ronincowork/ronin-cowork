@@ -18,6 +18,8 @@ test('Agent profile reuses Self, pure Documents, membership, Task Manager and ge
   assert.match(text, /documents: WORKBENCH_TYPES\.agentDocuments/);
   assert.match(text, /teams: WORKBENCH_TYPES\.agentTeams/);
   assert.match(text, /tasks: WORKBENCH_TYPES\.agentTasks/);
+  assert.match(text, /registerWorkbenchCatalog\(\)/);
+  assert.doesNotMatch(text, /profiles\.define|library\.register/, 'Agent owns no private profile or catalog');
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.agent, \[WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.agentDocuments, WORKBENCH_TYPES\.agentTeams, WORKBENCH_TYPES\.agentTasks, WORKBENCH_TYPES\.document, FEEDBACK_TYPE\]\)/);
   assert.match(text, /sessions: \(\) => agent \? \[\{ key: agent, label: t\('agent\.self', 'Self'\) \}\] : \[\]/);
   assert.match(text, /terminal: \(id, detail\) =>/);

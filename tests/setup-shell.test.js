@@ -32,7 +32,11 @@ test('Ronin Home and Setup share the same persisted light and dark control', asy
   assert.match(home, /header: \{ actions: \[themeToggle\] \}/);
   assert.doesNotMatch(home, /ronin-home-active/);
   assert.match(setup, /const themeToggle = createThemeToggle\(\)/);
-  assert.match(setup, /workbenchView\('setup', \{ header: \{ actions: \[themeToggle\] \} \}\)/);
+  assert.match(setup, /workbenchView\('setup'/);
+  assert.match(setup, /ram: false/);
+  assert.match(setup, /feedback: false/);
+  assert.match(setup, /leading: \[setupStepsHeader\]/);
+  assert.match(setup, /actions: \[themeToggle\]/);
   assert.match(toggle, /import\('\.\/theme\.js'\)[\s\S]*setTheme\(dark \? 'light' : 'dark'\)/);
   assert.match(toggle, /aria-pressed/);
   assert.match(workspace, /shapeControl\.hidden = next\.header\?\.shape !== true/, 'undeclared pane count stays absent');
@@ -165,8 +169,8 @@ test('Setup progression uses persisted answers, not operational guesses, and one
 });
 
 test('the Setup workbench registers real surfaces and maps each scene to workspace 2', async () => {
-  const [setup, main, cowork] = await Promise.all([
-    source('js/setup-view.js'), source('js/main.js'), source('js/cowork-view.js'),
+  const [setup, main, cowork, catalog] = await Promise.all([
+    source('js/setup-view.js'), source('js/main.js'), source('js/cowork-view.js'), source('js/workbench-catalog.js'),
   ]);
   assert.match(setup, /registerSetupSurfaces\(\);[\s\S]*registerPresetsSurface\(\);/);
   assert.match(setup, /const scene = sceneAt\(number\)/);
@@ -175,8 +179,6 @@ test('the Setup workbench registers real surfaces and maps each scene to workspa
   assert.match(setup, /selectorCurrent: true/);
   assert.doesNotMatch(setup, /arrangement\.move\('selector', 0\)/);
   assert.match(setup, /order: Object\.freeze\(\['workspace1', 'selector', 'workspace2'\]\)/);
-  assert.match(setup, /header: \{ actions: \[themeToggle\] \}/);
-  assert.match(setup, /header: \{ actions: \[themeToggle\] \}/);
   // Provider sign-in reuses the existing tile host; Setup itself starts no helper Agent.
   assert.match(setup, /mountProviderSetupSession: providerSessions\.mountProviderSetupSession/);
   assert.doesNotMatch(setup, /createMikaTilePool|createMikaHelpPanel|MIKA_SESSION/);
@@ -190,7 +192,9 @@ test('the Setup workbench registers real surfaces and maps each scene to workspa
   assert.match(providers, /context\.environment\.onSetupRuntime\?\.\(runtime\)/,
     'provider measurements report facts to the journey instead of moving Setup furniture themselves');
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
-  assert.match(cowork, /PRESETS_TYPE/);
+  assert.match(cowork, /registerWorkbenchCatalog\(\)/);
+  assert.doesNotMatch(cowork, /registerPresetsSurface|profiles\.define/, 'Cowork owns no private Presets registration or profile');
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.cowork, \[[^\]]*PRESETS_TYPE/, 'the canonical Cowork profile exposes Presets');
 });
 
 test('Setup is the one public destination and has no parallel preview route', async () => {

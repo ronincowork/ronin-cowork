@@ -80,9 +80,11 @@ test('one definition under one type, registered by both workbenches, with one sh
   assert.match(setup, /providers: PROVIDER_SURFACE_TYPE/);
   assert.match(setup, /providerSurfaceDefinition\(\),/);
   assert.doesNotMatch(setup, /createProviderSurface|setup-provider-state/);
-  const campaign = await source('campaign-view.js');
-  assert.match(campaign, /providers: PROVIDER_SURFACE_TYPE/);
-  assert.match(campaign, /add\(providerSurfaceDefinition\(\)\)/);
+  const [campaign, catalog] = await Promise.all([source('campaign-view.js'), source('workbench-catalog.js')]);
+  assert.match(campaign, /registerWorkbenchCatalog\(\)/);
+  assert.doesNotMatch(campaign, /providerSurfaceDefinition|library\.register/, 'Settings owns no second provider registration');
+  assert.match(catalog, /registerSetupSurfaces\(\)/, 'the central catalog registers the shared Setup definitions once');
+  assert.match(catalog, /PROVIDER_SURFACE_TYPE/, 'the Settings profile admits the shared provider type');
   for (const view of ['setup-view.js', 'campaign-view.js']) {
     const text = await source(view);
     assert.match(text, /createProviderSetupSessionMount\(\)/, `${view} takes the shared mount`);

@@ -1,4 +1,4 @@
-# Team work
+# Team Work
 
 - **label:** Team Work
 - **blurb:** Propose or staff a Team with explicit ownership and coordination.
