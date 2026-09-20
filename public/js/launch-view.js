@@ -89,6 +89,6 @@ export function createLaunchView() {
       save();
     },
     leave: () => bench.leave(),
-    destroy: () => { for (const help of Object.values(helpBySeat)) help.destroy?.(); bench.leave(); ctx = null; },
+    destroy: () => { for (const help of Object.values(helpBySeat)) help.destroy?.(); for (const view of Object.values(agentBySeat)) view.destroy?.(); bench.leave(); ctx = null; },
   };
 }

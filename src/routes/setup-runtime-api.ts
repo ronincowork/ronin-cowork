@@ -29,10 +29,14 @@ import type { ProviderSummary } from '../model-providers.js';
 import { readUserIntro, writeUserIntro } from '../user-intro.js';
 
 const errMsg = (error: unknown) => String((error as Error)?.message ?? error).replaceAll(homedir(), '~');
-/** The answer from the Campaign's summary; a machine never measured is measured once, not guessed. */
+const EMPTY_PROVIDER_SUMMARY: ProviderSummary = {
+  measured_at: '', installed: [], signed_in: [], operational: [], activated_count: 0,
+  paths: {}, versions: {}, model_lists: {}, model_inventory: {}, latest: {},
+};
+/** A record-only answer. Setup progress owns every automatic machine measurement. */
 const answer = async (summary?: ProviderSummary) => {
   const section = await readSetupSection();
-  const facts = summary ?? await readProviderSummary() ?? await measureAndRecordProviders(section);
+  const facts = summary ?? await readProviderSummary() ?? EMPTY_PROVIDER_SUMMARY;
   return setupRuntimeAnswer(section, facts, undefined, await installedAnswer());
 };
 
@@ -60,6 +64,7 @@ export function registerSetupRuntime(app: express.Express): void {
   // other reader takes GET /api/setup/runtime, which is the record.
   app.post('/api/setup/providers/measure', async (_req, res) => {
     try {
+      await measureAndRecordProviders();
       const completion = await refreshProviderInventory();
       if (completion.state === 'failed' || !completion.summary) throw new Error('Provider inventory refresh failed.');
       res.json(await answer(completion.summary));

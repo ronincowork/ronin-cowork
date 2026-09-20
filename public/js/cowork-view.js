@@ -301,7 +301,7 @@ export function createCoworkView(options = {}) {
             return connectSession(name, id);
           },
         });
-        newAgentBySeat[id] = { el: view.el, enter: (detail) => view.enter(detail) };
+        newAgentBySeat[id] = { el: view.el, enter: (detail) => view.enter(detail), destroy: () => view.destroy() };
       }
       // The detail rides through: `S.showNewSession(prompt)` seeds the form's Instructions.
       return { el: newAgentBySeat[id].el, show: (detail) => void newAgentBySeat[id].enter(detail) };
@@ -867,6 +867,7 @@ export function createCoworkView(options = {}) {
       helpPanel.destroy();
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       for (const commons of builtCommons()) commons.channels.destroy();
+      for (const view of Object.values(newAgentBySeat)) view.destroy();
     },
   };
 }

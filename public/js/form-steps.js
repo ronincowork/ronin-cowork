@@ -284,7 +284,13 @@ export function loadProviderCatalog() {
   return inflight;
 }
 
-export const providerCatalogHandlers = new Set();
+const providerCatalogHandlers = new Set();
+
+/** Listen while a model picker exists; the returned disposer is part of the view's destroy contract. */
+export function subscribeProviderCatalog(handler) {
+  providerCatalogHandlers.add(handler);
+  return () => providerCatalogHandlers.delete(handler);
+}
 
 /** Drop the cached join and repaint consumers after a persisted inventory completion. */
 export function reloadProviderCatalog() {
