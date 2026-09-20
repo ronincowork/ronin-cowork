@@ -40,9 +40,8 @@ sha256_of() {
   else shasum -a 256 "$1" | awk '{print $1}'; fi
 }
 
-# Keep this root deliberately short. The candidate gate nests a private tmux binary,
-# wrapper and socket below it; macOS rejects Unix socket paths long before PATH_MAX.
-# Ronin supports Linux and macOS, both of which provide the sticky, shared /tmp root.
+# Keep the download and extraction root short as well. The updater independently budgets
+# its candidate-gate socket path; both supported platforms provide the sticky shared /tmp.
 WORK="$(mktemp -d /tmp/ronin.XXXXXX)"
 trap 'rm -rf "$WORK"' EXIT
 
