@@ -18,7 +18,7 @@ function group(row) {
   return t('behaviours.available', 'Optional');
 }
 
-function editor(row, host, refresh, startEditing = false) {
+function editor(row, host, refresh) {
   let reading = null;
   let dirty = false;
   let editing = false;
@@ -31,7 +31,7 @@ function editor(row, host, refresh, startEditing = false) {
   const readingHost = node('div', 'bh-reading');
   const area = node('textarea', 'bh-text'); area.spellcheck = false; area.autocapitalize = 'off'; area.hidden = true;
   const actions = node('div', 'bh-actions');
-  const toggle = node('button', 'wk-action', t('behaviours.edit', 'Edit'));
+  const toggle = node('button', 'wk-action', t('behaviours.view_edit', 'View/Edit'));
   const save = node('button', 'wk-action', t('panels.save', 'Save')); save.disabled = true;
   const saveAs = node('button', 'wk-action', t('behaviours.save_as', 'Save As'));
   const saveAsForm = node('form', 'bh-save-as'); saveAsForm.hidden = true;
@@ -41,7 +41,8 @@ function editor(row, host, refresh, startEditing = false) {
   const cancel = node('button', 'wk-action', t('panels.cancel', 'Cancel')); cancel.type = 'button';
   saveAsLabel.append(saveAsName); saveAsForm.append(saveAsLabel, create, cancel);
   actions.append(toggle, save, saveAs);
-  host.append(heading, summary, meta, actions, status, readingHost, area, saveAsForm);
+  const viewOnly = node('span', 'wk-action bh-view-only', t('behaviours.view', 'View'));
+  host.append(heading, summary, meta, viewOnly, status, readingHost);
   const stoneRoot = host.closest('.sws');
   const guard = (event) => {
     const leaving = event.type === 'keydown' ? event.key === 'Escape' : event.target.closest?.('[data-sws-id]');
@@ -68,7 +69,6 @@ function editor(row, host, refresh, startEditing = false) {
     if (!editing) readingHost.replaceChildren(renderMarkdownDocument(area.value));
     save.disabled = !editing || !reading?.name;
     toggle.setAttribute('aria-pressed', String(editing));
-    toggle.textContent = editing ? t('behaviours.view', 'View') : t('behaviours.edit', 'Edit');
   };
   const load = async () => {
     const mine = ++generation;
@@ -80,7 +80,7 @@ function editor(row, host, refresh, startEditing = false) {
     const result = await request(`/api/ways/${encodeURIComponent(row.scope)}/${encodeURIComponent(row.name)}`, { cache: 'no-store' });
     if (mine !== generation) return;
     if (!result.ok) { say(result.message, true); return; }
-    reading = result.data; area.value = reading.text || ''; dirty = false; editing = startEditing; paintMode(); if (editing) area.focus(); say('');
+    reading = result.data; area.value = reading.text || ''; dirty = false; editing = false; paintMode(); say('');
   };
   toggle.addEventListener('click', () => { editing = !editing; paintMode(); if (editing) area.focus(); else toggle.focus(); });
   area.addEventListener('input', () => { dirty = true; say(''); });
@@ -117,7 +117,7 @@ function editor(row, host, refresh, startEditing = false) {
 export function createBehaviourSurface(initial = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('behaviours.title', 'Behaviors'), className: 'behaviour-surface' });
   let rows = [];
-  const stones = createStoneWorkSurface({ className: 'behaviour-stones', renderDetail: (item, host) => editor(item.row, host, refresh, initial.edit === true && keyOf(item.row) === `${initial.scope}:${initial.name}`) });
+  const stones = createStoneWorkSurface({ className: 'behaviour-stones', renderDetail: (item, host) => editor(item.row, host, refresh) });
   const intro = node('div', 'sws-intro');
   intro.append(node('h2', '', t('behaviours.title', 'Behaviors')), node('p', '', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')));
   stones.mount(surface.content, { before: [intro] });
@@ -127,7 +127,7 @@ export function createBehaviourSurface(initial = {}) {
     const stones = ordered.map((row) => ({ id: keyOf(row), label: row.label || row.name, group: group(row), secondary: row.blurb || '', state: row.origin === 'user' ? t('behaviours.yours', 'Yours') : '', row }));
     const addAt = stones.findLastIndex((item) => item.row.scope === 'selected') + 1;
     stones.splice(addAt, 0, {
-      id: 'selected:+', label: t('behaviours.add_own', 'Add Your Own'), group: t('behaviours.available', 'Optional'), secondary: '', className: 'sws-add', row: { name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: '', scope: 'selected', origin: 'user', requires: [] },
+      id: 'selected:+', label: t('behaviours.add_own', 'Add Your Own'), group: t('behaviours.available', 'Optional'), secondary: '', className: 'sws-add', disabled: true, row: { name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: '', scope: 'selected', origin: 'user', requires: [] },
     });
     return stones;
   };

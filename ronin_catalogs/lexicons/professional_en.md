@@ -2018,8 +2018,6 @@ The catalog entry goes. {dir} is not touched.
 - **behaviours.yours:** Yours
 - **behaviours.stock:** Ronin
 - **behaviours.view_edit:** View/Edit
-- **behaviours.edit:** Edit
-- **behaviours.view:** View
 - **behaviours.save_as:** Save As
 - **behaviours.add_own:** Add Your Own
 - **behaviours.add_own_blurb:** Create a Behavior in your owner store.

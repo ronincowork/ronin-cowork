@@ -368,14 +368,14 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const general = behaviourRows().filter((row) => row.scope === 'selected' && row.available === true && !row.installation);
     const automatic = behaviourRows().filter((row) => row.scope === 'floor');
     const conditional = behaviourRows().filter((row) => row.scope === 'conditional');
-    const edit = (row) => ({ name: row.name, scope: row.scope, create: !row.name, edit: Boolean(row.name) });
     const row = (item, availability = '') => ({
-      v: item.name || '+', l: item.label || item.name, sub: item.blurb || '', read: item.reading, edit: edit(item),
+      v: item.name || '+', l: item.label || item.name, sub: item.blurb || '', read: item.reading,
+      view: item.name ? { name: item.name, scope: item.scope } : null,
       off: typeof availability === 'string' ? availability : availability.off || '',
       disabled: typeof availability === 'object' && availability.disabled === true,
     });
     const createOwn = row({ name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: '', scope: 'selected' });
-    createOwn.action = ({ source }) => window.dispatchEvent(new CustomEvent('ronin:edit-behaviour', { detail: { scope: 'selected', create: true, source } }));
+    createOwn.disabled = true;
     const picker = ask([{ group: t('behaviours.available', 'Optional'), fields: [{
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
       options: [...general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')), createOwn],

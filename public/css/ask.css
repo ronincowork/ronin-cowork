@@ -76,8 +76,8 @@
   .ask-tall .ask-name { -webkit-line-clamp: 4; white-space: normal; }
   .ask-read { position: absolute; right: var(--space-2); bottom: var(--space-2); border: 0; background: transparent; color: var(--accent); font-size: 0; cursor: pointer; }
   .ask-read::before { content: '▧'; font-size: var(--text-3); }
-  .ask-read.ask-edit { font-size: var(--form-note); }
-  .ask-read.ask-edit::before { content: none; }
+  .ask-read:is(.ask-edit, .ask-view) { font-size: var(--form-note); }
+  .ask-read:is(.ask-edit, .ask-view)::before { content: none; }
   .ask-glyph { color: var(--accent); font-size: var(--text-8); font-style: normal; line-height: 1; }
   .ask-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: break-word; font-size: var(--form-input); font-weight: 500; line-height: 1.2; }
   .ask-square .ask-name { font-size: var(--form-note); }

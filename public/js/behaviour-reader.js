@@ -10,14 +10,14 @@ export function installBehaviourReader(bench, type = 'document', editType = 'cam
     bench.place(type, BESIDE[workspace] || 'workspace2', { key: path, path });
   };
   window.addEventListener('ronin:read-document', read);
-  const edit = (event) => {
+  const view = (event) => {
     const name = String(event.detail?.name || '');
     const scope = String(event.detail?.scope || '');
     const source = event.detail?.source;
-    if ((!name && event.detail?.create !== true) || !scope || !(source instanceof Node) || !bench.host.contains(source)) return;
+    if (!name || !scope || !(source instanceof Node) || !bench.host.contains(source)) return;
     const workspace = source.closest('[data-workspace]')?.dataset.workspace || bench.selected();
-    bench.place(editType, BESIDE[workspace] || 'workspace2', { name, scope, create: event.detail?.create === true, edit: event.detail?.edit === true });
+    bench.place(editType, BESIDE[workspace] || 'workspace2', { name, scope });
   };
-  window.addEventListener('ronin:edit-behaviour', edit);
-  return () => { window.removeEventListener('ronin:read-document', read); window.removeEventListener('ronin:edit-behaviour', edit); };
+  window.addEventListener('ronin:view-behaviour', view);
+  return () => { window.removeEventListener('ronin:read-document', read); window.removeEventListener('ronin:view-behaviour', view); };
 }

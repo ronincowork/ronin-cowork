@@ -154,7 +154,7 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
     const on = field.many ? state[field.key].includes(row.v) : String(state[field.key]) === String(row.v);
     if (!row.action) opt.setAttribute('aria-selected', String(on));
     else opt.dataset.askAction = 'true';
-    if (row.off || row.disabled) { opt.setAttribute('aria-disabled', 'true'); opt.title = row.off || ''; }
+    if (row.off) { opt.setAttribute('aria-disabled', 'true'); opt.title = row.off; }
     if (field.shape === 'square' && (row.glyph || row.blank)) opt.append(el('i', 'ask-glyph', row.glyph || '○'));
     const name = el('b', 'ask-name');
     name.append(snake(row.l));
@@ -162,7 +162,7 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
     if (field.shape === 'rect' && row.word) opt.append(el('small', 'ask-word', row.word));
     opt.addEventListener('mouseenter', () => say(row));
     opt.addEventListener('focus', () => say(row));
-    opt.addEventListener('click', () => { if (row.off || row.disabled) { say(row); return; } if (row.action) { row.action({ source: root, row }); return; } choose(field, row, opt); });
+    opt.addEventListener('click', () => { if (row.off) { say(row); return; } if (row.action) { row.action({ source: root, row }); return; } choose(field, row, opt); });
     optionNodes.push({ field, row, node: opt });
     return opt;
   };
@@ -265,16 +265,17 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
         const items = [...(!f.many && f.blank != null ? [{ v: '', l: f.blank, blank: true }] : []), ...shown];
         for (const row of items) {
           const opt = optionStone(f, row, say);
-          if (row.read || row.edit) {
+          if (row.read || row.edit || row.view) {
             const wrap = el('span', 'ask-opt-wrap');
-            const read = el('button', row.edit ? 'ask-read ask-edit' : 'ask-read', row.edit ? t('ask.edit', 'Edit') : t('ask.read', 'Read'));
+            const reading = row.view ? t('ask.view', 'View') : row.edit ? t('ask.edit', 'Edit') : t('ask.read', 'Read');
+            const read = el('button', row.view ? 'ask-read ask-view' : row.edit ? 'ask-read ask-edit' : 'ask-read', reading);
             read.type = 'button';
-            read.title = row.edit ? t('ask.edit_behaviour', 'Edit this Behavior') : t('ask.read_behaviour', 'Read this behaviour');
-            read.setAttribute('aria-label', `${row.edit ? t('ask.edit', 'Edit') : t('ask.read', 'Read')} ${row.l}`);
+            read.title = row.view ? t('ask.view_behaviour', 'View this Behavior') : row.edit ? t('ask.edit_behaviour', 'Edit this Behavior') : t('ask.read_behaviour', 'Read this behaviour');
+            read.setAttribute('aria-label', `${reading} ${row.l}`);
             read.addEventListener('click', (event) => {
               event.stopPropagation();
-              window.dispatchEvent(new CustomEvent(row.edit ? 'ronin:edit-behaviour' : 'ronin:read-document', {
-                detail: row.edit ? { ...row.edit, source: root } : { path: row.read, source: root },
+              window.dispatchEvent(new CustomEvent(row.view ? 'ronin:view-behaviour' : row.edit ? 'ronin:edit-behaviour' : 'ronin:read-document', {
+                detail: row.view ? { ...row.view, source: root } : row.edit ? { ...row.edit, source: root } : { path: row.read, source: root },
               }));
             });
             wrap.append(opt, read); options.append(wrap);
