@@ -3,7 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { createSetupZone } from './setup-zone.js';
+import { mountSetupStepFooter } from './setup-step-footer.js';
 
 export const PASSWORD_SURFACE_TYPE = 'machine.password';
 
@@ -100,7 +100,6 @@ export function createPasswordSurface(context = {}) {
     basic.hidden = state?.basic !== true;
     basic.textContent = t('password.basic_kept', 'Legacy Basic authentication is also configured. Turning this password Off does not remove that separate restriction.');
     context.environment?.onPasswordState?.({ required: saved, basic: state?.basic === true });
-    zone?.setFacts({ required: saved });
   };
 
   selector = ask([{ group: t('password.access', 'Browser access'), fields: [{
@@ -156,13 +155,14 @@ export function createPasswordSurface(context = {}) {
     if (!result.ok) { say(result.message, true); return; }
     paint(result.data); say('');
   };
-  const zone = context.environment?.answerSetupStep ? createSetupZone('password', context.environment, {
-    tailscale: () => context.environment?.answerSetupStep?.('password', 'not_now'),
-    password: () => openForm('enable'),
-    advance: async () => { if (await context.environment?.answerSetupStep?.('password', 'acted')) context.environment?.nextSetupStep?.(); },
-  }) : null;
-  if (zone) body.prepend(zone.el);
-  return { el: surface.el, show, destroy: () => { zone?.destroy(); selector.destroy(); } };
+  const stopFooter = context.environment?.answerSetupStep ? mountSetupStepFooter(body, context.environment, {
+    id: 'password', number: 5, pending: 'Not answered yet', complete: 'Answered',
+    actions: () => [
+      { label: 'Set a password', quiet: 'quiet', action: () => openForm('enable') },
+      { label: 'Tailnet is enough', kind: 'primary', action: () => context.environment?.answerSetupStep?.('password', 'not_now') },
+    ],
+  }) : () => {};
+  return { el: surface.el, show, destroy: () => { stopFooter(); selector.destroy(); } };
 }
 
 export function passwordSurfaceDefinition() {

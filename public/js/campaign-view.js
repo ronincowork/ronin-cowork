@@ -70,8 +70,8 @@ export function createCampaignView() {
   const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   const selected = () => campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
   const setupProgress = () => liveSetupProgress || (selected() ? { steps: SETUP_STEP_IDS.map((id, index) => ({
-    id, number: index + 1, answered: Boolean(selected()?.config?.setup?.answers?.[id]), answer: selected()?.config?.setup?.answers?.[id] || '',
-  })), facts: selected()?.config?.setup?.facts || {} } : null);
+    id, number: index + 1, answered: Boolean(selected()?.config?.setup?.answers?.[id]),
+  })) } : null);
   const readRoots = async () => {
     const campaignId = selected()?.id || '';
     const query = campaignId ? `?campaign_id=${encodeURIComponent(campaignId)}` : '';

@@ -214,7 +214,7 @@ export function createInstallationsSurface(campaign, context = {}) {
   stoneSurface = createStoneWorkSurface({ items: [], className: 'campaign-installations-stones', renderDetail });
   const reading = el('p', 'setup-notice');
   reading.setAttribute('role', 'status');
-  stoneSurface.mount(surface.content, { before: [...(context.before || []), reading] });
+  stoneSurface.mount(surface.content, { before: [reading] });
 
   const enter = async () => {
     const [catalogResult, installedResult] = await Promise.all([

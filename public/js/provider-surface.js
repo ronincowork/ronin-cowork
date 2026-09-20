@@ -32,7 +32,7 @@
  */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
-import { createSetupZone } from './setup-zone.js';
+import { mountSetupStepFooter } from './setup-step-footer.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
@@ -434,17 +434,25 @@ export function createProviderSurface(context) {
     },
   });
   context.environment?.onProviderSurface?.(controller);
-  const zone = context.environment?.answerSetupStep ? createSetupZone('provider', context.environment, {
-    signIn: () => controller.openFirst(), advance: () => context.environment?.nextSetupStep?.(),
-  }) : null;
-  stones.mount(out.content, { before: zone ? [zone.el] : [], after: [mikaAvailability, notice] });
+  stones.mount(out.content, { after: [mikaAvailability, notice] });
+  const stopFooter = context.environment?.answerSetupStep ? mountSetupStepFooter(out.content, context.environment, {
+    id: 'provider', number: 1,
+    pending: 'Waiting on a provider', complete: 'Complete — found on this machine',
+    actions: () => [
+      { label: 'Look again', quiet: 'link', action: () => context.environment?.scanSetupProgress?.() },
+      { label: 'Install a provider', kind: 'primary', action: () => controller.openFirst() },
+    ],
+    answeredActions: () => [
+      { label: 'Look again', quiet: 'link', action: () => context.environment?.scanSetupProgress?.() },
+      { label: 'Next step', kind: 'primary', action: () => context.environment?.nextSetupStep?.() },
+    ],
+  }) : () => {};
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   /** The frame from whatever `runtime` holds now: the record, or the measure once it lands. */
   const paintFrom = async () => {
     disposeMount();
     context.environment.setupRuntime = runtime;
     const activatedNow = Number(runtime.activated_count || 0);
-    zone?.setFacts({ activated_count: activatedNow });
     context.environment.onSetupRuntime?.(runtime);
     mikaAvailability.hidden = activatedNow === 0;
     mikaAvailability.textContent = activatedNow === 1
@@ -500,10 +508,9 @@ export function createProviderSurface(context) {
   const paint = async (refresh = false) => { await showRecord(); return measure(refresh); };
   const onInventory = () => { void showRecord(); };
   window.addEventListener('ronin:provider-inventory', onInventory);
-  const stopProgressRefresh = context.environment?.onSetupProgress?.(() => { void showRecord(); }) || (() => {});
   return {
     el: out.el,
     show: async () => { await showRecord(); },
-    destroy: () => { stopProgressRefresh(); zone?.destroy(); window.removeEventListener('ronin:provider-inventory', onInventory); context.environment?.onProviderSurface?.(null); disposeMount(); stones.destroy(); },
+    destroy: () => { stopFooter(); window.removeEventListener('ronin:provider-inventory', onInventory); context.environment?.onProviderSurface?.(null); disposeMount(); stones.destroy(); },
   };
 }

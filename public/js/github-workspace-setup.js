@@ -130,7 +130,7 @@ export function createGithubWorkspaceSetup({ environment, workspace = 'workspace
       : !installed ? t('roots.github_auth_unavailable_state', 'Install GitHub CLI') : t('roots.github_auth_state', 'Connect account');
     items[1].state = t('roots.github_clone_ready_state', 'Uses existing Git access');
     items[1].disabled = false;
-    onStateChange?.({ installed, authenticated, account });
+    onStateChange?.();
   };
   const mountAttachment = (attachment, provider = 'github', closeEndpoint = '/api/setup/github/close') => {
     if (mounted || destroyed || attachment?.type !== 'session' || !attachment.key

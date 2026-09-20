@@ -10,7 +10,6 @@ export function setupSteps(payload) {
     id, number: index + 1,
     label: SETUP_SCENES.find((scene) => scene.id === id)?.label || id,
     answered: byId.get(id)?.answered === true,
-    answer: byId.get(id)?.answer === 'acted' || byId.get(id)?.answer === 'not_now' ? byId.get(id).answer : '',
   }));
 }
 

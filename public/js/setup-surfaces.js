@@ -16,7 +16,7 @@ import { HOUSE_PRESETS, PRESETS_TYPE, buildLaunchPlan, initialControls, seatingP
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { createInstallationsSurface } from './campaign-installations.js';
-import { createSetupZone } from './setup-zone.js';
+import { mountSetupStepFooter } from './setup-step-footer.js';
 import { createStatusMarker } from './status-marker.js';
 
 // Model providers is the one surface two workbenches seat (provider-surface.js); its type
@@ -309,14 +309,15 @@ function createRegisterSurface(context) {
       if (result.ok) { current = result.data; paint(); }
     }));
     notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
-    zone.setFacts({ registered: current?.status === 'registered' || current?.status === 'anonymous' });
   };
-  const zone = createSetupZone('register', context.environment, {
-    register: () => registerAction.click(),
-    decline: () => identityMode.set('no_thanks'),
-    advance: async () => { if (await context.environment?.answerSetupStep?.('register', 'acted')) context.environment?.nextSetupStep?.(); },
+  body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
+  const stopFooter = mountSetupStepFooter(body, context.environment, {
+    id: 'register', number: 2, pending: 'Not answered yet', complete: 'Answered',
+    actions: () => [
+      { label: 'No thank you', action: () => { identityMode.set('no_thanks'); void context.environment?.answerSetupStep?.('register', 'not_now'); } },
+      { label: 'Send registration', kind: 'primary', action: () => registerAction.click() },
+    ],
   });
-  body.append(zone.el, identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
   return { el: out.el, show: async () => {
     const routeKind = context.environment?.kinds?.get?.()[0] || '';
     kind.set({ build: 'build_software', life: 'life_assistants', research: 'research_writing', other: 'other' }[routeKind] || '');
@@ -331,26 +332,30 @@ function createRegisterSurface(context) {
       userIntro.hidden = Boolean(userIntroText.value.trim());
     }
     paint();
-  }, destroy: zone.destroy };
+  }, destroy: stopFooter };
 }
 
 function createRootsSurface(context) {
-  let page = null;
-  const zone = createSetupZone('workspace', context.environment, {
-    connect: () => page?.el.querySelector('.setup-roots-github-stone')?.click(),
-    decline: () => context.environment?.answerSetupStep?.('workspace', 'not_now'),
-    advance: () => context.environment?.nextSetupStep?.(),
-  });
-  page = createWorkspaceFoldersSurface({
+  const page = createWorkspaceFoldersSurface({
     campaignId: () => context.tenant?.campaign || '',
     presentation: 'stones',
     environment: context.environment,
     workspace: context.workspace,
-    before: [zone.el],
-    onGithubState: (state) => zone.setFacts({ connected: state?.authenticated === true }),
     onShow: () => notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench),
   });
-  return { ...page, destroy: () => { zone.destroy(); page.destroy?.(); } };
+  const host = page.el.querySelector('.wk-surface-content') || page.el;
+  const stopFooter = mountSetupStepFooter(host, context.environment, {
+    id: 'workspace', number: 3, pending: 'Not answered yet', complete: 'Complete — found on this machine',
+    actions: () => [
+      { label: 'I don’t use GitHub', action: () => context.environment?.answerSetupStep?.('workspace', 'not_now') },
+      { label: 'Connect GitHub', kind: 'primary', action: () => page.el.querySelector('.setup-roots-github-stone')?.click() },
+    ],
+    answeredActions: () => [
+      { label: 'Look again', quiet: 'link', action: () => context.environment?.scanSetupProgress?.() },
+      { label: 'Next step', kind: 'primary', action: () => context.environment?.nextSetupStep?.() },
+    ],
+  });
+  return { ...page, destroy: () => { stopFooter(); page.destroy?.(); } };
 }
 
 function createBountySurface(context) {
@@ -684,33 +689,27 @@ function createLaunchOwnSurface(context) {
 
 function createSetupInstallationsSurface(context) {
   const selected = () => campaignById(context.tenant?.campaign) || campaigns()[0] || null;
-  const zone = createSetupZone('installations', context.environment, {
-    registerFirst: () => context.environment?.navigateToSurface?.(SETUP_SURFACE_TYPES.register),
-    decline: () => context.environment?.answerSetupStep?.('installations', 'not_now'),
-    advance: async () => { if (await context.environment?.answerSetupStep?.('installations', 'acted')) context.environment?.nextSetupStep?.(); },
-  });
   const page = createInstallationsSurface(selected, {
     ...context,
-    before: [zone.el],
     onInstallationsState: (values) => context.environment?.onInstallationsState?.(values),
-    onInstallationChange: (name, on) => {
-      if (name === 'ronin_services') zone.setFacts({ installed: on === true });
-      context.environment?.onInstallationChoice?.();
-    },
+    onInstallationChange: () => context.environment?.onInstallationChoice?.(),
     createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
+  });
+  const host = page.el.querySelector('.wk-surface-content') || page.el;
+  const stopFooter = mountSetupStepFooter(host, context.environment, {
+    id: 'installations', number: 4, pending: 'Not answered yet', complete: 'Answered',
+    actions: () => [
+      { label: 'No, I’m good', action: () => context.environment?.answerSetupStep?.('installations', 'not_now') },
+      { label: 'Keep these installations', kind: 'primary', action: () => context.environment?.answerSetupStep?.('installations', 'acted') },
+    ],
   });
   // Setup chooses and sequences the shared page; it does not change the page's controls.
   // The shared Services model owns the Install, Turn on, and Restart gates in every
   // workbench, and the server independently enforces the same capabilities.
   return { el: page.el, show: async () => {
     await loadCampaigns();
-    const registration = await request('/api/setup/registration', { cache: 'no-store' });
-    zone.setFacts({
-      registered: registration.ok && ['registered', 'anonymous'].includes(registration.data?.status),
-      installed: selected()?.config?.installations?.ronin_services === true,
-    });
     await page.enter();
-  }, destroy: () => { zone.destroy(); page.destroy?.(); } };
+  }, destroy: () => { stopFooter(); page.destroy?.(); } };
 }
 
 export function setupSurfaceDefinitions() {

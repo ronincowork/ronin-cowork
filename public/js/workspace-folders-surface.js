@@ -21,8 +21,6 @@ export function createWorkspaceFoldersSurface({
   onShow = () => {},
   environment = null,
   workspace = 'workspace2',
-  before = [],
-  onGithubState = () => {},
 } = {}) {
   const surface = WorkspaceKit.primitives.createSurface({
     label: t('cowork.tab_roots', 'Workspace folders'),
@@ -41,7 +39,7 @@ export function createWorkspaceFoldersSurface({
   const github = presentation === 'stones' ? createGithubWorkspaceSetup({
     environment,
     workspace,
-    onStateChange: (state) => { room?.updateExtraItems(); onGithubState(state); },
+    onStateChange: () => room?.updateExtraItems(),
     onAuthenticated: () => {
       environment?.onGithubAuthenticated?.();
       room?.select('\0github-clone', { focus: true });
@@ -57,7 +55,6 @@ export function createWorkspaceFoldersSurface({
     () => campaignId?.() || '',
     presentation ? {
       presentation,
-      before,
       extraItems: github?.items || [],
       onSelection: (id) => environment?.onWorkspaceFolderChosen?.(id),
     } : {},

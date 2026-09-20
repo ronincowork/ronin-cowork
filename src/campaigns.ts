@@ -14,7 +14,7 @@ async function writeCampaigns(campaigns: Record<string, unknown>): Promise<void>
 export interface CampaignSettings {
   installations: Record<string, boolean>;
   services: { parts: Record<string, boolean> };
-  setup: { answers: SetupAnswers; facts: SetupFacts };
+  setup: { answers: SetupAnswers };
   defaults: AgentDefaults;
   cowork_defaults: Record<string, unknown>;
   template_defaults: Record<string, unknown>;
@@ -24,7 +24,6 @@ export const SETUP_STEP_IDS = ['provider', 'register', 'workspace', 'installatio
 export type SetupStepId = typeof SETUP_STEP_IDS[number];
 export type SetupAnswer = 'acted' | 'not_now';
 export type SetupAnswers = Partial<Record<SetupStepId, SetupAnswer>>;
-export interface SetupFacts { tailscale?: boolean; checked_at?: string }
 
 export interface CampaignDeskSettings {
   skin: string;
@@ -60,7 +59,7 @@ export interface CampaignEdit {
   config?: {
     installations?: Record<string, boolean>;
     services?: { parts?: Record<string, boolean> };
-    setup?: { answers?: SetupAnswers; facts?: SetupFacts };
+    setup?: { answers?: SetupAnswers };
     defaults?: Partial<AgentDefaults>;
     cowork_defaults?: Record<string, unknown>;
     template_defaults?: Record<string, unknown>;
@@ -137,18 +136,10 @@ const serviceSettings = (v: unknown): { parts: Record<string, boolean> } => {
   };
 };
 
-const setupSettings = (v: unknown): { answers: SetupAnswers; facts: SetupFacts } => {
-  const value = bucket(v);
-  const answers = bucket(value.answers);
-  const facts = bucket(value.facts);
-  return {
-    answers: Object.fromEntries(SETUP_STEP_IDS.flatMap((id) =>
-      answers[id] === 'acted' || answers[id] === 'not_now' ? [[id, answers[id]]] : [])),
-    facts: {
-      ...(typeof facts.tailscale === 'boolean' ? { tailscale: facts.tailscale } : {}),
-      ...(typeof facts.checked_at === 'string' && facts.checked_at ? { checked_at: facts.checked_at } : {}),
-    },
-  };
+const setupSettings = (v: unknown): { answers: SetupAnswers } => {
+  const answers = bucket(bucket(v).answers);
+  return { answers: Object.fromEntries(SETUP_STEP_IDS.flatMap((id) =>
+    answers[id] === 'acted' || answers[id] === 'not_now' ? [[id, answers[id]]] : [])) };
 };
 
 const settings = (v: unknown): CampaignSettings => {
