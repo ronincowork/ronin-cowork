@@ -1,16 +1,17 @@
-/* Persisted Setup intent. Operational readiness is deliberately not an input here. */
-export const SETUP_STEP_IDS = Object.freeze(['provider', 'register', 'workspace', 'installations', 'password']);
-const ANSWERS = new Set(['acted', 'not_now']);
+/* Painter-only reading of the server-owned Setup progress resource. */
+import { SETUP_SCENES } from './setup-journey.js';
 
-export function setupAnswers(campaign) {
-  const source = campaign?.config?.setup?.answers;
-  if (!source || typeof source !== 'object' || Array.isArray(source)) return {};
-  return Object.fromEntries(SETUP_STEP_IDS.flatMap((id) => ANSWERS.has(source[id]) ? [[id, source[id]]] : []));
+export const SETUP_STEP_IDS = Object.freeze(['provider', 'register', 'workspace', 'installations', 'password']);
+
+export function setupSteps(payload) {
+  const source = Array.isArray(payload?.steps) ? payload.steps : [];
+  const byId = new Map(source.map((step) => [step?.id, step]));
+  return SETUP_STEP_IDS.map((id, index) => ({
+    id, number: index + 1,
+    label: SETUP_SCENES.find((scene) => scene.id === id)?.label || id,
+    answered: byId.get(id)?.answered === true,
+  }));
 }
 
-export const firstUnansweredSetupStep = (campaign) => {
-  const answers = setupAnswers(campaign);
-  return SETUP_STEP_IDS.find((id) => !answers[id]) || '';
-};
-
-export const setupIsComplete = (campaign) => firstUnansweredSetupStep(campaign) === '';
+export const firstUnansweredSetupStep = (payload) => setupSteps(payload).find((step) => !step.answered)?.id || '';
+export const setupIsComplete = (payload) => firstUnansweredSetupStep(payload) === '';

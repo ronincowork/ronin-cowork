@@ -3,6 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { mountSetupStepFooter } from './setup-step-footer.js';
 
 export const PASSWORD_SURFACE_TYPE = 'machine.password';
 
@@ -154,6 +155,13 @@ export function createPasswordSurface(context = {}) {
     if (!result.ok) { say(result.message, true); return; }
     paint(result.data); say('');
   };
+  if (context.environment?.answerSetupStep) mountSetupStepFooter(body, context.environment, {
+    id: 'password', number: 5, pending: 'Not answered yet', complete: 'Answered',
+    actions: () => [
+      { label: 'Set a password', quiet: 'quiet', action: () => openForm('enable') },
+      { label: 'Tailnet is enough', kind: 'primary', action: () => context.environment?.answerSetupStep?.('password', 'not_now') },
+    ],
+  });
   return { el: surface.el, show, destroy: () => selector.destroy() };
 }
 

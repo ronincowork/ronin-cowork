@@ -6038,6 +6038,25 @@ button.wb-door:hover b {
    another size sets it under its own class, as the card does below. */
 .setup-steps-bar { --slab: var(--space-10); --slab-w: 16px; --slab-gap: var(--space-1); --slab-type: var(--text-3); --skew: -14deg; display: flex; align-items: center; flex: 0 0 auto; gap: var(--slab-gap); }
 .setup-steps-header { display: inline-flex; align-items: center; }
+.setup-scan { display: inline-flex; align-items: center; gap: var(--space-4); margin-left: var(--space-6); }
+.setup-scan-button { display: grid; place-items: center; width: var(--space-10); height: var(--space-10); flex: 0 0 auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-round); background: transparent; color: var(--muted); padding: 0; cursor: pointer; }
+.setup-scan-button:hover { border-color: var(--setup-mark); color: var(--setup-mark); }
+.setup-scan-button svg { width: var(--space-7); height: var(--space-7); display: block; }
+.setup-scan[data-state='scanning'] .setup-scan-button { border-color: var(--setup-mark); color: var(--setup-mark); }
+.setup-scan[data-state='scanning'] .setup-scan-button svg { animation: setup-scan-spin 1.1s linear infinite; }
+.setup-scan[data-state='failed'] .setup-scan-button { border-color: var(--bad); color: var(--bad-soft); }
+@keyframes setup-scan-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .setup-scan[data-state='scanning'] .setup-scan-button svg { animation: none; } }
+.setup-scan-word { color: var(--muted); font-size: var(--text-2); white-space: nowrap; }
+.setup-scan[data-state='scanning'] .setup-scan-word { color: var(--setup-mark); }
+.setup-scan[data-state='failed'] .setup-scan-word { color: var(--bad-soft); }
+.setup-scan-word:empty { display: none; }
+.setup-step-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); margin-top: var(--space-9); padding-top: var(--space-7); border-top: var(--edge) solid var(--line); }
+.setup-step-answer { margin: 0; margin-right: auto; color: var(--muted); font-size: var(--text-3); }
+.setup-step-answer b { color: var(--fg-strong); font-weight: 650; }
+.setup-step-answer[data-answered='true'] b { color: var(--setup-mark); }
+.setup-step-footer .wk-action[data-kind='quiet'] { background: transparent; color: var(--muted-2); }
+.setup-step-footer .wk-action[data-kind='link'] { border-color: transparent; background: transparent; color: var(--muted); padding-inline: var(--space-2); text-decoration: underline; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
    were five separate things. The lean is one angle shared by every mark and never changes
    with state — only the fill moves, so the row cannot reflow as answers land. */

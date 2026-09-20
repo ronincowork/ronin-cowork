@@ -6,7 +6,6 @@ import { createReleaseUpdateController, packageReading } from './release-update-
 import { createSenmaida } from './senmaida.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { setupIsComplete } from './setup-progress.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -23,7 +22,10 @@ function DOORS() {
   ];
 }
 
-export const setupDefaultView = (campaign) => setupIsComplete(campaign) ? 'campaign' : 'setup';
+export const setupDefaultView = (campaign) => {
+  const answers = campaign?.config?.setup?.answers || {};
+  return ['provider', 'register', 'workspace', 'installations', 'password'].every((id) => answers[id]) ? 'campaign' : 'setup';
+};
 
 /** The machine door's house mark: a wheel with eight broad teeth, recognisably admin
  * without importing a platform emoji or turning into a literal vehicle silhouette. */

@@ -13,11 +13,9 @@ import { reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
 import { onProjects, projectData } from './home.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
-import { campaignById, loadCampaigns, normalizeSelection, saveCampaign } from './campaigns.js';
-import { firstUnansweredSetupStep, setupAnswers as readSetupAnswers } from './setup-progress.js';
+import { firstUnansweredSetupStep } from './setup-progress.js';
 import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
-import { t } from './lexicon.js';
-import { toast } from './ui.js';
+import { setupProgressHandlers } from './events.js';
 
 const PROFILE = 'setup';
 // Release toggles: unfinished programs stay out of Setup without changing the workbench.
@@ -50,21 +48,18 @@ export function createSetupView() {
   let gardenContent = null;
   let providerSurface = null;
   let paintedSceneId = null;
-  let answers = {};
-  let savingAnswer = false;
+  let progress = { steps: [], scanning: false, scanned_at: '' };
   let enterGeneration = 0;
   let sceneOverride = 1;
   let workspaceFolderOrigin = null;
+  const progressListeners = new Set();
   const providerSessions = createProviderSetupSessionMount();
   const kinds = createKindsPreference(globalThis.localStorage, (next) => request('/api/setup/preferences', { method: 'PATCH', json: { kinds: next } }));
-  const nextAction = WorkspaceKit.primitives.createAction({ label: 'Next', launch: true, action: () => advance() });
-  const notNowAction = WorkspaceKit.primitives.createAction({ label: t('setup.not_now', 'Not now'), action: () => { void answerActive('not_now', true); } });
   const themeToggle = createThemeToggle();
   const setupStepsHeader = document.createElement('span');
   setupStepsHeader.className = 'setup-steps-header';
   const refreshSetupStepsHeader = () => {
-    const campaign = selectedCampaign();
-    const marks = setupStepMarks(campaign);
+    const marks = setupStepMarks(progress);
     const answered = marks.filter((step) => step.answered).length;
     const next = marks.find((step) => step.next);
     const reading = document.createElement('span');
@@ -72,17 +67,33 @@ export function createSetupView() {
     reading.textContent = next
       ? `${answered} of ${marks.length} Setup steps complete. Next: ${next.label}.`
       : 'Setup completed.';
-    setupStepsHeader.replaceChildren(createSetupStepsBar(campaign), reading);
+    const scan = document.createElement('span'); scan.className = 'setup-scan';
+    scan.dataset.state = progress.reason ? 'failed' : progress.scanning ? 'scanning' : 'idle';
+    const scanButton = document.createElement('button'); scanButton.className = 'setup-scan-button'; scanButton.type = 'button';
+    scanButton.setAttribute('aria-label', progress.scanning ? 'Looking at this machine' : progress.reason ? 'Try looking again' : 'Look at this machine again');
+    scanButton.setAttribute('aria-busy', String(progress.scanning));
+    scanButton.title = progress.scanned_at ? `Last looked ${progress.scanned_at}` : 'Look at this machine';
+    scanButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>';
+    scanButton.addEventListener('click', () => { void scanProgress(); });
+    const word = document.createElement('span'); word.className = 'setup-scan-word';
+    word.textContent = progress.scanning ? 'Looking at this machine…' : progress.reason || '';
+    scan.append(scanButton, word);
+    setupStepsHeader.replaceChildren(createSetupStepsBar(progress), scan, reading);
   };
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
   const environment = {
-    onGithubAuthenticated: () => {},
-    onWorkspaceFolderChosen: () => { void answerStep('workspace', 'acted'); },
+    onGithubAuthenticated: () => { void scanProgress(); },
+    onWorkspaceFolderChosen: () => { void scanProgress(); },
     onInstallationsState: () => {},
     onInstallationChoice: () => { void answerStep('installations', 'acted'); },
     onPasswordChoice: (required) => { void answerStep('password', required ? 'acted' : 'not_now'); },
     onRegistrationChoice: (answer) => { void answerStep('register', answer); },
-    onProviderChoice: (answer) => { void answerStep('provider', answer); },
+    onProviderChoice: () => { void scanProgress(); },
+    setupProgress: () => progress,
+    onSetupProgress: (listener) => { progressListeners.add(listener); listener(progress); return () => progressListeners.delete(listener); },
+    answerSetupStep: (step, answer) => answerStep(step, answer),
+    scanSetupProgress: () => scanProgress(),
+    nextSetupStep: () => advance(),
     setupRuntime: null,
     onSetupRuntime: (next) => { runtime = next; environment.setupRuntime = next; paint(); },
     kinds,
@@ -143,43 +154,24 @@ export function createSetupView() {
       openSurface(action);
     },
   };
-  const selectedCampaign = () => campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
-  const answerStep = async (step, answer, move = false) => {
-    const campaign = selectedCampaign();
-    if (!campaign || savingAnswer || answers[step]) return false;
-    savingAnswer = true;
-    const result = await saveCampaign(campaign.id, { config: { setup: { answers: { ...answers, [step]: answer } } } });
-    savingAnswer = false;
-    if (!result.ok) {
-      toast(result.message || 'Setup could not save that choice. Try again.', false);
-      return false;
-    }
-    answers = readSetupAnswers(selectedCampaign());
-    paint();
-    if (move) advance();
-    return true;
+  const acceptProgress = (next) => {
+    if (!next || !Array.isArray(next.steps)) return false;
+    progress = next; paint(); for (const listener of progressListeners) listener(progress); return true;
   };
-  const answerActive = (answer, move = false) => answerStep(activeScene()?.id, answer, move);
+  const answerStep = async (step, answer) => {
+    const result = await request(`/api/setup/progress/${encodeURIComponent(step)}`, { method: 'PATCH', json: { answer } });
+    return result.ok && acceptProgress(result.data);
+  };
+  const scanProgress = async () => {
+    const result = await request('/api/setup/progress/scan', { method: 'POST' });
+    return result.ok && acceptProgress(result.data);
+  };
   const save = () => ctx?.patchViewState('setup', { ...bench.snapshot(), sceneOverride });
   const defaultScene = () => SCENES.find((scene) => !sceneComplete(scene)) || SCENES[SCENES.length - 1];
   const sceneAt = (number) => SCENES[Number(number) - 1] || defaultScene();
   const activeScene = () => sceneAt(sceneOverride);
   const sceneComplete = (scene) => {
-    return Boolean(scene?.id && answers[scene.id]);
-  };
-  const seatNext = (visible) => {
-    if (!visible) { nextAction.el.remove(); return; }
-    const actions = bench?.host.querySelector('[data-workspace="workspace2"] > .wk-surface > .wk-surface-header .wk-surface-header-actions');
-    if (!actions) return;
-    actions.prepend(nextAction.el);
-  };
-  const seatNotNow = (visible) => {
-    if (!visible) { notNowAction.el.remove(); return; }
-    const actions = bench?.host.querySelector('[data-workspace="workspace2"] > .wk-surface > .wk-surface-header .wk-surface-header-actions');
-    if (!actions) return;
-    notNowAction.el.textContent = activeScene()?.id === 'workspace'
-      ? t('setup.fine_for_now', 'Fine for now') : t('setup.not_now', 'Not now');
-    actions.prepend(notNowAction.el);
+    return Boolean(scene?.id && setupStepMarks(progress).find((step) => step.id === scene.id)?.answered);
   };
   const selectGarden = (scene) => {
     if (!garden || !gardenContent || !scene || paintedSceneId === scene.id) return false;
@@ -190,9 +182,6 @@ export function createSetupView() {
   const paint = () => {
     refreshSetupStepsHeader();
     const active = activeScene();
-    const canAdvance = active.number < SCENES.length && sceneComplete(active);
-    seatNext(canAdvance);
-    seatNotNow(['provider', 'register', 'workspace', 'installations', 'password'].includes(active.id) && !sceneComplete(active));
     for (const card of bench?.host.querySelectorAll('[data-workbench-offer-type]') || []) {
       delete card.dataset.sceneRelevant;
       const position = ORDER.indexOf(card.dataset.workbenchOfferType);
@@ -245,6 +234,8 @@ export function createSetupView() {
     open(next.number);
   }
   kinds.subscribe(() => paint());
+  const onProgress = (next) => { acceptProgress(next); };
+  setupProgressHandlers.add(onProgress);
 
   bench = WorkspaceKit.workbench.create({
     profile: PROFILE,
@@ -283,17 +274,16 @@ export function createSetupView() {
       const generation = ++enterGeneration;
       ctx = context;
       const { state: entry } = context.workbenchEntry();
-      await loadCampaigns();
-      if (generation !== enterGeneration) return;
-      answers = readSetupAnswers(selectedCampaign());
-      const first = firstUnansweredSetupStep(selectedCampaign());
-      sceneOverride = first
-        ? (SCENES.find((scene) => scene.id === first)?.number || 1)
-        : Number(entry.sceneOverride) || 1;
+      sceneOverride = Number(entry.sceneOverride) || 1;
       bench.enter({ ...entry, count: 2, arrangement: { ...ARRANGEMENT, widths: entry.arrangement?.widths || ARRANGEMENT.widths } });
       bench.place(GARDEN_CANVAS_TYPE, 'workspace1');
       paint();
       open(sceneOverride);
+      void request('/api/setup/progress', { cache: 'no-store' }).then((result) => {
+        if (generation !== enterGeneration || !result.ok || !acceptProgress(result.data)) return;
+        const first = firstUnansweredSetupStep(progress);
+        if (!progress.scanning && first) open(SCENES.find((scene) => scene.id === first)?.number || 1);
+      });
       if (!runtime) {
         void request('/api/setup/runtime', { cache: 'no-store' }).then((result) => {
           runtime = result.ok ? result.data : { providers: [], activated_count: 0 };
@@ -311,6 +301,6 @@ export function createSetupView() {
       }
     },
     leave: () => { enterGeneration += 1; bench.leave(); },
-    destroy: () => { enterGeneration += 1; providerSessions.destroyAll(); bench.leave(); ctx = null; },
+    destroy: () => { enterGeneration += 1; setupProgressHandlers.delete(onProgress); providerSessions.destroyAll(); bench.leave(); ctx = null; },
   };
 }

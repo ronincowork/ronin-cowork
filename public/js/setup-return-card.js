@@ -32,10 +32,10 @@ const node = (tag, className, text) => {
  * so the card says its name and draws no bar rather than claiming nothing is answered.
  * `open()` takes the person to Ronin Setup; Setup itself decides which step to show.
  */
-export function createSetupReturnCard(campaign, open) {
+export function createSetupReturnCard(progress, open) {
   const card = node('button', 'wk-card setup-return-card');
   card.type = 'button';
-  const rungs = campaign ? setupStepMarks(campaign) : null;
+  const rungs = progress ? setupStepMarks(progress) : null;
   const next = rungs ? rungs.find((step) => step.next) || null : null;
 
   // Unfinished, the card carries the column's entity weight; finished, it steps back to
@@ -47,7 +47,7 @@ export function createSetupReturnCard(campaign, open) {
   head.append(heading);
 
   if (rungs && next) {
-    head.append(createSetupStepsBar(campaign));
+    head.append(createSetupStepsBar(progress));
   } else if (rungs) {
     heading.append(' ', node('span', 'setup-return-done', t('setup_return.complete', 'Complete')));
     card.dataset.complete = 'true';

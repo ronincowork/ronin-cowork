@@ -23,6 +23,8 @@ import { workbenchView } from './workspace-contract.js';
 import { createSetupReturnCard } from './setup-return-card.js';
 import { returnFromWorkspaceFolders } from './workspace.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
+import { SETUP_STEP_IDS } from './setup-progress.js';
+import { setupProgressHandlers } from './events.js';
 
 const PROFILE = WORKBENCH_PROFILES.campaign;
 const MIKA_SESSION = 'mika_agent';
@@ -62,10 +64,14 @@ export function createCampaignView() {
   let ctx = null, entered = false, bench = null;
   let loadGeneration = 0;
   let rootsHere = null; // null until the light Workspace Folder index has answered once this entry
+  let liveSetupProgress = null;
   // The native sign-in tile the Model providers surface mounts here as on Ronin Setup.
   const providerSessions = createProviderSetupSessionMount();
   const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   const selected = () => campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
+  const setupProgress = () => liveSetupProgress || (selected() ? { steps: SETUP_STEP_IDS.map((id, index) => ({
+    id, number: index + 1, answered: Boolean(selected()?.config?.setup?.answers?.[id]),
+  })) } : null);
   const readRoots = async () => {
     const campaignId = selected()?.id || '';
     const query = campaignId ? `?campaign_id=${encodeURIComponent(campaignId)}` : '';
@@ -161,7 +167,7 @@ export function createCampaignView() {
     // The way back to Setup heads the Machine Settings group. It is a door, not a surface,
     // so it is built here rather than registered as a Workbench type a drag could seat.
     const machine = cards.querySelector(`[data-workbench-offer-type="${TYPES.machine}"]`);
-    if (machine) machine.before(createSetupReturnCard(selected(), openSetup));
+    if (machine) machine.before(createSetupReturnCard(setupProgress(), openSetup));
   }, onStateChange: save, onPlacement: save });
   installBehaviourReader(bench, TYPES.document);
   helpPanel = createMikaHelpPanel({
@@ -174,6 +180,8 @@ export function createCampaignView() {
     view: () => ({ workbench: 'campaign', team: '', selected: bench.selected(), workspaces: { workspace1: [bench.typeAt('workspace1'), bench.resourceAt('workspace1')].filter(Boolean).join(':') || 'empty', workspace2: [bench.typeAt('workspace2'), bench.resourceAt('workspace2')].filter(Boolean).join(':') || 'empty' } }),
   });
   mikaHelp.el.addEventListener('click', () => { void helpPanel.open(); });
+  const onSetupProgress = (next) => { liveSetupProgress = next; if (entered) bench.refreshSelector(); };
+  setupProgressHandlers.add(onSetupProgress);
   return {
     el: bench.host, glyph: '⛩', ...workbenchView('campaign'), arrangement: bench.arrangement,
     title: () => t('campaign.settings_short_title', 'Settings'),
@@ -206,6 +214,6 @@ export function createCampaignView() {
       });
     },
     leave: () => { entered = false; loadGeneration++; bench.leave(); },
-    destroy: () => { entered = false; loadGeneration++; helpPanel.destroy(); providerSessions.destroyAll(); mikaPool.destroyAll(); bench.leave(); ctx = null; },
+    destroy: () => { entered = false; loadGeneration++; setupProgressHandlers.delete(onSetupProgress); helpPanel.destroy(); providerSessions.destroyAll(); mikaPool.destroyAll(); bench.leave(); ctx = null; },
   };
 }

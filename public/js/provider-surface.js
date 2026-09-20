@@ -20,9 +20,8 @@
  *   2. THE CATALOG — the three measured facts, dated, then every model the catalog lists
  *      for this provider: tier, cost as read, good at, not good at, the default marked.
  *
- * This surface is the one client that measures: showing it probes the machine
- * (POST /api/setup/providers/measure) and writes the Campaign's dated provider summary,
- * which every other reader then takes from the record; the catalog rows come from the one
+ * The Setup progress resource owns measurement. This surface paints the Campaign's dated
+ * provider summary, which every reader takes from the record; the catalog rows come from the one
  * picker's read (form-steps.js), so this surface and every picker cannot disagree.
  *
  * MEASURING IS NOT A REASON TO WITHHOLD THE FRAME. The stones paint at once from the
@@ -33,6 +32,7 @@
  */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
+import { mountSetupStepFooter } from './setup-step-footer.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
@@ -435,6 +435,18 @@ export function createProviderSurface(context) {
   });
   context.environment?.onProviderSurface?.(controller);
   stones.mount(out.content, { after: [mikaAvailability, notice] });
+  if (context.environment?.answerSetupStep) mountSetupStepFooter(out.content, context.environment, {
+    id: 'provider', number: 1,
+    pending: 'Waiting on a provider', complete: 'Complete — found on this machine',
+    actions: () => [
+      { label: 'Look again', quiet: 'link', action: () => context.environment?.scanSetupProgress?.() },
+      { label: 'Install a provider', kind: 'primary', action: () => controller.openFirst() },
+    ],
+    answeredActions: () => [
+      { label: 'Look again', quiet: 'link', action: () => context.environment?.scanSetupProgress?.() },
+      { label: 'Next step', kind: 'primary', action: () => context.environment?.nextSetupStep?.() },
+    ],
+  });
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   /** The frame from whatever `runtime` holds now: the record, or the measure once it lands. */
   const paintFrom = async () => {
@@ -483,28 +495,22 @@ export function createProviderSurface(context) {
     };
     await paintFrom();
   };
-  /**
-   * The measure, behind the frame: this surface is the one reader that measures — every
-   * other surface takes the Campaign's recorded summary from GET /api/setup/runtime, which
-   * the catalog read takes too, after the measurement has been written. Refresh is the same
-   * read through the door that also asks for the newest releases. Resolves once repainted.
-   */
+  /** A deliberate provider release refresh remains a provider operation; Setup scans live above it. */
   const measure = async (refresh = false) => {
-    const result = refresh
-      ? await request('/api/setup/providers/refresh', { method: 'POST', json: {} })
-      : await request('/api/setup/providers/measure', { method: 'POST', json: {} });
+    const result = refresh ? await request('/api/setup/providers/refresh', { method: 'POST', json: {} }) : await request('/api/setup/runtime', { cache: 'no-store' });
     if (!result.ok) { say(result.message, true); return false; }
     runtime = result.data;
     await loadProviderCatalog();
     await paintFrom();
     return true;
   };
-  /** After a press: the record at once, then the measure, awaited — a press is never the first frame. */
+  /** After a press: repaint the record; Setup progress performs any completion scan. */
   const paint = async (refresh = false) => { await showRecord(); return measure(refresh); };
+  const onInventory = () => { void showRecord(); };
+  window.addEventListener('ronin:provider-inventory', onInventory);
   return {
     el: out.el,
-    // Show resolves on the first frame; the measure follows on its own and repaints.
-    show: async () => { await showRecord(); void measure(false); },
-    destroy: () => { context.environment?.onProviderSurface?.(null); disposeMount(); stones.destroy(); },
+    show: async () => { await showRecord(); },
+    destroy: () => { window.removeEventListener('ronin:provider-inventory', onInventory); context.environment?.onProviderSurface?.(null); disposeMount(); stones.destroy(); },
   };
 }

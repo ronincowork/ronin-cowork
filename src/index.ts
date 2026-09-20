@@ -71,6 +71,7 @@ import { roninIdentity } from './routes/version.js';
 import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
 import { ensureInstalledRoots } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
+import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
 import { migrateSopsToBehaviours } from './behaviour-store-migration.js';
 
@@ -248,6 +249,7 @@ registerCampaigns(app); // /api/campaigns* — the durable record of each body o
 startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts
 registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
 registerSetupRuntime(app); // /api/setup/runtime and provider login completion — explicit readiness facts for Ronin Setup
+registerSetupProgress(app); // one server-owned Setup completion record, scan and answer resource
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts

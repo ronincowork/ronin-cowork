@@ -17,6 +17,8 @@ export function connectEvents() {
     if (m.t === 'sessions' && Array.isArray(m.list)) onSessionsEvent(m.list);
     if (m.t === 'team-page') for (const fn of teamPageHandlers) fn(m);
     if (m.t === 'mika-show') for (const fn of mikaShowHandlers) fn(m);
+    if (m.t === 'setup-progress' && Array.isArray(m.steps)) for (const fn of setupProgressHandlers) fn(m);
+    if (m.t === 'provider-inventory') window.dispatchEvent(new CustomEvent('ronin:provider-inventory', { detail: m }));
   };
   ws.onclose = () => setTimeout(connectEvents, 3000); // keep the feed alive
 }
@@ -28,6 +30,8 @@ export const teamPageHandlers = new Set();
 export const sessionsHandlers = new Set();
 /** Who hears Mika's `show` (`{t:'mika-show', tab, workspace, surface}`): the Help panel of the tab it names. */
 export const mikaShowHandlers = new Set();
+/** Who hears the server-owned five-step Setup record after a scan or answer lands. */
+export const setupProgressHandlers = new Set();
 
 export function onSessionsEvent(list) {
   const before = new Set(S.sessions.map((s) => s.name));
