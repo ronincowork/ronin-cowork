@@ -411,7 +411,12 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     });
     const drop = createAction({ label: stones ? t('roots.exclude_folder', 'Exclude') : t('roots.exclude', 'exclude'), kind: 'danger', title: t('roots.exclude_title', 'Remove it from the catalog. Nothing on disk is touched.') }).el;
     drop.addEventListener('click', async () => {
-      if (!confirm(t('roots.exclude_confirm', 'Exclude "{name}" from your Ronin?\n\nThe catalog entry goes. {dir} is not touched.', { name: r.name, dir: r.dir }))) return;
+      if (!await confirmDialog({
+        label: t('roots.exclude_folder', 'Exclude workspace folder'),
+        message: t('roots.exclude_confirm', 'Exclude "{name}" from your Ronin?\n\nThe catalog entry goes. {dir} is not touched.', { name: r.name, dir: r.dir }),
+        confirmLabel: t('roots.exclude_folder', 'Exclude'),
+        cancelLabel: t('roots.cancel_folder', 'Cancel'),
+      })) return;
       drop.disabled = true;
       const res = await request('/api/project-roots/' + encodeURIComponent(r.name), { method: 'DELETE' });
       if (!res.ok) {

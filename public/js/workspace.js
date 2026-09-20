@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { WorkspacePrimitives } from './workspace-primitives.js';
+import { DISMISSED_WORKSPACE } from './workspace-contract.js';
 
 export const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
 export const WORKSPACE_STATE_VERSION = 3;
@@ -148,16 +149,29 @@ export function openWorkbenchTab(spec = {}, reserved = null) {
 }
 
 /** Use the normal view transition to open the shared Workspace Folders work surface. */
-export function navigateToWorkspaceFolders(context) {
-  if (!context?.navigate || !context?.patchViewState) return false;
+export function navigateToWorkspaceFolders(context, detail = {}) {
+  if (!context?.navigate || !context?.patchViewState || detail?.origin?.kind !== 'preset') return false;
   const remembered = context.viewState?.('campaign') || {};
+  const seats = { ...(remembered.seats || {}) };
+  const target = ['workspace1', 'workspace2', 'workspace3', 'workspace4']
+    .find((workspace) => !seats[workspace] || seats[workspace] === DISMISSED_WORKSPACE);
+  if (!target) return false;
+  context.patchState?.({ returnTo: { view: context.id, param: context.param || '', origin: detail.origin } });
   context.patchViewState('campaign', {
     ...remembered,
-    count: Math.max(2, Number(remembered.count) || 0),
-    selected: 'workspace2',
-    seats: { ...(remembered.seats || {}), workspace2: 'campaign.project-roots' },
+    count: target === 'workspace3' || target === 'workspace4' ? 4 : Math.max(2, Number(remembered.count) || 0),
+    selected: target,
+    seats: { ...seats, [target]: 'campaign.project-roots' },
   });
   return context.navigate('campaign');
+}
+
+/** Return to the Preset view recorded by navigateToWorkspaceFolders. */
+export function returnFromWorkspaceFolders(context) {
+  const destination = context?.state?.returnTo;
+  if (!destination || destination.origin?.kind !== 'preset') return false;
+  context.patchState?.({ returnTo: null });
+  return context.navigate(destination.view, { param: destination.param || '' });
 }
 
 /** Claim and remove this tab's structured launch before restoration. Refresh therefore

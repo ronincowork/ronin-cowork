@@ -23,6 +23,7 @@ import { installBehaviourReader } from './behaviour-reader.js';
 import { WORKBENCH_HEADER } from './workspace-contract.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
 import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
+import { returnFromWorkspaceFolders } from './workspace.js';
 
 const PROFILE = 'campaign';
 const MIKA_SESSION = 'mika_agent';
@@ -122,6 +123,8 @@ export function createCampaignView() {
     selected,
     entered: () => entered,
     ctx: () => ctx,
+    workspaceFolderOrigin: () => ctx?.state?.returnTo?.origin || null,
+    returnFromWorkspaceFolders: () => returnFromWorkspaceFolders(ctx),
     workbench: () => bench,
     /** How many live roots belong to the selected Campaign; null before the first read. */
     roots: () => (rootsHere === null ? null : rootsHere.filter((root) => !root.archived && campaignOf(root) === selected()?.id).length),

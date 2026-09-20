@@ -357,7 +357,7 @@ export function createCoworkView(options = {}) {
       reserveLaunchTab: reserveWorkspaceTab,
       trackedRoots: () => projectData,
       onTrackedRoots: onProjects,
-      navigateToSurface: (type) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx),
+      navigateToSurface: (type, detail) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx, detail),
     }, workspace: id }),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),

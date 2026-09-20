@@ -52,6 +52,7 @@ export function createSetupView() {
   let savingAnswer = false;
   let enterGeneration = 0;
   let sceneOverride = 1;
+  let workspaceFolderOrigin = null;
   const providerSessions = createProviderSetupSessionMount();
   const kinds = createKindsPreference(globalThis.localStorage, (next) => request('/api/setup/preferences', { method: 'PATCH', json: { kinds: next } }));
   const nextAction = WorkspaceKit.primitives.createAction({ label: 'Next', launch: true, action: () => advance() });
@@ -72,7 +73,19 @@ export function createSetupView() {
     runtime: () => runtime || {},
     trackedRoots: () => projectData,
     onTrackedRoots: onProjects,
-    navigateToSurface: (type) => openSurface(type),
+    navigateToSurface: (type, detail = {}) => {
+      workspaceFolderOrigin = type === SETUP_SURFACE_TYPES.roots ? detail.origin || null : null;
+      return openSurface(type);
+    },
+    workspaceFolderOrigin: () => workspaceFolderOrigin,
+    returnFromWorkspaceFolders: () => {
+      const origin = workspaceFolderOrigin;
+      if (origin?.kind !== 'preset') return false;
+      workspaceFolderOrigin = null;
+      bench.place(PRESETS_TYPE, origin.workspace || 'workspace2', { preset: origin.preset });
+      bench.select(origin.workspace || 'workspace2');
+      return true;
+    },
     launch: launchPresetPlan,
     launchUrl: presetLaunchUrl,
     reserveLaunchTab: reserveWorkspaceTab,
