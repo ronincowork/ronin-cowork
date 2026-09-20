@@ -22,7 +22,6 @@ import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { workbenchView } from './workspace-contract.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
-import { createSetupReturnCard } from './setup-return-card.js';
 import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
 import { returnFromWorkspaceFolders } from './workspace.js';
 
@@ -155,8 +154,6 @@ export function createCampaignView() {
   };
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
   const save = () => ctx?.patchViewState('campaign', bench.snapshot());
-  /** The Setup card is a door out of this Workbench. Setup owns which step it lands on. */
-  const openSetup = () => ctx?.navigate('setup');
   const mikaHelp = WorkspaceKit.primitives.createAction({ label: t('mika.help', 'ミ Help'), size: 'compact' });
   let helpPanel = null;
   bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign.settings_short_title', 'Settings'), title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : t('campaign.settings_short_title', 'Settings'), actions: [mikaHelp], selectorCurrent: 'placed', onSelectorRefresh: (cards) => {
@@ -167,10 +164,6 @@ export function createCampaignView() {
       const first = cards.querySelector(`[data-workbench-offer-type="${type}"]`);
       if (first) first.before(elem('h3', 'wk-selector-group', label));
     }
-    // The way back to Setup heads the Machine Settings group. It is a door, not a surface,
-    // so it is built here rather than registered as a Workbench type a drag could seat.
-    const machine = cards.querySelector(`[data-workbench-offer-type="${TYPES.machine}"]`);
-    if (machine) machine.before(createSetupReturnCard(selected(), openSetup));
   }, onStateChange: save, onPlacement: save });
   installBehaviourReader(bench, TYPES.document);
   helpPanel = createMikaHelpPanel({

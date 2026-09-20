@@ -14,19 +14,6 @@ Machine Settings opens **Ronin Setup**, this guide, while the installation is ge
 ready. **Ronin Settings** remains the full configuration workbench. The place name in the
 top bar switches between them without reloading.
 
-### Going back to Setup
-
-**Ronin Settings → Machine Settings** keeps a **Setup** card at the head of its column: the
-word, then five numbered marks, one for each step Setup asks about — model provider,
-registration, Workspace folders, Installations, and password. A mark is hollow until you
-answer that step and filled once you have; the outlined mark is the step Setup will open
-on. Answering means either doing the thing or saying not now — both count, and both are
-remembered.
-
-Widen the column, or switch the selector to its fuller cards, and the card also names that
-step. Once all five are answered the marks go and the card reads **Setup Complete**. It
-stays where it is, so any step can be opened again whenever you want it.
-
 ## The Setup workbench
 
 Setup is one workbench with two workspaces and a selector column between them:
