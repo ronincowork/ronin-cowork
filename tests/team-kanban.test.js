@@ -74,7 +74,7 @@ test('the board stays square, fixed, manually refreshed, and free of pills and e
   assert.match(kanbanCss, /max-height:\s*calc\(var\(--tk-outcome-line\) \* 2\)/);
   assert.doesNotMatch(moduleSource, /setInterval|MutationObserver|tk-count|tk-chip/);
   assert.match(moduleSource, /tk-refresh/);
-  assert.match(moduleSource, /wk-density-lines/);
+  assert.match(moduleSource, /tw-agent-density-lines/);
 });
 
 test('the beta notice is a prominent Workspace Kit header above every board state', () => {

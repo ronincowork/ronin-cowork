@@ -107,8 +107,8 @@ export function createWorkbench(options = {}) {
   }
 
   let selectorDensity = options.selectorDensity === 'thick' ? 'thick' : 'thin';
-  const densityToggle = WorkspacePrimitives.createAction({ label: '', size: 'compact', className: 'wk-selector-density' });
-  const densityLines = node('span', 'wk-density-lines');
+  const densityToggle = WorkspacePrimitives.createAction({ label: '', size: 'compact', className: 'tw-agent-density' });
+  const densityLines = node('span', 'tw-agent-density-lines');
   densityLines.append(node('i'), node('i'));
   densityToggle.el.replaceChildren(densityLines);
 
@@ -254,7 +254,6 @@ export function createWorkbench(options = {}) {
   };
   const typeAt = (id) => holding(id)?.dataset?.workbenchSurface || '';
   const resourceAt = (id) => holding(id)?.dataset?.workbenchResource || '';
-  const actionHost = (id) => holding(id)?.querySelector(':scope > .wk-surface-header .wk-surface-header-actions, :scope > .wk-tabset-bar .wk-tabset-actions') || null;
   const locations = (type, resource = '') => WORKBENCH_IDS.filter((id) => typeAt(id) === type && (!resource || resourceAt(id) === resource));
   const place = (type, id = selected, detail = {}) => {
     if (fixedWorkspaces[id] && fixedWorkspaces[id] !== type) return false;
@@ -326,7 +325,7 @@ export function createWorkbench(options = {}) {
     selectorHeader: layout.headers.get('selector'), declaration, cells: Object.freeze(cells),
     ids: WORKBENCH_IDS, visibleIds, holding, selected: () => selected, count: () => count,
     select, setCount, setSelectorDensity, selectorDensity: () => selectorDensity, placeNode, restoreDefault, dismiss, isDefault: (id) => holding(id) === defaults[id],
-    instance, place, typeAt, resourceAt, actionHost, locations, snapshot, refreshSelector, enter, leave,
+    instance, place, typeAt, resourceAt, locations, snapshot, refreshSelector, enter, leave,
   };
   selectorTitle = api.selectorHeader?.title || null;
   if (!options.deferSelector) refreshSelector();

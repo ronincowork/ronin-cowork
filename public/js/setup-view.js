@@ -154,13 +154,13 @@ export function createSetupView() {
   };
   const seatNext = (visible) => {
     if (!visible) { nextAction.el.remove(); return; }
-    const actions = bench?.actionHost('workspace2');
+    const actions = bench?.host.querySelector('[data-workspace="workspace2"] > .wk-surface > .wk-surface-header .wk-surface-header-actions');
     if (!actions) return;
     actions.prepend(nextAction.el);
   };
   const seatNotNow = (visible) => {
     if (!visible) { notNowAction.el.remove(); return; }
-    const actions = bench?.actionHost('workspace2');
+    const actions = bench?.host.querySelector('[data-workspace="workspace2"] > .wk-surface > .wk-surface-header .wk-surface-header-actions');
     if (!actions) return;
     notNowAction.el.textContent = activeScene()?.id === 'workspace'
       ? t('setup.fine_for_now', 'Fine for now') : t('setup.not_now', 'Not now');

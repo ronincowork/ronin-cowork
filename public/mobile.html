@@ -27,10 +27,7 @@
          the screen the address names is the first one painted, never the Teams bar first. -->
     <script>
       try {
-        var route = location.hash.replace(/^#\/?(?:m\/)?/, '').split('/')[0];
-        if (/^(?:t|d|s|team|feedback)$/.test(route)) document.documentElement.dataset.screen = 'inside';
-        document.documentElement.dataset.workbench = route === 's' ? 'agent'
-          : /^(?:t|d|team)$/.test(route) ? 'team' : 'cowork';
+        if (/^#\/(?:m\/)?(?:t|d|s|team|feedback)(?:\/|$)/.test(location.hash)) document.documentElement.dataset.screen = 'inside';
       } catch (e) {}
     </script>
     <link rel="stylesheet" href="/__RONIN_ASSET_VERSION__/style.css" />

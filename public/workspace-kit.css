@@ -62,9 +62,9 @@
   .wk-workbench-host[data-selector-density='thin'] .wk-workbench-selector-cards > .wk-card { padding: var(--space-3) var(--space-4); }
   .wk-workbench-host[data-selector-density='thin'] .wk-workbench-selector-cards > .wk-card .wk-card-summary,
   .wk-workbench-host[data-selector-density='thin'] .wk-workbench-selector-cards > .wk-card .wk-card-meta { display: none; }
-  .wk-density-lines { display: grid; width: var(--space-6); gap: var(--space-1); }
-  .wk-density-lines i { display: block; height: var(--edge-2); border-radius: var(--edge); background: currentColor; }
-  [data-lines='one'] .wk-density-lines i:last-child { display: none; }
+  .tw-agent-density-lines { display: grid; width: var(--space-6); gap: var(--space-1); }
+  .tw-agent-density-lines i { display: block; height: var(--edge-2); border-radius: var(--edge); background: currentColor; }
+  .tw-agent-density[data-lines='one'] .tw-agent-density-lines i:last-child { display: none; }
 
   .wk-workbench-selector-cards .wk-selector-utility { border-color: var(--define-line); box-shadow: inset var(--edge-2) 0 var(--define-line); }
   .wk-workbench-selector-cards .wk-selector-entity { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
@@ -83,6 +83,7 @@
   .wk-workbench-layout[data-workbench-profile='setup'] .wk-selector-group,
   .wk-workbench-layout[data-workbench-profile='campaign'] .wk-selector-group { margin: var(--space-5) var(--space-2) var(--space-2); color: var(--muted); font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
   .wk-workbench-layout[data-workbench-profile='setup'] .wk-workbench-selector-cards .wk-card[aria-current='page'] { border-color: var(--kaki); box-shadow: inset var(--edge-2) 0 var(--kaki); }
+  body:has([data-workspace-view='setup']:not([hidden])) #shapecycle { display: none; }
   /* ミ Help: Mika alone in the selector column — the conversation's text and nothing
      else. The selector header carries her title and Close; the borrowed tile's head,
      composer and keys row stay hidden here and come back untouched in a workspace. */

@@ -6264,13 +6264,13 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   padding-top: max(var(--space-3), env(safe-area-inset-top));
-  background: var(--cowork-head-bg);
-  border-bottom: var(--cowork-surface-head-edge) solid var(--cowork-head-line);
+  background: var(--bg-2);
+  border-bottom: var(--edge) solid var(--line);
 }
 #phone .ph-title {
   flex: 1;
   min-width: 0;
-  color: var(--cowork-head-fg);
+  color: var(--fg-strong);
   font-size: var(--text-6);
   font-weight: 600;
   white-space: nowrap;
@@ -6484,7 +6484,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   height: var(--bar-brand-mark-h);
 }
 #phone .ph-bar .brand-word {
-  color: var(--cowork-head-fg);
+  color: var(--fg-strong);
   font-size: var(--text-6);
   font-weight: 600;
 }
