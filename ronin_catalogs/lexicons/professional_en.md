@@ -1008,6 +1008,7 @@ The pad's current config downloads as a backup first.
 - **roots.read_failed:** could not read the catalog — {message}
 - **roots.save:** save
 - **roots.cancel:** cancel
+- **roots.handle_needed:** Give this Workspace Folder a handle.
 - **roots.edit:** edit
 - **roots.edit_folder:** Edit
 - **roots.edit_folder_title:** Change the summary, shelves, match words, or repository workflow.
@@ -1135,6 +1136,8 @@ The catalog entry goes. {dir} is not touched.
 - **roots.flow_checkout:** Every Agent uses this checkout, even when the Agent has Worktrees on.
 - **roots.flow_preview:** Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.
 - **roots.profile_confirm:** Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.
+- **roots.profile_confirm_title:** Confirm repository settings
+- **roots.profile_confirm_action:** Use these settings
 - **folders.selected:** Selected folder
 - **folders.none_selected:** None selected
 - **folders.start_context:** This is where the Agent will start.
@@ -1157,6 +1160,7 @@ The catalog entry goes. {dir} is not touched.
 - **folders.new_in:** ＋ New folder in {name}
 - **folders.name_needed:** Give the new folder a name.
 - **folders.create_confirm:** Create this folder on the Ronin machine?\n\n{target}
+- **folders.create_title:** Create folder
 - **folders.creating:** Creating…
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document

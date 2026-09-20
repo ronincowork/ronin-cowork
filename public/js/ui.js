@@ -124,6 +124,48 @@ export function sheet(spec) {
   return { el, card, open, close, isOpen };
 }
 
+/** A small yes/no question with the same focus, Escape, and phone behavior as every sheet. */
+export function confirmDialog({ label, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel' }) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const dlg = sheet({
+      id: `confirm-${++uid}`,
+      cls: 'ui-confirm-card',
+      label,
+      onClose: () => {
+        dlg.el.remove();
+        if (!settled) { settled = true; resolve(false); }
+      },
+    });
+    const title = document.createElement('h2');
+    title.textContent = label;
+    const copy = document.createElement('p');
+    copy.className = 'ui-confirm-copy';
+    copy.textContent = message;
+    const actions = document.createElement('div');
+    actions.className = 'ui-confirm-actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.textContent = cancelLabel;
+    const accept = document.createElement('button');
+    accept.type = 'button';
+    accept.className = 'primary';
+    accept.textContent = confirmLabel;
+    const finish = (answer) => {
+      if (settled) return;
+      settled = true;
+      dlg.close();
+      dlg.el.remove();
+      resolve(answer);
+    };
+    cancel.addEventListener('click', () => finish(false));
+    accept.addEventListener('click', () => finish(true));
+    actions.append(cancel, accept);
+    dlg.card.append(title, copy, actions);
+    dlg.open();
+  });
+}
+
 /* ---------- the outcome chip ---------- */
 
 let toastEl = null;
@@ -237,4 +279,3 @@ export function button(label, opts = {}) {
   if (opts.onClick) b.addEventListener('click', opts.onClick);
   return b;
 }
-

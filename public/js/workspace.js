@@ -147,6 +147,19 @@ export function openWorkbenchTab(spec = {}, reserved = null) {
   return window.open(url, '_blank', 'noopener');
 }
 
+/** Use the normal view transition to open the shared Workspace Folders work surface. */
+export function navigateToWorkspaceFolders(context) {
+  if (!context?.navigate || !context?.patchViewState) return false;
+  const remembered = context.viewState?.('campaign') || {};
+  context.patchViewState('campaign', {
+    ...remembered,
+    count: Math.max(2, Number(remembered.count) || 0),
+    selected: 'workspace2',
+    seats: { ...(remembered.seats || {}), workspace2: 'campaign.project-roots' },
+  });
+  return context.navigate('campaign');
+}
+
 /** Claim and remove this tab's structured launch before restoration. Refresh therefore
  * sees only the arrangement the Workbench saved after applying it. */
 export function consumeWorkbenchLaunch(destination, param = '') {

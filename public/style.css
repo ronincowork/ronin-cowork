@@ -475,6 +475,16 @@ body {
   border: var(--edge) solid var(--line-3);
   border-radius: var(--radius-xl);
 }
+.ui-confirm-card {
+  width: min(34rem, calc(100vw - 2 * var(--space-6)));
+  max-height: calc(100dvh - 2 * var(--space-6));
+  overflow: auto;
+  gap: var(--space-5);
+  padding: var(--space-8);
+}
+.ui-confirm-card h2, .ui-confirm-copy { margin: 0; }
+.ui-confirm-copy { white-space: pre-line; overflow-wrap: anywhere; line-height: 1.5; }
+.ui-confirm-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); }
 
 
 #toast {
@@ -2916,10 +2926,14 @@ body {
 }
 .pr-frow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
 }
 .pr-err {
+  flex: 1 1 14rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--bad-soft);
   font-size: var(--text-3);
 }
