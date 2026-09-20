@@ -14,6 +14,16 @@ const {
   updateBehaviourDocument,
 } = await import('../src/behaviour-documents.js');
 
+test('canonical hyphenated floor and conditional Behaviors are readable', async () => {
+  const rows = await Promise.all([
+    readBehaviourDocument('floor', 'cowork-agent'),
+    readBehaviourDocument('floor', 'user-intro'),
+    readBehaviourDocument('conditional', 'team-lead'),
+  ]);
+  assert.deepEqual(rows.map((row) => row.name), ['cowork-agent', 'user-intro', 'team-lead']);
+  assert.ok(rows.every((row) => row.origin === 'stock'));
+});
+
 test('saving stock creates a whole-file owner shadow and never changes stock', async () => {
   const stock = await readBehaviourDocument('selected', 'write_it_down');
   assert.equal(stock.origin, 'stock');

@@ -11,14 +11,14 @@ export class BehaviourDocumentError extends Error {
   constructor(message: string, readonly status = 400) { super(message); }
 }
 
-const tokenPattern = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/;
+const tokenPattern = /^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$/;
 const digest = (text: string): string => createHash('sha256').update(text).digest('hex');
 
 function identity(scopeValue: unknown, nameValue: unknown): { scope: BehaviourDocumentScope; name: string; relative: string } {
   const scope = String(scopeValue ?? '').trim() as BehaviourDocumentScope;
   const name = String(nameValue ?? '').trim();
   if (!BEHAVIOUR_SCOPES.includes(scope)) throw new BehaviourDocumentError('Choose a valid Behavior scope.');
-  if (!tokenPattern.test(name)) throw new BehaviourDocumentError('Use a lowercase Behavior name with underscores.');
+  if (!tokenPattern.test(name)) throw new BehaviourDocumentError('Use a lowercase Behavior name with hyphens or underscores.');
   return { scope, name, relative: path.join(scope, `${name}.md`) };
 }
 
