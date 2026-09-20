@@ -276,7 +276,7 @@ export function createSetupView() {
   return {
     el: bench.host,
     glyph: '人',
-    ...workbenchView('setup', { header: { actions: [setupStepsHeader, themeToggle] } }),
+    ...workbenchView('setup', { header: { ram: false, feedback: false, actions: [setupStepsHeader, themeToggle] } }),
     title: () => 'Ronin Setup',
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {
