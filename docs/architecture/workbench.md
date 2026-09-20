@@ -24,6 +24,12 @@ explicit Campaign, Setup, New Project, Cowork, Team, or Agent appearances; a vie
 supply its dynamic-island reading. `workspace-header.js` applies that declaration, while
 surface factories remain ignorant of header colour.
 
+Header content has two declared seats: `header.leading` appears before the centred
+dynamic island and `header.actions` appears with the right-side controls. Both accept
+elements or primitives exposing `.el`; the ViewHost alone places them. Standard controls
+remain capability flags (`shape`, `ram`, `services`, and `feedback`), so a Workbench turns
+one off in its declaration rather than hiding it with local CSS or querying header DOM.
+
 - A **library definition** gives one stable type a header kind, discovery reading, and
   `create(context)` factory.
 - A **profile** lists the library types one destination may place.

@@ -246,18 +246,20 @@ export function createWorkspace(host, options = {}) {
     map = invoke(id, 'map', () => WorkspacePrimitives.createLayoutMap(view.arrangement)) || null;
     if (map) mapSlot.append(map.el);
   };
-  // HEADER CAPABILITIES. A view declares only what it owns: compact actions, pane count,
-  // machine telemetry, Services state, and Feedback. The ViewHost seats them and defaults
-  // every undeclared capability to absent, so a static page cannot inherit workbench chrome.
-  const actionsSlot = options.actionsSlot instanceof Element ? options.actionsSlot : null;
-  const showActions = (id, view) => {
-    if (!actionsSlot) return;
-    actionsSlot.replaceChildren();
-    for (const action of Array.isArray(view.header?.actions) ? view.header.actions : []) {
-      const el = action?.el ?? action;
-      if (el instanceof Node) actionsSlot.append(el);
+  // HEADER CAPABILITIES. A view declares only what it owns: controls before the island,
+  // compact actions after it, pane count, machine telemetry, Services state, and Feedback.
+  // The ViewHost seats them and defaults every undeclared capability to absent, so a
+  // static page cannot inherit workbench chrome.
+  const seatHeaderItems = (slot, items) => {
+    if (!slot) return;
+    slot.replaceChildren();
+    for (const item of Array.isArray(items) ? items : []) {
+      const el = item?.el ?? item;
+      if (el instanceof Node) slot.append(el);
     }
   };
+  const leadingSlot = options.leadingSlot instanceof Element ? options.leadingSlot : null;
+  const actionsSlot = options.actionsSlot instanceof Element ? options.actionsSlot : null;
   // THE TAB NAME rides beside the map, for a view that offers one (`tabName`). Redrawn on
   // every navigation, not only on a view change: the same view on another param has
   // another default. A commit retitles the tab at once.
@@ -323,7 +325,11 @@ export function createWorkspace(host, options = {}) {
     }
     next.el.hidden = false;
     if (changed) invoke(id, 'enter', () => next.enter?.(context));
-    if (active?.view !== next) { showMap(id, next); showActions(id, next); }
+    if (active?.view !== next) {
+      showMap(id, next);
+      seatHeaderItems(leadingSlot, next.header?.leading);
+      seatHeaderItems(actionsSlot, next.header?.actions);
+    }
     showName(id, next);
     const feedback = document.getElementById('feedbackaction');
     if (feedback) feedback.hidden = next.header?.feedback !== true;

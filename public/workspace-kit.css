@@ -108,6 +108,7 @@
   .wk-workbench-splitter:hover::after, .wk-workbench-splitter[data-dragging='true']::after, .wk-workbench-splitter:focus-visible::after { background: var(--aiiro); opacity: 1; }
 
   .wk-view-map:empty { display: none; }
+  .wk-view-leading:empty { display: none; }
   .wk-view-actions:empty { display: none; }
 
   .wk-view-name:empty { display: none; }
@@ -205,10 +206,11 @@
      frame the browser paints is already the phone presentation. No script-set attribute
      is needed to reach it: data-responsive stays a script-set OVERRIDE only, and the one
      value that changes anything is 'desktop', which keeps the side-by-side shape narrow. */
+  :root[data-workbench='setup'] #bar #coworkssep,
+  :root[data-workbench='setup'] #bar #coworksbtn { display: none; }
+
   @media (max-width: 680px) {
-    body:has([data-workspace-view='setup']:not([hidden])) #bar .brand-word,
-    body:has([data-workspace-view='setup']:not([hidden])) #bar #coworkssep,
-    body:has([data-workspace-view='setup']:not([hidden])) #bar #coworksbtn { display: none; }
+    body:has([data-workspace-view='setup']:not([hidden])) #bar .brand-word { display: none; }
     .wk-league-board [data-surface='cards'] { grid-template-columns: 1fr; }
     .wk-workbench-host { flex-direction: column; }
     .wk-workbench-splitter { display: none; }
