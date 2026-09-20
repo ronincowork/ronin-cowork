@@ -16,6 +16,7 @@ import {
   upsertProjectRoot,
   removeProjectRoot,
   repoFacts,
+  checkProjectRootGitAccess,
   suggestDirs,
   isValidRootName,
   type RootField,
@@ -198,6 +199,18 @@ export function registerCatalogs(app: express.Express): void {
         arrangement,
         repo_profile: arrangement ? arrangementProfile(arrangement) : null,
       });
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  app.post('/api/project-roots/:name/git-access', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidRootName(name)) return res.status(400).json({ error: 'Invalid ID.' });
+    try {
+      const root = (await listProjectRoots()).find((entry) => entry.name === name);
+      if (!root) return res.status(404).json({ error: `"${name}" is not in the catalog.` });
+      res.json({ ok: true, ...(await checkProjectRootGitAccess(root)) });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

@@ -15,6 +15,8 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   const stones = options.presentation === 'stones';
   let data = null; // { roots: [...], untagged: n }
   let editing = null; // handle of the block whose form is open
+  const gitAccess = new Map(); // measured for this page only; credentials remain owned by Git
+  const checkingGitAccess = new Set();
 
   const head = document.createElement('div');
   head.className = 'pr-head';
@@ -526,6 +528,35 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
           : t('roots.profile_undeclared', 'Not declared'), { title: declared ? '' : t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.') }],
         [t('roots.fact_worktrees', 'Worktrees'), declared && r.repo_profile?.worktrees === 'enabled' ? t('roots.worktrees_enabled', 'Use Ronin Worktrees') : t('roots.worktrees_disabled', 'Use the checkout')],
       ])));
+
+      const access = gitAccess.get(r.name) || { state: 'not_checked', message: t('roots.git_access_not_checked_detail', 'Ronin has not checked read access to this repository’s origin.') };
+      const checking = checkingGitAccess.has(r.name);
+      const labels = {
+        available: t('roots.git_access_available', 'Access available'),
+        unavailable: t('roots.git_access_unavailable', 'Access unavailable'),
+        not_checked: t('roots.git_access_not_checked', 'Not checked'),
+        check_failed: t('roots.git_access_check_failed', 'Check failed'),
+      };
+      const accessBody = make('div', 'pr-git-access');
+      const accessState = make('p', 'pr-detail-state', checking ? t('roots.git_access_checking', 'Checking…') : labels[access.state] || labels.check_failed);
+      accessState.dataset.tone = access.state === 'available' ? 'ok' : access.state === 'not_checked' ? 'muted' : 'bad';
+      const accessMessage = make('p', 'pr-fine', access.message || '');
+      accessMessage.setAttribute('role', 'status');
+      const check = createAction({ label: t('roots.git_access_check', 'Check access'), kind: 'primary' }).el;
+      check.disabled = checking;
+      check.addEventListener('click', async () => {
+        if (checkingGitAccess.has(r.name)) return;
+        checkingGitAccess.add(r.name);
+        if (stoneSurface) stoneSurface.refreshDetail(); else render();
+        const result = await request(`/api/project-roots/${encodeURIComponent(r.name)}/git-access`, { method: 'POST' });
+        gitAccess.set(r.name, result.ok
+          ? { state: result.data?.state || 'check_failed', message: result.data?.message || '' }
+          : { state: 'check_failed', message: result.message });
+        checkingGitAccess.delete(r.name);
+        if (stoneSurface) stoneSurface.refreshDetail(); else render();
+      });
+      accessBody.append(accessState, accessMessage, check);
+      d.append(section(t('roots.git_access', 'Git access'), accessBody));
     } else if (exists) {
       // A project_root need not be a project_repo. `~/lab` is one; this is a legal shape, not a warning.
       d.append(section(t('roots.section_repository', 'Repository'), make('p', 'pr-fine', t('roots.repository_none', 'Not a Git repository. A workspace folder does not need to be one.'))));

@@ -20,6 +20,8 @@ import {
   closeGithubLogin,
   removeGithubAuthentication,
   cloneGithubWorkspace,
+  openGitSetupSession,
+  closeGitSetupSession,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
 import { measureAndRecordProviders, readProviderSummary } from '../provider-summary.js';
@@ -205,6 +207,16 @@ export function registerSetupRuntime(app: express.Express): void {
 
   app.post('/api/setup/github/clone', async (req, res) => {
     try { res.json({ ok: true, workspace: await cloneGithubWorkspace(req.body?.repository) }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+
+  app.post('/api/setup/git/open', async (_req, res) => {
+    try { res.json({ ok: true, attachment: await openGitSetupSession() }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+
+  app.post('/api/setup/git/close', async (_req, res) => {
+    try { await closeGitSetupSession(); res.json({ ok: true }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 }

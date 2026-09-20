@@ -55,7 +55,7 @@ test('connected GitHub offers one server-owned removal action and keeps clone se
   assert.equal(logout.options.body, undefined, 'the server discovers the active account; the browser cannot name another one');
   assert.equal(button('Remove authentication').hidden, true);
   assert.ok(button('Connect GitHub'));
-  assert.equal(surface.items[1].disabled, true);
+  assert.equal(surface.items[1].disabled, false, 'GitHub CLI authentication does not gate Git-native cloning');
   assert.equal(finishes, 0, 'removal is not authentication completion');
   surface.destroy(); await settle();
 });
@@ -86,7 +86,7 @@ test('missing GitHub CLI offers one Install button and mounts its visible provid
   surface.destroy(); await settle();
 });
 
-test('an unreadable GitHub result is distinct from signed out and keeps cloning blocked', async () => {
+test('an unreadable GitHub CLI result is distinct from signed out and leaves Git-native cloning available', async () => {
   globalThis.fetch = async () => ({
     ok: true, status: 200, json: async () => ({
       installed: true, authenticated: false, account: '', state: 'unreadable',
@@ -99,6 +99,6 @@ test('an unreadable GitHub result is distinct from signed out and keeps cloning 
   const text = [...host.walk()].map((node) => node.textContent).filter(Boolean);
   assert.ok(text.includes('Ronin could not ask GitHub CLI to verify authentication.'));
   assert.ok(text.includes('Could not verify'));
-  assert.equal(surface.items[1].disabled, true);
+  assert.equal(surface.items[1].disabled, false);
   surface.destroy(); await settle();
 });
