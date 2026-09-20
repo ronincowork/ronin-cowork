@@ -41,7 +41,8 @@ function editor(row, host, refresh, startEditing = false) {
   const cancel = node('button', 'wk-action', t('panels.cancel', 'Cancel')); cancel.type = 'button';
   saveAsLabel.append(saveAsName); saveAsForm.append(saveAsLabel, create, cancel);
   actions.append(toggle, save, saveAs);
-  host.append(heading, summary, meta, actions, status, readingHost, area, saveAsForm);
+  const viewOnly = node('span', 'wk-action bh-view-only', t('behaviours.view', 'View'));
+  host.append(heading, summary, meta, viewOnly, status, readingHost);
   const stoneRoot = host.closest('.sws');
   const guard = (event) => {
     const leaving = event.type === 'keydown' ? event.key === 'Escape' : event.target.closest?.('[data-sws-id]');
@@ -80,7 +81,7 @@ function editor(row, host, refresh, startEditing = false) {
     const result = await request(`/api/ways/${encodeURIComponent(row.scope)}/${encodeURIComponent(row.name)}`, { cache: 'no-store' });
     if (mine !== generation) return;
     if (!result.ok) { say(result.message, true); return; }
-    reading = result.data; area.value = reading.text || ''; dirty = false; editing = startEditing; paintMode(); if (editing) area.focus(); say('');
+    reading = result.data; area.value = reading.text || ''; dirty = false; editing = false; paintMode(); say('');
   };
   toggle.addEventListener('click', () => { editing = !editing; paintMode(); if (editing) area.focus(); else toggle.focus(); });
   area.addEventListener('input', () => { dirty = true; say(''); });
@@ -127,7 +128,7 @@ export function createBehaviourSurface(initial = {}) {
     const stones = ordered.map((row) => ({ id: keyOf(row), label: row.label || row.name, group: group(row), secondary: row.blurb || '', state: row.origin === 'user' ? t('behaviours.yours', 'Yours') : '', row }));
     const addAt = stones.findLastIndex((item) => item.row.scope === 'selected') + 1;
     stones.splice(addAt, 0, {
-      id: 'selected:+', label: t('behaviours.add_own', 'Add Your Own'), group: t('behaviours.available', 'Optional'), secondary: '', className: 'sws-add', row: { name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: '', scope: 'selected', origin: 'user', requires: [] },
+      id: 'selected:+', label: t('behaviours.add_own', 'Add Your Own'), group: t('behaviours.available', 'Optional'), secondary: '', className: 'sws-add', disabled: true, row: { name: '', label: t('behaviours.add_own', 'Add Your Own'), blurb: '', scope: 'selected', origin: 'user', requires: [] },
     });
     return stones;
   };

@@ -265,16 +265,17 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
         const items = [...(!f.many && f.blank != null ? [{ v: '', l: f.blank, blank: true }] : []), ...shown];
         for (const row of items) {
           const opt = optionStone(f, row, say);
-          if (row.read || row.edit) {
+          if (row.read || row.edit || row.view) {
             const wrap = el('span', 'ask-opt-wrap');
-            const read = el('button', row.edit ? 'ask-read ask-edit' : 'ask-read', row.edit ? t('ask.edit', 'Edit') : t('ask.read', 'Read'));
+            const reading = row.view ? t('ask.view', 'View') : row.edit ? t('ask.edit', 'Edit') : t('ask.read', 'Read');
+            const read = el('button', row.view ? 'ask-read ask-view' : row.edit ? 'ask-read ask-edit' : 'ask-read', reading);
             read.type = 'button';
-            read.title = row.edit ? t('ask.edit_behaviour', 'Edit this Behavior') : t('ask.read_behaviour', 'Read this behaviour');
-            read.setAttribute('aria-label', `${row.edit ? t('ask.edit', 'Edit') : t('ask.read', 'Read')} ${row.l}`);
+            read.title = row.view ? t('ask.view_behaviour', 'View this Behavior') : row.edit ? t('ask.edit_behaviour', 'Edit this Behavior') : t('ask.read_behaviour', 'Read this behaviour');
+            read.setAttribute('aria-label', `${reading} ${row.l}`);
             read.addEventListener('click', (event) => {
               event.stopPropagation();
-              window.dispatchEvent(new CustomEvent(row.edit ? 'ronin:edit-behaviour' : 'ronin:read-document', {
-                detail: row.edit ? { ...row.edit, source: root } : { path: row.read, source: root },
+              window.dispatchEvent(new CustomEvent(row.view ? 'ronin:view-behaviour' : row.edit ? 'ronin:edit-behaviour' : 'ronin:read-document', {
+                detail: row.view ? { ...row.view, source: root } : row.edit ? { ...row.edit, source: root } : { path: row.read, source: root },
               }));
             });
             wrap.append(opt, read); options.append(wrap);
