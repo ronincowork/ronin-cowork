@@ -260,6 +260,15 @@ a `destroy()` owner at that moment, not speculatively.
 
 ## Transient surfaces
 
+### Read-only documents
+
+`public/js/markdown-reader.js` is the shared presentation boundary for Markdown that a
+person is meant to read but not edit. It creates headings, prose, lists, links, emphasis,
+and code as DOM nodes; it never injects authored HTML, owns a save path, or changes the
+calling surface's navigation state. Assist and contextual guides compose this reader inside
+their own surface or dialog. The Docs editor remains the owner of editing, dirty-state,
+and saving behavior.
+
 - **Sheet/dialog** — `ui.sheet` (`public/js/ui.js`): scrim + card, `role=dialog`,
   focus enters the first field (never on touch — the iOS keyboard), Tab is contained,
   Escape and the backdrop dismiss, and focus RETURNS to the opener. Consumers: Notes,
