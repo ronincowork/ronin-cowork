@@ -158,9 +158,10 @@ Entry performs no form catalog read. It restores and places the requested form f
 
 ### Ronin Setup (`setup` profile)
 
-The Garden and selected journey surface seat immediately. Garden content, setup runtime,
-and small registration/GitHub completion facts hydrate the journey and discovery column
-independently.
+The Garden and selected journey surface seat immediately. The Campaign's persisted Setup
+answers select the first unanswered step; each answer records that the person acted or
+chose not now. Setup runtime and registration, Workspace Folder, installation, and password
+facts hydrate their owning surfaces independently and never infer that a step was answered.
 
 | Surface | Required data and owner |
 |---|---|
