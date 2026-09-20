@@ -748,7 +748,7 @@ export function createCoworkView(options = {}) {
         onFailed: (message) => commons.channels.setState('failed', message),
         idPrefix: id,
         reading: readingsOf,
-        onOpen: (member) => putSession(member.name, oppositeSeat(id)),
+        onOpen: (member) => openWorkspaceTab('agent', member.name),
         onClose: (member) => retireSession(member.name, `commons-${id}-${member.name}`, async () => {
           await Promise.all([fetchSessions(), refreshTeams()]);
           paint();
