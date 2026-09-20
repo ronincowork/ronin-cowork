@@ -10,7 +10,8 @@ import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-
 import {
   createStep, el, kindTiles, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { openLaunchHandoff } from './launch-handoff.js';
+import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -516,7 +517,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
     else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
     if (connect) await connect(born);
-    else openWorkspaceTab(team ? 'team' : 'cowork', team, launchTab);
+    else openLaunchHandoff({ team, sessions: [{ name: born, team_lead: body.team_lead === true }] }, launchTab);
     clearAfterLaunch();
     await consumed?.();
   }

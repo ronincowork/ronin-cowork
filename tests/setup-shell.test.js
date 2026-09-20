@@ -86,13 +86,14 @@ test('launch actions reuse the nin mark, never the Team Roster torii, and open t
   assert.match(workspace, /window\.open\(url\.href, '_blank', 'noopener'\)/);
   for (const caller of [agent, team]) {
     assert.match(caller, /launch: true/);
-    assert.match(caller, /openWorkspaceTab|openWorkbenchTab/);
+    assert.match(caller, /openLaunchHandoff|openWorkbenchTab/);
   }
 });
 
-test('a newly raised Team tab carries a one-shot instruction to drop the opener tab name', async () => {
-  const form = await source('js/new-team-form.js');
-  assert.match(form, /openWorkbenchTab\(\{ destination: 'team', param: name, mode: 'overlay', state: \{ tabName: '' \} \}, launchTab\)/);
+test('a newly raised Team opens successful Agents directly and clears the inherited tab name', async () => {
+  const [form, handoff] = await Promise.all([source('js/new-team-form.js'), source('js/launch-handoff.js')]);
+  assert.match(form, /openLaunchHandoff\(\{ team: name, sessions: launched \}, launchTab\)/);
+  assert.match(handoff, /destination: 'team'[\s\S]*mode: 'replace'[\s\S]*tabName: ''/);
 });
 
 test('edited Cowork and Team workbench labels become the exact tab title', async () => {
