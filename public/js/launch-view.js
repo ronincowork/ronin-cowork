@@ -90,7 +90,6 @@ export function createLaunchView() {
     defaultNode: blank,
     label: t('campaign_home.launch', 'New Project'),
     title: () => t('campaign_home.launch', 'New Project'),
-    shapeControl: document.getElementById('shapecycle'),
     onStateChange: save,
     onPlacement: save,
   });
