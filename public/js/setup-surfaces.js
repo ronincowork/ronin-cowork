@@ -311,7 +311,7 @@ function createRegisterSurface(context) {
     notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
   };
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
-  mountSetupStepFooter(body, context.environment, {
+  const stopFooter = mountSetupStepFooter(body, context.environment, {
     id: 'register', number: 2, pending: 'Not answered yet', complete: 'Answered',
     actions: () => [
       { label: 'No thank you', action: () => { identityMode.set('no_thanks'); void context.environment?.answerSetupStep?.('register', 'not_now'); } },
@@ -332,7 +332,7 @@ function createRegisterSurface(context) {
       userIntro.hidden = Boolean(userIntroText.value.trim());
     }
     paint();
-  } };
+  }, destroy: stopFooter };
 }
 
 function createRootsSurface(context) {
@@ -344,7 +344,7 @@ function createRootsSurface(context) {
     onShow: () => notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench),
   });
   const host = page.el.querySelector('.wk-surface-content') || page.el;
-  mountSetupStepFooter(host, context.environment, {
+  const stopFooter = mountSetupStepFooter(host, context.environment, {
     id: 'workspace', number: 3, pending: 'Not answered yet', complete: 'Complete — found on this machine',
     actions: () => [
       { label: 'I don’t use GitHub', action: () => context.environment?.answerSetupStep?.('workspace', 'not_now') },
@@ -355,7 +355,7 @@ function createRootsSurface(context) {
       { label: 'Next step', kind: 'primary', action: () => context.environment?.nextSetupStep?.() },
     ],
   });
-  return page;
+  return { ...page, destroy: () => { stopFooter(); page.destroy?.(); } };
 }
 
 function createBountySurface(context) {
@@ -696,7 +696,7 @@ function createSetupInstallationsSurface(context) {
     createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
   });
   const host = page.el.querySelector('.wk-surface-content') || page.el;
-  mountSetupStepFooter(host, context.environment, {
+  const stopFooter = mountSetupStepFooter(host, context.environment, {
     id: 'installations', number: 4, pending: 'Not answered yet', complete: 'Answered',
     actions: () => [
       { label: 'No, I’m good', action: () => context.environment?.answerSetupStep?.('installations', 'not_now') },
@@ -709,7 +709,7 @@ function createSetupInstallationsSurface(context) {
   return { el: page.el, show: async () => {
     await loadCampaigns();
     await page.enter();
-  }, destroy: () => page.destroy?.() };
+  }, destroy: () => { stopFooter(); page.destroy?.(); } };
 }
 
 export function setupSurfaceDefinitions() {

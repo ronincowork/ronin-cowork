@@ -20,9 +20,9 @@ export function createPasswordSurface(context = {}) {
   const body = el('div', 'setup-surface-body setup-register-compact password-surface');
   const intro = el('section', 'setup-register-welcome');
   intro.append(
-    el('span', 'setup-register-eyebrow', t('password.eyebrow', 'Access control')),
-    el('h2', '', t('password.heading', 'Browser password')),
-    el('p', 'setup-lede', t('password.explain', 'One password protects this Ronin installation through both its local HTTP and Tailscale HTTPS addresses.')),
+    el('span', 'setup-register-eyebrow', t('password.eyebrow', 'How you reach this machine')),
+    el('h2', '', t('password.heading', 'How do you reach this machine?')),
+    el('p', 'setup-lede', t('password.explain', 'Most people reach Ronin over Tailnet, which is already private. A password on top is optional—set one only if this machine is reachable some other way.')),
   );
   const access = el('section', 'setup-register-group password-access');
   access.append(el('h3', '', t('password.access', 'Browser access')));
@@ -155,14 +155,14 @@ export function createPasswordSurface(context = {}) {
     if (!result.ok) { say(result.message, true); return; }
     paint(result.data); say('');
   };
-  if (context.environment?.answerSetupStep) mountSetupStepFooter(body, context.environment, {
+  const stopFooter = context.environment?.answerSetupStep ? mountSetupStepFooter(body, context.environment, {
     id: 'password', number: 5, pending: 'Not answered yet', complete: 'Answered',
     actions: () => [
       { label: 'Set a password', quiet: 'quiet', action: () => openForm('enable') },
       { label: 'Tailnet is enough', kind: 'primary', action: () => context.environment?.answerSetupStep?.('password', 'not_now') },
     ],
-  });
-  return { el: surface.el, show, destroy: () => selector.destroy() };
+  }) : () => {};
+  return { el: surface.el, show, destroy: () => { stopFooter(); selector.destroy(); } };
 }
 
 export function passwordSurfaceDefinition() {
