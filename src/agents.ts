@@ -104,20 +104,29 @@ function loginShell(): string {
   return s && s.trim() ? s : '/bin/bash';
 }
 
-export async function listAgentAvailability(): Promise<AgentAvailability[]> {
-  const names = AGENTS.map((a) => a.cmd).join(' ');
-  const script = `for c in ${names}; do printf '%s\\t%s\\n' "$c" "$(command -v "$c" 2>/dev/null || true)"; done`;
-
+/** Resolve owner-installed commands through the owner's login shell, not the service PATH. */
+export async function discoverExecutables(names: readonly string[]): Promise<Map<string, string>> {
+  const wanted = names.filter((name) => /^[A-Za-z0-9._+-]+$/.test(name));
   const found = new Map<string, string>();
+  if (!wanted.length) return found;
+  const script = `for c in "$@"; do printf '%s\\t%s\\n' "$c" "$(command -v "$c" 2>/dev/null || true)"; done`;
   try {
-    const { stdout } = await pexec(loginShell(), ['-lc', script], { timeout: 5000 });
+    const { stdout } = await pexec(loginShell(), ['-lc', script, 'ronin-discover', ...wanted], { timeout: 5000 });
     for (const line of stdout.split('\n')) {
       const [cmd, where] = line.split('\t');
-      if (cmd) found.set(cmd, (where ?? '').trim());
+      if (cmd && wanted.includes(cmd)) found.set(cmd, (where ?? '').trim());
     }
   } catch {
   }
+  return found;
+}
 
+export async function discoverExecutable(name: string): Promise<string> {
+  return (await discoverExecutables([name])).get(name) ?? '';
+}
+
+export async function listAgentAvailability(): Promise<AgentAvailability[]> {
+  const found = await discoverExecutables(AGENTS.map((a) => a.cmd));
   return AGENTS.map((a) => {
     const where = found.get(a.cmd) ?? '';
     return { id: a.id, label: a.label, get: a.operations.install, parked: a.parked, cmd: a.cmd, installed: !!where, path: where };

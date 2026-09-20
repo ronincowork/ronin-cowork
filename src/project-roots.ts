@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import { storeDir } from './resources.js';
+import { discoverExecutable } from './agents.js';
 
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -226,8 +227,8 @@ export interface RootFacts {
   project_context?: string[];
 }
 
-const git = async (dir: string, args: string[]) => {
-  const { stdout } = await execFileP('git', ['-C', dir, ...args], { timeout: 4000 });
+const git = async (executable: string, dir: string, args: string[]) => {
+  const { stdout } = await execFileP(executable, ['-C', dir, ...args], { timeout: 4000 });
   return stdout.trim();
 };
 
@@ -244,14 +245,55 @@ export async function repoFacts(root: ProjectRootInfo): Promise<RootFacts> {
     stat(path.join(dir, candidate)).then(() => candidate, () => ''),
   ))).filter(Boolean);
   try {
-    if ((await git(dir, ['rev-parse', '--show-toplevel'])) !== dir) return out;
+    const executable = await discoverExecutable('git');
+    if (!executable || (await git(executable, dir, ['rev-parse', '--show-toplevel'])) !== dir) return out;
     out.repo = {
-      remote: await git(dir, ['remote', 'get-url', 'origin']).catch(() => ''),
-      branch: await git(dir, ['branch', '--show-current']).catch(() => ''),
+      remote: await git(executable, dir, ['remote', 'get-url', 'origin']).catch(() => ''),
+      branch: await git(executable, dir, ['branch', '--show-current']).catch(() => ''),
     };
   } catch {
   }
   return out;
+}
+
+export type GitAccessState = 'available' | 'unavailable' | 'check_failed';
+export interface GitAccessAnswer {
+  state: GitAccessState;
+  message: string;
+  checked_at: string;
+}
+
+const safeGitMessage = (value: unknown): string => String(value ?? '')
+  .replace(/https?:\/\/[^\s/@]+(?::[^\s/@]*)?@/gi, 'https://[credentials]@')
+  .replace(/\b(?:gh[opusr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g, '[credential]')
+  .replace(/([?&](?:access_token|token|password)=)[^\s&]+/gi, '$1[credential]')
+  .replace(/[\r\n]+/g, ' ').trim().slice(0, 500);
+
+/** Measure read access to one Workspace Folder's origin without modifying Git or its credentials. */
+export async function checkProjectRootGitAccess(root: ProjectRootInfo): Promise<GitAccessAnswer> {
+  const checked_at = new Date().toISOString();
+  const facts = await repoFacts(root);
+  if (!facts.exists || !facts.repo) return { state: 'check_failed', message: 'This Workspace Folder is not an available Git repository.', checked_at };
+  if (!facts.repo.remote) return { state: 'unavailable', message: 'This repository has no origin remote to check.', checked_at };
+  const executable = await discoverExecutable('git');
+  if (!executable) return { state: 'check_failed', message: 'Git is not available to the owner’s login shell.', checked_at };
+  try {
+    await execFileP(executable, ['-C', facts.dir, 'ls-remote', 'origin'], {
+      timeout: 20_000, maxBuffer: 1024 * 1024,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' },
+    });
+    return { state: 'available', message: 'Git can read this repository’s origin remote.', checked_at };
+  } catch (error) {
+    const failed = error as { code?: unknown; killed?: boolean; stderr?: unknown; message?: unknown };
+    if (failed.killed || typeof failed.code !== 'number') {
+      return { state: 'check_failed', message: safeGitMessage(failed.stderr) || 'Ronin could not complete the Git access check.', checked_at };
+    }
+    return {
+      state: 'unavailable',
+      message: safeGitMessage(failed.stderr) || 'Git could not read this repository’s origin with the current connection.',
+      checked_at,
+    };
+  }
 }
 
 export async function suggestDirs(prefixRaw: string): Promise<string[]> {
