@@ -315,8 +315,15 @@ function createRegisterSurface(context) {
   const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
   const paintZone = () => {
     if (!zone) return;
-    if (current?.status === 'registered') {
-      zone.paint({ state: 'Registration complete.', picks: [goodToGo(() => context.environment?.nextSetupStep?.())] });
+    // The mark fills on any SUCCESSFUL SUBMISSION — registerAction persists 'acted' for all
+    // of them — so the zone must read answered the same way, or a filled mark sits above a
+    // zone still asking. 'optional' is the only unsubmitted status; the other three are
+    // submitted and each gets its own truthful sentence.
+    if (current?.status && current.status !== 'optional') {
+      const said = current.status === 'registered' ? 'Registration complete.'
+        : current.status === 'anonymous' ? 'Registered anonymously.'
+        : 'Registration sent. Confirm the link in your email.';
+      zone.paint({ state: said, picks: [goodToGo(() => context.environment?.nextSetupStep?.())] });
       return;
     }
     const declinedAlready = context.environment?.setupProgress?.()?.steps?.find((step) => step.id === 'register')?.answer === 'not_now';
@@ -333,6 +340,8 @@ function createRegisterSurface(context) {
   // The zone is the SURFACE's top window, so it is seated beside the body, not inside it:
   // the body is a document capped to a reading measure and centred, and a zone that rode
   // inside it would sit at a different edge on every step. Beside it, all five match.
+  // Answering does not reload this surface, so the zone listens for the record it reads.
+  const stopProgress = zone ? (context.environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
   if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
   return { el: out.el, show: async () => {
@@ -349,7 +358,7 @@ function createRegisterSurface(context) {
       userIntro.hidden = Boolean(userIntroText.value.trim());
     }
     paint();
-  }, destroy: () => {} };
+  }, destroy: () => stopProgress() };
 }
 
 function createRootsSurface(context) {

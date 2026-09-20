@@ -232,7 +232,14 @@ export function createInstallationsSurface(campaign, context = {}) {
     if (!zone) return;
     const step = environment?.setupProgress?.()?.steps?.find((entry) => entry.id === 'installations');
     if (anythingInstalled()) {
-      zone.paint({ state: 'Installed.', picks: [goodToGo(() => environment?.nextSetupStep?.())] });
+      // Nothing else answers step 4 — the Setup scan answers only provider and workspace, and
+      // onInstallationChoice fires only when a choice is MADE here. Something already being
+      // installed is not an answer, so Good to go has to give one before it moves on, or the
+      // step is left hollow behind us.
+      zone.paint({ state: 'Installed.', picks: [goodToGo(async () => {
+        await environment?.answerSetupStep?.('installations', 'acted');
+        environment?.nextSetupStep?.();
+      })] });
       return;
     }
     const noThankYou = {
@@ -251,6 +258,8 @@ export function createInstallationsSurface(campaign, context = {}) {
     zone.paint({ state: 'Nothing installed.', picks: [noThankYou] });
   };
 
+  // Answering does not reload this surface, so the zone listens for the record it reads.
+  const stopProgress = zone ? (environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
   stoneSurface.mount(surface.content, { before: zone ? [zone.el, reading] : [reading] });
 
   const enter = async () => {
@@ -286,7 +295,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     // surface straight into operation mode, which is the one view the header zone is not in.
   };
 
-  return { el: surface.el, enter, destroy: () => stoneSurface.destroy() };
+  return { el: surface.el, enter, destroy: () => { stopProgress(); stoneSurface.destroy(); } };
 }
 
 export function installationsSummary(campaign) {

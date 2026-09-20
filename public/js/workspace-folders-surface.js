@@ -66,6 +66,10 @@ export function createWorkspaceFoldersSurface({
     });
   };
 
+  // The zone reads the answer record, so it has to hear when the record changes: answering
+  // here does not reload the surface, and an unrepainted zone leaves the pick unmarked.
+  const stopProgress = zone ? (environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
+
   let room = null;
   const github = presentation === 'stones' ? createGithubWorkspaceSetup({
     environment,
@@ -109,6 +113,6 @@ export function createWorkspaceFoldersSurface({
         });
       }
     },
-    destroy: () => github?.destroy(),
+    destroy: () => { stopProgress(); github?.destroy(); },
   };
 }

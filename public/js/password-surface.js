@@ -103,6 +103,8 @@ export function createPasswordSurface(context = {}) {
       picks: [addPassword, { label: 'No password', action: () => context.environment?.answerSetupStep?.('password', 'not_now') }],
     });
   };
+  // Answering does not reload this surface, so the zone listens for the record it reads.
+  const stopProgress = zone ? (context.environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
   // Seated beside the body, not inside it — see the note in setup-surfaces.js.
   if (zone) surface.content.append(zone.el);
   body.append(intro, access, form, recovery);
@@ -198,7 +200,7 @@ export function createPasswordSurface(context = {}) {
     if (!result.ok) { say(result.message, true); return; }
     paint(result.data); say('');
   };
-  return { el: surface.el, show, destroy: () => selector.destroy() };
+  return { el: surface.el, show, destroy: () => { stopProgress(); selector.destroy(); } };
 }
 
 export function passwordSurfaceDefinition() {
