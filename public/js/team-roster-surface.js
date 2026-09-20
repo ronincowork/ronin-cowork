@@ -1,5 +1,4 @@
 /* The detailed Ronin roster, promoted to a Cowork workspace surface. */
-import { S } from './state.js';
 import { deleteTeamRoster, refreshTeams, subscribe, teamsFromState } from './team-controller.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
@@ -9,7 +8,7 @@ import { openWorkspaceTab } from './workspace.js';
 
 const node = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 
-export function createTeamRosterSurface() {
+export function createTeamRosterSurface(options = {}) {
   const label = t('league.team_roster', 'Team roster');
   const surface = WorkspaceKit.primitives.createSurface({ label, className: 'team-roster-surface' });
   const host = node('div', 'home-sec team-roster-detail');
@@ -25,7 +24,7 @@ export function createTeamRosterSurface() {
     if (!result.ok) surface.setState('failed', result.message);
     else { surface.setState(null, ''); await refreshHome(); roster.render(); }
   };
-  const roster = buildRoster({ index: 'team-roster', connect: (name) => S.connectSession?.(name) }, host, {
+  const roster = buildRoster({ index: 'team-roster', connect: (name) => options.onOpen?.(name) }, host, {
     hideGroupCounts: true,
     groups: () => teamsFromState().filter((team) => !team.holding).map((team) => team.name),
     groupLabel: teamLabel,
