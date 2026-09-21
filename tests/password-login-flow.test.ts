@@ -6,6 +6,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import vm from 'node:vm';
 import { closeTestServer, openTestServer } from './helpers/testserver.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -90,12 +91,13 @@ test('password command protects local and proxied browser addresses through logi
   assert.match(JSON.parse(set.body).stdout, /password set/);
 
   const base = `http://127.0.0.1:${port}`;
+  const destination = '/m?view=team%2Fclean-round';
   for (const headers of [{ accept: 'text/html' }, { accept: 'text/html', host: 'ronin.example.ts.net:4810' }]) {
-    const gated = await fetch(`${base}/`, { redirect: 'manual', headers });
+    const gated = await fetch(`${base}${destination}`, { redirect: 'manual', headers });
     assert.equal(gated.status, 302);
-    assert.equal(gated.headers.get('location'), '/login');
+    assert.equal(gated.headers.get('location'), `/login?next=${encodeURIComponent(destination)}`);
   }
-  const loginPage = await fetch(`${base}/login`);
+  const loginPage = await fetch(`${base}/login?next=${encodeURIComponent(destination)}`);
   assert.equal(loginPage.status, 200);
   assert.match(await loginPage.text(), /id="pw"/);
 
@@ -105,13 +107,45 @@ test('password command protects local and proxied browser addresses through logi
   assert.equal(login.status, 200);
   const cookie = login.headers.get('set-cookie')?.split(';', 1)[0];
   assert.match(cookie ?? '', /^ronin_session=/);
-  const refreshed = await fetch(`${base}/`, { redirect: 'manual', headers: { cookie: cookie! } });
+  const refreshed = await fetch(`${base}${destination}`, { redirect: 'manual', headers: { cookie: cookie! } });
   assert.equal(refreshed.status, 200);
 
   const logout = await fetch(`${base}/api/logout`, { method: 'POST', headers: { cookie: cookie! } });
   assert.equal(logout.status, 200);
   assert.match(logout.headers.get('set-cookie') ?? '', /ronin_session=;/);
-  const afterLogout = await fetch(`${base}/`, { redirect: 'manual', headers: { accept: 'text/html' } });
+  const afterLogout = await fetch(`${base}${destination}`, { redirect: 'manual', headers: { accept: 'text/html' } });
   assert.equal(afterLogout.status, 302);
-  assert.equal(afterLogout.headers.get('location'), '/login');
+  assert.equal(afterLogout.headers.get('location'), `/login?next=${encodeURIComponent(destination)}`);
+});
+
+test('login form returns to the protected browser route, including its fragment', async () => {
+  const html = await fs.readFile(path.join(ROOT, 'public', 'login.html'), 'utf8');
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)?.[1];
+  assert.ok(script);
+  for (const [search, hash, expected] of [
+    ['?next=%2F', '#/team/clean-round', '/#/team/clean-round'],
+    ['?next=%2Fm%3Fview%3Dteam', '#/team/clean-round', '/m?view=team#/team/clean-round'],
+    ['?next=%2F%2Fevil.example', '#/team/clean-round', '/#/team/clean-round'],
+  ]) {
+    const controls = new Map<string, any>();
+    const element = (id: string) => {
+      if (!controls.has(id)) controls.set(id, {
+        value: id === 'pw' ? 'correct horse' : '', dataset: {},
+        addEventListener(_event: string, handler: (event: { preventDefault(): void }) => Promise<void>) {
+          this.submit = handler;
+        },
+        focus() {},
+      });
+      return controls.get(id);
+    };
+    let returned = '';
+    vm.runInNewContext(script, {
+      document: { getElementById: element }, URLSearchParams,
+      location: { search, hash, replace: (url: string) => { returned = url; } },
+      window: { isSecureContext: false }, matchMedia: () => ({ matches: false }),
+      fetch: async (url: string) => ({ ok: true, json: async () => url === '/api/passkey/options' ? { registered: false } : { ok: true } }),
+    });
+    await element('f').submit({ preventDefault() {} });
+    assert.equal(returned, expected);
+  }
 });

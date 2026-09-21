@@ -495,7 +495,7 @@ export function createServicesSurface(context) {
    *  A refusal answers in the tool's own words; no answer means Ronin went down, which is the restart happening. */
   const restartRonin = async (state, startedAt) => {
     state.dataset.tone = 'warn';
-    state.replaceChildren(el('p', 'setup-services-status-line', t('services_setup.restarting', 'Restarting Ronin…')), el('p', 'setup-services-next', t('services_setup.next_restarting', 'Sessions stay up; this surface re-reads the machine as Ronin comes back.')));
+    state.replaceChildren(el('p', 'setup-services-status-line', t('services_setup.restarting', 'Restarting Ronin…')), el('p', 'setup-services-next', t('services_setup.next_restarting', 'This surface re-reads the machine as Ronin comes back.')));
     const asked = await request('/api/machine/restart', { method: 'POST', json: {} });
     if (!asked.ok && asked.kind !== 'network') { said = asked.message; await show(); return; }
     const until = Date.now() + 120_000;
@@ -517,6 +517,7 @@ export function createServicesSurface(context) {
     // Ronin is down or unreachable for a moment (a restart in flight): keep what is painted and look again shortly.
     if (!installed.ok && installed.kind === 'network' && body.dataset.state) { timer = setTimeout(() => { if (body.isConnected) void show(); }, 3000); return; }
     const model = servicesSetupModel(registration, installed, activation);
+    if (installed.ok) context.onInstalledState?.(installed.data);
     const startedAt = installed.ok ? installed.data?.cowork?.startedAt || '' : '';
     const intro = explain();
     body.replaceChildren(intro);
@@ -619,6 +620,7 @@ export function createServicesSurface(context) {
             const fresh = await request('/api/installed', { cache: 'no-store' });
             if (fresh.ok) {
               facts = fresh.data;
+              context.onInstalledState?.(fresh.data);
               const next = servicesSetupModel(registration, fresh, activation);
               paintSteps(next);
               body.dataset.state = next.state;

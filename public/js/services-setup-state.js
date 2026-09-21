@@ -25,7 +25,7 @@ function registrationRow(registration, record) {
   const row = (state, tone, status, next, stepIn, polling = false) => ({ state, tone, status, next, step: stepIn, polling });
   if (reg.services_entitled === true) {
     return row('entitled', 'ok', t('services_setup.status_entitled', 'Registered · Ready to install'),
-      t('services_setup.next_entitled', 'Install fetches Services from Ronin HQ, verifies it, and restarts Ronin’s server. The page blinks; sessions are untouched.'),
+      t('services_setup.next_entitled', 'Install fetches Services from Ronin HQ, verifies it, and restarts Ronin’s server. The page reconnects when Ronin returns.'),
       step('register', caption, t('services_setup.done', 'Done'), { done: true, enabled: false }));
   }
   if (!registration?.ok || !reg.status || reg.status === 'optional') {
@@ -93,7 +93,7 @@ export function servicesSetupModel(registration, installed, activation = null) {
   if (!parts) {
     if (installing) {
       return { ...model('installing', 'warn', t('services_setup.status_installing', 'Installing Services…'),
-        t('services_setup.next_installing', 'Fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched.'), true), summary: t('services_setup.summary_installing', 'installing') };
+        t('services_setup.next_installing', 'Fetch, verify, contract check, restart. The page reconnects when Ronin returns.'), true), summary: t('services_setup.summary_installing', 'installing') };
     }
     if (installFailed) {
       return { ...model('install_failed', 'bad', t('services_setup.status_install_failed', 'Install did not finish'),
@@ -112,7 +112,7 @@ export function servicesSetupModel(registration, installed, activation = null) {
   if (!on) {
     return { ...model('switched_off', '', t('services_setup.status_switched_off', 'Installed · switched off'),
       facts.restart_needed
-        ? t('services_setup.next_switched_off_running', 'Switched off, but still running in this copy of Ronin. Press Restart, or ask any of your Agents to restart Ronin, and it stops; sessions are untouched.')
+        ? t('services_setup.next_switched_off_running', 'Switched off, but still running in this copy of Ronin. Press Restart, or ask any of your Agents to restart Ronin, and it stops when Ronin returns.')
         : t('services_setup.next_switched_off', 'Turn it on here: it sets the Campaign’s choice and cascades to new teams and Agents; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.', counts),
       reg.polling), summary: t('services_setup.summary_switched_off', 'switched off') };
   }

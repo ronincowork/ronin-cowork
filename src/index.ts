@@ -156,7 +156,7 @@ app.use((req, res, next) => {
   // A peer on the operator's own socket is the user: the 0600 mode was the credential.
   if (isOperatorPeer(req) || checkAuth(req.headers)) return next();
   if (passwordAuthEnabled() && req.method === 'GET' && req.accepts(['json', 'html']) === 'html') {
-    return res.redirect('/login');
+    return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
   }
   if (authEnabled) res.set('WWW-Authenticate', 'Basic realm="tmux-ronin"');
   res.status(401).send('Authentication required.');

@@ -8,10 +8,10 @@
 > This is supporting reference, not a Behavior. It is fetched when needed rather than
 > delivered as working instruction.
 
-**Every document produced in development is one of three things, and lives in one of
-three directories of the project_repo:**
+**Every document produced in development is one of three things. Creator planning
+belongs in the creators' Lab; standing product facts belong in the product repository:**
 
-- **`wip/`** — what might be. Plans, build-outs, handoffs, scratch. Mutable and
+- **Lab `wip/`** — what might be. Plans, build-outs, handoffs, scratch. Mutable and
   mortal: **finishing a piece of work includes deleting its wip documents.** Never a
   log, never amended into a record — git is the history; we are not the Library of
   Congress. Handoffs go in `wip/handoffs/`, build-out plans in `wip/buildouts/`.
