@@ -81,5 +81,10 @@ export function createSetupZoneSlot(options) {
   const slot = document.createElement('div');
   slot.className = 'setup-zone-slot';
   slot.append(zone.el);
-  return { el: slot, paint: zone.paint };
+  // The slot carries a fixed height, so an empty zone inside a shown slot is a band of
+  // nothing. It is ours to hide, so hide it outright rather than leave it to a CSS rule
+  // that a future stylesheet could stop matching.
+  const paint = (reading) => { zone.paint(reading); slot.hidden = zone.el.hidden; };
+  paint();
+  return { el: slot, paint };
 }
