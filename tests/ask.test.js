@@ -32,6 +32,22 @@ globalThis.document = {
 
 const { ask, snake } = await import('../public/js/ask.js');
 
+test('provider inventory listener is lazy and bound once when a browser picker subscribes', async () => {
+  assert.equal(globalThis.window, undefined, 'module import must not require a browser window');
+  const { subscribeProviderCatalog } = await import('../public/js/form-steps.js');
+  const listeners = [];
+  globalThis.window = { addEventListener: (name) => listeners.push(name) };
+  try {
+    const first = subscribeProviderCatalog(() => {});
+    const second = subscribeProviderCatalog(() => {});
+    assert.deepEqual(listeners, ['ronin:provider-inventory']);
+    first();
+    second();
+  } finally {
+    delete globalThis.window;
+  }
+});
+
 const PROVIDERS = [
   { v: 'anthropic', l: 'Claude Code' },
   { v: 'openai', l: 'Codex' },

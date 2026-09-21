@@ -265,7 +265,19 @@ let catalog = { rows: [], providers: [], machine: [], measured_at: '', origin: '
 let inflight = null;
 const NATIVE_MODEL = 'native';
 
+// The catalog module is also imported by non-browser readers. Bind the page-level feed
+// on first use, not at module evaluation, and never add a second listener on repaint.
+let inventoryEventWindow = null;
+function ensureProviderInventoryListener() {
+  if (typeof window === 'undefined' || inventoryEventWindow === window) return;
+  window.addEventListener('ronin:provider-inventory', (event) => {
+    if (event.detail?.state === 'complete') void reloadProviderCatalog();
+  });
+  inventoryEventWindow = window;
+}
+
 export function loadProviderCatalog() {
+  ensureProviderInventoryListener();
   if (inflight) return inflight;
   inflight = Promise.all([request('/api/provider-catalog'), request('/api/setup/runtime', { cache: 'no-store' })]).then(([read, runtime]) => {
     const providers = read.ok && Array.isArray(read.data?.providers) ? read.data.providers : [];
@@ -288,6 +300,7 @@ const providerCatalogHandlers = new Set();
 
 /** Listen while a model picker exists; the returned disposer is part of the view's destroy contract. */
 export function subscribeProviderCatalog(handler) {
+  ensureProviderInventoryListener();
   providerCatalogHandlers.add(handler);
   return () => providerCatalogHandlers.delete(handler);
 }
@@ -300,10 +313,6 @@ export function reloadProviderCatalog() {
     return value;
   });
 }
-
-window.addEventListener('ronin:provider-inventory', (event) => {
-  if (event.detail?.state === 'complete') void reloadProviderCatalog();
-});
 
 /** What every reader paints from: `{ rows, providers, machine, measured_at, origin, updated, stock_updated, withdrawn, loaded }`. */
 export const providerCatalog = () => catalog;
