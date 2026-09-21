@@ -77,7 +77,7 @@ test('Campaign, Team, Setup and Cowork use the same tab-instance snapshot contra
     count: index === 2 ? 4 : 2, seats: { workspace1: destination },
   });
   assert.equal(resolveWorkbenchEntry(tabs, '2'.repeat(32), 'team', 'Commons', null, {}).count, 4);
-  assert.deepEqual(resolveWorkbenchEntry(tabs, '5'.repeat(32), 'team', 'Commons', null, { count: 2 }), { count: 2 });
+  assert.deepEqual(resolveWorkbenchEntry(tabs, '5'.repeat(32), 'team', 'Commons', null, { count: 2 }), { count: 2, seats: {} });
   assert.equal(resolveWorkbenchEntry(tabs, '1'.repeat(32), 'campaign', '', null, {}).seats.workspace1, 'campaign');
   assert.equal(resolveWorkbenchEntry(tabs, '3'.repeat(32), 'setup', '', null, {}).seats.workspace1, 'setup');
   assert.equal(resolveWorkbenchEntry(tabs, '4'.repeat(32), 'cowork', '', null, {}).seats.workspace1, 'cowork');
