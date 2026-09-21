@@ -66,7 +66,7 @@ export function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } =
     let viewer;
     if (typeof view.text === 'string') {
       viewer = node('div', 'garden-media-doc');
-      viewer.append(renderMarkdownDocument(view.text));
+      viewer.append(renderMarkdownDocument(view.text, document, { onLink: view.onLink }));
     } else if (view.kind === 'video') {
       viewer = node('video', 'garden-media-video');
       viewer.controls = true; viewer.preload = 'metadata'; viewer.src = view.src;
@@ -77,7 +77,12 @@ export function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } =
     }
     mediaBody.append(viewer);
     overlay.hidden = false;
+    if (view.fragment) scrollMediaTo(view.fragment);
     close.focus();
+  };
+  const scrollMediaTo = (fragment) => {
+    const heading = [...mediaBody.querySelectorAll('[id]')].find((node) => node.id === fragment);
+    heading?.scrollIntoView?.({ block: 'start' });
   };
 
   const paintCopy = (items) => {
@@ -132,7 +137,7 @@ export function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } =
   };
 
   surface.content.append(scene, overlay);
-  return { ...surface, paint, showMedia, closeMedia, paintCount: () => painted };
+  return { ...surface, paint, showMedia, scrollMediaTo, closeMedia, paintCount: () => painted };
 }
 
 export function registerGardenCanvas() {
