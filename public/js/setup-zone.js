@@ -28,7 +28,9 @@ const el = (tag, cls = '', text = '') => {
 /**
  * One zone, as an element to seat wherever the step's surface keeps its header.
  *
- * `paint({ state, picks })` — `state` is the sentence; `picks` are `{ label, chosen, action }`. A pick is an erabi stone at the shared 140x40: one line of words, and if a
+ * `paint({ state, picks })` — `state` is the sentence; `picks` are `{ label, chosen, action,
+ * disabled }`. A disabled pick is shown and not selectable: it says the option exists but is
+ * not available on this machine, which is a different thing from not offering it at all. A pick is an erabi stone at the shared 140x40: one line of words, and if a
  * label does not fit, shorten the label rather than stretch the stone. `chosen` marks an
  * answer already given and leaves every other pick in place so it can still be changed.
  */
@@ -57,8 +59,9 @@ export function createSetupZone({ className = '' } = {}) {
       button.dataset.setupZonePick = pick.key || (pick.label || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       // ask.css marks the chosen stone on aria-selected; aria-pressed is styled nowhere.
       button.setAttribute('aria-selected', String(pick.chosen === true));
-      button.append(el('span', 'ask-name', pick.label || ''));
+      if (pick.disabled) { button.disabled = true; button.setAttribute('aria-disabled', 'true'); }
       if (pick.title) button.title = pick.title;
+      button.append(el('span', 'ask-name', pick.label || ''));
       button.addEventListener('click', () => pick.action?.());
       return button;
     }));

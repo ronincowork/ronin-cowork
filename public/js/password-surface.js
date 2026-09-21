@@ -74,10 +74,14 @@ export function createPasswordSurface(context = {}) {
    * claim either until it knows.
    */
   const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
+  const answerNoPassword = () => {
+    if (saved) void disable();                                    // a set password must go
+    else void context.environment?.answerSetupStep?.('password', 'not_now');
+  };
   const paintZone = () => {
     if (!zone) return;
     const progress = context.environment?.setupProgress?.();
-    const tailscale = progress?.facts?.tailscale;
+    const onTailnet = progress?.facts?.tailscale === true;
     // STEP 5 NEVER EMPTIES either, and both of its picks keep working: how you reach this
     // machine is a standing arrangement, not a one-time answer, so the owner can come back
     // and change it whenever (owner, 2026-09-21). 'Tailnet only' therefore has to MEAN it —
@@ -85,16 +89,20 @@ export function createPasswordSurface(context = {}) {
     // makes, rather than quietly recording an answer that contradicts the machine.
     zone.paint({
       state: saved ? 'Password set.'
-        : tailscale === true ? 'Tailnet available. Add a password as well?'
-        : tailscale === false ? 'Tailnet not available on this machine.'
+        : onTailnet ? 'Tailnet available. Add a password as well?'
+        : progress?.facts?.tailscale === false ? 'Tailnet not available on this machine.'
         : 'Checking how you reach this machine\u2026',
+      // Without Tailnet, 'Tailnet only' is not an arrangement this machine can be in, so it is
+      // shown and not selectable rather than quietly offered — and 'None' takes its place as
+      // the real choice, for a machine that is already protected some other way and wants no
+      // Ronin password on top (owner, 2026-09-21).
       picks: [
-        // Name the arrangement that is actually on offer. Without Tailnet, 'Tailnet only' is
-        // not a thing this machine can be, and marking it as the current state would claim an
-        // arrangement that does not exist — the honest choice there is simply no password.
-        { label: tailscale === true ? 'Tailnet only' : 'No password',
-          chosen: !saved,
-          action: () => { if (saved) void disable(); else void context.environment?.answerSetupStep?.('password', 'not_now'); } },
+        { label: 'Tailnet only',
+          chosen: onTailnet && !saved,
+          disabled: !onTailnet,
+          title: onTailnet ? '' : 'Tailnet is not available on this machine.',
+          action: () => answerNoPassword() },
+        ...(onTailnet ? [] : [{ label: 'None', chosen: !saved, action: () => answerNoPassword() }]),
         { label: 'Add password', chosen: saved, action: () => openForm('enable') },
       ],
     });
