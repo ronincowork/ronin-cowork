@@ -16,7 +16,7 @@ import { HOUSE_PRESETS, PRESETS_TYPE, buildLaunchPlan, initialControls, seatingP
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { createInstallationsSurface } from './campaign-installations.js';
-import { createSetupZoneSlot, goodToGo } from './setup-zone.js';
+import { createSetupZoneSlot } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
 
 // Model providers is the one surface two workbenches seat (provider-surface.js); its type
@@ -230,6 +230,7 @@ function createRegisterSurface(context) {
   registerAction.replaceChildren(sendMark, el('span', '', sendLabel));
   const send = el('div', 'setup-register-send');
   send.append(consent, registerAction, notice);
+  let formOpen = null; // see THE HEADER ZONE, below
   const paintIdentityMode = () => {
     const emailRegistration = identityMode.value.value === 'email';
     const declinedRegistration = identityMode.value.value === 'no_thanks';
@@ -272,7 +273,7 @@ function createRegisterSurface(context) {
     identity.dataset.tone = current?.status === 'pending' ? 'pending' : 'ok';
     identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.check_email', 'Check your email')),
       el('span', '', summaryWords()));
-    form.hidden = Boolean(current?.submitted_at);
+    form.hidden = !formOnShow();
     recoveryOptions.hidden = !current?.submitted_at;
     recovery.replaceChildren();
     const changeEmail = () => action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
@@ -312,34 +313,54 @@ function createRegisterSurface(context) {
     paintZone();
   };
   /** Step 2's header zone. Registering is the decision; the form below is how it is done. */
+  /* ── THE HEADER ZONE ──────────────────────────────────────────────────────────────────
+     Two picks, and neither is ever a no-op:
+       Register here  shows the form if it is put away;
+       No thank you   puts the form away if it is on show.
+     Either press answers step 2 — the tick means the person dealt with the step, not that
+     they registered. Once they actually have registered there is nothing left to decide, so
+     the zone empties the way every settled step does (owner, 2026-09-21).
+
+     The form's visibility is `formOpen`: null until a pick is pressed, and while it is null
+     the record decides, so someone who declined and came back finds it as they left it. */
   const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
+  const recordedAnswer = () => context.environment?.setupProgress?.()?.steps
+    ?.find((step) => step.id === 'register')?.answer;
+  const formOnShow = () => (formOpen === null
+    ? identityMode.value.value !== 'no_thanks' && recordedAnswer() !== 'not_now' && !current?.submitted_at
+    : formOpen);
+  const answerStep = (answer) => context.environment?.answerSetupStep?.('register', answer);
+  const showForm = () => {
+    formOpen = true;
+    // A declined identity hides the form's own innards, so reopening on 'no_thanks' would
+    // show an empty shell. Send it back to the recommended choice; they can still switch.
+    if (identityMode.value.value === 'no_thanks') identityMode.set('email');
+    void answerStep('acted');
+    paint();
+  };
+  const hideForm = () => {
+    formOpen = false;
+    identityMode.set('no_thanks');
+    void answerStep('not_now');
+    paint();
+  };
   const paintZone = () => {
     if (!zone) return;
-    // The mark fills on any SUCCESSFUL SUBMISSION — registerAction persists 'acted' for all
-    // of them — so the zone must read answered the same way, or a filled mark sits above a
-    // zone still asking. 'optional' is the only unsubmitted status; the other three are
-    // submitted and each gets its own truthful sentence.
-    if (current?.status && current.status !== 'optional') {
-      const said = current.status === 'registered' ? 'Registration complete.'
-        : current.status === 'anonymous' ? 'Registered anonymously.'
-        : 'Registration sent. Confirm the link in your email.';
-      zone.paint({ state: said, picks: [goodToGo(() => context.environment?.nextSetupStep?.())] });
-      return;
-    }
-    const declinedAlready = context.environment?.setupProgress?.()?.steps?.find((step) => step.id === 'register')?.answer === 'not_now';
+    if (current?.status === 'registered') { zone.paint(); return; }
+    const answer = recordedAnswer();
     zone.paint({
-      state: 'Register to join the community and share your experience — it makes Ronin better for everyone.',
+      state: current?.status === 'anonymous' ? 'Said hello anonymously.'
+        : current?.status === 'pending' ? 'Registration sent. Confirm the link in your email.'
+        : 'Register to join the community and share your experience — it makes Ronin better for everyone.',
       picks: [
-        { label: 'Register', action: () => registerAction.click() },
-        { label: 'No thank you',
-          chosen: declinedAlready,
-          action: () => { identityMode.set('no_thanks'); void context.environment?.answerSetupStep?.('register', 'not_now'); } },
+        // Shows the form; it does NOT send it. registerAction POSTs on the spot, and with no
+        // identity chosen it posts anonymously, so a pick wired straight to it registered
+        // people who had filled in nothing. Pressing Send stays the person's own act.
+        { label: 'Register here', chosen: answer === 'acted', action: showForm },
+        { label: 'No thank you', chosen: answer === 'not_now', action: hideForm },
       ],
     });
   };
-  // The zone is the SURFACE's top window, so it is seated beside the body, not inside it:
-  // the body is a document capped to a reading measure and centred, and a zone that rode
-  // inside it would sit at a different edge on every step. Beside it, all five match.
   // Answering does not reload this surface, so the zone listens for the record it reads.
   const stopProgress = zone ? (context.environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
   if (zone) out.content.append(zone.el);

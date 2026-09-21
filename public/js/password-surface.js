@@ -3,7 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { createSetupZoneSlot, goodToGo } from './setup-zone.js';
+import { createSetupZoneSlot } from './setup-zone.js';
 
 export const PASSWORD_SURFACE_TYPE = 'machine.password';
 
@@ -74,37 +74,31 @@ export function createPasswordSurface(context = {}) {
    * claim either until it knows.
    */
   const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
-  let passwordRequired = false;
   const paintZone = () => {
     if (!zone) return;
     const progress = context.environment?.setupProgress?.();
-    const step = progress?.steps?.find((entry) => entry.id === 'password');
     const tailscale = progress?.facts?.tailscale;
-    if (step?.answered) {
-      zone.paint({
-        state: passwordRequired ? 'Password set.' : 'Tailnet only. No password.',
-        picks: [goodToGo(() => context.environment?.nextSetupStep?.())],
-      });
-      return;
-    }
-    const addPassword = { label: 'Add password', action: () => openForm('enable') };
-    if (tailscale === true) {
-      zone.paint({
-        state: 'Tailnet available. Add a password as well?',
-        picks: [
-          { label: 'Tailnet only', action: () => context.environment?.answerSetupStep?.('password', 'not_now') },
-          addPassword,
-        ],
-      });
-      return;
-    }
+    // STEP 5 NEVER EMPTIES either, and both of its picks keep working: how you reach this
+    // machine is a standing arrangement, not a one-time answer, so the owner can come back
+    // and change it whenever (owner, 2026-09-21). 'Tailnet only' therefore has to MEAN it —
+    // when a password is set it turns that password off, the same call the toggle below
+    // makes, rather than quietly recording an answer that contradicts the machine.
     zone.paint({
-      state: tailscale === false ? 'Tailnet not available on this machine.' : 'Checking how you reach this machine\u2026',
-      picks: [addPassword, { label: 'No password', action: () => context.environment?.answerSetupStep?.('password', 'not_now') }],
+      state: saved ? 'Password set.'
+        : tailscale === true ? 'Tailnet available. Add a password as well?'
+        : tailscale === false ? 'Tailnet not available on this machine.'
+        : 'Checking how you reach this machine\u2026',
+      picks: [
+        // Name the arrangement that is actually on offer. Without Tailnet, 'Tailnet only' is
+        // not a thing this machine can be, and marking it as the current state would claim an
+        // arrangement that does not exist — the honest choice there is simply no password.
+        { label: tailscale === true ? 'Tailnet only' : 'No password',
+          chosen: !saved,
+          action: () => { if (saved) void disable(); else void context.environment?.answerSetupStep?.('password', 'not_now'); } },
+        { label: 'Add password', chosen: saved, action: () => openForm('enable') },
+      ],
     });
   };
-  // Answering does not reload this surface, so the zone listens for the record it reads.
-  const stopProgress = zone ? (context.environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
   // Seated beside the body, not inside it — see the note in setup-surfaces.js.
   if (zone) surface.content.append(zone.el);
   body.append(intro, access, form, recovery);
@@ -140,7 +134,6 @@ export function createPasswordSurface(context = {}) {
     basic.hidden = state?.basic !== true;
     basic.textContent = t('password.basic_kept', 'Legacy Basic authentication is also configured. Turning this password Off does not remove that separate restriction.');
     context.environment?.onPasswordState?.({ required: saved, basic: state?.basic === true });
-    passwordRequired = saved;
     paintZone();
   };
 
@@ -200,6 +193,10 @@ export function createPasswordSurface(context = {}) {
     if (!result.ok) { say(result.message, true); return; }
     paint(result.data); say('');
   };
+  // Answering does not reload this surface, so the zone listens for the record it reads. This
+  // subscribes LAST because onSetupProgress paints immediately, and paintZone reads `saved`
+  // and `disable` — subscribing before they are initialised throws on the first paint.
+  const stopProgress = zone ? (context.environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
   return { el: surface.el, show, destroy: () => { stopProgress(); selector.destroy(); } };
 }
 

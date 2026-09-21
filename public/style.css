@@ -6075,6 +6075,10 @@ button.wb-door:hover b {
 .sws-header:has(> .setup-zone) { box-sizing: border-box; }
 /* A step whose surface is a document, not a phalanx, seats the zone in this instead of
    .sws-header. Same height, so both kinds of step keep one rhythm down the five. */
+/* An answered step's zone hides itself; its slot goes with it, or the step keeps a band of
+   nothing where the zone used to be. The phalanx is not moved by this — it simply starts
+   where it always starts on a surface carrying no zone. */
+.sws-header:has(> .setup-zone[hidden]), .setup-zone-slot:has(> .setup-zone[hidden]) { display: none; }
 .setup-zone-slot { display: flex; flex: 0 0 auto; align-items: flex-start; box-sizing: border-box; min-width: 0; block-size: var(--sws-header-height, clamp(6rem, 15dvh, 9rem)); overflow: hidden; }
 .setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-9); box-sizing: border-box; width: 100%; min-width: 0; height: calc(100% - var(--space-9)); overflow: hidden; border-bottom: var(--edge) solid var(--line); padding: var(--space-6) 0 0; transition: border-color var(--motion-quick) var(--ease); }
 :is(.sws-header, .setup-zone-slot):has(> .setup-zone):hover > .setup-zone { border-bottom-color: var(--kaki); }

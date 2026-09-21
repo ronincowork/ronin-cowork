@@ -28,8 +28,7 @@ const el = (tag, cls = '', text = '') => {
 /**
  * One zone, as an element to seat wherever the step's surface keeps its header.
  *
- * `paint({ state, picks })` — `state` is the sentence; `picks` are `{ label, chosen, action,
- * disabled }`. A pick is an erabi stone at the shared 140x40: one line of words, and if a
+ * `paint({ state, picks })` — `state` is the sentence; `picks` are `{ label, chosen, action }`. A pick is an erabi stone at the shared 140x40: one line of words, and if a
  * label does not fit, shorten the label rather than stretch the stone. `chosen` marks an
  * answer already given and leaves every other pick in place so it can still be changed.
  */
@@ -42,17 +41,25 @@ export function createSetupZone({ className = '' } = {}) {
   zone.append(state, options);
 
   const paint = ({ state: reading = '', picks = [] } = {}) => {
+    // NOTHING TO SAY, NOTHING TO SHOW. Once a step is answered its card carries a checkmark
+    // and the zone has no fact left that needs a decision, so it leaves rather than sit there
+    // congratulating you (owner, 2026-09-21). Called with nothing, the zone hides; the slot
+    // goes with it, so no empty band is left behind.
+    zone.hidden = !reading && picks.length === 0;
     state.textContent = reading;
     options.replaceChildren(...picks.map((pick) => {
       const button = el('button', 'ask-opt ask-rect');
       button.type = 'button';
+      // A pick is nameable as a pick. Its label can legitimately read like a control on the
+      // surface below ('Add password', 'Register here'), so anything selecting by words alone
+      // can pick the wrong one — a harness did exactly that and pressed real controls. This
+      // says which button is the zone's, for tests, harnesses and anyone reading the DOM.
+      button.dataset.setupZonePick = pick.key || (pick.label || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       // ask.css marks the chosen stone on aria-selected; aria-pressed is styled nowhere.
       button.setAttribute('aria-selected', String(pick.chosen === true));
-      if (pick.disabled) button.setAttribute('aria-disabled', 'true');
-      button.disabled = pick.disabled === true;
       button.append(el('span', 'ask-name', pick.label || ''));
       if (pick.title) button.title = pick.title;
-      button.addEventListener('click', () => { if (!pick.disabled) pick.action?.(); });
+      button.addEventListener('click', () => pick.action?.());
       return button;
     }));
   };
@@ -73,9 +80,3 @@ export function createSetupZoneSlot(options) {
   slot.append(zone.el);
   return { el: slot, paint: zone.paint };
 }
-
-/**
- * The pick every answered step ends on: one stone that moves to the next step. The step
- * says what it is good to go *from* in its own state line, so the words here never change.
- */
-export const goodToGo = (advance) => ({ label: 'Good to go', action: advance });

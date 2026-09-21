@@ -32,7 +32,7 @@
  */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
-import { createSetupZone, goodToGo } from './setup-zone.js';
+import { createSetupZone } from './setup-zone.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
@@ -436,9 +436,14 @@ export function createProviderSurface(context) {
   context.environment?.onProviderSurface?.(controller);
   const zone = context.environment?.answerSetupStep ? createSetupZone() : null;
   /** Step 1 states one machine fact: whether any provider on this machine is signed in. */
-  const paintZone = (activated) => zone?.paint(activated > 0
-    ? { state: 'Provider signed in and authenticated.', picks: [goodToGo(() => context.environment?.nextSetupStep?.())] }
-    : { state: 'No provider found on this machine.', picks: [{ label: 'Sign in a provider', action: () => controller.openFirst() }] });
+  const paintZone = (activated) => {
+    if (!zone) return;
+    // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
+    if (context.environment?.setupProgress?.()?.steps?.find((step) => step.id === 'provider')?.answered) { zone.paint(); return; }
+    zone.paint(activated > 0
+      ? { state: 'Provider signed in and authenticated.', picks: [] }
+      : { state: 'No provider found on this machine.', picks: [{ label: 'Sign in a provider', action: () => controller.openFirst() }] });
+  };
   stones.mount(out.content, { before: zone ? [zone.el] : [], after: [mikaAvailability, notice] });
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   /** The frame from whatever `runtime` holds now: the record, or the measure once it lands. */

@@ -9,7 +9,7 @@ import { createStoneWorkSurface } from './stone-work-surface.js';
 import { completeInstallationMap as completeMap } from './installation-map.js';
 import { createStatusMarker } from './status-marker.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
-import { createSetupZone, goodToGo } from './setup-zone.js';
+import { createSetupZone } from './setup-zone.js';
 
 const INSTALLATION_ORDER = ['ronin_services', 'gbrain', 'trello', 'perplexity'];
 const INSTALLATION_GUIDES = Object.freeze({
@@ -231,23 +231,19 @@ export function createInstallationsSurface(campaign, context = {}) {
   const paintZone = () => {
     if (!zone) return;
     const step = environment?.setupProgress?.()?.steps?.find((entry) => entry.id === 'installations');
+    // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
+    if (step?.answered) { zone.paint(); return; }
     if (anythingInstalled()) {
       // Nothing else answers step 4 — the Setup scan answers only provider and workspace, and
       // onInstallationChoice fires only when a choice is MADE here. Something already being
-      // installed is not an answer, so Good to go has to give one before it moves on, or the
-      // step is left hollow behind us.
-      zone.paint({ state: 'Installed.', picks: [goodToGo(async () => {
-        // answerSetupStep reports whether the PATCH landed. Advancing regardless would leave
-        // the step hollow AND carry the person past the failure without showing it.
-        if (await environment?.answerSetupStep?.('installations', 'acted')) environment?.nextSetupStep?.();
-      })] });
+      // installed is not an answer, so the pick still has to give one; once it lands the step
+      // is answered and this zone hides on the repaint.
+      zone.paint({ state: 'Installed.', picks: [
+        { label: 'Keep these', action: () => environment?.answerSetupStep?.('installations', 'acted') },
+      ] });
       return;
     }
-    const noThankYou = {
-      label: 'No thank you',
-      chosen: step?.answer === 'not_now',
-      action: () => environment?.answerSetupStep?.('installations', 'not_now'),
-    };
+    const noThankYou = { label: 'No thank you', action: () => environment?.answerSetupStep?.('installations', 'not_now') };
     // Registration gates the ones Ronin maintains, so say so before offering to skip.
     if (registered === false) {
       zone.paint({

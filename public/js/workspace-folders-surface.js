@@ -3,7 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { buildProjectRoots } from './projectroots.js';
 import { t } from './lexicon.js';
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
-import { createSetupZone, goodToGo } from './setup-zone.js';
+import { createSetupZone } from './setup-zone.js';
 import { request } from './request.js';
 
 const el = (tag, cls = '') => {
@@ -48,20 +48,18 @@ export function createWorkspaceFoldersSurface({
   const paintZone = () => {
     if (!zone) return;
     // Connected but nowhere to work is still worth saying: Agents start in a folder.
+    // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
+    if (environment?.setupProgress?.()?.steps?.find((step) => step.id === 'workspace')?.answered) { zone.paint(); return; }
     const folders = (environment?.trackedRoots?.() || []).filter((entry) => entry?.name).length;
-    const declined = environment?.setupProgress?.()?.steps?.find((step) => step.id === 'workspace')?.answer === 'not_now';
     if (connectedToGithub) {
-      zone.paint({
-        state: folders ? 'GitHub connected.' : 'GitHub connected. No folder registered.',
-        picks: [goodToGo(() => environment?.nextSetupStep?.())],
-      });
+      zone.paint({ state: folders ? 'GitHub connected.' : 'GitHub connected. No folder registered.', picks: [] });
       return;
     }
     zone.paint({
       state: 'No GitHub connection found.',
       picks: [
         { label: 'Connect GitHub', action: () => rootHost.querySelector('.setup-roots-github-stone')?.click() },
-        { label: 'I don\u2019t use GitHub', chosen: declined, action: () => environment?.answerSetupStep?.('workspace', 'not_now') },
+        { label: 'I don\u2019t use GitHub', action: () => environment?.answerSetupStep?.('workspace', 'not_now') },
       ],
     });
   };
