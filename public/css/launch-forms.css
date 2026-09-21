@@ -321,6 +321,7 @@
 
   /* Behaviors library/viewer — the shared stone surface supplies responsive geometry. */
   .behaviour-surface .sws-detail { min-width: 0; }
+  .behaviour-surface .sws-group { color: var(--kaki); font-weight: 700; }
   .bh-title { margin: 0; }
   .bh-summary, .bh-meta, .bh-status, .na-behaviour-intro { color: var(--muted); }
   .na-behaviour-sections { display: grid; gap: var(--space-9); }
