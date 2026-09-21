@@ -328,6 +328,8 @@
   .na-behaviour-section { display: grid; gap: var(--space-4); }
   .na-behaviour-note { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .na-behaviour-sections .ask-group-head { color: var(--fg-strong); font-size: var(--form-input); font-weight: 650; }
+  .na-behaviour-sections .ask-opt[data-ask-action='true'][data-ask-value='@customize'] { border: var(--edge) dotted var(--line-2); gap: var(--space-2); }
+  .na-behaviour-sections .ask-opt[data-ask-action='true'][data-ask-value='@customize']::before { content: '+'; color: var(--kaki); font-size: var(--text-8); line-height: 1; }
   .na-behaviour-readonly .ask-opt[aria-disabled='true'] { opacity: 1; }
   .bh-actions { margin: var(--space-3) 0; }
   .bh-editor { display: grid; gap: var(--space-3); }
