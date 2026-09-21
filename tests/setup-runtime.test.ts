@@ -10,6 +10,7 @@ process.env.RONIN_USER_ROOT = path.join(box, 'ronin');
 process.env.RONIN_CATALOGS_DIR = path.join(box, 'ronin', 'catalogs');
 
 const runtime = await import('../src/setup-runtime.js');
+const { SpawnBrokerError } = await import('../src/spawn-broker.js');
 const summary = await import('../src/provider-summary.js');
 const { listProviderCatalog } = await import('../src/model-providers.js');
 const roots = await import('../src/project-roots.js');
@@ -247,19 +248,12 @@ test('Done records completion and closes; Close before completion only closes', 
   assert.equal(recorded.length, 2, 'Close did not record activation');
 });
 
-test('GitHub auth status uses only structured, mechanically verified state', () => {
-  const status = (github: unknown) => JSON.stringify({ hosts: { 'github.com': github } });
-  assert.deepEqual(runtime.githubAuthFromStatus(status([
-    { active: true, host: 'github.com', login: 'octo-cat', state: 'success' },
-  ])), { state: 'authenticated', account: 'octo-cat', problem: '' });
-  assert.deepEqual(runtime.githubAuthFromStatus(JSON.stringify({ hosts: {} })), {
-    state: 'needs_authentication', account: '', problem: '',
+test('GitHub auth accepts only an authenticated account login', () => {
+  assert.deepEqual(runtime.githubAuthFromLogin('octo-cat\n'), {
+    state: 'authenticated', account: 'octo-cat', problem: '',
   });
-  assert.equal(runtime.githubAuthFromStatus(status([
-    { active: true, host: 'github.com', login: 'octo-cat', state: 'failure' },
-  ])).state, 'unreadable', 'a saved credential that could not be verified is not called signed out');
-  assert.equal(runtime.githubAuthFromStatus('not json').state, 'unreadable');
-  assert.equal(runtime.githubAuthFromStatus(JSON.stringify({ hosts: [] })).state, 'unreadable');
+  assert.equal(runtime.githubAuthFromLogin('').state, 'unreadable');
+  assert.equal(runtime.githubAuthFromLogin('not a login').state, 'unreadable');
 });
 
 test('GitHub login session is born through the provider setup identity contract', async () => {
@@ -287,17 +281,20 @@ test('GitHub setup publishes one provider-style attachment and opens and closes 
   let opens = 0;
   let closes = 0;
   let installLive = false;
-  let status = JSON.stringify({ hosts: {} });
+  let login = '';
   const ops: runtime.GithubSetupOps = {
     installed: async () => true,
-    authStatus: async () => status,
+    authenticatedLogin: async () => {
+      if (!login) throw new SpawnBrokerError('authentication required', { error: { message: 'authentication required', code: 4 } });
+      return login;
+    },
     exists: async () => live,
     installExists: async () => installLive,
     open: async () => { opens += 1; live = true; },
     openInstall: async () => { installLive = true; },
     close: async () => { closes += 1; live = false; },
     closeInstall: async () => { installLive = false; },
-    logout: async () => { status = JSON.stringify({ hosts: {} }); },
+    logout: async () => { login = ''; },
   };
 
   assert.deepEqual(await runtime.githubSetupAnswer(ops), {
@@ -315,7 +312,7 @@ test('GitHub setup publishes one provider-style attachment and opens and closes 
   await runtime.openGithubLogin(ops);
   assert.equal(opens, 1, 'a second Connect reuses the visible setup session');
 
-  status = JSON.stringify({ hosts: { 'github.com': [{ active: true, host: 'github.com', login: 'octo-cat', state: 'success' }] } });
+  login = 'octo-cat\n';
   const authenticated = await runtime.githubSetupAnswer(ops);
   assert.deepEqual({ state: authenticated.state, authenticated: authenticated.authenticated, account: authenticated.account }, {
     state: 'authenticated', authenticated: true, account: 'octo-cat',
@@ -327,7 +324,7 @@ test('GitHub setup publishes one provider-style attachment and opens and closes 
   await runtime.closeGithubLogin(ops);
   assert.equal(closes, 1, 'Close is harmless once the setup session is gone');
 
-  const unreadable = { ...ops, authStatus: async () => { throw new Error('credential helper failed'); } };
+  const unreadable = { ...ops, authenticatedLogin: async () => { throw new Error('credential helper failed'); } };
   assert.deepEqual(await runtime.githubSetupAnswer(unreadable), {
     installed: true, authenticated: false, account: '', state: 'unreadable',
     problem: 'Ronin could not ask GitHub CLI to verify authentication.', installing: false, attachment: null,
@@ -338,7 +335,7 @@ test('GitHub setup does not probe auth when gh is absent and refuses to open', a
   let statusCalls = 0;
   const ops: runtime.GithubSetupOps = {
     installed: async () => false,
-    authStatus: async () => { statusCalls += 1; return 'unexpected'; },
+    authenticatedLogin: async () => { statusCalls += 1; return 'unexpected'; },
     exists: async () => false,
     installExists: async () => false,
     open: async () => undefined,
@@ -359,7 +356,7 @@ test('GitHub install opens one visible provider-style session before authenticat
   let opens = 0;
   const ops: runtime.GithubSetupOps = {
     installed: async () => false,
-    authStatus: async () => '',
+    authenticatedLogin: async () => '',
     exists: async () => false,
     installExists: async () => installLive,
     open: async () => undefined,
@@ -380,18 +377,21 @@ test('GitHub install opens one visible provider-style session before authenticat
 
 test('GitHub logout removes only the detected active account and closes its temporary session', async () => {
   let live = true;
-  let status = JSON.stringify({ hosts: { 'github.com': [{ active: true, host: 'github.com', login: 'octo-cat', state: 'success' }] } });
+  let login = 'octo-cat';
   const loggedOut: string[] = [];
   const ops: runtime.GithubSetupOps = {
     installed: async () => true,
-    authStatus: async () => status,
+    authenticatedLogin: async () => {
+      if (!login) throw new SpawnBrokerError('authentication required', { error: { message: 'authentication required', code: 4 } });
+      return login;
+    },
     exists: async () => live,
     installExists: async () => false,
     open: async () => { live = true; },
     openInstall: async () => undefined,
     close: async () => { live = false; },
     closeInstall: async () => undefined,
-    logout: async (account) => { loggedOut.push(account); status = JSON.stringify({ hosts: {} }); },
+    logout: async (account) => { loggedOut.push(account); login = ''; },
   };
   assert.deepEqual(await runtime.removeGithubAuthentication(ops), {
     installed: true, authenticated: false, account: '', state: 'needs_authentication', problem: '', installing: false, attachment: null,

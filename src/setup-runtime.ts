@@ -9,7 +9,7 @@ import { activatedAt, npmPackageOf, offAt } from './provider-summary.js';
 import { peekProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
-import { execFile as run } from './spawn-broker.js';
+import { execFile as run, SpawnBrokerError } from './spawn-broker.js';
 import { collectBirthLines } from './sockets.js';
 import { killSessionTree, sessionExists } from './tmux.js';
 import { addJob, isValidTeam, listJobs, type Job } from './jikan.js';
@@ -416,7 +416,7 @@ export interface GithubSetupAnswer {
 
 export interface GithubSetupOps {
   installed(): Promise<boolean>;
-  authStatus(): Promise<string>;
+  authenticatedLogin(): Promise<string>;
   exists(): Promise<boolean>;
   installExists(): Promise<boolean>;
   open(): Promise<void>;
@@ -476,12 +476,12 @@ export async function closeGitSetupSession(): Promise<void> {
 
 const defaultGithubSetupOps: GithubSetupOps = {
   installed: () => discoverExecutable('gh').then(Boolean),
-  // `gh auth status --json` verifies every saved credential and returns structured state.
-  // It never includes a token unless --show-token is explicitly requested (we do not).
-  authStatus: async () => {
+  // `gh api user` verifies the active github.com credential and prints only its login.
+  // `gh auth status --json` requires gh 2.81, though older installed versions can log in.
+  authenticatedLogin: async () => {
     const gh = await discoverExecutable('gh');
     if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
-    return (await run(gh, ['auth', 'status', '--hostname', 'github.com', '--json', 'hosts'], { timeout: 8_000 })).stdout;
+    return (await run(gh, ['api', 'user', '--hostname', 'github.com', '--jq', '.login'], { timeout: 8_000 })).stdout;
   },
   exists: () => sessionExists(GITHUB_SETUP_SESSION),
   installExists: () => sessionExists(GITHUB_INSTALL_SESSION),
@@ -502,26 +502,10 @@ export interface GithubAuthMeasurement {
   problem: string;
 }
 
-/** Read only gh's structured, mechanically verified result; never parse prose or tokens. */
-export function githubAuthFromStatus(status: string): GithubAuthMeasurement {
-  let parsed: unknown;
-  try { parsed = JSON.parse(status); }
-  catch { return { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' }; }
-  const hosts = (parsed as { hosts?: unknown })?.hosts;
-  if (!hosts || typeof hosts !== 'object' || Array.isArray(hosts)) {
-    return { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
-  }
-  const accounts = (hosts as Record<string, unknown>)['github.com'];
-  if (accounts === undefined) return { state: 'needs_authentication', account: '', problem: '' };
-  if (!Array.isArray(accounts)) {
-    return { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
-  }
-  const active = accounts.find((row) => row && typeof row === 'object' && (row as { active?: unknown }).active === true) as Record<string, unknown> | undefined;
-  if (!active) return { state: 'needs_authentication', account: '', problem: '' };
-  if (active.state !== 'success') {
-    return { state: 'unreadable', account: '', problem: 'GitHub CLI could not verify the saved GitHub authentication.' };
-  }
-  const account = typeof active.login === 'string' && /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(active.login) ? active.login : '';
+/** Accept only the login returned by GitHub's authenticated /user endpoint. */
+export function githubAuthFromLogin(login: string): GithubAuthMeasurement {
+  const candidate = login.trim();
+  const account = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(candidate) ? candidate : '';
   return account
     ? { state: 'authenticated', account, problem: '' }
     : { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
@@ -531,8 +515,12 @@ export async function githubSetupAnswer(ops: GithubSetupOps = defaultGithubSetup
   const installed = await ops.installed();
   let measurement: GithubAuthMeasurement = { state: 'needs_authentication', account: '', problem: '' };
   if (installed) {
-    try { measurement = githubAuthFromStatus(await ops.authStatus()); }
-    catch { measurement = { state: 'unreadable', account: '', problem: 'Ronin could not ask GitHub CLI to verify authentication.' }; }
+    try { measurement = githubAuthFromLogin(await ops.authenticatedLogin()); }
+    catch (error) {
+      measurement = error instanceof SpawnBrokerError && error.code === 4
+        ? { state: 'needs_authentication', account: '', problem: '' }
+        : { state: 'unreadable', account: '', problem: 'Ronin could not ask GitHub CLI to verify authentication.' };
+    }
   }
   const account = measurement.account;
   const [open, installing] = await Promise.all([ops.exists(), ops.installExists()]);
