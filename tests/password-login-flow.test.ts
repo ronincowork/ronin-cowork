@@ -90,12 +90,13 @@ test('password command protects local and proxied browser addresses through logi
   assert.match(JSON.parse(set.body).stdout, /password set/);
 
   const base = `http://127.0.0.1:${port}`;
+  const destination = '/m?view=team%2Fclean-round';
   for (const headers of [{ accept: 'text/html' }, { accept: 'text/html', host: 'ronin.example.ts.net:4810' }]) {
-    const gated = await fetch(`${base}/`, { redirect: 'manual', headers });
+    const gated = await fetch(`${base}${destination}`, { redirect: 'manual', headers });
     assert.equal(gated.status, 302);
-    assert.equal(gated.headers.get('location'), '/login');
+    assert.equal(gated.headers.get('location'), `/login?next=${encodeURIComponent(destination)}`);
   }
-  const loginPage = await fetch(`${base}/login`);
+  const loginPage = await fetch(`${base}/login?next=${encodeURIComponent(destination)}`);
   assert.equal(loginPage.status, 200);
   assert.match(await loginPage.text(), /id="pw"/);
 
@@ -105,13 +106,13 @@ test('password command protects local and proxied browser addresses through logi
   assert.equal(login.status, 200);
   const cookie = login.headers.get('set-cookie')?.split(';', 1)[0];
   assert.match(cookie ?? '', /^ronin_session=/);
-  const refreshed = await fetch(`${base}/`, { redirect: 'manual', headers: { cookie: cookie! } });
+  const refreshed = await fetch(`${base}${destination}`, { redirect: 'manual', headers: { cookie: cookie! } });
   assert.equal(refreshed.status, 200);
 
   const logout = await fetch(`${base}/api/logout`, { method: 'POST', headers: { cookie: cookie! } });
   assert.equal(logout.status, 200);
   assert.match(logout.headers.get('set-cookie') ?? '', /ronin_session=;/);
-  const afterLogout = await fetch(`${base}/`, { redirect: 'manual', headers: { accept: 'text/html' } });
+  const afterLogout = await fetch(`${base}${destination}`, { redirect: 'manual', headers: { accept: 'text/html' } });
   assert.equal(afterLogout.status, 302);
-  assert.equal(afterLogout.headers.get('location'), '/login');
+  assert.equal(afterLogout.headers.get('location'), `/login?next=${encodeURIComponent(destination)}`);
 });
