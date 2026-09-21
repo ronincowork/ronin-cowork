@@ -235,7 +235,7 @@ test('Team Configuration hides legacy Control and hosts Runtime trays below its 
   assert.match(form, /trayHost: defaultsRow/);
 });
 
-test('New Team checks names only for a cast and opens partial Teams with exact recovery evidence', async () => {
+test('New Team checks names only for a cast and opens empty or partial Teams with recovery evidence', async () => {
   const form = await source('new-team-form.js');
   assert.match(form, /if \(picks\.length\) \{[\s\S]*request\('\/api\/sessions'/);
   assert.match(form, /const launched = outcomes\.filter\(\(\{ result \}\) => result\?\.ok\)[\s\S]*result\.data\?\.name \|\| row\.name/);
@@ -243,5 +243,6 @@ test('New Team checks names only for a cast and opens partial Teams with exact r
   assert.match(form, /openLaunchHandoff\(\{ team: name, sessions: picks \}, launchTab\);[\s\S]*await launchTeamAgents\(request, name, picks\)/,
     'the Team tab opens after its record and before its Agents');
   assert.match(form, /if \(refused\.length\) \{[\s\S]*return;/);
+  assert.doesNotMatch(form, /mode: 'overlay'/);
   assert.doesNotMatch(form, /if \(refused\.length\) \{\s*closeWorkspaceTab/);
 });

@@ -38,6 +38,8 @@ test('New Team is consumed only after complete creation and destination opening'
   assert.match(form, /openLaunchHandoff\(\{ team: name, sessions: picks \}, launchTab\);[\s\S]*await launchTeamAgents\(request, name, picks\);[\s\S]*await created\?\.\(name\);\s*await consumed\?\.\(\);/);
   const partial = form.slice(form.indexOf('if (refused.length)'), form.indexOf("notice.set('', '')"));
   assert.doesNotMatch(partial, /consumed/);
+  assert.match(partial, /notice\.set\('failed',[\s\S]*return;/,
+    'a failed cast reports recovery in the source after the Team tab has opened');
   assert.match(catalog, /environment\.newTeamForm\(workspace, consumed\)/);
   assert.match(cowork, /createNewTeamFormView\(WorkspaceKit, \{ consumed,/);
   assert.match(launch, /team: \(workspace, _detail, consumed\)[\s\S]*createNewTeamFormView\(WorkspaceKit, \{\s*consumed,/);
