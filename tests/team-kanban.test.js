@@ -77,12 +77,16 @@ test('the board stays square, fixed, manually refreshed, and free of pills and e
   assert.match(moduleSource, /tw-agent-density-lines/);
 });
 
-test('the beta notice stays in Task Manager content rather than creating a second page header', () => {
+test('the beta notice sits in a collapsible Task Manager header zone', () => {
   assert.doesNotMatch(moduleSource, /createSurfaceHeader/);
-  assert.match(moduleSource, /const beta = node\('span', 'tk-beta'/);
+  assert.match(moduleSource, /const header = node\('div', 'tk-header'/);
+  assert.match(moduleSource, /const beta = node\('strong', 'tk-beta'/);
   assert.match(moduleSource, /team_kanban\.beta', 'Beta'/);
-  assert.match(moduleSource, /topline\.append\(beta, controls, notice, legend\)/);
-  assert.match(moduleSource, /root\.append\(topline, board\)/);
+  assert.match(moduleSource, /This message will go in this header\./);
+  assert.match(moduleSource, /headerToggle\.setAttribute\('aria-expanded', String\(expanded\)\)/);
+  assert.match(moduleSource, /headerMessage\.hidden = !expanded/);
+  assert.match(moduleSource, /root\.append\(header, topline, board\)/);
+  assert.match(workspaceCss, /\.tk-header \{[^}]*clamp\(6rem, 15dvh, 9rem\)/);
   assert.doesNotMatch(workspaceCss, /\.tk-beta > \.wk-surface-header-title/);
   assert.doesNotMatch(workspaceCss, /\.tk-beta[^}]*#[0-9a-f]/i, 'the beta header uses house tokens, not an invented color');
 });
