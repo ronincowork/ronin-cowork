@@ -31,6 +31,6 @@ test('a wipeboard notice enters the shared queue before the worker submits it', 
   const direct = await fs.readFile(path.join(repo, 'src/commands/message.ts'), 'utf8');
   const board = await fs.readFile(path.join(repo, 'src/commands/wipeboard.ts'), 'utf8');
   assert.match(direct, /enqueueMessage\(target, text, source/);
-  assert.match(board, /enqueueMessage\(session, message, 'wipeboard_notice'\)/);
+  assert.match(board, /enqueueMessage\(session, message, 'wipeboard_notice', from\)/);
   assert.doesNotMatch(board, /message-cli/);
 });

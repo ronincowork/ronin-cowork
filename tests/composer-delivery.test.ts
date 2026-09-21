@@ -56,7 +56,7 @@ test('one Ronin box request submits even if copy mode reopens after the paste', 
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
   assert.equal(screen.match(/SUBMITTED:one press/g)?.length, 1, screen);
-  assert.equal(screen.match(/From Owner \[Ronin Box\]:/g)?.length, 1, screen);
+  assert.equal(screen.match(/SUBMITTED:From Owner \[Ronin Box\]:/g)?.length, 1, screen);
   assert.equal((await fetch(`http://127.0.0.1:${address.port}/api/messages`).then((r) => r.json())).messages.length, 0);
   assert.equal(tmux.state(), 'up');
   assert.equal(await server.run('display-message', '-p', '-t', '=composer_target:', '#{pane_in_mode}'), '0',
