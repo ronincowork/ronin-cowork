@@ -495,7 +495,7 @@ export function createServicesSurface(context) {
    *  A refusal answers in the tool's own words; no answer means Ronin went down, which is the restart happening. */
   const restartRonin = async (state, startedAt) => {
     state.dataset.tone = 'warn';
-    state.replaceChildren(el('p', 'setup-services-status-line', t('services_setup.restarting', 'Restarting Ronin…')), el('p', 'setup-services-next', t('services_setup.next_restarting', 'Sessions stay up; this surface re-reads the machine as Ronin comes back.')));
+    state.replaceChildren(el('p', 'setup-services-status-line', t('services_setup.restarting', 'Restarting Ronin…')), el('p', 'setup-services-next', t('services_setup.next_restarting', 'This surface re-reads the machine as Ronin comes back.')));
     const asked = await request('/api/machine/restart', { method: 'POST', json: {} });
     if (!asked.ok && asked.kind !== 'network') { said = asked.message; await show(); return; }
     const until = Date.now() + 120_000;

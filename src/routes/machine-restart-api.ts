@@ -16,8 +16,8 @@ const RESTART_TOOL = join(REPO_ROOT, 'ronin_bin', 'ronin-host');
  * identity this route refuses with a plain sentence. When this copy is the
  * service, the tool is run and no answer follows: the restart takes this process down, and the
  * browser reads the restart off /api/installed's `startedAt` changing. Only a refusal from the
- * tool answers — its own words, so the person reads what it saw. Sessions are untouched: they
- * live in the tmux server, not in Ronin (see the tool's own header).
+ * tool answers — its own words, so the person reads what it saw. On Linux, sessions live
+ * in the separate tmux-server service. macOS session survival needs live verification.
  */
 export function registerMachineRestart(app: express.Express): void {
   app.post('/api/machine/restart', (_req, res) => {

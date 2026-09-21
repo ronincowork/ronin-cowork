@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # Internal implementation for `ronin-host restart`.
 #
-# WHY IT TAKES NO ARGUMENT, which is the whole of its safety. Two services run here and
-# they are one keystroke apart. `ronin` is the app: the browser grid, the API, the
-# launcher. Restarting it is ordinary and cheap — pick up a code change, clear a wedged
-# process — because sessions do not live inside it. The other is the tmux server, and
-# that one OWNS every session, agent and shell on the box. Stopping it ends all of them
-# simultaneously, including whoever typed the command, and there is no undo.
+# WHY IT TAKES NO ARGUMENT, which is the whole of its safety. On Linux, Ronin and
+# tmux-server are separate user services and their names are one keystroke apart. Ronin
+# serves the browser, API, and launcher; tmux-server owns every session. Restarting
+# tmux-server ends them all. On macOS, tmux daemonizes out of Ronin's LaunchAgent, but
+# its survival across a LaunchAgent restart has not been proved.
 #
 # An agent with no sanctioned way to restart Ronin will reach for `systemctl` on its
 # own, and from there the unit that wipes the box is one word away. That is not a
@@ -18,7 +17,7 @@
 # inside it: by definition the repair would kill you mid-command. Say what you saw,
 # name it on the board, and stop.
 #
-# Sessions are NOT restarted, ended, or disturbed by this. Browser tiles reconnect.
+# This tool targets only the Ronin operator. Browser tiles reconnect when it returns.
 set -u
 
 case "${1:-}" in
@@ -27,7 +26,7 @@ case "${1:-}" in
 REFUSED: ronin-host restart takes no arguments — it restarts Ronin, and only Ronin.
 There is deliberately no way to aim it at another service. If you believe something else
 on this box needs restarting, that is the owner's call, not yours: say what you saw and
-stop. Never hand-roll it with systemctl.
+stop. Never hand-roll a service restart.
 EOF
      exit 4 ;;
 esac
@@ -35,26 +34,23 @@ esac
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$ROOT/libexec/ronin-machine.sh"
 kind="$(machine_service_kind)"
-if [ "$kind" = systemd ]; then
-  unit=ronin.service
-else
-  unit="$(machine_operator_unit)"
-fi
+unit="$(machine_operator_unit)"
 if [ "$kind" = none ]; then
   echo "NO-SERVICE: Ronin has no supported service manager here. Whoever started it must restart it." >&2
   exit 2
 fi
-if { [ "$kind" = systemd ] && ! systemctl --user cat "$unit" >/dev/null 2>&1; } ||
-   { [ "$kind" = launchd ] && ! machine_operator_loaded; }; then
+if ! machine_operator_loaded; then
   echo "NO-UNIT: $unit is not loaded. Run setup before using Restart." >&2
   exit 2
 fi
 
-echo "restarting $unit — every session stays up; browser tiles reconnect."
-case "$kind" in
-  systemd) systemctl --user restart "$unit" ;;
-  launchd) launchctl kickstart -k "$(machine_launchd_domain "$unit")/$unit" ;;
-esac || {
+action="$(machine_operator_restart_action)"
+if [ "$kind" = systemd ]; then
+  echo "restarting $unit — sessions live in tmux-server.service, which is untouched."
+else
+  echo "restarting $unit — Ronin's browser tiles will reconnect when it returns."
+fi
+sh -c "$action" || {
   echo "STUCK: $kind refused the restart. Ronin may still be running. Report it." >&2
   exit 5
 }
