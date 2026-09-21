@@ -43,11 +43,10 @@ export function createSetupZone({ className = '' } = {}) {
   zone.append(state, options);
 
   const paint = ({ state: reading = '', picks = [] } = {}) => {
-    // NOTHING TO SAY, NOTHING TO SHOW. Once a step is answered its card carries a checkmark
-    // and the zone has no fact left that needs a decision, so it leaves rather than sit there
-    // congratulating you (owner, 2026-09-21). Called with nothing, the zone hides; the slot
-    // goes with it, so no empty band is left behind.
-    zone.hidden = !reading && picks.length === 0;
+    // NOTHING TO SAY, NOTHING SAID. Once a step is answered its card carries a checkmark and
+    // the zone has no fact left that needs a decision, so it goes blank rather than sit there
+    // congratulating you. It does NOT go away: the slot is what holds the stone phalanx level
+    // from step to step, so the space stays whether it is filled or not (owner, 2026-09-21).
     state.textContent = reading;
     options.replaceChildren(...picks.map((pick) => {
       const button = el('button', 'ask-opt ask-rect');
@@ -81,10 +80,5 @@ export function createSetupZoneSlot(options) {
   const slot = document.createElement('div');
   slot.className = 'setup-zone-slot';
   slot.append(zone.el);
-  // The slot carries a fixed height, so an empty zone inside a shown slot is a band of
-  // nothing. It is ours to hide, so hide it outright rather than leave it to a CSS rule
-  // that a future stylesheet could stop matching.
-  const paint = (reading) => { zone.paint(reading); slot.hidden = zone.el.hidden; };
-  paint();
-  return { el: slot, paint };
+  return { el: slot, paint: zone.paint };
 }
