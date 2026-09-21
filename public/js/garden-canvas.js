@@ -66,7 +66,7 @@ export function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } =
     let viewer;
     if (typeof view.text === 'string') {
       viewer = node('div', 'garden-media-doc');
-      viewer.append(renderMarkdownDocument(view.text, document, { onLink: view.onLink }));
+      viewer.append(renderMarkdownDocument(view.text, document, { onLink: view.onLink, resolveHref: view.resolveHref }));
     } else if (view.kind === 'video') {
       viewer = node('video', 'garden-media-video');
       viewer.controls = true; viewer.preload = 'metadata'; viewer.src = view.src;

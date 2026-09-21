@@ -6,7 +6,7 @@ import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { request } from './request.js';
 import { SETUP_SCENES } from './setup-journey.js';
 import { GARDEN_CANVAS_TYPE, registerGardenCanvas } from './garden-canvas.js';
-import { localDocumentLink } from './document-links.js';
+import { localDocumentLink, productRepositoryHref } from './document-links.js';
 import { normalizeGardenCanvasCatalog } from './garden-canvas-model.js';
 import { PRESETS_TYPE, createKindsPreference, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
@@ -143,7 +143,7 @@ export function createSetupView() {
         else query.set('product', '1');
         const result = await request('/api/file?' + query.toString());
         garden.showMedia({ label, kind: 'doc', text: result.ok ? result.data.text || '' : result.message,
-          fragment, onLink: (href) => {
+          fragment, resolveHref: item.root ? undefined : (href) => productRepositoryHref(path, href), onLink: (href) => {
             const linked = localDocumentLink(path, href, !item.root);
             if (!linked) return false;
             if (linked.path === path && linked.fragment) {
