@@ -54,6 +54,6 @@ test('New Agent consumes its workbench form only after a successful handoff', as
   assert.match(form, /if \(connect\) await connect\(born\);\s*else openLaunchHandoff\([^;]+;\s*clearAfterLaunch\(\);\s*await consumed\?\.\(\);/);
   assert.match(catalog, /environment\.newAgent\(workspace, consumed\)/);
   assert.match(cowork, /createNewAgentView\(WorkspaceKit, \{\s*consumed,/);
-  assert.match(launch, /agent: \(workspace, _detail, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{ consumed \}\)/);
+  assert.match(launch, /agent: \(workspace, _detail, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{\s*consumed(?:\s*,|\s*\})/);
   assert.doesNotMatch(setup, /createEmbeddedNewAgentView\([^)]*consumed/);
 });
