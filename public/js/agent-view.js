@@ -16,6 +16,14 @@ import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from '.
 
 const PROFILE = WORKBENCH_PROFILES.agent;
 const TYPES = Object.freeze({ self: WORKBENCH_TYPES.terminal, documents: WORKBENCH_TYPES.agentDocuments, teams: WORKBENCH_TYPES.agentTeams, tasks: WORKBENCH_TYPES.agentTasks, document: WORKBENCH_TYPES.document, feedback: WORKBENCH_TYPES.feedback });
+const AGENT_BOUND_TYPES = new Set([TYPES.self, TYPES.documents, TYPES.teams]);
+const bindAgentSeat = (seat, agent) => {
+  const held = seat === 'agent.commons' ? TYPES.documents
+    : seat?.type === 'agent.commons' ? { ...seat, type: TYPES.documents } : seat;
+  const type = typeof held === 'string' ? held : held?.type;
+  if (!AGENT_BOUND_TYPES.has(type)) return held;
+  return { ...(typeof held === 'string' ? { type: held } : held), key: agent };
+};
 const el = (tag, cls = '', text = '') => { const out = document.createElement(tag); if (cls) out.className = cls; if (text) out.textContent = text; return out; };
 const memberships = (name) => (S.sessions.find((row) => row.name === name)?.tags || []).map(String).sort();
 
@@ -92,11 +100,11 @@ export function createAgentView() {
     // candidates through sessions() and creates them through terminal(); every profile
     // that offers it supplies both halves of that environment contract.
     sessions: () => agent ? [{ key: agent, label: t('agent.self', 'Self') }] : [],
-    terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => { seats[id].pool.sync([agent]); seats[id].pool.show(detail.key || agent, false); } }),
-    documents: (id, detail) => makeDocuments(id, detail.key || agent),
-    teams: (id, detail) => {
-      const key = `${id}\0${detail.key || agent}`;
-      if (!membership.has(key)) membership.set(key, createMembershipSurface(detail.key || agent, () => { bench.refreshSelector(); for (const item of documents.values()) item.show(); }));
+    terminal: (id) => ({ el: seats[id].surface.el, show: () => { seats[id].pool.sync([agent]); seats[id].pool.show(agent, false); } }),
+    documents: (id) => makeDocuments(id, agent),
+    teams: (id) => {
+      const key = `${id}\0${agent}`;
+      if (!membership.has(key)) membership.set(key, createMembershipSurface(agent, () => { bench.refreshSelector(); for (const item of documents.values()) item.show(); }));
       return membership.get(key);
     },
     taskOffers: () => memberships(agent).map((team) => ({ key: team, label: t('agent.team_tasks', '{team} Task Manager', { team }), summary: t('agent.team_tasks_summary', 'Projects held by {team}', { team }) })),
@@ -126,10 +134,7 @@ export function createAgentView() {
     const typed = WorkspaceKit.contract.normalizeWorkbenchState(state, bench.declaration);
     bench.enter({ arrangement: typed.arrangement, count: state.count, selected: state.selected, selectorDensity: state.selectorDensity });
     for (const id of bench.visibleIds()) {
-      const remembered = typed.seats[id];
-      const held = typeof remembered === 'string' && remembered === 'agent.commons'
-        ? TYPES.documents
-        : remembered?.type === 'agent.commons' ? { ...remembered, type: TYPES.documents } : remembered;
+      const held = bindAgentSeat(typed.seats[id], agent);
       if (held === DISMISSED_WORKSPACE) continue;
       if (typeof held === 'string') bench.place(held, id);
       else if (held?.type) bench.place(held.type, id, held);
