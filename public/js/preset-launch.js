@@ -167,11 +167,9 @@ export function presetWorkspaceState(plan) {
 }
 
 export function presetLaunchUrl(data = {}, plan = null) {
-  const url = new URL(location.href);
   const team = data.urlView === 'team' && data.team;
   const view = team ? 'team' : 'cowork';
   const workspaceState = presetWorkspaceState(plan);
   if (workspaceState) return workbenchLaunchUrl({ destination: view, param: team ? data.team : '', mode: 'replace', state: workspaceState });
-  url.hash = team ? `#/team/${encodeURIComponent(data.team)}` : '#/cowork';
-  return url.href;
+  return workbenchLaunchUrl({ destination: view, param: team ? data.team : '', mode: 'overlay' });
 }

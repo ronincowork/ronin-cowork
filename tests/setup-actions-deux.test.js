@@ -43,7 +43,7 @@ for (const [kind, type] of [['agent', 'launch.agent'], ['team', 'launch.team']])
     assert.equal(h.tabs(), 1);
     assert.equal(JSON.stringify(h.state), h.before);
     const payload = launchFrom(h.opened());
-    assert.deepEqual(payload.state, { selected: 'workspace1', seats: { workspace1: { type, detail: {} } } });
+    assert.deepEqual(payload.state, { count: 2, selected: 'workspace1', seats: { workspace1: { type, detail: {} } } });
   });
 }
 
@@ -91,10 +91,20 @@ test('a preset launch carries exact Cowork seating without changing source state
   assert.match(url, /#\/cowork$/);
   assert.equal(source, JSON.stringify({ version: 3, views: { cowork: { untouched: true } } }));
   const stored = launchFrom(url).state;
-  assert.deepEqual(stored, { count: 2, seats: {
+  assert.deepEqual(stored, { count: 2, selected: 'workspace1', seats: {
     workspace1: 'doc_agent', workspace2: { type: 'document', key: 'README.md', root: 'ronin_lab', path: 'README.md' },
   } });
   assert.deepEqual(normalizeWorkbenchState(stored).seats, stored.seats);
+});
+
+test('a preset without planned seats still opens a fresh Team request', () => {
+  const url = new URL(presetLaunchUrl({ urlView: 'team', team: 'Commons' }, null));
+  assert.equal(url.hash, '#/team/Commons');
+  assert.match(url.searchParams.get('ronin-tab'), /^[a-f0-9]{32}$/);
+  assert.deepEqual(launchFrom(url.href), {
+    destination: 'team', param: 'Commons', mode: 'overlay',
+    state: { count: 2, selected: 'workspace1', seats: {} },
+  });
 });
 
 test('an explicitly dismissed workspace stays blank while an uninitialized seat may seed its default', () => {

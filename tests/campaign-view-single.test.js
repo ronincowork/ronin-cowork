@@ -58,7 +58,7 @@ test('Settings carries Setup capabilities and first opens with Defaults beside W
   assert.doesNotMatch(source, /campaign-mika-card/, 'Mika is not highlighted independently of workspace placement');
   assert.match(source, /selectorCurrent: 'placed'/, 'Settings highlights every card represented in a visible workspace');
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.campaign, \[WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.campaignMachine/, 'Mika is the first Settings selector card');
-  assert.match(source, /workbenchEntry\(\{\s*count: 2, selected: 'workspace1',\s*seats: \{ workspace1: TYPES\.defaults, workspace2: TYPES\.roots \}/);
+  assert.match(source, /workbenchEntry\(\{\s*count: 2, selected: 'workspace1',\s*arrangement: normalizeWorkbenchState\(null, bench\.declaration\)\.arrangement,\s*seats: \{ workspace1: TYPES\.defaults, workspace2: TYPES\.roots \}/);
   assert.doesNotMatch(source, /mikaDefaultV1|bench\.setCount\(2\)|bench\.restoreDefault\('workspace2'\)/,
     'no initializer may overwrite remembered Settings state');
   assert.doesNotMatch(source, /const DEFAULT_VIEW/);

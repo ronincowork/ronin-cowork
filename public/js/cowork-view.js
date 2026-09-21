@@ -16,7 +16,7 @@ import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
 import { createPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { refreshDesks } from './desks.js';
@@ -79,6 +79,13 @@ export function createCoworkView(options = {}) {
   const { createSurface, createTabbedSurface, createAction } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault } = WorkspaceKit.contract;
+  const teamDefaultsRequest = (name) => ({ destination: 'team', param: name, mode: 'replace', state: {
+    count: 2, selected: 'workspace1',
+    seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: DISMISSED_WORKSPACE },
+  } });
+  const deskDefaultsRequest = () => ({ destination: 'campaign', mode: 'replace', state: {
+    count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' },
+  } });
   const root = el('main', 'tw-view');
   let ctx = null;
   let team = '';
@@ -287,12 +294,14 @@ export function createCoworkView(options = {}) {
         const view = createNewAgentView(WorkspaceKit, {
           consumed,
           team: () => (campaign || team === UNASSIGNED ? '' : team),
+          teamDefaultsUrl: (name) => workbenchLaunchUrl(teamDefaultsRequest(name)),
+          deskDefaultsUrl: () => workbenchLaunchUrl(deskDefaultsRequest()),
           openTeamDefaults: (name) => {
             if (!name) return;
             if (!campaign && name === team) putCommons(oppositeSeat(id), 'team-configuration');
-            else openWorkbenchTab({ destination: 'team', param: name, mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: DISMISSED_WORKSPACE } } });
+            else openWorkbenchTab(teamDefaultsRequest(name));
           },
-          openDeskDefaults: () => openWorkbenchTab({ destination: 'campaign', mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' } } }),
+          openDeskDefaults: () => openWorkbenchTab(deskDefaultsRequest()),
           // A Team launch hands its workspace to the newborn. Cowork has no Team-local
           // seat contract: its successful no-Team launch opens the standalone Agent
           // destination through new-agent's shared launch handoff.
@@ -815,8 +824,9 @@ export function createCoworkView(options = {}) {
       void readKanbanAvailability();
       seenConfig = ''; // a fresh entry always paints the configuration once
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
-      team = campaign ? '' : context.param || context.state?.team || '';
-      const { state: entry } = context.workbenchEntry();
+      team = campaign ? '' : context.param;
+      const { state: entry } = context.workbenchEntry({ count: 2, selected: 'workspace1',
+        arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement, seats: {} });
       setBarLabel();
       const typed = normalizeWorkbenchState(entry, bench.declaration);
       bench.enter({ arrangement: typed.arrangement, count: entry.count, selected: entry.selected,

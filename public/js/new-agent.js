@@ -11,7 +11,7 @@ import {
   createStep, el, kindTiles, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, subscribeProviderCatalog, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { openLaunchHandoff } from './launch-handoff.js';
-import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { closeWorkspaceTab, reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -41,7 +41,7 @@ export function coworkWorkspacePayload(repos = []) {
   return { repos: [...repos] };
 }
 
-export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, openTeamDefaults = null, openDeskDefaults = null } = {}) {
+export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, openTeamDefaults = null, openDeskDefaults = null, teamDefaultsUrl = null, deskDefaultsUrl = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const freshDraft = () => {
@@ -271,7 +271,10 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const defaultsLink = (label, href, open) => {
     const link = el('a', null, label);
     link.href = href;
-    if (open) link.addEventListener('click', (event) => { event.preventDefault(); open(); });
+    if (open) link.addEventListener('click', (event) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault(); open();
+    });
     return link;
   };
   const paintDefaultsNote = () => {
@@ -281,8 +284,11 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       ? t('new_agent.defaults_cascade_team', 'Defaults cascade from Desk → Team → this Agent. Changes on this form apply only to this Agent.')
       : t('new_agent.defaults_cascade_desk', 'Defaults cascade from Desk → this Agent. Changes on this form apply only to this Agent.'));
     const links = el('p', 'na-defaults-links');
-    if (hasTeam) links.append(defaultsLink(t('new_agent.team_defaults', 'Team defaults'), `#/team/${encodeURIComponent(chosenTeam())}`, openTeamDefaults ? () => openTeamDefaults(chosenTeam()) : null), ' · ');
-    links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'), '#/campaign', openDeskDefaults));
+    if (hasTeam && chosenTeam()) links.append(defaultsLink(t('new_agent.team_defaults', 'Team defaults'),
+      teamDefaultsUrl?.(chosenTeam()) || workbenchLaunchUrl({ destination: 'team', param: chosenTeam(), mode: 'overlay' }),
+      openTeamDefaults ? () => openTeamDefaults(chosenTeam()) : null), ' · ');
+    links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'),
+      deskDefaultsUrl?.() || workbenchLaunchUrl({ destination: 'campaign', mode: 'overlay' }), openDeskDefaults));
     defaultsNote.append(teaching, links);
   };
   const onQuestionChange = (value, key) => {
