@@ -6,6 +6,7 @@ import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { request } from './request.js';
 import { SETUP_SCENES } from './setup-journey.js';
 import { GARDEN_CANVAS_TYPE, registerGardenCanvas } from './garden-canvas.js';
+import { localDocumentLink, productRepositoryHref } from './document-links.js';
 import { normalizeGardenCanvasCatalog } from './garden-canvas-model.js';
 import { PRESETS_TYPE, createKindsPreference, registerPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
@@ -136,11 +137,24 @@ export function createSetupView() {
     openGardenMedia: async (item) => {
       if (!garden) return;
       if (item.kind !== 'doc') { garden.showMedia({ label: item.label, kind: item.kind, src: item.src }); return; }
-      const query = new URLSearchParams({ path: item.path });
-      if (item.root) query.set('root', item.root);
-      else query.set('product', '1');
-      const result = await request('/api/file?' + query.toString());
-      garden.showMedia({ label: item.label, kind: item.kind, text: result.ok ? result.data.text || '' : result.message });
+      const openDocument = async (path, label, fragment = '') => {
+        const query = new URLSearchParams({ path });
+        if (item.root) query.set('root', item.root);
+        else query.set('product', '1');
+        const result = await request('/api/file?' + query.toString());
+        garden.showMedia({ label, kind: 'doc', text: result.ok ? result.data.text || '' : result.message,
+          fragment, resolveHref: item.root ? undefined : (href) => productRepositoryHref(path, href), onLink: (href) => {
+            const linked = localDocumentLink(path, href, !item.root);
+            if (!linked) return false;
+            if (linked.path === path && linked.fragment) {
+              garden.scrollMediaTo?.(linked.fragment);
+            } else {
+              void openDocument(linked.path, linked.path.split('/').pop(), linked.fragment);
+            }
+            return true;
+          } });
+      };
+      await openDocument(item.path, item.label);
     },
     openSetupAction: (action) => {
       if (action === 'setup.providers.choose') {

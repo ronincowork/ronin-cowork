@@ -17,6 +17,7 @@
   <dict>
     <key>PATH</key><string>__TMUX_DIR__:__NODE_DIR__:/usr/local/bin:/usr/bin:/bin</string>
     <key>NODE_ENV</key><string>production</string>
+    <key>RONIN_LAUNCHD_JOB</key><string>com.ronin</string>
   </dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>

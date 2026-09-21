@@ -265,7 +265,10 @@ test('Services retains registration, installation, master, and explicit restart 
   assert.match(route, /join\(REPO_ROOT, 'ronin_bin', 'ronin-host'\)/, 'the route runs the sanctioned tool and names no unit');
   assert.match(route, /execFile\(RESTART_TOOL, \['restart'\]/, 'the route selects only the fixed restart subcommand');
   assert.doesNotMatch(route, /execFile\(['"]systemctl|ronin\.service/, 'the route invokes no systemctl and names no unit; only the tool does');
-  assert.match(route, /if \(!process\.env\.INVOCATION_ID\) \{\n\s*res\.status\(409\)/, 'a copy that is not the installed service refuses rather than restarting the wrong Ronin');
+  assert.match(route, /process\.platform === 'darwin'/);
+  assert.match(route, /process\.env\.RONIN_LAUNCHD_JOB === 'com\.ronin'/);
+  assert.match(route, /Boolean\(process\.env\.INVOCATION_ID\)/, 'Linux retains its systemd identity');
+  assert.match(route, /if \(!installedService\) \{\n\s*res\.status\(409\)/, 'a copy that is not the installed service refuses');
   assert.match(route, /res\.status\(409\)\.json\(\{ error: \(error\.stderr \|\| error\.message\)/, 'the tool\'s refusal is answered in its own words');
   const index = await (await import('node:fs/promises')).readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
   assert.match(index, /registerMachineRestart\(app\)/);

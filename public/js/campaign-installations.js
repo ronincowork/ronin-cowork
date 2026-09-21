@@ -68,6 +68,11 @@ export function createInstallationsSurface(campaign, context = {}) {
       stone.title = reason;
     }
   };
+  const acceptInstalled = (facts) => {
+    installed = facts;
+    refreshStoneMarks();
+    paintZone();
+  };
 
   const saveAvailability = async (installation, on, notice) => {
     const row = campaign();
@@ -155,6 +160,7 @@ export function createInstallationsSurface(campaign, context = {}) {
         refreshStoneMarks();
         context.onInstallationChange?.(name, on);
       },
+      onInstalledState: acceptInstalled,
     };
     const page = context.createInstallationSurface?.(installation.id, sharedContext) || null;
     if (page) {
@@ -238,8 +244,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     }
     const rows = Array.isArray(catalogResult.data) ? catalogResult.data : [];
     catalog = INSTALLATION_ORDER.map((name) => rows.find((row) => row.name === name)).filter(Boolean);
-    installed = installedResult.ok ? installedResult.data : null;
-    paintZone();
+    acceptInstalled(installedResult.ok ? installedResult.data : null);
     if (zone && registered === null) {
       void request('/api/setup/registration', { cache: 'no-store' }).then((result) => {
         registered = result.ok ? result.data?.status === 'registered' : null;
