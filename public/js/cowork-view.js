@@ -566,10 +566,10 @@ export function createCoworkView(options = {}) {
       // owner's explicit dash: later roster and view paints must leave that seat alone.
       if (!workspaceMaySeedDefault(wanted)) continue;
       const request = surfaceRequest(wanted);
-      // The Workbench seat names its occupant. The pool renders that request;
-      // membership only supplies roster offers and additional sessions.
+      // The launch names the intended occupant before its session exists. Keep
+      // that seat pending until the live Team roster can supply its Tile.
       if (request.type === WB_TYPES.terminal) {
-        putSession(request.detail.key, id, false);
+        if (seats[id].pool.has(request.detail.key)) putSession(request.detail.key, id, false);
         continue;
       }
       if (WorkspaceKit.workbench.library.has(request.type) && bench.place(request.type, id, request.detail)) continue;
@@ -584,8 +584,7 @@ export function createCoworkView(options = {}) {
   const syncPools = (members) => {
     const live = new Set(S.sessions.map((s) => s.name));
     for (const x of [...extras]) if (!live.has(x) && live.size) extras.delete(x); // a gone extra leaves the pool
-    const seated = Object.values(remembered).flatMap((seat) => seat?.type === WB_TYPES.terminal && seat.key ? [seat.key] : []);
-    const names = [...new Set([...members.map((m) => m.name), ...extras, ...seated])];
+    const names = [...new Set([...members.map((m) => m.name), ...extras])];
     for (const seat of Object.values(seats)) seat.pool.sync(names);
     paintSeats();
   };
@@ -836,9 +835,9 @@ export function createCoworkView(options = {}) {
         arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement, seats: {} });
       setBarLabel();
       const typed = normalizeWorkbenchState(entry, bench.declaration);
+      remembered = { ...typed.seats };
       bench.enter({ arrangement: typed.arrangement, count: entry.count, selected: entry.selected,
         selectorDensity: entry.selectorDensity || entry[campaign ? 'teamCardDensity' : 'agentCardDensity'] });
-      remembered = { ...typed.seats };
       const members = restorationMembers();
       syncPools(members);
       ensureLeadHot(members);

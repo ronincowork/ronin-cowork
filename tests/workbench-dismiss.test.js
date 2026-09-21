@@ -35,7 +35,7 @@ test('New Team is consumed only after complete creation and destination opening'
     source('new-team-form.js'), source('cowork-view.js'), source('workbench-catalog.js'), source('launch-view.js'),
   ]);
   assert.match(form, /\{ created = null, consumed = null, embedded = false \}/);
-  assert.match(form, /if \(launched\.length\) openLaunchHandoff\(\{ team: name, sessions: launched \}, launchTab\);[\s\S]*await created\?\.\(name\);\s*await consumed\?\.\(\);/);
+  assert.match(form, /openLaunchHandoff\(\{ team: name, sessions: picks \}, launchTab\);[\s\S]*await launchTeamAgents\(request, name, picks\);[\s\S]*await created\?\.\(name\);\s*await consumed\?\.\(\);/);
   const partial = form.slice(form.indexOf('if (refused.length)'), form.indexOf("notice.set('', '')"));
   assert.doesNotMatch(partial, /consumed/);
   assert.match(catalog, /environment\.newTeamForm\(workspace, consumed\)/);

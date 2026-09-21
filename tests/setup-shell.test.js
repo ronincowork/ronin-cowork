@@ -95,9 +95,9 @@ test('launch actions reuse the nin mark, never the Team Roster torii, and open t
   }
 });
 
-test('a newly raised Team opens successful Agents directly and clears the inherited tab name', async () => {
+test('a newly raised Team opens its tenant before Agent birth and clears the inherited tab name', async () => {
   const [form, handoff] = await Promise.all([source('js/new-team-form.js'), source('js/launch-handoff.js')]);
-  assert.match(form, /openLaunchHandoff\(\{ team: name, sessions: launched \}, launchTab\)/);
+  assert.match(form, /openLaunchHandoff\(\{ team: name, sessions: picks \}, launchTab\);[\s\S]*await launchTeamAgents\(request, name, picks\)/);
   assert.match(handoff, /destination: 'team'[\s\S]*mode: 'replace'[\s\S]*tabName: ''/);
 });
 
