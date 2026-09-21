@@ -384,7 +384,10 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     });
     const picker = ask([{ group: t('behaviours.available', 'Optional'), fields: [{
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
-      options: general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')),
+      options: [
+        ...general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')),
+        ...(openBehaviours ? [{ v: '@customize', l: t('behaviours.customize', 'Customize Behaviors'), action: () => openBehaviours() }] : []),
+      ],
     }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
@@ -394,11 +397,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const conditions = readonly(t('behaviours.conditional', 'Conditional'), 'conditional', conditional, () => ({ disabled: true, sub: '' }));
     const autoSection = el('div', 'na-behaviour-section');
     autoSection.append(auto.el, el('p', 'na-behaviour-note', t('behaviours.bare_metal_excludes', 'Exclude by using a bare metal Agent.')));
-    const customize = el('button', 'sws-stone na-customize-behaviours');
-    customize.type = 'button'; customize.append(el('b', 'sws-label', t('behaviours.customize', 'Customize Behaviors')));
-    customize.addEventListener('click', () => openBehaviours?.());
-    customize.hidden = !openBehaviours;
-    shelvesHost.replaceChildren(picker.el, customize, autoSection, conditions.el);
+    shelvesHost.replaceChildren(picker.el, autoSection, conditions.el);
   }
   stepLoadout.body.append(el('p', 'na-behaviour-intro', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')), shelvesHost);
 

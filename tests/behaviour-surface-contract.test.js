@@ -41,7 +41,8 @@ test('Behavior implementation keeps the coordinated Docs editor boundary untouch
 
 test('New Agent offers the shared Behavior surface beside its optional choices', () => {
   assert.match(agent, /Customize Behaviors/);
-  assert.match(agent, /openBehaviours\?\.\(\)/);
+  assert.match(agent, /action: \(\) => openBehaviours\(\)/);
+  assert.doesNotMatch(agent, /sws-stone na-customize-behaviours/);
   assert.match(cowork, /openBehaviours: \(\) => bench\.place\(BEHAVIOUR_SURFACE_TYPE, oppositeSeat\(id\)\)/);
   assert.match(agent, /ronin:behaviours-changed/);
 });
