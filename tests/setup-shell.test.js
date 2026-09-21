@@ -200,7 +200,8 @@ test('Setup is the one public destination and has no parallel preview route', as
   ]);
   assert.match(setup, /const PROFILE = 'setup'/);
   assert.match(setup, /patchViewState\('setup'/);
-  assert.match(setup, /context\.workbenchEntry\(\)/);
+  assert.match(setup, /context\.workbenchEntry\(\{\s*count: 2, selected: 'workspace1', arrangement: ARRANGEMENT,\s*seats: \{ workspace1: GARDEN_CANVAS_TYPE, workspace2: SCENES\[0\]\.type \}/,
+    'Setup declares its complete first-open shape and seats for a new tab instance');
   assert.doesNotMatch(kit, /data-setup-viewport|setup-header-toggle/);
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
   assert.doesNotMatch(main, /setup2|createSetup2View/);
