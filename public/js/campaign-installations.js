@@ -8,16 +8,9 @@ import { ask } from './ask.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { completeInstallationMap as completeMap } from './installation-map.js';
 import { createStatusMarker } from './status-marker.js';
-import { renderMarkdownDocument } from './markdown-reader.js';
 import { createSetupZone, goodToGo } from './setup-zone.js';
 
 const INSTALLATION_ORDER = ['ronin_services', 'gbrain', 'trello', 'perplexity'];
-const INSTALLATION_GUIDES = Object.freeze({
-  ronin_services: 'docs/getting-started/services-activation.md',
-  gbrain: 'docs/products/gbrain.md',
-  trello: 'docs/products/trello.md',
-  perplexity: 'docs/products/perplexity.md',
-});
 const el = (tag, cls = '', text = null) => {
   const out = document.createElement(tag);
   if (cls) out.className = cls;
@@ -152,35 +145,6 @@ export function createInstallationsSurface(campaign, context = {}) {
 
   const renderDetail = (installation, host) => {
     const controls = installation.effect === 'provider' ? featureProviderControls(installation) : null;
-    const guidance = el('section', 'campaign-installation-guidance');
-    guidance.append(
-      el('p', 'setup-lede', installation.blurb || t('campaign_view.no_installation_description', 'No description is available.')),
-    );
-    const guidePath = INSTALLATION_GUIDES[installation.name];
-    if (guidePath) {
-      const guideHost = el('div', 'campaign-installation-guide');
-      const guideNotice = el('p', 'setup-notice');
-      guideNotice.setAttribute('role', 'status');
-      const readMore = el('button', 'wk-action', t('campaign_view.read_more', 'Read more'));
-      readMore.type = 'button';
-      readMore.addEventListener('click', async () => {
-        readMore.disabled = true;
-        guideNotice.textContent = t('campaign_view.loading_guide', 'Opening guide…');
-        const query = new URLSearchParams({ product: '1', path: guidePath });
-        const result = await request(`/api/file?${query.toString()}`, { cache: 'no-store' });
-        guideNotice.textContent = '';
-        readMore.disabled = false;
-        if (!result.ok) {
-          guideNotice.textContent = t('campaign_view.guide_read_failed', 'The guide could not be read. Try again.');
-          guideNotice.dataset.tone = 'failed';
-          return;
-        }
-        guideHost.replaceChildren(renderMarkdownDocument(result.data?.text || ''));
-        readMore.hidden = true;
-      });
-      guidance.append(readMore, guideNotice, guideHost);
-    }
-    host.append(guidance);
     const sharedContext = {
       ...context,
       installationMaturity: installation.maturity,
