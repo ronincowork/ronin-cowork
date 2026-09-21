@@ -19,6 +19,13 @@ const sourceFrom = (source: MessageSource): string => ({
   tell: 'Agent', wipeboard_notice: 'Wipeboard', owner: 'Owner', house: 'Ronin House', jikan: 'Cron jobs',
 })[source];
 
+/** Tell carries its queue-recorded sender into the recipient's prompt, not just the queue UI. */
+export function deliveryText(item: Pick<QueuedMessage, 'source' | 'from' | 'text'>): string {
+  if (item.source !== 'tell') return item.text;
+  const from = item.from && item.from !== 'Agent' ? `@${item.from}` : 'an unidentified Agent';
+  return `Tell from ${from}:\n${item.text}`;
+}
+
 async function remove(id: string): Promise<boolean> {
   if (!validId(id)) return false;
   try { await fs.unlink(file(id)); return true; } catch { return false; }
@@ -75,7 +82,8 @@ export async function processMessageQueue(options: { now?: number; delivery?: De
       }
       const overdue = now - Date.parse(item.created_at) >= AUTO_FORCE_AFTER_MS;
       try {
-        const result = overdue ? await delivery.force(item.target, item.text) : await delivery.safe(item.target, item.text);
+        const text = deliveryText(item);
+        const result = overdue ? await delivery.force(item.target, text) : await delivery.safe(item.target, text);
         if (!overdue && !result.delivered && !result.submitted) continue;
       } catch { /* one failed attempt is still finished */ }
       await remove(item.id);
