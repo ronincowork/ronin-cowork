@@ -41,7 +41,7 @@ export function coworkWorkspacePayload(repos = []) {
   return { repos: [...repos] };
 }
 
-export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, openTeamDefaults = null, openDeskDefaults = null, teamDefaultsUrl = null, deskDefaultsUrl = null } = {}) {
+export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, openTeamDefaults = null, openDeskDefaults = null, openBehaviours = null, teamDefaultsUrl = null, deskDefaultsUrl = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const freshDraft = () => {
@@ -394,7 +394,11 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const conditions = readonly(t('behaviours.conditional', 'Conditional'), 'conditional', conditional, () => ({ disabled: true, sub: '' }));
     const autoSection = el('div', 'na-behaviour-section');
     autoSection.append(auto.el, el('p', 'na-behaviour-note', t('behaviours.bare_metal_excludes', 'Exclude by using a bare metal Agent.')));
-    shelvesHost.replaceChildren(picker.el, autoSection, conditions.el);
+    const customize = el('button', 'sws-stone na-customize-behaviours');
+    customize.type = 'button'; customize.append(el('b', 'sws-label', t('behaviours.customize', 'Customize Behaviors')));
+    customize.addEventListener('click', () => openBehaviours?.());
+    customize.hidden = !openBehaviours;
+    shelvesHost.replaceChildren(picker.el, customize, autoSection, conditions.el);
   }
   stepLoadout.body.append(el('p', 'na-behaviour-intro', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')), shelvesHost);
 
@@ -603,6 +607,14 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     paintFolds();
     paintFoot();
   }
+  const refreshBehaviours = async () => {
+    const team = draft.teamMode === 'existing' ? draft.team : '';
+    const result = await request(`/api/launch-seed${team ? `?team=${encodeURIComponent(team)}` : ''}`);
+    if (!result.ok || !seed) return;
+    seed = { ...seed, behaviours: result.data?.behaviours || [] };
+    paintShelves();
+  };
+  window.addEventListener('ronin:behaviours-changed', refreshBehaviours);
 
   function paint() {
     const order = plan();
@@ -675,6 +687,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       paint();
     },
     destroy: () => {
+      window.removeEventListener('ronin:behaviours-changed', refreshBehaviours);
       unsubscribeProviderCatalog();
       questions.destroy();
       teamQuestions.destroy();

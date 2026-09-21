@@ -306,6 +306,7 @@ export function createCoworkView(options = {}) {
             else openWorkbenchTab(teamDefaultsRequest(name));
           },
           openDeskDefaults: () => openWorkbenchTab(deskDefaultsRequest()),
+          openBehaviours: () => bench.place(BEHAVIOUR_SURFACE_TYPE, oppositeSeat(id)),
           // A Team launch hands its workspace to the newborn. Cowork has no Team-local
           // seat contract: its successful no-Team launch opens the standalone Agent
           // destination through new-agent's shared launch handoff.
