@@ -92,6 +92,8 @@ Settings first opens with **Defaults** in workspace 1 and **Workspace folders** 
 workspace 2. That is only its first-open floor; once rearranged, refresh restores the
 remembered arrangement instead of applying the floor again.
 
+Teams first opens with the Team roster in workspace 1 and New Team in workspace 2.
+
 If a remembered surface is no longer available at the current scope, its workspace comes
 back empty. Check the discovery column: it is the current answer to what can be opened
 here.

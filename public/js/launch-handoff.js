@@ -2,9 +2,8 @@
 import { openWorkbenchTab } from './workspace.js';
 
 const EMPTY_WORKSPACE = '@empty';
-const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'];
-
 const sessionSeat = (name) => ({ type: 'session.terminal', key: name });
+const commonsSeat = () => ({ type: 'team.commons', tab: 'team-configuration' });
 
 function orderedSessions(sessions = []) {
   const seen = new Set();
@@ -38,18 +37,16 @@ export function launchHandoffSpec({ team = '', sessions = [] } = {}) {
     destination: 'team', param: teamName, mode: 'replace',
     state: {
       count: 2, selected: 'workspace1', tabName: '',
-      seats: { workspace1: { type: 'team.commons', tab: 'team-configuration' }, workspace2: EMPTY_WORKSPACE },
+      seats: { workspace1: commonsSeat(), workspace2: 'session.new-agent' },
     },
   };
 
-  const count = ordered.length > 2 ? 4 : 2;
-  const seats = Object.fromEntries(WORKSPACES.slice(0, count).map((workspace, index) => [
-    workspace,
-    ordered[index] ? sessionSeat(ordered[index].name) : EMPTY_WORKSPACE,
-  ]));
   return {
     destination: 'team', param: teamName, mode: 'replace',
-    state: { count, selected: 'workspace1', seats, tabName: '' },
+    state: { count: 2, selected: 'workspace1', tabName: '', seats: {
+      workspace1: sessionSeat(ordered[0].name),
+      workspace2: ordered[1] ? sessionSeat(ordered[1].name) : commonsSeat(),
+    } },
   };
 }
 

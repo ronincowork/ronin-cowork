@@ -832,7 +832,8 @@ export function createCoworkView(options = {}) {
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = campaign ? '' : context.param;
       const { state: entry } = context.workbenchEntry({ count: 2, selected: 'workspace1',
-        arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement, seats: {} });
+        arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement,
+        seats: campaign ? { workspace1: WB_TYPES.roster, workspace2: WB_TYPES.newTeamForm } : {} });
       setBarLabel();
       const typed = normalizeWorkbenchState(entry, bench.declaration);
       remembered = { ...typed.seats };

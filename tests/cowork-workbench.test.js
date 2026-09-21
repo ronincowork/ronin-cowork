@@ -37,3 +37,8 @@ test('Cowork launches use the standalone handoff while Team launches retain in-p
   const text = await source('cowork-view.js');
   assert.match(text, /connect: campaign \? null : async \(name\) => \{[\s\S]*fetchSessions\(\);[\s\S]*connectSession\(name, id\)/);
 });
+
+test('Teams opens its roster and New Team form in the two default workspaces', async () => {
+  const text = await source('cowork-view.js');
+  assert.match(text, /seats: campaign \? \{ workspace1: WB_TYPES\.roster, workspace2: WB_TYPES\.newTeamForm \} : \{\}/);
+});
