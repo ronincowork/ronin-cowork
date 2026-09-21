@@ -170,11 +170,6 @@ export function createCoworkView(options = {}) {
     };
     const roster = el('div', 'tw-config tw-roster');
     const config = el('div', 'tw-config');
-    const kanban = createTeamKanban({
-      lead: () => lead(),
-      openOwner: (name) => arrange({ [oppositeSeat(id)]: { session: name } }),
-      unavailable: (message) => updateKanbanAvailability({ available: false, message }),
-    });
     const messages = el('div', 'tw-messages');
     const messageLabel = t('workspace.tab_agent_message_queue', 'Messages');
     // THE COUNT IS THE SIGNAL. What is waiting is a number, so the tab says the number and
@@ -202,7 +197,6 @@ export function createCoworkView(options = {}) {
         // its count is how you learn something is waiting. That is what `watch` is for;
         // the panel itself has no hooks, so nothing stops the poll on a tab change.
         { id: 'agent-message-queue', label: messageLabel, panel: messages, watch: () => { messageQueue.enter(); return messageQueue.leave; } },
-        { id: 'kanban', label: t('workspace.tab_task_manager', 'Task Manager'), panel: kanban },
         { id: 'cron-jobs', label: t('workspace.tab_cron_jobs', 'Cron jobs'), panel: jikan },
         { id: 'team-configuration', label: t('workspace.tab_team_configuration', 'Configuration'), panel: service(config) },
       ],
@@ -213,7 +207,7 @@ export function createCoworkView(options = {}) {
     paintMessageAttention();
     channels.el.dataset.workbenchSurface = WB_TYPES.commons;
     return {
-      el: channels.el, channels, wipeboard, jikan, kanban, docs, roster, config, messageQueue,
+      el: channels.el, channels, wipeboard, jikan, docs, roster, config, messageQueue,
       attendQueueOnOpen: () => {
         chooseQueueOnOpen = true;
         if (retainedCount > 0) paintMessageAttention();
@@ -221,8 +215,8 @@ export function createCoworkView(options = {}) {
     };
   };
   // A SEAT'S COMMONS IS BUILT WHEN THAT SEAT FIRST SHOWS ONE. Three of the four
-  // workspaces usually never do, and a Commons is seven rooms — a wipeboard, a cron room,
-  // a doc shelf, a kanban and a message queue among them. A seat built late is handed the
+  // workspaces usually never do, and Commons holds a wipeboard, a cron room,
+  // a doc shelf, and a message queue among them. A seat built late is handed the
   // reading the others already have by forcing the next paint to redo its work.
   const commonsBySeat = {};
   let painterReady = false; // `paint` and its memo are declared below this point
@@ -232,8 +226,6 @@ export function createCoworkView(options = {}) {
       const made = createTeamCommons(id);
       commonsBySeat[id] = made;
       made.channels.mount(ctx);
-      made.channels.setAvailable('kanban', { on: true, title: '' });
-      made.kanban.setAvailability(kanbanGate);
       // Force the memo to miss so the new seat gets the reading the others hold. Before
       // the painter exists there is no reading yet, and the first paint covers it.
       if (painterReady) {
@@ -243,6 +235,22 @@ export function createCoworkView(options = {}) {
       }
     }
     return commonsBySeat[id];
+  };
+  const taskManagerBySeat = {};
+  const taskManagerFor = (id) => {
+    if (!taskManagerBySeat[id]) {
+      const surface = createSurface({ label: t('workspace.tab_task_manager', 'Task Manager'), className: 'tw-kanban' });
+      const manager = createTeamKanban({
+        lead: () => lead(),
+        openOwner: (name) => arrange({ [oppositeSeat(id)]: { session: name } }),
+        unavailable: (message) => updateKanbanAvailability({ available: false, message }),
+      });
+      manager.setTeam(team === UNASSIGNED ? '' : team);
+      manager.setAvailability(kanbanGate);
+      surface.content.append(manager.el);
+      taskManagerBySeat[id] = { el: surface.el, manager, show: () => manager.enter(), leave: () => manager.leave() };
+    }
+    return taskManagerBySeat[id];
   };
   const extras = new Set();
   // its roster exists, so the form that made it hands the workspace over to it and goes
@@ -274,11 +282,7 @@ export function createCoworkView(options = {}) {
       label: t('workspace.tab_task_manager', 'Task Manager'),
       summary: t('team_kanban.card_summary', 'The Team’s work, from Ideas through Done'),
     }] : [],
-    teamKanban: (id) => ({ el: commonsFor(id).el, show: () => {
-      const item = commonsFor(id);
-      item.channels.enter(ctx);
-      item.channels.select('kanban');
-    } }),
+    teamKanban: (id) => taskManagerFor(id),
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => putSession(detail.key, id) }),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
     cron: (id) => ({ el: cronBySeat[id].el, show: () => cronBySeat[id].room.enter() }),
@@ -302,6 +306,7 @@ export function createCoworkView(options = {}) {
             else openWorkbenchTab(teamDefaultsRequest(name));
           },
           openDeskDefaults: () => openWorkbenchTab(deskDefaultsRequest()),
+          openBehaviours: () => bench.place(BEHAVIOUR_SURFACE_TYPE, oppositeSeat(id)),
           // A Team launch hands its workspace to the newborn. Cowork has no Team-local
           // seat contract: its successful no-Team launch opens the standalone Agent
           // destination through new-agent's shared launch handoff.
@@ -367,12 +372,7 @@ export function createCoworkView(options = {}) {
     kanbanGate = next?.available === true
       ? { available: true, message: '' }
       : { available: false, message: String(next?.message || KANBAN_NOT_INSTALLED) };
-    for (const commons of builtCommons()) {
-      commons.kanban.setAvailability(kanbanGate);
-      // The tab keeps its place whether or not the Task Manager is installed, so the row
-      // never re-orders under the pointer when it arrives.
-      commons.channels.setAvailable('kanban', { on: true, title: '' });
-    }
+    for (const surface of Object.values(taskManagerBySeat)) surface.manager.setAvailability(kanbanGate);
     bench.refreshSelector();
   };
   updateKanbanAvailability(kanbanGate);
@@ -423,7 +423,11 @@ export function createCoworkView(options = {}) {
   const heldSurface = (id) => tokenOf(cellHolding(id));
   // A remembered surface keeps its tab and document too: a preset seats the commons on
   // the Wipeboard or Cron jobs, and a document beside its agent, in the tab it opens.
-  const surfaceRequest = (token) => token && typeof token === 'object' ? { type: token.type, detail: { key: token.key || '', root: token.root || '', path: token.path || '', ...(token.tab ? { tab: token.tab } : {}), ...(token.doc ? { doc: token.doc } : {}) } } : { type: token || '', detail: {} };
+  const surfaceRequest = (token) => token && typeof token === 'object'
+    ? token.type === WB_TYPES.commons && token.tab === 'kanban'
+      ? { type: WB_TYPES.kanban, detail: {} }
+      : { type: token.type, detail: { key: token.key || '', root: token.root || '', path: token.path || '', ...(token.tab ? { tab: token.tab } : {}), ...(token.doc ? { doc: token.doc } : {}) } }
+    : { type: token || '', detail: {} };
   /** A surface other than the seat's own is in this workspace. */
   const surfaceIn = (id) => !bench?.isDefault(id);
   const holds = (id) => surfaceIn(id) ? heldSurface(id) : seats[id].pool.active;
@@ -443,7 +447,9 @@ export function createCoworkView(options = {}) {
   const lead = () => membersOfTeam(team).find((m) => m.team_lead)?.name || '';
   const oppositeSeat = (id) => ({ workspace1: 'workspace2', workspace2: 'workspace1', workspace3: 'workspace4', workspace4: 'workspace3' })[id] || 'workspace1';
 
-  const putCommons = (id, tab = '', doc = '') => putSurface(WB_TYPES.commons, id, tab, doc);
+  const putCommons = (id, tab = '', doc = '') => tab === 'kanban'
+    ? putSurface(WB_TYPES.kanban, id)
+    : putSurface(WB_TYPES.commons, id, tab, doc);
   // `edges page … workspace1=new` still says "the door work starts at"; that door is
   // the drawn New Agent now (TOOLS.md's `new` word is unchanged for the owner).
   const putNew = (id) => putSurface(WB_TYPES.newAgent, id);
@@ -566,6 +572,12 @@ export function createCoworkView(options = {}) {
       // owner's explicit dash: later roster and view paints must leave that seat alone.
       if (!workspaceMaySeedDefault(wanted)) continue;
       const request = surfaceRequest(wanted);
+      // The launch names the intended occupant before its session exists. Keep
+      // that seat pending until the live Team roster can supply its Tile.
+      if (request.type === WB_TYPES.terminal) {
+        if (seats[id].pool.has(request.detail.key)) putSession(request.detail.key, id, false);
+        continue;
+      }
       if (WorkspaceKit.workbench.library.has(request.type) && bench.place(request.type, id, request.detail)) continue;
       else if (wanted && seats[id].pool.has(wanted)) putSession(wanted, id, false);
       // A remembered session the roster does not have: wait while the roster is still
@@ -761,10 +773,10 @@ export function createCoworkView(options = {}) {
     // tag-only team. The server creates it on open, so the slice never meets a void.
     for (const commons of builtCommons()) {
       commons.wipeboard.setBoard(team === UNASSIGNED ? '' : (roster.durable && roster.wipeboard) || team);
-      commons.kanban.setTeam(team === UNASSIGNED ? '' : team);
       // JIKAN is by active team: the tag-only or durable team, and its live members for the To list.
       commons.jikan.setTeam(team === UNASSIGNED ? '' : team, members.map((m) => m.name));
     }
+    for (const surface of Object.values(taskManagerBySeat)) surface.manager.setTeam(team === UNASSIGNED ? '' : team);
   };
   painterReady = true;
 
@@ -826,12 +838,13 @@ export function createCoworkView(options = {}) {
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = campaign ? '' : context.param;
       const { state: entry } = context.workbenchEntry({ count: 2, selected: 'workspace1',
-        arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement, seats: {} });
+        arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement,
+        seats: campaign ? { workspace1: WB_TYPES.roster, workspace2: WB_TYPES.newTeamForm } : {} });
       setBarLabel();
       const typed = normalizeWorkbenchState(entry, bench.declaration);
+      remembered = { ...typed.seats };
       bench.enter({ arrangement: typed.arrangement, count: entry.count, selected: entry.selected,
         selectorDensity: entry.selectorDensity || entry[campaign ? 'teamCardDensity' : 'agentCardDensity'] });
-      remembered = { ...typed.seats };
       const members = restorationMembers();
       syncPools(members);
       ensureLeadHot(members);
@@ -863,6 +876,7 @@ export function createCoworkView(options = {}) {
       // No transport survives outside the entered Team destination.
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
       for (const commons of builtCommons()) commons.channels.leave();
+      for (const surface of Object.values(taskManagerBySeat)) surface.manager.leave();
       S.showNewSession = null;
       S.connectSession = null;
       bench.leave();
@@ -877,6 +891,7 @@ export function createCoworkView(options = {}) {
       helpPanel.destroy();
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       for (const commons of builtCommons()) commons.channels.destroy();
+      for (const surface of Object.values(taskManagerBySeat)) surface.manager.destroy();
       for (const view of Object.values(newAgentBySeat)) view.destroy();
     },
   };

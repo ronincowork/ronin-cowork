@@ -40,7 +40,9 @@ export function createLaunchView() {
       return seated(teamBySeat[workspace]);
     },
     agent: (workspace, _detail, consumed) => {
-      if (!agentBySeat[workspace]) agentBySeat[workspace] = createNewAgentView(WorkspaceKit, { consumed });
+      if (!agentBySeat[workspace]) agentBySeat[workspace] = createNewAgentView(WorkspaceKit, {
+        consumed, openBehaviours: () => bench.place(TYPES.behaviours, workspace === 'workspace1' ? 'workspace2' : 'workspace1'),
+      });
       return seated(agentBySeat[workspace]);
     },
     help: (workspace) => {

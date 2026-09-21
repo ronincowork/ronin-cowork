@@ -186,7 +186,13 @@ export function createWorkbench(options = {}) {
   };
   const placeNode = (id, value) => {
     if (!cells[id] || !(value instanceof Node)) return false;
-    if (holding(id) !== value) cells[id].replaceChildren(value);
+    const previous = holding(id);
+    if (previous !== value) {
+      const held = previous ? [...instances.values()].find((candidate) => candidate.el === previous) : null;
+      if (held?.leave?.() === false) return false;
+      held?.hide?.();
+      cells[id].replaceChildren(value);
+    }
     select(id);
     return true;
   };
@@ -196,9 +202,6 @@ export function createWorkbench(options = {}) {
     // A completion callback belongs to the surface that received it. If that surface
     // already handed the workspace to a newborn, it must not dismiss the replacement.
     if (expected && previous !== expected) return true;
-    const value = previous ? [...instances.values()].find((candidate) => candidate.el === previous) : null;
-    if (value?.leave?.() === false) return false;
-    value?.hide?.();
     if (!restoreDefault(id)) return false;
     refreshSelector();
     options.onPlacement?.(snapshot(), { dismissed: id });

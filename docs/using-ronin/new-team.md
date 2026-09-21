@@ -12,7 +12,10 @@ Team, with their names and assignments, then press **Launch**.
 Names must use lowercase letters, digits, underscores, and hyphens. If an Agent name is
 already in use, the form asks for a different name before it creates the Team.
 
-The Team opens in its own browser tab. If only some Agents start successfully, the form
+The Team opens in its own browser tab as soon as its record is created. Workspaces requested
+for new Agents fill as their sessions join the live Team roster. With no new Agents, the tab
+opens Commons and New Agent. With one, it opens that Agent and Commons. With two or more,
+the first two Agents take the two workspaces. If only some Agents start successfully, the form
 names those that started and those that failed. The Team remains available; add the failed
 Agents there instead of launching the whole Team again.
 

@@ -2,9 +2,8 @@
 import { openWorkbenchTab } from './workspace.js';
 
 const EMPTY_WORKSPACE = '@empty';
-const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'];
-
 const sessionSeat = (name) => ({ type: 'session.terminal', key: name });
+const commonsSeat = () => ({ type: 'team.commons', tab: 'roster' });
 
 function orderedSessions(sessions = []) {
   const seen = new Set();
@@ -21,9 +20,9 @@ function orderedSessions(sessions = []) {
 /** Build the destination without opening it, so every launch entrance shares the rule. */
 export function launchHandoffSpec({ team = '', sessions = [] } = {}) {
   const ordered = orderedSessions(sessions);
-  if (!ordered.length) return null;
   const teamName = String(team || '').trim();
   if (!teamName) {
+    if (!ordered.length) return null;
     const name = ordered[0].name;
     return {
       destination: 'agent', param: name, mode: 'replace',
@@ -34,14 +33,20 @@ export function launchHandoffSpec({ team = '', sessions = [] } = {}) {
     };
   }
 
-  const count = ordered.length > 2 ? 4 : 2;
-  const seats = Object.fromEntries(WORKSPACES.slice(0, count).map((workspace, index) => [
-    workspace,
-    ordered[index] ? sessionSeat(ordered[index].name) : EMPTY_WORKSPACE,
-  ]));
+  if (!ordered.length) return {
+    destination: 'team', param: teamName, mode: 'replace',
+    state: {
+      count: 2, selected: 'workspace1', tabName: '',
+      seats: { workspace1: commonsSeat(), workspace2: 'session.new-agent' },
+    },
+  };
+
   return {
     destination: 'team', param: teamName, mode: 'replace',
-    state: { count, selected: 'workspace1', seats, tabName: '' },
+    state: { count: 2, selected: 'workspace1', tabName: '', seats: {
+      workspace1: sessionSeat(ordered[0].name),
+      workspace2: ordered[1] ? sessionSeat(ordered[1].name) : commonsSeat(),
+    } },
   };
 }
 

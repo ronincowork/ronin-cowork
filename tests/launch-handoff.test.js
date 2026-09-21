@@ -14,19 +14,17 @@ test('a successful no-Team launch replaces an Agent workbench with the newborn s
   });
 });
 
-test('a Team launch seats its successful cast lead first without manufacturing sessions', () => {
+test('a Team launch opens two workspaces for its first two planned Agents', () => {
   assert.deepEqual(launchHandoffSpec({
     team: 'builders',
     sessions: [{ name: 'writer' }, { name: 'lead', team_lead: true }, { name: 'reviewer' }],
   }), {
     destination: 'team', param: 'builders', mode: 'replace',
     state: {
-      count: 4, selected: 'workspace1', tabName: '',
+      count: 2, selected: 'workspace1', tabName: '',
       seats: {
         workspace1: terminal('lead'),
         workspace2: terminal('writer'),
-        workspace3: terminal('reviewer'),
-        workspace4: '@empty',
       },
     },
   });
@@ -39,7 +37,16 @@ test('a partial Team result seats only successful unique sessions in launch orde
     count: 2, selected: 'workspace1', tabName: '',
     seats: { workspace1: terminal('first'), workspace2: terminal('second') },
   });
-  assert.equal(launchHandoffSpec({ team: 'empty', sessions: [] }), null);
+  assert.deepEqual(launchHandoffSpec({ team: 'empty', sessions: [] }), {
+    destination: 'team', param: 'empty', mode: 'replace',
+    state: {
+      count: 2, selected: 'workspace1', tabName: '',
+      seats: { workspace1: { type: 'team.commons', tab: 'roster' }, workspace2: 'session.new-agent' },
+    },
+  });
+  assert.deepEqual(launchHandoffSpec({ team: 'solo', sessions: [{ name: 'first' }] })?.state.seats, {
+    workspace1: terminal('first'), workspace2: { type: 'team.commons', tab: 'roster' },
+  });
 });
 
 test('the handoff reuses the tab reserved by the launch click and carries a one-shot instruction', () => {

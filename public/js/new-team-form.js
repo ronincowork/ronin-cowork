@@ -11,7 +11,7 @@ import { launchTeamAgents } from './team-loader.js';
 import {
   createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
-import { closeWorkspaceTab, openWorkbenchTab, reserveWorkspaceTab } from './workspace.js';
+import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -481,6 +481,9 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       raise.setDisabled(false);
       return notice.set('failed', made.message);
     }
+    // The Team record is the new tab's tenant. Open its requested Workbench now;
+    // terminal seats remain pending until each Agent appears in the live roster.
+    openLaunchHandoff({ team: name, sessions: picks }, launchTab);
     // Then the cast, through the loader: births are awaited in order because every one
     // updates this Team's membership record. `agentPicks` is where the screen's words
     // become the route's — a row says assignment and the wire says instructions.
@@ -501,14 +504,10 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
         born: born.length ? born.join(', ') : t('forms.none', 'none'),
         names: refused.map(({ row }) => row.name).join(', '),
       }));
-      if (launched.length) openLaunchHandoff({ team: name, sessions: launched }, launchTab);
-      else openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
       return;
     }
     notice.set('', '');
     reset();
-    if (launched.length) openLaunchHandoff({ team: name, sessions: launched }, launchTab);
-    else openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
     await created?.(name);
     await consumed?.();
   }

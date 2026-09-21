@@ -41,7 +41,7 @@ export function coworkWorkspacePayload(repos = []) {
   return { repos: [...repos] };
 }
 
-export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, openTeamDefaults = null, openDeskDefaults = null, teamDefaultsUrl = null, deskDefaultsUrl = null } = {}) {
+export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, openTeamDefaults = null, openDeskDefaults = null, openBehaviours = null, teamDefaultsUrl = null, deskDefaultsUrl = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const freshDraft = () => {
@@ -384,7 +384,10 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     });
     const picker = ask([{ group: t('behaviours.available', 'Optional'), fields: [{
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
-      options: general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')),
+      options: [
+        ...general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')),
+        ...(openBehaviours ? [{ v: '@customize', l: t('behaviours.customize', 'Customize Behaviors'), action: () => openBehaviours() }] : []),
+      ],
     }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
@@ -603,6 +606,14 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     paintFolds();
     paintFoot();
   }
+  const refreshBehaviours = async () => {
+    const team = draft.teamMode === 'existing' ? draft.team : '';
+    const result = await request(`/api/launch-seed${team ? `?team=${encodeURIComponent(team)}` : ''}`);
+    if (!result.ok || !seed) return;
+    seed = { ...seed, behaviours: result.data?.behaviours || [] };
+    paintShelves();
+  };
+  window.addEventListener('ronin:behaviours-changed', refreshBehaviours);
 
   function paint() {
     const order = plan();
@@ -675,6 +686,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       paint();
     },
     destroy: () => {
+      window.removeEventListener('ronin:behaviours-changed', refreshBehaviours);
       unsubscribeProviderCatalog();
       questions.destroy();
       teamQuestions.destroy();

@@ -10,6 +10,7 @@ const COLUMNS = [
   { key: 'DONE', label: 'Done', worker: '' },
 ];
 const INDEX = Object.fromEntries(COLUMNS.map((column, index) => [column.key, index]));
+let nextHeaderId = 0;
 export const KANBAN_NOT_INSTALLED = 'Unavailable.';
 export const KANBAN_CAMPAIGN_OFF = 'Unavailable.';
 
@@ -90,7 +91,26 @@ export function moveMessage(project, toStage, leadName, now = new Date()) {
 
 export function createTeamKanban(options = {}) {
   const root = node('div', 'tk-kanban');
-  const beta = node('span', 'tk-beta', t('team_kanban.beta', 'Beta'));
+  const header = node('div', 'tk-header');
+  const headerRow = node('div', 'tk-header-row');
+  const beta = node('strong', 'tk-beta', t('team_kanban.beta', 'Beta'));
+  const headerToggle = node('button', 'tk-header-toggle');
+  headerToggle.type = 'button';
+  const headerMessage = node('p', 'tk-header-message', t('team_kanban.beta_message', 'Task Manager is in beta. Follow Projects from ideas to done using Tools and the Work Record. We’re making it easier for Agents to keep them current without forcing upkeep.'));
+  headerMessage.id = `tk-header-message-${++nextHeaderId}`;
+  headerToggle.setAttribute('aria-controls', headerMessage.id);
+  headerRow.append(beta, headerToggle);
+  header.append(headerRow, headerMessage);
+  const setHeaderExpanded = (expanded) => {
+    header.dataset.expanded = String(expanded);
+    headerToggle.setAttribute('aria-expanded', String(expanded));
+    headerToggle.textContent = expanded
+      ? t('team_kanban.header_collapse', 'Collapse')
+      : t('team_kanban.header_expand', 'Expand');
+    headerMessage.hidden = !expanded;
+  };
+  headerToggle.addEventListener('click', () => setHeaderExpanded(header.dataset.expanded !== 'true'));
+  setHeaderExpanded(true);
   const legend = node('div', 'tk-legend');
   for (const [status, label] of [['green', 'ready to move'], ['yellow', 'working'], ['red', 'blocked']]) {
     const item = node('span'); item.append(node('i', `tk-dot ${status}`), document.createTextNode(label)); legend.append(item);
@@ -108,9 +128,9 @@ export function createTeamKanban(options = {}) {
   foldButton.append(foldLines);
   controls.append(refreshButton, foldButton);
   const topline = node('div', 'tk-topline');
-  topline.append(beta, controls, notice, legend);
+  topline.append(controls, notice, legend);
   const board = node('div', 'tk-board');
-  root.append(topline, board);
+  root.append(header, topline, board);
 
   let team = '';
   let projects = [];
