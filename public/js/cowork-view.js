@@ -248,7 +248,7 @@ export function createCoworkView(options = {}) {
       manager.setTeam(team === UNASSIGNED ? '' : team);
       manager.setAvailability(kanbanGate);
       surface.content.append(manager.el);
-      taskManagerBySeat[id] = { el: surface.el, manager, show: () => manager.enter() };
+      taskManagerBySeat[id] = { el: surface.el, manager, show: () => manager.enter(), leave: () => manager.leave() };
     }
     return taskManagerBySeat[id];
   };
@@ -875,6 +875,7 @@ export function createCoworkView(options = {}) {
       // No transport survives outside the entered Team destination.
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
       for (const commons of builtCommons()) commons.channels.leave();
+      for (const surface of Object.values(taskManagerBySeat)) surface.manager.leave();
       S.showNewSession = null;
       S.connectSession = null;
       bench.leave();
@@ -889,6 +890,7 @@ export function createCoworkView(options = {}) {
       helpPanel.destroy();
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       for (const commons of builtCommons()) commons.channels.destroy();
+      for (const surface of Object.values(taskManagerBySeat)) surface.manager.destroy();
       for (const view of Object.values(newAgentBySeat)) view.destroy();
     },
   };

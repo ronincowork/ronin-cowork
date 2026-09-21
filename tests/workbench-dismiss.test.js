@@ -4,11 +4,11 @@ import { readFile } from 'node:fs/promises';
 
 const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 
-test('Workbench owns one non-destructive dismissal boundary for every surface header', async () => {
+test('Workbench leaves a surface before replacement or dismissal', async () => {
   const workbench = await source('workbench.js');
   assert.match(workbench, /const dismiss = \(id, expected = null\) => \{/);
   assert.match(workbench, /if \(expected && previous !== expected\) return true;/);
-  assert.match(workbench, /if \(value\?\.leave\?\.\(\) === false\) return false;/);
+  assert.match(workbench, /const placeNode = \(id, value\) => \{[\s\S]*if \(held\?\.leave\?\.\(\) === false\) return false;[\s\S]*cells\[id\]\.replaceChildren\(value\)/);
   assert.match(workbench, /if \(!restoreDefault\(id\)\) return false;/);
   assert.match(workbench, /refreshSelector\(\);\s*options\.onPlacement\?\.\(snapshot\(\), \{ dismissed: id \}\);/);
   assert.match(workbench, /consumed: \(\) => dismiss\(id, owned\)/);

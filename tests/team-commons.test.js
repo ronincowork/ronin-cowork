@@ -15,18 +15,19 @@ test('Commons opens on its separate Roster and keeps Configuration separate', as
   assert.doesNotMatch(view, /commons\.config\.replaceChildren\(members, config\)/);
 });
 
-test('Task Manager is offered only when available and its Commons tab stays present', async () => {
+test('Task Manager is offered only when available as a standalone surface', async () => {
   const [view, catalog] = await Promise.all([
     source('public/js/cowork-view.js'), source('public/js/workbench-catalog.js'),
   ]);
   assert.match(catalog, /kanban: 'team\.kanban'/);
-  assert.match(catalog, /type: WORKBENCH_TYPES\.kanban[\s\S]*e\.kanbanOffers\(\)/);
+  assert.match(catalog, /type: WORKBENCH_TYPES\.kanban, header: 'surface'[\s\S]*e\.kanbanOffers\(\)/);
   assert.match(catalog, /WORKBENCH_PROFILES\.team, \[WORKBENCH_TYPES\.commons, WORKBENCH_TYPES\.kanban,/);
   assert.match(view, /request\('\/api\/installed'/);
   assert.match(view, /kanbanOffers: \(\) => kanbanGate\.available \? \[\{/);
-  assert.match(view, /commons\.channels\.setAvailable\('kanban', \{ on: true, title: '' \}\)/);
-  assert.doesNotMatch(view, /kanbanTab/, 'no consumer reaches a tab node');
-  assert.match(view, /item\.channels\.select\('kanban'\)/);
+  assert.match(view, /teamKanban: \(id\) => taskManagerFor\(id\)/);
+  assert.match(view, /taskManagerBySeat\[id\] = \{ el: surface\.el, manager, show: \(\) => manager\.enter\(\), leave: \(\) => manager\.leave\(\) \}/);
+  assert.doesNotMatch(view, /\{ id: 'kanban', label:/);
+  assert.match(view, /for \(const surface of Object\.values\(taskManagerBySeat\)\) surface\.manager\.leave\(\)/);
   assert.match(view, /workspace\.tab_task_manager', 'Task Manager'/);
 });
 

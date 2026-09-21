@@ -91,7 +91,7 @@ test('Commons builds on first use and Task Manager has its own surface', async (
   assert.match(view, /teamCommons: \(id\) => \(\{ el: commonsFor\(id\)\.el/);
   assert.match(view, /made\.channels\.mount\(ctx\)/);
   assert.match(catalog, /type: WORKBENCH_TYPES\.kanban, header: 'surface'/);
-  assert.match(view, /taskManagerBySeat\[id\] = \{ el: surface\.el, manager, show: \(\) => manager\.enter\(\) \}/);
+  assert.match(view, /taskManagerBySeat\[id\] = \{ el: surface\.el, manager, show: \(\) => manager\.enter\(\), leave: \(\) => manager\.leave\(\) \}/);
   assert.match(view, /for \(const surface of Object\.values\(taskManagerBySeat\)\) surface\.manager\.setAvailability\(kanbanGate\)/);
   assert.match(view, /token\.type === WB_TYPES\.commons && token\.tab === 'kanban'/);
   assert.doesNotMatch(view, /\{ id: 'kanban', label:/);
