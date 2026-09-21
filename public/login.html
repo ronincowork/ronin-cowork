@@ -153,6 +153,9 @@
       const requested = new URLSearchParams(location.search).get('next');
       const destination = requested && requested.startsWith('/') && !requested.startsWith('//') && !requested.includes('\\')
         ? requested : '/';
+      // The server cannot see a #/ route. Browsers carry the original fragment through
+      // a redirect whose Location has none, so return it after the cookie is set.
+      const returnTo = destination.includes('#') ? destination : destination + location.hash;
 
       const say = (el, text, kind) => {
         el.textContent = text || '';
@@ -238,7 +241,7 @@
             authenticatorData: toB64u(cred.response.authenticatorData),
             signature: toB64u(cred.response.signature),
           });
-          location.replace(destination);
+          location.replace(returnTo);
           return;
         } catch (ex) {
           // NotAllowedError is the browser's word for "cancelled or timed out", which is
@@ -256,7 +259,7 @@
         say(err, '');
         try {
           await post('/api/login', { password: pw.value });
-          location.replace(destination);
+          location.replace(returnTo);
           return;
         } catch (ex) {
           // The password stays in the box: a failed login costs a retry, not retyping.
@@ -275,7 +278,7 @@
           // that dashes, case and O-for-0 are forgiven in exactly ONE place — doing it
           // here too would be a second spelling that could drift from the minter's.
           await post('/api/passkey/recover', { code: rc.value });
-          location.replace(destination);
+          location.replace(returnTo);
           return;
         } catch (ex) {
           say(rcmsg, ex.message === 'Failed to fetch' ? 'could not reach Ronin' : ex.message, 'bad');

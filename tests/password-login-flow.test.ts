@@ -6,6 +6,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import vm from 'node:vm';
 import { closeTestServer, openTestServer } from './helpers/testserver.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -115,4 +116,36 @@ test('password command protects local and proxied browser addresses through logi
   const afterLogout = await fetch(`${base}${destination}`, { redirect: 'manual', headers: { accept: 'text/html' } });
   assert.equal(afterLogout.status, 302);
   assert.equal(afterLogout.headers.get('location'), `/login?next=${encodeURIComponent(destination)}`);
+});
+
+test('login form returns to the protected browser route, including its fragment', async () => {
+  const html = await fs.readFile(path.join(ROOT, 'public', 'login.html'), 'utf8');
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)?.[1];
+  assert.ok(script);
+  for (const [search, hash, expected] of [
+    ['?next=%2F', '#/team/clean-round', '/#/team/clean-round'],
+    ['?next=%2Fm%3Fview%3Dteam', '#/team/clean-round', '/m?view=team#/team/clean-round'],
+    ['?next=%2F%2Fevil.example', '#/team/clean-round', '/#/team/clean-round'],
+  ]) {
+    const controls = new Map<string, any>();
+    const element = (id: string) => {
+      if (!controls.has(id)) controls.set(id, {
+        value: id === 'pw' ? 'correct horse' : '', dataset: {},
+        addEventListener(_event: string, handler: (event: { preventDefault(): void }) => Promise<void>) {
+          this.submit = handler;
+        },
+        focus() {},
+      });
+      return controls.get(id);
+    };
+    let returned = '';
+    vm.runInNewContext(script, {
+      document: { getElementById: element }, URLSearchParams,
+      location: { search, hash, replace: (url: string) => { returned = url; } },
+      window: { isSecureContext: false }, matchMedia: () => ({ matches: false }),
+      fetch: async (url: string) => ({ ok: true, json: async () => url === '/api/passkey/options' ? { registered: false } : { ok: true } }),
+    });
+    await element('f').submit({ preventDefault() {} });
+    assert.equal(returned, expected);
+  }
 });
