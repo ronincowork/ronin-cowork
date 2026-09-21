@@ -8,7 +8,7 @@ import { ask } from './ask.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { completeInstallationMap as completeMap } from './installation-map.js';
 import { createStatusMarker } from './status-marker.js';
-import { createSetupZone } from './setup-zone.js';
+import { createSetupZone, setupStep, watchSetupProgress } from './setup-zone.js';
 
 const INSTALLATION_ORDER = ['ronin_services', 'gbrain', 'trello', 'perplexity'];
 const el = (tag, cls = '', text = null) => {
@@ -194,7 +194,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     || (installed?.installations || []).some((row) => row.available === true);
   const paintZone = () => {
     if (!zone) return;
-    const step = environment?.setupProgress?.()?.steps?.find((entry) => entry.id === 'installations');
+    const step = setupStep(environment, 'installations');
     // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
     if (step?.answered) { zone.paint(); return; }
     if (anythingInstalled()) {
@@ -220,7 +220,7 @@ export function createInstallationsSurface(campaign, context = {}) {
   };
 
   // Answering does not reload this surface, so the zone listens for the record it reads.
-  const stopProgress = zone ? (environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
+  const stopProgress = watchSetupProgress(environment, paintZone);
   stoneSurface.mount(surface.content, { before: zone ? [zone.el, reading] : [reading] });
 
   const enter = async () => {

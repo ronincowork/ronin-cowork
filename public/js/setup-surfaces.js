@@ -16,7 +16,7 @@ import { HOUSE_PRESETS, PRESETS_TYPE, buildLaunchPlan, initialControls, seatingP
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { createInstallationsSurface } from './campaign-installations.js';
-import { createSetupZoneSlot } from './setup-zone.js';
+import { createSetupZoneSlot, setupStep, watchSetupProgress } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
 
 // Model providers is the one surface two workbenches seat (provider-surface.js); its type
@@ -110,7 +110,7 @@ function createRegisterSurface(context) {
   const email = input('email', 'email'); email.placeholder = 'you@example.com'; email.autocomplete = 'email';
   const identityMode = choiceGroup('identity_mode', t('setup_surface.identity', 'How would you like to register?'), [
     ['email', 'With email', 'Eligible for additional Ronin Services and participation in the Bounty Program.'],
-    ['anonymous', 'Anonymous'], ['no_thanks', 'No thank you'],
+    ['anonymous', 'Anonymous'],
   ], { short: t('setup_surface.identity_short', 'Register as') });
   identityMode.wrap.classList.add('setup-register-identity-choice');
   const kind = choiceGroup('kind', t('setup_surface.kind', 'Which of these are you most likely to use?'), [
@@ -231,24 +231,17 @@ function createRegisterSurface(context) {
   const send = el('div', 'setup-register-send');
   send.append(consent, registerAction, notice);
   let formOpen = null; // see THE HEADER ZONE, below
+  // Declining is the header zone's 'No thank you', not a third way to register, so this asks
+  // only how — and everything the old declined branch used to hide one by one lives inside
+  // the form, which now goes away whole.
   const paintIdentityMode = () => {
     const emailRegistration = identityMode.value.value === 'email';
-    const declinedRegistration = identityMode.value.value === 'no_thanks';
-    emailField.hidden = !emailRegistration || declinedRegistration;
-    runLocation.wrap.hidden = declinedRegistration;
-    fit.hidden = declinedRegistration;
-    consent.hidden = declinedRegistration;
-    registerAction.hidden = declinedRegistration;
-    notice.hidden = declinedRegistration;
-    send.hidden = declinedRegistration;
-    declined.hidden = !declinedRegistration;
-    email.required = emailRegistration && !declinedRegistration;
+    emailField.hidden = !emailRegistration;
+    email.required = emailRegistration;
   };
   identityMode.onChange(() => {
     paintIdentityMode();
-    const identity = identityMode.value.value === 'no_thanks' ? 'declined' : identityMode.value.value;
-    if (identity) void context.environment?.setIdentityChoice?.(identity);
-    if (identity === 'declined') context.environment?.onRegistrationChoice?.('not_now');
+    if (identityMode.value.value) void context.environment?.setIdentityChoice?.(identityMode.value.value);
   });
   paintIdentityMode();
   form.append(welcome, registrationIntro, about, fit, send);
@@ -274,6 +267,7 @@ function createRegisterSurface(context) {
     identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.check_email', 'Check your email')),
       el('span', '', summaryWords()));
     form.hidden = !formOnShow();
+    declined.hidden = recordedAnswer() !== 'not_now';
     recoveryOptions.hidden = !current?.submitted_at;
     recovery.replaceChildren();
     const changeEmail = () => action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
@@ -324,23 +318,15 @@ function createRegisterSurface(context) {
      The form's visibility is `formOpen`: null until a pick is pressed, and while it is null
      the record decides, so someone who declined and came back finds it as they left it. */
   const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
-  const recordedAnswer = () => context.environment?.setupProgress?.()?.steps
-    ?.find((step) => step.id === 'register')?.answer;
+  const recordedAnswer = () => setupStep(context.environment, 'register')?.answer;
   const formOnShow = () => (formOpen === null
-    ? identityMode.value.value !== 'no_thanks' && recordedAnswer() !== 'not_now' && !current?.submitted_at
+    ? recordedAnswer() !== 'not_now' && !current?.submitted_at
     : formOpen);
   const answerStep = (answer) => context.environment?.answerSetupStep?.('register', answer);
-  const showForm = () => {
-    formOpen = true;
-    // A declined identity hides the form's own innards, so reopening on 'no_thanks' would
-    // show an empty shell. Send it back to the recommended choice; they can still switch.
-    if (identityMode.value.value === 'no_thanks') identityMode.set('email');
-    void answerStep('acted');
-    paint();
-  };
+  const showForm = () => { formOpen = true; void answerStep('acted'); paint(); };
   const hideForm = () => {
     formOpen = false;
-    identityMode.set('no_thanks');
+    void context.environment?.setIdentityChoice?.('declined');
     void answerStep('not_now');
     paint();
   };
@@ -362,7 +348,7 @@ function createRegisterSurface(context) {
     });
   };
   // Answering does not reload this surface, so the zone listens for the record it reads.
-  const stopProgress = zone ? (context.environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
+  const stopProgress = watchSetupProgress(context.environment, paintZone);
   if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
   return { el: out.el, show: async () => {

@@ -3,7 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { buildProjectRoots } from './projectroots.js';
 import { t } from './lexicon.js';
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
-import { createSetupZone } from './setup-zone.js';
+import { createSetupZone, setupStep, watchSetupProgress } from './setup-zone.js';
 import { request } from './request.js';
 
 const el = (tag, cls = '') => {
@@ -49,7 +49,7 @@ export function createWorkspaceFoldersSurface({
     if (!zone) return;
     // Connected but nowhere to work is still worth saying: Agents start in a folder.
     // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
-    if (environment?.setupProgress?.()?.steps?.find((step) => step.id === 'workspace')?.answered) { zone.paint(); return; }
+    if (setupStep(environment, 'workspace')?.answered) { zone.paint(); return; }
     const folders = (environment?.trackedRoots?.() || []).filter((entry) => entry?.name).length;
     if (connectedToGithub) {
       zone.paint({ state: folders ? 'GitHub connected.' : 'GitHub connected. No folder registered.', picks: [] });
@@ -66,7 +66,7 @@ export function createWorkspaceFoldersSurface({
 
   // The zone reads the answer record, so it has to hear when the record changes: answering
   // here does not reload the surface, and an unrepainted zone leaves the pick unmarked.
-  const stopProgress = zone ? (environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
+  const stopProgress = watchSetupProgress(environment, paintZone);
 
   let room = null;
   const github = presentation === 'stones' ? createGithubWorkspaceSetup({

@@ -32,7 +32,7 @@
  */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
-import { createSetupZone } from './setup-zone.js';
+import { createSetupZone, setupStep } from './setup-zone.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
@@ -439,7 +439,7 @@ export function createProviderSurface(context) {
   const paintZone = (activated) => {
     if (!zone) return;
     // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
-    if (context.environment?.setupProgress?.()?.steps?.find((step) => step.id === 'provider')?.answered) { zone.paint(); return; }
+    if (setupStep(context.environment, 'provider')?.answered) { zone.paint(); return; }
     zone.paint(activated > 0
       ? { state: 'Provider signed in and authenticated.', picks: [] }
       : { state: 'No provider found on this machine.', picks: [{ label: 'Sign in a provider', action: () => controller.openFirst() }] });
