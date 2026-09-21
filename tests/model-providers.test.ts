@@ -155,7 +155,7 @@ test('the summary is what was measured, dated, and survives the record round tri
     signedIn: async (id) => id === 'claude' || id === 'grok',
     now: () => '2026-09-08T10:00:00.000Z',
     version: async (file, argv) => { if (file === '/bin/gemini') throw new Error('gemini was asked: a provider not activated gets nothing spent on it'); return (file === '/bin/codex' && argv[0] === '--version' ? 'codex-cli 0.151.0' : file === '/bin/claude' ? '2.1.263 (Claude Code)' : ''); },
-    modelList: async (id) => id === 'codex' ? { fetched_at: '2026-09-09T10:42:03Z', etag: 'e', client_version: '0.151.0', models: [{ slug: 'gpt-5.6-sol', display_name: 'Sol', description: 'Workhorse', visibility: 'list', priority: 1 }] } : null,
+    modelList: async () => { throw new Error('ordinary measurement must not discover model inventory'); },
   });
   assert.deepEqual(measured, {
     measured_at: '2026-09-08T10:00:00.000Z',
@@ -165,7 +165,8 @@ test('the summary is what was measured, dated, and survives the record round tri
     activated_count: 2,
     paths: { claude: '/bin/claude', codex: '/bin/codex', gemini: '/bin/gemini' },
     versions: { claude: '2.1.263', codex: '0.151.0' },
-    model_lists: { codex: { fetched_at: '2026-09-09T10:42:03Z', etag: 'e', client_version: '0.151.0', models: [{ slug: 'gpt-5.6-sol', display_name: 'Sol', description: 'Workhorse', visibility: 'list', priority: 1 }] } },
+    model_lists: {},
+    model_inventory: Object.fromEntries(['claude', 'codex', 'gemini'].map((id) => [id, { state: 'unmeasured', checked_at: '' }])),
     latest: {},
   }, 'gemini is installed but neither signed in nor recorded; grok has a file but no CLI; a CLI that would not say its version is simply absent');
 
@@ -181,7 +182,7 @@ test('the summary is what was measured, dated, and survives the record round tri
   assert.equal(catalog.parseProviderSummary({ installed: ['claude'] }), null, 'undated is unmeasured');
   assert.deepEqual(catalog.parseProviderSummary({ measured_at: 't', installed: ['claude', 'claude', 7], operational: ['bad id!'], paths: { claude: '/x', codex: 3 }, versions: { codex: '0.151.0', claude: 9 }, latest: { codex: { version: '0.153.4', checked_at: 'c' }, claude: { version: '' } } }), {
     measured_at: 't', installed: ['claude'], signed_in: [], operational: [], activated_count: 0, paths: { claude: '/x' },
-    versions: { codex: '0.151.0' }, model_lists: {}, latest: { codex: { version: '0.153.4', checked_at: 'c' } },
+    versions: { codex: '0.151.0' }, model_lists: {}, model_inventory: { claude: { state: 'unmeasured', checked_at: '' } }, latest: { codex: { version: '0.153.4', checked_at: 'c' } },
   }, 'a summary recorded before versions existed reads back with empty maps, never undefined');
 });
 
