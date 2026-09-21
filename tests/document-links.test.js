@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access } from 'node:fs/promises';
-import { localDocumentLink } from '../public/js/document-links.js';
+import { localDocumentLink, productRepositoryHref } from '../public/js/document-links.js';
 import { markdownHeadingId, renderMarkdownDocument } from '../public/js/markdown-reader.js';
 
 class Node {
@@ -38,4 +38,22 @@ test('Markdown links call local navigation while external links retain browser b
   links[1].listeners.click({ preventDefault() { prevented = true; } });
   assert.equal(prevented, false);
   assert.equal(links[1].target, '_blank');
+});
+
+test('Assist sends the tile guide repository link to canonical GitHub with its fragment', () => {
+  const source = 'docs/using-ronin/tile.md';
+  const relative = '../../public/js/README.md#visible-surface-ownership-index';
+  const canonical = 'https://github.com/ronincowork/ronin-cowork/blob/master/public/js/README.md#visible-surface-ownership-index';
+  assert.equal(productRepositoryHref(source, '../../public/js/README.md'),
+    'https://github.com/ronincowork/ronin-cowork/blob/master/public/js/README.md');
+  assert.equal(localDocumentLink(source, relative), null);
+  assert.equal(productRepositoryHref(source, relative), canonical);
+  assert.equal(productRepositoryHref(source, '../workbench.md#setup'), null, 'docs Markdown stays local');
+  assert.equal(productRepositoryHref(source, 'https://example.com/help'), null, 'external links stay external');
+  const article = renderMarkdownDocument(`[UI ownership index](${relative})`, doc,
+    { resolveHref: (href) => productRepositoryHref(source, href) });
+  const link = article.children[0].children.find((child) => child.tag === 'a');
+  assert.equal(link.href, canonical);
+  assert.equal(link.target, '_blank');
+  assert.equal(link.rel, 'noopener noreferrer');
 });
