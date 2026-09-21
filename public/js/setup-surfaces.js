@@ -267,7 +267,11 @@ function createRegisterSurface(context) {
     identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.check_email', 'Check your email')),
       el('span', '', summaryWords()));
     form.hidden = !formOnShow();
-    declined.hidden = recordedAnswer() !== 'not_now';
+    // Follow the form, not the answer record. hideForm paints immediately while the PATCH is
+    // still in flight, so reading the record here left the line hidden at the one moment it
+    // was wanted. The form being away, and not because they have already submitted, IS the
+    // declined state — and it is true synchronously.
+    declined.hidden = formOnShow() || Boolean(current?.submitted_at);
     recoveryOptions.hidden = !current?.submitted_at;
     recovery.replaceChildren();
     const changeEmail = () => action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
@@ -348,7 +352,9 @@ function createRegisterSurface(context) {
     });
   };
   // Answering does not reload this surface, so the zone listens for the record it reads.
-  const stopProgress = watchSetupProgress(context.environment, paintZone);
+  // paint() repaints the zone as its last act, so watching with paint — not paintZone — keeps
+  // the form and the declined line in step with the record too, however the record changed.
+  const stopProgress = watchSetupProgress(context.environment, paint);
   if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
   return { el: out.el, show: async () => {
