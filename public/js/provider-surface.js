@@ -457,7 +457,6 @@ export function createProviderSurface(context) {
     mikaAvailability.textContent = activatedNow === 1
       ? t('setup_surface.one_model_signed_in', '1 model signed in')
       : activatedNow > 1 ? t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow }) : '';
-    await loadProviderCatalog();
     context.workbench?.refreshSelector?.();
     const rows = providerCatalog().rows;
     const providers = (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id);
