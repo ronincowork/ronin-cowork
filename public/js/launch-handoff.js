@@ -3,7 +3,7 @@ import { openWorkbenchTab } from './workspace.js';
 
 const EMPTY_WORKSPACE = '@empty';
 const sessionSeat = (name) => ({ type: 'session.terminal', key: name });
-const commonsSeat = () => ({ type: 'team.commons', tab: 'team-configuration' });
+const commonsSeat = () => ({ type: 'team.commons', tab: 'roster' });
 
 function orderedSessions(sessions = []) {
   const seen = new Set();
