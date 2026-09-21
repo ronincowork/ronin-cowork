@@ -96,7 +96,7 @@ export function createTeamKanban(options = {}) {
   const beta = node('strong', 'tk-beta', t('team_kanban.beta', 'Beta'));
   const headerToggle = node('button', 'tk-header-toggle');
   headerToggle.type = 'button';
-  const headerMessage = node('p', 'tk-header-message', t('team_kanban.beta_message', 'Task Manager is in beta. Review your Team’s Projects here and request stage changes by dragging cards.'));
+  const headerMessage = node('p', 'tk-header-message', t('team_kanban.beta_message', 'Task Manager is in beta. We’re shaping it to follow Projects from open issues and ideas through planning, building, review, landing, and done. Tools and the Work Record already support this progression. We’re improving how Agents keep Projects current without making upkeep mandatory. This is a priority for us; watch for updates.'));
   headerMessage.id = `tk-header-message-${++nextHeaderId}`;
   headerToggle.setAttribute('aria-controls', headerMessage.id);
   headerRow.append(beta, headerToggle);

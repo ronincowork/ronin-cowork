@@ -725,7 +725,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## team — team-view.js (the Team page)
 - **team_kanban.beta:** Beta
-- **team_kanban.beta_message:** Task Manager is in beta. Review your Team’s Projects here and request stage changes by dragging cards.
+- **team_kanban.beta_message:** Task Manager is in beta. We’re shaping it to follow Projects from open issues and ideas through planning, building, review, landing, and done. Tools and the Work Record already support this progression. We’re improving how Agents keep Projects current without making upkeep mandatory. This is a priority for us; watch for updates.
 - **team_kanban.header_collapse:** Collapse
 - **team_kanban.header_expand:** Expand
 - **team.lead:** Team lead
