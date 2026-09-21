@@ -235,13 +235,13 @@ test('Team Configuration hides legacy Control and hosts Runtime trays below its 
   assert.match(form, /trayHost: defaultsRow/);
 });
 
-test('New Team checks names only for a cast and opens partial Teams with exact recovery evidence', async () => {
+test('New Team checks names only for a cast and opens empty or partial Teams with recovery evidence', async () => {
   const form = await source('new-team-form.js');
   assert.match(form, /if \(picks\.length\) \{[\s\S]*request\('\/api\/sessions'/);
   assert.match(form, /const launched = outcomes\.filter\(\(\{ result \}\) => result\?\.ok\)[\s\S]*result\.data\?\.name \|\| row\.name/);
   assert.match(form, /Team created\. Launched \{launched\} of \{total\} Agents: \{born\}\. Failed: \{names\}/);
-  assert.match(form, /if \(refused\.length\) \{[\s\S]*if \(launched\.length\) openLaunchHandoff\(\{ team: name, sessions: launched \}, launchTab\);[\s\S]*return;/);
-  assert.match(form, /else openWorkbenchTab\(\{ destination: 'team', param: name, mode: 'overlay'/,
-    'a Team with no successful births still opens its recovery destination');
+  assert.match(form, /if \(refused\.length\) \{[\s\S]*openLaunchHandoff\(\{ team: name, sessions: launched \}, launchTab\);\s*return;/,
+    'empty and partial Teams use the same destination with the successful cast');
+  assert.doesNotMatch(form, /mode: 'overlay'/);
   assert.doesNotMatch(form, /if \(refused\.length\) \{\s*closeWorkspaceTab/);
 });
