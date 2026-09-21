@@ -74,14 +74,14 @@ export function createPasswordSurface(context = {}) {
    * claim either until it knows.
    */
   const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
-  const answerNoPassword = () => {
-    if (saved) void disable();                                    // a set password must go
-    else void context.environment?.answerSetupStep?.('password', 'not_now');
-  };
+  // Two different acts, and each is only ever offered in the state where it makes sense:
+  // settling for no password when there is none, and removing one when there is.
+  const chooseNoPassword = () => void context.environment?.answerSetupStep?.('password', 'not_now');
   const paintZone = () => {
     if (!zone) return;
     const progress = context.environment?.setupProgress?.();
     const onTailnet = progress?.facts?.tailscale === true;
+    const noPasswordChosen = progress?.steps?.find((step) => step.id === 'password')?.answer === 'not_now';
     // STEP 5 NEVER EMPTIES either, and both of its picks keep working: how you reach this
     // machine is a standing arrangement, not a one-time answer, so the owner can come back
     // and change it whenever (owner, 2026-09-21). 'Tailnet only' therefore has to MEAN it —
@@ -96,15 +96,24 @@ export function createPasswordSurface(context = {}) {
       // shown and not selectable rather than quietly offered — and 'None' takes its place as
       // the real choice, for a machine that is already protected some other way and wants no
       // Ronin password on top (owner, 2026-09-21).
-      picks: [
-        { label: 'Tailnet only',
-          chosen: onTailnet && !saved,
-          disabled: !onTailnet,
-          title: onTailnet ? '' : 'Tailnet is not available on this machine.',
-          action: () => answerNoPassword() },
-        ...(onTailnet ? [] : [{ label: 'None', chosen: !saved, action: () => answerNoPassword() }]),
-        { label: 'Add password', chosen: saved, action: () => openForm('enable') },
-      ],
+      // A MARK MEANS THE PERSON CHOSE IT, never that the machine happens to be that way.
+      // Tailnet and no password is the state every machine starts in, so marking 'Tailnet
+      // only' on arrival claimed a decision nobody had made, and the step is not complete
+      // until they make it. Nothing is pre-marked; a mark appears once they have answered.
+      //
+      // With a password already on, none of that is the question any more — the one thing
+      // left to offer is taking it off again (owner, 2026-09-21).
+      picks: saved
+        ? [{ label: 'Disable password', action: () => void disable() }]
+        : [
+            { label: 'Tailnet only',
+              chosen: onTailnet && noPasswordChosen,
+              disabled: !onTailnet,
+              title: onTailnet ? '' : 'Tailnet is not available on this machine.',
+              action: chooseNoPassword },
+            ...(onTailnet ? [] : [{ label: 'None', chosen: noPasswordChosen, action: chooseNoPassword }]),
+            { label: 'Add password', action: () => openForm('enable') },
+          ],
     });
   };
   // Seated beside the body, not inside it — see the note in setup-surfaces.js.
