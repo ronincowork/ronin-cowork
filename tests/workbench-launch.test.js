@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { consumeWorkbenchLaunch, navigateToWorkspaceFolders, openWorkbenchTab, resolveWorkbenchState } from '../public/js/workspace.js';
+import { consumeWorkbenchLaunch, navigateToWorkspaceFolders, openWorkbenchTab, patchWorkspaceViewState, resolveWorkbenchEntry, resolveWorkbenchState, workbenchStateKey } from '../public/js/workspace.js';
 
 test('Workspace Folder navigation preserves Settings and seats the shared surface', () => {
   let written = null;
@@ -41,6 +41,46 @@ test('Workbench entry precedence is structured launch, remembered state, then fi
   assert.deepEqual(resolveWorkbenchState(remembered, { mode: 'overlay', state: {
     seats: { workspace2: 'launch.two' },
   } }, defaults).seats, { workspace1: 'remembered.one', workspace2: 'launch.two' });
+});
+
+test('Workbench recall is scoped to canonical destination and tenant', () => {
+  assert.equal(workbenchStateKey('campaign', 'ignored'), 'campaign', 'Campaign is one tenant');
+  assert.equal(workbenchStateKey('team', 'Commons'), 'team:Commons');
+  assert.equal(workbenchStateKey('agent', 'Ada/Lovelace'), 'agent:Ada%2FLovelace');
+  const defaults = { count: 2, seats: { workspace1: 'default.self', workspace2: 'default.docs' } };
+  let views = { agent: { seats: { workspace1: 'legacy.unscoped' } } };
+  views = patchWorkspaceViewState(views, 'agent', 'Ada', { selected: 'workspace2', seats: { workspace1: 'ada.self' } });
+  views = patchWorkspaceViewState(views, 'team', 'Commons', { seats: { workspace1: 'commons.roster' } });
+  assert.deepEqual(resolveWorkbenchEntry(views, 'agent', 'Ada', null, defaults), {
+    count: 2, selected: 'workspace2', seats: { workspace1: 'ada.self', workspace2: 'default.docs' },
+  });
+  assert.deepEqual(resolveWorkbenchEntry(views, 'agent', 'Bea', null, defaults), defaults,
+    'a cloned tab cannot use Ada or legacy unscoped Agent seats for Bea');
+  assert.deepEqual(resolveWorkbenchEntry(views, 'team', 'Other', null, defaults), defaults,
+    'a Team cannot restore Commons seats');
+  assert.deepEqual(resolveWorkbenchEntry(views, 'agent', 'Bea', { mode: 'replace', state: {
+    seats: { workspace1: 'chosen.self' },
+  } }, defaults), { count: 2, seats: { workspace1: 'chosen.self' } },
+  'an explicit launch beats both recall and defaults');
+  assert.deepEqual(resolveWorkbenchEntry(views, 'agent', 'Bea', { mode: 'overlay', state: {
+    seats: { workspace2: 'chosen.docs' },
+  } }, defaults).seats, { workspace1: 'default.self', workspace2: 'chosen.docs' },
+  'an overlay for Bea starts from Bea defaults, never Ada seats');
+  views = patchWorkspaceViewState(views, 'agent', 'Bea', { seats: { workspace1: 'bea.self' } });
+  assert.equal(resolveWorkbenchEntry(views, 'agent', 'Bea', null, defaults).seats.workspace1, 'bea.self',
+    'refresh recalls Bea after her first save');
+  assert.deepEqual(views['agent:Ada'].seats, { workspace1: 'ada.self' }, 'opening Bea does not rewrite Ada');
+});
+
+test('Campaign recall remains singleton while Team and Agent snapshots remain distinct', () => {
+  let views = patchWorkspaceViewState({}, 'campaign', '', { seats: { workspace1: 'campaign.defaults' } });
+  views = patchWorkspaceViewState(views, 'team', 'Alpha', { seats: { workspace1: 'alpha.member' } });
+  views = patchWorkspaceViewState(views, 'team', 'Beta', { seats: { workspace1: 'beta.member' } });
+  views = patchWorkspaceViewState(views, 'agent', 'Kai', { seats: { workspace1: 'kai.self' } });
+  assert.equal(resolveWorkbenchEntry(views, 'campaign', '', null, {}).seats.workspace1, 'campaign.defaults');
+  assert.equal(resolveWorkbenchEntry(views, 'team', 'Alpha', null, {}).seats.workspace1, 'alpha.member');
+  assert.equal(resolveWorkbenchEntry(views, 'team', 'Beta', null, {}).seats.workspace1, 'beta.member');
+  assert.equal(resolveWorkbenchEntry(views, 'agent', 'Kai', null, {}).seats.workspace1, 'kai.self');
 });
 
 test('a structured launch is tab-isolated, claimed once, and absent on refresh', () => {
