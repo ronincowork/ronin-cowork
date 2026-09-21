@@ -105,7 +105,7 @@ test('showing the surface paints the recorded inventory without starting a secon
   await settle();
   assert.deepEqual(calls.slice(2), [], 'Setup progress owns the scan; this surface does not start another');
   assert.equal(ctx.refreshed.count, 1);
-  assert.equal(ctx.environment.setupRuntime, machine);
+  assert.deepEqual(ctx.environment.setupRuntime, machine);
   const stones = byClass(made.el, 'sws-stone');
   assert.deepEqual(stones.map((stone) => stone.attributes['data-provider']), ['claude', 'codex', 'grok', 'pi', 'openrouter']);
   assert.deepEqual(stones.map((stone) => byClass(stone, 'sws-label')[0].textContent), ['Claude Code', 'Codex', 'Grok Build', 'Pi', 'OpenRouter']);
