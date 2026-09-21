@@ -82,3 +82,18 @@ export function createSetupZoneSlot(options) {
   slot.append(zone.el);
   return { el: slot, paint: zone.paint };
 }
+
+/**
+ * One step's record from the server-owned progress resource — `{ answered, answer }`, or
+ * undefined before it has loaded. Five surfaces were each spelling out the same lookup.
+ */
+export const setupStep = (environment, id) =>
+  environment?.setupProgress?.()?.steps?.find((step) => step.id === id);
+
+/**
+ * Repaint whenever the answer record changes. Answering does not reload a surface, so a zone
+ * that reads the record has to hear about it or it shows a stale mark. Returns the unsubscribe
+ * to call on destroy; safe to call when there is no zone and nothing to watch.
+ */
+export const watchSetupProgress = (environment, repaint) =>
+  environment?.onSetupProgress?.(() => repaint()) || (() => {});

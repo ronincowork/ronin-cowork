@@ -3,7 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { createSetupZoneSlot } from './setup-zone.js';
+import { createSetupZoneSlot, setupStep, watchSetupProgress } from './setup-zone.js';
 
 export const PASSWORD_SURFACE_TYPE = 'machine.password';
 
@@ -81,7 +81,7 @@ export function createPasswordSurface(context = {}) {
     if (!zone) return;
     const progress = context.environment?.setupProgress?.();
     const onTailnet = progress?.facts?.tailscale === true;
-    const noPasswordChosen = progress?.steps?.find((step) => step.id === 'password')?.answer === 'not_now';
+    const noPasswordChosen = setupStep(context.environment, 'password')?.answer === 'not_now';
     // STEP 5 NEVER EMPTIES either, and both of its picks keep working: how you reach this
     // machine is a standing arrangement, not a one-time answer, so the owner can come back
     // and change it whenever (owner, 2026-09-21). 'Tailnet only' therefore has to MEAN it —
@@ -213,7 +213,7 @@ export function createPasswordSurface(context = {}) {
   // Answering does not reload this surface, so the zone listens for the record it reads. This
   // subscribes LAST because onSetupProgress paints immediately, and paintZone reads `saved`
   // and `disable` — subscribing before they are initialised throws on the first paint.
-  const stopProgress = zone ? (context.environment?.onSetupProgress?.(() => paintZone()) || (() => {})) : (() => {});
+  const stopProgress = watchSetupProgress(context.environment, paintZone);
   return { el: surface.el, show, destroy: () => { stopProgress(); selector.destroy(); } };
 }
 
