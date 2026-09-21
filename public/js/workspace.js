@@ -8,6 +8,12 @@ const PREVIOUS_WORKSPACE_STATE_KEY = 'ronin.workspace.v1';
 const WORKBENCH_LAUNCH_PARAM = 'ronin-launch';
 
 const text = (value) => (typeof value === 'string' ? value : '');
+const TENANT_VIEWS = new Set(['team', 'agent']);
+
+/** One recalled Workbench belongs to one destination tenant, never just its view kind. */
+export function workbenchStateKey(view, param = '') {
+  return TENANT_VIEWS.has(view) ? `${view}:${encodeURIComponent(text(param))}` : view;
+}
 
 export const defaultWorkspaceState = () => ({
   version: WORKSPACE_STATE_VERSION,
@@ -22,9 +28,9 @@ export const defaultWorkspaceState = () => ({
   // Shared by the home and the doors it opens; healed on read against what exists
   // (js/campaigns.js `normalizeSelection`), so a stale or archived id cannot strand a tab.
   campaignSelection: null,
-  // Each destination owns one namespace inside this tab. Empty objects and null drafts
-  // are valid; the shell stores state but never interprets a feature's workflow.
-  views: { home: {}, cowork: {}, team: {}, agent: {}, campaign: {}, setup: {}, launch: {}, 'new-team': { draft: null } },
+  // Team and Agent snapshots are added under view+route-tenant keys on first save.
+  // Empty objects and null drafts are valid for singleton destinations.
+  views: { home: {}, cowork: {}, campaign: {}, setup: {}, launch: {}, 'new-team': { draft: null } },
   returnTo: null,
 });
 
@@ -204,6 +210,18 @@ export function resolveWorkbenchState(remembered = {}, launch = null, defaults =
   return { ...base, ...patch, seats };
 }
 
+/** Resolve a destination from its own recall namespace, including in a cloned tab. */
+export function resolveWorkbenchEntry(views, destination, param, launch, defaults) {
+  return resolveWorkbenchState(views?.[workbenchStateKey(destination, param)], launch, defaults);
+}
+
+/** Persist a snapshot under that same identity; other tenants remain untouched. */
+export function patchWorkspaceViewState(views, destination, param, patch) {
+  const key = workbenchStateKey(destination, param);
+  const before = views?.[key];
+  return { ...(views || {}), [key]: { ...(before && typeof before === 'object' ? before : {}), ...patch } };
+}
+
 /**
  * The one ViewHost owner. Views may be empty and may carry no classification; only a
  * registered id and an element are structural. Lifecycle failures are contained to the
@@ -309,11 +327,13 @@ export function createWorkspace(host, options = {}) {
     if (!next) throw new Error(`workspace has no safe ${safeView} view`);
     const param = text(nav.param);
     let launchClaimed = false, launch = null;
+    const scopedViewState = (view) => viewState(view, view === id ? param : '');
+    const scopedPatchViewState = (view, patch) => patchViewState(view, patch, view === id ? param : '');
     const workbenchEntry = (defaults = {}) => {
       if (!launchClaimed) { launch = consumeWorkbenchLaunch(id, param); launchClaimed = true; }
-      return { state: resolveWorkbenchState(viewState(id), launch, defaults), launched: launch !== null };
+      return { state: resolveWorkbenchEntry(state.views, id, param, launch, defaults), launched: launch !== null };
     };
-    const context = { id, param, state, navigate, patchState, viewState, patchViewState, workbenchEntry };
+    const context = { id, param, state, navigate, patchState, viewState: scopedViewState, patchViewState: scopedPatchViewState, workbenchEntry };
     const changed = !active || active.id !== id || active.param !== param;
     if (active && active.view !== next) {
       invoke(active.id, 'leave', () => active.view.leave?.());
@@ -370,19 +390,17 @@ export function createWorkspace(host, options = {}) {
     writeState(state);
   }
 
-  const viewState = (id) => state.views?.[id] ?? null;
-  const patchViewState = (id, patch) => {
+  const viewState = (id, param = '') => state.views?.[workbenchStateKey(id, param)] ?? null;
+  const patchViewState = (id, patch, param = '') => {
     if (!id || !patch || typeof patch !== 'object') return;
-    const before = state.views?.[id];
-    state.views = {
-      ...(state.views || {}),
-      [id]: { ...(before && typeof before === 'object' ? before : {}), ...patch },
-    };
+    state.views = patchWorkspaceViewState(state.views, id, param, patch);
     writeState(state);
   };
   const refreshTitle = () => {
     if (!active) return;
-    const context = { id: active.id, param: active.param, state, navigate, patchState, viewState, patchViewState };
+    const context = { id: active.id, param: active.param, state, navigate, patchState,
+      viewState: (view) => viewState(view, view === active.id ? active.param : ''),
+      patchViewState: (view, patch) => patchViewState(view, patch, view === active.id ? active.param : '') };
     document.title = tabTitle(invoke(active.id, 'title', () => active.view.title?.(context)));
   };
 
