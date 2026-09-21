@@ -21,7 +21,9 @@ test('Campaign Installations is the shared stone surface with the Setup Services
   assert.match(source, /saveCampaign\(row\.id, \{ config: \{ installations \} \}\)/);
   assert.match(source, /saveCampaign\(row\.id, \{ config: \{ defaults \} \}\)/);
   assert.doesNotMatch(source, /shape: 'square'|shape_all|answer === 'all'/);
-  assert.match(source, /stoneSurface\.select\('ronin_services'\)/);
+  // A collection surface opens showing its collection: forcing Ronin Services open put the
+  // surface straight into operation mode, which is the one view the header zone is not in.
+  assert.doesNotMatch(source, /stoneSurface\.select\('ronin_services'\)/);
   assert.match(source, /Ronin Services required/);
   assert.match(source, /name === 'trello' \|\| name === 'perplexity'/);
   assert.match(source, /values\.ronin_services === true.*installed\?\.services\?\.parts/);
