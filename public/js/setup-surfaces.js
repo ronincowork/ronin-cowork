@@ -517,6 +517,7 @@ export function createServicesSurface(context) {
     // Ronin is down or unreachable for a moment (a restart in flight): keep what is painted and look again shortly.
     if (!installed.ok && installed.kind === 'network' && body.dataset.state) { timer = setTimeout(() => { if (body.isConnected) void show(); }, 3000); return; }
     const model = servicesSetupModel(registration, installed, activation);
+    if (installed.ok) context.onInstalledState?.(installed.data);
     const startedAt = installed.ok ? installed.data?.cowork?.startedAt || '' : '';
     const intro = explain();
     body.replaceChildren(intro);
@@ -619,6 +620,7 @@ export function createServicesSurface(context) {
             const fresh = await request('/api/installed', { cache: 'no-store' });
             if (fresh.ok) {
               facts = fresh.data;
+              context.onInstalledState?.(fresh.data);
               const next = servicesSetupModel(registration, fresh, activation);
               paintSteps(next);
               body.dataset.state = next.state;
