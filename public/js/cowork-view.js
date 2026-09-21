@@ -16,7 +16,7 @@ import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
 import { createPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { refreshDesks } from './desks.js';
@@ -79,6 +79,13 @@ export function createCoworkView(options = {}) {
   const { createSurface, createTabbedSurface, createAction } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault } = WorkspaceKit.contract;
+  const teamDefaultsRequest = (name) => ({ destination: 'team', param: name, mode: 'replace', state: {
+    count: 2, selected: 'workspace1',
+    seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: DISMISSED_WORKSPACE },
+  } });
+  const deskDefaultsRequest = () => ({ destination: 'campaign', mode: 'replace', state: {
+    count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' },
+  } });
   const root = el('main', 'tw-view');
   let ctx = null;
   let team = '';
@@ -248,7 +255,8 @@ export function createCoworkView(options = {}) {
   // are Campaign-level and are now surfaces of Campaign Manage (js/campaign-view.js).
   // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
   // surface rather than the one tab left in a strip.
-  const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamRosterSurface()])) : {};
+  const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
+    .map((id) => [id, createTeamRosterSurface({ onOpen: openAgentWorkbench })])) : {};
   const cronBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => { const surface = createSurface({ label: t('workspace.tab_cron_jobs', 'Cron jobs'), className: 'tw-cron' }); const room = createTeamJikan({ universal: true, teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }); surface.content.append(room.el); return [id, { el: surface.el, room }]; })) : {};
   // seated in a workspace, grouped by Team of record, each row's act a labelled button.
   // A rehydrated session lands in the workspace whose surface woke it, like a birth.
@@ -286,12 +294,14 @@ export function createCoworkView(options = {}) {
         const view = createNewAgentView(WorkspaceKit, {
           consumed,
           team: () => (campaign || team === UNASSIGNED ? '' : team),
+          teamDefaultsUrl: (name) => workbenchLaunchUrl(teamDefaultsRequest(name)),
+          deskDefaultsUrl: () => workbenchLaunchUrl(deskDefaultsRequest()),
           openTeamDefaults: (name) => {
             if (!name) return;
             if (!campaign && name === team) putCommons(oppositeSeat(id), 'team-configuration');
-            else openWorkbenchTab({ destination: 'team', param: name, mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: DISMISSED_WORKSPACE } } });
+            else openWorkbenchTab(teamDefaultsRequest(name));
           },
-          openDeskDefaults: () => openWorkbenchTab({ destination: 'campaign', mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' } } }),
+          openDeskDefaults: () => openWorkbenchTab(deskDefaultsRequest()),
           // A Team launch hands its workspace to the newborn. Cowork has no Team-local
           // seat contract: its successful no-Team launch opens the standalone Agent
           // destination through new-agent's shared launch handoff.
@@ -300,7 +310,7 @@ export function createCoworkView(options = {}) {
             return connectSession(name, id);
           },
         });
-        newAgentBySeat[id] = { el: view.el, enter: (detail) => view.enter(detail) };
+        newAgentBySeat[id] = { el: view.el, enter: (detail) => view.enter(detail), destroy: () => view.destroy() };
       }
       // The detail rides through: `S.showNewSession(prompt)` seeds the form's Instructions.
       return { el: newAgentBySeat[id].el, show: (detail) => void newAgentBySeat[id].enter(detail) };
@@ -814,8 +824,9 @@ export function createCoworkView(options = {}) {
       void readKanbanAvailability();
       seenConfig = ''; // a fresh entry always paints the configuration once
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
-      team = campaign ? '' : context.param || context.state?.team || '';
-      const { state: entry } = context.workbenchEntry();
+      team = campaign ? '' : context.param;
+      const { state: entry } = context.workbenchEntry({ count: 2, selected: 'workspace1',
+        arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement, seats: {} });
       setBarLabel();
       const typed = normalizeWorkbenchState(entry, bench.declaration);
       bench.enter({ arrangement: typed.arrangement, count: entry.count, selected: entry.selected,
@@ -866,6 +877,7 @@ export function createCoworkView(options = {}) {
       helpPanel.destroy();
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       for (const commons of builtCommons()) commons.channels.destroy();
+      for (const view of Object.values(newAgentBySeat)) view.destroy();
     },
   };
 }

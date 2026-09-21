@@ -5728,7 +5728,12 @@ button.wb-door:hover b {
 .cs-gbrain-choice a { color: var(--kaki); }
 
 /* Ronin Setup workspace-2 surfaces: sparse first face, detail on selection. */
-.setup-surface-body { display: grid; gap: var(--space-5); padding: var(--space-6); min-width: 0; }
+/* No inline padding: a Setup surface's body begins on the surface's own content edge, the
+   same edge its title, its header zone and any phalanx below use. It used to sit 12px inside
+   that, which at full width read as a 12px mistake rather than a margin; where the body is
+   also capped to a reading measure it still centres, and a clearly narrower column reads as
+   the choice it is. */
+.setup-surface-body { display: grid; gap: var(--space-5); padding: var(--space-6) 0; min-width: 0; }
 .setup-explainer { margin: var(--space-5) var(--space-6) 0; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); }
 .setup-explainer > summary { cursor: pointer; padding: var(--space-4); font-weight: 650; }
 .setup-explainer-body { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); padding: 0 var(--space-4) var(--space-4); }
@@ -6038,6 +6043,47 @@ button.wb-door:hover b {
    another size sets it under its own class, as the card does below. */
 .setup-steps-bar { --slab: var(--space-10); --slab-w: 16px; --slab-gap: var(--space-1); --slab-type: var(--text-3); --skew: -14deg; display: flex; align-items: center; flex: 0 0 auto; gap: var(--slab-gap); }
 .setup-steps-header { display: inline-flex; align-items: center; }
+.setup-scan { display: inline-flex; align-items: center; gap: var(--space-4); margin-left: var(--space-6); }
+.setup-scan-button { display: grid; place-items: center; width: var(--space-10); height: var(--space-10); flex: 0 0 auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-round); background: transparent; color: var(--muted); padding: 0; cursor: pointer; }
+.setup-scan-button:hover { border-color: var(--setup-mark); color: var(--setup-mark); }
+.setup-scan-button svg { width: var(--space-7); height: var(--space-7); display: block; }
+.setup-scan[data-state='scanning'] .setup-scan-button { border-color: var(--setup-mark); color: var(--setup-mark); }
+.setup-scan[data-state='scanning'] .setup-scan-button svg { animation: setup-scan-spin 1.1s linear infinite; }
+.setup-scan[data-state='failed'] .setup-scan-button { border-color: var(--bad); color: var(--bad-soft); }
+@keyframes setup-scan-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .setup-scan[data-state='scanning'] .setup-scan-button svg { animation: none; } }
+.setup-scan-word { color: var(--muted); font-size: var(--text-2); white-space: nowrap; }
+.setup-scan[data-state='scanning'] .setup-scan-word { color: var(--setup-mark); }
+.setup-scan[data-state='failed'] .setup-scan-word { color: var(--bad-soft); }
+.setup-scan-word:empty { display: none; }
+/* THE SETUP HEADER ZONE. It sits in the work surface's own content box and adds no inset of
+   its own, so its state line and its picks begin on the same left edge as the surface's own
+   title and footer. A hairline divides the zone from the phalanx rather than a box: a box
+   spends kaki on a container, and kaki is what marks a chosen stone. The slot keeps its
+   fixed height, so the phalanx stays level from step to step whatever the state says.
+
+   The zone styles the zone and nothing else. It never reaches past its own slot to lay out
+   the phalanx below — the phalanx is the work surface's, identical on a surface that carries
+   a zone and one that does not, and a change up here must never move a stone down there.
+
+   The rule is drawn on the zone rather than on the slot, and the zone is one step shorter
+   than the slot it sits in. That leftover step is the clearance under the rule: it belongs
+   to the header's own box, so the line stands clear of the stones without the header ever
+   reaching down to space them. Hover takes the rule to kaki the way a fold's hairline does
+   (launch-forms.css, owner 2026-09-13) — the line lifts, nothing fills, and the words stay
+   put, because the zone is a region to read, not a control to press. */
+.sws-header:has(> .setup-zone) { box-sizing: border-box; }
+/* A step whose surface is a document, not a phalanx, seats the zone in this instead of
+   .sws-header. Same height, so both kinds of step keep one rhythm down the five. */
+/* A SETTLED ZONE GOES BLANK, IT DOES NOT GO AWAY. The slot is the phalanx's spacing: it holds
+   the stones at the same height on every step, whether the zone above them has something to
+   say or nothing at all (owner, 2026-09-21). Only operation mode takes the slot away, which
+   is a different thing — there is no phalanx view to keep level. */
+.setup-zone-slot { display: flex; flex: 0 0 auto; align-items: flex-start; box-sizing: border-box; min-width: 0; block-size: var(--sws-header-height, clamp(6rem, 15dvh, 9rem)); overflow: hidden; }
+.setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-9); box-sizing: border-box; width: 100%; min-width: 0; height: calc(100% - var(--space-9)); overflow: hidden; border-bottom: var(--edge) solid var(--line); padding: var(--space-6) 0 0; transition: border-color var(--motion-quick) var(--ease); }
+:is(.sws-header, .setup-zone-slot):has(> .setup-zone):hover > .setup-zone { border-bottom-color: var(--kaki); }
+.setup-zone-state { min-height: calc(var(--form-input) * 1.4 * 2); max-width: 40rem; margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: 500; line-height: 1.4; }
+.setup-zone-options { width: auto; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
    were five separate things. The lean is one angle shared by every mark and never changes
    with state — only the fill moves, so the row cannot reflow as answers land. */
@@ -6068,7 +6114,7 @@ button.wb-door:hover b {
 .setup-return-done { color: var(--setup-mark); }
 @media (max-width: 700px) {
   .setup-explainer-body { grid-template-columns: 1fr; }
-  .setup-surface-body { padding: var(--space-4); }
+  .setup-surface-body { padding: var(--space-4) 0; }
   .setup-services-benefit { grid-template-columns: 1fr; }
   .setup-gbrain-answer { grid-template-columns: 1fr; }
   .setup-explainer { margin: var(--space-4) var(--space-4) 0; }

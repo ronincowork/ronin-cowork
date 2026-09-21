@@ -81,7 +81,7 @@ test('an activated CLI\'s row says its version, what Refresh last learned of the
   const facts = await measured(on, ['claude', 'codex']);
   const before = await runtime.setupRuntimeAnswer(on, facts, { exists: nobody }, undefined, catalog);
   assert.equal(row(before, 'codex').version, '0.151.0');
-  assert.equal(row(before, 'codex').model_list?.client_version, '0.151.0');
+  assert.equal(row(before, 'codex').model_list, null, 'ordinary measurement records the CLI version; the separate inventory refresh has not completed');
   assert.equal(row(before, 'claude').version, null, 'a CLI that would not say is null, not a guess');
   assert.equal(row(before, 'codex').latest, null, 'never asked yet');
   assert.equal(row(before, 'codex').updatable, true, 'activated and the registry has an update line');

@@ -107,39 +107,38 @@ the Defaults surface neither displays nor edits.
 
 ## Entry, refresh, and intentional launch
 
-Every destination resolves entry state in this precedence order:
+A Workbench **tab instance**, not a destination or tenant, owns its current setup. The
+open request names the destination and tenant, chooses shape and initial seats, and gets a
+fresh tab-instance id. `openWorkbenchTab()` and ordinary Workbench doors use this path;
+the destination's declared defaults complete any omitted fields. A direct route with no
+request also creates a fresh default request. No new open recalls another tab's shape,
+seats, selection, or presentation preferences.
 
-1. a one-shot structured launch;
-2. this browser tab's remembered Workbench state;
-3. the destination's first-open defaults.
+On refresh (or browser history return), the same tab-instance id restores its entire
+snapshot: tenant, arrangement, shape, selected workspace, seats, and preferences. The
+one-shot request is consumed after the first entry and cannot replay over later edits.
+`public/js/workspace.js` owns request, id, snapshot, and resolution through
+`openWorkbenchTab()` and `workbenchEntry()`. A new tab receives a new id even if its
+browser cloned the source tab's `sessionStorage`; that clone is not a refresh.
 
-`public/js/workspace.js` owns this contract through `workbenchEntry()` and
-`openWorkbenchTab()`.
+- **Replace:** the request replaces the default seat map and names its requested shape.
+- **Overlay:** the request changes named seats and shape fields over destination defaults,
+  never over a prior tab's state.
+- **Refresh:** the saved snapshot wins in full. It is not merged with a fresh open request
+  or a destination's first-open floor.
 
-- **First open:** use the destination's default shape, selected workspace, and seats only
-  when there is no launch instruction and no remembered state.
-- **Refresh or return:** restore the latest remembered arrangement, selected workspace,
-  seat map, and destination-specific presentation preferences.
-- **Structured launch:** the caller names the destination, optional route parameter,
-  `replace` or `overlay`, and requested Workbench state. The instruction travels in the
-  destination URL, is validated and consumed once, then removed before ordinary state is
-  saved. Refresh therefore cannot replay it.
-- **Replace:** replace the complete seat map while retaining unrelated destination
-  preferences.
-- **Overlay:** change only the named seats and fields.
-
-Destinations validate every requested type against their profile. Missing, malformed,
-mismatched, or unavailable instructions fall through to remembered state and then the
-first-open floor. Feature code must not copy another tab's storage, temporarily mutate a
-source view, or add link-specific restoration branches.
+Destinations validate every requested type against their profile. Malformed or mismatched
+requests fall through to destination defaults, not another tab's last setup. Feature code
+must not copy another tab's storage, temporarily mutate a source view, or add link-specific
+restoration branches.
 
 | Destination | First open | Notable structured opening |
 |---|---|---|
 | Ronin Settings | Defaults in workspace 1; Workspace Folders in workspace 2 | **Desk defaults** replaces the seats with Defaults and Launch your own |
 | New Project | New Agent in workspace 1 | Links may replace or overlay New Agent/New Team and carry prompt or template detail |
 | Ronin Setup | Garden in workspace 1; active journey surface in workspace 2 | Journey actions select a Setup surface without another restoration path |
-| Cowork / Team | Restored seats, otherwise its empty/member seating rules | Team Configuration, documents, commons tabs, and New Agent may be addressed in seat detail |
-| Agent | Self in workspace 1; Agent Commons in workspace 2 | A successful standalone launch replaces the seats and focuses the authoritative returned Agent as Self |
+| Cowork / Team | Fresh empty/member seating rules; refresh restores this instance | Team Configuration, documents, commons tabs, and New Agent may be addressed in seat detail |
+| Agent | Self in workspace 1; Documents in workspace 2 | A successful standalone launch replaces the seats and focuses the authoritative returned Agent as Self |
 
 ## Surface inventory and required data
 

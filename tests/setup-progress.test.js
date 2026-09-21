@@ -1,21 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { firstUnansweredSetupStep, setupAnswers, setupIsComplete } from '../public/js/setup-progress.js';
+import { firstUnansweredSetupStep, setupIsComplete, setupSteps } from '../public/js/setup-progress.js';
 
-test('Setup progress is only the five explicit persisted Campaign answers', () => {
-  const campaign = { config: { setup: { answers: {
-    provider: 'acted', register: 'not_now', workspace: 'acted', installations: 'not_now',
-    password: 'acted', launch: 'acted', unknown: 'acted',
-  } }, providers: { activated_count: 0 } } };
-  assert.deepEqual(setupAnswers(campaign), {
-    provider: 'acted', register: 'not_now', workspace: 'acted', installations: 'not_now', password: 'acted',
-  });
-  assert.equal(setupIsComplete(campaign), true);
+test('Setup progress paints only the server-owned five-step payload', () => {
+  const progress = { steps: [
+    { id: 'provider', number: 1, answered: true }, { id: 'register', number: 2, answered: true },
+    { id: 'workspace', number: 3, answered: true }, { id: 'installations', number: 4, answered: true },
+    { id: 'password', number: 5, answered: true }, { id: 'unknown', number: 6, answered: true },
+  ] };
+  assert.deepEqual(setupSteps(progress).map(({ id, number, answered }) => ({ id, number, answered })), progress.steps.slice(0, 5));
+  assert.equal(setupIsComplete(progress), true);
 });
 
-test('first unanswered is stable and never guessed from machine readiness', () => {
-  const campaign = { config: { setup: { answers: { provider: 'acted', register: 'not_now' } } }, providers: { activated_count: 4 } };
-  assert.equal(firstUnansweredSetupStep(campaign), 'workspace');
-  assert.equal(setupIsComplete(campaign), false);
-  assert.equal(firstUnansweredSetupStep({ config: {}, providers: { activated_count: 4 } }), 'provider');
+test('first unanswered follows the payload and never reads machine readiness', () => {
+  const progress = { steps: [{ id: 'provider', answered: true }, { id: 'register', answered: true }] };
+  assert.equal(firstUnansweredSetupStep(progress), 'workspace');
+  assert.equal(setupIsComplete(progress), false);
+  assert.equal(firstUnansweredSetupStep({ activated_count: 4 }), 'provider');
 });

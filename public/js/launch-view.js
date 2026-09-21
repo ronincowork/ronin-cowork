@@ -76,7 +76,9 @@ export function createLaunchView() {
       ctx = context;
       const { state: resolved } = context.workbenchEntry({
         count: 2, selected: 'workspace1',
-        arrangement: { order: ['selector', 'workspace1', 'workspace2'] },
+        arrangement: WorkspaceKit.contract.normalizeWorkbenchState({
+          arrangement: { order: ['selector', 'workspace1', 'workspace2'] },
+        }, bench.declaration).arrangement,
         seats: { workspace1: TYPES.agent },
       });
       bench.enter(resolved);
@@ -89,6 +91,6 @@ export function createLaunchView() {
       save();
     },
     leave: () => bench.leave(),
-    destroy: () => { for (const help of Object.values(helpBySeat)) help.destroy?.(); bench.leave(); ctx = null; },
+    destroy: () => { for (const help of Object.values(helpBySeat)) help.destroy?.(); for (const view of Object.values(agentBySeat)) view.destroy?.(); bench.leave(); ctx = null; },
   };
 }

@@ -6,7 +6,7 @@ import { createReleaseUpdateController, packageReading } from './release-update-
 import { createSenmaida } from './senmaida.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { setupIsComplete } from './setup-progress.js';
+import { workbenchLaunchUrl } from './workspace.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -23,7 +23,10 @@ function DOORS() {
   ];
 }
 
-export const setupDefaultView = (campaign) => setupIsComplete(campaign) ? 'campaign' : 'setup';
+export const setupDefaultView = (campaign) => {
+  const answers = campaign?.config?.setup?.answers || {};
+  return ['provider', 'register', 'workspace', 'installations', 'password'].every((id) => answers[id]) ? 'campaign' : 'setup';
+};
 
 /** The machine door's house mark: a wheel with eight broad teeth, recognisably admin
  * without importing a platform emoji or turning into a literal vehicle silhouette. */
@@ -92,7 +95,7 @@ export function createCampaignHome() {
         ? t('campaign_home.machine_setup', 'Machine Setup') : door.name;
       const reading = door.key === 'campaign' && route === 'setup'
         ? t('campaign_home.setup_is', 'Install and authenticate a model provider') : door.is;
-      card.href = `#/${route}`;
+      card.href = workbenchLaunchUrl({ destination: route, mode: 'overlay' });
       card.dataset.door = door.key;
       if (locked) {
         card.dataset.unavailable = 'true';

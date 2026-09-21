@@ -235,17 +235,17 @@ async function post(named: string | null, argv: string[]): Promise<number> {
   const targets = [...new Set([...leads, ...wanted])].filter((n) => n !== at(author) && members.includes(n));
   const skipped = members.filter((n) => n !== at(author) && !targets.includes(n)).length;
   for (const t of targets) {
-    const verdict = await notify(t, postNotice(board, author));
+    const verdict = await notify(t, postNotice(board, author), author);
     out(`${t.padEnd(24)} ${verdict}`);
   }
   if (skipped) out(`${skipped} other(s) on the board were not interrupted — they see it when they check (--to all to reach everyone)`);
   return 0;
 }
 
-async function notify(session: string, message: string): Promise<string> {
+async function notify(session: string, message: string, from: string): Promise<string> {
   if (process.env.RONIN_NO_NOTIFY) return 'not notified (test seam)';
   try {
-    await enqueueMessage(session, message, 'wipeboard_notice');
+    await enqueueMessage(session, message, 'wipeboard_notice', from);
     return 'queued';
   } catch (e) {
     return `not notified — ${String((e as Error).message ?? e)}`;

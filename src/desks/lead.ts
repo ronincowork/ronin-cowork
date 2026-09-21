@@ -63,11 +63,13 @@ export function leadMessage(n: LeadNotice): string {
 
 export type Delivery = { to: string; how: 'house-send' | 'wipeboard' | 'self'; detail: string };
 
-/** One house notice into a session's tile, dial or no dial (libexec/ronin-house-send).
- *  Resolves to the sender's first line on delivery; rejects with its stdout when the
- *  tile could not take it, so a caller can choose its own fallback. */
-export async function houseSend(to: string, message: string): Promise<string> {
-  const { stdout } = await brokerExecFile(path.join(REPO, 'libexec', 'ronin-house-send'), [to, message]);
+/** Queue one house notice, independent of the recipient's dial (libexec/ronin-house-send).
+ * A receipt-bound reply carries its validated lead session as the recorded actor;
+ * other house notices retain Ronin House as the actor. A queue-write failure lets the
+ * caller choose its wipeboard fallback. */
+export async function houseSend(to: string, message: string, from?: string): Promise<string> {
+  const args = from ? ['--from', from, to, message] : [to, message];
+  const { stdout } = await brokerExecFile(path.join(REPO, 'libexec', 'ronin-house-send'), args);
   return stdout.trim();
 }
 
@@ -82,10 +84,10 @@ export async function replyToHandIn(input: {
   if (!leads.includes(input.from)) throw new Error(`${input.from} is not a lead of ${input.team}`);
   const msg = replyMessage(input.receiptId, input.from, input.message);
   try {
-    return { to: input.to, how: 'house-send', detail: await houseSend(input.to, msg) };
+    return { to: input.to, how: 'house-send', detail: await houseSend(input.to, msg, input.from) };
   } catch (e) {
     const err = e as { stdout?: string; message?: string };
-    return { to: input.to, how: 'wipeboard', detail: `${(err.stdout ?? err.message ?? '').trim()} → ${await wipeboard(input.team, msg, input.to)}` };
+    return { to: input.to, how: 'wipeboard', detail: `${(err.stdout ?? err.message ?? '').trim()} → ${await wipeboard(input.team, msg, input.to, input.from)}` };
   }
 }
 
@@ -111,9 +113,11 @@ export async function notifyLeads(n: LeadNotice): Promise<Delivery[]> {
   return out;
 }
 
-async function wipeboard(team: string, msg: string, to: string): Promise<string> {
+async function wipeboard(team: string, msg: string, to: string, from = ''): Promise<string> {
   try {
-    const { stdout } = await brokerExecFile(path.join(REPO, 'ronin_bin', 'edges'), ['wipeboard', team, 'post', '--to', to, msg]);
+    const { stdout } = await brokerExecFile(path.join(REPO, 'ronin_bin', 'edges'), [
+      'wipeboard', ...(from ? ['--session', from] : []), team, 'post', '--to', to, msg,
+    ]);
     return stdout.trim().split('\n')[0] ?? 'posted';
   } catch (e) {
     const err = e as { stdout?: string; message?: string };

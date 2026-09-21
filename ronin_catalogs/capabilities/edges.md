@@ -24,9 +24,12 @@ a Team note with `edges wipeboard`.
 | `edges schedule` | read/write: the Team's Cron jobs | | `edges --help` |
 | `edges control` | read: a session's Control setting | | `edges --help` |
 
-`edges send` delivers one message to one session, with no board in between. Open with
-`from @<your session>:` — the tool adds no watermark — and report `DELIVERED` or `QUEUED`;
-both are accepted outcomes, and you do not relay replies.
+`edges send` delivers one message to one session, with no board in between. The message
+queue automatically shows its recorded sender and channel for Tell, Wipeboard, owner,
+house, and scheduled deliveries; do not write a second `from @<your session>:` line.
+If a Tell sender cannot be resolved, the delivery says so rather than implying the
+owner or Team lead spoke. Report
+`DELIVERED` or `QUEUED`; both are accepted outcomes, and you do not relay replies.
 
 `edges wipeboard` is the Team's board: post rules, collisions, line state, and anything
 everyone must see. A bare post interrupts the lead; `--to` changes who is interrupted, never

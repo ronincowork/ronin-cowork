@@ -3,6 +3,8 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { buildProjectRoots } from './projectroots.js';
 import { t } from './lexicon.js';
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
+import { createSetupZone, setupStep, watchSetupProgress } from './setup-zone.js';
+import { request } from './request.js';
 
 const el = (tag, cls = '') => {
   const out = document.createElement(tag);
@@ -35,12 +37,45 @@ export function createWorkspaceFoldersSurface({
     : el('div', 'desk-pane desk-proj show');
   if (rootHost !== surface.content) surface.content.append(rootHost);
 
+  /**
+   * Step 3's header zone states GITHUB, not the folder list. The zone asks the thing that
+   * needs a decision; registering a folder is an act, done on the surface, and answers
+   * nothing (designer, 2026-09-20). A person can legitimately say they do not use GitHub,
+   * and the machine cannot decide that for them.
+   */
+  const zone = presentation === 'stones' && environment?.answerSetupStep ? createSetupZone() : null;
+  let connectedToGithub = false;
+  const paintZone = () => {
+    if (!zone) return;
+    // Connected but nowhere to work is still worth saying: Agents start in a folder.
+    // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
+    if (setupStep(environment, 'workspace')?.answered) { zone.paint(); return; }
+    const folders = (environment?.trackedRoots?.() || []).filter((entry) => entry?.name).length;
+    if (connectedToGithub) {
+      zone.paint({ state: folders ? 'GitHub connected.' : 'GitHub connected. No folder registered.', picks: [] });
+      return;
+    }
+    zone.paint({
+      state: 'No GitHub connection found.',
+      picks: [
+        { label: 'Connect GitHub', action: () => rootHost.querySelector('.setup-roots-github-stone')?.click() },
+        { label: 'I don\u2019t use GitHub', action: () => environment?.answerSetupStep?.('workspace', 'not_now') },
+      ],
+    });
+  };
+
+  // The zone reads the answer record, so it has to hear when the record changes: answering
+  // here does not reload the surface, and an unrepainted zone leaves the pick unmarked.
+  const stopProgress = watchSetupProgress(environment, paintZone);
+
   let room = null;
   const github = presentation === 'stones' ? createGithubWorkspaceSetup({
     environment,
     workspace,
-    onStateChange: () => room?.updateExtraItems(),
+    onStateChange: () => { room?.updateExtraItems(); paintZone(); },
     onAuthenticated: () => {
+      connectedToGithub = true;
+      paintZone();
       environment?.onGithubAuthenticated?.();
       room?.select('\0github-clone', { focus: true });
     },
@@ -56,7 +91,8 @@ export function createWorkspaceFoldersSurface({
     presentation ? {
       presentation,
       extraItems: github?.items || [],
-      onSelection: (id) => environment?.onWorkspaceFolderChosen?.(id),
+      before: zone ? [zone.el] : [],
+      onSelection: (id) => { environment?.onWorkspaceFolderChosen?.(id); paintZone(); },
     } : {},
   );
 
@@ -67,7 +103,14 @@ export function createWorkspaceFoldersSurface({
       void github?.show();
       room.enter();
       onShow();
+      if (zone) {
+        paintZone();
+        void request('/api/setup/github', { cache: 'no-store' }).then((result) => {
+          connectedToGithub = result.ok && result.data?.authenticated === true;
+          paintZone();
+        });
+      }
     },
-    destroy: () => github?.destroy(),
+    destroy: () => { stopProgress(); github?.destroy(); },
   };
 }

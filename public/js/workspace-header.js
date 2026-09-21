@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { t } from './lexicon.js';
+import { workbenchLaunchUrl } from './workspace.js';
 
 /** The one navigation header shared by every Ronin workspace. */
 const readable = (name = '') => String(name).split(/[_-]+/).filter(Boolean)
@@ -36,7 +37,10 @@ export function installWorkspaceHeader(workspace) {
     else delete document.documentElement.dataset.workbench;
     const landing = !active || active.id === 'home';
     if (separator) separator.hidden = landing;
-    if (coworkers) coworkers.hidden = landing;
+    if (coworkers) {
+      coworkers.hidden = landing;
+      coworkers.href = workbenchLaunchUrl({ destination: 'cowork', mode: 'overlay' });
+    }
     if (place) {
       const teamPage = active?.id === 'team' && active.param;
       const editable = teamPage || active?.id === 'cowork';

@@ -16,24 +16,16 @@
  * down in a squeezed column and up in the expanded one — sets that in its own CSS, under
  * its own class. The component never reads its surroundings.
  */
-import { SETUP_SCENES } from './setup-journey.js';
-import { SETUP_STEP_IDS, firstUnansweredSetupStep, setupAnswers } from './setup-progress.js';
+import { firstUnansweredSetupStep, setupSteps } from './setup-progress.js';
 
 /**
  * The five steps of one Campaign, in the order Setup asks them. `label` is the Setup
  * selector's own scene label, so no caller holds a second, staler copy of that column.
  * `next` marks the first unanswered step; every step false means Setup is complete.
  */
-export function setupStepMarks(campaign) {
-  const answers = setupAnswers(campaign);
-  const next = firstUnansweredSetupStep(campaign);
-  return SETUP_STEP_IDS.map((id, index) => ({
-    id,
-    number: index + 1,
-    label: SETUP_SCENES.find((scene) => scene.id === id)?.label || id,
-    answered: Boolean(answers[id]),
-    next: id === next,
-  }));
+export function setupStepMarks(progress) {
+  const next = firstUnansweredSetupStep(progress);
+  return setupSteps(progress).map((step) => ({ ...step, next: step.id === next }));
 }
 
 /**
@@ -43,11 +35,11 @@ export function setupStepMarks(campaign) {
  * that seats it owns the words that say the same thing — the card does this with the
  * step's name and a `.ui-sr` line.
  */
-export function createSetupStepsBar(campaign) {
+export function createSetupStepsBar(progress) {
   const bar = document.createElement('span');
   bar.className = 'setup-steps-bar';
   bar.setAttribute('aria-hidden', 'true');
-  for (const step of setupStepMarks(campaign)) {
+  for (const step of setupStepMarks(progress)) {
     const mark = document.createElement('span');
     mark.className = 'setup-steps-mark';
     mark.dataset.n = String(step.number);

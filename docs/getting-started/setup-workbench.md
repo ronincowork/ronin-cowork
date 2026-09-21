@@ -35,13 +35,34 @@ Setup is one workbench with two workspaces and a selector column between them:
 - **The selector** lists Model providers, optional registration, Workspace folders,
   Installations, and Launch. A check means the step's actual completion fact is true.
 - **Workspace 2** is the actionable surface for the selected step. Selecting a card changes
-  both workspaces together. A completed non-final step offers **Next**.
+  both workspaces together.
 
 On a phone the same three columns stack. Setup reads completion once when it opens and
 updates it after the corresponding action; it does not poll in the background.
 
 Every stone surface in Setup shares one shape: square stones on the left; select one and
 the stones fold into a rail with the stone's page beside it; Escape closes it.
+
+### The header zone
+
+Every step opens with a band across the top of its surface, above a hairline: one line
+saying what is true on this machine right now, and the choices that answer it. It states a
+fact and never explains — the guidance in Workspace 1 is where the reasoning lives — and it
+carries no title, because the surface already has one.
+
+Pressing a choice is what answers the step and fills its mark. Nothing is chosen for you:
+a choice shows as taken only once you have taken it, so a machine that merely happens to be
+in some state is not treated as having decided anything.
+
+The zone says what the step needs decided, never what one stone is doing. A stone's own
+condition — *Coming soon*, *Needs sign-in*, *Activated* — stays on the stone.
+
+Once a step is settled the band goes blank, and its space stays. That space is what holds
+the stones at the same height as you move between steps, so nothing jumps. While a stone is
+open the band is gone entirely: that is the step's own page, not its question.
+
+Two steps never go blank, because their answers are arrangements you may want to revisit
+rather than one-time facts: **Register** and **Password** keep their choices for good.
 
 ## Presets
 
@@ -151,16 +172,33 @@ Details of the catalog and what is measured are in `docs/architecture/model-prov
 
 ## Register
 
-Registration is optional; local Ronin works without it. The form asks for an email, what
+Registration is optional; local Ronin works without it. Declining is the header zone's
+**No thank you**, which puts the form away and answers the step; **Register here** brings it
+back. The form asks how you would like to register — with email, or anonymously — then an email, what
 brings you here, which core Ronin feature you prefer, which of the starting patterns you
 are most likely to use, what describes you, where you will install, a two-line introduction
 for your Cowork Agents, and anything else. The introduction stays on this machine as the
 owner `ways/floor/user-intro.md` shadow of the stock-empty Behavior and is included in every
 Cowork Agent's birth README; leaving it blank removes the shadow and leaves the placeholder
 empty.
+Sending the form is always your own press; nothing in the header zone submits it for you.
 Share only what feels useful. A registered identity is what Ronin Services entitlement
 hangs on; it is not a subscription and it switches nothing on by itself. Communication
 choices are separate, and **No communication** is one of them.
+
+## Password
+
+How you reach this machine is the last step. Most people reach Ronin over Tailscale, which
+is already private, so the zone says whether Tailscale is available here and asks whether
+you want a password as well.
+
+With Tailscale, the choices are **Tailscale only** and **Add password**. Without it,
+**Tailscale only** is shown but not selectable — it is not an arrangement this machine can be in — and
+**None** takes its place, for a machine already protected some other way. Once a password is
+set the only thing left to offer is **Disable password**.
+
+Having Tailscale does not answer this step for you. Whether Tailscale alone is enough is a
+judgement about your own machine, so Setup waits for you to say.
 
 ## Workspace folders
 

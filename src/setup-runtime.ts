@@ -4,7 +4,7 @@ import path from 'node:path';
 import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { listProviderCatalog, newerVersion, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { listProviderCatalog, newerVersion, type ProviderCatalogEntry, type ProviderInventoryStatus, type ProviderSummary } from './model-providers.js';
 import { activatedAt, npmPackageOf, offAt } from './provider-summary.js';
 import { peekProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { rootDir } from './resources.js';
@@ -91,6 +91,8 @@ export interface SetupProviderState {
   version: string | null;
   /** Its CLI-owned model list, including the CLI version that fetched it; null when not measured. */
   model_list: ProviderSummary['model_lists'][string] | null;
+  /** Persisted outcome of the most recent inventory read. */
+  model_inventory: ProviderInventoryStatus | null;
   /** The newest release its package source listed at the last Refresh; null when never asked or unaskable. */
   latest: string | null;
   latest_checked_at: string | null;
@@ -256,6 +258,7 @@ export async function setupRuntimeAnswer(
       models,
       version,
       model_list: activated ? summary.model_lists?.[agent.id] ?? null : null,
+      model_inventory: isInstalled ? summary.model_inventory?.[agent.id] ?? { state: 'unmeasured', checked_at: '' } : null,
       latest: latest?.version ?? null,
       latest_checked_at: latest?.checked_at ?? null,
       updatable: activated && Boolean(updateLine),

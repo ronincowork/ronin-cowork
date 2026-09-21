@@ -9,10 +9,9 @@
  * installed, signed in or recorded, and holds at least one cell in the provider catalog —
  * an installed, signed-in CLI with nothing to launch is not counted.
  *
- * The summary is written on the Campaign record at Ronin start, after Done and Close, and
- * whenever the Setup Model providers surface (or its Check again) probes. Everything else
- * reads the record and never probes. Agent installs run in a tile with no completion hook,
- * so a fresh install shows on the next probe or the next Ronin start, dated.
+ * Ordinary measurement writes machine facts while carrying recorded model inventory. Model
+ * discovery has its own single-flight below; Setup starts it only for an operational CLI
+ * whose inventory is missing or invalid, and its completion is pushed to open readers.
  */
 import { readFile, readdir, stat } from 'node:fs/promises';
 import os from 'node:os';
@@ -23,6 +22,7 @@ import { execFile } from './spawn-broker.js';
 import { ensureInitialCampaign, initialCampaign, writeCampaignProviders } from './campaigns.js';
 import { readSetupSection } from './machine-state.js';
 import { listProviderCatalog, parseProviderSummary, type CliModelList, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { broadcastEvent } from './ws/events.js';
 
 interface SetupSection { providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>; [key: string]: unknown }
 
@@ -145,7 +145,6 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
   ]);
   const signedIn = ops.signedIn ?? providerSignedIn;
   const version = ops.version ?? installedVersion;
-  const modelList = ops.modelList ?? cliModelList;
   const installed = available.filter((agent) => agent.installed).map((agent) => agent.id);
   const paths: Record<string, string> = {};
   for (const agent of available) if (agent.installed && agent.path) paths[agent.id] = agent.path;
@@ -163,17 +162,16 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
   const asked = await Promise.all(AGENTS.filter((agent) => operational.includes(agent.id) && paths[agent.id])
     .map(async (agent) => [agent.id, versionIn(await version(paths[agent.id], agent.operations.version))] as const));
   for (const [id, found] of asked) if (found) versions[id] = found;
-  const model_lists: Record<string, CliModelList> = {};
-  const lists = await Promise.all(AGENTS.filter((agent) => operational.includes(agent.id))
-    .map(async (agent) => [agent.id, await modelList(agent.id, undefined, paths[agent.id], versions[agent.id])] as const));
-  for (const [id, list] of lists) if (list) model_lists[id] = list;
+  const model_inventory: NonNullable<ProviderSummary['model_inventory']> = {};
+  for (const id of installed) model_inventory[id] = { state: 'unmeasured', checked_at: '' };
   return {
     measured_at: (ops.now ?? (() => new Date().toISOString()))(),
     installed, signed_in, operational,
     activated_count: operational.length,
     paths,
     versions,
-    model_lists,
+    model_lists: {},
+    model_inventory,
     latest: {},
   };
 }
@@ -247,7 +245,79 @@ export async function recordProviderSummary(summary: ProviderSummary): Promise<v
 export async function measureAndRecordProviders(section?: SetupSection, ops: MeasureOps = {}, refresh: LatestOps | false = false): Promise<ProviderSummary> {
   const previous = await readProviderSummary();
   const summary = await measureProviders(section ?? await readSetupSection(), ops);
+  for (const id of summary.installed) {
+    if (previous?.model_lists?.[id]) summary.model_lists[id] = previous.model_lists[id];
+    if (previous?.model_inventory?.[id]) summary.model_inventory![id] = previous.model_inventory[id];
+    if (summary.operational.includes(id) && !previous?.model_inventory?.[id] && !previous?.model_lists?.[id]) {
+      summary.model_inventory![id] = { state: 'unmeasured', checked_at: '' };
+    }
+  }
   summary.latest = refresh ? await latestVersions(summary.operational, refresh) : (previous?.latest ?? {});
   await recordProviderSummary(summary);
   return summary;
+}
+
+export interface ProviderInventoryNeed {
+  needed: boolean;
+  providers: string[];
+}
+
+/** Installed, usable CLIs whose inventory has never completed or whose saved result is structurally invalid. */
+export function providerInventoryNeed(summary: ProviderSummary | null): ProviderInventoryNeed {
+  if (!summary) return { needed: false, providers: [] };
+  const providers = summary.operational.filter((id) => {
+    const state = summary.model_inventory?.[id]?.state ?? (summary.model_lists?.[id] ? 'ready' : 'unmeasured');
+    return state === 'unmeasured' || state === 'invalid' || (state === 'ready' && !summary.model_lists?.[id]);
+  });
+  return { needed: providers.length > 0, providers };
+}
+
+export interface ProviderInventoryCompletion {
+  state: 'complete' | 'failed';
+  summary: ProviderSummary | null;
+  providers: string[];
+}
+
+let inventoryRefresh: Promise<ProviderInventoryCompletion> | null = null;
+
+/**
+ * The one background inventory refresh. Concurrent Setup callers share this flight; the
+ * completed Campaign write is announced on `/events` so already-open model pickers repaint.
+ */
+export function refreshProviderInventory(_section?: SetupSection, ops: MeasureOps = {}): Promise<ProviderInventoryCompletion> {
+  if (inventoryRefresh) return inventoryRefresh;
+  inventoryRefresh = (async () => {
+    const before = await readProviderSummary();
+    const providers = providerInventoryNeed(before).providers;
+    try {
+      if (!before) throw new Error('Provider machine facts have not been measured.');
+      const summary: ProviderSummary = {
+        ...before,
+        model_lists: { ...before.model_lists },
+        model_inventory: { ...before.model_inventory },
+      };
+      const modelList = ops.modelList ?? cliModelList;
+      const checkedAt = ops.now ?? (() => new Date().toISOString());
+      const lists = await Promise.all(providers.map(async (id) => [
+        id,
+        await modelList(id, undefined, summary.paths[id], summary.versions[id]),
+      ] as const));
+      for (const [id, list] of lists) {
+        if (list) summary.model_lists[id] = list;
+        else delete summary.model_lists[id];
+        summary.model_inventory![id] = { state: list ? 'ready' : 'unavailable', checked_at: checkedAt() };
+      }
+      await recordProviderSummary(summary);
+      const completion: ProviderInventoryCompletion = { state: 'complete', summary, providers };
+      broadcastEvent({ t: 'provider-inventory', state: completion.state, measured_at: summary.measured_at, providers });
+      return completion;
+    } catch {
+      const completion: ProviderInventoryCompletion = { state: 'failed', summary: null, providers };
+      broadcastEvent({ t: 'provider-inventory', state: completion.state, providers });
+      return completion;
+    } finally {
+      inventoryRefresh = null;
+    }
+  })();
+  return inventoryRefresh;
 }

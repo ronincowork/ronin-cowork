@@ -19,6 +19,19 @@ const sourceFrom = (source: MessageSource): string => ({
   tell: 'Agent', wipeboard_notice: 'Wipeboard', owner: 'Owner', house: 'Ronin House', jikan: 'Cron jobs',
 })[source];
 
+const channelOf = (source: MessageSource): string => ({
+  tell: 'Tell', wipeboard_notice: 'Wipeboard notice', owner: 'Ronin Box', house: 'House notice', jikan: 'Scheduled job',
+})[source];
+
+/** Every queued message carries the recorded actor and channel into the recipient's prompt. */
+export function deliveryText(item: Pick<QueuedMessage, 'source' | 'from' | 'text'>): string {
+  const recorded = String(item.from || '').replace(/[\r\n\t]/g, ' ').trim().slice(0, 80);
+  const from = item.source === 'tell'
+    ? (recorded && recorded !== 'Agent' ? `@${recorded.replace(/^@/, '')}` : 'an unidentified Agent')
+    : recorded || sourceFrom(item.source);
+  return `From ${from} [${channelOf(item.source)}]:\n${item.text}`;
+}
+
 async function remove(id: string): Promise<boolean> {
   if (!validId(id)) return false;
   try { await fs.unlink(file(id)); return true; } catch { return false; }
@@ -75,7 +88,8 @@ export async function processMessageQueue(options: { now?: number; delivery?: De
       }
       const overdue = now - Date.parse(item.created_at) >= AUTO_FORCE_AFTER_MS;
       try {
-        const result = overdue ? await delivery.force(item.target, item.text) : await delivery.safe(item.target, item.text);
+        const text = deliveryText(item);
+        const result = overdue ? await delivery.force(item.target, text) : await delivery.safe(item.target, text);
         if (!overdue && !result.delivered && !result.submitted) continue;
       } catch { /* one failed attempt is still finished */ }
       await remove(item.id);

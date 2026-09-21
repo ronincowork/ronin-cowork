@@ -27,7 +27,6 @@ import {
   setSessionTitle,
   stopSessionTree,
 } from '../tmux.js';
-import { sendText } from '../send.js';
 import { enqueueMessage } from '../message-queue.js';
 import { sessionKey } from '../session-dir.js';
 import { isValidRootName, listProjectRoots } from '../project-roots.js';
@@ -490,10 +489,9 @@ export function registerSessions(app: express.Express): void {
       const fresh = leads.filter((t) => !before.includes(t));
       let delivered: string | null = null;
       if (fresh.length) {
-          const reading = await conditionalBehaviourPath('team-lead');
-          const msg = teamLeadAcknowledgement(fresh, reading);
-          const sent = await sendText(name, msg).catch(() => null);
-          delivered = sent?.started ? 'delivered' : 'not delivered — the prompt was not accepting input';
+        const reading = await conditionalBehaviourPath('team-lead');
+        const msg = teamLeadAcknowledgement(fresh, reading);
+        delivered = await enqueueMessage(name, msg, 'house').then(() => 'queued', () => 'not queued');
       }
       res.json({ ok: true, team_lead: leads, tags, delivery: delivered });
     } catch (e) {

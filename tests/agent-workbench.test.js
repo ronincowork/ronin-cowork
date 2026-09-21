@@ -2,14 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { WORKSPACE_DESTINATIONS } from '../public/js/workspace-contract.js';
+import { defaultWorkspaceState } from '../public/js/workspace.js';
 
 const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 
-test('Agent is a first-class Workbench destination with its own state namespace', async () => {
+test('Agent is a first-class Workbench destination with tab-instance state', async () => {
   assert.ok(WORKSPACE_DESTINATIONS.includes('agent'));
   const [main, workspace] = await Promise.all([source('main.js'), source('workspace.js')]);
   assert.match(main, /workspace\.register\('agent', createAgentView\(\)\)/);
-  assert.match(workspace, /views: \{[^\n]*agent: \{\}/);
+  assert.match(workspace, /workbenchTabs: \{\}/);
+  assert.deepEqual(defaultWorkspaceState().workbenchTabs, {});
 });
 
 test('Agent profile reuses Self, pure Documents, membership, Task Manager and generic surfaces', async () => {
@@ -22,7 +24,8 @@ test('Agent profile reuses Self, pure Documents, membership, Task Manager and ge
   assert.doesNotMatch(text, /profiles\.define|library\.register/, 'Agent owns no private profile or catalog');
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.agent, \[WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.agentDocuments, WORKBENCH_TYPES\.agentTeams, WORKBENCH_TYPES\.agentTasks, WORKBENCH_TYPES\.document, FEEDBACK_TYPE\]\)/);
   assert.match(text, /sessions: \(\) => agent \? \[\{ key: agent, label: t\('agent\.self', 'Self'\) \}\] : \[\]/);
-  assert.match(text, /terminal: \(id, detail\) =>/);
+  assert.match(text, /terminal: \(id\) =>/);
+  assert.match(text, /pool\.show\(agent, false\)/, 'the route Agent owns the terminal');
   assert.match(text, /createWarmTerminalPool/);
   assert.doesNotMatch(text, /createTabbedSurface/);
   assert.match(text, /createSurface\(\{ label: t\('workspace\.tab_docs', 'Documents'\)/);

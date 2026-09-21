@@ -16,6 +16,7 @@ import { HOUSE_PRESETS, PRESETS_TYPE, buildLaunchPlan, initialControls, seatingP
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { createInstallationsSurface } from './campaign-installations.js';
+import { createSetupZoneSlot, setupStep, watchSetupProgress } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
 
 // Model providers is the one surface two workbenches seat (provider-surface.js); its type
@@ -109,7 +110,7 @@ function createRegisterSurface(context) {
   const email = input('email', 'email'); email.placeholder = 'you@example.com'; email.autocomplete = 'email';
   const identityMode = choiceGroup('identity_mode', t('setup_surface.identity', 'How would you like to register?'), [
     ['email', 'With email', 'Eligible for additional Ronin Services and participation in the Bounty Program.'],
-    ['anonymous', 'Anonymous'], ['no_thanks', 'No thank you'],
+    ['anonymous', 'Anonymous'],
   ], { short: t('setup_surface.identity_short', 'Register as') });
   identityMode.wrap.classList.add('setup-register-identity-choice');
   const kind = choiceGroup('kind', t('setup_surface.kind', 'Which of these are you most likely to use?'), [
@@ -229,24 +230,18 @@ function createRegisterSurface(context) {
   registerAction.replaceChildren(sendMark, el('span', '', sendLabel));
   const send = el('div', 'setup-register-send');
   send.append(consent, registerAction, notice);
+  let formOpen = null; // see THE HEADER ZONE, below
+  // Declining is the header zone's 'No thank you', not a third way to register, so this asks
+  // only how — and everything the old declined branch used to hide one by one lives inside
+  // the form, which now goes away whole.
   const paintIdentityMode = () => {
     const emailRegistration = identityMode.value.value === 'email';
-    const declinedRegistration = identityMode.value.value === 'no_thanks';
-    emailField.hidden = !emailRegistration || declinedRegistration;
-    runLocation.wrap.hidden = declinedRegistration;
-    fit.hidden = declinedRegistration;
-    consent.hidden = declinedRegistration;
-    registerAction.hidden = declinedRegistration;
-    notice.hidden = declinedRegistration;
-    send.hidden = declinedRegistration;
-    declined.hidden = !declinedRegistration;
-    email.required = emailRegistration && !declinedRegistration;
+    emailField.hidden = !emailRegistration;
+    email.required = emailRegistration;
   };
   identityMode.onChange(() => {
     paintIdentityMode();
-    const identity = identityMode.value.value === 'no_thanks' ? 'declined' : identityMode.value.value;
-    if (identity) void context.environment?.setIdentityChoice?.(identity);
-    if (identity === 'declined') context.environment?.onRegistrationChoice?.('not_now');
+    if (identityMode.value.value) void context.environment?.setIdentityChoice?.(identityMode.value.value);
   });
   paintIdentityMode();
   form.append(welcome, registrationIntro, about, fit, send);
@@ -271,7 +266,12 @@ function createRegisterSurface(context) {
     identity.dataset.tone = current?.status === 'pending' ? 'pending' : 'ok';
     identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.check_email', 'Check your email')),
       el('span', '', summaryWords()));
-    form.hidden = Boolean(current?.submitted_at);
+    form.hidden = !formOnShow();
+    // Follow the form, not the answer record. hideForm paints immediately while the PATCH is
+    // still in flight, so reading the record here left the line hidden at the one moment it
+    // was wanted. The form being away, and not because they have already submitted, IS the
+    // declined state — and it is true synchronously.
+    declined.hidden = formOnShow() || Boolean(current?.submitted_at);
     recoveryOptions.hidden = !current?.submitted_at;
     recovery.replaceChildren();
     const changeEmail = () => action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
@@ -308,7 +308,54 @@ function createRegisterSurface(context) {
       if (result.ok) { current = result.data; paint(); }
     }));
     notifySummary(SETUP_SURFACE_TYPES.register, current?.status || 'optional', context.workbench);
+    paintZone();
   };
+  /** Step 2's header zone. Registering is the decision; the form below is how it is done. */
+  /* ── THE HEADER ZONE ──────────────────────────────────────────────────────────────────
+     Two picks, and neither is ever a no-op:
+       Register here  shows the form if it is put away;
+       No thank you   puts the form away if it is on show.
+     Either press answers step 2 — the tick means the person dealt with the step, not that
+     they registered. Once they actually have registered there is nothing left to decide, so
+     the zone empties the way every settled step does (owner, 2026-09-21).
+
+     The form's visibility is `formOpen`: null until a pick is pressed, and while it is null
+     the record decides, so someone who declined and came back finds it as they left it. */
+  const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
+  const recordedAnswer = () => setupStep(context.environment, 'register')?.answer;
+  const formOnShow = () => (formOpen === null
+    ? recordedAnswer() !== 'not_now' && !current?.submitted_at
+    : formOpen);
+  const answerStep = (answer) => context.environment?.answerSetupStep?.('register', answer);
+  const showForm = () => { formOpen = true; void answerStep('acted'); paint(); };
+  const hideForm = () => {
+    formOpen = false;
+    void context.environment?.setIdentityChoice?.('declined');
+    void answerStep('not_now');
+    paint();
+  };
+  const paintZone = () => {
+    if (!zone) return;
+    if (current?.status === 'registered') { zone.paint(); return; }
+    const answer = recordedAnswer();
+    zone.paint({
+      state: current?.status === 'anonymous' ? 'Said hello anonymously.'
+        : current?.status === 'pending' ? 'Registration sent. Confirm the link in your email.'
+        : 'Register to join the community and share your experience — it makes Ronin better for everyone.',
+      picks: [
+        // Shows the form; it does NOT send it. registerAction POSTs on the spot, and with no
+        // identity chosen it posts anonymously, so a pick wired straight to it registered
+        // people who had filled in nothing. Pressing Send stays the person's own act.
+        { label: 'Register here', chosen: answer === 'acted', action: showForm },
+        { label: 'No thank you', chosen: answer === 'not_now', action: hideForm },
+      ],
+    });
+  };
+  // Answering does not reload this surface, so the zone listens for the record it reads.
+  // paint() repaints the zone as its last act, so watching with paint — not paintZone — keeps
+  // the form and the declined line in step with the record too, however the record changed.
+  const stopProgress = watchSetupProgress(context.environment, paint);
+  if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
   return { el: out.el, show: async () => {
     const routeKind = context.environment?.kinds?.get?.()[0] || '';
@@ -324,17 +371,21 @@ function createRegisterSurface(context) {
       userIntro.hidden = Boolean(userIntroText.value.trim());
     }
     paint();
-  } };
+  }, destroy: () => stopProgress() };
 }
 
 function createRootsSurface(context) {
-  return createWorkspaceFoldersSurface({
+  const page = createWorkspaceFoldersSurface({
     campaignId: () => context.tenant?.campaign || '',
     presentation: 'stones',
     environment: context.environment,
     workspace: context.workspace,
     onShow: () => notifySummary(SETUP_SURFACE_TYPES.roots, '2 folders + yours', context.workbench),
   });
+  // The header zone carries step 3's state and its picks (see workspace-folders-surface.js),
+  // so the step footer that used to ask at the bottom is retired — one place to answer, and
+  // the top bar already owns 'look at this machine again'.
+  return page;
 }
 
 function createBountySurface(context) {
@@ -649,7 +700,7 @@ function createLaunchOwnSurface(context) {
     const views = [item.id === 'team' ? createEmbeddedNewTeamFormView(WorkspaceKit, {}) : createEmbeddedNewAgentView(WorkspaceKit, {})];
     host.append(...views.map((view) => view.el));
     for (const view of views) void view.enter({});
-    return () => { for (const view of views) view.el.remove(); };
+    return () => { for (const view of views) { view.destroy?.(); view.el.remove(); } };
   };
   const stones = createStoneWorkSurface({
     items: [
@@ -674,13 +725,14 @@ function createSetupInstallationsSurface(context) {
     onInstallationChange: () => context.environment?.onInstallationChoice?.(),
     createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
   });
+  // Step 4 answers in its header zone (see campaign-installations.js); the footer is retired.
   // Setup chooses and sequences the shared page; it does not change the page's controls.
   // The shared Services model owns the Install, Turn on, and Restart gates in every
   // workbench, and the server independently enforces the same capabilities.
   return { el: page.el, show: async () => {
     await loadCampaigns();
     await page.enter();
-  }, destroy: () => page.destroy?.() };
+  }, destroy: () => { page.destroy?.(); } };
 }
 
 export function setupSurfaceDefinitions() {

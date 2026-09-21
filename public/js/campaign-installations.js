@@ -8,15 +8,9 @@ import { ask } from './ask.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { completeInstallationMap as completeMap } from './installation-map.js';
 import { createStatusMarker } from './status-marker.js';
-import { renderMarkdownDocument } from './markdown-reader.js';
+import { createSetupZone, setupStep, watchSetupProgress } from './setup-zone.js';
 
 const INSTALLATION_ORDER = ['ronin_services', 'gbrain', 'trello', 'perplexity'];
-const INSTALLATION_GUIDES = Object.freeze({
-  ronin_services: 'docs/getting-started/services-activation.md',
-  gbrain: 'docs/products/gbrain.md',
-  trello: 'docs/products/trello.md',
-  perplexity: 'docs/products/perplexity.md',
-});
 const el = (tag, cls = '', text = null) => {
   const out = document.createElement(tag);
   if (cls) out.className = cls;
@@ -151,35 +145,6 @@ export function createInstallationsSurface(campaign, context = {}) {
 
   const renderDetail = (installation, host) => {
     const controls = installation.effect === 'provider' ? featureProviderControls(installation) : null;
-    const guidance = el('section', 'campaign-installation-guidance');
-    guidance.append(
-      el('p', 'setup-lede', installation.blurb || t('campaign_view.no_installation_description', 'No description is available.')),
-    );
-    const guidePath = INSTALLATION_GUIDES[installation.name];
-    if (guidePath) {
-      const guideHost = el('div', 'campaign-installation-guide');
-      const guideNotice = el('p', 'setup-notice');
-      guideNotice.setAttribute('role', 'status');
-      const readMore = el('button', 'wk-action', t('campaign_view.read_more', 'Read more'));
-      readMore.type = 'button';
-      readMore.addEventListener('click', async () => {
-        readMore.disabled = true;
-        guideNotice.textContent = t('campaign_view.loading_guide', 'Opening guide…');
-        const query = new URLSearchParams({ product: '1', path: guidePath });
-        const result = await request(`/api/file?${query.toString()}`, { cache: 'no-store' });
-        guideNotice.textContent = '';
-        readMore.disabled = false;
-        if (!result.ok) {
-          guideNotice.textContent = t('campaign_view.guide_read_failed', 'The guide could not be read. Try again.');
-          guideNotice.dataset.tone = 'failed';
-          return;
-        }
-        guideHost.replaceChildren(renderMarkdownDocument(result.data?.text || ''));
-        readMore.hidden = true;
-      });
-      guidance.append(readMore, guideNotice, guideHost);
-    }
-    host.append(guidance);
     const sharedContext = {
       ...context,
       installationMaturity: installation.maturity,
@@ -214,7 +179,49 @@ export function createInstallationsSurface(campaign, context = {}) {
   stoneSurface = createStoneWorkSurface({ items: [], className: 'campaign-installations-stones', renderDetail });
   const reading = el('p', 'setup-notice');
   reading.setAttribute('role', 'status');
-  stoneSurface.mount(surface.content, { before: [reading] });
+
+  /**
+   * Step 4's header zone, in Setup only — Settings shows the same stones without one.
+   * The states are the STEP's and never a single stone's (designer, 2026-09-20): a stone's
+   * own condition already has .status-marker and .sws-state to live on, which is where
+   * 'Coming soon' and a registration gate belong. So the zone says whether anything at all
+   * is installed, and never names Ronin Services, gbrain, Trello or Perplexity.
+   */
+  const environment = context.environment;
+  const zone = environment?.answerSetupStep ? createSetupZone() : null;
+  let registered = null; // null until read: unknown is not the same as unregistered
+  const anythingInstalled = () => installed?.services?.installed === true
+    || (installed?.installations || []).some((row) => row.available === true);
+  const paintZone = () => {
+    if (!zone) return;
+    const step = setupStep(environment, 'installations');
+    // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
+    if (step?.answered) { zone.paint(); return; }
+    if (anythingInstalled()) {
+      // Nothing else answers step 4 — the Setup scan answers only provider and workspace, and
+      // onInstallationChoice fires only when a choice is MADE here. Something already being
+      // installed is not an answer, so the pick still has to give one; once it lands the step
+      // is answered and this zone hides on the repaint.
+      zone.paint({ state: 'Installed.', picks: [
+        { label: 'Keep these', action: () => environment?.answerSetupStep?.('installations', 'acted') },
+      ] });
+      return;
+    }
+    const noThankYou = { label: 'No thank you', action: () => environment?.answerSetupStep?.('installations', 'not_now') };
+    // Registration gates the ones Ronin maintains, so say so before offering to skip.
+    if (registered === false) {
+      zone.paint({
+        state: 'Nothing installed. Registration required.',
+        picks: [{ label: 'Register first', action: () => environment?.navigateToSurface?.('setup.register') }, noThankYou],
+      });
+      return;
+    }
+    zone.paint({ state: 'Nothing installed.', picks: [noThankYou] });
+  };
+
+  // Answering does not reload this surface, so the zone listens for the record it reads.
+  const stopProgress = watchSetupProgress(environment, paintZone);
+  stoneSurface.mount(surface.content, { before: zone ? [zone.el, reading] : [reading] });
 
   const enter = async () => {
     const [catalogResult, installedResult] = await Promise.all([
@@ -232,16 +239,24 @@ export function createInstallationsSurface(campaign, context = {}) {
     const rows = Array.isArray(catalogResult.data) ? catalogResult.data : [];
     catalog = INSTALLATION_ORDER.map((name) => rows.find((row) => row.name === name)).filter(Boolean);
     installed = installedResult.ok ? installedResult.data : null;
+    paintZone();
+    if (zone && registered === null) {
+      void request('/api/setup/registration', { cache: 'no-store' }).then((result) => {
+        registered = result.ok ? result.data?.status === 'registered' : null;
+        paintZone();
+      });
+    }
     reading.textContent = installedResult.ok ? '' : t('campaign_view.installation_status_read_failed', 'Installation status could not be read. Choices are shown, but their machine status is unknown.');
     reading.dataset.tone = installedResult.ok ? '' : 'failed';
     values = completeMap(catalog, campaign()?.config?.installations);
     context.onInstallationsState?.({ ...values });
     defaultBehaviours = Array.isArray(campaign()?.config?.defaults?.behaviours) ? [...campaign().config.defaults.behaviours] : [];
     stoneSurface.setItems(catalog.map(itemFor));
-    stoneSurface.select('ronin_services');
+    // A collection surface opens showing its collection. Forcing Ronin Services open put the
+    // surface straight into operation mode, which is the one view the header zone is not in.
   };
 
-  return { el: surface.el, enter, destroy: () => stoneSurface.destroy() };
+  return { el: surface.el, enter, destroy: () => { stopProgress(); stoneSurface.destroy(); } };
 }
 
 export function installationsSummary(campaign) {

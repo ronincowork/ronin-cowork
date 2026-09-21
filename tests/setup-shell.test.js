@@ -149,19 +149,16 @@ test('the existing workbench can pin a Setup workspace and aim selector cards at
   assert.match(workbench, /cell\.addEventListener\('pointerdown',[\s\S]*select\(id\);[\s\S]*}, true\)/);
 });
 
-test('Setup progression uses persisted answers, not operational guesses, and one gated Next in Workspace 2', async () => {
+test('Setup progression paints the server record and leaves completion actions in each surface footer', async () => {
   const [setup, style] = await Promise.all([source('js/setup-view.js'), source('style.css')]);
-  assert.match(setup, /createAction\(\{ label: 'Next', launch: true, action: \(\) => advance\(\) \}\)/, 'Next uses the Launch-format action');
-  assert.match(setup, /active\.number < SCENES\.length && sceneComplete\(active\)/, 'Next exists only for a complete non-final selected card');
-  assert.match(setup, /\[data-workspace="workspace2"\] > \.wk-surface > \.wk-surface-header \.wk-surface-header-actions/, 'Next sits at the top-right of Workspace 2');
-  assert.match(setup, /actions\.prepend\(nextAction\.el\)/);
+  assert.match(setup, /request\('\/api\/setup\/progress', \{ cache: 'no-store' \}\)/);
+  assert.match(setup, /setupProgressHandlers\.add\(onProgress\)/);
+  assert.doesNotMatch(setup, /nextAction|notNowAction|seatNext|seatNotNow/, 'the surface header owns no hidden progression controls');
   assert.match(setup, /garden\.controls\.replaceChildren\(\);[\s\S]*garden\.controls\.hidden = true/, 'Workspace 1 cannot retain the progression action');
-  assert.match(setup, /const sceneComplete = \(scene\) => \{[\s\S]*Boolean\(scene\?\.id && answers\[scene\.id\]\)/);
-  assert.match(setup, /saveCampaign\(campaign\.id, \{ config: \{ setup: \{ answers:/);
-  assert.match(setup, /firstUnansweredSetupStep\(selectedCampaign\(\)\)/);
-  assert.match(setup, /seatNotNow\(\['provider', 'register', 'workspace', 'installations', 'password'\]/);
-  assert.doesNotMatch(setup, /completion\.(?:registered|github|roots)|installationsComplete|launchComplete/,
-    'machine facts never answer a Setup step for the person');
+  assert.doesNotMatch(setup, /saveCampaign|setupAnswers|providers\/measure/, 'the client neither writes Campaign answers nor researches the machine');
+  assert.match(style, /\.setup-zone \{/, 'Setup answers in the header zone, not a per-step footer');
+  assert.doesNotMatch(style, /\.setup-step-footer \{/, 'the per-step footer is retired');
+  assert.match(style, /\.setup-scan\[data-state='scanning'\]/);
   assert.doesNotMatch(setup, /data\.stepState|flashSelector|setup-selector-pulse/);
   assert.match(style, /data-workbench-profile='setup'[\s\S]*?\.wk-card\[aria-current='page'\][^}]*background: var\(--kaki\)/, 'only the selected card gets the orange fill');
   assert.match(setup, /mark\.className = 'wk-card-mark';[\s\S]*mark\.textContent = '✓';[\s\S]*heading\.prepend\(mark\)/, 'completion uses the stock visible card mark');
@@ -203,7 +200,8 @@ test('Setup is the one public destination and has no parallel preview route', as
   ]);
   assert.match(setup, /const PROFILE = 'setup'/);
   assert.match(setup, /patchViewState\('setup'/);
-  assert.match(setup, /context\.workbenchEntry\(\)/);
+  assert.match(setup, /context\.workbenchEntry\(\{\s*count: 2, selected: 'workspace1', arrangement: ARRANGEMENT,\s*seats: \{ workspace1: GARDEN_CANVAS_TYPE, workspace2: SCENES\[0\]\.type \}/,
+    'Setup declares its complete first-open shape and seats for a new tab instance');
   assert.doesNotMatch(kit, /data-setup-viewport|setup-header-toggle/);
   assert.match(main, /workspace\.register\('setup', createSetupView\(\)\)/);
   assert.doesNotMatch(main, /setup2|createSetup2View/);

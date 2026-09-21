@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ronin-house-send — put a house notice through the durable inbound message queue.
-# Usage: ronin-house-send <session> <message...>
+# Usage: ronin-house-send [--from <lead-session>] <session> <message...>
 #
 # NOBODY TYPES THIS. It lives in libexec, off the agents' PATH, and is called by house
 # machinery only — desk hand-in notices and receipt-bound lead replies

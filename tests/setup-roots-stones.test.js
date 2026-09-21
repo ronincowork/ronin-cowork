@@ -15,7 +15,9 @@ test('Setup and Settings use the same Workspace Folders stone presentation', asy
     'Settings delegates its live environment and workspace to the shared stone surface');
   assert.doesNotMatch(campaign, /worktreesDefault/);
   assert.match(shared, /presentation === 'stones' \? createGithubWorkspaceSetup/);
-  assert.match(shared, /presentation \? \{[\s\S]*presentation,[\s\S]*extraItems: github\?\.items \|\| \[\],[\s\S]*onSelection: \(id\) => environment\?\.onWorkspaceFolderChosen\?\.\(id\),[\s\S]*\} : \{\}/);
+  // Setup also seats step 3's header zone here and repaints it when a folder is chosen;
+  // Settings passes no presentation and gets neither.
+  assert.match(shared, /presentation \? \{[\s\S]*presentation,[\s\S]*extraItems: github\?\.items \|\| \[\],[\s\S]*before: zone \? \[zone\.el\] : \[\],[\s\S]*onWorkspaceFolderChosen\?\.\(id\); paintZone\(\);[\s\S]*\} : \{\}/);
   assert.doesNotMatch(shared, /onboardingExtras/, 'GitHub clone is an ongoing Workspace Folders operation, not an onboarding-only extra');
   assert.doesNotMatch(setup, /onboardingExtras|setupOnboardingExtras/);
   assert.doesNotMatch(await source('public/js/setup-view.js'), /setupOnboardingExtras/);
@@ -53,7 +55,8 @@ test('Setup GitHub lifecycle uses only a published session and hands success to 
   const shared = await source('public/js/workspace-folders-surface.js');
   assert.match(shared, /onAuthenticated: \(\) => \{[\s\S]*environment\?\.onGithubAuthenticated\?\.\(\);[\s\S]*room\?\.select\('\\0github-clone', \{ focus: true \}\)/);
   assert.match(shared, /await room\?\.refresh\(\);[\s\S]*room\?\.select\(root\.name, \{ focus: true \}\)/);
-  assert.match(shared, /destroy: \(\) => github\?\.destroy\(\)/);
+  // The zone's progress subscription is dropped alongside the GitHub setup.
+  assert.match(shared, /destroy: \(\) => \{ stopProgress\(\); github\?\.destroy\(\); \}/);
 });
 
 test('Setup mounts the roots stones on the surface content so the shared insets apply', async () => {

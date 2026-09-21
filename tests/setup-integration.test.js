@@ -136,12 +136,12 @@ test('all inventoried launch families use the shared launch marker and no Team R
 
 test('Setup surfaces consume one runtime contract and open Presets only through Launch Your Own', async () => {
   const text = await source('setup-surfaces.js');
-  // The Model providers surface (provider-surface.js, the one surface Ronin Settings also
-  // seats) is the one client that measures; every other surface takes the Campaign's
-  // recorded summary from GET /api/setup/runtime (setup-view.js hydrates it).
+  // Setup progress owns provider measurement. The shared Model providers surface reads
+  // the recorded runtime, while explicit Refresh remains a provider operation.
   const providers = await source('provider-surface.js');
-  assert.match(providers, /request\('\/api\/setup\/providers\/measure', \{ method: 'POST'/);
-  assert.doesNotMatch(providers, /request\('\/api\/setup\/runtime'/);
+  assert.match(providers, /request\('\/api\/setup\/runtime', \{ cache: 'no-store' \}/);
+  assert.match(providers, /request\('\/api\/setup\/providers\/refresh', \{ method: 'POST'/);
+  assert.doesNotMatch(providers, /request\('\/api\/setup\/providers\/measure'/);
   assert.doesNotMatch(text, /request\('\/api\/setup\/(?:runtime|providers\/measure)'/);
   assert.match(await source('setup-view.js'), /request\('\/api\/setup\/runtime'/);
   assert.match(providers, /\/login`/);

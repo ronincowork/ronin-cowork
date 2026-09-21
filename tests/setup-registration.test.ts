@@ -207,8 +207,11 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.doesNotMatch(source, /What would make Ronin useful to you\?|Anything else\? \(optional\)/);
   assert.match(source, /setup_surface\.own_words', 'Anything else'/);
   assert.match(source, /Enjoy using Ronin\. If you’d like to share feedback later, we’d be glad to hear from you at a later date\./);
-  assert.match(source, /declinedRegistration[\s\S]*?fit\.hidden = declinedRegistration/);
-  assert.match(source, /registerAction\.hidden = declinedRegistration/);
+  // Declining is the header zone's 'No thank you', not a third way to register: the identity
+  // choice asks only how, and the whole form goes away rather than each control hiding itself.
+  assert.doesNotMatch(source, /'no_thanks'/);
+  assert.doesNotMatch(source, /declinedRegistration/);
+  assert.match(source, /form\.hidden = !formOnShow\(\)/);
   assert.match(source, /user_intro_submit', 'Submit'/);
   assert.match(source, /if \(result\.ok\) userIntro\.hidden = true/);
   assert.match(source, /register_action'[\s\S]*?'Send'\), '', async/);
@@ -481,7 +484,9 @@ test('Setup has one Installations card, Account has no gbrain tab, and Machine S
   assert.doesNotMatch(machine, /settei\.use_gbrain|family: 'gbrain'/);
   assert.match(installations, /context\.createInstallationSurface\?\.\(installation\.id, sharedContext\)/);
   assert.match(surfaces, /createInstallationSurface: \(id, shared\) => id === 'ronin_services' \? createServicesSurface\(shared\) : id === 'gbrain' \? createGbrainSurface\(shared\) : null/);
-  assert.match(installations, /stoneSurface\.select\('ronin_services'\)/);
+  // A collection surface opens showing its collection: forcing Ronin Services open put the
+  // surface straight into operation mode, which is the one view the header zone is not in.
+  assert.doesNotMatch(installations, /stoneSurface\.select\('ronin_services'\)/);
   assert.match(installations, /context\.onInstallationsState\?\.\(\{ \.\.\.values \}\)/, 'Setup completion follows the saved installation map');
 });
 

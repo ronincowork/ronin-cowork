@@ -3,6 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { createSetupZoneSlot, setupStep, watchSetupProgress } from './setup-zone.js';
 
 export const PASSWORD_SURFACE_TYPE = 'machine.password';
 
@@ -19,9 +20,9 @@ export function createPasswordSurface(context = {}) {
   const body = el('div', 'setup-surface-body setup-register-compact password-surface');
   const intro = el('section', 'setup-register-welcome');
   intro.append(
-    el('span', 'setup-register-eyebrow', t('password.eyebrow', 'Access control')),
-    el('h2', '', t('password.heading', 'Browser password')),
-    el('p', 'setup-lede', t('password.explain', 'One password protects this Ronin installation through both its local HTTP and Tailscale HTTPS addresses.')),
+    el('span', 'setup-register-eyebrow', t('password.eyebrow', 'How you reach this machine')),
+    el('h2', '', t('password.heading', 'How do you reach this machine?')),
+    el('p', 'setup-lede', t('password.explain', 'Most people reach Ronin over Tailscale, which is already private. A password on top is optional—set one only if this machine is reachable some other way.')),
   );
   const access = el('section', 'setup-register-group password-access');
   access.append(el('h3', '', t('password.access', 'Browser access')));
@@ -66,6 +67,57 @@ export function createPasswordSurface(context = {}) {
     el('p', 'setup-fine', t('password.recovery_help', 'On the machine running Ronin, open a terminal in the Ronin installation and run bin/ronin-recovery. Enter the one-time code under “Use a recovery code” on the login page. It works without the old password and expires after 30 minutes.')),
   );
   access.append(selectorHost, changeRow.el, note.el, reach, basic);
+  /**
+   * Step 5's header zone. Tailscale is a fact about this machine, read from the Setup scan
+   * (progress.facts.tailscale). It is three-valued on purpose: absent means the scan has not
+   * said yet, which is not the same as saying Tailscale is missing, so the zone declines to
+   * claim either until it knows.
+   */
+  const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
+  // Two different acts, and each is only ever offered in the state where it makes sense:
+  // settling for no password when there is none, and removing one when there is.
+  const chooseNoPassword = () => void context.environment?.answerSetupStep?.('password', 'not_now');
+  const paintZone = () => {
+    if (!zone) return;
+    const progress = context.environment?.setupProgress?.();
+    const onTailscale = progress?.facts?.tailscale === true;
+    const noPasswordChosen = setupStep(context.environment, 'password')?.answer === 'not_now';
+    // STEP 5 NEVER EMPTIES either, and both of its picks keep working: how you reach this
+    // machine is a standing arrangement, not a one-time answer, so the owner can come back
+    // and change it whenever (owner, 2026-09-21). 'Tailscale only' therefore has to MEAN it —
+    // when a password is set it turns that password off, the same call the toggle below
+    // makes, rather than quietly recording an answer that contradicts the machine.
+    zone.paint({
+      state: saved ? 'Password set.'
+        : onTailscale ? 'Tailscale available. Add a password as well?'
+        : progress?.facts?.tailscale === false ? 'Tailscale not available on this machine.'
+        : 'Checking how you reach this machine\u2026',
+      // Without Tailscale, 'Tailscale only' is not an arrangement this machine can be in, so it is
+      // shown and not selectable rather than quietly offered — and 'None' takes its place as
+      // the real choice, for a machine that is already protected some other way and wants no
+      // Ronin password on top (owner, 2026-09-21).
+      // A MARK MEANS THE PERSON CHOSE IT, never that the machine happens to be that way.
+      // Tailscale and no password is the state every machine starts in, so marking 'Tailscale
+      // only' on arrival claimed a decision nobody had made, and the step is not complete
+      // until they make it. Nothing is pre-marked; a mark appears once they have answered.
+      //
+      // With a password already on, none of that is the question any more — the one thing
+      // left to offer is taking it off again (owner, 2026-09-21).
+      picks: saved
+        ? [{ label: 'Disable password', action: () => void disable() }]
+        : [
+            { label: 'Tailscale only',
+              chosen: onTailscale && noPasswordChosen,
+              disabled: !onTailscale,
+              title: onTailscale ? '' : 'Tailscale is not available on this machine.',
+              action: chooseNoPassword },
+            ...(onTailscale ? [] : [{ label: 'None', chosen: noPasswordChosen, action: chooseNoPassword }]),
+            { label: 'Add password', action: () => openForm('enable') },
+          ],
+    });
+  };
+  // Seated beside the body, not inside it — see the note in setup-surfaces.js.
+  if (zone) surface.content.append(zone.el);
   body.append(intro, access, form, recovery);
   surface.content.append(body);
 
@@ -99,10 +151,14 @@ export function createPasswordSurface(context = {}) {
     basic.hidden = state?.basic !== true;
     basic.textContent = t('password.basic_kept', 'Legacy Basic authentication is also configured. Turning this password Off does not remove that separate restriction.');
     context.environment?.onPasswordState?.({ required: saved, basic: state?.basic === true });
+    paintZone();
   };
 
-  selector = ask([{ group: t('password.access', 'Browser access'), fields: [{
-    key: 'required', label: t('password.require', 'Require a password'), switch: [t('password.on', 'On'), t('password.off', 'Off')],
+  // No group head: the section's own h3 already says 'Browser access', and the head repeated
+  // it word for word directly beneath. The label is shortened to fit the shared stone rather
+  // than stretch it — it was ellipsing to 'Require a passw…'.
+  selector = ask([{ fields: [{
+    key: 'required', label: t('password.require', 'Require password'), switch: [t('password.on', 'On'), t('password.off', 'Off')],
   }] }], {
     value: { required: false },
     onChange: (next) => {
@@ -154,7 +210,11 @@ export function createPasswordSurface(context = {}) {
     if (!result.ok) { say(result.message, true); return; }
     paint(result.data); say('');
   };
-  return { el: surface.el, show, destroy: () => selector.destroy() };
+  // Answering does not reload this surface, so the zone listens for the record it reads. This
+  // subscribes LAST because onSetupProgress paints immediately, and paintZone reads `saved`
+  // and `disable` — subscribing before they are initialised throws on the first paint.
+  const stopProgress = watchSetupProgress(context.environment, paintZone);
+  return { el: surface.el, show, destroy: () => { stopProgress(); selector.destroy(); } };
 }
 
 export function passwordSurfaceDefinition() {
