@@ -202,8 +202,8 @@ and seats. Optional feature status is independent and must not hold the frame.
 |---|---|
 | Team roster / Team profile | Team records and live session-derived membership |
 | Agent terminal | selected session plus terminal transport; other sessions are not mounted for it |
-| Commons | only the selected tab enters: Roster, Docs, Wipeboard, Task Manager, Configuration, or another registered room |
-| Team Kanban | installed capability fact, then selected Team's derived Project view |
+| Commons | only the selected tab enters: Roster, Docs, Wipeboard, Messages, Configuration, or another registered room |
+| Team Task Manager | its own work surface; installed capability fact, then selected Team's derived Project view |
 | Cron jobs | scheduled messages for the addressed Team or collection scope |
 | New Agent / New Team | canonical launch form and its dependencies listed above |
 | Archived sessions | archive manifests when shown |
