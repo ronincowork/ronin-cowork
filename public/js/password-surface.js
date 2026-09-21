@@ -22,7 +22,7 @@ export function createPasswordSurface(context = {}) {
   intro.append(
     el('span', 'setup-register-eyebrow', t('password.eyebrow', 'How you reach this machine')),
     el('h2', '', t('password.heading', 'How do you reach this machine?')),
-    el('p', 'setup-lede', t('password.explain', 'Most people reach Ronin over Tailnet, which is already private. A password on top is optional—set one only if this machine is reachable some other way.')),
+    el('p', 'setup-lede', t('password.explain', 'Most people reach Ronin over Tailscale, which is already private. A password on top is optional—set one only if this machine is reachable some other way.')),
   );
   const access = el('section', 'setup-register-group password-access');
   access.append(el('h3', '', t('password.access', 'Browser access')));
@@ -80,24 +80,24 @@ export function createPasswordSurface(context = {}) {
   const paintZone = () => {
     if (!zone) return;
     const progress = context.environment?.setupProgress?.();
-    const onTailnet = progress?.facts?.tailscale === true;
+    const onTailscale = progress?.facts?.tailscale === true;
     const noPasswordChosen = setupStep(context.environment, 'password')?.answer === 'not_now';
     // STEP 5 NEVER EMPTIES either, and both of its picks keep working: how you reach this
     // machine is a standing arrangement, not a one-time answer, so the owner can come back
-    // and change it whenever (owner, 2026-09-21). 'Tailnet only' therefore has to MEAN it —
+    // and change it whenever (owner, 2026-09-21). 'Tailscale only' therefore has to MEAN it —
     // when a password is set it turns that password off, the same call the toggle below
     // makes, rather than quietly recording an answer that contradicts the machine.
     zone.paint({
       state: saved ? 'Password set.'
-        : onTailnet ? 'Tailnet available. Add a password as well?'
-        : progress?.facts?.tailscale === false ? 'Tailnet not available on this machine.'
+        : onTailscale ? 'Tailscale available. Add a password as well?'
+        : progress?.facts?.tailscale === false ? 'Tailscale not available on this machine.'
         : 'Checking how you reach this machine\u2026',
-      // Without Tailnet, 'Tailnet only' is not an arrangement this machine can be in, so it is
+      // Without Tailscale, 'Tailscale only' is not an arrangement this machine can be in, so it is
       // shown and not selectable rather than quietly offered — and 'None' takes its place as
       // the real choice, for a machine that is already protected some other way and wants no
       // Ronin password on top (owner, 2026-09-21).
       // A MARK MEANS THE PERSON CHOSE IT, never that the machine happens to be that way.
-      // Tailnet and no password is the state every machine starts in, so marking 'Tailnet
+      // Tailscale and no password is the state every machine starts in, so marking 'Tailscale
       // only' on arrival claimed a decision nobody had made, and the step is not complete
       // until they make it. Nothing is pre-marked; a mark appears once they have answered.
       //
@@ -106,12 +106,12 @@ export function createPasswordSurface(context = {}) {
       picks: saved
         ? [{ label: 'Disable password', action: () => void disable() }]
         : [
-            { label: 'Tailnet only',
-              chosen: onTailnet && noPasswordChosen,
-              disabled: !onTailnet,
-              title: onTailnet ? '' : 'Tailnet is not available on this machine.',
+            { label: 'Tailscale only',
+              chosen: onTailscale && noPasswordChosen,
+              disabled: !onTailscale,
+              title: onTailscale ? '' : 'Tailscale is not available on this machine.',
               action: chooseNoPassword },
-            ...(onTailnet ? [] : [{ label: 'None', chosen: noPasswordChosen, action: chooseNoPassword }]),
+            ...(onTailscale ? [] : [{ label: 'None', chosen: noPasswordChosen, action: chooseNoPassword }]),
             { label: 'Add password', action: () => openForm('enable') },
           ],
     });

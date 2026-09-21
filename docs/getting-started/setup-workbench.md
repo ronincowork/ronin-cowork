@@ -188,16 +188,16 @@ choices are separate, and **No communication** is one of them.
 
 ## Password
 
-How you reach this machine is the last step. Most people reach Ronin over Tailnet, which is
-already private, so the zone says whether Tailnet is available here and asks whether you
-want a password as well.
+How you reach this machine is the last step. Most people reach Ronin over Tailscale, which
+is already private, so the zone says whether Tailscale is available here and asks whether
+you want a password as well.
 
-With Tailnet, the choices are **Tailnet only** and **Add password**. Without it, **Tailnet
-only** is shown but not selectable — it is not an arrangement this machine can be in — and
+With Tailscale, the choices are **Tailscale only** and **Add password**. Without it,
+**Tailscale only** is shown but not selectable — it is not an arrangement this machine can be in — and
 **None** takes its place, for a machine already protected some other way. Once a password is
 set the only thing left to offer is **Disable password**.
 
-Having Tailnet does not answer this step for you. Whether Tailnet alone is enough is a
+Having Tailscale does not answer this step for you. Whether Tailscale alone is enough is a
 judgement about your own machine, so Setup waits for you to say.
 
 ## Workspace folders
