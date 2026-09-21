@@ -724,6 +724,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desks.parked_none:** none
 
 ## team — team-view.js (the Team page)
+- **team_kanban.beta:** Beta
+- **team_kanban.beta_message:** Task Manager is in beta. Review your Team’s Projects here and request stage changes by dragging cards.
+- **team_kanban.header_collapse:** Collapse
+- **team_kanban.header_expand:** Expand
 - **team.lead:** Team lead
 - **team.flip_commons:** Show the Team commons in this workspace
 - **team.flip_terminal:** Show the terminal in this workspace

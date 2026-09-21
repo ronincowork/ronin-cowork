@@ -82,7 +82,7 @@ test('the beta notice sits in a collapsible Task Manager header zone', () => {
   assert.match(moduleSource, /const header = node\('div', 'tk-header'/);
   assert.match(moduleSource, /const beta = node\('strong', 'tk-beta'/);
   assert.match(moduleSource, /team_kanban\.beta', 'Beta'/);
-  assert.match(moduleSource, /This message will go in this header\./);
+  assert.match(moduleSource, /team_kanban\.beta_message/);
   assert.match(moduleSource, /headerToggle\.setAttribute\('aria-expanded', String\(expanded\)\)/);
   assert.match(moduleSource, /headerMessage\.hidden = !expanded/);
   assert.match(moduleSource, /root\.append\(header, topline, board\)/);

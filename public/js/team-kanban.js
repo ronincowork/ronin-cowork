@@ -94,9 +94,9 @@ export function createTeamKanban(options = {}) {
   const header = node('div', 'tk-header');
   const headerRow = node('div', 'tk-header-row');
   const beta = node('strong', 'tk-beta', t('team_kanban.beta', 'Beta'));
-  const headerToggle = node('button', 'tk-header-toggle', 'Collapse');
+  const headerToggle = node('button', 'tk-header-toggle');
   headerToggle.type = 'button';
-  const headerMessage = node('p', 'tk-header-message', 'This message will go in this header.');
+  const headerMessage = node('p', 'tk-header-message', t('team_kanban.beta_message', 'Task Manager is in beta. Review your Team’s Projects here and request stage changes by dragging cards.'));
   headerMessage.id = `tk-header-message-${++nextHeaderId}`;
   headerToggle.setAttribute('aria-controls', headerMessage.id);
   headerRow.append(beta, headerToggle);
@@ -104,7 +104,9 @@ export function createTeamKanban(options = {}) {
   const setHeaderExpanded = (expanded) => {
     header.dataset.expanded = String(expanded);
     headerToggle.setAttribute('aria-expanded', String(expanded));
-    headerToggle.textContent = expanded ? 'Collapse' : 'Expand';
+    headerToggle.textContent = expanded
+      ? t('team_kanban.header_collapse', 'Collapse')
+      : t('team_kanban.header_expand', 'Expand');
     headerMessage.hidden = !expanded;
   };
   headerToggle.addEventListener('click', () => setHeaderExpanded(header.dataset.expanded !== 'true'));
