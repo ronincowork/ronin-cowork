@@ -19,11 +19,17 @@ const sourceFrom = (source: MessageSource): string => ({
   tell: 'Agent', wipeboard_notice: 'Wipeboard', owner: 'Owner', house: 'Ronin House', jikan: 'Cron jobs',
 })[source];
 
-/** Tell carries its queue-recorded sender into the recipient's prompt, not just the queue UI. */
+const channelOf = (source: MessageSource): string => ({
+  tell: 'Tell', wipeboard_notice: 'Wipeboard notice', owner: 'Ronin Box', house: 'House notice', jikan: 'Scheduled job',
+})[source];
+
+/** Every queued message carries the recorded actor and channel into the recipient's prompt. */
 export function deliveryText(item: Pick<QueuedMessage, 'source' | 'from' | 'text'>): string {
-  if (item.source !== 'tell') return item.text;
-  const from = item.from && item.from !== 'Agent' ? `@${item.from}` : 'an unidentified Agent';
-  return `Tell from ${from}:\n${item.text}`;
+  const recorded = String(item.from || '').replace(/[\r\n\t]/g, ' ').trim().slice(0, 80);
+  const from = item.source === 'tell'
+    ? (recorded && recorded !== 'Agent' ? `@${recorded.replace(/^@/, '')}` : 'an unidentified Agent')
+    : recorded || sourceFrom(item.source);
+  return `From ${from} [${channelOf(item.source)}]:\n${item.text}`;
 }
 
 async function remove(id: string): Promise<boolean> {

@@ -81,7 +81,7 @@ async function fanOut(board: string, post: Post, from: string): Promise<Record<s
       unaddressed++;
       continue;
     }
-    await enqueueMessage(m.name, notice, 'wipeboard_notice');
+    await enqueueMessage(m.name, notice, 'wipeboard_notice', post.author);
     results[m.name] = 'queued';
   }
   if (unaddressed) results['(not addressed)'] = `${unaddressed} other(s) — they see it when they check`;

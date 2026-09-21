@@ -25,6 +25,7 @@ test('a wipeboard notice enters the shared queue before the worker submits it', 
   await queue.enqueueMessage('board_notice_target', notice, 'wipeboard_notice');
   await queue.processMessageQueue();
   const stdout = await server.run('capture-pane', '-p', '-t', '=board_notice_target:');
+  assert.match(stdout, /From Wipeboard \[Wipeboard notice\]:/);
   assert.match(stdout, new RegExp(`SUBMITTED:${notice}`));
 
   const direct = await fs.readFile(path.join(repo, 'src/commands/message.ts'), 'utf8');

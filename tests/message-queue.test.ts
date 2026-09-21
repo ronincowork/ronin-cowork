@@ -26,13 +26,22 @@ test('producers enqueue without resolving the target', async (t) => {
   assert.deepEqual(Object.keys(item).sort(), ['created_at', 'from', 'id', 'source', 'target', 'text']);
 });
 
-test('Tell delivery names its recorded sender without changing the stored message body', async (t) => {
-  const q = await queue(t, 'tell_sender');
+test('queue delivery names the recorded actor and channel without changing the stored body', async (t) => {
+  const q = await queue(t, 'message_provenance');
   const item = await q.enqueueMessage('target', 'Please review the boundary.', 'tell', 'setup_live_audit');
-  assert.equal(q.deliveryText(item), 'Tell from @setup_live_audit:\nPlease review the boundary.');
+  assert.equal(q.deliveryText(item), 'From @setup_live_audit [Tell]:\nPlease review the boundary.');
   assert.equal(item.text, 'Please review the boundary.');
-  assert.equal(q.deliveryText({ ...item, from: 'Agent' }), 'Tell from an unidentified Agent:\nPlease review the boundary.');
-  assert.equal(q.deliveryText({ ...item, source: 'owner' }), item.text);
+  assert.equal(q.deliveryText({ ...item, from: 'Agent' }), 'From an unidentified Agent [Tell]:\nPlease review the boundary.');
+  assert.equal(q.deliveryText({ ...item, source: 'wipeboard_notice', from: '@cleaner' }),
+    'From @cleaner [Wipeboard notice]:\nPlease review the boundary.');
+  assert.equal(q.deliveryText({ ...item, source: 'house', from: '@cleaner' }),
+    'From @cleaner [House notice]:\nPlease review the boundary.');
+  assert.equal(q.deliveryText({ ...item, source: 'house', from: 'Ronin House' }),
+    'From Ronin House [House notice]:\nPlease review the boundary.');
+  assert.equal(q.deliveryText({ ...item, source: 'owner', from: 'Owner' }),
+    'From Owner [Ronin Box]:\nPlease review the boundary.');
+  assert.equal(q.deliveryText({ ...item, source: 'jikan', from: 'Cron jobs' }),
+    'From Cron jobs [Scheduled job]:\nPlease review the boundary.');
 });
 
 test('the worker shreds a letter whose current target is missing', async (t) => {
@@ -71,7 +80,11 @@ test('one worker sends oldest first and deletes every attempted letter', async (
     safe: async (_name: string, text: string) => { sent.push(text); return { delivered: true, submitted: true, reason: 'sent' }; },
     force: async () => { throw new Error('not overdue'); },
   } });
-  assert.deepEqual(sent, ['first', 'second', 'Tell from @setup_live_audit:\nthird']);
+  assert.deepEqual(sent, [
+    'From Owner [Ronin Box]:\nfirst',
+    'From Wipeboard [Wipeboard notice]:\nsecond',
+    'From @setup_live_audit [Tell]:\nthird',
+  ]);
   assert.deepEqual(await q.listQueuedMessages(), []);
 });
 
