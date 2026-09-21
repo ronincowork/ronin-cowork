@@ -6,6 +6,7 @@ import { createReleaseUpdateController, packageReading } from './release-update-
 import { createSenmaida } from './senmaida.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
+import { workbenchLaunchUrl } from './workspace.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -94,7 +95,7 @@ export function createCampaignHome() {
         ? t('campaign_home.machine_setup', 'Machine Setup') : door.name;
       const reading = door.key === 'campaign' && route === 'setup'
         ? t('campaign_home.setup_is', 'Install and authenticate a model provider') : door.is;
-      card.href = `#/${route}`;
+      card.href = workbenchLaunchUrl({ destination: route, mode: 'overlay' });
       card.dataset.door = door.key;
       if (locked) {
         card.dataset.unavailable = 'true';

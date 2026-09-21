@@ -192,6 +192,7 @@ export function createCampaignView() {
       const generation = ++loadGeneration;
       const { state: entry } = context.workbenchEntry({
         count: 2, selected: 'workspace1',
+        arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement,
         seats: { workspace1: TYPES.defaults, workspace2: TYPES.roots },
       });
       const typed = normalizeWorkbenchState(entry, bench.declaration);

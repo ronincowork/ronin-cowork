@@ -273,7 +273,10 @@ export function createSetupView() {
     enter: async (context) => {
       const generation = ++enterGeneration;
       ctx = context;
-      const { state: entry } = context.workbenchEntry();
+      const { state: entry } = context.workbenchEntry({
+        count: 2, selected: 'workspace1', arrangement: ARRANGEMENT,
+        seats: { workspace1: GARDEN_CANVAS_TYPE, workspace2: SCENES[0].type },
+      });
       sceneOverride = Number(entry.sceneOverride) || 1;
       bench.enter({ ...entry, count: 2, arrangement: { ...ARRANGEMENT, widths: entry.arrangement?.widths || ARRANGEMENT.widths } });
       bench.place(GARDEN_CANVAS_TYPE, 'workspace1');
