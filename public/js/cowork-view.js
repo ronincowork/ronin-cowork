@@ -566,6 +566,12 @@ export function createCoworkView(options = {}) {
       // owner's explicit dash: later roster and view paints must leave that seat alone.
       if (!workspaceMaySeedDefault(wanted)) continue;
       const request = surfaceRequest(wanted);
+      // The Workbench seat names its occupant. The pool renders that request;
+      // membership only supplies roster offers and additional sessions.
+      if (request.type === WB_TYPES.terminal) {
+        putSession(request.detail.key, id, false);
+        continue;
+      }
       if (WorkspaceKit.workbench.library.has(request.type) && bench.place(request.type, id, request.detail)) continue;
       else if (wanted && seats[id].pool.has(wanted)) putSession(wanted, id, false);
       // A remembered session the roster does not have: wait while the roster is still
@@ -578,7 +584,8 @@ export function createCoworkView(options = {}) {
   const syncPools = (members) => {
     const live = new Set(S.sessions.map((s) => s.name));
     for (const x of [...extras]) if (!live.has(x) && live.size) extras.delete(x); // a gone extra leaves the pool
-    const names = [...new Set([...members.map((m) => m.name), ...extras])];
+    const seated = Object.values(remembered).flatMap((seat) => seat?.type === WB_TYPES.terminal && seat.key ? [seat.key] : []);
+    const names = [...new Set([...members.map((m) => m.name), ...extras, ...seated])];
     for (const seat of Object.values(seats)) seat.pool.sync(names);
     paintSeats();
   };

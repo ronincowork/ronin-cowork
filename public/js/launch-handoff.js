@@ -21,9 +21,9 @@ function orderedSessions(sessions = []) {
 /** Build the destination without opening it, so every launch entrance shares the rule. */
 export function launchHandoffSpec({ team = '', sessions = [] } = {}) {
   const ordered = orderedSessions(sessions);
-  if (!ordered.length) return null;
   const teamName = String(team || '').trim();
   if (!teamName) {
+    if (!ordered.length) return null;
     const name = ordered[0].name;
     return {
       destination: 'agent', param: name, mode: 'replace',
@@ -33,6 +33,14 @@ export function launchHandoffSpec({ team = '', sessions = [] } = {}) {
       },
     };
   }
+
+  if (!ordered.length) return {
+    destination: 'team', param: teamName, mode: 'replace',
+    state: {
+      count: 2, selected: 'workspace1', tabName: '',
+      seats: { workspace1: { type: 'team.commons', tab: 'team-configuration' }, workspace2: EMPTY_WORKSPACE },
+    },
+  };
 
   const count = ordered.length > 2 ? 4 : 2;
   const seats = Object.fromEntries(WORKSPACES.slice(0, count).map((workspace, index) => [

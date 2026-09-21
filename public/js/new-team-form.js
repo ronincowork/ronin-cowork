@@ -11,7 +11,7 @@ import { launchTeamAgents } from './team-loader.js';
 import {
   createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
-import { closeWorkspaceTab, openWorkbenchTab, reserveWorkspaceTab } from './workspace.js';
+import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -501,14 +501,12 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
         born: born.length ? born.join(', ') : t('forms.none', 'none'),
         names: refused.map(({ row }) => row.name).join(', '),
       }));
-      if (launched.length) openLaunchHandoff({ team: name, sessions: launched }, launchTab);
-      else openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
+      openLaunchHandoff({ team: name, sessions: launched }, launchTab);
       return;
     }
     notice.set('', '');
     reset();
-    if (launched.length) openLaunchHandoff({ team: name, sessions: launched }, launchTab);
-    else openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
+    openLaunchHandoff({ team: name, sessions: launched }, launchTab);
     await created?.(name);
     await consumed?.();
   }
