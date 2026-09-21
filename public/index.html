@@ -27,11 +27,13 @@
     <link rel="stylesheet" href="/__RONIN_ASSET_VERSION__/css/feedback.css" />
     <link rel="stylesheet" href="/__RONIN_ASSET_VERSION__/css/garden-canvas.css" />
     <!-- modulepreloads:start -->
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/agent-view.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/ansi.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/api.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/archives.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/ask.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/behaviour-reader.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/behaviour-surface.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/campaign-defaults.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/campaign-desk.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/campaign-home.js" />
@@ -68,6 +70,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/installation-map.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/keysrow.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/koshi.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/launch-handoff.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/launch-help.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/launch-view.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/layout.js" />
@@ -76,6 +79,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/machine-settings-schema.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/machine-settings.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/main.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/markdown-reader.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/message-queue.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/mika-ready.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/mika.js" />
@@ -107,7 +111,10 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/session-picker.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/session-retire.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/setup-journey.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/setup-progress.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/setup-provider-state.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/setup-return-card.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/setup-steps-bar.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/setup-surfaces.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/setup-view.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/shingo.js" />
@@ -150,6 +157,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/voice.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/weblink.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/widgets.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workbench-catalog.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workbench.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workspace-adapters.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workspace-arrangement.js" />
@@ -172,6 +180,8 @@
       <span id="coworkssep" class="ui-bar-separator" aria-hidden="true" hidden>•</span>
       <a id="coworksbtn" class="ui-bar-nav" href="#/cowork" data-t="campaign.coworks" hidden>Teams</a>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
+      <!-- A view's declared controls before the centred island. js/workspace.js seats them. -->
+      <span id="viewleading" class="wk-view-leading"></span>
       <!-- THE PLACE — the reading inside the centred, neutral island cut into the top
            edge of the screen, visually separate from the Workbench headers.
            js/workspace-header.js writes it; nothing else does. -->

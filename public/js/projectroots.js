@@ -1,12 +1,13 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
-import { status } from './ui.js';
+import { confirmDialog, status } from './ui.js';
 import { loadProjects } from './home.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFolderPicker } from './folder-picker.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { ask } from './ask.js';
+import { finalizeTeamName, sanitizeTeamName } from './new-team-draft.js';
 
 export function buildProjectRoots(root, isShowing, campaignId = () => '', options = {}) {
   const { createAction } = WorkspaceKit.primitives;
@@ -14,6 +15,8 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   const stones = options.presentation === 'stones';
   let data = null; // { roots: [...], untagged: n }
   let editing = null; // handle of the block whose form is open
+  const gitAccess = new Map(); // measured for this page only; credentials remain owned by Git
+  const checkingGitAccess = new Set();
 
   const head = document.createElement('div');
   head.className = 'pr-head';
@@ -119,6 +122,15 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     // field. The independent display title is ordinary editable presentation.
     const handleInput = mk(t('roots.f_handle', 'Workspace Folder handle'), 'name', existing.name, t('roots.f_handle_hint', 'The stable handle used by sessions and tools, such as ronin_lab.'), 'ronin_lab');
     handleInput.disabled = !creating;
+    handleInput.maxLength = 32;
+    if (creating) {
+      handleInput.addEventListener('input', () => {
+        const caret = handleInput.selectionStart;
+        handleInput.value = sanitizeTeamName(handleInput.value).slice(0, 32);
+        handleInput.setSelectionRange(caret, caret);
+      });
+      handleInput.addEventListener('blur', () => { handleInput.value = finalizeTeamName(handleInput.value).slice(0, 32); });
+    }
     if (stones && !creating) handleInput.closest('label').hidden = true; // the detail head already says it
     mk(t('roots.f_title', 'display title'), 'title', existing.title, t('roots.f_title_hint', 'The name shown on screen. Changing it never changes the handle or directory.'), t('roots.f_title_placeholder', 'optional'));
     const dirInput = mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Where the Agent starts and discovers project instructions.'), '');
@@ -229,6 +241,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         body[i.dataset.key] = i.value.trim();
       });
       const name = creating ? body.name : existing.name;
+      if (creating && !name) { err.say(t('roots.handle_needed', 'Give this Workspace Folder a handle.'), 'bad'); handleInput.focus(); return; }
       delete body.name; // on an edit the route already carries the handle; on an add it rides the body
       let proposedProfile = null;
       if (profileFields) {
@@ -257,7 +270,12 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
             `stable=${p.stable}`,
             `worktrees=${p.worktrees}`,
           ].join('\n');
-          if ((creating || JSON.stringify(proposedProfile) !== JSON.stringify(profileFields.before)) && !confirm(t('roots.profile_confirm', 'Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.', { before: line(profileFields.before), after: line(proposedProfile) }))) return;
+          if ((creating || JSON.stringify(proposedProfile) !== JSON.stringify(profileFields.before)) && !await confirmDialog({
+            label: t('roots.profile_confirm_title', 'Confirm repository settings'),
+            message: t('roots.profile_confirm', 'Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.', { before: line(profileFields.before), after: line(proposedProfile) }),
+            confirmLabel: t('roots.profile_confirm_action', 'Use these settings'),
+            cancelLabel: t('roots.cancel_folder', 'Cancel'),
+          })) return;
         }
       }
       save.disabled = true;
@@ -395,7 +413,12 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
     });
     const drop = createAction({ label: stones ? t('roots.exclude_folder', 'Exclude') : t('roots.exclude', 'exclude'), kind: 'danger', title: t('roots.exclude_title', 'Remove it from the catalog. Nothing on disk is touched.') }).el;
     drop.addEventListener('click', async () => {
-      if (!confirm(t('roots.exclude_confirm', 'Exclude "{name}" from your Ronin?\n\nThe catalog entry goes. {dir} is not touched.', { name: r.name, dir: r.dir }))) return;
+      if (!await confirmDialog({
+        label: t('roots.exclude_folder', 'Exclude workspace folder'),
+        message: t('roots.exclude_confirm', 'Exclude "{name}" from your Ronin?\n\nThe catalog entry goes. {dir} is not touched.', { name: r.name, dir: r.dir }),
+        confirmLabel: t('roots.exclude_folder', 'Exclude'),
+        cancelLabel: t('roots.cancel_folder', 'Cancel'),
+      })) return;
       drop.disabled = true;
       const res = await request('/api/project-roots/' + encodeURIComponent(r.name), { method: 'DELETE' });
       if (!res.ok) {
@@ -505,6 +528,35 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
           : t('roots.profile_undeclared', 'Not declared'), { title: declared ? '' : t('roots.chip_shared_title', 'No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.') }],
         [t('roots.fact_worktrees', 'Worktrees'), declared && r.repo_profile?.worktrees === 'enabled' ? t('roots.worktrees_enabled', 'Use Ronin Worktrees') : t('roots.worktrees_disabled', 'Use the checkout')],
       ])));
+
+      const access = gitAccess.get(r.name) || { state: 'not_checked', message: t('roots.git_access_not_checked_detail', 'Ronin has not checked read access to this repository’s origin.') };
+      const checking = checkingGitAccess.has(r.name);
+      const labels = {
+        available: t('roots.git_access_available', 'Access available'),
+        unavailable: t('roots.git_access_unavailable', 'Access unavailable'),
+        not_checked: t('roots.git_access_not_checked', 'Not checked'),
+        check_failed: t('roots.git_access_check_failed', 'Check failed'),
+      };
+      const accessBody = make('div', 'pr-git-access');
+      const accessState = make('p', 'pr-detail-state', checking ? t('roots.git_access_checking', 'Checking…') : labels[access.state] || labels.check_failed);
+      accessState.dataset.tone = access.state === 'available' ? 'ok' : access.state === 'not_checked' ? 'muted' : 'bad';
+      const accessMessage = make('p', 'pr-fine', access.message || '');
+      accessMessage.setAttribute('role', 'status');
+      const check = createAction({ label: t('roots.git_access_check', 'Check access'), kind: 'primary' }).el;
+      check.disabled = checking;
+      check.addEventListener('click', async () => {
+        if (checkingGitAccess.has(r.name)) return;
+        checkingGitAccess.add(r.name);
+        if (stoneSurface) stoneSurface.refreshDetail(); else render();
+        const result = await request(`/api/project-roots/${encodeURIComponent(r.name)}/git-access`, { method: 'POST' });
+        gitAccess.set(r.name, result.ok
+          ? { state: result.data?.state || 'check_failed', message: result.data?.message || '' }
+          : { state: 'check_failed', message: result.message });
+        checkingGitAccess.delete(r.name);
+        if (stoneSurface) stoneSurface.refreshDetail(); else render();
+      });
+      accessBody.append(accessState, accessMessage, check);
+      d.append(section(t('roots.git_access', 'Git access'), accessBody));
     } else if (exists) {
       // A project_root need not be a project_repo. `~/lab` is one; this is a legal shape, not a warning.
       d.append(section(t('roots.section_repository', 'Repository'), make('p', 'pr-fine', t('roots.repository_none', 'Not a Git repository. A workspace folder does not need to be one.'))));

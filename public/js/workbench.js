@@ -106,6 +106,12 @@ export function createWorkbench(options = {}) {
     columns[COLUMN_OF[id]].append(cell);
   }
 
+  let selectorDensity = options.selectorDensity === 'thick' ? 'thick' : 'thin';
+  const densityToggle = WorkspacePrimitives.createAction({ label: '', size: 'compact', className: 'tw-agent-density' });
+  const densityLines = node('span', 'tw-agent-density-lines');
+  densityLines.append(node('i'), node('i'));
+  densityToggle.el.replaceChildren(densityLines);
+
   const selector = node('div', 'wk-workbench-selector');
   const selectorCards = node('div', 'wk-workbench-selector-cards');
   selector.append(selectorCards, buildHints({
@@ -120,12 +126,29 @@ export function createWorkbench(options = {}) {
   const layout = createWorkbenchLayout({
     declaration,
     surfaces: { workspace1: columns.workspace1, selector, workspace2: columns.workspace2 },
-    headers: { selector: { actions: options.actions || [] } },
+    headers: { selector: { actions: [densityToggle, ...(options.actions || [])] } },
     onStateChange: remember,
   });
   layout.el.dataset.workbenchProfile = profile.name;
+  const paintDensity = () => {
+    layout.host.dataset.selectorDensity = selectorDensity;
+    densityToggle.el.dataset.lines = selectorDensity === 'thin' ? 'two' : 'one';
+    densityToggle.el.title = selectorDensity === 'thin' ? 'Expand selector cards' : 'Collapse selector cards';
+    densityToggle.el.setAttribute('aria-label', densityToggle.el.title);
+    densityToggle.el.setAttribute('aria-pressed', String(selectorDensity === 'thin'));
+  };
+  const setSelectorDensity = (value, emit = false) => {
+    selectorDensity = value === 'thick' ? 'thick' : 'thin';
+    paintDensity();
+    options.onSelectorDensityChange?.(selectorDensity);
+    refreshSelector();
+    if (emit) remember();
+    return selectorDensity;
+  };
+  densityToggle.el.addEventListener('click', () => setSelectorDensity(selectorDensity === 'thin' ? 'thick' : 'thin', true));
+  paintDensity();
 
-  const shape = options.shapeControl;
+  const shape = document.getElementById('shapecycle');
   const paintShape = () => {
     if (!shape) return;
     shape.textContent = String(count);
@@ -152,6 +175,7 @@ export function createWorkbench(options = {}) {
     restoring = true;
     layout.restore(state.arrangement);
     setCount(state.count, true);
+    setSelectorDensity(state.selectorDensity, false);
     select(state.selected || selected);
     restoring = false;
     if (shape) { shape.hidden = false; shape.removeEventListener('click', onShape); shape.addEventListener('click', onShape); }
@@ -246,7 +270,7 @@ export function createWorkbench(options = {}) {
     options.onPlacement?.(snapshot());
     return true;
   };
-  const snapshot = () => ({ count, selected, arrangement: layout.arrangement.state(), seats: Object.fromEntries(WORKBENCH_IDS.map((id) => {
+  const snapshot = () => ({ count, selected, selectorDensity, arrangement: layout.arrangement.state(), seats: Object.fromEntries(WORKBENCH_IDS.map((id) => {
     const type = typeAt(id), key = resourceAt(id), detail = instanceDetails.get(holding(id)) || {};
     return [id, key ? { type, key, ...(['root', 'path', 'tab', 'doc'].reduce((kept, field) => detail[field] ? { ...kept, [field]: detail[field] } : kept, {})) } : type];
   })) });
@@ -300,7 +324,7 @@ export function createWorkbench(options = {}) {
     profile: profile.name, tenant, host: layout.host, el: layout.el, arrangement: layout.arrangement,
     selectorHeader: layout.headers.get('selector'), declaration, cells: Object.freeze(cells),
     ids: WORKBENCH_IDS, visibleIds, holding, selected: () => selected, count: () => count,
-    select, setCount, placeNode, restoreDefault, dismiss, isDefault: (id) => holding(id) === defaults[id],
+    select, setCount, setSelectorDensity, selectorDensity: () => selectorDensity, placeNode, restoreDefault, dismiss, isDefault: (id) => holding(id) === defaults[id],
     instance, place, typeAt, resourceAt, locations, snapshot, refreshSelector, enter, leave,
   };
   selectorTitle = api.selectorHeader?.title || null;

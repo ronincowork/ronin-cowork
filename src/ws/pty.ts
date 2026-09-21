@@ -14,7 +14,7 @@ import {
   tileInputAction,
 } from '../tmux.js';
 import { getStreamHandler } from '../sockets.js';
-import { deliverMessage } from '../message-queue.js';
+import { enqueueMessage } from '../message-queue.js';
 import { DeviceAttributesResponder } from '../terminal-protocol.js';
 
 const HEARTBEAT_MS = 30_000;
@@ -111,7 +111,7 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
       };
       inputQueue = inputQueue.then(async () => {
         if (closed) { answer({ ok: false, why: 'the terminal is gone' }); return; }
-        await deliverMessage(session, d.replace(/\r$/, ''), 'owner');
+        await enqueueMessage(session, d.replace(/\r$/, ''), 'owner');
         answer({ ok: true });
       }).catch((e) => answer({ ok: false, why: String((e as Error).message ?? e) }));
     } else if (msg.t === 'i' && typeof msg.d === 'string') {

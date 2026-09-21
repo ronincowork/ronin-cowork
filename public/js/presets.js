@@ -544,6 +544,13 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   let detail = null;
   let slots = HOUSE_PRESETS.map((row) => ({ ...row }));
   const controls = new Map();
+  const presetEnvironment = {
+    ...environment,
+    navigateToSurface: (type, detail = {}) => environment.navigateToSurface?.(type, {
+      ...detail,
+      origin: { kind: 'preset', workspace, preset: current()?.handle || '' },
+    }),
+  };
   // The open detail's Where selects, refilled when the catalog of workspace folders changes.
   const liveRoots = new Set();
   environment.onTrackedRoots?.(() => { const choices = rootChoices(freshRuntime(), environment); for (const fill of liveRoots) fill(choices); });
@@ -627,7 +634,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     if (!gate.ready) { launch.el.dataset.held = 'true'; launch.el.setAttribute('aria-disabled', 'true'); }
     go.append(launch.el); heading.append(go); detail.append(heading, warning, el('p', 'sp-description', slot.description || ''));
     const panel = el('div', 'sp-choice-panel');
-    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, environment, liveRoots); panel.append(fixed); }
+    if (isCorePreset(slot.handle)) { const fixed = el('div', 'sp-controls'); renderSpecialControls(fixed, slot.handle, controlState(), runtime, presetEnvironment, liveRoots); panel.append(fixed); }
     if (slot.handle !== 'bare_metal') panel.append(field('Initial message to agent', message));
     detail.append(panel);
   };
@@ -658,7 +665,12 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
     });
     surface.setState('', ''); paintGrid();
   };
-  return { el: surface.el, enter, show: enter, slots: () => slots.map((row) => ({ ...row })), workspace };
+  const show = (detail = {}) => {
+    enter();
+    const index = slots.findIndex((slot) => slot.handle === detail?.preset);
+    if (index >= 0) stoneSurface.select(String(index), { focus: true });
+  };
+  return { el: surface.el, enter, show, slots: () => slots.map((row) => ({ ...row })), workspace };
 }
 
 export function registerPresetsSurface(library = WorkspaceKit.workbench.library) {

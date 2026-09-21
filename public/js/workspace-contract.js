@@ -1,7 +1,7 @@
 /* Runtime-checked workspace state and navigation values for Kit consumers. */
 import { migrateWorkbenchState } from './workspace-arrangement.js';
 export const WORKSPACE_DESTINATIONS = Object.freeze([
-  'campaign', 'cowork', 'team', 'customize', 'commons', 'configuration',
+  'campaign', 'cowork', 'team', 'agent', 'customize', 'commons', 'configuration',
 ]);
 
 /** Shared header capabilities for a movable workbench. Static views opt into only
@@ -12,6 +12,19 @@ export const WORKBENCH_HEADER = Object.freeze({
   services: true,
   feedback: true,
 });
+export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'cowork', 'team', 'agent']);
+
+/** One declaration for every managed Workbench's application chrome. Feature views
+ * provide content and, when useful, an island reading; the base owns capabilities and
+ * appearance identity. */
+export function workbenchView(appearance, options = {}) {
+  if (!WORKBENCH_APPEARANCES.includes(appearance)) throw new Error(`unknown Workbench appearance: ${appearance}`);
+  return Object.freeze({
+    appearance,
+    header: Object.freeze({ ...WORKBENCH_HEADER, ...(options.header || {}) }),
+    ...(options.island ? { island: options.island } : {}),
+  });
+}
 export const UTILITY_HEADER = Object.freeze({
   ram: true,
   services: true,

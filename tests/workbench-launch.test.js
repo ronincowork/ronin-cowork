@@ -1,6 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { consumeWorkbenchLaunch, openWorkbenchTab, resolveWorkbenchState } from '../public/js/workspace.js';
+import { consumeWorkbenchLaunch, navigateToWorkspaceFolders, openWorkbenchTab, resolveWorkbenchState } from '../public/js/workspace.js';
+
+test('Workspace Folder navigation preserves Settings and seats the shared surface', () => {
+  let written = null;
+  let state = null;
+  let destination = '';
+  const existing = { count: 4, selected: 'workspace1', seats: { workspace1: 'campaign.defaults' }, selectorDensity: 'thick' };
+  assert.equal(navigateToWorkspaceFolders({
+    id: 'settings',
+    param: 'providers',
+    viewState: () => existing,
+    patchState: (value) => { state = value; },
+    patchViewState: (id, value) => { assert.equal(id, 'campaign'); written = value; },
+    navigate: (id) => { destination = id; return true; },
+  }, { origin: { kind: 'preset', workspace: 'workspace1', preset: 'ronin_team' } }), true);
+  assert.equal(destination, 'campaign');
+  assert.deepEqual(state, { returnTo: {
+    view: 'settings', param: 'providers',
+    origin: { kind: 'preset', workspace: 'workspace1', preset: 'ronin_team' },
+  } });
+  assert.deepEqual(written, {
+    count: 4, selected: 'workspace2', selectorDensity: 'thick',
+    seats: { workspace1: 'campaign.defaults', workspace2: 'campaign.project-roots' },
+  });
+});
 
 test('Workbench entry precedence is structured launch, remembered state, then first-open defaults', () => {
   const defaults = { count: 2, selected: 'workspace1', seats: { workspace1: 'default.one', workspace2: 'default.two' } };

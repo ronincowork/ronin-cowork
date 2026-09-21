@@ -10,7 +10,7 @@ export type SeedField = 'kind' | 'project_root' | 'branch' | 'provider' | 'model
 export interface SeedValue<T = unknown> { value: T; stated_by: StatedBy[] }
 export interface LaunchSeed {
   campaign_id: string; seeds: Record<SeedField, SeedValue>;
-  behaviours: Array<{ name: string; label: string; blurb: string; reading: string; on: boolean; required: boolean; available: boolean; stated_by: StatedBy[] }>;
+  behaviours: Array<{ name: string; label: string; blurb: string; reading: string; scope: BehaviourRow['scope']; requires: string[]; installation: string; on: boolean; required: boolean; available: boolean; stated_by: StatedBy[] }>;
   available: string[]; still_asked: Array<'session_type' | 'name' | 'instructions'>;
 }
 export interface LaunchSeedSources {
@@ -57,7 +57,9 @@ export function resolveLaunchSeed(s: LaunchSeedSources): LaunchSeed & { resolved
       launch_mode: { value: a.launch_mode, stated_by: source('launch_mode') },
       behaviours: { value: cascade.selected, stated_by: behaviourSource },
     },
-    behaviours: s.behaviours.filter((row) => row.name !== 'mandates').map((row) => ({ name: row.name, label: row.label, blurb: row.blurb, reading: row.page, on: cascade.selected.includes(row.name), required: required.has(row.name), available: available.includes(row.name), stated_by: behaviourSource })),
+    // The launch UI reads the complete resolved library from this one projection. Only
+    // selected rows can be chosen; floor and conditional rows remain visible guidance.
+    behaviours: s.behaviours.map((row) => ({ name: row.name, label: row.label, blurb: row.blurb, reading: row.page, scope: row.scope, requires: row.requires, installation: row.installation, on: cascade.selected.includes(row.name), required: required.has(row.name), available: row.scope === 'selected' && available.includes(row.name), stated_by: behaviourSource })),
     available, still_asked: ['session_type', 'name', 'instructions'],
     resolved_contributions: cascade.contributions, undelivered: cascade.undelivered,
   };

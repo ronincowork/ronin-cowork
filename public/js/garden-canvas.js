@@ -4,6 +4,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { GARDEN_REGION_KEYS } from './garden-canvas-model.js';
 import { createSenmaida, createHito } from './senmaida.js';
+import { renderMarkdownDocument } from './markdown-reader.js';
 
 export const GARDEN_CANVAS_TYPE = 'setup.garden';
 
@@ -55,6 +56,7 @@ export function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } =
   const showMedia = (view) => {
     mediaBody.replaceChildren();
     if (!view) return;
+    overlay.setAttribute('aria-label', view.label || 'Document');
     mediaBody.append(node('h2', '', view.label));
     if (view.src) {
       const external = node('a', 'garden-media-external', 'Open separately \u2197');
@@ -63,7 +65,8 @@ export function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } =
     }
     let viewer;
     if (typeof view.text === 'string') {
-      viewer = node('pre', 'garden-media-doc', view.text);
+      viewer = node('div', 'garden-media-doc');
+      viewer.append(renderMarkdownDocument(view.text));
     } else if (view.kind === 'video') {
       viewer = node('video', 'garden-media-video');
       viewer.controls = true; viewer.preload = 'metadata'; viewer.src = view.src;

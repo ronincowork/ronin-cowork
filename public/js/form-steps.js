@@ -52,8 +52,8 @@ export function createStep({ n, key, title, onToggle = null }) {
       : '';
     if (onToggle) head.setAttribute('aria-expanded', String(!on));
     body.hidden = !!on;
-    sum.hidden = !on;
-    if (on) sum.textContent = meta || '—';
+    sum.hidden = !on || meta == null;
+    if (on) sum.textContent = meta == null ? '' : (meta || '—');
   };
   setCollapsed(false, '', !!onToggle && false);
   return {

@@ -28,7 +28,7 @@ import {
   stopSessionTree,
 } from '../tmux.js';
 import { sendText } from '../send.js';
-import { attemptMessage, enqueueMessage, MessageRefused } from '../message-queue.js';
+import { enqueueMessage } from '../message-queue.js';
 import { sessionKey } from '../session-dir.js';
 import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';
@@ -524,17 +524,14 @@ export function registerSessions(app: express.Express): void {
   app.post('/api/sessions/:name/send', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     const raw = String(req.body?.text ?? '');
     if (!raw.trim()) return res.status(400).json({ error: 'Nothing to send.' });
     try {
       const expanded = await expandLookup(raw);
       const text = expanded ?? raw;
       const item = await enqueueMessage(name, text, 'owner');
-      const retained = await attemptMessage(item.id, 'force');
-      res.json({ ok: true, expanded: expanded != null, queued: retained !== null, started: retained === null, message: retained });
+      res.json({ ok: true, expanded: expanded != null, queued: true, started: false, message: item });
     } catch (e) {
-      if (e instanceof MessageRefused) return res.status(404).json({ error: e.message, code: 'target_missing' });
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });

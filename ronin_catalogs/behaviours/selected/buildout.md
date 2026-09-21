@@ -1,7 +1,7 @@
-# Buildout
+# Planning
 
-- **label:** Buildout
-- **blurb:** Keep a settled implementation plan beside the work it governs.
+- **label:** Planning
+- **blurb:** Settle an implementation plan beside the work before building it.
 - **installation:** —
 - **order:** 20
 - **scope:** selected

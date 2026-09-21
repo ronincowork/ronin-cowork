@@ -1,6 +1,6 @@
 # Perplexity
 - **label:** Perplexity
-- **blurb:** Makes the Perplexity research behaviour available when its connection exists.
+- **blurb:** A planned connection that would let selected Agents use Perplexity for research through a dedicated Behavior. It is not available yet and cannot be enabled.
 - **effect:** provider
 - **maturity:** comingSoon
 - **provides:** perplexity

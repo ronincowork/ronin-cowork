@@ -8,8 +8,15 @@ import { ask } from './ask.js';
 import { createStoneWorkSurface } from './stone-work-surface.js';
 import { completeInstallationMap as completeMap } from './installation-map.js';
 import { createStatusMarker } from './status-marker.js';
+import { renderMarkdownDocument } from './markdown-reader.js';
 
 const INSTALLATION_ORDER = ['ronin_services', 'gbrain', 'trello', 'perplexity'];
+const INSTALLATION_GUIDES = Object.freeze({
+  ronin_services: 'docs/getting-started/services-activation.md',
+  gbrain: 'docs/products/gbrain.md',
+  trello: 'docs/products/trello.md',
+  perplexity: 'docs/products/perplexity.md',
+});
 const el = (tag, cls = '', text = null) => {
   const out = document.createElement(tag);
   if (cls) out.className = cls;
@@ -32,25 +39,35 @@ export function createInstallationsSurface(campaign, context = {}) {
     const provided = Array.isArray(installation.provides) ? installation.provides : [];
     return provided.length > 0 && provided.every((name) => defaultBehaviours.includes(name));
   };
-  const stateWord = (installation) => available(installation) ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off');
+  const comingSoon = (installation) => installation.maturity === 'comingSoon';
+  const measuredInstallation = (installation) => installed?.installations?.find((row) => row.name === installation.name);
+  const stateWord = (installation) => {
+    if (comingSoon(installation)) return t('status.coming_soon', 'Coming soon');
+    if (!installed) return t('campaign_view.status_unreadable', 'Status unreadable');
+    if (installation.name === 'ronin_services' && installed.services?.installed !== true) return t('campaign_view.not_installed', 'Not installed');
+    if (installation.effect === 'provider' && measuredInstallation(installation)?.available !== true) return t('campaign_view.not_installed', 'Not installed');
+    return available(installation) ? t('campaign_view.on', 'On') : t('campaign_view.not_configured', 'Not configured');
+  };
 
   const servicesReady = () => values.ronin_services === true && (installed?.services?.parts || []).length > 0;
   const gated = (name) => (name === 'trello' || name === 'perplexity') && !servicesReady();
+  const blockedReason = (installation) => comingSoon(installation) ? t('status.coming_soon', 'Coming soon')
+    : gated(installation.name) ? t('campaign_view.services_required', 'Ronin Services required') : '';
   const itemFor = (installation) => ({
     ...installation,
     id: installation.name,
     label: installation.label || installation.name,
     marker: createStatusMarker(installation.maturity),
     state: stateWord(installation),
-    attrs: gated(installation.name)
-      ? { 'data-gated': 'true', title: t('campaign_view.services_required', 'Ronin Services required') }
+    attrs: blockedReason(installation)
+      ? { 'data-gated': 'true', title: blockedReason(installation) }
       : {},
   });
   const refreshStoneMarks = () => {
     for (const installation of catalog) {
       const stone = stoneSurface.el.querySelector(`[data-sws-id="${installation.name}"]`);
       if (!stone) continue;
-      const reason = gated(installation.name) ? t('campaign_view.services_required', 'Ronin Services required') : '';
+      const reason = blockedReason(installation);
       const state = stone.querySelector('.sws-state');
       if (state) state.textContent = stateWord(installation);
       stone.toggleAttribute('data-gated', Boolean(reason));
@@ -91,11 +108,12 @@ export function createInstallationsSurface(campaign, context = {}) {
   };
 
   const featureProviderControls = (installation) => {
-    const reason = gated(installation.name) ? t('campaign_view.services_required', 'Ronin Services required') : '';
+    const reason = blockedReason(installation);
     const notice = el('p', 'setup-notice');
     const unavailable = el('p', 'setup-gbrain-hint', t('campaign_view.turn_available_on', 'turn Available on first'));
     const availableQuestion = ask([{ fields: [{
       key: 'available', label: t('campaign_view.available', 'Available'), switch: [t('campaign_view.on', 'On'), t('campaign_view.off', 'Off')],
+      off: reason,
     }] }], {
       className: 'campaign-installation-switch', value: { available: available(installation) },
       onChange: async (answer) => {
@@ -107,6 +125,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     });
     const defaultQuestion = ask([{ fields: [{
       key: 'defaultForAll', label: t('campaign_view.default_for_all_agents', 'Default for all Agents'), switch: [t('campaign_view.on', 'On'), t('campaign_view.off', 'Off')],
+      off: reason,
     }] }], {
       className: 'campaign-installation-switch', value: { defaultForAll: defaultForAll(installation) },
       onChange: async (answer) => {
@@ -132,13 +151,44 @@ export function createInstallationsSurface(campaign, context = {}) {
 
   const renderDetail = (installation, host) => {
     const controls = installation.effect === 'provider' ? featureProviderControls(installation) : null;
+    const guidance = el('section', 'campaign-installation-guidance');
+    guidance.append(
+      el('p', 'setup-lede', installation.blurb || t('campaign_view.no_installation_description', 'No description is available.')),
+    );
+    const guidePath = INSTALLATION_GUIDES[installation.name];
+    if (guidePath) {
+      const guideHost = el('div', 'campaign-installation-guide');
+      const guideNotice = el('p', 'setup-notice');
+      guideNotice.setAttribute('role', 'status');
+      const readMore = el('button', 'wk-action', t('campaign_view.read_more', 'Read more'));
+      readMore.type = 'button';
+      readMore.addEventListener('click', async () => {
+        readMore.disabled = true;
+        guideNotice.textContent = t('campaign_view.loading_guide', 'Opening guide…');
+        const query = new URLSearchParams({ product: '1', path: guidePath });
+        const result = await request(`/api/file?${query.toString()}`, { cache: 'no-store' });
+        guideNotice.textContent = '';
+        readMore.disabled = false;
+        if (!result.ok) {
+          guideNotice.textContent = t('campaign_view.guide_read_failed', 'The guide could not be read. Try again.');
+          guideNotice.dataset.tone = 'failed';
+          return;
+        }
+        guideHost.replaceChildren(renderMarkdownDocument(result.data?.text || ''));
+        readMore.hidden = true;
+      });
+      guidance.append(readMore, guideNotice, guideHost);
+    }
+    host.append(guidance);
     const sharedContext = {
       ...context,
+      installationMaturity: installation.maturity,
       tenant: { ...(context.tenant || {}), campaign: campaign()?.id },
       installationControls: controls,
       onInstallationChange: (name, on) => {
         values = { ...values, [name]: on };
         refreshStoneMarks();
+        context.onInstallationChange?.(name, on);
       },
     };
     const page = context.createInstallationSurface?.(installation.id, sharedContext) || null;
@@ -162,16 +212,28 @@ export function createInstallationsSurface(campaign, context = {}) {
   };
 
   stoneSurface = createStoneWorkSurface({ items: [], className: 'campaign-installations-stones', renderDetail });
-  stoneSurface.mount(surface.content);
+  const reading = el('p', 'setup-notice');
+  reading.setAttribute('role', 'status');
+  stoneSurface.mount(surface.content, { before: [reading] });
 
   const enter = async () => {
     const [catalogResult, installedResult] = await Promise.all([
       request('/api/installations'),
       request('/api/installed', { cache: 'no-store' }),
     ]);
-    const rows = catalogResult.ok && Array.isArray(catalogResult.data) ? catalogResult.data : [];
+    if (!catalogResult.ok) {
+      catalog = [];
+      installed = null;
+      reading.textContent = t('campaign_view.installations_read_failed', 'Installations could not be read. Nothing was changed; try again.');
+      reading.dataset.tone = 'failed';
+      stoneSurface.setItems([]);
+      return;
+    }
+    const rows = Array.isArray(catalogResult.data) ? catalogResult.data : [];
     catalog = INSTALLATION_ORDER.map((name) => rows.find((row) => row.name === name)).filter(Boolean);
     installed = installedResult.ok ? installedResult.data : null;
+    reading.textContent = installedResult.ok ? '' : t('campaign_view.installation_status_read_failed', 'Installation status could not be read. Choices are shown, but their machine status is unknown.');
+    reading.dataset.tone = installedResult.ok ? '' : 'failed';
     values = completeMap(catalog, campaign()?.config?.installations);
     context.onInstallationsState?.({ ...values });
     defaultBehaviours = Array.isArray(campaign()?.config?.defaults?.behaviours) ? [...campaign().config.defaults.behaviours] : [];

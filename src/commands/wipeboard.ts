@@ -2,7 +2,7 @@ import { listSessions } from '../tmux.js';
 import { tmux } from '../tmux-client.js';
 import { sessionKey } from '../session-dir.js';
 import { readWipeboardSettings } from '../machine-state.js';
-import { deliverMessage } from '../message-queue.js';
+import { enqueueMessage } from '../message-queue.js';
 import {
   appendPost,
   boardExists,
@@ -245,8 +245,8 @@ async function post(named: string | null, argv: string[]): Promise<number> {
 async function notify(session: string, message: string): Promise<string> {
   if (process.env.RONIN_NO_NOTIFY) return 'not notified (test seam)';
   try {
-    const retained = await deliverMessage(session, message, 'wipeboard_notice');
-    return retained ? `queued — ${retained.reason}` : 'notified';
+    await enqueueMessage(session, message, 'wipeboard_notice');
+    return 'queued';
   } catch (e) {
     return `not notified — ${String((e as Error).message ?? e)}`;
   }

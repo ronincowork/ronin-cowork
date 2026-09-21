@@ -42,7 +42,12 @@ export function createStoneWorkSurface({ items = [], selectedId = '', renderDeta
     const active = byId(selected);
     if (!active) selected = '';
     root.dataset.open = String(Boolean(selected || externalDetail));
+    let group = null;
     for (const item of rows) {
+      if (item.group && item.group !== group) {
+        group = item.group;
+        grid.append(element('h3', 'sws-group', group));
+      }
       const id = String(item.id);
       const button = element('button', `sws-stone ${item.className || ''}`.trim());
       button.type = 'button';

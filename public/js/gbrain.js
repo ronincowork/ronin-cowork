@@ -157,6 +157,11 @@ export function buildGbrain(root, isShowing, askPersonalAssistant, options = {})
     identity.append(make('h2', '', t('pane.gbrain', 'gbrain')), make('p', 'setup-lede', t('gbrain.setup_intro', 'A shared, searchable memory for your Agents.')));
     lockup.append(glyph, identity);
     wrap.append(lockup);
+    if (options.maturity === 'comingSoon') {
+      wrap.append(make('p', 'status-marker', t('status.coming_soon', 'Coming soon')));
+      root.replaceChildren(wrap);
+      return;
+    }
 
     const answers = make('dl', 'setup-gbrain-answers');
     const row = (question, tone = '') => {

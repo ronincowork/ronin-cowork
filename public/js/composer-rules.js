@@ -19,11 +19,10 @@ export function settleComposer(outcome, sent, boxNow) {
   return { clear: false, why: (outcome && outcome.why) || 'refused' };
 }
 
-/** The owner's explicit send bypasses queue preflight. Never append a terminal Enter here. */
+/** Every complete message enters the same queue. Never append a terminal Enter here. */
 export async function sendComposerMessage(target, text) {
   const result = await request('/api/messages', { method: 'POST', json: { target, text } });
   if (!result.ok) return { ok: false, why: result.message };
-  // Once accepted, the queue owns the message, including a transport failure. Keeping a
-  // second editable copy here would invite a duplicate send.
-  return { ok: result.data.ok === true, why: result.data.message?.reason || 'refused' };
+  // Once accepted, the queue owns the only copy.
+  return { ok: result.data.ok === true, why: 'refused' };
 }

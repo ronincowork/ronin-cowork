@@ -1,6 +1,6 @@
 /* Host-side folder chooser shared by setup and Campaign Workspace Folders. */
 import { request } from './request.js';
-import { status } from './ui.js';
+import { confirmDialog, status } from './ui.js';
 import { t } from './lexicon.js';
 
 const el = (tag, cls, text) => {
@@ -116,7 +116,12 @@ export function createFolderPicker({ value = '', onChange = () => {}, words = {}
     const folderName = name.value.trim();
     if (!folderName) { line.say(t('folders.name_needed', 'Give the new folder a name.'), 'bad'); return; }
     const target = current.replace(/\/$/, '') + '/' + folderName;
-    if (!confirm(t('folders.create_confirm', 'Create this folder on the Ronin machine?\n\n{target}', { target }))) return;
+    if (!await confirmDialog({
+      label: t('folders.create_title', 'Create folder'),
+      message: t('folders.create_confirm', 'Create this folder on the Ronin machine?\n\n{target}', { target }),
+      confirmLabel: t('folders.create', 'Create and select'),
+      cancelLabel: t('roots.cancel_folder', 'Cancel'),
+    })) return;
     make.disabled = true; line.say(t('folders.creating', 'Creating…'), 'busy');
     const result = await request('/api/folders', { method: 'POST', json: { parent: current, name: folderName, init_git: initGit.checked } });
     make.disabled = false;

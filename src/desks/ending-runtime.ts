@@ -6,7 +6,7 @@ import { inspectEnding, type EndingDeskInput, type EndingPreflight, type EndingR
 import { appendManagedEvent, withManagedTransaction } from './lifecycle-ledger.js';
 import { quarantineDesk } from './quarantine.js';
 import { listDesks } from './registry.js';
-import { attemptMessage, enqueueMessage } from '../message-queue.js';
+import { enqueueMessage } from '../message-queue.js';
 import { listSessions } from '../tmux.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { teamLineBranch } from './schema.js';
@@ -68,8 +68,7 @@ function runtimeOps(preflight: EndingPreflight, closingSession = '', signal?: Ab
   return {
     async prompt(target, message) {
       const queued = await enqueueMessage(target, message, 'house');
-      const retained = await attemptMessage(queued.id, 'safe');
-      return { queued: retained !== null, id: queued.id };
+      return { queued: true, id: queued.id };
     },
     async close(fact) {
       if (isTeamLineEndingFact(fact)) {

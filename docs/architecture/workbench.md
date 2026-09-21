@@ -12,6 +12,23 @@ smallest reads needed to paint itself.
 ## Library, profile, tenant, instance
 
 `public/js/workbench.js` owns the shared library and frame.
+`public/js/workbench-catalog.js` is the canonical registration and profile catalog for
+Ronin Settings, New Project, Cowork, Team, and Agent. Destination modules provide tenant
+data and surface factories through their environment; they do not register another copy
+of those types or profile lists. Ronin Setup's ordered journey profile remains with its
+Setup controller because journey progress, rather than destination choice, determines it.
+
+`workbenchView(appearance, options)` in `public/js/workspace-contract.js` is the one
+application-chrome declaration. It supplies the shared header capabilities and one of the
+explicit Campaign, Setup, New Project, Cowork, Team, or Agent appearances; a view may also
+supply its dynamic-island reading. `workspace-header.js` applies that declaration, while
+surface factories remain ignorant of header colour.
+
+Header content has two declared seats: `header.leading` appears before the centred
+dynamic island and `header.actions` appears with the right-side controls. Both accept
+elements or primitives exposing `.el`; the ViewHost alone places them. Standard controls
+remain capability flags (`shape`, `ram`, `services`, and `feedback`), so a Workbench turns
+one off in its declaration rather than hiding it with local CSS or querying header DOM.
 
 - A **library definition** gives one stable type a header kind, discovery reading, and
   `create(context)` factory.
@@ -22,6 +39,8 @@ smallest reads needed to paint itself.
   two workspaces creates two rendered instances; data authorities may still be shared.
 - `place(type, workspace, detail)` is the only placement path used by clicks, drag/drop,
   restoration, and programmatic openings.
+- The frame owns the selector's compact/expanded action and persists `selectorDensity`
+  beside shape, selection, arrangement, and seats. Profiles do not build another toggle.
 
 The definition's `create()` draws the stable shell. Its returned `show()` or `enter()`
 starts only that surface's reads. `leave()` parks active work and `destroy()` releases
@@ -120,6 +139,7 @@ source view, or add link-specific restoration branches.
 | New Project | New Agent in workspace 1 | Links may replace or overlay New Agent/New Team and carry prompt or template detail |
 | Ronin Setup | Garden in workspace 1; active journey surface in workspace 2 | Journey actions select a Setup surface without another restoration path |
 | Cowork / Team | Restored seats, otherwise its empty/member seating rules | Team Configuration, documents, commons tabs, and New Agent may be addressed in seat detail |
+| Agent | Self in workspace 1; Agent Commons in workspace 2 | A successful standalone launch replaces the seats and focuses the authoritative returned Agent as Self |
 
 ## Surface inventory and required data
 
@@ -189,6 +209,20 @@ and seats. Optional feature status is independent and must not hold the frame.
 | New Agent / New Team | canonical launch form and its dependencies listed above |
 | Archived sessions | archive manifests when shown |
 | Presets / Document / Feedback | the shared surface's own reads |
+
+### Agent (`agent` profile)
+
+The route parameter is the tenant Agent. Its terminal can paint before Team and optional
+service reads finish. Team membership and Task Manager choices enrich independently.
+
+| Surface | Required data and owner |
+|---|---|
+| Self | route Agent plus the shared terminal host and transport |
+| Agent Documents | the Agent's tracked documents in one untabbed work surface |
+| Agent Task Manager | one separately offered Task Manager for each current Team |
+| Team membership | Team records and live session tags from `team-controller.js`; writes use the canonical session-membership route |
+| Task Manager | installed capability fact and the selected Team's derived Project view |
+| Document / Feedback | each shared surface's own read or submission |
 
 ## Change checklist
 

@@ -10,6 +10,13 @@ const updater = fs.readFileSync('bin/ronin-update', 'utf8');
 const lifecycle = updater.slice(updater.indexOf('CANDIDATE_PID=""'), updater.indexOf('# Which package this run moves:'));
 const gate = updater.slice(updater.indexOf('# --- gate the CANDIDATE'), updater.indexOf('# A public install is one uninterrupted journey.'));
 
+test('the updater scratch root leaves room for its actual macOS candidate tmux socket', () => {
+  assert.match(updater, /# --- install ---\n(?:#[^\n]*\n)*WORK="\$\(mktemp -d \/tmp\/ronin\.XXXXXX\)"/);
+  assert.match(gate, /RONIN_TESTSERVER_ROOT="\$WORK\/tmux" "\$TARGET\/bin\/ronin-testserver" open "\$CANDIDATE_SERVER"/);
+  const longestCandidateSocket = `/tmp/ronin.${'X'.repeat(6)}/tmux/candidate/tmux-${'9'.repeat(20)}/candidate`;
+  assert.ok(Buffer.byteLength(longestCandidateSocket) < 104, `${longestCandidateSocket} must fit macOS sockaddr_un.sun_path`);
+});
+
 for (const fail of [false, true]) {
   test(`candidate ${fail ? 'failure' : 'success'} closes its server and preserves an existing server`, async t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rc-'));

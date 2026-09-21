@@ -62,8 +62,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **squad:** Team
 - **player_one:** Lead session
 - **team_kit:** Shared toolkit
-- **loadout:** Tools and skills
-- **behaviours:** Behaviours
+- **loadout:** Behaviors
+- **behaviours:** Behaviors
 - **glossary.installation:** installation
 - **glossary.behaviour:** behaviour
 - **glossary.installations:** Installations
@@ -242,7 +242,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.default_reach:** Reach
 - **campaign_view.default_recruit:** Recruit
 - **campaign_view.default_output:** Output
-- **campaign_view.default_behaviours:** Behaviours
+- **campaign_view.default_behaviours:** Behaviors
 - **campaign_view.behaviours_help:** One shelf:name book per line.
 - **campaign_view.defaults_summary:** {model} · {reach}
 - **campaign_view.option_open:** Open
@@ -359,6 +359,15 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.sell_stats:** Usage history — what your sessions did, counted over time, never their content.
 - **campaign_view.available:** Available
 - **campaign_view.unavailable:** Unavailable
+- **campaign_view.status_unreadable:** Status unreadable
+- **campaign_view.not_installed:** Not installed
+- **campaign_view.not_configured:** Not configured
+- **campaign_view.no_installation_description:** No description is available.
+- **campaign_view.read_more:** Read more
+- **campaign_view.loading_guide:** Opening guide…
+- **campaign_view.guide_read_failed:** The guide could not be read. Try again.
+- **campaign_view.installations_read_failed:** Installations could not be read. Nothing was changed; try again.
+- **campaign_view.installation_status_read_failed:** Installation status could not be read. Choices are shown, but their machine status is unknown.
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
 - **campaign_view.rt_worktrees:** Ronin worktrees
@@ -391,6 +400,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_home.up_to_date:** Up to date
 - **campaign_home.update_available:** {version} available
 - **setup.provider_gate:** Activate one model provider in Machine Setup to use this.
+- **setup.not_now:** Not now
+- **setup.fine_for_now:** Fine for now
 - **setup.title:** Ronin Setup
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
@@ -425,8 +436,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **help.agents_body:** The Agents this Team is raised with. A row is short on purpose — a name and what that Agent does — and opens for its mandate when you want it. 人 marks the lead; this form offers one, though a running Team may gain more. Raising creates the Team and then births every named row, the lead last. A Team with no rows is ordinary and raises fine.
 - **help.installations:** What an Installation is
 - **help.installations_body:** An Installation is a system-level switch in the Campaign. A system installation joins every Cowork Agent; a provider installation makes its behaviours available for Teams and Agents to choose.
-- **help.behaviours:** What a Behaviour is
-- **help.behaviours_body:** A Behaviour says how the owner wants ordinary work done. Each is one short page delivered at birth when selected. Mandate teaching belongs to every Cowork Agent's Ronin floor; behaviours are additions the owner may choose.
+- **help.behaviours:** What a Behavior is
+- **help.behaviours_body:** Behaviors are specific guidance given to Agents at birth. Write it Down, Planning, Team Work, Visual Staging, and Working with the User are selectable; All Cowork Agents and Conditional Behaviors are applied by Ronin when their rules match.
 - **help.type:** New session
 - **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born with everything Ronin provides on this box. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a shell with no agent. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
 - **help.top:** Name & kind
@@ -440,7 +451,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **help.where:** Who and where
 - **help.where_body:** The provider and model that open, and the folder they open in. The folder is where work starts, not a fence: an Agent reaches whatever it is asked to reach. A Team’s branch is the line its Agents hand work in to, and the lead promotes from it; blank means the Team’s own line.
 - **help.mandate:** Mandate
-- **help.loadout:** Tools and skills
+- **help.loadout:** Behaviors
 - **help.kit:** Shared toolkit
 - **help.kit_body:** What every Agent raised on this Team starts with. All of it lands in the next Agent form as an ordinary editable value — none of it is a constraint, and changing it here never touches a session already running.
 - **new_team.common:** Common instructions
@@ -1008,6 +1019,7 @@ The pad's current config downloads as a backup first.
 - **roots.read_failed:** could not read the catalog — {message}
 - **roots.save:** save
 - **roots.cancel:** cancel
+- **roots.handle_needed:** Give this Workspace Folder a handle.
 - **roots.edit:** edit
 - **roots.edit_folder:** Edit
 - **roots.edit_folder_title:** Change the summary, shelves, match words, or repository workflow.
@@ -1061,25 +1073,36 @@ The catalog entry goes. {dir} is not touched.
 - **roots.stone_repo_no_remote:** Repository · no remote
 - **roots.stone_repo_worktrees:** Repository · Worktrees
 - **roots.stone_repo_checkout:** Repository · checkout
-- **roots.github_auth_stone:** Authenticate GitHub
+- **roots.git_access:** Git access
+- **roots.git_access_available:** Access available
+- **roots.git_access_unavailable:** Access unavailable
+- **roots.git_access_not_checked:** Not checked
+- **roots.git_access_check_failed:** Check failed
+- **roots.git_access_checking:** Checking…
+- **roots.git_access_check:** Check access
+- **roots.git_access_not_checked_detail:** Ronin has not checked read access to this repository’s origin.
+- **roots.github_auth_stone:** GitHub CLI
 - **roots.github_auth_state:** Connect account
 - **roots.github_auth_connected_state:** Connected{account}
 - **roots.github_auth_unavailable_state:** Install GitHub CLI
 - **roots.github_auth_heading:** GitHub CLI
-- **roots.github_auth_lede:** Install GitHub CLI, authenticate your account, then clone repositories.
+- **roots.github_auth_lede:** GitHub CLI is Ronin’s recommended guided connection. Existing Git credentials, SSH, and other Git connections remain available.
 - **roots.github_install:** Install
 - **roots.github_install_step:** Install
 - **roots.github_auth_step:** Authenticate
-- **roots.github_ready_step:** Ready
+- **roots.github_ready_step:** Connected
 - **roots.github_installed:** Installed
 - **roots.github_installing:** Installing…
 - **roots.github_not_installed:** Not installed
 - **roots.github_signed_in:** Signed in as {account}
 - **roots.github_not_signed_in:** Not signed in
+- **roots.github_auth_unreadable:** Could not verify
 - **roots.github_after_install:** After install
-- **roots.github_ready:** Ready to clone
-- **roots.github_not_ready:** Not yet
+- **roots.github_ready:** GitHub CLI connected
+- **roots.github_not_ready:** Not connected
 - **roots.github_connect:** Connect GitHub
+- **roots.git_other_method:** Use another method
+- **roots.git_other_open:** Use your preferred Git or SSH setup here, then return to the Workspace Folder and check Git access.
 - **roots.github_remove_auth:** Remove authentication
 - **roots.github_removing_auth:** Removing GitHub authentication…
 - **roots.github_done:** Done
@@ -1087,14 +1110,15 @@ The catalog entry goes. {dir} is not touched.
 - **roots.github_missing:** GitHub CLI is not installed.
 - **roots.github_connected:** Connected to GitHub as {account}.
 - **roots.github_not_connected:** GitHub is not connected on this machine.
+- **roots.github_unreadable:** Ronin could not verify GitHub authentication.
 - **roots.github_waiting:** Finish GitHub authentication in the window first.
 - **roots.github_clone_stone:** Clone a repository
-- **roots.github_clone_state:** Authenticate first
-- **roots.github_clone_ready_state:** Ready to clone
+- **roots.github_clone_state:** Uses existing Git access
+- **roots.github_clone_ready_state:** Uses existing Git access
 - **roots.github_clone_heading:** Clone a repository
 - **roots.github_clone_lede:** Clone a GitHub repository and add its folder as a Ronin workspace.
-- **roots.github_clone_needs_auth:** Authenticate GitHub first.
-- **roots.github_clone_ready:** GitHub is connected. Enter the repository you want to clone.
+- **roots.github_clone_needs_auth:** Cloning uses this machine’s existing Git access.
+- **roots.github_clone_ready:** Cloning uses this machine’s existing Git access. GitHub CLI is optional.
 - **roots.github_repository:** GitHub repository
 - **roots.github_clone:** Clone and add workspace
 - **roots.github_cloning:** Cloning repository…
@@ -1135,6 +1159,8 @@ The catalog entry goes. {dir} is not touched.
 - **roots.flow_checkout:** Every Agent uses this checkout, even when the Agent has Worktrees on.
 - **roots.flow_preview:** Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.
 - **roots.profile_confirm:** Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.
+- **roots.profile_confirm_title:** Confirm repository settings
+- **roots.profile_confirm_action:** Use these settings
 - **folders.selected:** Selected folder
 - **folders.none_selected:** None selected
 - **folders.start_context:** This is where the Agent will start.
@@ -1157,6 +1183,7 @@ The catalog entry goes. {dir} is not touched.
 - **folders.new_in:** ＋ New folder in {name}
 - **folders.name_needed:** Give the new folder a name.
 - **folders.create_confirm:** Create this folder on the Ronin machine?\n\n{target}
+- **folders.create_title:** Create folder
 - **folders.creating:** Creating…
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document
@@ -1300,14 +1327,10 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
 - **messages.reconnecting:** Reconnecting…
-- **messages.note:** Sometimes Agent-to-Agent messages get stuck and need your help. Try Again is gentle; Force gives it one determined shove. 😉
+- **messages.note:** A message waits only while a draft or dialog is present. After two minutes Ronin attempts it once, then removes it.
 - **messages.from:** From
 - **messages.to_label:** To
-- **messages.attempts:** Attempts
 - **messages.waiting:** Waiting
-- **messages.failed:** Failed
-- **messages.pending:** Pending
-- **messages.target_missing:** Target missing
 - **messages.state_age:** {state} · {age}
 - **messages.age_now:** just now
 - **messages.age_short_seconds:** {seconds}s
@@ -1319,35 +1342,10 @@ The catalog entry goes. {dir} is not touched.
 - **messages.type_owner:** Owner message
 - **messages.type_house:** House message
 - **messages.type_jikan:** Cron job
-- **messages.reason_prompt_changed:** The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.
-- **messages.retry:** Try Again
-- **messages.force:** Force
 - **messages.dismiss:** Dismiss
-- **messages.select_all:** Select All
-- **messages.select_all_count:** Select All ({count})
-- **messages.select_message:** Select message to {target}
-- **messages.dismiss_selected:** Dismiss Selected
-- **messages.dismiss_selected_count:** Dismiss Selected ({count})
-- **messages.clear_selection:** Clear Selection ({count})
-- **messages.force_selected:** Force Selected
-- **messages.force_selected_count:** Force Selected ({count})
-- **messages.auto_force_off:** Auto-force after 2 min: off
-- **messages.auto_force_on:** Auto-force after {minutes} min: on
-- **messages.auto_force_set:** Stuck messages are forced after {minutes} minutes.
-- **messages.auto_force_cleared:** Stuck messages wait for you.
-- **messages.auto_forced_reason:** Auto-forced {age} ago — {reason}
-- **messages.forced_count:** {delivered} delivered · {retained} still retained.
 - **messages.dismiss_all:** Dismiss All
 - **messages.dismiss_all_count:** Dismiss All ({count})
-- **messages.trying:** Trying…
-- **messages.forcing:** Forcing…
-- **messages.dismissing:** Dismissing…
-- **messages.delivered:** Delivered and cleared.
-- **messages.dismissed:** Message dismissed.
-- **messages.dismissed_count:** {count} message(s) dismissed.
-- **messages.retained:** Still waiting — {reason}
 - **messages.action_failed:** Message action failed — {reason}
-- **messages.attention:** A message failed to send and was auto-forced after 2 minutes.
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update
@@ -1898,6 +1896,17 @@ The catalog entry goes. {dir} is not touched.
 - **league.launch_team:** Launch
 - **league.ronin:** Ronin: no team
 - **league.no_ronin:** No Rōnin Agents
+- **agent.workbench:** Agent
+- **agent.self:** Self
+- **agent.commons:** Commons
+- **agent.commons_summary:** Docs and Task Manager
+- **agent.team_membership:** Team membership
+- **agent.team_membership_summary:** Add or remove this Agent from installed Teams
+- **agent.join_team:** Join
+- **agent.no_teams:** No Teams are installed.
+- **agent.no_team_tasks:** Join a Team to use its Task Manager.
+- **agent.team_tasks:** {team} Task Manager
+- **agent.team_tasks_summary:** Projects held by {team}
 - **league.team_roster_removing:** Removing {session} from {team}…
 - **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
@@ -1994,4 +2003,17 @@ The catalog entry goes. {dir} is not touched.
 - **campaign_view.machine:** Machine
 - **campaign_view.workspaces:** Workspaces
 - **campaign_view.machine_settings:** Machine Settings
+
+## behaviours — behaviour-surface.js
+- **behaviours.title:** Behaviors
+- **behaviours.card_summary:** Optional, All Cowork Agents, and Conditional guidance Agents receive at birth.
+- **behaviours.intro:** Behaviors are specific guidance given to Agents at birth.
+- **behaviours.available:** Optional
+- **behaviours.auto:** All Cowork Agents
+- **behaviours.auto_included:** All Ronin Agents include these
+- **behaviours.bare_metal_excludes:** Exclude by using a bare metal Agent.
+- **behaviours.conditional:** Conditional
+- **behaviours.requires:** When
+- **behaviours.yours:** Yours
+- **behaviours.stock:** Ronin
 - **campaign_view.desk_settings:** Desk Settings

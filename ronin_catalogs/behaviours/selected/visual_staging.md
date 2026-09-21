@@ -1,8 +1,10 @@
 # visual_staging — one disposable Team preview before hand-in
 
+- **label:** Visual Staging
+- **blurb:** Put visual work on one disposable Team preview for fast owner feedback.
 - **scope:** selected
 - **installation:** —
-- **order:** 60
+- **order:** 40
 
 > Stock Behavior. Your own copy in the ways store (`ronin-store ways` → `visual_staging.md`)
 > replaces this file whole — a default, not law.

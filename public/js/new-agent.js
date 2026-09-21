@@ -10,7 +10,8 @@ import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-
 import {
   createStep, el, kindTiles, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
-import { closeWorkspaceTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { openLaunchHandoff } from './launch-handoff.js';
+import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -360,20 +361,35 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   void loadProviderCatalog().then(() => questions.paint());
 
   /* ---- 7 · Loadout ---- */
-  const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('loadout', 'Tools and skills'), onToggle: () => toggle('loadout') });
-  const availableBehaviours = () => (seed?.behaviours || []).filter((row) => row.available === true);
-  const shelvesHost = el('div');
+  const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('behaviours', 'Behaviors'), onToggle: () => toggle('loadout') });
+  const behaviourRows = () => seed?.behaviours || [];
+  const shelvesHost = el('div', 'na-behaviour-sections');
   function paintShelves() {
-    const picker = ask([{ group: t('behaviours', 'Behaviours'), fields: [{
+    const general = behaviourRows().filter((row) => row.scope === 'selected' && row.available === true && !row.installation);
+    const automatic = behaviourRows().filter((row) => row.scope === 'floor');
+    const conditional = behaviourRows().filter((row) => row.scope === 'conditional');
+    const row = (item, availability = '') => ({
+      v: item.name || '+', l: item.label || item.name,
+      sub: typeof availability === 'object' && Object.hasOwn(availability, 'sub') ? availability.sub : item.blurb || '', read: item.reading,
+      view: item.name ? { name: item.name, scope: item.scope } : null,
+      off: typeof availability === 'string' ? availability : availability.off || '',
+      disabled: typeof availability === 'object' && availability.disabled === true,
+    });
+    const picker = ask([{ group: t('behaviours.available', 'Optional'), fields: [{
       key: 'behaviours', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall',
-      options: availableBehaviours().map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading,
-        off: row.required ? t('team_config.required', 'Required for each new Agent') : '' })),
+      options: general.map((item) => row(item, item.required ? t('team_config.required', 'Required for each new Agent') : '')),
     }] }], { value: { behaviours: draft.books }, density: 'tight', exposed: true, onChange: (value) => {
       draft.books = [...value.behaviours]; touched.books = true; paintFoot();
     } });
-    shelvesHost.replaceChildren(picker.el);
+    const readonly = (label, key, rows, reason) => ask([{ group: label, fields: [{ key, label, many: true, shape: 'tall', options: rows.map((item) => row(item, reason(item))) }] }], { value: { [key]: [] }, className: 'na-behaviour-readonly', density: 'tight', exposed: true });
+    const auto = readonly(`${t('behaviours.auto', 'All Cowork Agents')} (${t('behaviours.auto_included', 'All Ronin Agents include these')})`, 'automatic', automatic,
+      () => ({ disabled: true, sub: '' }));
+    const conditions = readonly(t('behaviours.conditional', 'Conditional'), 'conditional', conditional, () => ({ disabled: true, sub: '' }));
+    const autoSection = el('div', 'na-behaviour-section');
+    autoSection.append(auto.el, el('p', 'na-behaviour-note', t('behaviours.bare_metal_excludes', 'Exclude by using a bare metal Agent.')));
+    shelvesHost.replaceChildren(picker.el, autoSection, conditions.el);
   }
-  stepLoadout.body.append(shelvesHost);
+  stepLoadout.body.append(el('p', 'na-behaviour-intro', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')), shelvesHost);
 
   /* ---- the plan: which steps exist for this type and door ---- */
   const steps = {
@@ -386,14 +402,11 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     else draft.expanded[key] = true;
     paintFolds();
   }
-  const meta = {
-    loadout: () => t('new_agent.loadout_meta', '{books} behaviours', { books: draft.books.length }),
-  };
   function paintFolds() {
     const templateFolded = isCowork() && !!templateRow();
     for (const key of FOLDS) {
       const folded = key === 'loadout' || templateFolded;
-      steps[key].setCollapsed(folded && !draft.expanded[key], folded ? meta[key]() : '', folded);
+      steps[key].setCollapsed(folded && !draft.expanded[key], null, folded);
     }
   }
 
@@ -516,7 +529,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
     else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
     if (connect) await connect(born);
-    else openWorkspaceTab(team ? 'team' : 'cowork', team, launchTab);
+    else openLaunchHandoff({ team, sessions: [{ name: born, team_lead: body.team_lead === true }] }, launchTab);
     clearAfterLaunch();
     await consumed?.();
   }
@@ -613,10 +626,10 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   let payloadOpen = false;
   const stepPayload = createStep({ n: 8, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
     payloadOpen = !payloadOpen;
-    stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
+    stepPayload.setCollapsed(!payloadOpen, null, true);
   } });
   stepPayload.body.append(foot, actions.el);
-  stepPayload.setCollapsed(true, t('forms.payload_summary', 'Review what Launch will create'), true);
+  stepPayload.setCollapsed(true, null, true);
   identityRow.append(nameField, teamQuestions.el);
   stepTop.body.replaceChildren(identityRow, questions.el, defaultsNote, instructionsField);
   const form = el('div', 'ntf-form');

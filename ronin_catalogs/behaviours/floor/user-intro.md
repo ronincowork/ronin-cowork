@@ -1,6 +1,6 @@
 # User intro
 
-- **label:** User intro
+- **label:** User Intro
 - **blurb:** What the owner wants every Cowork Agent to know about them.
 - **installation:** —
 - **order:** 30

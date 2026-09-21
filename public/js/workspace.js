@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { WorkspacePrimitives } from './workspace-primitives.js';
+import { DISMISSED_WORKSPACE } from './workspace-contract.js';
 
 export const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
 export const WORKSPACE_STATE_VERSION = 3;
@@ -23,7 +24,7 @@ export const defaultWorkspaceState = () => ({
   campaignSelection: null,
   // Each destination owns one namespace inside this tab. Empty objects and null drafts
   // are valid; the shell stores state but never interprets a feature's workflow.
-  views: { home: {}, cowork: {}, campaign: {}, setup: {}, launch: {}, 'new-team': { draft: null } },
+  views: { home: {}, cowork: {}, team: {}, agent: {}, campaign: {}, setup: {}, launch: {}, 'new-team': { draft: null } },
   returnTo: null,
 });
 
@@ -147,6 +148,32 @@ export function openWorkbenchTab(spec = {}, reserved = null) {
   return window.open(url, '_blank', 'noopener');
 }
 
+/** Use the normal view transition to open the shared Workspace Folders work surface. */
+export function navigateToWorkspaceFolders(context, detail = {}) {
+  if (!context?.navigate || !context?.patchViewState || detail?.origin?.kind !== 'preset') return false;
+  const remembered = context.viewState?.('campaign') || {};
+  const seats = { ...(remembered.seats || {}) };
+  const target = ['workspace1', 'workspace2', 'workspace3', 'workspace4']
+    .find((workspace) => !seats[workspace] || seats[workspace] === DISMISSED_WORKSPACE);
+  if (!target) return false;
+  context.patchState?.({ returnTo: { view: context.id, param: context.param || '', origin: detail.origin } });
+  context.patchViewState('campaign', {
+    ...remembered,
+    count: target === 'workspace3' || target === 'workspace4' ? 4 : Math.max(2, Number(remembered.count) || 0),
+    selected: target,
+    seats: { ...seats, [target]: 'campaign.project-roots' },
+  });
+  return context.navigate('campaign');
+}
+
+/** Return to the Preset view recorded by navigateToWorkspaceFolders. */
+export function returnFromWorkspaceFolders(context) {
+  const destination = context?.state?.returnTo;
+  if (!destination || destination.origin?.kind !== 'preset') return false;
+  context.patchState?.({ returnTo: null });
+  return context.navigate(destination.view, { param: destination.param || '' });
+}
+
 /** Claim and remove this tab's structured launch before restoration. Refresh therefore
  * sees only the arrangement the Workbench saved after applying it. */
 export function consumeWorkbenchLaunch(destination, param = '') {
@@ -219,18 +246,20 @@ export function createWorkspace(host, options = {}) {
     map = invoke(id, 'map', () => WorkspacePrimitives.createLayoutMap(view.arrangement)) || null;
     if (map) mapSlot.append(map.el);
   };
-  // HEADER CAPABILITIES. A view declares only what it owns: compact actions, pane count,
-  // machine telemetry, Services state, and Feedback. The ViewHost seats them and defaults
-  // every undeclared capability to absent, so a static page cannot inherit workbench chrome.
-  const actionsSlot = options.actionsSlot instanceof Element ? options.actionsSlot : null;
-  const showActions = (id, view) => {
-    if (!actionsSlot) return;
-    actionsSlot.replaceChildren();
-    for (const action of Array.isArray(view.header?.actions) ? view.header.actions : []) {
-      const el = action?.el ?? action;
-      if (el instanceof Node) actionsSlot.append(el);
+  // HEADER CAPABILITIES. A view declares only what it owns: controls before the island,
+  // compact actions after it, pane count, machine telemetry, Services state, and Feedback.
+  // The ViewHost seats them and defaults every undeclared capability to absent, so a
+  // static page cannot inherit workbench chrome.
+  const seatHeaderItems = (slot, items) => {
+    if (!slot) return;
+    slot.replaceChildren();
+    for (const item of Array.isArray(items) ? items : []) {
+      const el = item?.el ?? item;
+      if (el instanceof Node) slot.append(el);
     }
   };
+  const leadingSlot = options.leadingSlot instanceof Element ? options.leadingSlot : null;
+  const actionsSlot = options.actionsSlot instanceof Element ? options.actionsSlot : null;
   // THE TAB NAME rides beside the map, for a view that offers one (`tabName`). Redrawn on
   // every navigation, not only on a view change: the same view on another param has
   // another default. A commit retitles the tab at once.
@@ -296,7 +325,11 @@ export function createWorkspace(host, options = {}) {
     }
     next.el.hidden = false;
     if (changed) invoke(id, 'enter', () => next.enter?.(context));
-    if (active?.view !== next) { showMap(id, next); showActions(id, next); }
+    if (active?.view !== next) {
+      showMap(id, next);
+      seatHeaderItems(leadingSlot, next.header?.leading);
+      seatHeaderItems(actionsSlot, next.header?.actions);
+    }
     showName(id, next);
     const feedback = document.getElementById('feedbackaction');
     if (feedback) feedback.hidden = next.header?.feedback !== true;

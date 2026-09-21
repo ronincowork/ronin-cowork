@@ -156,5 +156,5 @@ New Session, Docs and Wipeboard live in the cowork-space surfaces named above.
 
 Team Commons' **Messages** tab shows inbound session messages that have not
 cleared. It is the visible half of the durable delivery flow; see `docs/architecture/message-queue.md`.
-Delivered messages disappear, while stuck and failed messages offer **Try Again**,
-**Force**, and **Dismiss**.
+Messages waiting behind a draft or dialog remain visible with **Dismiss**. After two
+minutes the worker attempts delivery once and removes the letter.

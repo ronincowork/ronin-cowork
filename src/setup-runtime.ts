@@ -2,7 +2,7 @@ import { mkdir, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { updateCommand, updateLineOf } from './agent-install.js';
-import { AGENTS, launchArgv, listAgentAvailability } from './agents.js';
+import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
 import { listProviderCatalog, newerVersion, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
 import { activatedAt, npmPackageOf, offAt } from './provider-summary.js';
@@ -398,13 +398,15 @@ async function git(dir: string, args: string[]): Promise<string> {
 
 const GITHUB_SETUP_SESSION = 'setup_github';
 const GITHUB_INSTALL_SESSION = 'install_github';
+const GIT_SETUP_SESSION = 'setup_git';
 
-export type GithubSetupState = 'missing' | 'needs_authentication' | 'authenticated';
+export type GithubSetupState = 'missing' | 'needs_authentication' | 'authenticated' | 'unreadable';
 export interface GithubSetupAnswer {
   installed: boolean;
   authenticated: boolean;
   account: string;
   state: GithubSetupState;
+  problem: string;
   installing: boolean;
   attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
 }
@@ -423,12 +425,18 @@ export interface GithubSetupOps {
 
 export type GithubSessionPrimitives = SetupSessionPrimitives;
 
-export async function createGithubSetupSession(primitives?: GithubSessionPrimitives, command = runCommand): Promise<void> {
+export async function createGithubSetupSession(
+  primitives?: GithubSessionPrimitives,
+  command = runCommand,
+  executable = () => discoverExecutable('gh'),
+): Promise<void> {
+  const gh = await executable();
+  if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
   await createSetupSession(GITHUB_SETUP_SESSION, 'gh', os.homedir(), {
     agent: false, provider: 'github',
     argv: [],
   }, primitives);
-  await command(GITHUB_SETUP_SESSION, 'gh auth login --hostname github.com --git-protocol https');
+  await command(GITHUB_SETUP_SESSION, `'${gh.replaceAll("'", "'\\''")}' auth login --hostname github.com --git-protocol https`);
 }
 
 /** GitHub's supported package paths, run visibly because system package managers may ask for sudo. */
@@ -451,34 +459,87 @@ export async function createGithubInstallSession(primitives?: GithubSessionPrimi
   await runCommand(GITHUB_INSTALL_SESSION, githubInstallCommand());
 }
 
+/** A neutral owner shell for SSH, credential-helper, or organization-specific Git setup. */
+export async function openGitSetupSession(primitives?: GithubSessionPrimitives): Promise<ReturnType<typeof setupAttachment>> {
+  if (!(await sessionExists(GIT_SETUP_SESSION))) {
+    await createSetupSession(GIT_SETUP_SESSION, 'git', os.homedir(), { agent: false, argv: [], provider: 'git' }, primitives);
+  }
+  return setupAttachment(GIT_SETUP_SESSION);
+}
+
+export async function closeGitSetupSession(): Promise<void> {
+  if (await sessionExists(GIT_SETUP_SESSION)) await killSessionTree(GIT_SETUP_SESSION);
+}
+
 const defaultGithubSetupOps: GithubSetupOps = {
-  installed: () => run('gh', ['--version'], { timeout: 5_000 }).then(() => true, () => false),
-  authStatus: () => run('gh', ['auth', 'status', '--hostname', 'github.com', '--active'], { timeout: 8_000 })
-    .then((result) => result.stderr || result.stdout, () => ''),
+  installed: () => discoverExecutable('gh').then(Boolean),
+  // `gh auth status --json` verifies every saved credential and returns structured state.
+  // It never includes a token unless --show-token is explicitly requested (we do not).
+  authStatus: async () => {
+    const gh = await discoverExecutable('gh');
+    if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
+    return (await run(gh, ['auth', 'status', '--hostname', 'github.com', '--json', 'hosts'], { timeout: 8_000 })).stdout;
+  },
   exists: () => sessionExists(GITHUB_SETUP_SESSION),
   installExists: () => sessionExists(GITHUB_INSTALL_SESSION),
   open: () => createGithubSetupSession(),
   openInstall: () => createGithubInstallSession(),
   close: () => killSessionTree(GITHUB_SETUP_SESSION),
   closeInstall: () => killSessionTree(GITHUB_INSTALL_SESSION),
-  logout: (account) => run('gh', ['auth', 'logout', '--hostname', 'github.com', '--user', account], { timeout: 8_000 }).then(() => undefined),
+  logout: async (account) => {
+    const gh = await discoverExecutable('gh');
+    if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
+    await run(gh, ['auth', 'logout', '--hostname', 'github.com', '--user', account], { timeout: 8_000 });
+  },
 };
 
-/** Accept only gh's explicit active-login line; warnings and failure prose are not auth. */
-export function githubAccountFromStatus(status: string): string {
-  return status.match(/^\s*✓\s+Logged in to github\.com account ([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\b/im)?.[1] ?? '';
+export interface GithubAuthMeasurement {
+  state: 'needs_authentication' | 'authenticated' | 'unreadable';
+  account: string;
+  problem: string;
+}
+
+/** Read only gh's structured, mechanically verified result; never parse prose or tokens. */
+export function githubAuthFromStatus(status: string): GithubAuthMeasurement {
+  let parsed: unknown;
+  try { parsed = JSON.parse(status); }
+  catch { return { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' }; }
+  const hosts = (parsed as { hosts?: unknown })?.hosts;
+  if (!hosts || typeof hosts !== 'object' || Array.isArray(hosts)) {
+    return { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
+  }
+  const accounts = (hosts as Record<string, unknown>)['github.com'];
+  if (accounts === undefined) return { state: 'needs_authentication', account: '', problem: '' };
+  if (!Array.isArray(accounts)) {
+    return { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
+  }
+  const active = accounts.find((row) => row && typeof row === 'object' && (row as { active?: unknown }).active === true) as Record<string, unknown> | undefined;
+  if (!active) return { state: 'needs_authentication', account: '', problem: '' };
+  if (active.state !== 'success') {
+    return { state: 'unreadable', account: '', problem: 'GitHub CLI could not verify the saved GitHub authentication.' };
+  }
+  const account = typeof active.login === 'string' && /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(active.login) ? active.login : '';
+  return account
+    ? { state: 'authenticated', account, problem: '' }
+    : { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
 }
 
 export async function githubSetupAnswer(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
   const installed = await ops.installed();
-  const account = installed ? githubAccountFromStatus(await ops.authStatus()) : '';
+  let measurement: GithubAuthMeasurement = { state: 'needs_authentication', account: '', problem: '' };
+  if (installed) {
+    try { measurement = githubAuthFromStatus(await ops.authStatus()); }
+    catch { measurement = { state: 'unreadable', account: '', problem: 'Ronin could not ask GitHub CLI to verify authentication.' }; }
+  }
+  const account = measurement.account;
   const [open, installing] = await Promise.all([ops.exists(), ops.installExists()]);
   const authenticated = account !== '';
   return {
     installed,
     authenticated,
     account,
-    state: !installed ? 'missing' : authenticated ? 'authenticated' : 'needs_authentication',
+    state: !installed ? 'missing' : measurement.state,
+    problem: installed ? measurement.problem : '',
     installing,
     attachment: installing ? setupAttachment(GITHUB_INSTALL_SESSION)
       : open ? setupAttachment(GITHUB_SETUP_SESSION) : null,
@@ -514,10 +575,11 @@ export async function removeGithubAuthentication(ops: GithubSetupOps = defaultGi
 }
 
 export async function cloneGithubWorkspace(repository: unknown): Promise<{ name: string; dir: string }> {
-  const slug = typeof repository === 'string' ? repository.trim().replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, '') : '';
-  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(slug)) throw new Error('Repository must be owner/name or a github.com URL.');
-  const status = await githubSetupAnswer();
-  if (!status.authenticated) throw new Error('Connect GitHub before cloning a repository.');
+  const entered = typeof repository === 'string' ? repository.trim() : '';
+  const match = /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)?([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+?)(?:\.git)?$/.exec(entered);
+  if (!match) throw new Error('Repository must be owner/name or an HTTPS or SSH github.com URL.');
+  const slug = match[1];
+  const remote = /^(?:git@|ssh:\/\/)/.test(entered) ? entered : `https://github.com/${slug}.git`;
   const base = slug.split('/')[1].toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-|-$/g, '');
   if (!base) throw new Error('That repository does not make a valid workspace ID.');
   const known = await peekProjectRoots();
@@ -525,7 +587,22 @@ export async function cloneGithubWorkspace(repository: unknown): Promise<{ name:
   for (let suffix = 2; known.some((root) => root.name === name); suffix++) name = `${base}-${suffix}`;
   const dir = path.join(rootDir('user'), name);
   if (await exists(dir)) throw new Error(`The destination ${dir} already exists.`);
-  await run('gh', ['repo', 'clone', slug, dir], { timeout: 120_000, maxBuffer: 1024 * 1024 });
+  const git = await discoverExecutable('git');
+  if (!git) throw new Error('Git is not installed or is not available to the owner’s login shell.');
+  try {
+    await run(git, ['clone', remote, dir], {
+      timeout: 120_000, maxBuffer: 1024 * 1024,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' },
+    });
+  } catch (error) {
+    const detail = error && typeof error === 'object' && 'stderr' in error ? String(error.stderr || '') : '';
+    const safe = detail
+      .replace(/https?:\/\/[^\s/@]+(?::[^\s/@]*)?@/gi, 'https://[credentials]@')
+      .replace(/\b(?:gh[opusr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g, '[credential]')
+      .replace(/([?&](?:access_token|token|password)=)[^\s&]+/gi, '$1[credential]')
+      .replace(/[\r\n]+/g, ' ').trim().slice(0, 500);
+    throw new Error(safe || 'Git could not access that repository with this machine’s current Git connection.');
+  }
   await upsertProjectRoot(name, { title: slug.split('/')[1], dir, remit: `Work in ${slug}.`, match: slug, archived: '' }, { declareArrangement: false });
   return { name, dir };
 }

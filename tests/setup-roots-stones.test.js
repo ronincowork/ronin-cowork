@@ -11,7 +11,8 @@ test('Setup and Settings use the same Workspace Folders stone presentation', asy
     source('public/js/workspace-folders-surface.js'),
   ]);
   assert.match(setup, /createWorkspaceFoldersSurface\(\{[\s\S]*presentation: 'stones'/);
-  assert.match(campaign, /createWorkspaceFoldersSurface\(\{[\s\S]*presentation: 'stones'[\s\S]*environment: e,[\s\S]*workspace,/);
+  assert.match(campaign, /campaignRoots: \(\{ workspace \}\) => createWorkspaceFoldersSurface\(\{[\s\S]*presentation: 'stones',[\s\S]*environment,[\s\S]*workspace,/,
+    'Settings delegates its live environment and workspace to the shared stone surface');
   assert.doesNotMatch(campaign, /worktreesDefault/);
   assert.match(shared, /presentation === 'stones' \? createGithubWorkspaceSetup/);
   assert.match(shared, /presentation \? \{[\s\S]*presentation,[\s\S]*extraItems: github\?\.items \|\| \[\],[\s\S]*onSelection: \(id\) => environment\?\.onWorkspaceFolderChosen\?\.\(id\),[\s\S]*\} : \{\}/);
@@ -128,6 +129,25 @@ test('the Setup form keeps the real fields and reads as sections, while Campaign
   assert.match(roots, /words: \{[\s\S]*?chosen: t\('roots\.picker_path', 'Path'\),[\s\S]*?note: '',[\s\S]*?take: t\('roots\.picker_keep', 'Keep'\)/, 'Setup says the picker in keep-or-ignore terms, never "choose" or "where the Agent will start"');
   assert.doesNotMatch(roots.slice(roots.indexOf('function addCard')), /roots\.add_hint/, 'the add page does not say choose');
   assert.doesNotMatch(roots, /setInterval|poll/, 'the roots surface has no background repaint loop');
+});
+
+test('Workspace Folder creation reuses object-ID normalization and house confirmation sheets', async () => {
+  const [roots, picker, ui, css] = await Promise.all([
+    source('public/js/projectroots.js'), source('public/js/folder-picker.js'),
+    source('public/js/ui.js'), source('public/style.css'),
+  ]);
+  assert.match(roots, /import \{ finalizeTeamName, sanitizeTeamName \} from '\.\/new-team-draft\.js'/);
+  assert.match(roots, /sanitizeTeamName\(handleInput\.value\)\.slice\(0, 32\)/);
+  assert.match(roots, /finalizeTeamName\(handleInput\.value\)\.slice\(0, 32\)/);
+  assert.match(roots, /handleInput\.maxLength = 32/);
+  assert.match(roots, /confirmDialog\(\{/);
+  assert.match(picker, /confirmDialog\(\{/);
+  assert.doesNotMatch(roots, /confirm\(t\('roots\.profile_confirm'/);
+  assert.doesNotMatch(picker, /\bconfirm\(/);
+  assert.match(ui, /export function confirmDialog/);
+  assert.match(ui, /cls: 'ui-confirm-card'/);
+  assert.match(css, /\.ui-confirm-copy \{[^}]*overflow-wrap: anywhere/);
+  assert.match(css, /\.pr-err \{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere/s);
 });
 
 test('roots carry no parallel stone DOM or CSS presentation and the detail rhythm uses kaki rules', async () => {

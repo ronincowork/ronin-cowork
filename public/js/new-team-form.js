@@ -6,6 +6,7 @@ import { ruledRows } from './glyphs.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
+import { openLaunchHandoff } from './launch-handoff.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
   createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
@@ -295,7 +296,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     if (!LAUNCH_MODES().some((row) => row.key === draft.launchMode)) draft.launchMode = 'configured';
     if (signature !== kitSignature) {
       kitQuestions?.destroy();
-      const shelfRows = (rows) => rows.map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading }));
+      const shelfRows = (rows) => rows.filter((row) => !row.installation).map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading, view: { name: row.name, scope: row.scope || 'selected' } }));
       kitQuestions = ask([
         { group: t('launch_mode.head', 'Launch mode'), fields: [{
           key: 'launchMode', label: t('launch_mode.mode', 'Mode'),
@@ -484,11 +485,15 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     // updates this Team's membership record. `agentPicks` is where the screen's words
     // become the route's — a row says assignment and the wire says instructions.
     const outcomes = await launchTeamAgents(request, name, picks);
+    const launched = outcomes.filter(({ result }) => result?.ok).map(({ row, result }) => ({
+      name: result.data?.name || row.name,
+      team_lead: row.team_lead === true,
+    }));
     const refused = outcomes.filter(({ result }) => !result?.ok);
     busy = false;
     raise.setDisabled(false);
     if (refused.length) {
-      const born = outcomes.filter(({ result }) => result?.ok).map(({ row }) => row.name);
+      const born = launched.map(({ name: sessionName }) => sessionName);
       notice.set('failed', t('new_team.staffing_failed', 'Team created. Launched {launched} of {total} Agents: {born}. Failed: {names}. The Team is open; add the failed Agents there.', {
         launched: born.length,
         failed: refused.length,
@@ -496,15 +501,14 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
         born: born.length ? born.join(', ') : t('forms.none', 'none'),
         names: refused.map(({ row }) => row.name).join(', '),
       }));
-      openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
+      if (launched.length) openLaunchHandoff({ team: name, sessions: launched }, launchTab);
+      else openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
       return;
     }
     notice.set('', '');
     reset();
-    // The reserved tab cloned the opener's sessionStorage when it was opened. A Team tab
-    // name belongs to that older tab, not to the Team born here; clear it so the new page
-    // falls back to the roster title (and ultimately the Team name).
-    openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
+    if (launched.length) openLaunchHandoff({ team: name, sessions: launched }, launchTab);
+    else openWorkbenchTab({ destination: 'team', param: name, mode: 'overlay', state: { tabName: '' } }, launchTab);
     await created?.(name);
     await consumed?.();
   }

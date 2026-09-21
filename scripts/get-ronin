@@ -40,7 +40,9 @@ sha256_of() {
   else shasum -a 256 "$1" | awk '{print $1}'; fi
 }
 
-WORK="$(mktemp -d)"
+# Keep the download and extraction root short as well. The updater independently budgets
+# its candidate-gate socket path; both supported platforms provide the sticky shared /tmp.
+WORK="$(mktemp -d /tmp/ronin.XXXXXX)"
 trap 'rm -rf "$WORK"' EXIT
 
 say "==> asking $REPO for its latest release"

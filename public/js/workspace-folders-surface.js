@@ -26,6 +26,10 @@ export function createWorkspaceFoldersSurface({
     label: t('cowork.tab_roots', 'Workspace folders'),
     className: 'setup-surface',
   });
+  const back = WorkspaceKit.primitives.createAction({ label: t('roots.return_to_preset', 'Return to Preset') });
+  back.el.hidden = true;
+  back.el.addEventListener('click', () => environment?.returnFromWorkspaceFolders?.());
+  surface.header?.actions.append(back.el);
   const rootHost = presentation === 'stones'
     ? surface.content
     : el('div', 'desk-pane desk-proj show');
@@ -59,6 +63,7 @@ export function createWorkspaceFoldersSurface({
   return {
     el: surface.el,
     show: () => {
+      back.el.hidden = !environment?.workspaceFolderOrigin?.();
       void github?.show();
       room.enter();
       onShow();

@@ -50,11 +50,12 @@ test('browser password settings use the durable auth authority and keep the savi
 });
 
 test('Setup and Settings register the same ERABI Password surface without a second implementation', async () => {
-  const [surface, setupView, setupJourney, campaign, index, login] = await Promise.all([
+  const [surface, setupView, setupJourney, campaign, catalog, index, login] = await Promise.all([
     fs.readFile(new URL('../public/js/password-surface.js', import.meta.url), 'utf8'),
     fs.readFile(new URL('../public/js/setup-view.js', import.meta.url), 'utf8'),
     fs.readFile(new URL('../public/js/setup-journey.js', import.meta.url), 'utf8'),
     fs.readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8'),
+    fs.readFile(new URL('../public/js/workbench-catalog.js', import.meta.url), 'utf8'),
     fs.readFile(new URL('../src/index.ts', import.meta.url), 'utf8'),
     fs.readFile(new URL('../public/login.html', import.meta.url), 'utf8'),
   ]);
@@ -72,7 +73,10 @@ test('Setup and Settings register the same ERABI Password surface without a seco
   assert.match(surface, /method: 'DELETE'/);
   assert.match(setupView, /registerPasswordSurface\(\)/);
   assert.match(setupJourney, /type: 'machine\.password'/);
-  assert.match(campaign, /registerPasswordSurface\(\)[\s\S]*PASSWORD_SURFACE_TYPE/);
+  assert.match(campaign, /registerWorkbenchCatalog\(\)/);
+  assert.doesNotMatch(campaign, /registerPasswordSurface|PASSWORD_SURFACE_TYPE/, 'Settings owns no second Password registration');
+  assert.match(catalog, /registerPasswordSurface\(\)/);
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.campaign, \[[^\]]*PASSWORD_SURFACE_TYPE/);
   assert.equal((surface.match(/createPasswordSurface/g) || []).length, 2,
     'one builder plus its one definition call; neither workbench forks the page');
   assert.ok(index.indexOf("app.use((req, res, next)") < index.indexOf('registerPasswordSettings(app, issueSession)'),
