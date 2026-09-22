@@ -242,7 +242,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     { group: t('where.label', 'Where it works'), fields: [
       { key: 'root', label: t('where.born_in', 'Born in'), blank: t('new_team.root_default', 'The box’s default'), options: () => rootRows() },
       { key: 'repos', label: t('where.additional', 'Additional workspaces'), many: true, after: 'root',
-        options: (value) => rootRows(true).filter((row) => row.v !== value.root), row: branchField },
+        options: () => rootRows(true), row: branchField },
     ] },
   ], {
     value: { provider: draft.provider, model: draft.model, root: draft.root, repos: draft.repos },
@@ -250,7 +250,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     density: 'tight',
     onChange: (value) => {
       draft.provider = value.provider; draft.model = value.model; draft.root = value.root;
-      draft.repos = value.repos.filter((name) => name !== value.root);
+      draft.repos = value.repos;
       for (const name of Object.keys(draft.branches)) if (!draft.repos.includes(name)) delete draft.branches[name];
       paintFoot();
     },
@@ -563,6 +563,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     if (!seed) return;
     const value = (field) => seed.seeds?.[field]?.value;
     draft.root = value('project_root') || '';
+    draft.repos = Array.isArray(value('repos')) ? [...value('repos')] : [];
     draft.provider = value('provider') || '';
     draft.model = value('model') || '';
     for (const key of ['reach', 'recruit']) {

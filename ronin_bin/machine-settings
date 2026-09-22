@@ -20,6 +20,8 @@ Usage:
   machine-settings installations write <name> on|off [--campaign <id>]
   machine-settings defaults read [--campaign <id>]
   machine-settings defaults write <field> <value> [--campaign <id>]
+  machine-settings cowork-defaults read [--campaign <id>]
+  machine-settings cowork-defaults write born-in|workspaces <value> [--campaign <id>]
   machine-settings project-root list [--campaign <id>] [--all]
   machine-settings project-root read <workspace-folder-handle> [--campaign <id>]
   machine-settings project-root create <workspace-folder-handle> --title <title> --dir <path> [field flags]
@@ -176,6 +178,19 @@ if f not in {"provider","model","reach","recruit","output","behaviours","launch_
 d[f]=[x.strip() for x in v.split(",") if x.strip()] if f in {"output","behaviours"} else v
 print(json.dumps({"config":{"defaults":d}}))') || die 'BAD-ARG: unknown defaults field.' 2; api PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
       *) die "BAD-ARG: unknown defaults operation '$sub'." 2;; esac
+    ;;
+  cowork-defaults)
+    sub=${1:-}; shift || true
+    case "$sub" in
+      -h|--help|'') echo 'Usage: cowork-defaults read [--campaign <id>]; cowork-defaults write born-in <workspace-folder-handle>|workspaces <comma-separated handles> [--campaign <id>]';;
+      read) take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: cowork-defaults read accepts only --campaign.' 2; c=$(campaign_json); printf '%s' "$c" | python3 -c 'import json,sys; print(json.dumps(json.load(sys.stdin).get("config",{}).get("cowork_defaults",{}),indent=2))';;
+      write) field=${1:-}; value=${2-}; [ "$#" -ge 2 ] || die 'BAD-ARG: cowork-defaults write needs field and value.' 2; shift 2; take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: unexpected cowork-defaults write argument.' 2; case "$field" in born-in|workspaces) ;; *) die 'BAD-ARG: cowork-defaults field is born-in or workspaces. Run machine-settings --help.' 2;; esac; resolve_campaign; c=$(api GET "/api/campaigns/$CAMPAIGN"); body=$(printf '%s' "$c" | FIELD="$field" VALUE="$value" python3 -c 'import json,os,sys
+c=json.load(sys.stdin); d=dict(c.get("config",{}).get("cowork_defaults",{})); field=os.environ["FIELD"]; value=os.environ["VALUE"]
+if field=="born-in": d["project_root"]=value.strip()
+else: d["repos"]=[x.strip() for x in value.split(",") if x.strip()]
+print(json.dumps({"config":{"cowork_defaults":d}}))'); api PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
+      *) die "BAD-ARG: unknown cowork-defaults operation '$sub'." 2;;
+    esac
     ;;
   project-root)
     sub=${1:-}; shift || true

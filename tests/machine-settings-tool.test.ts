@@ -14,6 +14,7 @@ const campaign = {
   config: {
     installations: { ronin_services: false, gbrain: true, trello: false },
     defaults: { provider: 'dynamic', model: 'runtime-choice', behaviours: ['gbrain'], reach: 'plan', recruit: 'propose agents', output: ['code'], dial: 'write', launch_mode: 'configured' },
+    cowork_defaults: { project_root: 'old', repos: ['old'] },
   },
   providers: { measured_at: 'now', providers: [{ id: 'dynamic', installed: true }] },
 };
@@ -109,6 +110,20 @@ test('Campaign/default/installation writes use only the selected Campaign typed 
   assert.equal((writes[1].body as any).config.defaults.reach, 'execute');
   assert.equal((writes[2].body as any).config.installations.gbrain, false);
   assert.ok(!f.requests.some((request) => (request.body as any)?.family === 'campaigns' || (request.body as any)?.family === 'record-section'));
+});
+
+test('Cowork defaults use the Campaign route and preserve the other Cowork choice', async (t) => {
+  const f = await fixture();
+  t.after(f.close);
+  const read = await f.run(['cowork-defaults', 'read']);
+  assert.equal(read.code, 0, read.error);
+  assert.deepEqual(JSON.parse(read.output), { project_root: 'old', repos: ['old'] });
+  assert.equal((await f.run(['cowork-defaults', 'write', 'born-in', 'samurai_lab'])).code, 0);
+  assert.equal((await f.run(['cowork-defaults', 'write', 'workspaces', 'samurai_lab,ronin_cowork'])).code, 0);
+  const writes = f.requests.filter((request) => request.method === 'PUT');
+  assert.deepEqual(writes.map((request) => request.url), ['/api/campaigns/selected', '/api/campaigns/selected']);
+  assert.deepEqual((writes[0].body as any).config.cowork_defaults, { project_root: 'samurai_lab', repos: ['old'] });
+  assert.deepEqual((writes[1].body as any).config.cowork_defaults, { project_root: 'old', repos: ['samurai_lab', 'ronin_cowork'] });
 });
 
 test('Machine/provider writes use named Machine Settings families, never a generic store', async (t) => {

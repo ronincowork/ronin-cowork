@@ -314,7 +314,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       draft.team = draft.teamMode === 'existing' ? value.teamName : '';
       if (!touched.repos) {
         const selected = teams.find((row) => row.name === draft.team);
-        draft.repos = workspaceRepos({ root: draft.root, teamRepos: draft.teamMode === 'existing' ? selected?.repos || [] : [] });
+        draft.repos = workspaceRepos({ root: draft.root, teamRepos: draft.teamMode === 'existing' ? selected?.repos || [] : seed?.seeds?.repos?.value || [] });
       }
       void loadSeed();
     }
@@ -589,7 +589,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     if (!touched.root && value('project_root')) draft.root = value('project_root');
     if (!touched.repos) {
       const selected = draft.teamMode === 'existing' ? teams.find((row) => row.name === draft.team) : null;
-      draft.repos = workspaceRepos({ root: draft.root, teamRepos: selected?.repos || [] });
+      draft.repos = workspaceRepos({ root: draft.root, teamRepos: selected?.repos || value('repos') || [] });
     }
     if (!touched.mandate) {
       for (const key of ['reach', 'recruit']) if (value(key)) draft[key] = value(key);

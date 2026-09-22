@@ -38,6 +38,18 @@ test('teamless seed exposes available behaviours and the fixed residue', () => {
   assert.deepEqual(seed.still_asked, ['session_type', 'name', 'instructions']);
 });
 
+test('Campaign Cowork defaults seed birthplace and workspaces until a Team owns them', () => {
+  const configured = { ...campaign, config: { ...campaign.config, cowork_defaults: {
+    project_root: 'samurai_lab', repos: ['samurai_lab', 'ronin_cowork'],
+  } } };
+  const sourcesWithDefaults = { ...sources(null), campaign: configured };
+  const seed = resolveLaunchSeed(sourcesWithDefaults);
+  assert.equal(seed.seeds.project_root.value, 'samurai_lab');
+  assert.deepEqual(seed.seeds.repos.value, ['samurai_lab', 'ronin_cowork']);
+  assert.equal(seed.seeds.project_root.stated_by[0]?.layer, 'campaign');
+  assert.deepEqual(resolveLaunchSeed({ ...sourcesWithDefaults, roster: team }).seeds.project_root.value, 'work');
+});
+
 test('Team complete elective lists replace Campaign defaults while floor guidance remains visible', () => {
   const seed = resolveLaunchSeed(sources(team));
   assert.deepEqual(seed.seeds.behaviours.value, ['write_it_down']);

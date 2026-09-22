@@ -21,6 +21,7 @@ Reach for the settings tool when the owner asks what this box has, what the Camp
 | `machine-settings campaign archive` | write: archive the selected Campaign | | `machine-settings --help` |
 | `machine-settings installations` | read/write: the catalog, proven state, and the Campaign's switches | | `machine-settings --help` |
 | `machine-settings defaults write` | write: the typed default fields | | `machine-settings --help` |
+| `machine-settings cowork-defaults` | read/write: a new Team's birthplace and workspace folders | | `machine-settings --help` |
 | `machine-settings project-root` | read/write/create: named fields, archive, exclude | | `machine-settings --help` |
 | `machine-settings provider` | read/write: providers and the default model | | `machine-settings --help` |
 | `machine-settings machine` | read/write: name, location, monitor | | `machine-settings --help` |
@@ -47,6 +48,10 @@ workspace-folder-handle; title and directory may change. Archive keeps the catal
 it from launch choices; exclude removes only the entry and never deletes a directory or
 hosted repository. Inspect a repository's declared arrangement before changing its
 profile; adding an existing repository does not rewrite `RONIN_REPO` unless a profile is supplied.
+
+`cowork-defaults write born-in <handle>` sets the birthplace for new Teams and teamless
+Agents. `cowork-defaults write workspaces <comma-separated handles>` sets the workspace
+folders offered by default. A new Team inherits both; current Teams keep their own choices.
 
 Available session models are read dynamically from the canonical Campaign/provider model
 catalog used by the UI dropdowns. This document carries no model list: installation and
