@@ -30,7 +30,7 @@ import path from 'node:path';
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-parity-test-'));
 const listed = (slugs: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: 'test', client_version: 'test', models: slugs.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list', priority })) });
 const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude', 'codex'], signed_in: ['claude', 'codex'], operational: ['claude', 'codex'], activated_count: 2, paths: {}, versions: {}, latest: {}, model_lists: {
-  claude: listed(['opus', 'fable', 'sonnet', 'haiku']),
+  claude: listed(['claude-opus-5', 'claude-fable-5-1', 'claude-sonnet-5', 'claude-haiku-4-5-20251001']),
   codex: listed(['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5']),
 } };
 const catalogs = path.join(temp, 'catalogs');
@@ -64,7 +64,7 @@ await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 await fs.writeFile(
   path.join(temp, 'config', 'machine_settings.json'),
   JSON.stringify({
-    agents: { sessions: { default: { provider: 'anthropic', model: 'fable' } } },
+    agents: { sessions: { default: { provider: 'anthropic', model: 'claude-fable-5-1' } } },
     campaigns: {
       home_machine: {
         title: 'Ronin Home',
@@ -293,7 +293,7 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
   assert.match(commons.cmd, /fable/, 'the configured session default answers, not the role');
 
   // EXPLICIT — the owner named one, and it beats every layer. Same input, same answer.
-  const pick = 'claude --model haiku';
+  const pick = 'claude --model claude-haiku-4-5-20251001';
   const c2 = await resolveForm(commonsForm({ cmd: pick }), new Set());
   const f2 = await resolveForm(forkitForm({ cmd: pick }), new Set());
   assert.ok(c2.cmd.startsWith(pick), `explicit pick must lead the cmd, got "${c2.cmd}"`);
@@ -303,16 +303,16 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
 
 test('launch_mode selects the Agent document’s Native or Dangerously command', async () => {
   const configured = await resolveForm(commonsForm({
-    provider: 'anthropic', model: 'opus', launch_mode: 'configured',
+    provider: 'anthropic', model: 'claude-opus-5', launch_mode: 'configured',
   }), new Set());
-  assert.equal(configured.cmd, 'claude --model opus');
+  assert.equal(configured.cmd, 'claude --model claude-opus-5');
   assert.equal(configured.launch_mode, 'configured');
   assert.deepEqual(configured.stated_by.launch_mode, [{ layer: 'launch', source: 'launch request' }]);
 
   const dangerous = await resolveForm(commonsForm({
-    provider: 'anthropic', model: 'opus', launch_mode: 'live_dangerously',
+    provider: 'anthropic', model: 'claude-opus-5', launch_mode: 'live_dangerously',
   }), new Set());
-  assert.equal(dangerous.cmd, 'claude --model opus --dangerously-skip-permissions');
+  assert.equal(dangerous.cmd, 'claude --model claude-opus-5 --dangerously-skip-permissions');
   assert.equal(dangerous.launch_mode, 'live_dangerously');
 
   const bareDangerous = await resolveForm(commonsForm({
@@ -359,7 +359,7 @@ test('stated_by carries the settled launch, Team, and Campaign layers', async ()
   const explicit = await resolveForm(commonsForm({
     name: 'attribution-proof',
     project_root: 'beta',
-    cmd: 'claude --model haiku',
+    cmd: 'claude --model claude-haiku-4-5-20251001',
   }), new Set());
   for (const key of ['name', 'project_root', 'cmd']) {
     assert.deepEqual(explicit.stated_by[key], [{ layer: 'launch', source: 'launch request' }], key);

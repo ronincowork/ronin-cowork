@@ -40,6 +40,8 @@ export interface SessionLaunchSpec {
   cli: string;
   /** The model id passed to the CLI, unchanged. */
   model: string;
+  /** Optional short identifier shown in the UI; never passed to the CLI. */
+  display_id?: string;
   /** The complete interactive command for this model. */
   cmd: string;
   /** Empty for a model discovered from a CLI before Ronin has descriptive metadata for it. */
@@ -170,6 +172,7 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
     for (const [model, row] of rows) {
       models.push({
         provider, cli, model, cmd: '',
+        ...(row['display id'] ? { display_id: unquote(row['display id']) } : {}),
         tier: asTier((row.tier ?? '').toLowerCase()),
         default: /^yes$/i.test(row.default ?? ''),
         cost: row.cost ?? '',
@@ -264,6 +267,7 @@ const nativeSpec = (entry: ProviderCatalogEntry): SessionLaunchSpec | null => {
   const base = entry.models[0];
   if (!base || !entry.native) return null;
   return { ...base, model: NATIVE_MODEL, cmd: entry.native,
+    display_id: undefined,
     ...(entry.nativeDangerousCmd ? { dangerousCmd: entry.nativeDangerousCmd } : { dangerousCmd: undefined }),
     tier: '', default: true, cost: '',
     good_at: 'the CLI choosing its own configured or current default model',
@@ -281,7 +285,7 @@ export function modelsAvailableToUser(entries: readonly ProviderCatalogEntry[], 
       const known = catalog.get(model.slug);
       if (known) return [{ ...known, default: false }];
       const cmd = discoveredCommand(entry.models, model.slug);
-      return cmd ? [{ ...entry.models[0], model: model.slug, cmd, tier: '' as const, default: false,
+      return cmd ? [{ ...entry.models[0], model: model.slug, display_id: model.display_name || model.slug, cmd, tier: '' as const, default: false,
         cost: '', good_at: model.description, not_good_at: '' }] : [];
     });
     return { ...entry, models: [...(native ? [native] : []), ...models] };

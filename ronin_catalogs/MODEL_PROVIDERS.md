@@ -10,7 +10,7 @@
 > (`$(ronin-store catalogs)/MODEL_PROVIDERS.md`) and edit it there. Each provider section in the owner copy
 > replaces that provider section; other shipped providers keep receiving updates; an upgrade never touches it.
 
-- **updated:** 2026-09-19
+- **updated:** 2026-09-22
 
 ## Keeping it fresh
 
@@ -42,7 +42,8 @@ Then one table, one row per model, **in the order the picker offers them**:
 
 | Column | Meaning |
 |---|---|
-| `model` | the model id passed to the CLI, unchanged — its real name, never a euphemism |
+| `model` | the full model id passed to the CLI, unchanged |
+| `display id` | optional short name shown to the owner when this exact model id is available; never sent to the CLI |
 | `tier` | **light** · **standard** · **frontier**: the cost and capability band, as the vendor prices it |
 | `default` | optional descriptive metadata retained for a reported model; it does not change what Model: Native means |
 | `cost` | the vendor's public list price per million tokens, input · output, with the month it was read — a reading, not a contract |
@@ -65,15 +66,15 @@ read, and a stale reading is dated, never guessed.
 - **cli:** `claude`
 - **transcript_source:** Observed 2026-09-22: `~/.claude/projects/<cwd-slug>/<uuid>.jsonl`; one record per completed message. Journal adapter exists; exact launch identity is required.
 
-Model ids are Claude Code's own aliases, passed unchanged to its `--model` option; each
-resolves to the current model of that family.
+Claude launch commands use the concrete model ids below. Display ids are only labels in
+Ronin's picker; they are never sent as CLI model arguments.
 
-| model | tier | default | cost | good at | not good at |
-|---|---|---|---|---|---|
-| `opus` | frontier | yes | $5 in · $25 out per M tokens (2026-06) | long agentic coding runs, hard reasoning, large refactors across a repository | quick throwaway questions where its price and latency buy nothing |
-| `fable` | frontier | | $10 in · $50 out per M tokens (2026-06) | the hardest multi-step reasoning and long-horizon work; thinking is always on | cheap or latency-bound loops, and any task Opus already finishes reliably |
-| `sonnet` | standard | | $2 in · $10 out per M tokens (2026-06) | everyday coding, review and writing at a fraction of the frontier price | the deepest reasoning chains, where the frontier rows pull ahead |
-| `haiku` | light | | $1 in · $5 out per M tokens (2026-06) | fast sub-agents, classification, summaries and high-volume routine work | large refactors and subtle multi-file reasoning |
+| model | display id | tier | default | cost | good at | not good at |
+|---|---|---|---|---|---|---|
+| `claude-opus-5` | Opus | frontier | yes | $5 in · $25 out per M tokens (2026-06) | long agentic coding runs, hard reasoning, large refactors across a repository | quick throwaway questions where its price and latency buy nothing |
+| `claude-fable-5-1` | Fable | frontier | | $10 in · $50 out per M tokens (2026-06) | the hardest multi-step reasoning and long-horizon work; thinking is always on | cheap or latency-bound loops, and any task Opus already finishes reliably |
+| `claude-sonnet-5` | Sonnet | standard | | $2 in · $10 out per M tokens (2026-06) | everyday coding, review and writing at a fraction of the frontier price | the deepest reasoning chains, where the frontier rows pull ahead |
+| `claude-haiku-4-5-20251001` | Haiku | light | | $1 in · $5 out per M tokens (2026-06) | fast sub-agents, classification, summaries and high-volume routine work | large refactors and subtle multi-file reasoning |
 
 ### OpenAI
 

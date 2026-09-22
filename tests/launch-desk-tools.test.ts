@@ -16,7 +16,7 @@ import { execFileSync } from 'node:child_process';
 process.env.BIND ??= '127.0.0.1';
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-launch-desk-tools-'));
 const listed = (slugs: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: 'test', client_version: 'test', models: slugs.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list', priority })) });
-const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude'], signed_in: ['claude'], operational: ['claude'], activated_count: 1, paths: {}, versions: {}, latest: {}, model_lists: { claude: listed(['fable']) } };
+const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude'], signed_in: ['claude'], operational: ['claude'], activated_count: 1, paths: {}, versions: {}, latest: {}, model_lists: { claude: listed(['claude-fable-5-1']) } };
 process.env.RONIN_CATALOGS_DIR = path.join(tmp, 'catalogs');
 process.env.RONIN_DESKS_DIR = path.join(tmp, 'desks');
 process.env.RONIN_WORKTREES_DIR = path.join(tmp, 'worktrees');
@@ -56,7 +56,7 @@ await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'
 ].join('\n'));
 await fs.mkdir(path.join(tmp, 'config'), { recursive: true });
 await fs.writeFile(path.join(tmp, 'config', 'machine_settings.json'), JSON.stringify({
-  agents: { sessions: { default: { provider: 'anthropic', model: 'fable' } } },
+  agents: { sessions: { default: { provider: 'anthropic', model: 'claude-fable-5-1' } } },
   campaigns: { home_machine: { title: 'Ronin Home', state: 'active', providers, config: { agent_defaults: {} } } },
 }));
 await fs.mkdir(path.join(tmp, 'shelf', 'all'), { recursive: true });
