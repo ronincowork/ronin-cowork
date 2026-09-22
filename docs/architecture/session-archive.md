@@ -99,3 +99,21 @@ provider-id stamp. Its remaining process-argument compatibility path reads Linux
 supported session/resume id is accepted; conflicting ids refuse. There is no journal
 search by prompt and no descendant descriptor scan. Older unstamped sessions without
 an explicit supported id remain unidentifiable rather than risking a neighbour's history.
+
+## Retention of closed session folders
+
+A session's folder under the session store (`birth-receipt.json`, `launch-identity.json`,
+`brief.md`, `README.md`, `tegami.md`, `transcript.jsonl`, and for isolated launches
+`cli-home/`) outlives the session on purpose: it is the evidence a later reading of the
+Agent needs. It does not outlive the retention period. `src/session-retention.ts` runs once
+at boot and then daily on the JIKAN clock and removes a folder that is **closed** — no live
+session carries its key — **unarchived** — no archive manifest names its key — and has not
+been written to for the period. Archived folders stay until hard delete, as before.
+
+"Closed" is not a marker file; it is the absence of a live key, and the close time is the
+folder's last write (Rireki writes `transcript.jsonl` every minute while a bound session
+lives, so that is exact to a minute). The period is `config.cowork_defaults.session_retention_days`
+on a Campaign, default **7**, no UI; when campaigns disagree the most generous value wins,
+because a folder does not record which campaign it was born into. `0` on any campaign
+switches the sweep off. Set it with `PUT /api/campaigns/:id` (`config.cowork_defaults`) or
+by editing the campaign file; `machine-settings defaults write` covers Agent defaults only.

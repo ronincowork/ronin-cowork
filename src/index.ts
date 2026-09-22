@@ -61,6 +61,7 @@ import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { DocumentPathError, legacyDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { startSessionRetention } from './session-retention.js';
 import { discoverParts, partsToLoad } from './parts.js';
 import { initialCampaign } from './campaigns.js';
 import { listInstallations } from './resource-adapters.js';
@@ -426,6 +427,7 @@ await tmuxClient.connect(); // only the long-lived server opts into control mode
 const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
+const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
 startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
@@ -471,6 +473,7 @@ server.listen(config.port, config.bind, async () => {
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopBootHooks();
+    stopSessionRetention();
     stopSpawnBroker();
     setTimeout(() => process.exit(0), 2000).unref();
     // Only the socket this process bound comes down with it. Nothing shared is touched:
