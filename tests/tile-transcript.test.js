@@ -32,7 +32,7 @@ const tick = () => new Promise((resolve) => setImmediate(resolve));
 const record = (text) => ({ role: 'agent', kind: 'say', text });
 const answer = (records, since, seq) => ({ ok: true, data: { available: true, records, since, seq } });
 const contents = (el) => el.children.filter((n) => n.className === 'tile-transcript-entry')
-  .map((n) => n.children[1].textContent);
+  .map((n) => n.textContent);
 
 test('header toggle appears only with loaded Rireki and changes its label', () => {
   const button = new Node();

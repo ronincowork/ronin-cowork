@@ -4329,9 +4329,7 @@ button.wb-door:hover b {
   background: var(--bg);
   font: var(--text-3)/1.45 var(--font-mono);
 }
-.tile-transcript-entry { border-bottom: var(--edge) solid var(--line); padding: var(--space-3) 0; }
-.tile-transcript-entry strong { color: var(--accent); }
-.tile-transcript-entry pre { margin: var(--space-2) 0 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tile-transcript-entry { border-bottom: var(--edge) solid var(--line); padding: var(--space-3) 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tile-transcript-message { color: var(--muted); }
 .tile.transcript-on .composer,
 .tile.transcript-on:is(.tape-on, .keys-on) .composer.show,

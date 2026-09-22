@@ -37,11 +37,7 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
     for (const rec of records) {
       const entry = document.createElement('div');
       entry.className = 'tile-transcript-entry';
-      const label = document.createElement('strong');
-      label.textContent = [rec.role, rec.kind === 'say' ? '' : rec.kind].filter(Boolean).join(' · ');
-      const body = document.createElement('pre');
-      body.textContent = rec.text || '';
-      entry.append(label, body);
+      entry.textContent = rec.text || '';
       el.append(entry);
     }
     if (atBottom) el.scrollTop = el.scrollHeight;
