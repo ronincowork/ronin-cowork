@@ -67,6 +67,25 @@ test('the stock catalog names every provider with its CLI, its tiers and a marke
   assert.equal(flat.find((row) => row.cmd === 'claude --model opus')?.dangerousCmd, 'claude --model opus --dangerously-skip-permissions');
 });
 
+test('every provider launches refreshed ids and carries refreshed display names', async () => {
+  const entries = await catalog.listProviderCatalog();
+  const refreshed = {
+    claude: 'claude-fable-5-1', codex: 'gpt-6-astra', gemini: 'gemini-3.1-pro',
+    grok: 'grok-4.6', hermes: 'nousresearch/hermes-4-405b',
+  };
+  const lists = Object.fromEntries(Object.entries(refreshed).map(([cli, slug]) => [cli, {
+    fetched_at: 'now', etag: '', client_version: 'test', models: [{ slug, display_name: cli === 'claude' ? 'Fable 5.1' : '', description: '', visibility: 'list' as const, priority: 0 }],
+  }]));
+  const resolved = catalog.modelsAvailableToUser(entries, { model_lists: lists });
+  for (const [cli, slug] of Object.entries(refreshed)) {
+    const models = resolved.find((entry) => entry.cli === cli)?.models ?? [];
+    assert.deepEqual(models.map((row) => row.model), ['native', slug], cli);
+    assert.equal(models[1]?.display_name, cli === 'claude' ? 'Fable 5.1' : slug);
+    assert.ok(models[1]?.cmd.includes(slug), cli);
+    assert.ok(models[1]?.dangerousCmd?.includes(slug), `${cli} dangerous launch also uses the refreshed id`);
+  }
+});
+
 test('a provider section parses model facts without owning CLI command syntax', () => {
   const parsed = catalog.parseProviderCatalog([
     '# a catalog', '', '### Example Vendor', '',

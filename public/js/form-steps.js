@@ -359,7 +359,8 @@ export function orderedCatalog(rows = [], machine = []) {
     const modelListCurrent = Boolean(list?.client_version && entry?.version && list.client_version === entry.version);
     // `off`: the owner turned the provider off — greyed with that word, never the false
     // "not on this machine" (the house rule: disabled, never hidden; and never a lie).
-    marked.push({ ...row, default: false, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
+    marked.push({ ...row, display_name: measuredModel.display_name || row.model,
+      default: false, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
       provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '',
       model_list: list, model_list_current: modelListCurrent, model_list_installed: entry?.version || '',
       listed: list ? Boolean(measuredModel) : null,
@@ -371,7 +372,7 @@ export function orderedCatalog(rows = [], machine = []) {
     const known = new Set(marked.filter((row) => row.cli === entry.id).map((row) => row.model));
     for (const model of entry.model_list.models) {
       if (model?.visibility !== 'list' || !model?.slug || known.has(model.slug)) continue;
-      marked.push({ ...base, model: model.slug, tier: '', default: false, cost: '',
+      marked.push({ ...base, model: model.slug, display_name: model.display_name || model.slug, tier: '', default: false, cost: '',
         good_at: model.description || '', not_good_at: '', origin: 'cli', shadowed: false,
         listed: true, selectable: entry.activated === true });
     }
@@ -387,12 +388,12 @@ export function tierWord(tier) {
 }
 
 /**
- * One model as an option reads: its id and its tier, and stops there. A picker is for
+ * One model as an option reads: the CLI's display name, or its id when unnamed, and its tier. A picker is for
  * choosing, not for reading: the long good-at / not-good-at description belongs to the
  * Campaign's Model providers surface, where there is room for the whole table. In an
  * option it is a sentence squeezed into a line that cannot show it.
  */
-export const modelLabel = (row) => row?.model === NATIVE_MODEL ? t('forms.model_native', 'Native') : String(row?.model || '');
+export const modelLabel = (row) => row?.model === NATIVE_MODEL ? t('forms.model_native', 'Native') : String(row?.display_name || row?.model || '');
 export const modelWord = (row) => row?.model === NATIVE_MODEL || !row?.tier
   ? modelLabel(row)
   : t('forms.model_word', '{model} · {tier}', { model: modelLabel(row), tier: tierWord(row.tier) });

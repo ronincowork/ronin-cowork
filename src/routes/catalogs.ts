@@ -10,7 +10,8 @@ import { listWays } from '../resources.js';
 import { listSessionReadings } from '../session-readings.js';
 import { listAgentAvailability } from '../agents.js';
 import { dispatchInstall } from '../agent-install.js';
-import { listProviderCatalog, readProviderCatalog } from '../model-providers.js';
+import { listProviderCatalog, modelsAvailableToUser, readProviderCatalog } from '../model-providers.js';
+import { readProviderSummary } from '../provider-summary.js';
 import {
   listProjectRoots,
   upsertProjectRoot,
@@ -288,6 +289,18 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/provider-catalog', async (_req, res) => {
     try {
       res.json(await readProviderCatalog());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  app.get('/api/launch-models', async (req, res) => {
+    try {
+      const named = String(req.query.campaign_id ?? '').trim();
+      const campaign = named ? await readCampaign(named) : await initialCampaign();
+      if (named && !campaign) return res.status(404).json({ error: `Unknown Campaign: ${named}.` });
+      const summary = campaign?.providers ?? await readProviderSummary();
+      res.json({ providers: modelsAvailableToUser(await listProviderCatalog(), summary) });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

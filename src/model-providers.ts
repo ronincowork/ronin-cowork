@@ -40,6 +40,8 @@ export interface SessionLaunchSpec {
   cli: string;
   /** The model id passed to the CLI, unchanged. */
   model: string;
+  /** Friendly name from the refreshed CLI inventory; the model id remains the launch value. */
+  display_name?: string;
   /** The complete interactive command for this model. */
   cmd: string;
   /** Empty for a model discovered from a CLI before Ronin has descriptive metadata for it. */
@@ -254,16 +256,16 @@ async function attachAgentLaunches(entry: ProviderCatalogEntry): Promise<Provide
 }
 
 /** Derive a newly discovered model through the already-resolved Agent command grammar. */
-const discoveredCommand = (models: readonly SessionLaunchSpec[], model: string): string => {
-  const argv = models[0]?.cmd.match(/^(.*?\s(?:--model|-m)(?:=|\s+))(\S+)(.*)$/);
-  return argv && /^[A-Za-z0-9._:-]+$/.test(model) ? `${argv[1]}${model}${argv[3]}` : '';
+const discoveredCommand = (template: string | undefined, model: string): string => {
+  const argv = template?.match(/^(.*?\s(?:--model|-m)(?:=|\s+))(\S+)(.*)$/);
+  return argv && /^[A-Za-z0-9._:/@+-]+$/.test(model) ? `${argv[1]}${model}${argv[3]}` : '';
 };
 
 /** The provider's ordinary CLI launch: its catalog command with only model selection removed. */
 const nativeSpec = (entry: ProviderCatalogEntry): SessionLaunchSpec | null => {
   const base = entry.models[0];
   if (!base || !entry.native) return null;
-  return { ...base, model: NATIVE_MODEL, cmd: entry.native,
+  return { ...base, model: NATIVE_MODEL, display_name: 'Native', cmd: entry.native,
     ...(entry.nativeDangerousCmd ? { dangerousCmd: entry.nativeDangerousCmd } : { dangerousCmd: undefined }),
     tier: '', default: true, cost: '',
     good_at: 'the CLI choosing its own configured or current default model',
@@ -279,9 +281,10 @@ export function modelsAvailableToUser(entries: readonly ProviderCatalogEntry[], 
     const catalog = new Map(entry.models.map((model) => [model.model, model]));
     const models = list.models.filter((model) => model.visibility === 'list').flatMap((model) => {
       const known = catalog.get(model.slug);
-      if (known) return [{ ...known, default: false }];
-      const cmd = discoveredCommand(entry.models, model.slug);
-      return cmd ? [{ ...entry.models[0], model: model.slug, cmd, tier: '' as const, default: false,
+      if (known) return [{ ...known, display_name: model.display_name || model.slug, default: false }];
+      const cmd = discoveredCommand(entry.models[0]?.cmd, model.slug);
+      return cmd ? [{ ...entry.models[0], model: model.slug, display_name: model.display_name || model.slug, cmd, tier: '' as const, default: false,
+        dangerousCmd: discoveredCommand(entry.models[0]?.dangerousCmd, model.slug) || undefined,
         cost: '', good_at: model.description, not_good_at: '' }] : [];
     });
     return { ...entry, models: [...(native ? [native] : []), ...models] };

@@ -51,7 +51,7 @@ globalThis.fetch = async (url) => {
 };
 
 const steps = await import('../public/js/form-steps.js');
-const { orderedCatalog, catalogRows, modelAvailabilityFact, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
+const { orderedCatalog, catalogRows, modelAvailabilityFact, modelLabel, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
 const schema = await import('../public/js/machine-settings-schema.js');
 const CATALOG = catalogRows(CATALOG_DOOR.providers);
 
@@ -69,6 +69,19 @@ test('the catalog is ordered with the providers this machine can launch first, i
   assert.equal(rows[2].cli_label, 'Claude Code');
   // A row whose CLI the machine has no row for is offered under its own id, never dropped.
   assert.equal(orderedCatalog([{ provider: 'nous', cli: 'hermes', native: 'hermes', model: 'x', tier: 'standard' }], [])[0].provider_label, 'nous');
+});
+
+test('the picker uses refreshed ids as values and refreshed display names as labels for every provider', () => {
+  const rows = orderedCatalog(CATALOG, [{ ...MACHINE.providers[0], model_list: {
+    client_version: 'test', models: [
+      { slug: 'claude-fable-5-1', display_name: 'Fable 5.1', visibility: 'list' },
+      { slug: 'claude-haiku-4-5-20251001', visibility: 'list' },
+    ],
+  } }]);
+  const models = rows.filter((row) => row.provider === 'anthropic' && row.model !== 'native');
+  assert.deepEqual(models.map((row) => row.model), ['claude-fable-5-1', 'claude-haiku-4-5-20251001']);
+  assert.deepEqual(models.map(modelLabel), ['Fable 5.1', 'claude-haiku-4-5-20251001']);
+  assert.ok(!models.some((row) => row.model === 'opus' || row.model === 'haiku'));
 });
 
 test('a Codex list is the named-model inventory and retains its capture version', () => {

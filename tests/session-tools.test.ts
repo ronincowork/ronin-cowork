@@ -25,9 +25,9 @@ async function fixture(
         res.end(JSON.stringify(sessions));
         return;
       }
-      if (req.method === 'GET' && req.url === '/api/provider-catalog') {
+      if (req.method === 'GET' && req.url === '/api/launch-models') {
         const facts = modelFacts ?? { provider: 'fixture-provider', cli: 'fixture-cli', model: `fixture-model-${process.pid}` };
-        res.end(JSON.stringify({ origin: 'user', updated: 'fixture-date', providers: [{ provider: facts.provider, cli: facts.cli, label: 'Fixture Provider', models: [{ model: facts.model, tier: 'fixture-tier' }] }] }));
+        res.end(JSON.stringify({ providers: [{ provider: facts.provider, cli: facts.cli, label: 'Fixture Provider', models: [{ model: facts.model, display_name: 'Friendly Fixture', tier: 'fixture-tier' }] }] }));
         return;
       }
       if (req.method === 'GET' && req.url === '/api/setup/runtime') {
@@ -99,14 +99,14 @@ test('project custody and lead designation are ordinary unknown creation options
   assert.deepEqual(f.requests, []);
 });
 
-test('creation help renders current catalog choices, availability, and Campaign defaults', async (t) => {
+test('creation help renders exact launch ids, availability, and Campaign defaults', async (t) => {
   const facts = { provider: `provider-${process.pid}`, cli: `cli-${process.pid}`, model: `model-${process.pid}` };
   const f = await fixture([], facts);
   t.after(f.close);
   const result = await f.run('session_create', ['--help']);
   assert.equal(result.code, 0, result.output);
   assert.match(result.output, new RegExp(`${facts.provider} \\(Fixture Provider\\) — available`));
-  assert.match(result.output, new RegExp(`${facts.model} · fixture-tier — available`));
+  assert.match(result.output, new RegExp(`${facts.model} \\(Friendly Fixture\\) · fixture-tier — available`));
   assert.match(result.output, new RegExp(`Current launch default: ${facts.provider}/${facts.model} — fixture Campaign default`));
   assert.match(result.output, /--root <workspace-folder-handle>/);
   assert.match(result.output, /ronin_lab/);
@@ -114,7 +114,7 @@ test('creation help renders current catalog choices, availability, and Campaign 
   assert.doesNotMatch(result.output, /--root <path>/);
   assert.doesNotMatch(result.output, /--project|--lead/);
   assert.deepEqual(f.requests.map(({ method, url }) => `${method} ${url}`), [
-    'GET /api/provider-catalog', 'GET /api/setup/runtime', 'GET /api/launch-seed',
+    'GET /api/launch-models', 'GET /api/setup/runtime', 'GET /api/launch-seed',
   ]);
 });
 
@@ -125,7 +125,7 @@ test('creation validates one catalog pair and forwards the selected provider and
   const result = await f.run('session_create', ['unused', '--provider', facts.provider, '--model', facts.model]);
   assert.equal(result.code, 0, result.output);
   assert.deepEqual(f.requests.map(({ method, url }) => `${method} ${url}`), [
-    'GET /api/provider-catalog', 'POST /api/session',
+    'GET /api/launch-models', 'POST /api/session',
   ]);
   const body = JSON.parse(f.requests[1]!.body);
   assert.equal(body.name, 'unused');
@@ -133,7 +133,7 @@ test('creation validates one catalog pair and forwards the selected provider and
   assert.equal(body.model, facts.model);
 });
 
-test('creation reports invalid model choices from the current catalog response', async (t) => {
+test('creation reports invalid model choices from the current launch-model response', async (t) => {
   const facts = { provider: `provider-${process.pid}`, cli: `cli-${process.pid}`, model: `model-${process.pid}` };
   const f = await fixture([], facts);
   t.after(f.close);
@@ -142,7 +142,17 @@ test('creation reports invalid model choices from the current catalog response',
   assert.equal(result.code, 4);
   assert.match(result.output, new RegExp(`BAD-MODEL: ${facts.provider}/${missing}`));
   assert.match(result.output, new RegExp(`Available: ${facts.provider}/${facts.model}`));
-  assert.deepEqual(f.requests.map(({ method, url }) => `${method} ${url}`), ['GET /api/provider-catalog']);
+  assert.deepEqual(f.requests.map(({ method, url }) => `${method} ${url}`), ['GET /api/launch-models']);
+});
+
+test('CLI accepts a refreshed full model id and does not offer a catalog alias', async (t) => {
+  const f = await fixture([], { provider: 'anthropic', cli: 'claude', model: 'claude-fable-5-1' });
+  t.after(f.close);
+  const full = await f.run('session_create', ['full_id', '--provider', 'anthropic', '--model', 'claude-fable-5-1']);
+  assert.equal(full.code, 0, full.output);
+  const alias = await f.run('session_create', ['alias', '--provider', 'anthropic', '--model', 'fable']);
+  assert.equal(alias.code, 4);
+  assert.match(alias.output, /Available: anthropic\/claude-fable-5-1/);
 });
 
 test('updating a missing name refuses after its read and never creates it', async (t) => {

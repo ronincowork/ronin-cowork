@@ -37,11 +37,12 @@ One `### <Vendor label>` section per provider. Its fields:
 | `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, …) — the join between this catalog and what the machine measures |
 | `maturity` | optional display status: `beta` or `comingSoon`; a provider with no model rows remains visible only as an unavailable catalog card |
 
-Then one table, one row per model, **in the order the picker offers them**:
+Then one table of optional model metadata. The provider CLI's refreshed inventory decides
+which model ids are launchable and their order in the picker:
 
 | Column | Meaning |
 |---|---|
-| `model` | the model id passed to the CLI, unchanged — its real name, never a euphemism |
+| `model` | the exact CLI model id this metadata describes; older aliases do not grant launch availability |
 | `tier` | **light** · **standard** · **frontier**: the cost and capability band, as the vendor prices it |
 | `default` | optional descriptive metadata retained for a reported model; it does not change what Model: Native means |
 | `cost` | the vendor's public list price per million tokens, input · output, with the month it was read — a reading, not a contract |
@@ -59,8 +60,8 @@ read, and a stale reading is dated, never guessed.
 - **provider:** `anthropic`
 - **cli:** `claude`
 
-Model ids are Claude Code's own aliases, passed unchanged to its `--model` option; each
-resolves to the current model of that family.
+These Claude family aliases are historical metadata. Only exact ids returned by Claude
+Code's refreshed model inventory can be selected or passed to `--model` by Ronin.
 
 | model | tier | default | cost | good at | not good at |
 |---|---|---|---|---|---|

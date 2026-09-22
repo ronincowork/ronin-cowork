@@ -40,6 +40,9 @@ own resolved birth packet and prompt.
 
 Every documented `session_create` form is universal. Capability selection changes only
 which workflow knowledge is taught.
+`session_create --help` lists the exact model ids from each provider's refreshed CLI
+inventory. Use those ids with `--provider` and `--model`; display names are for the owner
+and are not model aliases.
 
 ## Lifecycle boundaries
 

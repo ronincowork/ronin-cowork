@@ -1,9 +1,10 @@
 # Model providers
 
-Ronin launches agents from **one provider catalog**: `ronin_catalogs/MODEL_PROVIDERS.md`.
-It owns the provider/model inventory. Every picker, every launch and every
-provider fact on screen reads from it, or from the Campaign's **measured provider
-summary**, which says what this machine has and when that was measured.
+Ronin names providers through `ronin_catalogs/MODEL_PROVIDERS.md` and gets launchable model
+ids from each provider CLI's refreshed inventory in the Campaign's measured provider
+summary. The catalog supplies dated model metadata; it does not grant an alias permission
+to launch. The picker shows the refreshed `display_name` when present, falling back to
+the model id. The CLI and launch route accept the exact model id.
 
 This is intentionally data, not provider code. Adding a provider or model must not add a
 route, UI branch, parser branch, or spawn branch.
@@ -44,11 +45,12 @@ provider: the catalog (whose it is, what it offers) and the CLI registry (how it
 resumes and is recognised in a tile). The join lives in this data and nowhere else — no
 command-word match, no map in a client.
 
-Then a table, one row per model, in the order the picker offers them:
+Then a table of optional metadata keyed by model id. The refreshed CLI inventory owns
+the picker order and the accepted model ids:
 
 | Column | Meaning |
 |---|---|
-| `model` | the provider's real model id, passed to the CLI unchanged — never a euphemism |
+| `model` | the exact CLI id this metadata enriches; a row alone does not make a model launchable |
 | `tier` | **light** · **standard** · **frontier**: the vendor's own cost and capability band |
 | `default` | `yes` on the one row a launch naming this provider and no model gets when ⚙ Configuration holds no preference for it; the first row when no row says so |
 | `cost` | the public list price per million tokens, input · output, with the month it was read in parentheses — a dated reading, never a contract |
@@ -169,9 +171,9 @@ every terminal agent behaves like Claude.
 |---|---|
 | provider | the vendor id shown before the dot in the picker; the section's `provider` field |
 | cli | the registry row that serves it; the section's `cli` field |
-| model | the provider's real model id, from the row's `model` column |
-| cmd | the Agent page's Model command rendered with the row's model id |
-| row order | the order the picker offers that provider's models in |
+| model | the exact id returned by the refreshed CLI inventory |
+| cmd | the Agent page's Model command rendered with that id |
+| row order | the refreshed CLI inventory's model order in the picker |
 | default | the marked row, else the first: what answers when `agents.sessions.by_provider.<provider>` is unset. Not a stored default |
 
 The model id and the command must agree: `openai · gpt-5.6-terra` resolves to a Codex
@@ -184,8 +186,9 @@ The launch path does no provider interpretation, but it does adapt to the agent'
 interface after starting the command:
 
 ```text
-MODEL_PROVIDERS.md facts + docs/agents/<cli>.md commands
-  → GET /api/provider-catalog
+MODEL_PROVIDERS.md metadata + docs/agents/<cli>.md commands + refreshed CLI inventory
+  → GET /api/provider-catalog and GET /api/setup/runtime (picker)
+  → GET /api/launch-models (session_create help and validation)
   → the one picker (providerModelPair, public/js/form-steps.js)
   → POST /api/launch { cmd, launch_mode }
   → combine the Model and Launch mode choices into one complete command
@@ -203,13 +206,14 @@ the Campaign's Team and Agent defaults, Team Configuration, ⚙ Configuration (t
 each provider's preferred model, and Mika's row), cowork setup and the Presets rows all call
 it; none keeps a list, a join or a vendor's name of its own. The picker reads the catalog
 itself (`GET /api/provider-catalog`: its origin, its `updated` date, and one entry per
-provider with the vendor's label and its model rows) and what this machine measured of each
+provider with the vendor's label and its metadata rows) and what this machine measured of each
 CLI (`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
 probes), joined on the catalog's own `cli` field, and it offers:
 
-- every provider and every model in the catalog, the providers this machine can launch
-  first and the rest after, in catalog order within each group;
-- each model as `<id> · <tier>`, and no further — the tier is the one descriptor carried
+- every catalog provider and every model in its refreshed CLI inventory, the providers this machine can launch
+  first and the rest after, in inventory order within each group;
+- each model by the CLI's display name when present, otherwise its full id, with a catalog tier when matched;
+  the tier is the one descriptor carried
   into the choice. What a model is good at and not good at is the Model providers
   surface's to show, where the table has room for it; an option line does not, and a
   description squeezed into one is read by nobody;
