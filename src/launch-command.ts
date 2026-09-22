@@ -18,6 +18,11 @@ export interface CommandRequest {
 }
 
 const offer = (names: string[]): string => names.join(', ') || 'nothing yet (see ⚙ Configuration)';
+// Old saved preferences used the short display id. Resolve those against the current
+// catalog, then use only the resulting concrete model id in a launch command.
+const matchingModel = (specs: readonly SessionLaunchSpec[], value: string): SessionLaunchSpec | undefined =>
+  specs.find((spec) => spec.model === value)
+  ?? specs.find((spec) => spec.display_id?.toLowerCase() === value.toLowerCase());
 
 export interface MergedSessionsDefaults {
   sessions: SessionsDefaults;
@@ -70,8 +75,8 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
   }
 
   if (model) {
-    const named = (within.find((s) => s.model === model && s.provider === dflt?.provider)
-      ?? within.find((s) => s.model === model))?.cmd;
+    const named = (matchingModel(within.filter((s) => s.provider === dflt?.provider), model)
+      ?? matchingModel(within, model))?.cmd;
     if (!named) {
       const whose = provider ? `${provider} offers` : "this box's provider catalog offers";
       throw new Error(`Unknown model "${model}" — ${whose}: ${offer([...new Set(within.map((s) => s.model))])}.`);
@@ -81,13 +86,13 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
 
   if (provider) {
     const preferred = req.sessions?.by_provider?.[provider] ?? '';
-    const chosen = preferred ? within.find((s) => s.model === preferred)?.cmd : undefined;
+    const chosen = preferred ? matchingModel(within, preferred)?.cmd : undefined;
     if (chosen) return { cmd: chosen, source: 'settei_provider' };
     return { cmd: providerDefault(within, provider)!.cmd, source: 'system' };
   }
 
   const installed = dflt?.provider && dflt?.model
-    ? specs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
+    ? matchingModel(specs.filter((s) => s.provider === dflt.provider), dflt.model)?.cmd
     : undefined;
   const providerNative = dflt?.provider ? providerDefault(specs, dflt.provider)?.cmd : undefined;
   return { cmd: installed ?? providerNative ?? defaultAgentCommand(), source: 'system' };

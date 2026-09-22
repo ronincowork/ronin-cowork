@@ -51,7 +51,7 @@ globalThis.fetch = async (url) => {
 };
 
 const steps = await import('../public/js/form-steps.js');
-const { orderedCatalog, catalogRows, modelAvailabilityFact, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
+const { orderedCatalog, catalogRows, modelAvailabilityFact, modelLabel, providerModelPair, loadProviderCatalog, providerCatalog } = steps;
 const schema = await import('../public/js/machine-settings-schema.js');
 const CATALOG = catalogRows(CATALOG_DOOR.providers);
 
@@ -69,6 +69,17 @@ test('the catalog is ordered with the providers this machine can launch first, i
   assert.equal(rows[2].cli_label, 'Claude Code');
   // A row whose CLI the machine has no row for is offered under its own id, never dropped.
   assert.equal(orderedCatalog([{ provider: 'nous', cli: 'hermes', native: 'hermes', model: 'x', tier: 'standard' }], [])[0].provider_label, 'nous');
+});
+
+test('a measured concrete model uses its short display id in the picker', () => {
+  const rows = catalogRows([{ provider: 'anthropic', cli: 'claude', native: 'claude', models: [
+    { model: 'claude-fable-5-1', display_id: 'Fable', cmd: 'claude --model claude-fable-5-1' },
+  ] }]);
+  const machine = [{ id: 'claude', activated: true, model_list: { models: [{ slug: 'claude-fable-5-1', visibility: 'list' }] } }];
+  const available = orderedCatalog(rows, machine).find((row) => row.model === 'claude-fable-5-1');
+  assert.equal(modelLabel(available), 'Fable');
+  assert.equal(available.cmd, 'claude --model claude-fable-5-1');
+  assert.equal(orderedCatalog(rows, [{ ...machine[0], model_list: { models: [] } }]).some((row) => row.model === 'claude-fable-5-1'), false);
 });
 
 test('a Codex list is the named-model inventory and retains its capture version', () => {

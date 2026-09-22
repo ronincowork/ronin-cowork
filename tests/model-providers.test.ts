@@ -52,19 +52,20 @@ test('the stock catalog names every provider with its CLI, its tiers and a marke
   assert.equal(anthropic.label, 'Anthropic');
   assert.deepEqual(anthropic.launch_modes, ['configured', 'live_dangerously']);
   assert.equal(anthropic.nativeDangerousCmd, 'claude --dangerously-skip-permissions');
-  assert.deepEqual(anthropic.models.map((row) => row.model), ['opus', 'fable', 'sonnet', 'haiku'], 'row order is picker order');
-  assert.equal(catalog.providerDefault(anthropic.models, 'anthropic')?.model, 'opus');
-  assert.equal(anthropic.models.find((row) => row.model === 'haiku')?.tier, 'light');
+  assert.deepEqual(anthropic.models.map((row) => row.model), ['claude-opus-5', 'claude-fable-5-1', 'claude-sonnet-5', 'claude-haiku-4-5-20251001'], 'row order is picker order');
+  assert.deepEqual(anthropic.models.map((row) => row.display_id), ['Opus', 'Fable', 'Sonnet', 'Haiku']);
+  assert.equal(catalog.providerDefault(anthropic.models, 'anthropic')?.model, 'claude-opus-5');
+  assert.equal(anthropic.models.find((row) => row.model === 'claude-haiku-4-5-20251001')?.tier, 'light');
   const openai = providers.find((entry) => entry.provider === 'openai')!;
   assert.equal(catalog.providerDefault(openai.models, 'openai')?.model, 'gpt-5.6-sol');
   const captured = (models: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: '', client_version: 'test', models: models.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list' as const, priority })) });
   const flat = await catalog.listSessionLaunchSpecs({ model_lists: {
-    claude: captured(['opus', 'fable', 'sonnet', 'haiku']),
+    claude: captured(['claude-opus-5', 'claude-fable-5-1', 'claude-sonnet-5', 'claude-haiku-4-5-20251001']),
     codex: captured(openai.models.map((row) => row.model)),
     grok: captured(providers.find((entry) => entry.cli === 'grok')!.models.map((row) => row.model)),
   } });
-  assert.deepEqual(flat.slice(0, 5).map((row) => row.cmd), ['claude', 'claude --model opus', 'claude --model fable', 'claude --model sonnet', 'claude --model haiku']);
-  assert.equal(flat.find((row) => row.cmd === 'claude --model opus')?.dangerousCmd, 'claude --model opus --dangerously-skip-permissions');
+  assert.deepEqual(flat.slice(0, 5).map((row) => row.cmd), ['claude', 'claude --model claude-opus-5', 'claude --model claude-fable-5-1', 'claude --model claude-sonnet-5', 'claude --model claude-haiku-4-5-20251001']);
+  assert.equal(flat.find((row) => row.cmd === 'claude --model claude-opus-5')?.dangerousCmd, 'claude --model claude-opus-5 --dangerously-skip-permissions');
 });
 
 test('a provider section parses model facts without owning CLI command syntax', () => {
@@ -108,7 +109,7 @@ test("the owner's copy is an overlay: a section of a shipped id replaces it in p
   await writeFile(mine, [
     '# mine', '',
     '### Anthropic (mine)', '', '- **provider:** `anthropic`', '- **cli:** `claude`', '', table,
-    '| `fable` | frontier | yes | $10 (2026-09) | hard | cheap | `claude --model fable` |', '',
+    '| `claude-fable-5-1` | frontier | yes | $10 (2026-09) | hard | cheap | `claude --model claude-fable-5-1` |', '',
     '### xAI', '', '- **provider:** `xai`', '- **hidden:** yes', '',
     '### Google', '', '- **provider:** `google`', '- **cli:** `gemini`', '', table,
     '| `gemini-3.1-pro` | frontier | | $2 (2026-09) | x | y | — |',
@@ -126,15 +127,15 @@ test("the owner's copy is an overlay: a section of a shipped id replaces it in p
       ['anthropic', 'user', true], ['openai', 'stock', false], ['google', 'user', true], ['nous', 'stock', false], ['openrouter', 'stock', false], ['example', 'user', false],
     ], 'anthropic and google replace in place; xai is hidden; example appends');
     assert.equal(read.providers[0].label, 'Anthropic (mine)', 'the heading is the copy\'s, the key was the id');
-    assert.deepEqual(read.providers[0].models.map((m) => m.cmd), ['claude --model fable'], 'the section replaced whole — the shipped rows do not merge in');
+    assert.deepEqual(read.providers[0].models.map((m) => m.cmd), ['claude --model claude-fable-5-1'], 'the section replaced whole — the shipped rows do not merge in');
     assert.ok(read.providers[1].models.length >= 3, 'the shipped OpenAI rows are exactly as shipped');
     assert.deepEqual(read.withdrawn, [{ provider: 'xai', label: 'xAI' }], 'the explicit hidden marker withdraws a provider');
     const listed = (models: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: '', client_version: 'test', models: models.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list' as const, priority })) });
     const cmds = (await catalog.listSessionLaunchSpecs({ model_lists: {
-      claude: listed(['fable']),
+      claude: listed(['claude-fable-5-1']),
       codex: listed(['gpt-5.6-sol', 'ex-1']),
     } })).map((row) => row.cmd);
-    assert.ok(cmds.includes('codex --model gpt-5.6-sol') && cmds.includes('claude --model fable') && cmds.includes('codex --model ex-1'));
+    assert.ok(cmds.includes('codex --model gpt-5.6-sol') && cmds.includes('claude --model claude-fable-5-1') && cmds.includes('codex --model ex-1'));
     assert.ok(!cmds.some((cmd) => cmd.startsWith('grok')), 'withdrawn providers launch nothing');
   } finally {
     await rm(mine, { force: true });
