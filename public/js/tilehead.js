@@ -37,6 +37,16 @@ const HEADER = () => {
 
   { grow: true },
 
+  { key: 'transcriptBtn', cls: 'transcript-toggle', text: t('transcript.toggle', 'Transcript'), needs: 'session',
+    help: t('transcript.toggle_help', 'Switch between Terminal and Transcript'),
+    quiet: t('transcript.no_session', 'Transcript — no Agent in this tile'),
+    read: (tile, el) => {
+      el.hidden = !tile.transcriptAvailable();
+      el.setAttribute('aria-pressed', String(!!tile.transcriptOn));
+      el.textContent = tile.transcriptOn ? t('transcript.terminal', 'Terminal') : t('transcript.toggle', 'Transcript');
+    },
+    on: (tile) => tile.toggleTranscript() },
+
   // rireki choices to the terminal header … I want to be able to switch between locked
   // and the different versions of unlocked to see how this looks"). Ugly for now by his
   // own word — a select with a word in it among glyph buttons — and the trade is that

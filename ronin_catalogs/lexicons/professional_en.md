@@ -1475,6 +1475,17 @@ The catalog entry goes. {dir} is not touched.
 ## bar — layout.js
 - **bar.keys_title:** Esc, ^C, jump to latest, Tab and the arrows
 
+## transcript — tile-transcript.js (the tile's journal view)
+- **transcript.title:** Transcript
+- **transcript.toggle:** Transcript
+- **transcript.terminal:** Terminal
+- **transcript.toggle_help:** Switch between Terminal and Transcript
+- **transcript.no_session:** Transcript — no Agent in this tile
+- **transcript.loading:** Loading transcript…
+- **transcript.empty:** No transcript output yet.
+- **transcript.unavailable:** Transcript unavailable for this Agent.
+- **transcript.failed:** Transcript could not be loaded. Retrying…
+
 ## output — output.js (the RIREKI view picker)
 - **output.locked:** Locked
 - **output.terminal_mirror:** Terminal Mirror

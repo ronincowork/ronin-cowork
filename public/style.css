@@ -4313,6 +4313,26 @@ button.wb-door:hover b {
 }
 
 .tile-head select.output { width: auto; flex: 0 0 5rem; min-width: 0; }
+.tile-head button.transcript-toggle { width: auto; min-width: 5.7rem; padding: 0 var(--space-2); }
+.tile-head button.transcript-toggle[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
+.tile-head button.transcript-toggle[hidden] { display: none; }
+.tile .tile-transcript { display: none; }
+.tile.transcript-on .tile-transcript {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4);
+  color: var(--fg);
+  background: var(--bg);
+  font: var(--text-3)/1.45 var(--font-mono);
+}
+.tile-transcript-entry { border-bottom: var(--edge) solid var(--line); padding: var(--space-3) 0; }
+.tile-transcript-entry strong { color: var(--accent); }
+.tile-transcript-entry pre { margin: var(--space-2) 0 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tile-transcript-message { color: var(--muted); }
 @media (pointer: coarse) {
   .tile select.output { width: 44px; height: 40px; padding: 0; flex: 0 0 44px; }
 }

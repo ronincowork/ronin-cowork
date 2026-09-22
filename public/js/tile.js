@@ -21,6 +21,7 @@ import { isCoarse } from './tiledrop.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
 import { desksOf, refreshDesks } from './desks.js';
 import { t } from './lexicon.js';
+import { makeTileTranscript } from './tile-transcript.js';
 
 const readableSession = (name) => {
   const live = S.sessions.find((row) => row.name === name);
@@ -37,6 +38,7 @@ export class Tile {
     // this Tile instance so one open sheet never suppresses another tile's boundary.
     this.retirementId = `tile-${++nextRetirementId}`;
     this.session = null;
+    this.transcriptOn = false;
     this.pending = ''; // UNLOCKED: locally-parked typed text (sent as one parcel on Enter)
     this.strip = null; // the thin bar showing this.pending over the tile
     this.composer = null; // the unlocked tile's text entry (built on first use)
@@ -71,6 +73,8 @@ export class Tile {
       onSummaryNow: () => void this.refreshKaki(true, true),
       onSummaryPolicy: (policy) => void this.setKakiPolicy(policy),
     });
+    this.transcriptView = makeTileTranscript();
+    this.body.append(this.transcriptView.el);
 
 
     // SHINGO 信号: this session's ladder, read off its TEGAMI. The chip (built with the
@@ -83,6 +87,7 @@ export class Tile {
     this.term = new TermView(this.body, {
       // Locked: key-for-key to the host (the mirror, unchanged). Unlocked: DVR input rules.
       onUserData: (d) => {
+        if (this.transcriptOn) return;
         return this.locked ? this.sendRaw(d) : this.dvrInput(d);
       },
       onProtocolData: (d) => this.wire.sendTerminalReply(d),
@@ -282,6 +287,23 @@ export class Tile {
    */
   syncHeader() {
     syncTileHead(this);
+  }
+
+  transcriptAvailable() {
+    return Array.isArray(S.services) && S.services.includes('rireki');
+  }
+
+  toggleTranscript() {
+    if (!this.session || !this.transcriptAvailable()) return;
+    this.transcriptOn = !this.transcriptOn;
+    this.el.classList.toggle('transcript-on', this.transcriptOn);
+    if (this.transcriptOn) {
+      if (this.body.contains(document.activeElement)) document.activeElement.blur();
+      this.transcriptView.show(this.session);
+    }
+    else this.transcriptView.hide();
+    this.syncHeader();
+    if (!this.transcriptOn) this.doFit();
   }
 
   /** Mark this tile active (visual highlight + keystroke target) without grabbing keyboard focus. */
@@ -500,6 +522,9 @@ export class Tile {
   }
 
   detach() {
+    this.transcriptView.hide();
+    this.transcriptOn = false;
+    this.el.classList.remove('transcript-on');
     this.tape.setAltNote(false);
     this.wire.close();
     this.session = null;
@@ -541,6 +566,11 @@ export class Tile {
   }
 
   connect(session) {
+    if (this.session !== session) {
+      this.transcriptView.hide();
+      this.transcriptOn = false;
+      this.el.classList.remove('transcript-on');
+    }
     if (this.session !== session) { this.lastSelection = ''; this.pending = ''; this.renderPending(); }
     this.session = session;
     this.sessionKey = S.sessions.find((row) => row.name === session)?.key;

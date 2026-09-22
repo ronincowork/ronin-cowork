@@ -10,6 +10,7 @@ column, or drag its card into the workspace where you want to see it.
 | Title / ⛩ | Edit the Agent's displayed title; its session name remains its identity |
 | Work Record | Open the Agent's objective, work, and tracked repositories |
 | Output | Choose an available output view; Locked is the live terminal |
+| Transcript / Terminal | When Terminal transcript is active, switch between the normal terminal and the Agent's journal output |
 | Mention | Add another session's name to the message box |
 | Docs | Open documents tracked by this Agent |
 | × | Open the archive/delete choices |
@@ -36,10 +37,11 @@ see [Archived sessions](archived-sessions.md).
 
 ## Output availability
 
-**Locked** shows the live terminal. Additional readable output views require a loaded
-recording service; installing Services alone does not prove those views are available.
-The recording part is currently parked. A live tile is usable without it, and should not
-be treated as a durable conversation backup.
+The separate **Transcript** button appears when Ronin Services has loaded Terminal
+transcript. It reads that Agent's journal output and updates while the view is open.
+Agents born before activation, or without an exact journal binding, show an unavailable
+message. **Terminal** returns to the normal interactive terminal. The older Output
+selector is separate from this switch.
 
 See [Work record](work-record.md) for authored work and [Workbench](workbench.md) for
 arrangement and navigation. Contributors can find the implementation in the
