@@ -41,8 +41,9 @@ own resolved birth packet and prompt.
 Every documented `session_create` form is universal. Capability selection changes only
 which workflow knowledge is taught.
 `session_create --help` lists the exact model ids from each provider's refreshed CLI
-inventory. Use those ids with `--provider` and `--model`; display names are for the owner
-and are not model aliases.
+inventory. Use those ids with `--provider` and `--model`; display names are for the owner.
+CLI-supported names already stored in settings, such as Claude's `sonnet`, also pass
+through unchanged. The tool does not maintain a separate alias map.
 
 `session_set <name> --root <handle>` changes the recorded Workspace Folder; `--clear-root`
 clears it. The original birth directory and the running shell's directory remain as they

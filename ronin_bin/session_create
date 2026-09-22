@@ -50,8 +50,9 @@ With no --team, the new Agent joins the caller's first Team when there is one.
 --root selects a registered Workspace Folder by its handle (for example, ronin_lab),
 not by its filesystem path. Use `machine-settings project-root list` to read the handles.
 Choose a current pair in one call: session_create <name> --provider <provider> --model <model>.
-The model ids below are the exact values accepted by --model and sent to the provider CLI.
-They come from its refreshed inventory; this tool keeps no alias list.
+The model ids below come from each CLI's refreshed inventory and are sent unchanged.
+A CLI-supported alias is also passed through unchanged, including saved preferences.
+This tool keeps no alias list.
 Related: session_check --help; session_set --help
 EOF
   python3 - "$catalog" "$runtime" "$seed" <<'PY'
@@ -119,24 +120,6 @@ done
 
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
-if [ -n "$MODEL" ]; then
-  catalog=$(mktemp /tmp/session_create-catalog.XXXXXX) || exit 2
-  trap "rm -f '$catalog'" EXIT
-  catalog_read /api/launch-models "$catalog"
-  validation=$(python3 - "$catalog" "$PROVIDER" "$MODEL" <<'PY'
-import json, sys
-catalog, wanted_provider, wanted_model = json.load(open(sys.argv[1])), sys.argv[2], sys.argv[3]
-pairs = [(str(p.get("provider", "")), str(m.get("model", "")))
-         for p in catalog.get("providers", []) if isinstance(p, dict)
-         for m in p.get("models", []) if isinstance(m, dict) and m.get("model")]
-if (wanted_provider and (wanted_provider, wanted_model) not in pairs) or (not wanted_provider and wanted_model not in [m for _, m in pairs]):
-    choices = ", ".join(f"{p}/{m}" for p, m in pairs) or "none"
-    print(f"BAD-MODEL: {wanted_provider + '/' if wanted_provider else ''}{wanted_model} is not in the refreshed CLI inventory. Available: {choices}. Run session_create --help for the full list.")
-    raise SystemExit(4)
-PY
-) || { rc=$?; die "$validation" "$rc"; }
-fi
-
 CALLER=$(ronin_session_me 2>/dev/null || true)
 body=$(NAME="$NAME" CALLER="$CALLER" PROMPT="$PROMPT" TEAM="$TEAM" ROOT="$ROOT" \
        PROVIDER="$PROVIDER" MODE="$MODE" CMD="$CMD" MODEL="$MODEL" MCP="$MCP" TAGS="$TAGS" SEED="$SEED" BEHAVIOURS="$BEHAVIOURS" python3 - <<'PY'

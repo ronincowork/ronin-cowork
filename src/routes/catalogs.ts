@@ -236,6 +236,10 @@ export function registerCatalogs(app: express.Express): void {
       }
       const facts = await repoFacts({ name, title: fields.title ?? '', dir: fields.dir, remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' });
       if (facts.repo && req.body?.profile !== undefined) validateArrangementProfile(req.body.profile);
+      const currentProfile = facts.repo && req.body?.profile !== undefined
+        ? arrangementProfile(await readArrangement(name, fields.dir)) : null;
+      const profileChangedSinceOpen = currentProfile && req.body?.before !== undefined
+        && JSON.stringify(req.body.before) !== JSON.stringify(currentProfile);
       await upsertProjectRoot(name, fields);
       const root = (await listProjectRoots()).find((r) => r.name === name);
       const arrangement = root && facts.repo
@@ -243,7 +247,8 @@ export function registerCatalogs(app: express.Express): void {
           ? await setArrangementProfile(root.dir, req.body.profile)
           : await readArrangement(name, root.dir)
         : null;
-      res.json({ ok: true, repo_profile: arrangement ? arrangementProfile(arrangement) : null });
+      res.json({ ok: true, repo_profile: arrangement ? arrangementProfile(arrangement) : null,
+        ...(profileChangedSinceOpen ? { profile_changed_since_open: true, current_before: currentProfile } : {}) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
@@ -266,8 +271,12 @@ export function registerCatalogs(app: express.Express): void {
     try {
       const root = (await listProjectRoots()).find((r) => r.name === name);
       if (!root) return res.status(404).json({ error: `"${name}" is not in the catalog.` });
+      const currentProfile = arrangementProfile(await readArrangement(name, root.dir));
+      const profileChangedSinceOpen = req.body?.before !== undefined
+        && JSON.stringify(req.body.before) !== JSON.stringify(currentProfile);
       const arrangement = await setArrangementProfile(root.dir, req.body?.profile);
-      res.json({ ok: true, repo_profile: arrangementProfile(arrangement) });
+      res.json({ ok: true, repo_profile: arrangementProfile(arrangement),
+        ...(profileChangedSinceOpen ? { profile_changed_since_open: true, current_before: currentProfile } : {}) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }

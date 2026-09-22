@@ -13,7 +13,8 @@ Usage:
   work-record update_record --status N[.M] PLANNED|ACTIVE|DONE
   work-record update_record --done N[.M] | --active N[.M] | --drop N[.M]
   work-record update_record --repo <repo-or-url>[:<branch>] | --unrepo <repo-or-url>[:<branch>]
-  work-record workspace list | add <repo-or-url> [--branch <branch>]
+  work-record workspace list
+  work-record workspace add <repo-or-url> [--branch <branch>]
   work-record workspace remove <repo-or-url> [--branch <branch>]
   work-record document add <path>
   work-record document remove <path>

@@ -84,6 +84,8 @@ test('every provider launches refreshed ids and carries refreshed display names'
     assert.ok(models[1]?.cmd.includes(slug), cli);
     assert.ok(models[1]?.dangerousCmd?.includes(slug), `${cli} dangerous launch also uses the refreshed id`);
   }
+  const launchable = await catalog.listSessionLaunchSpecs({ model_lists: lists });
+  assert.equal(launchable.find((row) => row.provider === 'anthropic' && row.model === 'sonnet')?.cmd, 'claude --model sonnet', 'saved CLI alias remains launchable');
 });
 
 test('a provider section parses model facts without owning CLI command syntax', () => {

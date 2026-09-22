@@ -241,7 +241,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     ] },
     { group: t('where.label', 'Where it works'), fields: [
       { key: 'root', label: t('where.born_in', 'Born in'), blank: t('new_team.root_default', 'The box’s default'), options: () => rootRows() },
-      { key: 'repos', label: t('where.additional', 'Additional workspaces'), many: true, after: 'root',
+      { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root',
         options: () => rootRows(true), row: branchField },
     ] },
   ], {

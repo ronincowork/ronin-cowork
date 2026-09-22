@@ -33,7 +33,7 @@ async function send(route: string, method: string, body: unknown) {
   const response = await fetch(`${base}${route}`, {
     method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
   });
-  return { status: response.status, body: await response.json() as { error?: string; repo_profile?: unknown } };
+  return { status: response.status, body: await response.json() as { error?: string; repo_profile?: unknown; profile_changed_since_open?: boolean; current_before?: unknown } };
 }
 
 test('registers a declared repository without confirmation fields or rewriting RONIN_REPO', async () => {
@@ -58,6 +58,22 @@ test('accepts an explicit repository profile without a confirmation flag or befo
   });
   assert.equal(changed.status, 200, changed.body.error);
   assert.match(await readFile(path.join(dir, 'RONIN_REPO'), 'utf8'), /^working=develop$/m);
+});
+
+test('reports a repository profile changed since the form opened while applying the requested edit', async () => {
+  const dir = await repo('changed');
+  await writeFile(path.join(dir, 'RONIN_REPO'), 'mode=direct\nstable=main\ndesks=none\n');
+  const created = await send('/api/project-roots', 'POST', { name: 'changed', dir });
+  assert.equal(created.status, 200, created.body.error);
+  const before = { mode: 'direct', working: '', stable: 'main', worktrees: 'disabled' };
+  await writeFile(path.join(dir, 'RONIN_REPO'), 'mode=reviewed\nworking=develop\nstable=main\ndesks=managed\n');
+  const changed = await send('/api/project-roots/changed/repo-profile', 'PUT', {
+    before, profile: { mode: 'direct', working: '', stable: 'release', worktrees: 'disabled' },
+  });
+  assert.equal(changed.status, 200, changed.body.error);
+  assert.equal(changed.body.profile_changed_since_open, true);
+  assert.deepEqual(changed.body.current_before, { mode: 'reviewed', working: 'develop', stable: 'main', worktrees: 'enabled' });
+  assert.match(await readFile(path.join(dir, 'RONIN_REPO'), 'utf8'), /^stable=release$/m);
 });
 
 test('rejects a malformed repository profile before adding a catalog entry', async () => {

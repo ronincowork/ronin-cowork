@@ -292,7 +292,15 @@ export function modelsAvailableToUser(entries: readonly ProviderCatalogEntry[], 
 }
 
 export async function listSessionLaunchSpecs(summary: ProviderSummary | null = null): Promise<SessionLaunchSpec[]> {
-  return modelsAvailableToUser(await listProviderCatalog(), summary).flatMap((entry) => entry.models);
+  const catalog = await listProviderCatalog();
+  const refreshed = modelsAvailableToUser(catalog, summary).flatMap((entry) => entry.models);
+  const known = new Set(refreshed.map((spec) => `${spec.provider}\0${spec.model}`));
+  // A recorded preference may use a CLI-supported catalog name (for example Claude's
+  // "sonnet"). Keep that command available for launches without adding aliases to the
+  // refreshed picker or rewriting the owner's saved preference.
+  const named = catalog.flatMap((entry) => entry.models)
+    .filter((spec) => !known.has(`${spec.provider}\0${spec.model}`));
+  return [...refreshed, ...named];
 }
 
 /** A provider's own default row: the one marked `default`, else its first. */

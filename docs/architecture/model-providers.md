@@ -2,9 +2,10 @@
 
 Ronin names providers through `ronin_catalogs/MODEL_PROVIDERS.md` and gets launchable model
 ids from each provider CLI's refreshed inventory in the Campaign's measured provider
-summary. The catalog supplies dated model metadata; it does not grant an alias permission
-to launch. The picker shows the refreshed `display_name` when present, falling back to
-the model id. The CLI and launch route accept the exact model id.
+summary. The catalog supplies dated model metadata and retains CLI-supported names already
+used by saved settings. The picker shows the refreshed `display_name` when present, falling
+back to the model id. The launch path also passes a catalog name such as `sonnet` unchanged
+to its CLI, so an older saved preference keeps working.
 
 This is intentionally data, not provider code. Adding a provider or model must not add a
 route, UI branch, parser branch, or spawn branch.
