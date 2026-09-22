@@ -4316,6 +4316,13 @@ button.wb-door:hover b {
 .tile-head button.transcript-toggle { width: auto; min-width: 5.7rem; padding: 0 var(--space-2); }
 .tile-head button.transcript-toggle[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
 .tile-head button.transcript-toggle[hidden] { display: none; }
+/* Opaque: the route said this Agent has nothing to show. Still a button — pressing it
+   opens the view, which says why in full. */
+.tile-head button.transcript-toggle.off { opacity: 0.4; }
+.tile-transcript-entry[data-role='user'] { font-weight: 600; }
+.tile-transcript-entry[data-kind='note'] { color: var(--muted); font-style: italic; }
+.tile-transcript-entry[data-kind='act'],
+.tile-transcript-entry[data-kind='code'] { color: var(--muted); font-family: var(--mono, monospace); font-size: 0.9em; }
 .tile .tile-transcript { display: none; }
 .tile.transcript-on .tile-transcript {
   display: block;

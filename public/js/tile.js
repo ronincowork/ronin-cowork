@@ -39,6 +39,9 @@ export class Tile {
     this.retirementId = `tile-${++nextRetirementId}`;
     this.session = null;
     this.transcriptOn = false;
+    this.transcriptLevel = -1; // index into the route's readings while transcriptOn; -1 is Terminal
+    this.transcriptReadings = []; // what the route offers, in order — T1 is the first
+    this.transcriptState = null; // the route's last word on this Agent: available, empty, reason
     this.pending = ''; // UNLOCKED: locally-parked typed text (sent as one parcel on Enter)
     this.strip = null; // the thin bar showing this.pending over the tile
     this.composer = null; // the unlocked tile's text entry (built on first use)
@@ -73,7 +76,7 @@ export class Tile {
       onSummaryNow: () => void this.refreshKaki(true, true),
       onSummaryPolicy: (policy) => void this.setKakiPolicy(policy),
     });
-    this.transcriptView = makeTileTranscript();
+    this.transcriptView = makeTileTranscript({ onState: (state) => this.onTranscriptState(state) });
     this.body.append(this.transcriptView.el);
 
 
@@ -293,17 +296,63 @@ export class Tile {
     return Array.isArray(S.services) && S.services.includes('rireki');
   }
 
+  /**
+   * One button, one direction: Terminal → T1 → T2 … → Tn → Terminal. The levels are the
+   * readings the route published for this Agent, most concentrated first; the tile keeps
+   * no list of its own, so a reading added on the server is a new T here untouched.
+   * (Owner, 2026-09-22: the full record shows the docs the Agent read, useless to him;
+   * the lower levels are the point.)
+   */
   toggleTranscript() {
     if (!this.session || !this.transcriptAvailable()) return;
-    this.transcriptOn = !this.transcriptOn;
-    this.el.classList.toggle('transcript-on', this.transcriptOn);
-    if (this.transcriptOn) {
+    const readings = Array.isArray(this.transcriptReadings) ? this.transcriptReadings : [];
+    const was = this.transcriptOn;
+    const next = was ? this.transcriptLevel + 1 : 0;
+    const on = !was || next < readings.length;
+    this.transcriptOn = on;
+    this.transcriptLevel = on ? next : -1;
+    this.el.classList.toggle('transcript-on', on);
+    if (on) {
       if (this.body.contains(document.activeElement)) document.activeElement.blur();
-      this.transcriptView.show(this.session);
+      const view = readings[next]?.name || '';
+      if (was) this.transcriptView.setReading(view);
+      else this.transcriptView.show(this.session, view);
     }
     else this.transcriptView.hide();
     this.syncHeader();
-    if (!this.transcriptOn) this.doFit();
+    if (!on) this.doFit();
+  }
+
+  /** The route's word on this Agent's transcript arrived; the header reads it from here. */
+  onTranscriptState(state) {
+    this.transcriptState = state;
+    if (Array.isArray(state.readings) && state.readings.length) this.transcriptReadings = state.readings;
+    if (this.transcriptOn && state.view) {
+      const at = this.transcriptReadings.findIndex((r) => r.name === state.view);
+      if (at >= 0) this.transcriptLevel = at;
+    }
+    this.syncHeader();
+  }
+
+  /** What the button says: where you are in the cycle, or the way in. */
+  transcriptLabel() {
+    if (!this.transcriptOn) return t('transcript.toggle', 'Transcript');
+    const reading = this.transcriptReadings[this.transcriptLevel];
+    return reading ? 'T' + (this.transcriptLevel + 1) + ' · ' + (reading.label || reading.name) : t('transcript.toggle', 'Transcript');
+  }
+
+  /**
+   * Why the button is opaque, or '' when it is live. Decided by what the route last said
+   * for THIS Agent — unavailable for any reason, or nothing to show yet — never by which
+   * CLI it runs. Pressing still opens the view, which says the same reason in full.
+   */
+  transcriptQuiet() {
+    if (!this.session || !this.transcriptAvailable() || this.transcriptOn) return '';
+    const state = this.transcriptState;
+    if (!state) return '';
+    if (!state.available) return state.reason || t('transcript.unavailable', 'Transcript unavailable for this Agent.');
+    if (state.empty) return t('transcript.empty', 'No transcript output yet.');
+    return '';
   }
 
   /** Mark this tile active (visual highlight + keystroke target) without grabbing keyboard focus. */
@@ -531,6 +580,7 @@ export class Tile {
   detach() {
     this.transcriptView.hide();
     this.transcriptOn = false;
+    this.transcriptLevel = -1;
     this.el.classList.remove('transcript-on');
     this.tape.setAltNote(false);
     this.wire.close();
@@ -573,13 +623,19 @@ export class Tile {
   }
 
   connect(session) {
-    if (this.session !== session) {
+    const changed = this.session !== session;
+    if (changed) {
       this.transcriptView.hide();
       this.transcriptOn = false;
+      this.transcriptLevel = -1;
+      this.transcriptReadings = [];
+      this.transcriptState = null;
       this.el.classList.remove('transcript-on');
     }
-    if (this.session !== session) { this.lastSelection = ''; this.pending = ''; this.renderPending(); }
+    if (changed) { this.lastSelection = ''; this.pending = ''; this.renderPending(); }
     this.session = session;
+    // Ask the route once, so the button is opaque or live before anyone presses it.
+    if (changed && this.transcriptAvailable()) void this.transcriptView.probe(session);
     this.sessionKey = S.sessions.find((row) => row.name === session)?.key;
     this.syncEmpty();
     // The Services answer is per session. A tile that held an unlocked view for one Agent

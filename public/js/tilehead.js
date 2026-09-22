@@ -38,12 +38,15 @@ const HEADER = () => {
   { grow: true },
 
   { key: 'transcriptBtn', cls: 'transcript-toggle', text: t('transcript.toggle', 'Transcript'), needs: 'session',
-    help: t('transcript.toggle_help', 'Switch between Terminal and Transcript'),
+    help: t('transcript.toggle_help', 'Terminal → T1 → T2 → … → Terminal: each press shows more of the record'),
     quiet: t('transcript.no_session', 'Transcript — no Agent in this tile'),
+    // Opaque when the route says this Agent has nothing to show — any reason, any CLI.
+    state: (tile) => (typeof tile.transcriptQuiet === 'function' ? tile.transcriptQuiet() : ''),
     read: (tile, el) => {
       el.hidden = !tile.transcriptAvailable();
       el.setAttribute('aria-pressed', String(!!tile.transcriptOn));
-      el.textContent = tile.transcriptOn ? t('transcript.terminal', 'Terminal') : t('transcript.toggle', 'Transcript');
+      el.textContent = typeof tile.transcriptLabel === 'function' ? tile.transcriptLabel()
+        : (tile.transcriptOn ? t('transcript.terminal', 'Terminal') : t('transcript.toggle', 'Transcript'));
     },
     on: (tile) => tile.toggleTranscript() },
 
@@ -112,7 +115,8 @@ function quietReason(row, tile) {
     const missing = need === 'session' ? !tile.session : serviceMissing(need);
     if (missing) return (typeof row.quiet === 'object' ? row.quiet[need] : row.quiet) || '';
   }
-  return '';
+  // A row may also go quiet on what it learned about this Agent, with its own reason.
+  return typeof row.state === 'function' ? row.state(tile) || '' : '';
 }
 
 /**

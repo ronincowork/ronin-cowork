@@ -2,7 +2,12 @@
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
-export function makeTileTranscript({ read = request, schedule = setTimeout, cancel = clearTimeout } = {}) {
+/**
+ * @param onState  told after every read what the route said about this Agent's transcript:
+ *                 { available, empty, reason, readings, view } — the header's opaque state
+ *                 and the T-levels come from here, never from a list kept in the tile.
+ */
+export function makeTileTranscript({ read = request, schedule = setTimeout, cancel = clearTimeout, onState = () => {} } = {}) {
   const el = document.createElement('div');
   el.className = 'tile-transcript';
   el.setAttribute('role', 'log');
@@ -14,6 +19,7 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
   let controller = null;
   let since = 0;
   let seq = 0;
+  let reading = ''; // the T-level's name on the route; '' lets the route choose its default
 
   function stop() {
     generation++;
@@ -37,17 +43,37 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
     for (const rec of records) {
       const entry = document.createElement('div');
       entry.className = 'tile-transcript-entry';
+      // Who and what, for the stylesheet: a note reads quieter than speech, a tool call
+      // quieter still. The text itself is exactly what the route sent.
+      entry.setAttribute('data-role', rec.role || '');
+      entry.setAttribute('data-kind', rec.kind || '');
       entry.textContent = rec.text || '';
       el.append(entry);
     }
     if (atBottom) el.scrollTop = el.scrollHeight;
   }
 
+  function url(name, view, from, at) {
+    return '/api/sessions/' + encodeURIComponent(name) + '/transcript?'
+      + (view ? 'view=' + encodeURIComponent(view) + '&' : '') + 'since=' + from + '&seq=' + at;
+  }
+
+  /** What the route said, in the shape the header reads. `shown` is what this read carried. */
+  function report(data, shown) {
+    const readings = Array.isArray(data.readings) ? data.readings : [];
+    onState({
+      available: data.available !== false,
+      empty: data.available === false || shown === 0,
+      reason: data.reason || '',
+      readings,
+      view: typeof data.view === 'string' ? data.view : '',
+    });
+  }
+
   async function poll(token) {
     if (!active || !session || token !== generation) return;
     controller = new AbortController();
-    const url = '/api/sessions/' + encodeURIComponent(session) + '/transcript?view=all&since=' + since + '&seq=' + seq;
-    const result = await read(url, { cache: 'no-store', signal: controller.signal });
+    const result = await read(url(session, reading, since, seq), { cache: 'no-store', signal: controller.signal });
     if (!active || token !== generation) return;
     controller = null;
     if (!result.ok) {
@@ -58,25 +84,49 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
       since = 0;
       seq = 0;
       message(result.data.reason || t('transcript.unavailable', 'Transcript unavailable for this Agent.'));
+      report(result.data, 0);
     } else {
       const records = Array.isArray(result.data.records) ? result.data.records : [];
       if (!records.length && since === 0) message(t('transcript.empty', 'No transcript output yet.'));
       else append(records);
+      // Empty means nothing has ever been shown on this reading, not a quiet poll.
+      report(result.data, since === 0 && !records.length ? 0 : 1);
       if (Number.isFinite(result.data.since)) since = result.data.since;
       if (Number.isFinite(result.data.seq)) seq = result.data.seq;
     }
     timer = schedule(() => void poll(token), 2000);
   }
 
-  function show(name) {
-    if (active && session === name) return;
+  /**
+   * One read, nothing rendered: enough for the header to know whether this Agent has a
+   * transcript before anyone presses the button, and which readings the route offers.
+   */
+  async function probe(name) {
+    if (!name) return;
+    const result = await read(url(name, '', 0, 0), { cache: 'no-store' });
+    if (!result.ok || active) return;
+    const records = Array.isArray(result.data.records) ? result.data.records : [];
+    report(result.data, records.length);
+  }
+
+  function show(name, view = '') {
+    if (active && session === name && reading === view) return;
     stop();
     session = name;
+    reading = view;
     active = true;
     since = 0;
     seq = 0;
     message(t('transcript.loading', 'Loading transcript…'));
     void poll(generation);
+  }
+
+  /** Same Agent, another T-level: start the reading over from its first record. */
+  function setReading(view) {
+    if (!active || !session) return;
+    const name = session;
+    active = false;
+    show(name, view);
   }
 
   function hide() {
@@ -86,5 +136,5 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
     el.replaceChildren();
   }
 
-  return { el, show, hide };
+  return { el, show, hide, probe, setReading };
 }

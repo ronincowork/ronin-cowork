@@ -65,7 +65,8 @@ test('journal view appends from the returned cursor and shows unavailable distin
   assert.deepEqual(contents(view.el), ['first']);
   scheduled.shift()();
   await tick();
-  assert.match(urls[1], /agent%20one\/transcript\?view=all&since=25&seq=1$/);
+  // No reading named: the route chooses its default and echoes it; the URL carries no view.
+  assert.match(urls[1], /agent%20one\/transcript\?since=25&seq=1$/);
   assert.deepEqual(contents(view.el), ['first', 'second']);
   scheduled.shift()();
   await tick();
@@ -112,4 +113,79 @@ test('Transcript blocks every tile input path and Terminal restores them', async
   assert.equal(raw, 1);
   Tile.prototype.focusTerminal.call(fake);
   assert.equal(focused, 1);
+});
+
+const READINGS = [{ name: 'chat', label: 'Chat' }, { name: 'notes', label: 'Notes' }, { name: 'work', label: 'Work' }, { name: 'all', label: 'Everything' }];
+const withReadings = (records, view) => ({ ok: true, data: { available: true, records, since: 1, seq: 1, view, readings: READINGS } });
+
+test('the button cycles Terminal → T1 … T4 → Terminal over the readings the route published', async () => {
+  const shown = [];
+  const tile = {
+    session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: [], transcriptState: null,
+    transcriptAvailable: () => true, el: { classList: { toggle() {} } }, body: { contains: () => false },
+    transcriptView: { show: (name, view) => shown.push(['show', view]), setReading: (view) => shown.push(['set', view]), hide: () => shown.push(['hide']) },
+    syncHeader() {}, doFit() {},
+  };
+  const toggle = () => Tile.prototype.toggleTranscript.call(tile);
+  const label = () => Tile.prototype.transcriptLabel.call(tile);
+  // Before the route has answered, the first press asks for the default and labels once it knows.
+  toggle();
+  assert.equal(tile.transcriptOn, true);
+  assert.deepEqual(shown, [['show', '']]);
+  assert.equal(label(), 'Transcript');
+  Tile.prototype.onTranscriptState.call(tile, { available: true, empty: false, reason: '', readings: READINGS, view: 'notes' });
+  assert.equal(label(), 'T2 · Notes');
+  toggle(); assert.equal(label(), 'T3 · Work');
+  toggle(); assert.equal(label(), 'T4 · Everything');
+  toggle();
+  assert.equal(tile.transcriptOn, false);
+  assert.equal(label(), 'Transcript');
+  assert.deepEqual(shown.slice(1), [['set', 'work'], ['set', 'all'], ['hide']]);
+  // With the readings known (a probe answered), the way in is T1.
+  toggle();
+  assert.equal(label(), 'T1 · Chat');
+  assert.deepEqual(shown.at(-1), ['show', 'chat']);
+});
+
+test('opaque when the route says unavailable or empty, live when records exist — never by CLI', () => {
+  const button = new Node();
+  const tile = { transcriptBtn: button, headHelp: {}, session: 'agent', transcriptOn: false, transcriptState: null,
+    transcriptReadings: [], transcriptLevel: -1,
+    transcriptAvailable: Tile.prototype.transcriptAvailable, transcriptQuiet: Tile.prototype.transcriptQuiet, transcriptLabel: Tile.prototype.transcriptLabel };
+  S.services = ['rireki'];
+  syncTileHead(tile);
+  assert.equal(button.attributes['aria-disabled'], 'false', 'unknown yet is not opaque');
+  tile.transcriptState = { available: false, empty: true, reason: 'This Agent’s CLI keeps no readable conversation journal — terminal output only.', readings: [], view: '' };
+  syncTileHead(tile);
+  assert.equal(button.attributes['aria-disabled'], 'true');
+  assert.equal(button.title, tile.transcriptState.reason);
+  tile.transcriptState = { available: true, empty: true, reason: '', readings: READINGS, view: 'notes' };
+  syncTileHead(tile);
+  assert.equal(button.attributes['aria-disabled'], 'true', 'available but nothing written yet is opaque too');
+  tile.transcriptState = { available: true, empty: false, reason: '', readings: READINGS, view: 'notes' };
+  syncTileHead(tile);
+  assert.equal(button.attributes['aria-disabled'], 'false');
+  assert.equal(button.textContent, 'Transcript');
+  tile.transcriptOn = true; tile.transcriptLevel = 0; tile.transcriptReadings = READINGS;
+  syncTileHead(tile);
+  assert.equal(button.textContent, 'T1 · Chat');
+  assert.equal(button.attributes['aria-disabled'], 'false', 'while open the button is the way onward, never opaque');
+});
+
+test('a probe tells the header what the route offers without rendering anything', async () => {
+  const states = [];
+  const view = makeTileTranscript({ read: async () => withReadings([record('x')], 'notes'), schedule: () => 1, cancel() {}, onState: (s) => states.push(s) });
+  await view.probe('agent');
+  assert.equal(view.el.children.length, 0);
+  assert.deepEqual(states, [{ available: true, empty: false, reason: '', readings: READINGS, view: 'notes' }]);
+  // A reading named on show is carried in the URL, and switching reading restarts from the first record.
+  const urls = [];
+  const view2 = makeTileTranscript({ read: async (url) => { urls.push(url); return withReadings([record('y')], 'chat'); }, schedule: () => 1, cancel() {} });
+  view2.show('agent', 'chat');
+  await tick();
+  view2.setReading('work');
+  await tick();
+  assert.match(urls[0], /transcript\?view=chat&since=0&seq=0$/);
+  assert.match(urls[1], /transcript\?view=work&since=0&seq=0$/);
+  view2.hide();
 });
