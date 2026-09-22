@@ -101,7 +101,7 @@ Usage:
   work-record update_record --leg N <title> | --leg N.M <title>
   work-record update_record --status N[.M] PLANNED|ACTIVE|DONE
   work-record update_record --done N[.M] | --active N[.M] | --drop N[.M]
-  work-record update_record --repo <repo>:<branch> | --unrepo <repo>[:<branch>]
+  work-record update_record --repo <repo-or-url>[:<branch>] | --unrepo <repo-or-url>[:<branch>]
   work-record document add <path> | --undoc <path>
   work-record update_record --on_tangent | --on_track
   work-record update_record < work-record.json
@@ -109,7 +109,8 @@ Usage:
 Common tasks:
   --objective changes the objective. --phase and --gate append rungs.
   --leg N appends a leg; --leg N.M retitles it. Field updates may be combined.
-  --doc lists a working document for the owner; --repo keeps a checkout row current.
+  --doc lists a working document for the owner. For repository URLs and branches, use
+  work-record workspace add|remove|list; its --branch flag avoids URL ambiguity.
   return, backlog and done move the whole held Project to the Team Inbox, Backlog or Done.
 
 Lead position (separate form; changes only another session's pointer):
@@ -360,8 +361,10 @@ while [ $# -gt 0 ]; do
     --done)       need "$1" "${2-}" "N[.M]";         EDITS+=("status$US$2${US}DONE"); shift ;;
     --active)     need "$1" "${2-}" "N[.M]";         EDITS+=("status$US$2${US}ACTIVE"); shift ;;
     --drop)       need "$1" "${2-}" "N[.M]";         EDITS+=("drop$US$2"); shift ;;
-    --repo)       need "$1" "${2-}" "<repo>:<branch>"; EDITS+=("repo$US$2"); shift ;;
-    --unrepo)     need "$1" "${2-}" "<repo>[:<branch>]"; EDITS+=("unrepo$US$2"); shift ;;
+    --repo)       need "$1" "${2-}" "<repo-or-url>[:<branch>]"; EDITS+=("repo$US$2"); shift ;;
+    --unrepo)     need "$1" "${2-}" "<repo-or-url>[:<branch>]"; EDITS+=("unrepo$US$2"); shift ;;
+    --repo-pair)  need "$1" "${2-}" "<repo-or-url> <branch>"; EDITS+=("repo-pair$US$2$US${3-}"); shift 2 ;;
+    --unrepo-pair) need "$1" "${2-}" "<repo-or-url> <branch>"; EDITS+=("unrepo-pair$US$2$US${3-}"); shift 2 ;;
     *) die "work-record update_record: unknown argument: $1. Run work-record update_record --help." ;;
   esac
   shift
@@ -639,6 +642,21 @@ def pos(word, verb, want=None):
     return rung, legs[li - 1]
 
 said = []
+def repo_argument(raw, existing, removing=False):
+    value = raw.strip()
+    if not value:
+        sys.exit("work-record update_record: repository name or URL is empty. Run work-record --help.")
+    # A URL contains its own colon. Prefer an exact recorded repository before treating
+    # the final colon as a branch separator; this also handles URLs without a branch.
+    if removing and any(isinstance(r, dict) and r.get("repo") == value for r in existing):
+        return value, ""
+    repo, separator, branch = value.rpartition(":")
+    if not separator or (value.endswith(".git") and ("://" in value or "@" in value)):
+        return value, ""
+    if branch.startswith("//") or ("/" in branch and ("://" in value or "@" in value) and ".git:" not in value):
+        return value, ""
+    return repo.strip(), branch.strip()
+
 for raw in sys.argv[1:]:
     f = raw.split(US)
     verb, args = f[0], f[1:]
@@ -675,23 +693,26 @@ for raw in sys.argv[1:]:
         else:
             ladder.remove(rung)
         said.append("%s dropped" % args[0])
-    elif verb == "repo":
-        repo, _, branch = args[0].partition(":")
-        repo, branch = repo.strip(), branch.strip()
-        if not repo:
-            sys.exit("work-record update_record: --repo takes <repo>:<branch>.")
+    elif verb in ("repo", "repo-pair"):
         repos = out.setdefault("repos", [])
+        repo, branch = (args[0].strip(), args[1].strip()) if verb == "repo-pair" else repo_argument(args[0], repos)
+        if not repo:
+            sys.exit("work-record update_record: --repo needs a repository name or URL. Run work-record --help.")
         if not any(isinstance(r, dict) and r.get("repo") == repo and r.get("branch", "") == branch for r in repos):
             repos.append({"repo": repo, "branch": branch})
-        said.append("repo %s kept" % args[0])
-    elif verb == "unrepo":
-        repo, _, branch = args[0].partition(":")
+            said.append("repository %s%s listed" % (repo, ":" + branch if branch else ""))
+        else:
+            said.append("repository %s%s already listed; unchanged" % (repo, ":" + branch if branch else ""))
+    elif verb in ("unrepo", "unrepo-pair"):
+        repo, branch = (args[0].strip(), args[1].strip()) if verb == "unrepo-pair" else repo_argument(args[0], out.get("repos") or [], removing=True)
         before = len(out.get("repos") or [])
         out["repos"] = [r for r in (out.get("repos") or [])
-                        if not (isinstance(r, dict) and r.get("repo") == repo.strip() and (not branch or r.get("branch", "") == branch.strip()))]
-        if len(out["repos"]) == before:
-            print("work-record update_record: note — no repo row matched %s." % args[0], file=sys.stderr)
-        said.append("repo %s removed" % args[0])
+                        if not (isinstance(r, dict) and r.get("repo") == repo and (not branch or r.get("branch", "") == branch))]
+        removed = before - len(out["repos"])
+        if removed:
+            said.append("repository %s: %d row(s) removed" % (args[0], removed))
+        else:
+            said.append("repository %s: no row matched; unchanged. Run work-record --help for repository forms" % args[0])
 print("work-record update_record: " + "; ".join(said), file=sys.stderr)
 print(json.dumps(out, ensure_ascii=False))
 EDIT

@@ -10,7 +10,9 @@ session_check — read one live Agent by exact name
 Usage:
   session_check <name>
 
-Reports the Agent's Teams, lead designations, and project root.
+Reports the Agent's Teams, lead designations, and recorded Workspace Folder handle.
+The recorded handle can change; the birth directory does not. Working repositories
+are in that Agent's Work Record (`work-record workspace list` in its session).
 An unused name returns NO-SESSION and changes nothing. Related:
 session_create --help; session_set --help; edges team --help
 EOF

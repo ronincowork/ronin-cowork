@@ -164,6 +164,23 @@ test('updating a missing name refuses after its read and never creates it', asyn
   assert.deepEqual(f.requests, [{ method: 'GET', url: '/api/sessions', body: '' }]);
 });
 
+test('recorded root can be set or cleared without claiming to move the birth directory', async (t) => {
+  const f = await fixture([{ name: 'active', tags: [], leads: [] }]);
+  t.after(f.close);
+  const set = await f.run('session_set', ['active', '--root', 'samurai_lab']);
+  assert.equal(set.code, 0, set.output);
+  assert.match(set.output, /recorded_root=samurai_lab \(birth and shell directory unchanged\)/);
+  const clear = await f.run('session_set', ['active', '--clear-root']);
+  assert.equal(clear.code, 0, clear.output);
+  assert.match(clear.output, /recorded_root=cleared \(birth and shell directory unchanged\)/);
+  assert.deepEqual(f.requests.map(({ method, url, body }) => ({ method, url, body: body ? JSON.parse(body) : null })), [
+    { method: 'GET', url: '/api/sessions', body: null },
+    { method: 'POST', url: '/api/sessions/active/project-root', body: { project_root: 'samurai_lab' } },
+    { method: 'GET', url: '/api/sessions', body: null },
+    { method: 'POST', url: '/api/sessions/active/project-root', body: { project_root: '' } },
+  ]);
+});
+
 test('value-taking flags refuse a missing value before making a request', async (t) => {
   const f = await fixture();
   t.after(f.close);

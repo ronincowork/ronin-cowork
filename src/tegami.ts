@@ -89,6 +89,8 @@ function seedShell(
 > repositories. Keep every worktree and branch current. The worktree is the important
 > live coordinate: it tells the owner which private worktree this session is actually using;
 > the branch remains supporting Git detail.
+> \`work-record workspace list|add|remove\` edits these entries; use \`--branch\` separately
+> for a URL. This record does not change where your shell was born or open a desk.
 >
 > YOUR **ladder** — the rungs, and which one you are on. Phases hold legs. Name a phase
 > before you know its legs; a phase with nothing under it yet is normal. Leave out what you
@@ -109,7 +111,7 @@ function seedShell(
 > Your own words go in "objective" and "title". Read it with \`work-record read\`. **Change one
 > field with one call**: \`work-record update_record --objective "<sentence>"\` · \`--phase "<title>"\` ·
 > \`--leg N "<title>"\` · \`--done N.M\` · \`--gate "<what you wait for>"\` · \`--rung N\`,
-> \`--leg N.M\` to retitle · \`--drop N[.M]\` · \`--repo <repo>:<branch>\`. Verbs combine in one
+> \`--leg N.M\` to retitle · \`--drop N[.M]\`. Verbs combine in one
 > call. \`work-record update_record < block.json\` replaces the whole authored block. Where the file lives
 > is Ronin's business.
 
