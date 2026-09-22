@@ -10,7 +10,7 @@ column, or drag its card into the workspace where you want to see it.
 | Title / ⛩ | Edit the Agent's displayed title; its session name remains its identity |
 | Work Record | Open the Agent's objective, work, and tracked repositories |
 | Output | Choose an available output view; Locked is the live terminal |
-| Transcript / T1…T4 | When Terminal transcript is active, cycle from the terminal through ever fuller readings of the Agent's conversation and back |
+| Transcript / Chat · Notes · Work · All | When Terminal transcript is active, cycle from the terminal through ever fuller readings of the Agent's conversation and back |
 | Mention | Add another session's name to the message box |
 | Docs | Open documents tracked by this Agent |
 | × | Open the archive/delete choices |
@@ -38,11 +38,11 @@ see [Archived sessions](archived-sessions.md).
 ## Output availability
 
 The separate **Transcript** button appears when Ronin Services has loaded Terminal
-transcript. It cycles: **Terminal → T1 → T2 → T3 → T4 → Terminal**, each press showing more
-of the record as the CLI itself wrote it. T1 is the conversation alone; T2 adds the gaps
-and interruptions; T3 adds each tool call as one line; T4 is everything, tool output
-included. The levels are the readings the server offers, so a new reading appears as a new
-level. The button is opaque when this Agent has nothing to show — born before Ronin
+transcript. It cycles: **Terminal → Chat → Notes → Work → All → Terminal**, each press
+showing more of the record as the CLI itself wrote it. Chat is the conversation alone;
+Notes adds the gaps and interruptions; Work adds each tool call as one line; All is
+everything, tool output included. The readings are the ones the server offers, so a new
+reading appears as a new step. The button is opaque when this Agent has nothing to show — born before Ronin
 recorded launch identity, on a CLI with no readable journal, or simply nothing written
 yet; pressing it says which. Switching the service on later, or a restart, does not lose
 an Agent whose identity was recorded. **Terminal** returns to the normal interactive terminal. The older Output

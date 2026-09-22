@@ -19,10 +19,13 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
   let controller = null;
   let since = 0;
   let seq = 0;
-  let reading = ''; // the T-level's name on the route; '' lets the route choose its default
+  let reading = ''; // the reading's name on the route; '' lets the route choose its default
+  let rendered = false; // whether this reading has ever shown a record — the header's 'empty'
+  let probing = 0; // the live probe; hide() and a newer probe outdate an older one
 
   function stop() {
     generation++;
+    probing++;
     cancel(timer);
     controller?.abort();
     controller = null;
@@ -40,6 +43,7 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
     const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
     if (!Array.isArray(records) || !records.length) return;
     if (el.firstElementChild?.classList.contains('tile-transcript-message')) el.replaceChildren();
+    rendered = true;
     for (const rec of records) {
       const entry = document.createElement('div');
       entry.className = 'tile-transcript-entry';
@@ -87,10 +91,10 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
       report(result.data, 0);
     } else {
       const records = Array.isArray(result.data.records) ? result.data.records : [];
-      if (!records.length && since === 0) message(t('transcript.empty', 'No transcript output yet.'));
+      if (!records.length && !rendered) message(t('transcript.empty', 'No transcript output yet.'));
       else append(records);
-      // Empty means nothing has ever been shown on this reading, not a quiet poll.
-      report(result.data, since === 0 && !records.length ? 0 : 1);
+      // Empty means this reading has never shown a record — not that this poll was quiet.
+      report(result.data, rendered ? 1 : 0);
       if (Number.isFinite(result.data.since)) since = result.data.since;
       if (Number.isFinite(result.data.seq)) seq = result.data.seq;
     }
@@ -103,8 +107,10 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
    */
   async function probe(name) {
     if (!name) return;
+    const token = ++probing;
     const result = await read(url(name, '', 0, 0), { cache: 'no-store' });
-    if (!result.ok || active) return;
+    // A slow probe for the Agent this tile no longer shows must not speak for the new one.
+    if (token !== probing || !result.ok || active) return;
     const records = Array.isArray(result.data.records) ? result.data.records : [];
     report(result.data, records.length);
   }
@@ -117,6 +123,7 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
     active = true;
     since = 0;
     seq = 0;
+    rendered = false;
     message(t('transcript.loading', 'Loading transcript…'));
     void poll(generation);
   }

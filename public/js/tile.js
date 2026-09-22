@@ -42,6 +42,7 @@ export class Tile {
     this.transcriptLevel = -1; // index into the route's readings while transcriptOn; -1 is Terminal
     this.transcriptReadings = []; // what the route offers, in order — T1 is the first
     this.transcriptState = null; // the route's last word on this Agent: available, empty, reason
+    this.transcriptWantFirst = false; // pressed before the readings were known: move to the first once they are
     this.pending = ''; // UNLOCKED: locally-parked typed text (sent as one parcel on Enter)
     this.strip = null; // the thin bar showing this.pending over the tile
     this.composer = null; // the unlocked tile's text entry (built on first use)
@@ -297,7 +298,7 @@ export class Tile {
   }
 
   /**
-   * One button, one direction: Terminal → T1 → T2 … → Tn → Terminal. The levels are the
+   * One button, one direction: Terminal → Chat → Notes → Work → All → Terminal. The levels are the
    * readings the route published for this Agent, most concentrated first; the tile keeps
    * no list of its own, so a reading added on the server is a new T here untouched.
    * (Owner, 2026-09-22: the full record shows the docs the Agent read, useless to him;
@@ -315,10 +316,13 @@ export class Tile {
     if (on) {
       if (this.body.contains(document.activeElement)) document.activeElement.blur();
       const view = readings[next]?.name || '';
+      // Pressed before the route has named its readings: enter on whatever it defaults to,
+      // then move to its first reading as soon as the list arrives — the way in is Chat.
+      this.transcriptWantFirst = !was && !view;
       if (was) this.transcriptView.setReading(view);
       else this.transcriptView.show(this.session, view);
     }
-    else this.transcriptView.hide();
+    else { this.transcriptWantFirst = false; this.transcriptView.hide(); }
     this.syncHeader();
     if (!on) this.doFit();
   }
@@ -327,7 +331,12 @@ export class Tile {
   onTranscriptState(state) {
     this.transcriptState = state;
     if (Array.isArray(state.readings) && state.readings.length) this.transcriptReadings = state.readings;
-    if (this.transcriptOn && state.view) {
+    if (this.transcriptOn && this.transcriptWantFirst && this.transcriptReadings.length) {
+      this.transcriptWantFirst = false;
+      const first = this.transcriptReadings[0].name;
+      this.transcriptLevel = 0;
+      if (state.view !== first) this.transcriptView.setReading(first);
+    } else if (this.transcriptOn && state.view) {
       const at = this.transcriptReadings.findIndex((r) => r.name === state.view);
       if (at >= 0) this.transcriptLevel = at;
     }
@@ -338,7 +347,9 @@ export class Tile {
   transcriptLabel() {
     if (!this.transcriptOn) return t('transcript.toggle', 'Transcript');
     const reading = this.transcriptReadings[this.transcriptLevel];
-    return reading ? 'T' + (this.transcriptLevel + 1) + ' · ' + (reading.label || reading.name) : t('transcript.toggle', 'Transcript');
+    // The route's own word for the reading — Chat, Notes, Work, All — is the label (owner,
+    // 2026-09-22: the names beat T1…T4).
+    return reading ? (reading.label || reading.name) : t('transcript.toggle', 'Transcript');
   }
 
   /**

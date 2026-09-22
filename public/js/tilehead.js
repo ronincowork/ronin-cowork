@@ -38,10 +38,11 @@ const HEADER = () => {
   { grow: true },
 
   { key: 'transcriptBtn', cls: 'transcript-toggle', text: t('transcript.toggle', 'Transcript'), needs: 'session',
-    help: t('transcript.toggle_help', 'Terminal → T1 → T2 → … → Terminal: each press shows more of the record'),
+    help: t('transcript.toggle_help', 'Terminal → Chat → Notes → Work → All → Terminal: each press shows more of the record'),
     quiet: t('transcript.no_session', 'Transcript — no Agent in this tile'),
     // Opaque when the route says this Agent has nothing to show — any reason, any CLI.
     state: (tile) => (typeof tile.transcriptQuiet === 'function' ? tile.transcriptQuiet() : ''),
+    pressWhenQuiet: true,
     read: (tile, el) => {
       el.hidden = !tile.transcriptAvailable();
       el.setAttribute('aria-pressed', String(!!tile.transcriptOn));
@@ -127,6 +128,20 @@ function quietReason(row, tile) {
  * four neighbours dimmed. Rows carrying their own reading are refreshed by the tile
  * first — this decides only whether they are reachable.
  */
+/**
+ * Whether a press does anything. A quiet control does not — unless the row says its quiet
+ * state is itself worth opening: the transcript button is opaque when there is nothing to
+ * show, and pressing it opens the view that says why in full.
+ */
+export function pressable(row, tile) {
+  return !!row.pressWhenQuiet || !quietReason(row, tile);
+}
+
+/** One header row by key, for a test that wants the real row and not a copy of it. */
+export function headerRow(key) {
+  return HEADER().find((row) => row.key === key) ?? null;
+}
+
 export function syncTileHead(tile) {
   for (const row of HEADER()) {
     const node = tile[row.key]?.el ?? tile[row.key];
@@ -175,7 +190,7 @@ export function buildTileHead(tile) {
     // The click is the row's, and the row hands it straight back to the tile. Guarded on
     // the same condition that dims it — an inert control here stays HOVERABLE so it can
     // say why (see setInert), so the refusal has to live in the handler.
-    if (row.on) node.addEventListener('click', () => !quietReason(row, tile) && row.on(tile, node));
+    if (row.on) node.addEventListener('click', () => pressable(row, tile) && row.on(tile, node));
     head.append(node);
     out[row.key] = made ?? node;
     // Controls with a menu hang it off the header rather than inside the button.

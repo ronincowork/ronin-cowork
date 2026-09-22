@@ -1479,7 +1479,7 @@ The catalog entry goes. {dir} is not touched.
 - **transcript.title:** Transcript
 - **transcript.toggle:** Transcript
 - **transcript.terminal:** Terminal
-- **transcript.toggle_help:** Terminal → T1 → T2 → … → Terminal: each press shows more of the record
+- **transcript.toggle_help:** Terminal → Chat → Notes → Work → All → Terminal: each press shows more of the record
 - **transcript.no_session:** Transcript — no Agent in this tile
 - **transcript.loading:** Loading transcript…
 - **transcript.empty:** No transcript output yet.
