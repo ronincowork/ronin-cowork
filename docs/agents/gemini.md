@@ -8,6 +8,8 @@
 - **launch_model_dangerously:** ["gemini", "--model", "{model}", "--approval-mode=yolo"]
 - **launch_resume:** ["gemini", "--resume", "{session_id}"]
 - **launch_new_session_id:** —
+- **launch_isolation:** —
+- **transcript_journal:** —
 - **launch_initial:** positional
 
 CLI id: `gemini`. Catalog provider: Google. Reviewed 2026-09-14.

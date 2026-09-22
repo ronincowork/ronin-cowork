@@ -8,6 +8,8 @@
 - **launch_model_dangerously:** ["hermes", "chat", "--provider", "{provider}", "-m", "{model}", "--yolo"]
 - **launch_resume:** ["hermes", "--resume", "{session_id}"]
 - **launch_new_session_id:** —
+- **launch_isolation:** —
+- **transcript_journal:** —
 - **launch_initial:** none
 
 CLI id: `hermes`. Catalog provider: Nous Research and other inference providers. Reviewed 2026-09-14.

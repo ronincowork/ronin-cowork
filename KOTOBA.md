@@ -85,7 +85,7 @@ use the glossary's plain terms. **Koshi** is an existing UI name and an explicit
 | Name | Current meaning |
 |---|---|
 | MICHI / TEGAMI / SHINGO | Work-record service contribution / stored record / UI reading |
-| RIREKI | Readable-transcript implementation; currently parked, so do not promise a recording |
+| RIREKI | Optional transcript service reading provider journals through verified session identity. The former terminal recorder is disconnected; transcript availability is explicit per session |
 | OBOERU | Memory terminology; not an active part in the Services manifest |
 | TOMODACHI / SOROBAN | Stats and counting contracts |
 | KOSHI | Ronin's helper agents |

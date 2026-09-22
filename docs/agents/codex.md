@@ -8,6 +8,8 @@
 - **launch_model_dangerously:** ["codex", "--model", "{model}", "--dangerously-bypass-approvals-and-sandbox"]
 - **launch_resume:** ["codex", "resume", "{session_id}"]
 - **launch_new_session_id:** —
+- **launch_isolation:** {"env": "CODEX_HOME", "home": "~/.codex", "private": "sessions"}
+- **transcript_journal:** {"format": "event-items", "root": "{home}/sessions", "pattern": "rollout-*.jsonl", "idPath": "payload.session_id", "childPath": "payload.source"}
 - **launch_initial:** positional
 
 CLI id: `codex`. Catalog provider: OpenAI. Reviewed 2026-09-14.
@@ -27,10 +29,24 @@ The declarations above are executable documentation. Native + Native means exact
 
 Resume is separate: `codex resume <session-id>`.
 
-For a new session Ronin appends the initial brief positionally. Codex owns the new
-conversation identity; Ronin discovers the exact identity after launch rather than
-supplying one in argv.
+For a new session Ronin appends the initial brief positionally. The launch processor
+sets `CODEX_HOME` to `<session store>/<birth key>/cli-home`. Every existing entry from
+the inherited home is symlinked into that directory except `sessions`, which is private.
+This preserves discovered configuration and credentials without a filename allowlist.
+Codex chooses its id; Ronin reads it from the header inside that launch-owned journal
+location. No shared-directory claim, birth-window match, or terminal capture is used.
 
+Verified with CLI 0.153.4 on 2026-09-22: a real one-reply `codex exec` invocation wrote
+its rollout under the supplied home, with no matching rollout in the default home.
+File-based authentication through a symlink succeeded. Forced token refresh and macOS
+keyring behavior were not exercised. A CLI replacing a shared symlink by atomic rename
+can make that file local to the isolated home; inheritance is the launch-time view.
+
+Ronin restore retains this launch home and resumes the recorded id there. An explicitly
+named existing conversation without retained Ronin identity uses the existing CLI home;
+Ronin does not rewrite its id. Native in-pane history/picker behavior may differ because
+the journal directory is private while other provider state is inherited; no picker
+compatibility claim is made by the relocation test.
 Upstream also offers `--approve-for-me`, explicit sandbox policies, and approval policies.
 Ronin does not currently expose those as launch choices; `--approve-for-me` is a safer
 automation candidate to evaluate separately from full bypass.

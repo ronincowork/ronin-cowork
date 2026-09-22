@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { execFile } from './spawn-broker.js';
-import { readAgentLaunches, renderLaunch } from './agent-launches.js';
+import { readAgentLaunches, renderLaunch, type AgentLaunches } from './agent-launches.js';
 
 const pexec = execFile;
 
@@ -152,13 +152,50 @@ export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv
   return { argv: [bin, ...rest], parked: !!brief };
 }
 
-export async function newProviderSession(agent: string, argv: readonly string[]): Promise<{ argv: string[]; id: string }> {
-  const spec = AGENTS.find((a) => a.id === agent);
-  if (!spec) return { argv: [...argv], id: '' };
-  const grammar = await readAgentLaunches(spec.id);
-  if (!grammar.newSessionId.length) return { argv: [...argv], id: '' };
-  const id = randomUUID();
-  return { argv: [argv[0], ...renderLaunch(grammar.newSessionId, { session_id: id }), ...argv.slice(1)], id };
+export interface ProviderLaunch {
+  argv: string[];
+  id: string;
+  strategy: 'minted' | 'isolated' | 'unbound';
+  grammar?: AgentLaunches;
+}
+
+/** Read identity using the same grammar that writes it. Never inspect the prompt text. */
+function namedSession(argv: readonly string[], template: readonly string[]): string {
+  if (!template.includes('{session_id}')) return '';
+  for (let start = 1; start <= argv.length - template.length; start++) {
+    let id = '';
+    const matches = template.every((part, index) => {
+      const value = argv[start + index]!;
+      if (part === '{session_id}') { id = value; return !!value && !value.startsWith('-'); }
+      return part === value;
+    });
+    if (matches) return id;
+  }
+  // Accept the conventional --flag=<id> spelling of a declared two-token option.
+  if (template.length === 2 && template[0]!.startsWith('--') && template[1] === '{session_id}') {
+    const prefix = template[0] + '=';
+    const value = argv.slice(1).find(arg => arg.startsWith(prefix))?.slice(prefix.length) ?? '';
+    if (value && !value.startsWith('-')) return value;
+  }
+  return '';
+}
+
+export async function newProviderSession(agent: string, argv: readonly string[]): Promise<ProviderLaunch> {
+  const grammar = argv.length ? await readAgentLaunches(agent || 'terminal').catch((e: NodeJS.ErrnoException) => {
+    if (e.code === 'ENOENT') return undefined; throw e;
+  }) : undefined;
+  const unchanged = { argv: [...argv], id: '', grammar };
+  if (!grammar) return { ...unchanged, strategy: 'unbound' };
+  const resume = grammar.resume.slice(1);
+  const id = namedSession(argv, grammar.newSessionId) || namedSession(argv, resume);
+  if (id) return { ...unchanged, id, strategy: 'minted' };
+  // A selector without a literal id (interactive resume, --last, etc.) is not a new
+  // conversation. Preserve it, but do not assign or claim an invented identity.
+  if ([grammar.newSessionId[0], resume[0]].some(flag => flag && argv.slice(1).some(arg => arg === flag || arg.startsWith(flag + '='))))
+    return { ...unchanged, strategy: 'unbound' };
+  if (!grammar.newSessionId.length) return { ...unchanged, strategy: grammar.isolation ? 'isolated' : 'unbound' };
+  const assigned = randomUUID();
+  return { argv: [argv[0]!, ...renderLaunch(grammar.newSessionId, { session_id: assigned }), ...argv.slice(1)], id: assigned, strategy: 'minted', grammar };
 }
 
 export async function resumeAgentArgv(agent: string, id: string): Promise<string[]> {

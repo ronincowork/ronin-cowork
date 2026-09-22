@@ -8,6 +8,8 @@
 - **launch_model_dangerously:** ["claude", "--model", "{model}", "--dangerously-skip-permissions"]
 - **launch_resume:** ["claude", "--resume", "{session_id}"]
 - **launch_new_session_id:** ["--session-id", "{session_id}"]
+- **launch_isolation:** —
+- **transcript_journal:** {"format": "message-blocks", "root": "~/.claude/projects", "pattern": "{session_id}.jsonl", "idPath": "sessionId", "childPath": "isSidechain"}
 - **launch_initial:** positional
 
 CLI id: `claude`. Catalog provider: Anthropic. Reviewed 2026-09-14.
