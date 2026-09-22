@@ -50,12 +50,18 @@ export async function resolveLaunchJournal(identity: LaunchIdentity): Promise<st
 }
 
 /** The live pane selects a persisted birth, never an in-memory event subscription. */
-export async function resolveTranscriptSource(name: string): Promise<import('./sockets-contract.js').TranscriptSource | null> {
+export async function resolveTranscriptSource(name: string): Promise<import('./sockets-contract.js').TranscriptLookup> {
   const { tmux } = await import('./tmux-client.js');
   const { exactPane } = await import('./tmux.js');
   const key = await tmux.run(['display-message', '-p', '-t', exactPane(name), '#{@ronin-key}']).catch(() => '');
-  if (!key.trim()) return null;
+  // Each step knows why it stopped, and says so. Collapsing these into one null made a
+  // session that is merely not running read exactly like one whose CLI keeps no journal,
+  // and the tile could only ever show a single sentence for both.
+  if (!key.trim()) return { gap: 'not_live' };
   const identity = await readLaunchIdentity(key.trim());
-  const file = identity ? await resolveLaunchJournal(identity) : null;
-  return identity?.journal && file ? { file, format: identity.journal.format, provider: identity.cli, session: identity.providerSession } : null;
+  if (!identity) return { gap: 'no_identity' };
+  if (!identity.journal) return { gap: 'unbound' };
+  const file = await resolveLaunchJournal(identity);
+  if (!file) return { gap: 'journal_pending' };
+  return { source: { file, format: identity.journal.format, provider: identity.cli, session: identity.providerSession } };
 }
