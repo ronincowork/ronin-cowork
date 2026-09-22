@@ -130,8 +130,8 @@ Content-Type: application/json
 }
 ```
 
-The Admin Desk's **Workspace folders** control and Mika's constrained `machine-settings
-project-root` tool use this same endpoint. They are preferred human-facing paths. Editing the owner catalog by hand remains an
+The Admin Desk's **Workspace folders** control and the `machine-settings project-root`
+tool use this same endpoint. They are preferred human-facing paths. Editing the owner catalog by hand remains an
 emergency/advanced path, not a separate workflow.
 
 `409` means the handle already exists: inspect and use `PUT /api/project-roots/:name` only if
@@ -244,14 +244,16 @@ worktree root adds the private branch, internal desk record, assignment reading,
 hand-in path with receipts. `desks=managed|none` remains
 only the compatibility spelling stored in `RONIN_REPO`; the editor presents **Allow Ronin
 Worktrees** and **Use the checkout**. Branch names are owner choices. A changed profile
-is shown once as exact before/after text and, on confirmation, rewritten directly and
+is shown once as exact before/after text in the browser and, when the owner chooses it, rewritten directly and
 atomically. This is not a migration: refs, desks, Teams, and running Agent instructions are
 untouched.
 
 The same form appears while adding a root. Its repository Worktrees choice is seeded from
 **Worktrees for new Workspace Folders** on the Campaign workbench, while its mode and
-branch suggestions remain editable before **Add**. For a Git directory the confirmed proposal
+branch suggestions remain editable before **Add**. For a Git directory an explicit profile
 is the file that is written; the backend does not substitute `dev`, `master`, or `main`.
+An Agent may register an existing repository without supplying a profile, leaving its
+`RONIN_REPO` untouched.
 Non-Git directories remain legal Workspace Folders and receive no `RONIN_REPO`.
 
 A session in a worktree root works at a **repo desk** — the internal record for its

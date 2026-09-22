@@ -45,8 +45,8 @@ The selected Campaign is the current session's when `--campaign` is omitted; an 
 or absent Campaign is reported, never guessed. Workspace Folder writes preserve the
 workspace-folder-handle; title and directory may change. Archive keeps the catalog entry and removes
 it from launch choices; exclude removes only the entry and never deletes a directory or
-hosted repository. Creation and repository-profile changes keep their inspection and
-explicit confirmation steps.
+hosted repository. Inspect a repository's declared arrangement before changing its
+profile; adding an existing repository does not rewrite `RONIN_REPO` unless a profile is supplied.
 
 Available session models are read dynamically from the canonical Campaign/provider model
 catalog used by the UI dropdowns. This document carries no model list: installation and
@@ -54,8 +54,7 @@ configuration changes must appear without maintaining a second inventory.
 `session_create --help` renders the current provider/model choices and defaults from that
 same source.
 
-Mika receives the same read operations plus `session_create` as a separate grant. Her
-settings writes are mechanically two-step: `machine-settings --propose ...` prints the
-exact canonical method, path, payload, and confirmation token; only after the owner confirms
-that proposal may she repeat it with `--confirmed <token>`. Her mode refuses Workspace
-Folder exclusion, credentials, generic families, and unlisted writers.
+Any Agent with this capability can use the same typed reads and writes. Mika also receives
+`session_create` as a separate grant. Her house guidance tells her to show the owner the
+intended change and wait for a yes before writing, and not to exclude Workspace Folders or
+handle credentials. These are instructions to Mika, not identity checks in the tool.

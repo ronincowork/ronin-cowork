@@ -22,7 +22,7 @@ import {
   type RootField,
 } from '../project-roots.js';
 import { campaignResolver, machineCampaignId } from '../campaign-scope.js';
-import { arrangementProfile, assertArrangementProfileCurrent, readArrangement, setArrangementProfile, validateArrangementProfile } from '../desks/arrangement.js';
+import { arrangementProfile, readArrangement, setArrangementProfile, validateArrangementProfile } from '../desks/arrangement.js';
 import {
   listSavedLaunches,
   saveLaunch,
@@ -234,15 +234,13 @@ export function registerCatalogs(app: express.Express): void {
         return res.status(409).json({ error: `"${name}" is already in the catalog.` });
       }
       const facts = await repoFacts({ name, title: fields.title ?? '', dir: fields.dir, remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' });
-      if (facts.repo && req.body?.confirmed !== true) return res.status(400).json({ error: 'Confirm the exact repository profile before adding this repository.' });
-      if (facts.repo) {
-        validateArrangementProfile(req.body?.profile);
-        await assertArrangementProfileCurrent(facts.dir, req.body?.before);
-      }
+      if (facts.repo && req.body?.profile !== undefined) validateArrangementProfile(req.body.profile);
       await upsertProjectRoot(name, fields);
       const root = (await listProjectRoots()).find((r) => r.name === name);
       const arrangement = root && facts.repo
-        ? await setArrangementProfile(root.dir, req.body?.profile, req.body?.before)
+        ? req.body?.profile !== undefined
+          ? await setArrangementProfile(root.dir, req.body.profile)
+          : await readArrangement(name, root.dir)
         : null;
       res.json({ ok: true, repo_profile: arrangement ? arrangementProfile(arrangement) : null });
     } catch (e) {
@@ -264,11 +262,10 @@ export function registerCatalogs(app: express.Express): void {
   app.put('/api/project-roots/:name/repo-profile', async (req, res) => {
     const { name } = req.params;
     if (!isValidRootName(name)) return res.status(400).json({ error: 'Invalid ID.' });
-    if (req.body?.confirmed !== true) return res.status(400).json({ error: 'Confirm the exact repository profile before applying it.' });
     try {
       const root = (await listProjectRoots()).find((r) => r.name === name);
       if (!root) return res.status(404).json({ error: `"${name}" is not in the catalog.` });
-      const arrangement = await setArrangementProfile(root.dir, req.body?.profile, req.body?.before);
+      const arrangement = await setArrangementProfile(root.dir, req.body?.profile);
       res.json({ ok: true, repo_profile: arrangementProfile(arrangement) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });

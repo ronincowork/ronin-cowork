@@ -436,12 +436,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         // Told at birth, the way tmux tells every shell where its server is: the socket
         // this operator bound. A process that bound none (a dev run) says nothing, and the
         // newborn's tools use the default path.
-        env: houseSeat === 'mika'
-          ? {
-              ...(birthEnv(routineTools?.path, boundOperatorSocket(), agentBinDir(), process.env.PATH ?? '', true) ?? {}),
-              RONIN_MACHINE_SETTINGS_AUTHORITY: 'mika',
-            }
-          : birthEnv(routineTools?.path, boundOperatorSocket(), agentBinDir(), process.env.PATH ?? ''),
+        env: birthEnv(routineTools?.path, boundOperatorSocket(), agentBinDir(), process.env.PATH ?? '', houseSeat === 'mika'),
         key: birthKey || undefined,
         // The Services switch as resolved for THIS Agent at birth (campaign < team < form):
         // off means RIREKI never records it. Set here and never again — nothing cascades

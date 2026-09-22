@@ -50,6 +50,11 @@ async function fixture() {
       });
       if (req.method === 'GET' && req.url === '/api/provider-catalog') return answer({ providers: [{ provider: 'Dynamic', cli: 'dynamic', models: [{ model: 'runtime-choice' }] }] });
       if (req.method === 'GET' && req.url === '/api/project-roots/detail?campaign_id=selected') return answer({ roots: [{ name: 'repo', campaign_id: 'selected' }], untagged: 0 });
+      if (req.method === 'POST' && req.url === '/api/project-roots') {
+        if (raw && JSON.parse(raw).name === 'reject') return answer({ error: 'invalid repository profile' });
+        return answer({ ok: true });
+      }
+      if (req.method === 'DELETE' && req.url === '/api/project-roots/repo') return answer({ ok: true });
       res.statusCode = 404;
       answer({ error: `unexpected ${req.method} ${req.url}` });
     });
@@ -130,29 +135,30 @@ test('Campaign omission refuses without exact session context and help carries o
   assert.doesNotMatch(help.output, /gpt-|claude-|gemini-|sonnet|opus/i);
 });
 
-test('Mika reads directly but every allowed write requires an exact proposal confirmation', async (t) => {
+test('machine settings writes and Workspace Folder operations do not depend on Agent identity or confirmation tokens', async (t) => {
   const f = await fixture();
   t.after(f.close);
   const env = { RONIN_MACHINE_SETTINGS_AUTHORITY: 'mika' };
-  assert.equal((await f.run(['machine', 'read'], env)).code, 0);
-  const direct = await f.run(['machine', 'write', 'monitor', 'on'], env);
-  assert.equal(direct.code, 4);
-  assert.match(direct.error, /CONFIRMATION-REQUIRED/);
-  assert.equal(f.requests.filter((request) => request.method === 'PATCH').length, 0);
-
-  const proposed = await f.run(['--propose', 'machine', 'write', 'monitor', 'on'], env);
-  assert.equal(proposed.code, 0, proposed.error);
-  const proposal = JSON.parse(proposed.output);
-  assert.deepEqual(proposal.proposal, {
-    method: 'PATCH', path: '/api/machine-settings',
-    payload: { family: 'machine', value: { monitor: true } },
+  const write = await f.run(['machine', 'write', 'monitor', 'on'], env);
+  assert.equal(write.code, 0, write.error);
+  const create = await f.run(['project-root', 'create', 'another', '--dir', '/tmp/another'], env);
+  assert.equal(create.code, 0, create.error);
+  const exclude = await f.run(['project-root', 'exclude', 'repo'], env);
+  assert.equal(exclude.code, 0, exclude.error);
+  assert.deepEqual(f.requests.filter((request) => ['PATCH', 'POST', 'DELETE'].includes(request.method)).map(({ method, url }) => [method, url]), [
+    ['PATCH', '/api/machine-settings'], ['POST', '/api/project-roots'], ['DELETE', '/api/project-roots/repo'],
+  ]);
+  assert.deepEqual((f.requests.find((request) => request.method === 'POST')?.body as Record<string, unknown>), {
+    name: 'another', dir: '/tmp/another', campaign_id: 'selected',
   });
-  assert.equal(f.requests.filter((request) => request.method === 'PATCH').length, 0);
-  const applied = await f.run(['--confirmed', proposal.confirmation, 'machine', 'write', 'monitor', 'on'], env);
-  assert.equal(applied.code, 0, applied.error);
-  assert.equal(f.requests.filter((request) => request.method === 'PATCH').length, 1);
+});
 
-  const excluded = await f.run(['--propose', 'project-root', 'exclude', 'repo'], env);
-  assert.equal(excluded.code, 4);
-  assert.match(excluded.error, /Mika cannot exclude/);
+test('a rejected write reports the route, reason, and help command', async (t) => {
+  const f = await fixture();
+  t.after(f.close);
+  const result = await f.run(['project-root', 'create', 'reject', '--dir', '/tmp/reject']);
+  assert.equal(result.code, 4);
+  assert.match(result.error, /\/api\/project-roots/);
+  assert.match(result.error, /invalid repository profile/);
+  assert.match(result.error, /machine-settings --help/);
 });

@@ -281,7 +281,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       save.disabled = true;
       err.say('');
       const r = creating
-        ? await request('/api/project-roots', { method: 'POST', json: { ...body, name, campaign_id: campaignId(), ...(proposedProfile ? { before: profileFields.before, profile: proposedProfile, confirmed: true } : {}) } })
+        ? await request('/api/project-roots', { method: 'POST', json: { ...body, name, campaign_id: campaignId(), ...(proposedProfile ? { profile: proposedProfile } : {}) } })
         : await request('/api/project-roots/' + encodeURIComponent(name), { method: 'PUT', json: body });
       if (!r.ok) {
         err.say(r.message, 'bad');
@@ -292,7 +292,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
         if (JSON.stringify(proposedProfile) !== JSON.stringify(profileFields.before)) {
           const d = await request('/api/project-roots/' + encodeURIComponent(name) + '/repo-profile', {
             method: 'PUT',
-            json: { before: profileFields.before, profile: proposedProfile, confirmed: true },
+            json: { profile: proposedProfile },
           });
           if (!d.ok) {
             err.say(d.message, 'bad');

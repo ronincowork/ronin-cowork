@@ -333,7 +333,7 @@ test('Code Stack Eval keeps ticked folders on Apply and evaluates the chosen one
   assert.match(source, /key: 'folder'.*options: folders\.map/, 'one canonical pick chooses the evaluation folder');
   assert.match(source, /state\.root_dir = folder\.dir; state\.root = folder\.registered_root\?\.name \|\| '';/);
   assert.match(source, /if \(!folder\.registered_root\) state\.pending = /);
-  assert.match(source, /request\('\/api\/project-roots', \{ method: 'POST', json: \{ name, dir: folder\.dir, \.\.\.\(profile \? \{ before, profile, confirmed: true \} : \{\}\) \} \}\)/);
+  assert.match(source, /request\('\/api\/project-roots', \{ method: 'POST', json: \{ name, dir: folder\.dir, \.\.\.\(profile \? \{ profile \} : \{\}\) \} \}\)/);
   assert.match(source, /if \(state\.root_dir === dir\) state\.root = made\.name/);
   assert.match(source, /environment\?\.navigateToSurface\?\.\('setup\.roots'\)/);
   assert.match(source, /workspaceFoldersAction\(environment, 'Manage workspace folders'\)/);
