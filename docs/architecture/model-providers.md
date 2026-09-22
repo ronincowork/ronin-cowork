@@ -48,7 +48,8 @@ Then a table, one row per model, in the order the picker offers them:
 
 | Column | Meaning |
 |---|---|
-| `model` | the provider's real model id, passed to the CLI unchanged — never a euphemism |
+| `model` | the provider's concrete model id, passed to the CLI unchanged |
+| `display id` | optional short identifier shown in pickers for this exact available model; never passed to the CLI |
 | `tier` | **light** · **standard** · **frontier**: the vendor's own cost and capability band |
 | `default` | `yes` on the one row a launch naming this provider and no model gets when ⚙ Configuration holds no preference for it; the first row when no row says so |
 | `cost` | the public list price per million tokens, input · output, with the month it was read in parentheses — a dated reading, never a contract |

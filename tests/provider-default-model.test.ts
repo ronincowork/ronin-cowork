@@ -25,7 +25,7 @@ import path from 'node:path';
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-provider-test-'));
 const listed = (slugs: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: 'test', client_version: 'test', models: slugs.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list', priority })) });
 const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude', 'codex'], signed_in: ['claude', 'codex'], operational: ['claude', 'codex'], activated_count: 2, paths: {}, versions: {}, latest: {}, model_lists: {
-  claude: listed(['opus', 'fable', 'sonnet', 'haiku']),
+  claude: listed(['claude-opus-5', 'claude-fable-5-1', 'claude-sonnet-5', 'claude-haiku-4-5-20251001']),
   codex: listed(['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5']),
 } };
 const catalogs = path.join(temp, 'catalogs');
@@ -64,17 +64,17 @@ test('the three ways an agent may ask, against one configuration', async () => {
   // they are three answers to one question and it is the shape that must not drift.
   await agents({
     default: { provider: 'openai', model: 'gpt-5.6-sol' },
-    by_provider: { anthropic: 'fable', openai: 'gpt-5.6-terra' },
+    by_provider: { anthropic: 'claude-fable-5-1', openai: 'gpt-5.6-terra' },
   });
   //  "give me an agent to do XYZ"  -> the install default, vendor and model both
   const lazy = await resolveForm(launch(), new Set());
   assert.ok(lazy.cmd.startsWith('codex --model gpt-5.6-sol'), `lazy: got "${lazy.cmd}"`);
   //  "give me an Anthropic agent"  -> that vendor's preferred model
   const vendor = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(vendor.cmd.startsWith('claude --model fable'), `vendor: got "${vendor.cmd}"`);
+  assert.ok(vendor.cmd.startsWith('claude --model claude-fable-5-1'), `vendor: got "${vendor.cmd}"`);
   //  "open a fable five session"   -> that model
-  const named = await resolveForm(launch({ model: 'opus' }), new Set());
-  assert.ok(named.cmd.startsWith('claude --model opus'), `named: got "${named.cmd}"`);
+  const named = await resolveForm(launch({ model: 'claude-opus-5' }), new Set());
+  assert.ok(named.cmd.startsWith('claude --model claude-opus-5'), `named: got "${named.cmd}"`);
   // Three different commands from three different asks — if any two of these ever agree,
   // one layer has started answering a question it was not asked.
   assert.equal(new Set([lazy.cmd, vendor.cmd, named.cmd]).size, 3);
@@ -85,22 +85,22 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
   // The settled Campaign pair answers where it has an answer and ⚙ answers the rest.
   await agents({
     default: { provider: 'openai', model: 'gpt-5.6-sol' },
-    by_provider: { anthropic: 'fable', openai: 'gpt-5.6-terra' },
+    by_provider: { anthropic: 'claude-fable-5-1', openai: 'gpt-5.6-terra' },
   });
   const file = path.join(temp, 'config', 'machine_settings.json');
   const document = JSON.parse(await fs.readFile(file, 'utf8'));
   document.campaigns = { work: {
     title: 'Work',
     providers,
-    config: { defaults: { provider: 'anthropic', model: 'opus' } },
+    config: { defaults: { provider: 'anthropic', model: 'claude-opus-5' } },
   } };
   await fs.writeFile(file, JSON.stringify(document));
   // Nothing named: the Campaign's default pair, not ⚙'s.
   const inherited = await resolveForm(launch({ campaign_id: 'work' }), new Set());
-  assert.ok(inherited.cmd.startsWith('claude --model opus'), inherited.cmd);
+  assert.ok(inherited.cmd.startsWith('claude --model claude-opus-5'), inherited.cmd);
   // A provider named: the Campaign's own row for it, and the reading says so.
   const vendor = await resolveForm(launch({ campaign_id: 'work', provider: 'anthropic' }), new Set());
-  assert.ok(vendor.cmd.startsWith('claude --model opus'), vendor.cmd);
+  assert.ok(vendor.cmd.startsWith('claude --model claude-opus-5'), vendor.cmd);
   assert.deepEqual(vendor.stated_by.cmd, [{ layer: 'system', source: '#/campaign (work: defaults)' }]);
   // A provider the Campaign has no row for: ⚙'s row, and the reading says ⚙.
   const theirs = await resolveForm(launch({ campaign_id: 'work', provider: 'openai' }), new Set());
@@ -124,15 +124,21 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
 test("the owner's scenario: default is OpenAI, the launch says anthropic, and it gets anthropic's preferred model", async () => {
   await agents({
     default: { provider: 'openai', model: 'gpt-5.6-sol' },
-    by_provider: { anthropic: 'fable', openai: 'gpt-5.6-terra' },
+    by_provider: { anthropic: 'claude-fable-5-1', openai: 'gpt-5.6-terra' },
   });
   const r = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(r.cmd.startsWith('claude --model fable'), `expected anthropic's preference, got "${r.cmd}"`);
+  assert.ok(r.cmd.startsWith('claude --model claude-fable-5-1'), `expected anthropic's preference, got "${r.cmd}"`);
   // The install default is NOT what answered — that is the whole point of the ruling.
   assert.doesNotMatch(r.cmd, /codex|gpt-5\.6-sol/, 'naming a provider must beat the install default');
   // And it is attributed to the owner's configuration, not to this file's fallbacks:
   // the provider was the launch's word, the model was ⚙'s.
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]);
+});
+
+test('a saved short model preference still launches its concrete model id', async () => {
+  await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: { anthropic: 'fable' } });
+  const r = await resolveForm(launch({ provider: 'anthropic' }), new Set());
+  assert.ok(r.cmd.startsWith('claude --model claude-fable-5-1'), r.cmd);
 });
 
 test('a provider with no preference set delegates the model to that provider CLI', async () => {
@@ -152,7 +158,7 @@ test('a provider with no preference set delegates the model to that provider CLI
 test('naming no provider still lands on the install default — the general default is untouched', async () => {
   await agents({
     default: { provider: 'openai', model: 'gpt-5.6-sol' },
-    by_provider: { anthropic: 'fable', openai: 'gpt-5.6-terra' },
+    by_provider: { anthropic: 'claude-fable-5-1', openai: 'gpt-5.6-terra' },
   });
   const r = await resolveForm(launch(), new Set());
   // NOT openai's per-provider preference (`gpt-5.6-terra`): a launch that named nothing
@@ -162,10 +168,10 @@ test('naming no provider still lands on the install default — the general defa
 });
 
 test('a provider narrows an explicit model rather than competing with it', async () => {
-  await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: { anthropic: 'fable' } });
+  await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: { anthropic: 'claude-fable-5-1' } });
   // Both named: the pair must be a real cell, and the model wins over the preference.
-  const r = await resolveForm(launch({ provider: 'anthropic', model: 'haiku' }), new Set());
-  assert.ok(r.cmd.startsWith('claude --model haiku'), `expected the named pair, got "${r.cmd}"`);
+  const r = await resolveForm(launch({ provider: 'anthropic', model: 'claude-haiku-4-5-20251001' }), new Set());
+  assert.ok(r.cmd.startsWith('claude --model claude-haiku-4-5-20251001'), `expected the named pair, got "${r.cmd}"`);
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'launch', source: 'launch request' }]);
   // A model that provider does not offer is refused, and the message names what it does
   // offer — not the whole table, which would be a list the caller cannot act on.
@@ -198,12 +204,12 @@ test('a provider the owner turned off launches nothing new, in its own words; on
   await assert.rejects(() => resolveForm(launch(), new Set()), /turned off/, 'the install default rides the same refusal when its provider is off');
   // Never activated is not off: no off_at, nothing recorded, no file — it launches, and the CLI asks to sign in in the tile.
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: {} }, { providers: {} });
-  const r = await resolveForm(launch({ provider: 'anthropic', model: 'haiku' }), new Set());
-  assert.ok(r.cmd.startsWith('claude --model haiku'));
+  const r = await resolveForm(launch({ provider: 'anthropic', model: 'claude-haiku-4-5-20251001' }), new Set());
+  assert.ok(r.cmd.startsWith('claude --model claude-haiku-4-5-20251001'));
 });
 
 test('a terminal takes no provider resolution at all', async () => {
-  await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: { anthropic: 'fable' } });
+  await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: { anthropic: 'claude-fable-5-1' } });
   const r = await resolveForm(launch({ session_type: 'terminal', provider: 'anthropic' }), new Set());
   assert.equal(r.agent, false);
   assert.equal(r.cmd, '', 'a terminal launches nothing, whatever provider was named');

@@ -1,5 +1,5 @@
 
-export const CONTRACT_V = 5;
+export const CONTRACT_V = 6;
 
 export interface LaunchIdentity {
   key: string;
@@ -23,10 +23,25 @@ export interface BornInfo {
 
 export type RowFields = Record<string, unknown>;
 
+/** `dir` is the session folder: where a part keeps files of its own beside Core's. */
 export interface TranscriptSource { file: string; format: string; provider: string; session: string; dir: string }
 
+/**
+ * WHY THERE IS NO SOURCE, when there is none. Core knows which of these it hit; before
+ * this it returned null and the part had one sentence for four different situations, so
+ * a session that simply is not running read the same as one whose CLI keeps no journal.
+ * Core reports the state; the part chooses the words its surface shows.
+ */
+export type TranscriptGap =
+  | 'not_live'        // no live pane for that name
+  | 'no_identity'     // the pane exists, but no launch identity was persisted for it
+  | 'unbound'         // identity exists; this CLI writes no journal Ronin can read
+  | 'journal_pending'; // bound and expected, but the CLI has not written the file yet
+
+export type TranscriptLookup = { source: TranscriptSource } | { gap: TranscriptGap };
+
 export interface Sockets {
-  resolveTranscriptSource(name: string): Promise<TranscriptSource | null>;
+  resolveTranscriptSource(name: string): Promise<TranscriptLookup>;
   registerBoot(hook: { start(): void | Promise<void>; stop?(): void }): void;
   onSessionWillBorn(cb: (name: string) => void | Promise<void>): void;
   onSessionBorn(cb: (info: BornInfo) => void | Promise<void>): void;

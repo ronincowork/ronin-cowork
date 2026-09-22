@@ -26,13 +26,11 @@ stopped; provider-native conversation resume is what makes the later process con
 
 ## The recording
 
-RIREKI is currently parked. When a recording exists, it is preserved with the archive; archive does not create a recording. RIREKI's `r_tape` and `r_scroll`
-already live in the session record directory, so archive does not move or duplicate them.
-The manifest preserves the stable session key; rehydrate stamps that same key onto the new
-tmux session, and RIREKI continues against the same tape and scroll. Archive emits no
-`SessionEnd`, specifically so the recording lifecycle does not treat this resumable stop
-as a death. Hard delete emits `SessionEnd` and removes the record directory, including the
-tape and scroll.
+RIREKI reads provider journals through Core's persisted launch identity. Archive retains
+the session directory, including `launch-identity.json` and any isolated journal home;
+restore reuses that identity and home. Archive does not create a transcript copy.
+Hard deletion of an archive removes its retained session directory. The legacy terminal
+recorder is disconnected from RIREKI registration.
 
 - A live tile's trash action offers **Archive**, **Delete**, and **Hard Delete**. Archive is
   resumable and refuses while the Agent owns an open desk. Delete visibly checks all desks,
@@ -47,12 +45,13 @@ tape and scroll.
 - Manifests contain Ronin/tmux metadata and the provider conversation UUID. They never store
   the launch prompt, transcript, or raw process argv, and list responses omit the UUID.
 
-New Claude launches carry a Ronin-minted `--session-id` and the same UUID is stamped on the
-tmux session. Legacy Claude sessions are discoverable only when exactly one history file
-contains the exact initial prompt. Codex discovery requires a matching rollout file and
-thread-writer lock in the pane process tree; the most recently written matching rollout is
-the active conversation. If discovery is absent or ambiguous, archive refuses before
-stopping tmux.
+Archive uses the launch artifact whenever one exists. An artifact without a resolved
+conversation id refuses archive; it never falls through to process discovery.
+For pre-artifact sessions, a stamped provider id wins without process inspection.
+Otherwise the compatibility reader accepts an explicit id from the live process argv
+where supported. Prompt-content matching and descriptor lock/mtime selection are
+refused, not silently treated as identity. Consequently some older sessions can no
+longer be archived automatically. Refusal happens before writing a manifest or stopping tmux.
 
 The archive manifest store is declared as `archived_sessions` in both store tables. Resolve
 its location with `bin/ronin-store archived_sessions`; never spell the path in callers.
@@ -90,20 +89,13 @@ Agents and team leads use those same routes through `session_archive <session>` 
 
 ## Provider identity
 
-New Claude launches are deterministic: Ronin mints a UUID, passes it as `--session-id`, and
-stamps it in `@ronin-provider-session`. A resumed Claude process also exposes its UUID in
-`--resume`. For older Claude sessions without either argument, Ronin scans only the current
-project's Claude history and accepts an ID only when exactly one file contains the exact
-initial user prompt; ambiguity fails closed.
+`docs/agents/<cli>.md` owns launch and resume grammar. Launch identity is minted or
+isolated before startup and persisted under the birth key. This path requires no `/proc`
+inspection and keeps isolation unchanged.
 
-Codex does not currently accept a caller-minted conversation UUID on an ordinary new
-interactive launch. Its native process keeps both a rollout JSONL file and a matching
-thread-writer lock open. Ronin walks the pane process and descendants, intersects those two
-FD identities, and selects the most recently written exact match. A rollout without its
-matching lock is never accepted.
-
-Provider operation syntax is executable data owned once in `src/agents.ts` and documented in
-`docs/architecture/model-providers.md` § One command registry. Archive code discovers conversation
-identity; it does not own install, launch, update, or resume argv. Gemini's resume command
-is registered but its exact live-session identity discovery is not yet integrated; Grok
-and Hermes also remain non-archivable until their full identity contracts are verified.
+Only births without a launch artifact reach `providerSessionInfo`. It prefers the tmux
+provider-id stamp. Its remaining process-argument compatibility path reads Linux
+`/proc/PID/cmdline`; it is unavailable on macOS or after the process exits. An explicit
+supported session/resume id is accepted; conflicting ids refuse. There is no journal
+search by prompt and no descendant descriptor scan. Older unstamped sessions without
+an explicit supported id remain unidentifiable rather than risking a neighbour's history.

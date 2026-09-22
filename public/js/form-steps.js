@@ -371,7 +371,7 @@ export function orderedCatalog(rows = [], machine = []) {
     const known = new Set(marked.filter((row) => row.cli === entry.id).map((row) => row.model));
     for (const model of entry.model_list.models) {
       if (model?.visibility !== 'list' || !model?.slug || known.has(model.slug)) continue;
-      marked.push({ ...base, model: model.slug, tier: '', default: false, cost: '',
+      marked.push({ ...base, model: model.slug, display_id: model.display_name || model.slug, tier: '', default: false, cost: '',
         good_at: model.description || '', not_good_at: '', origin: 'cli', shadowed: false,
         listed: true, selectable: entry.activated === true });
     }
@@ -392,7 +392,11 @@ export function tierWord(tier) {
  * Campaign's Model providers surface, where there is room for the whole table. In an
  * option it is a sentence squeezed into a line that cannot show it.
  */
-export const modelLabel = (row) => row?.model === NATIVE_MODEL ? t('forms.model_native', 'Native') : String(row?.model || '');
+export const modelLabel = (row) => {
+  if (row?.model === NATIVE_MODEL) return t('forms.model_native', 'Native');
+  const available = catalog.rows.find((item) => item.provider === row?.provider && item.model === row?.model && item.selectable);
+  return String(row?.display_id || available?.display_id || row?.model || '');
+};
 export const modelWord = (row) => row?.model === NATIVE_MODEL || !row?.tier
   ? modelLabel(row)
   : t('forms.model_word', '{model} · {tier}', { model: modelLabel(row), tier: tierWord(row.tier) });
