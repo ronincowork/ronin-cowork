@@ -1,74 +1,81 @@
-/**
- * BINDING A LAUNCH TO ITS CONVERSATION — the one processor every CLI goes through.
- *
- * WHY THIS TEST EXISTS. The transcript route must be able to say which journal belongs to
- * which pane. Two earlier answers were wrong and were caught in review: a caller-supplied
- * working directory (any page could ask for any path), and then the session's
- * `project_root` (which nearly every session on a project shares, so two live agents
- * matched the same journal and could be served each other's conversation).
- *
- * The only honest moment to bind is the moment the command is built, because that is the
- * last point at which Ronin can DECIDE the answer rather than infer it afterwards. So the
- * invariants asserted here are about refusing to guess as much as about stamping:
- *
- *   - `claude` gets an assigned id, so the journal filename is known before the process
- *     starts.
- *   - a command that already names a conversation is left exactly as written — Ronin never
- *     overrides an explicit resume.
- *   - `codex` is NOT stamped, and says why. It mints its own id; a flag it does not accept
- *     would break the launch, and an invented binding would be the same guess in a new
- *     place.
- *   - an unrecognised CLI is left alone. Appending a flag to a command we do not
- *     understand is a worse failure than leaving it unbound.
- */
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { stampProviderSession } from '../src/launch-binding.js';
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { newProviderSession } from '../src/agents.js';
+import { readAgentLaunches } from '../src/agent-launches.js';
+import { processLaunch, readLaunchIdentity } from '../src/launch-binding.js';
+import { resolveLaunchJournal } from '../src/launch-journal.js';
 
-const FIXED = '11111111-2222-3333-4444-555555555555';
-const id = () => FIXED;
+const dir = fileURLToPath(new URL('../docs/agents/', import.meta.url));
+const grammars = await Promise.all((await readdir(dir)).filter(n => n !== 'README.md' && n.endsWith('.md'))
+  .map(n => readAgentLaunches(n.slice(0, -3))));
+const mint = grammars.find(g => g.newSessionId.length)!;
+const isolated = grammars.find(g => g.isolation)!;
 
-test('claude is assigned a session id at launch, so the journal is known before it is written', () => {
-  const out = stampProviderSession('claude --model opus', 'claude', id);
-  assert.equal(out.cmd, `claude --model opus --session-id ${FIXED}`);
-  assert.equal(out.providerSession, FIXED);
+test('one grammar assignment on actual argv; a named conversation keeps its id and argv', async () => {
+  const cli = mint.native[0]!;
+  const first = await newProviderSession(cli, mint.native);
+  assert.equal(first.strategy, 'minted');
+  assert.equal(first.argv.filter(arg => arg === mint.newSessionId[0]).length, 1);
+  const second = await newProviderSession(cli, first.argv);
+  assert.deepEqual(second, first);
+  const resumed = mint.resume.map(p => p.replace('{session_id}', first.id));
+  assert.equal((await newProviderSession(cli, resumed)).id, first.id);
+  const opaque = mint.resume.map(p => p.replace('{session_id}', 'thread-opaque-id'));
+  assert.equal((await newProviderSession(cli, opaque)).id, 'thread-opaque-id');
 });
 
-test('a command that already names its conversation is left exactly as written', () => {
-  for (const cmd of [
-    `claude --session-id ${FIXED}`,
-    `claude --resume ${FIXED}`,
-    `codex resume ${FIXED}`,
-  ]) {
-    const out = stampProviderSession(cmd, cmd.startsWith('codex') ? 'codex' : 'claude', id);
-    assert.equal(out.cmd, cmd, 'the command must not be rewritten');
-    assert.equal(out.providerSession, FIXED, 'the named conversation is the binding');
+test('strategy follows grammar rather than a provider list', async () => {
+  for (const grammar of grammars) {
+    const result = await newProviderSession(grammar.native[0]!, grammar.native);
+    assert.equal(result.strategy, grammar.newSessionId.length ? 'minted' : grammar.isolation ? 'isolated' : 'unbound');
   }
 });
 
-test('codex is not stamped, and the reason is recorded rather than implied', () => {
-  const out = stampProviderSession('codex --model gpt', 'codex', id);
-  assert.equal(out.cmd, 'codex --model gpt', 'codex takes no assigned id; the command must be untouched');
-  assert.equal(out.providerSession, undefined, 'unbound, not guessed');
-  assert.match(out.note, /cannot be given one at launch/);
+test('isolated launch mirrors newly discovered settings but owns its journal; restore reuses home', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'launch-isolation-'));
+  const source = path.join(root, 'original-home'), store = path.join(root, 'sessions');
+  await mkdir(source); await mkdir(path.join(source, isolated.isolation!.private));
+  await writeFile(path.join(source, 'future-setting'), 'preserve me');
+  await writeFile(path.join(source, isolated.isolation!.private, 'neighbour.jsonl'), 'foreign');
+  const envName = isolated.isolation!.env;
+  const oldHome = process.env[envName], oldStore = process.env.RONIN_SESSION_DIR;
+  process.env[envName] = source; process.env.RONIN_SESSION_DIR = store;
+  t.after(async () => {
+    if (oldHome === undefined) delete process.env[envName]; else process.env[envName] = oldHome;
+    if (oldStore === undefined) delete process.env.RONIN_SESSION_DIR; else process.env.RONIN_SESSION_DIR = oldStore;
+    await rm(root, { recursive: true, force: true });
+  });
+  const identity = await processLaunch({ name: 'one', key: 'one-key', cli: isolated.native[0]!, argv: isolated.native, cwd: root }, async (_argv, env, identity) => {
+    assert.equal(env[envName], identity.home);
+    assert.equal(await realpath(path.join(identity.home!, 'future-setting')), path.join(source, 'future-setting'));
+    assert.deepEqual(await readdir(identity.journal!.root), []);
+    assert.equal((await readLaunchIdentity('one-key'))?.home, identity.home, 'persist before start');
+    await writeFile(path.join(identity.journal!.root, 'rollout-own.jsonl'), JSON.stringify({ type: 'session_meta', payload: { session_id: '11111111-2222-3333-4444-555555555555', source: 'cli' } }) + '\n');
+  });
+  const file = await resolveLaunchJournal(identity);
+  assert.ok(file?.startsWith(identity.home!));
+  const argv = isolated.resume.map(p => p.replace('{session_id}', identity.providerSession));
+  const restored = await processLaunch({ name: 'one', key: 'one-key', cli: isolated.native[0]!, argv, cwd: root, resume: true }, async (actual, env) => {
+    assert.deepEqual(actual, argv); assert.equal(env[envName], identity.home);
+  });
+  assert.equal(restored.home, identity.home);
+  assert.equal(await readFile(path.join(restored.home!, 'future-setting'), 'utf8'), 'preserve me');
 });
 
-test('an unrecognised CLI is left alone rather than handed a flag it may not accept', () => {
-  const out = stampProviderSession('grok', 'grok', id);
-  assert.equal(out.cmd, 'grok');
-  assert.equal(out.providerSession, undefined);
-  assert.match(out.note, /no binding known/);
-});
-
-test('an empty command binds nothing and does not invent one', () => {
-  const out = stampProviderSession('', 'claude', id);
-  assert.equal(out.cmd, '');
-  assert.equal(out.providerSession, undefined);
-});
-
-test('each claude launch gets its own id — two sessions can never collide', () => {
-  const a = stampProviderSession('claude', 'claude');
-  const b = stampProviderSession('claude', 'claude');
-  assert.ok(a.providerSession && b.providerSession);
-  assert.notEqual(a.providerSession, b.providerSession);
+test('all process starts pass through one serial entry, including unbound shells', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'launch-serial-'));
+  const old = process.env.RONIN_SESSION_DIR; process.env.RONIN_SESSION_DIR = root;
+  t.after(async () => { if (old === undefined) delete process.env.RONIN_SESSION_DIR; else process.env.RONIN_SESSION_DIR = old; await rm(root, { recursive: true, force: true }); });
+  let release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
+  const events: string[] = [];
+  const first = processLaunch({ name: 'a', cli: '', argv: [], cwd: root }, async () => { events.push('a'); await gate; });
+  const second = processLaunch({ name: 'b', cli: '', argv: [], cwd: root }, async () => { events.push('b'); });
+  while (!events.length) await new Promise(resolve => setTimeout(resolve, 5));
+  assert.deepEqual(events, ['a']); release();
+  const result = await Promise.all([first, second]);
+  assert.deepEqual(events, ['a', 'b']); assert.ok(result.every(r => r.strategy === 'unbound'));
 });

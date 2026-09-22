@@ -35,6 +35,7 @@ One `### <Vendor label>` section per provider. Its fields:
 |---|---|
 | `provider` | the vendor id a launch names (`anthropic`, `openai`, …) and the key of `agents.sessions.by_provider` |
 | `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, …) — the join between this catalog and what the machine measures |
+| `transcript_source` | dated descriptive journal location and write discipline; availability requires a supported adapter and verified launch identity, not merely a file at that path |
 | `maturity` | optional display status: `beta` or `comingSoon`; a provider with no model rows remains visible only as an unavailable catalog card |
 
 Then one table, one row per model, **in the order the picker offers them**:
@@ -47,6 +48,10 @@ Then one table, one row per model, **in the order the picker offers them**:
 | `cost` | the vendor's public list price per million tokens, input · output, with the month it was read — a reading, not a contract |
 | `good at` · `not good at` | one line each, from the vendor's own positioning and the public record |
 
+Transcript-source observations above were recorded by the transcript investigation on
+2026-09-22; they do not update the dated price/model research. Mint/claim capability
+belongs only to `docs/agents/<cli>.md` and is not duplicated in this catalog.
+
 Adding a provider is a section; adding model metadata is a row; never a code path. The
 matching `docs/agents/<cli>.md` page owns bare, model, dangerous and resume commands. Model:
 Native is always offered and means no model override. A named row is offered only when the CLI's captured inventory reports
@@ -58,6 +63,7 @@ read, and a stale reading is dated, never guessed.
 
 - **provider:** `anthropic`
 - **cli:** `claude`
+- **transcript_source:** Observed 2026-09-22: `~/.claude/projects/<cwd-slug>/<uuid>.jsonl`; one record per completed message. Journal adapter exists; exact launch identity is required.
 
 Model ids are Claude Code's own aliases, passed unchanged to its `--model` option; each
 resolves to the current model of that family.
@@ -73,6 +79,7 @@ resolves to the current model of that family.
 
 - **provider:** `openai`
 - **cli:** `codex`
+- **transcript_source:** Observed 2026-09-22: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`; ordinal-sequenced records with a session metadata header. Journal adapter exists; fresh Ronin launches isolate the journal home; the id comes from its header.
 
 Model ids are passed unchanged to Codex's `--model` option. Sol, Terra and Luna are
 OpenAI's durable capability tiers; the generation number moves on its own cadence.
@@ -91,6 +98,7 @@ refused by Codex in the new tile, and Ronin never substitutes.
 
 - **provider:** `google`
 - **cli:** `gemini`
+- **transcript_source:** Observed 2026-09-22: `~/.gemini/tmp/<project>/chats/session-*.jsonl`; appended `$set` mutations replace the complete messages array. An adapter must apply mutations and diff messages, not map each line to a message; not implemented here.
 
 Model ids are passed unchanged to Gemini CLI's `--model` option. The free tier serves
 Flash models only; Pro needs a paid plan. These cells are written from Google's published CLI
@@ -107,6 +115,7 @@ first real launch of each is the proof, per `docs/architecture/model-providers.m
 
 - **provider:** `xai`
 - **cli:** `grok`
+- **transcript_source:** No conversation journal found in the 2026-09-22 investigation. The sessions SQLite file was an empty FTS index; memtrace was memory profiling and logs/unified.jsonl telemetry. No transcript adapter available.
 
 Model ids are passed unchanged to Grok Build's `-m` option. Its Agent page maps
 Dangerously to Grok's canonical `--always-approve` spelling.
@@ -121,6 +130,7 @@ Written from xAI's published CLI overview and price list, not yet exercised thro
 
 - **provider:** `nous`
 - **cli:** `hermes`
+- **transcript_source:** Not established by the 2026-09-22 transcript investigation; no transcript availability promised.
 
 Hermes Agent runs any provider; these rows are its own Hermes models through the Nous
 Portal (`hermes setup --portal` signs in). Model ids are passed unchanged to
@@ -137,6 +147,7 @@ and none of these cells has yet been exercised through Ronin.
 
 - **provider:** `openrouter`
 - **cli:** `openrouter`
+- **transcript_source:** No launchable CLI integration or verified transcript source declared.
 - **maturity:** `comingSoon`
 
 OpenRouter is listed for visibility only. It has no model rows yet, so it is not offered

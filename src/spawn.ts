@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { mergeSessionDefaults, resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
-import { stampProviderSession } from './launch-binding.js';
 import { REPO_ROOT } from './resources.js';
 import { bootFiles, ensureShelf } from './birth-readme.js';
 import { listProjectRoots, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
@@ -321,13 +320,6 @@ export async function resolveForm(
     }
     cmd = spec.dangerousCmd;
   }
-  // BIND THE LAUNCH TO ITS CONVERSATION, here and nowhere else. The command is settled at
-  // this point (including the Dangerously variant), and this is the last moment anything
-  // can know which journal the pane is about to write. Every CLI goes through the one
-  // processor: it either assigns an id or records why it could not have one. A CLI that
-  // cannot be bound stays unbound rather than being matched by directory afterwards.
-  const bound = agent ? stampProviderSession(cmd, spec?.cli ?? '') : { cmd, note: 'no agent: nothing to bind' };
-  cmd = bound.cmd;
   const explicit: StatedBy[] = [{ layer: 'launch', source: 'launch request' }];
   const system: StatedBy[] = [{ layer: 'system', source: 'src/spawn.ts' }];
   const rosterSource: StatedBy[] = roster

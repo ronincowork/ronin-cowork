@@ -1,3 +1,5 @@
+import { readLaunchIdentity } from '../launch-binding.js';
+import { resolveLaunchJournal } from '../launch-journal.js';
 import fs from 'node:fs';
 import type express from 'express';
 import {
@@ -151,7 +153,9 @@ export function registerSessions(app: express.Express): void {
       if (!prepared.proceed) return;
       const key = await sessionKey(name);
       const runtime = await sessionRuntime(name);
-      const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
+      const launchIdentity = await readLaunchIdentity(key);
+      if (launchIdentity) await resolveLaunchJournal(launchIdentity);
+      const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, launchIdentity?.providerSession || await getProviderSessionId(name));
       if (!provider) return res.status(409).json({ error: `Could not identify a resumable ${runtime.agent || 'agent'} conversation.` });
       const archived: ArchivedSession = {
         version: 1, id: key, name, key, archived_at: new Date().toISOString(), cwd: runtime.cwd,
@@ -180,7 +184,7 @@ export function registerSessions(app: express.Express): void {
       }
       const argv = await resumeAgentArgv(archived.agent, archived.provider_session_id);
       if (!argv.length) return res.status(409).json({ error: `${archived.agent} cannot be resumed on this machine.` });
-      await createSession(archived.name, archived.cwd, { agent: true, argv });
+      await createSession(archived.name, archived.cwd, { agent: true, argv, cli: archived.agent, key: archived.key, resume: true });
       try {
         await setSessionKey(archived.name, archived.key);
         await setTags(archived.name, archived.tags);

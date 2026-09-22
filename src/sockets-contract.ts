@@ -1,7 +1,19 @@
 
-export const CONTRACT_V = 2;
+export const CONTRACT_V = 3;
+
+export interface LaunchIdentity {
+  key: string;
+  cli: string;
+  strategy: 'minted' | 'isolated' | 'unbound';
+  providerSession: string;
+  home?: string;
+  journalFile?: string;
+  env: Record<string, string>;
+  journal?: { format: string; root: string; pattern: string; idPath: string; childPath?: string };
+}
 
 export interface BornInfo {
+  identity?: LaunchIdentity;
   name: string;
   key?: string; // @ronin-key (<name>-<created-epoch>) — when the caller has it resolved
   team?: string; // the team it was born onto, when the launch named one; may be blank

@@ -7,6 +7,8 @@ export interface AgentLaunches {
   modelDangerously: string[];
   resume: string[];
   newSessionId: string[];
+  isolation?: { env: string; home: string; private: string };
+  transcript?: { format: string; root: string; pattern: string; idPath: string; childPath?: string };
   initial: 'positional' | 'none';
 }
 
@@ -29,7 +31,11 @@ export async function readAgentLaunches(cli: string): Promise<AgentLaunches> {
   if (!/^[a-z][a-z0-9_-]*$/.test(cli)) throw new Error(`Invalid Agent CLI id "${cli}".`);
   const text = await readFile(new URL(`../docs/agents/${cli}.md`, import.meta.url), 'utf8');
   const initial = field(text, 'launch_initial');
+  const isolation = field(text, 'launch_isolation');
+  const transcript = field(text, 'transcript_journal');
   const launches: AgentLaunches = {
+    ...(isolation && isolation !== '—' ? { isolation: JSON.parse(isolation) } : {}),
+    ...(transcript && transcript !== '—' ? { transcript: JSON.parse(transcript) } : {}),
     native: argv(text, 'launch_native'),
     model: argv(text, 'launch_model'),
     nativeDangerously: argv(text, 'launch_native_dangerously'),
