@@ -1,5 +1,5 @@
 
-export const CONTRACT_V = 3;
+export const CONTRACT_V = 4;
 
 export interface LaunchIdentity {
   key: string;
@@ -23,7 +23,10 @@ export interface BornInfo {
 
 export type RowFields = Record<string, unknown>;
 
+export interface TranscriptSource { file: string; format: string; provider: string; session: string }
+
 export interface Sockets {
+  resolveTranscriptSource(name: string): Promise<TranscriptSource | null>;
   registerBoot(hook: { start(): void | Promise<void>; stop?(): void }): void;
   onSessionWillBorn(cb: (name: string) => void | Promise<void>): void;
   onSessionBorn(cb: (info: BornInfo) => void | Promise<void>): void;

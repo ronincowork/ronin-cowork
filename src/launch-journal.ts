@@ -1,7 +1,7 @@
 /** Resolve journals only inside the location owned by the launch declaration. */
 import { open, readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { writeLaunchIdentity } from './launch-binding.js';
+import { readLaunchIdentity, writeLaunchIdentity } from './launch-binding.js';
 import type { LaunchIdentity } from './sockets-contract.js';
 const field = (value: unknown, key: string): unknown => key.split('.').reduce<unknown>((v, k) =>
   v && typeof v === 'object' ? (v as Record<string, unknown>)[k] : undefined, value);
@@ -47,4 +47,15 @@ export async function resolveLaunchJournal(identity: LaunchIdentity): Promise<st
     return file;
   }
   return null;
+}
+
+/** The live pane selects a persisted birth, never an in-memory event subscription. */
+export async function resolveTranscriptSource(name: string): Promise<import('./sockets-contract.js').TranscriptSource | null> {
+  const { tmux } = await import('./tmux-client.js');
+  const { exactPane } = await import('./tmux.js');
+  const key = await tmux.run(['display-message', '-p', '-t', exactPane(name), '#{@ronin-key}']).catch(() => '');
+  if (!key.trim()) return null;
+  const identity = await readLaunchIdentity(key.trim());
+  const file = identity ? await resolveLaunchJournal(identity) : null;
+  return identity?.journal && file ? { file, format: identity.journal.format, provider: identity.cli, session: identity.providerSession } : null;
 }

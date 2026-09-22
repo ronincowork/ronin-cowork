@@ -11,6 +11,7 @@ const routeMounts: Array<(app: unknown) => void> = [];
 let streamHandler: ((...args: unknown[]) => void) | undefined;
 
 export const sockets: Sockets = {
+  resolveTranscriptSource: async (name) => (await import('./launch-journal.js')).resolveTranscriptSource(name),
   registerBoot: (h) => void bootHooks.push(h),
   onSessionWillBorn: (cb) => void willBornHooks.push(cb),
   onSessionBorn: (cb) => void bornHooks.push(cb),
