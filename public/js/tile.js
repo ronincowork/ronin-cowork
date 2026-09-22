@@ -343,9 +343,9 @@ export class Tile {
     this.syncHeader();
   }
 
-  /** What the button says: where you are in the cycle, or the way in. */
+  /** What the button says: where you are now — Terminal, or the reading on screen. */
   transcriptLabel() {
-    if (!this.transcriptOn) return t('transcript.toggle', 'Transcript');
+    if (!this.transcriptOn) return t('transcript.terminal', 'Terminal');
     const reading = this.transcriptReadings[this.transcriptLevel];
     // The route's own word for the reading — Chat, Notes, Work, All — is the label (owner,
     // 2026-09-22: the names beat T1…T4).

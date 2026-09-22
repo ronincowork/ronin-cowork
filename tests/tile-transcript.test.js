@@ -9,7 +9,14 @@ class Node {
     this.scrollTop = 0;
     this.clientHeight = 100;
     this.attributes = {};
-    this.classList = { toggle() {}, contains: (name) => this.className.split(/\s+/).includes(name) };
+    this.classList = {
+      toggle: (name, force) => {
+        const has = this.className.split(/\s+/).filter(Boolean);
+        const want = force ?? !has.includes(name);
+        this.className = (want ? [...new Set([...has, name])] : has.filter((n) => n !== name)).join(' ');
+      },
+      contains: (name) => this.className.split(/\s+/).includes(name),
+    };
   }
   setAttribute(key, value) { this.attributes[key] = value; }
   append(...nodes) { this.children.push(...nodes); }
@@ -44,6 +51,7 @@ test('header toggle appears only with loaded Rireki and changes its label', () =
   S.services = ['rireki'];
   syncTileHead(tile);
   assert.equal(button.hidden, false);
+  // Without transcriptLabel on the fake, the row falls back to the old two-state words.
   assert.equal(button.textContent, 'Transcript');
   tile.transcriptOn = true;
   syncTileHead(tile);
@@ -133,7 +141,7 @@ test('the button cycles Terminal → Chat → Notes → Work → All → Termina
   toggle();
   assert.equal(tile.transcriptOn, true);
   assert.deepEqual(shown, [['show', '']]);
-  assert.equal(label(), 'Transcript');
+  assert.equal(label(), 'Transcript', 'on, but the route has not named the reading yet');
   Tile.prototype.onTranscriptState.call(tile, { available: true, empty: false, reason: '', readings: READINGS, view: 'notes' });
   assert.equal(label(), 'Chat');
   assert.deepEqual(shown.at(-1), ['set', 'chat']);
@@ -142,7 +150,7 @@ test('the button cycles Terminal → Chat → Notes → Work → All → Termina
   toggle(); assert.equal(label(), 'All');
   toggle();
   assert.equal(tile.transcriptOn, false);
-  assert.equal(label(), 'Transcript');
+  assert.equal(label(), 'Terminal', 'the button names where you are, not where a press goes');
   assert.deepEqual(shown.slice(1), [['set', 'chat'], ['set', 'notes'], ['set', 'work'], ['set', 'all'], ['hide']]);
   // With the readings known (a probe answered), the way in is Chat.
   toggle();
@@ -160,15 +168,18 @@ test('opaque when the route says unavailable or empty, live when records exist �
   assert.equal(button.attributes['aria-disabled'], 'false', 'unknown yet is not opaque');
   tile.transcriptState = { available: false, empty: true, reason: 'This Agent’s CLI keeps no readable conversation journal — terminal output only.', readings: [], view: '' };
   syncTileHead(tile);
-  assert.equal(button.attributes['aria-disabled'], 'true');
+  assert.equal(button.classList.contains('off'), true, 'quiet to the eye');
+  assert.equal(button.attributes['aria-disabled'], 'false', 'operable to assistive tech: the press opens the reason');
   assert.equal(button.title, tile.transcriptState.reason);
   tile.transcriptState = { available: true, empty: true, reason: '', readings: READINGS, view: 'notes' };
   syncTileHead(tile);
-  assert.equal(button.attributes['aria-disabled'], 'true', 'available but nothing written yet is opaque too');
+  assert.equal(button.classList.contains('off'), true, 'available but nothing written yet is opaque too');
+  assert.equal(button.attributes['aria-disabled'], 'false');
   tile.transcriptState = { available: true, empty: false, reason: '', readings: READINGS, view: 'notes' };
   syncTileHead(tile);
+  assert.equal(button.classList.contains('off'), false);
   assert.equal(button.attributes['aria-disabled'], 'false');
-  assert.equal(button.textContent, 'Transcript');
+  assert.equal(button.textContent, 'Terminal');
   tile.transcriptOn = true; tile.transcriptLevel = 0; tile.transcriptReadings = READINGS;
   syncTileHead(tile);
   assert.equal(button.textContent, 'Chat');
@@ -205,6 +216,15 @@ test('an opaque transcript button is still pressable, so the reason can be read 
   assert.equal(pressable(row, tile), true, 'no Agent in the tile: the press still lands, and toggleTranscript declines without one');
   const plain = { key: 'other', needs: 'session', quiet: 'none' };
   assert.equal(pressable(plain, tile), false, 'an ordinary quiet control does nothing');
+  // The real row through the header pass: quiet class and title, yet announced operable.
+  const button = new Node();
+  const quietTile = { transcriptBtn: button, headHelp: {}, session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: [],
+    transcriptState: tile.transcriptState, transcriptAvailable: () => true, transcriptQuiet: Tile.prototype.transcriptQuiet, transcriptLabel: Tile.prototype.transcriptLabel };
+  S.services = ['rireki'];
+  syncTileHead(quietTile);
+  assert.equal(button.classList.contains('off'), true);
+  assert.equal(button.title, 'no journal here');
+  assert.equal(button.attributes['aria-disabled'], 'false');
 });
 
 test('a slow probe for the previous Agent cannot speak for the next one', async () => {

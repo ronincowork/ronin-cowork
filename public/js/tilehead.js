@@ -150,6 +150,8 @@ export function syncTileHead(tile) {
     if (row.needs) {
       const why = quietReason(row, tile);
       setInert(node, !!why, why, tile.headHelp[row.key]);
+      // Quiet to the eye, operable to assistive tech: the press opens the reason in full.
+      if (why && row.pressWhenQuiet) node.setAttribute('aria-disabled', 'false');
     }
   }
 }

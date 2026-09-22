@@ -39,7 +39,8 @@ see [Archived sessions](archived-sessions.md).
 
 The separate **Transcript** button appears when Ronin Services has loaded Terminal
 transcript. It cycles: **Terminal → Chat → Notes → Work → All → Terminal**, each press
-showing more of the record as the CLI itself wrote it. Chat is the conversation alone;
+showing more of the record as the CLI itself wrote it; the button always names where you
+are now. Chat is the conversation alone;
 Notes adds the gaps and interruptions; Work adds each tool call as one line; All is
 everything, tool output included. The readings are the ones the server offers, so a new
 reading appears as a new step. The button is opaque when this Agent has nothing to show — born before Ronin
