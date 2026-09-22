@@ -229,8 +229,8 @@ the account's GitHub tokens.
 ## Ronin Services
 
 Services adds optional capabilities. The page reports what is installed and enabled on
-this machine. Readable recording and local weights are currently parked; their source
-presence does not make those features available. See [Ronin Services](services-activation.md)
+this machine. Terminal transcript needs both the package and its switch; local weights are
+currently parked, and source presence alone does not make a feature available. See [Ronin Services](services-activation.md)
 for installation, registration, availability, and data sharing.
 
 The surface shows one measured status line and three controls in one shape:
