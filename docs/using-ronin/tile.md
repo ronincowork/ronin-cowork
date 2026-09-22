@@ -38,9 +38,10 @@ see [Archived sessions](archived-sessions.md).
 ## Output availability
 
 The separate **Transcript** button appears when Ronin Services has loaded Terminal
-transcript. It reads that Agent's journal output and updates while the view is open.
-Agents born before activation, or without an exact journal binding, show an unavailable
-message. **Terminal** returns to the normal interactive terminal. The older Output
+transcript. It shows the Agent's conversation as the CLI itself recorded it — speech,
+tool calls, and tool output in full — and updates while the view is open. Agents born
+before activation, or on a CLI with no readable journal, show why the transcript is
+unavailable. **Terminal** returns to the normal interactive terminal. The older Output
 selector is separate from this switch.
 
 See [Work record](work-record.md) for authored work and [Workbench](workbench.md) for

@@ -212,8 +212,8 @@ test('floor and capability teaching own ordinary work; system reading stays inst
   assert.match(sessions, /Fork[\s\S]*fork it[\s\S]*session_create/i);
   assert.match(edges, /edges wipeboard/);
   assert.match(edges, /edges read/);
-  assert.match(services, /Readable transcripts are not in this beta/);
-  assert.match(services, /`edges read` falls back/);
+  assert.match(services, /Transcripts come from the CLI's own journal, not the screen/);
+  assert.match(services, /`edges read`\s+still shows a live pane/);
   assert.match(services, /Koshi\*\* is Ronin's assisted administrative behavior/);
   assert.match(services, /Voice\*\* turns the owner's speech into text/);
   assert.match(services, /Hotwords\*\* are the owner's dictation\s+glossary/);
