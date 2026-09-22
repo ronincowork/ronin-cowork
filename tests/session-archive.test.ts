@@ -30,18 +30,28 @@ test('archive manifests round-trip and list newest first', async () => {
   }
 });
 
-test('Codex discovery requires one matching rollout and writer lock', async () => {
-  const { codexIdFromFdTargets } = await import('../src/session-archive.js');
+test('stamped identity wins without process inspection, including opaque ids', async t => {
+  const { providerSessionInfo } = await import('../src/session-archive.js');
+  t.mock.method(fs, 'readFile', async () => { throw new Error('must not inspect process'); });
+  assert.deepEqual(await providerSessionInfo('codex', '/unused', 123, 'thread-opaque'), { agent: 'codex', id: 'thread-opaque' });
+});
+
+test('legacy discovery accepts explicit argv but refuses prompt and fd heuristics', async t => {
+  const { providerSessionInfo } = await import('../src/session-archive.js');
   const id = '01a03237-a381-7f01-8b0d-e64b38b6bc95';
-  assert.equal(codexIdFromFdTargets([
-    { target: `/tmp/thread-writer-locks/${id}.lock`, modified: 1 },
-    { target: `/tmp/sessions/rollout-2026-08-24T05-21-42-${id}.jsonl`, modified: 2 },
-  ]), id);
-  assert.equal(codexIdFromFdTargets([{ target: `/tmp/thread-writer-locks/${id}.lock`, modified: 1 }]), '');
-  assert.equal(codexIdFromFdTargets([
-    { target: `/tmp/thread-writer-locks/${id}.lock`, modified: 1 },
-    { target: `/tmp/sessions/rollout-2026-08-24T05-21-42-11111111-1111-1111-1111-111111111111.jsonl`, modified: 2 },
-  ]), '');
+  let argv = ['claude', '--session-id', id];
+  t.mock.method(fs, 'readFile', async (file: string) => {
+    assert.equal(file, '/proc/123/cmdline');
+    return Buffer.from(argv.join('\0') + '\0');
+  });
+  t.mock.method(fs, 'readdir', async () => { throw new Error('must not scan journals or descriptors'); });
+  assert.deepEqual(await providerSessionInfo('claude', '/unused', 123), { agent: 'claude', id });
+  argv = ['claude', '--session-id', id, '--session-id', '11111111-1111-1111-1111-111111111111'];
+  assert.equal(await providerSessionInfo('claude', '/unused', 123), null);
+  argv = ['claude', 'an exact prompt also present in a neighbour journal'];
+  assert.equal(await providerSessionInfo('claude', '/unused', 123), null);
+  argv = ['codex'];
+  assert.equal(await providerSessionInfo('codex', '/unused', 123), null);
 });
 
 test('legacy provider identity is inferred only from the executable argv', async () => {

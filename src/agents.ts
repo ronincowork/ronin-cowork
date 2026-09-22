@@ -16,7 +16,7 @@ export interface AgentOperations {
   selfUpdates: boolean;
   version: readonly string[];
   session: {
-    discovery: 'claude-history' | 'codex-fds' | 'unsupported';
+    discovery: 'explicit-argv' | 'unsupported';
   };
 }
 
@@ -31,7 +31,7 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: true,
       version: ['--version'],
-      session: { discovery: 'claude-history' },
+      session: { discovery: 'explicit-argv' },
     } as AgentOperations,
     parked: '',
     credentials: ['.claude/.credentials.json'],
@@ -47,7 +47,7 @@ export const AGENTS = [
       update: { shell: 'npm install -g @openai/codex@latest', argv: [] },
       selfUpdates: false,
       version: ['--version'],
-      session: { discovery: 'codex-fds' },
+      session: { discovery: 'unsupported' },
     } as AgentOperations,
     parked: '',
     credentials: ['.codex/auth.json'],

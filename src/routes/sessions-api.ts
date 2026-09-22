@@ -155,7 +155,9 @@ export function registerSessions(app: express.Express): void {
       const runtime = await sessionRuntime(name);
       const launchIdentity = await readLaunchIdentity(key);
       if (launchIdentity) await resolveLaunchJournal(launchIdentity);
-      const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, launchIdentity?.providerSession || await getProviderSessionId(name));
+      const provider = launchIdentity
+        ? (launchIdentity.providerSession ? { agent: launchIdentity.cli, id: launchIdentity.providerSession } : null)
+        : await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
       if (!provider) return res.status(409).json({ error: `Could not identify a resumable ${runtime.agent || 'agent'} conversation.` });
       const archived: ArchivedSession = {
         version: 1, id: key, name, key, archived_at: new Date().toISOString(), cwd: runtime.cwd,
