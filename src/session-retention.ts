@@ -1,7 +1,7 @@
 /**
  * Session folders outlive their sessions on purpose — the transcript, the birth receipt,
  * and the launch identity are the evidence a later personality reading needs — but not
- * forever. A closed, unarchived folder is removed once nothing has written to it for
+ * forever. The sweep runs weekly; the period is counted in days. A closed, unarchived folder is removed once nothing has written to it for
  * the retention period. Archived folders stay until hard delete, as before.
  *
  * Owner rulings, 2026-09-22: seven days after close; the period is a Campaign key with
@@ -23,7 +23,8 @@ import { listSessions } from './tmux.js';
 
 export const DEFAULT_RETENTION_DAYS = 7;
 const DAY_MS = 86_400_000;
-const SWEEP_EVERY_MS = DAY_MS;
+/** The owner's word: the clean sweep runs once a week; the period it applies is in days. */
+const SWEEP_EVERY_MS = 7 * DAY_MS;
 
 const days = (value: unknown): number | null => {
   const n = typeof value === 'number' ? value : Number(value);
@@ -88,7 +89,7 @@ export async function sweepOnce(now = Date.now()): Promise<string[]> {
   });
 }
 
-/** Once at boot, then daily, on the house clock JIKAN already keeps. */
+/** Once at boot, then weekly, on the house clock JIKAN already keeps. */
 export function startSessionRetention(): () => void {
   const run = async () => {
     const removed = await sweepOnce();
