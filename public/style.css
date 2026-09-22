@@ -4333,6 +4333,11 @@ button.wb-door:hover b {
 .tile-transcript-entry strong { color: var(--accent); }
 .tile-transcript-entry pre { margin: var(--space-2) 0 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tile-transcript-message { color: var(--muted); }
+.tile.transcript-on .composer,
+.tile.transcript-on:is(.tape-on, .keys-on) .composer.show,
+.tile.transcript-on .dvr-strip,
+.tile.transcript-on .tapejump,
+.tile.transcript-on .termjump { display: none; }
 @media (pointer: coarse) {
   .tile select.output { width: 44px; height: 40px; padding: 0; flex: 0 0 44px; }
 }

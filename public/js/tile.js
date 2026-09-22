@@ -315,6 +315,7 @@ export class Tile {
 
   /** Activate and pull keyboard focus into the terminal. */
   focusTerminal() {
+    if (this.transcriptOn) return;
     this.activate();
     this.term.focus();
   }
@@ -324,11 +325,13 @@ export class Tile {
    * a closed socket DROPS them, loudly (see tilewire.js).
    */
   sendRaw(d) {
+    if (this.transcriptOn) return false;
     return this.wire.sendInput(d);
   }
 
   /** Ronin's box uses the same message sender in Locked and Unlocked views. */
   sendMessage(text) {
+    if (this.transcriptOn) return Promise.resolve({ ok: false, why: t('transcript.read_only', 'Transcript is read only') });
     return sendComposerMessage(this.session, text);
   }
 
@@ -343,6 +346,10 @@ export class Tile {
    * and the keys row can ask their OWN tile for it.
    */
   jumpLatest() {
+    if (this.transcriptOn) {
+      this.transcriptView.el.scrollTop = this.transcriptView.el.scrollHeight;
+      return;
+    }
     if (!this.locked) {
       if (this.tapeMode) this.tape.scrollToBottom();
       else this.term.scrollToBottom();

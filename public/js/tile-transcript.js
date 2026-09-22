@@ -2,7 +2,7 @@
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
-export function makeTileTranscript() {
+export function makeTileTranscript({ read = request, schedule = setTimeout, cancel = clearTimeout } = {}) {
   const el = document.createElement('div');
   el.className = 'tile-transcript';
   el.setAttribute('role', 'log');
@@ -17,7 +17,7 @@ export function makeTileTranscript() {
 
   function stop() {
     generation++;
-    clearTimeout(timer);
+    cancel(timer);
     controller?.abort();
     controller = null;
   }
@@ -51,7 +51,7 @@ export function makeTileTranscript() {
     if (!active || !session || token !== generation) return;
     controller = new AbortController();
     const url = '/api/sessions/' + encodeURIComponent(session) + '/transcript?view=all&since=' + since + '&seq=' + seq;
-    const result = await request(url, { cache: 'no-store', signal: controller.signal });
+    const result = await read(url, { cache: 'no-store', signal: controller.signal });
     if (!active || token !== generation) return;
     controller = null;
     if (!result.ok) {
@@ -69,7 +69,7 @@ export function makeTileTranscript() {
       if (Number.isFinite(result.data.since)) since = result.data.since;
       if (Number.isFinite(result.data.seq)) seq = result.data.seq;
     }
-    timer = setTimeout(() => void poll(token), 2000);
+    timer = schedule(() => void poll(token), 2000);
   }
 
   function show(name) {
