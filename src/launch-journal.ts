@@ -53,9 +53,10 @@ export async function resolveLaunchJournal(identity: LaunchIdentity): Promise<st
 export async function resolveTranscriptSource(name: string): Promise<import('./sockets-contract.js').TranscriptSource | null> {
   const { tmux } = await import('./tmux-client.js');
   const { exactPane } = await import('./tmux.js');
+  const { sessionDir } = await import('./session-dir.js');
   const key = await tmux.run(['display-message', '-p', '-t', exactPane(name), '#{@ronin-key}']).catch(() => '');
   if (!key.trim()) return null;
   const identity = await readLaunchIdentity(key.trim());
   const file = identity ? await resolveLaunchJournal(identity) : null;
-  return identity?.journal && file ? { file, format: identity.journal.format, provider: identity.cli, session: identity.providerSession } : null;
+  return identity?.journal && file ? { file, format: identity.journal.format, provider: identity.cli, session: identity.providerSession, dir: sessionDir(key.trim()) } : null;
 }

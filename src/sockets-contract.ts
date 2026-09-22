@@ -1,5 +1,5 @@
 
-export const CONTRACT_V = 4;
+export const CONTRACT_V = 5;
 
 export interface LaunchIdentity {
   key: string;
@@ -23,7 +23,7 @@ export interface BornInfo {
 
 export type RowFields = Record<string, unknown>;
 
-export interface TranscriptSource { file: string; format: string; provider: string; session: string }
+export interface TranscriptSource { file: string; format: string; provider: string; session: string; dir: string }
 
 export interface Sockets {
   resolveTranscriptSource(name: string): Promise<TranscriptSource | null>;
