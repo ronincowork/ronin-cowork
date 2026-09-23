@@ -141,3 +141,18 @@ test('each surface walks only the readings it was given, by name', async () => {
   }
   assert.doesNotMatch(tile, /this\.transcriptReadings\[this\.transcriptLevel\]/, 'the level never indexes the unfiltered list');
 });
+
+test('the メ sheet holds Output for a Services-bound Agent and withdraws it for one without', async () => {
+  const [tile, style] = await Promise.all([read('public/js/tile.js'), read('public/style.css')]);
+  // Services being ON for the desk is not the same question as Services being on for THIS
+  // Agent: the roster row carries rireki per session, and an Agent born before Rireki was
+  // activated answers false while every newer one answers true. Both must read correctly.
+  const off = tile.slice(tile.indexOf('servicesOff() {'), tile.indexOf('syncOutput() {'));
+  assert.match(off, /S\.streamOff/, 'the Campaign switch still wins');
+  assert.match(off, /row\?\.rireki === false/, 'otherwise it is this Agent\'s own answer');
+  const sync = tile.slice(tile.indexOf('syncOutput() {'));
+  assert.match(sync, /sel\.hidden = off;/, 'the control withdraws itself when there is nothing to choose');
+  // And the word beside it goes with it, so the sheet never shows a blank line. Without
+  // this the row stayed, holding a hidden select and a label for a control that is gone.
+  assert.match(style, /\.tdrop-row:has\(> \[hidden\]\) \{\s*display: none;/);
+});
