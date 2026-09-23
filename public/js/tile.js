@@ -3,7 +3,7 @@ import { fetchSessions, setSessionTitle } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
-import { IS_TOUCH, S, saveState, serviceMissing, serviceParked, tiles, WHEEL_DOWN } from './state.js';
+import { IS_TOUCH, S, saveState, serviceParked, tiles, WHEEL_DOWN } from './state.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
@@ -47,7 +47,6 @@ export class Tile {
     this.strip = null; // the thin bar showing this.pending over the tile
     this.composer = null; // the unlocked tile's text entry (built on first use)
     this.tapeAt = null; // last tape offset seen — the resume point on reconnect
-    this.kakiTimer = null;
     // THIS TILE's transport. `S.locked` is only the default a new tile is born with.
     this.output = S.streamOff ? 'locked' : (S.output || (S.locked ? 'locked' : 'terminal_mirror'));
     this.locked = this.output === 'locked';
@@ -480,10 +479,8 @@ export class Tile {
       this.tapeAt = m.mode === 'tape' && m.seg != null ? { seg: m.seg, off: m.off } : null;
       this.tape.setAltNote(m.mode === 'tape' && m.provenance === 'derived', m.partial);
     } else if (m.t === 'lines') {
-      if (this.output === 'agent_summary') return;
       this.tape.appendRecs(m.recs || [], !!m.reset);
     } else if (m.t === 'frame') {
-      if (this.output === 'agent_summary') return;
       this.tape.setFrame(m.text || '');
     } else if (m.t === 'older') {
       this.tape.prepend(m.recs || [], m.atTop);
@@ -497,7 +494,9 @@ export class Tile {
   /** Change this tile's Output and reopen its viewer against the named server projection. */
   setOutput(value) {
     const previous = this.output;
-    const allowed = new Set(['locked', 'terminal_mirror', 'detailed', 'condensed', 'cherry_pick', 'agent_summary']);
+    // What can actually be produced. The tape projections are gone from the offer, not
+    // from the source (owner, 2026-09-23); a stored choice naming one lands on Locked.
+    const allowed = new Set(['locked', 'terminal_mirror']);
     this.output = this.servicesOff() || !allowed.has(value) ? 'locked' : value;
     this.locked = this.output === 'locked';
     S.output = this.output;
@@ -505,10 +504,6 @@ export class Tile {
     this.renderPending();
     this.syncOutput();
     if (this.tape) this.tape.setMode(this.output);
-    if (this.kakiTimer) clearInterval(this.kakiTimer);
-    this.kakiTimer = this.output === 'agent_summary'
-      ? setInterval(() => void this.refreshKaki(false), 5000)
-      : null;
     if (this.session && this.wire.wantOpen && previous !== this.output) this.connect(this.session);
     saveState();
   }
@@ -538,7 +533,7 @@ export class Tile {
     // so a one-option dropdown is noise and the control disappears whole (owner,
     sel.hidden = off;
     for (const option of [...sel.options])
-      if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
+      if (S.streamOff && option.value !== 'locked') option.remove();
     const transcriptPark = serviceParked('rireki');
     sel.title = S.streamOff
       ? transcriptPark
@@ -699,8 +694,6 @@ export class Tile {
       rows: this.term.rows,
       tapeAt: this.tapeAt,
     });
-
-    if (this.output === 'agent_summary') void this.refreshKaki(true);
 
     saveState();
   }

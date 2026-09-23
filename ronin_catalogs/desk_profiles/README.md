@@ -16,7 +16,7 @@ prose. Fields, all optional — a blank field means "as stock":
 | `skin` | a `SKINS.md` entry | `public/js/skins.js` at boot and on pick |
 | `theme` | `light` · `dark` · `automatic` | root presentation, before reveal |
 | `lexicon` | a `lexicons/` entry | `public/js/lexicon.js` — every `t()` |
-| `rireki_view` | `terminal_mirror` · `detailed` · `condensed` · `cherry_pick` · `locked` | a NEW tile's Output, when the tile has no choice of its own |
+| `rireki_view` | `terminal_mirror` · `locked` | a NEW tile's Output, when the tile has no choice of its own. A profile naming a retired tape projection does not apply |
 | `team_arrangement` | slot names in order — `workspace1,roster,workspace2` | the Team page, when a tab has no arrangement of its own |
 
 **Yours and ours.** A file of the same name in your catalogs store replaces ours **whole**;

@@ -9,7 +9,7 @@ column, or drag its card into the workspace where you want to see it.
 |---|---|
 | Title / ⛩ | Edit the Agent's displayed title; its session name remains its identity |
 | Work Record | Open the Agent's objective, work, and tracked repositories |
-| Output | Choose an available output view; Locked is the live terminal |
+| Output | **Terminal Mirror** — the live terminal — or **Locked**, the same terminal to watch without typing into it |
 | Transcript / Chat · Notes · Work · All · Term | When Terminal transcript is active, cycle from the terminal through ever fuller readings of the Agent's conversation and back |
 | Mention | Add another session's name to the message box |
 | Docs | Open documents tracked by this Agent |
@@ -56,7 +56,11 @@ On a phone the button sits in the bar at the top, because the tile's own header 
 screen there, and it is a two-state toggle: **Term** or **Chat**. The fuller readings are a
 desk thing; a thumb wants the conversation or the terminal.
 
-The older Output selector is separate from this switch.
+The Output selector beside it is a different question — whether this tile's terminal takes
+your typing — and it offers Terminal Mirror or Locked. It once listed Detailed, Condensed,
+Cherry Pick and Agent Summary as well: those were views of a recording Ronin no longer
+makes, so choosing one showed an empty tile. They have left the list, not the source; if
+Agent Summary returns it will be written from the conversation, like everything else here.
 
 See [Work record](work-record.md) for authored work and [Workbench](workbench.md) for
 arrangement and navigation. Contributors can find the implementation in the

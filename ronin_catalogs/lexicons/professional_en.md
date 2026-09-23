@@ -1490,10 +1490,6 @@ The catalog entry goes. {dir} is not touched.
 ## output — output.js (the RIREKI view picker)
 - **output.locked:** Locked
 - **output.terminal_mirror:** Terminal Mirror
-- **output.detailed:** Detailed
-- **output.condensed:** Condensed
-- **output.cherry_pick:** Cherry Pick
-- **output.agent_summary:** Agent Summary
 - **output.aria:** Output
 - **output.title:** Output shown in this tile
 
@@ -1661,7 +1657,7 @@ The catalog entry goes. {dir} is not touched.
 - **tile.session_ended:** session ended.
 - **output.title_off:** Output — Locked only. Ronin Services is off for this Agent.
 - **output.title_locked:** Output — Locked only. Ronin Services is not installed.
-- **output.title_choose:** Output — choose the live terminal or a RIREKI view
+- **output.title_choose:** Output — the live terminal, or Locked to watch without typing
 
 ## tape — the summary default and the alt note
 - **tape.no_summary:** No summary has been written yet.

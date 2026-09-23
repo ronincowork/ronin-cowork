@@ -9,5 +9,5 @@ concept drew it, cut corners and all.
 - **skin:** square
 - **theme:** dark
 - **lexicon:** league_en
-- **rireki_view:** condensed
+- **rireki_view:** terminal_mirror
 - **team_arrangement:** roster,workspace1,workspace2
