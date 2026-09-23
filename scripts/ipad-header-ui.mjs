@@ -37,6 +37,17 @@ const firstTeam = async () => {
     return name ?? null;
   } catch { return null; }
 };
+// Say plainly when the target is not answering. Driving a browser at a closed door
+// produced a confusing hang; a desk has no .env, so its default can name an address this
+// installation no longer binds — the positional URL is the answer there.
+try {
+  const probe = await fetch(`${ORIGIN}/api/health`);
+  if (!probe.ok) throw new Error(`HTTP ${probe.status}`);
+} catch (e) {
+  console.error(`ipad-header-ui: nothing is answering at ${ORIGIN} (${String(e.message).split('\n')[0]}).`);
+  console.error('The header has NOT been looked at. Pass the URL to use, e.g. the tailnet HTTPS address.');
+  process.exit(2);
+}
 const team = await firstTeam();
 const DESTINATIONS = [
   { name: 'the coworkspace', at: `${ORIGIN}/#/cowork` },
