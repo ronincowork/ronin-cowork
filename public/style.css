@@ -6784,7 +6784,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 /* Wide touch keeps the original workbench. Its redundant workspace bands go away;
    the application and Agent headers independently fold when conversation needs room. */
 @media (pointer: coarse) and (min-width: 681px) {
-  #bar > .app-header-collapse,
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .view-island > .app-header-collapse,
   :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head > .tile-head-collapse {
     display: inline-flex;
     flex: 0 0 auto;
@@ -6798,15 +6798,14 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
     color: var(--fg);
     font: 600 var(--text-5)/1 var(--font-ui);
   }
-  #bar > .app-header-collapse { margin-left: auto; }
-  #bar.header-collapsed {
-    min-height: 0;
-    justify-content: flex-end;
-    border-bottom-color: transparent;
-    background: transparent;
-    padding-block: var(--space-1);
+  .view-island > .app-header-collapse { margin-left: var(--space-2); }
+  #bar.header-collapsed { display: none; }
+  .wk-surface-header.island-docked > :not(.view-island) { display: none !important; }
+  .wk-surface-header.island-docked > .view-island {
+    display: flex;
+    flex: 1 1 auto;
+    justify-content: center;
   }
-  #bar.header-collapsed > :not(.app-header-collapse) { display: none !important; }
   :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface:has(.tile) > .wk-surface-header {
     display: none;
   }

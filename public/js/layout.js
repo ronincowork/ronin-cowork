@@ -12,7 +12,10 @@ import { t } from './lexicon.js';
 
 export function build() {
   const bar = document.getElementById('bar');
-  if (bar) {
+  const island = document.getElementById('viewisland');
+  if (bar && island) {
+    const home = document.createComment('view-island-home');
+    island.before(home);
     const collapse = document.createElement('button');
     collapse.type = 'button';
     collapse.className = 'header-collapse app-header-collapse';
@@ -22,9 +25,31 @@ export function build() {
       collapse.setAttribute('aria-expanded', String(!closed));
       collapse.setAttribute('aria-label', closed ? t('bar.expand_header', 'Expand header') : t('bar.collapse_header', 'Collapse header'));
     };
-    collapse.addEventListener('click', () => { bar.classList.toggle('header-collapsed'); sync(); });
+    const restore = () => {
+      if (!bar.classList.contains('header-collapsed')) return;
+      island.closest('.wk-surface-header')?.classList.remove('island-docked');
+      home.after(island);
+      bar.classList.remove('header-collapsed');
+      sync();
+    };
+    collapse.addEventListener('click', () => {
+      const closed = bar.classList.contains('header-collapsed');
+      if (closed) {
+        restore();
+      } else {
+        const selectorHead = [...document.querySelectorAll('[data-workbench-header="selector"]')]
+          .find((node) => node.getClientRects().length);
+        if (!selectorHead) return;
+        selectorHead.classList.add('island-docked');
+        selectorHead.append(island);
+        bar.classList.add('header-collapsed');
+      }
+      sync();
+    });
+    window.addEventListener('hashchange', restore);
+    window.matchMedia('(pointer: coarse) and (min-width: 681px)').addEventListener?.('change', restore);
     sync();
-    bar.append(collapse);
+    island.append(collapse);
   }
   // Each wiring block is guarded separately: losing one control must not cost the
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
