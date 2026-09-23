@@ -6433,6 +6433,33 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   border-color: var(--kaki);
   color: var(--on-strong);
 }
+
+/* The reading toggle rides the phone's head the way it rides the tile's, since the tile's
+   own head is not on screen here. A word, not a glyph — it names where you are. */
+#phone .ph-bar .transcript-toggle {
+  flex: 0 0 auto;
+  height: 40px;
+  min-width: 44px;
+  padding: 0 var(--space-3);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--fg);
+  font: 600 var(--text-3)/1 var(--font-ui);
+  cursor: pointer;
+}
+#phone .ph-bar .transcript-toggle[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* Nothing to show: quiet to the eye, still pressable — the press says why. */
+#phone .ph-bar .transcript-toggle.off { opacity: 0.4; }
+#phone .ph-bar .transcript-toggle[hidden] { display: none; }
+#phone .ph-bar .transcript-toggle:active {
+  background: var(--kaki);
+  border-color: var(--kaki);
+  color: var(--on-strong);
+}
 #phone .ph-main {
   flex: 1;
   min-height: 0;

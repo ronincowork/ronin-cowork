@@ -309,7 +309,13 @@ export class Tile {
     const readings = Array.isArray(this.transcriptReadings) ? this.transcriptReadings : [];
     const was = this.transcriptOn;
     const next = was ? this.transcriptLevel + 1 : 0;
-    const on = !was || next < readings.length;
+    // A thumb wants a toggle, not five detents: on the phone this is Term or Chat and
+    // nothing else (owner, 2026-09-23). The list still comes from the route — the phone
+    // simply does not walk past its first entry, so a reading added on the server changes
+    // the desktop cycle and leaves the phone alone. The phone document is the same
+    // question the keys row asks below.
+    const reach = document.getElementById('phone') ? Math.min(1, readings.length) : readings.length;
+    const on = !was || next < reach;
     this.transcriptOn = on;
     this.transcriptLevel = on ? next : -1;
     this.el.classList.toggle('transcript-on', on);

@@ -50,8 +50,11 @@ an Agent whose identity was recorded. **Term** returns to the normal interactive
 
 While you are reading any of the readings, the message box stays with you: the record
 itself is read-only, but the Agent is live, and the box below it talks to the Agent the
-same way it does over the terminal. On a phone the tile header is not on screen, so the
-reading control lives in the メ sheet beside Work record, Docs and Output.
+same way it does over the terminal.
+
+On a phone the button sits in the bar at the top, because the tile's own header is not on
+screen there, and it is a two-state toggle: **Term** or **Chat**. The fuller readings are a
+desk thing; a thumb wants the conversation or the terminal.
 
 The older Output selector is separate from this switch.
 

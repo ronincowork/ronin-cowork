@@ -25,7 +25,10 @@ class Node {
   get scrollHeight() { return this.children.length * 50; }
 }
 
-globalThis.document = { createElement: () => new Node(), activeElement: null };
+// getElementById answers for the phone document only when a test says it is on one: the
+// tile asks that question to decide how far its cycle goes.
+globalThis.document = { createElement: () => new Node(), activeElement: null,
+  getElementById: (id) => (id === 'phone' && globalThis.__onPhone ? new Node() : null) };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {} };
 Object.defineProperty(globalThis, 'navigator', { value: { platform: 'Linux' }, configurable: true });
 
@@ -281,4 +284,31 @@ test('empty means this reading never showed a record, not that the last poll was
   await tick();
   assert.equal(states.at(-1), true);
   view.hide();
+});
+
+test('on a phone the cycle is two states: Term and the conversation, from the route\'s own list', () => {
+  const shown = [];
+  const tile = {
+    session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: READINGS, transcriptState: null,
+    transcriptAvailable: () => true, tapeMode: false,
+    el: { classList: { toggle() {} } }, body: { contains: () => false },
+    transcriptView: { show: (name, view) => shown.push(['show', view]), setReading: (view) => shown.push(['set', view]), hide: () => shown.push(['hide']) },
+    setComposer() {}, syncHeader() {}, doFit() {},
+  };
+  const toggle = () => Tile.prototype.toggleTranscript.call(tile);
+  const label = () => Tile.prototype.transcriptLabel.call(tile);
+  globalThis.__onPhone = true;
+  try {
+    // Owner, 2026-09-23: Term or Chat on a phone. Notes, Work and All are a desk thing.
+    toggle();
+    assert.equal(label(), 'Chat');
+    toggle();
+    assert.equal(tile.transcriptOn, false, 'the second press comes straight back to Term');
+    assert.equal(label(), TERM);
+    assert.deepEqual(shown, [['show', 'chat'], ['hide']], 'it never walks to Notes');
+    // The same tile on a desk keeps every reading the route published.
+    globalThis.__onPhone = false;
+    toggle(); toggle();
+    assert.equal(label(), 'Notes');
+  } finally { globalThis.__onPhone = false; }
 });

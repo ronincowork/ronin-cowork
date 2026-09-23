@@ -1579,7 +1579,6 @@ The catalog entry goes. {dir} is not touched.
 - **me.control:** Control
 - **me.kill:** Kill session
 - **me.output:** Output
-- **me.transcript:** Reading
 - **me.title:** This session — status, work record, groups, docs, note, control
 
 ## keys — keysrow.js (the composer's keys row)
@@ -1598,7 +1597,7 @@ The catalog entry goes. {dir} is not touched.
 - **phone.agents:** Agents
 - **phone.docs:** Docs
 - **phone.back:** Back
-- **phone.me_title:** This Agent — work record, docs, reading, output, close
+- **phone.me_title:** This Agent — work record, docs, output, close
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 
