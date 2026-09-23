@@ -14,11 +14,17 @@ export function build() {
   const bar = document.getElementById('bar');
   const island = document.getElementById('viewisland');
   if (bar && island) {
-    const home = document.createComment('view-island-home');
-    island.before(home);
+    // THE CARET RIDES THE ISLAND, AND ONLY THE CARET EVER LEAVES IT. Collapsing hides
+    // #bar, so the one control that reopens the header has to outlive the bar: it docks
+    // to the body, fixed over the work surfaces' header, deliberately a little in the
+    // way so the fold can always be toggled back. The island itself never moves. It is
+    // one island, shaped once, and it goes down with the bar it belongs to — nothing
+    // re-parents it into a header it was never shaped for.
     const collapse = document.createElement('button');
     collapse.type = 'button';
     collapse.className = 'header-collapse app-header-collapse';
+    const home = document.createComment('header-collapse-home');
+    island.append(home, collapse);
     const sync = () => {
       const closed = bar.classList.contains('header-collapsed');
       collapse.textContent = closed ? '⌄' : '⌃';
@@ -27,29 +33,27 @@ export function build() {
     };
     const restore = () => {
       if (!bar.classList.contains('header-collapsed')) return;
-      island.closest('.wk-surface-header')?.classList.remove('island-docked');
-      home.after(island);
+      home.after(collapse);
+      collapse.classList.remove('header-collapse-docked');
       bar.classList.remove('header-collapsed');
       sync();
     };
     collapse.addEventListener('click', () => {
-      const closed = bar.classList.contains('header-collapsed');
-      if (closed) {
+      if (bar.classList.contains('header-collapsed')) {
         restore();
-      } else {
-        const selectorHead = [...document.querySelectorAll('[data-workbench-header="selector"]')]
-          .find((node) => node.getClientRects().length);
-        if (!selectorHead) return;
-        selectorHead.classList.add('island-docked');
-        selectorHead.append(island);
-        bar.classList.add('header-collapsed');
+        return;
       }
+      // The body, not a surface header: the caret must not depend on finding a header to
+      // live in, and collapsing the application header must never cost a work surface its
+      // own title and actions.
+      document.body.append(collapse);
+      collapse.classList.add('header-collapse-docked');
+      bar.classList.add('header-collapsed');
       sync();
     });
     window.addEventListener('hashchange', restore);
     window.matchMedia('(pointer: coarse) and (min-width: 681px)').addEventListener?.('change', restore);
     sync();
-    island.append(collapse);
   }
   // Each wiring block is guarded separately: losing one control must not cost the
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.

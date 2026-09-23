@@ -118,6 +118,20 @@ head does not disappear when a surface is empty or quiet.
 Use the controls in that head for the surface you are looking at. A workspace remains the
 same numbered place when you replace its surface.
 
+## Folding the header on a tablet
+
+On a wide touch screen — an iPad keeps the workbench rather than the phone document — the
+application header folds away to give the work below more room. The chevron rides inside
+the dynamic island at the top of the screen, next to the name the island is showing.
+
+Collapsing takes the whole header, island included. The chevron stays: it docks to the top
+edge of the screen, in the island's own colours, sitting over the head of the work surfaces
+so it is always within reach. It is deliberately a little in the way — it is how you get the
+header back. Tap it again and the header returns exactly as it was.
+
+Each Agent tile folds its own head the same way and keeps that choice separately, so a tile
+you are reading can stay compact while the one you are working in shows its full controls.
+
 ## Short vocabulary check
 
 > The Team workbench's discovery column offers the Commons surface. Opening it places

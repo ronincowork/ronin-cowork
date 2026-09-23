@@ -6810,7 +6810,15 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
     color: inherit;
     transform: none;
   }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) .view-island > .app-header-collapse,
+  /* The readings — surface map, RAM/RPM, the view's own actions, Feedback — belong at
+     the right-hand end. The island above is absolutely positioned, so its .grow no
+     longer pushes them there, and trimBarForTouch removes #shapecycle and its
+     margin-left: auto with it. #viewmap is first of the trailing group, so the auto
+     margin here carries the whole group right. */
+  #bar > .wk-view-map { margin-left: auto; }
+  /* Keyed on the control, not on its parent: the caret is styled the same whether it is
+     riding the island or docked over the work surfaces below. */
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .app-header-collapse,
   :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head > .tile-head-collapse {
     display: inline-flex;
     flex: 0 0 auto;
@@ -6824,22 +6832,33 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
     color: var(--fg);
     font: 600 var(--text-5)/1 var(--font-ui);
   }
-  .view-island > .app-header-collapse { position: relative; z-index: 1; margin-left: var(--space-2); }
-  #bar.header-collapsed { display: none; }
-  .wk-surface-header.island-docked > :not(.view-island) { display: none !important; }
-  .wk-surface-header.island-docked {
-    padding: 0;
-    background: var(--bar-place-bg);
+  /* Riding the island, the caret IS the island: its own ink on its own surface, not a
+     second chip floating inside the slab. Scoped like the rule above so it out-ranks the
+     shared panel treatment that suits a tile head but not a dark island. */
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .view-island > .app-header-collapse {
+    position: relative;
+    z-index: 1;
+    margin-left: var(--space-2);
+    border-color: transparent;
+    background: transparent;
+    color: inherit;
   }
-  .wk-surface-header.island-docked > .view-island {
-    position: static;
-    display: flex;
-    flex: 1 1 auto;
-    max-width: none;
-    padding: var(--space-2) var(--space-3);
-    border-radius: 0;
-    justify-content: center;
-    transform: none;
+  #bar.header-collapsed { display: none; }
+  /* Collapsed: the bar and its island are gone, and this is all that is left of them —
+     the caret alone, in the island's own colours, cut into the top edge where the island
+     sat so it does not jump, sitting over the work surfaces' header. In the way on
+     purpose: it is the only way back. */
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .app-header-collapse.header-collapse-docked {
+    position: fixed;
+    z-index: 5;
+    top: max(0px, env(safe-area-inset-top));
+    left: 50%;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-color: transparent;
+    background: var(--bar-place-bg);
+    color: var(--bar-place-fg);
+    transform: translateX(-50%);
   }
   :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface > .wk-surface-header:not([data-workbench-header='selector']) {
     display: none;

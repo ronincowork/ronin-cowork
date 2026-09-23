@@ -58,3 +58,29 @@ test('managed workspaces empty their seat and both empty views use the subdued R
   assert.match(cowork, /logo\.src = '/);
   assert.match(css, /\.tile-empty-mark img[\s\S]*opacity: 0\.16;[\s\S]*filter: grayscale\(1\)/);
 });
+
+test('collapsing the application header moves the caret alone, never the island', async () => {
+  const [layout, style] = await Promise.all([read('public/js/layout.js'), read('public/style.css')]);
+  // The defect: collapsing re-parented the whole island into the live selector header,
+  // where a class had to unwind every island property to survive a flex band, and the
+  // header lost its own title and actions to make room. The island stays in the bar.
+  assert.doesNotMatch(layout, /island-docked|selectorHead|data-workbench-header="selector"/);
+  assert.doesNotMatch(style, /island-docked/);
+  assert.match(layout, /document\.body\.append\(collapse\)/);
+  assert.match(layout, /collapse\.classList\.add\('header-collapse-docked'\)/);
+  assert.match(style, /\.app-header-collapse\.header-collapse-docked \{[^}]*position: fixed/);
+  // Keyed on the control, so the caret keeps its shape once it is no longer the island's child.
+  assert.match(style, /\.app-header-collapse,\n\s*:root:is\(\[data-workbench='team'\], \[data-workbench='cowork'\]\) \.tile-head > \.tile-head-collapse \{/);
+});
+
+test('the wide-touch bar keeps its readings at the right-hand end', async () => {
+  const [style, html] = await Promise.all([read('public/style.css'), read('public/index.html')]);
+  // The island goes position: absolute on wide touch, so its .grow stops pushing the
+  // readings right and trimBarForTouch removes the only other right-hand push.
+  assert.match(style, /#bar > \.wk-view-map \{ margin-left: auto; \}/);
+  // The auto margin only carries the group if the map is still first of the trailing run.
+  const bar = html.slice(html.indexOf('<header id="bar">'), html.indexOf('</header>'));
+  for (const after of ['id="ramrpm"', 'id="viewactions"', 'id="feedbackaction"']) {
+    assert.ok(bar.indexOf('id="viewmap"') < bar.indexOf(after), `the map precedes ${after}`);
+  }
+});
