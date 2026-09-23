@@ -201,6 +201,9 @@ export function buildTileHead(tile) {
   const collapse = document.createElement('button');
   collapse.type = 'button';
   collapse.className = 'tile-head-collapse';
+  // Wide touch starts with the useful compact identity row; the owner can expand the
+  // full Agent tools in place. Desktop and the dedicated phone document are unchanged.
+  if (window.matchMedia('(pointer: coarse) and (min-width: 681px)').matches) el.classList.add('header-collapsed');
   const syncCollapse = () => {
     const closed = el.classList.contains('header-collapsed');
     collapse.textContent = closed ? '⌄' : '⌃';
