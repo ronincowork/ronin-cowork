@@ -1478,8 +1478,8 @@ The catalog entry goes. {dir} is not touched.
 ## transcript — tile-transcript.js (the tile's journal view)
 - **transcript.title:** Transcript
 - **transcript.toggle:** Transcript
-- **transcript.terminal:** Terminal
-- **transcript.toggle_help:** Terminal → Chat → Notes → Work → All → Terminal: each press shows more of the record
+- **transcript.terminal:** Term
+- **transcript.toggle_help:** Term → Chat → Notes → Work → All → Term: each press shows more of the record
 - **transcript.no_session:** Transcript — no Agent in this tile
 - **transcript.loading:** Loading transcript…
 - **transcript.empty:** No transcript output yet.
@@ -1579,6 +1579,7 @@ The catalog entry goes. {dir} is not touched.
 - **me.control:** Control
 - **me.kill:** Kill session
 - **me.output:** Output
+- **me.transcript:** Reading
 - **me.title:** This session — status, work record, groups, docs, note, control
 
 ## keys — keysrow.js (the composer's keys row)
@@ -1597,7 +1598,7 @@ The catalog entry goes. {dir} is not touched.
 - **phone.agents:** Agents
 - **phone.docs:** Docs
 - **phone.back:** Back
-- **phone.me_title:** This Agent — work record, docs, note, control, kill
+- **phone.me_title:** This Agent — work record, docs, reading, output, close
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 

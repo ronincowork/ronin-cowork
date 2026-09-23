@@ -275,10 +275,16 @@ export async function buildPhone() {
     stageTile = tile;
     tile.composer?.el.querySelector('.keysrow')?.append(feedbackAction);
 
-    sheet = makeDrop('メ', t('phone.me_title', 'This Agent — work record, docs, output, close'), 'me');
+    sheet = makeDrop('メ', t('phone.me_title', 'This Agent — work record, docs, reading, output, close'), 'me');
     const node = (key) => tile[key]?.el ?? tile[key];
     sheet.addRow(node('workRecordBtn'), t('me.ladder', 'Work record'));
     sheet.addRow(node('docsBtn'), t('me.docs', 'Docs'));
+    // The reading control is the tile HEAD's button, and the head does not exist on a
+    // phone — so without this row Term · Chat · Notes · Work · All are unreachable here,
+    // not merely awkward (owner, 2026-09-23: "i dont see the rireki choices on my phone").
+    // 'stay' because it is a dial: each tap is the next reading, and the sheet must not
+    // shut under the finger. The row hides itself when the route offers no readings.
+    sheet.addRow(node('transcriptBtn'), t('me.transcript', 'Reading'), 'stay');
     // No Services, no choice: the Output row only exists where an unlocked view does.
     if (!tile.servicesOff()) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
     sheet.addRow(node('killBtn'), 'Close');

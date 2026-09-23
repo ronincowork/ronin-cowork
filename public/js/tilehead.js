@@ -38,7 +38,7 @@ const HEADER = () => {
   { grow: true },
 
   { key: 'transcriptBtn', cls: 'transcript-toggle', text: t('transcript.toggle', 'Transcript'), needs: 'session',
-    help: t('transcript.toggle_help', 'Terminal → Chat → Notes → Work → All → Terminal: each press shows more of the record'),
+    help: t('transcript.toggle_help', 'Term → Chat → Notes → Work → All → Term: each press shows more of the record'),
     quiet: t('transcript.no_session', 'Transcript — no Agent in this tile'),
     // Opaque when the route says this Agent has nothing to show — any reason, any CLI.
     state: (tile) => (typeof tile.transcriptQuiet === 'function' ? tile.transcriptQuiet() : ''),
@@ -47,7 +47,7 @@ const HEADER = () => {
       el.hidden = !tile.transcriptAvailable();
       el.setAttribute('aria-pressed', String(!!tile.transcriptOn));
       el.textContent = typeof tile.transcriptLabel === 'function' ? tile.transcriptLabel()
-        : (tile.transcriptOn ? t('transcript.terminal', 'Terminal') : t('transcript.toggle', 'Transcript'));
+        : (tile.transcriptOn ? t('transcript.terminal', 'Term') : t('transcript.toggle', 'Transcript'));
     },
     on: (tile) => tile.toggleTranscript() },
 

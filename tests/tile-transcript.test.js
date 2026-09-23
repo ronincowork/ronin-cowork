@@ -55,7 +55,7 @@ test('header toggle appears only with loaded Rireki and changes its label', () =
   assert.equal(button.textContent, 'Transcript');
   tile.transcriptOn = true;
   syncTileHead(tile);
-  assert.equal(button.textContent, 'Terminal');
+  assert.equal(button.textContent, 'Term');
   assert.equal(button.attributes['aria-pressed'], 'true');
 });
 
@@ -98,41 +98,64 @@ test('stale response from the previous session cannot enter the next transcript'
   view.hide();
 });
 
-test('Transcript blocks every tile input path and Terminal restores them', async () => {
+test('a reading keeps the way to answer: the composer sends, the hidden terminal is not focused', async () => {
   let raw = 0;
   let focused = 0;
+  let composer = null;
   const fake = {
-    transcriptOn: true, session: 'agent', transcriptAvailable: () => true,
+    transcriptOn: true, session: 'agent', transcriptAvailable: () => true, tapeMode: false,
     el: { classList: { toggle() {} } }, body: { contains: () => false },
     transcriptView: { el: { scrollTop: 0, scrollHeight: 50 }, show() {}, hide() {} },
     wire: { sendInput: () => { raw++; return true; } },
     term: { focus: () => { focused++; } }, activate() {}, syncHeader() {}, doFit() {},
+    setComposer: (on) => { composer = on; },
   };
-  assert.equal(Tile.prototype.sendRaw.call(fake, 'x'), false);
-  assert.equal((await Tile.prototype.sendMessage.call(fake, 'hello')).ok, false);
-  Tile.prototype.focusTerminal.call(fake);
-  Tile.prototype.jumpLatest.call(fake);
-  assert.equal(raw, 0);
-  assert.equal(focused, 0);
-  assert.equal(fake.transcriptView.el.scrollTop, 50);
-  Tile.prototype.toggleTranscript.call(fake);
-  assert.equal(fake.transcriptOn, false);
+  // Owner, 2026-09-23: reading a record is not a reason to lose the entry box. Both
+  // deliberate send paths — the box and the keys row that rides it — reach the live Agent.
   assert.equal(Tile.prototype.sendRaw.call(fake, 'x'), true);
   assert.equal(raw, 1);
+  // The terminal is behind the reading, so there is nothing on screen to focus, and ⤓
+  // belongs to the reading the eye is actually on.
+  Tile.prototype.focusTerminal.call(fake);
+  Tile.prototype.jumpLatest.call(fake);
+  assert.equal(focused, 0);
+  assert.equal(fake.transcriptView.el.scrollTop, 50);
+  // Leaving the reading on a desktop tile takes the composer away with it.
+  Tile.prototype.toggleTranscript.call(fake);
+  assert.equal(fake.transcriptOn, false);
+  assert.equal(composer, false, 'the composer follows the reading out');
   Tile.prototype.focusTerminal.call(fake);
   assert.equal(focused, 1);
 });
 
+test('the composer comes with the reading and goes with it', () => {
+  const asked = [];
+  const fake = {
+    transcriptOn: false, transcriptLevel: -1, transcriptReadings: [{ name: 'chat', label: 'Chat' }],
+    session: 'agent', transcriptAvailable: () => true, tapeMode: false,
+    el: { classList: { toggle() {} } }, body: { contains: () => false },
+    transcriptView: { show() {}, setReading() {}, hide() {} },
+    setComposer: (on) => asked.push(on), syncHeader() {}, doFit() {},
+  };
+  Tile.prototype.toggleTranscript.call(fake);
+  assert.deepEqual(asked, [true], 'opening a reading builds the entry box even on a desktop tile');
+  Tile.prototype.toggleTranscript.call(fake);
+  assert.deepEqual(asked, [true, false]);
+});
+
+// The off-state's name, in one place: these assertions are about WHERE the button says
+// you are, not about the word chosen for it.
+const TERM = 'Term';
 const READINGS = [{ name: 'chat', label: 'Chat' }, { name: 'notes', label: 'Notes' }, { name: 'work', label: 'Work' }, { name: 'all', label: 'All' }];
 const withReadings = (records, view) => ({ ok: true, data: { available: true, records, since: 1, seq: 1, view, readings: READINGS } });
 
-test('the button cycles Terminal → Chat → Notes → Work → All → Terminal over the readings the route published', async () => {
+test('the button cycles Term → Chat → Notes → Work → All → Term over the readings the route published', async () => {
   const shown = [];
   const tile = {
     session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: [], transcriptState: null,
     transcriptAvailable: () => true, el: { classList: { toggle() {} } }, body: { contains: () => false },
     transcriptView: { show: (name, view) => shown.push(['show', view]), setReading: (view) => shown.push(['set', view]), hide: () => shown.push(['hide']) },
-    syncHeader() {}, doFit() {},
+    setComposer() {}, syncHeader() {}, doFit() {},
   };
   const toggle = () => Tile.prototype.toggleTranscript.call(tile);
   const label = () => Tile.prototype.transcriptLabel.call(tile);
@@ -150,7 +173,7 @@ test('the button cycles Terminal → Chat → Notes → Work → All → Termina
   toggle(); assert.equal(label(), 'All');
   toggle();
   assert.equal(tile.transcriptOn, false);
-  assert.equal(label(), 'Terminal', 'the button names where you are, not where a press goes');
+  assert.equal(label(), TERM, 'the button names where you are, not where a press goes');
   assert.deepEqual(shown.slice(1), [['set', 'chat'], ['set', 'notes'], ['set', 'work'], ['set', 'all'], ['hide']]);
   // With the readings known (a probe answered), the way in is Chat.
   toggle();
@@ -179,7 +202,7 @@ test('opaque when the route says unavailable or empty, live when records exist �
   syncTileHead(tile);
   assert.equal(button.classList.contains('off'), false);
   assert.equal(button.attributes['aria-disabled'], 'false');
-  assert.equal(button.textContent, 'Terminal');
+  assert.equal(button.textContent, TERM);
   tile.transcriptOn = true; tile.transcriptLevel = 0; tile.transcriptReadings = READINGS;
   syncTileHead(tile);
   assert.equal(button.textContent, 'Chat');

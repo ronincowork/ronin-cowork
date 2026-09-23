@@ -4338,8 +4338,6 @@ button.wb-door:hover b {
 }
 .tile-transcript-entry { border-bottom: var(--edge) solid var(--line); padding: var(--space-3) 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tile-transcript-message { color: var(--muted); }
-.tile.transcript-on .composer,
-.tile.transcript-on:is(.tape-on, .keys-on) .composer.show,
 .tile.transcript-on .dvr-strip,
 .tile.transcript-on .tapejump,
 .tile.transcript-on .termjump { display: none; }
@@ -4519,7 +4517,7 @@ button.wb-door:hover b {
 .tile .composer {
   display: none;
 }
-.tile:is(.tape-on, .keys-on) .composer.show {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer.show {
   display: flex;
   position: absolute;
   left: 0;
@@ -4532,7 +4530,7 @@ button.wb-door:hover b {
   border-top: var(--edge) solid var(--term-panel-line);
   align-items: flex-end;
 }
-.tile:is(.tape-on, .keys-on) .composer textarea {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea {
   flex: 1;
   resize: none;
   min-height: 30px;
@@ -4546,31 +4544,31 @@ button.wb-door:hover b {
   outline: none;
 }
 
-.tile:is(.tape-on, .keys-on) .composer.held textarea {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer.held textarea {
   border-color: var(--bad-deep);
 }
-.tile:is(.tape-on, .keys-on) .composer.sending textarea {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer.sending textarea {
   opacity: 0.6;
 }
 /* The reason a send was held — its own row above the box, only while it is true. */
-.tile:is(.tape-on, .keys-on) .composer .cwhy {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cwhy {
   display: none;
   flex-basis: 100%;
   margin: 0;
   font: var(--text-3)/1.3 var(--font-ui);
   color: var(--bad-deep);
 }
-.tile:is(.tape-on, .keys-on) .composer.held .cwhy {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer.held .cwhy {
   display: block;
 }
 
-.tile:is(.tape-on, .keys-on) .composer.queued .csend {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer.queued .csend {
   opacity: 0.4;
 }
-.tile:is(.tape-on, .keys-on) .composer textarea:focus {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea:focus {
   border-color: var(--accent);
 }
-.tile:is(.tape-on, .keys-on) .composer .csend {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .csend {
   height: 30px;
   min-width: 38px;
   border: 0;
@@ -4582,7 +4580,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 
-.tile:is(.tape-on, .keys-on) .composer .cmic {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cmic {
   height: 30px;
   min-width: 34px;
   border: var(--edge) solid var(--line);
@@ -4593,23 +4591,24 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 
-.tile:is(.tape-on, .keys-on) .composer .cmic.listening {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cmic.listening {
   background: var(--rec);
   border-color: var(--rec);
   color: var(--on-strong);
 }
 
-.tile:is(.tape-on, .keys-on) .composer .cmic.busy {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cmic.busy {
   opacity: 0.6;
   cursor: default;
 }
 
-.tile.tape-on .tape {
+.tile.tape-on .tape,
+.tile.transcript-on .tile-transcript {
   bottom: var(--composer-clearance, 0px);
 }
 @media (pointer: coarse) {
 
-  .tile:is(.tape-on, .keys-on) .composer textarea { font-size: 16px; }
+  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea { font-size: 16px; }
 }
 
 
@@ -6297,16 +6296,16 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .mq-force { border-color: var(--bad); }
 
 
-.tile:is(.tape-on, .keys-on) .composer.show {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer.show {
   flex-wrap: wrap;
 }
-.tile:is(.tape-on, .keys-on) .composer .keysrow {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow {
   flex-basis: 100%;
   display: flex;
   gap: var(--space-2);
   overflow-x: auto;
 }
-.tile:is(.tape-on, .keys-on) .composer .keysrow button {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow button {
   flex: 1 0 auto;
   min-width: 40px;
   height: 40px;
@@ -6318,7 +6317,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   font-size: var(--text-5);
   cursor: pointer;
 }
-.tile:is(.tape-on, .keys-on) .composer .keysrow button:active {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow button:active {
   background: var(--kaki);
   border-color: var(--kaki);
   color: var(--on-strong);

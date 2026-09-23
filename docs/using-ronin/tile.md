@@ -10,7 +10,7 @@ column, or drag its card into the workspace where you want to see it.
 | Title / ⛩ | Edit the Agent's displayed title; its session name remains its identity |
 | Work Record | Open the Agent's objective, work, and tracked repositories |
 | Output | Choose an available output view; Locked is the live terminal |
-| Transcript / Chat · Notes · Work · All | When Terminal transcript is active, cycle from the terminal through ever fuller readings of the Agent's conversation and back |
+| Transcript / Chat · Notes · Work · All · Term | When Terminal transcript is active, cycle from the terminal through ever fuller readings of the Agent's conversation and back |
 | Mention | Add another session's name to the message box |
 | Docs | Open documents tracked by this Agent |
 | × | Open the archive/delete choices |
@@ -38,7 +38,7 @@ see [Archived sessions](archived-sessions.md).
 ## Output availability
 
 The separate **Transcript** button appears when Ronin Services has loaded Terminal
-transcript. It cycles: **Terminal → Chat → Notes → Work → All → Terminal**, each press
+transcript. It cycles: **Term → Chat → Notes → Work → All → Term**, each press
 showing more of the record as the CLI itself wrote it; the button always names where you
 are now. Chat is the conversation alone;
 Notes adds the gaps and interruptions; Work adds each tool call as one line; All is
@@ -46,8 +46,14 @@ everything, tool output included. The readings are the ones the server offers, s
 reading appears as a new step. The button is opaque when this Agent has nothing to show — born before Ronin
 recorded launch identity, on a CLI with no readable journal, or simply nothing written
 yet; pressing it says which. Switching the service on later, or a restart, does not lose
-an Agent whose identity was recorded. **Terminal** returns to the normal interactive terminal. The older Output
-selector is separate from this switch.
+an Agent whose identity was recorded. **Term** returns to the normal interactive terminal.
+
+While you are reading any of the readings, the message box stays with you: the record
+itself is read-only, but the Agent is live, and the box below it talks to the Agent the
+same way it does over the terminal. On a phone the tile header is not on screen, so the
+reading control lives in the メ sheet beside Work record, Docs and Output.
+
+The older Output selector is separate from this switch.
 
 See [Work record](work-record.md) for authored work and [Workbench](workbench.md) for
 arrangement and navigation. Contributors can find the implementation in the

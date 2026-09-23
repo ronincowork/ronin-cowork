@@ -323,6 +323,10 @@ export class Tile {
       else this.transcriptView.show(this.session, view);
     }
     else { this.transcriptWantFirst = false; this.transcriptView.hide(); }
+    // Reading is not a reason to lose the way to answer (owner, 2026-09-23). The record
+    // is read-only; the entry box beside it still talks to the live Agent, and it is the
+    // same box the phone has always used.
+    this.setComposer(on || this.tapeMode || isCoarse());
     this.syncHeader();
     if (!on) this.doFit();
   }
@@ -345,7 +349,7 @@ export class Tile {
 
   /** What the button says: where you are now — Terminal, or the reading on screen. */
   transcriptLabel() {
-    if (!this.transcriptOn) return t('transcript.terminal', 'Terminal');
+    if (!this.transcriptOn) return t('transcript.terminal', 'Term');
     const reading = this.transcriptReadings[this.transcriptLevel];
     // The route's own word for the reading — Chat, Notes, Work, All — is the label (owner,
     // 2026-09-22: the names beat T1…T4).
@@ -373,7 +377,14 @@ export class Tile {
     tiles.forEach((t) => t.el.classList.toggle('active', t === this));
   }
 
-  /** Activate and pull keyboard focus into the terminal. */
+  /**
+   * Activate and pull keyboard focus into the terminal.
+   *
+   * Still refused while a reading is open, and this is the line the owner's ruling did
+   * NOT move: the record is read-only and the terminal is behind it, so there is nothing
+   * on screen to focus. What the ruling restored is the composer — a deliberate send to a
+   * live Agent, which never needed the terminal to be visible.
+   */
   focusTerminal() {
     if (this.transcriptOn) return;
     this.activate();
@@ -385,13 +396,11 @@ export class Tile {
    * a closed socket DROPS them, loudly (see tilewire.js).
    */
   sendRaw(d) {
-    if (this.transcriptOn) return false;
     return this.wire.sendInput(d);
   }
 
   /** Ronin's box uses the same message sender in Locked and Unlocked views. */
   sendMessage(text) {
-    if (this.transcriptOn) return Promise.resolve({ ok: false, why: t('transcript.read_only', 'Transcript is read only') });
     return sendComposerMessage(this.session, text);
   }
 
@@ -671,7 +680,7 @@ export class Tile {
     // never focuses xterm on touch, so a locked mirror without it cannot be typed into
     // at all. Both views reserve the composer's measured height and keyboard lift
     // so the CLI's own input line and the transcript's last message stay visible. Desktop keeps the old rule: tape mode only.
-    this.setComposer(this.tapeMode || isCoarse());
+    this.setComposer(this.tapeMode || isCoarse() || this.transcriptOn);
     this.el.classList.toggle('tape-on', this.tapeMode);
     this.setDot('wait');
     this.doFit();
