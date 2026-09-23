@@ -66,6 +66,17 @@ export async function loadSavedLaunches() {
 
 /** The status word for a row — a function, not a table, because the lexicon is loaded
  *  after this module is evaluated and a table would freeze the stock words. */
-export function statusLabel(status) {
-  return { ready: t('home.status_ready', 'ready'), thinking: t('home.status_thinking', 'thinking…'), 'awaiting-input': t('home.status_awaiting_input', 'awaiting input') }[status];
+/**
+ * What an Agent is doing now, in the owner's words. The backend decides which of these it
+ * is — from the journal, except `asking`, which is the one thing only the screen shows —
+ * and nothing here infers anything from anything.
+ */
+export function stanceLabel(stance) {
+  return {
+    working: t('home.stance_working', 'working…'),
+    replying: t('home.stance_replying', 'replying…'),
+    awaiting_you: t('home.stance_awaiting_you', 'awaiting you'),
+    asking: t('home.stance_asking', 'asking you'),
+    unknown: t('home.stance_unknown', ''),
+  }[stance];
 }

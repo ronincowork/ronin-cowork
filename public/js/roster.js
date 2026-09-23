@@ -13,7 +13,7 @@
  * tile's own 🏷 opens.
  */
 import { request } from './request.js';
-import { homeData, homeFault, statusLabel } from './home.js';
+import { homeData, homeFault, stanceLabel } from './home.js';
 import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
 import { t } from './lexicon.js';
@@ -191,10 +191,10 @@ export function buildRoster(tile, host, options = {}) {
       sg.title = s.tegami.objective ? clampTip(s.tegami.objective) : '';
       r.appendChild(sg);
     }
-    if (s.status) {
+    if (s.stance && s.stance !== 'unknown') {
       const st = document.createElement('span');
-      st.className = 'home-status st-' + s.status;
-      st.textContent = statusLabel(s.status) || s.status;
+      st.className = 'home-status st-' + s.stance;
+      st.textContent = stanceLabel(s.stance) || s.stance;
       r.appendChild(st);
     }
     if (s.ctx != null) {
@@ -277,7 +277,7 @@ export function buildRoster(tile, host, options = {}) {
     void loadMax();
     stale.hidden = !homeFault;
     if (homeFault) stale.textContent = t('roster.stale', '⚠ roster may be stale — {fault}', { fault: homeFault });
-    const data = homeData || S.sessions.map((s) => ({ ...s, status: null, ctx: null }));
+    const data = homeData || S.sessions.map((s) => ({ ...s, stance: 'unknown', ctx: null }));
     list.innerHTML = '';
     // Sorted by group, with a heading per group. A session in two groups is listed
     // under BOTH — that's what multi-valued tags mean, and either row opens the same

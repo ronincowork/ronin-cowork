@@ -472,9 +472,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.mode_agent:** Agent
 
 ## home — home.js (the status words and the launch receipt)
-- **home.status_ready:** ready
-- **home.status_thinking:** thinking…
-- **home.status_awaiting_input:** awaiting input
+- **home.stance_working:** working…
+- **home.stance_replying:** replying…
+- **home.stance_awaiting_you:** awaiting you
+- **home.stance_asking:** asking you
 
 ## settei — settei.js (the ⚙ Configuration tab)
 - **settei.saving:** saving…

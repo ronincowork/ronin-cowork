@@ -3919,13 +3919,16 @@ button.wb-door:hover b {
   color: var(--muted);
   white-space: nowrap;
 }
-.home-status.st-ready {
+/* Your turn reads calm; at work reads busy; stopped at a question reads urgent, because it
+   is the only one that cannot go on without you. */
+.home-status.st-awaiting_you {
   color: var(--ok);
 }
-.home-status.st-thinking {
+.home-status.st-working,
+.home-status.st-replying {
   color: var(--warn);
 }
-.home-status.st-awaiting-input {
+.home-status.st-asking {
   color: var(--bad);
 }
 .home-ctx {

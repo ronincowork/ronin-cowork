@@ -11,7 +11,7 @@ import { createTeamJikan } from './team-jikan.js';
 import { buildMessageQueue } from './message-queue.js';
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { buildArchives } from './archives.js';
-import { onProjects, projectData, refreshHome, statusLabel } from './home.js';
+import { onProjects, projectData, refreshHome, stanceLabel } from './home.js';
 import { request } from './request.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
@@ -696,9 +696,9 @@ export function createCoworkView(options = {}) {
       step: current.label,
       description: current.text,
       model: (row.model || '').toLowerCase(),
-      status: statusLabel(row.status),
+      status: stanceLabel(row.stance),
       ctx: row.ctx != null ? `⛽ ${row.ctx}%` : '',
-      lines: [current.text, statusLabel(row.status), row.ctx != null ? `⛽ ${row.ctx}%` : '', (row.model || '').toLowerCase()].filter(Boolean),
+      lines: [current.text, stanceLabel(row.stance), row.ctx != null ? `⛽ ${row.ctx}%` : '', (row.model || '').toLowerCase()].filter(Boolean),
     };
   };
   function renderCards(members) {

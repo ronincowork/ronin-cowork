@@ -62,6 +62,19 @@ Cherry Pick and Agent Summary as well: those were views of a recording Ronin no 
 makes, so choosing one showed an empty tile. They have left the list, not the source; if
 Agent Summary returns it will be written from the conversation, like everything else here.
 
+## What an Agent is doing
+
+Each Agent's row says its **stance**: *working…*, *replying…*, *awaiting you*, or *asking
+you*. It is read from the conversation the CLI itself wrote — a tool going out is a record,
+a finished reply is a record — so it does not depend on what happens to be drawn on the
+terminal. An Agent whose CLI keeps no readable conversation says nothing rather than
+guessing.
+
+*Asking you* is the exception and the one that matters most: a permission prompt is drawn on
+the screen and no CLI writes it down, so that one is read from the terminal, and it outranks
+the rest. An Agent stopped at a question is busy as far as its own journal knows, and "busy"
+is the wrong thing to tell the person whose answer it is waiting for.
+
 See [Work record](work-record.md) for authored work and [Workbench](workbench.md) for
 arrangement and navigation. Contributors can find the implementation in the
 [UI ownership index](../../public/js/README.md) and [contributor map](../contributor-map.md#user-interface).
