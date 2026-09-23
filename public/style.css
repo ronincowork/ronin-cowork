@@ -6384,6 +6384,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   border-color: var(--kaki);
   color: var(--on-strong);
 }
+.tile.transcript-on .composer .keysrow [data-terminal-action='copy'] {
+  display: none;
+}
 
 .tile.keys-on:not(.tape-on) .tile-body {
   /* FitAddon reads computed height: give it the content area, excluding controls. */

@@ -96,7 +96,8 @@ export function installTileControls(tile) {
   }, true);
 }
 export function buildMobileControlButtons(tile) {
-  return actions.map((action) => actionButton(action, () => { tile.activate?.(); return tile.controlAction(action); }));
+  return ['copy', 'clear', 'stop'].map((action) =>
+    actionButton(action, () => { tile.activate?.(); return tile.controlAction(action); }));
 }
 
 function actionButton(action, run) {

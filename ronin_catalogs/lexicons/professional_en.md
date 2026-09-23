@@ -1581,7 +1581,8 @@ The catalog entry goes. {dir} is not touched.
 - **me.title:** This session — status, work record, groups, docs, note, control
 
 ## keys — keysrow.js (the composer's keys row)
-- **keys.backspace:** Backspace
+- **keys.escape_face:** Esc
+- **keys.escape:** Escape
 
 ## composer — the ✕ clear
 
