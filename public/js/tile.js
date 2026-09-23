@@ -581,7 +581,9 @@ export class Tile {
       // acting on THIS tile's session rather than "the active tile" (keysrow.js).
       if (isCoarse()) {
         this.composer.el.prepend(buildKeysRow({
-          controls: document.getElementById('phone') ? buildMobileControlButtons(this) : [],
+          // Clear and Stop belong to every touch composer, including the wide iPad
+          // workbench. Copy remains Term-only through the shared transcript CSS rule.
+          controls: buildMobileControlButtons(this),
           sendRaw: (d) => this.sendRaw(d),
           latest: () => this.jumpLatest(),
         }).el);
