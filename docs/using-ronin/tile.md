@@ -44,8 +44,8 @@ are now. Chat is the conversation alone;
 Notes adds the gaps and interruptions; Work adds each tool call as one line; All is
 everything, tool output included. The readings are the ones the server offers, so a new
 reading appears as a new step. The button is opaque when this Agent has nothing to show — born before Ronin
-recorded launch identity, on a CLI with no readable journal, or simply nothing written
-yet; pressing it says which. Switching the service on later, or a restart, does not lose
+recorded launch identity, started outside Ronin, on a CLI with no readable journal, or
+simply nothing written yet; pressing it says which. Switching the service on later, or a restart, does not lose
 an Agent whose identity was recorded. **Term** returns to the normal interactive terminal.
 
 While you are reading any of the readings, the message box stays with you: the record

@@ -1,5 +1,5 @@
 
-export const CONTRACT_V = 6;
+export const CONTRACT_V = 7;
 
 export interface LaunchIdentity {
   key: string;
@@ -34,7 +34,8 @@ export interface TranscriptSource { file: string; format: string; provider: stri
  */
 export type TranscriptGap =
   | 'not_live'        // no live pane for that name
-  | 'no_identity'     // the pane exists, but no launch identity was persisted for it
+  | 'no_key'          // the pane is live, but it carries no Ronin identity key at all
+  | 'no_identity'     // the pane has a key, but no launch identity was persisted for it
   | 'unbound'         // identity exists; this CLI writes no journal Ronin can read
   | 'journal_pending'; // bound and expected, but the CLI has not written the file yet
 

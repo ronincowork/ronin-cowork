@@ -58,7 +58,16 @@ export async function resolveTranscriptSource(name: string): Promise<import('./s
   // Each step knows why it stopped, and says so. Collapsing these into one null made a
   // session that is merely not running read exactly like one whose CLI keeps no journal,
   // and the tile could only ever show a single sentence for both.
-  if (!key.trim()) return { gap: 'not_live' };
+  //
+  // An empty key is TWO situations, and telling a running Agent that it is not running is
+  // the worse of them: no pane at all, or a live pane carrying no Ronin key — a terminal
+  // opened by hand, or a session from before keys were stamped. `codex_bryers` was running
+  // and being told it was not. So the pane is asked whether it exists before anything is
+  // said about it.
+  if (!key.trim()) {
+    const live = await tmux.run(['has-session', '-t', `=${name}`]).then(() => true).catch(() => false);
+    return { gap: live ? 'no_key' : 'not_live' };
+  }
   const identity = await readLaunchIdentity(key.trim());
   if (!identity) return { gap: 'no_identity' };
   if (!identity.journal) return { gap: 'unbound' };
