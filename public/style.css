@@ -1531,18 +1531,19 @@ body {
     display: none !important;
   }
   :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .grow { flex: 0 1 auto; }
-  .tablet-agents,
-  .tablet-tools {
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-agents,
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-tools {
     display: flex;
     min-width: 0;
     align-items: center;
     gap: var(--space-2);
   }
-  .tablet-agents { flex: 1 1 0; }
-  .tablet-agents-right { justify-content: flex-end; }
-  .tablet-tools { flex: 1 1 0; justify-content: flex-end; }
-  .tablet-agent,
-  .tablet-tools > :is(button, select) {
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-agents { flex: 1 1 0; }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-agents-right { justify-content: flex-end; }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-tools { flex: 1 1 0; justify-content: flex-end; }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > :is(.tablet-agents, .tablet-tools)[hidden] { display: none !important; }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-agent,
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-tools > :is(button, select) {
     min-width: 0;
     height: 36px;
     border: var(--edge) solid transparent;
@@ -1552,15 +1553,15 @@ body {
     padding: 0 var(--space-3);
     font: 600 var(--text-3)/1 var(--font-ui);
   }
-  .tablet-agent {
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-agent {
     max-width: 11rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .tablet-agent[aria-pressed='true'] { border-color: var(--accent); color: var(--fg-strong); }
-  .tablet-tools > :is(.work-record, .transcript-toggle, .tdocs-btn) { width: auto; }
-  .tablet-tools > .tdocs { top: 100%; right: var(--space-4); }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-agent[aria-pressed='true'] { border-color: var(--accent); color: var(--fg-strong); }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-tools > :is(.work-record, .transcript-toggle, .tdocs-btn) { width: auto; }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-tools > .tdocs { top: 100%; right: var(--space-4); }
   :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface:has(.tile) > .wk-surface-header,
   :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface:has(.tile) .tile-head {
     display: none;
