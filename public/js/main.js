@@ -11,6 +11,7 @@ import { loadProjects, loadSavedLaunches, refreshHome } from './home.js';
 import { build } from './layout.js';
 import { S, tiles } from './state.js';
 import { installTips } from './tips.js';
+import { installTabletHeader } from './tablet-header.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
@@ -27,6 +28,7 @@ import { applyPageWords } from './pagewords.js';
 import { installFeedbackButton } from './feedback.js';
 
 export async function init() {
+  guard('tablet header', installTabletHeader);
   const reveal = () => document.documentElement.classList.remove('boot-pending');
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
   // so a tile is born knowing. `stream:false` = the 🔓 tape view is off (no record

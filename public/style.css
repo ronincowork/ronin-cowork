@@ -1520,6 +1520,52 @@ body {
     touch-action: pan-y;
   }
 }
+
+/* Wide touch workbenches keep their columns, but terminal work has one compact header. */
+@media (pointer: coarse) and (min-width: 681px) {
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar {
+    min-height: 48px;
+    padding-block: var(--space-2);
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar :is(#brandbtn, #coworkssep, #coworksbtn, #servicesstate, #ramrpm, #feedbackaction, #shapecycle) {
+    display: none !important;
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .grow { flex: 0 1 auto; }
+  .tablet-agents,
+  .tablet-tools {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .tablet-agents { flex: 1 1 0; }
+  .tablet-agents-right { justify-content: flex-end; }
+  .tablet-tools { flex: 1 1 0; justify-content: flex-end; }
+  .tablet-agent,
+  .tablet-tools > :is(button, select) {
+    min-width: 0;
+    height: 36px;
+    border: var(--edge) solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--muted);
+    padding: 0 var(--space-3);
+    font: 600 var(--text-3)/1 var(--font-ui);
+  }
+  .tablet-agent {
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tablet-agent[aria-pressed='true'] { border-color: var(--accent); color: var(--fg-strong); }
+  .tablet-tools > :is(.work-record, .transcript-toggle, .tdocs-btn) { width: auto; }
+  .tablet-tools > .tdocs { top: 100%; right: var(--space-4); }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface:has(.tile) > .wk-surface-header,
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface:has(.tile) .tile-head {
+    display: none;
+  }
+}
 .xterm .xterm-viewport::-webkit-scrollbar {
   width: 0;
   height: 0;
