@@ -84,3 +84,23 @@ test('the wide-touch bar keeps its readings at the right-hand end', async () => 
     assert.ok(bar.indexOf('id="viewmap"') < bar.indexOf(after), `the map precedes ${after}`);
   }
 });
+
+test('a UI diagnostic asks the host contract where Ronin answers instead of guessing', async () => {
+  const { readdir } = await import('node:fs/promises');
+  const names = (await readdir(new URL('../scripts', import.meta.url))).filter((n) => n.endsWith('-ui.mjs'));
+  const checked = [];
+  for (const name of names) {
+    const src = await read(`scripts/${name}`);
+    // Only the scripts that drive an ALREADY-RUNNING Ronin. The others stand up their own
+    // loopback fixture on an ephemeral port, which resolves nothing and guesses nothing.
+    if (!/from '\.\/lib\/ui-host\.mjs'/.test(src) || !/defaultUrl/.test(src)) continue;
+    checked.push(name);
+    // A routable address in the source is one machine's answer published to every other.
+    assert.doesNotMatch(src, /\b(?!127\.0\.0\.1)\d{1,3}(?:\.\d{1,3}){3}\b/, `${name} names a machine address`);
+    assert.doesNotMatch(src, /https?:\/\/[^\s'"`$]+/, `${name} hardcodes a target URL`);
+    assert.doesNotMatch(src, /\|\|\s*['"`]https?:/, `${name} falls back to a literal URL`);
+    // defaultUrl(), defaultUrl(true) and defaultUrl(<staging flag>) are all the contract.
+    assert.match(src, /defaultUrl\(/, `${name} must resolve its target through defaultUrl()`);
+  }
+  assert.ok(checked.includes('ipad-header-ui.mjs'), 'the iPad header diagnostic is covered');
+});

@@ -11,16 +11,18 @@
  * top (the private-desk preview route), so no rig has to be started and nothing on the
  * live box is touched.
  *
- *   node scripts/ipad-header-ui.mjs [url]
+ *   node scripts/ipad-header-ui.mjs [url]   # no url: the host contract resolves one
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadPlaywright } from './lib/ui-host.mjs';
+import { defaultUrl, loadPlaywright } from './lib/ui-host.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(ROOT, 'public');
-const URL_ = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'http://100.101.235.17:3006/';
+// Where Ronin answers is the operator connection contract's to resolve, never this
+// script's to guess: BIND/PORT, else the tailscale address, else loopback.
+const URL_ = process.argv.slice(2).find((a) => !a.startsWith('--')) || defaultUrl();
 // The workbench, not the front door: the readings and the caret only exist there.
 const AT = `${URL_.replace(/#.*$/, '').replace(/\/$/, '')}/#/cowork`;
 
