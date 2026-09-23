@@ -6785,7 +6785,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
    the application and Agent headers independently fold when conversation needs room. */
 @media (pointer: coarse) and (min-width: 681px) {
   #bar > .app-header-collapse,
-  .tile-head > .tile-head-collapse {
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head > .tile-head-collapse {
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;

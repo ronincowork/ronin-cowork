@@ -36,6 +36,14 @@ test('the Torii rename prompt keeps the immutable Agent ID visible', async () =>
   assert.match(tile, /setSessionTitle\(session, wanted\.trim\(\)\)/);
 });
 
+test('the wide-touch Agent collapse control and its response share one workbench scope', async () => {
+  const style = await read('public/style.css');
+  const scope = ":root:is([data-workbench='team'], [data-workbench='cowork'])";
+  assert.match(style, new RegExp(`${scope.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\.tile-head > \\.tile-head-collapse`));
+  assert.match(style, new RegExp(`${scope.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\.tile\\.header-collapsed \\.tile-head`));
+  assert.doesNotMatch(style, /(?:^|,)\s*\.tile-head > \.tile-head-collapse\s*\{/m);
+});
+
 test('managed workspaces empty their seat and both empty views use the subdued Ronin mark', async () => {
   const [cowork, host, tile, css] = await Promise.all([
     read('public/js/cowork-view.js'), read('public/js/terminal-tile-host.js'),
