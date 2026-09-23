@@ -23,8 +23,26 @@ const PUBLIC = path.join(ROOT, 'public');
 // Where Ronin answers is the operator connection contract's to resolve, never this
 // script's to guess: BIND/PORT, else the tailscale address, else loopback.
 const URL_ = process.argv.slice(2).find((a) => !a.startsWith('--')) || defaultUrl();
-// The workbench, not the front door: the readings and the caret only exist there.
-const AT = `${URL_.replace(/#.*$/, '').replace(/\/$/, '')}/#/cowork`;
+// The workbench, not the front door: the readings and the caret only exist there. The
+// Team destination is where an Agent's head sits beside the selector's, which is the one
+// place their bands can disagree — so the Team is asked for by name at run time, never
+// written down here.
+const ORIGIN = URL_.replace(/#.*$/, '').replace(/\/$/, '');
+const firstTeam = async () => {
+  try {
+    const res = await fetch(`${ORIGIN}/api/team-rosters`);
+    const body = await res.json();
+    const rows = Array.isArray(body) ? body : (body?.teams ?? body?.data ?? []);
+    const name = rows.map((r) => r?.name ?? r?.team ?? r).find((n) => typeof n === 'string' && n);
+    return name ?? null;
+  } catch { return null; }
+};
+const team = await firstTeam();
+const DESTINATIONS = [
+  { name: 'the coworkspace', at: `${ORIGIN}/#/cowork` },
+  ...(team ? [{ name: `the Team workbench (${team})`, at: `${ORIGIN}/#/team/${encodeURIComponent(team)}` }] : []),
+];
+if (!team) console.log('ipad-header-ui: no Team answered, so head-band alignment beside the selector was NOT looked at.');
 
 const pw = await loadPlaywright();
 if (!pw) {
@@ -96,6 +114,21 @@ const measure = (page) => page.evaluate((sel) => {
     const centres = [...bar.children].filter(seen).filter((el) => el.id !== 'viewisland').map((el) => { const r = box(el); return r.y + r.h / 2; });
     out.rows.centreSpread = centres.length ? Math.round(Math.max(...centres) - Math.min(...centres)) : 0;
   }
+  // HEADS IN THE SAME ROW MUST LINE UP. A tile head and a surface header are different
+  // constructs that sit side by side; if their bands differ the eye reads two things.
+  const headsOf = [...document.querySelectorAll('.wk-surface-header, .tile-head')].filter(seen);
+  const bands = [];
+  for (const el of headsOf) {
+    const r = box(el);
+    const band = bands.find((x) => Math.abs(x.y - r.y) <= 1);
+    const row = { kind: el.classList.contains('tile-head') ? 'tile head' : 'surface head', ...r };
+    if (band) band.heads.push(row); else bands.push({ y: r.y, heads: [row] });
+  }
+  out.rows.bands = bands.map((b) => ({
+    y: Math.round(b.y),
+    heads: b.heads.map((h) => `${h.kind} h=${Math.round(h.h)} bottom=${Math.round(h.bottom)}`),
+    aligned: b.heads.every((h) => Math.abs(h.bottom - b.heads[0].bottom) <= 1),
+  }));
   // The visible work-surface header the docked caret sits over, and what it holds.
   const head = [...document.querySelectorAll('.wk-surface-header')].find(seen);
   if (head) {
@@ -136,12 +169,16 @@ const report = (label, m) => {
     if (m.rows.gapRight !== null) say(m.rows.gapRight >= 0 && m.rows.gapRight <= 8, `the readings sit at the right-hand end (clear space=${m.rows.gapRight}px)`);
   }
   if (m.rows.surfaceHeader) say(!m.rows.surfaceWrapped, `the work-surface header is one row (rows=${m.rows.surfaceRows}, h=${Math.round(m.rows.surfaceHeader.h)})`);
+  for (const band of m.rows.bands ?? []) {
+    say(band.aligned, `the heads at y=${band.y} share one band — ${band.heads.join(' · ')}`);
+  }
   say(m.overlaps.length === 0, `nothing sits on top of anything else${m.overlaps.length ? `: ${m.overlaps.map((o) => `${o.a} over ${o.b} (${o.x}x${o.y}px)`).join(', ')}` : ''}`);
   for (const [k, v] of Object.entries(m.items)) {
     if (v) console.log(`       ${k.padEnd(22)} x=${Math.round(v.x)} y=${Math.round(v.y)} w=${Math.round(v.w)} h=${Math.round(v.h)}`);
   }
 };
 
+for (const dest of DESTINATIONS) {
 for (const shape of shapes) {
   const ctx = await browser.newContext({
     viewport: { width: shape.width, height: shape.height },
@@ -158,18 +195,18 @@ for (const shape of shapes) {
     if (served) return route.fulfill({ status: 200, contentType: served.contentType, body: served.body });
     return route.fallback();
   });
-  await page.goto(AT, { waitUntil: 'networkidle', timeout: 30_000 });
-  await page.waitForTimeout(1200);
+  await page.goto(dest.at, { waitUntil: 'networkidle', timeout: 30_000 });
+  await page.waitForTimeout(3500);
 
   if (errs.length) { console.log(`\n${shape.name}: the page reported ${errs.length} error(s) — the composition below is not trustworthy:`); for (const e of errs.slice(0, 5)) console.log(`       ${e}`); bad += 1; }
-  report(`${shape.name} — header expanded`, await measure(page));
+  report(`${dest.name} · ${shape.name} — header expanded`, await measure(page));
 
   const caret = page.locator('.app-header-collapse');
   if (await caret.count() && await caret.isVisible()) {
     await caret.click({ timeout: 5000 });
     await page.waitForTimeout(400);
     const m = await measure(page);
-    console.log(`\n${shape.name} — header COLLAPSED`);
+    console.log(`\n${dest.name} · ${shape.name} — header COLLAPSED`);
     const barGone = !m.items['#brandbtn'];
     console.log(`  ${barGone ? 'ok  ' : 'FAIL'} the application header is out of the way`);
     if (!barGone) bad += 1;
@@ -219,6 +256,7 @@ for (const shape of shapes) {
     bad += 1;
   }
   await ctx.close();
+}
 }
 
 await browser.close();

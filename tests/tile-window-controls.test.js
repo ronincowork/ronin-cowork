@@ -36,12 +36,30 @@ test('the Torii rename prompt keeps the immutable Agent ID visible', async () =>
   assert.match(tile, /setSessionTitle\(session, wanted\.trim\(\)\)/);
 });
 
-test('the wide-touch Agent collapse control and its response share one workbench scope', async () => {
-  const style = await read('public/style.css');
+test('wide touch puts the Agent tools behind one menu instead of folding the head', async () => {
+  const [style, head] = await Promise.all([read('public/style.css'), read('public/js/tilehead.js')]);
   const scope = ":root:is([data-workbench='team'], [data-workbench='cowork'])";
-  assert.match(style, new RegExp(`${scope.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\.tile-head > \\.tile-head-collapse`));
-  assert.match(style, new RegExp(`${scope.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\.tile\\.header-collapsed \\.tile-head`));
-  assert.doesNotMatch(style, /(?:^|,)\s*\.tile-head > \.tile-head-collapse\s*\{/m);
+  const lit = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // The per-tile chevron is retired: it traded one tap for another and gave the tile head
+  // a different depth from the surface heads beside it.
+  assert.doesNotMatch(style, /tile-head-collapse|tile\.header-collapsed/);
+  assert.doesNotMatch(head, /tile-head-collapse|header-collapsed/);
+  // One menu, the way the phone already does it.
+  assert.match(head, /makeDrop\('メ'/);
+  for (const key of ['workRecordBtn', 'docsBtn', 'mentionBtn', 'outputEl', 'minimizeBtn', 'killBtn']) {
+    assert.match(head, new RegExp(`row\\('${key}'`), `${key} belongs in the メ sheet`);
+  }
+  // The reading toggle stays a toggle and never becomes a row in a menu.
+  assert.doesNotMatch(head, /row\('transcriptBtn'/);
+  // ONE BAND DEPTH ACROSS THE ROW. The Kit's depth is already on .tile-head; the defect
+  // was the wide-touch block overriding it to 38px against the surface head's 45px, so
+  // what this guards is that nothing here restates or shrinks the band again.
+  assert.match(style, /^\.tile-head \{[^}]*min-height: var\(--row-head\)/m);
+  const wide = style.slice(style.indexOf('@media (pointer: coarse) and (min-width: 681px)'));
+  const rule = wide.slice(wide.indexOf(`${scope} .tile-head {`));
+  const body = rule.slice(rule.indexOf('{'), rule.indexOf('}'));
+  assert.match(body, /flex-wrap: nowrap/, 'one row, never two');
+  assert.doesNotMatch(body, /min-height|height:|padding/, 'the band depth is the Kit\'s, not restated here');
 });
 
 test('managed workspaces empty their seat and both empty views use the subdued Ronin mark', async () => {
@@ -69,8 +87,10 @@ test('collapsing the application header moves the caret alone, never the island'
   assert.match(layout, /document\.body\.append\(collapse\)/);
   assert.match(layout, /collapse\.classList\.add\('header-collapse-docked'\)/);
   assert.match(style, /\.app-header-collapse\.header-collapse-docked \{[^}]*position: fixed/);
-  // Keyed on the control, so the caret keeps its shape once it is no longer the island's child.
-  assert.match(style, /\.app-header-collapse,\n\s*:root:is\(\[data-workbench='team'\], \[data-workbench='cowork'\]\) \.tile-head > \.tile-head-collapse \{/);
+  // Keyed on the control, not on its parent, so the caret keeps its shape once it is
+  // docked and no longer the island's child.
+  assert.match(style, /:root:is\(\[data-workbench='team'\], \[data-workbench='cowork'\]\) \.app-header-collapse \{/);
+  assert.doesNotMatch(style, /\.view-island > \.app-header-collapse \{[^}]*display: inline-flex/);
 });
 
 test('the wide-touch bar keeps its readings at the right-hand end', async () => {
@@ -103,4 +123,21 @@ test('a UI diagnostic asks the host contract where Ronin answers instead of gues
     assert.match(src, /defaultUrl\(/, `${name} must resolve its target through defaultUrl()`);
   }
   assert.ok(checked.includes('ipad-header-ui.mjs'), 'the iPad header diagnostic is covered');
+});
+
+test('each surface walks only the readings it was given, by name', async () => {
+  const tile = await read('public/js/tile.js');
+  const cycle = tile.slice(tile.indexOf('transcriptCycle() {'), tile.indexOf('toggleTranscript()'));
+  // A thumb does not want five detents. The phone is Terminal or Chat; a tablet is
+  // Terminal, Chat and Work. Notes and the full record are a desk's business.
+  assert.match(cycle, /getElementById\('phone'\)[\s\S]*slice\(0, 1\)/, 'the phone stops after the first reading');
+  assert.match(cycle, /isCoarse\(\)[\s\S]*filter\(\(r\) => r\.name === 'chat' \|\| r\.name === 'work'\)/, 'a tablet offers Chat and Work');
+  assert.match(cycle, /return readings;/, 'a desk still walks every reading the route published');
+  // Named, not sliced by length: a reading added on the server must not join a thumb surface.
+  assert.doesNotMatch(cycle, /slice\(0,\s*[23]\)|Math\.min\(\s*[23]/, 'the tablet selects by name, never by count');
+  // The level indexes the cycle, not the route's full list, or the label and the view drift.
+  for (const site of ['const readings = this.transcriptCycle();', 'const cycle = this.transcriptCycle();', 'this.transcriptCycle()[this.transcriptLevel]']) {
+    assert.ok(tile.includes(site), `the cycle is the index everywhere: ${site}`);
+  }
+  assert.doesNotMatch(tile, /this\.transcriptReadings\[this\.transcriptLevel\]/, 'the level never indexes the unfiltered list');
 });

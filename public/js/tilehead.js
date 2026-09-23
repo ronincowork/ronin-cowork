@@ -5,6 +5,7 @@ import { buildTileDocs } from './tiledocs.js';
 import { buildTileMentions } from './tilementions.js';
 import { serviceMissing } from './state.js';
 import { makeOutput } from './output.js';
+import { makeDrop } from './tiledrop.js';
 import { t } from './lexicon.js';
 
 /**
@@ -38,7 +39,7 @@ const HEADER = () => {
   { grow: true },
 
   { key: 'transcriptBtn', cls: 'transcript-toggle', text: t('transcript.toggle', 'Transcript'), needs: 'session',
-    help: t('transcript.toggle_help', 'Term → Chat → Notes → Work → All → Term: each press shows more of the record'),
+    help: t('transcript.toggle_help', 'Each press shows more of the record; past the last one it returns to the terminal'),
     quiet: t('transcript.no_session', 'Transcript — no Agent in this tile'),
     // Opaque when the route says this Agent has nothing to show — any reason, any CLI.
     state: (tile) => (typeof tile.transcriptQuiet === 'function' ? tile.transcriptQuiet() : ''),
@@ -198,20 +199,22 @@ export function buildTileHead(tile) {
     // Controls with a menu hang it off the header rather than inside the button.
     if (made?.menu) head.append(made.menu);
   }
-  const collapse = document.createElement('button');
-  collapse.type = 'button';
-  collapse.className = 'tile-head-collapse';
-  // Wide touch starts with the useful compact identity row; the owner can expand the
-  // full Agent tools in place. Desktop and the dedicated phone document are unchanged.
-  if (window.matchMedia('(pointer: coarse) and (min-width: 681px)').matches) el.classList.add('header-collapsed');
-  const syncCollapse = () => {
-    const closed = el.classList.contains('header-collapsed');
-    collapse.textContent = closed ? '⌄' : '⌃';
-    collapse.setAttribute('aria-expanded', String(!closed));
-    collapse.setAttribute('aria-label', closed ? t('head.expand', 'Expand Agent header') : t('head.collapse', 'Collapse Agent header'));
-  };
-  collapse.addEventListener('click', () => { el.classList.toggle('header-collapsed'); syncCollapse(); });
-  syncCollapse();
-  head.append(collapse);
+  // WIDE TOUCH PUTS THE AGENT'S TOOLS IN ONE PLACE, the way the phone does: the head is
+  // the Agent's name, its reading toggle, and メ. A fold that hid the tools behind a
+  // chevron only traded one tap for another and left the head a different depth from the
+  // surface heads beside it (owner, 2026-09-23). The toggle stays a toggle and never
+  // becomes a row in a menu — the same ruling the phone document already carries.
+  if (window.matchMedia('(pointer: coarse) and (min-width: 681px)').matches) {
+    const sheet = makeDrop('メ', t('me.agent_title', 'This Agent — work record, docs, output, close'), 'me');
+    const row = (key, label, mode) => { if (out[key]?.el || out[key]) sheet.addRow(out[key]?.el ?? out[key], label, mode); };
+    row('workRecordBtn', t('me.ladder', 'Work record'));
+    row('docsBtn', t('me.docs', 'Docs'));
+    row('mentionBtn', t('me.mention', 'Mention session'));
+    row('outputEl', t('me.output', 'Output'), 'stay');
+    row('minimizeBtn', t('me.minimize', 'Minimize'));
+    row('killBtn', t('me.kill', 'Kill session'));
+    head.append(sheet.btn, sheet.menu);
+    out.meSheet = sheet;
+  }
   return out;
 }

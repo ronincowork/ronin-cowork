@@ -4273,6 +4273,12 @@ button.wb-door:hover b {
     border-radius: var(--radius-md);
     cursor: pointer;
   }
+  /* A row whose control has taken itself away is not a row. Without Services there is
+     nothing to choose, so the Output select hides itself (Tile.syncOutput) — the word
+     beside it has to go with it rather than leaving a blank line in the sheet. */
+  .tdrop-row:has(> [hidden]) {
+    display: none;
+  }
   .tdrop-row:active {
     background: var(--line);
   }
@@ -6778,8 +6784,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 
 }
 
-.header-collapse,
-.tile-head-collapse { display: none; }
+.header-collapse { display: none; }
 
 /* Wide touch keeps the original workbench. Its redundant workspace bands go away;
    the application and Agent headers independently fold when conversation needs room. */
@@ -6818,8 +6823,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   #bar > .wk-view-map { margin-left: auto; }
   /* Keyed on the control, not on its parent: the caret is styled the same whether it is
      riding the island or docked over the work surfaces below. */
-  :root:is([data-workbench='team'], [data-workbench='cowork']) .app-header-collapse,
-  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head > .tile-head-collapse {
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .app-header-collapse {
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
@@ -6869,16 +6873,19 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head > .torii {
     display: none;
   }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile.header-collapsed .tile-head > :not(.sess):not(.tile-head-collapse) {
-    display: none !important;
-  }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile.header-collapsed .tile-head {
+  /* ONE BAND DEPTH ACROSS THE ROW. An Agent's head sits beside the selector's head, so
+     they line up or the eye reads them as two different things. The fold that used to
+     live here gave the tile a 38px band against the surface head's 45px and never
+     agreed with it (owner, 2026-09-23). The Kit's own depth, --row-head, is already on
+     .tile-head; the fold's tighter padding was what pulled it out of line, so nothing is
+     restated here. Everything but the name and the reading toggle is behind メ, so one
+     row is enough and it must never become two. */
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head {
     flex-wrap: nowrap;
-    min-height: 38px;
-    padding-block: var(--space-1);
   }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile.header-collapsed .tile-head .sess {
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head .sess {
     flex: 1 1 auto;
+    min-width: 0;
     max-width: none;
   }
 }

@@ -1519,8 +1519,6 @@ The catalog entry goes. {dir} is not touched.
 - **request.unreachable:** could not reach Ronin — network or server down
 
 ## head — tilehead.js (the tile head's help and quiet words)
-- **head.expand:** Expand Agent header
-- **head.collapse:** Collapse Agent header
 - **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
 - **head.dot_help:** Connection: green = attached, grey = disconnected
 - **head.rename_help:** Edit this Agent title
@@ -1582,6 +1580,8 @@ The catalog entry goes. {dir} is not touched.
 - **me.control:** Control
 - **me.kill:** Kill session
 - **me.output:** Output
+- **me.minimize:** Minimize
+- **me.agent_title:** This Agent — work record, docs, output, close
 - **me.title:** This session — status, work record, groups, docs, note, control
 
 ## keys — keysrow.js (the composer's keys row)
