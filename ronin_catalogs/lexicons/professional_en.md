@@ -1486,6 +1486,8 @@ The catalog entry goes. {dir} is not touched.
 - **transcript.empty:** No transcript output yet.
 - **transcript.unavailable:** Transcript unavailable for this Agent.
 - **transcript.failed:** Transcript could not be loaded. Retrying…
+- **transcript.stance_working:** Working
+- **transcript.stance_asking:** Waiting for your answer
 - **transcript.read_only:** Transcript is read only
 
 ## output — output.js (the RIREKI view picker)

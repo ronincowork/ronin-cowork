@@ -22,6 +22,45 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
   let reading = ''; // the reading's name on the route; '' lets the route choose its default
   let rendered = false; // whether this reading has ever shown a record — the header's 'empty'
   let probing = 0; // the live probe; hide() and a newer probe outdate an older one
+  let stance = ''; // what the Agent is doing, as the roster row last said
+  let stanceNode = null; // the indicator itself, held rather than looked up
+
+  /**
+   * THE END OF THE CONVERSATION, as it stands right now.
+   *
+   * Three bouncing dots on the Agent's side while it is working or replying, exactly where
+   * its next line will appear; nothing at all when it is your turn, because an empty end is
+   * how a conversation says it is waiting for you. `asking` is neither: the Agent cannot go
+   * on until the person answers, and that is worth a sentence rather than a decoration.
+   *
+   * The value is the row's — the tile is told, and infers nothing (owner's rule). It lives
+   * as the last child of the log so the view scrolls to it like any other line.
+   */
+  function paintStance() {
+    const shows = active && (stance === 'working' || stance === 'replying' || stance === 'asking');
+    if (!shows) {
+      stanceNode?.remove();
+      stanceNode = null;
+      return;
+    }
+    if (!stanceNode) {
+      stanceNode = document.createElement('div');
+      stanceNode.className = 'tile-transcript-stance';
+      stanceNode.setAttribute('aria-live', 'polite');
+    }
+    if (stanceNode.getAttribute?.('data-stance') !== stance) {
+      stanceNode.setAttribute('data-stance', stance);
+      stanceNode.replaceChildren();
+      const words = stance === 'asking'
+        ? t('transcript.stance_asking', 'Waiting for your answer')
+        : t('transcript.stance_working', 'Working');
+      if (stance === 'asking') stanceNode.textContent = words;
+      else for (let i = 0; i < 3; i++) stanceNode.append(document.createElement('i'));
+      stanceNode.setAttribute('aria-label', words);
+    }
+    // Always last: records append above it, so the end of the conversation stays the end.
+    el.append(stanceNode);
+  }
 
   function stop() {
     generation++;
@@ -33,16 +72,21 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
 
   function message(value) {
     el.replaceChildren();
+    stanceNode = null;
     const line = document.createElement('p');
     line.className = 'tile-transcript-message';
     line.textContent = value;
     el.append(line);
+    // An Agent can be at work with nothing said yet — 'Loading', or a reading with no
+    // records in it. The message is the log's whole content, so the indicator is put back
+    // after it rather than lost with the children it replaced.
+    paintStance();
   }
 
   function append(records) {
     const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
     if (!Array.isArray(records) || !records.length) return;
-    if (el.firstElementChild?.classList.contains('tile-transcript-message')) el.replaceChildren();
+    if (el.firstElementChild?.classList.contains('tile-transcript-message')) { el.replaceChildren(); stanceNode = null; }
     rendered = true;
     for (const rec of records) {
       const entry = document.createElement('div');
@@ -54,6 +98,7 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
       entry.textContent = rec.text || '';
       el.append(entry);
     }
+    paintStance(); // records append above it; the end of the conversation stays the end
     if (atBottom) el.scrollTop = el.scrollHeight;
   }
 
@@ -115,6 +160,14 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
     report(result.data, records.length);
   }
 
+  /** The roster row's word on what this Agent is doing. Nothing is polled for it. */
+  function setStance(next) {
+    const value = typeof next === 'string' ? next : '';
+    if (value === stance) return;
+    stance = value;
+    paintStance();
+  }
+
   function show(name, view = '') {
     if (active && session === name && reading === view) return;
     stop();
@@ -143,5 +196,5 @@ export function makeTileTranscript({ read = request, schedule = setTimeout, canc
     el.replaceChildren();
   }
 
-  return { el, show, hide, probe, setReading };
+  return { el, show, hide, probe, setReading, setStance };
 }

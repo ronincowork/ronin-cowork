@@ -94,6 +94,7 @@ export async function buildPhone() {
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — for the slow work-record clock
   let sheet = null; // its メ sheet — dies with the host
+  let roster = null; // the roster clock, which the desk has in layout.js and the phone lacked
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
 
   /* ---------- screen 1 · the Teams ---------- */
@@ -283,6 +284,13 @@ export async function buildPhone() {
     if (!tile.servicesOff()) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
     sheet.addRow(node('killBtn'), 'Close');
 
+    // The desk refreshes the roster on its own clock (layout.js) and the phone had none, so
+    // a row's own facts — what the Agent is doing — never arrived here at all. Same data and
+    // the same cadence, not a second poll of anything.
+    void refreshHome();
+    clearInterval(roster);
+    roster = setInterval(() => { if (document.visibilityState === 'visible') void refreshHome(); }, 8000);
+
     // The 📄 menu hangs off the hidden tile head; here it hangs off the bar.
     //
     // So does the reading toggle, and it is a toggle here rather than a dial: the owner's
@@ -300,6 +308,8 @@ export async function buildPhone() {
     );
   };
   const closeTerminal = () => {
+    clearInterval(roster);
+    roster = null;
     sheet?.close();
     sheet = null;
     host?.destroy();

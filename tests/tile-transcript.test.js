@@ -19,8 +19,17 @@ class Node {
     };
   }
   setAttribute(key, value) { this.attributes[key] = value; }
-  append(...nodes) { this.children.push(...nodes); }
-  replaceChildren(...nodes) { this.children = nodes; }
+  getAttribute(key) { return this.attributes[key]; }
+  remove() { this.parent?.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
+  append(...nodes) {
+    for (const n of nodes) {
+      const at = this.children.indexOf(n);
+      if (at >= 0) this.children.splice(at, 1); // append MOVES a node it already holds
+      n.parent = this;
+      this.children.push(n);
+    }
+  }
+  replaceChildren(...nodes) { this.children.forEach((n) => { if (!nodes.includes(n)) n.parent = null; }); this.children = nodes; }
   get firstElementChild() { return this.children[0] || null; }
   get scrollHeight() { return this.children.length * 50; }
 }
@@ -311,4 +320,40 @@ test('on a phone the cycle is two states: Term and the conversation, from the ro
     toggle(); toggle();
     assert.equal(label(), 'Notes');
   } finally { globalThis.__onPhone = false; }
+});
+
+test('the end of the conversation says what the Agent is doing, from the row and nothing else', async () => {
+  const view = makeTileTranscript({
+    read: async () => ({ ok: true, data: { available: true, records: [record('a line')], since: 1, seq: 1, view: 'chat', readings: READINGS } }),
+    schedule: () => 0, cancel() {},
+  });
+  const indicator = () => view.el.children.find((n) => n.className === 'tile-transcript-stance');
+  view.show('agent', 'chat');
+  await tick();
+
+  // Nothing said yet: nothing shown. The tile never guesses.
+  assert.equal(indicator(), undefined);
+
+  // At work, and writing: three dots, on the Agent's side, at the end.
+  view.setStance('working');
+  assert.equal(indicator()?.children.length, 3, 'three dots');
+  assert.equal(view.el.children.at(-1), indicator(), 'and they are the end of the conversation');
+  view.setStance('replying');
+  assert.equal(indicator()?.children.length, 3);
+
+  // Your turn: the end of the conversation is empty, which is how it says so.
+  view.setStance('awaiting_you');
+  assert.equal(indicator(), undefined);
+
+  // Stopped at a question: words, not dots — the person has to do something.
+  view.setStance('asking');
+  assert.equal(indicator()?.children.length, 0, 'no dots');
+  assert.equal(indicator()?.textContent, 'Waiting for your answer');
+
+  // Nothing known: nothing shown, rather than a guess.
+  view.setStance('unknown');
+  assert.equal(indicator(), undefined);
+  view.setStance('working');
+  view.hide();
+  assert.equal(indicator(), undefined, 'and it goes with the reading');
 });

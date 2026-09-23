@@ -64,6 +64,14 @@ Agent Summary returns it will be written from the conversation, like everything 
 
 ## What an Agent is doing
 
+While you are reading the conversation, the end of it shows what the Agent is doing now:
+three dots on the Agent's side, where its next line will appear, while it is working or
+writing one. When it is your turn the end is simply empty — that is how a conversation says
+it is waiting for you. If it is stopped at a question it says so in words instead, because
+that one needs you to do something and a decoration would not say it. If the dots are
+unwelcome, a system "reduce motion" setting leaves them still.
+
+
 Each Agent's row says its **stance**: *working…*, *replying…*, *awaiting you*, or *asking
 you*. It is read from the conversation the CLI itself wrote — a tool going out is a record,
 a finished reply is a record — so it does not depend on what happens to be drawn on the

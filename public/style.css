@@ -4360,6 +4360,46 @@ button.wb-door:hover b {
   font-weight: 600;
 }
 .tile-transcript-message { color: var(--muted); }
+
+/*
+ * WHAT IT IS DOING, at the end of the conversation.
+ *
+ * Three dots on the Agent's side, where its next line will appear, while it is working or
+ * writing one. Nothing at all when it is your turn — an empty end is how a conversation
+ * says it is waiting for you. `asking` is neither, and gets words: the Agent cannot go on
+ * until you answer, and a decoration would not say that.
+ */
+.tile-transcript-stance {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0 var(--space-3) var(--space-4);
+  color: var(--muted);
+}
+.tile-transcript-stance i {
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: 50%;
+  background: var(--kaki);
+  opacity: 0.45;
+  animation: transcript-thinking var(--motion-hint) ease-in-out infinite;
+}
+.tile-transcript-stance i:nth-child(2) { animation-delay: var(--motion-quick); }
+.tile-transcript-stance i:nth-child(3) { animation-delay: var(--motion-settle); }
+@keyframes transcript-thinking {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(calc(var(--space-1) * -2)); opacity: 1; }
+}
+/* Stopped at a question: the person has to act, so it says so, in the colour that means act. */
+.tile-transcript-stance[data-stance='asking'] {
+  color: var(--bad);
+  font-weight: 600;
+}
+/* Motion is the whole point of the dots, so when motion is unwelcome they simply sit still —
+   the indicator is still there, and still says the Agent is at work. */
+@media (prefers-reduced-motion: reduce) {
+  .tile-transcript-stance i { animation: none; opacity: 0.75; }
+}
 .tile.transcript-on .dvr-strip,
 .tile.transcript-on .tapejump,
 .tile.transcript-on .termjump { display: none; }

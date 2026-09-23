@@ -20,6 +20,7 @@ import { buildTileDocView } from './tile-doc-view.js';
 import { isCoarse } from './tiledrop.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
 import { desksOf, refreshDesks } from './desks.js';
+import { homeData } from './home.js';
 import { t } from './lexicon.js';
 import { makeTileTranscript } from './tile-transcript.js';
 
@@ -334,6 +335,16 @@ export class Tile {
     this.setComposer(on || this.tapeMode || isCoarse());
     this.syncHeader();
     if (!on) this.doFit();
+  }
+
+  /**
+   * The roster answered. Its row already carries what this Agent is doing, so the reading
+   * takes its end-of-conversation indicator from there — no second poll, and no opinion of
+   * its own (owner, 2026-09-23: the backend sends it, the front renders it).
+   */
+  renderHome() {
+    const row = this.session && Array.isArray(homeData) ? homeData.find((r) => r.name === this.session) : null;
+    this.transcriptView.setStance(row?.stance || '');
   }
 
   /** The route's word on this Agent's transcript arrived; the header reads it from here. */
