@@ -4319,7 +4319,6 @@ button.wb-door:hover b {
 /* Opaque: the route said this Agent has nothing to show. Still a button — pressing it
    opens the view, which says why in full. */
 .tile-head button.transcript-toggle.off { opacity: 0.4; }
-.tile-transcript-entry[data-role='user'] { font-weight: 600; }
 .tile-transcript-entry[data-kind='note'] { color: var(--muted); font-style: italic; }
 .tile-transcript-entry[data-kind='act'],
 .tile-transcript-entry[data-kind='code'] { color: var(--muted); font-family: var(--mono, monospace); font-size: 0.9em; }
@@ -4336,7 +4335,27 @@ button.wb-door:hover b {
   background: var(--bg);
   font: var(--text-3)/1.45 var(--font-mono);
 }
-.tile-transcript-entry { border-bottom: var(--edge) solid var(--line); padding: var(--space-3) 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tile-transcript-entry {
+  border-bottom: var(--edge) solid var(--line);
+  /* The rule is transparent here so every line starts on the same left edge, whoever
+     said it — only its colour changes below. */
+  border-left: var(--edge-2) solid transparent;
+  padding: var(--space-3) 0 var(--space-3) var(--space-4);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/*
+ * WHOSE LINE IS THIS. On a phone a conversation in one colour and one font is a wall, and
+ * the owner could not tell his own words from the Agent's. So yours carry the house colour
+ * on their edge and the faintest wash of it behind them, and stay heavier than the reply.
+ * Shape, fill and weight — never an underline, and never a chat bubble: this is a record
+ * being read, not a messaging app (owner, 2026-09-23).
+ */
+.tile-transcript-entry[data-role='user'] {
+  border-left-color: var(--kaki);
+  background: color-mix(in srgb, var(--kaki) 8%, transparent);
+  font-weight: 600;
+}
 .tile-transcript-message { color: var(--muted); }
 .tile.transcript-on .dvr-strip,
 .tile.transcript-on .tapejump,
