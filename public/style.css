@@ -1521,52 +1521,6 @@ body {
   }
 }
 
-/* Wide touch workbenches keep their columns, but terminal work has one compact header. */
-@media (pointer: coarse) and (min-width: 681px) {
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar {
-    min-height: 48px;
-    padding-block: var(--space-2);
-  }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar :is(#brandbtn, #coworkssep, #coworksbtn, #servicesstate, #ramrpm, #feedbackaction, #shapecycle) {
-    display: none !important;
-  }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .grow { flex: 0 1 auto; }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-agents,
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-tools {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    gap: var(--space-2);
-  }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-agents { flex: 1 1 0; }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-agents-right { justify-content: flex-end; }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > .tablet-tools { flex: 1 1 0; justify-content: flex-end; }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar > :is(.tablet-agents, .tablet-tools)[hidden] { display: none !important; }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-agent,
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-tools > :is(button, select) {
-    min-width: 0;
-    height: 36px;
-    border: var(--edge) solid transparent;
-    border-radius: var(--radius-md);
-    background: transparent;
-    color: var(--muted);
-    padding: 0 var(--space-3);
-    font: 600 var(--text-3)/1 var(--font-ui);
-  }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-agent {
-    max-width: 11rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-agent[aria-pressed='true'] { border-color: var(--accent); color: var(--fg-strong); }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-tools > :is(.work-record, .transcript-toggle, .tdocs-btn) { width: auto; }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) #bar .tablet-tools > .tdocs { top: 100%; right: var(--space-4); }
-  :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface:has(.tile) > .wk-surface-header,
-  :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface:has(.tile) .tile-head {
-    display: none;
-  }
-}
 .xterm .xterm-viewport::-webkit-scrollbar {
   width: 0;
   height: 0;
@@ -6822,4 +6776,53 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .rs-stage button.td-seg,.desk-stats button.td-seg { border:0; padding:0; min-width:0; border-radius:0; cursor:pointer; }
 .rs-categories { display:flex; flex-wrap:wrap; margin-top:var(--space-4); }
 
+}
+
+.header-collapse,
+.tile-head-collapse { display: none; }
+
+/* Wide touch keeps the original workbench. Its redundant workspace bands go away;
+   the application and Agent headers independently fold when conversation needs room. */
+@media (pointer: coarse) and (min-width: 681px) {
+  #bar > .app-header-collapse,
+  .tile-head > .tile-head-collapse {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 32px;
+    border: var(--edge) solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    color: var(--fg);
+    font: 600 var(--text-5)/1 var(--font-ui);
+  }
+  #bar > .app-header-collapse { margin-left: auto; }
+  #bar.header-collapsed {
+    min-height: 0;
+    justify-content: flex-end;
+    border-bottom-color: transparent;
+    background: transparent;
+    padding-block: var(--space-1);
+  }
+  #bar.header-collapsed > :not(.app-header-collapse) { display: none !important; }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface:has(.tile) > .wk-surface-header {
+    display: none;
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head > .torii {
+    display: none;
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile.header-collapsed .tile-head > :not(.sess):not(.tile-head-collapse) {
+    display: none !important;
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile.header-collapsed .tile-head {
+    flex-wrap: nowrap;
+    min-height: 38px;
+    padding-block: var(--space-1);
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile.header-collapsed .tile-head .sess {
+    flex: 1 1 auto;
+    max-width: none;
+  }
 }

@@ -359,7 +359,7 @@ export function createCoworkView(options = {}) {
     label: campaign ? teamsLabel : t('team.roster_title', 'Team Roster'),
     // While ミ Help is open the column is Mika's, and every repaint says so.
     title: () => helpPanel?.isOpen() ? t('mika.header', 'Mika, your helpful assistant') : campaign ? teamsLabel : t('team.roster_title', 'Roster'),
-    actions: [rosterNote, mikaHelp], deferSelector: true,
+    actions: [rosterNote], deferSelector: true,
     selectorFilter: (type) => type !== BEHAVIOUR_SURFACE_TYPE,
     installDrop: (cell, id) => acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: { session: name } })),
     onSelect: markSelected,

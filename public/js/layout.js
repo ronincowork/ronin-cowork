@@ -8,8 +8,24 @@ import { buildPadPanel } from './padpanel.js';
 import { buildNotePanel } from './panels.js';
 import { IS_TOUCH, S, tiles } from './state.js';
 import { isCoarse } from './tiledrop.js';
+import { t } from './lexicon.js';
 
 export function build() {
+  const bar = document.getElementById('bar');
+  if (bar) {
+    const collapse = document.createElement('button');
+    collapse.type = 'button';
+    collapse.className = 'header-collapse app-header-collapse';
+    const sync = () => {
+      const closed = bar.classList.contains('header-collapsed');
+      collapse.textContent = closed ? '⌄' : '⌃';
+      collapse.setAttribute('aria-expanded', String(!closed));
+      collapse.setAttribute('aria-label', closed ? t('bar.expand_header', 'Expand header') : t('bar.collapse_header', 'Collapse header'));
+    };
+    collapse.addEventListener('click', () => { bar.classList.toggle('header-collapsed'); sync(); });
+    sync();
+    bar.append(collapse);
+  }
   // Each wiring block is guarded separately: losing one control must not cost the
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
   document.addEventListener('visibilitychange', () => {

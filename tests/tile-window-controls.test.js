@@ -36,12 +36,6 @@ test('the Torii rename prompt keeps the immutable Agent ID visible', async () =>
   assert.match(tile, /setSessionTitle\(session, wanted\.trim\(\)\)/);
 });
 
-test('wide-touch Agent header slots stay scoped and hidden until Team or Cowork supplies them', async () => {
-  const style = await read('public/style.css');
-  assert.match(style, /:root:is\(\[data-workbench='team'\], \[data-workbench='cowork'\]\) #bar > :is\(\.tablet-agents, \.tablet-tools\)\[hidden\] \{ display: none !important; \}/);
-  assert.doesNotMatch(style, /\n\s*\.tablet-(?:agents|tools)\s*\{\s*display:\s*flex/);
-});
-
 test('managed workspaces empty their seat and both empty views use the subdued Ronin mark', async () => {
   const [cowork, host, tile, css] = await Promise.all([
     read('public/js/cowork-view.js'), read('public/js/terminal-tile-host.js'),

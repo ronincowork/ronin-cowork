@@ -2,11 +2,10 @@
 import { t } from './lexicon.js';
 
 function fitDropToTile(anchor, menu) {
-  const head = anchor.closest('.tile-head, #bar');
-  if (!head) return;
+  const head = anchor.closest('.tile-head');
   const box = anchor.closest('.tile');
-  const bottom = box?.getBoundingClientRect().bottom ?? window.innerHeight;
-  const room = bottom - head.getBoundingClientRect().bottom - 8;
+  if (!head || !box) return;
+  const room = box.getBoundingClientRect().bottom - head.getBoundingClientRect().bottom - 8;
   menu.style.maxHeight = `${Math.max(140, Math.round(room))}px`;
 }
 

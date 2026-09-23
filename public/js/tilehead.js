@@ -198,5 +198,17 @@ export function buildTileHead(tile) {
     // Controls with a menu hang it off the header rather than inside the button.
     if (made?.menu) head.append(made.menu);
   }
+  const collapse = document.createElement('button');
+  collapse.type = 'button';
+  collapse.className = 'tile-head-collapse';
+  const syncCollapse = () => {
+    const closed = el.classList.contains('header-collapsed');
+    collapse.textContent = closed ? '⌄' : '⌃';
+    collapse.setAttribute('aria-expanded', String(!closed));
+    collapse.setAttribute('aria-label', closed ? t('head.expand', 'Expand Agent header') : t('head.collapse', 'Collapse Agent header'));
+  };
+  collapse.addEventListener('click', () => { el.classList.toggle('header-collapsed'); syncCollapse(); });
+  syncCollapse();
+  head.append(collapse);
   return out;
 }
