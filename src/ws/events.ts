@@ -4,6 +4,7 @@ import { listSessions } from '../tmux.js';
 import { tmux, type TmuxClient } from '../tmux-client.js';
 import { withAxes } from '../tegami.js';
 import { unwatch, watchFor } from './watchers.js';
+import { emitTranscriptWatch } from '../sockets.js';
 
 const eventClients = new Set<WebSocket>();
 let lastSessionNames = '';
@@ -34,7 +35,11 @@ export function handleEvents(ws: WebSocket): void {
       return;
     }
     if (msg?.t !== 'watch') return;
-    watchFor(ws, typeof msg.session === 'string' ? msg.session : '', typeof msg.reading === 'string' ? msg.reading : '');
+    const session = typeof msg.session === 'string' ? msg.session : '';
+    watchFor(ws, session, typeof msg.reading === 'string' ? msg.reading : '');
+    // Somebody is now looking at this Agent: a good moment for whoever follows journals to
+    // make sure it is following this one. It never causes a read.
+    if (session) emitTranscriptWatch(session);
   });
   void listSessions()
     .then(withAxes)
