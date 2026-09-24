@@ -69,7 +69,8 @@ export async function collectBirthLines(name: string, agent: boolean): Promise<s
 /**
  * A tab said what it is watching. The owner's words: "if the user starts tracking a session,
  * that's a good place to make sure we have a watcher instead of silently watching transcripts
- * which don't exist." It is a nudge, not a read — no part syncs or writes because of it.
+ * which don't exist." An Agent already being watched is unaffected; one that is not gets a
+ * watcher, and installing one catches up what was written while nothing was watching.
  */
 export function emitTranscriptWatch(session: string): void {
   for (const cb of watchHooks) void Promise.resolve(cb(session)).catch((e) => console.error('[sockets] watch hook:', e));
