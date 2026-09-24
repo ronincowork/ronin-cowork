@@ -393,6 +393,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_home.coworks_is:** Your Teams and Agents
 - **campaign_home.launch:** New Project
 - **campaign_home.launch_is:** Start a new Team or Agent
+- **campaign_home.desk:** Desk
+- **campaign_home.desk_is:** All Teams, Agents, and work
+- **campaign_home.team:** Team
+- **campaign_home.team_is:** Choose a Team and open its Workbench
+- **campaign_home.agent:** Agent
+- **campaign_home.agent_is:** Choose an Agent and open its Workbench
+- **campaign_home.settings:** Settings
 - **campaign_home.version:** v1.3
 - **campaign_home.check_updates:** Check for updates
 - **campaign_home.checking:** Checking…

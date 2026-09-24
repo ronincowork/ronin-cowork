@@ -65,9 +65,9 @@
     border-radius: var(--ch-box) 0 0 var(--ch-box);
     background: var(--ch-tone);
   }
-  .ch-door[data-door='campaign'] { --ch-tone: var(--accent); }
-  .ch-door[data-door='coworks'] { --ch-tone: var(--accent-2); }
-  .ch-door[data-door='launch'] { --ch-tone: var(--ok-2); }
+  .ch-door[data-door='desk'] { --ch-tone: var(--kaki); }
+  .ch-door[data-door='team'] { --ch-tone: var(--accent-2); }
+  .ch-door[data-door='agent'] { --ch-tone: var(--ok-2); }
 
   .ch-door:hover {
     border-color: var(--ch-edge-hover);
@@ -109,19 +109,33 @@
   .ch-release {
     position: absolute;
     z-index: 2;
-    right: var(--space-8);
+    left: var(--space-8);
     bottom: var(--space-7);
     max-width: calc(100% - var(--space-8) * 2);
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: var(--space-4);
     color: var(--dim);
     font-size: var(--text-2);
-    text-align: right;
+    text-align: left;
     overflow-wrap: anywhere;
   }
-  .ch-update-package { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--space-4); }
+  .ch-settings {
+    position: absolute;
+    z-index: 2;
+    right: var(--space-8);
+    bottom: var(--space-7);
+    padding: var(--space-3) var(--space-6);
+    border: var(--edge) solid var(--line-2);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    color: var(--muted-2);
+    font: inherit;
+    cursor: pointer;
+  }
+  .ch-settings:hover, .ch-settings:focus-visible { border-color: var(--kaki); color: var(--fg-strong); }
+  .ch-update-package { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: var(--space-4); }
   .ch-update-package + .ch-update-package { margin-top: var(--space-3); }
   .ch-update-reading[data-state='available'] { color: var(--accent); }
   @media (max-width: 720px), (max-height: 600px) {

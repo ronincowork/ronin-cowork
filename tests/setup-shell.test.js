@@ -14,9 +14,14 @@ test('Ronin Home routes the Machine door from persisted Campaign Setup answers',
   } } } }), 'campaign');
 });
 
-test('Ronin Home names the place and gates Teams and New Project on runtime readiness', async () => {
+test('Ronin Home opens Desk, Team, and Agent through the operational collection and keeps Settings secondary', async () => {
   const home = await source('js/campaign-home.js');
   assert.match(home, /Ronin Home/);
+  assert.match(home, /campaign_home\.desk', 'Desk'/);
+  assert.match(home, /campaign_home\.team', 'Team'/);
+  assert.match(home, /campaign_home\.agent', 'Agent'/);
+  assert.match(home, /campaign_home\.settings', 'Settings'/);
+  assert.doesNotMatch(home, /data-door=['"]campaign/);
   assert.match(home, /request\('\/api\/setup\/runtime'/);
   assert.match(home, /activatedCount < 1/);
   assert.match(home, /aria-disabled/);
