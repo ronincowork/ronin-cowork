@@ -12,7 +12,10 @@ export function createTerminalTileHost(options = {}) {
 
   const ensure = () => {
     if (tile) return tile;
-    tile = new Tile(Number(options.index) || 0, { onMinimize: options.onMinimize });
+    tile = new Tile(Number(options.index) || 0, {
+      onMinimize: options.onMinimize,
+      transcriptCache: options.transcriptCache,
+    });
     tiles.push(tile);
     tile.el.classList.add('wk-hosted-tile');
     // Consumer actions ride the Tile's own head row, beside its buttons — this host is
@@ -50,6 +53,7 @@ export function createTerminalTileHost(options = {}) {
   const destroy = () => {
     if (!tile) return;
     tile.wire?.close();
+    tile.transcriptView?.dispose();
     tile.ro?.disconnect();
     tile.composer?.dispose();
     if (tile.kakiTimer) clearInterval(tile.kakiTimer);
