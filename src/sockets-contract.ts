@@ -45,11 +45,9 @@ export type TranscriptGap =
   | 'no_key'          // the pane is live, but it carries no Ronin identity key at all
   | 'no_identity'     // the pane has a key, but no launch identity was persisted for it
   | 'unbound'         // identity exists; this CLI writes no journal Ronin can read
-  | 'journal_ambiguous' // two parent segments the source gives no strict order for — see launch-journal.ts
   | 'journal_pending'; // bound and expected, but the CLI has not written the file yet
 
-/** `reason` names the thing that caused the gap — a file, a clash — when there is one to name. */
-export type TranscriptLookup = { source: TranscriptSource } | { gap: TranscriptGap; reason?: string };
+export type TranscriptLookup = { source: TranscriptSource } | { gap: TranscriptGap };
 
 export interface Sockets {
   resolveTranscriptSource(name: string): Promise<TranscriptLookup>;
@@ -58,6 +56,12 @@ export interface Sockets {
   onSessionBorn(cb: (info: BornInfo) => void | Promise<void>): void;
   addBirthLines(cb: (name: string, agent: boolean) => Promise<string> | string): void;
   onSessionEnd(cb: (name: string, key: string) => void | Promise<void>): void;
+  /**
+   * A reader registered interest in a session — the tab's own {t:'watch'}. A part may use it
+   * to make sure it is watching that Agent's journal at all. It is NOT a read: nothing is
+   * synced or written because somebody looked.
+   */
+  onTranscriptWatch(cb: (session: string) => void | Promise<void>): void;
   addRowFields(cb: (session: string) => Promise<RowFields> | RowFields): void;
 
 /**

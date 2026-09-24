@@ -31,9 +31,7 @@ async function header(file: string): Promise<unknown | null> {
   }
 }
 
-export type SegmentChain =
-  | { files: string[]; session: string }
-  | { gap: 'journal_pending' | 'journal_ambiguous'; reason?: string };
+export type SegmentChain = { files: string[]; session: string } | { gap: 'journal_pending' };
 
 /**
  * A BIRTH'S JOURNAL IS A CHAIN, NOT A FILENAME.
@@ -44,11 +42,10 @@ export type SegmentChain =
  * newest message must always receive anything newer, and a pinned filename cannot keep it.
  *
  * For an ISOLATED birth the journal root is private to that birth, so every parent segment
- * in it belongs here — membership is not in question. ORDER is. The header's own timestamp
- * is the only authority for it: filenames are the provider's business and inventing an
- * order from them would assign global seq from something we made up. So when two parents
- * share a timestamp this REFUSES, and the transcript reads unavailable rather than
- * misordered (new_lead's ruling; the trade-off is stated in docs/rireki.md).
+ * in it belongs here — membership is not in question, only order. The header's timestamp
+ * decides it and the filename settles a tie, which is total because names in a directory are
+ * unique. A tie is inconsequential — both segments are kept and every record is delivered
+ * either way — so the transcript is never made unavailable over one (owner's ruling).
  *
  * READ-ONLY. Resolution runs on GET, so it writes nothing: the launch artifact is birth
  * evidence, never cursor state, and the chain is derived on every call.
@@ -63,29 +60,16 @@ export async function resolveLaunchSegments(identity: LaunchIdentity): Promise<S
     // THERE AND UNREADABLE IS NOT ABSENT. A half-written header is a segment we cannot yet
     // place; treating it as missing would order the chain around a hole and hand out a seq
     // the next sync would contradict.
-    if (row === null) return { gap: 'journal_pending', reason: file };
+    if (row === null) return { gap: 'journal_pending' };
     const child = declaration.childPath ? field(row, declaration.childPath) : undefined;
     if (child === true || (child !== null && typeof child === 'object')) continue;
     const id = field(row, declaration.idPath);
-    if (typeof id !== 'string' || !id) return { gap: 'journal_pending', reason: file };
+    if (typeof id !== 'string' || !id) return { gap: 'journal_pending' };
     const ts = field(row, declaration.tsPath || 'timestamp');
     found.push({ file, ts: typeof ts === 'string' && ts ? ts : '', id });
   }
   if (!found.length) return { gap: 'journal_pending' };
-  // ONE SEGMENT NEEDS NO ORDER. Ordering authority is only owed when there is a choice to
-  // make; demanding a timestamp from a lone journal would take a perfectly readable
-  // transcript away to settle a question nobody asked. Every provider that has never
-  // rotated a file lands here, which is almost all of them.
-  if (found.length === 1) return { files: [found[0].file], session: found[0].id };
-  const stamp = declaration.tsPath || 'timestamp';
-  const unstamped = found.find((f) => !f.ts);
-  if (unstamped) return { gap: 'journal_ambiguous', reason: `${unstamped.file} carries no ${stamp}` };
-  found.sort((a, b) => (a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0));
-  for (let i = 1; i < found.length; i++) {
-    if (found[i].ts === found[i - 1].ts) {
-      return { gap: 'journal_ambiguous', reason: `${found[i - 1].file} and ${found[i].file} share ${found[i].ts}` };
-    }
-  }
+  found.sort((a, b) => (a.ts === b.ts ? (a.file < b.file ? -1 : a.file > b.file ? 1 : 0) : a.ts < b.ts ? -1 : 1));
   // The birth's provider session is the one it is writing NOW: derived on every call,
   // never written back, because resolution answers GETs.
   return { files: found.map((f) => f.file), session: found[found.length - 1].id };
@@ -152,7 +136,7 @@ export async function resolveTranscriptSource(name: string): Promise<import('./s
   // segments in it and the newest is merely the current one. Nothing is written here.
   if (identity.strategy === 'isolated') {
     const chain = await resolveLaunchSegments(identity);
-    if ('gap' in chain) return { gap: chain.gap, ...(chain.reason ? { reason: chain.reason } : {}) };
+    if ('gap' in chain) return { gap: chain.gap };
     const files = chain.files;
     return { source: { ...common, file: files[files.length - 1], files, session: chain.session } };
   }

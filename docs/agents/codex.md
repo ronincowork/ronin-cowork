@@ -44,10 +44,10 @@ of an isolated birth is therefore the ORDERED CHAIN of parent rollouts in its pr
 writes nothing back: the launch artifact is birth evidence, never a cursor. Sub-agent
 rollouts are excluded by `childPath`, as before.
 
-Segments are ordered by the header's own `timestamp`. A lone segment needs no ordering
-authority — there is no choice to make — but when two parent segments carry the same
-timestamp the transcript reads **unavailable rather than misordered**: ordering them by
-filename would invent a sequence and assign the conversation's global numbering from it.
+Segments are ordered by the header's own `timestamp`, and the filename settles a tie — a
+total order, because names in one directory are unique. Every parent is admitted exactly
+once: a tie decides only which of two segments is read first, never whether a record is
+delivered, so it is not worth making a transcript unavailable over.
 
 Verified with CLI 0.153.4 on 2026-09-22: a real one-reply `codex exec` invocation wrote
 its rollout under the supplied home, with no matching rollout in the default home.

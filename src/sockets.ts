@@ -7,6 +7,7 @@ const willBornHooks: Array<(name: string) => void | Promise<void>> = [];
 const bornHooks: Array<(info: BornInfo) => void | Promise<void>> = [];
 const birthLineHooks: Array<(name: string, agent: boolean) => Promise<string> | string> = [];
 const endHooks: Array<(name: string, key: string) => void | Promise<void>> = [];
+const watchHooks: Array<(session: string) => void | Promise<void>> = [];
 const rowContribs: Array<(session: string) => Promise<RowFields> | RowFields> = [];
 const routeMounts: Array<(app: unknown) => void> = [];
 let streamHandler: ((...args: unknown[]) => void) | undefined;
@@ -18,6 +19,7 @@ export const sockets: Sockets = {
   onSessionBorn: (cb) => void bornHooks.push(cb),
   addBirthLines: (cb) => void birthLineHooks.push(cb),
   onSessionEnd: (cb) => void endHooks.push(cb),
+  onTranscriptWatch: (cb) => void watchHooks.push(cb),
   addRowFields: (cb) => void rowContribs.push(cb),
   // Connections are Core's; what a reading admits is the part's. This is the seam.
   deliverToWatchers: (session, make) => deliverToWatchers(session, make),
@@ -64,6 +66,15 @@ export async function collectBirthLines(name: string, agent: boolean): Promise<s
   }
   return out;
 }
+/**
+ * A tab said what it is watching. The owner's words: "if the user starts tracking a session,
+ * that's a good place to make sure we have a watcher instead of silently watching transcripts
+ * which don't exist." It is a nudge, not a read — no part syncs or writes because of it.
+ */
+export function emitTranscriptWatch(session: string): void {
+  for (const cb of watchHooks) void Promise.resolve(cb(session)).catch((e) => console.error('[sockets] watch hook:', e));
+}
+
 export function emitSessionEnd(name: string, key: string): void {
   for (const cb of endHooks) void Promise.resolve(cb(name, key)).catch((e) => console.error('[sockets] end hook:', e));
 }
