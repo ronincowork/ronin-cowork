@@ -31,9 +31,10 @@ test('Task Manager is offered only when available as a standalone surface', asyn
   assert.match(view, /workspace\.tab_task_manager', 'Task Manager'/);
 });
 
-test('People surface shares roster/org selection and density; Launch opens the Agent workbench while Close retires', async () => {
-  const [view, members, retirement, css, workbench, coworkRoster] = await Promise.all([
+test('People surface shares roster/org selection and density; selection opens adjacent composition while Launch opens the Agent workbench', async () => {
+  const [view, members, retirement, css, workbench, coworkRoster, composition, catalog] = await Promise.all([
     source('public/js/cowork-view.js'), source('public/js/team-members.js'), source('public/js/session-retire.js'), source('public/css/team-workspace.css'), source('public/js/workbench.js'), source('public/js/team-roster-surface.js'),
+    source('public/js/agent-composition.js'), source('public/js/workbench-catalog.js'),
   ]);
   assert.match(view, /workspace1: 'workspace2', workspace2: 'workspace1', workspace3: 'workspace4', workspace4: 'workspace3'/);
   assert.match(view, /openOwner: \(name\) => arrange\(\{ \[oppositeSeat\(id\)\]: \{ session: name \} \}\)/);
@@ -60,7 +61,11 @@ test('People surface shares roster/org selection and density; Launch opens the A
   assert.match(members, /let reading = 'roster', density = 'compact', selected/);
   assert.match(members, /rosterButton\.el\.addEventListener\('click'[\s\S]*reading = 'roster'[\s\S]*orgButton\.el\.addEventListener\('click'[\s\S]*reading = 'org'/);
   assert.match(members, /options\.onSelect\?\.\(member\)/, 'both readings use the same selection callback');
-  assert.match(view, /onSelect: \(member\) => arrange\(\{ \[oppositeSeat\(id\)\]: \{ session: member\.name \} \}\)/, 'selection drives the adjacent Agent tile');
+  assert.match(view, /onSelect: \(member\) => bench\.place\(WB_TYPES\.agentComposition, oppositeSeat\(id\), \{ key: member\.name \}\)/, 'selection drives the adjacent Agent composition surface');
+  assert.match(catalog, /agentComposition: AGENT_COMPOSITION_TYPE/);
+  assert.match(catalog, /WORKBENCH_PROFILES\.team[^\n]*WORKBENCH_TYPES\.agentComposition/);
+  assert.match(composition, /\/api\/sessions\/\$\{encodeURIComponent\(agent\)\}\/composition/);
+  assert.match(composition, /Immutable history/);
   assert.match(members, /densityButton\.el\.addEventListener\('click'[\s\S]*density === 'compact' \? 'expanded' : 'compact'/);
   assert.match(members, /detail\.hidden = density !== 'expanded'/);
   assert.match(members, /const leads = members\.filter\(\(member\) => member\.team_lead\), others = members\.filter/);
