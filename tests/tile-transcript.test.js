@@ -30,6 +30,12 @@ class Node {
     }
   }
   replaceChildren(...nodes) { this.children.forEach((n) => { if (!nodes.includes(n)) n.parent = null; }); this.children = nodes; }
+  insertBefore(node, mark) {
+    const at = this.children.indexOf(mark);
+    node.parent = this;
+    this.children.splice(at < 0 ? this.children.length : at, 0, node);
+    return node;
+  }
   get firstElementChild() { return this.children[0] || null; }
   get scrollHeight() { return this.children.length * 50; }
 }
@@ -50,6 +56,16 @@ const [{ makeTileTranscript }, { Tile }, { syncTileHead }, { S }] = await Promis
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const record = (text) => ({ role: 'agent', kind: 'say', text });
 const answer = (records, since, seq) => ({ ok: true, data: { available: true, records, since, seq } });
+/**
+ * The opening stream, as the view sees it: a header line, then records newest first.
+ * `show()` opens on this now, and the 2 s poll follows it — so a test about the POLL hands
+ * back a header and no records, and a test about the OPEN hands back both.
+ */
+const streamOf = (records = [], since = 0, seq = 0) => async (_url, onLine) => {
+  onLine({ available: true, since, seq, readings: [], view: '' });
+  for (const rec of records) onLine(rec);
+  return { ok: true, status: 200, data: {} };
+};
 const contents = (el) => el.children.filter((n) => n.className === 'tile-transcript-entry')
   .map((n) => n.textContent);
 
@@ -78,9 +94,12 @@ test('journal view appends from the returned cursor and shows unavailable distin
     { ok: true, data: { available: false, reason: 'no exact binding', records: [] } }];
   const view = makeTileTranscript({
     read: async (url) => { urls.push(url); return responses.shift(); },
+    readLines: streamOf(),
     schedule: (fn) => { scheduled.push(fn); return fn; }, cancel() {},
   });
   view.show('agent one');
+  await tick();
+  scheduled.shift()();
   await tick();
   assert.deepEqual(contents(view.el), ['first']);
   scheduled.shift()();
@@ -95,14 +114,18 @@ test('journal view appends from the returned cursor and shows unavailable distin
 });
 
 test('stale response from the previous session cannot enter the next transcript', async () => {
+  const pending = [];
   let resolveOld;
   const old = new Promise((resolve) => { resolveOld = resolve; });
   const view = makeTileTranscript({
     read: (url) => url.includes('/old/') ? old : Promise.resolve(answer([record('new only')], 9, 1)),
-    schedule: () => 1, cancel() {},
+    readLines: streamOf(),
+    schedule: (fn) => { pending.push(fn); return 1; }, cancel() {},
   });
   view.show('old');
   view.show('new');
+  await tick();
+  pending.splice(0).forEach((fn) => void fn()); // the polls the two opens scheduled
   await tick();
   resolveOld(answer([record('old secret')], 10, 1));
   await tick();
@@ -227,15 +250,19 @@ test('a probe tells the header what the route offers without rendering anything'
   await view.probe('agent');
   assert.equal(view.el.children.length, 0);
   assert.deepEqual(states, [{ available: true, empty: false, reason: '', readings: READINGS, view: 'notes' }]);
-  // A reading named on show is carried in the URL, and switching reading restarts from the first record.
+  // A reading named on show is carried in the URL the OPEN asks for, and switching reading
+  // restarts the view on the new reading's own stream.
   const urls = [];
-  const view2 = makeTileTranscript({ read: async (url) => { urls.push(url); return withReadings([record('y')], 'chat'); }, schedule: () => 1, cancel() {} });
+  const view2 = makeTileTranscript({
+    read: async () => withReadings([record('y')], 'chat'),
+    readLines: async (url, onLine) => { urls.push(url); onLine({ available: true, since: 0, seq: 0, readings: [], view: '' }); return { ok: true }; },
+    schedule: () => 1, cancel() {} });
   view2.show('agent', 'chat');
   await tick();
   view2.setReading('work');
   await tick();
-  assert.match(urls[0], /transcript\?view=chat&since=0&seq=0$/);
-  assert.match(urls[1], /transcript\?view=work&since=0&seq=0$/);
+  assert.match(urls[0], /transcript\?stream&view=chat$/);
+  assert.match(urls[1], /transcript\?stream&view=work$/);
   view2.hide();
 });
 
@@ -282,11 +309,13 @@ test('empty means this reading never showed a record, not that the last poll was
   const states = [];
   const scheduled = [];
   const responses = [withReadings([], 'chat'), withReadings([], 'chat'), withReadings([record('finally')], 'chat'), withReadings([], 'chat')];
-  const view = makeTileTranscript({ read: async () => responses.shift(), schedule: (fn) => { scheduled.push(fn); return fn; }, cancel() {},
+  const view = makeTileTranscript({ read: async () => responses.shift(), readLines: streamOf(),
+    schedule: (fn) => { scheduled.push(fn); return fn; }, cancel() {},
     onState: (s) => states.push(s.empty) });
   view.show('agent', 'chat');
   await tick(); scheduled.shift()(); await tick(); scheduled.shift()(); await tick(); scheduled.shift()(); await tick();
-  assert.deepEqual(states, [true, true, false, false]);
+  // The open reports first (nothing shown yet), then each poll.
+  assert.deepEqual(states, [true, true, true, false]);
   // Switching reading starts the question over.
   responses.push(withReadings([], 'work'));
   view.setReading('work');
@@ -357,3 +386,46 @@ test('the end of the conversation says what the Agent is doing, from the row and
   view.hide();
   assert.equal(indicator(), undefined, 'and it goes with the reading');
 });
+
+test('the view opens on the end of the conversation, painting each record as it arrives', async () => {
+  // The stream hands back newest first; the view puts each above the last, so the reader
+  // sees the final thing said immediately and the order stays the conversation's own.
+  const painted = [];
+  let deliver;
+  const view = makeTileTranscript({
+    read: async () => answer([], 9, 9),
+    readLines: async (_url, onLine) => {
+      onLine({ available: true, since: 9, seq: 9, readings: READINGS, view: 'chat' });
+      deliver = onLine;
+      for (const seq of [4, 3, 2]) { onLine({ seq, role: 'agent', kind: 'say', text: `line ${seq}` }); painted.push(contents(view.el).join('|')); }
+      return { ok: true, status: 200, data: {} };
+    },
+    schedule: () => 1, cancel() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  assert.equal(painted[0], 'line 4', 'the newest is on screen after ONE record, not after all of them');
+  assert.deepEqual(contents(view.el), ['line 2', 'line 3', 'line 4'], 'and they end up in the order they were said');
+  assert.ok(deliver, 'the view read the stream rather than waiting for a whole body');
+  view.hide();
+});
+
+test('the view takes a screenful and lets go, rather than reading a whole conversation', async () => {
+  let sent = 0;
+  const view = makeTileTranscript({
+    read: async () => answer([], 1, 1),
+    readLines: async (_url, onLine, opts) => {
+      onLine({ available: true, since: 1, seq: 1, readings: READINGS, view: 'chat' });
+      for (let seq = 500; seq > 0 && !opts.signal?.aborted; seq--) { onLine({ seq, role: 'agent', kind: 'say', text: `s${seq}` }); sent++; }
+      return { ok: true, status: 200, data: {} };
+    },
+    schedule: () => 1, cancel() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  // One number, phone and desk alike: the open is fast because the FIRST record paints,
+  // not because of how many follow it. This only bounds what is built behind that.
+  assert.equal(sent, 30);
+  view.hide();
+});
+

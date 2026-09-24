@@ -64,6 +64,10 @@ Agent Summary returns it will be written from the conversation, like everything 
 
 ## What an Agent is doing
 
+A long conversation opens at its end: the last thing said appears immediately and the rest
+fills in under it, rather than the whole record being fetched before anything shows.
+Scrolling to the top asks for what came before.
+
 While you are reading the conversation, the end of it shows what the Agent is doing now:
 three dots on the Agent's side, where its next line will appear, while it is working or
 writing one. When it is your turn the end is simply empty — that is how a conversation says
