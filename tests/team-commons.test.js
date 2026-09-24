@@ -31,7 +31,7 @@ test('Task Manager is offered only when available as a standalone surface', asyn
   assert.match(view, /workspace\.tab_task_manager', 'Task Manager'/);
 });
 
-test('Roster expands live readings; its Launch opens the Agent workbench while Close retires', async () => {
+test('People surface shares roster/org selection and density; Launch opens the Agent workbench while Close retires', async () => {
   const [view, members, retirement, css, workbench, coworkRoster] = await Promise.all([
     source('public/js/cowork-view.js'), source('public/js/team-members.js'), source('public/js/session-retire.js'), source('public/css/team-workspace.css'), source('public/js/workbench.js'), source('public/js/team-roster-surface.js'),
   ]);
@@ -57,7 +57,18 @@ test('Roster expands live readings; its Launch opens the Agent workbench while C
   assert.match(css, /\.league-team-member-detail\[hidden\] \{ display: none; \}/);
   assert.match(members, /toggle\.setAttribute\('aria-expanded', 'false'\)/);
   assert.match(members, /toggle\.setAttribute\('aria-controls', detail\.id\)/);
-  assert.match(members, /toggle\.addEventListener\('click', \(\) => \{[\s\S]*detail\.hidden = !expanded;/);
+  assert.match(members, /let reading = 'roster', density = 'compact', selected/);
+  assert.match(members, /rosterButton\.el\.addEventListener\('click'[\s\S]*reading = 'roster'[\s\S]*orgButton\.el\.addEventListener\('click'[\s\S]*reading = 'org'/);
+  assert.match(members, /options\.onSelect\?\.\(member\)/, 'both readings use the same selection callback');
+  assert.match(view, /onSelect: \(member\) => arrange\(\{ \[oppositeSeat\(id\)\]: \{ session: member\.name \} \}\)/, 'selection drives the adjacent Agent tile');
+  assert.match(members, /densityButton\.el\.addEventListener\('click'[\s\S]*density === 'compact' \? 'expanded' : 'compact'/);
+  assert.match(members, /detail\.hidden = density !== 'expanded'/);
+  assert.match(members, /const leads = members\.filter\(\(member\) => member\.team_lead\), others = members\.filter/);
+  assert.match(members, /'Reporting lines are not set, so these Agents remain unplaced\.'/);
+  assert.match(members, /'Team lead not assigned'[\s\S]*'Assign lead'[\s\S]*'Add new Agent'/);
+  assert.match(members, /import \{ ask \} from '\.\/ask\.js'/);
+  assert.match(members, /const pick = ask\(\[\{ fields: \[\{[\s\S]*key: 'lead'[\s\S]*options: choices\.map/);
+  assert.match(view, /onAddLead: \(\) => bench\.place\(WB_TYPES\.newAgent, oppositeSeat\(id\)/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
   assert.match(view, /campaign \? \{ action: \(\) => openAgentWorkbench\(member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
   assert.match(view, /createTeamRosterSurface\(\{ onOpen: openAgentWorkbench \}\)/, 'the Cowork Team Roster row opens the standalone Agent workbench');

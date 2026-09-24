@@ -1898,6 +1898,21 @@ The catalog entry goes. {dir} is not touched.
 - **league.delete_team:** Delete team
 - **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
 - **league.members:** Team members
+- **league.people:** People
+- **league.people_reading:** People reading
+- **league.roster_reading:** Roster
+- **league.org_reading:** Org chart
+- **league.no_lead_title:** Team lead not assigned
+- **league.no_lead_help:** Assign an Agent already on this Team, or add a new Agent for the role.
+- **league.choose_lead:** Choose an Agent as team lead
+- **league.no_lead_candidates:** No current Agents to assign
+- **league.assign_lead:** Assign lead
+- **league.add_lead_agent:** Add new Agent
+- **league.add_lead_prompt:** Join this Team as its team lead.
+- **league.unplaced_agents:** Other Agents
+- **league.hierarchy_unset:** Reporting lines are not set, so these Agents remain unplaced.
+- **league.expand_people:** Expand Agent details
+- **league.compact_people:** Compact Agent details
 - **league.role_unset:** Role not set
 - **league.team_lead:** Team Lead
 - **league.make_team_lead:** Make Lead
