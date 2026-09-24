@@ -971,8 +971,12 @@ body {
   padding: var(--space-4);
   background: var(--bg);
 }
-.tile-body[data-surface='docs'] > .tile-doc-view.open { display: flex; }
-.tile-body[data-surface='docs'] > .composer { display: none !important; }
+.tile-doc-view.open { display: flex; }
+/* `.open` is the Docs sibling's own public state. Keep it exclusive even during the
+   instant before a host synchronizes data-surface, and for independent surface hosts. */
+.tile-body:has(> .tile-doc-view.open) > :is(.xterm, .tape, .tile-transcript, .composer) {
+  display: none !important;
+}
 .tile-doc-close {
   align-self: flex-end;
   border: var(--edge) solid var(--line);

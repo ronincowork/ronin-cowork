@@ -196,8 +196,9 @@ export class Tile {
   /** Point the gauge at the session's context reading (null = no reading, gauge hides). */
   async refreshCtx() {
     const session = this.session;
-    if (!session) {
+    if (!session || this.servicesOff()) {
       this.gauge.set(null);
+      this.setFooter(null, null);
       return;
     }
     const r = await request('/api/sessions/' + encodeURIComponent(session) + '/ctx', { cache: 'no-store' });
