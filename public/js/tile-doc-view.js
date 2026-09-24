@@ -15,12 +15,16 @@ export function buildTileDocView(tile) {
   root.append(close);
 
   const docs = buildDocs(tile, root, () => root.classList.contains('open'), (name) => name === tile.session);
-  close.addEventListener('click', () => {
+  const leave = () => {
+    if (!root.classList.contains('open')) return true;
     if (docs.leave()) {
       root.classList.remove('open');
       tile.syncSurface();
+      return true;
     }
-  });
+    return false;
+  };
+  close.addEventListener('click', leave);
   return {
     el: root,
     async open(path) {
@@ -30,11 +34,7 @@ export function buildTileDocView(tile) {
       docs.enter();
       await docs.open(path);
     },
-    close() {
-      if (docs.leave()) {
-        root.classList.remove('open');
-        tile.syncSurface();
-      }
-    },
+    close: leave,
+    isOpen: () => root.classList.contains('open'),
   };
 }

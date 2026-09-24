@@ -684,6 +684,9 @@ export class Tile {
 
   connect(session) {
     const changed = this.session !== session;
+    // A document belongs to the session that opened it. Switching the seat first asks
+    // that editor to leave; unsaved typing can refuse, keeping both session and surface.
+    if (changed && this.docView?.isOpen() && !this.docView.close()) return false;
     if (changed) {
       this.transcriptView.hide();
       this.transcriptOn = false;
@@ -737,6 +740,7 @@ export class Tile {
     });
 
     saveState();
+    return true;
   }
 
   async refreshKaki(create, force = false) {
