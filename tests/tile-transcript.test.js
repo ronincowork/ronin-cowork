@@ -88,7 +88,7 @@ test('a reading keeps the way to answer: the composer sends, the hidden terminal
   let focused = 0;
   let composer = null;
   const fake = {
-    transcriptOn: true, session: 'agent', transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, tapeMode: false,
+    transcriptOn: true, session: 'agent', transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, tapeMode: false,
     el: { classList: { toggle() {} } }, body: { contains: () => false },
     transcriptView: { el: { scrollTop: 0, scrollHeight: 50 }, show() {}, hide() {} },
     wire: { sendInput: () => { raw++; return true; } },
@@ -117,7 +117,7 @@ test('the composer comes with the reading and goes with it', () => {
   const asked = [];
   const fake = {
     transcriptOn: false, transcriptLevel: -1, transcriptReadings: [{ name: 'chat', label: 'Chat' }],
-    session: 'agent', transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, tapeMode: false,
+    session: 'agent', transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, tapeMode: false,
     el: { classList: { toggle() {} } }, body: { contains: () => false },
     transcriptView: { show() {}, setReading() {}, hide() {} },
     setComposer: (on) => asked.push(on), syncHeader() {}, doFit() {},
@@ -138,7 +138,7 @@ test('the button cycles Term → Chat → Notes → Work → All → Term over t
   const shown = [];
   const tile = {
     session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: [], transcriptState: null,
-    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, el: { classList: { toggle() {} } }, body: { contains: () => false },
+    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, el: { classList: { toggle() {} } }, body: { contains: () => false },
     transcriptView: { show: (name, view) => shown.push(['show', view]), setReading: (view) => shown.push(['set', view]), hide: () => shown.push(['hide']) },
     setComposer() {}, syncHeader() {}, doFit() {},
   };
@@ -170,7 +170,7 @@ test('opaque when the route says unavailable or empty, live when records exist �
   const button = new Node();
   const tile = { transcriptBtn: button, headHelp: {}, session: 'agent', transcriptOn: false, transcriptState: null,
     transcriptReadings: [], transcriptLevel: -1,
-    transcriptAvailable: Tile.prototype.transcriptAvailable, transcriptCycle: Tile.prototype.transcriptCycle, transcriptQuiet: Tile.prototype.transcriptQuiet, transcriptLabel: Tile.prototype.transcriptLabel };
+    transcriptAvailable: Tile.prototype.transcriptAvailable, transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, transcriptQuiet: Tile.prototype.transcriptQuiet, transcriptLabel: Tile.prototype.transcriptLabel };
   S.services = ['rireki'];
   syncTileHead(tile);
   assert.equal(button.attributes['aria-disabled'], 'false', 'unknown yet is not opaque');
@@ -220,7 +220,7 @@ test('an opaque transcript button is still pressable, so the reason can be read 
   const row = headerRow('transcriptBtn');
   const tile = { session: 'agent', transcriptOn: false,
     transcriptState: { available: false, empty: true, reason: 'no journal here', readings: [], view: '' },
-    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, transcriptQuiet: Tile.prototype.transcriptQuiet };
+    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, transcriptQuiet: Tile.prototype.transcriptQuiet };
   assert.equal(Tile.prototype.transcriptQuiet.call(tile), 'no journal here', 'the row is quiet');
   assert.equal(pressable(row, tile), true, 'and still opens');
   tile.session = null;
@@ -230,7 +230,7 @@ test('an opaque transcript button is still pressable, so the reason can be read 
   // The real row through the header pass: quiet class and title, yet announced operable.
   const button = new Node();
   const quietTile = { transcriptBtn: button, headHelp: {}, session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: [],
-    transcriptState: tile.transcriptState, transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, transcriptQuiet: Tile.prototype.transcriptQuiet, transcriptLabel: Tile.prototype.transcriptLabel };
+    transcriptState: tile.transcriptState, transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, transcriptQuiet: Tile.prototype.transcriptQuiet, transcriptLabel: Tile.prototype.transcriptLabel };
   S.services = ['rireki'];
   syncTileHead(quietTile);
   assert.equal(button.classList.contains('off'), true);
@@ -259,7 +259,7 @@ test('on a phone the cycle is two states: Term and the conversation, from the ro
   const shown = [];
   const tile = {
     session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: READINGS, transcriptState: null,
-    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, tapeMode: false,
+    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, tapeMode: false,
     el: { classList: { toggle() {} } }, body: { contains: () => false },
     transcriptView: { show: (name, view) => shown.push(['show', view]), setReading: (view) => shown.push(['set', view]), hide: () => shown.push(['hide']) },
     setComposer() {}, syncHeader() {}, doFit() {},
@@ -322,7 +322,7 @@ test('on a tablet the cycle is Term, Chat and Work — Notes and All stay on the
   const shown = [];
   const tile = {
     session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: READINGS, transcriptState: null,
-    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, tapeMode: false,
+    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, tapeMode: false,
     el: { classList: { toggle() {} } }, body: { contains: () => false },
     transcriptView: { show: (name, view) => shown.push(['show', view]), setReading: (view) => shown.push(['set', view]), hide: () => shown.push(['hide']) },
     setComposer() {}, syncHeader() {}, doFit() {},
