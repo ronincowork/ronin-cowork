@@ -36,6 +36,19 @@ This preserves discovered configuration and credentials without a filename allow
 Codex chooses its id; Ronin reads it from the header inside that launch-owned journal
 location. No shared-directory claim, birth-window match, or terminal capture is used.
 
+**A birth's journal may be several files.** Codex can close one rollout and open another
+under the same birth — a continuation — and on 2026-09-24 it did: the identity had pinned
+the first filename, so the copy stopped at 12:56 while the Agent kept working. The journal
+of an isolated birth is therefore the ORDERED CHAIN of parent rollouts in its private
+`sessions` directory, not one filename. Resolution derives that chain on every call and
+writes nothing back: the launch artifact is birth evidence, never a cursor. Sub-agent
+rollouts are excluded by `childPath`, as before.
+
+Segments are ordered by the header's own `timestamp`. A lone segment needs no ordering
+authority — there is no choice to make — but when two parent segments carry the same
+timestamp the transcript reads **unavailable rather than misordered**: ordering them by
+filename would invent a sequence and assign the conversation's global numbering from it.
+
 Verified with CLI 0.153.4 on 2026-09-22: a real one-reply `codex exec` invocation wrote
 its rollout under the supplied home, with no matching rollout in the default home.
 File-based authentication through a symlink succeeded. Forced token refresh and macOS

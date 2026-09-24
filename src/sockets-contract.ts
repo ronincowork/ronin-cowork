@@ -1,5 +1,5 @@
 
-export const CONTRACT_V = 8;
+export const CONTRACT_V = 9;
 
 export interface LaunchIdentity {
   key: string;
@@ -9,7 +9,10 @@ export interface LaunchIdentity {
   home?: string;
   journalFile?: string;
   env: Record<string, string>;
-  journal?: { format: string; root: string; pattern: string; idPath: string; childPath?: string };
+  journal?: { format: string; root: string; pattern: string; idPath: string; childPath?: string;
+    /** Where the header carries the segment's own time — the authority for ordering a
+     *  continuation chain. Defaults to the top-level `timestamp` both CLIs already write. */
+    tsPath?: string };
 }
 
 export interface BornInfo {
@@ -24,7 +27,12 @@ export interface BornInfo {
 export type RowFields = Record<string, unknown>;
 
 /** `dir` is the session folder: where a part keeps files of its own beside Core's. */
-export interface TranscriptSource { file: string; format: string; provider: string; session: string; dir: string }
+/**
+ * `file` is the CURRENT segment — provenance, and what a watch routes on. `files` is the
+ * ordered chain when one birth's journal spans several segments, oldest first, and `file`
+ * is its last. Absent for every identity whose journal is a single pinned file.
+ */
+export interface TranscriptSource { file: string; format: string; provider: string; session: string; dir: string; files?: string[] }
 
 /**
  * WHY THERE IS NO SOURCE, when there is none. Core knows which of these it hit; before
@@ -37,9 +45,11 @@ export type TranscriptGap =
   | 'no_key'          // the pane is live, but it carries no Ronin identity key at all
   | 'no_identity'     // the pane has a key, but no launch identity was persisted for it
   | 'unbound'         // identity exists; this CLI writes no journal Ronin can read
+  | 'journal_ambiguous' // two parent segments the source gives no strict order for — see launch-journal.ts
   | 'journal_pending'; // bound and expected, but the CLI has not written the file yet
 
-export type TranscriptLookup = { source: TranscriptSource } | { gap: TranscriptGap };
+/** `reason` names the thing that caused the gap — a file, a clash — when there is one to name. */
+export type TranscriptLookup = { source: TranscriptSource } | { gap: TranscriptGap; reason?: string };
 
 export interface Sockets {
   resolveTranscriptSource(name: string): Promise<TranscriptLookup>;
