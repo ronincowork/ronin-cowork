@@ -35,10 +35,10 @@ test('Agent profile reuses Self, pure Documents, membership, Task Manager and ge
   assert.doesNotMatch(text, /request\([^\n]*\/teams[^\n]*membership/);
 });
 
-test('Agent first-open and structured seats use the ordinary terminal surface token', async () => {
+test('Agent first-open seats Self beside immutable/current composition facts', async () => {
   const text = await source('agent-view.js');
   assert.match(text, /workspace1: \{ type: TYPES\.self, key: agent \}/);
-  assert.match(text, /workspace2: \{ type: TYPES\.documents, key: agent \}/);
+  assert.match(text, /workspace2: \{ type: TYPES\.composition, key: agent \}/);
   assert.match(text, /context\.workbenchEntry\(defaults\)/);
   assert.match(text, /normalizeWorkbenchState\(state, bench\.declaration\)/);
 });

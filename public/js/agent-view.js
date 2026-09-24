@@ -13,9 +13,10 @@ import { t } from './lexicon.js';
 import { workbenchView, DISMISSED_WORKSPACE } from './workspace-contract.js';
 import { agentTitle } from './team-members.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
+import { createAgentCompositionSurface } from './agent-composition.js';
 
 const PROFILE = WORKBENCH_PROFILES.agent;
-const TYPES = Object.freeze({ self: WORKBENCH_TYPES.terminal, documents: WORKBENCH_TYPES.agentDocuments, teams: WORKBENCH_TYPES.agentTeams, tasks: WORKBENCH_TYPES.agentTasks, document: WORKBENCH_TYPES.document, feedback: WORKBENCH_TYPES.feedback });
+const TYPES = Object.freeze({ self: WORKBENCH_TYPES.terminal, composition: WORKBENCH_TYPES.agentComposition, documents: WORKBENCH_TYPES.agentDocuments, teams: WORKBENCH_TYPES.agentTeams, tasks: WORKBENCH_TYPES.agentTasks, document: WORKBENCH_TYPES.document, feedback: WORKBENCH_TYPES.feedback });
 const el = (tag, cls = '', text = '') => { const out = document.createElement(tag); if (cls) out.className = cls; if (text) out.textContent = text; return out; };
 const memberships = (name) => (S.sessions.find((row) => row.name === name)?.tags || []).map(String).sort();
 
@@ -98,6 +99,7 @@ export function createAgentView() {
     // that offers it supplies both halves of that environment contract.
     sessions: () => agent ? [{ key: agent, label: t('agent.self', 'Self') }] : [],
     terminal: (id) => ({ el: seats[id].surface.el, show: () => { seats[id].pool.sync([agent]); seats[id].pool.show(agent, false); } }),
+    composition: (detail = {}) => createAgentCompositionSurface(detail.key || agent),
     documents: (id) => makeDocuments(id, agent),
     teams: (id) => {
       const key = `${id}\0${agent}`;
@@ -130,7 +132,7 @@ export function createAgentView() {
   const restore = () => {
     const defaults = { count: 2, selected: 'workspace1',
       arrangement: WorkspaceKit.contract.normalizeWorkbenchState(null, bench.declaration).arrangement,
-      seats: { workspace1: { type: TYPES.self, key: agent }, workspace2: { type: TYPES.documents, key: agent } } };
+      seats: { workspace1: { type: TYPES.self, key: agent }, workspace2: { type: TYPES.composition, key: agent } } };
     const { state } = context.workbenchEntry(defaults);
     const typed = WorkspaceKit.contract.normalizeWorkbenchState(state, bench.declaration);
     bench.enter({ arrangement: typed.arrangement, count: state.count, selected: state.selected, selectorDensity: state.selectorDensity });
