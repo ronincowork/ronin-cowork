@@ -73,6 +73,14 @@
   .tk-unavailable { margin: 0; color: var(--muted); }
   .tk-column { display: flex; height: var(--tk-column-height); min-width: 0; flex-direction: column; border: var(--edge) solid var(--line); background: var(--well); transition: border-color var(--motion-quick) var(--ease), background var(--motion-quick) var(--ease); }
   .tk-column > h3 { box-sizing: border-box; display: grid; height: var(--tk-column-head); flex: none; gap: var(--space-1); margin: 0; border-bottom: var(--edge) solid var(--line); padding: var(--space-3) var(--space-4); color: var(--muted); font-size: var(--text-3); font-weight: 650; letter-spacing: var(--tk-heading-track); text-transform: uppercase; }
+  .tk-column-open, .tk-back { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .tk-back { grid-column: 1 / -1; justify-self: start; margin-bottom: var(--space-2); color: var(--accent-2); }
+  .tk-project-detail { padding: var(--space-5); border: var(--edge) solid var(--line); background: var(--well); }
+  .tk-project-detail h2 { margin: var(--space-5) 0 var(--space-2); color: var(--fg-strong); }
+  .tk-project-id { color: var(--muted); font-size: var(--text-3); }
+  .tk-project-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-5); }
+  .tk-project-facts dt { color: var(--muted); }
+  .tk-project-facts dd { margin: 0; color: var(--fg-strong); overflow-wrap: anywhere; }
   .tk-column-worker { color: var(--dim); font-size: var(--text-2); font-weight: 500; letter-spacing: 0; text-transform: none; }
   .tk-cards { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; gap: var(--space-3); overflow-y: auto; padding: var(--space-3); }
   .tk-empty { margin: 0; padding: var(--space-3); color: var(--dim); font-size: var(--text-3); font-style: italic; }
@@ -96,8 +104,9 @@
   .tk-card-row { min-height: var(--tk-card-meta-line); align-items: center; gap: var(--space-2); margin-top: var(--space-3); padding-top: 0; font-size: var(--text-3); }
   .tk-waiting { color: var(--kanban-green); }
   .tk-asked { color: var(--muted); }
-  .tk-owner { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: var(--accent-2); font: inherit; }
-  .tk-owner:hover { border-bottom-style: solid; }
+  .tk-owner, .tk-project-open { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: var(--accent-2); font: inherit; }
+  .tk-owner:hover, .tk-project-open:hover { border-bottom-style: solid; }
+  .tk-project-open { margin-left: auto; }
   /* The tab is drawn on the launch forms' furniture (launch-forms.css: .ntf-form, .fs-step, .wk-field);
      only the identity line is its own: Team ID · Title · Kind, one height, the Kind tray hosted by the line. */
   .tw-config-form { min-width: 0; }
