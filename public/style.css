@@ -6749,7 +6749,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   min-height: 0;
   margin: var(--space-4);
 }
-#phone .ph-docs .dc-text {
+#phone .dc-text {
   /* iOS zooms the whole viewport when a focused editor is smaller than 16px. */
   font-size: 16px;
 }
