@@ -14,6 +14,7 @@ export function createTerminalTileHost(options = {}) {
     if (tile) return tile;
     tile = new Tile(Number(options.index) || 0, {
       onMinimize: options.onMinimize,
+      onOpenDocument: options.onOpenDocument,
       transcriptCache: options.transcriptCache,
     });
     tiles.push(tile);

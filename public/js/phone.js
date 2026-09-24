@@ -96,6 +96,10 @@ export async function buildPhone() {
   let sheet = null; // its メ sheet — dies with the host
   let roster = null; // the roster clock, which the desk has in layout.js and the phone lacked
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
+  let docsPane = null; // the phone's one Docs surface, moved into place rather than rebuilt
+  let docsTeam = '';
+  let docsReturn = '';
+  let pendingDoc = '';
   const transcriptModes = new Map(); // session → Chat; Tiles are rebuilt whenever the phone changes Agent
   const transcriptCache = new Map(); // session + reading → records/cursor retained while Tiles come and go
 
@@ -250,27 +254,47 @@ export async function buildPhone() {
    */
   const paintDocs = () => {
     const team = route.team;
-    teamBar(team);
-    const pane = el('div', 'home-docs ph-docs');
-    const docs = buildDocs(null, pane, () => pane.isConnected,
-      (name) => membersOfTeam(team).some((member) => member.name === name),
-      () => teamByName(team)?.repos || []);
-    docsView = docs;
-    main.replaceChildren(segment(team, 'docs'), pane);
-    void refreshHome().then(() => { if (pane.isConnected) docs.enter(); });
+    bar.replaceChildren(backLink(docsReturn || '#/'), el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })));
+    if (!docsPane || docsTeam !== team) {
+      docsTeam = team;
+      docsPane = el('div', 'home-docs ph-docs');
+      docsView = buildDocs(null, docsPane, () => docsPane.isConnected,
+        (name) => membersOfTeam(team).some((member) => member.name === name),
+        () => teamByName(team)?.repos || []);
+    }
+    main.replaceChildren(segment(team, 'docs'), docsPane);
+    void refreshHome().then(async () => {
+      if (!docsPane.isConnected) return;
+      docsView.enter();
+      if (pendingDoc) {
+        const path = pendingDoc;
+        pendingDoc = '';
+        await docsView.open(path);
+      }
+    });
   };
   const leaveDocs = () => {
     if (!docsView) return true;
     const left = docsView.leave(); // false while unsaved typing stands and the owner keeps it
-    if (left) docsView = null;
+    if (left) docsReturn = '';
     return left;
+  };
+
+  const openPhoneDoc = (team, session, path) => {
+    pendingDoc = path;
+    docsReturn = sessionHash(team, session);
+    location.hash = docsHash(team);
   };
 
   /* ---------- screen 3 · the Agent ---------- */
   const openTerminal = () => {
     const { team, session } = route;
     closeTerminal();
-    host = createTerminalTileHost({ mode: 'reduced', transcriptCache });
+    host = createTerminalTileHost({
+      mode: 'reduced',
+      transcriptCache,
+      onOpenDocument: (path) => openPhoneDoc(team, session, path),
+    });
     const term = el('div', 'ph-term');
     term.append(host.el);
     main.replaceChildren(term);
@@ -347,7 +371,10 @@ export async function buildPhone() {
     route = next;
     if (route.screen === 'teams') paintTeams();
     else if (route.screen === 'agents') paintAgents();
-    else if (route.screen === 'docs') { if (docsView) teamBar(route.team); else paintDocs(); } // a title that arrives late still lands
+    else if (route.screen === 'docs') {
+      if (!docsPane?.isConnected) paintDocs();
+      else bar.replaceChildren(backLink(docsReturn || '#/'), el('span', 'ph-title', teamLabel({ ...teamByName(route.team), name: route.team })));
+    }
     else if (route.screen === 'feedback') paintFeedback();
     else if (!host) openTerminal();
   };
