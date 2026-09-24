@@ -99,7 +99,7 @@ export async function buildPhone() {
   let docsPane = null; // the phone's one Docs surface, moved into place rather than rebuilt
   let docsTeam = '';
   let docsReturn = '';
-  let pendingDoc = '';
+  let pendingDoc = null; // { team, path } — an async refresh may not carry it to another Team
   const transcriptModes = new Map(); // session → Chat; Tiles are rebuilt whenever the phone changes Agent
   const transcriptCache = new Map(); // session + reading → records/cursor retained while Tiles come and go
 
@@ -263,25 +263,30 @@ export async function buildPhone() {
         () => teamByName(team)?.repos || []);
     }
     main.replaceChildren(segment(team, 'docs'), docsPane);
+    const pane = docsPane;
+    const controller = docsView;
     void refreshHome().then(async () => {
-      if (!docsPane.isConnected) return;
-      docsView.enter();
-      if (pendingDoc) {
-        const path = pendingDoc;
-        pendingDoc = '';
-        await docsView.open(path);
+      if (!pane.isConnected || docsTeam !== team) return;
+      controller.enter();
+      if (pendingDoc?.team === team) {
+        const { path } = pendingDoc;
+        pendingDoc = null;
+        await controller.open(path);
       }
     });
   };
   const leaveDocs = () => {
     if (!docsView) return true;
     const left = docsView.leave(); // false while unsaved typing stands and the owner keeps it
-    if (left) docsReturn = '';
+    if (left) {
+      docsReturn = '';
+      pendingDoc = null;
+    }
     return left;
   };
 
   const openPhoneDoc = (team, session, path) => {
-    pendingDoc = path;
+    pendingDoc = { team, path };
     docsReturn = sessionHash(team, session);
     location.hash = docsHash(team);
   };
