@@ -569,3 +569,77 @@ test('scrolling to the top asks for the page above, and it lands above', async (
     'the older page lands above, in order, with no overlap');
   view.dispose();
 });
+
+test('a gap wider than one page is filled all the way, not just its newest page', async () => {
+  // A tab suspended long enough to miss more than the route's page size used to keep only
+  // the newest page of its gap and never learn the rest was missing.
+  const MISSED = 1201;
+  const doors = [];
+  const view = makeTileTranscript({
+    read: async (url) => {
+      const after = Number(/after=(\d+)/.exec(url)?.[1] ?? NaN);
+      const before = Number(/before=(\d+)/.exec(url)?.[1] ?? NaN);
+      if (!Number.isFinite(after)) {
+        // the opening page: it holds seq 10 and nothing else
+        return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 11, more: false,
+          records: [{ seq: 10, role: 'agent', kind: 'say', text: 's10' }] } };
+      }
+      doors.push([after, Number.isFinite(before) ? before : null]);
+      const newest = Number.isFinite(before) ? before - 1 : 10 + MISSED;
+      const count = Math.min(500, newest - after);
+      const from = newest - count + 1;
+      return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 10 + MISSED + 1,
+        more: from > after + 1,
+        records: Array.from({ length: count }, (_, i) => ({ seq: from + i, role: 'agent', kind: 'say', text: `s${from + i}` })) } };
+    },
+    watch() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  assert.deepEqual(seqsOn(view), [10]);
+
+  deliver({ t: 'reconnected' });
+  for (let i = 0; i < 10; i++) await tick();
+
+  const shown = seqsOn(view);
+  assert.equal(shown.length, MISSED + 1, `every missed record landed: ${shown.length} of ${MISSED + 1}`);
+  assert.deepEqual(shown, [...shown].sort((a, b) => a - b), 'in seq order');
+  assert.equal(new Set(shown).size, shown.length, 'each exactly once');
+  assert.equal(shown[0], 10);
+  assert.equal(shown.at(-1), 10 + MISSED);
+
+  // The lower bound never moved; only `before` stepped backwards.
+  assert.ok(doors.length >= 3, `the walk took more than one page: ${doors.length}`);
+  assert.deepEqual([...new Set(doors.map(([after]) => after))], [10], 'after stays the snapshotted lower bound');
+  const befores = doors.map(([, b]) => b);
+  assert.equal(befores[0], null, 'the first page asks with no upper door');
+  for (let i = 2; i < befores.length; i++) assert.ok(befores[i] < befores[i - 1], 'before steps backward');
+  view.dispose();
+});
+
+test('a conversation with nothing in it yet still has a place to resume from', async () => {
+  // "Nothing held" is a position, not the absence of one. Treating seq 0 as no checkpoint is
+  // how the very first thing an Agent ever says could be lost, if it said it while the
+  // socket was down.
+  const asked = [];
+  const view = makeTileTranscript({
+    read: async (url) => {
+      asked.push(url);
+      return url.includes('after=')
+        ? { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 1,
+            records: [{ seq: 0, role: 'agent', kind: 'say', text: 'the first thing it said' }] } }
+        : { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 0, more: false, records: [] } };
+    },
+    watch() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  assert.deepEqual(seqsOn(view), [], 'a genuinely empty conversation');
+
+  deliver({ t: 'reconnected' });
+  for (let i = 0; i < 4; i++) await tick();
+  assert.equal(asked.filter((u) => u.includes('after=')).length, 1, 'exactly one request');
+  assert.match(asked[1], /after=-1$/, 'from before the first record, because it holds none');
+  assert.deepEqual(seqsOn(view), [0], 'and seq 0 lands, once');
+  view.dispose();
+});

@@ -195,8 +195,13 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
    */
   function noteEnd(answer) {
     const end = Number(answer?.seq);
-    if (!Number.isFinite(end) || end <= 0) return;
-    frontier = frontier === null ? end - 1 : Math.max(frontier, end - 1);
+    if (!Number.isFinite(end) || end < 0) return;
+    // A conversation with nothing in it yet answers seq 0, and its checkpoint is -1: "I have
+    // seen nothing, tell me everything from the first record." Rejecting that as no
+    // checkpoint at all is how the very first thing an Agent says could be lost, if it said
+    // it while the socket was down (new_lead and mobile_transcript, review).
+    const checkpoint = end - 1;
+    frontier = frontier === null ? checkpoint : Math.max(frontier, checkpoint);
   }
 
   function url(name, view, door = {}) {
@@ -267,17 +272,36 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
    * Fill the gap a dropped socket left: what came after the newest record held, once.
    * A tab that was never away has nothing to ask for.
    */
+  /**
+   * FILL THE GAP A DROPPED SOCKET LEFT — all of it, however wide.
+   *
+   * The route answers a bounded page, so a tab suspended long enough to miss more than a
+   * page loses the OLDER part of its gap and never learns it (new_lead, review). The walk
+   * therefore keeps going while the route says there is more.
+   *
+   * The lower bound is snapshotted once and never moves: records arriving live during the
+   * walk would otherwise push it forward and step over the very records being fetched. Each
+   * page steps `before` backwards instead, and both doors are exclusive, so the pages meet
+   * without gap or overlap. Everything lands through the same ordered merge, so live
+   * arrivals interleaving with the walk are harmless.
+   */
   async function catchUp(token) {
     // The frontier, not the newest record shown: a reading with nothing in it still knows
     // where the conversation had got to, and asks from there.
     if (!active || !session || token !== generation || frontier === null) return;
-    const from = frontier;
-    const result = await read(url(session, reading, { after: from }), { cache: 'no-store' });
-    if (!active || token !== generation || !result.ok) return;
-    noteEnd(result.data);
-    // Whatever arrived live while this was in flight is already held; the rest fills in by
-    // seq, wherever it belongs.
-    merge(Array.isArray(result.data.records) ? result.data.records : []);
+    const lower = frontier;
+    let before;
+    // A bound on the walk: a route that kept saying `more` should not spin the tab forever.
+    for (let page = 0; page < 200; page++) {
+      const door = before === undefined ? { after: lower } : { after: lower, before };
+      const result = await read(url(session, reading, door), { cache: 'no-store' });
+      if (!active || token !== generation || !result.ok) return;
+      noteEnd(result.data);
+      const records = Array.isArray(result.data.records) ? result.data.records : [];
+      merge(records);
+      if (result.data.more !== true || !records.length) return;
+      before = records[0].seq; // the oldest of this page; the next one is older still
+    }
   }
 
   /** Scrolled to the top: the conversation above what is shown. */
