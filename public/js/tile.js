@@ -427,7 +427,7 @@ export class Tile {
    * live Agent, which never needed the terminal to be visible.
    */
   focusTerminal() {
-    if (this.transcriptOn) return;
+    if (this.transcriptOn || this.docView?.isOpen()) return;
     this.activate();
     this.term.focus();
   }

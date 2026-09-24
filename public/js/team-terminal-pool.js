@@ -98,7 +98,7 @@ export function createWarmTerminalPool({
     if (!entry) return false;
     const previous = active;
     clearGrace(entry);
-    stream(name, entry);
+    if (!stream(name, entry)) return false;
     for (const [member, candidate] of entries) {
       if (member !== name && candidate.host) candidate.host.hide();
     }
@@ -115,7 +115,7 @@ export function createWarmTerminalPool({
   const keepHot = (name) => {
     const entry = entries.get(name);
     if (!entry || streaming(entry) || name === active) return false;
-    stream(name, entry);
+    if (!stream(name, entry)) return false;
     entry.host.hide();
     touch(name);
     return true;
@@ -127,7 +127,7 @@ export function createWarmTerminalPool({
     const entry = entries.get(name);
     if (!entry) return null;
     clearGrace(entry);
-    stream(name, entry);
+    if (!stream(name, entry)) return null;
     touch(name);
     return entry.host.el;
   };
@@ -146,7 +146,7 @@ export function createWarmTerminalPool({
     const entry = entries.get(name);
     if (!entry || streaming(entry) || name === active) return false;
     if (lru.length >= streamCap) return false;
-    stream(name, entry);
+    if (!stream(name, entry)) return false;
     entry.host.hide();
     touch(name, true); // coldest: first to park, never displacing shown members
     armGrace(name);
