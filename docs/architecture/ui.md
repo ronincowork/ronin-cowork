@@ -221,6 +221,17 @@ shape: `{ok, status, data}` or `{ok:false, kind, message, retryable}`. It never 
 for a transport outcome, never toasts, never retries a mutation, and knows no Ronin
 vocabulary. Documented exceptions: `voice.js` (audio blob), `stats.js` (beacon).
 
+The failure kinds are `network` (it never reached Ronin), `abort` (the caller cancelled),
+`http` (Ronin answered with a failing status — the status is the story, whatever the body
+looked like), and `malformed` (the status said success and the body was there but could not
+be read; retryable, because the next read usually gets it).
+
+**An empty body and an unreadable one are different answers.** A 200 or 204 that genuinely
+said nothing decodes to `{}` and is success. A 200 whose body arrived in pieces is a
+failure, and a feature that reads emptiness as a real state — no records, no documents, no
+rows — must be able to tell the two apart. Folding them together is how a phone came to
+report "No transcript output yet." while the server was sending 637 records.
+
 Where a failure LANDS is a product decision, by scope:
 
 | Scope | Surface | Rule |
