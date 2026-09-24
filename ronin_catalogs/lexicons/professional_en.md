@@ -393,6 +393,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_home.coworks_is:** Your Teams and Agents
 - **campaign_home.launch:** New Project
 - **campaign_home.launch_is:** Start a new Team or Agent
+- **campaign_home.desk:** Desk
+- **campaign_home.desk_is:** All Teams, Agents, and work
+- **campaign_home.team:** Team
+- **campaign_home.team_is:** Choose a Team and open its Workbench
+- **campaign_home.agent:** Agent
+- **campaign_home.agent_is:** Choose an Agent and open its Workbench
+- **campaign_home.settings:** Settings
 - **campaign_home.version:** v1.3
 - **campaign_home.check_updates:** Check for updates
 - **campaign_home.checking:** Checking…
@@ -729,6 +736,17 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team_kanban.beta_message:** Task Manager is in beta. Follow Projects from ideas to done using Tools and the Work Record. We’re making it easier for Agents to keep them current without forcing upkeep.
 - **team_kanban.header_collapse:** Collapse
 - **team_kanban.header_expand:** Expand
+- **team_kanban.back:** Back to Task Manager
+- **team_kanban.project:** Project
+- **team_kanban.status_projects:** Projects by status
+- **team_kanban.project_missing:** This Project is not in the current scope.
+- **team_kanban.stage:** Status
+- **team_kanban.holder:** Holder
+- **team_kanban.progress:** Progress
+- **team_kanban.next:** Next
+- **team_kanban.evidence:** Evidence
+- **team_kanban.open_project:** Open Project
+- **team_kanban.desk_summary:** Projects across this Desk’s Teams and Agents
 - **team.lead:** Team lead
 - **team.flip_commons:** Show the Team commons in this workspace
 - **team.flip_terminal:** Show the terminal in this workspace
@@ -1559,6 +1577,8 @@ The catalog entry goes. {dir} is not touched.
 - **pad.w_wispr:** Wispr push-to-talk (right ⌥) — Wispr handles it, Ronin stays out of the way
 
 ## bar — layout.js (the ニ sheet)
+- **bar.expand_header:** Expand header
+- **bar.collapse_header:** Collapse header
 - **bar.keys:** Keys
 - **bar.ni_title:** Ronin — keys, home, new session, board, pad
 - **bar.new:** New
@@ -1579,10 +1599,13 @@ The catalog entry goes. {dir} is not touched.
 - **me.control:** Control
 - **me.kill:** Kill session
 - **me.output:** Output
+- **me.minimize:** Minimize
+- **me.agent_title:** This Agent — work record, docs, output, close
 - **me.title:** This session — status, work record, groups, docs, note, control
 
 ## keys — keysrow.js (the composer's keys row)
-- **keys.backspace:** Backspace
+- **keys.escape_face:** Esc
+- **keys.escape:** Escape
 
 ## composer — the ✕ clear
 
@@ -1894,6 +1917,21 @@ The catalog entry goes. {dir} is not touched.
 - **league.delete_team:** Delete team
 - **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
 - **league.members:** Team members
+- **league.people:** People
+- **league.people_reading:** People reading
+- **league.roster_reading:** Roster
+- **league.org_reading:** Org chart
+- **league.no_lead_title:** Team lead not assigned
+- **league.no_lead_help:** Assign an Agent already on this Team, or add a new Agent for the role.
+- **league.choose_lead:** Choose an Agent as team lead
+- **league.no_lead_candidates:** No current Agents to assign
+- **league.assign_lead:** Assign lead
+- **league.add_lead_agent:** Add new Agent
+- **league.add_lead_prompt:** Join this Team as its team lead.
+- **league.unplaced_agents:** Other Agents
+- **league.hierarchy_unset:** Reporting lines are not set, so these Agents remain unplaced.
+- **league.expand_people:** Expand Agent details
+- **league.compact_people:** Compact Agent details
 - **league.role_unset:** Role not set
 - **league.team_lead:** Team Lead
 - **league.make_team_lead:** Make Lead

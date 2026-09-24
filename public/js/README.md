@@ -101,7 +101,7 @@ below describes implementation ownership; use the surface index above to find a 
 | `ansi.js` | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
 | `tiledrop.js` | `isCoarse`, `makeDrop` — the coarse-pointer sheet primitives (the hoisted phone header is gone; the phone has its own shell) |
 | `phone.js` | THE MOBILE DOCUMENT's entry module — `mobile.html` boots it, never `main.js`: Teams → a Team (Agents \| Docs) → one Agent's tile, hash-routed (`#/t/…` `#/d/…` `#/s/…`); the server sends that document at `/m`, and at `/` to a phone |
-| `keysrow.js` | `buildKeysRow` — Esc/^C/Tab/arrows/⤓ docked on every coarse tile's composer |
+| `keysrow.js` | `buildKeysRow` — Esc/Tab/Shift-Tab/arrows/⤓ docked on every coarse tile's composer |
 | `tilementions.js` | `buildTileMentions` — the @ button on a tile head; click or drag a live session name into the composer |
 | `team-arrange.js` | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `edges page`, run through the page's own verbs |
 | `team-kanban.js` | `createTeamKanban` — the Team Kanban read: five responsive columns from the team's derived project JSON; a drop sends one move request and writes no project data |

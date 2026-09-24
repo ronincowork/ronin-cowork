@@ -298,24 +298,34 @@ export class Tile {
   }
 
   /**
-   * One button, one direction: Terminal → Chat → Notes → Work → All → Terminal. The levels are the
-   * readings the route published for this Agent, most concentrated first; the tile keeps
-   * no list of its own, so a reading added on the server is a new T here untouched.
+   * The readings THIS surface walks, taken from the list the route published for this
+   * Agent. A desk walks all of them. A thumb does not want five detents: the phone is
+   * Terminal or Chat and nothing else, and a tablet is Terminal, Chat and Work — what the
+   * Agent said, and the record of what it did. Notes and the full record are a desk's
+   * business (owner, 2026-09-23).
+   *
+   * Named, never sliced by length: a reading added on the server joins the desk's cycle
+   * and leaves the thumb surfaces exactly as they were.
+   */
+  transcriptCycle() {
+    const readings = Array.isArray(this.transcriptReadings) ? this.transcriptReadings : [];
+    if (document.getElementById('phone')) return readings.slice(0, 1);
+    if (isCoarse()) return readings.filter((r) => r.name === 'chat' || r.name === 'work');
+    return readings;
+  }
+
+  /**
+   * One button, one direction, ending back at the terminal. The tile keeps no list of its
+   * own; the levels index the cycle above.
    * (Owner, 2026-09-22: the full record shows the docs the Agent read, useless to him;
    * the lower levels are the point.)
    */
   toggleTranscript() {
     if (!this.session || !this.transcriptAvailable()) return;
-    const readings = Array.isArray(this.transcriptReadings) ? this.transcriptReadings : [];
+    const readings = this.transcriptCycle();
     const was = this.transcriptOn;
     const next = was ? this.transcriptLevel + 1 : 0;
-    // A thumb wants a toggle, not five detents: on the phone this is Term or Chat and
-    // nothing else (owner, 2026-09-23). The list still comes from the route — the phone
-    // simply does not walk past its first entry, so a reading added on the server changes
-    // the desktop cycle and leaves the phone alone. The phone document is the same
-    // question the keys row asks below.
-    const reach = document.getElementById('phone') ? Math.min(1, readings.length) : readings.length;
-    const on = !was || next < reach;
+    const on = !was || next < readings.length;
     this.transcriptOn = on;
     this.transcriptLevel = on ? next : -1;
     this.el.classList.toggle('transcript-on', on);
@@ -351,13 +361,14 @@ export class Tile {
   onTranscriptState(state) {
     this.transcriptState = state;
     if (Array.isArray(state.readings) && state.readings.length) this.transcriptReadings = state.readings;
-    if (this.transcriptOn && this.transcriptWantFirst && this.transcriptReadings.length) {
+    const cycle = this.transcriptCycle();
+    if (this.transcriptOn && this.transcriptWantFirst && cycle.length) {
       this.transcriptWantFirst = false;
-      const first = this.transcriptReadings[0].name;
+      const first = cycle[0].name;
       this.transcriptLevel = 0;
       if (state.view !== first) this.transcriptView.setReading(first);
     } else if (this.transcriptOn && state.view) {
-      const at = this.transcriptReadings.findIndex((r) => r.name === state.view);
+      const at = cycle.findIndex((r) => r.name === state.view);
       if (at >= 0) this.transcriptLevel = at;
     }
     this.syncHeader();
@@ -366,7 +377,7 @@ export class Tile {
   /** What the button says: where you are now — Terminal, or the reading on screen. */
   transcriptLabel() {
     if (!this.transcriptOn) return t('transcript.terminal', 'Term');
-    const reading = this.transcriptReadings[this.transcriptLevel];
+    const reading = this.transcriptCycle()[this.transcriptLevel];
     // The route's own word for the reading — Chat, Notes, Work, All — is the label (owner,
     // 2026-09-22: the names beat T1…T4).
     return reading ? (reading.label || reading.name) : t('transcript.toggle', 'Transcript');
@@ -581,7 +592,9 @@ export class Tile {
       // acting on THIS tile's session rather than "the active tile" (keysrow.js).
       if (isCoarse()) {
         this.composer.el.prepend(buildKeysRow({
-          controls: document.getElementById('phone') ? buildMobileControlButtons(this) : [],
+          // Clear and Stop belong to every touch composer, including the wide iPad
+          // workbench. Copy remains Term-only through the shared transcript CSS rule.
+          controls: buildMobileControlButtons(this),
           sendRaw: (d) => this.sendRaw(d),
           latest: () => this.jumpLatest(),
         }).el);

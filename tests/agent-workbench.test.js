@@ -22,7 +22,7 @@ test('Agent profile reuses Self, pure Documents, membership, Task Manager and ge
   assert.match(text, /tasks: WORKBENCH_TYPES\.agentTasks/);
   assert.match(text, /registerWorkbenchCatalog\(\)/);
   assert.doesNotMatch(text, /profiles\.define|library\.register/, 'Agent owns no private profile or catalog');
-  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.agent, \[WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.agentDocuments, WORKBENCH_TYPES\.agentTeams, WORKBENCH_TYPES\.agentTasks, WORKBENCH_TYPES\.document, FEEDBACK_TYPE\]\)/);
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.agent, \[[^\]]*WORKBENCH_TYPES\.agentTasks[^\]]*WORKBENCH_TYPES\.taskStatus[^\]]*WORKBENCH_TYPES\.taskProject/);
   assert.match(text, /sessions: \(\) => agent \? \[\{ key: agent, label: t\('agent\.self', 'Self'\) \}\] : \[\]/);
   assert.match(text, /terminal: \(id\) =>/);
   assert.match(text, /pool\.show\(agent, false\)/, 'the route Agent owns the terminal');
@@ -30,14 +30,15 @@ test('Agent profile reuses Self, pure Documents, membership, Task Manager and ge
   assert.doesNotMatch(text, /createTabbedSurface/);
   assert.match(text, /createSurface\(\{ label: t\('workspace\.tab_docs', 'Documents'\)/);
   assert.match(text, /createTeamKanban/);
+  assert.match(text, /kind: 'agent', agent, teams: \(\) => memberships\(agent\)/);
   assert.match(text, /setTeamMembership/);
   assert.doesNotMatch(text, /request\([^\n]*\/teams[^\n]*membership/);
 });
 
-test('Agent first-open and structured seats use the ordinary terminal surface token', async () => {
+test('Agent first-open seats Self beside immutable/current composition facts', async () => {
   const text = await source('agent-view.js');
   assert.match(text, /workspace1: \{ type: TYPES\.self, key: agent \}/);
-  assert.match(text, /workspace2: \{ type: TYPES\.documents, key: agent \}/);
+  assert.match(text, /workspace2: \{ type: TYPES\.composition, key: agent \}/);
   assert.match(text, /context\.workbenchEntry\(defaults\)/);
   assert.match(text, /normalizeWorkbenchState\(state, bench\.declaration\)/);
 });

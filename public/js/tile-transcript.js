@@ -213,13 +213,19 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
     const anchorTop = el.scrollTop;
     let taken = 0;
     let header = null;
-    const reach = new AbortController();
+    // The SHARED controller, not one of its own: hiding the view or switching reading has
+    // to end this walk too. With a private controller the callbacks went stale and the
+    // network read carried on to the beginning of the conversation for nobody, because
+    // `taken` stopped advancing and nothing else could stop it (found in review).
+    controller = new AbortController();
+    const reach = controller;
     await readLines(streamUrl(session, reading, before), (value) => {
       if (!active || token !== generation) return;
       if (header === null) { header = value; return; }
       prepend(value);
       if (++taken >= SCREENFUL) reach.abort();
     }, { cache: 'no-store', signal: reach.signal });
+    if (controller === reach) controller = null;
     if (!active || token !== generation) return;
     opening = false;
     if (taken < SCREENFUL) exhausted = true;

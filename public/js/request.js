@@ -126,6 +126,12 @@ export async function requestLines(url, onLine, opts = {}) {
   }
   if (!res.ok) return shapeResult(res.status, false, await res.json().catch(() => null));
 
+  // A caller stops this by aborting the signal from inside onLine — a view that has taken
+  // the screenful it can show. One network chunk holds many lines, so the signal is asked
+  // after EVERY delivery: without that the rest of the chunk is still parsed and handed
+  // over, and the real client renders past what it asked for while a mock that sends one
+  // line at a time looks correct (found in review).
+  const stopped = () => opts.signal?.aborted === true;
   const deliver = (line) => {
     if (!line.trim()) return true;
     try {
@@ -140,10 +146,16 @@ export async function requestLines(url, onLine, opts = {}) {
   if (!res.body?.getReader) {
     const whole = await res.text().catch(() => null);
     if (whole === null) return malformed(res.status);
-    for (const line of whole.split('\n')) if (!deliver(line)) return malformed(res.status);
+    for (const line of whole.split('\n')) {
+      if (!deliver(line)) return malformed(res.status);
+      if (stopped()) return cancelled();
+    }
     return { ok: true, status: res.status, data: {} };
   }
   const reader = res.body.getReader();
+  // However this ends — enough read, a broken line, a dropped connection — the reader is
+  // released, so the server is not left streaming to a consumer that has returned.
+  const release = () => { try { void reader.cancel(); } catch { /* already gone */ } };
   const decoder = new TextDecoder();
   let carry = '';
   try {
@@ -155,18 +167,24 @@ export async function requestLines(url, onLine, opts = {}) {
       while ((nl = carry.indexOf('\n')) !== -1) {
         const line = carry.slice(0, nl);
         carry = carry.slice(nl + 1);
-        if (!deliver(line)) return malformed(res.status);
+        if (!deliver(line)) { release(); return malformed(res.status); }
+        if (stopped()) { release(); return cancelled(); }
       }
     }
   } catch (cause) {
-    if (opts.signal?.aborted) {
-      return { ok: false, status: 0, kind: 'abort', message: t('request.cancelled', 'cancelled'), retryable: false, cause };
-    }
+    release();
+    if (stopped()) return { ...cancelled(), cause };
     return { ok: false, status: res.status, kind: 'network',
       message: t('request.unreachable', 'could not reach Ronin — network or server down'), retryable: true, cause };
   }
-  if (carry.trim() && !deliver(carry)) return malformed(res.status);
+  if (carry.trim() && !deliver(carry)) { release(); return malformed(res.status); }
+  release();
   return { ok: true, status: res.status, data: {} };
+}
+
+/** The caller stopped it — a view with what it needed. Not a failure of anything. */
+function cancelled() {
+  return { ok: false, status: 0, kind: 'abort', message: t('request.cancelled', 'cancelled'), retryable: false };
 }
 
 /** The answer said success and part of it could not be read. Shared by both readers here. */

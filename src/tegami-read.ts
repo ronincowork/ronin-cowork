@@ -3,6 +3,7 @@ import path from 'node:path';
 import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
 import { normalizeProject, type Project } from './projects.js';
+import { mandate, type Mandate } from './agent-defaults.js';
 
 const ON_TRACK = 'on_track';
 
@@ -21,6 +22,7 @@ export interface Rung {
 }
 export interface Tegami {
   objective: string;
+  mandate: Mandate;
   repos: { repo: string; branch: string }[];
   at: { project?: string; rung?: number; leg?: number } | null;
   teams: { team: string; team_role: string; objective: string }[];
@@ -169,6 +171,7 @@ export async function readTegami(name: string): Promise<Tegami | null> {
     const off = state && state !== ON_TRACK ? state : '';
     return {
       objective: String(b.objective ?? ''),
+      mandate: mandate(b.mandate),
       repos: Array.isArray(b.repos)
         ? b.repos.flatMap((x) => {
             if (!x || typeof x !== 'object') return [];

@@ -1520,6 +1520,7 @@ body {
     touch-action: pan-y;
   }
 }
+
 .xterm .xterm-viewport::-webkit-scrollbar {
   width: 0;
   height: 0;
@@ -4272,6 +4273,12 @@ button.wb-door:hover b {
     border-radius: var(--radius-md);
     cursor: pointer;
   }
+  /* A row whose control has taken itself away is not a row. Without Services there is
+     nothing to choose, so the Output select hides itself (Tile.syncOutput) — the word
+     beside it has to go with it rather than leaving a blank line in the sheet. */
+  .tdrop-row:has(> [hidden]) {
+    display: none;
+  }
   .tdrop-row:active {
     background: var(--line);
   }
@@ -6388,6 +6395,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
   border-color: var(--kaki);
   color: var(--on-strong);
 }
+.tile.transcript-on .composer .keysrow [data-terminal-action='copy'] {
+  display: none;
+}
 
 .tile.keys-on:not(.tape-on) .tile-body {
   /* FitAddon reads computed height: give it the content area, excluding controls. */
@@ -6441,6 +6451,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 }
 #phone .ph-bar {
   position: relative;
+  z-index: 21;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -6776,4 +6787,110 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .rs-stage button.td-seg,.desk-stats button.td-seg { border:0; padding:0; min-width:0; border-radius:0; cursor:pointer; }
 .rs-categories { display:flex; flex-wrap:wrap; margin-top:var(--space-4); }
 
+}
+
+.header-collapse { display: none; }
+
+/* Wide touch keeps the original workbench. Its redundant workspace bands go away;
+   the application and Agent headers independently fold when conversation needs room. */
+@media (pointer: coarse) and (min-width: 681px) {
+  .view-island {
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    min-width: 9rem;
+    max-width: min(48vw, 28rem);
+    padding: var(--space-3) var(--space-3) var(--space-4) var(--space-6);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    background: var(--bar-place-bg);
+    color: var(--bar-place-fg);
+    transform: translateX(-50%);
+  }
+  .view-island > .ui-bar-place {
+    position: static;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    transform: none;
+  }
+  /* The readings — surface map, RAM/RPM, the view's own actions, Feedback — belong at
+     the right-hand end. The island above is absolutely positioned, so its .grow no
+     longer pushes them there, and trimBarForTouch removes #shapecycle and its
+     margin-left: auto with it. #viewmap is first of the trailing group, so the auto
+     margin here carries the whole group right. */
+  #bar > .wk-view-map { margin-left: auto; }
+  /* Keyed on the control, not on its parent: the caret is styled the same whether it is
+     riding the island or docked over the work surfaces below. */
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .app-header-collapse {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 32px;
+    border: var(--edge) solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    color: var(--fg);
+    font: 600 var(--text-5)/1 var(--font-ui);
+  }
+  /* Riding the island, the caret IS the island: its own ink on its own surface, not a
+     second chip floating inside the slab. Scoped like the rule above so it out-ranks the
+     shared panel treatment that suits a tile head but not a dark island. */
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .view-island > .app-header-collapse {
+    position: relative;
+    z-index: 1;
+    margin-left: var(--space-2);
+    border-color: transparent;
+    background: transparent;
+    color: inherit;
+  }
+  #bar.header-collapsed { display: none; }
+  /* Collapsed: the bar and its island are gone, and this is all that is left of them —
+     the caret alone, in the island's own colours, cut into the top edge where the island
+     sat so it does not jump, sitting over the work surfaces' header. In the way on
+     purpose: it is the only way back. */
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .app-header-collapse.header-collapse-docked {
+    position: fixed;
+    z-index: 5;
+    top: max(0px, env(safe-area-inset-top));
+    left: 50%;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-color: transparent;
+    background: var(--bar-place-bg);
+    color: var(--bar-place-fg);
+    transform: translateX(-50%);
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-layout-surface > .wk-surface-header:not([data-workbench-header='selector']) {
+    display: none;
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .wk-workbench-cell .tw-blank > .wk-surface-header {
+    display: none;
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head > .torii {
+    display: none;
+  }
+  /* ONE BAND DEPTH ACROSS THE ROW. An Agent's head sits beside the selector's head, so
+     they line up or the eye reads them as two different things. The fold that used to
+     live here gave the tile a 38px band against the surface head's 45px and never
+     agreed with it (owner, 2026-09-23). The Kit's own depth, --row-head, is already on
+     .tile-head; the fold's tighter padding was what pulled it out of line, so nothing is
+     restated here. Everything but the name and the reading toggle is behind メ, so one
+     row is enough and it must never become two. */
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head {
+    flex-wrap: nowrap;
+  }
+  :root:is([data-workbench='team'], [data-workbench='cowork']) .tile-head .sess {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+  }
 }

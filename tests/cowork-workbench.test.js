@@ -42,3 +42,13 @@ test('Teams opens its roster and New Team form in the two default workspaces', a
   const text = await source('cowork-view.js');
   assert.match(text, /seats: campaign \? \{ workspace1: WB_TYPES\.roster, workspace2: WB_TYPES\.newTeamForm \} : \{\}/);
 });
+
+test('Cowork offers a Desk-scoped Task Manager and all scopes can place drill-down surfaces', async () => {
+  const [text, catalog] = await Promise.all([source('cowork-view.js'), source('workbench-catalog.js')]);
+  assert.match(text, /kind: 'desk', teams: \(\) => teamsFromState\(\)/);
+  assert.match(text, /taskStatus: \(id, detail\)/);
+  assert.match(text, /taskProject: \(id, detail\)/);
+  assert.match(catalog, /taskStatus: 'task-manager\.status'/);
+  assert.match(catalog, /taskProject: 'task-manager\.project'/);
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.cowork, \[[^\]]*WORKBENCH_TYPES\.kanban[^\]]*WORKBENCH_TYPES\.taskStatus[^\]]*WORKBENCH_TYPES\.taskProject/);
+});
