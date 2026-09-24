@@ -6447,6 +6447,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 }
 #phone .ph-bar {
   position: relative;
+  z-index: 21;
   display: flex;
   align-items: center;
   gap: var(--space-3);
