@@ -643,3 +643,100 @@ test('a conversation with nothing in it yet still has a place to resume from', a
   assert.deepEqual(seqsOn(view), [0], 'and seq 0 lands, once');
   view.dispose();
 });
+
+test('the gap walk is governed by progress, not by a page count', async () => {
+  // A fixed cap is a wider silent gap: above it the tab stops with records missing while
+  // saying it fetched all of them. Two things are proved here — a walk far longer than any
+  // plausible cap completes, and a route that says "more" without moving does not spin it.
+  let pages = 0;
+  const long = makeTileTranscript({
+    read: async (url) => {
+      if (!url.includes('after=')) {
+        return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 1, more: false,
+          records: [{ seq: 0, role: 'agent', kind: 'say', text: 's0' }] } };
+      }
+      pages++;
+      const before = Number(/before=(\d+)/.exec(url)?.[1] ?? NaN);
+      const newest = Number.isFinite(before) ? before - 1 : 1000;
+      return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 1001, more: newest > 1,
+        records: [{ seq: newest, role: 'agent', kind: 'say', text: `s${newest}` }] } };
+    },
+    watch() {},
+  });
+  long.show('agent', 'chat');
+  await tick();
+  deliver({ t: 'reconnected' });
+  for (let i = 0; i < 1100; i++) await tick();
+  assert.ok(pages > 500, `the walk ran past any fixed cap: ${pages} pages`);
+  assert.equal(seqsOn(long).length, 1001, 'and every record landed');
+  long.dispose();
+
+  // A route insisting there is more without ever reaching further back.
+  let asked = 0;
+  const stuck = makeTileTranscript({
+    read: async (url) => {
+      if (url.includes('after=')) asked++;
+      return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 6, more: true,
+        records: [{ seq: 5, role: 'agent', kind: 'say', text: 's5' }] } };
+    },
+    watch() {},
+  });
+  stuck.show('agent', 'chat');
+  await tick();
+  deliver({ t: 'reconnected' });
+  for (let i = 0; i < 50; i++) await tick();
+  assert.ok(asked <= 3, `it stopped instead of spinning: ${asked} requests`);
+  stuck.dispose();
+});
+
+test('a walk that fails halfway still owes the whole gap, and the next one pays it', async () => {
+  // The loss this prevents: page 1 renders the newest 500, so the newest SEEN jumps to the
+  // end of the gap. Resuming from that would skip everything the walk never reached —
+  // silently, and for good.
+  const MISSED = 1201;
+  const doors = [];
+  let failOn = 0; // fail the Nth gap request, by count: timing is not a test control
+  const view = makeTileTranscript({
+    read: async (url) => {
+      if (!url.includes('after=')) {
+        return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 11, more: false,
+          records: [{ seq: 10, role: 'agent', kind: 'say', text: 's10' }] } };
+      }
+      const after = Number(/after=(-?\d+)/.exec(url)[1]);
+      const before = Number(/before=(\d+)/.exec(url)?.[1] ?? NaN);
+      doors.push([after, Number.isFinite(before) ? before : null]);
+      if (doors.length === failOn) return { ok: false, kind: 'network', retryable: true };
+      const newest = Number.isFinite(before) ? before - 1 : 10 + MISSED;
+      const count = Math.min(500, newest - after);
+      const from = newest - count + 1;
+      return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 10 + MISSED + 1,
+        more: from > after + 1,
+        records: Array.from({ length: count }, (_, i) => ({ seq: from + i, role: 'agent', kind: 'say', text: `s${from + i}` })) } };
+    },
+    watch() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  assert.deepEqual(seqsOn(view), [10]);
+
+  // First recovery: page one lands, page two fails.
+  failOn = 2;
+  deliver({ t: 'reconnected' });
+  for (let i = 0; i < 8; i++) await tick();
+  const partial = seqsOn(view).length;
+  assert.ok(partial > 1 && partial <= MISSED, `part of the gap is on screen: ${partial}`);
+  assert.equal(doors.length, 2, 'it stopped when the page failed');
+
+  // Second recovery: it must start again from where the gap began, not from what it showed.
+  failOn = 0;
+  deliver({ t: 'reconnected' });
+  for (let i = 0; i < 20; i++) await tick();
+
+  assert.deepEqual([...new Set(doors.map(([after]) => after))], [10],
+    'every request in both walks keeps the original lower bound');
+  const shown = seqsOn(view);
+  assert.equal(shown.length, MISSED + 1, `the whole gap is recovered: ${shown.length} of ${MISSED + 1}`);
+  assert.deepEqual(shown, [...shown].sort((a, b) => a - b), 'in order');
+  assert.equal(new Set(shown).size, shown.length, 'each exactly once, though pages were re-fetched');
+  view.dispose();
+});

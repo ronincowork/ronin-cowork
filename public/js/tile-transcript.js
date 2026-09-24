@@ -49,6 +49,17 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
    */
   const held = new Set(); // every seq rendered
   let frontier = null; // the newest seq known to EXIST — held, or merely reported by the route
+  /*
+   * WHERE A RECOVERY STARTS, kept apart from what has merely been SEEN.
+   *
+   * A walk that fails halfway has rendered its newest page, so the newest seen jumps to the
+   * end of the gap — and resuming from that would skip everything the walk had not reached
+   * yet, silently and for good (mobile_transcript, review). So the resume point only moves
+   * when a walk finishes, and an unfinished one leaves what it still owes behind it.
+   */
+  let committed = null; // the resume point a fresh recovery starts from
+  let owed = null; // an unfinished walk's lower bound; null when nothing is outstanding
+  let walking = false; // one walk at a time; a second reconnect joins the one in flight
   const oldestHeld = () => (held.size ? Math.min(...held) : null);
   const newestHeld = () => (held.size ? Math.max(...held) : null);
   let exhausted = false; // the backward walk reached the beginning of the conversation
@@ -263,15 +274,14 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     if (typeof result.data.view === 'string') resolved = result.data.view;
     exhausted = result.data.more === false;
     merge(Array.isArray(result.data.records) ? result.data.records : []);
+    // An open owes nothing: what it shows is current as of the end it was told.
+    committed = frontier;
+    owed = null;
     if (!rendered) message(t('transcript.empty', 'No transcript output yet.'));
     report(result.data, rendered ? 1 : 0);
     el.scrollTop = el.scrollHeight; // the newest is what you opened for
   }
 
-  /**
-   * Fill the gap a dropped socket left: what came after the newest record held, once.
-   * A tab that was never away has nothing to ask for.
-   */
   /**
    * FILL THE GAP A DROPPED SOCKET LEFT — all of it, however wide.
    *
@@ -286,21 +296,47 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
    * arrivals interleaving with the walk are harmless.
    */
   async function catchUp(token) {
-    // The frontier, not the newest record shown: a reading with nothing in it still knows
-    // where the conversation had got to, and asks from there.
-    if (!active || !session || token !== generation || frontier === null) return;
-    const lower = frontier;
-    let before;
-    // A bound on the walk: a route that kept saying `more` should not spin the tab forever.
-    for (let page = 0; page < 200; page++) {
-      const door = before === undefined ? { after: lower } : { after: lower, before };
-      const result = await read(url(session, reading, door), { cache: 'no-store' });
-      if (!active || token !== generation || !result.ok) return;
-      noteEnd(result.data);
-      const records = Array.isArray(result.data.records) ? result.data.records : [];
-      merge(records);
-      if (result.data.more !== true || !records.length) return;
-      before = records[0].seq; // the oldest of this page; the next one is older still
+    if (!active || !session || token !== generation || walking) return;
+    // What a previous walk failed to finish, or else the last committed resume point. The
+    // frontier is deliberately NOT used: a reading with nothing in it has a committed
+    // checkpoint of -1, and a half-finished walk has an older debt than anything on screen.
+    const lower = owed !== null ? owed : committed;
+    if (lower === null) return;
+    owed = lower; // outstanding until this walk reaches the end of the gap
+    walking = true;
+    try {
+      let before;
+      for (;;) {
+        const door = before === undefined ? { after: lower } : { after: lower, before };
+        const result = await read(url(session, reading, door), { cache: 'no-store' });
+        if (!active || token !== generation) return;
+        // A failed page leaves the debt standing: the next reconnect starts again from the
+        // same bound rather than from whatever the first page happened to show.
+        if (!result.ok) return;
+        noteEnd(result.data);
+        const records = Array.isArray(result.data.records) ? result.data.records : [];
+        merge(records);
+        if (result.data.more !== true) {
+          // The whole gap is in. Only now does the resume point move.
+          owed = null;
+          committed = frontier;
+          return;
+        }
+        /*
+         * The walk is governed by progress, not by a count of pages: a fixed cap is just a
+         * wider silent gap. Progress is the next page reaching strictly further back while
+         * staying above the bound. A route that says "there is more" without moving cannot
+         * answer, so the walk stops — and the debt stays outstanding rather than being
+         * promoted to complete.
+         */
+        const oldest = records.length ? records[0].seq : undefined;
+        const moved = typeof oldest === 'number' && oldest > lower + 1
+          && (before === undefined || oldest < before);
+        if (!moved) return;
+        before = oldest;
+      }
+    } finally {
+      walking = false;
     }
   }
 
@@ -334,6 +370,9 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     // filter exists to prevent, so the last hop checks too (new_lead, review).
     if ((msg.reading || '') !== reading) return;
     merge(Array.isArray(msg.records) ? msg.records : []);
+    // While the socket is up, live records are contiguous, so what has been seen IS what has
+    // been recovered — unless a walk is still owed, in which case its debt stands.
+    if (owed === null) committed = frontier;
   }
 
   /**
@@ -366,6 +405,8 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     active = true;
     held.clear();
     frontier = null;
+    committed = null;
+    owed = null;
     exhausted = false;
     rendered = false;
     message(t('transcript.loading', 'Loading transcript…'));
@@ -396,6 +437,8 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     session = null;
     held.clear();
     frontier = null;
+    committed = null;
+    owed = null;
     exhausted = false;
     el.replaceChildren();
   }
