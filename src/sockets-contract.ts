@@ -1,5 +1,5 @@
 
-export const CONTRACT_V = 9;
+export const CONTRACT_V = 10;
 
 export interface LaunchIdentity {
   key: string;
@@ -58,8 +58,13 @@ export interface Sockets {
   onSessionEnd(cb: (name: string, key: string) => void | Promise<void>): void;
   /**
    * A reader registered interest in a session — the tab's own {t:'watch'}. A part may use it
-   * to make sure it is watching that Agent's journal at all. It is NOT a read: nothing is
-   * synced or written because somebody looked.
+   * to make sure it is watching that Agent's journal at all.
+   *
+   * It is not a read, and looking at an Agent already being watched changes nothing. But if
+   * nothing is watching that birth, installing a watcher is what installing always is:
+   * watch first, then catch up what was written while nobody was. The owner: "if you get a
+   * new watcher because the old one died, it will then catch up the transcript to the
+   * journal."
    */
   onTranscriptWatch(cb: (session: string) => void | Promise<void>): void;
   addRowFields(cb: (session: string) => Promise<RowFields> | RowFields): void;

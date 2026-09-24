@@ -38,7 +38,8 @@ export function handleEvents(ws: WebSocket): void {
     const session = typeof msg.session === 'string' ? msg.session : '';
     watchFor(ws, session, typeof msg.reading === 'string' ? msg.reading : '');
     // Somebody is now looking at this Agent: a good moment for whoever follows journals to
-    // make sure it is following this one. It never causes a read.
+    // make sure it is following this one. Already following is nothing at all; not following
+    // means installing a watcher, which catches up what was missed.
     if (session) emitTranscriptWatch(session);
   });
   void listSessions()
