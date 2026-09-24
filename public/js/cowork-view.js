@@ -739,7 +739,11 @@ export function createCoworkView(options = {}) {
         onFailed: (message) => commons.channels.setState('failed', message),
         idPrefix: id,
         reading: readingsOf,
+        onSelect: (member) => arrange({ [oppositeSeat(id)]: { session: member.name } }),
         onOpen: (member) => openAgentWorkbench(member.name),
+        onAddLead: () => bench.place(WB_TYPES.newAgent, oppositeSeat(id), {
+          prompt: t('league.add_lead_prompt', 'Join this Team as its team lead.'),
+        }),
         onClose: (member) => retireSession(member.name, `commons-${id}-${member.name}`, async () => {
           await Promise.all([fetchSessions(), refreshTeams()]);
           paint();
