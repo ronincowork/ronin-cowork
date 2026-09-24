@@ -751,6 +751,7 @@ export function createCoworkView(options = {}) {
         onOpen: (member) => openAgentWorkbench(member.name),
         onAddLead: () => bench.place(WB_TYPES.newAgent, oppositeSeat(id), {
           prompt: t('league.add_lead_prompt', 'Join this Team as its team lead.'),
+          teamLead: true,
         }),
         onClose: (member) => retireSession(member.name, `commons-${id}-${member.name}`, async () => {
           await Promise.all([fetchSessions(), refreshTeams()]);

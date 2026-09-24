@@ -667,6 +667,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     enter: async (detail = {}) => {
       const entryTeam = typeof team === 'function' ? team() : team;
       if (entryTeam) { draft.teamMode = 'existing'; draft.team = entryTeam; }
+      if (detail?.teamLead === true) draft.teamLead = true;
       paint();
       const [tray, teamRows, rootRows] = await Promise.all([
         request('/api/templates/agents'),

@@ -25,7 +25,7 @@ test('Task Manager is offered only when available as a standalone surface', asyn
   assert.match(view, /request\('\/api\/installed'/);
   assert.match(view, /kanbanOffers: \(\) => kanbanGate\.available \? \[\{/);
   assert.match(view, /teamKanban: \(id\) => taskManagerFor\(id\)/);
-  assert.match(view, /taskManagerBySeat\[id\] = \{ el: surface\.el, manager, show: \(\) => manager\.enter\(\), leave: \(\) => manager\.leave\(\) \}/);
+  assert.match(view, /taskManagerBySeat\[cacheKey\] = \{ el: surface\.el, manager, show: \(\) => manager\.enter\(\), leave: \(\) => manager\.leave\(\) \}/);
   assert.doesNotMatch(view, /\{ id: 'kanban', label:/);
   assert.match(view, /for \(const surface of Object\.values\(taskManagerBySeat\)\) surface\.manager\.leave\(\)/);
   assert.match(view, /workspace\.tab_task_manager', 'Task Manager'/);
@@ -68,7 +68,8 @@ test('People surface shares roster/org selection and density; Launch opens the A
   assert.match(members, /'Team lead not assigned'[\s\S]*'Assign lead'[\s\S]*'Add new Agent'/);
   assert.match(members, /import \{ ask \} from '\.\/ask\.js'/);
   assert.match(members, /const pick = ask\(\[\{ fields: \[\{[\s\S]*key: 'lead'[\s\S]*options: choices\.map/);
-  assert.match(view, /onAddLead: \(\) => bench\.place\(WB_TYPES\.newAgent, oppositeSeat\(id\)/);
+  assert.match(view, /onAddLead: \(\) => bench\.place\(WB_TYPES\.newAgent, oppositeSeat\(id\), \{[\s\S]*teamLead: true/);
+  assert.match(await source('public/js/new-agent.js'), /if \(detail\?\.teamLead === true\) draft\.teamLead = true/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
   assert.match(view, /campaign \? \{ action: \(\) => openAgentWorkbench\(member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
   assert.match(view, /createTeamRosterSurface\(\{ onOpen: openAgentWorkbench \}\)/, 'the Cowork Team Roster row opens the standalone Agent workbench');
