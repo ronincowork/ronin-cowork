@@ -265,6 +265,30 @@ next to a predicate that stops it costing anything while its surface is hidden.
 | pane data (wipeboard, docs list, roots, koshi, stats) | the pane module | its own gated poll (2s/2s/15s) or `enter()` — each owner is the file the surface lives in |
 | tile bytes | `TileWire` (`tilewire.js`) | the socket; reconnect/backoff lives there and nowhere else |
 
+### Transcript reading transport
+
+A transcript tab opens with a bounded tail, then registers its Agent and reading on
+`/events`. Live records arrive only for that subscription. After the event socket closes,
+the replacement socket repeats the watch and the tab makes one bounded `after=<committed>`
+walk; every fetched or pushed record enters one sequence-keyed set, so overlap is harmless
+and a record is rendered once in sequence order. The reading remains a server filter:
+records excluded from Chat still advance the journal checkpoint but do not become Chat
+rows.
+
+The promoted phone acceptance on 2026-09-24 keeps these results separate:
+
+- **Live phone Chat push passed:** one record went journal → event frame → DOM in 237ms
+  (6ms frame → DOM), with no transcript GET, one DOM copy, no unrelated-Agent frame and
+  no browser or network error.
+- **Real reconnect transport passed:** closing the client event socket produced a new open
+  socket after 3.086s and exactly one `after=1825` GET.
+- **Outage reading filtering and duplicate prevention passed:** natural records 1826–1828
+  were `act` records, so Chat correctly returned an empty page at checkpoint 1828; nothing
+  appeared before reconnect and the DOM remained duplicate-free.
+- **Missed phone Chat recovery under real traffic is unknown:** no `say` record existed in
+  that outage, so there was no Chat-admitted record to recover. The deterministic recovery
+  regression passes, but it is not relabelled as real-traffic evidence.
+
 Lifecycle is deliberately simple: the page is the unit. Tiles, rooms and sheets are
 built once at boot and live for the page — nothing unmounts, so there is no disposal
 contract to forget; hidden surfaces cost nothing because their polls are gated on
