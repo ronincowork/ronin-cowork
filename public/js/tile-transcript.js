@@ -235,6 +235,14 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
 
   async function poll(token) {
     if (!active || !session || token !== generation) return;
+    // A stream owns the controller while it runs, and taking it would orphan that walk: a
+    // later hide would abort this poll instead of the history read, which would then carry
+    // on to the beginning of the conversation for nobody (found in review). The poll waits
+    // its turn rather than stamping on it.
+    if (opening) {
+      timer = schedule(() => void poll(token), 2000);
+      return;
+    }
     controller = new AbortController();
     const result = await read(url(session, reading, since, seq), { cache: 'no-store', signal: controller.signal });
     if (!active || token !== generation) return;

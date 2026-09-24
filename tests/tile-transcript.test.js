@@ -490,3 +490,44 @@ test('the history walk dies with the view, rather than reading on for nobody', a
   await tick();
   assert.equal(stillReading, false, 'hiding the view ended the walk it had started');
 });
+
+test('a poll cannot take the controller from a stream that is still reading', async () => {
+  // The race: earlier() is awaiting, the 2 s poll fires, and it used to assign itself a new
+  // controller — so a later hide aborted the poll and left the history walk running.
+  let reads = 0;
+  let historyAborted = false;
+  let releaseHistory;
+  const scheduled = [];
+  const view = makeTileTranscript({
+    read: async () => { reads++; return answer([], 1, 1); },
+    readLines: async (url, onLine, opts) => {
+      onLine({ available: true, since: 1, seq: 1, readings: READINGS, view: 'chat' });
+      if (!url.includes('before=')) {
+        for (let seq = 30; seq > 0; seq--) onLine({ seq, role: 'agent', kind: 'say', text: `s${seq}` });
+        return { ok: true };
+      }
+      opts.signal?.addEventListener?.('abort', () => { historyAborted = true; });
+      await new Promise((resolve) => { releaseHistory = resolve; });
+      return { ok: false, kind: 'abort' };
+    },
+    schedule: (fn) => { scheduled.push(fn); return scheduled.length; }, cancel() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+
+  // Scrolled to the top: the history stream starts and stays pending.
+  view.el.scrollTop = 0;
+  view.el.dispatchEvent({ type: 'scroll' });
+  await tick();
+  const before = reads;
+
+  // The poll the open scheduled fires while that walk is still going.
+  scheduled.shift()();
+  await tick();
+  assert.equal(reads, before, 'the poll waited its turn instead of starting alongside');
+
+  view.hide();
+  await tick();
+  assert.equal(historyAborted, true, 'and hiding aborted the walk that was actually running');
+  releaseHistory?.();
+});
