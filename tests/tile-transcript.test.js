@@ -740,3 +740,58 @@ test('a walk that fails halfway still owes the whole gap, and the next one pays 
   assert.equal(new Set(shown).size, shown.length, 'each exactly once, though pages were re-fetched');
   view.dispose();
 });
+
+test('a finger opens on the reading; a desk still opens on the terminal', () => {
+  const make = () => {
+    const shown = [];
+    const tile = {
+      session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: [], transcriptState: null,
+      transcriptWantChat: false, transcriptAvailable: () => true,
+      transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface,
+      toggleTranscript: Tile.prototype.toggleTranscript, surfaceHost: { select() {} }, tapeMode: false,
+      el: { classList: { toggle() {} } }, body: { contains: () => false },
+      transcriptView: { show: (n, view) => shown.push(['show', view]), setReading: (v) => shown.push(['set', v]), hide: () => shown.push(['hide']) },
+      setComposer() {}, syncHeader() {}, doFit() {},
+    };
+    return { tile, shown };
+  };
+  const land = (tile, state) => Tile.prototype.onTranscriptState.call(tile, state);
+  const live = { available: true, empty: false, reason: '', readings: READINGS, view: '' };
+
+  // Owner, 2026-09-24: on a phone or a tablet the default is Chat when there is one.
+  const coarse = globalThis.window.matchMedia;
+  globalThis.window.matchMedia = (q) => ({ matches: /coarse/.test(q) });
+  try {
+    const a = make();
+    a.tile.transcriptWantChat = true;
+    land(a.tile, live);
+    assert.equal(a.tile.transcriptOn, true, 'the reading opens by itself');
+    assert.deepEqual(a.shown, [['show', 'chat']], 'and it is Chat, not Notes or All');
+    assert.equal(Tile.prototype.transcriptLabel.call(a.tile), 'Chat');
+
+    // An Agent with no record to show is still met at its terminal.
+    for (const dead of [{ ...live, available: false }, { ...live, empty: true }]) {
+      const b = make();
+      b.tile.transcriptWantChat = true;
+      land(b.tile, dead);
+      assert.equal(b.tile.transcriptOn, false, `stays on the terminal for ${JSON.stringify({ available: dead.available, empty: dead.empty })}`);
+      assert.deepEqual(b.shown, []);
+    }
+
+    // Spent once: a later answer must not drag the view back off the terminal.
+    const c = make();
+    c.tile.transcriptWantChat = true;
+    land(c.tile, { ...live, available: false });
+    assert.equal(c.tile.transcriptWantChat, false, 'the intention is spent, not retried');
+    land(c.tile, live);
+    assert.equal(c.tile.transcriptOn, false, 'a second answer does not reopen it');
+  } finally {
+    globalThis.window.matchMedia = coarse;
+  }
+
+  // A desk is unchanged: no intention is ever set there, so the terminal stays the way in.
+  const d = make();
+  land(d.tile, live);
+  assert.equal(d.tile.transcriptOn, false);
+  assert.deepEqual(d.shown, []);
+});
