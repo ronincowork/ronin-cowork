@@ -118,11 +118,11 @@ export function hideChip() {
  * single-tile — the picker is the way back).
  */
 export function openSessionSomewhere(name) {
-  if (S.connectSession?.(name)) return;
+  if (S.connectSession?.(name)) return true;
   const tile = S.active || tiles.find((candidate) => candidate.el.style.display !== 'none') || tiles[0];
-  if (!tile) return;
-  tile.connect(name);
+  if (!tile || tile.connect(name) === false) return false;
   tile.activate();
+  return true;
 }
 
 /* ---------- commons — the admin pane inside a tile (tab label: ⌂ Roster) ----------
