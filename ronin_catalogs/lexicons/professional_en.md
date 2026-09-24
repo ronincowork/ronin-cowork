@@ -1516,6 +1516,7 @@ The catalog entry goes. {dir} is not touched.
 
 ## request — request.js (the client's own two messages)
 - **request.cancelled:** cancelled
+- **request.malformed:** Ronin answered, but the answer did not arrive whole
 - **request.unreachable:** could not reach Ronin — network or server down
 
 ## head — tilehead.js (the tile head's help and quiet words)
