@@ -38,6 +38,7 @@ import { installBehaviourReader } from './behaviour-reader.js';
 import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
 import { createTeamKanban, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
+import { createAgentCompositionSurface } from './agent-composition.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -292,6 +293,8 @@ export function createCoworkView(options = {}) {
     taskStatus: (id, detail) => taskManagerFor(id, { ...detail, view: 'status' }),
     taskProject: (id, detail) => taskManagerFor(id, { ...detail, view: 'project' }),
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => putSession(detail.key, id) }),
+    agent: () => '',
+    composition: (detail = {}) => createAgentCompositionSurface(detail.key),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
     cron: (id) => ({ el: cronBySeat[id].el, show: () => cronBySeat[id].room.enter() }),
     newTeamForm: (id, consumed) => {
@@ -747,7 +750,7 @@ export function createCoworkView(options = {}) {
         onFailed: (message) => commons.channels.setState('failed', message),
         idPrefix: id,
         reading: readingsOf,
-        onSelect: (member) => arrange({ [oppositeSeat(id)]: { session: member.name } }),
+        onSelect: (member) => bench.place(WB_TYPES.agentComposition, oppositeSeat(id), { key: member.name }),
         onOpen: (member) => openAgentWorkbench(member.name),
         onAddLead: () => bench.place(WB_TYPES.newAgent, oppositeSeat(id), {
           prompt: t('league.add_lead_prompt', 'Join this Team as its team lead.'),

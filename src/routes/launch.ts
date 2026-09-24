@@ -518,6 +518,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         tags: resolved.tags,
         team_lead: !!form.team_lead && !!resolved.team,
         kind: resolved.kind,
+        mandate: resolved.mandate,
         behaviours: resolved.behaviours,
         ignored: [...new Set([...accepted.ignored, ...resolved.ignored])].sort(),
         undelivered: [...new Set(resolved.undelivered)].sort(),

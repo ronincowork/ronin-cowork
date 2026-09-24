@@ -234,3 +234,20 @@
 
 
 }
+
+@layer app {
+  .ac-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--space-6); padding: var(--space-5); }
+  .ac-section { min-width: 0; border: var(--edge) solid var(--line); background: var(--well); padding: var(--space-5); }
+  .ac-section h3, .ac-section h4 { color: var(--fg-strong); }
+  .ac-section h3 { margin: 0 0 var(--space-2); }
+  .ac-section h4 { margin: var(--space-5) 0 var(--space-2); }
+  .ac-birth { border-left: var(--edge-2) solid var(--accent-2); }
+  .ac-note, .ac-status { color: var(--muted); font-size: var(--text-3); }
+  .ac-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-4); }
+  .ac-facts dt { color: var(--muted); }
+  .ac-facts dd { margin: 0; overflow-wrap: anywhere; color: var(--fg-strong); }
+  .ac-brief { max-height: 18rem; overflow: auto; margin: 0; border: var(--edge) solid var(--line); padding: var(--space-3); color: var(--fg); font: inherit; white-space: pre-wrap; }
+  .ac-mandate, .ac-behaviours { display: grid; gap: var(--space-4); }
+  .ac-mandate > .wk-action { justify-self: end; }
+  .ac-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-3); }
+}
