@@ -75,3 +75,35 @@ test('mobile box Enter sends once even with the terminal socket down; edits duri
   await Promise.resolve();
   assert.equal(composer.ta.value, 'new draft');
 });
+
+import { readFile } from 'node:fs/promises';
+const read = (p) => readFile(new URL(`../${p}`, import.meta.url), 'utf8');
+
+test('the composer offers no microphone until Voice is rebuilt', async () => {
+  const [composer, style] = await Promise.all([read('public/js/composer.js'), read('public/style.css')]);
+  // Withdrawn whole (owner, 2026-09-24): speech-to-text and text-to-speech get their own
+  // controls when Voice is rethought. It was drawn on any touch surface the BROWSER could
+  // record on, which says nothing about whether the machine can transcribe — Koe is parked
+  // here, and /api/health advertised transcribe:true off a default URL string that is
+  // never empty, so the button was always drawn and always failed.
+  assert.doesNotMatch(composer, /cmic|CAN_RECORD|wireDictation|dictation/);
+  assert.doesNotMatch(style, /\.cmic/);
+  // The engine stays standing; it is not what was wrong.
+  const voice = await read('public/js/voice.js');
+  assert.match(voice, /export function wireDictation/);
+  assert.match(voice, /composer\.mic_title/);
+  const lexicon = await read('ronin_catalogs/lexicons/professional_en.md');
+  assert.match(lexicon, /composer\.mic_title/, 'voice.js still reads this word');
+});
+
+test('the keys row stands down while the on-screen keyboard is up', async () => {
+  const [composer, style] = await Promise.all([read('public/js/composer.js'), read('public/style.css')]);
+  // Two rows of controls above a keyboard is the screen twice over. Driven off the SAME
+  // visualViewport measurement that lifts the box, so there is no second notion of "the
+  // keyboard is open" to fall out of step with the first.
+  const lift = composer.slice(composer.indexOf('const lift = ()'), composer.indexOf('if (IS_TOUCH)'));
+  assert.match(lift, /visualViewport/);
+  assert.match(lift, /wrap\.classList\.toggle\('kb-open', kb > \d+\)/, 'a threshold, not kb > 0: iOS reports stray offset while scrolling');
+  assert.match(composer, /blur[\s\S]{0,200}classList\.remove\('kb-open'\)/, 'dismissing the keyboard brings the row straight back');
+  assert.match(style, /\.composer\.kb-open \.keysrow \{\s*display: none;/);
+});

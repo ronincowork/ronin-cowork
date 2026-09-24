@@ -1,6 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { IS_TOUCH, S } from './state.js';
-import { CAN_RECORD, wireDictation } from './voice.js';
 import { t } from './lexicon.js';
 import { settleComposer } from './composer-rules.js';
 
@@ -22,18 +21,13 @@ export function buildComposer(body, hooks) {
   ta.placeholder = t('composer.placeholder', 'Message…');
   ta.title = t('composer.title', 'Enter sends · Shift+Enter or Option+Enter for a new line');
   ta.spellcheck = false;
-  // 🎤 sits ON the box, not floating over the terminal, and records to the host
-  // rather than to Apple — same engine the Mac's ⌥ mic uses, so it knows the words
-  // in ronin_catalogs/HOTWORDS.md. Built only where the browser can actually record; a
-  // dead button is worse than none. (Recording needs a secure context, so over the
-  // tailnet that means the https URL, not the bare IP.)
-  const mic = CAN_RECORD && IS_TOUCH ? document.createElement('button') : null;
-  if (mic) {
-    mic.className = 'cmic';
-    mic.type = 'button';
-    mic.textContent = '🎤';
-    mic.title = t('composer.mic_title', 'Dictate into this box — tap again to stop, then ↵ to send');
-  }
+  // NO 🎤 ON THE BOX. Dictation is withdrawn from the composer until Voice is rebuilt as
+  // a whole — speech to text AND text to speech, with its own controls (owner,
+  // 2026-09-24). It was offered on any touch surface the browser could record on, which
+  // said nothing about whether this machine can transcribe: Koe is parked here
+  // (`component_off`), and /api/health advertised `transcribe: true` off a default URL
+  // string that is never empty, so the button was always drawn and always failed.
+  // js/voice.js stays exactly where it is — the engine is not the thing that was wrong.
   const btn = document.createElement('button');
   btn.className = 'csend';
   btn.textContent = '↵';
@@ -42,10 +36,10 @@ export function buildComposer(body, hooks) {
   const why = document.createElement('p');
   why.className = 'cwhy';
   why.setAttribute('role', 'status');
-  wrap.append(...[why, ta, mic, btn].filter(Boolean));
+  wrap.append(why, ta, btn);
   body.appendChild(wrap);
 
-  const state = { dictation: null, queued: false, inflight: false };
+  const state = { inflight: false };
   // The wire's own words for a send that did not get through, in the owner's language.
   const reasons = {
     'not connected': () => t('composer.why_not_connected', 'the tile is not connected'),
@@ -55,38 +49,17 @@ export function buildComposer(body, hooks) {
     wrap.classList.toggle('held', !!reason);
     why.textContent = reason ? t('composer.held', 'Not sent — {why}. Your text is kept.', { why: (reasons[reason] || (() => reason))() }) : '';
   };
-  if (mic) state.dictation = wireDictation(ta, mic);
-  if (state.dictation)
-    state.dictation.afterText = () => {
-      if (!state.queued) return;
-      state.queued = false;
-      wrap.classList.remove('queued');
-      submit();
-    };
-
   const grow = () => {
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
   };
   const clearBox = () => {
-    if (S.dictation) S.dictation.stop();
     ta.value = '';
     grow();
     hold(null);
     ta.focus();
   };
   const submit = () => {
-    // Stop listening BEFORE reading the box: iOS keeps the recognizer running a
-    // beat after you stop talking, and a trailing result would refill a box we
-    // are about to clear.
-    if (S.dictation) S.dictation.stop();
-    // Enter while the clip is still TRANSCRIBING: the box is empty but a message
-    // is on its way. Queue the send; `afterText` above fires it when it lands.
-    if (state.dictation && state.dictation.busy && !ta.value.trim()) {
-      state.queued = true;
-      wrap.classList.add('queued');
-      return;
-    }
     // One message in flight at a time: a second Enter while the host is still answering
     // would send the same text twice.
     if (state.inflight) return;
@@ -134,6 +107,13 @@ export function buildComposer(body, hooks) {
     const vv = window.visualViewport;
     const kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
     wrap.style.bottom = kb + 'px';
+    // THE KEYS ROW STANDS DOWN WHILE THE KEYBOARD IS UP (owner, 2026-09-24). Two rows of
+    // controls above a keyboard is the screen twice over; the device's own keyboard is
+    // the thing being typed on, so the row that stands in for it is not needed until the
+    // keyboard goes away again. Read off the same measurement that lifts the box — no
+    // second notion of "the keyboard is open" to fall out of step with this one.
+    // A threshold, not `kb > 0`: iOS reports a few stray pixels of offset while scrolling.
+    wrap.classList.toggle('kb-open', kb > 120);
     reserve();
   };
   if (IS_TOUCH) {
@@ -142,6 +122,7 @@ export function buildComposer(body, hooks) {
     ta.addEventListener('focus', lift);
     ta.addEventListener('blur', () => {
       wrap.style.bottom = '0px';
+      wrap.classList.remove('kb-open'); // the row is back the moment the keyboard is dismissed
       reserve();
     });
     if (window.visualViewport) {
