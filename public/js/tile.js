@@ -60,6 +60,7 @@ export class Tile {
     Object.assign(this, buildTileHead(this));
     this.body.dataset.surface = 'term'; // one viewport, one visible reading
     this.onMinimize = typeof options.onMinimize === 'function' ? options.onMinimize : null;
+    this.onOpenDocument = typeof options.onOpenDocument === 'function' ? options.onOpenDocument : null;
     this.emptyMark = document.createElement('div');
     this.emptyMark.className = 'tile-empty-mark';
     this.emptyMark.setAttribute('aria-hidden', 'true');
@@ -105,8 +106,8 @@ export class Tile {
       },
     });
     installTileControls(this);
-    this.docView = buildTileDocView(this);
-    this.body.append(this.docView.el);
+    this.docView = this.onOpenDocument ? null : buildTileDocView(this);
+    if (this.docView) this.body.append(this.docView.el);
 
     // THE SOCKET — beside both views, owned by neither.
     this.wire = new TileWire({
@@ -260,9 +261,10 @@ export class Tile {
       .forEach((m) => m.classList.remove('open'));
   }
 
-  /** Open one tracked document over this Agent; closing it reveals the live pane again. */
+  /** Open one tracked document in this host's one document surface. */
   openDoc(path) {
     this.clearOverlays();
+    if (this.onOpenDocument) { this.onOpenDocument(path); return; }
     void this.docView.open(path);
   }
 
