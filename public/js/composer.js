@@ -107,22 +107,24 @@ export function buildComposer(body, hooks) {
     const vv = window.visualViewport;
     const kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
     wrap.style.bottom = kb + 'px';
-    // THE KEYS ROW STANDS DOWN WHILE THE KEYBOARD IS UP (owner, 2026-09-24). Two rows of
-    // controls above a keyboard is the screen twice over; the device's own keyboard is
-    // the thing being typed on, so the row that stands in for it is not needed until the
-    // keyboard goes away again. Read off the same measurement that lifts the box — no
-    // second notion of "the keyboard is open" to fall out of step with this one.
-    // A threshold, not `kb > 0`: iOS reports a few stray pixels of offset while scrolling.
-    wrap.classList.toggle('kb-open', kb > 120);
     reserve();
   };
   if (IS_TOUCH) {
     ta.setAttribute('enterkeyhint', 'send');
     ta.setAttribute('autocorrect', 'on');
-    ta.addEventListener('focus', lift);
+    // THE KEYS ROW STANDS DOWN IN TEXT ENTRY (owner, 2026-09-24). Two rows of controls
+    // above an on-screen keyboard is the screen twice over, and the device's own keyboard
+    // is the thing being typed on.
+    //
+    // The signal is the box having focus, not a measured keyboard height. Measuring looks
+    // more precise and is not: it needs a pixel threshold to survive the stray offset iOS
+    // reports while scrolling, and that guess was wrong on the owner's phone — the row
+    // never went away. Focus is what "entering text entry" actually means, it needs no
+    // number, and it is already the moment the keyboard opens on a touch device.
+    ta.addEventListener('focus', () => { wrap.classList.add('kb-open'); lift(); });
     ta.addEventListener('blur', () => {
+      wrap.classList.remove('kb-open'); // the row is back the moment the box is left
       wrap.style.bottom = '0px';
-      wrap.classList.remove('kb-open'); // the row is back the moment the keyboard is dismissed
       reserve();
     });
     if (window.visualViewport) {
