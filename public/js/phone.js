@@ -96,6 +96,7 @@ export async function buildPhone() {
   let sheet = null; // its メ sheet — dies with the host
   let roster = null; // the roster clock, which the desk has in layout.js and the phone lacked
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
+  const transcriptModes = new Map(); // session → Chat; Tiles are rebuilt whenever the phone changes Agent
 
   /* ---------- screen 1 · the Teams ---------- */
   const paintTeams = () => {
@@ -274,6 +275,7 @@ export async function buildPhone() {
     main.replaceChildren(term);
     const tile = host.mount(session);
     stageTile = tile;
+    if (transcriptModes.get(session)) tile.toggleTranscript();
     tile.composer?.el.querySelector('.keysrow')?.append(feedbackAction);
 
     sheet = makeDrop('メ', t('phone.me_title', 'This Agent — work record, docs, output, close'), 'me');
@@ -308,6 +310,7 @@ export async function buildPhone() {
     );
   };
   const closeTerminal = () => {
+    if (stageTile?.session) transcriptModes.set(stageTile.session, stageTile.transcriptOn);
     clearInterval(roster);
     roster = null;
     sheet?.close();
