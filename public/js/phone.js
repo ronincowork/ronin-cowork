@@ -96,7 +96,16 @@ export async function buildPhone() {
   let sheet = null; // its メ sheet — dies with the host
   let roster = null; // the roster clock, which the desk has in layout.js and the phone lacked
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
-  const transcriptModes = new Map(); // session → Chat; Tiles are rebuilt whenever the phone changes Agent
+  const transcriptModeKey = 'ronin.phone.transcript-modes';
+  let savedTranscriptModes = {};
+  try { savedTranscriptModes = JSON.parse(sessionStorage.getItem(transcriptModeKey) || '{}') || {}; } catch {}
+  const transcriptModes = new Map(Object.entries(savedTranscriptModes).filter(([, chat]) => chat === true));
+  const rememberTranscriptMode = (session, chat) => {
+    if (!session) return;
+    if (chat) transcriptModes.set(session, true);
+    else transcriptModes.delete(session);
+    try { sessionStorage.setItem(transcriptModeKey, JSON.stringify(Object.fromEntries(transcriptModes))); } catch {}
+  };
   const transcriptCache = new Map(); // session + reading → records/cursor retained while Tiles come and go
 
   /* ---------- screen 1 · the Teams ---------- */
@@ -286,6 +295,8 @@ export async function buildPhone() {
 
     sheet = makeDrop('メ', t('phone.me_title', 'This Agent — work record, docs, output, close'), 'me');
     const node = (key) => tile[key]?.el ?? tile[key];
+    const transcriptBtn = node('transcriptBtn');
+    transcriptBtn.addEventListener('click', () => rememberTranscriptMode(session, tile.transcriptOn));
     sheet.addRow(node('workRecordBtn'), t('me.ladder', 'Work record'));
     sheet.addRow(node('docsBtn'), t('me.docs', 'Docs'));
     // No Services, no choice: the Output row only exists where an unlocked view does.
@@ -309,14 +320,14 @@ export async function buildPhone() {
     bar.replaceChildren(
       backLink(teamHash(team)),
       el('span', 'ph-title', agentLabel(S.sessions.find((row) => row.name === session) || { name: session })),
-      node('transcriptBtn'),
+      transcriptBtn,
       sheet.btn,
       sheet.menu,
       tile.docsBtn.menu,
     );
   };
   const closeTerminal = () => {
-    if (stageTile?.session) transcriptModes.set(stageTile.session, stageTile.transcriptOn);
+    if (stageTile?.session) rememberTranscriptMode(stageTile.session, stageTile.transcriptOn);
     clearInterval(roster);
     roster = null;
     sheet?.close();
