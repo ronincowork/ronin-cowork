@@ -141,17 +141,6 @@ export async function requestLines(url, onLine, opts = {}) {
       return false; // a line that is not an object is a broken answer, not an empty one
     }
   };
-  // A body that cannot be streamed (an older engine, a stand-in in a test) is still read —
-  // whole rather than as it arrives, which is slower and never wrong.
-  if (!res.body?.getReader) {
-    const whole = await res.text().catch(() => null);
-    if (whole === null) return malformed(res.status);
-    for (const line of whole.split('\n')) {
-      if (!deliver(line)) return malformed(res.status);
-      if (stopped()) return cancelled();
-    }
-    return { ok: true, status: res.status, data: {} };
-  }
   const reader = res.body.getReader();
   // However this ends — enough read, a broken line, a dropped connection — the reader is
   // released, so the server is not left streaming to a consumer that has returned.
