@@ -55,7 +55,7 @@ const serve = (seed) => {
             : url.startsWith('/api/project-roots/detail') ? roots
               : url.startsWith('/api/team-rosters/') && init.method === 'PUT' ? (puts.push(JSON.parse(init.body)), { roster: JSON.parse(init.body) })
                 : null;
-    return { ok: body !== null, status: body ? 200 : 404, headers: { get: () => 'application/json' }, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => body ?? { error: 'no' }, text: async () => JSON.stringify(body) };
+    return { ok: body !== null, status: body ? 200 : 404, headers: { get: () => 'application/json' }, json: async () => body ?? { error: 'no' }, text: async () => JSON.stringify(body ?? { error: 'no' }) };
   };
 };
 
