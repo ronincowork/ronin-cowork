@@ -68,12 +68,17 @@ export function createAgentView() {
   }
 
   const documents = new Map(), membership = new Map(), tasks = new Map();
-  const makeTaskManager = (id, team) => {
-    const key = `${id}\0${team}`;
+  const makeTaskManager = (id, detail = {}) => {
+    const key = `${id}\0${detail.view || 'overview'}\0${detail.stage || detail.project || ''}`;
     if (tasks.has(key)) return tasks.get(key);
-    const surface = WorkspaceKit.primitives.createSurface({ label: t('workspace.tab_task_manager', 'Task Manager'), className: 'tw-kanban' });
-    const manager = createTeamKanban({ openOwner: (name) => name === agent && bench.place(TYPES.self, bench.selected(), { key: agent }) });
-    manager.setTeam(team); manager.setAvailability(availability); surface.content.append(manager.el);
+    const surface = WorkspaceKit.primitives.createSurface({ label: detail.view === 'project' ? t('team_kanban.project', 'Project') : detail.view === 'status' ? t('team_kanban.status_projects', 'Projects by status') : t('workspace.tab_task_manager', 'Task Manager'), className: 'tw-kanban' });
+    const scope = detail.scope || { kind: 'agent', agent, teams: () => memberships(agent) };
+    const opposite = ({ workspace1: 'workspace2', workspace2: 'workspace1', workspace3: 'workspace4', workspace4: 'workspace3' })[id] || 'workspace1';
+    const manager = createTeamKanban({ scope, view: detail.view, detail,
+      openOwner: (name) => name === agent && bench.place(TYPES.self, bench.selected(), { key: agent }),
+      openSurface: (view, next) => bench.place(view === 'status' ? WORKBENCH_TYPES.taskStatus : WORKBENCH_TYPES.taskProject, opposite, { ...next, view }),
+    });
+    manager.setAvailability(availability); surface.content.append(manager.el);
     const made = { el: surface.el, show: () => manager.enter(), manager }; tasks.set(key, made); return made;
   };
   const makeDocuments = (id, name = agent) => {
@@ -99,8 +104,10 @@ export function createAgentView() {
       if (!membership.has(key)) membership.set(key, createMembershipSurface(agent, () => { bench.refreshSelector(); for (const item of documents.values()) item.show(); }));
       return membership.get(key);
     },
-    taskOffers: () => memberships(agent).map((team) => ({ key: team, label: t('agent.team_tasks', '{team} Task Manager', { team }), summary: t('agent.team_tasks_summary', 'Projects held by {team}', { team }) })),
-    tasks: (id, detail) => makeTaskManager(id, detail.key),
+    taskOffers: () => memberships(agent).length ? [{ key: agent, label: t('workspace.tab_task_manager', 'Task Manager'), summary: t('agent.team_tasks_summary', 'Projects held by this Agent') }] : [],
+    tasks: (id, detail) => makeTaskManager(id, detail),
+    taskStatus: (id, detail) => makeTaskManager(id, { ...detail, view: 'status' }),
+    taskProject: (id, detail) => makeTaskManager(id, { ...detail, view: 'project' }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     feedback: () => createFeedbackSurface(() => bench.place(TYPES.documents, bench.selected(), { key: agent })),
   };

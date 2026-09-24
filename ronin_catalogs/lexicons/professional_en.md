@@ -729,6 +729,17 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team_kanban.beta_message:** Task Manager is in beta. Follow Projects from ideas to done using Tools and the Work Record. We’re making it easier for Agents to keep them current without forcing upkeep.
 - **team_kanban.header_collapse:** Collapse
 - **team_kanban.header_expand:** Expand
+- **team_kanban.back:** Back to Task Manager
+- **team_kanban.project:** Project
+- **team_kanban.status_projects:** Projects by status
+- **team_kanban.project_missing:** This Project is not in the current scope.
+- **team_kanban.stage:** Status
+- **team_kanban.holder:** Holder
+- **team_kanban.progress:** Progress
+- **team_kanban.next:** Next
+- **team_kanban.evidence:** Evidence
+- **team_kanban.open_project:** Open Project
+- **team_kanban.desk_summary:** Projects across this Desk’s Teams and Agents
 - **team.lead:** Team lead
 - **team.flip_commons:** Show the Team commons in this workspace
 - **team.flip_terminal:** Show the terminal in this workspace

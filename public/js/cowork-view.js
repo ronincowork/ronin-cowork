@@ -237,20 +237,26 @@ export function createCoworkView(options = {}) {
     return commonsBySeat[id];
   };
   const taskManagerBySeat = {};
-  const taskManagerFor = (id) => {
-    if (!taskManagerBySeat[id]) {
-      const surface = createSurface({ label: t('workspace.tab_task_manager', 'Task Manager'), className: 'tw-kanban' });
+  const taskManagerFor = (id, detail = {}) => {
+    const cacheKey = `${id}\0${detail.view || 'overview'}\0${detail.stage || detail.project || ''}`;
+    if (!taskManagerBySeat[cacheKey]) {
+      const surface = createSurface({ label: detail.view === 'project' ? t('team_kanban.project', 'Project') : detail.view === 'status' ? t('team_kanban.status_projects', 'Projects by status') : t('workspace.tab_task_manager', 'Task Manager'), className: 'tw-kanban' });
+      const taskScope = detail.scope || (campaign
+        ? { kind: 'desk', teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }
+        : { kind: 'team', team: team === UNASSIGNED ? '' : team });
       const manager = createTeamKanban({
-        lead: () => lead(),
+        scope: taskScope, view: detail.view, detail,
+        lead: (project) => membersOfTeam(project?.team || team).find((member) => member.team_lead)?.name || '',
         openOwner: (name) => arrange({ [oppositeSeat(id)]: { session: name } }),
+        openSurface: (view, next) => bench.place(view === 'status' ? WB_TYPES.taskStatus : WB_TYPES.taskProject, oppositeSeat(id), { ...next, view }),
         unavailable: (message) => updateKanbanAvailability({ available: false, message }),
       });
-      manager.setTeam(team === UNASSIGNED ? '' : team);
+      if (!detail.scope && !campaign) manager.setTeam(team === UNASSIGNED ? '' : team);
       manager.setAvailability(kanbanGate);
       surface.content.append(manager.el);
-      taskManagerBySeat[id] = { el: surface.el, manager, show: () => manager.enter(), leave: () => manager.leave() };
+      taskManagerBySeat[cacheKey] = { el: surface.el, manager, show: () => manager.enter(), leave: () => manager.leave() };
     }
-    return taskManagerBySeat[id];
+    return taskManagerBySeat[cacheKey];
   };
   const extras = new Set();
   // its roster exists, so the form that made it hands the workspace over to it and goes
@@ -280,9 +286,11 @@ export function createCoworkView(options = {}) {
     teamCommons: (id) => ({ el: commonsFor(id).el, show: (detail = {}) => { const item = commonsFor(id); if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
     kanbanOffers: () => kanbanGate.available ? [{
       label: t('workspace.tab_task_manager', 'Task Manager'),
-      summary: t('team_kanban.card_summary', 'The Team’s work, from Ideas through Done'),
+      summary: campaign ? t('team_kanban.desk_summary', 'Projects across this Desk’s Teams and Agents') : t('team_kanban.card_summary', 'The Team’s work, from Ideas through Done'),
     }] : [],
     teamKanban: (id) => taskManagerFor(id),
+    taskStatus: (id, detail) => taskManagerFor(id, { ...detail, view: 'status' }),
+    taskProject: (id, detail) => taskManagerFor(id, { ...detail, view: 'project' }),
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => putSession(detail.key, id) }),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
     cron: (id) => ({ el: cronBySeat[id].el, show: () => cronBySeat[id].room.enter() }),
@@ -776,7 +784,10 @@ export function createCoworkView(options = {}) {
       // JIKAN is by active team: the tag-only or durable team, and its live members for the To list.
       commons.jikan.setTeam(team === UNASSIGNED ? '' : team, members.map((m) => m.name));
     }
-    for (const surface of Object.values(taskManagerBySeat)) surface.manager.setTeam(team === UNASSIGNED ? '' : team);
+    for (const surface of Object.values(taskManagerBySeat)) {
+      if (campaign) void surface.manager.refresh();
+      else surface.manager.setTeam(team === UNASSIGNED ? '' : team);
+    }
   };
   painterReady = true;
 

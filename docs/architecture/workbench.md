@@ -203,7 +203,7 @@ and seats. Optional feature status is independent and must not hold the frame.
 | Team roster / Team profile | Team records and live session-derived membership |
 | Agent terminal | selected session plus terminal transport; other sessions are not mounted for it |
 | Commons | only the selected tab enters: Roster, Docs, Wipeboard, Messages, Configuration, or another registered room |
-| Team Task Manager | its own work surface; installed capability fact, then selected Team's derived Project view |
+| Task Manager | Desk scope aggregates the canonical per-Team Project readings; Team scope reads the selected Team; status and Project drill-downs are independently placeable surfaces carrying the same tenant |
 | Cron jobs | scheduled messages for the addressed Team or collection scope |
 | New Agent / New Team | canonical launch form and its dependencies listed above |
 | Archived sessions | archive manifests when shown |
@@ -218,9 +218,9 @@ service reads finish. Team membership and Task Manager choices enrich independen
 |---|---|
 | Self | route Agent plus the shared terminal host and transport |
 | Agent Documents | the Agent's tracked documents in one untabbed work surface |
-| Agent Task Manager | one separately offered Task Manager for each current Team |
+| Agent Task Manager | the route Agent's Projects across its current Teams, filtered by the canonical holder returned with each Team Project reading |
 | Team membership | Team records and live session tags from `team-controller.js`; writes use the canonical session-membership route |
-| Task Manager | installed capability fact and the selected Team's derived Project view |
+| Status / Project drill-down | the same Agent tenant and Team reads as Task Manager; each is an independently placeable surface and writes no Project data |
 | Document / Feedback | each shared surface's own read or submission |
 
 ## Change checklist

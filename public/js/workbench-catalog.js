@@ -14,7 +14,7 @@ export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 
 export const WORKBENCH_TYPES = Object.freeze({
   document: 'document', terminal: 'session.terminal', behaviours: BEHAVIOUR_SURFACE_TYPE, feedback: FEEDBACK_TYPE,
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
-  commons: 'team.commons', kanban: 'team.kanban', cron: 'cowork.cron-jobs',
+  commons: 'team.commons', kanban: 'team.kanban', taskStatus: 'task-manager.status', taskProject: 'task-manager.project', cron: 'cowork.cron-jobs',
   roster: 'cowork.team-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent',
   team: 'team.profile', archives: 'cowork.archives',
   agentDocuments: 'agent.documents', agentTeams: 'agent.team-membership', agentTasks: 'agent.task-manager',
@@ -38,6 +38,8 @@ export function registerWorkbenchCatalog() {
   via(WORKBENCH_TYPES.launchHelp, 'surface', 'help', { label: () => t('help.title', 'Help'), summary: () => t('help.card_summary', 'What each step means, beside the step you are on.'), variant: 'dotted' });
   via(WORKBENCH_TYPES.commons, 'tabs', 'teamCommons', { className: 'wk-selector-utility', label: () => t('team.commons_card', 'Commons'), summary: () => t('team.commons_summary', 'See Roster / Docs / Wipeboard / Messages / Configuration') });
   add({ type: WORKBENCH_TYPES.kanban, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_task_manager', 'Task Manager'), discover: (_t, e) => e.kanbanOffers(), create: ({ workspace, environment }) => environment.teamKanban(workspace) });
+  add({ type: WORKBENCH_TYPES.taskStatus, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.taskStatus(workspace, detail) });
+  add({ type: WORKBENCH_TYPES.taskProject, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.taskProject(workspace, detail) });
   via(WORKBENCH_TYPES.roster, 'surface', 'roster', { className: 'wk-selector-utility', label: () => t('league.team_roster', 'Team roster') });
   via(WORKBENCH_TYPES.cron, 'surface', 'cron', { className: 'wk-selector-utility', label: () => t('workspace.tab_cron_jobs', 'Cron jobs'), summary: () => t('team_jikan.all_teams_summary', 'Scheduled messages across every team') });
   add({ type: WORKBENCH_TYPES.newTeamForm, header: 'surface', className: 'wk-selector-utility wk-selector-group-after', label: () => t('new_team.title', 'New Team'), summary: () => t('new_team.card_summary', 'Template · kit · lead — the drawn form.'), variant: 'dotted', create: ({ workspace, environment, consumed }) => environment.newTeamForm(workspace, consumed) });
@@ -56,9 +58,9 @@ export function registerWorkbenchCatalog() {
   campaign(WORKBENCH_TYPES.campaignMachine, 'tabs', () => t('campaign_view.machine', 'Machine'), 'campaignMachine', () => t('campaign_view.machine_summary', 'Themes · Desk · Account · Archived · Messages · Help desk · Keypad.'));
   if (MULTIPLE_CAMPAIGNS_ENABLED) campaign(WORKBENCH_TYPES.campaignCreate, 'surface', () => t('campaign.new', 'New Desk'), 'campaignCreate', () => t('campaign_view.new_summary', 'Set the stage. It creates no Team and launches no Agent.'), { variant: 'dotted' });
   profiles.define(WORKBENCH_PROFILES.launch, [WORKBENCH_TYPES.launchTeam, WORKBENCH_TYPES.launchAgent, WORKBENCH_TYPES.launchHelp, BEHAVIOUR_SURFACE_TYPE, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
-  profiles.define(WORKBENCH_PROFILES.cowork, [WORKBENCH_TYPES.roster, WORKBENCH_TYPES.cron, WORKBENCH_TYPES.team, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.document, BEHAVIOUR_SURFACE_TYPE, PRESETS_TYPE, FEEDBACK_TYPE]);
-  profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.kanban, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newAgent, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
-  profiles.define(WORKBENCH_PROFILES.agent, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentDocuments, WORKBENCH_TYPES.agentTeams, WORKBENCH_TYPES.agentTasks, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
+  profiles.define(WORKBENCH_PROFILES.cowork, [WORKBENCH_TYPES.roster, WORKBENCH_TYPES.kanban, WORKBENCH_TYPES.taskStatus, WORKBENCH_TYPES.taskProject, WORKBENCH_TYPES.cron, WORKBENCH_TYPES.team, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.document, BEHAVIOUR_SURFACE_TYPE, PRESETS_TYPE, FEEDBACK_TYPE]);
+  profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.kanban, WORKBENCH_TYPES.taskStatus, WORKBENCH_TYPES.taskProject, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newAgent, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
+  profiles.define(WORKBENCH_PROFILES.agent, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentDocuments, WORKBENCH_TYPES.agentTeams, WORKBENCH_TYPES.agentTasks, WORKBENCH_TYPES.taskStatus, WORKBENCH_TYPES.taskProject, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.campaign, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.campaignMachine, BEHAVIOUR_SURFACE_TYPE, PASSWORD_SURFACE_TYPE, WORKBENCH_TYPES.campaignInstallations, PROVIDER_SURFACE_TYPE, SETUP_SURFACE_TYPES.register, FEEDBACK_TYPE, WORKBENCH_TYPES.campaignIdentity, WORKBENCH_TYPES.campaignDefaults, WORKBENCH_TYPES.campaignRoots, SETUP_SURFACE_TYPES.launchOwn, WORKBENCH_TYPES.document, ...(MULTIPLE_CAMPAIGNS_ENABLED ? [WORKBENCH_TYPES.campaignCreate] : [])]);
   registered = true;
 }
