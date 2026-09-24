@@ -416,3 +416,156 @@ test('a reconnect asks for what it missed, from the newest record it holds', asy
   assert.deepEqual(contents(view.el), ['before the drop', 'missed this']);
   view.dispose();
 });
+
+/**
+ * THE RACES. Four sources feed this view and they arrive in any order; a high-water mark
+ * mutated by whoever arrived last loses to every one of these (new_lead, tmux_v2 and
+ * mobile_transcript each found one).
+ */
+const deliver = (msg) => [...transcriptHandlers].forEach((fn) => fn(msg));
+const seqsOn = (view) => [...view.el.children]
+  .filter((n) => n.className === 'tile-transcript-entry')
+  .map((n) => Number(n.attributes['data-seq']));
+
+test('a live record arriving before the opening page does not cost the history', async () => {
+  let release;
+  const page = new Promise((resolve) => { release = resolve; });
+  const view = makeTileTranscript({ read: () => page, watch() {} });
+  view.show('agent', 'chat');
+  await tick();
+
+  // The socket is quicker than the fetch: seq 100 lands while [71..100] is in flight.
+  deliver({ t: 'transcript', session: 'agent', reading: 'chat', records: [{ seq: 100, role: 'agent', kind: 'say', text: 's100' }] });
+  assert.deepEqual(seqsOn(view), [100]);
+
+  release({ ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 101, more: true,
+    records: Array.from({ length: 30 }, (_, i) => ({ seq: 71 + i, role: 'agent', kind: 'say', text: `s${71 + i}` })) } });
+  await tick();
+
+  assert.deepEqual(seqsOn(view), Array.from({ length: 30 }, (_, i) => 71 + i),
+    'the whole page is there, in order, and seq 100 appears once');
+  view.dispose();
+});
+
+test('a live record arriving during a catch-up does not strand the records it was fetched for', async () => {
+  let release;
+  const gap = new Promise((resolve) => { release = resolve; });
+  let call = 0;
+  const view = makeTileTranscript({
+    read: () => (call++ === 0
+      ? Promise.resolve({ ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 11, more: false,
+          records: [{ seq: 10, role: 'agent', kind: 'say', text: 's10' }] } })
+      : gap),
+    watch() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  assert.deepEqual(seqsOn(view), [10]);
+
+  deliver({ t: 'reconnected' });          // asks after=10
+  await tick();
+  deliver({ t: 'transcript', session: 'agent', reading: 'chat', records: [{ seq: 13, role: 'agent', kind: 'say', text: 's13' }] });
+  assert.deepEqual(seqsOn(view), [10, 13], 'the live one lands while the gap is still in flight');
+
+  release({ ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 14, more: false,
+    records: [11, 12, 13].map((seq) => ({ seq, role: 'agent', kind: 'say', text: `s${seq}` })) } });
+  await tick();
+  assert.deepEqual(seqsOn(view), [10, 11, 12, 13], 'the missed records fill their gap, and 13 is not doubled');
+  view.dispose();
+});
+
+test('an empty reading still knows where to resume from', async () => {
+  const asked = [];
+  const view = makeTileTranscript({
+    read: async (url) => {
+      asked.push(url);
+      return url.includes('after=')
+        ? { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 43,
+            records: [{ seq: 42, role: 'agent', kind: 'say', text: 'said while away' }] } }
+        // Nothing this reading admits, but the conversation is at seq 42.
+        : { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 42, more: false, records: [] } };
+    },
+    watch() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  assert.deepEqual(seqsOn(view), [], 'nothing to show yet');
+
+  deliver({ t: 'reconnected' });
+  await tick();
+  assert.match(asked[1], /after=41$/, 'it resumes from the end the route reported, not from nothing');
+  assert.deepEqual(seqsOn(view), [42], 'and what was written while it was away is recovered');
+  view.dispose();
+});
+
+test('a frame cut for the reading you just left is not shown in the one you are in', async () => {
+  const view = makeTileTranscript({
+    read: async () => ({ ok: true, data: { available: true, view: 'work', readings: READINGS, seq: 1, more: false, records: [] } }),
+    watch() {},
+  });
+  view.show('agent', 'work');
+  await tick();
+  view.setReading('chat');
+  await tick();
+
+  // Already on the wire when the reader switched: it belongs to Work.
+  deliver({ t: 'transcript', session: 'agent', reading: 'work',
+    records: [{ seq: 5, role: 'agent', kind: 'act', text: 'Bash ls' }] });
+  assert.deepEqual(seqsOn(view), [], 'a tool record cut for Work never appears in Chat');
+
+  deliver({ t: 'transcript', session: 'agent', reading: 'chat',
+    records: [{ seq: 6, role: 'agent', kind: 'say', text: 'for chat' }] });
+  assert.deepEqual(seqsOn(view), [6]);
+  view.dispose();
+});
+
+test('a default-reading tab still accepts what the server sends it', async () => {
+  // '' is the subscription key and the server echoes '', while the route reports 'notes'.
+  // Comparing against the resolved name would reject every frame this tab is sent.
+  const view = makeTileTranscript({
+    read: async () => ({ ok: true, data: { available: true, view: 'notes', readings: READINGS, seq: 1, more: false, records: [] } }),
+    watch() {},
+  });
+  view.show('agent', '');
+  await tick();
+  deliver({ t: 'transcript', session: 'agent', reading: '', records: [{ seq: 2, role: 'agent', kind: 'say', text: 'default reading' }] });
+  assert.deepEqual(seqsOn(view), [2]);
+  view.dispose();
+});
+
+test('the same seq twice inside one response is one record', async () => {
+  const view = makeTileTranscript({
+    read: async () => ({ ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 4, more: false,
+      records: [{ seq: 3, role: 'agent', kind: 'say', text: 'once' }, { seq: 3, role: 'agent', kind: 'say', text: 'once' }] } }),
+    watch() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  assert.deepEqual(seqsOn(view), [3], 'a duplicate inside a batch is still a duplicate');
+  view.dispose();
+});
+
+test('scrolling to the top asks for the page above, and it lands above', async () => {
+  const asked = [];
+  const view = makeTileTranscript({
+    read: async (url) => {
+      asked.push(url);
+      const before = /before=(\d+)/.exec(url);
+      const from = before ? Number(before[1]) - 30 : 40;
+      return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 70, more: from > 10,
+        records: Array.from({ length: 30 }, (_, i) => ({ seq: from + i, role: 'agent', kind: 'say', text: `s${from + i}` })) } };
+    },
+    watch() {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  assert.deepEqual(seqsOn(view), Array.from({ length: 30 }, (_, i) => 40 + i));
+
+  view.el.scrollTop = 0;
+  view.el.dispatchEvent({ type: 'scroll' });
+  await tick();
+  assert.match(asked[1], /before=40/, 'it asks for what is above the oldest it holds');
+  assert.deepEqual(seqsOn(view), Array.from({ length: 60 }, (_, i) => 10 + i),
+    'the older page lands above, in order, with no overlap');
+  view.dispose();
+});

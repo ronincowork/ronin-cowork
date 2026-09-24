@@ -20,12 +20,37 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   let session = null;
   let active = false;
   let generation = 0;
-  let reading = ''; // the reading's name on the route; '' lets the route choose its default
+  /*
+   * THE WIRE READING IS THE SUBSCRIPTION KEY, and it is what a delivered frame must match.
+   *
+   * '' means "whatever the route calls default", and the server echoes '' back on the
+   * frames it sends. The route separately reports the view it RESOLVED that to ('notes'),
+   * which is what the header shows. Comparing a frame against the resolved name would
+   * reject every frame of a default-reading tab; comparing against the wire key is exact
+   * (new_lead's ruling). The two are kept apart deliberately.
+   */
+  let reading = ''; // the subscription key: '' until the person picks a reading
+  let resolved = ''; // what the route called it — for display, never for matching
   let rendered = false; // whether this reading has ever shown a record — the header's 'empty'
   let probing = 0; // the live probe; hide() and a newer probe outdate an older one
   let stance = ''; // what the Agent is doing, as the roster row last said
-  let oldest = null; // the lowest seq on screen — where scrolling up carries on from
-  let latest = null; // the newest seq held: the tab's own place, and its dedupe key
+  /*
+   * ONE ORDERED SET, AND EVERY CURSOR DERIVED FROM IT.
+   *
+   * Four sources feed this view — the opening page, a page from scrolling up, a catch-up
+   * after a reconnect, and the socket — and they race. A high-water mark mutated by arrival
+   * order loses to every one of those races: a live seq 100 landing before the opening page
+   * [71..100] returns would throw the whole page away, and a live 13 landing during a
+   * catch-up would discard the 11 and 12 it was fetched for (found by new_lead, tmux_v2 and
+   * mobile_transcript, each from a different angle).
+   *
+   * So the tab holds the seqs it has, records go in by seq wherever they belong, and
+   * `oldest`/`newest` are read off the set rather than assigned by whoever arrived last.
+   */
+  const held = new Set(); // every seq rendered
+  let frontier = null; // the newest seq known to EXIST — held, or merely reported by the route
+  const oldestHeld = () => (held.size ? Math.min(...held) : null);
+  const newestHeld = () => (held.size ? Math.max(...held) : null);
   let exhausted = false; // the backward walk reached the beginning of the conversation
   let reaching = false; // a scroll-up fetch is in flight; one at a time
   let stanceNode = null; // the indicator itself, held rather than looked up
@@ -90,6 +115,8 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     entry.className = 'tile-transcript-entry';
     // Who and what, for the stylesheet: a note reads quieter than speech, a tool call
     // quieter still. The text itself is exactly what the route sent.
+    // Its own place in the conversation, so a record arriving late can be put where it goes.
+    if (typeof rec.seq === 'number') entry.setAttribute('data-seq', String(rec.seq));
     entry.setAttribute('data-role', rec.role || '');
     entry.setAttribute('data-kind', rec.kind || '');
     entry.textContent = rec.text || '';
@@ -105,45 +132,71 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   }
 
   /**
-   * THE ONE WAY A RECORD ENTERS THIS VIEW.
+   * THE ONE WAY A RECORD ENTERS THIS VIEW — by its own seq, into its own place.
    *
-   * Everything — the opening page, the records the socket delivers, the page fetched after a
-   * reconnect — comes through here, and a record is appended only if its seq is past the
-   * newest held. That is what makes two sources incapable of duplicating or reordering
-   * anything, and it is why there is no second store to keep in step.
+   * Two sources feed this: the socket, and a fetch. They race, and a high-water mark cannot
+   * merge them — if the socket's seq 100 lands before the opening page [71..100] returns,
+   * a "newer than the newest held" rule throws the whole page away and the reader is left
+   * with one line where their conversation was (new_lead, review).
+   *
+   * So each seq is remembered individually and a record that arrives late is INSERTED where
+   * it belongs rather than appended. A record already held is ignored whichever door it came
+   * through; a gap filled later closes in place; the order on screen is always seq order.
    */
-  function append(records) {
-    if (!Array.isArray(records) || !records.length) return;
+  function insertInOrder(entry, seq) {
+    const kids = el.children;
+    if (typeof seq !== 'number') { el.append(entry); return; }
+    // From the end: almost everything belongs there, and a record filling a gap walks only
+    // as far as the gap. Children without a seq — the end-of-conversation indicator — are
+    // stepped over, and paintStance puts it back at the end afterwards.
+    let at = kids.length - 1;
+    for (; at >= 0; at--) {
+      const seen = Number(kids[at].getAttribute?.('data-seq'));
+      if (Number.isFinite(seen) && seen < seq) break;
+    }
+    const next = kids[at + 1];
+    if (next) el.insertBefore(entry, next);
+    else el.append(entry);
+  }
+
+  function merge(records) {
+    if (!Array.isArray(records) || !records.length) return 0;
     const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+    const taking = new Set(); // duplicates INSIDE one response are duplicates too
     const fresh = records
-      .filter((rec) => typeof rec?.seq !== 'number' || latest === null || rec.seq > latest)
+      .filter((rec) => {
+        const seq = rec?.seq;
+        if (typeof seq !== 'number') return true;
+        if (held.has(seq) || taking.has(seq)) return false;
+        taking.add(seq);
+        return true;
+      })
       .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
-    if (!fresh.length) return;
+    if (!fresh.length) return 0;
     clearMessage();
     rendered = true;
     for (const rec of fresh) {
-      el.append(entryFor(rec));
-      if (typeof rec.seq === 'number') latest = latest === null ? rec.seq : Math.max(latest, rec.seq);
+      if (typeof rec.seq === 'number') {
+        held.add(rec.seq);
+        frontier = frontier === null ? rec.seq : Math.max(frontier, rec.seq);
+      }
+      insertInOrder(entryFor(rec), rec.seq);
     }
-    paintStance(); // records append above it; the end of the conversation stays the end
+    paintStance(); // the end-of-conversation indicator stays the end
     if (atBottom) el.scrollTop = el.scrollHeight;
+    return fresh.length;
   }
+  const append = merge;
 
   /**
-   * ONE RECORD, ARRIVING FROM THE BACKWARD STREAM.
-   *
-   * They come newest first, so each one goes ABOVE the last — which leaves the conversation
-   * in its own order, oldest at the top, and paints the last thing said immediately instead
-   * of after the whole transcript has been read.
+   * How far the conversation had got when the server last spoke, whether or not this reading
+   * showed any of it. Without this an empty Chat has nothing to reconnect from, and anything
+   * written while its socket was down is lost (new_lead, review).
    */
-  function prepend(rec) {
-    clearMessage();
-    rendered = true;
-    const first = el.firstElementChild;
-    const entry = entryFor(rec);
-    if (first) el.insertBefore(entry, first);
-    else el.append(entry);
-    if (typeof rec.seq === 'number') oldest = oldest === null ? rec.seq : Math.min(oldest, rec.seq);
+  function noteEnd(answer) {
+    const end = Number(answer?.seq);
+    if (!Number.isFinite(end) || end <= 0) return;
+    frontier = frontier === null ? end - 1 : Math.max(frontier, end - 1);
   }
 
   function url(name, view, door = {}) {
@@ -198,11 +251,13 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
       report(result.data, 0);
       return;
     }
-    const records = Array.isArray(result.data.records) ? result.data.records : [];
-    const first = records[0];
-    if (typeof first?.seq === 'number') oldest = first.seq;
+    // The end the route reports, kept whether or not this reading showed any of it: an
+    // empty Chat still has a place to reconnect from, and without it anything written while
+    // its socket was down would be lost (new_lead, review).
+    noteEnd(result.data);
+    if (typeof result.data.view === 'string') resolved = result.data.view;
     exhausted = result.data.more === false;
-    append(records);
+    merge(Array.isArray(result.data.records) ? result.data.records : []);
     if (!rendered) message(t('transcript.empty', 'No transcript output yet.'));
     report(result.data, rendered ? 1 : 0);
     el.scrollTop = el.scrollHeight; // the newest is what you opened for
@@ -213,33 +268,35 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
    * A tab that was never away has nothing to ask for.
    */
   async function catchUp(token) {
-    if (!active || !session || token !== generation || latest === null) return;
-    const result = await read(url(session, reading, { after: latest }), { cache: 'no-store' });
+    // The frontier, not the newest record shown: a reading with nothing in it still knows
+    // where the conversation had got to, and asks from there.
+    if (!active || !session || token !== generation || frontier === null) return;
+    const from = frontier;
+    const result = await read(url(session, reading, { after: from }), { cache: 'no-store' });
     if (!active || token !== generation || !result.ok) return;
-    append(Array.isArray(result.data.records) ? result.data.records : []);
+    noteEnd(result.data);
+    // Whatever arrived live while this was in flight is already held; the rest fills in by
+    // seq, wherever it belongs.
+    merge(Array.isArray(result.data.records) ? result.data.records : []);
   }
 
   /** Scrolled to the top: the conversation above what is shown. */
   async function earlier(token) {
-    if (!active || !session || exhausted || reaching || oldest === null) return;
+    const from = oldestHeld();
+    if (!active || !session || exhausted || reaching || from === null) return;
     reaching = true;
     const anchorHeight = el.scrollHeight;
     const anchorTop = el.scrollTop;
-    const result = await read(url(session, reading, { tail: SCREENFUL, before: oldest }), { cache: 'no-store' });
+    const result = await read(url(session, reading, { tail: SCREENFUL, before: from }), { cache: 'no-store' });
     reaching = false;
     if (!active || token !== generation || !result.ok) return;
     const records = Array.isArray(result.data.records) ? result.data.records : [];
     if (!records.length) { exhausted = true; return; }
-    const first = records[0];
-    if (typeof first?.seq === 'number') oldest = first.seq;
     exhausted = result.data.more === false;
-    // Above what is already shown, and the reader stays where they were looking.
-    for (const rec of [...records].reverse()) {
-      const top = el.firstElementChild;
-      const entry = entryFor(rec);
-      if (top) el.insertBefore(entry, top); else el.append(entry);
-    }
-    rendered = true;
+    // Through the same merge as everything else: they land above what is shown because
+    // their seqs are lower, not because this function prepends them.
+    merge(records);
+    // The page grew above the reader; keep them where they were looking.
     el.scrollTop = anchorTop + (el.scrollHeight - anchorHeight);
   }
 
@@ -248,7 +305,11 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     if (!active || !session) return;
     if (msg.t === 'reconnected') { void catchUp(generation); return; }
     if (msg.session !== session) return; // another Agent's tab, or a stale registration
-    append(Array.isArray(msg.records) ? msg.records : []);
+    // A frame already on the wire when the reader switched reading belongs to the reading it
+    // was cut for. Showing Work's tool records inside Chat is exactly what the server-side
+    // filter exists to prevent, so the last hop checks too (new_lead, review).
+    if ((msg.reading || '') !== reading) return;
+    merge(Array.isArray(msg.records) ? msg.records : []);
   }
 
   /**
@@ -279,8 +340,8 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     session = name;
     reading = view;
     active = true;
-    oldest = null;
-    latest = null;
+    held.clear();
+    frontier = null;
     exhausted = false;
     rendered = false;
     message(t('transcript.loading', 'Loading transcript…'));
@@ -309,7 +370,8 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     active = false;
     reaching = false;
     session = null;
-    oldest = null;
+    held.clear();
+    frontier = null;
     exhausted = false;
     el.replaceChildren();
   }
