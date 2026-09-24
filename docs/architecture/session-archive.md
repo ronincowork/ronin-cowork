@@ -111,8 +111,10 @@ session carries its key — **unarchived** — no archive manifest names its key
 been written to for the period. Archived folders stay until hard delete, as before.
 
 "Closed" is not a marker file; it is the absence of a live key, and the close time is the
-folder's last write (Rireki writes `transcript.jsonl` every minute while a bound session
-lives, so that is exact to a minute). The period is `config.cowork_defaults.session_retention_days`
+folder's last write (Rireki writes `transcript.jsonl` when the Agent's journal moves — it no
+longer touches it on a clock, so the last write is the last thing the Agent actually did).
+Retention is unaffected: a folder whose key is still live is never removed, however long it
+has been quiet. The period is `config.cowork_defaults.session_retention_days`
 on a Campaign, default **7**, no UI; when campaigns disagree the most generous value wins,
 because a folder does not record which campaign it was born into. `0` on any campaign
 switches the sweep off. Set it with `PUT /api/campaigns/:id` (`config.cowork_defaults`) or
