@@ -14,12 +14,11 @@ export function buildTileDocView(tile) {
   close.title = t('docs.close_agent', 'Close documents and return to this Agent');
   root.append(close);
 
-  const docs = buildDocs(tile, root, () => root.classList.contains('open'), (name) => name === tile.session);
+  const docs = buildDocs(tile, root, () => tile.surfaceHost.is('docs'), (name) => name === tile.session);
   const leave = () => {
-    if (!root.classList.contains('open')) return true;
+    if (!tile.surfaceHost.is('docs')) return true;
     if (docs.leave()) {
-      root.classList.remove('open');
-      tile.syncSurface();
+      tile.syncSurface(false);
       return true;
     }
     return false;
@@ -28,13 +27,12 @@ export function buildTileDocView(tile) {
   return {
     el: root,
     async open(path) {
-      root.classList.add('open');
-      tile.syncSurface();
+      tile.surfaceHost.select('docs');
       await refreshHome();
       docs.enter();
       await docs.open(path);
     },
     close: leave,
-    isOpen: () => root.classList.contains('open'),
+    isOpen: () => tile.surfaceHost.is('docs'),
   };
 }

@@ -879,7 +879,8 @@ async function runPass({ label, browser, contextOpts }) {
       const overlay = body.querySelector('.tile-doc-view');
       const area = overlay?.querySelector('.dc-text');
       if (!overlay || !area) return { kept: false, active: '', reason: 'Docs editor is absent' };
-      overlay.classList.add('open');
+      const previousSurface = body.dataset.surface;
+      body.dataset.surface = 'docs';
       overlay.dataset.view = 'edit';
       area.disabled = false;
       area.focus();
@@ -888,9 +889,9 @@ async function runPass({ label, browser, contextOpts }) {
       area.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
       const kept = document.activeElement === area;
       const active = `${document.activeElement?.tagName || ''}.${document.activeElement?.className || ''}`;
-      overlay.classList.remove('open');
       overlay.dataset.view = 'list';
       area.disabled = true;
+      body.dataset.surface = previousSurface;
       return { kept, active, before, rect: [rect.width, rect.height] };
     });
     if (docsFocus.kept) ok(`${label}: in-Tile Docs keeps selection and editing focus away from xterm`);

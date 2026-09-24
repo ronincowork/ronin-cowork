@@ -23,6 +23,7 @@ import { desksOf, refreshDesks } from './desks.js';
 import { homeData } from './home.js';
 import { t } from './lexicon.js';
 import { makeTileTranscript } from './tile-transcript.js';
+import { createSurfaceHost, TILE_SURFACES } from './surface-host.js';
 
 const readableSession = (name) => {
   const live = S.sessions.find((row) => row.name === name);
@@ -58,7 +59,7 @@ export class Tile {
     // references rather than re-queried: on touch these nodes are RELOCATED into the app
     // bar (js/tiledrop.js), and a later `querySelector` on the tile would find nothing.
     Object.assign(this, buildTileHead(this));
-    this.body.dataset.surface = 'term'; // one viewport, one visible reading
+    this.surfaceHost = createSurfaceHost(this.body, TILE_SURFACES, 'term');
     this.onMinimize = typeof options.onMinimize === 'function' ? options.onMinimize : null;
     this.emptyMark = document.createElement('div');
     this.emptyMark.className = 'tile-empty-mark';
@@ -268,12 +269,12 @@ export class Tile {
   }
 
   /** Term, unlocked output, Chat and Docs are peers in one viewport, never overlays. */
-  syncSurface() {
-    const surface = this.docView?.el.classList.contains('open')
+  syncSurface(includeDocs = true) {
+    const surface = includeDocs && this.docView?.isOpen()
       ? 'docs'
       : this.transcriptOn ? 'chat'
         : this.tapeMode ? 'tape' : 'term';
-    this.body.dataset.surface = surface;
+    this.surfaceHost.select(surface);
   }
 
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */

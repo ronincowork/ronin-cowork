@@ -88,7 +88,7 @@ below describes implementation ownership; use the surface index above to find a 
 | `services-setup-state.js` | the Ronin Setup Services surface's state: registration, installed facts and the activation record → one status, one next line, at most one action |
 | `system.js` | `buildSystem` — ⚙ System: release identity, updates, appearance, log out |
 | `shingo.js` | SHINGO 信号 — the expanded work-record reading and its age helpers |
-| `tile.js` | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
+| `tile.js` / `surface-host.js` | `class Tile` — one cell of the coworkspace; its surface host owns the catalogued sibling tenants and names the one active tenant |
 | `tilehead.js` | `buildTileHead` — the cell's chrome, one table and a loop: name, Work Record, output, mentions, Docs, status, and window controls |
 | `output.js` | the six Output names and the per-tile selector |
 | `tapeview.js` | **RIREKI's client render** — the 🔓 view: transcript, folds, live frame, scroll anchoring, paging |
