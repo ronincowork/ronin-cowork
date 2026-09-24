@@ -47,7 +47,7 @@ const MACHINE = {
 };
 globalThis.fetch = async (url) => {
   const body = url.startsWith('/api/provider-catalog') ? CATALOG_DOOR : url.startsWith('/api/setup/runtime') ? MACHINE : null;
-  return { ok: body !== null, status: body ? 200 : 404, json: async () => body ?? { error: 'no such door' } };
+  return { ok: body !== null, status: body ? 200 : 404, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => body ?? { error: 'no such door' } };
 };
 
 const steps = await import('../public/js/form-steps.js');

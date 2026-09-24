@@ -37,7 +37,7 @@ test('connected GitHub offers one server-owned removal action and keeps clone se
     if (url.endsWith('/login')) github = { ...github, attachment: { type: 'session', key: 'setup_github' } };
     if (url.endsWith('/close')) github = { ...github, attachment: null };
     if (url.endsWith('/logout')) github = { installed: true, authenticated: false, account: '', attachment: null };
-    return { ok: true, status: 200, json: async () => ({ ...github }) };
+    return { ok: true, status: 200, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => ({ ...github }) };
   };
   const surface = createGithubWorkspaceSetup({
     environment: { mountProviderSetupSession: () => ({ park() {}, destroy() {} }) },
@@ -70,7 +70,7 @@ test('missing GitHub CLI offers one Install button and mounts its visible provid
       ...github, installing: true,
       attachment: { type: 'session', key: 'install_github', team: 'provider_setup', temporary: true },
     };
-    return { ok: true, status: 200, json: async () => ({ ...github }) };
+    return { ok: true, status: 200, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => ({ ...github }) };
   };
   const surface = createGithubWorkspaceSetup({
     environment: { mountProviderSetupSession: ({ session }) => { assert.equal(session, 'install_github'); mounts++; return { park() {}, destroy() {} }; } },
@@ -88,7 +88,7 @@ test('missing GitHub CLI offers one Install button and mounts its visible provid
 
 test('an unreadable GitHub CLI result is distinct from signed out and leaves Git-native cloning available', async () => {
   globalThis.fetch = async () => ({
-    ok: true, status: 200, json: async () => ({
+    ok: true, status: 200, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => ({
       installed: true, authenticated: false, account: '', state: 'unreadable',
       problem: 'Ronin could not ask GitHub CLI to verify authentication.', attachment: null,
     }),
