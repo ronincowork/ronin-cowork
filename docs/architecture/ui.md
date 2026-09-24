@@ -250,6 +250,28 @@ Native dialogs: `confirm()` is the destructive-confirm primitive (kill session, 
 edits) — it is modal, keyboard-correct and honest. `prompt()` is tolerated for one-line
 name entry only. `alert()` is not used.
 
+## Work-surface ownership
+
+A viewport has one surface owner and one named active tenant. `surface-host.js` holds the
+catalog of sibling Tile tenants (`term`, `tape`, `chat`, `docs`) and writes the sole active
+name to `data-surface`; the siblings render that decision and do not compete through
+z-index or maintain a second visibility flag. Navigation chooses a tenant. It does not
+construct another viewer for the same work.
+
+The invariant is deliberately small: **one host, catalogued sibling tenants, one active
+tenant**. A tenant owns its enter/leave boundary and may refuse departure (Docs does so for
+unsaved edits). Focus, sizing and teardown follow the active tenant. Adding a work surface
+means registering another sibling with the host, not adding another overlay condition to
+the shell.
+
+Phone consolidation follows the same rule: Team Docs and an Agent menu must enter one
+page-owned Docs viewer/editor, never two controllers that happen to share a builder. Until
+that routing is on the promoted tree, it remains an architectural gap rather than something
+the CSS may disguise. The active phone Tile may be destroyed when another Agent is chosen;
+its transcript listener and watch are disposed, while page-level transcript state may remain
+bounded and later catch up from its committed cursor. Hidden or destroyed tenants must not
+leave a socket, poll or focus target behind.
+
 ## Update paths — what causes a surface to change
 
 The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`);
@@ -288,12 +310,19 @@ The promoted phone acceptance on 2026-09-24 keeps these results separate:
 - **Missed phone Chat recovery under real traffic is unknown:** no `say` record existed in
   that outage, so there was no Chat-admitted record to recover. The deterministic recovery
   regression passes, but it is not relabelled as real-traffic evidence.
+- **Post-promotion open passed on `19450aab`:** a fresh Binary phone tab began in Term with
+  no Agent watch, then one Chat press registered `{session:"binary", reading:"chat"}` at
+  the start of the bounded tail request. Under the established 400ms RTT / 50KB/s envelope,
+  `tail=30` returned HTTP 200 with 26,370 bytes (916ms imposed transfer delay); the first
+  entry was visible 1,443ms after the press and 30 entries rendered. The independent
+  availability probe was `tail=1`, 1,282 bytes and 426ms. The check sent no message and
+  changed no store.
 
-Lifecycle is deliberately simple: the page is the unit. Tiles, rooms and sheets are
-built once at boot and live for the page — nothing unmounts, so there is no disposal
-contract to forget; hidden surfaces cost nothing because their polls are gated on
-visibility predicates, not torn down. If a surface ever becomes destroyable, it takes
-a `destroy()` owner at that moment, not speculatively.
+Lifecycle has two explicit owners. Long-lived workspace rooms are page-owned and gate their
+polls on visibility. Disposable phone Tiles are host-owned: destroying one closes its
+transport, disposes its transcript handler/watch, observer, composer and timers, and removes
+it from the Tile registry. A surface is never treated as page-lived merely because an older
+desktop composition happened not to unmount it.
 
 ## Transient surfaces
 
