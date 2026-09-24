@@ -51,7 +51,7 @@ globalThis.fetch = async (url, init = {}) => {
   const body = url.startsWith('/api/provider-catalog') ? catalog
     : url.startsWith('/api/setup/runtime') || url.startsWith('/api/setup/providers/measure') || url.startsWith('/api/setup/providers/refresh') ? machine
       : url.endsWith('/update') || url.endsWith('/close') ? { ok: true } : null;
-  return { ok: body !== null, status: body ? 200 : 404, json: async () => body ?? { error: 'no such door' } };
+  return { ok: body !== null, status: body ? 200 : 404, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => body ?? { error: 'no such door' } };
 };
 
 const surface = await import('../public/js/provider-surface.js');
@@ -336,7 +336,7 @@ test('Install mounts its returned session inline, survives a completed install, 
     if (url.endsWith('/grok/install')) {
       installs++;
       machine = { ...machine, providers: [{ ...base, install_open: true, attachment: { type: 'session', key: 'install_grok', team: 'provider_setup', temporary: true } }] };
-      return { ok: true, status: 200, json: async () => ({ ok: true, runtime: machine }) };
+      return { ok: true, status: 200, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => ({ ok: true, runtime: machine }) };
     }
     if (url.endsWith('/grok/close')) machine = { ...machine, providers: [{ ...base, installed: true, installable: false }] };
     return originalFetch(url, init);
@@ -372,7 +372,7 @@ test('Done asks through Erabi for the sign-in method and title, then submits tha
     if (url.endsWith('/codex/done')) {
       saved = JSON.parse(init.body).sign_in;
       machine = { providers: [{ id: 'codex', label: 'Codex', installed: true, activated: true, sign_in: saved }], activated_count: 1 };
-      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      return { ok: true, status: 200, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => ({ ok: true }) };
     }
     return originalFetch(url, init);
   };

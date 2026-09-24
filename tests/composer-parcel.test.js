@@ -16,7 +16,7 @@ test('one composer send uses the HTTP message funnel with plain text, without a 
   const sent = [];
   globalThis.fetch = async (url, init) => {
     sent.push([url, init.method, JSON.parse(init.body)]);
-    return { status: 200, ok: true, json: async () => ({ ok: true, queued: true }) };
+    return { status: 200, ok: true, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => ({ ok: true, queued: true }) };
   };
   assert.equal((await sendComposerMessage('agent', 'one\ntwo')).ok, true);
   assert.deepEqual(sent, [['/api/messages', 'POST', { target: 'agent', text: 'one\ntwo' }]]);
@@ -25,7 +25,7 @@ test('one composer send uses the HTTP message funnel with plain text, without a 
 test('accepted queued text belongs to the server; an unreachable server keeps the box', async (t) => {
   const before = globalThis.fetch;
   t.after(() => { globalThis.fetch = before; });
-  globalThis.fetch = async () => ({ status: 200, ok: true, json: async () => ({ ok: true, queued: true }) });
+  globalThis.fetch = async () => ({ status: 200, ok: true, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => ({ ok: true, queued: true }) });
   assert.equal((await sendComposerMessage('agent', 'hello')).ok, true);
   globalThis.fetch = async () => { throw new Error('offline'); };
   assert.equal((await sendComposerMessage('agent', 'hello')).ok, false);
