@@ -108,6 +108,7 @@ export async function issueTeamProjectId(team: string): Promise<string> {
 }
 
 export async function assignTeamProject(team: string, statedId: string, session: string, move: ProjectMover = houseMove): Promise<Project> {
+  return withTeamIssuer(team, async () => {
   const roster = await readTeamRoster(team);
   if (!roster) throw new Error(`Team "${team}" has no roster.`);
   const id = projectId(team, statedId);
@@ -122,6 +123,7 @@ export async function assignTeamProject(team: string, statedId: string, session:
     throw error;
   }
   return project;
+  });
 }
 
 export async function moveTeamProject(team: string, statedId: string, to: TeamProjectArea): Promise<{ project: Project; from: TeamProjectArea }> {
