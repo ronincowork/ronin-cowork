@@ -12,7 +12,7 @@ import { t } from './lexicon.js';
  * @param watch  tells the server what this tab is showing; the server sends only that
  *               Agent's records, already cut to that reading. Injected for testing.
  */
-export function makeTileTranscript({ read = request, watch = watchTranscript, onState = () => {} } = {}) {
+export function makeTileTranscript({ read = request, watch = watchTranscript, onState = () => {}, cache = null } = {}) {
   const el = document.createElement('div');
   el.className = 'tile-transcript';
   el.setAttribute('role', 'log');
@@ -65,6 +65,29 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   let exhausted = false; // the backward walk reached the beginning of the conversation
   let reaching = false; // a scroll-up fetch is in flight; one at a time
   let stanceNode = null; // the indicator itself, held rather than looked up
+  let lastState = null; // the header facts restored with a cached phone transcript
+
+  const CACHE_TTL = 10 * 60 * 1000;
+  const CACHE_LIMIT = 12;
+  const cacheKey = (name = session, view = reading) => `${name}\u0000${view}`;
+  function stash() {
+    if (!cache?.set || !session || !active) return;
+    const now = Date.now();
+    for (const [key, saved] of cache) if (!saved?.expiresAt || saved.expiresAt <= now) cache.delete(key);
+    const records = [...el.querySelectorAll('.tile-transcript-entry')].map((entry) => ({
+      seq: Number(entry.dataset.seq),
+      role: entry.dataset.role || '',
+      kind: entry.dataset.kind || '',
+      text: entry.textContent || '',
+    })).filter((record) => Number.isFinite(record.seq));
+    const key = cacheKey();
+    cache.delete(key); // refresh insertion order as well as expiry: the limit is true LRU
+    cache.set(key, {
+      records, frontier, committed, exhausted, rendered, resolved, lastState,
+      scrollTop: el.scrollTop, expiresAt: now + CACHE_TTL,
+    });
+    while (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value);
+  }
 
   /**
    * THE END OF THE CONVERSATION, as it stands right now.
@@ -237,13 +260,14 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   /** What the route said, in the shape the header reads. `shown` is what this read carried. */
   function report(data, shown) {
     const readings = Array.isArray(data.readings) ? data.readings : [];
-    onState({
+    lastState = {
       available: data.available !== false,
       empty: data.available === false || shown === 0,
       reason: data.reason || '',
       readings,
       view: typeof data.view === 'string' ? data.view : '',
-    });
+    };
+    onState(lastState);
   }
 
   /**
@@ -399,6 +423,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
 
   function show(name, view = '') {
     if (active && session === name && reading === view) return;
+    stash();
     stop();
     session = name;
     reading = view;
@@ -409,11 +434,33 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     owed = null;
     exhausted = false;
     rendered = false;
-    message(t('transcript.loading', 'Loading transcript…'));
+    lastState = null;
+    el.replaceChildren();
+    stanceNode = null;
+    let saved = cache?.get?.(cacheKey(name, view));
+    if (saved?.expiresAt <= Date.now()) {
+      cache.delete(cacheKey(name, view));
+      saved = null;
+    }
+    if (saved) {
+      merge(saved.records);
+      frontier = saved.frontier;
+      committed = saved.committed;
+      exhausted = saved.exhausted;
+      rendered = saved.rendered;
+      resolved = saved.resolved || '';
+      lastState = saved.lastState || null;
+      if (lastState) onState(lastState);
+      if (!rendered) message(t('transcript.empty', 'No transcript output yet.'));
+      queueMicrotask(() => { if (active && session === name && reading === view) el.scrollTop = saved.scrollTop || 0; });
+    } else {
+      message(t('transcript.loading', 'Loading transcript…'));
+    }
     // Tell the server what this tab is showing before asking for anything, so a record
     // written while the first page is in flight is delivered rather than missed.
     watch(name, view);
-    void open(generation);
+    if (saved) void catchUp(generation);
+    else void open(generation);
   }
 
   // Scrolled to the very top, with more conversation above: fetch it.
@@ -430,6 +477,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   }
 
   function hide() {
+    stash();
     stop();
     watch('', ''); // nothing is being shown: the server stops sending
     active = false;
@@ -449,5 +497,5 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
 
   return { el, show, hide, probe, setReading, setStance,
     /** For tests and teardown: stop listening. */
-    dispose() { transcriptHandlers.delete(delivered); watch('', ''); } };
+    dispose() { stash(); stop(); active = false; transcriptHandlers.delete(delivered); watch('', ''); } };
 }

@@ -77,7 +77,10 @@ export class Tile {
       onSummaryNow: () => void this.refreshKaki(true, true),
       onSummaryPolicy: (policy) => void this.setKakiPolicy(policy),
     });
-    this.transcriptView = makeTileTranscript({ onState: (state) => this.onTranscriptState(state) });
+    this.transcriptView = makeTileTranscript({
+      cache: options.transcriptCache,
+      onState: (state) => this.onTranscriptState(state),
+    });
     this.body.append(this.transcriptView.el);
 
 

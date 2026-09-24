@@ -97,6 +97,7 @@ export async function buildPhone() {
   let roster = null; // the roster clock, which the desk has in layout.js and the phone lacked
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
   const transcriptModes = new Map(); // session → Chat; Tiles are rebuilt whenever the phone changes Agent
+  const transcriptCache = new Map(); // session + reading → records/cursor retained while Tiles come and go
 
   /* ---------- screen 1 · the Teams ---------- */
   const paintTeams = () => {
@@ -269,13 +270,18 @@ export async function buildPhone() {
   const openTerminal = () => {
     const { team, session } = route;
     closeTerminal();
-    host = createTerminalTileHost({ mode: 'reduced' });
+    host = createTerminalTileHost({ mode: 'reduced', transcriptCache });
     const term = el('div', 'ph-term');
     term.append(host.el);
     main.replaceChildren(term);
     const tile = host.mount(session);
     stageTile = tile;
-    if (transcriptModes.get(session)) tile.toggleTranscript();
+    if (transcriptModes.get(session)) {
+      // The phone's one reading is Chat. Naming it now lets the transcript restore its
+      // snapshot immediately instead of first opening the route's default reading.
+      tile.transcriptReadings = [{ name: 'chat', label: 'Chat' }];
+      tile.toggleTranscript();
+    }
     tile.composer?.el.querySelector('.keysrow')?.append(feedbackAction);
 
     sheet = makeDrop('メ', t('phone.me_title', 'This Agent — work record, docs, output, close'), 'me');
