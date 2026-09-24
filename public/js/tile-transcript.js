@@ -1,5 +1,6 @@
 /* The journal view is independent of the terminal socket and old Output selector. */
-import { request, requestLines } from './request.js';
+import { request } from './request.js';
+import { transcriptHandlers, watchTranscript } from './events.js';
 import { t } from './lexicon.js';
 
 /**
@@ -7,8 +8,11 @@ import { t } from './lexicon.js';
  *                 { available, empty, reason, readings, view } — the header's opaque state
  *                 and the T-levels come from here, never from a list kept in the tile.
  */
-export function makeTileTranscript({ read = request, readLines = requestLines, schedule = setTimeout,
-  cancel = clearTimeout, onState = () => {} } = {}) {
+/**
+ * @param watch  tells the server what this tab is showing; the server sends only that
+ *               Agent's records, already cut to that reading. Injected for testing.
+ */
+export function makeTileTranscript({ read = request, watch = watchTranscript, onState = () => {} } = {}) {
   const el = document.createElement('div');
   el.className = 'tile-transcript';
   el.setAttribute('role', 'log');
@@ -16,17 +20,14 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
   let session = null;
   let active = false;
   let generation = 0;
-  let timer = null;
-  let controller = null;
-  let since = 0;
-  let seq = 0;
   let reading = ''; // the reading's name on the route; '' lets the route choose its default
   let rendered = false; // whether this reading has ever shown a record — the header's 'empty'
   let probing = 0; // the live probe; hide() and a newer probe outdate an older one
   let stance = ''; // what the Agent is doing, as the roster row last said
   let oldest = null; // the lowest seq on screen — where scrolling up carries on from
+  let latest = null; // the newest seq held: the tab's own place, and its dedupe key
   let exhausted = false; // the backward walk reached the beginning of the conversation
-  let opening = false; // a backward stream is running; the forward poll waits for its cursor
+  let reaching = false; // a scroll-up fetch is in flight; one at a time
   let stanceNode = null; // the indicator itself, held rather than looked up
 
   /**
@@ -69,9 +70,6 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
   function stop() {
     generation++;
     probing++;
-    cancel(timer);
-    controller?.abort();
-    controller = null;
   }
 
   function message(value) {
@@ -106,12 +104,27 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
     }
   }
 
+  /**
+   * THE ONE WAY A RECORD ENTERS THIS VIEW.
+   *
+   * Everything — the opening page, the records the socket delivers, the page fetched after a
+   * reconnect — comes through here, and a record is appended only if its seq is past the
+   * newest held. That is what makes two sources incapable of duplicating or reordering
+   * anything, and it is why there is no second store to keep in step.
+   */
   function append(records) {
-    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
     if (!Array.isArray(records) || !records.length) return;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+    const fresh = records
+      .filter((rec) => typeof rec?.seq !== 'number' || latest === null || rec.seq > latest)
+      .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
+    if (!fresh.length) return;
     clearMessage();
     rendered = true;
-    for (const rec of records) el.append(entryFor(rec));
+    for (const rec of fresh) {
+      el.append(entryFor(rec));
+      if (typeof rec.seq === 'number') latest = latest === null ? rec.seq : Math.max(latest, rec.seq);
+    }
     paintStance(); // records append above it; the end of the conversation stays the end
     if (atBottom) el.scrollTop = el.scrollHeight;
   }
@@ -133,16 +146,11 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
     if (typeof rec.seq === 'number') oldest = oldest === null ? rec.seq : Math.min(oldest, rec.seq);
   }
 
-  function url(name, view, from, at) {
-    return '/api/sessions/' + encodeURIComponent(name) + '/transcript?'
-      + (view ? 'view=' + encodeURIComponent(view) + '&' : '') + 'since=' + from + '&seq=' + at;
-  }
-
-  /** The backward stream: newest first, optionally from where the last one stopped. */
-  function streamUrl(name, view, before) {
-    return '/api/sessions/' + encodeURIComponent(name) + '/transcript?stream'
-      + (view ? '&view=' + encodeURIComponent(view) : '')
-      + (before === null || before === undefined ? '' : '&before=' + before);
+  function url(name, view, door = {}) {
+    const query = Object.entries(door).filter(([, v]) => v !== undefined && v !== null)
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`);
+    if (view) query.unshift('view=' + encodeURIComponent(view));
+    return '/api/sessions/' + encodeURIComponent(name) + '/transcript' + (query.length ? '?' + query.join('&') : '');
   }
 
   /*
@@ -170,103 +178,77 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
   }
 
   /**
-   * OPEN AT THE END. The records arrive newest first and each is put above the last, so the
-   * final thing said is on screen after one line has been read instead of after all of them.
-   * The header comes first and carries where the live poll starts, so the two directions
-   * meet without overlapping.
+   * OPEN AT THE END: the last screenful of this reading, in one bounded request.
+   *
+   * Reading the whole conversation to show the end of it was the wait — 4.9 s to a first
+   * entry on a 133 KB transcript over slow 3G. Live records do not come through here at all;
+   * they arrive on the event socket because the CLI wrote them.
    */
   async function open(token) {
     if (!active || !session || token !== generation) return;
-    opening = true;
-    controller = new AbortController();
-    let taken = 0;
-    let header = null;
-    const result = await readLines(streamUrl(session, reading, null), (value) => {
-      if (!active || token !== generation) return;
-      if (header === null) { header = value; return; }
-      prepend(value);
-      if (++taken >= SCREENFUL) controller?.abort(); // a screenful is enough to look at
-    }, { cache: 'no-store', signal: controller.signal });
+    const result = await read(url(session, reading, { tail: SCREENFUL }), { cache: 'no-store' });
     if (!active || token !== generation) return;
-    controller = null;
-    opening = false;
-    if (header) {
-      exhausted = taken < SCREENFUL;
-      if (Number.isFinite(header.since)) since = header.since;
-      if (Number.isFinite(header.seq)) seq = header.seq;
-      report(header, rendered ? 1 : 0);
-      if (!rendered) message(t('transcript.empty', 'No transcript output yet.'));
-      el.scrollTop = el.scrollHeight; // the newest is what you were opening for
-    } else if (result.ok === false && result.kind !== 'abort') {
-      // Aborting is this view's own doing and is not a failure of anything.
+    if (!result.ok) {
+      // An unreadable answer is a failure and says so. It is never an empty conversation.
       message(t('transcript.failed', 'Transcript could not be loaded. Retrying…'));
+      return;
     }
-    timer = schedule(() => void poll(token), 2000);
+    if (result.data.available === false) {
+      message(result.data.reason || t('transcript.unavailable', 'Transcript unavailable for this Agent.'));
+      report(result.data, 0);
+      return;
+    }
+    const records = Array.isArray(result.data.records) ? result.data.records : [];
+    const first = records[0];
+    if (typeof first?.seq === 'number') oldest = first.seq;
+    exhausted = result.data.more === false;
+    append(records);
+    if (!rendered) message(t('transcript.empty', 'No transcript output yet.'));
+    report(result.data, rendered ? 1 : 0);
+    el.scrollTop = el.scrollHeight; // the newest is what you opened for
   }
 
-  /** Scrolled to the top: the conversation above what is shown, from the same stream. */
+  /**
+   * Fill the gap a dropped socket left: what came after the newest record held, once.
+   * A tab that was never away has nothing to ask for.
+   */
+  async function catchUp(token) {
+    if (!active || !session || token !== generation || latest === null) return;
+    const result = await read(url(session, reading, { after: latest }), { cache: 'no-store' });
+    if (!active || token !== generation || !result.ok) return;
+    append(Array.isArray(result.data.records) ? result.data.records : []);
+  }
+
+  /** Scrolled to the top: the conversation above what is shown. */
   async function earlier(token) {
-    if (!active || !session || exhausted || opening || oldest === null) return;
-    opening = true;
-    const before = oldest;
+    if (!active || !session || exhausted || reaching || oldest === null) return;
+    reaching = true;
     const anchorHeight = el.scrollHeight;
     const anchorTop = el.scrollTop;
-    let taken = 0;
-    let header = null;
-    // The SHARED controller, not one of its own: hiding the view or switching reading has
-    // to end this walk too. With a private controller the callbacks went stale and the
-    // network read carried on to the beginning of the conversation for nobody, because
-    // `taken` stopped advancing and nothing else could stop it (found in review).
-    controller = new AbortController();
-    const reach = controller;
-    await readLines(streamUrl(session, reading, before), (value) => {
-      if (!active || token !== generation) return;
-      if (header === null) { header = value; return; }
-      prepend(value);
-      if (++taken >= SCREENFUL) reach.abort();
-    }, { cache: 'no-store', signal: reach.signal });
-    if (controller === reach) controller = null;
-    if (!active || token !== generation) return;
-    opening = false;
-    if (taken < SCREENFUL) exhausted = true;
-    // Keep the reader where they were looking: the page grew above them.
+    const result = await read(url(session, reading, { tail: SCREENFUL, before: oldest }), { cache: 'no-store' });
+    reaching = false;
+    if (!active || token !== generation || !result.ok) return;
+    const records = Array.isArray(result.data.records) ? result.data.records : [];
+    if (!records.length) { exhausted = true; return; }
+    const first = records[0];
+    if (typeof first?.seq === 'number') oldest = first.seq;
+    exhausted = result.data.more === false;
+    // Above what is already shown, and the reader stays where they were looking.
+    for (const rec of [...records].reverse()) {
+      const top = el.firstElementChild;
+      const entry = entryFor(rec);
+      if (top) el.insertBefore(entry, top); else el.append(entry);
+    }
+    rendered = true;
     el.scrollTop = anchorTop + (el.scrollHeight - anchorHeight);
   }
 
-  async function poll(token) {
-    if (!active || !session || token !== generation) return;
-    // A stream owns the controller while it runs, and taking it would orphan that walk: a
-    // later hide would abort this poll instead of the history read, which would then carry
-    // on to the beginning of the conversation for nobody (found in review). The poll waits
-    // its turn rather than stamping on it.
-    if (opening) {
-      timer = schedule(() => void poll(token), 2000);
-      return;
-    }
-    controller = new AbortController();
-    const result = await read(url(session, reading, since, seq), { cache: 'no-store', signal: controller.signal });
-    if (!active || token !== generation) return;
-    controller = null;
-    if (!result.ok) {
-      since = 0;
-      seq = 0;
-      message(t('transcript.failed', 'Transcript could not be loaded. Retrying…'));
-    } else if (result.data.available === false) {
-      since = 0;
-      seq = 0;
-      message(result.data.reason || t('transcript.unavailable', 'Transcript unavailable for this Agent.'));
-      report(result.data, 0);
-    } else {
-      const records = Array.isArray(result.data.records) ? result.data.records : [];
-      if (!records.length && !rendered) message(t('transcript.empty', 'No transcript output yet.'));
-      else append(records);
-      for (const rec of records) if (typeof rec.seq === 'number' && oldest === null) oldest = rec.seq;
-      // Empty means this reading has never shown a record — not that this poll was quiet.
-      report(result.data, rendered ? 1 : 0);
-      if (Number.isFinite(result.data.since)) since = result.data.since;
-      if (Number.isFinite(result.data.seq)) seq = result.data.seq;
-    }
-    timer = schedule(() => void poll(token), 2000);
+  /** A record the server sent because the Agent wrote it, already cut to this reading. */
+  function delivered(msg) {
+    if (!active || !session) return;
+    if (msg.t === 'reconnected') { void catchUp(generation); return; }
+    if (msg.session !== session) return; // another Agent's tab, or a stale registration
+    append(Array.isArray(msg.records) ? msg.records : []);
   }
 
   /**
@@ -276,7 +258,7 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
   async function probe(name) {
     if (!name) return;
     const token = ++probing;
-    const result = await read(url(name, '', 0, 0), { cache: 'no-store' });
+    const result = await read(url(name, '', { tail: 1 }), { cache: 'no-store' });
     // A slow probe for the Agent this tile no longer shows must not speak for the new one.
     if (token !== probing || !result.ok || active) return;
     const records = Array.isArray(result.data.records) ? result.data.records : [];
@@ -297,12 +279,14 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
     session = name;
     reading = view;
     active = true;
-    since = 0;
-    seq = 0;
     oldest = null;
+    latest = null;
     exhausted = false;
     rendered = false;
     message(t('transcript.loading', 'Loading transcript…'));
+    // Tell the server what this tab is showing before asking for anything, so a record
+    // written while the first page is in flight is delivered rather than missed.
+    watch(name, view);
     void open(generation);
   }
 
@@ -321,13 +305,20 @@ export function makeTileTranscript({ read = request, readLines = requestLines, s
 
   function hide() {
     stop();
+    watch('', ''); // nothing is being shown: the server stops sending
     active = false;
-    opening = false;
+    reaching = false;
     session = null;
     oldest = null;
     exhausted = false;
     el.replaceChildren();
   }
 
-  return { el, show, hide, probe, setReading, setStance };
+  // The view listens for its Agent's records for as long as it exists. `delivered` ignores
+  // anything for another session, so a stale registration cannot write into the wrong tile.
+  transcriptHandlers.add(delivered);
+
+  return { el, show, hide, probe, setReading, setStance,
+    /** For tests and teardown: stop listening. */
+    dispose() { transcriptHandlers.delete(delivered); watch('', ''); } };
 }

@@ -3,6 +3,7 @@ import { type WebSocket } from 'ws';
 import { listSessions } from '../tmux.js';
 import { tmux, type TmuxClient } from '../tmux-client.js';
 import { withAxes } from '../tegami.js';
+import { unwatch, watchFor } from './watchers.js';
 
 const eventClients = new Set<WebSocket>();
 let lastSessionNames = '';
@@ -20,9 +21,21 @@ const SESSION_NOTIFICATIONS = [
 
 export function handleEvents(ws: WebSocket): void {
   eventClients.add(ws);
-  const drop = () => eventClients.delete(ws);
+  const drop = () => { eventClients.delete(ws); unwatch(ws); };
   ws.on('close', drop);
   ws.on('error', drop);
+  // The one thing a browser says on this socket. Everything else it sends is ignored: this
+  // is a feed, and an unknown message from a client is not a reason to drop the connection.
+  ws.on('message', (raw) => {
+    let msg: { t?: string; session?: unknown; reading?: unknown };
+    try {
+      msg = JSON.parse(String(raw)) as typeof msg;
+    } catch {
+      return;
+    }
+    if (msg?.t !== 'watch') return;
+    watchFor(ws, typeof msg.session === 'string' ? msg.session : '', typeof msg.reading === 'string' ? msg.reading : '');
+  });
   void listSessions()
     .then(withAxes)
     .then((list) => {

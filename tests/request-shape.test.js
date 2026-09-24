@@ -66,7 +66,7 @@ test('no client reads a property the request contract does not publish', async (
  *
  * This half needs no browser, only a fetch to stand in for one.
  */
-import { request, requestLines } from '../public/js/request.js';
+import { request } from '../public/js/request.js';
 
 const answer = ({ status = 200, ok = status < 400, body = '', throws = null }) => {
   globalThis.fetch = async () => ({
@@ -122,48 +122,4 @@ test("a server error's own words still reach the caller", async () => {
   assert.equal(r.message, 'name taken');
 });
 
-test('a caller that stops mid-chunk is obeyed at once, however many rows the chunk held', async () => {
-  // The defect this pins: the signal was only consulted between network chunks. One chunk
-  // carries many NDJSON rows, so a view that aborted at its thirtieth still had the rest of
-  // that chunk parsed and handed to it — invisible to a mock that sends one row at a time.
-  const rows = Array.from({ length: 200 }, (_, i) => JSON.stringify({ seq: i })).join('\n') + '\n';
-  let cancelled = 0;
-  globalThis.fetch = async () => ({
-    status: 200, ok: true,
-    body: { getReader: () => {
-      let sent = false;
-      return {
-        read: async () => (sent ? { done: true } : (sent = true, { done: false, value: new TextEncoder().encode(rows) })),
-        cancel: async () => { cancelled++; },
-      };
-    } },
-    text: async () => rows,
-  });
-  const control = new AbortController();
-  const got = [];
-  const result = await requestLines('/api/sessions/agent/transcript?stream', (value) => {
-    got.push(value);
-    if (got.length === 30) control.abort();
-  }, { signal: control.signal });
-  assert.equal(got.length, 30, 'not one row past what the caller asked for');
-  assert.equal(result.kind, 'abort', 'stopping is the caller doing its job, not a failure');
-  assert.equal(cancelled, 1, 'and the reader is released, so the server stops streaming');
-});
 
-test('a broken line releases the reader too', async () => {
-  let cancelled = 0;
-  const rows = '{"seq":1}\n{"seq":2\n';
-  globalThis.fetch = async () => ({
-    status: 200, ok: true,
-    body: { getReader: () => {
-      let sent = false;
-      return {
-        read: async () => (sent ? { done: true } : (sent = true, { done: false, value: new TextEncoder().encode(rows) })),
-        cancel: async () => { cancelled++; },
-      };
-    } },
-  });
-  const result = await requestLines('/api/x', () => {});
-  assert.equal(result.kind, 'malformed');
-  assert.equal(cancelled, 1);
-});

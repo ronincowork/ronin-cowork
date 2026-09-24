@@ -4,9 +4,36 @@ import { refreshHome } from './home.js';
 import { S, tiles } from './state.js';
 import { t } from './lexicon.js';
 
+/**
+ * WHAT THIS TAB IS SHOWING, said once and re-said whenever it changes.
+ *
+ * The server sends an Agent's records only to connections that asked for them, so a phone
+ * watching one Agent is never woken by another. One registration per connection: a tile
+ * shows one Agent in one reading, so a new watch replaces the old and there is nothing to
+ * unsubscribe.
+ */
+let socket = null;
+let watching = null; // {session, reading} — kept so a reconnect can say it again
+
+export function watchTranscript(session, reading) {
+  watching = session ? { session, reading: reading || '' } : null;
+  sendWatch();
+}
+
+function sendWatch() {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  try {
+    socket.send(JSON.stringify({ t: 'watch', session: watching?.session || '', reading: watching?.reading || '' }));
+  } catch { /* the socket went; the reconnect will say it again */ }
+}
+
 export function connectEvents() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(`${proto}://${location.host}/events`);
+  socket = ws;
+  // A reconnect is a new connection with no memory, so it is told again at once. The tab
+  // then asks for what it missed while the socket was down.
+  ws.onopen = () => { sendWatch(); for (const fn of transcriptHandlers) fn({ t: 'reconnected' }); };
   ws.onmessage = (ev) => {
     let m;
     try {
@@ -14,6 +41,7 @@ export function connectEvents() {
     } catch (_) {
       return;
     }
+    if (m.t === 'transcript') for (const fn of transcriptHandlers) fn(m);
     if (m.t === 'sessions' && Array.isArray(m.list)) onSessionsEvent(m.list);
     if (m.t === 'team-page') for (const fn of teamPageHandlers) fn(m);
     if (m.t === 'mika-show') for (const fn of mikaShowHandlers) fn(m);
@@ -21,8 +49,11 @@ export function connectEvents() {
     if (m.t === 'provider-inventory') window.dispatchEvent(new CustomEvent('ronin:provider-inventory', { detail: m }));
   };
   ws.onclose = () => setTimeout(connectEvents, 3000); // keep the feed alive
+  return ws; // the caller may want to know which connection it got
 }
 
+/** Who hears an Agent's records arriving, and the reconnect that means a gap to fill. */
+export const transcriptHandlers = new Set();
 /** Who hears a team-page draft (`{t:'team-page', team, from, tab, tokens}`): the Team view registers on mount. */
 export const teamPageHandlers = new Set();
 /** Who hears the session list change, after `S.sessions` has been reconciled: the Team

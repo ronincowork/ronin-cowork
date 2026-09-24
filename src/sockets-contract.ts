@@ -1,5 +1,5 @@
 
-export const CONTRACT_V = 7;
+export const CONTRACT_V = 8;
 
 export interface LaunchIdentity {
   key: string;
@@ -49,6 +49,21 @@ export interface Sockets {
   addBirthLines(cb: (name: string, agent: boolean) => Promise<string> | string): void;
   onSessionEnd(cb: (name: string, key: string) => void | Promise<void>): void;
   addRowFields(cb: (session: string) => Promise<RowFields> | RowFields): void;
+
+/**
+ * WHO IS WATCHING A CONVERSATION, and how a part reaches them.
+ *
+ * Connections belong to Core: it owns the socket, the registration a browser sends, and
+ * throwing that registration away when the socket closes. What a reading ADMITS belongs to
+ * the transcript part, which owns the readings table. Neither can do the other's half.
+ *
+ * So Core offers this: for every connection watching `session`, ask the part to make the
+ * message for the reading that connection named, and send it. `make` is called once per
+ * distinct reading in play, not once per connection, and returning null sends that watcher
+ * nothing at all — which is how a Chat watcher receives no tool record. The return is how
+ * many connections were written to.
+ */
+  deliverToWatchers(session: string, make: (reading: string) => unknown | null): number;
   addRoutes(mount: (app: unknown) => void): void;
   setStreamHandler(h: (...args: unknown[]) => void): void;
 }

@@ -1,4 +1,5 @@
 import type { BornInfo, RowFields, Sockets } from './sockets-contract.js';
+import { deliverToWatchers } from './ws/watchers.js';
 
 type BootHook = { start(): void | Promise<void>; stop?(): void };
 const bootHooks: BootHook[] = [];
@@ -18,6 +19,8 @@ export const sockets: Sockets = {
   addBirthLines: (cb) => void birthLineHooks.push(cb),
   onSessionEnd: (cb) => void endHooks.push(cb),
   addRowFields: (cb) => void rowContribs.push(cb),
+  // Connections are Core's; what a reading admits is the part's. This is the seam.
+  deliverToWatchers: (session, make) => deliverToWatchers(session, make),
   addRoutes: (m) => void routeMounts.push(m),
   setStreamHandler: (h) => void (streamHandler = h),
 };
