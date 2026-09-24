@@ -968,12 +968,11 @@ body {
   display: none;
   position: absolute;
   inset: 0;
-  /* A document replaces the Tile's current reading; Chat must not paint over it. */
-  z-index: 21;
   padding: var(--space-4);
   background: var(--bg);
 }
-.tile-doc-view.open { display: flex; }
+.tile-body[data-surface='docs'] > .tile-doc-view.open { display: flex; }
+.tile-body[data-surface='docs'] > .composer { display: none !important; }
 .tile-doc-close {
   align-self: flex-end;
   border: var(--edge) solid var(--line);
@@ -4338,11 +4337,10 @@ button.wb-door:hover b {
 .tile-transcript-entry[data-kind='act'],
 .tile-transcript-entry[data-kind='code'] { color: var(--muted); font-family: var(--mono, monospace); font-size: 0.9em; }
 .tile .tile-transcript { display: none; }
-.tile.transcript-on .tile-transcript {
+.tile-body[data-surface='chat'] > .tile-transcript {
   display: block;
   position: absolute;
   inset: 0;
-  z-index: 20;
   overflow: auto;
   overscroll-behavior: contain;
   padding: var(--space-4);
@@ -4428,7 +4426,7 @@ button.wb-door:hover b {
 .tile .tape {
   display: none;
 }
-.tile.tape-on .tape {
+.tile-body[data-surface='tape'] > .tape {
   display: block;
   position: absolute;
 
@@ -4447,7 +4445,7 @@ button.wb-door:hover b {
   -webkit-text-size-adjust: 100%;
 }
 
-.tile.tape-on .xterm {
+.tile-body:not([data-surface='term']) > .xterm {
   display: none;
 }
 

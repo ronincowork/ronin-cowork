@@ -58,6 +58,7 @@ export class Tile {
     // references rather than re-queried: on touch these nodes are RELOCATED into the app
     // bar (js/tiledrop.js), and a later `querySelector` on the tile would find nothing.
     Object.assign(this, buildTileHead(this));
+    this.body.dataset.surface = 'term'; // one viewport, one visible reading
     this.onMinimize = typeof options.onMinimize === 'function' ? options.onMinimize : null;
     this.emptyMark = document.createElement('div');
     this.emptyMark.className = 'tile-empty-mark';
@@ -265,6 +266,15 @@ export class Tile {
     void this.docView.open(path);
   }
 
+  /** Term, unlocked output, Chat and Docs are peers in one viewport, never overlays. */
+  syncSurface() {
+    const surface = this.docView?.el.classList.contains('open')
+      ? 'docs'
+      : this.transcriptOn ? 'chat'
+        : this.tapeMode ? 'tape' : 'term';
+    this.body.dataset.surface = surface;
+  }
+
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */
   drawLadder() {
     this.el.querySelector('.shingo-ladder')?.remove();
@@ -332,6 +342,7 @@ export class Tile {
     this.transcriptOn = on;
     this.transcriptLevel = on ? next : -1;
     this.el.classList.toggle('transcript-on', on);
+    this.syncSurface();
     if (on) {
       if (this.body.contains(document.activeElement)) document.activeElement.blur();
       const view = readings[next]?.name || '';
@@ -630,6 +641,7 @@ export class Tile {
     this.transcriptOn = false;
     this.transcriptLevel = -1;
     this.el.classList.remove('transcript-on');
+    this.syncSurface();
     this.tape.setAltNote(false);
     this.wire.close();
     this.session = null;
@@ -679,6 +691,7 @@ export class Tile {
       this.transcriptReadings = [];
       this.transcriptState = null;
       this.el.classList.remove('transcript-on');
+      this.syncSurface();
     }
     if (changed) { this.lastSelection = ''; this.pending = ''; this.renderPending(); }
     this.session = session;
@@ -710,6 +723,7 @@ export class Tile {
     // so the CLI's own input line and the transcript's last message stay visible. Desktop keeps the old rule: tape mode only.
     this.setComposer(this.tapeMode || isCoarse() || this.transcriptOn);
     this.el.classList.toggle('tape-on', this.tapeMode);
+    this.syncSurface();
     this.setDot('wait');
     this.doFit();
 
