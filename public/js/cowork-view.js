@@ -32,7 +32,7 @@ import { RONIN_HELPERS } from './roster-groups.js';
 import { toast } from './ui.js';
 import { readyMika } from './mika-ready.js';
 import { createMikaHelpPanel } from './mika.js';
-import { orderCoworkTeams } from './cowork-workbench-contract.js';
+import { orderCoworkTeams, refreshCoworkDiscovery } from './cowork-workbench-contract.js';
 import { retireSession } from './session-retire.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
@@ -273,9 +273,7 @@ export function createCoworkView(options = {}) {
   // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
   // surface rather than the one tab left in a strip.
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
-    .map((id) => [id, createTeamRosterSurface({
-      onOpen: openAgentWorkbench,
-    })])) : {};
+    .map((id) => [id, createTeamRosterSurface()])) : {};
   const cronBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => { const surface = createSurface({ label: t('workspace.tab_cron_jobs', 'Cron jobs'), className: 'tw-cron' }); const room = createTeamJikan({ universal: true, teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }); surface.content.append(room.el); return [id, { el: surface.el, room }]; })) : {};
   // seated in a workspace, grouped by Team of record, each row's act a labelled button.
   // A rehydrated session lands in the workspace whose surface woke it, like a birth.
@@ -889,7 +887,13 @@ export function createCoworkView(options = {}) {
         bench.place(WB_TYPES.newAgent, lastSeat || 'workspace1', prompt ? { prompt } : {});
       };
       S.connectSession = (name) => connectSession(name);
-      if (campaign) void refreshTeams().then(() => renderCards([]));
+      if (campaign) void refreshCoworkDiscovery({
+        refreshTeams, active: () => entered, paint: () => renderCards([]),
+        // Discovery ran once against the empty pre-refresh Team cache. Rebuild the
+        // selector after that authority arrives so Team Chart and Team doors exist on
+        // a cold browser refresh, not only after some later publish happens to repaint.
+        refreshSelector: () => bench.refreshSelector(),
+      });
       else if (team !== loaded) void load(team);
       void readRows();
       window.clearInterval(homeTimer);

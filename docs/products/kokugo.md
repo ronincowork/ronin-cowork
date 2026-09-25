@@ -181,7 +181,7 @@ in `npm run verify` and in the BYOIN gate.
 
 ## 10 · A worked before / after
 
-`public/js/roster.js`, the session-max line, as it was:
+The retired roster module's session-max line, as it was:
 
 ```js
 maxNow.textContent = m > 0 ? `${maxLive} / ${m} running` : `${maxLive} running · no limit`;
