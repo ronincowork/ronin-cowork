@@ -90,9 +90,9 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.match(view, /team: \(\) => detail\.key \|\| team/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
   assert.match(view, /campaign \? \{ action: \(\) => openAgentWorkbench\(member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
-  assert.match(coworkRoster, /createPhalanx\(\{ className: 'team-roster-phalanx'/, 'Cowork Teams are one shared stone Phalanx');
-  assert.match(coworkRoster, /openWorkspaceTab\('team', name\)/, 'the Team action still opens the Team destination');
-  assert.doesNotMatch(coworkRoster, /buildRoster|S\.connectSession/, 'Cowork Teams no longer reuse the session roster or in-workspace seating');
+  assert.match(view, /createTeamRosterSurface\(\{[\s\S]*onOpen: openAgentWorkbench/, 'the Cowork Team Roster row opens the standalone Agent workbench');
+  assert.match(coworkRoster, /connect: \(name\) => options\.onOpen\?\.\(name\)/);
+  assert.doesNotMatch(coworkRoster, /S\.connectSession/, 'the Cowork Team Roster cannot fall back to in-workspace seating');
   assert.match(workbench, /card\.el\.addEventListener\('dragstart',[\s\S]*JSON\.stringify\(\{ type: definition\.type, detail \}\)/, 'drag still carries the terminal surface and Agent resource to a workspace');
   assert.match(css, /\.league-team-member-actions \{[^}]*flex-wrap: wrap;[^}]*justify-content: flex-end;/);
   for (const label of ['Archive', 'Delete', 'Hard Delete']) assert.match(retirement, new RegExp(`'${label}'`));

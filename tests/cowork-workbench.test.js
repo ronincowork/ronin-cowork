@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { coworkTeamStones, orderCoworkTeams, refreshCoworkDiscovery } from '../public/js/cowork-workbench-contract.js';
+import { orderCoworkTeams } from '../public/js/cowork-workbench-contract.js';
 
 const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 
@@ -26,32 +26,6 @@ test('Cowork roster omits a held helper and does not invent a no-team destinatio
   assert.deepEqual(ordered.map((team) => team.name), ['plain']);
 });
 
-test('cold Cowork discovery refreshes selector only after Team state arrives', async () => {
-  let release; const events = [];
-  const loading = new Promise((resolve) => { release = resolve; });
-  const done = refreshCoworkDiscovery({ refreshTeams: () => loading, active: () => true,
-    paint: () => events.push('paint'), refreshSelector: () => events.push('selector') });
-  assert.deepEqual(events, [], 'the empty pre-refresh cache produces no final selector');
-  release();
-  assert.equal(await done, true);
-  assert.deepEqual(events, ['paint', 'selector']);
-  assert.equal(await refreshCoworkDiscovery({ refreshTeams: async () => {}, active: () => false,
-    paint: () => events.push('stale paint'), refreshSelector: () => events.push('stale selector') }), false);
-  assert.deepEqual(events, ['paint', 'selector'], 'a destination left during refresh cannot repaint');
-});
-
-test('Cowork Teams projects every non-held Team as one Phalanx stone', () => {
-  const stones = coworkTeamStones([
-    { name: 'surface', title: 'Surface', objective: 'UI' },
-    { name: 'ops', title: '', objective: '' },
-    { name: 'holding', holding: true },
-  ], (name) => name === 'surface' ? 3 : 1, (count) => `${count} Agents`);
-  assert.deepEqual(stones.map(({ id, label, secondary, state }) => ({ id, label, secondary, state })), [
-    { id: 'surface', label: 'Surface', secondary: 'UI', state: '3 Agents' },
-    { id: 'ops', label: 'ops', secondary: 'ops', state: '1 Agents' },
-  ]);
-});
-
 test('Cowork discovery offers existing no-Team Agents as ordinary Agent destination doors', async () => {
   const [text, catalog] = await Promise.all([source('cowork-view.js'), source('workbench-catalog.js')]);
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.cowork, \[[^\]]*WORKBENCH_TYPES\.terminal/);
@@ -65,11 +39,8 @@ test('Cowork launches use the standalone handoff while Team launches retain in-p
 });
 
 test('Teams opens its roster and New Team form in the two default workspaces', async () => {
-  const [text, roster] = await Promise.all([source('cowork-view.js'), source('team-roster-surface.js')]);
+  const text = await source('cowork-view.js');
   assert.match(text, /seats: campaign \? \{ workspace1: WB_TYPES\.roster, workspace2: desk \? WB_TYPES\.kanban : WB_TYPES\.newTeamForm \} : \{\}/);
-  assert.match(roster, /createPhalanx\(/);
-  assert.match(roster, /coworkTeamStones\(teamsFromState\(\)/);
-  assert.match(roster, /label: t\('league\.launch_team', 'Launch'\)[\s\S]*openTeam\(item\.team\.name\)/);
 });
 
 test('Cowork offers a Desk-scoped Task Manager and all scopes can place drill-down surfaces', async () => {

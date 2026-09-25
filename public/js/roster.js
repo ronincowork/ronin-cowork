@@ -1,0 +1,398 @@
+/* part of the tmux-ronin client — see js/README.md */
+/**
+ * ⌂ ROSTER — the session list, and the one number above it.
+ *
+ * Extracted from commons.js when buildHome() was reduced to the control-plane shell:
+ * the roster is a room like Wipeboard or Docs, and the shell's job is mounting rooms,
+ * not owning two of them. Same DOM, same classes, same behaviour — the move is
+ * ownership, not redesign.
+ *
+ * The roster is a READ whose rows are doors: tap a row and that session fills the
+ * tile. Anything you want to DO to a session you do inside it (the phone rule), with
+ * the one desktop exception of 🏷 on a row, which opens the same group editor the
+ * tile's own 🏷 opens.
+ */
+import { request } from './request.js';
+import { homeData, homeFault, stanceLabel } from './home.js';
+import { S, tiles } from './state.js';
+import { clampTip, humanAge } from './shingo.js';
+import { t } from './lexicon.js';
+import { deskLabel, deskReadout, deskTip, desksOf, refreshDesks } from './desks.js';
+import { partitionRosterGroups, rosterGroups, teamTag } from './roster-groups.js';
+
+/**
+ * @param {object} tile  rows connect into this tile
+ * @param {HTMLElement} host  the roster section inside the commons' main pane
+ * @returns {{render: () => void}}
+ */
+export function buildRoster(tile, host, options = {}) {
+  // THE SESSION MAX — the top line, and the only place it is set.
+  //
+  // One number the owner types. It is not derived from RAM or anything else: a machine
+  // that guesses your limit is a machine you have to argue with. 0 means no limit, which
+  // is also what an install that has never touched this does.
+  //
+  // It sits above the list because it is a fact ABOUT the list — "4 / 6" reads as one
+  // line with the roster under it. Saved on `change` (blur or Enter), never per keystroke:
+  // typing "12" over "6" would otherwise briefly save "1" and refuse a launch for it.
+  const maxRow = document.createElement('div');
+  maxRow.className = 'home-maxrow';
+  const maxLab = document.createElement('label');
+  maxLab.textContent = t('roster.session_max', 'session max');
+  const maxInp = document.createElement('input');
+  // Four tiles build four rosters, so a fixed id here was four elements wearing one
+  // id — latent (label-for resolved to the first tile's input from every tile).
+  // The tile's index keeps it unique and keeps the label honest.
+  maxInp.id = `sessionmax-${tile.index}`;
+  maxLab.htmlFor = maxInp.id;
+  maxInp.type = 'number';
+  maxInp.min = '0';
+  maxInp.step = '1';
+  maxInp.className = 'home-max';
+  maxInp.title = t('roster.session_max_title', 'How many sessions may run at once. 0 = no limit. The owner sets this; agents cannot.');
+  const maxNow = document.createElement('span');
+  maxNow.className = 'home-maxnow';
+  let maxLive = 0;
+  const paintMax = () => {
+    // "4 / 6 running" when a limit is set; just the count when it is not, because
+    // "4 / 0" reads as an error rather than as freedom.
+    const m = Number(maxInp.value) || 0;
+    maxNow.textContent = m > 0 ? t('roster.running_of', '{n} / {max} running', { n: maxLive, max: m }) : t('roster.running_no_limit', '{n} running · no limit', { n: maxLive });
+    maxNow.classList.toggle('full', m > 0 && maxLive >= m);
+  };
+  const loadMax = async () => {
+    const r = await request('/api/session-max', { cache: 'no-store' });
+    // The roster still works without it — the field just shows what it last knew.
+    if (!r.ok) return;
+    if (document.activeElement !== maxInp) maxInp.value = String(r.data.max ?? 0);
+    maxLive = r.data.live ?? 0;
+    paintMax();
+  };
+  maxInp.addEventListener('change', async () => {
+    const n = Math.max(0, Math.floor(Number(maxInp.value) || 0));
+    const r = await request('/api/session-max', { method: 'PUT', json: { max: n } });
+    if (!r.ok) {
+      // The failure lands on the line that states the rule, not in a browser alert.
+      maxNow.textContent = t('roster.not_saved', 'not saved — {message}', { message: r.message });
+      maxNow.classList.add('full');
+      setTimeout(loadMax, 2500);
+      return;
+    }
+    // Echo what was STORED, not what was typed — the server floors and validates, and a
+    // field showing a different number from the one in force is the worst of both.
+    maxInp.value = String(r.data.max);
+    maxLive = r.data.live ?? maxLive;
+    paintMax();
+  });
+  maxRow.append(maxLab, maxInp, maxNow);
+  host.appendChild(maxRow);
+
+  // A refresh that failed must not look like a quiet roster: one line, above the list,
+  // present only while the last /api/home read did not land (home.js keeps the fact).
+  const stale = document.createElement('div');
+  stale.className = 'home-stale';
+  stale.hidden = true;
+  host.appendChild(stale);
+
+  const list = document.createElement('div');
+  list.className = 'home-list';
+  host.appendChild(list);
+
+  // A group has no record of its own: it exists when at least one session carries its
+  // tag. Keep a newly named, empty group here as a drop target; the first drop makes it
+  // durable on the session itself.
+  const pendingGroups = new Set();
+  const groupAdd = document.createElement('form');
+  groupAdd.className = 'home-group-add';
+  const groupInput = document.createElement('input');
+  groupInput.type = 'text';
+  groupInput.maxLength = 32;
+  groupInput.placeholder = t('roster.team_name', 'team name');
+  groupInput.setAttribute('aria-label', t('roster.team_name_aria', 'New team name'));
+  groupInput.autocapitalize = 'off';
+  groupInput.autocomplete = 'off';
+  groupInput.spellcheck = false;
+  const groupButton = document.createElement('button');
+  groupButton.type = 'submit';
+  groupButton.textContent = t('roster.add_team', '＋ Team');
+  const groupMessage = document.createElement('span');
+  groupMessage.className = 'home-group-msg';
+  groupAdd.append(groupInput, groupButton, groupMessage);
+  host.appendChild(groupAdd);
+
+  const cleanGroup = (value) =>
+    String(value || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 32);
+  groupAdd.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const group = cleanGroup(groupInput.value);
+    if (!group) {
+      groupMessage.textContent = t('roster.team_name_rule', 'use letters, digits, - or _');
+      groupInput.focus();
+      return;
+    }
+    pendingGroups.add(group);
+    groupInput.value = '';
+    groupMessage.textContent = t('roster.drag_into', 'drag a session into {team}', { team: group });
+    render();
+  });
+
+  // the right — the SHINGO chip, the status word, the ⛽ reading — sits at the SAME x on
+  // every row, so the eye runs straight down a column instead of hunting for where each
+  // reading landed. A session with no ladder leaves the ladder's slot EMPTY; it does not
+  // pull the context reading left. That was the whole complaint: right-aligned flow meant
+  // no two rows agreed on where anything was, and a list you cannot scan down is a list
+  // you have to read one row at a time.
+  //
+  // The columns are declared once in style.css (`.home-row`, the `--hr-*` tracks) and
+  // each cell is placed by its class, so an ABSENT element leaves its track standing.
+  // Nothing here builds a placeholder: a missing reading is a gap, which is the honest
+  // drawing of "nobody has said", and a gap in a fixed column reads as one.
+  const rowFor = (s) => {
+    const r = document.createElement('button');
+    r.type = 'button';
+    r.className = 'home-row';
+    r.draggable = true;
+    r.addEventListener('dragstart', (e) => {
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('application/x-ronin-session', s.name);
+      e.dataTransfer.setData('text/plain', s.name);
+      r.classList.add('dragging');
+    });
+    r.addEventListener('dragend', () => {
+      r.classList.remove('dragging');
+      for (const heading of host.querySelectorAll('.home-grp.drop-ready')) heading.classList.remove('drop-ready');
+    });
+    // The session's MARK: 人 when the session LEADS a team — the hand-set designation,
+    // read off `leads`, the same fact the team cards draw — and nothing otherwise.
+    // Leadership is explicit; a session that leads
+    // nothing has no mark, because there is nothing true to draw.
+    const jb = document.createElement('span');
+    const leads = s.leads?.length ? t('roster.leads', '人 leads {teams}', { teams: s.leads.join(', ') }) : '';
+    jb.className = 'home-job' + (leads ? ' lead' : ' off');
+    jb.textContent = leads ? '人' : '';
+    jb.title = leads;
+    r.appendChild(jb);
+    // shove the readings rightwards is gone with the flex row it existed to stretch —
+    // pushing things apart is what made every row's landmarks land somewhere different.
+    const nm = document.createElement('b');
+    nm.textContent = s.name;
+    r.appendChild(nm);
+    // SHINGO on the roll call: position, or held. One amber row and you know where
+    // to click through — which is the whole reason the board exists.
+    if (s.tegami && s.tegami.chip && s.tegami.ladder?.length) {
+      const sg = document.createElement('span');
+      sg.className = 'home-shingo' + (s.tegami.chip.gate ? ' gate' : '');
+      // was already the touch spelling — "quiet" costs five characters on a row that has
+      // none to spare, and a bare duration beside a position reads as one anyway — and
+      // the desktop had no better claim on the width. `phase 3 · leg 3/12 · 9h`.
+      const age = s.tegami.quietMs >= 60000 ? humanAge(s.tegami.quietMs) : '';
+      sg.textContent = s.tegami.chip.text + (age ? ' · ' + age : '');
+      // Agent-authored and unbounded — clamped for the fixed help box (see shingo.js).
+      sg.title = s.tegami.objective ? clampTip(s.tegami.objective) : '';
+      r.appendChild(sg);
+    }
+    if (s.stance && s.stance !== 'unknown') {
+      const st = document.createElement('span');
+      st.className = 'home-status st-' + s.stance;
+      st.textContent = stanceLabel(s.stance) || s.stance;
+      r.appendChild(st);
+    }
+    if (s.ctx != null) {
+      const cx = document.createElement('span');
+      cx.className = 'home-ctx';
+      cx.textContent = '⛽ ' + s.ctx + '%';
+      r.appendChild(cx);
+    }
+    // THE DESKS — derived on the server (git + the desk registry), never the agent's
+    // prose: `⑂ team/comp/fable` or `⑂ 2`, and the roll-up in the help. Amber when an
+    // update is pending or a hand-in is blocked — the two readings a lead acts on.
+    const dk = desksOf(s.name);
+    if (dk && dk.desks?.length) {
+      const dd = document.createElement('span');
+      dd.className = 'home-desks' + (dk.rollup.pending || dk.rollup.blocked ? ' attn' : '');
+      dd.textContent = deskLabel(dk);
+      dd.title = [deskReadout(dk), deskTip(dk)].filter(Boolean).join('\n');
+      r.appendChild(dd);
+    }
+    //
+    // It shipped for an hour as `agent · provider · model` — `codex · openai · gpt-5.6-sol`
+    // — and the owner cut it to the model alone: "showing just the model is fine, that
+    // tells everyone what they need to know." He is right, and the other two were paying
+    // for themselves twice over: `opus 5` already says Claude and `gpt-5.6-sol` already
+    // says Codex, so the agent restated the model and the provider restated the agent.
+    //
+    // The width claim that came with the three-part version was WRONG, and it is recorded
+    // here because it is the kind of wrong that survives if nobody measures. It said the
+    // column cost the session name 116px of 237px. Measured in the browser afterwards, the
+    // name track is 181px and the longest name on this board needs 81px — the names were
+    // never close to starved. What the arithmetic missed is that a fixed track charges its
+    // FULL width whether or not anything is in it, so a 140px column showing nothing on
+    // every row was the actual cost. Sizing a track to the worst case its content can
+    // reach is what eats a row, not the number of facts in it.
+    //
+    // SCRAPED, NOT STAMPED, and that is why it works at all today: js/../src/ctx.ts reads
+    // it off the pane's own status line on the refresh that is already happening, so it is
+    // right for sessions that predate every option this house has ever set, and it follows
+    // a mid-session model switch instead of remembering the launch.
+    //
+    // A MISSING FACT IS SIMPLY ABSENT — no `undefined`, no `unknown`, no dash. The roster's
+    // own rule, from the SHINGO chip (js/shingo.js): "an absent chip costs the owner
+    // nothing and stops a dash-plus-age pretending to be a position". A dash here would
+    // read as a state a session is IN rather than as a thing nobody has said.
+    //
+    // Lowercased as rendered and NOT mapped: `Opus 5` becomes `opus 5`, and that is the
+    // whole transform. The owner turned down a three-letter-code registry.
+    const stack = (s.model || '').toLowerCase();
+    if (stack) {
+      const sk = document.createElement('span');
+      sk.className = 'home-stack';
+      sk.textContent = stack;
+      // The cell clips (see style.css), so the untruncated reading has to be reachable.
+      sk.title = stack;
+      r.appendChild(sk);
+    }
+    // 🏷 on the row: set THIS session's groups without opening it first. Its own
+    // button, not the row's click, so tapping the row still just opens the session.
+    // TOUCH: no 🏷 at all. The list is already SORTED INTO GROUPS under headings,
+    // so the label repeated the heading you just read — and the button was a verb
+    // on a board that is meant to be a READ.
+    //
+    // dropped the tag NAMES and kept the button, on the reasoning that it was the only
+    // way to edit groups without opening the session. The owner's answer: that is not a
+    // gap, it is the design — "the way you change the tag is by going into a particular
+    // session and clicking on that session's tag button", which is the 🏷 in the tile
+    // header (tilehead.js). A verb that already has a home does not need a second one on
+    // a board whose whole job is to be READ, and the rows are already filed under the
+    // very headings the button was there to edit.
+    r.addEventListener('click', () => tile.connect(s.name));
+    return r;
+  };
+
+  const render = () => {
+    // The desk column rides the roster's refresh: a changed answer redraws once; a fresh
+    // one (younger than the module's window) resolves false and nothing loops.
+    void refreshDesks().then((changed) => { if (changed) render(); }).catch(() => {});
+    // The max line rides the roster's own refresh — no second timer, and it never
+    // overwrites the field while it has focus (see loadMax).
+    void loadMax();
+    stale.hidden = !homeFault;
+    if (homeFault) stale.textContent = t('roster.stale', '⚠ roster may be stale — {fault}', { fault: homeFault });
+    const data = homeData || S.sessions.map((s) => ({ ...s, stance: 'unknown', ctx: null }));
+    list.innerHTML = '';
+    // Sorted by group, with a heading per group. A session in two groups is listed
+    // under BOTH — that's what multi-valued tags mean, and either row opens the same
+    // session. Untagged sessions fall to the bottom under "no group". When nothing is
+    // tagged at all the headings are skipped entirely, so an untagged setup looks
+    // exactly as it did before.
+    const liveGroups = new Set(data.flatMap((s) => s.tags || []));
+    for (const group of liveGroups) pendingGroups.delete(group);
+    const groups = rosterGroups(data, [...pendingGroups, ...(options.groups?.() || [])]);
+    if (!groups.length) {
+      for (const s of data) list.appendChild(rowFor(s));
+    } else {
+      const heading = (text, n, container, acceptsDrop = true) => {
+        const named = options.groupLabel?.(text);
+        const label = String(named ?? '').trim() || text;
+        const h = document.createElement('div');
+        h.className = 'home-grp';
+        h.append(Object.assign(document.createElement('b'), { textContent: label }));
+        const actions = acceptsDrop ? options.groupActions?.(text, n) || [] : [];
+        if (actions.length) {
+          const controls = document.createElement('span');
+          // Tile-head controls are the house icon buttons; the roster reuses them whole.
+          controls.className = 'home-grp-actions tile-head';
+          controls.append(...actions);
+          h.append(controls);
+        } else if (!options.hideGroupCounts) {
+          h.append(Object.assign(document.createElement('span'), { textContent: String(n) }));
+        }
+        container.appendChild(h);
+        if (!acceptsDrop) return;
+        h.title = t('roster.drop_here', 'Drop a session here to add it to {team}', { team: label });
+        container.addEventListener('dragover', (e) => {
+          if (!e.dataTransfer.types.includes('application/x-ronin-session')) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          h.classList.add('drop-ready');
+        });
+        container.addEventListener('dragleave', (e) => {
+          if (!container.contains(e.relatedTarget)) h.classList.remove('drop-ready');
+        });
+        container.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          h.classList.remove('drop-ready');
+          const name = e.dataTransfer.getData('application/x-ronin-session');
+          const session = data.find((s) => s.name === name);
+          if (!session || (session.tags || []).includes(text)) return;
+          const wasPending = pendingGroups.has(text);
+          const optimistic = [...new Set([...(session.tags || []), text])].sort();
+          session.tags = optimistic;
+          const base = S.sessions.find((s) => s.name === name);
+          if (base) base.tags = optimistic;
+          pendingGroups.delete(text);
+          groupMessage.textContent = '';
+          tiles.forEach((t) => t.syncHeader());
+          render();
+
+          const fail = (message) => {
+            session.tags = (session.tags || []).filter((tag) => tag !== text);
+            if (base) base.tags = (base.tags || []).filter((tag) => tag !== text);
+            if (wasPending && !data.some((s) => (s.tags || []).includes(text))) pendingGroups.add(text);
+            groupMessage.textContent = t('roster.not_saved', 'not saved — {message}', { message });
+            tiles.forEach((t) => t.syncHeader());
+            render();
+          };
+          // Read immediately before writing so a drop never erases a group added from
+          // another tile since this roster's last poll.
+          const current = await request('/api/sessions/' + encodeURIComponent(name) + '/teams');
+          if (!current.ok) {
+            fail(current.message);
+            return;
+          }
+          const tags = [...new Set([...(current.data.teams || []), text])].sort();
+          const result = await request('/api/sessions/' + encodeURIComponent(name) + '/teams', {
+            method: 'PUT',
+            json: { teams: tags },
+          });
+          if (!result.ok) {
+            fail(result.message);
+            return;
+          }
+          const saved = Array.isArray(result.data.teams) ? result.data.teams : tags;
+          session.tags = saved;
+          if (base) base.tags = saved;
+          tiles.forEach((t) => t.syncHeader());
+          render();
+        });
+      };
+      const appendGroup = (g) => {
+        const mem = data.filter((s) => (s.tags || []).map(teamTag).includes(teamTag(g)));
+        const block = document.createElement('div');
+        block.className = 'home-group';
+        list.appendChild(block);
+        heading(g, mem.length, block);
+        for (const s of mem) block.appendChild(rowFor(s));
+      };
+      const ordered = partitionRosterGroups(groups);
+      for (const g of ordered.ordinary) appendGroup(g);
+      // A stale tag without a real Team record is an orphaned membership, not a Team.
+      // Keep that session reachable under no team so the roster never hides it.
+      const loose = data.filter((s) => !groups.some((g) => (s.tags || []).map(teamTag).includes(teamTag(g))));
+      if (loose.length) {
+        const block = document.createElement('div');
+        block.className = 'home-group';
+        list.appendChild(block);
+        heading(t('roster.no_team', 'no team'), loose.length, block, false);
+        for (const s of loose) block.appendChild(rowFor(s));
+      }
+      // The helper Team follows even the no-team block in DOM order, so visual order,
+      // keyboard traversal and screen-reader reading order agree on what "last" means.
+      if (ordered.helper) appendGroup(ordered.helper);
+    }
+    if (!data.length) {
+      list.appendChild(Object.assign(document.createElement('span'), { className: 'home-empty', textContent: t('roster.no_sessions', 'no sessions yet') }));
+    }
+  };
+
+  return { render };
+}

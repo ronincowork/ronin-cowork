@@ -405,7 +405,7 @@ as a registry because the drift it was written against — two hand-kept lists o
 is what happens the moment a second surface needs them.
 
 The retired embedded Commons was the control-plane shell only; the roster and launcher were rooms
-like Wipeboard and Docs (the roster module and a launcher module both retired with their old boards).
+like Wipeboard and Docs (`roster.js`, and a launcher module retired with the ＋ New board
 
 ⚙ Account is deliberately NOT a room: install-level facts (release, updates,
 appearance, log out) are page-level, so ONE control in the bar opens one sheet
