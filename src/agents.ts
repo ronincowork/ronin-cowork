@@ -10,11 +10,25 @@ export interface AgentScreen {
   ready: readonly string[];
 }
 
+/**
+ * HOW A CLI PUBLISHES ITS MODEL LIST — declared here, read by `readModels` in
+ * `src/provider-summary.ts` on Refresh all. `claude-cache` and `codex-cache` are the two
+ * cache files those CLIs keep; `command` runs the CLI with the argv and reads the list it
+ * prints; `none` says plainly that Ronin has no way to read one, so Model: Native is the
+ * only choice. A new way to read a list is a new key here, never an `if` on a CLI id.
+ */
+export type ModelsSource =
+  | { read: 'claude-cache' }
+  | { read: 'codex-cache' }
+  | { read: 'command'; argv: readonly string[] }
+  | { read: 'none' };
+
 export interface AgentOperations {
   install: string;
   update: { shell: string; argv: readonly string[] };
   selfUpdates: boolean;
   version: readonly string[];
+  models: ModelsSource;
   session: {
     discovery: 'explicit-argv' | 'unsupported';
   };
@@ -31,6 +45,7 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: true,
       version: ['--version'],
+      models: { read: 'claude-cache' },
       session: { discovery: 'explicit-argv' },
     } as AgentOperations,
     parked: '',
@@ -47,6 +62,7 @@ export const AGENTS = [
       update: { shell: 'npm install -g @openai/codex@latest', argv: [] },
       selfUpdates: false,
       version: ['--version'],
+      models: { read: 'codex-cache' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     parked: '',
@@ -63,6 +79,7 @@ export const AGENTS = [
       update: { shell: 'npm install -g @google/gemini-cli@latest', argv: [] },
       selfUpdates: true,
       version: ['--version'],
+      models: { read: 'none' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     parked: '',
@@ -70,7 +87,7 @@ export const AGENTS = [
     screen: { busy: [], asking: ['●\\s*\\d+\\.\\s'], ready: [] },
   },
   // [cli] auto_update defaults true: https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], session: { discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], models: { read: 'command', argv: ['models'] }, session: { discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
@@ -81,6 +98,7 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: false,
       version: ['--version'],
+      models: { read: 'none' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     credentials: [],

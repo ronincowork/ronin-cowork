@@ -15,8 +15,8 @@ import { execFileSync } from 'node:child_process';
 
 process.env.BIND ??= '127.0.0.1';
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-launch-desk-tools-'));
-const listed = (slugs: string[]) => ({ fetched_at: '2026-09-18T00:00:00Z', etag: 'test', client_version: 'test', models: slugs.map((slug, priority) => ({ slug, display_name: slug, description: '', visibility: 'list', priority })) });
-const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude'], signed_in: ['claude'], operational: ['claude'], activated_count: 1, paths: {}, versions: {}, latest: {}, model_lists: { claude: listed(['claude-fable-5-1']) } };
+const listed = (ids: string[]) => ({ read_at: '2026-09-18T00:00:00Z', by: 'test', rows: ids.map((id) => ({ id, name: id })) });
+const providers = { measured_at: '2026-09-18T00:00:00Z', installed: ['claude'], signed_in: ['claude'], operational: ['claude'], activated_count: 1, paths: {}, versions: {}, latest: {}, off: [], refreshed_at: '', models: { claude: listed(['claude-fable-5-1']) } };
 process.env.RONIN_CATALOGS_DIR = path.join(tmp, 'catalogs');
 process.env.RONIN_DESKS_DIR = path.join(tmp, 'desks');
 process.env.RONIN_WORKTREES_DIR = path.join(tmp, 'worktrees');

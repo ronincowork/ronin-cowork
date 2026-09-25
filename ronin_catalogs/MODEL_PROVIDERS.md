@@ -3,14 +3,15 @@
 > **This file is stock, and an upgrade replaces it.** It is the one record of every model
 > provider Ronin offers and optional descriptive metadata for
 > models Ronin knows how to describe. The signed-in provider CLI owns the live model
-> inventory; Refresh captures that account-specific list in Campaign settings. Pickers
-> and launches use the captured CLI list, enriched by matching rows here. Nothing in here executes.
+> list; **Refresh all** on the Model providers surface reads each activated CLI's own list
+> into the Campaign record. Pickers and launches use that list — the CLI's model ids and
+> its own display names — enriched by the row of the same id here. Nothing in here executes.
 >
 > **To keep names fresh without a code release,** copy this file to your catalogs store
 > (`$(ronin-store catalogs)/MODEL_PROVIDERS.md`) and edit it there. Each provider section in the owner copy
 > replaces that provider section; other shipped providers keep receiving updates; an upgrade never touches it.
 
-- **updated:** 2026-09-22
+- **updated:** 2026-09-25
 
 ## Keeping it fresh
 
@@ -38,14 +39,13 @@ One `### <Vendor label>` section per provider. Its fields:
 | `transcript_source` | dated descriptive journal location and write discipline; availability requires a supported adapter and verified launch identity, not merely a file at that path |
 | `maturity` | optional display status: `beta` or `comingSoon`; a provider with no model rows remains visible only as an unavailable catalog card |
 
-Then one table, one row per model, **in the order the picker offers them**:
+Then one table, one row per model id. The picker's order is the CLI's own; this table's
+order is only for reading:
 
 | Column | Meaning |
 |---|---|
-| `model` | the full model id passed to the CLI, unchanged |
-| `display id` | optional short name shown to the owner when this exact model id is available; never sent to the CLI |
+| `model` | the full model id passed to the CLI, unchanged — the one key; the name shown beside it is the CLI's own |
 | `tier` | **light** · **standard** · **frontier**: the cost and capability band, as the vendor prices it |
-| `default` | optional descriptive metadata retained for a reported model; it does not change what Model: Native means |
 | `cost` | the vendor's public list price per million tokens, input · output, with the month it was read — a reading, not a contract |
 | `good at` · `not good at` | one line each, from the vendor's own positioning and the public record |
 
@@ -55,10 +55,11 @@ belongs only to `docs/agents/<cli>.md` and is not duplicated in this catalog.
 
 Adding a provider is a section; adding model metadata is a row; never a code path. The
 matching `docs/agents/<cli>.md` page owns bare, model, dangerous and resume commands. Model:
-Native is always offered and means no model override. A named row is offered only when the CLI's captured inventory reports
-that exact id; the row enriches it but never grants availability. A provider that fills no
-`light` row simply offers none. Prices move: the date beside each cost says when it was
-read, and a stale reading is dated, never guessed.
+Native is always offered, is every provider's default, and means no model override. A model
+is offered when the CLI's list read by Refresh all reports its id, whether or not a row here
+describes it; a row enriches, never grants availability. A provider that fills no `light`
+row simply offers none. Prices move: the date beside each cost says when it was read, and
+a stale reading is dated, never guessed.
 
 ### Anthropic
 
@@ -66,15 +67,16 @@ read, and a stale reading is dated, never guessed.
 - **cli:** `claude`
 - **transcript_source:** Observed 2026-09-22: `~/.claude/projects/<cwd-slug>/<uuid>.jsonl`; one record per completed message. Journal adapter exists; exact launch identity is required.
 
-Claude launch commands use the concrete model ids below. Display ids are only labels in
-Ronin's picker; they are never sent as CLI model arguments.
+Claude launch commands use the concrete model ids below. Claude Code's own list carries
+more ids than these (older Opus and Sonnet generations); they are offered as it lists them.
 
-| model | display id | tier | default | cost | good at | not good at |
-|---|---|---|---|---|---|---|
-| `claude-opus-5` | Opus | frontier | yes | $5 in · $25 out per M tokens (2026-06) | long agentic coding runs, hard reasoning, large refactors across a repository | quick throwaway questions where its price and latency buy nothing |
-| `claude-fable-5-1` | Fable | frontier | | $10 in · $50 out per M tokens (2026-06) | the hardest multi-step reasoning and long-horizon work; thinking is always on | cheap or latency-bound loops, and any task Opus already finishes reliably |
-| `claude-sonnet-5` | Sonnet | standard | | $2 in · $10 out per M tokens (2026-06) | everyday coding, review and writing at a fraction of the frontier price | the deepest reasoning chains, where the frontier rows pull ahead |
-| `claude-haiku-4-5-20251001` | Haiku | light | | $1 in · $5 out per M tokens (2026-06) | fast sub-agents, classification, summaries and high-volume routine work | large refactors and subtle multi-file reasoning |
+| model | tier | cost | good at | not good at |
+|---|---|---|---|---|
+| `claude-opus-5-5` | frontier | $4 in · $20 out per M tokens (2026-09) | long agentic coding runs, hard reasoning, large refactors across a repository; the Opus line's current model | quick throwaway questions where its price and latency buy nothing |
+| `claude-fable-5-1` | frontier | $10 in · $50 out per M tokens (2026-06) | the hardest multi-step reasoning and long-horizon work; thinking is always on | cheap or latency-bound loops, and any task Opus already finishes reliably |
+| `claude-sonnet-5` | standard | $2 in · $10 out per M tokens (2026-06) | everyday coding, review and writing at a fraction of the frontier price | the deepest reasoning chains, where the frontier rows pull ahead |
+| `claude-haiku-4-5-20251001` | light | $1 in · $5 out per M tokens (2026-06) | fast sub-agents, classification, summaries and high-volume routine work | large refactors and subtle multi-file reasoning |
+| `claude-opus-5` | frontier | $5 in · $25 out per M tokens (2026-06) | the previous Opus, still served, for work tuned to it | new work, where Opus 5.5 does the same for less |
 
 ### OpenAI
 
@@ -87,13 +89,13 @@ OpenAI's durable capability tiers; the generation number moves on its own cadenc
 Availability belongs to the owner's OpenAI account: a model the account cannot use is
 refused by Codex in the new tile, and Ronin never substitutes.
 
-| model | tier | default | cost | good at | not good at |
-|---|---|---|---|---|---|
-| `gpt-6-astra` | frontier | | $10 in · $50 out per M tokens (2026-09) | the hardest end-to-end reasoning, coding, computer use, research and document creation | routine or bulk work where Sol or Terra burns less of the Codex subscription allowance |
-| `gpt-5.6-sol` | frontier | yes | $5 in · $30 out per M tokens (2026-09) | the hardest coding and reasoning work; OpenAI's flagship tier | bulk or latency-sensitive loops where Terra matches it for less |
-| `gpt-5.6-terra` | standard | | $2 in · $12 out per M tokens (2026-09) | everyday agentic coding at roughly half the flagship price | the very hardest problems, where Sol still leads |
-| `gpt-5.6-luna` | light | | $0.20 in · $1.20 out per M tokens (2026-09) | fast, cheap sub-agents, drafts and high-volume routine tasks | deep multi-step reasoning and large refactors |
-| `gpt-5.3-codex-spark` | light | | ChatGPT Pro research preview · separate usage limits (2026-09) | near-instant, real-time iteration on code | deep reasoning, non-text work, API-key launches, or accounts whose Codex model list does not include it |
+| model | tier | cost | good at | not good at |
+|---|---|---|---|---|
+| `gpt-6-astra` | frontier | $10 in · $50 out per M tokens (2026-09) | the hardest end-to-end reasoning, coding, computer use, research and document creation | routine or bulk work where Sol or Terra burns less of the Codex subscription allowance |
+| `gpt-5.6-sol` | frontier | $5 in · $30 out per M tokens (2026-09) | the hardest coding and reasoning work; OpenAI's flagship tier | bulk or latency-sensitive loops where Terra matches it for less |
+| `gpt-5.6-terra` | standard | $2 in · $12 out per M tokens (2026-09) | everyday agentic coding at roughly half the flagship price | the very hardest problems, where Sol still leads |
+| `gpt-5.6-luna` | light | $0.20 in · $1.20 out per M tokens (2026-09) | fast, cheap sub-agents, drafts and high-volume routine tasks | deep multi-step reasoning and large refactors |
+| `gpt-5.3-codex-spark` | light | ChatGPT Pro research preview · separate usage limits (2026-09) | near-instant, real-time iteration on code | deep reasoning, non-text work, API-key launches, or accounts whose Codex model list does not include it |
 
 ### Google
 
@@ -106,11 +108,11 @@ Flash models only; Pro needs a paid plan. These cells are written from Google's 
 reference and price list and have not yet been exercised end to end through Ronin; the
 first real launch of each is the proof, per `docs/architecture/model-providers.md`.
 
-| model | tier | default | cost | good at | not good at |
-|---|---|---|---|---|---|
-| `gemini-3.1-pro` | frontier | | $2 in · $12 out per M tokens, more above 200K context (2026-09) | long-context reasoning over very large inputs, multimodal work | the free tier, which does not serve it |
-| `gemini-3.8-flash` | standard | yes | $0.75 in · $3.75 out per M tokens, promotional to 2026-12 (2026-09) | fast everyday coding and chat on the free tier | the deepest reasoning, where Pro leads |
-| `gemini-2.5-flash-lite` | light | | $0.10 in · $0.40 out per M tokens (2026-09) | the cheapest high-volume classification and summaries | agentic coding of any depth |
+| model | tier | cost | good at | not good at |
+|---|---|---|---|---|
+| `gemini-3.1-pro` | frontier | $2 in · $12 out per M tokens, more above 200K context (2026-09) | long-context reasoning over very large inputs, multimodal work | the free tier, which does not serve it |
+| `gemini-3.8-flash` | standard | $0.75 in · $3.75 out per M tokens, promotional to 2026-12 (2026-09) | fast everyday coding and chat on the free tier | the deepest reasoning, where Pro leads |
+| `gemini-2.5-flash-lite` | light | $0.10 in · $0.40 out per M tokens (2026-09) | the cheapest high-volume classification and summaries | agentic coding of any depth |
 
 ### xAI
 
@@ -122,10 +124,10 @@ Model ids are passed unchanged to Grok Build's `-m` option. Its Agent page maps
 Dangerously to Grok's canonical `--always-approve` spelling.
 Written from xAI's published CLI overview and price list, not yet exercised through Ronin.
 
-| model | tier | default | cost | good at | not good at |
-|---|---|---|---|---|---|
-| `grok-4.6` | frontier | yes | $2 in · $6 out per M tokens, double above 200K context (2026-09) | long-running agents, coding and research with a 500K context | the cheapest bulk work, where 4.3 costs less |
-| `grok-4.3` | standard | | $1.25 in · $2.50 out per M tokens (2026-09) | everyday coding and chat at a low price | the hardest reasoning, where 4.6 leads |
+| model | tier | cost | good at | not good at |
+|---|---|---|---|---|
+| `grok-4.6` | frontier | $2 in · $6 out per M tokens, double above 200K context (2026-09) | long-running agents, coding and research with a 500K context | the cheapest bulk work, where 4.3 costs less |
+| `grok-4.3` | standard | $1.25 in · $2.50 out per M tokens (2026-09) | everyday coding and chat at a low price | the hardest reasoning, where 4.6 leads |
 
 ### Nous Research
 
@@ -139,10 +141,10 @@ Portal (`hermes setup --portal` signs in). Model ids are passed unchanged to
 Written from Nous's published CLI reference; the Portal lists no public per-token price,
 and none of these cells has yet been exercised through Ronin.
 
-| model | tier | default | cost | good at | not good at |
-|---|---|---|---|---|---|
-| `nousresearch/hermes-4-405b` | standard | yes | Nous Portal subscription; no public per-token list price (2026-09) | open-weight reasoning and tool use with a steerable persona | frontier-class coding, where the closed flagships lead |
-| `nousresearch/hermes-4.3-36b` | light | | Nous Portal subscription; no public per-token list price (2026-09) | fast open-weight chat and light agent work; runs locally on modest hardware | large refactors and long agentic runs |
+| model | tier | cost | good at | not good at |
+|---|---|---|---|---|
+| `nousresearch/hermes-4-405b` | standard | Nous Portal subscription; no public per-token list price (2026-09) | open-weight reasoning and tool use with a steerable persona | frontier-class coding, where the closed flagships lead |
+| `nousresearch/hermes-4.3-36b` | light | Nous Portal subscription; no public per-token list price (2026-09) | fast open-weight chat and light agent work; runs locally on modest hardware | large refactors and long agentic runs |
 
 ### OpenRouter
 
