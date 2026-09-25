@@ -5,11 +5,12 @@ import { ask } from './ask.js';
 import { agentTitle } from './team-members.js';
 import { membersOfTeam, refreshTeams, setTeamLead, subscribe } from './team-controller.js';
 import { t } from './lexicon.js';
+import { createAgentCompositionReader } from './agent-composition.js';
 
 export const TEAM_CHART_TYPE = 'team.chart';
 const el = (tag, cls = '', text = '') => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 
-export function createTeamChartSurface({ team, onSelect, onOpen, onAddLead } = {}) {
+export function createTeamChartSurface({ team, onOpen, onAddLead } = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('team_chart.title', 'Team Chart'), className: 'team-chart-surface' });
   let picker = null;
   let entered = false;
@@ -40,11 +41,12 @@ export function createTeamChartSurface({ team, onSelect, onOpen, onAddLead } = {
       return () => { picker?.destroy(); picker = null; };
     }
     const member = item.member;
-    host.append(el('h2', '', agentTitle(member)), el('p', 'tc-id', `@${member.name}`), el('p', 'tc-note', member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.agent', 'Agent')));
-    const inspect = WorkspaceKit.primitives.createAction({ label: t('team_chart.inspect', 'Agent details'), action: () => onSelect?.(member) });
+    const reader = createAgentCompositionReader(member.name, { setState: (state, message) => surface.setState(state, message) });
     const launch = WorkspaceKit.primitives.createAction({ label: t('league.launch_agent', 'Launch'), launch: true, action: () => onOpen?.(member) });
-    const actions = el('div', 'tc-actions'); actions.append(inspect.el, launch.el); host.append(actions);
-    return null;
+    const actions = el('div', 'tc-actions'); actions.append(launch.el);
+    host.append(reader.el, actions);
+    void reader.show();
+    return () => reader.destroy();
   };
   const phalanx = createPhalanx({ className: 'team-chart-phalanx', items: [], renderDetail });
   phalanx.mount(surface.content);

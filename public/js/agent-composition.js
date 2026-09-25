@@ -16,16 +16,15 @@ function behaviourList(items) {
   return items?.length ? items.map((row) => row.name).join(', ') : t('agent_composition.none', 'None');
 }
 
-export function createAgentCompositionSurface(agent) {
-  const surface = WorkspaceKit.primitives.createSurface({ label: t('agent_composition.title', 'Agent composition'), className: 'agent-composition' });
-  const body = el('div', 'ac-body'); surface.content.append(body);
+export function createAgentCompositionReader(agent, { setState = () => {} } = {}) {
+  const body = el('div', 'ac-body ac-reader');
   let questions = [];
   const load = async () => {
     for (const question of questions) question.destroy(); questions = [];
     body.replaceChildren(el('p', 'ac-status', t('forms.loading', 'Loading…')));
     const result = await request(`/api/sessions/${encodeURIComponent(agent)}/composition`, { cache: 'no-store' });
-    if (!result.ok) return surface.setState('failed', result.message);
-    surface.setState(null, ''); render(result.data);
+    if (!result.ok) return setState('failed', result.message);
+    setState(null, ''); render(result.data);
   };
   const render = (data) => {
     body.replaceChildren();
@@ -48,5 +47,12 @@ export function createAgentCompositionSurface(agent) {
     else behaviours.append(el('p', 'ac-note', t('agent_composition.no_additions', 'No further optional Behaviors are available.')));
     current.append(form, el('h4', '', t('behaviours', 'Behaviors')), behaviours); body.append(birth, current);
   };
-  return { el: surface.el, show: load, destroy: () => { for (const question of questions) question.destroy(); questions = []; } };
+  return { el: body, show: load, destroy: () => { for (const question of questions) question.destroy(); questions = []; body.remove(); } };
+}
+
+export function createAgentCompositionSurface(agent) {
+  const surface = WorkspaceKit.primitives.createSurface({ label: t('agent_composition.title', 'Agent composition'), className: 'agent-composition' });
+  const reader = createAgentCompositionReader(agent, { setState: (state, message) => surface.setState(state, message) });
+  surface.content.append(reader.el);
+  return { el: surface.el, show: reader.show, destroy: reader.destroy };
 }

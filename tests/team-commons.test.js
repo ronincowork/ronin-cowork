@@ -76,6 +76,8 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.doesNotMatch(coworkRoster, /org_reading|buildTeamMembers/);
   assert.match(chart, /export const TEAM_CHART_TYPE = 'team\.chart'/);
   assert.match(chart, /createPhalanx\(/);
+  assert.match(chart, /createAgentCompositionReader\(member\.name/);
+  assert.doesNotMatch(chart, /team_chart\.inspect|Agent details/);
   assert.match(chart, /group: t\('league\.team_lead', 'Team Lead'\)/);
   assert.match(chart, /group: t\('league\.agents', 'Agents'\)/);
   assert.match(chart, /onAddLead\?\.\(teamName\(\)\)/);
