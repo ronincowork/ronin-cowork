@@ -68,8 +68,8 @@ test('Setup mounts the roots stones on the surface content so the shared insets 
 test('roots adapt the real project-root detail and Add form to the shared stone work surface', async () => {
   const roots = await source('public/js/projectroots.js');
   assert.match(roots, /options\.presentation === 'stones'/);
-  assert.match(roots, /import \{ createStoneWorkSurface \} from '\.\/stone-work-surface\.js'/);
-  assert.match(roots, /stoneSurface = createStoneWorkSurface/);
+  assert.match(roots, /import \{ createPhalanx \} from '\.\/phalanx\.js'/);
+  assert.match(roots, /stoneSurface = createPhalanx/);
   assert.match(roots, /if \(current\) host\.append\(detail\(current\)\)/);
   assert.match(roots, /stoneSurface\.refreshDetail\(\)/);
   assert.match(roots, /const openAdd = stones \? null : createAction/);

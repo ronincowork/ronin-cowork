@@ -6,7 +6,7 @@ import { buildGbrain } from './gbrain.js';
 import { createWorkspaceFoldersSurface } from './workspace-folders-surface.js';
 import { ask } from './ask.js';
 import { PROVIDER_SURFACE_TYPE, providerSurfaceDefinition } from './provider-surface.js';
-import { createStoneWorkSurface } from './stone-work-surface.js';
+import { createPhalanx } from './phalanx.js';
 import { servicesSetupModel } from './services-setup-state.js';
 import { campaignById, campaigns, loadCampaigns, saveCampaign } from './campaigns.js';
 import { completeInstallationMap } from './installation-map.js';
@@ -420,7 +420,7 @@ function createBountySurface(context) {
     detail.append(el('h4', '', t('bounty.requirements', 'Before you apply')), requirements, apply, notice);
     host.append(detail);
   };
-  const stones = createStoneWorkSurface({ className: 'setup-bounty-stones', renderDetail });
+  const stones = createPhalanx({ className: 'setup-bounty-stones', renderDetail });
   stones.mount(out.content, { before: [intro] });
   return { el: out.el, show: async () => {
     const [registration, github] = await Promise.all([
@@ -704,7 +704,7 @@ function createLaunchOwnSurface(context) {
     for (const view of views) void view.enter({});
     return () => { for (const view of views) { view.destroy?.(); view.el.remove(); } };
   };
-  const stones = createStoneWorkSurface({
+  const stones = createPhalanx({
     items: [
       { id: 'agent', glyph: '人', label: t('agent', 'Agent') },
       { id: 'team', glyph: '人人', label: t('team', 'Team') },

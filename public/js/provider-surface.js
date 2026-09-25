@@ -35,7 +35,7 @@ import { ask } from './ask.js';
 import { createSetupZone, setupStep } from './setup-zone.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { createStoneWorkSurface } from './stone-work-surface.js';
+import { createPhalanx } from './phalanx.js';
 import { loadProviderCatalog, modelAvailabilityFact, modelLabel, providerCatalog, tierWord } from './form-steps.js';
 import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
 import { createStatusMarker } from './status-marker.js';
@@ -421,7 +421,7 @@ export function createProviderSurface(context) {
     return () => disposeMount();
   };
 
-  const stones = createStoneWorkSurface({
+  const stones = createPhalanx({
     selectedId: opened,
     className: 'setup-provider-stones',
     renderDetail: (item, host) => paintProvider(item.id, host),

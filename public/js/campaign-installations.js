@@ -5,7 +5,7 @@ import { request } from './request.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
-import { createStoneWorkSurface } from './stone-work-surface.js';
+import { createPhalanx } from './phalanx.js';
 import { completeInstallationMap as completeMap } from './installation-map.js';
 import { createStatusMarker } from './status-marker.js';
 import { createSetupZone, setupStep, watchSetupProgress } from './setup-zone.js';
@@ -182,7 +182,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     return () => controls?.destroy();
   };
 
-  stoneSurface = createStoneWorkSurface({ items: [], className: 'campaign-installations-stones', renderDetail });
+  stoneSurface = createPhalanx({ items: [], className: 'campaign-installations-stones', renderDetail });
   const reading = el('p', 'setup-notice');
   reading.setAttribute('role', 'status');
 

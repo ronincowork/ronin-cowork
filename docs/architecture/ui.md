@@ -637,7 +637,7 @@ own format: two numbered steps — Team (ID · Title · Kind, then Purpose) and 
 defaults (the groups) — at the forms' tight density. Its text entries are the kit's, beside
 the stones, not inside them. Contract and file list: `docs/architecture/team-workspace.md` § Durable Team record.
 
-**What is not an `ask()`.** The stone work surface (`stone-work-surface.js`) is a page for
+**What is not an `ask()`.** The Phalanx surface (`phalanx.js`) is a page for
 browsing a collection whose item is the content — Presets, Workspace Folders, Model
 providers, Templates — and stays. Tabs, the Presets kind filter, and the
 2 ⇄ 4 button are not selections from a list. The tile head owns its current Output and

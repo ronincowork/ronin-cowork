@@ -9,6 +9,10 @@ It does not own feature data. It restores placement, creates independent surface
 instances, and calls the placed instance's `show()` synchronously. The surface owns the
 smallest reads needed to paint itself.
 
+`public/js/phalanx.js` owns the shared Phalanx collection interaction: stones at rest,
+a selected-stone rail beside its detail, focus return, Escape, and responsive geometry.
+Consumers supply items and detail content; they do not recreate that movement privately.
+
 ## Library, profile, tenant, instance
 
 `public/js/workbench.js` owns the shared library and frame.
@@ -205,6 +209,7 @@ independent and must not hold the frame.
 | Surface | Required data and owner |
 |---|---|
 | Team roster / Team profile | Team records and live session-derived membership |
+| Team Chart | Selected Team membership and lead designation; Phalanx owns collection and selection geometry while Team Chart owns Agent and lead actions |
 | Agent terminal | selected session plus terminal transport; other sessions are not mounted for it |
 | Commons | only the selected tab enters: Roster, Docs, Wipeboard, Messages, Configuration, or another registered room |
 | Task Manager | Desk scope aggregates the canonical per-Team Project readings; Team scope reads the selected Team; status and Project drill-downs are independently placeable surfaces carrying the same tenant |

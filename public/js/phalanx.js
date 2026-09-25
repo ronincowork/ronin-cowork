@@ -12,7 +12,7 @@ let nextDetailId = 0;
  * The shared Setup work-surface: a responsive phalanx at rest and a one-stone
  * rail beside the consumer's real detail when selected.
  */
-export function createStoneWorkSurface({ items = [], selectedId = '', renderDetail, onSelectionChange, className = '' } = {}) {
+export function createPhalanx({ items = [], selectedId = '', renderDetail, onSelectionChange, className = '' } = {}) {
   const root = element('section', `sws ${className}`.trim());
   const rail = element('div', 'sws-rail');
   const grid = element('div', 'sws-grid');

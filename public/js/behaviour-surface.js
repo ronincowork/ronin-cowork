@@ -1,6 +1,6 @@
 /* Behaviors — shared reader and optional guidance editor. */
 import { request } from './request.js';
-import { createStoneWorkSurface } from './stone-work-surface.js';
+import { createPhalanx } from './phalanx.js';
 import { addProvMark } from './provenance.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
@@ -106,7 +106,7 @@ function viewer(row, host, afterSave) {
 export function createBehaviourSurface(initial = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('behaviours.title', 'Behaviors'), className: 'behaviour-surface' });
   let rows = [];
-  const stones = createStoneWorkSurface({ className: 'behaviour-stones', renderDetail: (item, host) => viewer(item.row, host, refresh) });
+  const stones = createPhalanx({ className: 'behaviour-stones', renderDetail: (item, host) => viewer(item.row, host, refresh) });
   const intro = node('div', 'sws-intro');
   intro.append(node('h2', '', t('behaviours.title', 'Behaviors')), node('p', '', t('behaviours.intro', 'Behaviors are specific guidance given to Agents at birth.')));
   const add = node('button', 'wk-action', t('behaviours.new', 'New optional Behavior'));

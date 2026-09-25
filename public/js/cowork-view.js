@@ -39,6 +39,7 @@ import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
 import { createTeamKanban, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
 import { createAgentCompositionSurface } from './agent-composition.js';
+import { createTeamChartSurface } from './team-chart-surface.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -274,8 +275,6 @@ export function createCoworkView(options = {}) {
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
     .map((id) => [id, createTeamRosterSurface({
       onOpen: openAgentWorkbench,
-      onSelect: (member) => bench.place(WB_TYPES.agentComposition, oppositeSeat(id), { key: member.name }),
-      onAddLead: (name) => bench.place(WB_TYPES.newAgent, oppositeSeat(id), { team: name, teamLead: true }),
     })])) : {};
   const cronBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => { const surface = createSurface({ label: t('workspace.tab_cron_jobs', 'Cron jobs'), className: 'tw-cron' }); const room = createTeamJikan({ universal: true, teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }); surface.content.append(room.el); return [id, { el: surface.el, room }]; })) : {};
   // seated in a workspace, grouped by Team of record, each row's act a labelled button.
@@ -290,6 +289,12 @@ export function createCoworkView(options = {}) {
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(campaign ? WB_TYPES.roster : WB_TYPES.commons, workspace)),
     teamCommons: (id) => ({ el: commonsFor(id).el, show: (detail = {}) => { const item = commonsFor(id); if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
+    teamChart: (id) => createTeamChartSurface({
+      team: () => team,
+      onSelect: (member) => bench.place(WB_TYPES.agentComposition, oppositeSeat(id), { key: member.name }),
+      onOpen: (member) => openAgentWorkbench(member.name),
+      onAddLead: (name) => bench.place(WB_TYPES.newAgent, oppositeSeat(id), { team: name, teamLead: true }),
+    }),
     kanbanOffers: () => kanbanGate.available ? [{
       label: t('workspace.tab_task_manager', 'Task Manager'),
       summary: campaign ? t('team_kanban.desk_summary', 'Projects across this Desk’s Teams and Agents') : t('team_kanban.card_summary', 'The Team’s work, from Ideas through Done'),

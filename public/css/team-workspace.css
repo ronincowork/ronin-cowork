@@ -236,6 +236,11 @@
 }
 
 @layer app {
+  .team-chart-surface .sws-group { color: var(--kaki); font-weight: 700; }
+  .team-chart-surface .sws-detail { min-width: 0; }
+  .tc-id, .tc-note { color: var(--muted); }
+  .tc-actions { display: grid; gap: var(--space-4); align-items: end; }
+  .tc-actions > .wk-action { justify-self: start; }
   .ac-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--space-6); padding: var(--space-5); }
   .ac-section { min-width: 0; border: var(--edge) solid var(--line); background: var(--well); padding: var(--space-5); }
   .ac-section h3, .ac-section h4 { color: var(--fg-strong); }

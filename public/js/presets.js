@@ -2,11 +2,11 @@
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { createStoneWorkSurface } from './stone-work-surface.js';
+import { createPhalanx } from './phalanx.js';
 import { loadProviderCatalog, providerCatalog, modelAvailabilityFact, modelLabel } from './form-steps.js';
 import { ask } from './ask.js';
 
-export { createStoneWorkSurface };
+export { createPhalanx };
 
 export const PRESETS_TYPE = 'setup.presets';
 export const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
@@ -569,7 +569,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   // and change-preset hold. The All purpose exposes all seven without a second control.
   const restingIndexes = () => restingPresets(kinds.get()).map((handle) => HOUSE_PRESETS.findIndex((row) => row.handle === handle)).filter((index) => index >= 0);
   const visibleIndexes = () => restingIndexes();
-  const stoneSurface = createStoneWorkSurface({
+  const stoneSurface = createPhalanx({
     className: 'sp-work-surface',
     renderDetail: (item, host) => { selected = Number(item.id); detail = host; paintDetail(); },
     onSelectionChange: (id) => { selected = id == null ? -1 : Number(id); },

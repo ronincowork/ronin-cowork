@@ -45,6 +45,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Ronin | The product; a repository, artifact, installed copy, and running operator are distinct things ([Release](docs/development/release.md)) |
 | Coworkspace | The whole browser UI ([Workbench](docs/using-ronin/workbench.md)) |
 | Surface | A visible UI held in a workspace; contributor change areas are navigation categories, not UI objects or directories |
+| Phalanx | A shared collection surface: stones stand in formation at rest, then move into a side rail when one is selected so that stone's detail can occupy the surface ([Workbench](docs/architecture/workbench.md)) |
 | Workspace | A numbered browser slot holding a tile or another surface |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
 | Ronin Home / Ronin Setup / Ronin Settings | Home destination, first-use workbench, and ongoing Desk configuration workbench |

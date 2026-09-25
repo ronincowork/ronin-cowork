@@ -3,7 +3,6 @@ import { deleteTeamRoster, refreshTeams, subscribe, teamsFromState } from './tea
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { buildRoster } from './roster.js';
-import { buildTeamMembers } from './team-members.js';
 import { refreshHome } from './home.js';
 import { openWorkspaceTab } from './workspace.js';
 
@@ -14,17 +13,6 @@ export function createTeamRosterSurface(options = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label, className: 'team-roster-surface' });
   const host = node('div', 'home-sec team-roster-detail');
   surface.content.append(host);
-  const tools = node('div', 'league-team-people-tools');
-  const toggle = node('div', 'league-team-view-toggle');
-  toggle.setAttribute('role', 'group');
-  toggle.setAttribute('aria-label', t('league.people_reading', 'People reading'));
-  const rosterButton = WorkspaceKit.primitives.createAction({ label: t('league.roster_reading', 'Roster'), size: 'compact' });
-  const orgButton = WorkspaceKit.primitives.createAction({ label: t('league.org_reading', 'Org chart'), size: 'compact' });
-  toggle.append(rosterButton.el, orgButton.el); tools.append(toggle); host.append(tools);
-  const rosterHost = node('div', 'team-roster-reading');
-  const orgHost = node('div', 'team-org-reading');
-  host.append(rosterHost, orgHost);
-  let reading = 'roster';
   const openTeam = (name) => openWorkspaceTab('team', name);
   const teamLabel = (name) => {
     const title = teamsFromState().find((team) => team.name === name)?.title;
@@ -36,7 +24,7 @@ export function createTeamRosterSurface(options = {}) {
     if (!result.ok) surface.setState('failed', result.message);
     else { surface.setState(null, ''); await refreshHome(); roster.render(); }
   };
-  const roster = buildRoster({ index: 'team-roster', connect: (name) => options.onOpen?.(name) }, rosterHost, {
+  const roster = buildRoster({ index: 'team-roster', connect: (name) => options.onOpen?.(name) }, host, {
     hideGroupCounts: true,
     groups: () => teamsFromState().filter((team) => !team.holding).map((team) => team.name),
     groupLabel: teamLabel,
@@ -52,31 +40,6 @@ export function createTeamRosterSurface(options = {}) {
       return [launch, remove];
     },
   });
-  const paintReading = () => {
-    rosterHost.hidden = reading !== 'roster';
-    orgHost.hidden = reading !== 'org';
-    rosterButton.el.setAttribute('aria-pressed', String(reading === 'roster'));
-    orgButton.el.setAttribute('aria-pressed', String(reading === 'org'));
-    if (reading !== 'org') return;
-    orgHost.replaceChildren(...teamsFromState().filter((team) => !team.holding).map((team) => {
-      const section = node('section', 'team-roster-org-team');
-      const head = node('div', 'home-grp');
-      head.append(node('b', null, teamLabel(team.name)));
-      const launch = WorkspaceKit.primitives.createAction({ label: t('league.launch_team', 'Launch'), launch: true, size: 'compact', action: () => openTeam(team.name) });
-      head.append(launch.el);
-      section.append(head, buildTeamMembers(team.name, {
-        onSelect: options.onSelect,
-        onOpen: options.onOpen,
-        onChanged: () => { void refreshTeams().then(() => paintReading()); },
-        onFailed: (message) => surface.setState('failed', message),
-        onAddLead: () => options.onAddLead?.(team.name),
-      }));
-      return section;
-    }));
-  };
-  rosterButton.el.addEventListener('click', () => { reading = 'roster'; paintReading(); });
-  orgButton.el.addEventListener('click', () => { reading = 'org'; paintReading(); });
-  paintReading();
   subscribe(() => roster.render());
   return {
     el: surface.el,
@@ -85,7 +48,6 @@ export function createTeamRosterSurface(options = {}) {
       void Promise.all([refreshHome(), refreshTeams()]).then(() => {
         surface.setState(null, '');
         roster.render();
-        paintReading();
       });
     },
   };

@@ -21,7 +21,7 @@ test('Task Manager is offered only when available as a standalone surface', asyn
   ]);
   assert.match(catalog, /kanban: 'team\.kanban'/);
   assert.match(catalog, /type: WORKBENCH_TYPES\.kanban, header: 'surface'[\s\S]*e\.kanbanOffers\(\)/);
-  assert.match(catalog, /WORKBENCH_PROFILES\.team, \[WORKBENCH_TYPES\.commons, WORKBENCH_TYPES\.kanban,/);
+  assert.match(catalog, /WORKBENCH_PROFILES\.team, \[WORKBENCH_TYPES\.commons, WORKBENCH_TYPES\.teamChart, WORKBENCH_TYPES\.kanban,/);
   assert.match(view, /request\('\/api\/installed'/);
   assert.match(view, /kanbanOffers: \(\) => kanbanGate\.available \? \[\{/);
   assert.match(view, /teamKanban: \(id\) => taskManagerFor\(id\)/);
@@ -31,10 +31,10 @@ test('Task Manager is offered only when available as a standalone surface', asyn
   assert.match(view, /workspace\.tab_task_manager', 'Task Manager'/);
 });
 
-test('People surface shares roster/org selection and density; selection opens adjacent composition while Launch opens the Agent workbench', async () => {
-  const [view, members, retirement, css, workbench, coworkRoster, composition, catalog] = await Promise.all([
+test('Roster remains a roster while Team Chart is a standalone Phalanx surface', async () => {
+  const [view, members, retirement, css, workbench, coworkRoster, composition, catalog, chart, phalanx, kotoba] = await Promise.all([
     source('public/js/cowork-view.js'), source('public/js/team-members.js'), source('public/js/session-retire.js'), source('public/css/team-workspace.css'), source('public/js/workbench.js'), source('public/js/team-roster-surface.js'),
-    source('public/js/agent-composition.js'), source('public/js/workbench-catalog.js'),
+    source('public/js/agent-composition.js'), source('public/js/workbench-catalog.js'), source('public/js/team-chart-surface.js'), source('public/js/phalanx.js'), source('KOTOBA.md'),
   ]);
   assert.match(view, /workspace1: 'workspace2', workspace2: 'workspace1', workspace3: 'workspace4', workspace4: 'workspace3'/);
   assert.match(view, /openOwner: \(name\) => arrange\(\{ \[oppositeSeat\(id\)\]: \{ session: name \} \}\)/);
@@ -58,9 +58,9 @@ test('People surface shares roster/org selection and density; selection opens ad
   assert.match(css, /\.league-team-member-detail\[hidden\] \{ display: none; \}/);
   assert.match(members, /toggle\.setAttribute\('aria-expanded', 'false'\)/);
   assert.match(members, /toggle\.setAttribute\('aria-controls', detail\.id\)/);
-  assert.match(members, /let reading = 'roster', density = 'compact', selected/);
-  assert.match(members, /rosterButton\.el\.addEventListener\('click'[\s\S]*reading = 'roster'[\s\S]*orgButton\.el\.addEventListener\('click'[\s\S]*reading = 'org'/);
-  assert.match(members, /options\.onSelect\?\.\(member\)/, 'both readings use the same selection callback');
+  assert.match(members, /let density = 'compact', selected/);
+  assert.doesNotMatch(members, /orgButton|org_reading/, 'Roster does not privately retain the chart reading');
+  assert.match(members, /options\.onSelect\?\.\(member\)/);
   assert.match(view, /onSelect: \(member\) => bench\.place\(WB_TYPES\.agentComposition, oppositeSeat\(id\), \{ key: member\.name \}\)/, 'selection drives the adjacent Agent composition surface');
   assert.match(catalog, /agentComposition: AGENT_COMPOSITION_TYPE/);
   assert.match(catalog, /WORKBENCH_PROFILES\.team[^\n]*WORKBENCH_TYPES\.agentComposition/);
@@ -68,19 +68,22 @@ test('People surface shares roster/org selection and density; selection opens ad
   assert.match(composition, /Immutable history/);
   assert.match(members, /densityButton\.el\.addEventListener\('click'[\s\S]*density === 'compact' \? 'expanded' : 'compact'/);
   assert.match(members, /detail\.hidden = density !== 'expanded'/);
-  assert.match(members, /const leads = members\.filter\(\(member\) => member\.team_lead\), others = members\.filter/);
-  assert.match(members, /'Reporting lines are not set, so these Agents remain unplaced\.'/);
   assert.match(members, /'Team lead not assigned'[\s\S]*'Assign lead'[\s\S]*'Add new Agent'/);
   assert.match(members, /import \{ ask \} from '\.\/ask\.js'/);
   assert.match(members, /const pick = ask\(\[\{ fields: \[\{[\s\S]*key: 'lead'[\s\S]*options: choices\.map/);
   assert.match(view, /onAddLead: \(\) => bench\.place\(WB_TYPES\.newAgent, oppositeSeat\(id\), \{[\s\S]*teamLead: true/);
   assert.match(await source('public/js/new-agent.js'), /if \(detail\?\.teamLead === true\) draft\.teamLead = true/);
-  assert.match(coworkRoster, /league\.roster_reading', 'Roster'/);
-  assert.match(coworkRoster, /league\.org_reading', 'Org chart'/);
-  assert.match(coworkRoster, /buildTeamMembers\(team\.name/);
-  assert.match(coworkRoster, /onAddLead: \(\) => options\.onAddLead\?\.\(team\.name\)/);
-  assert.match(view, /createTeamRosterSurface\(\{[\s\S]*onSelect: \(member\) => bench\.place\(WB_TYPES\.agentComposition/);
-  assert.match(view, /onAddLead: \(name\) => bench\.place\(WB_TYPES\.newAgent[\s\S]*team: name, teamLead: true/);
+  assert.doesNotMatch(coworkRoster, /org_reading|buildTeamMembers/);
+  assert.match(chart, /export const TEAM_CHART_TYPE = 'team\.chart'/);
+  assert.match(chart, /createPhalanx\(/);
+  assert.match(chart, /group: t\('league\.team_lead', 'Team Lead'\)/);
+  assert.match(chart, /group: t\('league\.agents', 'Agents'\)/);
+  assert.match(chart, /onAddLead\?\.\(teamName\(\)\)/);
+  assert.match(phalanx, /export function createPhalanx/);
+  assert.match(kotoba, /\| Phalanx \| A shared collection surface:/);
+  assert.match(catalog, /teamChart: TEAM_CHART_TYPE/);
+  assert.match(catalog, /WORKBENCH_PROFILES\.team[^\n]*WORKBENCH_TYPES\.teamChart/);
+  assert.match(view, /teamChart: \(id\) => createTeamChartSurface/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
   assert.match(view, /campaign \? \{ action: \(\) => openAgentWorkbench\(member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
   assert.match(view, /createTeamRosterSurface\(\{[\s\S]*onOpen: openAgentWorkbench/, 'the Cowork Team Roster row opens the standalone Agent workbench');

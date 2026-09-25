@@ -82,7 +82,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     embedActions.append(start.el);
     surface.content.append(embedActions);
   }
-
   const isCowork = () => draft.type === 'cowork_agent';
   const hasAgent = () => draft.type !== 'terminal';
   const templateRow = () => templates.find((row) => row.name === draft.template) || null;
@@ -640,7 +639,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     paintFoot();
   }
 
-  // a band of its own rather than trailing off the end of a long form.
+  // A band of its own rather than trailing off the end of a long form.
   let payloadOpen = false;
   const stepPayload = createStep({ n: 8, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
     payloadOpen = !payloadOpen;
@@ -661,7 +660,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     draft.instructions = prompt;
     instructionsInput.value = prompt;
   };
-
   return {
     el: embedded ? surface.content : surface.el,
     enter: async (detail = {}) => {

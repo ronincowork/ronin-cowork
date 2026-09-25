@@ -30,16 +30,13 @@ export const buildTeamMembers = (name, options = {}) => {
   const holding = !!options.holding;
   const roster = el('section', 'league-team-roster');
   const members = membersOfTeam(name);
-  let reading = 'roster', density = 'compact', selected = options.selected || '';
+  let density = 'compact', selected = options.selected || '';
   const heading = el('div', 'league-team-roster-heading');
   heading.append(el('h3', 'league-team-roster-title', holding ? t('league.agents', 'Agents') : t('league.people', 'People')));
   const tools = el('div', 'league-team-people-tools');
-  const viewToggle = el('div', 'league-team-view-toggle'); viewToggle.setAttribute('role', 'group'); viewToggle.setAttribute('aria-label', t('league.people_reading', 'People reading'));
-  const rosterButton = createAction({ label: t('league.roster_reading', 'Roster'), size: 'compact' });
-  const orgButton = createAction({ label: t('league.org_reading', 'Org chart'), size: 'compact' });
   const densityButton = createAction({ label: '', size: 'compact', className: 'tw-agent-density league-team-density' });
   const densityLines = el('span', 'tw-agent-density-lines'); densityLines.append(el('i'), el('i')); densityButton.el.replaceChildren(densityLines);
-  viewToggle.append(rosterButton.el, orgButton.el); tools.append(viewToggle, densityButton.el); tools.hidden = holding; heading.append(tools); roster.append(heading);
+  tools.append(densityButton.el); tools.hidden = holding; heading.append(tools); roster.append(heading);
   const content = el('div', 'league-team-people-content'); roster.append(content);
 
   const select = (member) => {
@@ -118,8 +115,7 @@ export const buildTeamMembers = (name, options = {}) => {
     const acts = el('div', 'league-team-lead-empty-actions'); acts.append(pick.el, assign.el); if (add) acts.append(add.el); box.append(acts); return box;
   };
   const paint = () => {
-    content.replaceChildren(); roster.dataset.reading = reading; roster.dataset.density = density;
-    rosterButton.el.setAttribute('aria-pressed', String(reading === 'roster')); orgButton.el.setAttribute('aria-pressed', String(reading === 'org'));
+    content.replaceChildren(); roster.dataset.density = density;
     densityButton.el.dataset.lines = density === 'compact' ? 'two' : 'one';
     densityButton.el.title = density === 'compact' ? t('league.expand_people', 'Expand Agent details') : t('league.compact_people', 'Compact Agent details');
     densityButton.el.setAttribute('aria-label', densityButton.el.title); densityButton.el.setAttribute('aria-pressed', String(density === 'expanded'));
@@ -127,20 +123,7 @@ export const buildTeamMembers = (name, options = {}) => {
       if (!holding) content.append(noLead());
       content.append(el('p', 'league-team-empty', holding ? t('league.no_ronin', 'No Rōnin Agents') : t('league.no_members', 'No Agents assigned yet.')));
     }
-    else if (reading === 'roster') content.append(...members.map(memberRow));
-    else {
-      const chart = el('div', 'league-team-org');
-      const leads = members.filter((member) => member.team_lead), others = members.filter((member) => !member.team_lead);
-      const leadLevel = el('div', 'league-team-org-leads');
-      if (leads.length) leadLevel.append(...leads.map(memberRow)); else leadLevel.append(noLead());
-      chart.append(leadLevel);
-      if (others.length) {
-        const unplaced = el('section', 'league-team-org-unplaced');
-        unplaced.append(el('h4', null, t('league.unplaced_agents', 'Other Agents')), el('p', null, t('league.hierarchy_unset', 'Reporting lines are not set, so these Agents remain unplaced.')), ...others.map(memberRow));
-        chart.append(unplaced);
-      }
-      content.append(chart);
-    }
+    else content.append(...members.map(memberRow));
     for (const detail of content.querySelectorAll('.league-team-member-detail')) detail.hidden = density !== 'expanded';
     for (const toggle of content.querySelectorAll('.league-team-member-toggle')) {
       const expanded = density === 'expanded', member = members.find((row) => row.name === toggle.closest('.league-team-member')?.dataset.session);
@@ -149,8 +132,6 @@ export const buildTeamMembers = (name, options = {}) => {
       const disclosure = toggle.querySelector('.league-team-member-disclosure'); if (disclosure) disclosure.textContent = expanded ? '⌃' : '⌄';
     }
   };
-  rosterButton.el.addEventListener('click', () => { reading = 'roster'; paint(); });
-  orgButton.el.addEventListener('click', () => { reading = 'org'; paint(); });
   densityButton.el.addEventListener('click', () => { density = density === 'compact' ? 'expanded' : 'compact'; paint(); });
   paint();
   if (holding) return roster;
