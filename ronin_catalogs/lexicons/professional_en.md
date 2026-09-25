@@ -746,6 +746,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team_kanban.next:** Next
 - **team_kanban.evidence:** Evidence
 - **team_kanban.open_project:** Open Project
+- **team_kanban.open_owner:** Open @{name}
+- **team_kanban.waiting:** waiting on
+- **team_kanban.asked:** asked
 - **team_kanban.desk_summary:** Projects across this Desk’s Teams and Agents
 - **team.lead:** Team lead
 - **team.flip_commons:** Show the Team commons in this workspace

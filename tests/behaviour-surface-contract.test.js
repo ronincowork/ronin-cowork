@@ -12,6 +12,7 @@ const cowork = await readFile(new URL('../public/js/cowork-view.js', import.meta
 
 test('Behavior work surface reads every scope and edits optional guidance through the existing API', () => {
   assert.match(surface, /createPhalanx/);
+  assert.match(surface, /createPhalanx\(\{ grouped: true/);
   assert.match(surface, /\/api\/ways\/\$\{encodeURIComponent\(row\.scope\)\}/);
   assert.match(surface, /renderMarkdownDocument/);
   assert.match(surface, /if \(row\.scope !== 'selected'\) return/);

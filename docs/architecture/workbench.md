@@ -10,8 +10,12 @@ instances, and calls the placed instance's `show()` synchronously. The surface o
 smallest reads needed to paint itself.
 
 `public/js/phalanx.js` owns the shared Phalanx collection interaction: stones at rest,
-a selected-stone rail beside its detail, focus return, Escape, and responsive geometry.
-Consumers supply items and detail content; they do not recreate that movement privately.
+optional named groups, a selected-stone rail beside its detail, focus return, Escape,
+density, and responsive geometry. Grouping is explicit: an ungrouped consumer passes no
+`grouped` option; a grouped consumer opts in with `true` or supplies ordered group records
+with shared heading and drag hooks. Consumers supply items and detail content; they do not
+recreate that movement privately. Behaviors and every Task Manager scope use this grouped
+contract; Task Manager supplies Ideas, Planning, Building, Landing, and Done as its groups.
 
 ## Library, profile, tenant, instance
 
