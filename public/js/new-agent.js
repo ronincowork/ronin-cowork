@@ -665,7 +665,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   return {
     el: embedded ? surface.content : surface.el,
     enter: async (detail = {}) => {
-      const entryTeam = typeof team === 'function' ? team() : team;
+      const entryTeam = String(detail?.team || (typeof team === 'function' ? team() : team) || '');
       if (entryTeam) { draft.teamMode = 'existing'; draft.team = entryTeam; }
       if (detail?.teamLead === true) draft.teamLead = true;
       paint();

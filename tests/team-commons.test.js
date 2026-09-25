@@ -75,9 +75,15 @@ test('People surface shares roster/org selection and density; selection opens ad
   assert.match(members, /const pick = ask\(\[\{ fields: \[\{[\s\S]*key: 'lead'[\s\S]*options: choices\.map/);
   assert.match(view, /onAddLead: \(\) => bench\.place\(WB_TYPES\.newAgent, oppositeSeat\(id\), \{[\s\S]*teamLead: true/);
   assert.match(await source('public/js/new-agent.js'), /if \(detail\?\.teamLead === true\) draft\.teamLead = true/);
+  assert.match(coworkRoster, /league\.roster_reading', 'Roster'/);
+  assert.match(coworkRoster, /league\.org_reading', 'Org chart'/);
+  assert.match(coworkRoster, /buildTeamMembers\(team\.name/);
+  assert.match(coworkRoster, /onAddLead: \(\) => options\.onAddLead\?\.\(team\.name\)/);
+  assert.match(view, /createTeamRosterSurface\(\{[\s\S]*onSelect: \(member\) => bench\.place\(WB_TYPES\.agentComposition/);
+  assert.match(view, /onAddLead: \(name\) => bench\.place\(WB_TYPES\.newAgent[\s\S]*team: name, teamLead: true/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
   assert.match(view, /campaign \? \{ action: \(\) => openAgentWorkbench\(member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
-  assert.match(view, /createTeamRosterSurface\(\{ onOpen: openAgentWorkbench \}\)/, 'the Cowork Team Roster row opens the standalone Agent workbench');
+  assert.match(view, /createTeamRosterSurface\(\{[\s\S]*onOpen: openAgentWorkbench/, 'the Cowork Team Roster row opens the standalone Agent workbench');
   assert.match(coworkRoster, /connect: \(name\) => options\.onOpen\?\.\(name\)/);
   assert.doesNotMatch(coworkRoster, /S\.connectSession/, 'the Cowork Team Roster cannot fall back to in-workspace seating');
   assert.match(workbench, /card\.el\.addEventListener\('dragstart',[\s\S]*JSON\.stringify\(\{ type: definition\.type, detail \}\)/, 'drag still carries the terminal surface and Agent resource to a workspace');

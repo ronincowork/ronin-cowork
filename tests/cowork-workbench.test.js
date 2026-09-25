@@ -40,7 +40,7 @@ test('Cowork launches use the standalone handoff while Team launches retain in-p
 
 test('Teams opens its roster and New Team form in the two default workspaces', async () => {
   const text = await source('cowork-view.js');
-  assert.match(text, /seats: campaign \? \{ workspace1: WB_TYPES\.roster, workspace2: WB_TYPES\.newTeamForm \} : \{\}/);
+  assert.match(text, /seats: campaign \? \{ workspace1: WB_TYPES\.roster, workspace2: desk \? WB_TYPES\.kanban : WB_TYPES\.newTeamForm \} : \{\}/);
 });
 
 test('Cowork offers a Desk-scoped Task Manager and all scopes can place drill-down surfaces', async () => {
@@ -51,4 +51,16 @@ test('Cowork offers a Desk-scoped Task Manager and all scopes can place drill-do
   assert.match(catalog, /taskStatus: 'task-manager\.status'/);
   assert.match(catalog, /taskProject: 'task-manager\.project'/);
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.cowork, \[[^\]]*WORKBENCH_TYPES\.kanban[^\]]*WORKBENCH_TYPES\.taskStatus[^\]]*WORKBENCH_TYPES\.taskProject/);
+});
+
+test('Desk owns an operational destination and first-opens Teams beside its Task Manager', async () => {
+  const [main, view, contract, home] = await Promise.all([
+    source('main.js'), source('cowork-view.js'), source('workspace-contract.js'), source('campaign-home.js'),
+  ]);
+  assert.match(home, /key: 'desk', route: 'desk'/);
+  assert.match(main, /workspace\.register\('desk', createCoworkView\(\{ kind: 'desk' \}\)\)/);
+  assert.match(contract, /'campaign', 'desk', 'cowork'/);
+  assert.match(view, /const desk = options\.kind === 'desk'/);
+  assert.match(view, /workspace1: WB_TYPES\.roster, workspace2: desk \? WB_TYPES\.kanban : WB_TYPES\.newTeamForm/);
+  assert.match(view, /workbenchView\(desk \? 'desk' : campaign \? 'cowork' : 'team'\)/);
 });

@@ -17,7 +17,7 @@ const el = (tag, cls, text) => {
 
 function DOORS() {
   return [
-    { key: 'desk', route: 'cowork', glyph: '⛩', name: t('campaign_home.desk', 'Desk'), is: t('campaign_home.desk_is', 'All Teams, Agents, and work') },
+    { key: 'desk', route: 'desk', glyph: '⛩', name: t('campaign_home.desk', 'Desk'), is: t('campaign_home.desk_is', 'All Teams, Agents, and work') },
     { key: 'team', route: 'cowork', glyph: '人人', name: t('campaign_home.team', 'Team'), is: t('campaign_home.team_is', 'Choose a Team and open its Workbench') },
     { key: 'agent', route: 'cowork', glyph: '人', name: t('campaign_home.agent', 'Agent'), is: t('campaign_home.agent_is', 'Choose an Agent and open its Workbench') },
   ];

@@ -14,13 +14,16 @@ test('Ronin Home routes the Machine door from persisted Campaign Setup answers',
   } } } }), 'campaign');
 });
 
-test('Ronin Home opens Desk, Team, and Agent through the operational collection and keeps Settings secondary', async () => {
+test('Ronin Home opens Desk as its operational tenant while Team and Agent use the collection chooser', async () => {
   const home = await source('js/campaign-home.js');
   assert.match(home, /Ronin Home/);
   assert.match(home, /campaign_home\.desk', 'Desk'/);
   assert.match(home, /campaign_home\.team', 'Team'/);
   assert.match(home, /campaign_home\.agent', 'Agent'/);
   assert.match(home, /campaign_home\.settings', 'Settings'/);
+  assert.match(home, /key: 'desk', route: 'desk'/);
+  assert.match(home, /key: 'team', route: 'cowork'/);
+  assert.match(home, /key: 'agent', route: 'cowork'/);
   assert.doesNotMatch(home, /data-door=['"]campaign/);
   assert.match(home, /request\('\/api\/setup\/runtime'/);
   assert.match(home, /activatedCount < 1/);

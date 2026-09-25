@@ -43,7 +43,7 @@ export function installWorkspaceHeader(workspace) {
     }
     if (place) {
       const teamPage = active?.id === 'team' && active.param;
-      const editable = teamPage || active?.id === 'cowork';
+      const editable = teamPage || active?.id === 'cowork' || active?.id === 'desk';
       if (editable) {
         // ViewHost has already seated the existing tab-name input here. Leave it intact:
         // its stored value names this workbench/tab and cannot rename the Team or Agent.
