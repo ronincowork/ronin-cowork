@@ -82,8 +82,12 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.match(phalanx, /export function createPhalanx/);
   assert.match(kotoba, /\| Phalanx \| A shared collection surface:/);
   assert.match(catalog, /teamChart: TEAM_CHART_TYPE/);
+  assert.match(catalog, /discover: \(_t, environment\) => environment\.chartTeams\(\)/);
+  assert.match(catalog, /WORKBENCH_PROFILES\.cowork[^\n]*WORKBENCH_TYPES\.teamChart/);
   assert.match(catalog, /WORKBENCH_PROFILES\.team[^\n]*WORKBENCH_TYPES\.teamChart/);
-  assert.match(view, /teamChart: \(id\) => createTeamChartSurface/);
+  assert.match(view, /chartTeams: \(\) => campaign[\s\S]*Team Chart/);
+  assert.match(view, /teamChart: \(id, detail = \{\}\) => createTeamChartSurface/);
+  assert.match(view, /team: \(\) => detail\.key \|\| team/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
   assert.match(view, /campaign \? \{ action: \(\) => openAgentWorkbench\(member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
   assert.match(view, /createTeamRosterSurface\(\{[\s\S]*onOpen: openAgentWorkbench/, 'the Cowork Team Roster row opens the standalone Agent workbench');

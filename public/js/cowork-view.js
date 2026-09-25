@@ -289,8 +289,11 @@ export function createCoworkView(options = {}) {
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(campaign ? WB_TYPES.roster : WB_TYPES.commons, workspace)),
     teamCommons: (id) => ({ el: commonsFor(id).el, show: (detail = {}) => { const item = commonsFor(id); if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
-    teamChart: (id) => createTeamChartSurface({
-      team: () => team,
+    chartTeams: () => campaign
+      ? teamsFromState().filter((item) => !item.holding).map((item) => ({ key: item.name, label: `${readableTeam(item.name)} · ${t('team_chart.title', 'Team Chart')}`, summary: t('team_chart.team_summary', 'Open this Team’s organizational Phalanx') }))
+      : team ? [{ key: team, label: t('team_chart.title', 'Team Chart') }] : [],
+    teamChart: (id, detail = {}) => createTeamChartSurface({
+      team: () => detail.key || team,
       onSelect: (member) => bench.place(WB_TYPES.agentComposition, oppositeSeat(id), { key: member.name }),
       onOpen: (member) => openAgentWorkbench(member.name),
       onAddLead: (name) => bench.place(WB_TYPES.newAgent, oppositeSeat(id), { team: name, teamLead: true }),
