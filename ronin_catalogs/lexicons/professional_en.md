@@ -605,13 +605,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.required:** Required
 - **forms.reason_not_on_machine:** not on this machine
 - **forms.reason_turned_off:** turned off
-- **forms.reason_not_listed:** not listed by your {cli} {client_version}
-- **forms.model_unlisted:** not listed by this CLI
 - **forms.provider_off:** {name} — not on this machine
 - **forms.model_word:** {model} · {tier}
 - **forms.model_off:** {model} · {tier} — not on this machine
-- **forms.model_list_current:** {verdict} by your {cli} {client_version}{as_of}
-- **forms.model_list_stale:** {verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
@@ -2011,7 +2007,12 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.
-- **setup_surface.model_candidates:** Listed by the CLI, missing from the catalog
+- **setup_surface.refresh_all:** Refresh all model providers
+- **setup_surface.refreshing_all:** Refreshing…
+- **setup_surface.last_ran:** Last ran {date}
+- **setup_surface.never_ran:** Never run — every provider offers Native only until it runs.
+- **setup_surface.models_read:** Model list read {date} by {cli} {version}
+- **setup_surface.models_not_read:** Model list not read yet — press Refresh all model providers.
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.fact_installed:** Installed
 - **setup_surface.fact_signed_in:** Signed in

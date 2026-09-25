@@ -46,7 +46,6 @@ export function connectEvents() {
     if (m.t === 'team-page') for (const fn of teamPageHandlers) fn(m);
     if (m.t === 'mika-show') for (const fn of mikaShowHandlers) fn(m);
     if (m.t === 'setup-progress' && Array.isArray(m.steps)) for (const fn of setupProgressHandlers) fn(m);
-    if (m.t === 'provider-inventory') window.dispatchEvent(new CustomEvent('ronin:provider-inventory', { detail: m }));
   };
   ws.onclose = () => setTimeout(connectEvents, 3000); // keep the feed alive
   return ws; // the caller may want to know which connection it got
