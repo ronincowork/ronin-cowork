@@ -9,8 +9,9 @@ const element = (tag, className = '', text = '') => {
 let nextDetailId = 0;
 
 /**
- * The shared Setup work-surface: a responsive phalanx at rest and a one-stone
- * rail beside the consumer's real detail when selected.
+ * The shared collection surface: a responsive phalanx at rest and a one-stone
+ * rail beside the consumer's real detail when selected. Its top area starts empty;
+ * consumers supply `before` content only when an explicit surface design calls for it.
  */
 export function createPhalanx({ items = [], selectedId = '', renderDetail, onSelectionChange, className = '' } = {}) {
   const root = element('section', `sws ${className}`.trim());

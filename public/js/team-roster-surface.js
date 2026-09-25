@@ -32,8 +32,7 @@ export function createTeamRosterSurface() {
     const actions = node('div', 'tc-actions'); actions.append(launch.el, remove.el); host.append(actions);
   };
   const stones = createPhalanx({ className: 'team-roster-phalanx', items: [], renderDetail });
-  const intro = node('div', 'sws-intro'); intro.append(node('h2', '', t('campaign.coworks', 'Teams')), node('p', '', t('league.teams_intro', 'Choose a Team to inspect or open its Workbench.')));
-  stones.mount(surface.content, { before: [intro] });
+  stones.mount(surface.content);
   const stop = subscribe(() => stones.setItems(items()));
   return {
     el: surface.el,

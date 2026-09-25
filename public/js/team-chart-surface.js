@@ -47,8 +47,7 @@ export function createTeamChartSurface({ team, onSelect, onOpen, onAddLead } = {
     return null;
   };
   const phalanx = createPhalanx({ className: 'team-chart-phalanx', items: [], renderDetail });
-  const intro = el('div', 'sws-intro'); intro.append(el('h2', '', t('team_chart.title', 'Team Chart')), el('p', '', t('team_chart.intro', 'The Team lead and Agents in one organizational reading.')));
-  phalanx.mount(surface.content, { before: [intro] });
+  phalanx.mount(surface.content);
   const stop = subscribe(() => { if (entered) phalanx.setItems(items()); });
   return {
     el: surface.el,
