@@ -135,6 +135,7 @@ restoration branches.
 | Destination | First open | Notable structured opening |
 |---|---|---|
 | Ronin Settings | Defaults in workspace 1; Workspace Folders in workspace 2 | **Desk defaults** replaces the seats with Defaults and Launch your own |
+| Desk | Teams overview in workspace 1; Desk Task Manager in workspace 2 | Status and Project drill-downs retain the Desk tenant |
 | New Project | New Agent in workspace 1 | Links may replace or overlay New Agent/New Team and carry prompt or template detail |
 | Ronin Setup | Garden in workspace 1; active journey surface in workspace 2 | Journey actions select a Setup surface without another restoration path |
 | Cowork / Team | Fresh empty/member seating rules; refresh restores this instance | Team Configuration, documents, commons tabs, and New Agent may be addressed in seat detail |
@@ -193,10 +194,13 @@ independently.
 | Launch your own | no launch data until Agent, Team, or Preset is selected; that embedded form then owns its reads |
 | Presets | preset catalog plus provider/root choices required by the selected preset |
 
-### Cowork and Team (`cowork` and `team` profiles)
+### Desk, Cowork, and Team (`desk`, `cowork`, and `team` profiles)
 
-Sessions and Team records are legitimate entry data because they are the discovery cards
-and seats. Optional feature status is independent and must not hold the frame.
+Desk is a first-class Workbench profile and tenant with its own restoration namespace and
+first-open map; it is not a renamed Cowork entry. Desk and Cowork reuse aggregate surface
+implementations, while Team addresses one Team. Sessions and Team records are legitimate
+entry data because they are the discovery cards and seats. Optional feature status is
+independent and must not hold the frame.
 
 | Surface | Required data and owner |
 |---|---|

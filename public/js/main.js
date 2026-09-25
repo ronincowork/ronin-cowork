@@ -14,6 +14,7 @@ import { installTips } from './tips.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
+import { createDeskView } from './desk-view.js';
 import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createCampaignView } from './campaign-view.js';
@@ -100,7 +101,7 @@ export async function init() {
   guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
   // Desk is an operational tenant, not the Cowork chooser and not Settings. It shares
   // the aggregate surface family while owning its first-open seating and restoration.
-  guard('register the Desk destination', () => workspace.register('desk', createCoworkView({ kind: 'desk' })));
+  guard('register the Desk destination', () => workspace.register('desk', createDeskView()));
   // A standalone Agent is a first-class Workbench tenant. Launch handoff opens this
   // destination; Setup does not own a private redirect or seating path.
   guard('register the Agent destination', () => workspace.register('agent', createAgentView()));

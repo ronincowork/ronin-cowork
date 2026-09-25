@@ -369,7 +369,7 @@ export function createCoworkView(options = {}) {
     })() : [],
   };
   bench = WorkspaceKit.workbench.create({
-    profile: campaign ? WB_PROFILES.cowork : WB_PROFILES.team,
+    profile: desk ? WB_PROFILES.desk : campaign ? WB_PROFILES.cowork : WB_PROFILES.team,
     tenant: { kind: desk ? 'desk' : campaign ? 'cowork' : 'team', team: () => team }, environment,
     defaultNode: (id) => seats[id].surface.el,
     label: campaign ? teamsLabel : t('team.roster_title', 'Team Roster'),
