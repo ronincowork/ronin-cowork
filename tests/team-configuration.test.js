@@ -30,13 +30,22 @@ globalThis.HTMLElement = FakeNode; // the kit's createField accepts a control by
 globalThis.document = { createElement: (tag) => new FakeNode(tag), createDocumentFragment: () => new FakeNode('#fragment'), querySelector: () => null, head: { append() {} }, addEventListener() {}, removeEventListener() {} };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {}, location: { hash: '' } };
 
-const catalog = { origin: 'stock', providers: [
-  { provider: 'anthropic', cli: 'claude', native: 'claude', label: 'Anthropic', models: [{ model: 'opus', tier: 'frontier', cmd: 'claude --model opus' }] },
-  { provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', cmd: 'codex --model gpt-5.6-sol' }] },
+/** Rows as the server joins them since 2026-09-25: Native first, then what the CLI listed; the client joins nothing. */
+const joined = (entry, on, listed = []) => {
+  const base = { provider: entry.provider, cli: entry.cli, provider_label: entry.label, cli_label: entry.cli_label || entry.label, operational: on, off: entry.off === true, selectable: on, origin: entry.origin || 'stock', shadowed: entry.shadowed === true };
+  const meta = new Map((entry.models || []).map((row) => [row.model, row]));
+  return { ...entry, cli_label: base.cli_label, operational: on, off: base.off, models: [
+    { ...base, model: 'native', name: 'Native', cmd: entry.native, tier: '', default: true, cost: '', good_at: 'the CLI choosing its own configured or current default model', not_good_at: 'pinning a particular model' },
+    ...listed.map(([id, name]) => ({ ...base, model: id, name, cmd: `${entry.native} --model ${id}`, tier: meta.get(id)?.tier || '', default: false, cost: meta.get(id)?.cost || '', good_at: meta.get(id)?.good_at || '', not_good_at: meta.get(id)?.not_good_at || '' })),
+  ] };
+};
+const catalog = { origin: 'stock', measured_at: '2026-09-13T00:00:00.000Z', refreshed_at: '', providers: [
+  joined({ provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', cli_label: 'Codex', models: [{ model: 'gpt-5.6-sol', tier: 'frontier' }] }, true, [['gpt-5.6-sol', 'GPT-5.6-Sol']]),
+  joined({ provider: 'anthropic', cli: 'claude', native: 'claude', label: 'Anthropic', cli_label: 'Claude Code', models: [{ model: 'opus', tier: 'frontier' }] }, false),
 ] };
 const machine = { measured_at: '2026-09-13T00:00:00.000Z', providers: [
-  { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true, version: 'test', model_list: { client_version: 'test', fetched_at: '2026-09-13', models: [{ slug: 'gpt-5.6-sol', visibility: 'list' }] } },
-  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: false, signed_in: false, activated: false, version: 'test', model_list: { client_version: 'test', fetched_at: '2026-09-13', models: [{ slug: 'opus', visibility: 'list' }] } },
+  { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true, version: 'test' },
+  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: false, signed_in: false, activated: false, version: null },
 ] };
 const ways = [{ name: 'mandates', label: 'Mandates', blurb: '' }, { name: 'buildout', label: 'Buildout', blurb: 'Write the plan beside the work.' }];
 const roots = { roots: [
@@ -89,7 +98,7 @@ test('every question is an ERABI stone whose reading is the saved answer', async
   assert.equal(readingOf(form, 'repos'), 'Ronin Services');
   assert.equal(readingOf(form, 'kind'), 'Coding');
   assert.equal(readingOf(form, 'provider'), 'OpenAI');
-  assert.equal(readingOf(form, 'model'), 'gpt-5.6-sol');
+  assert.equal(readingOf(form, 'model'), 'GPT-5.6-Sol', 'the reading shows the CLI\'s own name; the saved value stays the id');
   assert.equal(readingOf(form, 'reach'), 'Plan');
   assert.equal(readingOf(form, 'launch_mode'), 'Dangerously');
 });

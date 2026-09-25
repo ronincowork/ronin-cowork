@@ -32,6 +32,16 @@ globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener()
 
 const presets = await import('../public/js/presets.js');
 
+/** Rows as the server joins them since 2026-09-25: Native first, then what the CLI listed; the client joins nothing. */
+const joined = (entry, on, listed = []) => {
+  const base = { provider: entry.provider, cli: entry.cli, provider_label: entry.label, cli_label: entry.cli_label || entry.label, operational: on, off: entry.off === true, selectable: on, origin: entry.origin || 'stock', shadowed: entry.shadowed === true };
+  const meta = new Map((entry.models || []).map((row) => [row.model, row]));
+  return { ...entry, cli_label: base.cli_label, operational: on, off: base.off, models: [
+    { ...base, model: 'native', name: 'Native', cmd: entry.native, tier: '', default: true, cost: '', good_at: 'the CLI choosing its own configured or current default model', not_good_at: 'pinning a particular model' },
+    ...listed.map(([id, name]) => ({ ...base, model: id, name, cmd: `${entry.native} --model ${id}`, tier: meta.get(id)?.tier || '', default: false, cost: meta.get(id)?.cost || '', good_at: meta.get(id)?.good_at || '', not_good_at: meta.get(id)?.not_good_at || '' })),
+  ] };
+};
+
 test('purpose pills offer three original categories and All Sample Presets as singular choices', () => {
   const host = new FakeNode('div');
   const preference = presets.createKindsPreference(null);
@@ -371,8 +381,11 @@ test('a stone gate reads the runtime the Setup view keeps current, and the held 
 
 test('a row asks for provider and dependent model from the shared catalog', async () => {
   // The picker reads the catalog and the machine's summary itself; this is the one fetch it makes.
-  const catalog = { origin: 'stock', updated: '2026-09-08', providers: [{ provider: 'anthropic', cli: 'claude', native: 'claude', label: 'Anthropic', models: [{ model: 'opus', tier: 'frontier', good_at: 'hard work', cmd: 'claude --model opus' }] }, { provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', good_at: 'the hardest coding', cmd: 'codex --model gpt-5.6-sol' }] }] };
-  const machine = { measured_at: '2026-09-08T11:00:00.000Z', providers: [{ id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true, version: 'test', model_list: { client_version: 'test', fetched_at: '2026-09-08', models: [{ slug: 'gpt-5.6-sol', visibility: 'list' }] } }, { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: false, signed_in: false, activated: false, version: 'test', model_list: { client_version: 'test', fetched_at: '2026-09-08', models: [{ slug: 'opus', visibility: 'list' }] } }] };
+  const catalog = { origin: 'stock', updated: '2026-09-08', measured_at: '2026-09-08T11:00:00.000Z', refreshed_at: '', providers: [
+    joined({ provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', cli_label: 'Codex', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', good_at: 'the hardest coding' }] }, true, [['gpt-5.6-sol', 'GPT-5.6-Sol']]),
+    joined({ provider: 'anthropic', cli: 'claude', native: 'claude', label: 'Anthropic', cli_label: 'Claude Code', models: [{ model: 'opus', tier: 'frontier', good_at: 'hard work' }] }, false),
+  ] };
+  const machine = { measured_at: '2026-09-08T11:00:00.000Z', providers: [{ id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true, version: 'test' }, { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: false, signed_in: false, activated: false, version: null }] };
   globalThis.fetch = async (url) => { const body = url.startsWith('/api/provider-catalog') ? catalog : url.startsWith('/api/setup/runtime') ? machine : null; return { ok: body !== null, status: body ? 200 : 404, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => body ?? { error: 'no' } }; };
   const surface = presets.createPresetsSurface({ environment: {
     presetData: async () => ({ templates: [], runtime: { activated_count: 1, providers: [{ id: 'codex', activated: true }], roots: [] } }),
@@ -393,7 +406,7 @@ test('a row asks for provider and dependent model from the shared catalog', asyn
   options[1].click();
   model = [...rows[0].walk()].find((node) => node.dataset.askKey === 'model'); model.click();
   options = [...rows[0].walk()].filter((node) => String(node.className).split(' ').includes('ask-opt'));
-  assert.deepEqual(options.map((option) => option.textContent), ['Default model', 'Native', 'gpt-5.6-solfrontier']);
+  assert.deepEqual(options.map((option) => option.textContent), ['Default model', 'Native', 'GPT-5.6-Solfrontier']);
   assert.doesNotMatch(await readFile(new URL('../public/js/presets.js', import.meta.url), 'utf8'), /launchTable|sp-cycle/);
 });
 

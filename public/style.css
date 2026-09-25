@@ -6047,8 +6047,9 @@ button.wb-door:hover b {
 .setup-provider-date-list > div { display: flex; gap: var(--space-3); }
 .setup-provider-date-list dt { color: var(--muted); }
 .setup-provider-date-list dd { margin: 0; }
-/* Refresh: the one control that asks outside this machine (each CLI's package source), so it sits by the dates, not in a step. */
-.setup-provider-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); margin-top: var(--space-5); }
+/* Refresh all: the one control that reads every activated CLI's model list and asks outside this machine (each CLI's package source). It sits once, at the top, with the date it last ran. */
+.setup-provider-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); margin: var(--space-4) 0 var(--space-5); }
+.setup-provider-last-ran { margin: 0; }
 .setup-provider-descriptions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); margin-top: var(--space-3); }
 /* A stone's detail is two sections, top to bottom: Yours (the steps), then The catalog. */
 .setup-provider-yours, .setup-provider-catalog { display: grid; gap: var(--space-5); min-width: 0; }
@@ -6059,7 +6060,7 @@ button.wb-door:hover b {
 .setup-provider-facts dt { color: var(--muted); }
 .setup-provider-facts dd { margin: 0; color: var(--fg-strong); font-weight: 600; }
 .setup-provider-facts div[data-on='true'] dd { color: var(--ok); }
-.setup-provider-model-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-5); }
+.setup-provider-list-state { margin: 0; }
 .setup-provider-table { overflow-x: auto; max-width: 100%; }
 .setup-provider-models { width: 100%; min-width: calc(var(--space-12) * 10); table-layout: fixed; border-collapse: collapse; font-size: var(--text-5); }
 .setup-provider-models th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--muted); font-weight: 600; border-bottom: var(--edge) solid var(--line-2); }
@@ -6068,7 +6069,8 @@ button.wb-door:hover b {
 .setup-provider-models th:nth-child(2) { width: 10%; }
 .setup-provider-models th:nth-child(3) { width: 20%; }
 .setup-provider-models td b { color: var(--fg-strong); font-weight: 600; }
-.setup-provider-model-status { display: block; margin-top: var(--space-2); color: var(--muted-2); font-size: var(--text-3); line-height: 1.35; }
+/* Two names per model: the CLI's own name in bold, the id every launch uses beneath it. */
+.setup-provider-model-id { display: block; margin-top: var(--space-1); color: var(--muted-2); font-family: var(--mono, monospace); font-size: var(--text-2); overflow-wrap: anywhere; }
 .setup-provider-default { display: block; margin-top: var(--space-1); color: var(--muted); font-size: var(--text-2); }
 .setup-provider-tier { color: var(--muted-2); font-size: var(--text-2); letter-spacing: .06em; text-transform: uppercase; }
 .setup-kinds { display: grid; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }

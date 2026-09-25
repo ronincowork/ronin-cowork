@@ -18,11 +18,16 @@ export interface CommandRequest {
 }
 
 const offer = (names: string[]): string => names.join(', ') || 'nothing yet (see ⚙ Configuration)';
-// Old saved preferences used the short display id. Resolve those against the current
-// catalog, then use only the resulting concrete model id in a launch command.
-const matchingModel = (specs: readonly SessionLaunchSpec[], value: string): SessionLaunchSpec | undefined =>
-  specs.find((spec) => spec.model === value)
-  ?? specs.find((spec) => spec.display_id?.toLowerCase() === value.toLowerCase());
+// A preference names a model id. A preference saved before 2026-09-25 may hold the short
+// display id of that era ("fable"); it resolves to the first model the CLI lists under
+// that family name, and only the concrete id goes into the command.
+const matchingModel = (specs: readonly SessionLaunchSpec[], value: string): SessionLaunchSpec | undefined => {
+  const word = value.toLowerCase();
+  return specs.find((spec) => spec.model === value)
+    ?? specs.find((spec) => spec.name.toLowerCase() === word)
+    ?? specs.find((spec) => spec.model !== 'native' && spec.name.toLowerCase().split(' ')[0] === word)
+    ?? specs.find((spec) => spec.model !== 'native' && spec.model.toLowerCase().split(/[^a-z0-9.]+/).includes(word));
+};
 
 export interface MergedSessionsDefaults {
   sessions: SessionsDefaults;

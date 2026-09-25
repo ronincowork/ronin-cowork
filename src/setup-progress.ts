@@ -1,6 +1,6 @@
 import { ensureInitialCampaign, writeCampaign, type SetupAnswer, SETUP_STEP_IDS } from './campaigns.js';
 import { discoverExecutable } from './agents.js';
-import { measureAndRecordProviders, providerInventoryNeed, refreshProviderInventory } from './provider-summary.js';
+import { measureAndRecordProviders } from './provider-summary.js';
 import { githubSetupAnswer } from './setup-runtime.js';
 import { broadcastEvent } from './ws/events.js';
 import { tailnetIp } from './machine-settings.js';
@@ -36,7 +36,6 @@ async function performScan(): Promise<void> {
   const [providers, github, git] = await Promise.all([
     measureAndRecordProviders().then((value) => {
       provider = value.activated_count > 0;
-      if (providerInventoryNeed(value).needed) void refreshProviderInventory();
     }, (error) => reasons.push(String((error as Error)?.message ?? error))),
     githubSetupAnswer().then((value) => {
       workspace ||= value.installed || value.authenticated;

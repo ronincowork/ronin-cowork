@@ -10,7 +10,8 @@ import { listWays } from '../resources.js';
 import { listSessionReadings } from '../session-readings.js';
 import { listAgentAvailability } from '../agents.js';
 import { dispatchInstall } from '../agent-install.js';
-import { listProviderCatalog, readProviderCatalog } from '../model-providers.js';
+import { listProviderCatalog, providerCatalogAnswer } from '../model-providers.js';
+import { readProviderSummary } from '../provider-summary.js';
 import {
   listProjectRoots,
   upsertProjectRoot,
@@ -286,11 +287,11 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
-  // The one catalog read for the client: origin, path, the header's updated day, and every
-  // provider with its models.
+  // The one catalog read for the client: origin, path, the header's updated day, the dates
+  // of the record, and every provider with its joined rows — Native, then what its CLI lists.
   app.get('/api/provider-catalog', async (_req, res) => {
     try {
-      res.json(await readProviderCatalog());
+      res.json(await providerCatalogAnswer(await readProviderSummary()));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

@@ -249,42 +249,32 @@ export function templateTray(rows, current, onPick, { includeOwn = true } = {}) 
 /* ---------- the provider catalog, and the one picker that reads it ---------- */
 
 /**
- * THE CATALOG, READ ONCE PER SURFACE. Two reads, joined on the catalog's own `cli`
- * field: the provider catalog (GET /api/provider-catalog — its origin, stock or the
- * owner's copy, the date it was updated, and one entry per provider carrying the vendor
- * id, its CLI, its label and its model rows: model, tier, cost, good_at, not_good_at,
- * default, cmd, in catalog order) and what this machine measured of each CLI
- * (GET /api/setup/runtime `providers`, the Campaign's recorded provider summary:
- * installed, signed in, activated, dated). The catalog is a snapshot, not live data:
- * its `updated` date is shown wherever its facts are. Nothing here probes; the runtime
- * answers from the record, and only the Setup Model providers surface measures.
- * A surface calls `loadProviderCatalog()` when it is shown and paints from
- * `providerCatalog()`; a picker built before the first read paints again when it lands.
+ * THE PROVIDER CATALOG AS EVERY PICKER READS IT — one read, no join here.
+ *
+ * `GET /api/provider-catalog` answers the catalog's own facts (origin, `updated`) and every
+ * provider with its rows already JOINED on the server (`src/model-providers.ts`
+ * `providerRows`, since 2026-09-25): Native first, then each model the CLI listed on the
+ * last Refresh all, in the CLI's order, with two names — `model`, the id every launch uses,
+ * and `name`, the CLI's own display name with the version in it — plus `operational`,
+ * `off` and `selectable` for this machine. `GET /api/setup/runtime` answers the machine
+ * facts the Model providers surface paints (installed, signed in, steps). Nothing here
+ * probes; only Refresh all on that surface reads a model list. A surface calls
+ * `loadProviderCatalog()` when it is shown and paints from `providerCatalog()`; a picker
+ * built before the first read paints again when it lands.
  */
-let catalog = { rows: [], providers: [], machine: [], measured_at: '', origin: '', updated: '', stock_updated: '', withdrawn: [], loaded: false };
+let catalog = { rows: [], providers: [], machine: [], measured_at: '', refreshed_at: '', origin: '', updated: '', stock_updated: '', withdrawn: [], loaded: false };
 let inflight = null;
 const NATIVE_MODEL = 'native';
 
-// The catalog module is also imported by non-browser readers. Bind the page-level feed
-// on first use, not at module evaluation, and never add a second listener on repaint.
-let inventoryEventWindow = null;
-function ensureProviderInventoryListener() {
-  if (typeof window === 'undefined' || inventoryEventWindow === window) return;
-  window.addEventListener('ronin:provider-inventory', (event) => {
-    if (event.detail?.state === 'complete') void reloadProviderCatalog();
-  });
-  inventoryEventWindow = window;
-}
-
 export function loadProviderCatalog() {
-  ensureProviderInventoryListener();
   if (inflight) return inflight;
   inflight = Promise.all([request('/api/provider-catalog'), request('/api/setup/runtime', { cache: 'no-store' })]).then(([read, runtime]) => {
     const providers = read.ok && Array.isArray(read.data?.providers) ? read.data.providers : [];
     const machine = runtime.ok && Array.isArray(runtime.data?.providers) ? runtime.data.providers : [];
     catalog = {
-      rows: orderedCatalog(catalogRows(providers), machine), providers, machine,
-      measured_at: runtime.ok ? String(runtime.data?.measured_at || '') : '',
+      rows: providers.flatMap((entry) => (Array.isArray(entry?.models) ? entry.models : [])), providers, machine,
+      measured_at: read.ok ? String(read.data?.measured_at || '') : '',
+      refreshed_at: read.ok ? String(read.data?.refreshed_at || '') : '',
       origin: read.ok ? String(read.data?.origin || '') : '', updated: read.ok ? String(read.data?.updated || '') : '',
       stock_updated: read.ok ? String(read.data?.stock_updated || '') : '',
       withdrawn: read.ok && Array.isArray(read.data?.withdrawn) ? read.data.withdrawn : [],
@@ -296,90 +286,8 @@ export function loadProviderCatalog() {
   return inflight;
 }
 
-const providerCatalogHandlers = new Set();
-
-/** Listen while a model picker exists; the returned disposer is part of the view's destroy contract. */
-export function subscribeProviderCatalog(handler) {
-  ensureProviderInventoryListener();
-  providerCatalogHandlers.add(handler);
-  return () => providerCatalogHandlers.delete(handler);
-}
-
-/** Drop the cached join and repaint consumers after a persisted inventory completion. */
-export function reloadProviderCatalog() {
-  inflight = null;
-  return loadProviderCatalog().then((value) => {
-    for (const handler of providerCatalogHandlers) handler(value);
-    return value;
-  });
-}
-
-/** What every reader paints from: `{ rows, providers, machine, measured_at, origin, updated, stock_updated, withdrawn, loaded }`. */
+/** What every reader paints from: `{ rows, providers, machine, measured_at, refreshed_at, origin, updated, stock_updated, withdrawn, loaded }`. */
 export const providerCatalog = () => catalog;
-
-/**
- * The catalog's provider entries as flat model rows, each carrying its provider's id, CLI,
- * label, and which layer its section came from (`origin`: stock or user; `shadowed` when the
- * owner's section replaced a shipped one) — so a surface can say it. Pure.
- */
-export function catalogRows(providers = []) {
-  return (Array.isArray(providers) ? providers : []).flatMap((entry) => (Array.isArray(entry?.models) ? entry.models : [])
-    .map((row) => ({ ...row, provider: entry.provider, cli: entry.cli, native: entry.native || '', provider_label: entry.label || entry.provider, origin: entry.origin || 'stock', shadowed: entry.shadowed === true })));
-}
-
-/**
- * THE ROWS AS THE PICKER OFFERS THEM. Each catalog row gains what the machine measured
- * of its CLI — `operational` (the summary's activated: installed, signed in or recorded,
- * with a cell to launch) and the CLI's label — and providers this machine can launch
- * come first, so a first run reads the runnable ones before the greyed ones. Within a
- * group the catalog's own order holds. The vendor's label is the catalog's own. Pure:
- * the tests feed it rows.
- */
-export function orderedCatalog(rows = [], machine = []) {
-  const source = (Array.isArray(rows) ? rows : []).filter((row) => row?.provider && row?.model);
-  const marked = [];
-  for (const provider of [...new Set(source.map((row) => row.provider))]) {
-    const base = source.find((row) => row.provider === provider);
-    if (!base?.native) continue;
-    const entry = (Array.isArray(machine) ? machine : []).find((item) => item?.id === base.cli) || null;
-    marked.push({ ...base, model: NATIVE_MODEL, tier: '', default: true, cost: '',
-      good_at: t('forms.native_good_at', 'the CLI choosing its own configured or current default model'),
-      not_good_at: t('forms.native_not_good_at', 'pinning a particular model'),
-      operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
-      provider_label: base.provider_label || base.provider, cli_label: entry?.label || base.cli || '',
-      model_list: entry?.model_list || null, model_list_current: true, model_list_installed: entry?.version || '',
-      listed: true, selectable: entry?.activated === true });
-  }
-  for (const row of source) {
-    const entry = (Array.isArray(machine) ? machine : []).find((item) => item?.id === row.cli) || null;
-    const list = entry?.model_list || null;
-    if (!list) continue;
-    const measuredModel = Array.isArray(list?.models) ? list.models.find((model) => model?.slug === row.model) : null;
-    if (!measuredModel) continue;
-    const modelListCurrent = Boolean(list?.client_version && entry?.version && list.client_version === entry.version);
-    // `off`: the owner turned the provider off — greyed with that word, never the false
-    // "not on this machine" (the house rule: disabled, never hidden; and never a lie).
-    marked.push({ ...row, default: false, operational: entry?.activated === true, off: entry?.off === true && entry?.installed === true,
-      provider_label: row.provider_label || row.provider, cli_label: entry?.label || row.cli || '',
-      model_list: list, model_list_current: modelListCurrent, model_list_installed: entry?.version || '',
-      listed: list ? Boolean(measuredModel) : null,
-      selectable: entry?.activated === true });
-  }
-  for (const entry of Array.isArray(machine) ? machine : []) {
-    const base = marked.find((row) => row.cli === entry?.id);
-    if (!base || !Array.isArray(entry?.model_list?.models)) continue;
-    const known = new Set(marked.filter((row) => row.cli === entry.id).map((row) => row.model));
-    for (const model of entry.model_list.models) {
-      if (model?.visibility !== 'list' || !model?.slug || known.has(model.slug)) continue;
-      marked.push({ ...base, model: model.slug, display_id: model.display_name || model.slug, tier: '', default: false, cost: '',
-        good_at: model.description || '', not_good_at: '', origin: 'cli', shadowed: false,
-        listed: true, selectable: entry.activated === true });
-    }
-  }
-  const providers = [...new Set(marked.map((row) => row.provider))];
-  const on = providers.filter((provider) => marked.some((row) => row.provider === provider && row.operational));
-  return [...on, ...providers.filter((provider) => !on.includes(provider))].flatMap((provider) => marked.filter((row) => row.provider === provider));
-}
 
 /** light · standard · frontier, in the person's words. */
 export function tierWord(tier) {
@@ -387,38 +295,19 @@ export function tierWord(tier) {
 }
 
 /**
- * One model as an option reads: its id and its tier, and stops there. A picker is for
+ * One model as an option reads: its name and its tier, and stops there. A picker is for
  * choosing, not for reading: the long good-at / not-good-at description belongs to the
  * Campaign's Model providers surface, where there is room for the whole table. In an
  * option it is a sentence squeezed into a line that cannot show it.
  */
 export const modelLabel = (row) => {
   if (row?.model === NATIVE_MODEL) return t('forms.model_native', 'Native');
-  const available = catalog.rows.find((item) => item.provider === row?.provider && item.model === row?.model && item.selectable);
-  return String(row?.display_id || available?.display_id || row?.model || '');
+  const known = row?.name ? null : catalog.rows.find((item) => item.provider === row?.provider && item.model === row?.model);
+  return String(row?.name || known?.name || row?.model || '');
 };
 export const modelWord = (row) => row?.model === NATIVE_MODEL || !row?.tier
   ? modelLabel(row)
   : t('forms.model_word', '{model} · {tier}', { model: modelLabel(row), tier: tierWord(row.tier) });
-
-/** The persisted CLI list is the availability authority; its dates say exactly when it was captured. */
-export const modelAvailabilityFact = (row) => {
-  if (row.model === NATIVE_MODEL) return t('forms.model_native_fact', 'The CLI chooses the model');
-  const list = row.model_list;
-  if (!list) return t('forms.model_list_unknown', 'Availability has not been read from your {cli} yet', { cli: row.cli_label || row.cli });
-  const verdict = row.listed ? 'listed' : 'not listed';
-  const asOf = list.fetched_at ? ` (as of ${list.fetched_at})` : '';
-  if (!row.model_list_current) return t('forms.model_list_stale', '{verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read', {
-    verdict, cli: row.cli_label || row.cli, client_version: list.client_version, as_of: asOf, installed_version: row.model_list_installed || '',
-  });
-  return t('forms.model_list_current', '{verdict} by your {cli} {client_version}{as_of}', {
-    verdict, cli: row.cli_label || row.cli, client_version: list.client_version, as_of: asOf,
-  });
-};
-export const modelAvailabilityWord = (row) => {
-  const fact = modelAvailabilityFact(row);
-  return fact ? `${modelWord(row)} — ${fact}` : modelWord(row);
-};
 
 /**
  * THE ONE PROVIDER → MODEL PICKER. Two selects, and either pick may stand alone: naming
@@ -454,7 +343,7 @@ export function providerModelPair(read, write, field, { fixed = '', classes = ''
       const unavailable = row.selectable !== true;
       const label = fixed && !row.operational
         ? (row.off ? t('forms.model_turned_off', '{model} — turned off', { model: modelWord(row) }) : t('forms.model_off', '{model} — not on this machine', { model: modelWord(row) }))
-        : modelAvailabilityWord(row);
+        : modelWord(row);
       modelSelect.add(option(label, row.model, !row.operational || unavailable));
     }
     modelSelect.value = offered.some((row) => row.model === current.model) ? String(current.model) : '';
