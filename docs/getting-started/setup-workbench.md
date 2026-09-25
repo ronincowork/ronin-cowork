@@ -163,8 +163,10 @@ Ronin saves this description separately from credentials, then checks readiness 
 The terminal height is bounded, and opening a provider scrolls its detail panel to the
 first unfinished step. This works in both Ronin Setup and Ronin Settings.
 
-Below the steps sits what the catalog knows about the provider: its models, their tier and
-cost as read, and the default. Ronin only checks that a sign-in exists; it never reads a
+Below the steps sits the provider's model list as its CLI gave it on the last **Refresh
+all model providers** (the one button at the top of the surface, with the date it last
+ran), each model with the CLI's own name and its id, and the tier and cost the catalog
+knows. Native is the default. Ronin only checks that a sign-in exists; it never reads a
 credential or asks the provider about your account. A provider that needs to sign in
 again asks in its own flow.
 
