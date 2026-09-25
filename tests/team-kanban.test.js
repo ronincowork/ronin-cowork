@@ -64,15 +64,12 @@ test('only green lead and user exits get a bare waiting word', () => {
   assert.equal(waitingOn(project({ stage: 'DONE', exit: 'user' })), '');
 });
 
-test('the board stays square, fixed, manually refreshed, and free of pills and ellipses', () => {
+test('Task Manager leaves stone geometry to Phalanx and keeps manual refresh', () => {
   const kanbanCss = workspaceCss.slice(workspaceCss.indexOf('.tk-kanban'), workspaceCss.indexOf('/* The tab is drawn'));
-  assert.doesNotMatch(kanbanCss, /text-overflow|white-space:\s*nowrap|radius-pill|tk-chip/);
-  assert.match(kanbanCss, /--tk-column-min:\s*230px/);
-  assert.match(kanbanCss, /--tk-card-closed:\s*64px/);
-  assert.match(kanbanCss, /--tk-card-open:\s*168px/);
-  assert.doesNotMatch(kanbanCss, /line-clamp|-webkit-box/);
-  assert.match(kanbanCss, /max-height:\s*calc\(var\(--tk-outcome-line\) \* 2\)/);
-  assert.doesNotMatch(moduleSource, /setInterval|MutationObserver|tk-count|tk-chip/);
+  assert.doesNotMatch(kanbanCss, /\.tk-card|\.tk-column|--tk-column|--tk-card/);
+  assert.match(kanbanCss, /\.tk-phalanx\[data-density='compact'\]/);
+  assert.match(kanbanCss, /\.tk-project-green::before/);
+  assert.doesNotMatch(moduleSource, /setInterval|MutationObserver|tk-count|tk-chip|wk-card tk-card/);
   assert.match(moduleSource, /tk-refresh/);
   assert.match(moduleSource, /tw-agent-density-lines/);
 });
@@ -91,13 +88,13 @@ test('the beta notice sits in a collapsible Task Manager header zone', () => {
   assert.doesNotMatch(workspaceCss, /\.tk-beta[^}]*#[0-9a-f]/i, 'the beta header uses house tokens, not an invented color');
 });
 
-test('card expansion and owner opening are sibling controls, never nested interactions', () => {
-  assert.match(moduleSource, /node\('button', 'tk-card-toggle'\)/);
-  assert.doesNotMatch(moduleSource, /card\.setAttribute\('role', 'button'\)|card\.tabIndex/);
-  assert.match(moduleSource, /toggle\.setAttribute\('aria-expanded'/);
-  assert.match(moduleSource, /toggle\.addEventListener\('click', toggleOpen\)/);
-  assert.match(moduleSource, /if \(!event\.target\.closest\('button'\)\) navigate\('project', project\.id\)/);
-  assert.match(moduleSource, /team_kanban\.open_project', 'Open Project'/);
+test('Task Manager uses one grouped Phalanx while detail preserves owner opening', () => {
+  assert.match(moduleSource, /import \{ createPhalanx \} from '\.\/phalanx\.js'/);
+  assert.match(moduleSource, /createPhalanx\(\{ grouped: \{ groups \}, items/);
+  for (const stage of ['IDEAS', 'PLANNING', 'BUILDING', 'LANDING', 'DONE']) assert.match(moduleSource, new RegExp(`key: '${stage}'`));
+  assert.match(moduleSource, /draggable: true, action: \(\) => navigate\('project', project\.id\)/);
+  assert.match(moduleSource, /options\.openOwner\?\.\(owner\)/);
+  assert.doesNotMatch(moduleSource, /node\('article', 'wk-card tk-card'\)/);
 });
 
 test('Task Manager scope derives Team lists and filters Agent-held Projects without copying authority', () => {
