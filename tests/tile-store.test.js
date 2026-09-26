@@ -14,7 +14,6 @@ globalThis.fetch = async (url) => { asked.push(String(url)); return new Response
 
 const { store } = await import('../public/js/store.js');
 const { Tile } = await import('../public/js/tile.js');
-const { desksOf } = await import('../public/js/desks.js');
 const { buildDocs } = await import('../public/js/docs.js');
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -62,9 +61,9 @@ test('a tile paints its gauge and work record from the pushed home row, and asks
   assert.deepEqual(asked, [], 'no request: not /ctx, not /tegami, nothing');
 });
 
-test('opening the ladder is the one read of the desks; a push asks nothing', async () => {
+test('opening the ladder reads one session\'s desks, once; a push asks nothing', async () => {
   const { tile } = fakeTile('alpha');
-  Object.assign(tile, { drawLadder() { this.drawn = desksOf(this.session); } });
+  Object.assign(tile, { drawLadder(desks) { this.drawn = desks; } });
   tile.subscribeHome();
   asked.length = 0;
 
@@ -75,7 +74,7 @@ test('opening the ladder is the one read of the desks; a push asks nothing', asy
   answer = { alpha: { desks: [{ repo: 'ronin_cowork', branch: 'team/front-2/front2_tile' }] } };
   tile.toggleLadder();
   await settle();
-  assert.deepEqual(asked, ['/api/desks'], 'the ladder reads the desks when it opens, once');
+  assert.deepEqual(asked, ['/api/desks?session=alpha'], 'the ladder reads its own session\'s desks when it opens, once');
   assert.equal(tile.ladderOpen, true);
   assert.deepEqual(tile.drawn, answer.alpha);
   tile.unsubscribeHome();
@@ -95,5 +94,5 @@ test('the docs list hears the rows from enter to close, and nothing after', () =
   docs.close();
   store.receive({ t: 'home', rows: [{ name: 'epsilon', tegami: { docs: ['C.md'] } }] });
   assert.ok(!heard.includes('epsilon'), 'closed: the push is not heard');
-  assert.deepEqual(asked.filter((url) => url !== '/api/desks'), [], 'the tracked shelf asks no route');
+  assert.deepEqual(asked.filter((url) => !url.startsWith('/api/desks')), [], 'the tracked shelf asks no route');
 });

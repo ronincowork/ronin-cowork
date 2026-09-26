@@ -23,11 +23,13 @@ test('the Campaign page has one switch for offering New Campaign', async () => {
   assert.match(setupSurfaces, /providerSurfaceDefinition\(\),/, 'Setup surfaces register the one shared provider definition');
 });
 
-test('the home page renders the Campaign as a fixed door', async () => {
+test('the home page routes its three work doors and resolves the fixed Campaign setup state', async () => {
   const source = await readFile(new URL('../public/js/campaign-home.js', import.meta.url), 'utf8');
-  assert.match(source, /key: 'campaign', route: 'campaign'/);
+  for (const key of ['desk', 'team', 'agent']) assert.match(source, new RegExp(`key: '${key}'`));
+  assert.doesNotMatch(source, /key: 'campaign', route: 'campaign'/);
   assert.doesNotMatch(source, /\bcreateCampaign\b|campaign_ids|archiveCampaign|New Campaign/);
-  assert.match(source, /setupDefaultView\(setupCampaign\)/, 'the fixed machine door may choose Setup from persisted progress');
+  assert.match(source, /export const setupDefaultView/);
+  assert.match(source, /setupDefaultView\(setupCampaign\)/, 'the fixed Campaign still chooses Setup from persisted progress');
 });
 
 test('the fixed Campaign identity does not render its id', async () => {

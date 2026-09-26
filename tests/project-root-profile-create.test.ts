@@ -11,7 +11,7 @@ await mkdir(catalogs, { recursive: true });
 process.env.RONIN_CATALOGS_DIR = catalogs;
 
 const { listProjectRoots, upsertProjectRoot } = await import('../src/project-roots.js');
-const { arrangementProfile, readArrangement, setArrangementProfile } = await import('../src/desks/arrangement.js');
+const { arrangementProfile, setArrangementProfile } = await import('../src/desks/arrangement.js');
 
 test('new root creation can defer declaration and write the owner-proposed profile', async () => {
   const repo = path.join(box, 'repo'); await mkdir(repo);
@@ -19,10 +19,9 @@ test('new root creation can defer declaration and write the owner-proposed profi
   await upsertProjectRoot('custom', { dir: repo }, { declareArrangement: false });
   await assert.rejects(access(path.join(repo, 'RONIN_REPO')), /ENOENT/);
 
-  const before = arrangementProfile(await readArrangement('custom', repo));
   const written = await setArrangementProfile(repo, {
     mode: 'reviewed', working: 'gather', stable: 'ship', worktrees: 'enabled',
-  }, before);
+  });
   assert.deepEqual(arrangementProfile(written), {
     mode: 'reviewed', working: 'gather', stable: 'ship', worktrees: 'enabled',
   });

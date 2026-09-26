@@ -39,9 +39,9 @@ lead fields in roster writes. Archive manifests preserve a restoration snapshot;
 not compete with the current live session.
 
 The browser holds no durable copy of server truth. Per tab, [store.js](../public/js/store.js)
-holds what [events.ts](../src/ws/events.ts) pushes — the home rows and the session list —
-the Team rosters it re-reads on a `teams` nudge, and the desks it reads when a Work Record opens; it is lost on reload and filled again
-on connect.
+holds what [events.ts](../src/ws/events.ts) pushes — the home rows, the session list, the
+Team rosters — and nothing else; it is lost on reload and filled again on connect. Desks are read at open, not
+held: the Work Record ladder asks `GET /api/desks?session=<name>` and paints the answer.
 
 Live runtime identity also includes the session key resolved by
 [session-dir.ts](../src/session-dir.ts). Process existence and runtime options belong to

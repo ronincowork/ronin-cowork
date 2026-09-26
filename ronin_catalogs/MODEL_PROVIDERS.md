@@ -67,8 +67,9 @@ a stale reading is dated, never guessed.
 - **cli:** `claude`
 - **transcript_source:** Observed 2026-09-22: `~/.claude/projects/<cwd-slug>/<uuid>.jsonl`; one record per completed message. Journal adapter exists; exact launch identity is required.
 
-Claude launch commands use the concrete model ids below. Claude Code's own list carries
-more ids than these (older Opus and Sonnet generations); they are offered as it lists them.
+The picker uses the concrete model ids below. Claude Code's own list carries more ids than
+these (older Opus and Sonnet generations); they are offered as it lists them. Saved CLI
+names such as `sonnet` pass through unchanged and are never rewritten by Ronin.
 
 | model | tier | cost | good at | not good at |
 |---|---|---|---|---|

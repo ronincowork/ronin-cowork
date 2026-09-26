@@ -20,6 +20,7 @@ and held-project create/read/write.
 | Tool | Authority | Teach | Help |
 |---|---|---|---|
 | `work-record update_record` | write: objective, repositories, ladder, and focus | priority | `work-record --help` |
+| `work-record workspace list|add|remove` | read/write: repositories this Agent records as current work; accepts a handle or full URL and a separate branch | priority | `work-record workspace --help` |
 | `work-record document add` | write: make one document visible in Docs | priority | `work-record --help` |
 | `work-record project create` | create: one complete project with a Team-issued ID | priority | `work-record --help` |
 | `work-record project read` | read: one held project | priority | `work-record --help` |

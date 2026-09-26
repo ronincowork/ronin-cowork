@@ -30,7 +30,7 @@ gets no invented desk state.
 
 | Route | Answers |
 |---|---|
-| `GET /api/desks` | every live session's desks and roll-up, keyed by session; memoised a few seconds, for tools. `?session=<name>` answers that session's own entry of the same object (`{}` when it is not live) without computing every desk on the box; the Work Record ladder reads that form when it opens. Nothing pushes either |
+| `GET /api/desks` | every live session's desks and roll-up, keyed by session; memoised a few seconds, for tools. `?session=<name>` answers that one session's entry, `{ <name>: { session, live, desks, rollup } }` (the same entry the bare form holds, without computing every desk on the box), or `{}` when it is not live; the browser asks that when a Work Record opens. Nothing pushes either |
 | `GET /api/sessions/:name/desks` | one session: `{ session, live, desks[], rollup }` |
 | `GET /api/teams/:name/desks` | every member's desks, **plus parked desks of sessions that are gone** (`live: false`) — the lead's *hand in · inspect · reassign · discard* list — the team line seen per repository (`lines`), because one roster `branch` cannot name two repos' lines, and `promotion`: the last complete team promotion and any receipt still blocking the team (advancing or interrupted), from Track 2's ledger |
 
@@ -45,7 +45,7 @@ it shows them instead of the server recomputing them for every tab on a clock.
 
 | Surface | Shows |
 |---|---|
-| Work Record ladder (tile) | the **Worktrees** section: each desk's worktree, branch, and line, read from `GET /api/desks` through the store's snapshot when the ladder opens (`openLadder` in `public/js/tile.js`, `desksOf` in `public/js/desks.js`); a session with no desk shows the repositories its record lists |
+| Work Record ladder (tile) | the **Worktrees** section: each desk's worktree, branch, and line, read at open, not held: `GET /api/desks?session=<name>` when the ladder opens (`openLadder` in `public/js/tile.js`, `readDesks` in `public/js/desks.js`); a session with no desk shows the repositories its record lists |
 
 The API carries every path and SHA for anyone who asks.
 

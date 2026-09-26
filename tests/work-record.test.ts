@@ -61,7 +61,7 @@ test('help is side-effect-free, actionable, and separates lead positioning', () 
     assert.match(r.stdout, /--phase <title>/);
     assert.match(r.stdout, /--leg N <title>/);
     assert.match(r.stdout, /--status N\[\.M\] PLANNED\|ACTIVE\|DONE/);
-    assert.match(r.stdout, /--repo <repo>:<branch>/);
+    assert.match(r.stdout, /workspace add <repo-or-url> \[--branch <branch>\]/);
     assert.match(r.stdout, /Lead positioning is a separate form/);
     assert.match(r.stdout, /--session <name> --at N\[\.M\]/);
     assert.doesNotMatch(r.stderr, /cannot tell which session/);
@@ -106,6 +106,34 @@ test('field verbs edit one field each and carry the pointer and the doc list thr
   b = block(f.letter);
   assert.equal(b.ladder.length, 3);
   assert.deepEqual(b.ladder[2], { gate: 'wait for owner', status: 'ACTIVE' });
+});
+
+test('workspace commands edit exact repository URLs and acknowledge changed rows truthfully', (t) => {
+  const f = fixture();
+  t.after(() => rmSync(f.dir, { recursive: true, force: true }));
+  const call = (args: string[]) => spawnSync(tool, args, { encoding: 'utf8', env: f.env });
+  const old = 'https://github.com/ronincowork/ronin-cowork.git';
+  const next = 'https://github.com/ronincowork/samurai_lab.git';
+  let result = call(['workspace', 'add', old, '--branch', 'dev']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /repository .*ronin-cowork\.git:dev listed/);
+  result = call(['workspace', 'remove', old, '--branch', 'dev']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /1 row\(s\) removed/);
+  result = call(['workspace', 'remove', old]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /no row matched; unchanged/);
+  assert.doesNotMatch(result.stderr, /removed/);
+  result = call(['workspace', 'add', next, '--branch', 'main']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(block(f.letter).repos, [{ repo: next, branch: 'main' }]);
+  result = call(['workspace', 'list']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), [{ repo: next, branch: 'main' }]);
+  result = call(['update_record', '--unrepo', `${next}:main`]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /1 row\(s\) removed/);
+  assert.deepEqual(block(f.letter).repos, []);
 });
 
 test('field verbs refuse a wrong position, a wrong status, a missing value, and mixing with the other forms', (t) => {
