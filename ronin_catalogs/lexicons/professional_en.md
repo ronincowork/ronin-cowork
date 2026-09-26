@@ -155,24 +155,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## launcher — launcher.js (the ＋ New board and its form)
 
-## roster — roster.js (the ⌂ Roster tab)
-- **roster.session_max:** session max
-- **roster.session_max_title:** How many sessions may run at once. 0 = no limit. The owner sets this; agents cannot.
-- **roster.running_of:** {n} / {max} running
-- **roster.running_no_limit:** {n} running · no limit
-- **roster.not_saved:** not saved — {message}
-- **roster.team_name:** team name
-- **roster.team_name_aria:** New team name
-- **roster.add_team:** ＋ Team
-- **roster.team_name_rule:** use letters, digits, - or _
-- **roster.drag_into:** drag a session into {team}
-- **roster.leads:** 人 leads {teams}
-- **roster.no_role_yet:** has not said what it is doing yet
-- **roster.stale:** ⚠ roster may be stale — {fault}
-- **roster.drop_here:** Drop a session here to add it to {team}
-- **roster.no_team:** no team
-- **roster.no_sessions:** no sessions yet
-
 ## panels — panels.js (the session note and session teams sheets)
 - **panels.note_sheet:** Session note
 - **panels.save:** Save
@@ -701,31 +683,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team_wipeboard.read_failed:** Could not read the board — {message}
 - **team_wipeboard.post_failed:** Could not post — {message} (your text is still in the box)
 - **team_wipeboard.no_team:** No Team resolved — nothing to read.
-
-## desks — desks.js (the ⑂ desk readings: tile head, roster column, Team page)
-- **desks.detached:** (detached)
-- **desks.worktree:** worktree {path}
-- **desks.count_one:** 1 worktree
-- **desks.count_many:** {n} worktrees
-- **desks.pending_n:** {n} pending
-- **desks.private_n:** {n} private
-- **desks.dirty_n:** {n} dirty
-- **desks.parked_n:** {n} parked
-- **desks.blocked_n:** {n} blocked
-- **desks.none:** No managed worktree listed yet. A coding launch opens selected worktrees; the session lists its repositories in TEGAMI.
-- **desks.line:** → {line}
-- **desks.ahead:** ahead {n}
-- **desks.behind:** behind {n}
-- **desks.dirty_files:** {n} unsaved
-- **desks.pending_by:** update pending, by {who}
-- **desks.parked:** parked
-- **desks.unknown:** not found on this box
-- **desks.blocked:** blocked: {why}
-- **desks.promotion_blocking:** ⚠ {state} — {summary} ({id})
-- **desks.promotion_last:** last {summary} · {id} · by {who}
-- **desks.promotion_none:** none yet
-- **desks.parked_gone:** {name} · gone · {n} ahead
-- **desks.parked_none:** none
 
 ## team — team-view.js (the Team page)
 - **team_kanban.beta:** Beta

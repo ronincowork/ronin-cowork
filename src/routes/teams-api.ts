@@ -12,6 +12,7 @@ import { count } from '../counts.js';
 import { getTags, listSessions, setTags } from '../tmux.js';
 import { writeTeams } from '../tegami.js';
 import { announceTeamChanges } from './wipeboards-api.js';
+import { broadcastEvent } from '../ws/events.js';
 import { assertSameCampaignRoot, campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
 import { retireTeam } from '../team-retire.js';
 import { readCampaign } from '../campaigns.js';
@@ -123,6 +124,13 @@ function ideaEditOf(body: unknown): Partial<Project> {
 }
 
 export function registerTeams(app: express.Express): void {
+  // Every write below changes what GET /api/team-rosters answers. The server knows when it
+  // wrote, so it says so: {t:'teams'} is a nudge with no payload, and the browser store re-reads.
+  app.use(['/api/team-rosters', '/api/team'], (req, res, next) => {
+    if (req.method !== 'GET') res.on('finish', () => { if (res.statusCode < 400) broadcastEvent({ t: 'teams' }); });
+    next();
+  });
+
   app.post('/api/team-rosters/:name/projects', async (req, res) => {
     try {
       const result = await writeTeamIdea(req.params.name, undefined, ideaEditOf(req.body));

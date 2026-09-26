@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { status } from './ui.js';
 import { homeData } from './home.js';
+import { subscribe } from './store.js';
 import { t } from './lexicon.js';
 import { nextTabIndex } from './workspace-tabs.js';
 import { DOC_MIME } from './team-drag.js';
@@ -9,7 +10,7 @@ import { DOC_MIME } from './team-drag.js';
 let docsSequence = 0; // one id per shelf, so four tiles' lists never collide
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
-export function buildDocs(tile, root, isShowing, only = null, reposFirst = () => []) {
+export function buildDocs(tile, root, only = null, reposFirst = () => []) {
   let openPath = null; // normalized target, or null while the list is showing
   let dirty = false; // the owner has typed since the last load or save
   // Only rebuild the list when it actually changed — see refresh(). null, not '', so the
@@ -293,8 +294,8 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
    * Read the doc lists out of the roster data. No fetch: `/api/home` already carries every
    * session's letter (that is what the ladder chip renders from), so the list is free.
    *
-   * Rebuilt only when it actually changed. This runs every two seconds and the rows are
-   * buttons — blowing them away mid-click is the bug the wipeboard's member row already
+   * Rebuilt only when the list itself changed. It runs on every home push, most of which
+   * move some other part of a row (a stance, a gauge), and the rows are buttons — blowing them away mid-click is the bug the wipeboard's member row already
    * paid for once.
    */
   const refresh = (force = false) => {
@@ -331,16 +332,21 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     render(rows);
   };
 
-  // Poll only while this pane is actually on screen; a tile on another tab costs nothing.
-  setInterval(() => {
-    if (isShowing()) refresh();
-  }, 2000);
+  // THE TRACKED SHELF IS THE HOME ROWS. OPEN (`enter`) subscribes and draws the snapshot;
+  // while open each push redraws (an open editor defers it, see refresh); CLOSE (`close`)
+  // unsubscribes. The caller that seats this pane calls both.
+  let unsubscribe = null;
 
   empty('loading…');
   return {
     enter() {
       sig = null; // returning to the tab always redraws, however stale the signature
       refresh(shelf !== 'tracked'); // a shelf re-reads on entry: files come and go
+      unsubscribe ??= subscribe('home', () => refresh());
+    },
+    close() {
+      unsubscribe?.();
+      unsubscribe = null;
     },
     // ONE-DIRECTIONAL, deliberately: this pane learns nothing about tiles or headers in
     // return. It takes a path and shows it; who asked, and why, stays the caller's.
@@ -356,8 +362,15 @@ export function createDocumentWorkspaceAdapter({ root, path } = {}) {
   const host = document.createElement('div');
   host.className = 'home-docs';
   surface.content.append(host);
-  const docs = buildDocs(null, host, () => surface.el.isConnected);
+  const docs = buildDocs(null, host);
   const target = { root: String(root || ''), path: String(path || '') };
   const show = () => docs.open(target);
-  return { el: surface.el, show, enter: show, leave: docs.leave, isDirty: docs.isDirty };
+  // The document is up first; the list under ← then hears the rows until the seat leaves.
+  const enter = async () => { await show(); docs.enter(); };
+  const leave = () => {
+    const left = docs.leave();
+    if (left) docs.close();
+    return left;
+  };
+  return { el: surface.el, show, enter, leave, isDirty: docs.isDirty };
 }

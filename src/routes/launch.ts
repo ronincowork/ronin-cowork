@@ -25,7 +25,7 @@ import { scanContext, scanModel } from '../ctx.js';
 import { count } from '../counts.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
+import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate, type SessionWithAxes } from '../tegami.js';
 import { collectBirthLines, collectRowFields } from '../sockets.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
@@ -227,43 +227,49 @@ export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'act
   return state === 'awaiting-input' ? 'action_required' : state === null ? 'starting' : 'ready';
 }
 
+// The pane is still read, for two things a journal cannot state: whether a dialog is
+// open, and the CLI's own context gauge. What the Agent is DOING comes from its journal,
+// through the transcript part's row field — no spinner is matched here any more.
+const loadPaneStatus = createActivityCache(async (name: string) => {
+  const text = await capturePane(name, 0);
+  return {
+    asking: asksForInput(text),
+    ctx: scanContext(text),
+    model: scanModel(text),
+  };
+});
+
+// The home rows for one session listing: what /events pushes as {t:'home', rows}, from the
+// listing its tick already took.
+export function homeRows(list: SessionWithAxes[]) {
+  return Promise.all(
+    list.map(async (s) => {
+      const [pane, contributed, tegami] = await Promise.all([
+        loadPaneStatus(s.name, s.activity).catch(() => ({ asking: false, ctx: null, model: null })),
+        collectRowFields(s.name),
+        readTegami(s.name),
+      ]);
+      const { asking, ...reading } = pane;
+      return {
+        ...s,
+        ...reading,
+        ...contributed,
+        // ONE field, and one precedence: an Agent stopped at a question is `working` as
+        // far as its journal knows, and `working` is the wrong thing to tell the person
+        // whose answer it is waiting for.
+        stance: asking ? 'asking' : (contributed.stance ?? 'unknown'),
+        ...(tegami ? { tegami } : {}),
+      };
+    }),
+  );
+}
+
+// What GET /api/home answers: the same rows, for a tab that asks.
+export const loadHome = createWindowedLoader(async () => homeRows(await withAxes(await listSessions())), 2_000);
+
 export function registerLaunch(app: express.Express): LaunchControl {
   type MikaReady = Awaited<ReturnType<LaunchControl['ensureMika']>>;
   let mikaStarting: Promise<MikaReady> | null = null;
-  // The pane is still read, for two things a journal cannot state: whether a dialog is
-  // open, and the CLI's own context gauge. What the Agent is DOING comes from its journal,
-  // through the transcript part's row field — no spinner is matched here any more.
-  const loadPaneStatus = createActivityCache(async (name: string) => {
-    const text = await capturePane(name, 0);
-    return {
-      asking: asksForInput(text),
-      ctx: scanContext(text),
-      model: scanModel(text),
-    };
-  });
-  const loadHome = createWindowedLoader(async () => {
-    const list = await withAxes(await listSessions());
-    return Promise.all(
-      list.map(async (s) => {
-        const [pane, contributed, tegami] = await Promise.all([
-          loadPaneStatus(s.name, s.activity).catch(() => ({ asking: false, ctx: null, model: null })),
-          collectRowFields(s.name),
-          readTegami(s.name),
-        ]);
-        const { asking, ...reading } = pane;
-        return {
-          ...s,
-          ...reading,
-          ...contributed,
-          // ONE field, and one precedence: an Agent stopped at a question is `working` as
-          // far as its journal knows, and `working` is the wrong thing to tell the person
-          // whose answer it is waiting for.
-          stance: asking ? 'asking' : (contributed.stance ?? 'unknown'),
-          ...(tegami ? { tegami } : {}),
-        };
-      }),
-    );
-  }, 2_000);
 
   app.get('/api/launch-seed', async (req, res) => {
     try {

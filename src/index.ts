@@ -26,7 +26,7 @@ import { bindOperatorSocket, isOperatorPeer, operatorSocketPath, SiblingAlive, t
 import { addressRefusal, EXIT_ADDRESS_UNUSABLE } from './bind-refusal.js';
 import { publishMax, publishOwner } from './machine-state.js';
 import { registerCatalogs } from './routes/catalogs.js';
-import { registerLaunch } from './routes/launch.js';
+import { homeRows, registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions } from './routes/sessions-api.js';
@@ -417,7 +417,7 @@ const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
 const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
-startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
+startSessionsBroadcast({ list: listSessions, home: homeRows }); // /events: pushes the session list and the home rows when they change
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 void publishMax();

@@ -274,17 +274,24 @@ leave a socket, poll or focus target behind.
 
 ## Update paths — what causes a surface to change
 
-The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`);
-`homeData` and the catalogs have one owner (`home.js`); every timer below is written
-next to a predicate that stops it costing anything while its surface is hidden.
+The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`); the
+server's resources have one holder, `store.js`, which owns the `/events` socket: the home
+rows and the session list arrive only by push, Team rosters are read when the server nudges,
+and desks are read when a surface opens. The catalogs have one owner (`home.js`). The store
+hands a subscriber a resource when it subscribes and again only when a field a surface paints
+changed, so no surface keeps a clock for a resource or checks whether to repaint. Every timer below is written next to a predicate that stops it costing anything
+while its surface is hidden.
 
 | Fact | Written by | Arrives via |
 |---|---|---|
-| session set (`S.sessions`) | `reconcileSessions` (`api.js`) — the only writer | boot fetch (`main.js`) · `/events` push (`events.js`, which also owns births/deaths/chips) · visibilitychange + bfcache `pageshow` (`layout.js`) · post-mutation `fetchSessions()` calls |
-| roster/status data (`homeData`) | `refreshHome` (`home.js`) — inflight-guarded, fault-keeping | 8s poll while a home pane is visible (`layout.js`) · visibilitychange · every `showHome` · post-mutation refreshes |
-| catalogs (projects, presets, saved launches) | their `load*` in `home.js` | boot, and the panes that edit them re-load after a write |
-| per-tile readings (ctx, tegami, control) | the tile's own `refresh*` | 30s poll for visible connected tiles (`layout.js`) · connect · post-write re-read |
-| pane data (wipeboard, docs list, roots, koshi, stats) | the pane module | its own gated poll (2s/2s/15s) or `enter()` — each owner is the file the surface lives in |
+| session set (`S.sessions`) | `reconcileSessions` (`api.js`) — the only writer | boot fetch (`main.js`) · `{t:'sessions', list}` on the store's socket, pushed on connect and on change, reduced by `events.js` (which also owns births/deaths/chips); a push that moved only `activity` stamps is no change · visibilitychange + bfcache `pageshow` (`layout.js`) · post-mutation `fetchSessions()` calls |
+| roster/status data (`homeData`) | the store's `home` resource; `home.js` reads it into `homeData` | `{t:'home', rows}` only: the server sends it whole to every new connection, a reconnect included, and again when a painted field changed (not `activity` or the stance's `at`) · the browser never asks `GET /api/home`; that route is the tools' · visibility resume (`renew`, `layout.js`) reconnects a socket that went |
+| desk readings (`desksOf`) | the store's `desks` resource, read by `desks.js` | not pushed · the Work Record ladder reads `GET /api/desks` through the store's snapshot when it opens (`openLadder`, `tile.js`) |
+| Team rosters | the store's `teams` resource, projected by `team-controller.js`, which hears the store's `teams` and `sessions` and publishes only when the rosters or the session list changed | `{t:'teams'}` nudge after a successful write under `/api/team-rosters` or `/api/team` → one `GET /api/team-rosters` · `refreshTeams()` on Team entry and after a mutation |
+| catalogs (projects) | `loadProjects` in `home.js` | boot, and the panes that edit them re-load after a write |
+| per-tile readings (gauge, work record) | the tile's `refreshCtx` / `refreshTegami`, reading its session's home row (`ctx`, `model`, `tegami`) | the tile subscribes to the store's `home` when it is made and unsubscribes when its host destroys it (`terminal-tile-host.js`) · connect repaints from the row the store holds · the browser never calls `/ctx` or `/tegami`; those routes are the tools' |
+| docs list (tracked shelf) | `docs.js`, reading `homeData` | `enter` subscribes to the store's `home` and draws the snapshot; each push redraws; `close` unsubscribes, called by the seat that leaves it (tile docs view, phone docs screen, Team and Agent workbench tabs, the document seat) · the Plans and Docs shelves read `GET /api/docs` on demand |
+| pane data (wipeboard, message queue, roots, koshi, stats) | the pane module | its own gated poll or `enter()` — each owner is the file the surface lives in |
 | tile bytes | `TileWire` (`tilewire.js`) | the socket; reconnect/backoff lives there and nowhere else |
 
 ### Transcript reading transport
@@ -319,7 +326,8 @@ The promoted phone acceptance on 2026-09-24 keeps these results separate:
   changed no store.
 
 Lifecycle has two explicit owners. Long-lived workspace rooms are page-owned and gate their
-polls on visibility. Disposable phone Tiles are host-owned: destroying one closes its
+polls on visibility; a surface that reads a store resource subscribes when it opens and
+unsubscribes when it closes, and the Team destination does exactly that for the home rows. Disposable phone Tiles are host-owned: destroying one closes its
 transport, disposes its transcript handler/watch, observer, composer and timers, and removes
 it from the Tile registry. A surface is never treated as page-lived merely because an older
 desktop composition happened not to unmount it.

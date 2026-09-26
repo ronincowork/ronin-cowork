@@ -30,7 +30,7 @@ gets no invented desk state.
 
 | Route | Answers |
 |---|---|
-| `GET /api/desks` | every live session's desks and roll-up, keyed by session; memoised a few seconds — what every tile and the roster poll |
+| `GET /api/desks` | every live session's desks and roll-up, keyed by session; memoised a few seconds. The browser reads it when a Work Record opens; nothing pushes it |
 | `GET /api/sessions/:name/desks` | one session: `{ session, live, desks[], rollup }` |
 | `GET /api/teams/:name/desks` | every member's desks, **plus parked desks of sessions that are gone** (`live: false`) — the lead's *hand in · inspect · reassign · discard* list — the team line seen per repository (`lines`), because one roster `branch` cannot name two repos' lines, and `promotion`: the last complete team promotion and any receipt still blocking the team (advancing or interrupted), from Track 2's ledger |
 
@@ -39,18 +39,15 @@ the sum of commits ahead of a line, i.e. what nobody else can see yet.
 
 ## The surfaces
 
-`public/js/desks.js` shares one deduped fetch of `/api/desks` and owns the words
-(`desks.*` in the lexicon).
+Desks are read, not pushed. Ahead/behind and unsaved files are live git facts with no
+write route to announce them, and one surface shows them, so the browser asks at the moment
+it shows them instead of the server recomputing them for every tab on a clock.
 
 | Surface | Shows |
 |---|---|
-| tile head ⑂ | one desk: its branch; several: the count. The help carries the roll-up (`2 desks · 1 pending · 3 private`) and one line per desk: repo, branch, `→ line`, ahead/behind, unsaved, pending (by whom), parked, blocked. Amber when pending or blocked. Works with no services installed |
-| roster (⌂) | a `--hr-desks` column with the same label and help; hidden with the model column on a narrow tile |
-| Team page | the roll-up among each member's readings; a **Team lines** row (`ronin-cowork → team/comp/dev · ronin-services → team/comp/dev`) beside the roster's single `Branch`; a **Promotion** row (last complete, or the receipt blocking the team — amber); a **Parked desks** row (`name · gone · 3 ahead`) |
-| ▣ Project roots | a chip for the **arrangement**, read from the repo's checked-in `RONIN_REPO`: `reviewed · desks`, `reviewed`, `direct`, or `shared checkout` when there is no record — apart from whichever branch happens to be mounted at the root |
+| Work Record ladder (tile) | the **Worktrees** section: each desk's worktree, branch, and line, read from `GET /api/desks` through the store's snapshot when the ladder opens (`openLadder` in `public/js/tile.js`, `desksOf` in `public/js/desks.js`); a session with no desk shows the repositories its record lists |
 
-Paths and SHAs stay out of every row (docs/architecture/worktrees.md, "Surfaces that change": detail
-behind inspection); the API carries them for anyone who asks.
+The API carries every path and SHA for anyone who asks.
 
 ## What this page does not cover
 

@@ -1,18 +1,21 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { reconcileSessions } from './api.js';
-import { refreshHome } from './home.js';
+import { store } from './store.js';
 import { S, tiles } from './state.js';
 import { t } from './lexicon.js';
 
 /**
- * WHAT THIS TAB IS SHOWING, said once and re-said whenever it changes.
+ * WHAT THE /events MESSAGES MEAN TO THE PAGE.
  *
- * The server sends an Agent's records only to connections that asked for them, so a phone
- * watching one Agent is never woken by another. One registration per connection: a tile
- * shows one Agent in one reading, so a new watch replaces the old and there is nothing to
- * unsubscribe.
+ * The socket and the resources are the store's (js/store.js). This module turns a changed
+ * session list into birth chips and tiles returning home, and hands the feeds that are not
+ * resources — transcripts, Team page drafts, Mika, Setup progress — to their surfaces.
+ *
+ * WHAT THIS TAB IS SHOWING, said once and re-said whenever it changes. The server sends an
+ * Agent's records only to connections that asked for them, so a phone watching one Agent is
+ * never woken by another. One registration per connection: a tile shows one Agent in one
+ * reading, so a new watch replaces the old and there is nothing to unsubscribe.
  */
-let socket = null;
 let watching = null; // {session, reading} — kept so a reconnect can say it again
 
 export function watchTranscript(session, reading) {
@@ -21,34 +24,7 @@ export function watchTranscript(session, reading) {
 }
 
 function sendWatch() {
-  if (!socket || socket.readyState !== WebSocket.OPEN) return;
-  try {
-    socket.send(JSON.stringify({ t: 'watch', session: watching?.session || '', reading: watching?.reading || '' }));
-  } catch { /* the socket went; the reconnect will say it again */ }
-}
-
-export function connectEvents() {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}/events`);
-  socket = ws;
-  // A reconnect is a new connection with no memory, so it is told again at once. The tab
-  // then asks for what it missed while the socket was down.
-  ws.onopen = () => { sendWatch(); for (const fn of transcriptHandlers) fn({ t: 'reconnected' }); };
-  ws.onmessage = (ev) => {
-    let m;
-    try {
-      m = JSON.parse(ev.data);
-    } catch (_) {
-      return;
-    }
-    if (m.t === 'transcript') for (const fn of transcriptHandlers) fn(m);
-    if (m.t === 'sessions' && Array.isArray(m.list)) onSessionsEvent(m.list);
-    if (m.t === 'team-page') for (const fn of teamPageHandlers) fn(m);
-    if (m.t === 'mika-show') for (const fn of mikaShowHandlers) fn(m);
-    if (m.t === 'setup-progress' && Array.isArray(m.steps)) for (const fn of setupProgressHandlers) fn(m);
-  };
-  ws.onclose = () => setTimeout(connectEvents, 3000); // keep the feed alive
-  return ws; // the caller may want to know which connection it got
+  store.send({ t: 'watch', session: watching?.session || '', reading: watching?.reading || '' });
 }
 
 /** Who hears an Agent's records arriving, and the reconnect that means a gap to fill. */
@@ -63,7 +39,17 @@ export const mikaShowHandlers = new Set();
 /** Who hears the server-owned five-step Setup record after a scan or answer lands. */
 export const setupProgressHandlers = new Set();
 
-export function onSessionsEvent(list) {
+// A reconnect is a new connection with no memory, so it is told again at once. The tab
+// then asks for what it missed while the socket was down.
+store.onOpen(() => { sendWatch(); for (const fn of transcriptHandlers) fn({ t: 'reconnected' }); });
+store.listen('transcript', (m) => { for (const fn of transcriptHandlers) fn(m); });
+store.listen('team-page', (m) => { for (const fn of teamPageHandlers) fn(m); });
+store.listen('mika-show', (m) => { for (const fn of mikaShowHandlers) fn(m); });
+store.listen('setup-progress', (m) => { if (Array.isArray(m.steps)) for (const fn of setupProgressHandlers) fn(m); });
+store.reduce('sessions', (list) => onSessionsEvent(list));
+
+/** A changed session list: reconcile it, return dead tiles home, and offer the newborn. */
+function onSessionsEvent(list) {
   const before = new Set(S.sessions.map((s) => s.name));
   const now = new Set(list.map((s) => s.name));
   reconcileSessions(list); // the one writer (api.js); pickers current everywhere
@@ -75,15 +61,14 @@ export function onSessionsEvent(list) {
   for (const s of list) {
     if (!before.has(s.name) && !tiles.some((t) => t.session === s.name)) showBirthChip(s.name);
   }
-  refreshHome(); // fresh status/gauge for any home panels on screen
   for (const fn of sessionsHandlers) fn(list);
 }
 
 /* Chip: "a session appeared" — one tap to open, dismisses itself. */
-export let chipEl = null;
-export let chipTimer = null;
+let chipEl = null;
+let chipTimer = null;
 const BIRTH_CHIP_HOLD_MS = 7500;
-export function showBirthChip(name) {
+function showBirthChip(name) {
   if (!chipEl) {
     chipEl = document.createElement('div');
     chipEl.id = 'chip';
@@ -107,7 +92,7 @@ export function showBirthChip(name) {
   clearTimeout(chipTimer);
   chipTimer = setTimeout(hideChip, BIRTH_CHIP_HOLD_MS);
 }
-export function hideChip() {
+function hideChip() {
   if (chipEl) chipEl.classList.remove('show');
 }
 
@@ -123,14 +108,3 @@ export function openSessionSomewhere(name) {
   tile.activate();
   return true;
 }
-
-/* ---------- commons — the admin pane inside a tile (tab label: ⌂ Roster) ----------
- * commons (内 — inside, the house, ours): the counterpart of the dials' "outside
- * agents". It is the inside of a tile — the part that is yours, from which work is
- * dispatched to the outside agents the dials govern. The UI tab says "⌂ Roster" for
- * legibility; the concept is commons everywhere else. See docs/commons.md.
- *
- * The selectors below still say "home" (they predate the name) — new code should
- * say commons; renaming them is a single tidy-up pass, not a piecemeal one.
- */
-// Shared data: one /api/home fetch feeds every visible panel.

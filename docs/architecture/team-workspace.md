@@ -50,7 +50,8 @@ one on leave so no transport survives outside the entered destination.
    is waited for while the roster is still arriving, then let go.
 6. The roster renders one card per member and a `＋ Add Agent to Team` card. A card
    is a **reading**: Agent title, 人, SHINGO chip, status (ready · thinking · awaiting
-   input), model, ⛽ context, attached — read off `/api/home`'s row on entry and every 5s.
+   input), model, ⛽ context, attached — read off the store's `/api/home` row: handed over
+   on entry, then again each time the server pushes a change. Leaving unsubscribes.
 7. **Click a card** and its Tile goes into the workspace last touched (the one carrying
    the Sessions grid's `.tile.active` highlight); **drag a card** onto a workspace and it
    goes there. Arrow keys walk the cards; Enter picks.

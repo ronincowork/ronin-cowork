@@ -3,7 +3,6 @@ import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamsFromStat
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { createPhalanx } from './phalanx.js';
-import { refreshHome } from './home.js';
 import { openWorkspaceTab } from './workspace.js';
 
 const node = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
@@ -20,7 +19,7 @@ export function createTeamRosterSurface() {
     if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: teamLabel(team), count }))) return;
     const result = await deleteTeamRoster(team);
     if (!result.ok) surface.setState('failed', result.message);
-    else { surface.setState(null, ''); await refreshHome(); await refreshTeams(); stones.setItems(items()); }
+    else { surface.setState(null, ''); await refreshTeams(); stones.setItems(items()); }
   };
   const items = () => teamsFromState().filter((team) => !team.holding).map((team) => {
     const count = membersOfTeam(team.name).length;
@@ -40,7 +39,7 @@ export function createTeamRosterSurface() {
     el: surface.el,
     render: () => {
       surface.setState('loading', t('league.roster_loading', 'Loading Teams…'));
-      void Promise.all([refreshHome(), refreshTeams()]).then(() => {
+      void refreshTeams().then(() => {
         surface.setState(null, '');
         stones.setItems(items());
       });
