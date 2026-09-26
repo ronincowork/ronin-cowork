@@ -1,7 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { fetchSessions } from './api.js';
 import { guard } from './errors.js';
-import { refreshHome } from './home.js';
+import { renew } from './store.js';
 import { buildSessionPicker } from './session-picker.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadPanel } from './padpanel.js';
@@ -55,29 +54,14 @@ export function build() {
     window.matchMedia('(pointer: coarse) and (min-width: 681px)').addEventListener?.('change', restore);
     sync();
   }
-  // Each wiring block is guarded separately: losing one control must not cost the
-  // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
+  // Resumed tab (esp. mobile — a backgrounded page can live for days) or one restored from
+  // bfcache: renew the store — a socket that went reconnects now, and the new connection is
+  // sent the session list and the rows whole. Nothing here keeps a clock or re-reads a list.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      fetchSessions();
-      refreshHome();
-    }
+    if (document.visibilityState === 'visible') renew();
   });
-  // Home-panel cadence: status + gauge readings for sessionless tiles. Gentle poll,
-  // only while a home panel is actually on a visible screen.
-  setInterval(() => {
-    if (document.visibilityState === 'visible') refreshHome();
-  }, 8000);
-  // Gauge cadence: the number only moves when a turn completes, so a gentle 30s poll
-  // (one cheap capture-pane per tile-with-session), paused while the tab is hidden.
-  setInterval(() => {
-    if (document.visibilityState !== 'visible') return;
-    tiles.forEach((t) => {
-      if (t.session && t.el.style.display !== 'none') { t.refreshCtx(); t.refreshTegami(); }
-    });
-  }, 30000);
   window.addEventListener('pageshow', (e) => {
-    if (e.persisted) fetchSessions(); // restored from bfcache
+    if (e.persisted) renew();
   });
   window.addEventListener('resize', () => tiles.forEach((t) => t.doFit()));
   // Desktop: Ctrl+Shift (or Ctrl+Alt) + 1/2/4 sets HOW MANY tiles are on screen —

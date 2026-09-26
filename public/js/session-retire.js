@@ -46,7 +46,7 @@ export function createSubmitGate() {
 }
 
 /** The tile trash boundary: exactly the two lifecycle choices, dismissible by Escape/scrim. */
-export function retireSession(name, retirementId, onDone) {
+export function retireSession(name, retirementId, onDone = () => {}) {
   const submit = createSubmitGate();
   // Dismissal removes the node, not just the `open` class: ^C raises this sheet as
   // readily as × does, and a scrim-tapped one left in the body would stack a dead

@@ -51,6 +51,18 @@ async function allDesks(): Promise<Record<string, SessionDesks>> {
   return Object.fromEntries(rows.map((r) => [r.session, r]));
 }
 
+// What GET /api/desks answers: read when a surface opens, not pushed. The memo lets tabs
+// opening together share the git reads.
+async function loadDesks(): Promise<Record<string, SessionDesks>> {
+  if (!memo || Date.now() - memo.at > MEMO_MS) memo = { at: Date.now(), value: allDesks() };
+  try {
+    return await memo.value;
+  } catch (e) {
+    memo = null;
+    throw e;
+  }
+}
+
 export function registerDesks(app: express.Express): void {
   app.get('/api/funnel-recovery', async (_req, res) => {
     try { res.json(await listFunnelReceipts()); }
@@ -89,12 +101,16 @@ export function registerDesks(app: express.Express): void {
     catch (e) { res.status(409).json({ error: String((e as Error)?.message ?? e) }); }
   });
 
-  app.get('/api/desks', async (_req, res) => {
+  // ?session=<name> answers that session's own entry of the same keyed object ({} when it
+  // is not live), read without computing every desk on the box; the bare form is for tools.
+  app.get('/api/desks', async (req, res) => {
+    const session = String(req.query.session ?? '').trim();
     try {
-      if (!memo || Date.now() - memo.at > MEMO_MS) memo = { at: Date.now(), value: allDesks() };
-      res.json(await memo.value);
+      if (!session) return res.json(await loadDesks());
+      if (!isValidName(session)) return res.status(400).json({ error: 'Invalid session name.' });
+      if (!(await sessionExists(session))) return res.json({});
+      res.json({ [session]: await desksOf(session, await locator()) });
     } catch (e) {
-      memo = null;
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });

@@ -54,6 +54,8 @@ export function createTerminalTileHost(options = {}) {
   const send = (text) => !parked && !!tile?.sendRaw(String(text));
   const destroy = () => {
     if (!tile) return;
+    tile.unsubscribeHome?.();
+    tile.docView?.dispose();
     tile.wire?.close();
     tile.transcriptView?.dispose();
     tile.ro?.disconnect();

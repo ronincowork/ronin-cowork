@@ -65,3 +65,22 @@ test('lifecycle tools preserve route refusals and reject extra arguments', async
       && /conversation cannot be resumed/.test((error.stdout ?? '') + (error.stderr ?? '')),
   );
 });
+
+test('session_end acknowledges an unexpected answer with Ronin\'s own error, never the status alone', async (t) => {
+  const server = createServer((_req, res) => {
+    res.statusCode = 500;
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify({ error: 'Agent shutdown timed out during assigned desk lookup; the Agent remains live.' }));
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const address = server.address() as AddressInfo;
+  const env = { ...process.env, RONIN_URL: `http://127.0.0.1:${address.port}`, TMUX_PANE: '%7' };
+
+  await assert.rejects(
+    exec(path.join(root, 'ronin_bin', 'session_end'), [], { env }),
+    (error: { code?: number; stderr?: string }) => error.code === 5
+      && /STUCK: Ronin answered 500/.test(error.stderr ?? '')
+      && /timed out during assigned desk lookup/.test(error.stderr ?? ''),
+  );
+});

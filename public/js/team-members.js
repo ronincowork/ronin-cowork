@@ -3,7 +3,7 @@
  *  the add-select — shared by the Commons roster and the league team surfaces. */
 import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
-import { membersOfTeam, refreshTeams, sessionsAvailableToTeam, setTeamLead, setTeamMembership, teamByName } from './team-controller.js';
+import { membersOfTeam, sessionsAvailableToTeam, setTeamLead, setTeamMembership, teamByName } from './team-controller.js';
 import { setSessionTitle } from './api.js';
 import { t } from './lexicon.js';
 
@@ -14,8 +14,7 @@ export const agentTitle = (session) => session.title || String(session.name || '
 const agentName = (session) => String(session.identity?.cli || session.agent || session.session_type || 'Agent')
   .split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 
-// "flashing the team configuration on and off"). Every five-second row read and every
-// refreshTeams() publish land in the panel renderers; redrawing unconditionally flashed
+// Every pushed home row and every Team projection publish land in the panel renderers; redrawing unconditionally flashed
 // the form's loading line, refetched three catalogs, and wiped a half-typed edit. The
 // renderers compare this string — the durable roster, each member line, the add-select's
 // candidates — and tear the panel down only when it moves.
@@ -62,7 +61,7 @@ export const buildTeamMembers = (name, options = {}) => {
       const currentTitle = agentTitle(member);
       const wanted = window.prompt(t('league.rename_agent_prompt', 'Edit Agent title'), currentTitle);
       if (wanted == null || wanted.trim() === currentTitle) return;
-      try { await setSessionTitle(member.name, wanted.trim()); await refreshTeams(); options.onChanged?.(); }
+      try { await setSessionTitle(member.name, wanted.trim()); options.onChanged?.(); }
       catch (error) { options.onFailed?.(t('head.rename_failed', 'Could not rename session: {reason}', { reason: error.message })); }
     } });
     const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.make_team_lead', 'Make Lead'), size: 'compact', selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });

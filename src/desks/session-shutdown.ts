@@ -48,9 +48,14 @@ export interface ShutdownOps {
   stop(session: string, signal?: AbortSignal): Promise<void>;
 }
 
+// Filtered before any git runs: the status of every desk on the box is seconds of git,
+// and this read has a 5s budget inside session_end.
+export async function assignedDesks(session: string, list: typeof listDesks = listDesks): Promise<DeskStatus[]> {
+  return (await list({ owner: session })).filter((desk) => desk.state === 'open');
+}
+
 const liveOps: ShutdownOps = {
-  desks: async (session) => (await listDesks()).filter((desk) => desk.state === 'open'
-    && (desk.owners?.length ? desk.owners : [desk.session]).includes(session)),
+  desks: (session) => assignedDesks(session),
   liveSessions: listSessions,
   cwd: sessionDir,
   close: (desk, session, signal) => closeDeskForShutdown(desk.repo, desk.branch, session, undefined, signal),

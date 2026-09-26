@@ -2,11 +2,9 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamKanban, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
-import { refreshTeams, setTeamMembership, subscribe, teamsFromState } from './team-controller.js';
+import { setTeamMembership, subscribe, teamsFromState } from './team-controller.js';
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { createFeedbackSurface } from './feedback.js';
-import { fetchSessions } from './api.js';
-import { refreshHome } from './home.js';
 import { request } from './request.js';
 import { S } from './state.js';
 import { t } from './lexicon.js';
@@ -87,9 +85,9 @@ export function createAgentView() {
     if (documents.has(key)) return documents.get(key);
     const surface = WorkspaceKit.primitives.createSurface({ label: t('workspace.tab_docs', 'Documents'), className: 'agent-documents', flush: true });
     const docsPane = el('div', 'home-docs tw-docs');
-    const docs = buildDocs(null, docsPane, () => entered && docsPane.isConnected, (candidate) => candidate === name);
+    const docs = buildDocs(null, docsPane, (candidate) => candidate === name);
     surface.content.append(docsPane);
-    const made = { el: surface.el, show: () => { void refreshHome(); docs.enter(); } };
+    const made = { el: surface.el, show: () => { docs.enter(); }, leave: () => { docs.close(); } };
     documents.set(key, made); return made;
   };
   const environment = {
@@ -153,10 +151,10 @@ export function createAgentView() {
       context = ctx; agent = ctx.param; entered = true;
       for (const seat of Object.values(seats)) seat.pool.sync([agent]);
       restore();
-      void Promise.all([fetchSessions(), refreshTeams(), refreshAvailability()]).then(() => { if (!entered) return; bench.refreshSelector(); for (const item of membership.values()) item.render(); });
+      void refreshAvailability().then(() => { if (!entered) return; bench.refreshSelector(); for (const item of membership.values()) item.render(); });
     },
-    leave: () => { entered = false; bench.leave(); for (const seat of Object.values(seats)) seat.pool.destroyAll(); },
-    destroy: () => { entered = false; unsubscribe?.(); for (const seat of Object.values(seats)) seat.pool.destroyAll(); },
+    leave: () => { entered = false; bench.leave(); for (const item of documents.values()) item.leave(); for (const seat of Object.values(seats)) seat.pool.destroyAll(); },
+    destroy: () => { entered = false; unsubscribe?.(); for (const item of documents.values()) item.leave(); for (const seat of Object.values(seats)) seat.pool.destroyAll(); },
     placeFeedback: () => bench.place(TYPES.feedback, bench.selected()),
   };
 }

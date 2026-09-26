@@ -4,7 +4,7 @@ import { createPhalanx } from './phalanx.js';
 import { ask } from './ask.js';
 import { createAgentCompositionReader } from './agent-composition.js';
 import { agentTitle } from './team-members.js';
-import { membersOfTeam, refreshTeams, setTeamLead, subscribe } from './team-controller.js';
+import { membersOfTeam, setTeamLead, subscribe } from './team-controller.js';
 import { t } from './lexicon.js';
 
 export const TEAM_CHART_TYPE = 'team.chart';
@@ -26,7 +26,6 @@ export function createTeamChartSurface({ team, onOpen, onAddLead } = {}) {
       ...others.map((member) => ({ id: member.name, label: agentTitle(member), group: t('league.agents', 'Agents'), secondary: `@${member.name}`, member })),
     ];
   };
-  const changed = async () => { await refreshTeams(); phalanx.setItems(items()); phalanx.refreshDetail(); };
   const renderDetail = (item, host) => {
     picker?.destroy(); picker = null;
     if (item.emptyLead) {
@@ -35,7 +34,7 @@ export function createTeamChartSurface({ team, onOpen, onAddLead } = {}) {
       let selected = '';
       const assign = WorkspaceKit.primitives.createAction({ label: t('league.assign_lead', 'Assign lead'), disabled: true });
       picker = ask([{ fields: [{ key: 'lead', label: t('league.choose_lead', 'Choose an Agent as team lead'), blank: candidates.length ? t('league.choose_lead', 'Choose an Agent as team lead') : t('league.no_lead_candidates', 'No current Agents to assign'), options: candidates.map((member) => ({ v: member.name, l: agentTitle(member) })) }] }], { density: 'tight', onChange: (value) => { selected = value.lead; assign.setDisabled(!selected); } });
-      assign.el.addEventListener('click', async () => { const result = await setTeamLead(selected, teamName(), true); if (!result.ok) return surface.setState('failed', result.message); await changed(); });
+      assign.el.addEventListener('click', async () => { const result = await setTeamLead(selected, teamName(), true); if (!result.ok) surface.setState('failed', result.message); });
       const add = WorkspaceKit.primitives.createAction({ label: t('league.add_lead_agent', 'Add new Agent'), action: () => onAddLead?.(teamName()) });
       const actions = el('div', 'tc-actions'); actions.append(picker.el, assign.el, add.el); host.append(actions);
       return () => { picker?.destroy(); picker = null; };
@@ -55,7 +54,7 @@ export function createTeamChartSurface({ team, onOpen, onAddLead } = {}) {
   const stop = subscribe(() => { if (entered) phalanx.setItems(items()); });
   return {
     el: surface.el,
-    show: async () => { entered = true; await refreshTeams(); phalanx.setItems(items()); },
+    show: () => { entered = true; phalanx.setItems(items()); },
     leave: () => { entered = false; },
     destroy: () => { entered = false; picker?.destroy(); stop?.(); phalanx.destroy(); },
   };

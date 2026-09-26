@@ -12,6 +12,7 @@ import { count } from '../counts.js';
 import { getTags, listSessions, setTags } from '../tmux.js';
 import { writeTeams } from '../tegami.js';
 import { announceTeamChanges } from './wipeboards-api.js';
+import { pushTeams } from '../ws/events.js';
 import { assertSameCampaignRoot, campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
 import { retireTeam } from '../team-retire.js';
 import { readCampaign } from '../campaigns.js';
@@ -122,7 +123,30 @@ function ideaEditOf(body: unknown): Partial<Project> {
   return edit;
 }
 
+// What GET /api/team-rosters answers, and, for this machine's Campaign, what /events pushes
+// as {t:'teams', rosters}.
+export async function teamRosters(named: string[] = []): Promise<unknown[]> {
+  const resolve = await campaignResolver();
+  const wanted = named.length ? named : [await machineCampaignId()].filter(Boolean);
+  const keep = await campaignFilter(wanted);
+  const rosters = (await listTeamRosters()).filter((r) => keep(r.campaign_id));
+  return Promise.all(
+    rosters.map(async (r) => ({
+      ...r,
+      campaign_id: resolve(r.campaign_id),
+      wipeboard_exists: await boardExists(r.wipeboard),
+    })),
+  );
+}
+
 export function registerTeams(app: express.Express): void {
+  // Every write below changes what GET /api/team-rosters answers. The server knows when it
+  // wrote, so it reads the rosters once and pushes them: {t:'teams', rosters}.
+  app.use(['/api/team-rosters', '/api/team'], (req, res, next) => {
+    if (req.method !== 'GET') res.on('finish', () => { if (res.statusCode < 400) void pushTeams(); });
+    next();
+  });
+
   app.post('/api/team-rosters/:name/projects', async (req, res) => {
     try {
       const result = await writeTeamIdea(req.params.name, undefined, ideaEditOf(req.body));
@@ -199,20 +223,7 @@ export function registerTeams(app: express.Express): void {
 
   app.get('/api/team-rosters', async (req, res) => {
     try {
-      const resolve = await campaignResolver();
-      const named = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
-      const wanted = named.length ? named : [await machineCampaignId()].filter(Boolean);
-      const keep = await campaignFilter(wanted);
-      const rosters = (await listTeamRosters()).filter((r) => keep(r.campaign_id));
-      res.json(
-        await Promise.all(
-          rosters.map(async (r) => ({
-            ...r,
-            campaign_id: resolve(r.campaign_id),
-            wipeboard_exists: await boardExists(r.wipeboard),
-          })),
-        ),
-      );
+      res.json(await teamRosters(([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean)));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

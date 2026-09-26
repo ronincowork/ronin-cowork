@@ -11,12 +11,12 @@
  * RELOCATED not cloned, so every handler and live widget keeps the owner it always had.
  */
 import { trackAppHeight } from './appheight.js';
-import { fetchSessions } from './api.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
-import { connectEvents, sessionsHandlers } from './events.js';
-import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
-import { loadProjects, projectData, refreshHome } from './home.js';
+import { sessionsHandlers } from './events.js';
+import { connect, renew } from './store.js';
+import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
+import { loadProjects, projectData } from './home.js';
 import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
 import { makeDrop } from './tiledrop.js';
@@ -97,7 +97,6 @@ export async function buildPhone() {
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — for the slow work-record clock
   let sheet = null; // its メ sheet — dies with the host
-  let roster = null; // the roster clock, which the desk has in layout.js and the phone lacked
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
   const transcriptModeKey = 'ronin.phone.transcript-modes';
   let savedTranscriptModes = {};
@@ -210,7 +209,6 @@ export async function buildPhone() {
         return;
       }
       const born = result.data?.name || name.value.trim();
-      await fetchSessions();
       // The Agent opens where it was born: its own tile, in this document.
       location.hash = sessionHash(team, born);
     });
@@ -264,17 +262,17 @@ export async function buildPhone() {
     const team = route.team;
     teamBar(team);
     const pane = el('div', 'home-docs ph-docs');
-    const docs = buildDocs(null, pane, () => pane.isConnected,
+    const docs = buildDocs(null, pane,
       (name) => membersOfTeam(team).some((member) => member.name === name),
       () => teamByName(team)?.repos || []);
     docsView = docs;
     main.replaceChildren(segment(team, 'docs'), pane);
-    void refreshHome().then(() => { if (pane.isConnected) docs.enter(); });
+    docs.enter();
   };
   const leaveDocs = () => {
     if (!docsView) return true;
     const left = docsView.leave(); // false while unsaved typing stands and the owner keeps it
-    if (left) docsView = null;
+    if (left) { docsView.close(); docsView = null; }
     return left;
   };
 
@@ -306,13 +304,6 @@ export async function buildPhone() {
     if (!tile.servicesOff()) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
     sheet.addRow(node('killBtn'), 'Close');
 
-    // The desk refreshes the roster on its own clock (layout.js) and the phone had none, so
-    // a row's own facts — what the Agent is doing — never arrived here at all. Same data and
-    // the same cadence, not a second poll of anything.
-    void refreshHome();
-    clearInterval(roster);
-    roster = setInterval(() => { if (document.visibilityState === 'visible') void refreshHome(); }, 8000);
-
     // The 📄 menu hangs off the hidden tile head; here it hangs off the bar.
     //
     // So does the reading toggle, and it is a toggle here rather than a dial: the owner's
@@ -331,8 +322,6 @@ export async function buildPhone() {
   };
   const closeTerminal = () => {
     if (stageTile?.session) rememberTranscriptMode(stageTile.session, stageTile.transcriptOn);
-    clearInterval(roster);
-    roster = null;
     sheet?.close();
     sheet = null;
     host?.destroy();
@@ -368,28 +357,22 @@ export async function buildPhone() {
   window.addEventListener('hashchange', () => guard('phone route', render));
 
   /* ---------- the feeds ---------- */
-  // Membership and the lists are live off the same feed the workbench uses. A killed
-  // or vanished session on stage sends you back to its team — a dead tile is not a page.
+  // Membership and the lists are live off the same feed the workbench uses: the Team
+  // projection repaints every screen but the terminal once per change. On the terminal, a
+  // killed or vanished session sends you back to its team — a dead tile is not a page.
   sessionsHandlers.add(() => {
-    if (route.screen === 'terminal') {
-      const row = S.sessions.find((r) => r.name === route.session);
-      if (!row) { location.hash = teamHash(route.team); return; }
-      // The tile opened on the name alone; the Agent's own title lands with the list.
-      const title = bar.querySelector('.ph-title');
-      if (title && title.textContent !== agentLabel(row)) title.textContent = agentLabel(row);
-      return;
-    }
-    render();
+    if (route.screen !== 'terminal') return;
+    const row = S.sessions.find((r) => r.name === route.session);
+    if (!row) { location.hash = teamHash(route.team); return; }
+    // The tile opened on the name alone; the Agent's own title lands with the list.
+    const title = bar.querySelector('.ph-title');
+    if (title && title.textContent !== agentLabel(row)) title.textContent = agentLabel(row);
   });
   subscribe(() => { if (route.screen !== 'terminal') render(); });
+  // A resumed phone renews the store: a socket that went reconnects and is sent it all.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
-    void fetchSessions();
-    void refreshTeams();
+    if (document.visibilityState === 'visible') renew();
   });
-  // The tile refreshes its own work record on connect; keep it breathing here, since the
-  // desktop's 30s clock (layout.js) never runs in this document.
-  window.setInterval(() => { if (route.screen === 'terminal' && stageTile) stageTile.refreshTegami(); }, 30000);
 
   // Ask the operator which optional surfaces are plugged in BEFORE a tile is born, the
   // way main.js does: `stream:false` means the 🔓 views are off and every tile is 🔒.
@@ -405,9 +388,7 @@ export async function buildPhone() {
   }
   // A tile address mounts its tile now: the terminal attaches by name and needs no list.
   if (route.screen === 'terminal') guard('phone paint', render);
-  await fetchSessions();
-  guard('session event stream', connectEvents);
-  await refreshTeams();
+  guard('session event stream', connect);
   guard('load projects', loadProjects); // the launch card's project_root fallback
   guard('phone paint', render);
 }

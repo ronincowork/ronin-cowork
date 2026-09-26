@@ -1,5 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { fetchSessions } from './api.js';
 import { request } from './request.js';
 import { showFailure } from './errors.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -85,7 +84,6 @@ export async function askMika(tile, ask) {
       // failure: what was wanted was her tile, and there it is.
       if (!r.ok && r.status !== 409) throw new Error(r.message);
       born = r.ok;
-      if (born) void fetchSessions(); // the roster shows her without waiting for a poll
     } else if (ask) {
       await request('/api/sessions/' + encodeURIComponent(MIKA) + '/send', {
         method: 'POST',

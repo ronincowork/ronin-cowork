@@ -1,5 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { fetchSessions, setSessionTitle } from './api.js';
+import { setSessionTitle } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
@@ -19,8 +19,9 @@ import { buildKeysRow } from './keysrow.js';
 import { buildTileDocView } from './tile-doc-view.js';
 import { isCoarse } from './tiledrop.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
-import { desksOf, refreshDesks } from './desks.js';
+import { readDesks } from './desks.js';
 import { homeData } from './home.js';
+import { get, subscribe } from './store.js';
 import { t } from './lexicon.js';
 import { makeTileTranscript } from './tile-transcript.js';
 import { createSurfaceHost, TILE_SURFACES } from './surface-host.js';
@@ -169,6 +170,24 @@ export class Tile {
     this.ro.observe(this.body);
 
     this.refreshSessionName();
+    this.subscribeHome();
+  }
+
+  /**
+   * OPEN: hear the home rows — the snapshot now, then each change the server pushes. The
+   * gauge and the work record are this session's row; nothing here fetches or keeps a
+   * clock for them. CLOSE is `unsubscribeHome`, called by whoever destroys the tile.
+   */
+  subscribeHome() {
+    this.unsubscribeHome = subscribe('home', () => {
+      this.refreshCtx();
+      this.refreshTegami();
+    });
+  }
+
+  /** This session's home row, as the store holds it; null when there is none. */
+  homeRow() {
+    return (this.session && get('home')?.find((row) => row.name === this.session)) || null;
   }
 
   async rename() {
@@ -178,9 +197,8 @@ export class Tile {
     const wanted = window.prompt(t('head.rename_prompt', 'Edit Agent title\n\nAgent ID: {id}', { id: session }), current);
     if (wanted == null || wanted.trim() === current) return;
     try {
+      // The new title arrives with the pushed session list, which repaints this tile's name.
       await setSessionTitle(session, wanted.trim());
-      await fetchSessions();
-      this.refreshSessionName();
     } catch (e) {
       toast(t('head.rename_failed', 'Could not rename session: {reason}', { reason: e.message }), false);
     }
@@ -196,57 +214,40 @@ export class Tile {
   }
 
   /** Point the gauge at the session's context reading (null = no reading, gauge hides). */
-  async refreshCtx() {
-    const session = this.session;
-    if (!session || this.servicesOff()) {
-      this.gauge.set(null);
-      this.setFooter(null, null);
-      return;
-    }
-    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/ctx', { cache: 'no-store' });
-    if (this.session !== session) return;
-    this.gauge.set(r.ok ? r.data.ctx : null);
-    this.setFooter(r.ok ? r.data.ctx : null, r.ok ? r.data.model : null);
+  refreshCtx() {
+    const row = this.servicesOff() ? null : this.homeRow();
+    this.gauge.set(row?.ctx ?? null);
+    this.setFooter(row?.ctx ?? null, row?.model ?? null);
   }
 
   /**
-   * Re-read the session's letter. A mechanical read and nothing else: no check, no
+   * Read the session's letter off its row. A mechanical read and nothing else: no check, no
    * proof, no disagreement with what the agent wrote. Null = no ladder up, chip hides.
+   * The desks beside it in the ladder are not on the row: `openLadder` reads this session's
+   * once, when the ladder opens, and paints what that read answers (js/desks.js).
    */
-  async refreshTegami() {
-    const session = this.session;
-    // The desks ride the same clock as the letter and are cowork's own (`/api/desks`),
-    // so the ⑂ reading is live on a box with no services at all.
-    if (session) await refreshDesks().catch(() => {});
-    if (this.session !== session) return;
-    // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
-    // a 404 — the chip simply never shows, same as a session with no letter.
-    if (!session) {
-      this.closeLadder();
-      syncTileHead(this);
-      return;
-    }
-    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tegami', { cache: 'no-store' });
-    if (this.session !== session) return;
-    // A failed read keeps the last chip rather than blanking it — the poll heals it.
-    if (r.kind === 'network') return;
-    this.tegami = r.ok ? r.data : null;
-    // changes. Measured without it: switch a tile from a session with docs to one with none
-    // and 📄 stayed lit, claiming the previous session's docs until the roster poll redrew.
+  refreshTegami() {
+    this.tegami = this.homeRow()?.tegami || null;
+    // Measured without this: switch a tile from a session with docs to one with none and
+    // 📄 stayed lit, claiming the previous session's docs until the roster redrew.
     // `syncTileHead`, not `syncHeader` — the reading pass without another server fetch.
     syncTileHead(this);
-    // An open Work Record is a reading snapshot. Replacing it on this polling clock
-    // flashes the panel and resets the owner's scroll position. Keep the refreshed
-    // value cached; closing and reopening the panel draws that latest value.
+    // An open Work Record is a reading snapshot. Replacing it on each push flashes the
+    // panel and resets the owner's scroll position. Keep the value held; closing and
+    // reopening the panel draws the latest one.
     if (!this.tegami) this.closeLadder();
   }
 
   toggleLadder() {
     if (this.ladderOpen) this.closeLadder();
-    else {
-      this.ladderOpen = true;
-      this.drawLadder();
-    }
+    else void this.openLadder();
+  }
+
+  /** This session's desks are read when the ladder opens — one read of `/api/desks?session=`, fresh at open. */
+  async openLadder() {
+    const desks = await readDesks(this.session);
+    this.ladderOpen = true;
+    this.drawLadder(desks);
   }
 
   closeLadder() {
@@ -279,9 +280,9 @@ export class Tile {
   }
 
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */
-  drawLadder() {
+  drawLadder(desks) {
     this.el.querySelector('.shingo-ladder')?.remove();
-    const box = buildLadder(this.tegami, desksOf(this.session));
+    const box = buildLadder(this.tegami, desks);
     this.el.querySelector('.tile-head').after(box);
     this.workRecordBtn.classList.add('open');
     this.workRecordBtn.setAttribute('aria-expanded', 'true');
@@ -369,7 +370,7 @@ export class Tile {
 
   /**
    * The roster answered. Its row already carries what this Agent is doing, so the reading
-   * takes its end-of-conversation indicator from there — no second poll, and no opinion of
+   * takes its end-of-conversation indicator from there — no read of its own, and no opinion of
    * its own (owner, 2026-09-23: the backend sends it, the front renders it).
    */
   renderHome() {
@@ -695,10 +696,7 @@ export class Tile {
     // a repeat already queued can still reach xterm first. Dismissal removes the node
     // (session-retire.js), so finding one means this tile's sheet is up — never a stack.
     if (document.getElementById(`endsession-${this.retirementId}`)) return;
-    retireSession(name, this.retirementId, async () => {
-      this.detach();
-      await fetchSessions();
-    });
+    retireSession(name, this.retirementId, () => this.detach());
   }
 
   connect(session) {

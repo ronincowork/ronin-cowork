@@ -1,14 +1,14 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { trackAppHeight } from './appheight.js';
-import { fetchSessions } from './api.js';
 import { mountRamRpm } from './ramrpm.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { applyTheme } from './theme.js';
 import { restoreSkin } from './skins.js';
 import { activeProfile, loadDeskProfile } from './desk-profile.js';
-import { connectEvents } from './events.js';
-import { loadProjects, loadSavedLaunches, refreshHome } from './home.js';
+import { sayWhenUnreachable } from './events.js';
+import { connect } from './store.js';
+import { loadProjects } from './home.js';
 import { build } from './layout.js';
 import { S, tiles } from './state.js';
 import { installTips } from './tips.js';
@@ -132,16 +132,9 @@ export async function init() {
   reveal();
 
   guard('install workspace controls', build);
-  // The session list is the one step worth reporting loudly: without it every tile
-  // is an empty picker, which reads as "broken" rather than "server unreachable".
-  {
-    const r = await fetchSessions();
-    if (!r.ok) showFailure(t('errors.no_session_list', 'could not load the session list'), new Error(r.message));
-  }
-  guard('session event stream', connectEvents); // births & deaths push over this
+  guard('say when Ronin is unreachable', sayWhenUnreachable);
+  guard('session event stream', connect); // the store's socket: rows, sessions, births & deaths
   guard('load projects', loadProjects); // PROJECT_ROOTS.md — WHERE a spawn happens
-  guard('load saved launches', loadSavedLaunches); // SAVED_LAUNCHES.md — user scope, often empty
-  guard('refresh home panels', refreshHome);
   // Mark the first tile active but don't grab the keyboard on load (avoids the
   // iOS on-screen keyboard popping up before you've picked a session).
   guard('activate first tile', () => {

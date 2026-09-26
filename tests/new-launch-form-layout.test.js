@@ -68,7 +68,7 @@ test('both workbench entrances use the canonical New Agent form with contextual 
   assert.match(cowork, /const deskDefaultsRequest = \(\) => \(\{ destination: 'campaign', mode: 'replace', state: \{[\s\S]*workspace1: 'campaign\.defaults', workspace2: 'setup\.launch-own'/);
   assert.match(cowork, /deskDefaultsUrl: \(\) => workbenchLaunchUrl\(deskDefaultsRequest\(\)\)/);
   assert.match(cowork, /openDeskDefaults: \(\) => openWorkbenchTab\(deskDefaultsRequest\(\)\)/);
-  assert.match(cowork, /connect: campaign \? null : async \(name\) => \{\s*await fetchSessions\(\);\s*return connectSession\(name, id\)/,
+  assert.match(cowork, /connect: campaign \? null : \(name\) => connectSession\(name, id\)/,
     'a Team launch replaces its workspace; a Teamless Cowork launch uses the standalone Agent handoff');
   assert.match(cowork, /const live = new Set\(S\.sessions\.map/, 'a newborn is not discarded against the slower home reading');
   assert.doesNotMatch(cowork, /legacyTypes|team\.add-agent|@new-team|@team-roster/,
