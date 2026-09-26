@@ -194,7 +194,8 @@ from what the tab remembered.
 
 - **Chat** — reserved, empty, inert.
 - **Wipeboard** — the real Team thread and owner composer; the roster's `wipeboard` id or
-  the Team name; polled only while entered.
+  the Team name. Entering asks the server for the thread over the socket; the thread and
+  every later post arrive by push until the tab is left.
 - **Docs** — the Commons' own mdedit pane (`buildDocs`), narrowed to the roster's members;
   a draft `commons:docs:<path>` opens a file here.
 - **Messages** — inbound session messages that have not delivered yet; safe

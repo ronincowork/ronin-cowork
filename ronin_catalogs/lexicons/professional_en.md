@@ -424,7 +424,6 @@ nothing paints exactly this.
 - **team_wipeboard.no_notice:** → (no notice)
 - **team_wipeboard.cleared:** … earlier posts have cleared
 - **team_wipeboard.empty:** Nothing on the board right now — posts clear after 48 hours.
-- **team_wipeboard.read_failed:** Could not read the board — {message}
 - **team_wipeboard.post_failed:** Could not post — {message} (your text is still in the box)
 - **team_wipeboard.no_team:** No Team resolved — nothing to read.
 
@@ -535,12 +534,10 @@ nothing paints exactly this.
 - **machine.scope_note:** These are this container’s numbers, not the host’s.
 - **machine.unavailable:** not readable here
 - **machine.unavailable_note:** This system does not expose these, so they are left unanswered rather than reported as zero.
-- **machine.read_failed:** Could not read the machine just now.
-- **machine.refresh:** Refresh
-- **machine.refresh_title:** Read the machine again now
+- **machine.no_reading:** No reading of the machine yet.
 - **machine.stop:** Stop watching
 - **machine.stop_title:** Stop gathering machine readings and hide the gauge. Nothing was installed on the box, so there is nothing to undo — turn it back on whenever you like.
-- **machine.stopped:** Off. Reload to clear the gauge.
+- **machine.stopped:** Off — the gauge is hidden.
 - **machine.save_failed:** Could not save that.
 
 ## gbrain — gbrain.js (the gbrain commons tab)
@@ -957,15 +954,11 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_keypad:** Keypad
 - **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
-- **messages.reconnecting:** Reconnecting…
 - **messages.note:** A message waits only while a draft or dialog is present. After two minutes Ronin attempts it once, then removes it.
 - **messages.from:** From
 - **messages.to_label:** To
 - **messages.waiting:** Waiting
 - **messages.state_age:** {state} · {age}
-- **messages.age_now:** just now
-- **messages.age_short_seconds:** {seconds}s
-- **messages.age_short_minutes:** {minutes}m {seconds}s
 - **messages.type_tell:** Agent tell
 - **messages.type_wipeboard:** Wipeboard notification
 - **messages.type_owner:** Owner message
@@ -1317,7 +1310,6 @@ The catalog entry goes. {dir} is not touched.
 - **team_jikan.all_teams_summary:** Scheduled messages across every team
 - **team_jikan.none:** No jobs yet. Choose New job to schedule a message.
 - **team_jikan.remove:** Remove
-- **team_jikan.read_failed:** Could not read the jobs — {message}
 
 ## workspace — workspace-primitives.js (the Kit's own words)
 - **team_config.no_roster:** This Team has no saved record.

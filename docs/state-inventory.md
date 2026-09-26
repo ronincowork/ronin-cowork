@@ -40,7 +40,9 @@ not compete with the current live session.
 
 The browser holds no durable copy of server truth. Per tab, [store.js](../public/js/store.js)
 holds what [events.ts](../src/ws/events.ts) pushes — the home rows, the session list, the
-Team rosters — and nothing else; it is lost on reload and filled again on connect. Desks are read at open, not
+Team rosters, the message queue, the machine reading, and the wipeboard threads and Cron
+jobs its open surfaces asked for — and nothing else; it is lost on reload and filled again
+on connect. Desks are read at open, not
 held: the Work Record ladder asks `GET /api/desks?session=<name>` and paints the answer.
 
 Live runtime identity also includes the session key resolved by
