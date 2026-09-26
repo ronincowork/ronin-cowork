@@ -52,20 +52,13 @@ const HEADER = () => {
     },
     on: (tile) => tile.toggleTranscript() },
 
-  // rireki choices to the terminal header … I want to be able to switch between locked
-  // and the different versions of unlocked to see how this looks"). Ugly for now by his
-  // own word — a select with a word in it among glyph buttons — and the trade is that
-  // the RIREKI flavours are one click away on every tile while they are being judged.
+  // OUTPUT IN THE HEAD. The owner moved the RIREKI choices into the terminal header ("… I
+  // want to be able to switch between locked and the different versions of unlocked to see
+  // how this looks"). Ugly for now, by the owner's own word — a select with a word in it
+  // among glyph buttons — and the trade is that the RIREKI flavours are one click away on
+  // every tile while they are being judged.
   { key: 'outputEl', widget: (tile) => makeOutput(tile),
     help: t('head.output_help', 'Output — live terminal or one of RIREKI’s unlocked views') },
-
-  // below was put to him). It opened `/tegami/raw` — the letter verbatim — and it was the
-  // only client route to that endpoint. The objection: the shingo chip opens the PARSED
-  // ladder, not the file, and shingo.js hides the chip entirely when there is no ladder,
-  // so a session with a letter and no ladder up now has no route to its own letter. The
-  // owner's call is that the button costs more header width than that case is worth. If
-  // the raw view comes back it belongs INSIDE the ladder panel, where the reader already
-  // is, not as a second glyph competing with the first.
 
   // Hidden until there is a reading — a plain shell pane has no context, and that is fine.
   //
