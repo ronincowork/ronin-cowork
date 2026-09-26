@@ -13,15 +13,22 @@ smallest reads needed to paint itself.
 a selected-stone rail beside its detail, focus return, Escape, and responsive geometry.
 Consumers supply items and detail content; they do not recreate that movement privately.
 
-Task Manager uses the same Phalanx with declared groups in Ideas, Planning, Building,
-Landing, Done order, including empty groups as drop targets. Each Project is one stone;
-group headings open status surfaces and stones open Project surfaces with the current
-tenant scope. Compact/full density changes the stone readings. The Project detail opens
-its holder, and dragging between groups sends the existing move request without changing
-the Project record. Cowork/Desk, Team, and Agent scopes all use `createTeamKanban`.
+Task Manager retains its original board, furniture, selector card, and status/Project
+workspace drill-downs. Work Items (`work-items`) is a separate surface and card in
+Cowork/Desk, Team, and Agent profiles. Cowork/Desk offers one Work Items card spanning
+all Teams; Team reads its selected Team; Agent filters to Projects held by that Agent.
+
+Work Items mounts `createPhalanx` directly in the standard surface content seat. Each
+Project is a selectable stone in Ideas, Planning, Building, Landing, Done order. Selection
+moves all groups into the left rail and renders the Project inside the same `sws-detail`;
+it never opens another numbered workspace. `project-reading.js` holds the canonical
+Project reading used by both presentations, with each supplying its own styling classes.
+Work Items keeps normal Phalanx furniture, density controls, explicit holder opening,
+and message-only stage drops. It does not use Task Manager's board or beige furniture.
+
 The shared Phalanx accepts ordered `grouped.groups`, group/item event callbacks, item
-actions, and `setDensity`; existing inline group headings and in-place details retain
-their prior behavior.
+actions, and `setDensity`; Work Items stones deliberately supply no action callback,
+so the normal selection, rail, detail, Escape, and focus-return behavior applies.
 
 ## Library, profile, tenant, instance
 

@@ -428,6 +428,12 @@ nothing paints exactly this.
 - **team_wipeboard.no_team:** No Team resolved — nothing to read.
 
 ## team — team-view.js (the Team page)
+- **work_items.title:** Work Items
+- **work_items.intro:** Select a work item to read its Project. Drag between stages to request a move.
+- **work_items.refresh:** Refresh Work Items
+- **work_items.details:** Show stone details
+- **work_items.loading:** Loading Work Items…
+- **work_items.failed:** Could not load Work Items.
 - **team_kanban.beta:** Beta
 - **team_kanban.beta_message:** Task Manager is in beta. Follow Projects from ideas to done using Tools and the Work Record. We’re making it easier for Agents to keep them current without forcing upkeep.
 - **team_kanban.header_collapse:** Collapse

@@ -1,8 +1,9 @@
 /* The single-Agent Workbench: one ordinary Workbench tenant, not a launch special case. */
+import { createWorkItemsSurface } from './work-items-surface.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamKanban, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
-import { setTeamMembership, subscribe, teamsFromState } from './team-controller.js';
+import { membersOfTeam, setTeamMembership, subscribe, teamsFromState } from './team-controller.js';
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { createFeedbackSurface } from './feedback.js';
 import { request } from './request.js';
@@ -105,6 +106,12 @@ export function createAgentView() {
       return membership.get(key);
     },
     taskOffers: () => memberships(agent).length ? [{ key: agent, label: t('workspace.tab_task_manager', 'Task Manager'), summary: t('agent.team_tasks_summary', 'Projects held by this Agent') }] : [],
+    workItemOffers: () => memberships(agent).length ? [{ label: t('work_items.title', 'Work Items'), summary: t('agent.team_tasks_summary', 'Projects held by this Agent') }] : [],
+    workItems: () => createWorkItemsSurface({
+      scope: () => ({ kind: 'agent', agent, teams: memberships(agent) }),
+      lead: (project) => membersOfTeam(project.team).find((member) => member.team_lead)?.name || '',
+      openOwner: (name) => name === agent && bench.place(TYPES.self, bench.selected(), { key: agent }),
+    }),
     tasks: (id, detail) => makeTaskManager(id, detail),
     taskStatus: (id, detail) => makeTaskManager(id, { ...detail, view: 'status' }),
     taskProject: (id, detail) => makeTaskManager(id, { ...detail, view: 'project' }),

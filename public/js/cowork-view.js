@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
+import { createWorkItemsSurface } from './work-items-surface.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
@@ -300,6 +301,17 @@ export function createCoworkView(options = {}) {
       label: t('workspace.tab_task_manager', 'Task Manager'),
       summary: campaign ? t('team_kanban.desk_summary', 'Projects across this Desk’s Teams and Agents') : t('team_kanban.card_summary', 'The Team’s work, from Ideas through Done'),
     }] : [],
+    workItemOffers: () => kanbanGate.available ? [{
+      label: t('work_items.title', 'Work Items'),
+      summary: campaign ? t('team_kanban.desk_summary', 'Projects across this Desk’s Teams and Agents') : t('team_kanban.card_summary', 'The Team’s work, from Ideas through Done'),
+    }] : [],
+    workItems: () => createWorkItemsSurface({
+      scope: () => campaign
+        ? { kind: 'desk', teams: teamsFromState().filter((item) => !item.holding).map((item) => item.name) }
+        : { kind: 'team', team: team === UNASSIGNED ? '' : team },
+      lead: (project) => membersOfTeam(project.team).find((member) => member.team_lead)?.name || '',
+      openOwner: (name) => openAgentWorkbench(name),
+    }),
     teamKanban: (id) => taskManagerFor(id),
     taskStatus: (id, detail) => taskManagerFor(id, { ...detail, view: 'status' }),
     taskProject: (id, detail) => taskManagerFor(id, { ...detail, view: 'project' }),

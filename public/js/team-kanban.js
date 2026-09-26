@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { createPhalanx } from './phalanx.js';
+import { appendProjectReading } from './project-reading.js';
 
 const COLUMNS = [
   { key: 'IDEAS', label: 'Ideas', worker: 'lead' },
@@ -10,10 +10,11 @@ const COLUMNS = [
   { key: 'LANDING', label: 'Landing', worker: 'lead, then user' },
   { key: 'DONE', label: 'Done', worker: '' },
 ];
+export { COLUMNS as PROJECT_STAGES };
 const INDEX = Object.fromEntries(COLUMNS.map((column, index) => [column.key, index]));
 let nextHeaderId = 0;
 export const KANBAN_NOT_INSTALLED = 'Unavailable.';
-const KANBAN_CAMPAIGN_OFF = 'Unavailable.';
+export const KANBAN_CAMPAIGN_OFF = 'Unavailable.';
 
 export const taskManagerScope = (value = {}) => {
   const kind = ['desk', 'team', 'agent'].includes(value.kind) ? value.kind : 'team';
@@ -154,8 +155,8 @@ export function createTeamKanban(options = {}) {
   let seat = null;
   let availability = { available: false, message: KANBAN_NOT_INSTALLED };
   let allOpen = false;
+  const openCards = new Set();
   const asked = new Map(); // id -> { stage, target }; never written to the project record
-  let phalanx = null;
   const leadName = (project) => String(options.lead?.(project) || '');
   const holderName = (project) => project.holder === 'lead' ? leadName(project) : project.holder;
   const effectiveScope = () => scope.kind === 'team' && team ? taskManagerScope({ kind: 'team', team }) : taskManagerScope(scope);
@@ -172,7 +173,6 @@ export function createTeamKanban(options = {}) {
   };
 
   const render = () => {
-    phalanx?.destroy(); phalanx = null;
     board.replaceChildren();
     topline.hidden = !availability.available;
     if (!availability.available) {
@@ -186,16 +186,7 @@ export function createTeamKanban(options = {}) {
       detail.append(back);
       if (!project) detail.append(node('p', 'tk-empty', t('team_kanban.project_missing', 'This Project is not in the current scope.')));
       else {
-        detail.append(node('h2', '', project.title), node('p', 'tk-project-id', project.id), node('p', 'tk-outcome', project.objective));
-        const facts = node('dl', 'tk-project-facts');
-        for (const [label, value] of [[t('team_kanban.stage', 'Status'), stageLabel(project.stage)], [t('team_kanban.holder', 'Holder'), `@${holderName(project)}`], [t('team_kanban.progress', 'Progress'), project.status], [t('team_kanban.next', 'Next'), project.exit]]) facts.append(node('dt', '', label), node('dd', '', value));
-        detail.append(facts);
-        const owner = holderName(project);
-        if (owner) {
-          const openOwner = node('button', 'tk-owner', t('team_kanban.open_owner', 'Open @{name}', { name: owner }));
-          openOwner.type = 'button'; openOwner.addEventListener('click', () => options.openOwner?.(owner)); detail.append(openOwner);
-        }
-        if (project.evidence.length) detail.append(node('h3', '', t('team_kanban.evidence', 'Evidence')), node('p', 'tk-evidence', project.evidence.join(' · ')));
+        appendProjectReading(detail, project, { holder: holderName(project), stage: stageLabel(project.stage), prefix: 'tk' });
       }
       board.append(detail); return;
     }
@@ -203,54 +194,90 @@ export function createTeamKanban(options = {}) {
     if (view === 'status') {
       const back = node('button', 'tk-back', t('team_kanban.back', 'Back to Task Manager')); back.type = 'button'; back.addEventListener('click', () => navigate('overview')); board.append(back);
     }
-    const clearDrag = () => {
-      board.classList.remove('dragging');
-      for (const group of board.querySelectorAll('[data-sws-group]')) {
-        group.classList.remove('means', 'over');
-        const hint = group.querySelector('.sws-group-hint'); if (hint) hint.textContent = '';
+    for (const column of shownColumns) {
+      const columnProjects = projects.filter((project) => project.stage === column.key);
+      const section = node('section', 'tk-column');
+      section.dataset.stage = column.key;
+      const heading = node('h3');
+      const statusOpen = node('button', 'tk-column-open', column.label); statusOpen.type = 'button'; statusOpen.addEventListener('click', () => navigate('status', column.key));
+      heading.append(statusOpen);
+      if (column.worker) heading.append(node('span', 'tk-column-worker', column.worker));
+      const hint = node('p', 'tk-drop-hint');
+      const cards = node('div', 'tk-cards');
+      if (!columnProjects.length) cards.append(node('p', 'tk-empty', t('team_kanban.empty', 'nothing here')));
+      for (const project of columnProjects) {
+        const card = node('article', 'wk-card tk-card');
+        card.draggable = true;
+        card.dataset.project = project.id;
+        const isOpen = allOpen || openCards.has(project.id);
+        card.classList.toggle('open', isOpen);
+        if (project.stage !== 'DONE') card.dataset.status = project.status;
+        const toggle = node('button', 'tk-card-toggle');
+        toggle.type = 'button';
+        toggle.setAttribute('aria-expanded', String(isOpen));
+        toggle.append(node('span', 'wk-card-heading tk-title', project.title));
+        card.append(toggle);
+        const details = node('div', 'tk-details');
+        details.append(node('p', 'wk-card-summary tk-outcome', project.objective));
+        if (project.evidence.length) details.append(node('p', 'tk-evidence', project.evidence.join(' · ')));
+        const row = node('div', 'wk-card-meta tk-card-row');
+        const wait = waitingOn(project);
+        if (wait) row.append(node('span', 'tk-waiting', wait));
+        const owner = holderName(project);
+        if (owner) {
+          const open = node('button', 'tk-owner', `@${owner}`);
+          open.type = 'button';
+          open.addEventListener('click', (event) => { event.stopPropagation(); options.openOwner?.(owner); });
+          row.append(open);
+        }
+        const pending = asked.get(project.id);
+        if (pending?.stage === project.stage) row.append(node('span', 'tk-asked', `asked @${pending.target}`));
+        else if (pending) asked.delete(project.id);
+        const openProject = node('button', 'tk-project-open', t('team_kanban.open_project', 'Open Project'));
+        openProject.type = 'button'; openProject.addEventListener('click', () => navigate('project', project.id)); row.append(openProject);
+        card.append(details, row);
+        const toggleOpen = () => {
+          if (openCards.has(project.id)) openCards.delete(project.id);
+          else openCards.add(project.id);
+          allOpen = projects.length > 0 && projects.every((item) => openCards.has(item.id));
+          paintFold(); render();
+        };
+        toggle.addEventListener('click', toggleOpen);
+        card.addEventListener('click', (event) => {
+          if (!event.target.closest('button')) navigate('project', project.id);
+        });
+        card.addEventListener('dragstart', (event) => {
+          event.dataTransfer?.setData('text/plain', project.id);
+          card.classList.add('dragging'); board.classList.add('dragging');
+          const targets = definedTargets(project);
+          for (const target of board.querySelectorAll('.tk-column')) {
+            const defined = targets.has(target.dataset.stage);
+            target.classList.toggle('means', defined);
+            target.querySelector('.tk-drop-hint').textContent = defined
+              ? `drop here: ${meaningLine(moveMessage(project, target.dataset.stage, leadName()))}`
+              : '';
+          }
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging'); board.classList.remove('dragging');
+          for (const item of board.querySelectorAll('.tk-column')) {
+            item.classList.remove('means', 'over');
+            item.querySelector('.tk-drop-hint').textContent = '';
+          }
+        });
+        cards.append(card);
       }
-    };
-    const groups = shownColumns.map((column) => ({
-      id: column.key, label: column.label, secondary: column.worker,
-      empty: t('team_kanban.empty', 'nothing here'),
-      action: () => navigate('status', column.key),
-      events: {
-        dragover: (event) => { event.preventDefault(); event.currentTarget.classList.add('over'); },
-        dragleave: (event) => event.currentTarget.classList.remove('over'),
-        drop: (event) => {
-          event.preventDefault(); clearDrag();
-          const project = projects.find((item) => item.id === (event.dataTransfer?.getData('text/plain') || ''));
-          if (project && project.stage !== column.key) void sendMove(project, column.key);
-        },
-      },
-    }));
-    const items = projects.filter((project) => shownColumns.some((column) => column.key === project.stage)).map((project) => {
-      const owner = holderName(project);
-      const wait = waitingOn(project);
-      const pending = asked.get(project.id);
-      if (pending && pending.stage !== project.stage) asked.delete(project.id);
-      return {
-        id: project.id, group: project.stage, label: project.title, secondary: project.objective,
-        state: [owner ? `@${owner}` : '', wait ? `${t('team_kanban.waiting', 'waiting on')} ${wait}` : '', pending?.stage === project.stage ? `${t('team_kanban.asked', 'asked')} @${pending.target}` : ''].filter(Boolean).join(' · '),
-        className: `tk-project-stone${project.stage === 'DONE' ? '' : ` tk-project-${project.status}`}`,
-        attrs: { 'data-project': project.id },
-        draggable: true, action: () => navigate('project', project.id),
-        events: {
-          dragstart: (event) => {
-            event.dataTransfer?.setData('text/plain', project.id); board.classList.add('dragging');
-            const targets = definedTargets(project);
-            for (const target of board.querySelectorAll('[data-sws-group]')) {
-              const defined = targets.has(target.dataset.swsGroup); target.classList.toggle('means', defined);
-              const hint = target.querySelector('.sws-group-hint');
-              if (hint) hint.textContent = defined ? `drop here: ${meaningLine(moveMessage(project, target.dataset.swsGroup, leadName(project)))}` : '';
-            }
-          },
-          dragend: clearDrag,
-        },
-      };
-    });
-    phalanx = createPhalanx({ grouped: { groups }, items, density: allOpen ? 'full' : 'compact', className: 'tk-phalanx' });
-    board.append(phalanx.el);
+      section.append(heading, hint, cards);
+      section.addEventListener('dragover', (event) => { event.preventDefault(); section.classList.add('over'); });
+      section.addEventListener('dragleave', () => section.classList.remove('over'));
+      section.addEventListener('drop', (event) => {
+        event.preventDefault(); section.classList.remove('over');
+        const id = event.dataTransfer?.getData('text/plain') || '';
+        const project = projects.find((item) => item.id === id);
+        if (project && project.stage !== column.key) void sendMove(project, column.key);
+      });
+      board.append(section);
+    }
   };
 
   const sendMove = async (project, toStage) => {
@@ -302,7 +329,9 @@ export function createTeamKanban(options = {}) {
   refreshButton.addEventListener('click', () => void refresh());
   foldButton.addEventListener('click', () => {
     allOpen = !allOpen;
-    paintFold(); phalanx?.setDensity(allOpen ? 'full' : 'compact');
+    openCards.clear();
+    if (allOpen) for (const project of projects) openCards.add(project.id);
+    paintFold(); render();
   });
   paintFold();
 
@@ -314,12 +343,12 @@ export function createTeamKanban(options = {}) {
       void refresh();
     },
     leave: () => { entered = false; },
-    destroy: () => { entered = false; phalanx?.destroy(); },
+    destroy: () => { entered = false; },
     setTeam: (name) => {
       if (taskManagerScope(scope).kind !== 'team') return;
       const next = String(name || '');
       if (team === next) return;
-      team = next; projects = []; asked.clear(); allOpen = false; paintFold(); render();
+      team = next; projects = []; asked.clear(); openCards.clear(); allOpen = false; paintFold(); render();
       if (entered) void refresh();
     },
     setScope: (next) => { scope = next || {}; team = ''; projects = []; if (entered) void refresh(); },

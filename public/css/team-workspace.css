@@ -38,6 +38,13 @@
   .tk-kanban {
     --tk-notice-line: 1.5em;
     --tk-heading-track: .04em;
+    --tk-card-meta-line: 1em;
+    --tk-column-min: 230px;
+    --tk-column-height: 300px;
+    --tk-column-head: 56px;
+    --tk-card-closed: 64px;
+    --tk-card-open: 168px;
+    --tk-outcome-line: 1.35em;
     --tk-control-size: var(--space-8);
     height: 100%; min-height: 0; overflow: auto; background: var(--bg-2); container: team-kanban / inline-size;
   }
@@ -62,17 +69,11 @@
   .tk-dot.yellow { background: var(--kanban-yellow); }
   .tk-dot.red { background: var(--kanban-red); }
   .tk-notice { flex: 1 1 auto; min-width: 0; margin: 0; color: var(--muted); font-size: var(--text-3); }
-  .tk-board { display: grid; gap: var(--space-4); min-width: 0; padding: var(--space-4) var(--space-5) var(--space-5); }
-  .tk-board > .tk-phalanx { grid-column: 1 / -1; }
-  .tk-phalanx[data-density='compact'] .sws-secondary, .tk-phalanx[data-density='compact'] .sws-state { display: none; }
-  .tk-project-stone::before { background: var(--line-2); }
-  .tk-project-green::before { background: var(--kanban-green); }
-  .tk-project-yellow::before { background: var(--kanban-yellow); }
-  .tk-project-red::before { background: var(--kanban-red); }
-  .tk-phalanx .sws-group.means { outline: var(--edge-2) dashed var(--accent); outline-offset: var(--space-1); }
-  .tk-phalanx .sws-group.over { background: var(--raise); }
+  .tk-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--tk-column-min), 1fr)); gap: var(--space-4); min-width: 0; padding: var(--space-4) var(--space-5) var(--space-5); }
   .tk-unavailable { margin: 0; color: var(--muted); }
-  .tk-back { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .tk-column { display: flex; height: var(--tk-column-height); min-width: 0; flex-direction: column; border: var(--edge) solid var(--line); background: var(--well); transition: border-color var(--motion-quick) var(--ease), background var(--motion-quick) var(--ease); }
+  .tk-column > h3 { box-sizing: border-box; display: grid; height: var(--tk-column-head); flex: none; gap: var(--space-1); margin: 0; border-bottom: var(--edge) solid var(--line); padding: var(--space-3) var(--space-4); color: var(--muted); font-size: var(--text-3); font-weight: 650; letter-spacing: var(--tk-heading-track); text-transform: uppercase; }
+  .tk-column-open, .tk-back { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .tk-back { grid-column: 1 / -1; justify-self: start; margin-bottom: var(--space-2); color: var(--accent-2); }
   .tk-project-detail { padding: var(--space-5); border: var(--edge) solid var(--line); background: var(--well); }
   .tk-project-detail h2 { margin: var(--space-5) 0 var(--space-2); color: var(--fg-strong); }
@@ -80,11 +81,32 @@
   .tk-project-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-5); }
   .tk-project-facts dt { color: var(--muted); }
   .tk-project-facts dd { margin: 0; color: var(--fg-strong); overflow-wrap: anywhere; }
+  .tk-column-worker { color: var(--dim); font-size: var(--text-2); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .tk-cards { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; gap: var(--space-3); overflow-y: auto; padding: var(--space-3); }
   .tk-empty { margin: 0; padding: var(--space-3); color: var(--dim); font-size: var(--text-3); font-style: italic; }
-  .tk-outcome { margin-top: var(--space-1); color: var(--muted); font-size: var(--text-3); }
+  .tk-card { box-sizing: border-box; width: 100%; height: var(--tk-card-closed); min-width: 0; overflow: hidden; border-left: var(--space-2) solid var(--line-2); border-radius: 0; padding: var(--space-3) var(--space-4); cursor: grab; }
+  .tk-card.open { height: var(--tk-card-open); }
+  .tk-card:active { cursor: grabbing; }
+  .tk-card.dragging { opacity: .45; }
+  .tk-card[data-status='green'] { border-left-color: var(--kanban-green); }
+  .tk-card[data-status='yellow'] { border-left-color: var(--kanban-yellow); }
+  .tk-card[data-status='red'] { border-left-color: var(--kanban-red); }
+  .tk-board.dragging .tk-column.means { border-color: var(--accent); border-style: dashed; background: var(--raise); }
+  .tk-column.over { border-color: var(--accent); background: var(--raise); }
+  .tk-drop-hint { display: none; margin: 0; padding: var(--space-2) var(--space-4) 0; color: var(--accent); font-size: var(--text-3); }
+  .tk-board.dragging .tk-column.means .tk-drop-hint { display: block; }
+  .tk-card-toggle { display: block; width: 100%; border: 0; padding: 0; background: transparent; color: inherit; text-align: left; }
+  .tk-title { display: block; font-size: var(--text-4); overflow-wrap: anywhere; }
+  .tk-details { display: none; }
+  .tk-card.open .tk-details { display: block; }
+  .tk-outcome { max-height: calc(var(--tk-outcome-line) * 2); overflow: hidden; margin-top: var(--space-1); color: var(--muted); font-size: var(--text-3); line-height: var(--tk-outcome-line); }
   .tk-evidence { margin: var(--space-2) 0 0; overflow-wrap: anywhere; color: var(--dim); font-size: var(--text-2); }
-  .tk-owner { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: var(--accent-2); font: inherit; }
-  .tk-owner:hover { border-bottom-style: solid; }
+  .tk-card-row { min-height: var(--tk-card-meta-line); align-items: center; gap: var(--space-2); margin-top: var(--space-3); padding-top: 0; font-size: var(--text-3); }
+  .tk-waiting { color: var(--kanban-green); }
+  .tk-asked { color: var(--muted); }
+  .tk-owner, .tk-project-open { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: var(--accent-2); font: inherit; }
+  .tk-owner:hover, .tk-project-open:hover { border-bottom-style: solid; }
+  .tk-project-open { margin-left: auto; }
   /* The tab is drawn on the launch forms' furniture (launch-forms.css: .ntf-form, .fs-step, .wk-field);
      only the identity line is its own: Team ID · Title · Kind, one height, the Kind tray hosted by the line. */
   .tw-config-form { min-width: 0; }
