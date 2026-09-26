@@ -2,6 +2,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { createPhalanx } from './phalanx.js';
 import { ask } from './ask.js';
+import { createAgentCompositionReader } from './agent-composition.js';
 import { agentTitle } from './team-members.js';
 import { membersOfTeam, refreshTeams, setTeamLead, subscribe } from './team-controller.js';
 import { t } from './lexicon.js';
@@ -9,7 +10,7 @@ import { t } from './lexicon.js';
 export const TEAM_CHART_TYPE = 'team.chart';
 const el = (tag, cls = '', text = '') => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 
-export function createTeamChartSurface({ team, onSelect, onOpen, onAddLead } = {}) {
+export function createTeamChartSurface({ team, onOpen, onAddLead } = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('team_chart.title', 'Team Chart'), className: 'team-chart-surface' });
   let picker = null;
   let entered = false;
@@ -41,10 +42,12 @@ export function createTeamChartSurface({ team, onSelect, onOpen, onAddLead } = {
     }
     const member = item.member;
     host.append(el('h2', '', agentTitle(member)), el('p', 'tc-id', `@${member.name}`), el('p', 'tc-note', member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.agent', 'Agent')));
-    const inspect = WorkspaceKit.primitives.createAction({ label: t('team_chart.inspect', 'Agent details'), action: () => onSelect?.(member) });
     const launch = WorkspaceKit.primitives.createAction({ label: t('league.launch_agent', 'Launch'), launch: true, action: () => onOpen?.(member) });
-    const actions = el('div', 'tc-actions'); actions.append(inspect.el, launch.el); host.append(actions);
-    return null;
+    const actions = el('div', 'tc-actions'); actions.append(launch.el); host.append(actions);
+    const profile = createAgentCompositionReader(member.name, { setState: (kind, message) => surface.setState(kind, message) });
+    host.append(profile.el);
+    void profile.show();
+    return profile.destroy;
   };
   const phalanx = createPhalanx({ className: 'team-chart-phalanx', items: [], renderDetail });
   const intro = el('div', 'sws-intro'); intro.append(el('h2', '', t('team_chart.title', 'Team Chart')), el('p', '', t('team_chart.intro', 'The Team lead and Agents in one organizational reading.')));

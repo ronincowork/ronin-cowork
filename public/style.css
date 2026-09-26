@@ -413,8 +413,15 @@ body {
 body {
   display: flex;
   flex-direction: column;
-  /* What the browser can actually show, not what it says it could (js/appheight.js).
-     The fallback is only for the moment before the first measurement lands. */
+  /* THE APPLICATION IS THE VISIBLE RECTANGLE — where it is as well as how big
+     (js/appheight.js). Fixed to the top of the visible window rather than the top of the
+     page, because iOS pans one without the other; `top`, never a transform, since a
+     transformed ancestor would become the containing block for every position: fixed
+     thing inside. The fallbacks are only for the moment before the first measurement. */
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--app-top, 0px);
   height: var(--app-h, 100dvh);
   overflow: hidden;
 }

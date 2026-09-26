@@ -13,6 +13,16 @@ smallest reads needed to paint itself.
 a selected-stone rail beside its detail, focus return, Escape, and responsive geometry.
 Consumers supply items and detail content; they do not recreate that movement privately.
 
+Task Manager uses the same Phalanx with declared groups in Ideas, Planning, Building,
+Landing, Done order, including empty groups as drop targets. Each Project is one stone;
+group headings open status surfaces and stones open Project surfaces with the current
+tenant scope. Compact/full density changes the stone readings. The Project detail opens
+its holder, and dragging between groups sends the existing move request without changing
+the Project record. Cowork/Desk, Team, and Agent scopes all use `createTeamKanban`.
+The shared Phalanx accepts ordered `grouped.groups`, group/item event callbacks, item
+actions, and `setDensity`; existing inline group headings and in-place details retain
+their prior behavior.
+
 ## Library, profile, tenant, instance
 
 `public/js/workbench.js` owns the shared library and frame.
@@ -209,7 +219,7 @@ independent and must not hold the frame.
 | Surface | Required data and owner |
 |---|---|
 | Team roster / Team profile | Team records and live session-derived membership |
-| Team Chart | Selected Team membership and lead designation; Phalanx owns collection and selection geometry while Team Chart owns Agent and lead actions |
+| Team Chart | Selected Team membership and lead designation; Phalanx owns collection and selection geometry, and its in-place detail embeds the canonical Agent composition reader plus the secondary Launch action |
 | Agent terminal | selected session plus terminal transport; other sessions are not mounted for it |
 | Commons | only the selected tab enters: Roster, Docs, Wipeboard, Messages, Configuration, or another registered room |
 | Task Manager | Desk scope aggregates the canonical per-Team Project readings; Team scope reads the selected Team; status and Project drill-downs are independently placeable surfaces carrying the same tenant |
