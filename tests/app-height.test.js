@@ -48,8 +48,11 @@ test('the height is never left on a value read part-way through an animation', a
   // Each is replaced rather than stacked, so a burst of resize events leaves one of each.
   assert.match(height, /cancelAnimationFrame\(frame\)/);
   assert.match(height, /clearTimeout\(settle\)/);
-  // Leaving a text box is the keyboard going away, and does not always bring an event.
-  assert.match(height, /addEventListener\('focusout', remeasure\)/);
+  // Leaving a text box is the keyboard going away, and does not always bring a viewport
+  // event of its own — so it re-measures. Guarded by what the handler DOES, since it also
+  // has the keyboard mark to update and is no longer a bare reference.
+  const focusout = height.slice(height.indexOf("addEventListener('focusout'"));
+  assert.match(focusout.slice(0, focusout.indexOf('}')), /remeasure\(\)/);
 });
 
 test('nothing pinned to the bottom compensates for the keyboard on its own', async () => {
@@ -86,4 +89,24 @@ test('the application cannot be dragged around: the heads are fixed furniture', 
   assert.match(rule, /overscroll-behavior: none/);
   // The bar is a flex child of that box, never a scrolled one, so it cannot travel.
   assert.match(style, /#bar \{[^}]*flex: 0 0 auto/);
+});
+
+test('the top header stands down for the keyboard; the workspace heads do not', async () => {
+  const [style, height] = await Promise.all([read('public/style.css'), read('public/js/appheight.js')]);
+  // With the keys up there is little room left, and the application bar is the part you
+  // are not using. The heads over the work surfaces are what tell you where you are, so
+  // they stay and the space between them gives (owner, 2026-09-26).
+  assert.match(style, /:root\[data-keyboard='open'\] #bar \{ display: none; \}/);
+  // Nothing hides a surface head or a tile head for the keyboard.
+  assert.doesNotMatch(style, /\[data-keyboard='open'\][^{]*(?:wk-surface-header|tile-head)/);
+  // A text box holding focus is what "the keyboard is up" means — the same signal the
+  // keys row already uses, and no pixel threshold to guess wrong.
+  assert.match(height, /dataset\.keyboard = 'open'/);
+  assert.match(height, /input\|textarea/);
+  assert.match(height, /isContentEditable/);
+  assert.doesNotMatch(height, /keyboard[\s\S]{0,200}> \d{2,}/, 'no height threshold decides it');
+  // Moving between two boxes fires focusout before focusin, so who holds focus is read
+  // afterwards — otherwise the top header leaves and returns between fields.
+  assert.match(height, /setTimeout\(markKeyboard, 0\)/);
+  assert.match(height, /addEventListener\('focusin', markKeyboard\)/);
 });

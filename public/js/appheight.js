@@ -58,8 +58,30 @@ export function trackAppHeight() {
   window.visualViewport?.addEventListener('scroll', remeasure);
   window.addEventListener('resize', remeasure);
   window.addEventListener('orientationchange', remeasure);
+  /**
+   * WHETHER THE KEYBOARD IS UP, said once for the whole application.
+   *
+   * A text box holding focus is what "the keyboard is up" means on a touch screen. It is
+   * the same signal the composer's keys row already uses and the one that behaves on the
+   * owner's device, and it needs no pixel threshold — a measured keyboard height needs a
+   * guess to survive the stray offset iOS reports, and that guess was wrong before.
+   *
+   * Read on the next tick rather than from the event: moving between two boxes fires
+   * focusout before focusin, and asking who holds focus afterwards avoids the flicker of
+   * the top header leaving and returning between one field and the next.
+   */
+  const entry = (el) => !!el && (/^(?:input|textarea)$/i.test(el.tagName) || el.isContentEditable);
+  const markKeyboard = () => {
+    if (entry(document.activeElement)) document.documentElement.dataset.keyboard = 'open';
+    else delete document.documentElement.dataset.keyboard;
+  };
+  document.addEventListener('focusin', markKeyboard);
   // Leaving a text box is the keyboard going away, and it is not always followed by a
   // final viewport event of its own.
-  document.addEventListener('focusout', remeasure);
+  document.addEventListener('focusout', () => {
+    setTimeout(markKeyboard, 0);
+    remeasure();
+  });
+  markKeyboard();
   return remeasure;
 }
