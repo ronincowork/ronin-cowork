@@ -39,12 +39,6 @@ export async function setSessionTitle(name, title) {
   return r.data.title;
 }
 
-/** Kill a tmux session on the host (and its grid_* viewers). */
-export async function deleteSession(name) {
-  const r = await request('/api/sessions/' + encodeURIComponent(name), { method: 'DELETE' });
-  if (!r.ok) throw new Error(r.message);
-}
-
 /** Start the observable safe Agent+desk shutdown transaction. */
 export async function startSessionShutdown(name, body) {
   const r = await request('/api/sessions/' + encodeURIComponent(name) + '/shutdown', { method: 'POST', ...(body ? { json: body } : {}) });

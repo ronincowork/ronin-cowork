@@ -55,10 +55,9 @@ export function build() {
     window.matchMedia('(pointer: coarse) and (min-width: 681px)').addEventListener?.('change', restore);
     sync();
   }
-  // Each wiring block is guarded separately: losing one control must not cost the
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list,
-  // and renew the store — a socket that went reconnects, a live one re-reads the rows once.
-  // The home panels' readings arrive by push; nothing here keeps a clock for them.
+  // and renew the store — a socket that went reconnects now, and the new connection is sent
+  // the rows whole. The home panels' readings arrive by push; nothing here keeps a clock.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       fetchSessions();

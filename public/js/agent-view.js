@@ -6,7 +6,6 @@ import { refreshTeams, setTeamMembership, subscribe, teamsFromState } from './te
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { createFeedbackSurface } from './feedback.js';
 import { fetchSessions } from './api.js';
-import { refreshHome } from './home.js';
 import { request } from './request.js';
 import { S } from './state.js';
 import { t } from './lexicon.js';
@@ -89,7 +88,7 @@ export function createAgentView() {
     const docsPane = el('div', 'home-docs tw-docs');
     const docs = buildDocs(null, docsPane, () => entered && docsPane.isConnected, (candidate) => candidate === name);
     surface.content.append(docsPane);
-    const made = { el: surface.el, show: () => { void refreshHome(); docs.enter(); } };
+    const made = { el: surface.el, show: () => { docs.enter(); } };
     documents.set(key, made); return made;
   };
   const environment = {

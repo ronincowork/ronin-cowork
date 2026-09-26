@@ -1,6 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { buildDocs } from './docs.js';
-import { refreshHome } from './home.js';
 import { t } from './lexicon.js';
 
 /** The shared document editor, scoped to and painted over one Agent tile. */
@@ -29,7 +28,6 @@ export function buildTileDocView(tile) {
     el: root,
     async open(path) {
       tile.surfaceHost.select('docs');
-      await refreshHome();
       docs.enter();
       await docs.open(path);
     },

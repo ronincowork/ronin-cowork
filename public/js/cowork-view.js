@@ -13,7 +13,7 @@ import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { buildArchives } from './archives.js';
 import { onProjects, projectData, stanceLabel } from './home.js';
 import { request } from './request.js';
-import { sessionsHandlers, teamPageHandlers } from './events.js';
+import { teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
 import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
@@ -547,7 +547,7 @@ export function createCoworkView(options = {}) {
   });
   const arrange = (draft) => {
     const did = arranger.apply(draft);
-    renderCards(membersOfTeam(team));
+    renderCards();
     reportView();
     return did;
   };
@@ -568,7 +568,6 @@ export function createCoworkView(options = {}) {
     }
     return { team, selected: lastSeat, count: bench.count(), order: [...a.order], hidden: [...a.hidden], workspaces };
   };
-  let reportTimer = 0;
   const reportView = () => { if (entered && team && team !== UNASSIGNED) void sendView(team, TAB, view()); };
   // A draft from an agent: for this tab if it names it (the tab that shows the agent),
   // else for every tab on the team. A line in the roster header says who arranged it.
@@ -688,24 +687,15 @@ export function createCoworkView(options = {}) {
   let hearRows = null; // the unsubscribe, while entered
   const onRows = (list) => {
     rows = new Map(list.map((row) => [row.name, row]));
-    renderCards(membersOfTeam(team));
+    renderCards();
     // The configuration reads the same roster, but renderConfig only redraws when
     // something it shows moved.
     const roster = teamByName(team);
     renderConfig(roster.durable ? roster : null, membersOfTeam(team));
   };
-  // MEMBERSHIP IS LIVE, AND SO ARE THE SEATS. The team controller only publishes on
-  // `refreshTeams()`, which this page runs once on entry; the cards, though, are drawn
-  // off `S.sessions`, which the events feed keeps current. A session that joined the team
-  // after entry therefore had a card and no seat in either pool — its card clicked and
-  // whole paint again whenever the member set or the 人 changes, on the feed's event.
-  const membership = (members) => members.map((m) => m.name + (m.team_lead ? ' 人' : '')).join('\n');
-  let seenMembers = '';
-  const onSessions = () => {
-    if (!entered || !team || loaded !== team) return;
-    if (membership(membersOfTeam(team)) === seenMembers) return;
-    paint();
-  };
+  // MEMBERSHIP IS LIVE, AND SO ARE THE SEATS. The team controller publishes when the
+  // session list or the rosters change (js/team-controller.js), and a publish is a whole
+  // paint: seats, cards and configuration follow the member set and the 人.
   const readingsOf = (m) => {
     const row = rows.get(m.name) || {};
     const current = currentWorkStep(row.tegami);
@@ -718,7 +708,7 @@ export function createCoworkView(options = {}) {
       lines: [current.text, stanceLabel(row.stance), row.ctx != null ? `⛽ ${row.ctx}%` : '', (row.model || '').toLowerCase()].filter(Boolean),
     };
   };
-  function renderCards(members) {
+  function renderCards() {
     if (rosterTitle) rosterTitle.textContent = campaign ? teamsLabel : t('team.roster_title', 'Roster');
     bench.refreshSelector();
   }
@@ -732,8 +722,8 @@ export function createCoworkView(options = {}) {
     return ctx?.navigate?.('agent', { param: name }) ?? false;
   }
 
-  // team configuration on and off"). Every tick and publish lands here; the panel is
-  // torn down only when configSignature says something it draws actually moved.
+  // CONFIGURATION IS DRAWN ONLY WHEN IT MOVED. Every publish and every pushed row lands
+  // here; the panel is torn down only when configSignature says something it draws moved.
   // Two signatures, because the two panels move for different reasons: the member rows
   // follow the live readings (status, ⛽, model — the pushed home rows), the Configuration
   // tab follows the saved record alone. Repainting the tab on a push threw away the owner's
@@ -784,12 +774,11 @@ export function createCoworkView(options = {}) {
   const paint = () => {
     const members = membersOfTeam(team);
     const roster = teamByName(team);
-    seenMembers = membership(members);
     syncPools(restorationMembers());
     ensureLeadHot(members);
     seatTheTeam();
     touch(lastSeat);
-    renderCards(members);
+    renderCards();
     renderConfig(roster.durable ? roster : null, members);
     // THE BOARD IS ASSUMED: the roster's wipeboard id, or the team's own name for a
     // tag-only team. The server creates it on open, so the slice never meets a void.
@@ -808,7 +797,7 @@ export function createCoworkView(options = {}) {
   async function load(name) {
     if (!name) {
       syncPools([]);
-      renderCards([]);
+      renderCards();
       renderConfig(null, []);
       loaded = '';
       return;
@@ -819,11 +808,10 @@ export function createCoworkView(options = {}) {
     setBarLabel();
     rosterTitle.textContent = t('team.roster_title', 'Roster');
     if (!result.live.ok) {
-      renderCards([]);
+      renderCards();
       renderConfig(null, []);
       return;
     }
-    const members = membersOfTeam(name);
     paint();
   }
 
@@ -853,7 +841,6 @@ export function createCoworkView(options = {}) {
         if (team) paint();
       });
       teamPageHandlers.add(onDraft);
-      sessionsHandlers.add(onSessions);
     },
     enter: (context) => {
       ctx = context;
@@ -883,14 +870,12 @@ export function createCoworkView(options = {}) {
       };
       S.connectSession = (name) => connectSession(name);
       // Entry paints once from the Team projection; load() paints a Team not yet read.
-      if (campaign) void refreshTeams().then(() => { renderCards([]); if (entered) paint(); });
+      if (campaign) void refreshTeams().then(() => { if (entered) paint(); });
       else if (team !== loaded) void load(team);
       else paint();
       hearRows?.();
       hearRows = subscribeStore('home', onRows);
       reportView();
-      window.clearInterval(reportTimer);
-      reportTimer = window.setInterval(reportView, 10000);
     },
     leave: () => {
       // Leaving the destination closes every Team transport; the seats remember what
@@ -899,7 +884,6 @@ export function createCoworkView(options = {}) {
       disarmPrewarm();
       hearRows?.();
       hearRows = null;
-      window.clearInterval(reportTimer);
       // No transport survives outside the entered Team destination.
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
       for (const commons of builtCommons()) commons.channels.leave();
@@ -914,7 +898,6 @@ export function createCoworkView(options = {}) {
       unsubscribe?.();
       unsubscribe = null;
       teamPageHandlers.delete(onDraft);
-      sessionsHandlers.delete(onSessions);
       helpPanel.destroy();
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       for (const commons of builtCommons()) commons.channels.destroy();
