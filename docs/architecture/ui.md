@@ -355,14 +355,12 @@ desktop composition happened not to unmount it.
   the hidden-opener ones. The browser's own mousedown focus rule runs after the dismissal
   handler and moves focus to the nearest focusable ancestor of what was pressed — the scrim
   is a bare `div`, so that is `<body>`, arriving right after the restore and undoing it.
-  backdrop click returned `<body>` on every one of them, ⚙ System and the session switcher
-  included. The pointer's default is cancelled, so the restore is the last word.
-  Commons menu, and that menu is gone (see Navigation). A primitive with no consumer is
-  a corpse `check-dead` fails the build on, and parked code is not kept alive by an
-  exemption — the tape is in git. The dismissal grammar it held is not repealed: the job
-  menu (`widgets.js`) and the touch drops (`tiledrop.js`) still carry it in their own
-  code, and the day a bar control drops a menu again it comes back to `ui.js` rather
-  than being hand-rolled at the call site for the fourth time.
+  The pointer's default is cancelled, so the restore is the last word, for every consumer,
+  ⚙ System and the session switcher included.
+  A primitive with no consumer is deleted, not parked — the tape is in git. The dismissal
+  grammar is not repealed: the touch drops (`tiledrop.js`) carry it in their own code, and
+  the day a bar control drops a menu again it comes back to `ui.js` rather than being
+  hand-rolled at the call site.
   **Weighed again the same day and still not restored.** メ on the tile header now drops
   the six controls that used to end the row (`public/js/tilemore.js`, docs/using-ronin/tile.md); it
   follows the adjacent header-menu grammar, and the reason is mechanical rather than
@@ -506,8 +504,7 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
 
 `check-modules` (cycles across the whole graph, orphans, resolution, top-level import
 use, the 700-line ceiling) · `check-css` (colour spelled once; app patches no
-primitive and shadows no token; the contrast floor, both themes) · `check-dead`
-(deletions leave no corpses) · `check-tips` (hover/focus help stays absent) · `smoke-ui` (desktop +
+primitive and shadows no token; the contrast floor, both themes) · `check-tips` (hover/focus help stays absent) · `smoke-ui` (desktop +
 phone render, the journey probes, and an axe scan at three states — serious/critical
 fail; color-contrast is excluded there because contrast policy is check-css's tiered
 floor, including the documented sub-AA `--muted` secondary tier the density ruling

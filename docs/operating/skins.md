@@ -93,9 +93,10 @@ in the catalogs store: a file of ours of the same name is replaced whole; a new 
    README) — or copy one of ours (`home.md`) and change its `lexicon:` line.
 3. **Pick it** in ⚙ → Appearance → desk profile, and reload. Surfaces take the words on
    their next paint; sessions born after the pick get the glossary rendered in those words.
-4. **Check it**: `node scripts/check-lexicon.mjs` from the cowork checkout notes every
-   lexicon in the store and any key in it the floor lacks (a typo changes nothing, silently).
-   The Customize view lists both shelves (Presentation → Desk profiles · Lexicons).
+4. **Check it**: a key the floor lacks changes nothing, silently, so compare your file
+   with the floor: `npm run kokugo:table` writes every key across the lexicons side by side
+   to `docs/kokugo-table.md`. The Customize view lists both shelves (Presentation → Desk
+   profiles · Lexicons).
 
 **An update never touches your files.** Never edit `ronin_catalogs/` — a `git pull` replaces it.
 

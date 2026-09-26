@@ -11,9 +11,8 @@
  *   data-t-aria="bar.keys"       its aria-label
  *
  * The literal in the file is the floor's floor, exactly as the second argument of t() is:
- * with no lexicon up, nothing changes byte for byte. ONE mechanism for the page, and
- * scripts/check-lexicon.mjs reads these attributes as keys the client reads — a key the
- * floor lacks fails the build here as it would in a module.
+ * with no lexicon up, nothing changes byte for byte. ONE mechanism for the page: these
+ * attributes are keys the client reads, and land in the floor like any other.
  */
 import { t } from './lexicon.js';
 

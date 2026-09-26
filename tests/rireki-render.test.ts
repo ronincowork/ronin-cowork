@@ -6,8 +6,7 @@
  *
  * RENDER.TS IS A SERVICE'S, NOT THIS REPO'S. `src/services/` is assembled at boot from
  * RONIN_SERVICES and gitignored, so it is real on an installed box and absent on the
- * isolated runner (the same fact check-docs' allowlist records for the docs that cite
- * service files). The import is therefore dynamic, and on a tree with no mount every
+ * isolated runner. The import is therefore dynamic, and on a tree with no mount every
  * test here SKIPS WITH ITS REASON — the two-leg integration test's rule — rather than
  * failing the unit floor for a file the runner could never have. A skip is not a pass:
  * the designated integrator's local candidate run is where these actually execute.

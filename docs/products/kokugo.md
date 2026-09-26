@@ -6,7 +6,7 @@ lexicons change displayed words, not behavior.
 
 **The rule, in one sentence: every string a person reads in the coworkspace is
 `t('room.key', 'the literal')`, and the key lands in `ronin_catalogs/lexicons/professional_en.md`
-in the same commit — `scripts/check-lexicon.mjs` fails you otherwise.**
+in the same commit.**
 
 This page is the instruction for anyone building a new tab, view, page or control in
 `public/js/` or `public/index.html`. It is written for an agent with no other context and
@@ -20,8 +20,8 @@ is short enough to read every time. The machinery it describes: `public/js/lexic
 ```js
 import { t } from './lexicon.js';
 
-label.textContent = t('roster.session_max', 'session max');
-note.textContent  = t('roster.running_of', '{n} / {max} running', { n: live, max: cap });
+button.textContent = t('desk.remove', 'Remove');
+notice.textContent = t('add_agent.started', 'Started {name}', { name: born });
 ```
 
 `t(key, literal, vars)`:
@@ -157,51 +157,38 @@ rendered for. One-time, by ruling: a profile changed mid-session is not re-read.
 
 Adding a row to the glossary means marking its UI word and adding the `glossary.*` line
 to the floor; a profile's word for it is one line in that profile's lexicon
-(`home_en`: `glossary.team` → *Staff*). `check-lexicon` fails a row with no marker, a
-marked key the floor lacks, a floor word that differs from the cell's, and an orphan key.
+(`home_en`: `glossary.team` → *Staff*).
 
-## 9 · Running the gate
+## 9 · Checking your work
 
-```
-node scripts/check-lexicon.mjs
-```
-
-- `FAIL the client reads \`x\` and professional_en.md does not carry it` — add the line.
-- `FAIL <lexicon>.md spells \`x\`, which professional_en.md does not carry` — a typo in a
-  lexicon: a bare key must exist in the floor to fall through to.
-- `note N floor key(s) no view reads yet` — allowed (the campaign board's keys wait for
-  their surface); read it so the list cannot rot.
-- `note N module(s) import t and also name a local t` — legal; each is a scope where a
-  bare `t` is a local, not the word. If you renamed a local off `t`, read that scope twice.
-- `check-lexicon: the floor holds (N keys, M read by the client, L lexicons)` — green.
-
-Also green after every change: `node scripts/check-modules.mjs` (cycles, top-level use of
-an import), `check-dead`, `check-docs`, and `node --check` on the file. `check-lexicon` is
-in `npm run verify` and in the BYOIN gate.
+No script checks the words: a key the floor lacks falls through to the literal and paints,
+silently. Read your diff for every new `t()` and its floor line. `npm run kokugo:table`
+writes `docs/kokugo-table.md`, every key across the lexicons side by side, for comparing
+a profile's words with the floor's. `node scripts/check-modules.mjs` (cycles, top-level use
+of an import) and `node --check` on the file stay green after every change.
 
 ## 10 · A worked before / after
 
-`public/js/roster.js`, the session-max line, as it was:
+`public/js/new-agent.js`, the launch notice, written without the helper:
 
 ```js
-maxNow.textContent = m > 0 ? `${maxLive} / ${m} running` : `${maxLive} running · no limit`;
+notice.set('success', deskNote ? `Started ${born} — ${deskNote}` : `Started ${born}`);
 ```
 
 As it is:
 
 ```js
-maxNow.textContent = m > 0
-  ? t('roster.running_of', '{n} / {max} running', { n: maxLive, max: m })
-  : t('roster.running_no_limit', '{n} running · no limit', { n: maxLive });
+if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
+else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
 ```
 
-And in `ronin_catalogs/lexicons/professional_en.md`, under `## roster`:
+And in `ronin_catalogs/lexicons/professional_en.md`, under `## add_agent`:
 
 ```
-- **roster.running_of:** {n} / {max} running
-- **roster.running_no_limit:** {n} running · no limit
+- **add_agent.started:** Started {name}
+- **add_agent.started_note:** Started {name} — {note}
 ```
 
-Two keys, because they are two sentences; placeholders, because the numbers are values;
-the literals byte-identical, because a box with no lexicon must paint exactly as before.
-`home_en` says nothing about either, and falls through.
+Two keys, because they are two sentences; placeholders, because the name and the note are
+values; the literals byte-identical, because a box with no lexicon must paint exactly as
+before. `home_en` says nothing about either, and falls through.

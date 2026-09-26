@@ -44,13 +44,11 @@ lexicon paints exactly as stock. Wording and translation are one axis, and the l
 is one more lexicon, `home_fr`, with `- **base:** professional_fr` (itself based on
 `professional_en`) — never a second setting.
 
-## The floor, and the check
+## The floor
 
-`professional_en` is complete by definition. `scripts/check-lexicon.mjs` (in the verify
-chain) **fails** when a key the client reads through `t()` is missing from it, or when
-another shipped lexicon spells a bare key the floor lacks (nothing to fall through to);
-it **reports** floor keys no view reads yet. A view adds its keys to `professional_en` in
-the same commit.
+`professional_en` is complete by definition: a view adds its keys to it in the same
+commit. No script enforces that — a key the floor lacks falls through to the view's
+literal — so the diff is where it is checked.
 
 
 The KOKUGO sweep put every user-facing string in `public/js` and `public/index.html`

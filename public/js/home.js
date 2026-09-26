@@ -1,20 +1,13 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * HOME DATA — the client's cache of what the server knows about sessions and catalogs.
+ * The workspace-folder catalog and the words for an Agent's stance. The home rows
+ * themselves are the store's (js/store.js).
  *
- * The rows themselves are the store's (js/store.js): the server pushes them on connect and
- * on change, and this module holds them as `homeData` for the modules that read it.
- *
- * The catalogs (projects) stay best-effort — they change when the owner changes them, and
- * the next successful load heals them without a banner.
+ * The catalog stays best-effort — it changes when the owner changes it, and the next
+ * successful load heals it without a banner.
  */
 import { request } from './request.js';
-import { subscribe } from './store.js';
 import { t } from './lexicon.js';
-
-export let homeData = null; // session list enriched with status + ctx
-
-subscribe('home', (rows) => { homeData = rows; });
 
 export let projectData = null; // /api/project-roots: [{name, title, dir, match[], remit, docs[], plans[]}]
 // The provider catalog is not cached here: form-steps.js reads it for the one picker and

@@ -1,6 +1,6 @@
 # professional_en
 The floor. Every key a surface reads is here, in plain English, so a lexicon that says
-nothing paints exactly this. `check-lexicon` holds this file complete.
+nothing paints exactly this.
 
 - **label:** Professional
 - **blurb:** The plain words. Every other lexicon falls through to these.

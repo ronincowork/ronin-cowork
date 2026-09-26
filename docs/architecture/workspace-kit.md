@@ -163,8 +163,7 @@ Every consumer must:
 8. Preserve unrelated dirty work and stage paths/hunks selectively.
 9. Read every string a person sees through `t('room.key', 'literal')` (`public/js/lexicon.js`)
    and land the key in `ronin_catalogs/lexicons/professional_en.md` in the same commit —
-   `docs/products/kokugo.md` is the whole instruction; `scripts/check-lexicon.mjs` fails the gate
-   otherwise. Kit primitives take the already-translated word; they never translate.
+   `docs/products/kokugo.md` is the whole instruction. Kit primitives take the already-translated word; they never translate.
 
 If a needed primitive, layout, adapter, state field, lifecycle capability, or backend
 contract is missing, **stop and ask the Workspace Kit/owner decision-maker**. Do not work
@@ -180,8 +179,7 @@ npm run byoin             # user-customization guard-rail check
 
 Ordinary Kit legs use direct dogfood and scoped diagnostic evidence, not BYOIN. One
 designated integrator runs the check once on the exact release candidate.
-`scripts/check-workspace-kit.mjs` rejects feature-local Team projections, terminal hosts,
-primitive copies and layout drift. `scripts/check-css.mjs` guards CSS. Staging
+`scripts/check-css.mjs` guards CSS. Staging
 `scripts/smoke-ui.mjs` owns dev-only workspace/skin evidence; default live smoke must not
 pretend unlanded routes exist. `scripts/visual-ui.mjs` measures declared compositions. A
 SKIP is unverified, never a pass.

@@ -25,7 +25,7 @@ lexicon paints exactly as stock. So a lexicon says **only what it changes** — 
 dozen lines, not six hundred.
 
 **`professional_en` is the floor**, and it is complete by definition: every key a view reads
-through `t()` is in it, and `scripts/check-lexicon.mjs` fails the build when one is not.
+through `t()` is in it, in the same commit as the view that reads it.
 The other shipped lexicons (`vibe_code_en`, `home_en`, `terminal_en`, `league_en`) may be short or empty.
 
 **The language is in the name.** Every lexicon ends in its language — `home_en`,
