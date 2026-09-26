@@ -2,22 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { WebSocket } from 'ws';
 import type { SessionInfo } from '../src/tmux.js';
-import { feedEvents, handleEvents, homeSignature, pushTeams, sessionsSignature, tick } from '../src/ws/events.js';
+import { feedEvents, handleEvents, homeSignature, publishHeld, pushJikan, pushMessages, pushTeams, pushWipeboard, sessionsSignature, tick, watchStore } from '../src/ws/events.js';
 
 // A browser on /events: records what it is sent, and can close.
 function browser() {
   const sent: Array<Record<string, unknown>> = [];
-  const handlers = new Map<string, () => void>();
+  const handlers = new Map<string, (raw?: unknown) => void>();
   const ws = {
     OPEN: 1,
     readyState: 1,
     send(text: string) { sent.push(JSON.parse(text) as Record<string, unknown>); },
-    on(event: string, fn: () => void) { handlers.set(event, fn); },
+    on(event: string, fn: (raw?: unknown) => void) { handlers.set(event, fn); },
   };
   return {
     ws: ws as unknown as WebSocket,
     got: (t: string) => sent.filter((msg) => msg.t === t),
     close() { ws.readyState = 3; handlers.get('close')?.(); },
+    // What the browser says on the socket, as the server receives it.
+    say(msg: unknown) { handlers.get('message')?.(Buffer.from(JSON.stringify(msg))); },
   };
 }
 
@@ -184,4 +186,102 @@ test('the home signature ignores only activity and stance time', () => {
   assert.equal(homeSignature([row]), homeSignature([{ ...row, activity: 9, at: 'y' }]));
   assert.notEqual(homeSignature([row]), homeSignature([{ ...row, tegami: { at: 'changed' } }]));
   assert.notEqual(homeSignature([row]), homeSignature([{ ...row, stance: 'working' }]));
+});
+
+test('held messages are sent when they change, and whole to a fresh connection', async (t) => {
+  let list: unknown[] = [{ id: 'm1' }];
+  feedEvents({ list: async () => [session('a')], messages: async () => list });
+  const first = open(t);
+  await settle();
+  await pushMessages();
+  assert.deepEqual(first.got('messages'), [{ t: 'messages', list }]);
+  await pushMessages();
+  assert.equal(first.got('messages').length, 1, 'a read that found the same queue sends nothing');
+  list = [];
+  await pushMessages();
+  assert.deepEqual(first.got('messages').at(-1), { t: 'messages', list: [] });
+  assert.equal(publishHeld({ t: 'memory', reading: { off: true } }), true);
+  assert.equal(publishHeld({ t: 'memory', reading: { off: true } }), false, 'off is pushed once');
+  const second = open(t);
+  await settle();
+  assert.deepEqual(second.got('messages'), [{ t: 'messages', list: [] }], 'a fresh tab gets the queue every tab holds');
+  assert.deepEqual(second.got('memory'), [{ t: 'memory', reading: { off: true } }]);
+});
+
+test('a want answers that one connection with the message a write sends everybody', async (t) => {
+  const boards: Record<string, unknown> = { 'front-2': { brief: 'b', posts: [{ id: '1' }], more: false } };
+  feedEvents({
+    list: async () => [session('a')],
+    wipeboard: async (board) => (boards[board] as Record<string, unknown>) ?? null,
+    jikan: async (team) => team === '*' ? [{ id: 'j', team: 'front-2' }] : team === 'front-2' ? [{ id: 'j' }] : null,
+  });
+  const asker = open(t);
+  const other = open(t);
+  await settle();
+  asker.say({ t: 'want', resource: 'wipeboard', board: 'front-2' });
+  asker.say({ t: 'want', resource: 'jikan', team: '*' });
+  asker.say({ t: 'want', resource: 'wipeboard', board: 'nope' });
+  await settle();
+  assert.deepEqual(asker.got('wipeboard'), [{ t: 'wipeboard', board: 'front-2', brief: 'b', posts: [{ id: '1' }], more: false }]);
+  assert.deepEqual(asker.got('jikan'), [{ t: 'jikan', team: '*', jobs: [{ id: 'j', team: 'front-2' }] }]);
+  assert.deepEqual(other.got('wipeboard'), [], 'only the connection that asked');
+});
+
+test('a burst of file events from one write is one read and one push', async (t) => {
+  let reads = 0;
+  let posts = [{ id: '1' }];
+  feedEvents({ list: async () => [session('a')], wipeboard: async () => { reads += 1; return { posts }; } });
+  const b = open(t);
+  await settle();
+  posts = [{ id: '1' }, { id: '2' }];
+  await Promise.all([pushWipeboard('front-2'), pushWipeboard('front-2'), pushWipeboard('front-2'), pushWipeboard('front-2')]);
+  assert.ok(reads <= 2, `one read running and one waiting, not four (${reads})`);
+  assert.deepEqual(b.got('wipeboard'), [{ t: 'wipeboard', board: 'front-2', posts }]);
+  await pushWipeboard('front-2');
+  assert.equal(b.got('wipeboard').length, 1, 'the same board read again sends nothing');
+});
+
+test('a Team\'s jobs changing pushes that Team and every Team', async (t) => {
+  let jobs = [{ id: 'j1' }];
+  feedEvents({ list: async () => [session('a')], jikan: async (team) => team === '*' ? jobs.map((j) => ({ ...j, team: 'front-2' })) : jobs });
+  const b = open(t);
+  await settle();
+  jobs = [{ id: 'j1' }, { id: 'j2' }];
+  await pushJikan('front-2');
+  assert.deepEqual(b.got('jikan').map((m) => [m.team, (m.jobs as unknown[]).length]), [['front-2', 2], ['*', 2]]);
+});
+
+test('GitHub setup is watched while a setup session is attached, and once after it closes', async (t) => {
+  let attached = false;
+  let answer = { authenticated: false };
+  feedEvents({ list: async () => [session('a')], github: { attached: async () => attached, answer: async () => answer } });
+  const b = open(t);
+  await settle();
+  assert.deepEqual(b.got('github-setup'), [], 'nothing while nothing is attached');
+  attached = true;
+  await tick();
+  assert.deepEqual(b.got('github-setup'), [{ t: 'github-setup', github: { authenticated: false } }]);
+  await tick();
+  assert.equal(b.got('github-setup').length, 1, 'an unchanged answer sends nothing');
+  answer = { authenticated: true };
+  attached = false; // the login finished and its session closed
+  await tick();
+  assert.deepEqual(b.got('github-setup').at(-1), { t: 'github-setup', github: { authenticated: true } });
+  answer = { authenticated: false };
+  await tick();
+  assert.equal(b.got('github-setup').length, 2, 'then nothing until a session is attached again');
+});
+
+test('a store folder change names the file that changed', async (t) => {
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-watch-'));
+  const seen: string[] = [];
+  const stop = watchStore(dir, (file) => seen.push(file));
+  t.after(async () => { stop(); await fs.rm(dir, { recursive: true, force: true }); });
+  await fs.mkdir(path.join(dir, 'front-2', 'posts'), { recursive: true });
+  await fs.writeFile(path.join(dir, 'front-2', 'posts', '1.md'), 'hello');
+  for (let i = 0; i < 50 && !seen.some((f) => f.startsWith('front-2/posts')); i++) await new Promise((r) => setTimeout(r, 20));
+  assert.ok(seen.some((f) => f.split('/')[0] === 'front-2'), `saw ${seen.join(', ')}`);
 });

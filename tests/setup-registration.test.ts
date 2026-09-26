@@ -493,13 +493,6 @@ test('Setup has one Installations card, Account has no gbrain tab, and Machine S
   assert.match(installations, /context\.onInstallationsState\?\.\(\{ \.\.\.values \}\)/, 'Setup completion follows the saved installation map');
 });
 
-test('legacy Services mutation entry points explicitly retire to registration', async () => {
-  const source = await (await import('node:fs/promises')).readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8');
-  assert.match(source, /app\.post\('\/api\/services\/activation'[\s\S]*status\(410\)/);
-  assert.match(source, /Registration recovery moved to \/api\/setup\/registration\/recovery/);
-  assert.match(source, /Registration deletion moved to \/api\/setup\/registration/);
-});
-
 test('Register resend confirmation remains wired from its button to the live recovery action', async () => {
   const fs = await import('node:fs/promises');
   const [surface, api] = await Promise.all([
@@ -512,7 +505,7 @@ test('Register resend confirmation remains wired from its button to the live rec
     'the live recovery route dispatches that request to HQ resend');
 });
 
-test('retired Services mutation handlers return 410 while registration routes remain live', async () => {
+test('registration routes are live, and the retired Services mutation routes are gone', async () => {
   const handlers = new Map<string, Function>();
   const app = {
     get(path: string, handler: Function) { handlers.set(`GET ${path}`, handler); },
@@ -528,13 +521,7 @@ test('retired Services mutation handlers return 410 while registration routes re
   for (const route of [
     'POST /api/services/activation', 'POST /api/services/activation/resend',
     'POST /api/services/activation/address', 'DELETE /api/services/activation',
-  ]) {
-    let code = 200; let body: unknown = null;
-    const response = { status(value: number) { code = value; return this; }, json(value: unknown) { body = value; return this; } };
-    await handlers.get(route)?.({ body: {} }, response);
-    assert.equal(code, 410, route);
-    assert.match(String((body as { error?: string })?.error), /registration/i);
-  }
+  ]) assert.equal(handlers.has(route), false, route);
 });
 
 test('all browser mutation callers use registration; Services activation is read/poll/install only', async () => {

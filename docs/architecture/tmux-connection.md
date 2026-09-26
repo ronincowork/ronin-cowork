@@ -42,9 +42,23 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   list and the home rows to browsers on `%sessions-changed`, renames and window changes,
   with the 2 s clock kept as a heartbeat; each tick takes one session listing for both, and
   each is sent only when a field the UI paints moved (`sessionsSignature` leaves out
-  `activity`), so a notification that changed nothing painted sends nothing. The Team
-  rosters are pushed as `{t:'teams', rosters}` after each roster write. A row's `activity`
-  comes from the listing.
+  `activity`), so a notification that changed nothing painted sends nothing. A row's
+  `activity` comes from the listing. Everything else on `/events`:
+
+  | Message | Sent | On connect |
+  |---|---|---|
+  | `{t:'teams', rosters}` | after each roster write, when it moved | held, sent |
+  | `{t:'messages', list}` | when a file in the message queue folder changes and the queue moved | held, sent |
+  | `{t:'memory', reading}` | the machine service's reading of memory, swap, load, cores and scope, taken once a minute and sent when it moved; `{off:true}` once when watching is off | held, sent |
+  | `{t:'wipeboard', board, …}` | when a file under that board's folder changes and the board (last 100 posts, `more`) moved | answers `{t:'want', resource:'wipeboard', board}` |
+  | `{t:'jikan', team, jobs}` | when that Team's jobs file changes and its jobs moved, and as `team:'*'` for every Team | answers `{t:'want', resource:'jikan', team}` |
+  | `{t:'github-setup', github}` | on the tick while a GitHub or git setup session is attached, when `GET /api/setup/github`'s answer moved, and once after the last one closes | — |
+  | `{t:'services-setup', services}` | `{ registration, installed, activation }` after each write to registration, Services, Campaigns or machine settings, when the install watcher ends, and when Ronin HQ confirms the emailed link (asked every 15 s while a request waits and a browser is connected) | — |
+  | `{t:'gbrain', snapshot}` | `GET /api/gbrain`'s answer while an install or uninstall runs, and once when it ends | — |
+
+  The store folders for boards, cron jobs and the message queue are the whole truth, and
+  every writer (a route, a CLI child, the server) changes a file in them: the server
+  watches each folder (`watchStore`) and pushes the resource the file names.
 
 **The rule:** no `execFile('tmux', …)` or `spawn('tmux', …)` in `src/` outside the client
 and the pty attach paths (`src/ws/pty.ts`, `src/viewer.ts`). `tests/tmux.test.ts` refuses
