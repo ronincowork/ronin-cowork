@@ -175,8 +175,11 @@ beside the line and the ref moves by one atomic `update-ref`.
 
 - launch: `deriveAssignment()` (pure candidate planning), `resolveLaunchDesks()` (one
   Worktrees resolution), `prepareLaunchDesks()` (opens resolved managed rows), `Assignment`;
-- visibility: `listDesks({session|team|repo})` → `DeskStatus[]`, `readDesk()`,
-  `receiptsForDesk()`;
+- visibility: `listDesks({session|owner|team|repo})` → `DeskStatus[]`, `readDesk()`,
+  `receiptsForDesk()`. `session` is the desk's recorded holder (the first owner);
+  `owner` is custody, any of its `owners`, so a desk shared by handoff answers to each
+  owner. Both filter the records before any git runs, so ask for the one session you need;
+  status for every desk on the box is seconds of git;
 - promotion: `acceptedSince(repo, line, lastPromotedLineSha)` → the receipts a change set
   carries; `ChangeSetReceipt` is the shape it writes;
 - the compatibility audit: `RONIN_REPO`, read by `readArrangement()`.
