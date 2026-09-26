@@ -266,7 +266,9 @@ test('on a phone the cycle is two states: Term and the conversation, from the ro
   };
   const toggle = () => Tile.prototype.toggleTranscript.call(tile);
   const label = () => Tile.prototype.transcriptLabel.call(tile);
-  globalThis.__onPhone = true;
+  // The phone document no longer needs a flag of its own: coarse is the whole rule.
+  const fine = globalThis.window.matchMedia;
+  globalThis.window.matchMedia = (q) => ({ matches: /coarse/.test(q) });
   try {
     // Owner, 2026-09-23: Term or Chat on a phone. Notes, Work and All are a desk thing.
     toggle();
@@ -276,10 +278,10 @@ test('on a phone the cycle is two states: Term and the conversation, from the ro
     assert.equal(label(), TERM);
     assert.deepEqual(shown, [['show', 'chat'], ['hide']], 'it never walks to Notes');
     // The same tile on a desk keeps every reading the route published.
-    globalThis.__onPhone = false;
+    globalThis.window.matchMedia = fine;
     toggle(); toggle();
     assert.equal(label(), 'Notes');
-  } finally { globalThis.__onPhone = false; }
+  } finally { globalThis.window.matchMedia = fine; }
 });
 
 test('the end of the conversation says what the Agent is doing, from the row and nothing else', async () => {
@@ -318,31 +320,31 @@ test('the end of the conversation says what the Agent is doing, from the row and
   assert.equal(indicator(), undefined, 'and it goes with the reading');
 });
 
-test('on a tablet the cycle is Term, Chat and Work — Notes and All stay on the desk', () => {
+test('a tablet is a phone here: Terminal or the conversation, and no third press', () => {
   const shown = [];
   const tile = {
     session: 'agent', transcriptOn: false, transcriptLevel: -1, transcriptReadings: READINGS, transcriptState: null,
-    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle, syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, tapeMode: false,
+    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle,
+    syncSurface: Tile.prototype.syncSurface, surfaceHost: { select() {} }, tapeMode: false,
     el: { classList: { toggle() {} } }, body: { contains: () => false },
-    transcriptView: { show: (name, view) => shown.push(['show', view]), setReading: (view) => shown.push(['set', view]), hide: () => shown.push(['hide']) },
+    transcriptView: { show: (n, view) => shown.push(['show', view]), setReading: (v) => shown.push(['set', v]), hide: () => shown.push(['hide']) },
     setComposer() {}, syncHeader() {}, doFit() {},
   };
   const toggle = () => Tile.prototype.toggleTranscript.call(tile);
   const label = () => Tile.prototype.transcriptLabel.call(tile);
-  const coarse = globalThis.window.matchMedia;
+  const fine = globalThis.window.matchMedia;
   globalThis.window.matchMedia = (q) => ({ matches: /coarse/.test(q) });
   try {
-    // Owner, 2026-09-23: on the iPad only Terminal, Chat and Work are on offer.
+    // Owner, 2026-09-26: the tablet briefly offered Work as a third state. It does not any
+    // more — one rule for every touch screen, phone and tablet alike.
     toggle();
     assert.equal(label(), 'Chat');
     toggle();
-    assert.equal(label(), 'Work', 'Notes is skipped, not merely unlabelled');
-    toggle();
-    assert.equal(tile.transcriptOn, false, 'past Work it comes back to the terminal');
+    assert.equal(tile.transcriptOn, false, 'the second press comes straight back to Term');
     assert.equal(label(), TERM);
-    assert.deepEqual(shown, [['show', 'chat'], ['set', 'work'], ['hide']], 'it never walks to Notes or All');
+    assert.deepEqual(shown, [['show', 'chat'], ['hide']], 'it never walks to Work, Notes or All');
   } finally {
-    globalThis.window.matchMedia = coarse;
+    globalThis.window.matchMedia = fine;
   }
 });
 

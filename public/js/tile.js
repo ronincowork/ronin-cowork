@@ -325,8 +325,11 @@ export class Tile {
    */
   transcriptCycle() {
     const readings = Array.isArray(this.transcriptReadings) ? this.transcriptReadings : [];
-    if (document.getElementById('phone')) return readings.slice(0, 1);
-    if (isCoarse()) return readings.filter((r) => r.name === 'chat' || r.name === 'work');
+    // A thumb gets the terminal or the conversation and nothing else, on a tablet exactly
+    // as on a phone — there is no third press (owner, 2026-09-26). The tablet briefly had
+    // Work as well; one rule for every touch screen is both what was asked for and one
+    // fewer thing to keep in step, so the phone no longer needs a case of its own.
+    if (isCoarse()) return readings.slice(0, 1);
     return readings;
   }
 

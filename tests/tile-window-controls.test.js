@@ -130,22 +130,22 @@ test('a UI diagnostic asks the host contract where Ronin answers instead of gues
   assert.ok(checked.includes('ipad-header-ui.mjs'), 'the iPad header diagnostic is covered');
 });
 
-test('each surface walks only the readings it was given, by name', async () => {
+test('one rule for every touch screen, and the level always indexes the cycle', async () => {
   const tile = await read('public/js/tile.js');
   const cycle = tile.slice(tile.indexOf('transcriptCycle() {'), tile.indexOf('toggleTranscript()'));
-  // A thumb does not want five detents. The phone is Terminal or Chat; a tablet is
-  // Terminal, Chat and Work. Notes and the full record are a desk's business.
-  assert.match(cycle, /getElementById\('phone'\)[\s\S]*slice\(0, 1\)/, 'the phone stops after the first reading');
-  assert.match(cycle, /isCoarse\(\)[\s\S]*filter\(\(r\) => r\.name === 'chat' \|\| r\.name === 'work'\)/, 'a tablet offers Chat and Work');
+  // A thumb gets Terminal or the conversation, phone and tablet alike (owner, 2026-09-26).
+  // The tablet briefly had Work as a third state; there is no surface-specific case left.
+  assert.match(cycle, /if \(isCoarse\(\)\) return readings\.slice\(0, 1\);/);
+  assert.doesNotMatch(cycle, /getElementById\('phone'\)/, 'the phone needs no case of its own');
   assert.match(cycle, /return readings;/, 'a desk still walks every reading the route published');
-  // Named, not sliced by length: a reading added on the server must not join a thumb surface.
-  assert.doesNotMatch(cycle, /slice\(0,\s*[23]\)|Math\.min\(\s*[23]/, 'the tablet selects by name, never by count');
-  // The level indexes the cycle, not the route's full list, or the label and the view drift.
+  // What source text uniquely guards: the level indexes the CYCLE, never the route's full
+  // list. Mixing the two drifts the button's label away from the reading on screen.
   for (const site of ['const readings = this.transcriptCycle();', 'const cycle = this.transcriptCycle();', 'this.transcriptCycle()[this.transcriptLevel]']) {
     assert.ok(tile.includes(site), `the cycle is the index everywhere: ${site}`);
   }
   assert.doesNotMatch(tile, /this\.transcriptReadings\[this\.transcriptLevel\]/, 'the level never indexes the unfiltered list');
 });
+
 
 test('the メ sheet holds Output for a Services-bound Agent and withdraws it for one without', async () => {
   const [tile, style] = await Promise.all([read('public/js/tile.js'), read('public/style.css')]);

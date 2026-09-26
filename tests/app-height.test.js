@@ -15,9 +15,24 @@ test('the application is as tall as what the browser can show', async () => {
   assert.match(height, /setProperty\('--app-h'/);
   // Keeping the last good height: a zero arrives while a tab is restored.
   assert.match(height, /if \(height > 0\)/);
-  for (const event of ['resize', 'scroll', 'orientationchange']) {
+  for (const event of ['resize', 'scroll', 'orientationchange', 'focusout']) {
     assert.match(height, new RegExp(`'${event}'`), `re-measured on ${event}`);
   }
+});
+
+test('the height is never left on a value read part-way through an animation', async () => {
+  const height = await read('public/js/appheight.js');
+  // iOS animates the keyboard away and reports the viewport as it goes, so the FINAL
+  // resize can carry a mid-animation height — and then nothing fires again. Measured once,
+  // the app stays that bit too short and leaves a strip of dead space along the bottom
+  // that only a reload clears. So the last event is never trusted on its own.
+  assert.match(height, /requestAnimationFrame\(measure\)/, 'again on the next frame');
+  assert.match(height, /setTimeout\(measure, \d+\)/, 'and again once things have stopped moving');
+  // Each is replaced rather than stacked, so a burst of resize events leaves one of each.
+  assert.match(height, /cancelAnimationFrame\(frame\)/);
+  assert.match(height, /clearTimeout\(settle\)/);
+  // Leaving a text box is the keyboard going away, and does not always bring an event.
+  assert.match(height, /addEventListener\('focusout', remeasure\)/);
 });
 
 test('nothing pinned to the bottom compensates for the keyboard on its own', async () => {
