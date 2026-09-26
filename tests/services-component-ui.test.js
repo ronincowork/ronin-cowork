@@ -50,9 +50,9 @@ test('new Agent transcript recording follows both the master and explicit capabi
   assert.match(launch, /contribution\.enabled\) && transcriptOn/);
 });
 
-test('restart disagreement alone does not schedule surface polling', async () => {
+test('restart disagreement offers Restart and nothing to poll', async () => {
   const { servicesSetupModel } = await import('../public/js/services-setup-state.js');
   const model = servicesSetupModel({ ok: true, data: { services_entitled: true } }, { ok: true, data: { services: { installed: true, switched_on: true, restart_needed: true } } });
-  assert.equal(model.polling, false);
+  assert.equal('polling' in model, false, 'the model carries no polling flag: nothing polls');
   assert.equal(model.steps.at(-1).act, 'restart');
 });

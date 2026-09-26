@@ -39,7 +39,8 @@ test('Setup GitHub lifecycle uses only a published session and hands success to 
   assert.match(github, /attachment\?\.type !== 'session' \|\| !attachment\.key/);
   assert.match(github, /mountAttachment\(result\.data\.attachment\)/, 're-entering resumes the published temporary session');
   assert.match(github, /if \(connecting \|\| mounted \|\| destroyed\) return/);
-  assert.match(github, /if \(checking \|\| destroyed\) return/);
+  assert.doesNotMatch(github, /setInterval|setTimeout/, 'the login is watched by the server, not polled');
+  assert.match(github, /store\.listen\('github-setup'/);
   assert.match(github, /stopWatch\(\); unmount\(\)/);
   assert.match(github, /onAuthenticated\?\.\(\)/);
   assert.doesNotMatch(github, /roots\.github_check|Check connection/);
@@ -49,7 +50,7 @@ test('Setup GitHub lifecycle uses only a published session and hands success to 
   assert.match(github, /request\('\/api\/setup\/github\/install', \{ method: 'POST' \}\)/);
   assert.match(github, /setup-provider-steps setup-github-steps/);
   assert.doesNotMatch(github, /glyph: '⌘'/, 'GitHub never borrows the macOS Command key as its identity');
-  const finish = github.slice(github.indexOf('const finishAuthentication'), github.indexOf('const poll'));
+  const finish = github.slice(github.indexOf('const finishAuthentication'), github.indexOf('repository.addEventListener'));
   assert.doesNotMatch(finish, /\/clone|onCloned/, 'authentication never starts a clone');
   assert.match(github, /if \(result\.ok\) await onCloned\?\.\(result\.data\?\.workspace\)/);
   const shared = await source('public/js/workspace-folders-surface.js');

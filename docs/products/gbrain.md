@@ -20,8 +20,9 @@ launch defaults will not reconfigure a running provider CLI.
 
 ## Understand connections and data
 
-Inspect the local process, listening address, external provider, integrations, and public
-access facts shown by the gbrain surface. Do not assume a local listening address means an
+The gbrain page in Ronin Setup shows whether gbrain is installed and running, and which
+accounts are linked. For the local process, listening address, external provider and
+public access, ask an Agent to read them from the installation. Do not assume a local listening address means an
 external account has been linked—or that a linked account has already supplied data.
 
 Setup or repair may hand a request to an assistant. Review the account and access requested
