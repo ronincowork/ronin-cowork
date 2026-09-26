@@ -7,46 +7,34 @@
  * every fact here from git and the desk registry at the moment of asking — nothing an
  * agent maintains in prose — so a reading is never stale by more than one poll.
  *
- * THREE READERS, ONE FETCH. The tile head's ⑂ button, the roster's desk column and the
- * Team page's readings all ask on the same clock, so the fetch is shared and deduped:
- * concurrent callers ride one request, and a read younger than `FRESH_MS` is answered
- * from memory. The server memoises too; between the two, N tiles cost one git pass.
+ * THREE READERS, ONE RESOURCE. The tile head's ⑂ button, the roster's desk column and the
+ * Team page's readings all read the store's `desks` (js/store.js), which the server pushes
+ * on connect and on change. Before a connection has had that push, `refreshDesks` reads the
+ * snapshot through the store: concurrent callers ride one request, and a read younger than
+ * `FRESH_MS` is answered from memory.
  *
  * The roll-up (`2 desks · 1 pending · 3 private`) keeps paths and SHAs OUT of the row
  * (docs/architecture/worktrees.md "Surfaces that change": detail behind inspection). The tooltip carries
  * one line per desk: repo, branch, line, ahead/behind, dirt, pending, parked, blocked.
  */
-import { request } from './request.js';
+import { get, snapshot } from './store.js';
 import { clampTip } from './shingo.js';
 import { t } from './lexicon.js';
 
-let data = new Map(); // session name -> { desks: [], rollup: {} }
 let readAt = 0;
-let inflight = null;
 const FRESH_MS = 3000;
 
-let seen = '';
-
-/** Re-read every session's desks; shared and deduped. Resolves true when the answer changed. */
+/** Re-read every session's desks through the store. Resolves true when the answer changed. */
 export async function refreshDesks(force = false) {
-  if (inflight) return inflight;
   if (!force && Date.now() - readAt < FRESH_MS) return false;
-  inflight = (async () => {
-    const r = await request('/api/desks', { cache: 'no-store' });
-    // A failed read keeps the last answer rather than blanking every ⑂ — the poll heals it.
-    if (!r.ok || !r.data || typeof r.data !== 'object') return false;
-    data = new Map(Object.entries(r.data));
-    readAt = Date.now();
-    const now = JSON.stringify(r.data);
-    const changed = now !== seen;
-    seen = now;
-    return changed;
-  })().finally(() => { inflight = null; });
-  return inflight;
+  // A failed read keeps the last answer rather than blanking every ⑂.
+  const read = await snapshot('desks');
+  if (read.ok) readAt = Date.now();
+  return read.changed;
 }
 
 /** One session's desks and roll-up, or null when nothing has been read for it. */
-export const desksOf = (name) => (name && data.get(name)) || null;
+export const desksOf = (name) => (name && get('desks')?.[name]) || null; // session name -> { desks: [], rollup: {} }
 
 const worktreeName = (worktree) => String(worktree || '').replace(/[\\/]+$/, '').split(/[\\/]/).filter(Boolean).pop() || '';
 
