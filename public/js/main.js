@@ -6,7 +6,7 @@ import { guard, showFailure } from './errors.js';
 import { applyTheme } from './theme.js';
 import { restoreSkin } from './skins.js';
 import { activeProfile, loadDeskProfile } from './desk-profile.js';
-import './events.js'; // what the /events messages mean to the page
+import { sayWhenUnreachable } from './events.js';
 import { connect } from './store.js';
 import { loadProjects } from './home.js';
 import { build } from './layout.js';
@@ -132,6 +132,7 @@ export async function init() {
   reveal();
 
   guard('install workspace controls', build);
+  guard('say when Ronin is unreachable', sayWhenUnreachable);
   guard('session event stream', connect); // the store's socket: rows, sessions, births & deaths
   guard('load projects', loadProjects); // PROJECT_ROOTS.md — WHERE a spawn happens
   // Mark the first tile active but don't grab the keyboard on load (avoids the

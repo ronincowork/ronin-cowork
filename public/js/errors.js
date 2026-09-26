@@ -65,6 +65,20 @@ export function showFailure(where, err) {
   }
 }
 
+/** Take a failure off the screen once its cause has cleared: its lines go, it may be shown
+ *  again, and the bar goes with its last line. */
+export function clearFailure(where) {
+  for (const key of [...failSeen]) if (key.startsWith(where + '|')) failSeen.delete(key);
+  if (!failBar) return;
+  const children = [...failBar.children];
+  children.forEach((child, i) => {
+    if (child.className !== 'failbar-line' || !child.textContent.startsWith(where + ': ')) return;
+    if (children[i + 1]?.className === 'failbar-at') children[i + 1].remove();
+    child.remove();
+  });
+  if (![...failBar.children].some((child) => child.className === 'failbar-line')) { failBar.remove(); failBar = null; }
+}
+
 /** Run fn; on a throw, show it and return fallback instead of taking the page down. */
 export function guard(where, fn, fallback) {
   try {

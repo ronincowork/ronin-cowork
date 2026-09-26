@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { reconcileSessions } from './api.js';
 import { store } from './store.js';
+import { clearFailure, showFailure } from './errors.js';
 import { S, tiles } from './state.js';
 import { t } from './lexicon.js';
 
@@ -47,6 +48,19 @@ store.listen('team-page', (m) => { for (const fn of teamPageHandlers) fn(m); });
 store.listen('mika-show', (m) => { for (const fn of mikaShowHandlers) fn(m); });
 store.listen('setup-progress', (m) => { if (Array.isArray(m.steps)) for (const fn of setupProgressHandlers) fn(m); });
 store.reduce('sessions', onSessionsEvent);
+
+/**
+ * THE PAGE SAYS WHEN IT CANNOT REACH RONIN, and the socket is the truth of that: a socket
+ * that closes, or never opens, before the page has had a session list puts the failure
+ * on screen; the next open takes it off. The store's own retry is the only retry.
+ */
+export function sayWhenUnreachable() {
+  const where = t('errors.no_session_list', 'could not load the session list');
+  store.onClose(() => {
+    if (store.get('sessions') === undefined) showFailure(where, new Error(t('errors.no_socket', 'Ronin did not answer on /events')));
+  });
+  store.onOpen(() => clearFailure(where));
+}
 
 /** A changed session list: reconcile it, return dead tiles home, and offer the newborn.
  *  The page's first list has nothing before it, so nothing in it is a birth. */

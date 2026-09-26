@@ -39,6 +39,7 @@ export function createStore({
   const reducers = new Map(); // key -> fn, run before any subscriber hears the change
   const listeners = new Map(); // message type -> Set<fn>, for the feeds that are not resources
   const openers = new Set();
+  const closers = new Set();
   let socket = null;
   let retry = null;
 
@@ -90,7 +91,11 @@ export function createStore({
       try { message = JSON.parse(event.data); } catch { return; }
       receive(message);
     };
-    ws.onclose = () => { if (socket === ws) retry = later(connect, RECONNECT_MS); }; // keep the feed alive
+    ws.onclose = () => {
+      if (socket !== ws) return; // a socket renew() already replaced
+      for (const fn of closers) fn();
+      retry = later(connect, RECONNECT_MS); // keep the feed alive
+    };
     return ws;
   }
 
@@ -107,6 +112,8 @@ export function createStore({
   }
   /** Run on every open of the socket, the first and each reconnect. */
   function onOpen(fn) { openers.add(fn); return () => openers.delete(fn); }
+  /** Run each time the socket closes or fails to open. */
+  function onClose(fn) { closers.add(fn); return () => closers.delete(fn); }
 
   /** Say something to the server; false when the socket is not open (the next open says it again). */
   function send(message) {
@@ -114,7 +121,7 @@ export function createStore({
     try { socket.send(JSON.stringify(message)); return true; } catch { return false; }
   }
 
-  return { get, subscribe, reduce, connect, renew, listen, onOpen, send, receive };
+  return { get, subscribe, reduce, connect, renew, listen, onOpen, onClose, send, receive };
 }
 
 /** The tab's one store. */

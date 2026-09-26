@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 // A pushed session change reaches the Team surfaces through the store alone: the reducer
 // writes S.sessions, the Team projection publishes once, and nothing asks REST.
-globalThis.window = { matchMedia: () => ({ matches: false }) };
+globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {} };
 const chips = [];
 const node = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, append(...kids) { chips.push(kids[0]?.textContent); }, set innerHTML(_) {} });
 globalThis.document = { createElement: node, body: { appendChild() {} } };
