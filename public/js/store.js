@@ -5,15 +5,14 @@
  *
  * Every surface in the person's path has one lifecycle (owner's ruling, 2026-09-25): OPEN
  * subscribes and is handed what the store holds; WHILE OPEN the store hands it each change;
- * CLOSE unsubscribes. A reconnect is a new connection, and the server sends it every pushed
- * resource whole. No surface fetches a resource held here and no surface owns a timer for one.
+ * CLOSE unsubscribes. A reconnect is a new connection, and the server sends it every
+ * resource whole.
  *
  * The contract a subscriber may rely on: it hears a resource only when the resource
  * changed. The store compares what arrived with what it holds, by the fields a surface
  * paints, and says nothing when they are the same.
  *
- * Each resource is pushed on connect and on change, and the push is the only way in: the
- * store reads nothing over REST.
+ * Each resource is pushed on connect and on change, and the push is the only way in.
  *
  *   home      {t:'home', rows}
  *   sessions  {t:'sessions', list}   — reduced into S.sessions (js/events.js) before anyone hears it

@@ -20,7 +20,7 @@ import { setupProgressHandlers } from './events.js';
 
 const PROFILE = 'setup';
 // Release toggles: unfinished programs stay out of Setup without changing the workbench.
-export const SETUP_FEATURES = Object.freeze({ bounty: false });
+const SETUP_FEATURES = Object.freeze({ bounty: false });
 const SCENES = Object.freeze(SETUP_SCENES
   .filter((scene) => SETUP_FEATURES.bounty || scene.type !== 'setup.bounty')
   .map((scene, index) => Object.freeze({ ...scene, number: index + 1 })));

@@ -15,7 +15,7 @@ const node = (tag, cls = '', value = '') => {
   return el;
 };
 
-export function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } = {}) {
+function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: 'Assist', className: 'garden-canvas' });
   surface.content.classList.add('garden-canvas-content');
   const scene = node('div', 'garden-canvas-scene');

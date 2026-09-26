@@ -23,7 +23,7 @@ import { t } from './lexicon.js';
 export const isOwn = (e) => !!e && e.origin === 'user';
 
 /** The mark for one entry, or null when it is stock and there is nothing to say. */
-export function provMark(entry) {
+function provMark(entry) {
   if (!isOwn(entry)) return null;
   const el = document.createElement('span');
   el.className = 'prov' + (entry.shadowed ? ' prov-shad' : '');

@@ -13,10 +13,10 @@ import { t } from './lexicon.js';
 // every write, and only the 13 key slots of the chosen layer are replaced —
 // encoders, joystick, lights, other layers/profiles, unknown fields all pass
 // through untouched. Don't run the Input app while writing.
-export const WL_VID = 0x303a; // Espressif — the pad is an ESP32-S3
-export const WL_PIDS = [0x8297, 0x8298]; // Creator Micro 2
-export const WL_REPORT = 0x06; // report ID; 63-byte frames: [channel, len, ...payload]
-export const WL_RPC_CH = 2;
+const WL_VID = 0x303a; // Espressif — the pad is an ESP32-S3
+const WL_PIDS = [0x8297, 0x8298]; // Creator Micro 2
+const WL_REPORT = 0x06; // report ID; 63-byte frames: [channel, len, ...payload]
+const WL_RPC_CH = 2;
 // Mirrors PAD_LAYOUT (2/4/4/3): F13–F24 + bottom-right Right Option for Wispr
 // push-to-talk — hold-to-talk works because holding the key IS holding ⌥, and the
 // right-side modifier is never used alone. Point Wispr's hotkey at Right Option.

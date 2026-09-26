@@ -242,7 +242,9 @@ test('Team Configuration hides legacy Control and hosts Runtime trays below its 
 
 test('New Team checks names only for a cast and opens empty or partial Teams with recovery evidence', async () => {
   const form = await source('new-team-form.js');
-  assert.match(form, /if \(picks\.length\) \{[\s\S]*request\('\/api\/sessions'/);
+  assert.match(form, /if \(picks\.length\) \{\s*const conflicts = conflictingAgentNames\(picks, S\.sessions\)/,
+    'a cast is checked against the pushed session list');
+  assert.doesNotMatch(form, /request\('\/api\/sessions'/);
   assert.match(form, /const launched = outcomes\.filter\(\(\{ result \}\) => result\?\.ok\)[\s\S]*result\.data\?\.name \|\| row\.name/);
   assert.match(form, /Team created\. Launched \{launched\} of \{total\} Agents: \{born\}\. Failed: \{names\}/);
   assert.match(form, /openLaunchHandoff\(\{ team: name, sessions: picks \}, launchTab\);[\s\S]*await launchTeamAgents\(request, name, picks\)/,

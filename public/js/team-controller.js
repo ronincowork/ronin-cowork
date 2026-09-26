@@ -4,7 +4,7 @@
  * which the store's pushed `sessions` keeps current. The store delivers each only when it
  * changed, so a listener hears the projection once per change and a Team surface never
  * rebuilds from the same answer twice. A write here changes the server; the change comes
- * back by push, and nothing is re-read. */
+ * back by push. */
 import { request } from './request.js';
 import { subscribe as hear } from './store.js';
 import { helpersLast, teamTag } from './roster-groups.js';

@@ -6,7 +6,7 @@ import { renderResource } from './customize-resources.js';
 import { UTILITY_HEADER } from './workspace-contract.js';
 
 
-export function buildCustomize() {
+function buildCustomize() {
   // Read the Kit inside the call, never at module top level: a top-level reference to an
   // imported binding reintroduces load-order fragility (public/js/README.md rule 4).
   const { createExplorerRail, createSurface } = WorkspaceKit.primitives;

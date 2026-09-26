@@ -3,7 +3,7 @@ import { IS_TOUCH, S, WHEEL_DOWN, WHEEL_UP, tiles } from './state.js';
 import { toast } from './ui.js';
 import { t } from './lexicon.js';
 
-export const LS_PAD = 'tmuxgrid.worklouder';
+const LS_PAD = 'tmuxgrid.worklouder';
 export const PAD_CODE = /^F1[3-9]$|^F2[0-4]$/; // the ONLY codes the pad logic touches
 // Creator Micro 2 geometry — key rows are 2/4/4/3 (confirmed by the device's own
 // keymap.json format). Joystick top-right, touch strip bottom-left (verified);
@@ -98,7 +98,7 @@ for (const [c, k] of [['F22', 'enter'], ['F24', 'aenter'], ['F21', 'adel']])
   if (padBinds[c] && padBinds[c].key === k) delete padBinds[c];
 // Cockpit control codes moved when Pause/ScrollLock turned out to be brightness
 // keys — clear OUR old control seeds wherever they still sit on a retired code.
-export const PAD_CONTROL_JOBS = new Set(['scrollup', 'scrolldown', 'layoutcycle', 'tileup', 'tiledown', 'tileleft', 'tileright']);
+const PAD_CONTROL_JOBS = new Set(['scrollup', 'scrolldown', 'layoutcycle', 'tileup', 'tiledown', 'tileleft', 'tileright']);
 for (const c of ['F19', 'F20', 'F22', 'F23', 'F24', 'Insert', 'Pause', 'ScrollLock'])
   if (padBinds[c] && padBinds[c].key && PAD_CONTROL_JOBS.has(padBinds[c].key)) delete padBinds[c];
 // Glen's cockpit defaults (seeded wherever unbound): encoder turns scroll, the

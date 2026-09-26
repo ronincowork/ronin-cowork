@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
+import { S } from './state.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { ruledRows } from './glyphs.js';
@@ -440,19 +441,9 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     // CHECK BEFORE THE FIRST WRITE. The launch door rightly refuses an explicit name
     // collision, but discovering one after POST /api/team-rosters leaves a Team with only
     // part of the cast. The form knows the whole proposed cast, so its gate checks both
-    // the live set and duplicates inside the form before it creates anything.
+    // the live set (`S.sessions`) and duplicates inside the form before it creates anything.
     if (picks.length) {
-      notice.set('info', t('new_team.checking_names', 'Checking Agent names…'));
-      const live = await request('/api/sessions', { cache: 'no-store' });
-      if (!live.ok) {
-        closeWorkspaceTab(launchTab);
-        busy = false;
-        raise.setDisabled(false);
-        return notice.set('failed', t('new_team.name_check_failed', 'Agent names could not be checked, so nothing was created. {reason}', {
-          reason: live.message,
-        }));
-      }
-      const conflicts = conflictingAgentNames(picks, Array.isArray(live.data) ? live.data : []);
+      const conflicts = conflictingAgentNames(picks, S.sessions);
       if (conflicts.length) {
         closeWorkspaceTab(launchTab);
         busy = false;

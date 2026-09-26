@@ -6,6 +6,5 @@ is not said here falls through to `professional`, and the words grow as surfaces
 - **blurb:** The lobby's words — campaigns, squads, loadouts.
 - **base:** professional_en
 - **squad:** Squad
-- **player_one:** Player One
 - **team_kit:** Team kit
 - **loadout:** Loadout

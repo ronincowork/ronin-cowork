@@ -67,7 +67,7 @@ function onSessionsEvent(list, previous = list) {
   const before = new Set(previous.map((s) => s.name));
   const now = new Set(list.map((s) => s.name));
   reconcileSessions(list); // the one writer (api.js); pickers current everywhere
-  // Death: the tile refreshes and returns to the home panel.
+  // Death: the tile lets the session go.
   tiles.forEach((t) => {
     if (t.session && !now.has(t.session)) t.detach();
   });

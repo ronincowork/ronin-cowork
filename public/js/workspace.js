@@ -2,8 +2,8 @@
 import { WorkspacePrimitives } from './workspace-primitives.js';
 import { WORKBENCH_APPEARANCES } from './workspace-contract.js';
 
-export const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
-export const WORKSPACE_STATE_VERSION = 4;
+const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
+const WORKSPACE_STATE_VERSION = 4;
 const PREVIOUS_WORKSPACE_STATE_KEY = 'ronin.workspace.v1';
 const WORKBENCH_LAUNCH_PARAM = 'ronin-launch';
 const WORKBENCH_TAB_PARAM = 'ronin-tab';
@@ -52,7 +52,7 @@ export const defaultWorkspaceState = () => ({
 });
 
 /** Normalize is deliberately forgiving: null, empty and older partial records are valid. */
-export function migrateWorkspaceState(candidate) {
+function migrateWorkspaceState(candidate) {
   const base = defaultWorkspaceState();
   const parsed = candidate && typeof candidate === 'object' ? candidate : {};
   // `panes` is the serialized v1 key only. Normalize its left/right geometry into the
@@ -109,7 +109,7 @@ function writeState(state) {
   }
 }
 
-export function routeFromHash(hash = location.hash) {
+function routeFromHash(hash = location.hash) {
   const raw = hash.replace(/^#\/?/, '');
   if (!raw) return null;
   try {
@@ -122,7 +122,7 @@ export function routeFromHash(hash = location.hash) {
   }
 }
 
-export function hashFor(view, param = '') {
+function hashFor(view, param = '') {
   return '#/' + [view, param].filter(Boolean).map(encodeURIComponent).join('/');
 }
 

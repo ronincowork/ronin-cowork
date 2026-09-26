@@ -9,7 +9,7 @@ import { ask } from './ask.js';
 export { createPhalanx };
 
 export const PRESETS_TYPE = 'setup.presets';
-export const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
+const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
 
 export const HOUSE_PRESETS = Object.freeze([
   { handle: 'bare_metal', shelf: 'teams', label: 'Bare Metal', description: 'Choose a provider and model for each native session, or leave it at Default.', glyph: { rects: [[4, 9, 10, 14], [18, 9, 10, 14]] }, destination: 'Ronin Lab' },
@@ -32,11 +32,11 @@ export const PRESET_KINDS = Object.freeze([
   { id: 'life', label: 'Life Assistants', presets: Object.freeze(['personal_assistant', 'health_and_fitness', 'agent_editable_doc']) },
   { id: 'research', label: 'Research and writing', presets: Object.freeze(['morning_brief', 'personal_assistant', 'bare_metal']) },
 ]);
-export const DEFAULT_RESTING_PRESETS = Object.freeze(['bare_metal', 'personal_assistant', 'agent_editable_doc']);
-export const PRESET_KINDS_KEY = 'ronin.setup.kinds.v1';
+const DEFAULT_RESTING_PRESETS = Object.freeze(['bare_metal', 'personal_assistant', 'agent_editable_doc']);
+const PRESET_KINDS_KEY = 'ronin.setup.kinds.v1';
 const knownKind = (id) => id === 'other' || PRESET_KINDS.some((kind) => kind.id === id);
 /** The house handles at rest for the picked kinds, in kind order, deduplicated. */
-export const restingPresets = (kinds = []) => {
+const restingPresets = (kinds = []) => {
   const picked = PRESET_KINDS.filter((kind) => kinds.includes(kind.id)).flatMap((kind) => kind.presets);
   return picked.length ? [...new Set(picked)] : [...DEFAULT_RESTING_PRESETS];
 };
@@ -110,7 +110,7 @@ const agentsAroundConfiguration = ({ sessions: born = [], team = '' }) => {
     ].filter(Boolean),
   };
 };
-export const CORE_PRESET_TREATMENTS = Object.freeze({
+const CORE_PRESET_TREATMENTS = Object.freeze({
   bare_metal: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
   ronin_team: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
   staff_my_codebase: treatment(['root'], 'team', () => ({ count: 2, seats: [] })),
@@ -135,7 +135,7 @@ export const CORE_PRESET_TREATMENTS = Object.freeze({
 export const isCorePreset = (handle) => Object.hasOwn(CORE_PRESET_TREATMENTS, String(handle || ''));
 export const bareMetalWorkspaceCount = (count) => count <= 1 ? 1 : count === 2 ? 2 : 4;
 export const presetActions = (handle) => ['user_message', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
-export function firstActivatableProvider(runtime = {}) {
+function firstActivatableProvider(runtime = {}) {
   return (Array.isArray(runtime.providers) ? runtime.providers : []).find((provider) => {
     if (!provider?.id || provider.activated === true || provider.blocked) return false;
     return provider.installed === true || provider.installable === true || provider.login_open === true

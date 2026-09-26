@@ -103,7 +103,7 @@ function viewer(row, host, afterSave) {
   return () => { active = false; };
 }
 
-export function createBehaviourSurface(initial = {}) {
+function createBehaviourSurface(initial = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('behaviours.title', 'Behaviors'), className: 'behaviour-surface' });
   let rows = [];
   const stones = createPhalanx({ className: 'behaviour-stones', renderDetail: (item, host) => viewer(item.row, host, refresh) });

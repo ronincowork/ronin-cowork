@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { tiles } from './state.js';
 
-export const LS_THEME = 'tmuxgrid.theme';
+const LS_THEME = 'tmuxgrid.theme';
 
 /** The owner's CHOICE on THIS DEVICE: a light or dark pin, or 'auto' — follow the
  *  Campaign's configured theme (the Machine Settings control), else the house light. */
@@ -92,7 +92,7 @@ function mirrorLightness([r, g, b]) {
 }
 
 /** The 240, for xterm's `extendedAnsi`. Index 0 is colour 16. */
-export function termCube() {
+function termCube() {
   const mode = getComputedStyle(document.documentElement).getPropertyValue('--term-cube').trim();
   const out = [];
   for (let n = 16; n < 256; n++) {

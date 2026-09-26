@@ -135,7 +135,7 @@ export function createWarmTerminalPool({
     const entry = entries.get(name);
     if (!entry?.host) return false;
     container.append(entry.host.el);
-    if (active === name) { entry.host.reveal?.(); entry.host.fit(); }
+    if (active === name) entry.host.fit();
     else park(name);
     return true;
   };

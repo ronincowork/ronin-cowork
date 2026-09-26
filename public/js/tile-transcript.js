@@ -413,7 +413,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     report(result.data, records.length);
   }
 
-  /** The roster row's word on what this Agent is doing. Nothing is polled for it. */
+  /** The home row's word on what this Agent is doing. */
   function setStance(next) {
     const value = typeof next === 'string' ? next : '';
     if (value === stance) return;

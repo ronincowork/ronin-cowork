@@ -5,7 +5,7 @@ import { WorkspacePrimitives } from './workspace-primitives.js';
 import { buildHints } from './terminal-controls.js';
 import { t } from './lexicon.js';
 
-export const WORKBENCH_IDS = Object.freeze(['workspace1', 'workspace2', 'workspace3', 'workspace4']);
+const WORKBENCH_IDS = Object.freeze(['workspace1', 'workspace2', 'workspace3', 'workspace4']);
 const LOWER = new Set(['workspace3', 'workspace4']);
 const COLUMN_OF = Object.freeze({ workspace1: 'workspace1', workspace3: 'workspace1', workspace2: 'workspace2', workspace4: 'workspace2' });
 const SURFACE_DRAG = 'application/x-ronin-workbench-surface';

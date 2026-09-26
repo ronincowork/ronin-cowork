@@ -28,7 +28,7 @@ import { t } from './lexicon.js';
 import { applyPageWords } from './pagewords.js';
 import { installFeedbackButton } from './feedback.js';
 
-export async function init() {
+async function init() {
   const reveal = () => document.documentElement.classList.remove('boot-pending');
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
   // so a tile is born knowing. `stream:false` = the 🔓 tape view is off (no record

@@ -128,7 +128,7 @@ export async function runTerminalAction(tile, action, target) {
   const r = await request(`/api/sessions/${encodeURIComponent(tile.session)}/control-action`, { method: 'POST', json: { intent: action, key: tile.sessionKey || session?.key } });
   if (!r.ok) toast(r.message, false);
 }
-export function terminalSnapshot(tile) {
+function terminalSnapshot(tile) {
   if (tile.tapeMode) return tile.tape?.el?.innerText || tile.body.innerText || '';
   const buffer = tile.term.term.buffer.active;
   const lines = [];

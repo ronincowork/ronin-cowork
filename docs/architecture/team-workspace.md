@@ -50,7 +50,7 @@ one on leave so no transport survives outside the entered destination.
    is waited for while the roster is still arriving, then let go.
 6. The roster renders one card per member and a `＋ Add Agent to Team` card. A card
    is a **reading**: Agent title, 人, SHINGO chip, status (ready · thinking · awaiting
-   input), model, ⛽ context, attached — read off the store's `/api/home` row: handed over
+   input), model, ⛽ context, attached — read off the store's home row: handed over
    on entry, then again each time the server pushes a change. Leaving unsubscribes.
 7. **Click a card** and its Tile goes into the workspace last touched (the one carrying
    the Sessions grid's `.tile.active` highlight); **drag a card** onto a workspace and it
@@ -237,7 +237,7 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
   from roster drag/drop, never stored on the roster.
 - Chat is intentionally empty.
 - No cherry-pick/summary reading on the cards: no service puts such a field on the
-  `/api/home` row.
+  home row.
 - There is no Team-scoped 1/2/4 mode. Sessions retains its separate raw grid.
 - The workspace selects the session it shows. The current Tile header displays its
   session name; roster placement and drag/drop change the selection.

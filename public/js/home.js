@@ -3,23 +3,18 @@
  * HOME DATA — the client's cache of what the server knows about sessions and catalogs.
  *
  * The rows themselves are the store's (js/store.js): the server pushes them on connect and
- * on change, and this module is their reader for the modules that import `homeData` — the
- * launcher and the tile pickers. A change of rows repaints the home panels once.
+ * on change, and this module holds them as `homeData` for the modules that read it.
  *
  * The catalogs (projects) stay best-effort — they change when the owner changes them, and
  * the next successful load heals them without a banner.
  */
 import { request } from './request.js';
 import { subscribe } from './store.js';
-import { tiles } from './state.js';
 import { t } from './lexicon.js';
 
 export let homeData = null; // session list enriched with status + ctx
 
-subscribe('home', (rows) => {
-  homeData = rows;
-  tiles.forEach((tile) => tile.renderHome?.());
-});
+subscribe('home', (rows) => { homeData = rows; });
 
 export let projectData = null; // /api/project-roots: [{name, title, dir, match[], remit, docs[], plans[]}]
 // The provider catalog is not cached here: form-steps.js reads it for the one picker and
@@ -32,7 +27,6 @@ export function onProjects(listener) { projectListeners.add(listener); return ()
 export async function loadProjects() {
   const r = await request('/api/project-roots');
   if (r.ok && Array.isArray(r.data)) projectData = r.data;
-  tiles.forEach((tile) => tile.renderHome?.());
   for (const listener of projectListeners) { try { listener(projectData); } catch (error) { console.error(error); } }
 }
 

@@ -13,7 +13,7 @@ const COLUMNS = [
 const INDEX = Object.fromEntries(COLUMNS.map((column, index) => [column.key, index]));
 let nextHeaderId = 0;
 export const KANBAN_NOT_INSTALLED = 'Unavailable.';
-export const KANBAN_CAMPAIGN_OFF = 'Unavailable.';
+const KANBAN_CAMPAIGN_OFF = 'Unavailable.';
 
 export const taskManagerScope = (value = {}) => {
   const kind = ['desk', 'team', 'agent'].includes(value.kind) ? value.kind : 'team';

@@ -95,7 +95,7 @@ export async function buildPhone() {
 
   let agentsPainted = ''; // what the Agents screen last drew — identical readings skip the repaint
   let host = null; // the one terminal host, alive only on the terminal screen
-  let stageTile = null; // the mounted tile inside it — for the slow work-record clock
+  let stageTile = null; // the mounted tile inside it — its transcript mode is remembered on close
   let sheet = null; // its メ sheet — dies with the host
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
   const transcriptModeKey = 'ronin.phone.transcript-modes';

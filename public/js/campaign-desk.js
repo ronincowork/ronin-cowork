@@ -38,7 +38,7 @@ export const choice = (name, options, current, why, onPick) => {
 /** A skin token, said as a word: `stock` → Stock. The catalog's labels are these. */
 export const skinWord = (skin) => (skin ? skin[0].toUpperCase() + skin.slice(1) : '');
 /** A rireki_view token, in the words the Output picker already uses — one literal key each, so the gate can see them. */
-export const tileWord = (view) => ({
+const tileWord = (view) => ({
   locked: t('output.locked', 'Locked'),
   terminal_mirror: t('output.terminal_mirror', 'Terminal Mirror'),
 }[view] || view);

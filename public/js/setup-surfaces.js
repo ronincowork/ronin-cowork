@@ -46,7 +46,7 @@ const action = (label, kind, onClick) => {
 };
 const servicesReady = (runtime = {}) => runtime?.services?.active === true || runtime?.services?.installed === true || runtime?.services?.switched_on === true;
 
-export const SERVICE_COMPONENTS = Object.freeze([
+const SERVICE_COMPONENTS = Object.freeze([
   { id: 'task_manager', label: 'Task manager', status: 'beta', needs: 'Adds a shared project board and quick summaries of active work.' },
   { id: 'terminal_transcript', label: 'Terminal transcript', status: 'comingSoon', needs: 'Records terminal activity for transcript views and downstream summaries.' },
   { id: 'voice_hotwords', label: 'Voice & Hotwords', status: 'comingSoon', needs: 'Adds voice tools and corrections for words dictation commonly mishears.' },
@@ -56,7 +56,7 @@ export const SERVICE_COMPONENTS = Object.freeze([
   { id: 'local_weights', label: 'Local weights', status: 'beta', needs: 'Provides locally stored model weights for features that need them.' },
 ]);
 
-export function serviceComponentRows(installed, masterOn) {
+function serviceComponentRows(installed, masterOn) {
   const parked = new Set((installed?.services?.capabilities?.parked || []).map((item) => item.name));
   return SERVICE_COMPONENTS.map((component) => ({
     v: component.id,

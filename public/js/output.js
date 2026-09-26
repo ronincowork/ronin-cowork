@@ -14,7 +14,7 @@ import { t } from './lexicon.js';
  * RIREKI_CLEANLINESS.md, the Koshi redirect. The client half below is left standing for
  * that, inert while nothing can select it.
  */
-export function OUTPUTS() {
+function OUTPUTS() {
   return [
     ['locked', t('output.locked', 'Locked')],
     ['terminal_mirror', t('output.terminal_mirror', 'Terminal Mirror')],

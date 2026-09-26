@@ -56,7 +56,7 @@ export function build() {
   }
   // Resumed tab (esp. mobile — a backgrounded page can live for days) or one restored from
   // bfcache: renew the store — a socket that went reconnects now, and the new connection is
-  // sent the session list and the rows whole. Nothing here keeps a clock or re-reads a list.
+  // sent the session list and the rows whole.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') renew();
   });

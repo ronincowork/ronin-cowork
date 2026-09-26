@@ -1,5 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
-export const DRAG_TYPE = 'text/x-ronin-session';
+const DRAG_TYPE = 'text/x-ronin-session';
 /** A doc dragged off the ▧ Docs list: its short reference (`dir/name`), for a composer. */
 export const DOC_MIME = 'text/x-ronin-doc';
 

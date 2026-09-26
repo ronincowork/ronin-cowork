@@ -221,7 +221,7 @@ export function kindTiles(current, onPick) {
  * the library door stands greyed so the shelf is not mistaken for the whole offer.
  */
 /** ONE TEMPLATE BOX — the launch forms' and the Campaign page's, so the two look the same by construction. */
-export function templateBox(art, label, blurb, picked, act) {
+function templateBox(art, label, blurb, picked, act) {
   const cell = el('button', 'fs-tmpl');
   cell.type = 'button';
   cell.title = blurb;

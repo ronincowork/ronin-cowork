@@ -2,8 +2,8 @@
 import { t } from './lexicon.js';
 
 
-export let failBar = null;
-export const failSeen = new Set();
+let failBar = null;
+const failSeen = new Set();
 
 /** Put a failure on screen. Nothing here may throw — it is the last line of defence. */
 export function showFailure(where, err) {

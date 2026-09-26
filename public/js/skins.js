@@ -2,7 +2,7 @@
 import { request } from './request.js';
 import { applyTheme } from './theme.js';
 
-export const LS_SKIN = 'tmuxgrid.skin';
+const LS_SKIN = 'tmuxgrid.skin';
 const STYLE_ID = 'skin';
 
 /**
@@ -10,7 +10,7 @@ const STYLE_ID = 'skin';
  * names none) leaves an empty block, which is the correct no-op: the shipped values win
  * because nothing overrides them.
  */
-export function applySkin(skin) {
+function applySkin(skin) {
   let el = document.getElementById(STYLE_ID);
   if (!el) {
     el = document.createElement('style');

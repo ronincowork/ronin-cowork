@@ -1,5 +1,5 @@
 /* Versioned content boundary for the reusable garden canvas. */
-export const GARDEN_CANVAS_VERSION = 2;
+const GARDEN_CANVAS_VERSION = 2;
 export const GARDEN_REGION_KEYS = Object.freeze(['question', 'cta', 'copy', 'media']);
 
 const text = (value) => typeof value === 'string' ? value.trim() : '';

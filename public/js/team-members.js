@@ -14,10 +14,10 @@ export const agentTitle = (session) => session.title || String(session.name || '
 const agentName = (session) => String(session.identity?.cli || session.agent || session.session_type || 'Agent')
   .split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 
-// Every pushed home row and every Team projection publish land in the panel renderers; redrawing unconditionally flashed
-// the form's loading line, refetched three catalogs, and wiped a half-typed edit. The
+// Every pushed home row and every Team projection publish land in the panel renderers. The
 // renderers compare this string — the durable roster, each member line, the add-select's
-// candidates — and tear the panel down only when it moves.
+// candidates — and tear the panel down only when it moves, so the form's loading line, its
+// catalogs and a half-typed edit survive a push.
 export const configSignature = (name) => {
   const roster = teamByName(name);
   const line = (s) => [s.name, !!s.team_lead, agentTitle(s), s.session_type || ''];
