@@ -28,12 +28,14 @@ const { sayWhenUnreachable } = await import('../public/js/events.js');
 const bar = () => body.children.find((child) => child.id === 'failbar');
 const lines = () => (bar()?.children || []).filter((c) => c.className === 'failbar-line').map((c) => c.textContent);
 
-test('a socket that never opens shows the message; an open that delivers sessions clears it', () => {
+const MESSAGE = 'cannot reach Ronin: the live connection is closed; what this page shows may be out of date. It reconnects on its own.';
+
+test('the bar is up while the socket is closed — at boot and after — and each open takes it down', () => {
   sayWhenUnreachable();
   store.connect();
   sockets[0].readyState = 3;
-  sockets[0].onclose(); // the server did not answer
-  assert.deepEqual(lines(), ['could not load the session list: Ronin did not answer on /events']);
+  sockets[0].onclose(); // the server did not answer at boot
+  assert.deepEqual(lines(), [MESSAGE]);
 
   store.renew(); // the store's own retry, brought forward
   sockets[1].readyState = 1;
@@ -41,9 +43,25 @@ test('a socket that never opens shows the message; an open that delivers session
   sockets[1].onmessage({ data: JSON.stringify({ t: 'sessions', list: [{ name: 'alpha' }] }) });
   assert.equal(bar(), undefined, 'the open took the failure off the screen');
 
-  // Once the page has its list, a dropped connection is the retry's business, not a banner.
+  // The server goes away after boot: the page says so, once, however often the retry fails.
   sockets[1].readyState = 3;
   sockets[1].onclose();
-  assert.equal(bar(), undefined);
+  store.renew();
+  sockets[2].readyState = 3;
+  sockets[2].onclose();
+  assert.deepEqual(lines(), [MESSAGE]);
+
+  store.renew();
+  sockets[3].readyState = 1;
+  sockets[3].onopen();
+  assert.equal(bar(), undefined, 'the reopen cleared it');
   console.error = quiet;
+});
+
+test('desktop and phone both say it, before their socket opens', async () => {
+  const { readFile } = await import('node:fs/promises');
+  for (const file of ['main.js', 'phone.js']) {
+    const text = await readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
+    assert.match(text, /guard\('say when Ronin is unreachable', sayWhenUnreachable\);\s*guard\('session event stream', connect\)/, file);
+  }
 });

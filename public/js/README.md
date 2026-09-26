@@ -70,7 +70,7 @@ below describes implementation ownership; use the surface index above to find a 
 | `widgets.js` | `makeDial`, `makeGauge`, `setInert`, the job menu |
 | `glyphs.js` | THE RULED GLYPHS — one face per ruled word (reach, recruit, output, dial, kind) for ask()'s squares; `glyph(axis, value)`, `ruledRows(axis, values, word)` |
 | `ask.js` | ERABI, THE ONE SELECTOR UTILITY — `ask(spec)`: reading stones, the tray, the two shapes, switches, groups (ronin-lab `SELECTORS.md`; docs/architecture/ui.md § Asking a question) |
-| `events.js` | what the `/events` messages mean to the page — birth/death chips, the transcript, draft, Mika and Setup feeds and their handler sets, `openSessionSomewhere`, and `sayWhenUnreachable` (the failure bar while the socket has never delivered a session list) |
+| `events.js` | what the `/events` messages mean to the page — birth/death chips, the transcript, draft, Mika and Setup feeds and their handler sets, `openSessionSomewhere`, and `sayWhenUnreachable` (the failure bar while the socket is closed, desktop and phone) |
 | `store.js` | THE STORE — the one `/events` socket (`connect`, `renew`) and the server's resources, all by push only: `home`, `sessions`, `teams`; `get`, `subscribe`. It reads nothing over REST |
 | `home.js` | THE DATA CACHE — `homeData` read from the store, `loadProjects`, `stanceLabel` (the provider catalog is form-steps.js's) |
 | `form-steps.js` | the drawn form idiom, and THE ONE PICKER — `providerModelPair`, `loadProviderCatalog` (rows come joined from the server) |

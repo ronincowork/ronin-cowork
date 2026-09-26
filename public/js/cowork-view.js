@@ -626,8 +626,8 @@ export function createCoworkView(options = {}) {
   };
   const disarmPrewarm = () => window.clearTimeout(dwellTimer);
 
-  // taken"). The readings ride /api/home's row — the same row the Commons roster reads:
-  // MICHI's SHINGO chip, the status, the model, the context gauge. The store hands them
+  // A MEMBER'S READINGS ride its /api/home row: MICHI's SHINGO chip, the status, the
+  // model, the context gauge. The store hands them
   // over on entry and again each time the server pushes a change; nothing is guessed when a
   // reading is absent. RIREKI's cherry-pick or summary joins the row when the service
   // contributes it; there is no field for it today.

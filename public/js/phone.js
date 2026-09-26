@@ -13,7 +13,7 @@
 import { trackAppHeight } from './appheight.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
-import { sessionsHandlers } from './events.js';
+import { sayWhenUnreachable, sessionsHandlers } from './events.js';
 import { connect, renew } from './store.js';
 import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
 import { loadProjects, projectData } from './home.js';
@@ -388,6 +388,7 @@ export async function buildPhone() {
   }
   // A tile address mounts its tile now: the terminal attaches by name and needs no list.
   if (route.screen === 'terminal') guard('phone paint', render);
+  guard('say when Ronin is unreachable', sayWhenUnreachable);
   guard('session event stream', connect);
   guard('load projects', loadProjects); // the launch card's project_root fallback
   guard('phone paint', render);

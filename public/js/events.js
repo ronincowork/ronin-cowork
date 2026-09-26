@@ -50,15 +50,14 @@ store.listen('setup-progress', (m) => { if (Array.isArray(m.steps)) for (const f
 store.reduce('sessions', onSessionsEvent);
 
 /**
- * THE PAGE SAYS WHEN IT CANNOT REACH RONIN, and the socket is the truth of that: a socket
- * that closes, or never opens, before the page has had a session list puts the failure
- * on screen; the next open takes it off. The store's own retry is the only retry.
+ * THE PAGE SAYS WHEN IT CANNOT REACH RONIN, and the socket is the truth of that: while the
+ * socket is closed — it never opened, or it dropped after boot — every reading on the page
+ * is frozen, so the failure bar says so; the next open takes it off. The store's own retry
+ * is the only retry. Desktop (main.js) and phone (phone.js) both call this once.
  */
 export function sayWhenUnreachable() {
-  const where = t('errors.no_session_list', 'could not load the session list');
-  store.onClose(() => {
-    if (store.get('sessions') === undefined) showFailure(where, new Error(t('errors.no_socket', 'Ronin did not answer on /events')));
-  });
+  const where = t('errors.unreachable', 'cannot reach Ronin');
+  store.onClose(() => showFailure(where, new Error(t('errors.unreachable_detail', 'the live connection is closed; what this page shows may be out of date. It reconnects on its own.'))));
   store.onOpen(() => clearFailure(where));
 }
 
