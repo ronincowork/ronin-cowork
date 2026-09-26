@@ -71,7 +71,8 @@ below describes implementation ownership; use the surface index above to find a 
 | `glyphs.js` | THE RULED GLYPHS — one face per ruled word (reach, recruit, output, dial, kind) for ask()'s squares; `glyph(axis, value)`, `ruledRows(axis, values, word)` |
 | `ask.js` | ERABI, THE ONE SELECTOR UTILITY — `ask(spec)`: reading stones, the tray, the two shapes, switches, groups (ronin-lab `SELECTORS.md`; docs/architecture/ui.md § Asking a question) |
 | `events.js` | the `/events` socket, birth/death chips, `openSessionSomewhere` |
-| `home.js` | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault` (the provider catalog is form-steps.js's) |
+| `store.js` | THE STORE — the one socket and the resources pushed on it (`home`, `sessions`, `desks`, `teams`); `get`, `subscribe`, the snapshot read on reconnect |
+| `home.js` | THE DATA CACHE — `homeData` read from the store, `refreshHome` (the store's snapshot read) + the catalog loaders, `homeFault` (the provider catalog is form-steps.js's) |
 | `form-steps.js` | the drawn form idiom, and THE ONE PICKER — `providerModelPair`, `loadProviderCatalog` (rows come joined from the server) |
 | `workbench-catalog.js` / Workbench surface definitions | The canonical destination profile and stable-type catalog. A destination supplies resident data and factories through its environment; `create()` builds the surface and its `show()`/`enter()` starts only that surface's reads. [Workbench construction](../../docs/architecture/workbench.md) owns the inventory, first-open/refresh/structured-launch rules, and dependency contract. |
 | `provider-surface.js` | THE ONE MODEL PROVIDERS SURFACE, seated by Ronin Setup and Ronin Settings — per provider, Yours (the steps and the sign-in tile) then The catalog |
