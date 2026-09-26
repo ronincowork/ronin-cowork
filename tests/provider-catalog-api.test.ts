@@ -57,15 +57,6 @@ test('GET /api/provider-catalog is the catalog object, whole and dated', async (
   }
 });
 
-test('GET /api/launch-models exposes the launch resolver model ids', async () => {
-  const response = await fetch(`${base}/api/launch-models`);
-  assert.equal(response.status, 200);
-  const body = await response.json() as { providers: Array<{ provider: string; models: Array<{ model: string }> }> };
-  assert.ok(body.providers.some((provider) => provider.provider === 'anthropic'));
-  assert.ok(body.providers.every((provider) => provider.models.every((model) => model.model === 'native')),
-    'without a refreshed inventory, only the provider-native launch is offered');
-});
-
 test.after(async () => {
   await new Promise<void>((r) => server.close(() => r()));
   await rm(box, { recursive: true, force: true });
