@@ -13,7 +13,7 @@ export function buildTileDocView(tile) {
   close.title = t('docs.close_agent', 'Close documents and return to this Agent');
   root.append(close);
 
-  const docs = buildDocs(tile, root, (name) => name === tile.session);
+  const docs = buildDocs(root, (name) => name === tile.session);
   const leave = () => {
     if (!tile.surfaceHost.is('docs')) return true;
     if (docs.leave()) {
