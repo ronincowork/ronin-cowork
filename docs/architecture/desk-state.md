@@ -30,7 +30,7 @@ gets no invented desk state.
 
 | Route | Answers |
 |---|---|
-| `GET /api/desks` | every live session's desks and roll-up, keyed by session; memoised a few seconds. The browser reads it when a Work Record opens; nothing pushes it |
+| `GET /api/desks` | every live session's desks and roll-up, keyed by session; memoised a few seconds, for tools. `?session=<name>` answers that session's own entry of the same object (`{}` when it is not live) without computing every desk on the box; the Work Record ladder reads that form when it opens. Nothing pushes either |
 | `GET /api/sessions/:name/desks` | one session: `{ session, live, desks[], rollup }` |
 | `GET /api/teams/:name/desks` | every member's desks, **plus parked desks of sessions that are gone** (`live: false`) — the lead's *hand in · inspect · reassign · discard* list — the team line seen per repository (`lines`), because one roster `branch` cannot name two repos' lines, and `promotion`: the last complete team promotion and any receipt still blocking the team (advancing or interrupted), from Track 2's ledger |
 

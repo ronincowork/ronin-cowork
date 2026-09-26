@@ -101,9 +101,15 @@ export function registerDesks(app: express.Express): void {
     catch (e) { res.status(409).json({ error: String((e as Error)?.message ?? e) }); }
   });
 
-  app.get('/api/desks', async (_req, res) => {
+  // ?session=<name> answers that session's own entry of the same keyed object ({} when it
+  // is not live), read without computing every desk on the box; the bare form is for tools.
+  app.get('/api/desks', async (req, res) => {
+    const session = String(req.query.session ?? '').trim();
     try {
-      res.json(await loadDesks());
+      if (!session) return res.json(await loadDesks());
+      if (!isValidName(session)) return res.status(400).json({ error: 'Invalid session name.' });
+      if (!(await sessionExists(session))) return res.json({});
+      res.json({ [session]: await desksOf(session, await locator()) });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }

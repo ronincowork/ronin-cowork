@@ -27,6 +27,7 @@ import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate, type SessionWithAxes } from '../tegami.js';
 import { collectBirthLines, collectRowFields } from '../sockets.js';
+import { pushTeams } from '../ws/events.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
@@ -312,7 +313,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (await sessionExists(MIKA_SESSION)) return res.json({ ok: true, name: MIKA_SESSION, already: true });
       try {
         mikaHome = await ensureMikaHome();
-        if (loader === RONIN_HELPER_LOADER) await ensureRoninHelpersTeam();
+        if (loader === RONIN_HELPER_LOADER) { await ensureRoninHelpersTeam(); void pushTeams(); }
         mikaSelection = await resolveConfiguredMikaModel();
       } catch (error) {
         if (error instanceof MikaUnavailable) {
