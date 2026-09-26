@@ -26,9 +26,10 @@ already in use or restoration fails, the archive remains available for recovery.
   consequences before confirming.
 - **Hide/close view** removes the tile from view; the Agent keeps running.
 
-Ronin stores session metadata for restoration. The provider owns the conversation history;
-archive does not make a separate transcript backup. Readable recording is currently parked
-in Services, so do not depend on it to recover a conversation.
+Ronin stores session metadata for restoration, and with Terminal transcript on it keeps a
+copy of the conversation in the session folder, which archive retains. The provider still
+owns the original journal. Closed, unarchived session folders are removed after the
+retention period (a Campaign setting, default seven days).
 
 Agents can use `session_archive` and `session_restore`; their help gives the current syntax.
 Contributors: [archive identity, persistence, and API](../architecture/session-archive.md).

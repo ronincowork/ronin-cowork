@@ -107,6 +107,28 @@ test('assign and return move one whole project across the roster boundary', asyn
   assert.equal((await readTeamRoster('alpha'))?.projects.some((p) => p.id === assigned.id), true);
 });
 
+test('concurrent assignments cannot restore a Project removed by the other assignment', async () => {
+  const one = await writeTeamIdea('alpha', undefined, { title: 'Parallel one', objective: 'Move once.' });
+  const two = await writeTeamIdea('alpha', undefined, { title: 'Parallel two', objective: 'Move once too.' });
+  const held = new Map<string, Project>();
+  const move = async (input: { direction: 'place'; session: string; project: Project } | { direction: 'return'; session: string; projectId: string }) => {
+    if (input.direction === 'place') {
+      held.set(input.project.id, input.project);
+      return { project: input.project, projectsRemaining: held.size };
+    }
+    const project = held.get(input.projectId)!;
+    held.delete(input.projectId);
+    return { project, projectsRemaining: held.size };
+  };
+  await Promise.all([
+    assignTeamProject('alpha', one.project.id, 'one', move),
+    assignTeamProject('alpha', two.project.id, 'two', move),
+  ]);
+  const roster = await readTeamRoster('alpha');
+  assert.equal(roster?.projects.some((project) => project.id === one.project.id || project.id === two.project.id), false);
+  assert.deepEqual([...held.keys()].sort(), [one.project.id, two.project.id].sort());
+});
+
 test('the settled nested shapes round-trip, and an edit touches only what it states', async () => {
   const r = await writeTeamRoster('alpha', { title: 'Alpha Platform' });
   assert.equal(r.title, 'Alpha Platform');

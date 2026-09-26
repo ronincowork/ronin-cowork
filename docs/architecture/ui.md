@@ -221,6 +221,17 @@ shape: `{ok, status, data}` or `{ok:false, kind, message, retryable}`. It never 
 for a transport outcome, never toasts, never retries a mutation, and knows no Ronin
 vocabulary. Documented exceptions: `voice.js` (audio blob), `stats.js` (beacon).
 
+The failure kinds are `network` (it never reached Ronin), `abort` (the caller cancelled),
+`http` (Ronin answered with a failing status — the status is the story, whatever the body
+looked like), and `malformed` (the status said success and the body was there but could not
+be read; retryable, because the next read usually gets it).
+
+**An empty body and an unreadable one are different answers.** A 200 or 204 that genuinely
+said nothing decodes to `{}` and is success. A 200 whose body arrived in pieces is a
+failure, and a feature that reads emptiness as a real state — no records, no documents, no
+rows — must be able to tell the two apart. Folding them together is how a phone came to
+report "No transcript output yet." while the server was sending 637 records.
+
 Where a failure LANDS is a product decision, by scope:
 
 | Scope | Surface | Rule |
@@ -239,6 +250,28 @@ Native dialogs: `confirm()` is the destructive-confirm primitive (kill session, 
 edits) — it is modal, keyboard-correct and honest. `prompt()` is tolerated for one-line
 name entry only. `alert()` is not used.
 
+## Work-surface ownership
+
+A viewport has one surface owner and one named active tenant. `surface-host.js` holds the
+catalog of sibling Tile tenants (`term`, `tape`, `chat`, `docs`) and writes the sole active
+name to `data-surface`; the siblings render that decision and do not compete through
+z-index or maintain a second visibility flag. Navigation chooses a tenant. It does not
+construct another viewer for the same work.
+
+The invariant is deliberately small: **one host, catalogued sibling tenants, one active
+tenant**. A tenant owns its enter/leave boundary and may refuse departure (Docs does so for
+unsaved edits). Focus, sizing and teardown follow the active tenant. Adding a work surface
+means registering another sibling with the host, not adding another overlay condition to
+the shell.
+
+Phone consolidation follows the same rule: Team Docs and an Agent menu must enter one
+page-owned Docs viewer/editor, never two controllers that happen to share a builder. Until
+that routing is on the promoted tree, it remains an architectural gap rather than something
+the CSS may disguise. The active phone Tile may be destroyed when another Agent is chosen;
+its transcript listener and watch are disposed, while page-level transcript state may remain
+bounded and later catch up from its committed cursor. Hidden or destroyed tenants must not
+leave a socket, poll or focus target behind.
+
 ## Update paths — what causes a surface to change
 
 The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`);
@@ -254,11 +287,42 @@ next to a predicate that stops it costing anything while its surface is hidden.
 | pane data (wipeboard, docs list, roots, koshi, stats) | the pane module | its own gated poll (2s/2s/15s) or `enter()` — each owner is the file the surface lives in |
 | tile bytes | `TileWire` (`tilewire.js`) | the socket; reconnect/backoff lives there and nowhere else |
 
-Lifecycle is deliberately simple: the page is the unit. Tiles, rooms and sheets are
-built once at boot and live for the page — nothing unmounts, so there is no disposal
-contract to forget; hidden surfaces cost nothing because their polls are gated on
-visibility predicates, not torn down. If a surface ever becomes destroyable, it takes
-a `destroy()` owner at that moment, not speculatively.
+### Transcript reading transport
+
+A transcript tab opens with a bounded tail, then registers its Agent and reading on
+`/events`. Live records arrive only for that subscription. After the event socket closes,
+the replacement socket repeats the watch and the tab makes one bounded `after=<committed>`
+walk; every fetched or pushed record enters one sequence-keyed set, so overlap is harmless
+and a record is rendered once in sequence order. The reading remains a server filter:
+records excluded from Chat still advance the journal checkpoint but do not become Chat
+rows.
+
+The promoted phone acceptance on 2026-09-24 keeps these results separate:
+
+- **Live phone Chat push passed:** one record went journal → event frame → DOM in 237ms
+  (6ms frame → DOM), with no transcript GET, one DOM copy, no unrelated-Agent frame and
+  no browser or network error.
+- **Real reconnect transport passed:** closing the client event socket produced a new open
+  socket after 3.086s and exactly one `after=1825` GET.
+- **Outage reading filtering and duplicate prevention passed:** natural records 1826–1828
+  were `act` records, so Chat correctly returned an empty page at checkpoint 1828; nothing
+  appeared before reconnect and the DOM remained duplicate-free.
+- **Missed phone Chat recovery under real traffic is unknown:** no `say` record existed in
+  that outage, so there was no Chat-admitted record to recover. The deterministic recovery
+  regression passes, but it is not relabelled as real-traffic evidence.
+- **Post-promotion open passed on `19450aab`:** a fresh Binary phone tab began in Term with
+  no Agent watch, then one Chat press registered `{session:"binary", reading:"chat"}` at
+  the start of the bounded tail request. Under the established 400ms RTT / 50KB/s envelope,
+  `tail=30` returned HTTP 200 with 26,370 bytes (916ms imposed transfer delay); the first
+  entry was visible 1,443ms after the press and 30 entries rendered. The independent
+  availability probe was `tail=1`, 1,282 bytes and 426ms. The check sent no message and
+  changed no store.
+
+Lifecycle has two explicit owners. Long-lived workspace rooms are page-owned and gate their
+polls on visibility. Disposable phone Tiles are host-owned: destroying one closes its
+transport, disposes its transcript handler/watch, observer, composer and timers, and removes
+it from the Tile registry. A surface is never treated as page-lived merely because an older
+desktop composition happened not to unmount it.
 
 ## Transient surfaces
 
@@ -573,7 +637,7 @@ own format: two numbered steps — Team (ID · Title · Kind, then Purpose) and 
 defaults (the groups) — at the forms' tight density. Its text entries are the kit's, beside
 the stones, not inside them. Contract and file list: `docs/architecture/team-workspace.md` § Durable Team record.
 
-**What is not an `ask()`.** The stone work surface (`stone-work-surface.js`) is a page for
+**What is not an `ask()`.** The Phalanx surface (`phalanx.js`) is a page for
 browsing a collection whose item is the content — Presets, Workspace Folders, Model
 providers, Templates — and stays. Tabs, the Presets kind filter, and the
 2 ⇄ 4 button are not selections from a list. The tile head owns its current Output and

@@ -5,7 +5,7 @@ import { loadProjects } from './home.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFolderPicker } from './folder-picker.js';
-import { createStoneWorkSurface } from './stone-work-surface.js';
+import { createPhalanx } from './phalanx.js';
 import { ask } from './ask.js';
 import { finalizeTeamName, sanitizeTeamName } from './new-team-draft.js';
 
@@ -36,7 +36,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   messages.setAttribute('role', 'status');
   let stoneSurface = null;
   if (stones) {
-    stoneSurface = createStoneWorkSurface({
+    stoneSurface = createPhalanx({
       className: 'setup-roots-stones',
       onSelectionChange: (id) => {
         if (id !== editing) editing = null;

@@ -352,7 +352,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.sell_head:** What Ronin Services adds
 - **campaign_view.sell_library:** The template library — teams and agents Ronin keeps and grows, with the books and tools they use, installed with one press.
 - **campaign_view.sell_assistant:** A background assistant that keeps every agent’s work record and instructions current, so the roster and the tile say what each agent is doing.
-- **campaign_view.sell_transcripts:** Readable transcripts are not in this beta; the recorder is off while it is refactored.
+- **campaign_view.sell_transcripts:** Readable transcripts of each Agent's conversation, kept in its session folder and shown on the tile.
 - **campaign_view.sell_voice:** Text to voice, and voice in — hear a report read back; speak to an agent from the tile.
 - **campaign_view.sell_hotwords:** Hotwords — teach dictation the words it mishears, once, for every session.
 - **campaign_view.sell_memory:** Unified team memory — what a session learns is kept for the team and recalled at birth.
@@ -393,6 +393,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_home.coworks_is:** Your Teams and Agents
 - **campaign_home.launch:** New Project
 - **campaign_home.launch_is:** Start a new Team or Agent
+- **campaign_home.desk:** Desk
+- **campaign_home.desk_is:** All Teams, Agents, and work
+- **campaign_home.team:** Team
+- **campaign_home.team_is:** Choose a Team and open its Workbench
+- **campaign_home.agent:** Agent
+- **campaign_home.agent_is:** Choose an Agent and open its Workbench
+- **campaign_home.settings:** Settings
 - **campaign_home.version:** v1.3
 - **campaign_home.check_updates:** Check for updates
 - **campaign_home.checking:** Checking…
@@ -472,9 +479,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.mode_agent:** Agent
 
 ## home — home.js (the status words and the launch receipt)
-- **home.status_ready:** ready
-- **home.status_thinking:** thinking…
-- **home.status_awaiting_input:** awaiting input
+- **home.stance_working:** working…
+- **home.stance_replying:** replying…
+- **home.stance_awaiting_you:** awaiting you
+- **home.stance_asking:** asking you
 
 ## settei — settei.js (the ⚙ Configuration tab)
 - **settei.saving:** saving…
@@ -597,13 +605,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.required:** Required
 - **forms.reason_not_on_machine:** not on this machine
 - **forms.reason_turned_off:** turned off
-- **forms.reason_not_listed:** not listed by your {cli} {client_version}
-- **forms.model_unlisted:** not listed by this CLI
 - **forms.provider_off:** {name} — not on this machine
 - **forms.model_word:** {model} · {tier}
 - **forms.model_off:** {model} · {tier} — not on this machine
-- **forms.model_list_current:** {verdict} by your {cli} {client_version}{as_of}
-- **forms.model_list_stale:** {verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
@@ -728,6 +732,20 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team_kanban.beta_message:** Task Manager is in beta. Follow Projects from ideas to done using Tools and the Work Record. We’re making it easier for Agents to keep them current without forcing upkeep.
 - **team_kanban.header_collapse:** Collapse
 - **team_kanban.header_expand:** Expand
+- **team_kanban.back:** Back to Task Manager
+- **team_kanban.project:** Project
+- **team_kanban.status_projects:** Projects by status
+- **team_kanban.project_missing:** This Project is not in the current scope.
+- **team_kanban.stage:** Status
+- **team_kanban.holder:** Holder
+- **team_kanban.progress:** Progress
+- **team_kanban.next:** Next
+- **team_kanban.evidence:** Evidence
+- **team_kanban.open_project:** Open Project
+- **team_kanban.open_owner:** Open @{name}
+- **team_kanban.waiting:** waiting on
+- **team_kanban.asked:** asked
+- **team_kanban.desk_summary:** Projects across this Desk’s Teams and Agents
 - **team.lead:** Team lead
 - **team.flip_commons:** Show the Team commons in this workspace
 - **team.flip_terminal:** Show the terminal in this workspace
@@ -1475,13 +1493,23 @@ The catalog entry goes. {dir} is not touched.
 ## bar — layout.js
 - **bar.keys_title:** Esc, ^C, jump to latest, Tab and the arrows
 
+## transcript — tile-transcript.js (the tile's journal view)
+- **transcript.title:** Transcript
+- **transcript.toggle:** Transcript
+- **transcript.terminal:** Term
+- **transcript.toggle_help:** Term → Chat → Notes → Work → All → Term: each press shows more of the record
+- **transcript.no_session:** Transcript — no Agent in this tile
+- **transcript.loading:** Loading transcript…
+- **transcript.empty:** No transcript output yet.
+- **transcript.unavailable:** Transcript unavailable for this Agent.
+- **transcript.failed:** Transcript could not be loaded. Retrying…
+- **transcript.stance_working:** Working
+- **transcript.stance_asking:** Waiting for your answer
+- **transcript.read_only:** Transcript is read only
+
 ## output — output.js (the RIREKI view picker)
 - **output.locked:** Locked
 - **output.terminal_mirror:** Terminal Mirror
-- **output.detailed:** Detailed
-- **output.condensed:** Condensed
-- **output.cherry_pick:** Cherry Pick
-- **output.agent_summary:** Agent Summary
 - **output.aria:** Output
 - **output.title:** Output shown in this tile
 
@@ -1505,6 +1533,7 @@ The catalog entry goes. {dir} is not touched.
 
 ## request — request.js (the client's own two messages)
 - **request.cancelled:** cancelled
+- **request.malformed:** Ronin answered, but the answer did not arrive whole
 - **request.unreachable:** could not reach Ronin — network or server down
 
 ## head — tilehead.js (the tile head's help and quiet words)
@@ -1547,6 +1576,8 @@ The catalog entry goes. {dir} is not touched.
 - **pad.w_wispr:** Wispr push-to-talk (right ⌥) — Wispr handles it, Ronin stays out of the way
 
 ## bar — layout.js (the ニ sheet)
+- **bar.expand_header:** Expand header
+- **bar.collapse_header:** Collapse header
 - **bar.keys:** Keys
 - **bar.ni_title:** Ronin — keys, home, new session, board, pad
 - **bar.new:** New
@@ -1567,10 +1598,13 @@ The catalog entry goes. {dir} is not touched.
 - **me.control:** Control
 - **me.kill:** Kill session
 - **me.output:** Output
+- **me.minimize:** Minimize
+- **me.agent_title:** This Agent — work record, docs, output, close
 - **me.title:** This session — status, work record, groups, docs, note, control
 
 ## keys — keysrow.js (the composer's keys row)
-- **keys.backspace:** Backspace
+- **keys.escape_face:** Esc
+- **keys.escape:** Escape
 
 ## composer — the ✕ clear
 
@@ -1585,7 +1619,7 @@ The catalog entry goes. {dir} is not touched.
 - **phone.agents:** Agents
 - **phone.docs:** Docs
 - **phone.back:** Back
-- **phone.me_title:** This Agent — work record, docs, note, control, kill
+- **phone.me_title:** This Agent — work record, docs, output, close
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 
@@ -1649,7 +1683,7 @@ The catalog entry goes. {dir} is not touched.
 - **tile.session_ended:** session ended.
 - **output.title_off:** Output — Locked only. Ronin Services is off for this Agent.
 - **output.title_locked:** Output — Locked only. Ronin Services is not installed.
-- **output.title_choose:** Output — choose the live terminal or a RIREKI view
+- **output.title_choose:** Output — the live terminal, or Locked to watch without typing
 
 ## tape — the summary default and the alt note
 - **tape.no_summary:** No summary has been written yet.
@@ -1882,6 +1916,21 @@ The catalog entry goes. {dir} is not touched.
 - **league.delete_team:** Delete team
 - **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
 - **league.members:** Team members
+- **league.people:** People
+- **league.people_reading:** People reading
+- **league.roster_reading:** Roster
+- **league.org_reading:** Org chart
+- **league.no_lead_title:** Team lead not assigned
+- **league.no_lead_help:** Assign an Agent already on this Team, or add a new Agent for the role.
+- **league.choose_lead:** Choose an Agent as team lead
+- **league.no_lead_candidates:** No current Agents to assign
+- **league.assign_lead:** Assign lead
+- **league.add_lead_agent:** Add new Agent
+- **league.add_lead_prompt:** Join this Team as its team lead.
+- **league.unplaced_agents:** Other Agents
+- **league.hierarchy_unset:** Reporting lines are not set, so these Agents remain unplaced.
+- **league.expand_people:** Expand Agent details
+- **league.compact_people:** Compact Agent details
 - **league.role_unset:** Role not set
 - **league.team_lead:** Team Lead
 - **league.make_team_lead:** Make Lead
@@ -1961,7 +2010,12 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.
-- **setup_surface.model_candidates:** Listed by the CLI, missing from the catalog
+- **setup_surface.refresh_all:** Refresh all model providers
+- **setup_surface.refreshing_all:** Refreshing…
+- **setup_surface.last_ran:** Last ran {date}
+- **setup_surface.never_ran:** Never run — every provider offers Native only until it runs.
+- **setup_surface.models_read:** Model list read {date} by {cli} {version}
+- **setup_surface.models_not_read:** Model list not read yet — press Refresh all model providers.
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.fact_installed:** Installed
 - **setup_surface.fact_signed_in:** Signed in

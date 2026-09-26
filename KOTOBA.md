@@ -45,6 +45,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Ronin | The product; a repository, artifact, installed copy, and running operator are distinct things ([Release](docs/development/release.md)) |
 | Coworkspace | The whole browser UI ([Workbench](docs/using-ronin/workbench.md)) |
 | Surface | A visible UI held in a workspace; contributor change areas are navigation categories, not UI objects or directories |
+| Phalanx | A shared collection surface: stones stand in formation at rest, then move into a side rail when one is selected so that stone's detail can occupy the surface ([Workbench](docs/architecture/workbench.md)) |
 | Workspace | A numbered browser slot holding a tile or another surface |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
 | Ronin Home / Ronin Setup / Ronin Settings | Home destination, first-use workbench, and ongoing Desk configuration workbench |
@@ -61,6 +62,15 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Worktree | Private working folder and branch with explicit custody for managed repository work; distinct from an engagement Desk and a Desk profile ([Worktrees](docs/architecture/worktrees.md)) |
 | Commit / hand-in / promotion / Git push | Private checkpoint / admission to Team review / admission to global dev / remote publication; not synonyms |
 | Desk profile | Owner-selected presentation defaults ([Desk profiles](docs/architecture/desk-profiles.md)) |
+| Transcript (`transcript`) | Ronin's copy of an Agent's conversation as its CLI wrote it; one file per session in the session folder. Readings are views of it; terminal output is not a transcript ([Tile](docs/using-ronin/tile.md)) |
+| Transcript reading (`transcript_view`) | A filter over the transcript, named by the server and offered by the tile in order, never a rewrite; adding a reading is adding a row. Stock readings are `chat_view`, `notes_view`, `work_view`, `all_view` ([Tile](docs/using-ronin/tile.md)) |
+| Chat view (`chat_view`) | Only what the person and the Agent said; what Koe speaks; the only reading on a phone ([Tile](docs/using-ronin/tile.md)) |
+| Notes view (`notes_view`) | Chat plus the gaps: session start, interruption, segment seams ([Tile](docs/using-ronin/tile.md)) |
+| Work view (`work_view`) | Notes plus each tool call and code block as one line, output collapsed ([Tile](docs/using-ronin/tile.md)) |
+| All view (`all_view`) | Everything the journal holds, injected lines and tool output included; the evidence view ([Tile](docs/using-ronin/tile.md)) |
+| Term (`term_view`) | The live terminal in the tile; not a reading, and what the view toggle returns to ([Tile](docs/using-ronin/tile.md)) |
+| View toggle (`view_toggle`) | The tile-head control cycling `term_view` → `chat_view` → `notes_view` → `work_view` → `all_view` → `term_view` on a desk, and `term_view` ↔ `chat_view` on a phone; it names where you are, goes opaque when the Agent has nothing to show, and says why on press ([Tile](docs/using-ronin/tile.md)) |
+| Agent stance (`agent_stance`) | What an Agent is doing now: working, replying, awaiting you, asking, unknown. Derived by the backend and sent; the tile never infers it ([Tile](docs/using-ronin/tile.md)) |
 
 ## Services and state
 
@@ -85,7 +95,7 @@ use the glossary's plain terms. **Koshi** is an existing UI name and an explicit
 | Name | Current meaning |
 |---|---|
 | MICHI / TEGAMI / SHINGO | Work-record service contribution / stored record / UI reading |
-| RIREKI | Readable-transcript implementation; currently parked, so do not promise a recording |
+| RIREKI | Optional transcript service: reads provider journals through launch identity into the per-session transcript and serves its readings. The former terminal recorder is retained on disk as the future source for CLIs with no journal |
 | OBOERU | Memory terminology; not an active part in the Services manifest |
 | TOMODACHI / SOROBAN | Stats and counting contracts |
 | KOSHI | Ronin's helper agents |

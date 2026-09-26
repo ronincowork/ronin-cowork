@@ -8,8 +8,53 @@ import { buildPadPanel } from './padpanel.js';
 import { buildNotePanel } from './panels.js';
 import { IS_TOUCH, S, tiles } from './state.js';
 import { isCoarse } from './tiledrop.js';
+import { t } from './lexicon.js';
 
 export function build() {
+  const bar = document.getElementById('bar');
+  const island = document.getElementById('viewisland');
+  if (bar && island) {
+    // THE CARET RIDES THE ISLAND, AND ONLY THE CARET EVER LEAVES IT. Collapsing hides
+    // #bar, so the one control that reopens the header has to outlive the bar: it docks
+    // to the body, fixed over the work surfaces' header, deliberately a little in the
+    // way so the fold can always be toggled back. The island itself never moves. It is
+    // one island, shaped once, and it goes down with the bar it belongs to — nothing
+    // re-parents it into a header it was never shaped for.
+    const collapse = document.createElement('button');
+    collapse.type = 'button';
+    collapse.className = 'header-collapse app-header-collapse';
+    const home = document.createComment('header-collapse-home');
+    island.append(home, collapse);
+    const sync = () => {
+      const closed = bar.classList.contains('header-collapsed');
+      collapse.textContent = closed ? '⌄' : '⌃';
+      collapse.setAttribute('aria-expanded', String(!closed));
+      collapse.setAttribute('aria-label', closed ? t('bar.expand_header', 'Expand header') : t('bar.collapse_header', 'Collapse header'));
+    };
+    const restore = () => {
+      if (!bar.classList.contains('header-collapsed')) return;
+      home.after(collapse);
+      collapse.classList.remove('header-collapse-docked');
+      bar.classList.remove('header-collapsed');
+      sync();
+    };
+    collapse.addEventListener('click', () => {
+      if (bar.classList.contains('header-collapsed')) {
+        restore();
+        return;
+      }
+      // The body, not a surface header: the caret must not depend on finding a header to
+      // live in, and collapsing the application header must never cost a work surface its
+      // own title and actions.
+      document.body.append(collapse);
+      collapse.classList.add('header-collapse-docked');
+      bar.classList.add('header-collapsed');
+      sync();
+    });
+    window.addEventListener('hashchange', restore);
+    window.matchMedia('(pointer: coarse) and (min-width: 681px)').addEventListener?.('change', restore);
+    sync();
+  }
   // Each wiring block is guarded separately: losing one control must not cost the
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
   document.addEventListener('visibilitychange', () => {

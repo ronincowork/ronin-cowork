@@ -8,6 +8,8 @@
 - **launch_model_dangerously:** ["grok", "--model", "{model}", "--always-approve"]
 - **launch_resume:** —
 - **launch_new_session_id:** —
+- **launch_isolation:** —
+- **transcript_journal:** —
 - **launch_initial:** positional
 
 CLI id: `grok`. Catalog provider: xAI. Reviewed 2026-09-14.

@@ -56,8 +56,43 @@ export async function request(url, opts = {}) {
       cause,
     };
   }
-  // An empty 204/200 body decodes to {}: "success said nothing" is a legal answer
-  // and must not be reported as a failure of the call that succeeded.
-  const body = await res.json().catch(() => null);
+  /*
+   * NOTHING AND UNREADABLE ARE NOT THE SAME ANSWER.
+   *
+   * This used to be `res.json().catch(() => null)`, which folded both into "success said
+   * nothing": a 200 whose body never arrived whole came back as ok with {}, and every
+   * caller that reads emptiness as a legitimate state believed it. The owner watched his
+   * phone say "No transcript output yet." while the server was sending 637 records —
+   * the view was not wrong, it was told there were none.
+   *
+   * So the body is read as text and the two cases are separated. An empty body is still a
+   * legal answer and still decodes to {}. A body that is THERE and cannot be understood is
+   * a failure of this call, and a retryable one, because the next read usually gets it.
+   *
+   * A failed status keeps its own shape: when the server said 500, the story is the 500,
+   * not the shape of the page it sent with it.
+   */
+  let raw;
+  try {
+    raw = await res.text();
+  } catch (cause) {
+    // The body was announced and could not be read at all — a decode or a cut-off read.
+    if (!res.ok) return shapeResult(res.status, false, null);
+    return { ...malformed(res.status), cause };
+  }
+  if (!raw) return shapeResult(res.status, res.ok, null);
+  let body;
+  try {
+    body = JSON.parse(raw);
+  } catch (cause) {
+    if (!res.ok) return shapeResult(res.status, false, null);
+    return { ...malformed(res.status), cause };
+  }
   return shapeResult(res.status, res.ok, body);
+}
+
+/** The answer said success and part of it could not be read. */
+function malformed(status) {
+  return { ok: false, status, kind: 'malformed',
+    message: t('request.malformed', 'Ronin answered, but the answer did not arrive whole'), retryable: true };
 }

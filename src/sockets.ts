@@ -1,4 +1,5 @@
 import type { BornInfo, RowFields, Sockets } from './sockets-contract.js';
+import { deliverToWatchers } from './ws/watchers.js';
 
 type BootHook = { start(): void | Promise<void>; stop?(): void };
 const bootHooks: BootHook[] = [];
@@ -6,17 +7,22 @@ const willBornHooks: Array<(name: string) => void | Promise<void>> = [];
 const bornHooks: Array<(info: BornInfo) => void | Promise<void>> = [];
 const birthLineHooks: Array<(name: string, agent: boolean) => Promise<string> | string> = [];
 const endHooks: Array<(name: string, key: string) => void | Promise<void>> = [];
+const watchHooks: Array<(session: string) => void | Promise<void>> = [];
 const rowContribs: Array<(session: string) => Promise<RowFields> | RowFields> = [];
 const routeMounts: Array<(app: unknown) => void> = [];
 let streamHandler: ((...args: unknown[]) => void) | undefined;
 
 export const sockets: Sockets = {
+  resolveTranscriptSource: async (name) => (await import('./launch-journal.js')).resolveTranscriptSource(name),
   registerBoot: (h) => void bootHooks.push(h),
   onSessionWillBorn: (cb) => void willBornHooks.push(cb),
   onSessionBorn: (cb) => void bornHooks.push(cb),
   addBirthLines: (cb) => void birthLineHooks.push(cb),
   onSessionEnd: (cb) => void endHooks.push(cb),
+  onTranscriptWatch: (cb) => void watchHooks.push(cb),
   addRowFields: (cb) => void rowContribs.push(cb),
+  // Connections are Core's; what a reading admits is the part's. This is the seam.
+  deliverToWatchers: (session, make) => deliverToWatchers(session, make),
   addRoutes: (m) => void routeMounts.push(m),
   setStreamHandler: (h) => void (streamHandler = h),
 };
@@ -60,6 +66,16 @@ export async function collectBirthLines(name: string, agent: boolean): Promise<s
   }
   return out;
 }
+/**
+ * A tab said what it is watching. The owner's words: "if the user starts tracking a session,
+ * that's a good place to make sure we have a watcher instead of silently watching transcripts
+ * which don't exist." An Agent already being watched is unaffected; one that is not gets a
+ * watcher, and installing one catches up what was written while nothing was watching.
+ */
+export function emitTranscriptWatch(session: string): void {
+  for (const cb of watchHooks) void Promise.resolve(cb(session)).catch((e) => console.error('[sockets] watch hook:', e));
+}
+
 export function emitSessionEnd(name: string, key: string): void {
   for (const cb of endHooks) void Promise.resolve(cb(name, key)).catch((e) => console.error('[sockets] end hook:', e));
 }

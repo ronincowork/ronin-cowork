@@ -1,0 +1,5 @@
+Grok Build 1.2.3
+
+Available models:
+  * grok-4.6 (default)
+  * grok-4.3

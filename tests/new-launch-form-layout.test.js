@@ -62,7 +62,7 @@ test('both workbench entrances use the canonical New Agent form with contextual 
   assert.doesNotMatch(cowork, /createAddAgentView/);
   assert.doesNotMatch(cowork, /WB_TYPES\.addAgent|addAgentBySeat|environment\.addAgent/);
   assert.match(cowork, /registerWorkbenchCatalog\(\)/);
-  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.team, \[WORKBENCH_TYPES\.commons, WORKBENCH_TYPES\.kanban, WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.newAgent, BEHAVIOUR_SURFACE_TYPE/);
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.team, \[[^\]]*WORKBENCH_TYPES\.commons[^\]]*WORKBENCH_TYPES\.teamChart[^\]]*WORKBENCH_TYPES\.newAgent[^\]]*BEHAVIOUR_SURFACE_TYPE/);
   assert.match(cowork, /const newAgentBySeat = \{\};[\s\S]*newAgent: \(id, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{[\s\S]*consumed,[\s\S]*team: \(\) =>/);
   assert.match(cowork, /openTeamDefaults:[\s\S]*putCommons\(oppositeSeat\(id\), 'team-configuration'\)/);
   assert.match(cowork, /const deskDefaultsRequest = \(\) => \(\{ destination: 'campaign', mode: 'replace', state: \{[\s\S]*workspace1: 'campaign\.defaults', workspace2: 'setup\.launch-own'/);
@@ -179,7 +179,6 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.doesNotMatch(agents, /switch:[^\n]+word:/);
   assert.match(agents, /density: 'tight'/);
   assert.match(agents, /tierWord\(item\.tier\)/);
-  assert.match(agents, /modelAvailabilityFact/);
   assert.doesNotMatch(agents, /forms\.provider_off|forms\.provider_turned_off|machine\?\.state|modelWord\([^)]*\)\.split/);
   assert.match(agents, /box\.append\(actions\.el, field/);
   assert.doesNotMatch(agents, /wk-button/);
@@ -229,7 +228,6 @@ test('New Team routes each selector region through ask() and leaves Templates br
   assert.match(form, /many: true, shape: 'tall', options: shelfRows/);
   assert.equal((form.match(/density: 'tight'/g) || []).length, 2, 'both defaults regions use launch density');
   assert.match(form, /tierWord\(row\.tier\)/);
-  assert.match(form, /modelAvailabilityFact/);
   assert.doesNotMatch(form, /forms\.provider_off|forms\.provider_turned_off|machine\?\.state|modelWord\([^)]*\)\.split/);
   assert.match(form, /templateTray\(offered\(\)/);
   assert.doesNotMatch(form, /kindTiles|providerModelPair|mandateSelect|dialRowMulti|wayTiles|bookShelves|createWhereItWorks|fs-routine/);

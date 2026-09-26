@@ -19,7 +19,18 @@ CLI. Models, prices and owner overrides belong to the
 Each Agent page is the executable authority for its no-model/model and
 native-approval/dangerous command combinations, plus Resume, new-session-id and
 initial-prompt forms. `src/agent-launches.ts` reads those argv
-fields; unsupported forms are `—`. This keeps the commands we use in one auditable place
+fields; unsupported forms are `—`. A nonempty `launch_new_session_id` chooses command-owned
+identity (`minted`); an existing explicitly named id is kept, never minted over. Otherwise
+`launch_isolation` declares an environment variable, its default home, and the one journal
+subdirectory to keep private (`isolated`). With neither capability, the outcome is
+`unbound`. Every process start, including restore and plain shells, passes through
+`src/launch-binding.ts`; the strategy table prepares identity before starting the process.
+
+`launch_isolation` mirrors every existing home entry by symlink except its declared
+private journal directory, which is a real directory under the Ronin session store.
+There is no per-file inheritance list. `transcript_journal` declares the source format,
+root, filename pattern, header id field and child-record marker. The model catalog carries
+descriptive source observations; executable CLI mechanics live here. This keeps the commands we use in one auditable place
 beside the upstream alternatives we deliberately do not use. `src/agents.ts` owns
 install/update/version and identity-discovery adapters. Each Agent page also owns its
 executable `stop_keys` and `clear_keys` fields. Ronin reads that page when an

@@ -10,6 +10,7 @@
  * tile the head is hidden and the bar's one メ sheet holds the head's own controls,
  * RELOCATED not cloned, so every handler and live widget keeps the owner it always had.
  */
+import { trackAppHeight } from './appheight.js';
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
@@ -59,6 +60,8 @@ const docsHash = (team) => '#/d/' + encodeURIComponent(team);
 const sessionHash = (team, session) => '#/s/' + encodeURIComponent(team) + '/' + encodeURIComponent(session);
 
 export async function buildPhone() {
+  // The visible height before anything is laid out in it — see js/appheight.js.
+  trackAppHeight();
   const root = document.getElementById('phone');
   if (!root) throw new Error('the mobile document has no #phone');
   const bar = root.querySelector('.ph-bar');
@@ -94,7 +97,19 @@ export async function buildPhone() {
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — for the slow work-record clock
   let sheet = null; // its メ sheet — dies with the host
+  let roster = null; // the roster clock, which the desk has in layout.js and the phone lacked
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
+  const transcriptModeKey = 'ronin.phone.transcript-modes';
+  let savedTranscriptModes = {};
+  try { savedTranscriptModes = JSON.parse(sessionStorage.getItem(transcriptModeKey) || '{}') || {}; } catch {}
+  const transcriptModes = new Map(Object.entries(savedTranscriptModes).filter(([, chat]) => chat === true));
+  const rememberTranscriptMode = (session, chat) => {
+    if (!session) return;
+    if (chat) transcriptModes.set(session, true);
+    else transcriptModes.delete(session);
+    try { sessionStorage.setItem(transcriptModeKey, JSON.stringify(Object.fromEntries(transcriptModes))); } catch {}
+  };
+  const transcriptCache = new Map(); // session + reading → records/cursor retained while Tiles come and go
 
   /* ---------- screen 1 · the Teams ---------- */
   const paintTeams = () => {
@@ -267,32 +282,57 @@ export async function buildPhone() {
   const openTerminal = () => {
     const { team, session } = route;
     closeTerminal();
-    host = createTerminalTileHost({ mode: 'reduced' });
+    host = createTerminalTileHost({ mode: 'reduced', transcriptCache });
     const term = el('div', 'ph-term');
     term.append(host.el);
     main.replaceChildren(term);
     const tile = host.mount(session);
     stageTile = tile;
+    if (transcriptModes.get(session)) {
+      // The phone's one reading is Chat. Naming it now lets the transcript restore its
+      // snapshot immediately instead of first opening the route's default reading.
+      tile.transcriptReadings = [{ name: 'chat', label: 'Chat' }];
+      tile.toggleTranscript();
+    }
     tile.composer?.el.querySelector('.keysrow')?.append(feedbackAction);
 
     sheet = makeDrop('メ', t('phone.me_title', 'This Agent — work record, docs, output, close'), 'me');
     const node = (key) => tile[key]?.el ?? tile[key];
+    const transcriptBtn = node('transcriptBtn');
+    transcriptBtn.addEventListener('click', () => rememberTranscriptMode(session, tile.transcriptOn));
     sheet.addRow(node('workRecordBtn'), t('me.ladder', 'Work record'));
     sheet.addRow(node('docsBtn'), t('me.docs', 'Docs'));
     // No Services, no choice: the Output row only exists where an unlocked view does.
     if (!tile.servicesOff()) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
     sheet.addRow(node('killBtn'), 'Close');
 
+    // The desk refreshes the roster on its own clock (layout.js) and the phone had none, so
+    // a row's own facts — what the Agent is doing — never arrived here at all. Same data and
+    // the same cadence, not a second poll of anything.
+    void refreshHome();
+    clearInterval(roster);
+    roster = setInterval(() => { if (document.visibilityState === 'visible') void refreshHome(); }, 8000);
+
     // The 📄 menu hangs off the hidden tile head; here it hangs off the bar.
+    //
+    // So does the reading toggle, and it is a toggle here rather than a dial: the owner's
+    // ruling of 2026-09-23 is Term or Chat on a phone, in the head where the desktop keeps
+    // it, never a row in a menu ("It should have the same toggle as the desktop"). The
+    // button is the tile head's own — hidden when the route offers this Agent nothing,
+    // opaque when it has nothing yet, naming where you are, exactly as on the desktop.
     bar.replaceChildren(
       backLink(teamHash(team)),
       el('span', 'ph-title', agentLabel(S.sessions.find((row) => row.name === session) || { name: session })),
+      transcriptBtn,
       sheet.btn,
       sheet.menu,
       tile.docsBtn.menu,
     );
   };
   const closeTerminal = () => {
+    if (stageTile?.session) rememberTranscriptMode(stageTile.session, stageTile.transcriptOn);
+    clearInterval(roster);
+    roster = null;
     sheet?.close();
     sheet = null;
     host?.destroy();

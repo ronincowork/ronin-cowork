@@ -9,7 +9,7 @@ import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
+  createStep, el, loadProviderCatalog, mandateWord, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
@@ -70,11 +70,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     });
   const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider).map((row) => ({
     v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: row.cost || '',
-    off: !row.operational
-      ? (row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'))
-      : !row.selectable
-        ? modelAvailabilityFact(row)
-        : undefined,
+    off: row.selectable ? undefined : row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
   }));
 
   /** What a template authors, as one string — the dirty test compares against it. */

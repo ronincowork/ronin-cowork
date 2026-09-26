@@ -9,25 +9,24 @@ import {
   sessionExists,
   setSessionIdentity,
   setLeads,
-  setProviderSessionId,
   setCampaign,
   setProjectRoot,
   setTags,
 } from '../tmux.js';
-import { launchArgv, newProviderSession } from '../agents.js';
+import { launchArgv } from '../agents.js';
 import { AtSessionMax, liveCount, readAgentsSection, readMax, readOwner, writeMax, writeOwner } from '../machine-state.js';
 import { resolveForm, type SpawnForm } from '../spawn.js';
 import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
-import { classifyStatus, createActivityCache } from '../status.js';
+import { asksForInput, classifyStatus, createActivityCache } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
-import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
+import { collectBirthLines, collectRowFields } from '../sockets.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
@@ -231,10 +230,13 @@ export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'act
 export function registerLaunch(app: express.Express): LaunchControl {
   type MikaReady = Awaited<ReturnType<LaunchControl['ensureMika']>>;
   let mikaStarting: Promise<MikaReady> | null = null;
+  // The pane is still read, for two things a journal cannot state: whether a dialog is
+  // open, and the CLI's own context gauge. What the Agent is DOING comes from its journal,
+  // through the transcript part's row field — no spinner is matched here any more.
   const loadPaneStatus = createActivityCache(async (name: string) => {
     const text = await capturePane(name, 0);
     return {
-      status: classifyStatus(text),
+      asking: asksForInput(text),
       ctx: scanContext(text),
       model: scanModel(text),
     };
@@ -244,14 +246,19 @@ export function registerLaunch(app: express.Express): LaunchControl {
     return Promise.all(
       list.map(async (s) => {
         const [pane, contributed, tegami] = await Promise.all([
-          loadPaneStatus(s.name, s.activity).catch(() => ({ status: null, ctx: null, model: null })),
+          loadPaneStatus(s.name, s.activity).catch(() => ({ asking: false, ctx: null, model: null })),
           collectRowFields(s.name),
           readTegami(s.name),
         ]);
+        const { asking, ...reading } = pane;
         return {
           ...s,
-          ...pane,
+          ...reading,
           ...contributed,
+          // ONE field, and one precedence: an Agent stopped at a question is `working` as
+          // far as its journal knows, and `working` is the wrong thing to tell the person
+          // whose answer it is waiting for.
+          stance: asking ? 'asking' : (contributed.stance ?? 'unknown'),
           ...(tegami ? { tegami } : {}),
         };
       }),
@@ -404,7 +411,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
     }
 
     try {
-      await emitSessionWillBorn(resolved.name); // rireki resets a reused name's stale tape here
       const launchWords = resolved.session_type === 'bare_metal_agent' ? (form.prompt ?? '') : resolved.brief;
       launch = resolved.agent ? await launchArgv(resolved.cmd, launchWords) : { argv: [], parked: false };
       if (resolved.agent && !launch.argv.length) {
@@ -413,8 +419,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
           error: `Could not find ${resolved.cmd.trim().split(/\s+/)[0]} on this machine. Install it from ⚙ Configuration, then launch again.`,
         });
       }
-      const providerSession = await newProviderSession(resolved.launchAgent, launch.argv);
-      launch.argv = providerSession.argv;
       routineTools = resolved.agent
         ? await projectRoutineTools(
             resolved.name,
@@ -431,6 +435,8 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const transcriptOn = (await readCampaign(campaignId))?.config.services.parts.terminal_transcript === true;
       await createSession(resolved.name, resolved.dir, {
         agent: resolved.agent,
+        cli: resolved.launchAgent,
+        team: resolved.team,
         exempt: resolved.capExempt,
         argv: launch.argv,
         // Told at birth, the way tmux tells every shell where its server is: the socket
@@ -461,7 +467,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (form.team_lead && resolved.team) await setLeads(resolved.name, [resolved.team]);
       if (resolved.project_root && resolved.session_type !== 'bare_metal_agent') await setProjectRoot(resolved.name, resolved.project_root);
       await setCampaign(resolved.name, campaignId);
-      if (providerSession.id) await setProviderSessionId(resolved.name, providerSession.id);
       if (resolved.session_type === 'cowork_agent') {
         await seedTegami(
           resolved.name,
@@ -483,12 +488,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
     }
 
     count('born', { name: resolved.name, born: 'launch' });
-    emitSessionBorn({
-      name: resolved.name,
-      team: resolved.team,
-      root: resolved.project_root,
-      cmd: resolved.cmd,
-    });
+
 
     if (resolved.session_type === 'bare_metal_agent') {
       res.json({
@@ -513,6 +513,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         tags: resolved.tags,
         team_lead: !!form.team_lead && !!resolved.team,
         kind: resolved.kind,
+        mandate: resolved.mandate,
         behaviours: resolved.behaviours,
         ignored: [...new Set([...accepted.ignored, ...resolved.ignored])].sort(),
         undelivered: [...new Set(resolved.undelivered)].sort(),

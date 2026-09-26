@@ -19,12 +19,12 @@ class FakeNode {
 globalThis.Node = FakeNode;
 globalThis.document = { createElement: (tag) => new FakeNode(tag), createTextNode: (text) => Object.assign(new FakeNode('#text'), { textContent: text }) };
 
-const { createStoneWorkSurface } = await import('../public/js/stone-work-surface.js');
+const { createPhalanx } = await import('../public/js/phalanx.js');
 const { createStatusMarker } = await import('../public/js/status-marker.js');
 
-test('shared stone surface selects, refreshes, opens external detail, and restores focus on Escape', () => {
+test('Phalanx selects, refreshes, opens external detail, and restores focus on Escape', () => {
   const rendered = [];
-  const surface = createStoneWorkSurface({
+  const surface = createPhalanx({
     items: [{ id: 'one', label: 'One', secondary: '/one', state: 'ready' }, { id: 'two', label: 'Two' }],
     renderDetail: (item, host) => { rendered.push(item.id); host.append(new FakeNode('article')); },
   });
@@ -59,7 +59,7 @@ test('shared stone surface selects, refreshes, opens external detail, and restor
 
 test('stone state can update without disposing or reconstructing an open detail', () => {
   let renders = 0;
-  const surface = createStoneWorkSurface({
+  const surface = createPhalanx({
     items: [{ id: 'one', label: 'One', state: 'waiting' }],
     renderDetail: (_item, host) => { renders += 1; host.append(new FakeNode('article')); },
   });
@@ -73,7 +73,7 @@ test('stone state can update without disposing or reconstructing an open detail'
 
 test('shared status markers are compact, token-driven, and can be placed on any stone', async () => {
   const marker = createStatusMarker('beta');
-  const surface = createStoneWorkSurface({ items: [{ id: 'one', label: 'One', marker }] });
+  const surface = createPhalanx({ items: [{ id: 'one', label: 'One', marker }] });
   assert.equal(surface.el.querySelectorAll('[data-sws-id]')[0].children[1], marker);
   assert.equal(marker.textContent, 'Beta');
   assert.equal(marker.dataset.status, 'beta');

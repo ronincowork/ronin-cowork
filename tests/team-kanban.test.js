@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { definedTargets, kanbanAvailability, KANBAN_NOT_INSTALLED, moveMessage, waitingOn } from '../public/js/team-kanban.js';
+import { definedTargets, kanbanAvailability, KANBAN_NOT_INSTALLED, moveMessage, projectsForScope, taskManagerScope, waitingOn } from '../public/js/team-kanban.js';
 
 const project = (values = {}) => ({
   id: 'virtual-kanban/7', title: 'Kanban tab', objective: 'Render it.', holder: 'tab_cut',
@@ -95,7 +95,26 @@ test('card expansion and owner opening are sibling controls, never nested intera
   assert.match(moduleSource, /node\('button', 'tk-card-toggle'\)/);
   assert.doesNotMatch(moduleSource, /card\.setAttribute\('role', 'button'\)|card\.tabIndex/);
   assert.match(moduleSource, /toggle\.setAttribute\('aria-expanded'/);
-  assert.match(moduleSource, /if \(!event\.target\.closest\('button'\)\) toggleOpen\(\)/);
+  assert.match(moduleSource, /toggle\.addEventListener\('click', toggleOpen\)/);
+  assert.match(moduleSource, /if \(!event\.target\.closest\('button'\)\) navigate\('project', project\.id\)/);
+  assert.match(moduleSource, /team_kanban\.open_project', 'Open Project'/);
+});
+
+test('Task Manager scope derives Team lists and filters Agent-held Projects without copying authority', () => {
+  assert.deepEqual(taskManagerScope({ kind: 'desk', teams: () => ['alpha', 'beta', 'alpha'] }), { kind: 'desk', teams: ['alpha', 'beta'], agent: '' });
+  const scope = taskManagerScope({ kind: 'agent', agent: 'surface-tasks', teams: ['surface', 'other'] });
+  assert.deepEqual(scope, { kind: 'agent', teams: ['surface', 'other'], agent: 'surface-tasks' });
+  assert.deepEqual(projectsForScope([
+    project({ id: 'surface/2', holder: 'surface-tasks' }),
+    project({ id: 'surface/2', holder: 'surface-tasks' }),
+    project({ id: 'surface/3', holder: 'someone-else' }),
+  ], scope).map((item) => item.id), ['surface/2']);
+});
+
+test('status and Project drill-downs are standalone Workbench surface types', () => {
+  assert.match(moduleSource, /openSurface\?\.\(nextView, detail\)/);
+  assert.match(moduleSource, /view === 'project'/);
+  assert.match(moduleSource, /view === 'status'/);
 });
 
 test('a failed move request uses house copy rather than the raw response message', () => {

@@ -26,8 +26,9 @@ Machine status are on unless you switch them off; the rest start off. Choosing
 
 The operator restart is separate from your Agent terminal sessions. After a restart, check
 the displayed Services state instead of assuming the switch alone proves a feature loaded.
-Readable recording and local weights are currently parked; do not rely on the package
-alone to provide readable transcripts or an active local model service.
+Terminal transcript reads the conversation the CLI itself writes and keeps a copy in the
+Agent's session folder; it needs both the package and the switch. Local weights are
+currently parked; do not rely on the package alone for an active local model service.
 
 ## What is sent
 

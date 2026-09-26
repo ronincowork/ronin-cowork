@@ -143,7 +143,7 @@ test('login form returns to the protected browser route, including its fragment'
       document: { getElementById: element }, URLSearchParams,
       location: { search, hash, replace: (url: string) => { returned = url; } },
       window: { isSecureContext: false }, matchMedia: () => ({ matches: false }),
-      fetch: async (url: string) => ({ ok: true, json: async () => url === '/api/passkey/options' ? { registered: false } : { ok: true } }),
+      fetch: async (url: string) => ({ ok: true, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => url === '/api/passkey/options' ? { registered: false } : { ok: true } }),
     });
     await element('f').submit({ preventDefault() {} });
     assert.equal(returned, expected);

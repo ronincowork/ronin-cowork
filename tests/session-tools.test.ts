@@ -25,9 +25,9 @@ async function fixture(
         res.end(JSON.stringify(sessions));
         return;
       }
-      if (req.method === 'GET' && req.url === '/api/launch-models') {
+      if (req.method === 'GET' && req.url === '/api/provider-catalog') {
         const facts = modelFacts ?? { provider: 'fixture-provider', cli: 'fixture-cli', model: `fixture-model-${process.pid}` };
-        res.end(JSON.stringify({ providers: [{ provider: facts.provider, cli: facts.cli, label: 'Fixture Provider', models: [{ model: facts.model, display_name: 'Friendly Fixture', tier: 'fixture-tier' }] }] }));
+        res.end(JSON.stringify({ providers: [{ provider: facts.provider, cli: facts.cli, provider_label: 'Fixture Provider', models: [{ model: facts.model, name: 'Friendly Fixture', tier: 'fixture-tier' }] }] }));
         return;
       }
       if (req.method === 'GET' && req.url === '/api/setup/runtime') {
@@ -114,7 +114,7 @@ test('creation help renders exact launch ids, availability, and Campaign default
   assert.doesNotMatch(result.output, /--root <path>/);
   assert.doesNotMatch(result.output, /--project|--lead/);
   assert.deepEqual(f.requests.map(({ method, url }) => `${method} ${url}`), [
-    'GET /api/launch-models', 'GET /api/setup/runtime', 'GET /api/launch-seed',
+    'GET /api/provider-catalog', 'GET /api/setup/runtime', 'GET /api/launch-seed',
   ]);
 });
 

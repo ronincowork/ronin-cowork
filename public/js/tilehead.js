@@ -5,6 +5,7 @@ import { buildTileDocs } from './tiledocs.js';
 import { buildTileMentions } from './tilementions.js';
 import { serviceMissing } from './state.js';
 import { makeOutput } from './output.js';
+import { makeDrop } from './tiledrop.js';
 import { t } from './lexicon.js';
 
 /**
@@ -36,6 +37,20 @@ const HEADER = () => {
     on: (tile) => tile.toggleLadder() },
 
   { grow: true },
+
+  { key: 'transcriptBtn', cls: 'transcript-toggle', text: t('transcript.toggle', 'Transcript'), needs: 'session',
+    help: t('transcript.toggle_help', 'Each press shows more of the record; past the last one it returns to the terminal'),
+    quiet: t('transcript.no_session', 'Transcript — no Agent in this tile'),
+    // Opaque when the route says this Agent has nothing to show — any reason, any CLI.
+    state: (tile) => (typeof tile.transcriptQuiet === 'function' ? tile.transcriptQuiet() : ''),
+    pressWhenQuiet: true,
+    read: (tile, el) => {
+      el.hidden = !tile.transcriptAvailable();
+      el.setAttribute('aria-pressed', String(!!tile.transcriptOn));
+      el.textContent = typeof tile.transcriptLabel === 'function' ? tile.transcriptLabel()
+        : (tile.transcriptOn ? t('transcript.terminal', 'Term') : t('transcript.toggle', 'Transcript'));
+    },
+    on: (tile) => tile.toggleTranscript() },
 
   // rireki choices to the terminal header … I want to be able to switch between locked
   // and the different versions of unlocked to see how this looks"). Ugly for now by his
@@ -102,7 +117,8 @@ function quietReason(row, tile) {
     const missing = need === 'session' ? !tile.session : serviceMissing(need);
     if (missing) return (typeof row.quiet === 'object' ? row.quiet[need] : row.quiet) || '';
   }
-  return '';
+  // A row may also go quiet on what it learned about this Agent, with its own reason.
+  return typeof row.state === 'function' ? row.state(tile) || '' : '';
 }
 
 /**
@@ -113,6 +129,20 @@ function quietReason(row, tile) {
  * four neighbours dimmed. Rows carrying their own reading are refreshed by the tile
  * first — this decides only whether they are reachable.
  */
+/**
+ * Whether a press does anything. A quiet control does not — unless the row says its quiet
+ * state is itself worth opening: the transcript button is opaque when there is nothing to
+ * show, and pressing it opens the view that says why in full.
+ */
+export function pressable(row, tile) {
+  return !!row.pressWhenQuiet || !quietReason(row, tile);
+}
+
+/** One header row by key, for a test that wants the real row and not a copy of it. */
+export function headerRow(key) {
+  return HEADER().find((row) => row.key === key) ?? null;
+}
+
 export function syncTileHead(tile) {
   for (const row of HEADER()) {
     const node = tile[row.key]?.el ?? tile[row.key];
@@ -121,6 +151,8 @@ export function syncTileHead(tile) {
     if (row.needs) {
       const why = quietReason(row, tile);
       setInert(node, !!why, why, tile.headHelp[row.key]);
+      // Quiet to the eye, operable to assistive tech: the press opens the reason in full.
+      if (why && row.pressWhenQuiet) node.setAttribute('aria-disabled', 'false');
     }
   }
 }
@@ -161,11 +193,28 @@ export function buildTileHead(tile) {
     // The click is the row's, and the row hands it straight back to the tile. Guarded on
     // the same condition that dims it — an inert control here stays HOVERABLE so it can
     // say why (see setInert), so the refusal has to live in the handler.
-    if (row.on) node.addEventListener('click', () => !quietReason(row, tile) && row.on(tile, node));
+    if (row.on) node.addEventListener('click', () => pressable(row, tile) && row.on(tile, node));
     head.append(node);
     out[row.key] = made ?? node;
     // Controls with a menu hang it off the header rather than inside the button.
     if (made?.menu) head.append(made.menu);
+  }
+  // WIDE TOUCH PUTS THE AGENT'S TOOLS IN ONE PLACE, the way the phone does: the head is
+  // the Agent's name, its reading toggle, and メ. A fold that hid the tools behind a
+  // chevron only traded one tap for another and left the head a different depth from the
+  // surface heads beside it (owner, 2026-09-23). The toggle stays a toggle and never
+  // becomes a row in a menu — the same ruling the phone document already carries.
+  if (window.matchMedia('(pointer: coarse) and (min-width: 681px)').matches) {
+    const sheet = makeDrop('メ', t('me.agent_title', 'This Agent — work record, docs, output, close'), 'me');
+    const row = (key, label, mode) => { if (out[key]?.el || out[key]) sheet.addRow(out[key]?.el ?? out[key], label, mode); };
+    row('workRecordBtn', t('me.ladder', 'Work record'));
+    row('docsBtn', t('me.docs', 'Docs'));
+    row('mentionBtn', t('me.mention', 'Mention session'));
+    row('outputEl', t('me.output', 'Output'), 'stay');
+    row('minimizeBtn', t('me.minimize', 'Minimize'));
+    row('killBtn', t('me.kill', 'Kill session'));
+    head.append(sheet.btn, sheet.menu);
+    out.meSheet = sheet;
   }
   return out;
 }

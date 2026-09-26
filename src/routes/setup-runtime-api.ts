@@ -24,14 +24,14 @@ import {
   closeGitSetupSession,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
-import { measureAndRecordProviders, readProviderSummary, refreshProviderInventory } from '../provider-summary.js';
+import { measureAndRecordProviders, readProviderSummary, refreshProviders } from '../provider-summary.js';
 import type { ProviderSummary } from '../model-providers.js';
 import { readUserIntro, writeUserIntro } from '../user-intro.js';
 
 const errMsg = (error: unknown) => String((error as Error)?.message ?? error).replaceAll(homedir(), '~');
 const EMPTY_PROVIDER_SUMMARY: ProviderSummary = {
-  measured_at: '', installed: [], signed_in: [], operational: [], activated_count: 0,
-  paths: {}, versions: {}, model_lists: {}, model_inventory: {}, latest: {},
+  measured_at: '', refreshed_at: '', installed: [], signed_in: [], operational: [], off: [], activated_count: 0,
+  paths: {}, versions: {}, models: {}, latest: {},
 };
 /** A record-only answer. Setup progress owns every automatic machine measurement. */
 const answer = async (summary?: ProviderSummary) => {
@@ -60,25 +60,14 @@ export function registerSetupRuntime(app: express.Express): void {
     }
   });
 
-  // The one probing door: the Setup Model providers surface and its Check again. Every
-  // other reader takes GET /api/setup/runtime, which is the record.
-  app.post('/api/setup/providers/measure', async (_req, res) => {
-    try {
-      await measureAndRecordProviders();
-      const completion = await refreshProviderInventory();
-      if (completion.state === 'failed' || !completion.summary) throw new Error('Provider inventory refresh failed.');
-      res.json(await answer(completion.summary));
-    } catch (error) {
-      res.status(500).json({ error: errMsg(error) });
-    }
-  });
-
-  // Refresh: the same measure, and then the one outbound ask — the newest release of each
-  // installed CLI whose update line names an npm package. A press, never a timer; each
-  // ask is an egress line. An ordinary measure keeps the last answer and its date.
+  // REFRESH ALL — the one door that reads model lists: the machine facts, then every
+  // activated CLI's own list, then the one outbound ask — the newest release of each
+  // activated CLI whose install line names an npm package. The owner's press, never a
+  // timer; each ask is an egress line. Every other reader takes GET /api/setup/runtime,
+  // which is the record.
   app.post('/api/setup/providers/refresh', async (_req, res) => {
     try {
-      res.json(await answer(await measureAndRecordProviders(undefined, {}, {})));
+      res.json(await answer(await refreshProviders()));
     } catch (error) {
       res.status(500).json({ error: errMsg(error) });
     }
@@ -139,7 +128,8 @@ export function registerSetupRuntime(app: express.Express): void {
     try {
       if (req.body?.sign_in !== undefined) await saveProviderSignIn(String(req.params.provider), req.body.sign_in);
       const result = await completeProviderLogin(String(req.params.provider));
-      res.json({ ok: true, closed: true, activation_recorded: true, activated_at: result.activated_at, attachment: null, runtime: await answer(await measureAndRecordProviders()) });
+      // Done activates a provider: the owner's press, so its model list is read now (owner, 2026-09-25).
+      res.json({ ok: true, closed: true, activation_recorded: true, activated_at: result.activated_at, attachment: null, runtime: await answer(await refreshProviders()) });
     } catch (error) {
       res.status(409).json({ error: errMsg(error) });
     }

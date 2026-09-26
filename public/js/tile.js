@@ -3,7 +3,7 @@ import { fetchSessions, setSessionTitle } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
-import { IS_TOUCH, S, saveState, serviceMissing, serviceParked, tiles, WHEEL_DOWN } from './state.js';
+import { IS_TOUCH, S, saveState, serviceParked, tiles, WHEEL_DOWN } from './state.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
@@ -20,7 +20,10 @@ import { buildTileDocView } from './tile-doc-view.js';
 import { isCoarse } from './tiledrop.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
 import { desksOf, refreshDesks } from './desks.js';
+import { homeData } from './home.js';
 import { t } from './lexicon.js';
+import { makeTileTranscript } from './tile-transcript.js';
+import { createSurfaceHost, TILE_SURFACES } from './surface-host.js';
 
 const readableSession = (name) => {
   const live = S.sessions.find((row) => row.name === name);
@@ -37,11 +40,16 @@ export class Tile {
     // this Tile instance so one open sheet never suppresses another tile's boundary.
     this.retirementId = `tile-${++nextRetirementId}`;
     this.session = null;
+    this.transcriptOn = false;
+    this.transcriptLevel = -1; // index into the route's readings while transcriptOn; -1 is Terminal
+    this.transcriptReadings = []; // what the route offers, in order — T1 is the first
+    this.transcriptState = null; // the route's last word on this Agent: available, empty, reason
+    this.transcriptWantFirst = false; // pressed before the readings were known: move to the first once they are
+    this.transcriptWantChat = false; // touch: open on the reading once the route says this Agent has one
     this.pending = ''; // UNLOCKED: locally-parked typed text (sent as one parcel on Enter)
     this.strip = null; // the thin bar showing this.pending over the tile
     this.composer = null; // the unlocked tile's text entry (built on first use)
     this.tapeAt = null; // last tape offset seen — the resume point on reconnect
-    this.kakiTimer = null;
     // THIS TILE's transport. `S.locked` is only the default a new tile is born with.
     this.output = S.streamOff ? 'locked' : (S.output || (S.locked ? 'locked' : 'terminal_mirror'));
     this.locked = this.output === 'locked';
@@ -52,6 +60,7 @@ export class Tile {
     // references rather than re-queried: on touch these nodes are RELOCATED into the app
     // bar (js/tiledrop.js), and a later `querySelector` on the tile would find nothing.
     Object.assign(this, buildTileHead(this));
+    this.surfaceHost = createSurfaceHost(this.body, TILE_SURFACES, 'term');
     this.onMinimize = typeof options.onMinimize === 'function' ? options.onMinimize : null;
     this.emptyMark = document.createElement('div');
     this.emptyMark.className = 'tile-empty-mark';
@@ -71,6 +80,11 @@ export class Tile {
       onSummaryNow: () => void this.refreshKaki(true, true),
       onSummaryPolicy: (policy) => void this.setKakiPolicy(policy),
     });
+    this.transcriptView = makeTileTranscript({
+      cache: options.transcriptCache,
+      onState: (state) => this.onTranscriptState(state),
+    });
+    this.body.append(this.transcriptView.el);
 
 
     // SHINGO 信号: this session's ladder, read off its TEGAMI. The chip (built with the
@@ -83,6 +97,7 @@ export class Tile {
     this.term = new TermView(this.body, {
       // Locked: key-for-key to the host (the mirror, unchanged). Unlocked: DVR input rules.
       onUserData: (d) => {
+        if (this.transcriptOn) return;
         return this.locked ? this.sendRaw(d) : this.dvrInput(d);
       },
       onProtocolData: (d) => this.wire.sendTerminalReply(d),
@@ -183,8 +198,9 @@ export class Tile {
   /** Point the gauge at the session's context reading (null = no reading, gauge hides). */
   async refreshCtx() {
     const session = this.session;
-    if (!session) {
+    if (!session || this.servicesOff()) {
       this.gauge.set(null);
+      this.setFooter(null, null);
       return;
     }
     const r = await request('/api/sessions/' + encodeURIComponent(session) + '/ctx', { cache: 'no-store' });
@@ -253,6 +269,15 @@ export class Tile {
     void this.docView.open(path);
   }
 
+  /** Term, unlocked output, Chat and Docs are peers in one viewport, never overlays. */
+  syncSurface(includeDocs = true) {
+    const surface = includeDocs && this.docView?.isOpen()
+      ? 'docs'
+      : this.transcriptOn ? 'chat'
+        : this.tapeMode ? 'tape' : 'term';
+    this.surfaceHost.select(surface);
+  }
+
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */
   drawLadder() {
     this.el.querySelector('.shingo-ladder')?.remove();
@@ -284,6 +309,126 @@ export class Tile {
     syncTileHead(this);
   }
 
+  transcriptAvailable() {
+    return Array.isArray(S.services) && S.services.includes('rireki');
+  }
+
+  /**
+   * The readings THIS surface walks, taken from the list the route published for this
+   * Agent. A desk walks all of them. A thumb does not want five detents: the phone is
+   * Terminal or Chat and nothing else, and a tablet is Terminal, Chat and Work — what the
+   * Agent said, and the record of what it did. Notes and the full record are a desk's
+   * business (owner, 2026-09-23).
+   *
+   * Named, never sliced by length: a reading added on the server joins the desk's cycle
+   * and leaves the thumb surfaces exactly as they were.
+   */
+  transcriptCycle() {
+    const readings = Array.isArray(this.transcriptReadings) ? this.transcriptReadings : [];
+    // A thumb gets the terminal or the conversation and nothing else, on a tablet exactly
+    // as on a phone — there is no third press (owner, 2026-09-26). The tablet briefly had
+    // Work as well; one rule for every touch screen is both what was asked for and one
+    // fewer thing to keep in step, so the phone no longer needs a case of its own.
+    if (isCoarse()) return readings.slice(0, 1);
+    return readings;
+  }
+
+  /**
+   * One button, one direction, ending back at the terminal. The tile keeps no list of its
+   * own; the levels index the cycle above.
+   * (Owner, 2026-09-22: the full record shows the docs the Agent read, useless to him;
+   * the lower levels are the point.)
+   */
+  toggleTranscript() {
+    if (!this.session || !this.transcriptAvailable()) return;
+    const readings = this.transcriptCycle();
+    const was = this.transcriptOn;
+    const next = was ? this.transcriptLevel + 1 : 0;
+    const on = !was || next < readings.length;
+    this.transcriptOn = on;
+    this.transcriptLevel = on ? next : -1;
+    this.el.classList.toggle('transcript-on', on);
+    this.syncSurface();
+    if (on) {
+      if (this.body.contains(document.activeElement)) document.activeElement.blur();
+      const view = readings[next]?.name || '';
+      // Pressed before the route has named its readings: enter on whatever it defaults to,
+      // then move to its first reading as soon as the list arrives — the way in is Chat.
+      this.transcriptWantFirst = !was && !view;
+      if (was) this.transcriptView.setReading(view);
+      else this.transcriptView.show(this.session, view);
+    }
+    else { this.transcriptWantFirst = false; this.transcriptView.hide(); }
+    // Reading is not a reason to lose the way to answer (owner, 2026-09-23). The record
+    // is read-only; the entry box beside it still talks to the live Agent, and it is the
+    // same box the phone has always used.
+    this.setComposer(on || this.tapeMode || isCoarse());
+    this.syncHeader();
+    if (!on) this.doFit();
+  }
+
+  /**
+   * The roster answered. Its row already carries what this Agent is doing, so the reading
+   * takes its end-of-conversation indicator from there — no second poll, and no opinion of
+   * its own (owner, 2026-09-23: the backend sends it, the front renders it).
+   */
+  renderHome() {
+    const row = this.session && Array.isArray(homeData) ? homeData.find((r) => r.name === this.session) : null;
+    this.transcriptView.setStance(row?.stance || '');
+  }
+
+  /** The route's word on this Agent's transcript arrived; the header reads it from here. */
+  onTranscriptState(state) {
+    this.transcriptState = state;
+    if (Array.isArray(state.readings) && state.readings.length) this.transcriptReadings = state.readings;
+    // The intention from connect(), spent once. 'Available' means what it means everywhere
+    // else in this tile — the button would be live, not opaque (see transcriptQuiet): an
+    // Agent whose record is unavailable or still empty is better met at its terminal than
+    // at a reading with nothing in it. Pressing the button before the answer lands turns
+    // the transcript on and the intention is dropped rather than fighting the press.
+    if (this.transcriptWantChat) {
+      this.transcriptWantChat = false;
+      if (!this.transcriptOn && state.available && !state.empty && this.transcriptCycle().length) {
+        this.toggleTranscript();
+        return;
+      }
+    }
+    const cycle = this.transcriptCycle();
+    if (this.transcriptOn && this.transcriptWantFirst && cycle.length) {
+      this.transcriptWantFirst = false;
+      const first = cycle[0].name;
+      this.transcriptLevel = 0;
+      if (state.view !== first) this.transcriptView.setReading(first);
+    } else if (this.transcriptOn && state.view) {
+      const at = cycle.findIndex((r) => r.name === state.view);
+      if (at >= 0) this.transcriptLevel = at;
+    }
+    this.syncHeader();
+  }
+
+  /** What the button says: where you are now — Terminal, or the reading on screen. */
+  transcriptLabel() {
+    if (!this.transcriptOn) return t('transcript.terminal', 'Term');
+    const reading = this.transcriptCycle()[this.transcriptLevel];
+    // The route's own word for the reading — Chat, Notes, Work, All — is the label (owner,
+    // 2026-09-22: the names beat T1…T4).
+    return reading ? (reading.label || reading.name) : t('transcript.toggle', 'Transcript');
+  }
+
+  /**
+   * Why the button is opaque, or '' when it is live. Decided by what the route last said
+   * for THIS Agent — unavailable for any reason, or nothing to show yet — never by which
+   * CLI it runs. Pressing still opens the view, which says the same reason in full.
+   */
+  transcriptQuiet() {
+    if (!this.session || !this.transcriptAvailable() || this.transcriptOn) return '';
+    const state = this.transcriptState;
+    if (!state) return '';
+    if (!state.available) return state.reason || t('transcript.unavailable', 'Transcript unavailable for this Agent.');
+    if (state.empty) return t('transcript.empty', 'No transcript output yet.');
+    return '';
+  }
+
   /** Mark this tile active (visual highlight + keystroke target) without grabbing keyboard focus. */
   activate() {
     if (S.active === this) return;
@@ -291,8 +436,16 @@ export class Tile {
     tiles.forEach((t) => t.el.classList.toggle('active', t === this));
   }
 
-  /** Activate and pull keyboard focus into the terminal. */
+  /**
+   * Activate and pull keyboard focus into the terminal.
+   *
+   * Still refused while a reading is open, and this is the line the owner's ruling did
+   * NOT move: the record is read-only and the terminal is behind it, so there is nothing
+   * on screen to focus. What the ruling restored is the composer — a deliberate send to a
+   * live Agent, which never needed the terminal to be visible.
+   */
   focusTerminal() {
+    if (this.transcriptOn || this.docView?.isOpen()) return;
     this.activate();
     this.term.focus();
   }
@@ -321,6 +474,10 @@ export class Tile {
    * and the keys row can ask their OWN tile for it.
    */
   jumpLatest() {
+    if (this.transcriptOn) {
+      this.transcriptView.el.scrollTop = this.transcriptView.el.scrollHeight;
+      return;
+    }
     if (!this.locked) {
       if (this.tapeMode) this.tape.scrollToBottom();
       else this.term.scrollToBottom();
@@ -376,10 +533,8 @@ export class Tile {
       this.tapeAt = m.mode === 'tape' && m.seg != null ? { seg: m.seg, off: m.off } : null;
       this.tape.setAltNote(m.mode === 'tape' && m.provenance === 'derived', m.partial);
     } else if (m.t === 'lines') {
-      if (this.output === 'agent_summary') return;
       this.tape.appendRecs(m.recs || [], !!m.reset);
     } else if (m.t === 'frame') {
-      if (this.output === 'agent_summary') return;
       this.tape.setFrame(m.text || '');
     } else if (m.t === 'older') {
       this.tape.prepend(m.recs || [], m.atTop);
@@ -393,7 +548,9 @@ export class Tile {
   /** Change this tile's Output and reopen its viewer against the named server projection. */
   setOutput(value) {
     const previous = this.output;
-    const allowed = new Set(['locked', 'terminal_mirror', 'detailed', 'condensed', 'cherry_pick', 'agent_summary']);
+    // What can actually be produced. The tape projections are gone from the offer, not
+    // from the source (owner, 2026-09-23); a stored choice naming one lands on Locked.
+    const allowed = new Set(['locked', 'terminal_mirror']);
     this.output = this.servicesOff() || !allowed.has(value) ? 'locked' : value;
     this.locked = this.output === 'locked';
     S.output = this.output;
@@ -401,10 +558,6 @@ export class Tile {
     this.renderPending();
     this.syncOutput();
     if (this.tape) this.tape.setMode(this.output);
-    if (this.kakiTimer) clearInterval(this.kakiTimer);
-    this.kakiTimer = this.output === 'agent_summary'
-      ? setInterval(() => void this.refreshKaki(false), 5000)
-      : null;
     if (this.session && this.wire.wantOpen && previous !== this.output) this.connect(this.session);
     saveState();
   }
@@ -434,7 +587,7 @@ export class Tile {
     // so a one-option dropdown is noise and the control disappears whole (owner,
     sel.hidden = off;
     for (const option of [...sel.options])
-      if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
+      if (S.streamOff && option.value !== 'locked') option.remove();
     const transcriptPark = serviceParked('rireki');
     sel.title = S.streamOff
       ? transcriptPark
@@ -471,7 +624,9 @@ export class Tile {
       // acting on THIS tile's session rather than "the active tile" (keysrow.js).
       if (isCoarse()) {
         this.composer.el.prepend(buildKeysRow({
-          controls: document.getElementById('phone') ? buildMobileControlButtons(this) : [],
+          // Clear and Stop belong to every touch composer, including the wide iPad
+          // workbench. Copy remains Term-only through the shared transcript CSS rule.
+          controls: buildMobileControlButtons(this),
           sendRaw: (d) => this.sendRaw(d),
           latest: () => this.jumpLatest(),
         }).el);
@@ -500,6 +655,12 @@ export class Tile {
   }
 
   detach() {
+    this.transcriptView.hide();
+    this.transcriptOn = false;
+    this.transcriptLevel = -1;
+    this.transcriptWantChat = false;
+    this.el.classList.remove('transcript-on');
+    this.syncSurface();
     this.tape.setAltNote(false);
     this.wire.close();
     this.session = null;
@@ -541,8 +702,29 @@ export class Tile {
   }
 
   connect(session) {
-    if (this.session !== session) { this.lastSelection = ''; this.pending = ''; this.renderPending(); }
+    const changed = this.session !== session;
+    // A document belongs to the session that opened it. Switching the seat first asks
+    // that editor to leave; unsaved typing can refuse, keeping both session and surface.
+    if (changed && this.docView?.isOpen() && !this.docView.close()) return false;
+    if (changed) {
+      this.transcriptView.hide();
+      this.transcriptOn = false;
+      this.transcriptLevel = -1;
+      this.transcriptReadings = [];
+      this.transcriptState = null;
+      this.el.classList.remove('transcript-on');
+      this.syncSurface();
+    }
+    if (changed) { this.lastSelection = ''; this.pending = ''; this.renderPending(); }
     this.session = session;
+    // Ask the route once, so the button is opaque or live before anyone presses it.
+    if (changed && this.transcriptAvailable()) void this.transcriptView.probe(session);
+    // A FINGER OPENS ON THE READING, NOT THE TERMINAL (owner, 2026-09-24). Someone coming
+    // to an Agent on a phone or a tablet wants to see what it said; the terminal is a
+    // desk's way in. Held as an intention rather than acted on here, because only the
+    // route can say whether THIS Agent has a record — the probe above is already on its
+    // way, and onTranscriptState spends the intention when the answer lands.
+    if (changed) this.transcriptWantChat = isCoarse() && this.transcriptAvailable();
     this.sessionKey = S.sessions.find((row) => row.name === session)?.key;
     this.syncEmpty();
     // The Services answer is per session. A tile that held an unlocked view for one Agent
@@ -567,8 +749,9 @@ export class Tile {
     // never focuses xterm on touch, so a locked mirror without it cannot be typed into
     // at all. Both views reserve the composer's measured height and keyboard lift
     // so the CLI's own input line and the transcript's last message stay visible. Desktop keeps the old rule: tape mode only.
-    this.setComposer(this.tapeMode || isCoarse());
+    this.setComposer(this.tapeMode || isCoarse() || this.transcriptOn);
     this.el.classList.toggle('tape-on', this.tapeMode);
+    this.syncSurface();
     this.setDot('wait');
     this.doFit();
 
@@ -581,9 +764,8 @@ export class Tile {
       tapeAt: this.tapeAt,
     });
 
-    if (this.output === 'agent_summary') void this.refreshKaki(true);
-
     saveState();
+    return true;
   }
 
   async refreshKaki(create, force = false) {

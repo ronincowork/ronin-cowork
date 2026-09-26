@@ -1,8 +1,9 @@
 /**
- * ONE CATALOG READ FOR THE CLIENT — GET /api/provider-catalog answers the same object the
- * server reads, whole: where it came from, when it was last read from the public record,
- * and every provider with its models. It is the only catalog route (owner's follow-up,
- * 2026-09-08); the flat rows it replaced are gone.
+ * ONE CATALOG READ FOR THE CLIENT — GET /api/provider-catalog answers the catalog's own
+ * facts (where it came from, when it was last read from the public record), the record's
+ * dates, and every provider with its JOINED rows: Native, then what its CLI listed. It is
+ * the only catalog route (owner's follow-up, 2026-09-08), and since 2026-09-25 the only
+ * join: no client joins anything.
  *
  * The contract is asserted at the router with no tmux and no live box: express is mounted
  * with only the catalog routes.
@@ -21,7 +22,7 @@ process.env.BIND = '127.0.0.1'; // src/machine-settings.ts must not shell `tails
 process.env.RONIN_USER_ROOT = path.join(box, 'ronin');
 process.env.RONIN_CATALOGS_DIR = path.join(box, 'ronin', 'catalogs');
 const { registerCatalogs } = await import('../src/routes/catalogs.js');
-const { readProviderCatalog, STOCK_CATALOG_MD } = await import('../src/model-providers.js');
+const { providerCatalogAnswer, STOCK_CATALOG_MD } = await import('../src/model-providers.js');
 
 const app = express();
 app.use(express.json());
@@ -34,33 +35,26 @@ test('GET /api/provider-catalog is the catalog object, whole and dated', async (
   const r = await fetch(`${base}/api/provider-catalog`);
   assert.equal(r.status, 200);
   const body = await r.json();
-  assert.deepEqual(body, JSON.parse(JSON.stringify(await readProviderCatalog())), 'the client reads exactly what the server reads');
+  assert.deepEqual(body, JSON.parse(JSON.stringify(await providerCatalogAnswer(null))), 'the client reads exactly what the server joins; this box has no record, so nothing is listed');
   assert.equal(body.origin, 'stock');
   assert.equal(body.path, STOCK_CATALOG_MD);
   assert.match(body.updated, /^\d{4}-\d{2}-\d{2}$/);
-  assert.deepEqual(Object.keys(body).sort(), ['origin', 'path', 'providers', 'stock_updated', 'updated', 'withdrawn']);
+  assert.deepEqual(Object.keys(body).sort(), ['measured_at', 'origin', 'path', 'providers', 'refreshed_at', 'stock_updated', 'updated', 'withdrawn']);
   assert.equal(body.stock_updated, body.updated, 'no owner copy: the one date is the shipped one');
+  assert.equal(body.refreshed_at, '', 'never refreshed, and said so');
   assert.deepEqual(body.withdrawn, []);
   assert.ok(body.providers.length >= 5);
   for (const entry of body.providers) {
-    assert.deepEqual(Object.keys(entry).filter((key) => !['maturity', 'native', 'nativeDangerousCmd', 'launch_modes'].includes(key)).sort(), ['cli', 'label', 'models', 'origin', 'provider', 'shadowed']);
+    assert.deepEqual(Object.keys(entry).filter((key) => !['maturity', 'native', 'nativeDangerousCmd', 'launch_modes'].includes(key)).sort(), ['cli', 'cli_label', 'label', 'models', 'off', 'operational', 'origin', 'provider', 'shadowed']);
     assert.equal(entry.origin, 'stock');
+    assert.equal(entry.operational, false);
     if (entry.maturity === 'comingSoon') assert.deepEqual(entry.models, [], `${entry.label} is visible but unavailable`);
     else {
       assert.ok(entry.native, `${entry.label} carries its native launch`);
       assert.ok(entry.launch_modes.includes('configured'), `${entry.label} carries supported launch modes`);
-      assert.ok(entry.models.length > 0, `${entry.label} carries its models`);
+      assert.deepEqual(entry.models.map((row: { model: string; name: string; selectable: boolean }) => [row.model, row.name, row.selectable]), [['native', 'Native', false]], `${entry.label}: nothing read from its CLI, so Native alone and not selectable`);
     }
   }
-});
-
-test('GET /api/launch-models exposes the launch resolver model ids', async () => {
-  const response = await fetch(`${base}/api/launch-models`);
-  assert.equal(response.status, 200);
-  const body = await response.json() as { providers: Array<{ provider: string; models: Array<{ model: string }> }> };
-  assert.ok(body.providers.some((provider) => provider.provider === 'anthropic'));
-  assert.ok(body.providers.every((provider) => provider.models.every((model) => model.model === 'native')),
-    'without a refreshed inventory, only the provider-native launch is offered');
 });
 
 test.after(async () => {

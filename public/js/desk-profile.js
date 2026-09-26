@@ -10,7 +10,8 @@ let desk = { active: null, profiles: [] };
 export const activeProfile = () => desk.active;
 export const deskProfiles = () => desk.profiles;
 
-const OUTPUTS = new Set(['locked', 'terminal_mirror', 'detailed', 'condensed', 'cherry_pick']);
+// A profile naming a retired projection simply does not apply, and the tile keeps its default.
+const OUTPUTS = new Set(['locked', 'terminal_mirror']);
 
 /** Read the list and the active profile; put its lexicon up; seed the new-tile default. */
 export async function loadDeskProfile() {
