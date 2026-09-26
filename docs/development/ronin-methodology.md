@@ -72,9 +72,10 @@ board turns into noise. A notice arriving in your own pane is the board speaking
 owner. When you need one particular session to *act*, use `edges send`.
 
 **Reading another Agent's work.** `work-record read --session <name>` reads its authored
-work and evidence. `edges read` is available when the installation supplies readable
-recording; the recording part is currently parked, so never promise transcript coverage.
-A live terminal capture is a current screen, not a durable history. Message delivery and
+work and evidence. With Terminal transcript on, an Agent's conversation is the journal its
+CLI writes, copied into its session folder and served by the transcript route; `edges read`
+still shows a live pane, so never present a pane capture as the transcript. A live
+terminal capture is a current screen, not a durable history. Message delivery and
 its retained states are described by [the queue contract](../architecture/message-queue.md).
 
 ### 4. Commit privately, hand in deliberately, let the lead promote

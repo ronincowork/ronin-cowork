@@ -58,9 +58,11 @@ import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
+import { mountAssets, noCacheClient, publicFingerprint } from './assets.js';
 import { DocumentPathError, legacyDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { startSessionRetention } from './session-retention.js';
 import { discoverParts, partsToLoad } from './parts.js';
 import { initialCampaign } from './campaigns.js';
 import { listInstallations } from './resource-adapters.js';
@@ -166,7 +168,8 @@ app.get('/vendor/xterm.css', (_req, res) => res.sendFile(path.join(NM, '@xterm/x
 app.get('/vendor/xterm.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/xterm/lib/xterm.js')));
 app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/addon-fit/lib/addon-fit.js')));
 
-const assetVersion = roninIdentity().commit.replace(/[^A-Za-z0-9._-]/g, '_');
+// The client's version and its serving rules live in assets.ts, which owns why.
+const assetVersion = publicFingerprint(PUBLIC);
 const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion);
 const indexHtml = readDocument('index.html');
 // THE MOBILE DOCUMENT. A phone downloads mobile.html — the bar, an empty list and
@@ -192,20 +195,7 @@ app.get('/index.html', sendIndex);
 app.get('/cowork-setup', (_req, res) => res.redirect(302, '/'));
 app.get('/m', sendMobile);
 app.get('/mobile.html', sendMobile);
-app.use(`/${assetVersion}`, express.static(PUBLIC, { immutable: true, maxAge: '1y', index: false }));
-
-// A development preview is replaced in place. Keep an already-open browser intact across
-// that one restart: its document may still ask for the preceding commit-prefixed assets.
-// Production retains strict immutable versioning; only development maps an old eight-hex
-// prefix onto the current preview files, which are served no-cache below.
-if (process.env.NODE_ENV !== 'production') app.use((req, _res, next) => {
-  req.url = req.url.replace(/^\/[0-9a-f]{8}(?=\/(?:style\.css|js\/|css\/))/, '');
-  next();
-});
-
-const noCacheClient = (res: express.Response, filePath: string) => {
-  if (/\.(?:html|js|css)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
-};
+mountAssets(app, PUBLIC, assetVersion);
 
 const STAGING = process.env.RONIN_STAGING_DIR ?? path.join(ROOT, 'public-staging');
 if (fs.existsSync(STAGING)) {
@@ -426,6 +416,7 @@ await tmuxClient.connect(); // only the long-lived server opts into control mode
 const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
+const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
 startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
@@ -471,6 +462,7 @@ server.listen(config.port, config.bind, async () => {
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopBootHooks();
+    stopSessionRetention();
     stopSpawnBroker();
     setTimeout(() => process.exit(0), 2000).unref();
     // Only the socket this process bound comes down with it. Nothing shared is touched:

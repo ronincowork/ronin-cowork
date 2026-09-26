@@ -16,7 +16,7 @@ export function buildKeysRow(hooks) {
   // Face · tooltip · what it sends. Faces that are glyphs (⤓, the arrows) are
   // values, not words; the worded faces go through the lexicon like everything else.
   const keys = () => [
-    ['⌫', t('keys.backspace', 'Backspace'), '\x7f'],
+    [t('keys.escape_face', 'Esc'), t('keys.escape', 'Escape'), '\x1b'],
     [t('keys.tab', 'Tab'), t('keys.tab', 'Tab'), '\t'],
     [t('keys.shift_tab_face', '⇧Tab'), t('keys.shift_tab', 'Shift-Tab'), '\x1b[Z'],
     ['↑', t('keys.up', 'Up'), '\x1b[A'],

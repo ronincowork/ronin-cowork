@@ -5,7 +5,7 @@ globalThis.window = { matchMedia: () => ({ matches: false }) };
 globalThis.fetch = async (url) => ({
   ok: true,
   status: 200,
-  json: async () => String(url).includes('team-rosters')
+  text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => String(url).includes('team-rosters')
     ? [{ name: 'ronin_helpers', title: 'Ronin Helpers' }, { name: 'zebra' }, { name: 'alpha' }]
     : [],
 });

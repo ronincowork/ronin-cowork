@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { trackAppHeight } from './appheight.js';
 import { fetchSessions } from './api.js';
 import { mountRamRpm } from './ramrpm.js';
 import { request } from './request.js';
@@ -14,6 +15,7 @@ import { installTips } from './tips.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
+import { createDeskView } from './desk-view.js';
 import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createCampaignView } from './campaign-view.js';
@@ -51,6 +53,10 @@ export async function init() {
   const ramRpm = guard('mount RAM_RPM', mountRamRpm, { setVisible() {} });
   const servicesStatus = guard('services activation status', installServicesStatus, { setVisible() {} });
 
+  // HOW TALL THE APPLICATION IS, before anything lays itself out inside it: every surface
+  // below is measured against this, so it has to be right for the first paint, not the
+  // second (js/appheight.js).
+  guard('app height', trackAppHeight);
   // The theme before the grid: tiles are born reading the resolved terminal palette.
   guard('apply theme', applyTheme);
   // THE DESK PROFILE before the grid (R38): its lexicon is what every t() reads, and its
@@ -98,6 +104,9 @@ export async function init() {
   guard('register the Customize destination', () => installCustomize(workspace));
   // Cowork collection and Team detail are two scopes of the same discovery workbench.
   guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
+  // Desk is an operational tenant, not the Cowork chooser and not Settings. It shares
+  // the aggregate surface family while owning its first-open seating and restoration.
+  guard('register the Desk destination', () => workspace.register('desk', createDeskView()));
   // A standalone Agent is a first-class Workbench tenant. Launch handoff opens this
   // destination; Setup does not own a private redirect or seating path.
   guard('register the Agent destination', () => workspace.register('agent', createAgentView()));

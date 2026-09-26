@@ -7,7 +7,7 @@ const css = await readFile(new URL('../public/style.css', import.meta.url), 'utf
 
 test('Launch your own hides Presets in Settings and retains them in Setup', () => {
   const launchOwn = source.slice(source.indexOf('function createLaunchOwnSurface'), source.indexOf('export function setupSurfaceDefinitions'));
-  assert.match(launchOwn, /createStoneWorkSurface\(/);
+  assert.match(launchOwn, /createPhalanx\(/);
   assert.match(launchOwn, /stones\.mount\(out\.content\)/);
   assert.doesNotMatch(launchOwn, /setup-surface-body/);
   assert.match(launchOwn, /context\.tenant\?\.kind === 'setup'/);

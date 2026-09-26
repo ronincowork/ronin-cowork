@@ -31,17 +31,32 @@ globalThis.Node = FakeNode;
 globalThis.document = { createDocumentFragment: () => new FakeNode('fragment'), createElement: (tag) => new FakeNode(tag), createElementNS: (_ns, tag) => new FakeNode(tag), querySelector: () => null, head: { append() {} }, addEventListener() {}, removeEventListener() {} };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} };
 
-let catalog = { origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', stock_updated: '2026-09-08', withdrawn: [], providers: [
-  { provider: 'anthropic', cli: 'claude', native: 'claude', label: 'Anthropic', origin: 'stock', shadowed: false, models: [
-    { model: 'opus', tier: 'frontier', default: true, cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions', cmd: 'claude --model opus' },
-    { model: 'haiku', tier: 'light', default: false, cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors', cmd: 'claude --model haiku' },
-  ] },
-  { provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', default: true, cost: '$5 in · $30 out per M tokens (2026-09)', good_at: 'the hardest coding', not_good_at: 'bulk loops', cmd: 'codex --model gpt-5.6-sol' }] },
-  { provider: 'pi', cli: 'pi', native: 'pi', label: 'Pi', models: [{ model: 'pi-1', tier: 'standard', default: true, cost: 'free (2026-09)', good_at: 'chat', not_good_at: 'code', cmd: 'pi' }] },
-  { provider: 'openrouter', cli: 'openrouter', label: 'OpenRouter', maturity: 'comingSoon', models: [] },
+/** Rows as the server joins them since 2026-09-25: Native first, then what the CLI listed; the client joins nothing. */
+const joined = (entry, on, listed = []) => {
+  const base = { provider: entry.provider, cli: entry.cli, provider_label: entry.label, cli_label: entry.cli_label || entry.label, operational: on, off: entry.off === true, selectable: on, origin: entry.origin || 'stock', shadowed: entry.shadowed === true };
+  const meta = new Map((entry.models || []).map((row) => [row.model, row]));
+  return { origin: 'stock', shadowed: false, ...entry, cli_label: base.cli_label, operational: on, off: base.off, launch_modes: ['configured'], models: [
+    { ...base, model: 'native', name: 'Native', cmd: entry.native, tier: '', default: true, cost: '', good_at: 'the CLI choosing its own configured or current default model', not_good_at: 'pinning a particular model' },
+    ...listed.map(([id, name]) => ({ ...base, model: id, name, cmd: `${entry.native} --model ${id}`, tier: meta.get(id)?.tier || '', default: false, cost: meta.get(id)?.cost || '', good_at: meta.get(id)?.good_at || '', not_good_at: meta.get(id)?.not_good_at || '' })),
+  ] };
+};
+const ANTHROPIC = { provider: 'anthropic', cli: 'claude', native: 'claude', label: 'Anthropic', cli_label: 'Claude Code', models: [
+  { model: 'opus', tier: 'frontier', cost: '$5 in · $25 out per M tokens (2026-06)', good_at: 'long agentic coding runs', not_good_at: 'quick throwaway questions' },
+  { model: 'haiku', tier: 'light', cost: '$1 in · $5 out per M tokens (2026-06)', good_at: 'fast sub-agents', not_good_at: 'large refactors' },
 ] };
-let machine = { measured_at: '2026-09-08T11:00:00.000Z', activated_count: 1, providers: [
-  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, path: '/home/glen/.local/bin/claude', signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, self_updates: true, askable: true, update: 'claude update', update_available: true, model_list: { client_version: '2.1.263', fetched_at: '2026-09-08', models: [{ slug: 'opus', visibility: 'list' }, { slug: 'haiku', visibility: 'list' }] } },
+const OPENAI = { provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', cli_label: 'Codex', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', cost: '$5 in · $30 out per M tokens (2026-09)', good_at: 'the hardest coding', not_good_at: 'bulk loops' }] };
+const PI = { provider: 'pi', cli: 'pi', native: 'pi', label: 'Pi', cli_label: 'pi', models: [{ model: 'pi-1', tier: 'standard', cost: 'free (2026-09)', good_at: 'chat', not_good_at: 'code' }] };
+const OPENROUTER = { provider: 'openrouter', cli: 'openrouter', cli_label: 'openrouter', label: 'OpenRouter', maturity: 'comingSoon', origin: 'stock', shadowed: false, operational: false, off: false, models: [] };
+const stockCatalog = () => ({ origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', updated: '2026-09-08', stock_updated: '2026-09-08', withdrawn: [], measured_at: '2026-09-08T11:00:00.000Z', refreshed_at: '', providers: [
+  joined(ANTHROPIC, true, [['opus', 'Opus 5'], ['haiku', 'Haiku 4.5']]),
+  joined(OPENAI, false),
+  joined(PI, false),
+  OPENROUTER,
+] });
+let catalog = stockCatalog();
+const CLAUDE_LIST = { read_at: '2026-09-08T06:00:00.000Z', by: '2.1.263', rows: [{ id: 'opus', name: 'Opus 5' }, { id: 'haiku', name: 'Haiku 4.5' }] };
+let machine = { measured_at: '2026-09-08T11:00:00.000Z', refreshed_at: '', activated_count: 1, providers: [
+  { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, path: '/home/glen/.local/bin/claude', signed_in: true, activated: true, state: 'activated', version: '2.1.263', latest: '2.1.265', latest_checked_at: '2026-09-09T12:00:00.000Z', updatable: true, self_updates: true, askable: true, update: 'claude update', update_available: true, model_list: CLAUDE_LIST },
   { id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: false, activated: false, login_open: true, state: 'login_open', attachment: { type: 'session', key: 'provider_setup_codex', team: 'provider_setup', temporary: true } },
   { id: 'grok', label: 'Grok Build', from: 'xAI', installed: false, installable: true, install: 'npm install -g @xai-official/grok', activated: false, state: 'installable' },
 ] };
@@ -49,9 +64,9 @@ const calls = [];
 globalThis.fetch = async (url, init = {}) => {
   calls.push(`${init.method || 'GET'} ${url}`);
   const body = url.startsWith('/api/provider-catalog') ? catalog
-    : url.startsWith('/api/setup/runtime') || url.startsWith('/api/setup/providers/measure') || url.startsWith('/api/setup/providers/refresh') ? machine
+    : url.startsWith('/api/setup/runtime') || url.startsWith('/api/setup/providers/refresh') ? machine
       : url.endsWith('/update') || url.endsWith('/close') ? { ok: true } : null;
-  return { ok: body !== null, status: body ? 200 : 404, json: async () => body ?? { error: 'no such door' } };
+  return { ok: body !== null, status: body ? 200 : 404, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => body ?? { error: 'no such door' } };
 };
 
 const surface = await import('../public/js/provider-surface.js');
@@ -164,14 +179,18 @@ test('a stone opens Yours — the three steps as Setup measures them — then Th
   assert.equal(calls[0], 'POST /api/setup/providers/claude/off');
   const facts = byClass(section, 'setup-provider-facts')[0].children;
   assert.deepEqual(facts.map((fact) => [fact.children[0].textContent, fact.children[1].textContent, fact.dataset.on]), [['Installed', 'yes', 'true'], ['Signed in', 'yes', 'true'], ['Activated', 'yes', 'true']]);
+  assert.equal(byClass(section, 'setup-provider-list-state')[0].textContent, 'Model list read 2026-09-08T06:00:00.000Z by Claude Code 2.1.263', 'when the list was read and by which CLI version — no per-provider Refresh');
+  assert.deepEqual(byClass(section, 'setup-provider-model-tools'), []);
   const table = byClass(section, 'setup-provider-models')[0];
   assert.deepEqual(walk(table).filter((node) => node.tagName === 'TH').map((node) => node.textContent), ['Model', 'Tier', 'Cost', 'Good at', 'Not good at']);
   const rows = walk(table).filter((node) => node.tagName === 'TR' && node.dataset.model);
+  // Two names in the Model cell: the CLI's own name in bold, the id every launch uses beneath.
   assert.deepEqual(rows.map((row) => row.children.map((cell) => cell.textContent)), [
-    ['Nativethe defaultThe CLI chooses the model', '', '', 'the CLI choosing its own configured or current default model', 'pinning a particular model'],
-    ['opuslisted by your Claude Code 2.1.263 (as of 2026-09-08)', 'frontier', '$5 in · $25 out per M tokens (2026-06)', 'long agentic coding runs', 'quick throwaway questions'],
-    ['haikulisted by your Claude Code 2.1.263 (as of 2026-09-08)', 'light', '$1 in · $5 out per M tokens (2026-06)', 'fast sub-agents', 'large refactors'],
+    ['Nativethe default', '', '', 'the CLI choosing its own configured or current default model', 'pinning a particular model'],
+    ['Opus 5opus', 'frontier', '$5 in · $25 out per M tokens (2026-06)', 'long agentic coding runs', 'quick throwaway questions'],
+    ['Haiku 4.5haiku', 'light', '$1 in · $5 out per M tokens (2026-06)', 'fast sub-agents', 'large refactors'],
   ]);
+  assert.deepEqual(rows.slice(1).map((row) => byClass(row, 'setup-provider-model-id')[0].textContent), ['opus', 'haiku']);
   assert.ok(byClass(section, 'setup-provider-table')[0], 'the table scrolls in its own box');
 });
 
@@ -280,23 +299,68 @@ test('a catalog provider no registry CLI serves keeps its catalog section and sa
   assert.deepEqual(walk(section).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['native']);
 });
 
-test('a stale CLI list still leaves only Native when none of its ids match catalog launch rows', async () => {
-  const savedMachine = machine;
+test('a model the CLI lists that the catalog does not describe is in the table with the CLI\'s name and no tier — never hidden, never guessed', async () => {
+  const savedMachine = machine; const savedCatalog = catalog;
   try {
-    machine = { measured_at: '2026-09-09T13:00:00.000Z', activated_count: 1, providers: [{
-      id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true,
-      state: 'activated', version: '0.153.4', model_list: {
-        fetched_at: '2026-09-09T06:00:00Z', etag: 'old', client_version: '0.151.0', models: [
-          { slug: 'gpt-5.5', display_name: 'GPT-5.5', description: 'General-purpose model.', visibility: 'list', priority: 2 },
-          { slug: 'gpt-5.3-codex-spark', display_name: 'Spark', description: 'Fast coding model.', visibility: 'list', priority: 1 },
-        ],
-      },
+    catalog = { ...stockCatalog(), providers: [joined(OPENAI, true, [['gpt-5.5', 'GPT-5.5'], ['gpt-5.3-codex-spark', 'Spark']])] };
+    machine = { measured_at: '2026-09-09T13:00:00.000Z', refreshed_at: '2026-09-09T13:00:00.000Z', activated_count: 1, providers: [{
+      id: 'codex', label: 'Codex', from: 'OpenAI', installed: true, signed_in: true, activated: true, state: 'activated', version: '0.153.4',
+      model_list: { read_at: '2026-09-09T13:00:00.000Z', by: '0.153.4', rows: [{ id: 'gpt-5.5', name: 'GPT-5.5' }, { id: 'gpt-5.3-codex-spark', name: 'Spark' }] },
     }] };
     const made = surface.createProviderSurface(context());
     await made.show(); await settle();
     byClass(made.el, 'sws-stone')[0].click();
-    assert.equal(byClass(made.el, 'setup-provider-model-status')[0].textContent, 'The CLI chooses the model');
-    assert.deepEqual(byClass(made.el, 'setup-provider-model-candidate'), []);
+    const rows = walk(made.el).filter((node) => node.tagName === 'TR' && node.dataset.model);
+    assert.deepEqual(rows.map((row) => [row.dataset.model, row.children[0].textContent, row.children[1].textContent]), [['native', 'Nativethe default', ''], ['gpt-5.5', 'GPT-5.5gpt-5.5', ''], ['gpt-5.3-codex-spark', 'Sparkgpt-5.3-codex-spark', '']]);
+    assert.equal(byClass(made.el, 'setup-provider-list-state')[0].textContent, 'Model list read 2026-09-09T13:00:00.000Z by Codex 0.153.4');
+    assert.deepEqual(byClass(made.el, 'setup-provider-model-candidate'), [], 'no second list of "candidates": the table is the list');
+  } finally {
+    machine = savedMachine; catalog = savedCatalog;
+  }
+});
+
+test('a provider whose CLI publishes no list says so, and one not yet read points at Refresh all', async () => {
+  const savedMachine = machine; const savedCatalog = catalog;
+  try {
+    catalog = { ...stockCatalog(), providers: [joined({ provider: 'google', cli: 'gemini', native: 'gemini', label: 'Google', cli_label: 'Gemini CLI', models: [{ model: 'gemini-3.8-flash', tier: 'standard', cost: 'x', good_at: 'y', not_good_at: 'z' }] }, true), joined(ANTHROPIC, true)] };
+    machine = { measured_at: '2026-09-09T13:00:00.000Z', refreshed_at: '', activated_count: 2, providers: [
+      { id: 'gemini', label: 'Gemini CLI', from: 'Google', installed: true, signed_in: true, activated: true, state: 'activated', version: '0.61.0', model_list: { read_at: '2026-09-09T13:00:00.000Z', by: '0.61.0', rows: [], unavailable: 'Gemini CLI publishes no model list Ronin can read.' } },
+      { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: true, signed_in: true, activated: true, state: 'activated', version: '2.1.282', model_list: null },
+    ] };
+    const made = surface.createProviderSurface(context());
+    await made.show(); await settle();
+    byClass(made.el, 'sws-stone')[0].click();
+    assert.equal(byClass(made.el, 'setup-provider-list-state')[0].textContent, 'Gemini CLI publishes no model list Ronin can read.');
+    assert.deepEqual(walk(made.el).filter((node) => node.tagName === 'TR' && node.dataset.model).map((row) => row.dataset.model), ['native']);
+    byClass(made.el, 'sws-stone')[1].click();
+    assert.equal(byClass(made.el, 'setup-provider-list-state')[0].textContent, 'Model list not read yet — press Refresh all model providers.');
+  } finally {
+    machine = savedMachine; catalog = savedCatalog;
+  }
+});
+
+test('Refresh all sits once at the top with the date it last ran, and is the one press that reads every list', async () => {
+  const savedMachine = machine;
+  try {
+    const ctx = context();
+    const made = surface.createProviderSurface(ctx);
+    await made.show(); await settle();
+    const bar = byClass(made.el, 'setup-provider-refresh')[0];
+    assert.ok(bar, 'above the stones, not inside a provider');
+    const button = byClass(bar, 'setup-provider-refresh-all')[0];
+    assert.equal(button.textContent, 'Refresh all model providers');
+    assert.equal(byClass(bar, 'setup-provider-last-ran')[0].textContent, 'Never run — every provider offers Native only until it runs.');
+    byClass(made.el, 'sws-stone')[0].click();
+    assert.deepEqual(byClass(made.el, 'setup-provider-model-tools'), [], 'no per-provider Refresh models');
+    assert.equal(byClass(made.el, 'setup-provider-refresh').length, 1, 'one door');
+    machine = { ...machine, refreshed_at: '2026-09-25T18:00:00.000Z' };
+    calls.length = 0;
+    button.click();
+    assert.equal(button.disabled, true);
+    await settle();
+    assert.equal(calls[0], 'POST /api/setup/providers/refresh', 'the one door that reads model lists and asks npm');
+    assert.equal(button.disabled, false);
+    assert.equal(byClass(bar, 'setup-provider-last-ran')[0].textContent, 'Last ran 2026-09-25T18:00:00.000Z');
   } finally {
     machine = savedMachine;
   }
@@ -304,10 +368,10 @@ test('a stale CLI list still leaves only Native when none of its ids match catal
 
 test('an unmeasured machine and the owner\'s catalog copy remain factual in provider detail', async () => {
   machine = { providers: [] };
-  catalog = { ...catalog, origin: 'user', updated: '2026-10-01', withdrawn: [{ provider: 'xai', label: 'xAI' }], providers: [
-    { ...catalog.providers[0], origin: 'user', shadowed: true },
-    catalog.providers[1],
-    { ...catalog.providers[2], origin: 'user', shadowed: false },
+  catalog = { ...stockCatalog(), origin: 'user', updated: '2026-10-01', withdrawn: [{ provider: 'xai', label: 'xAI' }], providers: [
+    joined({ ...ANTHROPIC, origin: 'user', shadowed: true }, false),
+    joined(OPENAI, false),
+    joined({ ...PI, origin: 'user', shadowed: false }, false),
   ] };
   const made = surface.createProviderSurface(context());
   await made.show(); await settle();
@@ -336,7 +400,7 @@ test('Install mounts its returned session inline, survives a completed install, 
     if (url.endsWith('/grok/install')) {
       installs++;
       machine = { ...machine, providers: [{ ...base, install_open: true, attachment: { type: 'session', key: 'install_grok', team: 'provider_setup', temporary: true } }] };
-      return { ok: true, status: 200, json: async () => ({ ok: true, runtime: machine }) };
+      return { ok: true, status: 200, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => ({ ok: true, runtime: machine }) };
     }
     if (url.endsWith('/grok/close')) machine = { ...machine, providers: [{ ...base, installed: true, installable: false }] };
     return originalFetch(url, init);
@@ -372,7 +436,7 @@ test('Done asks through Erabi for the sign-in method and title, then submits tha
     if (url.endsWith('/codex/done')) {
       saved = JSON.parse(init.body).sign_in;
       machine = { providers: [{ id: 'codex', label: 'Codex', installed: true, activated: true, sign_in: saved }], activated_count: 1 };
-      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      return { ok: true, status: 200, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => ({ ok: true }) };
     }
     return originalFetch(url, init);
   };
@@ -406,9 +470,9 @@ test('repainting an open setup terminal does not start another measurement from 
     await view.show(); await settle();
     await view.show(); await settle();
     const count = ctx.mounts.length;
-    const measurements = calls.filter(call => call.endsWith('/providers/measure')).length;
+    const measurements = calls.filter(call => call.endsWith('/providers/refresh')).length;
     await settle();
     assert.equal(ctx.mounts.length, count, 'the new terminal stays mounted');
-    assert.equal(calls.filter(call => call.endsWith('/providers/measure')).length, measurements);
+    assert.equal(calls.filter(call => call.endsWith('/providers/refresh')).length, measurements);
   } finally { view.destroy(); }
 });

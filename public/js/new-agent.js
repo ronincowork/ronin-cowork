@@ -8,7 +8,7 @@ import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, kindTiles, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, subscribeProviderCatalog, tagRow, templateTray, tierWord,
+  createStep, el, kindTiles, loadProviderCatalog, mandateWord, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { closeWorkspaceTab, reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
@@ -82,7 +82,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     embedActions.append(start.el);
     surface.content.append(embedActions);
   }
-
   const isCowork = () => draft.type === 'cowork_agent';
   const hasAgent = () => draft.type !== 'terminal';
   const templateRow = () => templates.find((row) => row.name === draft.template) || null;
@@ -232,17 +231,10 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
         : t('forms.reason_not_on_machine', 'not on this machine');
       return { v: row.provider, l: row.cli_label || row.provider_label || row.provider, off: unavailable || undefined };
     });
-  const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider).map((row) => {
-    const machine = providerCatalog().machine.find((item) => item.id === row.cli);
-    return {
-      v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: row.cost || '',
-      off: !row.operational
-        ? t('forms.reason_not_on_machine', 'not on this machine')
-        : !row.selectable
-          ? modelAvailabilityFact(row)
-          : undefined,
-    };
-  });
+  const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider).map((row) => ({
+    v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: row.cost || '',
+    off: row.selectable ? undefined : row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
+  }));
   const teamChoice = () => draft.teamMode === 'new' ? 'new' : draft.teamMode === 'none' ? 'none' : 'current';
   const teamRows = () => teams.map((row) => ({ v: row.name, l: String(row.title ?? '').trim() || row.name, sub: row.name }));
   const rootRows = () => roots.map((row) => ({ v: row.name, l: row.title || row.name, sub: row.title ? row.name : '' }));
@@ -365,7 +357,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     teamQuestions.set({ team: teamChoice(), teamName: draft.team });
   };
   void loadProviderCatalog().then(() => questions.paint());
-  const unsubscribeProviderCatalog = subscribeProviderCatalog(() => questions.paint());
 
   /* ---- 7 · Loadout ---- */
   const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('behaviours', 'Behaviors'), onToggle: () => toggle('loadout') });
@@ -640,7 +631,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     paintFoot();
   }
 
-  // a band of its own rather than trailing off the end of a long form.
+  // A band of its own rather than trailing off the end of a long form.
   let payloadOpen = false;
   const stepPayload = createStep({ n: 8, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
     payloadOpen = !payloadOpen;
@@ -661,12 +652,12 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     draft.instructions = prompt;
     instructionsInput.value = prompt;
   };
-
   return {
     el: embedded ? surface.content : surface.el,
     enter: async (detail = {}) => {
-      const entryTeam = typeof team === 'function' ? team() : team;
+      const entryTeam = String(detail?.team || (typeof team === 'function' ? team() : team) || '');
       if (entryTeam) { draft.teamMode = 'existing'; draft.team = entryTeam; }
+      if (detail?.teamLead === true) draft.teamLead = true;
       paint();
       const [tray, teamRows, rootRows] = await Promise.all([
         request('/api/templates/agents'),
@@ -687,7 +678,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     },
     destroy: () => {
       window.removeEventListener('ronin:behaviours-changed', refreshBehaviours);
-      unsubscribeProviderCatalog();
       questions.destroy();
       teamQuestions.destroy();
     },

@@ -10,7 +10,7 @@ import { listWays } from '../resources.js';
 import { listSessionReadings } from '../session-readings.js';
 import { listAgentAvailability } from '../agents.js';
 import { dispatchInstall } from '../agent-install.js';
-import { listProviderCatalog, modelsAvailableToUser, readProviderCatalog } from '../model-providers.js';
+import { listProviderCatalog, providerCatalogAnswer } from '../model-providers.js';
 import { readProviderSummary } from '../provider-summary.js';
 import {
   listProjectRoots,
@@ -243,9 +243,7 @@ export function registerCatalogs(app: express.Express): void {
       await upsertProjectRoot(name, fields);
       const root = (await listProjectRoots()).find((r) => r.name === name);
       const arrangement = root && facts.repo
-        ? req.body?.profile !== undefined
-          ? await setArrangementProfile(root.dir, req.body.profile)
-          : await readArrangement(name, root.dir)
+        ? req.body?.profile !== undefined ? await setArrangementProfile(root.dir, req.body.profile) : await readArrangement(name, root.dir)
         : null;
       res.json({ ok: true, repo_profile: arrangement ? arrangementProfile(arrangement) : null,
         ...(profileChangedSinceOpen ? { profile_changed_since_open: true, current_before: currentProfile } : {}) });
@@ -293,23 +291,11 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
-  // The one catalog read for the client: origin, path, the header's updated day, and every
-  // provider with its models.
+  // The one catalog read for the client: origin, path, the header's updated day, the dates
+  // of the record, and every provider with its joined rows — Native, then what its CLI lists.
   app.get('/api/provider-catalog', async (_req, res) => {
     try {
-      res.json(await readProviderCatalog());
-    } catch (e) {
-      res.status(500).json({ error: errMsg(e) });
-    }
-  });
-
-  app.get('/api/launch-models', async (req, res) => {
-    try {
-      const named = String(req.query.campaign_id ?? '').trim();
-      const campaign = named ? await readCampaign(named) : await initialCampaign();
-      if (named && !campaign) return res.status(404).json({ error: `Unknown Campaign: ${named}.` });
-      const summary = campaign?.providers ?? await readProviderSummary();
-      res.json({ providers: modelsAvailableToUser(await listProviderCatalog(), summary) });
+      res.json(await providerCatalogAnswer(await readProviderSummary()));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

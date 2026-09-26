@@ -8,7 +8,7 @@ import { t } from './lexicon.js';
 import { request } from './request.js';
 import { ask } from './ask.js';
 import { ruledRows } from './glyphs.js';
-import { createStep, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, tierWord } from './form-steps.js';
+import { createStep, loadProviderCatalog, mandateWord, modelLabel, providerCatalog, tierWord } from './form-steps.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
@@ -26,16 +26,14 @@ const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'];
 /** The provider and model rows as every ask() consumer reads them: the one catalog, reasons only. */
 const reason = (row) => (row.off
   ? t('forms.reason_turned_off', 'turned off')
-  : row.listed === false && row.model_list_current
-    ? t('forms.reason_not_listed', 'not listed by your {cli} {client_version}', { cli: row.cli_label || row.cli, client_version: row.model_list?.client_version || '' })
-    : t('forms.reason_not_on_machine', 'not on this machine'));
+  : t('forms.reason_not_on_machine', 'not on this machine'));
 const providerRows = () => {
   const rows = providerCatalog().rows;
   return rows.filter((row, index) => rows.findIndex((other) => other.provider === row.provider) === index)
     .map((row) => ({ v: row.provider, l: row.provider_label || row.provider, off: row.operational ? '' : reason(row) }));
 };
 const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider)
-  .map((row) => ({ v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: modelAvailabilityFact(row) || row.cost || '', off: row.selectable ? '' : (row.operational ? modelAvailabilityFact(row) : reason(row)) }));
+  .map((row) => ({ v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: row.cost || '', off: row.selectable ? '' : reason(row) }));
 
 export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   host.replaceChildren();

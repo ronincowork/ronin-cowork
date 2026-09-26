@@ -11,7 +11,7 @@ const agent = await readFile(new URL('../public/js/new-agent.js', import.meta.ur
 const cowork = await readFile(new URL('../public/js/cowork-view.js', import.meta.url), 'utf8');
 
 test('Behavior work surface reads every scope and edits optional guidance through the existing API', () => {
-  assert.match(surface, /createStoneWorkSurface/);
+  assert.match(surface, /createPhalanx/);
   assert.match(surface, /\/api\/ways\/\$\{encodeURIComponent\(row\.scope\)\}/);
   assert.match(surface, /renderMarkdownDocument/);
   assert.match(surface, /if \(row\.scope !== 'selected'\) return/);

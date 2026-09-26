@@ -333,3 +333,15 @@ export async function writeTeams(name: string, tags: string[]): Promise<boolean>
   await fs.rename(tmp, file);
   return true;
 }
+
+/** Change only the current mandate in an Agent-authored work record. Birth remains immutable. */
+export async function writeMandate(name: string, current: Mandate): Promise<Mandate> {
+  const file = tegamiPath(await sessionKey(name));
+  const text = await fs.readFile(file, 'utf8');
+  const parsed = letterBlock(text);
+  if (!parsed) throw new Error(`@${name} has no readable work record`);
+  const next = mandate(current);
+  parsed.body.mandate = next;
+  await replaceLetterBlock(file, text, parsed, parsed.body);
+  return next;
+}

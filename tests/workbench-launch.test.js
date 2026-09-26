@@ -137,7 +137,7 @@ test('every Workbench destination can receive a complete default open request', 
   const prior = globalThis.location;
   globalThis.location = { href: 'https://ronin.test/app#/home' };
   try {
-    for (const destination of ['setup', 'campaign', 'cowork', 'team', 'agent', 'launch']) {
+    for (const destination of ['setup', 'campaign', 'desk', 'cowork', 'team', 'agent', 'launch']) {
       const param = destination === 'team' || destination === 'agent' ? 'tenant-one' : '';
       const url = new URL(workbenchLaunchUrl({ destination, param, mode: 'overlay' }));
       assert.match(url.searchParams.get('ronin-tab'), /^[a-f0-9]{32}$/);

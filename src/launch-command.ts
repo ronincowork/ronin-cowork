@@ -18,6 +18,16 @@ export interface CommandRequest {
 }
 
 const offer = (names: string[]): string => names.join(', ') || 'nothing yet (see ⚙ Configuration)';
+// A preference names a model id. A preference saved before 2026-09-25 may hold the short
+// display id of that era ("fable"); it resolves to the first model the CLI lists under
+// that family name, and only the concrete id goes into the command.
+const matchingModel = (specs: readonly SessionLaunchSpec[], value: string): SessionLaunchSpec | undefined => {
+  const word = value.toLowerCase();
+  return specs.find((spec) => spec.model === value)
+    ?? specs.find((spec) => spec.name.toLowerCase() === word)
+    ?? specs.find((spec) => spec.model !== 'native' && spec.name.toLowerCase().split(' ')[0] === word)
+    ?? specs.find((spec) => spec.model !== 'native' && spec.model.toLowerCase().split(/[^a-z0-9.]+/).includes(word));
+};
 
 export interface MergedSessionsDefaults {
   sessions: SessionsDefaults;
@@ -70,8 +80,8 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
   }
 
   if (model) {
-    const named = (within.find((s) => s.model === model && s.provider === dflt?.provider)
-      ?? within.find((s) => s.model === model))?.cmd;
+    const named = (matchingModel(within.filter((s) => s.provider === dflt?.provider), model)
+      ?? matchingModel(within, model))?.cmd;
     if (!named) {
       const whose = provider ? `${provider} offers` : "this box's provider catalog offers";
       throw new Error(`Unknown model "${model}" — ${whose}: ${offer([...new Set(within.map((s) => s.model))])}.`);
@@ -81,13 +91,13 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
 
   if (provider) {
     const preferred = req.sessions?.by_provider?.[provider] ?? '';
-    const chosen = preferred ? within.find((s) => s.model === preferred)?.cmd : undefined;
+    const chosen = preferred ? matchingModel(within, preferred)?.cmd : undefined;
     if (chosen) return { cmd: chosen, source: 'settei_provider' };
     return { cmd: providerDefault(within, provider)!.cmd, source: 'system' };
   }
 
   const installed = dflt?.provider && dflt?.model
-    ? specs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
+    ? matchingModel(specs.filter((s) => s.provider === dflt.provider), dflt.model)?.cmd
     : undefined;
   const providerNative = dflt?.provider ? providerDefault(specs, dflt.provider)?.cmd : undefined;
   return { cmd: installed ?? providerNative ?? defaultAgentCommand(), source: 'system' };

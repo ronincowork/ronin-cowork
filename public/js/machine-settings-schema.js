@@ -10,8 +10,8 @@
  * owns meaning.
  *
  * `ctx` is what a surface already fetched and chose: { record, home, rows }, where
- * `rows` is the provider catalog as the one picker orders it (form-steps.js
- * `orderedCatalog`): every row carries its tier and whether this machine can launch it.
+ * `rows` is the provider catalog as the server joins it (form-steps.js
+ * `providerCatalog().rows`): every row carries its tier and whether this machine can launch it.
  */
 
 /** A provider·model value is one string so it survives a plain <option> and a text field. */

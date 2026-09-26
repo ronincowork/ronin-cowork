@@ -1,58 +1,44 @@
 /**
- * THE PROVIDER CATALOG — one record of every model provider and every model Ronin offers.
+ * THE PROVIDER CATALOG AND THE ONE JOIN — every model row a picker offers or a launch runs.
  *
- * `ronin_catalogs/MODEL_PROVIDERS.md` is stock; a copy in the owner's catalogs store is an
- * OVERLAY on it, merged per `### <Vendor>` section and keyed by the section's `provider` id
- * — the catalog entry merge described in `docs/architecture/shadowing.md`, so adding one provider or one
- * row does not fork the seven the owner did not touch. A user section of a stock id
- * replaces that section whole and keeps its place; a new id appends; a user section that
- * says `- **hidden:** yes` withdraws the stock one.
- * Every entry carries its `origin` and whether it shadowed a shipped section, so a surface
- * can SAY which layer a cell came from — a shadow nobody can see is the fault this replaces.
- * Each provider section carries the vendor id a launch names and the id of the CLI that
- * serves it (`src/agents.ts`), so the two are joined here, in data, and nowhere else. Each
- * model row carries its tier, a dated cost reading, what it is good at and not good at,
- * and whether it is the provider's default. The matching Agent page owns commands.
+ * Two records, one join, two names per model (owner's ruling, 2026-09-25):
  *
- * Each file's header carries `- **updated:** YYYY-MM-DD`, the day its prices, models and
- * descriptions were last read from the public record. It is a snapshot, refreshed with each
- * release (stock) or by the owner (their copy); readers show both dates, never hide either,
- * and never borrow one for the other.
+ * - THE CATALOG (`ronin_catalogs/MODEL_PROVIDERS.md`, stock; the owner's copy in the
+ *   catalogs store is an OVERLAY on it, merged per `### <Vendor>` section and keyed by
+ *   the section's `provider` id — `docs/architecture/shadowing.md`). It joins the vendor
+ *   id a launch names to the CLI that serves it (`src/agents.ts`), and carries
+ *   descriptive metadata per model id: tier, a dated cost reading, good at, not good at.
+ *   It never says what is available.
+ * - THE CAMPAIGN'S PROVIDER SUMMARY: what this machine measured, dated, hung on the
+ *   Campaign record. Its `models` are each activated CLI's own list, read on Refresh all
+ *   and never guessed. The CLI is the one source of truth for what can be launched.
  *
- * This module also holds the shape of the Campaign's measured provider summary, so that
- * the record and the catalog share one vocabulary; measuring and recording live in
- * `src/provider-summary.ts`.
+ * `providerRows` is the one join: Native first, then every model the CLI listed, in the
+ * CLI's order, each with its `model` (the id every launch uses) and `name` (the CLI's
+ * own display name, which carries the version — "Opus 5.5"), enriched by the catalog row
+ * of the same id when there is one. Launches, Mika, machine settings and every picker read
+ * these rows; no client joins anything.
  */
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { mergeSections, readUserCatalog, STOCK_DIR, storeDir, type CatalogSection, type Origin } from './resources.js';
-import { commandText, readAgentLaunches, renderLaunch } from './agent-launches.js';
+import { commandText, readAgentLaunches, renderLaunch, type AgentLaunches } from './agent-launches.js';
+import { AGENTS } from './agents.js';
 
 export const CATALOG_FILE = 'MODEL_PROVIDERS.md';
 export const TIERS = ['light', 'standard', 'frontier'] as const;
 export type Tier = typeof TIERS[number];
 export const NATIVE_MODEL = 'native';
 
-export interface SessionLaunchSpec {
-  /** The vendor id a launch names: `anthropic`, `openai`, … */
-  provider: string;
-  /** The id of the CLI that serves it in `src/agents.ts`: `claude`, `codex`, … */
-  cli: string;
-  /** The model id passed to the CLI, unchanged. */
+/** One catalog row: descriptive metadata for a model id, keyed by the id the CLI reports. */
+export interface CatalogModel {
+  /** The full model id passed to the CLI, unchanged. */
   model: string;
-  /** Friendly name from the refreshed CLI inventory; the model id remains the launch value. */
-  display_name?: string;
-  /** The complete interactive command for this model. */
-  cmd: string;
-  /** Empty for a model discovered from a CLI before Ronin has descriptive metadata for it. */
-  tier: Tier | '';
-  /** The row a launch naming this provider and no model gets when no preference is set. */
-  default: boolean;
+  tier: Tier;
   /** The vendor's public list price, dated — a reading, not a contract. */
   cost: string;
   good_at: string;
   not_good_at: string;
-  dangerousCmd?: string;
 }
 
 export interface ProviderCatalogEntry {
@@ -66,11 +52,7 @@ export interface ProviderCatalogEntry {
   shadowed: boolean;
   /** Optional display status for a provider that is beta or not offered yet. */
   maturity?: string;
-  /** Complete ordinary CLI launch with model choice delegated to the CLI. */
-  native?: string;
-  nativeDangerousCmd?: string;
-  launch_modes?: Array<'configured' | 'live_dangerously'>;
-  models: SessionLaunchSpec[];
+  models: CatalogModel[];
 }
 
 export interface ProviderCatalog {
@@ -85,6 +67,60 @@ export interface ProviderCatalog {
   providers: ProviderCatalogEntry[];
   /** Shipped providers the owner's copy withdrew with `- **hidden:** yes`. */
   withdrawn: Array<{ provider: string; label: string }>;
+}
+
+/** ONE JOINED ROW: what a launch runs and what a picker shows. */
+export interface SessionLaunchSpec {
+  /** The vendor id a launch names: `anthropic`, `openai`, … */
+  provider: string;
+  /** The id of the CLI that serves it in `src/agents.ts`: `claude`, `codex`, … */
+  cli: string;
+  /** The model id passed to the CLI, unchanged; `native` delegates the choice to the CLI. */
+  model: string;
+  /** The CLI's own display name for the id, version included ("Opus 5.5"); the id when it gives none. */
+  name: string;
+  /** The complete interactive command for this model. */
+  cmd: string;
+  dangerousCmd?: string;
+  /** '' for a listed model the catalog has no row for. */
+  tier: Tier | '';
+  /** Native: the row a launch naming this provider and no model gets when no preference is set. */
+  default: boolean;
+  cost: string;
+  good_at: string;
+  not_good_at: string;
+}
+
+/** A joined row as the client paints it: the launch spec plus what this machine can do with it. */
+export interface ProviderRow extends SessionLaunchSpec {
+  provider_label: string;
+  cli_label: string;
+  /** Installed, signed in or recorded, and not turned off: this machine can launch it. */
+  operational: boolean;
+  /** Turned off by the owner; the sign-in is kept. */
+  off: boolean;
+  selectable: boolean;
+  origin: Origin;
+  shadowed: boolean;
+}
+
+export interface ProviderRows extends Omit<ProviderCatalogEntry, 'models'> {
+  cli_label: string;
+  operational: boolean;
+  off: boolean;
+  /** Complete ordinary CLI launch with model choice delegated to the CLI; absent when no Agent page serves this CLI. */
+  native?: string;
+  nativeDangerousCmd?: string;
+  launch_modes?: Array<'configured' | 'live_dangerously'>;
+  models: ProviderRow[];
+}
+
+/** What `GET /api/provider-catalog` answers: the catalog's own facts, and the joined rows. */
+export interface ProviderCatalogAnswer extends Omit<ProviderCatalog, 'providers'> {
+  measured_at: string;
+  /** When Refresh all last read every activated CLI's list; '' when never. */
+  refreshed_at: string;
+  providers: ProviderRows[];
 }
 
 const cellsOf = (line: string): string[] => {
@@ -130,9 +166,7 @@ function parseProviderSection(section: CatalogSection): ProviderCatalogEntry | n
   return entry ? { ...entry, origin: section.origin, shadowed: section.shadowed } : null;
 }
 
-/**
- * A user section withdraws the shipped provider of its id with the house's hidden marker.
- */
+/** A user section withdraws the shipped provider of its id with the house's hidden marker. */
 function isWithdrawal(section: CatalogSection): boolean {
   if (section.origin !== 'user') return false;
   return section.lines.some((l) => /^-\s*\*\*hidden:\*\*\s*yes\b/i.test(l.trim()));
@@ -168,12 +202,11 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
       });
       rows.set(model, row);
     }
-    const models: SessionLaunchSpec[] = [];
+    const models: CatalogModel[] = [];
     for (const [model, row] of rows) {
       models.push({
-        provider, cli, model, cmd: '',
+        model,
         tier: asTier((row.tier ?? '').toLowerCase()),
-        default: /^yes$/i.test(row.default ?? ''),
         cost: row.cost ?? '',
         good_at: row['good at'] ?? '',
         not_good_at: row['not good at'] ?? '',
@@ -216,7 +249,7 @@ export async function readProviderCatalog(): Promise<ProviderCatalog> {
       continue;
     }
     const entry = parseProviderSection(section);
-    if (entry) providers.push(await attachAgentLaunches(entry));
+    if (entry) providers.push(entry);
   }
   return {
     origin: hasUser ? 'user' : 'stock',
@@ -232,137 +265,100 @@ export async function listProviderCatalog(): Promise<ProviderCatalogEntry[]> {
   return (await readProviderCatalog()).providers;
 }
 
-/** Attach executable commands from the Agent page that owns this CLI's launch grammar. */
-async function attachAgentLaunches(entry: ProviderCatalogEntry): Promise<ProviderCatalogEntry> {
-  if (!entry.models.length) return entry;
-  const grammar = await readAgentLaunches(entry.cli);
-  const values = (model = '') => ({ provider: entry.provider, model });
-  return {
-    ...entry,
-    native: commandText(renderLaunch(grammar.native, values())),
-    launch_modes: grammar.nativeDangerously.length || grammar.modelDangerously.length
-      ? ['configured', 'live_dangerously'] : ['configured'],
-    ...(grammar.nativeDangerously.length
-      ? { nativeDangerousCmd: commandText(renderLaunch(grammar.nativeDangerously, values())) }
-      : {}),
-    models: entry.models.map((row) => ({
-      ...row,
-      cmd: commandText(renderLaunch(grammar.model, values(row.model))),
-      ...(grammar.modelDangerously.length
-        ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, values(row.model))) }
-        : {}),
-    })),
-  };
+/* ---------------------------------------------------------------------------------- */
+/* THE CAMPAIGN'S PROVIDER SUMMARY — what this machine measured, dated.                */
+/* ---------------------------------------------------------------------------------- */
+
+/** One model as its CLI lists it: the id a launch uses, and the CLI's own name for it. */
+export interface ModelRow {
+  id: string;
+  name: string;
 }
 
-/** Derive a newly discovered model through the already-resolved Agent command grammar. */
-const discoveredCommand = (template: string | undefined, model: string): string => {
-  const argv = template?.match(/^(.*?\s(?:--model|-m)(?:=|\s+))(\S+)(.*)$/);
-  return argv && /^[A-Za-z0-9._:/@+-]+$/.test(model) ? `${argv[1]}${model}${argv[3]}` : '';
-};
-
-/** The provider's ordinary CLI launch: its catalog command with only model selection removed. */
-const nativeSpec = (entry: ProviderCatalogEntry): SessionLaunchSpec | null => {
-  const base = entry.models[0];
-  if (!base || !entry.native) return null;
-  return { ...base, model: NATIVE_MODEL, display_name: 'Native', cmd: entry.native,
-    ...(entry.nativeDangerousCmd ? { dangerousCmd: entry.nativeDangerousCmd } : { dangerousCmd: undefined }),
-    tier: '', default: true, cost: '',
-    good_at: 'the CLI choosing its own configured or current default model',
-    not_good_at: 'pinning a particular model' };
-};
-
-/** The CLI owns the live model inventory; catalog rows only enrich models it reports. */
-export function modelsAvailableToUser(entries: readonly ProviderCatalogEntry[], summary: ProviderSummary | null = null): ProviderCatalogEntry[] {
-  return entries.map((entry) => {
-    const native = nativeSpec(entry);
-    const list = summary?.model_lists?.[entry.cli];
-    if (!list) return { ...entry, models: native ? [native] : [] };
-    const catalog = new Map(entry.models.map((model) => [model.model, model]));
-    const models = list.models.filter((model) => model.visibility === 'list').flatMap((model) => {
-      const known = catalog.get(model.slug);
-      if (known) return [{ ...known, display_name: model.display_name || model.slug, default: false }];
-      const cmd = discoveredCommand(entry.models[0]?.cmd, model.slug);
-      return cmd ? [{ ...entry.models[0], model: model.slug, display_name: model.display_name || model.slug, cmd, tier: '' as const, default: false,
-        dangerousCmd: discoveredCommand(entry.models[0]?.dangerousCmd, model.slug) || undefined,
-        cost: '', good_at: model.description, not_good_at: '' }] : [];
-    });
-    return { ...entry, models: [...(native ? [native] : []), ...models] };
-  });
-}
-
-export async function listSessionLaunchSpecs(summary: ProviderSummary | null = null): Promise<SessionLaunchSpec[]> {
-  const catalog = await listProviderCatalog();
-  const refreshed = modelsAvailableToUser(catalog, summary).flatMap((entry) => entry.models);
-  const known = new Set(refreshed.map((spec) => `${spec.provider}\0${spec.model}`));
-  // A recorded preference may use a CLI-supported catalog name (for example Claude's
-  // "sonnet"). Keep that command available for launches without adding aliases to the
-  // refreshed picker or rewriting the owner's saved preference.
-  const named = catalog.flatMap((entry) => entry.models)
-    .filter((spec) => !known.has(`${spec.provider}\0${spec.model}`));
-  return [...refreshed, ...named];
-}
-
-/** A provider's own default row: the one marked `default`, else its first. */
-export function providerDefault(specs: readonly SessionLaunchSpec[], provider: string): SessionLaunchSpec | undefined {
-  const own = specs.filter((spec) => spec.provider === provider);
-  return own.find((spec) => spec.default) ?? own[0];
+/** A CLI's own model list as Ronin last read it. Rows are in the CLI's order. */
+export interface ModelList {
+  /** When Ronin read it. */
+  read_at: string;
+  /** The CLI version installed at that read; '' when it would not say. */
+  by: string;
+  rows: ModelRow[];
+  /** Why there are no rows: the CLI publishes no readable list, or none was found. */
+  unavailable?: string;
 }
 
 /**
- * THE CAMPAIGN'S PROVIDER SUMMARY — what this machine measured, dated.
- *
- * Written by the runtime when a provider is signed in, activated or closed and at Ronin
- * start, and by the Setup Model providers surface's own probe; read by everything else.
- * A stale summary shows its date. It is never guessed.
+ * Written at Ronin start and after a sign-in closes (machine facts, the recorded lists
+ * carried forward), and by Refresh all (machine facts, every activated CLI's list read
+ * again, npm asked for the newest release). Read by everything else. A stale summary
+ * shows its dates. It is never guessed.
  */
 export interface ProviderSummary {
   measured_at: string;
+  /** When Refresh all last ran: every activated CLI's list read, npm asked; '' when never. */
+  refreshed_at: string;
   /** CLI ids found on this machine's login-shell PATH. */
   installed: string[];
   /** CLI ids whose own credential file is on this machine. Presence only; never read. */
   signed_in: string[];
-  /** CLI ids that can launch: installed, signed in or recorded, and holding a catalog cell. */
+  /** CLI ids that can launch: installed, signed in or recorded, not off, and holding a catalog cell. */
   operational: string[];
+  /** Installed CLI ids the owner turned off; the sign-in is kept. */
+  off: string[];
   activated_count: number;
   /** Where each installed CLI was found. */
   paths: Record<string, string>;
   /** Each installed CLI's own version, as its `--version` printed it; absent when it would not say. */
   versions: Record<string, string>;
-  /** A CLI-owned model list, stamped by the CLI version that fetched it. */
-  model_lists: Record<string, CliModelList>;
-  /** The completed state of each installed CLI inventory read. Missing means an older, unmeasured record. */
-  model_inventory?: Record<string, ProviderInventoryStatus>;
+  /** Each activated CLI's own model list as last read; absent until Refresh all has read it. */
+  models: Record<string, ModelList>;
   /**
-   * The newest version its package source offers, asked only on Refresh — never on an
+   * The newest version its package source offers, asked only on Refresh all — never on an
    * ordinary measure, since each ask is an outbound request with an egress line. Kept
    * from the last Refresh until the next; absent for a CLI with no source Ronin can ask.
    */
   latest: Record<string, { version: string; checked_at: string }>;
 }
 
-export type ProviderInventoryState = 'unmeasured' | 'ready' | 'unavailable' | 'invalid';
-export interface ProviderInventoryStatus {
-  state: ProviderInventoryState;
-  checked_at: string;
-}
-
-export interface CliModelList {
-  fetched_at: string;
-  etag: string;
-  client_version: string;
-  models: Array<{
-    slug: string;
-    display_name: string;
-    description: string;
-    visibility: string;
-    priority: number;
-  }>;
-}
-
 const idList = (v: unknown): string[] => Array.isArray(v)
   ? [...new Set(v.filter((x): x is string => typeof x === 'string' && /^[a-z0-9_-]+$/.test(x)))]
   : [];
+const record = (v: unknown): Record<string, unknown> =>
+  v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
+
+/** One recorded list, or null when malformed. */
+function parseModelList(value: unknown): ModelList | null {
+  const item = record(value);
+  if (typeof item.read_at !== 'string' || !item.read_at || !Array.isArray(item.rows)) return null;
+  const rows: ModelRow[] = [];
+  for (const row of item.rows) {
+    const r = record(row);
+    if (typeof r.id !== 'string' || !r.id) return null;
+    rows.push({ id: r.id, name: typeof r.name === 'string' && r.name ? r.name : r.id });
+  }
+  return {
+    read_at: item.read_at,
+    by: typeof item.by === 'string' ? item.by : '',
+    rows,
+    ...(typeof item.unavailable === 'string' && item.unavailable ? { unavailable: item.unavailable } : {}),
+  };
+}
+
+/**
+ * A list recorded before 2026-09-25 under `model_lists` (the CLI's raw cache shape, with
+ * `fetched_at`, `client_version` and `models[{slug, display_name, visibility}]`), read
+ * once into today's shape so a store move never blanks the install.
+ */
+function parseLegacyModelList(value: unknown): ModelList | null {
+  const item = record(value);
+  if (typeof item.fetched_at !== 'string' || !item.fetched_at || !Array.isArray(item.models)) return null;
+  const rows: ModelRow[] = [];
+  for (const model of item.models) {
+    const m = record(model);
+    if (typeof m.slug !== 'string' || !m.slug || m.visibility !== 'list') continue;
+    rows.push({ id: m.slug, name: typeof m.display_name === 'string' && m.display_name ? m.display_name : m.slug });
+  }
+  return { read_at: item.fetched_at, by: typeof item.client_version === 'string' ? item.client_version : '', rows };
+}
 
 /** The summary as a record holds it, or null when the record carries none or a malformed one. */
 export function parseProviderSummary(value: unknown): ProviderSummary | null {
@@ -370,62 +366,33 @@ export function parseProviderSummary(value: unknown): ProviderSummary | null {
   const v = value as Record<string, unknown>;
   if (typeof v.measured_at !== 'string' || !v.measured_at.trim()) return null;
   const operational = idList(v.operational);
-  const rawPaths = v.paths && typeof v.paths === 'object' && !Array.isArray(v.paths) ? v.paths as Record<string, unknown> : {};
   const paths: Record<string, string> = {};
-  for (const [id, where] of Object.entries(rawPaths)) if (typeof where === 'string' && where) paths[id] = where;
-  const rawVersions = v.versions && typeof v.versions === 'object' && !Array.isArray(v.versions) ? v.versions as Record<string, unknown> : {};
+  for (const [id, where] of Object.entries(record(v.paths))) if (typeof where === 'string' && where) paths[id] = where;
   const versions: Record<string, string> = {};
-  for (const [id, version] of Object.entries(rawVersions)) if (typeof version === 'string' && version) versions[id] = version;
-  const rawLatest = v.latest && typeof v.latest === 'object' && !Array.isArray(v.latest) ? v.latest as Record<string, unknown> : {};
-  const latest: Record<string, { version: string; checked_at: string }> = {};
-  for (const [id, row] of Object.entries(rawLatest)) {
-    if (!row || typeof row !== 'object') continue;
-    const { version, checked_at } = row as Record<string, unknown>;
+  for (const [id, version] of Object.entries(record(v.versions))) if (typeof version === 'string' && version) versions[id] = version;
+  const latest: ProviderSummary['latest'] = {};
+  for (const [id, row] of Object.entries(record(v.latest))) {
+    const { version, checked_at } = record(row);
     if (typeof version === 'string' && version && typeof checked_at === 'string' && checked_at) latest[id] = { version, checked_at };
   }
-  const rawLists = v.model_lists && typeof v.model_lists === 'object' && !Array.isArray(v.model_lists) ? v.model_lists as Record<string, unknown> : {};
-  const model_lists: Record<string, CliModelList> = {};
-  for (const [id, row] of Object.entries(rawLists)) {
-    if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
-    const item = row as Record<string, unknown>;
-    if (typeof item.fetched_at !== 'string' || !item.fetched_at || typeof item.etag !== 'string'
-      || typeof item.client_version !== 'string' || !item.client_version || !Array.isArray(item.models)) continue;
-    const models = item.models.filter((model): model is CliModelList['models'][number] => {
-      if (!model || typeof model !== 'object' || Array.isArray(model)) return false;
-      const m = model as Record<string, unknown>;
-      return typeof m.slug === 'string' && Boolean(m.slug) && typeof m.display_name === 'string'
-        && typeof m.description === 'string' && typeof m.visibility === 'string' && typeof m.priority === 'number';
-    });
-    if (models.length !== item.models.length) continue;
-    model_lists[id] = { fetched_at: item.fetched_at, etag: item.etag, client_version: item.client_version, models };
-  }
-  const rawInventory = v.model_inventory && typeof v.model_inventory === 'object' && !Array.isArray(v.model_inventory)
-    ? v.model_inventory as Record<string, unknown> : {};
-  const model_inventory: Record<string, ProviderInventoryStatus> = {};
-  for (const id of idList(v.installed)) {
-    const row = rawInventory[id];
-    const item = row && typeof row === 'object' && !Array.isArray(row) ? row as Record<string, unknown> : null;
-    const state = item?.state;
-    const checked_at = item?.checked_at;
-    if (state === 'ready' || state === 'unavailable' || state === 'invalid' || state === 'unmeasured') {
-      model_inventory[id] = {
-        state: state === 'ready' && !model_lists[id] ? 'invalid' : state,
-        checked_at: typeof checked_at === 'string' ? checked_at : '',
-      };
-    } else {
-      model_inventory[id] = { state: model_lists[id] ? 'ready' : 'unmeasured', checked_at: model_lists[id]?.fetched_at ?? '' };
-    }
+  const models: Record<string, ModelList> = {};
+  const source = v.models !== undefined ? record(v.models) : record(v.model_lists);
+  const parse = v.models !== undefined ? parseModelList : parseLegacyModelList;
+  for (const [id, row] of Object.entries(source)) {
+    const list = parse(row);
+    if (list) models[id] = list;
   }
   return {
     measured_at: v.measured_at,
+    refreshed_at: typeof v.refreshed_at === 'string' ? v.refreshed_at : '',
     installed: idList(v.installed),
     signed_in: idList(v.signed_in),
     operational,
+    off: idList(v.off),
     activated_count: operational.length,
     paths,
     versions,
-    model_lists,
-    model_inventory,
+    models,
     latest,
   };
 }
@@ -440,4 +407,95 @@ export function newerVersion(installed: string, candidate: string): boolean {
     if (x !== y) return y > x;
   }
   return false;
+}
+
+/* ---------------------------------------------------------------------------------- */
+/* THE ONE JOIN                                                                        */
+/* ---------------------------------------------------------------------------------- */
+
+const NATIVE_NAME = 'Native';
+const NATIVE_GOOD_AT = 'the CLI choosing its own configured or current default model';
+const NATIVE_NOT_GOOD_AT = 'pinning a particular model';
+/** A model id goes into a command line: only the characters CLIs actually use in one. */
+const SAFE_MODEL_ID = /^[A-Za-z0-9._:/-]+$/;
+
+/** The Agent page's launch grammar for a CLI, or null when no page serves it. */
+async function grammarOf(cli: string): Promise<AgentLaunches | null> {
+  try { return await readAgentLaunches(cli); } catch { return null; }
+}
+
+/**
+ * Every provider with its joined rows: Native first, then each model the CLI listed, in
+ * the CLI's order, enriched by the catalog row of the same id. Providers this machine can
+ * launch come first; catalog order holds within each group. A provider whose CLI has no
+ * Agent page has no rows at all.
+ */
+export async function providerRows(summary: ProviderSummary | null, catalog?: ProviderCatalogEntry[]): Promise<ProviderRows[]> {
+  const entries = catalog ?? await listProviderCatalog();
+  const operational = new Set(summary?.operational ?? []);
+  const turnedOff = new Set(summary?.off ?? []);
+  const joined = await Promise.all(entries.map(async (entry): Promise<ProviderRows> => {
+    const agent = AGENTS.find((candidate) => candidate.id === entry.cli);
+    const off = turnedOff.has(entry.cli);
+    const on = operational.has(entry.cli);
+    const base = {
+      provider: entry.provider, cli: entry.cli, provider_label: entry.label, cli_label: agent?.label ?? entry.cli,
+      operational: on, off, selectable: on, origin: entry.origin, shadowed: entry.shadowed,
+    };
+    const grammar = entry.models.length ? await grammarOf(entry.cli) : null;
+    const models: ProviderRow[] = [];
+    let launch: Pick<ProviderRows, 'native' | 'nativeDangerousCmd' | 'launch_modes'> = {};
+    if (grammar) {
+      const values = (model = '') => ({ provider: entry.provider, model });
+      const native = commandText(renderLaunch(grammar.native, values()));
+      const dangerous = grammar.nativeDangerously.length || grammar.modelDangerously.length;
+      launch = {
+        native,
+        launch_modes: dangerous ? ['configured', 'live_dangerously'] : ['configured'],
+        ...(grammar.nativeDangerously.length ? { nativeDangerousCmd: commandText(renderLaunch(grammar.nativeDangerously, values())) } : {}),
+      };
+      models.push({
+        ...base, model: NATIVE_MODEL, name: NATIVE_NAME, cmd: native,
+        ...(launch.nativeDangerousCmd ? { dangerousCmd: launch.nativeDangerousCmd } : {}),
+        tier: '', default: true, cost: '', good_at: NATIVE_GOOD_AT, not_good_at: NATIVE_NOT_GOOD_AT,
+      });
+      const known = new Map(entry.models.map((row) => [row.model, row]));
+      for (const listed of summary?.models?.[entry.cli]?.rows ?? []) {
+        if (!SAFE_MODEL_ID.test(listed.id)) continue;
+        const meta = known.get(listed.id);
+        models.push({
+          ...base, model: listed.id, name: listed.name || listed.id,
+          cmd: commandText(renderLaunch(grammar.model, values(listed.id))),
+          ...(grammar.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, values(listed.id))) } : {}),
+          tier: meta?.tier ?? '', default: false, cost: meta?.cost ?? '', good_at: meta?.good_at ?? '', not_good_at: meta?.not_good_at ?? '',
+        });
+      }
+    }
+    const { models: _catalogModels, ...rest } = entry;
+    return { ...rest, cli_label: base.cli_label, operational: on, off, ...launch, models };
+  }));
+  return [...joined.filter((entry) => entry.operational), ...joined.filter((entry) => !entry.operational)];
+}
+
+/** The joined rows flat: what a launch resolves against. */
+export async function listSessionLaunchSpecs(summary: ProviderSummary | null = null): Promise<SessionLaunchSpec[]> {
+  return (await providerRows(summary)).flatMap((entry) => entry.models);
+}
+
+/** The one catalog read for the client: the catalog's own facts, the dates, and the joined rows. */
+export async function providerCatalogAnswer(summary: ProviderSummary | null): Promise<ProviderCatalogAnswer> {
+  const catalog = await readProviderCatalog();
+  const { providers: _entries, ...facts } = catalog;
+  return {
+    ...facts,
+    measured_at: summary?.measured_at ?? '',
+    refreshed_at: summary?.refreshed_at ?? '',
+    providers: await providerRows(summary, catalog.providers),
+  };
+}
+
+/** A provider's own default row: Native, else its first. */
+export function providerDefault(specs: readonly SessionLaunchSpec[], provider: string): SessionLaunchSpec | undefined {
+  const own = specs.filter((spec) => spec.provider === provider);
+  return own.find((spec) => spec.default) ?? own[0];
 }

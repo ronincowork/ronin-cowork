@@ -34,6 +34,23 @@ export function classifyStatus(text: string): SessionStatus | null {
   return null;
 }
 
+/**
+ * IS IT STOPPED AT A QUESTION? The one thing still read off the screen.
+ *
+ * What an Agent is doing now comes from its journal — a tool call is a record, a finished
+ * reply is a record. A dialog is not: a permission prompt is a thing drawn on a pane and no
+ * CLI writes a line for it, so there is nothing to read but the pane. It is also the most
+ * actionable state on the board, which is why it stayed when the spinner matching went.
+ *
+ * Only the `asking` patterns are consulted — the vendors' own, plus the house y/n. The
+ * spinner glyphs and prompt shapes are still in the table above for Mika's one-shot
+ * readiness read, which asks a different question: is this newly launched CLI up yet.
+ */
+export function asksForInput(text: string): boolean {
+  const tail = text.replace(/\n+$/, '').split('\n').slice(-SCAN_LINES).join('\n');
+  return STATUS_PATTERNS.some((p) => p.status === 'awaiting-input' && p.re.test(tail));
+}
+
 export function createActivityCache<T>(load: (session: string) => Promise<T>) {
   const settled = new Map<string, { activity: number; value: T }>();
   const pending = new Map<string, { activity: number; value: Promise<T> }>();

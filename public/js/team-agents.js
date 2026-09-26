@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
-import { createStep, el, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, tierWord } from './form-steps.js';
+import { createStep, el, mandateWord, modelLabel, providerCatalog, tierWord } from './form-steps.js';
 import { finalizeTeamName, sanitizeTeamName } from './new-team-draft.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -59,11 +59,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
       }));
     const modelRows = (provider) => providerCatalog().rows.filter((item) => item.provider === provider).map((item) => ({
       v: item.model, l: modelLabel(item), word: tierWord(item.tier), sub: item.cost || '',
-      off: !item.operational
-        ? (item.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'))
-      : !item.selectable
-        ? modelAvailabilityFact(item)
-        : undefined,
+      off: item.selectable ? undefined : item.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
     }));
     const mandateRows = (values) => values.map((value) => ({ v: value, l: mandateWord(value) }));
     const questions = ask([

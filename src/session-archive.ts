@@ -1,5 +1,4 @@
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { storeDir } from './resources.js';
@@ -70,82 +69,9 @@ export function argvFromProc(pid: number): Promise<string[]> {
   return fs.readFile(`/proc/${pid}/cmdline`).then((b) => b.toString().split('\0').filter(Boolean), () => []);
 }
 
-async function descendants(pid: number): Promise<number[]> {
-  const out: number[] = [];
-  const walk = async (parent: number): Promise<void> => {
-    let raw = '';
-    try { raw = await fs.readFile(`/proc/${parent}/task/${parent}/children`, 'utf8'); } catch { return; }
-    for (const token of raw.trim().split(/\s+/).filter(Boolean)) {
-      const child = Number(token); if (!child || out.includes(child)) continue;
-      out.push(child); await walk(child);
-    }
-  };
-  await walk(pid); return out;
-}
-
-export function codexIdFromFdTargets(targets: readonly { target: string; modified: number }[]): string {
-  const locks = new Set<string>();
-  const rollouts: Array<{ id: string; modified: number }> = [];
-  for (const { target, modified } of targets) {
-    const lock = target.match(/thread-writer-locks\/([0-9a-f-]{36})\.lock$/i);
-    if (lock) locks.add(lock[1].toLowerCase());
-    const rollout = target.match(/\/rollout-[^/]*-([0-9a-f-]{36})\.jsonl$/i);
-    if (rollout) rollouts.push({ id: rollout[1].toLowerCase(), modified });
-  }
-  const exact = rollouts.filter(({ id }) => locks.has(id)).sort((a, b) => b.modified - a.modified);
-  if (!exact.length || (exact[1] && exact[1].modified === exact[0].modified && exact[1].id !== exact[0].id)) return '';
-  return exact[0].id;
-}
-
-async function codexSessionId(pid: number): Promise<string> {
-  const targets: Array<{ target: string; modified: number }> = [];
-  for (const candidate of [pid, ...await descendants(pid)]) {
-    let fds: string[] = [];
-    try { fds = await fs.readdir(`/proc/${candidate}/fd`); } catch { continue; }
-    for (const fd of fds) {
-      try {
-        const link = `/proc/${candidate}/fd/${fd}`;
-        const [target, stat] = await Promise.all([fs.readlink(link), fs.stat(link)]);
-        targets.push({ target, modified: stat.mtimeMs });
-      } catch {}
-    }
-  }
-  return codexIdFromFdTargets(targets);
-}
-
 function idAfter(argv: readonly string[], flags: readonly string[]): string {
-  const at = argv.findIndex((v) => flags.includes(v));
-  const id = at >= 0 ? argv[at + 1] || '' : '';
-  return UUID.test(id) ? id : '';
-}
-
-function exactClaudePrompt(content: unknown, prompt: string): boolean {
-  if (content === prompt) return true;
-  return Array.isArray(content) && content.some((part) =>
-    part && typeof part === 'object' && (part as { type?: string; text?: string }).type === 'text' &&
-    (part as { text?: string }).text === prompt);
-}
-
-async function legacyClaudeSessionId(cwd: string, argv: string[]): Promise<string> {
-  const prompt = argv.at(-1) || '';
-  if (!prompt || prompt.startsWith('-')) return '';
-  const project = path.join(os.homedir(), '.claude', 'projects', cwd.replace(/[^A-Za-z0-9]/g, '-'));
-  let files: string[] = [];
-  try { files = await fs.readdir(project); } catch { return ''; }
-  const matches: string[] = [];
-  for (const file of files.filter((f) => f.endsWith('.jsonl') && UUID.test(f.slice(0, -6)))) {
-    try {
-      const raw = await fs.readFile(path.join(project, file), 'utf8');
-      for (const line of raw.split('\n')) {
-        if (!line.includes(prompt.slice(0, Math.min(80, prompt.length)))) continue;
-        const value = JSON.parse(line) as { type?: string; message?: { content?: unknown } };
-        if (value.type === 'user' && exactClaudePrompt(value.message?.content, prompt)) {
-          matches.push(file.slice(0, -6)); break;
-        }
-      }
-    } catch {}
-  }
-  return matches.length === 1 ? matches[0] : '';
+  const ids = argv.flatMap((value, index) => flags.includes(value) ? [argv[index + 1] || ''] : []);
+  return ids.length && ids.every(id => UUID.test(id) && id === ids[0]) ? ids[0]! : '';
 }
 
 export function providerFromArgv(argv: readonly string[]): ResumableProvider | '' {
@@ -157,20 +83,22 @@ export function providerFromArgv(argv: readonly string[]): ResumableProvider | '
   return '';
 }
 
+/** Compatibility for births without a launch artifact. Never infer from history,
+ * descendant file descriptors, or modification times. Process argv is Linux-only.
+ */
 export async function providerSessionInfo(
   stampedAgent: string,
-  cwd: string,
+  _cwd: string,
   pid: number,
   stampedId = '',
 ): Promise<{ agent: ResumableProvider; id: string } | null> {
+  const stamped = agentSpec(stampedAgent)?.id;
+  if (stamped && stampedId) return { agent: stamped, id: stampedId };
   const argv = await argvFromProc(pid);
-  const agent = agentSpec(stampedAgent)?.id || providerFromArgv(argv);
+  const agent = stamped || providerFromArgv(argv);
+  if (agent && stampedId) return { agent, id: stampedId };
   const discovery = agent ? agentSpec(agent)?.operations.session.discovery : 'unsupported';
-  if (!agent || discovery === 'unsupported') return null;
-  let id = UUID.test(stampedId) ? stampedId : '';
-  if (!id && discovery === 'codex-fds') id = await codexSessionId(pid);
-  if (!id && discovery === 'claude-history') {
-    id = idAfter(argv, ['--session-id']) || idAfter(argv, ['--resume', '-r']) || await legacyClaudeSessionId(cwd, argv);
-  }
-  return id ? { agent, id } : null;
+  const id = discovery === 'explicit-argv'
+    ? idAfter(argv, ['--session-id', '--resume', '-r']) : '';
+  return agent && id ? { agent, id } : null;
 }

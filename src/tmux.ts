@@ -1,3 +1,5 @@
+import { processLaunch } from './launch-binding.js';
+import path from 'node:path';
 import { config } from './machine-settings.js';
 import { ensureTmuxServer } from './host-guard.js';
 import { removeHandoff } from './handoff.js';
@@ -133,28 +135,27 @@ export interface CreateOpts {
   rireki?: boolean;
   /** House seats with a security-significant cwd must fail rather than fall back. */
   strictCwd?: boolean;
+  cli?: string;
+  team?: string;
+  resume?: boolean;
 }
 
 export async function createSession(name: string, dir?: string, opts: CreateOpts = {}): Promise<void> {
   if (opts.agent !== false && !opts.exempt) await assertUnderMax();
   await ensureTmuxServer();
   const cwd = dir || config.newSessionDir;
-  const build = (withDir: boolean) => newSessionArgs(name, {
-    cwd: withDir ? cwd : undefined,
-    env: opts.env,
-    argv: opts.argv,
-    key: opts.key,
-    rireki: opts.rireki,
-  });
-  try {
-    await tmux.run(build(true));
-  } catch (err) {
-    if (cwd && !opts.strictCwd) {
-      await tmux.run(build(false));
-    } else {
-      throw err;
+  await processLaunch({ name, key: opts.key, cli: opts.cli ?? path.basename(opts.argv?.[0] ?? ''),
+    argv: opts.argv ?? [], cwd, team: opts.team, env: opts.env, resume: opts.resume }, async (argv, env, identity) => {
+    const build = (withDir: boolean) => newSessionArgs(name, {
+      cwd: withDir ? cwd : undefined, env, argv, key: identity.key, rireki: opts.rireki,
+    });
+    try { await tmux.run(build(true)); }
+    catch (err) {
+      if (cwd && !opts.strictCwd) await tmux.run(build(false));
+      else throw err;
     }
-  }
+    if (identity.providerSession) await setProviderSessionId(name, identity.providerSession);
+  });
 }
 
 interface StopOptions { signal?: AbortSignal; timeoutMs?: number }

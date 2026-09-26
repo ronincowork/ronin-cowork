@@ -27,9 +27,11 @@
     <link rel="stylesheet" href="/__RONIN_ASSET_VERSION__/css/feedback.css" />
     <link rel="stylesheet" href="/__RONIN_ASSET_VERSION__/css/garden-canvas.css" />
     <!-- modulepreloads:start -->
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/agent-composition.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/agent-view.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/ansi.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/api.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/appheight.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/archives.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/ask.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/behaviour-reader.js" />
@@ -51,6 +53,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/customize-resources.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/customize.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/desk-profile.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/desk-view.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/desks.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/docs.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/document-links.js" />
@@ -94,6 +97,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/pagewords.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/panels.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/password-surface.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/phalanx.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/preset-launch.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/presets.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/projectroots.js" />
@@ -104,7 +108,6 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/release-update-controller.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/request.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/roster-groups.js" />
-    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/roster.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/senmaida.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/services-activation.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/services-card.js" />
@@ -124,12 +127,13 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/state.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/stats.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/status-marker.js" />
-    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/stone-work-surface.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/surface-host.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/system.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tapefold.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tapeview.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-agents.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-arrange.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-chart-surface.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-configuration.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-controller.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/team-drag.js" />
@@ -147,6 +151,7 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/theme-toggle.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/theme.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tile-doc-view.js" />
+    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tile-transcript.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tile.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tiledocs.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tiledrop.js" />
@@ -156,7 +161,6 @@
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tilewire.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/tips.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/ui.js" />
-    <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/voice.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/weblink.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/widgets.js" />
     <link rel="modulepreload" href="/__RONIN_ASSET_VERSION__/js/workbench-catalog.js" />
@@ -187,7 +191,7 @@
       <!-- THE PLACE — the reading inside the centred, neutral island cut into the top
            edge of the screen, visually separate from the Workbench headers.
            js/workspace-header.js writes it; nothing else does. -->
-      <span class="grow"><span id="viewplace" class="ui-bar-place" hidden></span></span>
+      <span id="viewisland" class="grow view-island"><span id="viewplace" class="ui-bar-place" hidden></span></span>
       <span id="viewmap" class="wk-view-map"></span>
       <button id="ramrpm" class="ramrpm" type="button" hidden aria-expanded="false"></button>
       <!-- A view's own compact controls (Setup's light/dark). js/workspace.js seats them. -->
