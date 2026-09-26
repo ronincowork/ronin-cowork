@@ -51,6 +51,18 @@ async function allDesks(): Promise<Record<string, SessionDesks>> {
   return Object.fromEntries(rows.map((r) => [r.session, r]));
 }
 
+// What GET /api/desks answers, and what /events pushes as {t:'desks', list}: one memo, so the
+// push clock and a reconnecting tab share the git reads.
+export async function loadDesks(): Promise<Record<string, SessionDesks>> {
+  if (!memo || Date.now() - memo.at > MEMO_MS) memo = { at: Date.now(), value: allDesks() };
+  try {
+    return await memo.value;
+  } catch (e) {
+    memo = null;
+    throw e;
+  }
+}
+
 export function registerDesks(app: express.Express): void {
   app.get('/api/funnel-recovery', async (_req, res) => {
     try { res.json(await listFunnelReceipts()); }
@@ -91,10 +103,8 @@ export function registerDesks(app: express.Express): void {
 
   app.get('/api/desks', async (_req, res) => {
     try {
-      if (!memo || Date.now() - memo.at > MEMO_MS) memo = { at: Date.now(), value: allDesks() };
-      res.json(await memo.value);
+      res.json(await loadDesks());
     } catch (e) {
-      memo = null;
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });

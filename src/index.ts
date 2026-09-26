@@ -26,13 +26,13 @@ import { bindOperatorSocket, isOperatorPeer, operatorSocketPath, SiblingAlive, t
 import { addressRefusal, EXIT_ADDRESS_UNUSABLE } from './bind-refusal.js';
 import { publishMax, publishOwner } from './machine-state.js';
 import { registerCatalogs } from './routes/catalogs.js';
-import { registerLaunch } from './routes/launch.js';
+import { loadHome, registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions } from './routes/sessions-api.js';
 import { registerTeams } from './routes/teams-api.js';
 import { registerDocs } from './routes/docs-api.js';
-import { registerDesks } from './routes/desks-api.js';
+import { loadDesks, registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
 import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
@@ -417,7 +417,7 @@ const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
 const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
-startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
+startSessionsBroadcast({ home: loadHome, desks: loadDesks }); // the /events membership poll, plus the pushed home rows and desks, on the same boot clock as before
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 void publishMax();

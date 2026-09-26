@@ -10,6 +10,58 @@ const eventClients = new Set<WebSocket>();
 let lastSessionNames = '';
 let sessionsRefresh: Promise<void> | undefined;
 
+/*
+ * PUSHED RESOURCES — the browser store holds what arrives here; nothing polls for them.
+ * Each rides the sessions triggers (tmux notifications, the 2s clock), is sent only when
+ * its signature moved, and is sent whole to a fresh connection. GET /api/home and
+ * /api/desks remain only as the snapshot a reconnecting tab asks for.
+ */
+interface Pushed {
+  t: 'home' | 'desks';
+  field: 'rows' | 'list';
+  load: () => Promise<unknown>;
+  signature: (value: unknown) => string;
+  last: string;
+  value?: unknown;
+  refresh?: Promise<boolean>;
+}
+let pushed: Pushed[] = [];
+
+// The fields the UI paints: a row's `activity` and its stance `at` move on every turn and
+// nothing under public/ shows them, so they never make a push on their own.
+export function homeSignature(rows: unknown): string {
+  return JSON.stringify((rows as Array<Record<string, unknown>>).map(({ activity: _activity, at: _at, ...painted }) => painted));
+}
+
+export function feedPushedResources(loaders: { home: () => Promise<unknown[]>; desks: () => Promise<unknown> }): void {
+  pushed = [
+    { t: 'home', field: 'rows', load: loaders.home, signature: homeSignature, last: '' },
+    { t: 'desks', field: 'list', load: loaders.desks, signature: (list) => JSON.stringify(list), last: '' },
+  ];
+}
+
+// Resolves true when this refresh broadcast, so a connection already in the set has it.
+function refreshPushed(resource: Pushed): Promise<boolean> {
+  if (eventClients.size === 0) return Promise.resolve(false);
+  if (resource.refresh) return resource.refresh;
+  resource.refresh = resource.load()
+    .then((value) => {
+      const signature = resource.signature(value);
+      if (signature === resource.last) return false;
+      resource.last = signature;
+      resource.value = value;
+      broadcastEvent({ t: resource.t, [resource.field]: value });
+      return true;
+    })
+    .catch(() => false)
+    .finally(() => { resource.refresh = undefined; });
+  return resource.refresh;
+}
+
+export async function refreshPushedResources(): Promise<void> {
+  await Promise.all(pushed.map(refreshPushed));
+}
+
 const SESSION_NOTIFICATIONS = [
   'sessions-changed',
   'session-renamed',
@@ -48,6 +100,15 @@ export function handleEvents(ws: WebSocket): void {
       if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ t: 'sessions', list }));
     })
     .catch(() => {});
+  // A fresh connection gets each pushed resource exactly once: the refresh either broadcast
+  // it (this socket is already in the set) or found nothing new, and then it is sent the
+  // value every other connection holds.
+  for (const resource of pushed) {
+    void refreshPushed(resource).then((broadcast) => {
+      if (broadcast || resource.value === undefined || ws.readyState !== ws.OPEN) return;
+      ws.send(JSON.stringify({ t: resource.t, [resource.field]: resource.value }));
+    });
+  }
 }
 
 export function broadcastEvent(msg: Record<string, unknown>): number {
@@ -81,9 +142,10 @@ export function wireTmuxNotifications(client: Pick<TmuxClient, 'on'>, refresh: (
   return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
 }
 
-export function startSessionsBroadcast(): void {
-  wireTmuxNotifications(tmux, () => { void refreshSessions(true); });
+export function startSessionsBroadcast(loaders: Parameters<typeof feedPushedResources>[0]): void {
+  feedPushedResources(loaders);
+  wireTmuxNotifications(tmux, () => { void refreshSessions(true); void refreshPushedResources(); });
   onClock('sessions_broadcast', 2000, async () => {
-    await refreshSessions(false);
+    await Promise.all([refreshSessions(false), refreshPushedResources()]);
   });
 }

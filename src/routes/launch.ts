@@ -227,43 +227,46 @@ export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'act
   return state === 'awaiting-input' ? 'action_required' : state === null ? 'starting' : 'ready';
 }
 
+// The pane is still read, for two things a journal cannot state: whether a dialog is
+// open, and the CLI's own context gauge. What the Agent is DOING comes from its journal,
+// through the transcript part's row field — no spinner is matched here any more.
+const loadPaneStatus = createActivityCache(async (name: string) => {
+  const text = await capturePane(name, 0);
+  return {
+    asking: asksForInput(text),
+    ctx: scanContext(text),
+    model: scanModel(text),
+  };
+});
+
+// The home rows: what GET /api/home answers, and what /events pushes as {t:'home', rows}.
+export const loadHome = createWindowedLoader(async () => {
+  const list = await withAxes(await listSessions());
+  return Promise.all(
+    list.map(async (s) => {
+      const [pane, contributed, tegami] = await Promise.all([
+        loadPaneStatus(s.name, s.activity).catch(() => ({ asking: false, ctx: null, model: null })),
+        collectRowFields(s.name),
+        readTegami(s.name),
+      ]);
+      const { asking, ...reading } = pane;
+      return {
+        ...s,
+        ...reading,
+        ...contributed,
+        // ONE field, and one precedence: an Agent stopped at a question is `working` as
+        // far as its journal knows, and `working` is the wrong thing to tell the person
+        // whose answer it is waiting for.
+        stance: asking ? 'asking' : (contributed.stance ?? 'unknown'),
+        ...(tegami ? { tegami } : {}),
+      };
+    }),
+  );
+}, 2_000);
+
 export function registerLaunch(app: express.Express): LaunchControl {
   type MikaReady = Awaited<ReturnType<LaunchControl['ensureMika']>>;
   let mikaStarting: Promise<MikaReady> | null = null;
-  // The pane is still read, for two things a journal cannot state: whether a dialog is
-  // open, and the CLI's own context gauge. What the Agent is DOING comes from its journal,
-  // through the transcript part's row field — no spinner is matched here any more.
-  const loadPaneStatus = createActivityCache(async (name: string) => {
-    const text = await capturePane(name, 0);
-    return {
-      asking: asksForInput(text),
-      ctx: scanContext(text),
-      model: scanModel(text),
-    };
-  });
-  const loadHome = createWindowedLoader(async () => {
-    const list = await withAxes(await listSessions());
-    return Promise.all(
-      list.map(async (s) => {
-        const [pane, contributed, tegami] = await Promise.all([
-          loadPaneStatus(s.name, s.activity).catch(() => ({ asking: false, ctx: null, model: null })),
-          collectRowFields(s.name),
-          readTegami(s.name),
-        ]);
-        const { asking, ...reading } = pane;
-        return {
-          ...s,
-          ...reading,
-          ...contributed,
-          // ONE field, and one precedence: an Agent stopped at a question is `working` as
-          // far as its journal knows, and `working` is the wrong thing to tell the person
-          // whose answer it is waiting for.
-          stance: asking ? 'asking' : (contributed.stance ?? 'unknown'),
-          ...(tegami ? { tegami } : {}),
-        };
-      }),
-    );
-  }, 2_000);
 
   app.get('/api/launch-seed', async (req, res) => {
     try {
