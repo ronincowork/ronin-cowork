@@ -6862,6 +6862,12 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
     color: inherit;
   }
   #bar.header-collapsed { display: none; }
+  /* THE TOP HEADER STANDS DOWN FOR THE KEYBOARD; THE WORKSPACE HEADS DO NOT. With the
+     keys up there is little room left, and the application bar is the part you are not
+     using — the heads over the work surfaces are what tells you where you are, so they
+     stay exactly where they are and it is the space between them that gives (owner,
+     2026-09-26). The bar comes back when the box is let go, with nothing to press. */
+  :root[data-keyboard='open'] #bar { display: none; }
   /* Collapsed: the bar and its island are gone, and this is all that is left of them —
      the caret alone, in the island's own colours, cut into the top edge where the island
      sat so it does not jump, sitting over the work surfaces' header. In the way on

@@ -39,9 +39,10 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   replies and server-wide notifications only. The roster and the recorder's sweep skip
   `grid_*` names.
 - `tmux.on(kind, handler)` delivers notifications. `src/ws/events.ts` pushes the session
-  list, the home rows and the desks to browsers on `%sessions-changed`, renames and window
-  changes, with the 2 s clock kept as a heartbeat; one `refresh-client -B` subscription carries every session's
-  `#{window_activity}` for the roster.
+  list and the home rows to browsers on `%sessions-changed`, renames and window changes,
+  with the 2 s clock kept as a heartbeat; each tick takes one session listing for both. No
+  `refresh-client -B` activity subscription is installed: nothing reads its values, and a
+  row's `activity` comes from the listing.
 
 **The rule:** no `execFile('tmux', …)` or `spawn('tmux', …)` in `src/` outside the client
 and the pty attach paths (`src/ws/pty.ts`, `src/viewer.ts`). `tests/tmux.test.ts` refuses
