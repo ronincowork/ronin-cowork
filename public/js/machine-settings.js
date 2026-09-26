@@ -199,6 +199,7 @@ export function buildMachineSettings(root, isShowing) {
     });
   };
 
+  let card = null; // the Services card of the last render; a new render closes it first
   const render = () => {
     body.innerHTML = '';
     const { set, observed, status: st, schema } = rec;
@@ -331,11 +332,11 @@ export function buildMachineSettings(root, isShowing) {
     const activation = set.services.activation ?? {};
     body.appendChild(obsRow(t('settei.subscription', 'subscription'), st.subscription,
       activation.email_masked ? ` ${activation.email_masked}` : ''));
-    // email and recorded without being checked; now the operator asks Ronin HQ, the
-    // person confirms on whatever device they are holding, and the install polls until
-    // the entitlement arrives. The card renders the durable stage rather than what this
-    // page remembers doing, so a reload or a second tab lands on the truth.
-    servicesCard(body);
+    // The operator asks Ronin HQ, the person confirms on whatever device they are holding,
+    // and each step arrives by push. The card renders the durable stage rather than what
+    // this page remembers doing, so a reload or a second tab lands on the truth.
+    card?.stop();
+    card = servicesCard(body);
 
     group(t('settei.group_needed', 'still needed'));
     for (const n of rec.needed ?? []) {
