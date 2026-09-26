@@ -240,6 +240,9 @@ The surface shows one measured status line and three controls in one shape:
 **Done** once they are. Installing needs a registered identity; switching on cascades to
 new Teams and Agents, and a Team can still differ in its own configuration. When a restart
 is the one thing left to do, a fourth control, **Restart**, appears until Ronin is back.
+Nothing on the page polls: a confirmed email, each install step and a switch's new facts
+arrive as Ronin learns them, and after a restart the page reads again when its connection
+to Ronin returns.
 Installed parts are usable whether or not anyone registered. The Grokbot Morning Briefing
 preset waits for Services to be active. The activation flow itself is in
 `docs/getting-started/services-activation.md`.

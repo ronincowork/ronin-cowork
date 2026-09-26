@@ -1,6 +1,7 @@
 /* Selector-driven workspace-2 surfaces for the Ronin Setup workbench. */
 import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
+import { store } from './store.js';
 import { t } from './lexicon.js';
 import { buildGbrain } from './gbrain.js';
 import { createWorkspaceFoldersSurface } from './workspace-folders-surface.js';
@@ -448,7 +449,6 @@ async function inlineServicesMark(host) {
 export function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
   const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);
-  let timer = null;
   let said = '';  // the last press's answer, kept across the surface's own re-reads until the next press
   const explain = () => {
     const intro = el('section', 'setup-services-intro');
@@ -491,34 +491,30 @@ export function createServicesSurface(context) {
     if (result.ok) context.environment?.onInstallationChoice?.();
     return result;
   };
-  /** Restart: ask, then read the restart off the machine — /api/installed's startedAt changes when Ronin is back.
+  /** Restart: ask; the socket closes as Ronin goes down, and its reopen reads the machine again.
    *  A refusal answers in the tool's own words; no answer means Ronin went down, which is the restart happening. */
-  const restartRonin = async (state, startedAt) => {
+  const restartRonin = async (state) => {
     state.dataset.tone = 'warn';
     state.replaceChildren(el('p', 'setup-services-status-line', t('services_setup.restarting', 'Restarting Ronin…')), el('p', 'setup-services-next', t('services_setup.next_restarting', 'This surface re-reads the machine as Ronin comes back.')));
     const asked = await request('/api/machine/restart', { method: 'POST', json: {} });
-    if (!asked.ok && asked.kind !== 'network') { said = asked.message; await show(); return; }
-    const until = Date.now() + 120_000;
-    while (Date.now() < until && body.isConnected) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      const probe = await request('/api/installed', { cache: 'no-store' });
-      if (probe.ok && probe.data?.cowork?.startedAt && probe.data.cowork.startedAt !== startedAt) break;
-    }
-    if (body.isConnected) await show();
+    if (!asked.ok && asked.kind !== 'network') { said = asked.message; await read(); }
   };
-  const show = async () => {
-    clearTimeout(timer);
+  // The three answers this surface paints, as a pushed or pressed `services` object carries them.
+  const answers = (services) => [services.registration, services.installed, services.activation].map((data) => ({ ok: true, data }));
+  const read = async () => {
     const [registration, installed, activation] = await Promise.all([
       request('/api/setup/registration', { cache: 'no-store' }),
       request('/api/installed', { cache: 'no-store' }),
       request('/api/services/activation', { cache: 'no-store' }),
       loadCampaigns(),
     ]);
-    // Ronin is down or unreachable for a moment (a restart in flight): keep what is painted and look again shortly.
-    if (!installed.ok && installed.kind === 'network' && body.dataset.state) { timer = setTimeout(() => { if (body.isConnected) void show(); }, 3000); return; }
+    // Ronin is down for a moment (a restart in flight): keep what is painted; the socket's reopen reads again.
+    if (!installed.ok && installed.kind === 'network' && body.dataset.state) return;
+    paint(registration, installed, activation);
+  };
+  const paint = (registration, installed, activation) => {
     const model = servicesSetupModel(registration, installed, activation);
     if (installed.ok) context.onInstalledState?.(installed.data);
-    const startedAt = installed.ok ? installed.data?.cowork?.startedAt || '' : '';
     const intro = explain();
     body.replaceChildren(intro);
     body.dataset.state = model.state;
@@ -553,12 +549,19 @@ export function createServicesSurface(context) {
         const button = action(item.label, '', async () => {
           if (item.act === 'register') { openRegister(); return; }
           button.disabled = true; said = ''; notice.textContent = '';
-          if (item.act === 'restart') { await restartRonin(state, startedAt); return; }
-          const result = item.act === 'switch_on' || item.act === 'switch_off' ? await switchServices(item.act === 'switch_on')
+          if (item.act === 'restart') { await restartRonin(state); return; }
+          // Install and Check status answer with the services object; a switch's new facts arrive by push.
+          const switching = item.act === 'switch_on' || item.act === 'switch_off';
+          const result = switching ? await switchServices(item.act === 'switch_on')
             : await request(item.act === 'install' ? '/api/services/install' : '/api/services/activation/poll', { method: 'POST', json: {} });
-          if (!result.ok) said = result.message;
-          else context.environment?.onInstallationChoice?.();
-          await show();
+          if (!result.ok) {
+            said = result.message;
+            notice.textContent = said; notice.classList.add('bad');
+            button.disabled = false;
+            return;
+          }
+          context.environment?.onInstallationChoice?.();
+          if (!switching) paint(...answers(result.data));
         });
         button.classList.add('setup-services-step-action');
         button.dataset.step = item.id; button.dataset.done = String(item.done);
@@ -601,7 +604,6 @@ export function createServicesSurface(context) {
         value: { [component.id]: desired[component.id] === true },
         onChange: async (answer) => {
           if (saving) return;
-          clearTimeout(timer);
           const before = { ...desired };
           desired = { ...desired, [component.id]: answer[component.id] };
           saving = true;
@@ -615,8 +617,8 @@ export function createServicesSurface(context) {
             notice.classList.add('bad');
           } else {
             notice.textContent = t('settei.saved', 'saved');
-            // One local facts read preserves runtime disagreement, including partial loads.
-            // Component selection never calls show(), activation polling, or page refresh.
+            // One local facts read preserves runtime disagreement, including partial loads,
+            // and repaints only the steps and status, never the controls being chosen.
             const fresh = await request('/api/installed', { cache: 'no-store' });
             if (fresh.ok) {
               facts = fresh.data;
@@ -649,10 +651,19 @@ export function createServicesSurface(context) {
     body.append(values, notice, state);
     body.append(el('p', 'setup-fine', 'Template Library offers ready-made Teams and Agents with their books and tools. It has no separate Services switch.'));
     body.append(el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.')));
-    // A confirmation or an install in flight: look again quietly while the surface is on screen.
-    if (model.polling) timer = setTimeout(() => { if (body.isConnected) void show(); }, model.state === 'installing' || model.steps.some((item) => item.id === 'restart') ? 5000 : 15000);
   };
-  return { el: out.el, show, destroy: () => clearTimeout(timer) };
+  // OPEN reads the three answers and listens: an email confirmed, an install's steps and a
+  // switch's new facts arrive as {t:'services-setup', services}; a reopened socket (Ronin
+  // back from a restart) reads again. CLOSE stops both. Nothing polls.
+  let unlisten = null;
+  let unopen = null;
+  const show = () => {
+    unlisten ??= store.listen('services-setup', (message) => paint(...answers(message.services)));
+    unopen ??= store.onOpen(() => { void read(); });
+    return read();
+  };
+  const close = () => { unlisten?.(); unopen?.(); unlisten = null; unopen = null; };
+  return { el: out.el, show, leave: close, destroy: close };
 }
 
 /** gbrain: its Setup work surface (gbrain.js), open while seated, closed when it leaves. */

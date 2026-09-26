@@ -22,7 +22,7 @@ function registrationRow(registration, record) {
   const reg = registration?.ok ? registration.data || {} : {};
   const stage = record.stage || reg.services_activation || 'not_requested';
   const caption = t('services_setup.step_register', 'Register');
-  const row = (state, tone, status, next, stepIn, polling = false) => ({ state, tone, status, next, step: stepIn, polling });
+  const row = (state, tone, status, next, stepIn) => ({ state, tone, status, next, step: stepIn });
   if (reg.services_entitled === true) {
     return row('entitled', 'ok', t('services_setup.status_entitled', 'Registered · Ready to install'),
       t('services_setup.next_entitled', 'Install fetches Services from Ronin HQ, verifies it, and restarts Ronin’s server. The page reconnects when Ronin returns.'),
@@ -40,8 +40,8 @@ function registrationRow(registration, record) {
   }
   if (stage === 'requesting') {
     return row('sending', 'warn', t('services_setup.status_sending', 'Sending the confirmation email…'),
-      t('services_setup.next_sending', 'Ronin is asking HQ to send it. This surface checks again in a moment.'),
-      step('register', caption, t('services_setup.sending', 'Sending…'), { enabled: false }), true);
+      t('services_setup.next_sending', 'Ronin is asking HQ to send it. This surface updates when it is sent.'),
+      step('register', caption, t('services_setup.sending', 'Sending…'), { enabled: false }));
   }
   if (stage === 'expired') {
     return row('expired', 'bad', t('services_setup.status_expired', 'Confirmation link expired'),
@@ -57,7 +57,7 @@ function registrationRow(registration, record) {
   return row('awaiting_email', 'warn',
     email ? t('services_setup.status_awaiting_to', 'Confirmation email sent to {email}', { email }) : t('services_setup.status_awaiting', 'Confirmation email sent'),
     t('services_setup.next_awaiting', 'Open the link in that email; any device works. Resend or change the address from Register.'),
-    step('register', caption, t('services_setup.check', 'Check status'), { act: 'check' }), true);
+    step('register', caption, t('services_setup.check', 'Check status'), { act: 'check' }));
 }
 
 /**
@@ -85,15 +85,15 @@ export function servicesSetupModel(registration, installed, activation = null) {
   // The switch is a toggle, never Done: it drives the Campaign's choice and cascades to new teams and Agents.
   const switchStep = on ? { ...step('switch', switchCaption, t('services_setup.turn_off', 'Turn off'), { act: 'switch_off' }), pressed: true }
     : { ...step('switch', switchCaption, t('services_setup.turn_on', 'Turn on'), { act: 'switch_on', enabled: parts, title: parts ? '' : t('services_setup.install_first', 'Install first') }), pressed: false };
-  // A moved switch waits on a restart of Ronin; the Restart control appears only then. A selection does not start polling.
+  // A moved switch waits on a restart of Ronin; the Restart control appears only then.
   const restartStep = parts && facts.restart_needed ? step('restart', t('services_setup.step_restart', 'Restart'), t('services_setup.restart', 'Restart'), { act: 'restart' }) : null;
   const steps = [reg.step, installStep, switchStep, ...(restartStep ? [restartStep] : [])];
-  const model = (state, tone, status, next, polling = false) => ({ state, tone, status, next, steps, polling, summary: '' });
+  const model = (state, tone, status, next) => ({ state, tone, status, next, steps, summary: '' });
 
   if (!parts) {
     if (installing) {
       return { ...model('installing', 'warn', t('services_setup.status_installing', 'Installing Services…'),
-        t('services_setup.next_installing', 'Fetch, verify, contract check, restart. The page reconnects when Ronin returns.'), true), summary: t('services_setup.summary_installing', 'installing') };
+        t('services_setup.next_installing', 'Fetch, verify, contract check, restart. The page reconnects when Ronin returns.')), summary: t('services_setup.summary_installing', 'installing') };
     }
     if (installFailed) {
       return { ...model('install_failed', 'bad', t('services_setup.status_install_failed', 'Install did not finish'),
@@ -104,7 +104,7 @@ export function servicesSetupModel(registration, installed, activation = null) {
       awaiting_email: t('services_setup.summary_awaiting', 'confirm email'), expired: t('services_setup.summary_expired', 'link expired'),
       send_failed: t('services_setup.summary_send_failed', 'waiting to send'),
     }[reg.state] || t('services_setup.summary_not_installed', 'not installed');
-    return { ...model(reg.state, reg.tone, reg.status, reg.next, reg.polling), summary };
+    return { ...model(reg.state, reg.tone, reg.status, reg.next), summary };
   }
 
   // Installed: the parts are here and usable; registration stays its own optional step.
@@ -113,13 +113,13 @@ export function servicesSetupModel(registration, installed, activation = null) {
     return { ...model('switched_off', '', t('services_setup.status_switched_off', 'Installed · switched off'),
       facts.restart_needed
         ? t('services_setup.next_switched_off_running', 'Switched off, but still running in this copy of Ronin. Press Restart, or ask any of your Agents to restart Ronin, and it stops when Ronin returns.')
-        : t('services_setup.next_switched_off', 'Turn it on here: it sets the Campaign’s choice and cascades to new teams and Agents; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.', counts),
-      reg.polling), summary: t('services_setup.summary_switched_off', 'switched off') };
+        : t('services_setup.next_switched_off', 'Turn it on here: it sets the Campaign’s choice and cascades to new teams and Agents; a team can differ in its Team Configuration. {loaded} of {parts} parts are running now.', counts)),
+      summary: t('services_setup.summary_switched_off', 'switched off') };
   }
   if (facts.restart_needed) {
     return { ...model('restart_needed', 'warn', t('services_setup.status_restart', 'Switched on · not yet running'),
-      t('services_setup.next_restart', 'Press Restart, or ask any of your Agents to restart Ronin. Unlocked views and the other parts then start on their own; only new Agents are born with the Services reading. Sessions are untouched.'), reg.polling), summary: t('services_setup.summary_restart', 'restart needed') };
+      t('services_setup.next_restart', 'Press Restart, or ask any of your Agents to restart Ronin. Unlocked views and the other parts then start on their own; only new Agents are born with the Services reading. Sessions are untouched.')), summary: t('services_setup.summary_restart', 'restart needed') };
   }
   return { ...model('active', 'ok', t('services_setup.status_active', 'Active on this Cowork'),
-    t('services_setup.next_active', '{loaded} of {parts} parts are running for new Agents.', counts), reg.polling), summary: t('services_setup.summary_active', 'active') };
+    t('services_setup.next_active', '{loaded} of {parts} parts are running for new Agents.', counts)), summary: t('services_setup.summary_active', 'active') };
 }
