@@ -43,9 +43,8 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   with the 2 s clock kept as a heartbeat; each tick takes one session listing for both, and
   each is sent only when a field the UI paints moved (`sessionsSignature` leaves out
   `activity`), so a notification that changed nothing painted sends nothing. The Team
-  rosters are pushed as `{t:'teams', rosters}` after each roster write, not on the tick. No
-  `refresh-client -B` activity subscription is installed: nothing reads its values, and a
-  row's `activity` comes from the listing.
+  rosters are pushed as `{t:'teams', rosters}` after each roster write. A row's `activity`
+  comes from the listing.
 
 **The rule:** no `execFile('tmux', …)` or `spawn('tmux', …)` in `src/` outside the client
 and the pty attach paths (`src/ws/pty.ts`, `src/viewer.ts`). `tests/tmux.test.ts` refuses
@@ -68,8 +67,7 @@ server, the restart in `src/host-guard.ts`, stays direct on purpose.
 The home rows are built by `homeRows` in `src/routes/launch.ts` from the session listing a
 tick took: while a browser is connected, `src/ws/events.ts` broadcasts `{t:'home', rows}`
 only when the painted fields moved (`homeSignature` leaves out a row's `activity` and stance
-`at`); a fresh connection receives the rows once, and that is a tab's snapshot. There is no
-`GET /api/home`: nothing read it once the rows were pushed. A session's screen is captured
+`at`); a fresh connection receives the rows once. A session's screen is captured
 and classified only when its `#{window_activity}` stamp moved since the last
 classification (`createActivityCache` in `src/status.ts`); an unchanged session keeps its
 last status, ctx and model.

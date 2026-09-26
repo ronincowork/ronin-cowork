@@ -30,16 +30,16 @@ gets no invented desk state.
 
 | Route | Answers |
 |---|---|
-| `GET /api/desks?session=<name>` | that session's desks and roll-up, `{ <name>: { session, live, desks, rollup } }`, or `{}` when it is not live; a missing or invalid name is a 400. The browser asks it when a Work Record opens. Nothing pushes it |
+| `GET /api/desks?session=<name>` | that session's desks and roll-up, `{ <name>: { session, live, desks, rollup } }`, or `{}` when it is not live; a missing or invalid name is a 400. The browser asks it when a Work Record opens |
 
 The roll-up: `{ desks, private, dirty, pending, parked, blocked, lined }` — `private` is
 the sum of commits ahead of a line, i.e. what nobody else can see yet.
 
 ## The surfaces
 
-Desks are read, not pushed. Ahead/behind and unsaved files are live git facts with no
-write route to announce them, and one surface shows them, so the browser asks at the moment
-it shows them instead of the server recomputing them for every tab on a clock.
+Desks are read when they are shown. Ahead/behind and unsaved files are live git facts with
+no write route to announce them, and one surface shows them, so the browser asks at the
+moment it shows them.
 
 | Surface | Shows |
 |---|---|
