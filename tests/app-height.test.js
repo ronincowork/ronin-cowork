@@ -41,3 +41,17 @@ test('both documents measure the height before they lay anything out', async () 
   // Before the theme and the grid in the desktop boot: surfaces are measured against it.
   assert.ok(main.indexOf('trackAppHeight') < main.indexOf("guard('apply theme'"), 'measured before the grid is built');
 });
+
+test('the application cannot be dragged around: the heads are fixed furniture', async () => {
+  const style = await read('public/style.css');
+  const root = style.slice(style.indexOf('html,\nbody {'));
+  const rule = root.slice(0, root.indexOf('}'));
+  // overflow: hidden stops the document SCROLLING but not the DRAG. On iOS a pull
+  // anywhere still rubber-bands the whole page, taking the bar and the surface heads off
+  // the top of the screen, and a scroll that reaches the end of a transcript chains
+  // outward into that same drag. There is nothing above or below the app to reach.
+  assert.match(rule, /overflow: hidden/);
+  assert.match(rule, /overscroll-behavior: none/);
+  // The bar is a flex child of that box, never a scrolled one, so it cannot travel.
+  assert.match(style, /#bar \{[^}]*flex: 0 0 auto/);
+});

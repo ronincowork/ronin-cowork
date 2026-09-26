@@ -402,6 +402,12 @@ body {
   font-family: var(--font-ui);
   -webkit-text-size-adjust: 100%;
   overflow: hidden;
+  /* THE APPLICATION DOES NOT MOVE. `overflow: hidden` stops the document scrolling but
+     not the drag: on iOS a pull anywhere still rubber-bands the whole page, taking the
+     bar and the surface heads off the top of the screen, and a scroll that reaches the
+     end of a transcript still chains outward into that drag. The heads are fixed
+     furniture and there is nothing above or below the app to reach (owner, 2026-09-26). */
+  overscroll-behavior: none;
 }
 
 body {
