@@ -45,7 +45,7 @@ test('one Ronin box request submits even if copy mode reopens after the paste', 
   assert.equal(reply.status, 200);
   assert.equal((await reply.json()).queued, true);
   // The route accepts one durable request; the one queue worker owns delivery.
-  const { processMessageQueue } = await import('../src/message-queue.js');
+  const { listQueuedMessages, processMessageQueue } = await import('../src/message-queue.js');
   await processMessageQueue();
   // The app may paint just after send-keys completes. This is test observation, not
   // production delivery logic: production always ends after the separate Enter.
@@ -57,7 +57,7 @@ test('one Ronin box request submits even if copy mode reopens after the paste', 
   }
   assert.equal(screen.match(/SUBMITTED:one press/g)?.length, 1, screen);
   assert.equal(screen.match(/SUBMITTED:From Owner \[Ronin Box\]:/g)?.length, 1, screen);
-  assert.equal((await fetch(`http://127.0.0.1:${address.port}/api/messages`).then((r) => r.json())).messages.length, 0);
+  assert.equal((await listQueuedMessages()).length, 0);
   assert.equal(tmux.state(), 'up');
   assert.equal(await server.run('display-message', '-p', '-t', '=composer_target:', '#{pane_in_mode}'), '0',
     'delivery leaves copy mode so the real Enter reaches the application');

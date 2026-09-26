@@ -1,9 +1,8 @@
 import type { Express } from 'express';
-import { dismissMessage, dismissMessages, enqueueMessage, listQueuedMessages } from '../message-queue.js';
+import { dismissMessage, dismissMessages, enqueueMessage } from '../message-queue.js';
 import { isValidName } from '../tmux.js';
 
 export function registerMessages(app: Express): void {
-  app.get('/api/messages', async (_req, res) => res.json({ messages: await listQueuedMessages() }));
   app.post('/api/messages', async (req, res) => {
     const target = String(req.body?.target ?? '');
     const text = String(req.body?.text ?? '');

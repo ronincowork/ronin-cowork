@@ -10,6 +10,36 @@ import { runUpdater } from '../update-run.js';
 import { buildKansou, sendKansou } from '../activation/kansou.js';
 import { registrationAnswer, submitRegistration, updateCommunication } from '../activation/registration.js';
 import { deleteRegistration } from '../activation/registration.js';
+import { installedAnswer } from './installed-api.js';
+import { broadcastEvent, listening } from '../ws/events.js';
+import { onClock } from '../jikan.js';
+
+async function activationAnswer(): Promise<Record<string, unknown>> {
+  return {
+    ...publicState(await readState()),
+    entitled: await isEntitled(),
+    egress: await readEgress(20),
+    receipts: await listReceipts(10),
+  };
+}
+
+// What the Services setup surface reads — its registration, what is installed, and the
+// activation — and what /events sends as {t:'services-setup', services} at each step.
+export async function servicesSetupAnswer(): Promise<Record<string, unknown>> {
+  const [registration, installed, activation] = await Promise.all([registrationAnswer(), installedAnswer(), activationAnswer()]);
+  return { registration, installed, activation };
+}
+
+export const pushServicesSetup = async (): Promise<void> => {
+  broadcastEvent({ t: 'services-setup', services: await servicesSetupAnswer() });
+};
+
+// Registration, activation, install, a Campaign's installation switch and machine settings
+// each change the answer: after a successful write to one, it is pushed.
+export const servicesSetupWrites: express.RequestHandler = (req, res, next) => {
+  if (req.method !== 'GET') res.on('finish', () => { if (res.statusCode < 400) void pushServicesSetup(); });
+  next();
+};
 
 async function startInstall(): Promise<void> {
   try {
@@ -22,7 +52,7 @@ async function startInstall(): Promise<void> {
     }).catch(() => {});
     return;
   }
-  void watchForServices();
+  void watchForServices().finally(pushServicesSetup);
 }
 
 const INSTALL_TIMEOUT_MS = 10 * 60_000;
@@ -65,10 +95,24 @@ async function watchForServices(now = () => Date.now()): Promise<void> {
   }).catch(() => {});
 }
 
+// The emailed link is confirmed at Ronin HQ, not here. While a request waits on it and a
+// browser is connected, the server asks HQ every 15 seconds; when the stage moves it pushes,
+// and a confirmation starts the install exactly as the Check status press does.
+export function startConfirmationCheck(): void {
+  onClock('services_confirmation', 15_000, async () => {
+    const before = await readState().catch(() => null);
+    if (!before || !['requesting', 'awaiting_email'].includes(before.stage) || !listening()) return;
+    const after = await poll().catch(() => null);
+    if (!after || after.stage === before.stage) return;
+    if (after.stage === 'verified') await startInstall();
+    await pushServicesSetup();
+  });
+}
+
 export async function resumeInstallWatch(): Promise<void> {
   const s = await readState().catch(() => null);
   if (s?.stage !== 'installing') return;
-  void watchForServices();
+  void watchForServices().finally(pushServicesSetup);
 }
 
 function fail(res: express.Response, e: unknown): void {
@@ -172,39 +216,15 @@ export function registerServicesActivation(app: express.Express): void {
     }
   });
   app.get('/api/services/activation', async (_req, res) => {
-    const state = await readState();
-    res.json({
-      ...publicState(state),
-      entitled: await isEntitled(),
-      egress: await readEgress(20),
-      receipts: await listReceipts(10),
-    });
-  });
-
-  app.post('/api/services/activation', async (req, res) => {
-    void req;
-    res.status(410).json({ error: 'Services activation now begins with registration at /api/setup/registration.' });
+    res.json(await activationAnswer());
   });
 
   app.post('/api/services/activation/poll', async (_req, res) => {
     try {
       const state = await poll();
       if (state.stage === 'verified') await startInstall();
-      res.json(publicState(await readState()));
+      res.json(await servicesSetupAnswer());
     } catch (e) { fail(res, e); }
-  });
-
-  app.post('/api/services/activation/resend', async (_req, res) => {
-    res.status(410).json({ error: 'Registration recovery moved to /api/setup/registration/recovery.' });
-  });
-
-  app.delete('/api/services/activation', async (_req, res) => {
-    res.status(410).json({ error: 'Registration deletion moved to /api/setup/registration.' });
-  });
-
-  app.post('/api/services/activation/address', async (req, res) => {
-    void req;
-    res.status(410).json({ error: 'Registration recovery moved to /api/setup/registration/recovery.' });
   });
 
   app.post('/api/services/tomodachi/send', async (_req, res) => {
@@ -217,6 +237,6 @@ export function registerServicesActivation(app: express.Express): void {
       return;
     }
     await startInstall();
-    res.json(publicState(await readState()));
+    res.json(await servicesSetupAnswer());
   });
 }

@@ -60,7 +60,8 @@ letter. Wipeboard posts and durable work receipts remain separate from interrupt
 
 ## API
 
-- `GET /api/messages`
+- `{t:'messages', list}` on `/events`: the waiting queue, sent to a fresh connection and
+  whenever a file in the queue folder changes and the queue moved
 - `POST /api/messages` with `{ "target": "agent", "text": "message" }`: enqueue
 - `DELETE /api/messages/:id`
 - `DELETE /api/messages` with `{ "ids": ["..."] }`
