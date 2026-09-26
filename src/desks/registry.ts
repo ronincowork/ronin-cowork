@@ -71,7 +71,7 @@ export async function removeDesk(repo: string, branch: string): Promise<void> {
   await unlink(deskRow(repo, branch)).catch(() => undefined);
 }
 
-export async function listDeskRecords(filter: { repo?: string; session?: string; team?: string; assignment?: string } = {}): Promise<DeskRecord[]> {
+export async function listDeskRecords(filter: { repo?: string; session?: string; owner?: string; team?: string; assignment?: string } = {}): Promise<DeskRecord[]> {
   const root = path.join(desksDir(), 'registry');
   const out: DeskRecord[] = [];
   let repos: string[] = [];
@@ -93,6 +93,8 @@ export async function listDeskRecords(filter: { repo?: string; session?: string;
       const rec = await readJson<DeskRecord>(path.join(root, repo, f));
       if (!rec) continue;
       if (filter.session && rec.session !== filter.session) continue;
+      // `owner` also matches a desk shared by handoff, where this session is not the first owner.
+      if (filter.owner && !(rec.owners?.length ? rec.owners : [rec.session]).includes(filter.owner)) continue;
       if (filter.team !== undefined && rec.team !== filter.team) continue;
       if (filter.assignment && rec.assignment !== filter.assignment) continue;
       out.push(rec);
@@ -136,7 +138,7 @@ export async function deskStatus(rec: DeskRecord, a: RepoArrangement): Promise<D
   };
 }
 
-export async function listDesks(filter: { repo?: string; session?: string; team?: string; assignment?: string } = {}): Promise<DeskStatus[]> {
+export async function listDesks(filter: { repo?: string; session?: string; owner?: string; team?: string; assignment?: string } = {}): Promise<DeskStatus[]> {
   const recs = await listDeskRecords(filter);
   const arrangements = new Map<string, RepoArrangement>();
   const out: DeskStatus[] = [];

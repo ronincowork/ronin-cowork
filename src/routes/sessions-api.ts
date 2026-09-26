@@ -85,7 +85,7 @@ const shutdownOperations = new Map<string, ShutdownOperation>();
 const shutdownSlots = new ShutdownSlots();
 
 async function openDeskRefusal(name: string): Promise<string> {
-  const desks = (await listDesks()).filter((desk) => desk.state === 'open' && (desk.owners?.length ? desk.owners : [desk.session]).includes(name));
+  const desks = (await listDesks({ owner: name })).filter((desk) => desk.state === 'open');
   return desks.length
     ? `Session "${name}" owns open desk${desks.length === 1 ? '' : 's'} ${desks.map((desk) => `${desk.repo}:${desk.branch}`).join(', ')}. Archive leaves managed-desk custody unchanged; run session_end or Shut down Agent after closeout instead.`
     : '';
@@ -385,7 +385,9 @@ export function registerSessions(app: express.Express): void {
       if (e instanceof ShutdownRefused) {
         return res.status(409).json({ error: e.message, blockers: e.blockers });
       }
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      const error = String((e as Error)?.message ?? e);
+      console.error(`[ronin] harakiri: ${name} (pane ${pane}) failed: ${error}`);
+      res.status(500).json({ error });
     }
   });
 
