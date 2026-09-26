@@ -86,9 +86,9 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.match(kotoba, /\| Phalanx \| A shared collection surface:/);
   assert.match(catalog, /teamChart: TEAM_CHART_TYPE/);
   assert.match(catalog, /discover: \(_t, environment\) => environment\.chartTeams\(\)/);
-  assert.match(catalog, /WORKBENCH_PROFILES\.cowork[^\n]*WORKBENCH_TYPES\.teamChart/);
+  assert.doesNotMatch(catalog, /WORKBENCH_PROFILES\.cowork[^\n]*WORKBENCH_TYPES\.teamChart/, 'Team Chart stays out of the Cowork selector (c5015105)');
   assert.match(catalog, /WORKBENCH_PROFILES\.team[^\n]*WORKBENCH_TYPES\.teamChart/);
-  assert.match(view, /chartTeams: \(\) => campaign[\s\S]*Team Chart/);
+  assert.match(view, /chartTeams: \(\) => !campaign && team[\s\S]*Team Chart/, 'only a Team page discovers its own chart');
   assert.match(view, /teamChart: \(id, detail = \{\}\) => createTeamChartSurface/);
   assert.match(view, /team: \(\) => detail\.key \|\| team/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
