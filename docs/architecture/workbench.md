@@ -13,6 +13,16 @@ smallest reads needed to paint itself.
 a selected-stone rail beside its detail, focus return, Escape, and responsive geometry.
 Consumers supply items and detail content; they do not recreate that movement privately.
 
+Task Manager uses the same Phalanx with declared groups in Ideas, Planning, Building,
+Landing, Done order, including empty groups as drop targets. Each Project is one stone;
+group headings open status surfaces and stones open Project surfaces with the current
+tenant scope. Compact/full density changes the stone readings. The Project detail opens
+its holder, and dragging between groups sends the existing move request without changing
+the Project record. Cowork/Desk, Team, and Agent scopes all use `createTeamKanban`.
+The shared Phalanx accepts ordered `grouped.groups`, group/item event callbacks, item
+actions, and `setDensity`; existing inline group headings and in-place details retain
+their prior behavior.
+
 ## Library, profile, tenant, instance
 
 `public/js/workbench.js` owns the shared library and frame.
