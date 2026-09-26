@@ -85,7 +85,7 @@ export function createAgentView() {
     if (documents.has(key)) return documents.get(key);
     const surface = WorkspaceKit.primitives.createSurface({ label: t('workspace.tab_docs', 'Documents'), className: 'agent-documents', flush: true });
     const docsPane = el('div', 'home-docs tw-docs');
-    const docs = buildDocs(null, docsPane, (candidate) => candidate === name);
+    const docs = buildDocs(docsPane, (candidate) => candidate === name);
     surface.content.append(docsPane);
     const made = { el: surface.el, show: () => { docs.enter(); }, leave: () => { docs.close(); } };
     documents.set(key, made); return made;

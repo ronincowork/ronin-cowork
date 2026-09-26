@@ -1,4 +1,4 @@
-/* One lifecycle owner for the existing Tile transport/render machinery. */
+/* One lifecycle owner for a Tile: make, mount, park, hide, fit, destroy. */
 import { Tile } from './tile.js';
 import { tiles } from './state.js';
 
@@ -12,7 +12,7 @@ export function createTerminalTileHost(options = {}) {
 
   const ensure = () => {
     if (tile) return tile;
-    tile = new Tile(Number(options.index) || 0, {
+    tile = new Tile({
       onMinimize: options.onMinimize,
       transcriptCache: options.transcriptCache,
     });
@@ -33,14 +33,6 @@ export function createTerminalTileHost(options = {}) {
     current.doFit();
     return current;
   };
-  const switchSession = (session) => {
-    if (!session) return park();
-    const current = mount();
-    if (!current) return false;
-    if (current.session !== session) current.connect(session);
-    if (current.session !== session) return false;
-    return current;
-  };
   const park = () => {
     if (tile?.session) tile.detach();
     parked = true;
@@ -51,7 +43,6 @@ export function createTerminalTileHost(options = {}) {
    *  the transport decision and stays its own verb. */
   const hide = () => { el.hidden = true; };
   const fit = () => { if (!parked) tile?.doFit(); };
-  const send = (text) => !parked && !!tile?.sendRaw(String(text));
   const destroy = () => {
     if (!tile) return;
     tile.unsubscribeHome?.();
@@ -60,12 +51,11 @@ export function createTerminalTileHost(options = {}) {
     tile.transcriptView?.dispose();
     tile.ro?.disconnect();
     tile.composer?.dispose();
-    if (tile.kakiTimer) clearInterval(tile.kakiTimer);
     tile.el.remove();
     const at = tiles.indexOf(tile);
     if (at >= 0) tiles.splice(at, 1);
     tile = null;
     parked = true;
   };
-  return { el, mount, switchSession, park, hide, destroy, fit, send, get session() { return tile?.session || ''; }, get parked() { return parked; } };
+  return { el, mount, park, hide, destroy, fit, get parked() { return parked; } };
 }

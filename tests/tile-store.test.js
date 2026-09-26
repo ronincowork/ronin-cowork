@@ -27,6 +27,7 @@ function fakeTile(session) {
     headHelp: {},
     ladderOpen: false,
     gauge: { set: (value) => painted.gauge.push(value) },
+    transcriptView: { setStance: (stance) => { painted.stance = stance; } },
     setFooter: (pct, model) => painted.footer.push([pct, model]),
     closeLadder: () => { painted.closed += 1; },
   });
@@ -45,6 +46,7 @@ test('a tile paints its gauge and work record from the pushed home row, and asks
   assert.equal(painted.gauge.at(-1), 41);
   assert.deepEqual(painted.footer.at(-1), [41, 'opus']);
   assert.deepEqual(tile.tegami, letter);
+  assert.equal(painted.stance, 'working', 'the reading\'s stance is the row\'s');
 
   // The next push moves the reading; the letter going away closes the ladder.
   store.receive({ t: 'home', rows: [{ name: 'alpha', ctx: 57, model: 'opus', stance: 'replying' }] });
@@ -82,7 +84,7 @@ test('opening the ladder reads one session\'s desks, once; a push asks nothing',
 
 test('the docs list hears the rows from enter to close, and nothing after', () => {
   const heard = [];
-  const docs = buildDocs(null, inert(), (name) => { heard.push(name); return false; });
+  const docs = buildDocs(inert(), (name) => { heard.push(name); return false; });
   store.receive({ t: 'home', rows: [{ name: 'gamma', tegami: { docs: ['A.md'] } }] });
   assert.deepEqual(heard, [], 'built but not entered: not listening');
 
