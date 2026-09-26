@@ -55,6 +55,8 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   | `{t:'github-setup', github}` | on the tick while a GitHub or git setup session is attached, when `GET /api/setup/github`'s answer moved, and once after the last one closes | — |
   | `{t:'services-setup', services}` | `{ registration, installed, activation }` after each write to registration, Services, Campaigns or machine settings, when the install watcher ends, and when Ronin HQ confirms the emailed link (asked every 15 s while a request waits and a browser is connected) | — |
   | `{t:'gbrain', snapshot}` | `GET /api/gbrain`'s answer while an install or uninstall runs, and once when it ends | — |
+  | `{t:'mika', ...ready}` | after `POST /api/mika/ready` answers `starting`, while a browser is connected: her pane is looked at every 350 ms and the answer pushed when it changes, until it is not `starting` | — |
+  | `{t:'shutdown', ...operation}` | each phase of a `POST /api/sessions/:name/shutdown` operation, and once when it is complete or failed | — |
 
   The store folders for boards, cron jobs and the message queue are the whole truth, and
   every writer (a route, a CLI child, the server) changes a file in them: the server

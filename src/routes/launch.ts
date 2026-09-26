@@ -27,7 +27,7 @@ import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate, type SessionWithAxes } from '../tegami.js';
 import { collectBirthLines, collectRowFields } from '../sockets.js';
-import { pushTeams } from '../ws/events.js';
+import { broadcastEvent, listening, pushTeams } from '../ws/events.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
@@ -243,6 +243,26 @@ export function homeRows(list: SessionWithAxes[]) {
       };
     }),
   );
+}
+
+// Mika is ready when her pane says so, and nothing announces that. While she is starting
+// and a browser is connected, the server looks again at the pace a tab used to ask, and
+// pushes {t:'mika', ...ready} each time the answer changes, until it is not starting.
+let watchingMika: Promise<void> | null = null;
+export function watchMika(observe: () => Promise<{ state: string } & Record<string, unknown>>, from: { state: string }, paceMs = 350): Promise<void> | null {
+  if (watchingMika || from.state !== 'starting') return watchingMika;
+  watchingMika = (async () => {
+    let last = from.state;
+    while (listening()) {
+      await new Promise((resolve) => setTimeout(resolve, paceMs));
+      const ready = await observe().catch(() => null);
+      if (!ready) return;
+      if (ready.state !== last) broadcastEvent({ t: 'mika', ...ready });
+      last = ready.state;
+      if (ready.state !== 'starting') return;
+    }
+  })().finally(() => { watchingMika = null; });
+  return watchingMika;
 }
 
 export function registerLaunch(app: express.Express): LaunchControl {
@@ -653,8 +673,10 @@ export function registerLaunch(app: express.Express): LaunchControl {
   };
   app.post('/api/mika/ready', async (req, res) => {
     const intent = req.body?.intent === 'setup_provider_ready' ? 'setup_provider_ready' : 'help';
-    const ready = await ensureMika(intent, isMikaTab(req.body?.tab) ? req.body.tab : '');
+    const tab = isMikaTab(req.body?.tab) ? req.body.tab : '';
+    const ready = await ensureMika(intent, tab);
     res.status(ready.ok ? 200 : ready.state === 'starting' ? 202 : 409).json(ready);
+    watchMika(() => ensureMika(intent, tab), ready);
   });
   return { ensureMika };
 }
