@@ -38,8 +38,10 @@ test('the Torii rename prompt keeps the immutable Agent ID visible', async () =>
 
 test('wide touch puts the Agent tools behind one menu instead of folding the head', async () => {
   const [style, head] = await Promise.all([read('public/style.css'), read('public/js/tilehead.js')]);
-  const scope = ":root:is([data-workbench='team'], [data-workbench='cowork'])";
-  const lit = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // The list of workbench kinds is allowed to grow — 60b7ff7b added 'desk'. What this
+  // guards is that the control is scoped to workbench kinds, not the exact membership.
+  const scope = ":root:is\\(\\[data-workbench='team'\\], \\[data-workbench='cowork'\\][^)]*\\)";
+  const lit = (x) => x;
   // The per-tile chevron is retired: it traded one tap for another and gave the tile head
   // a different depth from the surface heads beside it.
   assert.doesNotMatch(style, /tile-head-collapse|tile\.header-collapsed/);
@@ -56,8 +58,9 @@ test('wide touch puts the Agent tools behind one menu instead of folding the hea
   // what this guards is that nothing here restates or shrinks the band again.
   assert.match(style, /^\.tile-head \{[^}]*min-height: var\(--row-head\)/m);
   const wide = style.slice(style.indexOf('@media (pointer: coarse) and (min-width: 681px)'));
-  const rule = wide.slice(wide.indexOf(`${scope} .tile-head {`));
-  const body = rule.slice(rule.indexOf('{'), rule.indexOf('}'));
+  const found = new RegExp(`${scope} \\.tile-head \\{([^}]*)\\}`).exec(wide);
+  assert.ok(found, 'the wide-touch tile head rule is there to inspect');
+  const body = found[1];
   assert.match(body, /flex-wrap: nowrap/, 'one row, never two');
   assert.doesNotMatch(body, /min-height|height:|padding/, 'the band depth is the Kit\'s, not restated here');
 });
@@ -91,7 +94,7 @@ test('collapsing the application header moves the caret alone, never the island'
   assert.match(style, /\.app-header-collapse\.header-collapse-docked \{[^}]*position: fixed/);
   // Keyed on the control, not on its parent, so the caret keeps its shape once it is
   // docked and no longer the island's child.
-  assert.match(style, /:root:is\(\[data-workbench='team'\], \[data-workbench='cowork'\]\) \.app-header-collapse \{/);
+  assert.match(style, /:root:is\(\[data-workbench='team'\], \[data-workbench='cowork'\][^)]*\) \.app-header-collapse \{/);
   assert.doesNotMatch(style, /\.view-island > \.app-header-collapse \{[^}]*display: inline-flex/);
 });
 

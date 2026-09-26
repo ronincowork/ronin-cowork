@@ -407,7 +407,9 @@ body {
 body {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  /* What the browser can actually show, not what it says it could (js/appheight.js).
+     The fallback is only for the moment before the first measurement lands. */
+  height: var(--app-h, 100dvh);
   overflow: hidden;
 }
 }

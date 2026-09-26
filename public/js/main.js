@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { trackAppHeight } from './appheight.js';
 import { fetchSessions } from './api.js';
 import { mountRamRpm } from './ramrpm.js';
 import { request } from './request.js';
@@ -52,6 +53,10 @@ export async function init() {
   const ramRpm = guard('mount RAM_RPM', mountRamRpm, { setVisible() {} });
   const servicesStatus = guard('services activation status', installServicesStatus, { setVisible() {} });
 
+  // HOW TALL THE APPLICATION IS, before anything lays itself out inside it: every surface
+  // below is measured against this, so it has to be right for the first paint, not the
+  // second (js/appheight.js).
+  guard('app height', trackAppHeight);
   // The theme before the grid: tiles are born reading the resolved terminal palette.
   guard('apply theme', applyTheme);
   // THE DESK PROFILE before the grid (R38): its lexicon is what every t() reads, and its

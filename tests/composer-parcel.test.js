@@ -104,7 +104,7 @@ test('the keys row stands down in text entry', async () => {
   // and was not: it needed a pixel threshold to survive the stray offset iOS reports
   // while scrolling, that guess was wrong on the owner's phone, and the row never went
   // away. Focus is what entering text entry means and it needs no number.
-  assert.match(composer, /ta\.addEventListener\('focus', \(\) => \{ wrap\.classList\.add\('kb-open'\)/);
+  assert.match(composer, /ta\.addEventListener\('focus', \(\) => wrap\.classList\.add\('kb-open'\)\)/);
   assert.match(composer, /blur[\s\S]{0,160}classList\.remove\('kb-open'\)/, 'leaving the box brings the row straight back');
   assert.doesNotMatch(composer, /kb > \d+/, 'no pixel threshold decides this any more');
   assert.match(style, /\.composer\.kb-open \.keysrow \{\s*display: none;/);

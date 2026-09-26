@@ -10,6 +10,7 @@
  * tile the head is hidden and the bar's one メ sheet holds the head's own controls,
  * RELOCATED not cloned, so every handler and live widget keeps the owner it always had.
  */
+import { trackAppHeight } from './appheight.js';
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
@@ -59,6 +60,8 @@ const docsHash = (team) => '#/d/' + encodeURIComponent(team);
 const sessionHash = (team, session) => '#/s/' + encodeURIComponent(team) + '/' + encodeURIComponent(session);
 
 export async function buildPhone() {
+  // The visible height before anything is laid out in it — see js/appheight.js.
+  trackAppHeight();
   const root = document.getElementById('phone');
   if (!root) throw new Error('the mobile document has no #phone');
   const bar = root.querySelector('.ph-bar');

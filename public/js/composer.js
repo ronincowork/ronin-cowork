@@ -87,28 +87,21 @@ export function buildComposer(body, hooks) {
       if (verdict.why) hold(verdict.why);
     });
   };
-  /**
-   * Lift above the on-screen keyboard.
-   *
-   * iOS does not resize the window when the keyboard appears — it shrinks the
-   * VISUAL viewport and leaves the layout viewport alone, so a box pinned to the
-   * bottom ends up underneath the keyboard, which is where the ⌨ overlay this
-   * replaces learned the same lesson. `visualViewport` is the only thing that knows
-   * how much is covered.
+  /*
+   * THE BOX DOES NOT CLIMB ANY MORE. It used to measure the keyboard and lift itself by
+   * that many pixels, because the application was sized to the layout viewport and its
+   * own bottom was therefore behind the keys. The application is now sized to what is
+   * visible (js/appheight.js), so the bottom of the app is the bottom of the screen and
+   * this box simply sits there. One measurement, in one place, instead of every pinned
+   * thing compensating for the same lie.
    */
-  // Reserve the actual overlay, including a growing draft and the phone keyboard.
+  // Reserve what the overlay covers, including a growing draft, so the view underneath
+  // can end above it rather than behind it.
   const reserve = () => {
-    const height = wrap.getBoundingClientRect().height;
-    body.style.setProperty('--composer-clearance', (height ? height + (parseFloat(wrap.style.bottom) || 0) : 0) + 'px');
+    body.style.setProperty('--composer-clearance', `${Math.round(wrap.getBoundingClientRect().height)}px`);
   };
   const size = new ResizeObserver(reserve);
   size.observe(wrap);
-  const lift = () => {
-    const vv = window.visualViewport;
-    const kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
-    wrap.style.bottom = kb + 'px';
-    reserve();
-  };
   if (IS_TOUCH) {
     ta.setAttribute('enterkeyhint', 'send');
     ta.setAttribute('autocorrect', 'on');
@@ -121,16 +114,8 @@ export function buildComposer(body, hooks) {
     // reports while scrolling, and that guess was wrong on the owner's phone — the row
     // never went away. Focus is what "entering text entry" actually means, it needs no
     // number, and it is already the moment the keyboard opens on a touch device.
-    ta.addEventListener('focus', () => { wrap.classList.add('kb-open'); lift(); });
-    ta.addEventListener('blur', () => {
-      wrap.classList.remove('kb-open'); // the row is back the moment the box is left
-      wrap.style.bottom = '0px';
-      reserve();
-    });
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', lift);
-      window.visualViewport.addEventListener('scroll', lift);
-    }
+    ta.addEventListener('focus', () => wrap.classList.add('kb-open'));
+    ta.addEventListener('blur', () => wrap.classList.remove('kb-open')); // back the moment the box is left
   }
   ta.addEventListener('input', () => {
     grow();
@@ -170,8 +155,6 @@ export function buildComposer(body, hooks) {
     clear: clearBox,
     dispose() {
       size.disconnect();
-      window.visualViewport?.removeEventListener('resize', lift);
-      window.visualViewport?.removeEventListener('scroll', lift);
     },
     show(on) {
       wrap.classList.toggle('show', !!on);
