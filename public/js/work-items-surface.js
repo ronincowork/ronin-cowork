@@ -25,8 +25,6 @@ export function createWorkItemsSurface(options = {}) {
   } });
   const surface = createSurface({ label: t('work_items.title', 'Work Items'), className: 'work-items-surface', actions: [refreshAction, density] });
   const notice = el('p', 'wi-notice'); notice.setAttribute('role', 'status');
-  const intro = el('div', 'sws-intro');
-  intro.append(el('h2', '', t('work_items.title', 'Work Items')), el('p', '', t('work_items.intro', 'Select a work item to read its Project. Drag between stages to request a move.')));
 
   const clearDrag = () => {
     for (const group of phalanx.el.querySelectorAll('[data-sws-group]')) {
@@ -67,7 +65,7 @@ export function createWorkItemsSurface(options = {}) {
       label: t('team_kanban.open_owner', 'Open @{name}', { name: owner }), action: () => options.openOwner?.(owner),
     })] }).el);
   } });
-  phalanx.mount(surface.content, { before: [intro], after: [notice] });
+  phalanx.mount(surface.content, { after: [notice] });
   const paint = () => phalanx.setItems(projects.map((project) => {
     const pending = asked.get(project.id);
     if (pending && pending.stage !== project.stage) asked.delete(project.id);
