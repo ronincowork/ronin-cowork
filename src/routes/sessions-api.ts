@@ -81,6 +81,9 @@ interface ShutdownOperation extends ShutdownProgress {
 const publicArchive = ({ id, name, archived_at, agent, tags }: ArchivedSession) => ({ id, name, archived_at, agent, tags });
 
 const shutdownOperations = new Map<string, ShutdownOperation>();
+// A shutdown as it stands: what {t:'want', resource:'shutdown', id} answers a socket that
+// reopened mid-shutdown. Finished operations are kept five minutes.
+export const shutdownOperation = (id: string): ShutdownOperation | null => shutdownOperations.get(id) ?? null;
 const shutdownSlots = new ShutdownSlots();
 
 async function openDeskRefusal(name: string): Promise<string> {
@@ -343,12 +346,6 @@ export function registerSessions(app: express.Express): void {
         shutdownOperations.delete(id);
       }, 5 * 60_000).unref();
     })());
-  });
-
-  app.get('/api/session-shutdowns/:id', (req, res) => {
-    const operation = shutdownOperations.get(req.params.id);
-    if (!operation) return res.status(404).json({ error: 'No such shutdown operation.' });
-    res.status(operation.state === 'failed' && operation.blockers ? 409 : 200).json(operation);
   });
 
   app.put('/api/sessions/:name/title', async (req, res) => {
