@@ -26,9 +26,16 @@ export function trackAppHeight() {
   const measure = () => {
     const vv = window.visualViewport;
     const height = Math.round(vv?.height || window.innerHeight);
-    // A zero arrives while a tab is being restored; keeping the last good height stops the
-    // application collapsing to nothing and laying itself out again on the way back.
+    // WHERE the visible window is, not only how tall. iOS pans the visual viewport to keep
+    // a focused box above the keyboard, and the page underneath does not move with it. An
+    // app that knows its height but not its position is left sitting above what you can
+    // see: the work surface looks pushed up and the page behind it shows through along the
+    // bottom. Both numbers or neither (owner, 2026-09-26).
+    const top = Math.round(vv?.offsetTop || 0);
+    // A zero height arrives while a tab is being restored; keeping the last good one stops
+    // the application collapsing to nothing and laying itself out again on the way back.
     if (height > 0) document.documentElement.style.setProperty('--app-h', `${height}px`);
+    document.documentElement.style.setProperty('--app-top', `${top}px`);
   };
   /**
    * NEVER TRUST THE LAST EVENT. iOS animates the keyboard away and reports the viewport
