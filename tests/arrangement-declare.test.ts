@@ -52,23 +52,19 @@ test('repository profile editor keeps owner branch names and unrelated keys', as
   const dir = await repo('main');
   try {
     await writeFile(path.join(dir, 'RONIN_REPO'), '# owner note\nmode=reviewed\nworking=develop\nstable=release\ndesks=managed\npublish=release\n');
-    const before = arrangementProfile(await readArrangement('x', dir));
-    const a = await setArrangementProfile(dir, { mode: 'reviewed', working: 'integration/next', stable: 'production/v2', worktrees: 'disabled' }, before);
+    const a = await setArrangementProfile(dir, { mode: 'reviewed', working: 'integration/next', stable: 'production/v2', worktrees: 'disabled' });
     assert.deepEqual(arrangementProfile(a), { mode: 'reviewed', working: 'integration/next', stable: 'production/v2', worktrees: 'disabled' });
     const text = await readFile(path.join(dir, 'RONIN_REPO'), 'utf8');
     assert.match(text, /^# owner note$/m); assert.match(text, /^publish=release$/m);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('repository profile editor removes working in direct mode and refuses stale confirmation', async () => {
+test('repository profile editor applies an explicit profile without confirmation metadata', async () => {
   const dir = await repo('trunk');
   try {
     await writeFile(path.join(dir, 'RONIN_REPO'), 'mode=reviewed\nworking=develop\nstable=release\ndesks=managed\n');
-    const stale = arrangementProfile(await readArrangement('x', dir));
     await writeFile(path.join(dir, 'RONIN_REPO'), 'mode=reviewed\nworking=other\nstable=release\ndesks=managed\n');
-    await assert.rejects(setArrangementProfile(dir, { mode: 'direct', working: '', stable: 'trunk', worktrees: 'disabled' }, stale), /changed after this form was opened/);
-    const current = arrangementProfile(await readArrangement('x', dir));
-    const a = await setArrangementProfile(dir, { mode: 'direct', working: 'ignored', stable: 'trunk', worktrees: 'enabled' }, current);
+    const a = await setArrangementProfile(dir, { mode: 'direct', working: 'ignored', stable: 'trunk', worktrees: 'enabled' });
     assert.deepEqual(arrangementProfile(a), { mode: 'direct', working: '', stable: 'trunk', worktrees: 'enabled' });
     assert.doesNotMatch(await readFile(path.join(dir, 'RONIN_REPO'), 'utf8'), /^working=/m);
   } finally { await rm(dir, { recursive: true, force: true }); }

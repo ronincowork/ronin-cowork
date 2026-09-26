@@ -27,7 +27,7 @@ async function fixture(
       }
       if (req.method === 'GET' && req.url === '/api/provider-catalog') {
         const facts = modelFacts ?? { provider: 'fixture-provider', cli: 'fixture-cli', model: `fixture-model-${process.pid}` };
-        res.end(JSON.stringify({ origin: 'user', updated: 'fixture-date', providers: [{ provider: facts.provider, cli: facts.cli, label: 'Fixture Provider', models: [{ model: facts.model, tier: 'fixture-tier' }] }] }));
+        res.end(JSON.stringify({ providers: [{ provider: facts.provider, cli: facts.cli, provider_label: 'Fixture Provider', models: [{ model: facts.model, name: 'Friendly Fixture', tier: 'fixture-tier' }] }] }));
         return;
       }
       if (req.method === 'GET' && req.url === '/api/setup/runtime') {
@@ -99,14 +99,14 @@ test('project custody and lead designation are ordinary unknown creation options
   assert.deepEqual(f.requests, []);
 });
 
-test('creation help renders current catalog choices, availability, and Campaign defaults', async (t) => {
+test('creation help renders exact launch ids, availability, and Campaign defaults', async (t) => {
   const facts = { provider: `provider-${process.pid}`, cli: `cli-${process.pid}`, model: `model-${process.pid}` };
   const f = await fixture([], facts);
   t.after(f.close);
   const result = await f.run('session_create', ['--help']);
   assert.equal(result.code, 0, result.output);
   assert.match(result.output, new RegExp(`${facts.provider} \\(Fixture Provider\\) — available`));
-  assert.match(result.output, new RegExp(`${facts.model} · fixture-tier — available`));
+  assert.match(result.output, new RegExp(`${facts.model} \\(Friendly Fixture\\) · fixture-tier — available`));
   assert.match(result.output, new RegExp(`Current launch default: ${facts.provider}/${facts.model} — fixture Campaign default`));
   assert.match(result.output, /--root <workspace-folder-handle>/);
   assert.match(result.output, /ronin_lab/);
@@ -118,31 +118,40 @@ test('creation help renders current catalog choices, availability, and Campaign 
   ]);
 });
 
-test('creation validates one catalog pair and forwards the selected provider and model unchanged', async (t) => {
+test('creation forwards the selected provider and model unchanged', async (t) => {
   const facts = { provider: `provider-${process.pid}`, cli: `cli-${process.pid}`, model: `model-${process.pid}` };
   const f = await fixture([], facts);
   t.after(f.close);
   const result = await f.run('session_create', ['unused', '--provider', facts.provider, '--model', facts.model]);
   assert.equal(result.code, 0, result.output);
   assert.deepEqual(f.requests.map(({ method, url }) => `${method} ${url}`), [
-    'GET /api/provider-catalog', 'POST /api/session',
+    'POST /api/session',
   ]);
-  const body = JSON.parse(f.requests[1]!.body);
+  const body = JSON.parse(f.requests[0]!.body);
   assert.equal(body.name, 'unused');
   assert.equal(body.provider, facts.provider);
   assert.equal(body.model, facts.model);
 });
 
-test('creation reports invalid model choices from the current catalog response', async (t) => {
+test('creation passes an unlisted model through to the provider launch route', async (t) => {
   const facts = { provider: `provider-${process.pid}`, cli: `cli-${process.pid}`, model: `model-${process.pid}` };
   const f = await fixture([], facts);
   t.after(f.close);
   const missing = `missing-${process.pid}`;
   const result = await f.run('session_create', ['unused', '--provider', facts.provider, '--model', missing]);
-  assert.equal(result.code, 4);
-  assert.match(result.output, new RegExp(`BAD-MODEL: ${facts.provider}/${missing}`));
-  assert.match(result.output, new RegExp(`Available: ${facts.provider}/${facts.model}`));
-  assert.deepEqual(f.requests.map(({ method, url }) => `${method} ${url}`), ['GET /api/provider-catalog']);
+  assert.equal(result.code, 0, result.output);
+  assert.deepEqual(f.requests.map(({ method, url }) => `${method} ${url}`), ['POST /api/session']);
+  assert.equal(JSON.parse(f.requests[0]!.body).model, missing);
+});
+
+test('CLI passes both a refreshed full id and a provider alias unchanged', async (t) => {
+  const f = await fixture([], { provider: 'anthropic', cli: 'claude', model: 'claude-fable-5-1' });
+  t.after(f.close);
+  const full = await f.run('session_create', ['full_id', '--provider', 'anthropic', '--model', 'claude-fable-5-1']);
+  assert.equal(full.code, 0, full.output);
+  const alias = await f.run('session_create', ['alias', '--provider', 'anthropic', '--model', 'fable']);
+  assert.equal(alias.code, 0, alias.output);
+  assert.equal(JSON.parse(f.requests.at(-1)!.body).model, 'fable');
 });
 
 test('updating a missing name refuses after its read and never creates it', async (t) => {
@@ -152,6 +161,23 @@ test('updating a missing name refuses after its read and never creates it', asyn
   assert.equal(result.code, 3);
   assert.match(result.output, /NO-SESSION.*session_create/s);
   assert.deepEqual(f.requests, [{ method: 'GET', url: '/api/sessions', body: '' }]);
+});
+
+test('recorded root can be set or cleared without claiming to move the birth directory', async (t) => {
+  const f = await fixture([{ name: 'active', tags: [], leads: [] }]);
+  t.after(f.close);
+  const set = await f.run('session_set', ['active', '--root', 'samurai_lab']);
+  assert.equal(set.code, 0, set.output);
+  assert.match(set.output, /recorded_root=samurai_lab \(birth and shell directory unchanged\)/);
+  const clear = await f.run('session_set', ['active', '--clear-root']);
+  assert.equal(clear.code, 0, clear.output);
+  assert.match(clear.output, /recorded_root=cleared \(birth and shell directory unchanged\)/);
+  assert.deepEqual(f.requests.map(({ method, url, body }) => ({ method, url, body: body ? JSON.parse(body) : null })), [
+    { method: 'GET', url: '/api/sessions', body: null },
+    { method: 'POST', url: '/api/sessions/active/project-root', body: { project_root: 'samurai_lab' } },
+    { method: 'GET', url: '/api/sessions', body: null },
+    { method: 'POST', url: '/api/sessions/active/project-root', body: { project_root: '' } },
+  ]);
 });
 
 test('value-taking flags refuse a missing value before making a request', async (t) => {

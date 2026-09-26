@@ -49,17 +49,19 @@ reports; it never says what is available, and it carries no name of its own:
 
 | Column | Meaning |
 |---|---|
-| `model` | the provider's concrete model id, passed to the CLI unchanged — the one key |
+| `model` | the provider's concrete model id, passed to the CLI unchanged — the picker key |
 | `tier` | **light** · **standard** · **frontier**: the vendor's own cost and capability band |
 | `cost` | the public list price per million tokens, input · output, with the month it was read in parentheses — a dated reading, never a contract |
 | `good at` · `not good at` | one line each, from the vendor's positioning and the public record |
 
-**Two names per model, and no more (owner, 2026-09-25).** `model` is the id every launch
-and every saved preference uses. The name shown beside it is the CLI's own display name,
+**Two names per listed model, and no more (owner, 2026-09-25).** `model` is the id every
+new picker choice uses. The name shown beside it is the CLI's own display name,
 read with its list — "Opus 5.5", "GPT-5.6-Sol" — so the version is always in the title;
 a CLI that gives no name shows the id. The catalog carries no display column: a third name
 is what hid the version until 2026-09-25. There is no default column either: Model: Native
 is every provider's default in every path, and a preference is ⚙ Configuration's to hold.
+A saved or explicitly supplied CLI model name absent from the refreshed list is passed
+unchanged to the named provider. Ronin does not maintain or rewrite an alias map.
 
 `src/model-providers.ts` parses this shape and, in `providerRows`, joins it to what each
 CLI listed and to the CLI's Agent page for the command. The catalog deliberately contains

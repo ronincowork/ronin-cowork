@@ -10,8 +10,8 @@ all prerequisites are ready.
 
 ## Changes are proposed first
 
-Mika's settings tools show the proposed change and require confirmation before applying
-it. Review the exact change. Mika uses the same settings and launch operations as Ronin;
+Mika's guidance tells her to show the intended settings change and wait for your yes before
+applying it. Review the change she describes. Mika uses the same settings and launch operations as Ronin;
 a conversation is not a separate configuration store.
 
 Requests use the ordinary message queue. If Mika cannot receive one immediately, check

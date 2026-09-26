@@ -147,9 +147,15 @@ the owner should be able to open and keep checkout rows current:
 
 ```text
 work-record document add docs/using-ronin/work-record.md
-work-record update_record --repo ronin_cowork:team/example/cut
+work-record workspace add ronin_cowork --branch team/example/cut
+work-record workspace add https://github.com/ronincowork/samurai_lab.git --branch main
+work-record workspace list
 ```
 
-These fields locate work; they do not replace commits, hand-ins, or project evidence.
+Remove an old entry with `work-record workspace remove <repo-or-url>`; add `--branch`
+to remove only that branch. The acknowledgement says how many rows changed, including
+when none matched. `session_set <name> --root <handle>` separately changes a live
+session's recorded Workspace Folder. Neither edit changes its birth directory or opens
+a managed desk. These fields locate work; they do not replace commits, hand-ins, or project evidence.
 Read the record after structural edits. Keep the project truthful when the plan changes,
 when a leg completes, when work waits on someone else, and when landing evidence arrives.

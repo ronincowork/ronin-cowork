@@ -160,22 +160,12 @@ export function validateArrangementProfile(value: unknown): RepoProfile {
   return { mode: p.mode, working: p.mode === 'reviewed' ? working : '', stable, worktrees: p.worktrees };
 }
 
-export async function assertArrangementProfileCurrent(dir: string, expected: unknown): Promise<void> {
-  const beforeExpected = expected as RepoProfile;
-  if (!beforeExpected || typeof beforeExpected !== 'object') throw new Error('The current repository profile is required.');
-  const current = await readArrangement(path.basename(dir), dir);
-  if (JSON.stringify(arrangementProfile(current)) !== JSON.stringify(beforeExpected)) {
-    throw new Error('RONIN_REPO changed after this form was opened. Reopen the editor and review the current profile.');
-  }
-}
-
-export async function setArrangementProfile(dir: string, proposed: unknown, expected: unknown): Promise<RepoArrangement> {
+export async function setArrangementProfile(dir: string, proposed: unknown): Promise<RepoArrangement> {
   try { await access(path.join(dir, '.git')); } catch { throw new Error(`${dir} is not a git repository — it has no repository profile`); }
   const profile = validateArrangementProfile(proposed);
   const file = path.join(dir, RONIN_REPO_FILE);
   let text: string | null = null;
   try { text = await readFile(file, 'utf8'); } catch { text = null; }
-  await assertArrangementProfileCurrent(dir, expected);
 
   const lines = text === null ? [] : text.split('\n');
   const set = (key: string, value: string) => {

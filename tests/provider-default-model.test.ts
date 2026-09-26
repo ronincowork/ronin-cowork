@@ -135,10 +135,10 @@ test("the owner's scenario: default is OpenAI, the launch says anthropic, and it
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]);
 });
 
-test('a saved short model preference still launches its concrete model id', async () => {
+test('a saved CLI model name passes through unchanged', async () => {
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: { anthropic: 'fable' } });
   const r = await resolveForm(launch({ provider: 'anthropic' }), new Set());
-  assert.ok(r.cmd.startsWith('claude --model claude-fable-5-1'), r.cmd);
+  assert.ok(r.cmd.startsWith('claude --model fable'), r.cmd);
 });
 
 test('a provider with no preference set delegates the model to that provider CLI', async () => {
@@ -169,16 +169,12 @@ test('naming no provider still lands on the install default — the general defa
 
 test('a provider narrows an explicit model rather than competing with it', async () => {
   await agents({ default: { provider: 'openai', model: 'gpt-5.6-sol' }, by_provider: { anthropic: 'claude-fable-5-1' } });
-  // Both named: the pair must be a real cell, and the model wins over the preference.
+  // Both named: the model is passed unchanged to the named provider.
   const r = await resolveForm(launch({ provider: 'anthropic', model: 'claude-haiku-4-5-20251001' }), new Set());
   assert.ok(r.cmd.startsWith('claude --model claude-haiku-4-5-20251001'), `expected the named pair, got "${r.cmd}"`);
   assert.deepEqual(r.stated_by.cmd, [{ layer: 'launch', source: 'launch request' }]);
-  // A model that provider does not offer is refused, and the message names what it does
-  // offer — not the whole table, which would be a list the caller cannot act on.
-  await assert.rejects(
-    () => resolveForm(launch({ provider: 'anthropic', model: 'gpt-5.6-sol' }), new Set()),
-    (e: Error) => /anthropic offers/.test(e.message) && /opus/.test(e.message) && !/codex/.test(e.message),
-  );
+  const unlisted = await resolveForm(launch({ provider: 'anthropic', model: 'future-claude-name' }), new Set());
+  assert.ok(unlisted.cmd.startsWith('claude --model future-claude-name'), unlisted.cmd);
 });
 
 test('an unknown provider is refused by name, and a provider beside a cmd is a contradiction', async () => {

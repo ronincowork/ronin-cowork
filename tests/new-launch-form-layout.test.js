@@ -97,6 +97,13 @@ test('Where it works keeps birthplace separate and offers all workspaces to Cowo
   assert.doesNotMatch(form, /no auto desk|extra sessions/i);
 });
 
+test('New Team and New Agent forms consume Campaign Cowork workspace defaults', async () => {
+  const [team, agent] = await Promise.all([source('new-team-form.js'), source('new-agent.js')]);
+  assert.match(team, /draft\.root = value\('project_root'\) \|\| ''/);
+  assert.match(team, /draft\.repos = Array\.isArray\(value\('repos'\)\)/);
+  assert.match(agent, /teamRepos: selected\?\.repos \|\| value\('repos'\) \|\| \[\]/);
+});
+
 test('the old New Agent selector implementation and CSS are deleted', async () => {
   const [parts, css, askCss] = await Promise.all([
     source('form-steps.js'),

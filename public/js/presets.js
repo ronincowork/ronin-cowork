@@ -276,10 +276,8 @@ async function keepFolder(folder) {
     stable: inspected.data.repo_profile?.stable || inspected.data.repo?.branch || 'main',
     worktrees: inspected.data.repo_profile?.worktrees || 'disabled',
   } : null;
-  const absent = inspected.data.arrangement?.source === 'absent';
-  const before = profile ? { mode: inspected.data.arrangement?.mode || profile.mode, working: absent ? '' : (inspected.data.arrangement?.working || ''), stable: absent ? '' : (inspected.data.arrangement?.stable || ''), worktrees: profile.worktrees } : null;
   for (const name of [rootHandle(folder), `${rootHandle(folder)}_2`, `${rootHandle(folder)}_3`]) {
-    const made = await request('/api/project-roots', { method: 'POST', json: { name, dir: folder.dir, ...(profile ? { before, profile, confirmed: true } : {}) } });
+    const made = await request('/api/project-roots', { method: 'POST', json: { name, dir: folder.dir, ...(profile ? { profile } : {}) } });
     if (made.ok) return { ok: true, name };
     if (!/already in the catalog/i.test(made.message || '')) return made;
   }

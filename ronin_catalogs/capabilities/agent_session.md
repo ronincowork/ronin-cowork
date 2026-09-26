@@ -27,7 +27,7 @@ preflight succeeds.
 |---|---|---|---|
 | `session_check` | read: one live session by exact name; `NO-SESSION` for an unused name | priority | `session_check --help` |
 | `session_create` | create: one visible Agent from an explicit prompt and resolved Campaign/Team launch context | priority | `session_create --help` |
-| `session_set` | write: an existing session's Team membership, lead designation, or project root | | `session_set --help` |
+| `session_set` | write: an existing session's Team membership, lead designation, or recorded Workspace Folder handle | | `session_set --help` |
 | `session_archive` | write: make one session resumable and leave desk custody unchanged | | `session_archive --help` |
 | `session_restore` | create: restore one archived session | | `session_restore --help` |
 | `session_end` | end: preflight custody and end this Agent only when safe | | `session_end --help` |
@@ -40,6 +40,16 @@ own resolved birth packet and prompt.
 
 Every documented `session_create` form is universal. Capability selection changes only
 which workflow knowledge is taught.
+`session_create --help` lists the exact model ids from each provider's refreshed CLI
+inventory. Use those ids with `--provider` and `--model`; display names are for the owner.
+CLI-supported names already stored in settings, such as Claude's `sonnet`, also pass
+through unchanged. The tool does not maintain a separate alias map.
+
+`session_set <name> --root <handle>` changes the recorded Workspace Folder; `--clear-root`
+clears it. The original birth directory and the running shell's directory remain as they
+were. Read the handle with `session_check <name>`. From inside the Agent's session, use
+`work-record workspace list|add|remove` to keep its working repositories current. Those
+entries are its work record, not a command to open or close managed desks.
 
 ## Lifecycle boundaries
 

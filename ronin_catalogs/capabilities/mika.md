@@ -18,5 +18,5 @@ Settings facts.
 |---|---|---|---|
 | `mika` | ask: start or reach the constrained house assistant | priority | `mika` |
 
-Mika's own settings authority remains separately constrained by the Machine settings
-capability and her house-seat projection; this launcher does not broaden it.
+Mika's house guidance limits how she uses the shared Machine settings tool. The tool does
+not identify or reject her; the launcher does not change its write behavior.
