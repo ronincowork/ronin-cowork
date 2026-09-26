@@ -21,17 +21,38 @@
  * is simply the one where the two numbers differ.
  */
 export function trackAppHeight() {
-  const set = () => {
+  let frame = 0;
+  let settle = 0;
+  const measure = () => {
     const vv = window.visualViewport;
     const height = Math.round(vv?.height || window.innerHeight);
     // A zero arrives while a tab is being restored; keeping the last good height stops the
     // application collapsing to nothing and laying itself out again on the way back.
     if (height > 0) document.documentElement.style.setProperty('--app-h', `${height}px`);
   };
-  set();
-  window.visualViewport?.addEventListener('resize', set);
-  window.visualViewport?.addEventListener('scroll', set);
-  window.addEventListener('resize', set);
-  window.addEventListener('orientationchange', set);
-  return set;
+  /**
+   * NEVER TRUST THE LAST EVENT. iOS animates the keyboard away and reports the viewport
+   * as it goes, so the final `resize` can carry a height from part-way through the
+   * animation — and then nothing fires again. Measured once, the app stays that bit too
+   * short and leaves a strip of dead space along the bottom that only a reload clears.
+   *
+   * So: measure now for the common case, again on the next frame, and again once things
+   * have stopped moving. Three cheap reads of a number beat one that might be a lie.
+   */
+  const remeasure = () => {
+    measure();
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(measure);
+    clearTimeout(settle);
+    settle = setTimeout(measure, 300);
+  };
+  measure();
+  window.visualViewport?.addEventListener('resize', remeasure);
+  window.visualViewport?.addEventListener('scroll', remeasure);
+  window.addEventListener('resize', remeasure);
+  window.addEventListener('orientationchange', remeasure);
+  // Leaving a text box is the keyboard going away, and it is not always followed by a
+  // final viewport event of its own.
+  document.addEventListener('focusout', remeasure);
+  return remeasure;
 }
