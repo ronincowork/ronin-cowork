@@ -511,6 +511,13 @@ export function githubAuthFromLogin(login: string): GithubAuthMeasurement {
     : { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
 }
 
+// Whether a GitHub login, GitHub install or git setup session is open: while one is, the
+// /events tick watches the GitHub answer.
+export async function githubSetupAttached(): Promise<boolean> {
+  const open = await Promise.all([GITHUB_SETUP_SESSION, GITHUB_INSTALL_SESSION, GIT_SETUP_SESSION].map((name) => sessionExists(name)));
+  return open.some(Boolean);
+}
+
 export async function githubSetupAnswer(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
   const installed = await ops.installed();
   let measurement: GithubAuthMeasurement = { state: 'needs_authentication', account: '', problem: '' };

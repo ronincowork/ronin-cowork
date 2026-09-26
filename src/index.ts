@@ -35,7 +35,7 @@ import { registerDocs } from './routes/docs-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
-import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
+import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites, startConfirmationCheck } from './routes/services-activation-api.js';
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
@@ -47,14 +47,15 @@ import { registerLibrary } from './routes/library-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerInstalled } from './routes/installed-api.js';
 import { registerVersion } from './routes/version.js';
-import { registerWipeboards } from './routes/wipeboards-api.js';
+import { registerWipeboards, wipeboardAnswer } from './routes/wipeboards-api.js';
 import { registerTerminalControls } from './terminal-controls.js';
 import { registerMessages } from './routes/messages-api.js';
 import { countBrowserTool } from './tool-call-api.js';
 import { registerCli } from './routes/cli-api.js';
-import { startMessageQueue } from './message-queue.js';
-import { seedHouseBoard } from './wipeboards.js';
-import { handleEvents, startSessionsBroadcast } from './ws/events.js';
+import { listQueuedMessages, startMessageQueue } from './message-queue.js';
+import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
+import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
+import { handleEvents, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
@@ -69,9 +70,8 @@ import { listInstallations } from './resource-adapters.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 import { resourceRequestCache, storeDir } from './resources.js';
 import { compressResponse } from './http-performance.js';
-import { roninIdentity } from './routes/version.js';
 import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
-import { ensureInstalledRoots } from './setup-runtime.js';
+import { ensureInstalledRoots, githubSetupAnswer, githubSetupAttached } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
@@ -223,7 +223,8 @@ app.get('/api/health', (_req, res) =>
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerPasswordSettings(app, issueSession); // /api/password — saved browser password setting, behind the same gate
 app.use(countBrowserTool);
-registerLaunch(app); // /api/launch (both variants), /api/sessions, session-max, owner — src/routes/launch.ts
+app.use(['/api/setup/registration', '/api/services', '/api/campaigns', '/api/machine-settings'], servicesSetupWrites); // each write pushes {t:'services-setup'}
+registerLaunch(app); // /api/launch (both variants), /api/sessions — src/routes/launch.ts
 registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_view/show seam
 registerCatalogs(app); // catalogs and configuration resources — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
@@ -289,6 +290,7 @@ for (const s of services) {
 mountServiceRoutes(app);
 
 void resumeInstallWatch();
+startConfirmationCheck(); // asks Ronin HQ while a Services request awaits its emailed link
 
 registerSessions(app); // per-session: kill/harakiri, meta, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
@@ -417,7 +419,20 @@ const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
 const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
-startSessionsBroadcast({ list: listSessions, home: homeRows, teams: () => teamRosters() }); // /events: pushes the session list, the home rows and the Team rosters when they change
+// /events: pushes the session list, the home rows, the Team rosters, the message queue, boards,
+// cron jobs and GitHub setup when they change — src/ws/events.ts
+startSessionsBroadcast({
+  list: listSessions,
+  home: homeRows,
+  teams: () => teamRosters(),
+  messages: listQueuedMessages,
+  wipeboard: (board) => isValidBoardName(board) ? wipeboardAnswer(board, 100) : Promise.resolve(null),
+  jikan: (team) => team === '*' ? listAllJobs() : isValidTeam(team) ? listJobs(team) : Promise.resolve(null),
+  github: { attached: githubSetupAttached, answer: githubSetupAnswer },
+});
+watchStore(WIPEBOARD_DIR, (file) => { void pushWipeboard(file.split('/')[0]!); });
+watchStore(storeDir('jikan'), (file) => { if (file.endsWith('.md')) void pushJikan(file.slice(0, -3)); });
+watchStore(storeDir('message_queue'), () => { void pushMessages(); });
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 void publishMax();
