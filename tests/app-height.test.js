@@ -20,6 +20,23 @@ test('the application is as tall as what the browser can show', async () => {
   }
 });
 
+test('the application occupies the visible rectangle, position as well as size', async () => {
+  const [style, height] = await Promise.all([read('public/style.css'), read('public/js/appheight.js')]);
+  // Height alone is half the answer. iOS pans the visual viewport to keep a focused box
+  // above the keyboard and the page underneath does not move with it, so an app that knows
+  // only its height sits above what you can see: the work surface looks pushed up and the
+  // page shows through along the bottom. Measured with the term removed, that strip was
+  // exactly the pan distance.
+  assert.match(height, /offsetTop/, 'where the visible window is');
+  assert.match(height, /setProperty\('--app-top'/);
+  assert.match(style, /position: fixed;[\s\S]{0,120}top: var\(--app-top, 0px\);[\s\S]{0,80}height: var\(--app-h, 100dvh\);/,
+    'fixed to the visible window, taking both terms');
+  // `top`, never a transform: a transformed ancestor becomes the containing block for
+  // every position: fixed descendant, which would take the docked header caret with it.
+  const body = style.slice(style.indexOf('  position: fixed;'));
+  assert.doesNotMatch(body.slice(0, body.indexOf('}')), /transform:/);
+});
+
 test('the height is never left on a value read part-way through an animation', async () => {
   const height = await read('public/js/appheight.js');
   // iOS animates the keyboard away and reports the viewport as it goes, so the FINAL
