@@ -130,9 +130,9 @@ completion evidence. Coordination mechanisms support this surface; they do not r
 its name or become another work-record store.
 
 - Contract: [Work record](using-ronin/work-record.md).
-- Code path: [shingo.js](../public/js/shingo.js) →
-  [sessions-api.ts](../src/routes/sessions-api.ts) (`GET /api/sessions/:name/tegami`) →
-  [tegami-read.ts](../src/tegami-read.ts). Writes enter through
+- Code path: [tegami-read.ts](../src/tegami-read.ts) → the session's home row (`tegami`,
+  [launch.ts](../src/routes/launch.ts) `homeRows`) → the tile's ladder
+  ([tile.js](../public/js/tile.js), drawn by [shingo.js](../public/js/shingo.js)). Writes enter through
   [work-record](../ronin_bin/work-record) → [work-record-write](../libexec/work-record-write),
   which updates the authored block atomically. [tegami.ts](../src/tegami.ts) seeds the record
   and supports server-side custody/derived-field changes; [projects.ts](../src/projects.ts)

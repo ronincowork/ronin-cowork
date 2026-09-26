@@ -33,11 +33,9 @@ import { enqueueMessage } from '../message-queue.js';
 import { sessionKey } from '../session-dir.js';
 import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';
-import { readCtxLine } from '../ctx.js';
 import { count } from '../counts.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { writeMandate, writeTeams } from '../tegami.js';
-import { readTegami } from '../tegami-read.js';
 import { conditionalBehaviourPath, resolveBehaviourBooks } from '../behaviours.js';
 import { addCurrentBehaviour, readAgentComposition } from '../agent-composition.js';
 import { mandate } from '../agent-defaults.js';
@@ -264,17 +262,6 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  app.get('/api/sessions/:name/tegami', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    try {
-      res.json(await readTegami(name));
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
   app.delete('/api/sessions/:name', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -494,24 +481,6 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  app.get('/api/teams/:name/live', async (req, res) => {
-    const { name } = req.params;
-    try {
-      const members = (await listSessions()).filter((s) => s.tags.includes(name));
-      res.json({
-        team: name,
-        members: await Promise.all(
-          members.map(async (s) => ({
-            name: s.name,
-            team_lead: s.leads.includes(name),
-          })),
-        ),
-      });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
   app.post('/api/sessions/:name/team_lead', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -551,19 +520,6 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     res.json({ team_lead: await getLeads(name) });
-  });
-
-  app.get('/api/sessions/:name/ctx', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    try {
-      const reading = await readCtxLine(name); // { ctx, model } — one capture, both readings
-      count('ctx', { name, ctx: (reading as { ctx: number | null }).ctx, model: (reading as { model?: string | null }).model ?? null });
-      res.json(reading);
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
   });
 
   app.post('/api/sessions/:name/send', async (req, res) => {

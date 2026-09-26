@@ -109,7 +109,7 @@ test('a body that cannot be read at all is the same kind of failure', async () =
 test('a failed status keeps its own story, whatever shape the body was in', async () => {
   // A proxy returning an HTML error page must not be reported as a malformed success.
   answer({ status: 502, body: '<html>Bad Gateway</html>' });
-  const r = await request('/api/home');
+  const r = await request('/api/desks');
   assert.equal(r.kind, 'http', 'the 502 is the story, not the page it came with');
   assert.equal(r.message, 'HTTP 502');
   assert.equal(r.retryable, true);

@@ -43,20 +43,9 @@ async function updateConfig(mutate: (doc: Record<string, unknown>) => void): Pro
   }
 }
 
-export async function readMax(): Promise<number> {
+async function readMax(): Promise<number> {
   const s = await readSection<Record<string, unknown>>('sessions', {});
   return clean(s.max);
-}
-
-export async function writeMax(max: number): Promise<number> {
-  const value = clean(max);
-  await updateConfig((doc) => {
-    const sessions = ((doc.sessions ?? {}) as Record<string, unknown>) || {};
-    sessions.max = value;
-    doc.sessions = sessions;
-  });
-  await publishMax(value);
-  return value;
 }
 
 export async function publishMax(max?: number): Promise<void> {
@@ -79,17 +68,6 @@ export async function readOwner(): Promise<string> {
   const owner = await readSection<Record<string, unknown>>('owner', {});
   const name = typeof owner.name === 'string' ? owner.name.trim() : '';
   return name || machineUser();
-}
-
-export async function writeOwner(name: string): Promise<string> {
-  const value = String(name ?? '').trim().slice(0, 64) || machineUser();
-  await updateConfig((doc) => {
-    const owner = ((doc.owner ?? {}) as Record<string, unknown>) || {};
-    owner.name = value;
-    doc.owner = owner;
-  });
-  await publishOwner(value);
-  return value;
 }
 
 export const readKoshiSection = (): Promise<Record<string, unknown>> =>
@@ -156,7 +134,7 @@ export async function publishOwner(name?: string): Promise<void> {
   }
 }
 
-export async function liveCount(): Promise<number> {
+async function liveCount(): Promise<number> {
   try {
     const stdout = await tmux.run(['list-sessions', '-F', '#{session_name}']);
     return stdout.split('\n').filter((n) => n && !n.startsWith('grid_')).length;

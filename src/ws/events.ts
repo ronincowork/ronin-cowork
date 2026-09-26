@@ -9,13 +9,12 @@ import { emitTranscriptWatch } from '../sockets.js';
 const eventClients = new Set<WebSocket>();
 
 /*
- * THE PUSH — the browser store holds what arrives here; nothing polls for it. Each tick
+ * THE PUSH — the browser store holds what arrives here. Each tick
  * (a tmux notification, or the 2s clock while a browser is connected) takes ONE session
  * listing and builds both messages from it: {t:'sessions', list} and {t:'home', rows}, each
  * sent only when a field the UI paints moved. {t:'teams', rosters} is the GET
  * /api/team-rosters answer, read once per roster write and sent when it moved. A fresh
- * connection gets all three whole, and that is a tab's snapshot: no browser asks GET
- * /api/home, which answers the same rows to anything that reads the route directly.
+ * connection gets all three whole.
  */
 export interface Feed {
   list: () => Promise<SessionInfo[]>;
@@ -83,8 +82,7 @@ export function tick(): Promise<Tick> {
   return ticking;
 }
 
-// Called after every roster write: one read of the rosters for everybody, where each open
-// tab used to re-read the route on a nudge.
+// Called after every roster write: one read of the rosters for every connected tab.
 export function pushTeams(): Promise<void> {
   teamsRead = teamsRead.then(async () => {
     const rosters = await feed.teams().catch(() => undefined);
