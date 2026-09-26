@@ -5,12 +5,11 @@ import { S, tiles } from './state.js';
 import { t } from './lexicon.js';
 
 /**
- * THE FEEDS THAT ARE NOT RESOURCES, and the compatibility shim over the store.
+ * WHAT THE /events MESSAGES MEAN TO THE PAGE.
  *
- * The socket is the store's (js/store.js). What stays here is what each message means to
- * the page — a birth chip, a tile returning home, a transcript gap to fill — and the
- * handler sets the surfaces registered on before the store existed. They stay until the
- * last consumer subscribes to the store instead.
+ * The socket and the resources are the store's (js/store.js). This module turns a changed
+ * session list into birth chips and tiles returning home, and hands the feeds that are not
+ * resources — transcripts, Team page drafts, Mika, Setup progress — to their surfaces.
  *
  * WHAT THIS TAB IS SHOWING, said once and re-said whenever it changes. The server sends an
  * Agent's records only to connections that asked for them, so a phone watching one Agent is
@@ -26,11 +25,6 @@ export function watchTranscript(session, reading) {
 
 function sendWatch() {
   store.send({ t: 'watch', session: watching?.session || '', reading: watching?.reading || '' });
-}
-
-/** Open the feed. The store owns the socket; this name stays for main.js and phone.js. */
-export function connectEvents() {
-  return store.connect(); // the caller may want to know which connection it got
 }
 
 /** Who hears an Agent's records arriving, and the reconnect that means a gap to fill. */
@@ -55,7 +49,7 @@ store.listen('setup-progress', (m) => { if (Array.isArray(m.steps)) for (const f
 store.reduce('sessions', (list) => onSessionsEvent(list));
 
 /** A changed session list: reconcile it, return dead tiles home, and offer the newborn. */
-export function onSessionsEvent(list) {
+function onSessionsEvent(list) {
   const before = new Set(S.sessions.map((s) => s.name));
   const now = new Set(list.map((s) => s.name));
   reconcileSessions(list); // the one writer (api.js); pickers current everywhere
@@ -71,10 +65,10 @@ export function onSessionsEvent(list) {
 }
 
 /* Chip: "a session appeared" — one tap to open, dismisses itself. */
-export let chipEl = null;
-export let chipTimer = null;
+let chipEl = null;
+let chipTimer = null;
 const BIRTH_CHIP_HOLD_MS = 7500;
-export function showBirthChip(name) {
+function showBirthChip(name) {
   if (!chipEl) {
     chipEl = document.createElement('div');
     chipEl.id = 'chip';
@@ -98,7 +92,7 @@ export function showBirthChip(name) {
   clearTimeout(chipTimer);
   chipTimer = setTimeout(hideChip, BIRTH_CHIP_HOLD_MS);
 }
-export function hideChip() {
+function hideChip() {
   if (chipEl) chipEl.classList.remove('show');
 }
 
@@ -114,14 +108,3 @@ export function openSessionSomewhere(name) {
   tile.activate();
   return true;
 }
-
-/* ---------- commons — the admin pane inside a tile (tab label: ⌂ Roster) ----------
- * commons (内 — inside, the house, ours): the counterpart of the dials' "outside
- * agents". It is the inside of a tile — the part that is yours, from which work is
- * dispatched to the outside agents the dials govern. The UI tab says "⌂ Roster" for
- * legibility; the concept is commons everywhere else. See docs/commons.md.
- *
- * The selectors below still say "home" (they predate the name) — new code should
- * say commons; renaming them is a single tidy-up pass, not a piecemeal one.
- */
-// Shared data: one /api/home fetch feeds every visible panel.

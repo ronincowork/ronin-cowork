@@ -275,20 +275,20 @@ leave a socket, poll or focus target behind.
 ## Update paths — what causes a surface to change
 
 The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`); the
-resources the server pushes — the home rows, the session list, desks, Team rosters — have
-one holder, `store.js`, which owns the `/events` socket; the catalogs have one owner
-(`home.js`). The store hands a subscriber a resource when it subscribes and again only when
-the resource changed, so no surface keeps a clock for a pushed resource or checks whether
-to repaint. Every timer below is written next to a predicate that stops it costing anything
+server's resources have one holder, `store.js`, which owns the `/events` socket: the home
+rows and the session list arrive only by push, Team rosters are read when the server nudges,
+and desks are read when a surface opens. The catalogs have one owner (`home.js`). The store
+hands a subscriber a resource when it subscribes and again only when a field a surface paints
+changed, so no surface keeps a clock for a resource or checks whether to repaint. Every timer below is written next to a predicate that stops it costing anything
 while its surface is hidden.
 
 | Fact | Written by | Arrives via |
 |---|---|---|
-| session set (`S.sessions`) | `reconcileSessions` (`api.js`) — the only writer | boot fetch (`main.js`) · `{t:'sessions', list}` on the store's socket, reduced by `events.js` (which also owns births/deaths/chips) · visibilitychange + bfcache `pageshow` (`layout.js`) · post-mutation `fetchSessions()` calls |
-| roster/status data (`homeData`) | the store's `home` resource; `home.js` reads it into `homeData` and keeps `homeFault` | `{t:'home', rows}` pushed on connect and on change · one `GET /api/home` snapshot at boot (`main.js`) and on each reconnect · visibility resume (`renew`, `layout.js`) reconnects a socket that went · `refreshHome()` after a mutation — the store's snapshot read · a snapshot read fetches nothing once this connection has had a push; until then, each `sessions` message re-reads it |
+| session set (`S.sessions`) | `reconcileSessions` (`api.js`) — the only writer | boot fetch (`main.js`) · `{t:'sessions', list}` on the store's socket, pushed on connect and on change, reduced by `events.js` (which also owns births/deaths/chips); a push that moved only `activity` stamps is no change · visibilitychange + bfcache `pageshow` (`layout.js`) · post-mutation `fetchSessions()` calls |
+| roster/status data (`homeData`) | the store's `home` resource; `home.js` reads it into `homeData` | `{t:'home', rows}` only: the server sends it whole to every new connection, a reconnect included, and again when a painted field changed (not `activity` or the stance's `at`) · the browser never asks `GET /api/home`; that route is the tools' · visibility resume (`renew`, `layout.js`) reconnects a socket that went |
 | desk readings (`desksOf`) | the store's `desks` resource, read by `desks.js` | `{t:'desks', list}` pushed on connect and on change · `refreshDesks()` reads `GET /api/desks` only before this connection's first push |
-| Team rosters | the store's `teams` resource, projected by `team-controller.js`, which publishes only when the rosters or the session list changed | `{t:'teams'}` nudge after a successful write under `/api/team-rosters` or `/api/team` → one `GET /api/team-rosters` · `refreshTeams()` on Team entry and after a mutation |
-| catalogs (projects, presets, saved launches) | their `load*` in `home.js` | boot, and the panes that edit them re-load after a write |
+| Team rosters | the store's `teams` resource, projected by `team-controller.js`, which hears the store's `teams` and `sessions` and publishes only when the rosters or the session list changed | `{t:'teams'}` nudge after a successful write under `/api/team-rosters` or `/api/team` → one `GET /api/team-rosters` · `refreshTeams()` on Team entry and after a mutation |
+| catalogs (projects) | `loadProjects` in `home.js` | boot, and the panes that edit them re-load after a write |
 | per-tile readings (gauge, work record) | the tile's `refreshCtx` / `refreshTegami`, reading its session's home row (`ctx`, `model`, `tegami`) | the tile subscribes to the store's `home` when it is made and unsubscribes when its host destroys it (`terminal-tile-host.js`) · connect repaints from the row the store holds · the browser never calls `/ctx` or `/tegami`; those routes are the tools' |
 | docs list (tracked shelf) | `docs.js`, reading `homeData` | subscribes to the store's `home` when the list is shown (`enter`, back from the editor); the first push after it leaves the screen unsubscribes · the Plans and Docs shelves read `GET /api/docs` on demand |
 | pane data (wipeboard, message queue, roots, koshi, stats) | the pane module | its own gated poll or `enter()` — each owner is the file the surface lives in |

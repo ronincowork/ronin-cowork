@@ -14,7 +14,8 @@ import { trackAppHeight } from './appheight.js';
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
-import { connectEvents, sessionsHandlers } from './events.js';
+import { sessionsHandlers } from './events.js';
+import { connect } from './store.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
 import { loadProjects, projectData } from './home.js';
 import { buildDocs } from './docs.js';
@@ -393,7 +394,7 @@ export async function buildPhone() {
   // A tile address mounts its tile now: the terminal attaches by name and needs no list.
   if (route.screen === 'terminal') guard('phone paint', render);
   await fetchSessions();
-  guard('session event stream', connectEvents);
+  guard('session event stream', connect);
   await refreshTeams();
   guard('load projects', loadProjects); // the launch card's project_root fallback
   guard('phone paint', render);

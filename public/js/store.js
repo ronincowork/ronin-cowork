@@ -4,31 +4,33 @@
  * arrives on.
  *
  * Every surface in the person's path has one lifecycle (owner's ruling, 2026-09-25): OPEN
- * subscribes and is handed the snapshot; WHILE OPEN the store hands it each change; CLOSE
- * unsubscribes; RECONNECT renews and the store reads a fresh snapshot once. No surface
- * fetches a resource held here and no surface owns a timer for one.
+ * subscribes and is handed what the store holds; WHILE OPEN the store hands it each change;
+ * CLOSE unsubscribes. A reconnect is a new connection, and the server sends it every pushed
+ * resource whole. No surface fetches a resource held here and no surface owns a timer for one.
  *
  * The contract a subscriber may rely on: it hears a resource only when the resource
- * changed. The store compares what arrived with what it holds and says nothing when they
- * are the same, so a surface never checks whether it should repaint.
+ * changed. The store compares what arrived with what it holds, by the fields a surface
+ * paints, and says nothing when they are the same.
  *
- *   home      {t:'home', rows}   — the rows of GET /api/home, on connect and on change
- *   desks     {t:'desks', list}  — the answer of GET /api/desks, on connect and on change
- *   teams     {t:'teams'}        — a nudge: the store re-reads GET /api/team-rosters
- *   sessions  {t:'sessions', list}
- *
- * Until the server sends `home` on a connection, each `sessions` message re-reads the home
- * snapshot, as the tab did before the rows were pushed; the first `home` ends that.
+ *   home      {t:'home', rows}      — pushed on connect and on change; the only way in
+ *   sessions  {t:'sessions', list}  — pushed on connect and on change; the only way in
+ *   teams     {t:'teams'}           — a nudge: the store reads GET /api/team-rosters
+ *   desks     read on demand from GET /api/desks; never pushed
  */
 import { request } from './request.js';
 
 const SNAPSHOTS = {
-  home: { url: '/api/home', valid: Array.isArray },
   desks: { url: '/api/desks', valid: (data) => Boolean(data) && typeof data === 'object' && !Array.isArray(data) },
   teams: { url: '/api/team-rosters', valid: Array.isArray },
 };
 
 const RECONNECT_MS = 3000;
+
+// What a surface paints. A row's or session's `activity` stamp and a row's stance `at` move
+// on every turn and nothing shows them, so they never make a change on their own — the
+// same rule the server's `homeSignature` (src/ws/events.ts) applies before it pushes.
+export const painted = (list) => JSON.stringify(list.map(({ activity: _activity, at: _at, ...rest }) => rest));
+const SIGNATURES = { home: painted, sessions: painted };
 
 export function createStore({
   read = (url) => request(url, { cache: 'no-store' }),
@@ -43,14 +45,12 @@ export function createStore({
   const listeners = new Map(); // message type -> Set<fn>, for the feeds that are not resources
   const openers = new Set();
   const reading = new Map(); // key -> the one read in flight
-  const pushed = new Set(); // resources the server has sent on THIS connection
   let socket = null;
-  let opened = false;
   let retry = null;
 
   /** Hold a value; tell the subscribers only when it differs from what was held. */
   function set(key, value) {
-    const signature = JSON.stringify(value);
+    const signature = (SIGNATURES[key] || JSON.stringify)(value);
     if (signatures.get(key) === signature) return false;
     signatures.set(key, signature);
     values.set(key, value);
@@ -76,12 +76,10 @@ export function createStore({
   function reduce(key, fn) { reducers.set(key, fn); }
 
   /**
-   * Read a resource's snapshot from its route. Concurrent callers share one request, and a
-   * resource the server has already sent on this connection is not fetched: the store holds
-   * it. Resolves {ok, changed, message, result}.
+   * Read a resource that is not pushed (desks, teams) from its route. Concurrent callers
+   * share one request. Resolves {ok, changed, message, result}.
    */
   function snapshot(key) {
-    if (pushed.has(key)) return Promise.resolve({ ok: true, changed: false, result: { ok: true, data: values.get(key) } });
     if (reading.has(key)) return reading.get(key);
     const { url, valid } = SNAPSHOTS[key];
     const pending = Promise.resolve(read(url))
@@ -94,34 +92,19 @@ export function createStore({
   }
 
   function receive(message) {
-    if (message.t === 'home' && Array.isArray(message.rows)) {
-      pushed.add('home');
-      set('home', message.rows);
-    } else if (message.t === 'desks' && SNAPSHOTS.desks.valid(message.list)) {
-      pushed.add('desks');
-      set('desks', message.list);
-    } else if (message.t === 'teams') {
-      void snapshot('teams');
-    } else if (message.t === 'sessions' && Array.isArray(message.list)) {
-      set('sessions', message.list);
-      if (!pushed.has('home')) void snapshot('home');
-    }
+    if (message.t === 'home' && Array.isArray(message.rows)) set('home', message.rows);
+    else if (message.t === 'sessions' && Array.isArray(message.list)) set('sessions', message.list);
+    else if (message.t === 'teams') void snapshot('teams');
     for (const fn of listeners.get(message.t) || []) fn(message);
   }
 
-  /** Open the socket. A reconnect is a new connection with no memory: it reads the home snapshot once. */
+  /** Open the socket. The server sends a new connection every pushed resource whole. */
   function connect() {
     cancel(retry);
     retry = null;
     const ws = open();
     socket = ws;
-    ws.onopen = () => {
-      const again = opened;
-      opened = true;
-      pushed.clear();
-      for (const fn of openers) fn();
-      if (again) void snapshot('home');
-    };
+    ws.onopen = () => { for (const fn of openers) fn(); };
     ws.onmessage = (event) => {
       let message;
       try { message = JSON.parse(event.data); } catch { return; }
@@ -131,10 +114,9 @@ export function createStore({
     return ws;
   }
 
-  /** A resumed tab: reconnect now if the socket went, else read the home snapshot once. */
+  /** A resumed tab: reconnect now if the socket went, rather than waiting out the retry. */
   function renew() {
-    if (!socket || socket.readyState > 1) { connect(); return; }
-    void snapshot('home');
+    if (!socket || socket.readyState > 1) connect();
   }
 
   /** Hear a message type that is a feed rather than a resource (transcripts, drafts, Mika). */

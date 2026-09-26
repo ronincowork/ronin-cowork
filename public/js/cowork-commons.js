@@ -7,7 +7,6 @@ import { buildMachineSettings } from './machine-settings.js';
 import { buildStats } from './stats.js';
 import { buildSystemPanel } from './system.js';
 import { buildArchives } from './archives.js';
-import { refreshHome } from './home.js';
 import { askMika } from './mika.js';
 import { S, serviceOff } from './state.js';
 import { t } from './lexicon.js';
