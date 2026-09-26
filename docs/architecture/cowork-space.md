@@ -49,7 +49,7 @@ Three kinds of thing, and only three, sit inside the bar:
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
 | **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ edit Agent title · View Work Record · output selector · @ · ⚡ · メ. The Torii is first, immediately before the readable title; the permanent session ID does not change. |
-| **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Workspace folders · Archived · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). The Team roster now lives on the Teams workbench. |
+| **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · Log out) · Desk profile · Workspace folders · Archived · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). The Team roster now lives on the Teams workbench. |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
 | *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default |
 | `campaign_commons` | this campaign | Campaign Commons strip | Campaign · Workspace folders · Team roster · Templates |

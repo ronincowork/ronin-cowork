@@ -655,12 +655,11 @@ export function createServicesSurface(context) {
   return { el: out.el, show, destroy: () => clearTimeout(timer) };
 }
 
-/** gbrain: the Setup presentation of the commons tab. Reads and presses are the tab's own. */
+/** gbrain: its Setup work surface (gbrain.js), open while seated, closed when it leaves. */
 export function createGbrainSurface(context) {
   const out = surface(t('pane.gbrain', 'gbrain'));
   const host = el('div', 'setup-surface-body'); out.content.append(host);
-  const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
-    presentation: 'setup',
+  const room = buildGbrain(host, (prompt) => context.environment?.showNewSession?.(prompt), {
     maturity: context.installationMaturity,
     installationControls: context.installationControls,
     availability: () => {
@@ -685,10 +684,9 @@ export function createGbrainSurface(context) {
     },
   });
   return { el: out.el, show: () => {
-    const status = context.environment?.setupRuntime?.gbrain;
     context.workbench?.refreshSelector?.();
-    room.enter?.();
-  } };
+    room.enter();
+  }, leave: () => { room.close(); }, destroy: () => { room.close(); } };
 }
 
 function createLaunchOwnSurface(context) {

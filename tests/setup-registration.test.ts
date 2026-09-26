@@ -431,16 +431,15 @@ test('Setup gbrain answers its measured facts plainly with at most one action pe
   assert.equal(gbrainSetupModel(snapshot({ integrationsKnown: false, integrations: [] }), one).accounts, null);
   assert.equal(gbrainSetupModel(snapshot({ search: { weights: 'stopped', mode: 'keyword_only' } }), one).answer, 'Installed · running · keyword-only search');
   assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).hint, 'fetching weights');
-  assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).polling, true);
+  assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).state, 'installing');
   assert.deepEqual(gbrainSetupModel(snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } })).log, ['step 3 failed']);
 });
 
-test('Setup gbrain keeps installation/default choice on Campaign Installations and keeps the commons dashboard on its default', async () => {
+test('Setup gbrain keeps installation/default choice on Campaign Installations and follows an install by push', async () => {
   const [setup, gbrain] = await Promise.all([
     (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
     (await import('node:fs/promises')).readFile(new URL('../public/js/gbrain.js', import.meta.url), 'utf8'),
   ]);
-  assert.match(setup, /presentation: 'setup'/);
   assert.match(setup, /setupRuntime\?\.gbrain|runtime\?\.gbrain/);
   assert.match(setup, /onState: \(\) => context\.workbench\?\.refreshSelector/);
   assert.match(setup, /openServices: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.installations/);
@@ -456,13 +455,13 @@ test('Setup gbrain keeps installation/default choice on Campaign Installations a
   assert.match(gbrain, /row\(t\('campaign_view\.default_for_all_agents', 'Default for all Agents'\)\)/);
   assert.match(setup, /installationControls: context\.installationControls/);
   assert.match(gbrain, /const mine = \+\+reads;[\s\S]*?if \(mine === reads\) renderSetup\(result\)/);
-  assert.match(gbrain, /if \(!setup\) root\.append\(head, privacy, search, integrations\)/);
+  assert.doesNotMatch(gbrain, /setInterval|setTimeout/, 'an install is followed by push, never polled');
+  assert.match(gbrain, /store\.listen\('gbrain'/);
   for (const question of ['gbrain.setup_q_installed', 'gbrain.setup_q_accounts']) assert.ok(gbrain.includes(question), question);
   assert.doesNotMatch(gbrain, /gbrain\.setup_q_agents|gbrain\.setup_agents_/);
   assert.match(gbrain, /setAttribute\('aria-live', 'polite'\)/);
   assert.match(gbrain, /request\('\/api\/gbrain\/install', \{ method: 'POST', json: \{\} \}\)/);
   assert.match(gbrain, /root\.replaceChildren\(wrap\)/);
-  for (const kept of ['renderPrivacy(r.data)', 'renderSearch(r.data)', 'renderIntegrations(r.data)', 'integrations.append(renderRemove())', 'renderLoad(r.data)']) assert.ok(gbrain.includes(kept), kept);
   assert.doesNotMatch(gbrain, /designedErrors|gb-notice|gb-setup|setup-gbrain-benefit|setup-gbrain-facts/);
 });
 

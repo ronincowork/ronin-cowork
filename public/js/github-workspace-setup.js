@@ -1,6 +1,7 @@
 /* Setup's GitHub authentication and clone handoff for the Workspace Folder surface. */
 import { t } from './lexicon.js';
 import { request } from './request.js';
+import { store } from './store.js';
 import { WorkspaceKit } from './workspace-kit.js';
 
 const el = (tag, className = '', text = '') => {
@@ -63,8 +64,7 @@ export function createGithubWorkspaceSetup({ environment, workspace = 'workspace
   let account = '';
   let installed = true;
   let mounted = null;
-  let watch = 0;
-  let checking = false;
+  let unlisten = null;
   let connecting = false;
   let installing = false;
   let removing = false;
@@ -89,7 +89,14 @@ export function createGithubWorkspaceSetup({ environment, workspace = 'workspace
     renderDetail: (host) => { host.append(cloneBox); void show(); return () => cloneBox.remove(); },
   }];
 
-  const stopWatch = () => { if (watch) window.clearInterval(watch); watch = 0; checking = false; };
+  // While a setup session is attached the server watches the machine and pushes the GET
+  // answer each time it moves ({t:'github-setup', github}); the surface hears it until the
+  // session goes. A login that lands in the window closes the session from here.
+  const heard = (github) => {
+    if (github?.authenticated && (loginAccount === null || github.account !== loginAccount)) void finishAuthentication(github);
+    else paint(github);
+  };
+  const stopWatch = () => { unlisten?.(); unlisten = null; };
   const unmount = () => {
     unmounting = true;
     mounted?.park?.();
@@ -144,7 +151,7 @@ export function createGithubWorkspaceSetup({ environment, workspace = 'workspace
         if (!unmounting && !destroyed) void show();
       },
     });
-    if (mounted && !watch) watch = window.setInterval(() => { void poll(); }, 1500);
+    if (mounted) unlisten ??= store.listen('github-setup', (message) => heard(message.github));
     return Boolean(mounted);
   };
   const show = async () => {
@@ -176,15 +183,6 @@ export function createGithubWorkspaceSetup({ environment, workspace = 'workspace
     paint(github);
     await teardown(true);
     onAuthenticated?.();
-  };
-  const poll = async () => {
-    if (checking || destroyed) return;
-    checking = true;
-    try {
-      const result = await request('/api/setup/github', { cache: 'no-store' });
-      if (result.ok && result.data?.authenticated && (loginAccount === null || result.data.account !== loginAccount)) await finishAuthentication(result.data);
-      else if (result.ok) paint(result.data);
-    } finally { checking = false; }
   };
 
   repository.addEventListener('input', () => paint({ installed, authenticated, account }));

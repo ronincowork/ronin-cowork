@@ -252,7 +252,8 @@ gbrain is the memory the Personal Assistant runs on. Its page shows four rows:
 disabled with “turn Available on first” while availability is off), and **Accounts linked** (one row per account gbrain can link; the
 Personal Assistant links one when asked, with your approval). Under them sits the next
 step: **Open Model providers** if none is activated yet, otherwise **Start your first
-Personal Assistant**, the same launch the preset makes. What gbrain is lives in
+Personal Assistant**, the same launch the preset makes. While **Load gbrain** runs, the
+**Installed** row follows each install step as it happens. What gbrain is lives in
 `docs/products/gbrain.md`.
 
 ## Launch your own
