@@ -29,7 +29,7 @@ import { registerCatalogs } from './routes/catalogs.js';
 import { homeRows, registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerPasswordSettings } from './routes/password-api.js';
-import { registerSessions } from './routes/sessions-api.js';
+import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
 import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerDocs } from './routes/docs-api.js';
 import { registerDesks } from './routes/desks-api.js';
@@ -429,6 +429,7 @@ startSessionsBroadcast({
   wipeboard: (board) => isValidBoardName(board) ? wipeboardAnswer(board, 100) : Promise.resolve(null),
   jikan: (team) => team === '*' ? listAllJobs() : isValidTeam(team) ? listJobs(team) : Promise.resolve(null),
   github: { attached: githubSetupAttached, answer: githubSetupAnswer },
+  shutdown: shutdownOperation,
 });
 watchStore(WIPEBOARD_DIR, (file) => { void pushWipeboard(file.split('/')[0]!); });
 watchStore(storeDir('jikan'), (file) => { if (file.endsWith('.md')) void pushJikan(file.slice(0, -3)); });

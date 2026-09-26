@@ -29,10 +29,12 @@ export interface Feed {
   wipeboard: (board: string) => Promise<Record<string, unknown> | null>;
   jikan: (team: string) => Promise<unknown[] | null>;
   github: { attached: () => Promise<boolean>; answer: () => Promise<unknown> };
+  shutdown: (id: string) => object | null;
 }
 const empty: Feed = {
   list: listSessions, home: async () => [], teams: async () => [], messages: async () => [],
   wipeboard: async () => null, jikan: async () => null, github: { attached: async () => false, answer: async () => null },
+  shutdown: () => null,
 };
 let feed: Feed = empty;
 let lastSessions = '';
@@ -208,18 +210,21 @@ export function handleEvents(ws: WebSocket): void {
   // The one thing a browser says on this socket. Everything else it sends is ignored: this
   // is a feed, and an unknown message from a client is not a reason to drop the connection.
   ws.on('message', (raw) => {
-    let msg: { t?: string; session?: unknown; reading?: unknown; resource?: unknown; board?: unknown; team?: unknown };
+    let msg: { t?: string; session?: unknown; reading?: unknown; resource?: unknown; board?: unknown; team?: unknown; id?: unknown };
     try {
       msg = JSON.parse(String(raw)) as typeof msg;
     } catch {
       return;
     }
-    // A surface that opens asks for its board or its Team's jobs; the answer is the same
-    // message a write sends, on this socket, in order with every push after it.
+    // A surface that opens asks for its board or its Team's jobs, and a socket that reopened
+    // mid-shutdown asks for that shutdown; the answer is the same message a change sends, on
+    // this socket, in order with every push after it.
     if (msg?.t === 'want') {
+      const shutdown = msg.resource === 'shutdown' && typeof msg.id === 'string' ? feed.shutdown(msg.id) : null;
       const answer = msg.resource === 'wipeboard' && typeof msg.board === 'string' ? wipeboardMessage(msg.board)
         : msg.resource === 'jikan' && typeof msg.team === 'string' ? jikanMessage(msg.team)
-          : null;
+          : shutdown ? Promise.resolve({ t: 'shutdown', ...shutdown })
+            : null;
       void answer?.then((reply) => { if (reply && ws.readyState === ws.OPEN) ws.send(JSON.stringify(reply)); });
       return;
     }

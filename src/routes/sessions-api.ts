@@ -81,6 +81,9 @@ interface ShutdownOperation extends ShutdownProgress {
 const publicArchive = ({ id, name, archived_at, agent, tags }: ArchivedSession) => ({ id, name, archived_at, agent, tags });
 
 const shutdownOperations = new Map<string, ShutdownOperation>();
+// A shutdown as it stands: what {t:'want', resource:'shutdown', id} answers a socket that
+// reopened mid-shutdown. Finished operations are kept five minutes.
+export const shutdownOperation = (id: string): ShutdownOperation | null => shutdownOperations.get(id) ?? null;
 const shutdownSlots = new ShutdownSlots();
 
 async function openDeskRefusal(name: string): Promise<string> {

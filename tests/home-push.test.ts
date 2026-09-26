@@ -298,3 +298,14 @@ test('while Mika is starting the server looks again and pushes each change, then
   assert.deepEqual(b.got('mika'), [{ t: 'mika', ok: false, state: 'action_required', code: 'provider_confirmation_required' }], 'an unchanged answer sends nothing');
   assert.equal(watchMika(async () => ({ state: 'ready' }), { state: 'ready' }), null, 'a ready answer starts no watch');
 });
+
+test('a socket that reopened mid-shutdown asks for it and gets the operation as it stands', async (t) => {
+  const operation = { id: 'op1', session: 'leaving', state: 'running', phase: 'closing_desks' };
+  feedEvents({ list: async () => [session('a')], shutdown: (id) => id === 'op1' ? operation : null });
+  const b = open(t);
+  await settle();
+  b.say({ t: 'want', resource: 'shutdown', id: 'op1' });
+  b.say({ t: 'want', resource: 'shutdown', id: 'gone' });
+  await settle();
+  assert.deepEqual(b.got('shutdown'), [{ t: 'shutdown', ...operation }]);
+});
