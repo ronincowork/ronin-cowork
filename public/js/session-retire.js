@@ -1,37 +1,46 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { archiveSession, fetchSessionShutdown, startSessionShutdown } from './api.js';
+import { archiveSession, startSessionShutdown } from './api.js';
 import { sheet, toast } from './ui.js';
 import { t } from './lexicon.js';
+import { store } from './store.js';
 
-export async function runShutdownPolling(name, {
+/**
+ * One shutdown: the POST starts it, and each phase arrives as {t:'shutdown', id, ...} until
+ * it is complete or failed; nothing polls. The socket can go silent — a dropped connection
+ * loses the pushes sent while it was down — so a reopen asks for the state on the socket
+ * ({t:'want', resource:'shutdown', id}) and it arrives like any other phase; an overall
+ * deadline gives the controls back if the answer never comes.
+ */
+export function runShutdown(name, {
   requestBody,
   start = startSessionShutdown,
-  poll = fetchSessionShutdown,
+  want = (id) => store.send({ t: 'want', resource: 'shutdown', id }),
+  listen = (fn) => store.listen('shutdown', fn),
+  onOpen = (fn) => store.onOpen(fn),
   onProgress = () => {},
-  now = () => Date.now(),
-  wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  later = (fn, ms) => setTimeout(fn, ms),
+  cancel = (handle) => clearTimeout(handle),
   timeoutMs = requestBody?.mode === 'hard_delete' ? 125_000 : 35_000,
-  pollTimeoutMs = 5_000,
 } = {}) {
   onProgress({ state: 'running', phase: 'resolving_agent', message: 'Resolving Agent…' });
-  const started = await start(name, requestBody);
-  const deadline = now() + timeoutMs;
-  let state = started;
-  while (state.state === 'running') {
-    onProgress(state);
-    if (now() >= deadline) throw new Error('shutdown timed out; the Agent and any remaining desks were left available — try again');
-    await wait(150);
-    let timer;
-    try {
-      state = await Promise.race([
-        poll(started.id),
-        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('shutdown status check timed out; controls restored — try again')), pollTimeoutMs); }),
-      ]);
-    } finally { clearTimeout(timer); }
-  }
-  onProgress(state);
-  if (state.state !== 'complete') throw new Error(state.error || 'safe shutdown failed');
-  return state;
+  return new Promise((resolve, reject) => {
+    let id = null;
+    const early = []; // pushes that land before the POST has named the shutdown
+    const end = (settle) => { stopPush(); stopOpen(); cancel(deadline); settle(); };
+    const step = (state) => {
+      onProgress(state);
+      if (state.state === 'complete') end(() => resolve(state));
+      else if (state.state !== 'running') end(() => reject(new Error(state.error || 'safe shutdown failed')));
+    };
+    const stopPush = listen((message) => { if (id === null) early.push(message); else if (message.id === id) step(message); });
+    const stopOpen = onOpen(() => { if (id !== null) want(id); });
+    const deadline = later(() => end(() => reject(new Error('shutdown timed out; the Agent and any remaining desks were left available — try again'))), timeoutMs);
+    Promise.resolve(start(name, requestBody)).then((started) => {
+      id = started.id;
+      step(started);
+      for (const message of early.splice(0)) if (message.id === id) step(message);
+    }, (error) => end(() => reject(error)));
+  });
 }
 
 export function createSubmitGate() {
@@ -107,7 +116,7 @@ export function retireSession(name, retirementId, onDone = () => {}) {
     await onDone();
   };
   const safeShutdown = async () => {
-    const state = await runShutdownPolling(name, { onProgress: (value) => { progress.textContent = value.message; } });
+    const state = await runShutdown(name, { onProgress: (value) => { progress.textContent = value.message; } });
     toast(state.message, true);
   };
   archive.addEventListener('click', () => void submit(() => finish(archive, () => archiveSession(name), t('retire.archive_failed', 'could not archive it'), t('retire.archiving', 'archiving…'))));
@@ -116,7 +125,7 @@ export function retireSession(name, retirementId, onDone = () => {}) {
     const exact = `HARD DELETE ${name} AND OWNED DESKS`;
     if (!confirm(t('retire.hard_delete_confirm', 'Hard Delete is irreversible. Delete Agent {name} and every desk it owns, including dirty and unhanded work? Destructive evidence will be preserved.\n\nConfirm exact targets: {exact}', { name, exact }))) return;
     void submit(() => finish(destructive, async () => {
-      const state = await runShutdownPolling(name, {
+      const state = await runShutdown(name, {
         requestBody: { mode: 'hard_delete', confirmation: exact },
         onProgress: (value) => { progress.textContent = value.message; },
       });

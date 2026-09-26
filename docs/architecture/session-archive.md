@@ -77,12 +77,15 @@ its location with `bin/ronin-store archived_sessions`; never spell the path in c
 | `POST /api/sessions/:name/archive` | Persist the resumable manifest and stop the Agent; refuses while it owns an open desk |
 | `DELETE /api/sessions/:name` | Coordinated close of safe assigned worktrees followed by Agent deletion |
 | `POST /api/sessions/:name/shutdown` | Immediately start observable safe Delete, or exact-confirmed Hard Delete; returns an operation id |
-| `GET /api/session-shutdowns/:id` | Current phase, desk count, terminal success, or actionable blockers |
 | `GET /api/archived-sessions` | Roster-safe rows: `id`, `name`, `archived_at`, `agent` |
 | `POST /api/archived-sessions/:id/rehydrate` | Resume provider conversation and restore metadata |
 | `DELETE /api/archived-sessions/:id` | Irreversibly end and remove the archived record |
 
-The browser calls these routes through `public/js/api.js`. Archived rows never enter
+The browser calls these routes through `public/js/api.js`. A shutdown's phases reach it as
+`{t:'shutdown', id, …}` on `/events` until it is complete or failed (`runShutdown` in
+`public/js/session-retire.js`); a socket that reopens mid-shutdown asks for the state with
+`{t:'want', resource:'shutdown', id}`. Nothing polls, and an overall deadline returns the
+controls if the socket stays silent. Archived rows never enter
 `S.sessions`, so they cannot appear in live pickers or consume the configured session max.
 Agents and team leads use those same routes through `session_archive <session>` and
 `session_restore <archive-id>`; the tools add no lifecycle or store of their own.

@@ -338,12 +338,6 @@ export function registerSessions(app: express.Express): void {
     })());
   });
 
-  app.get('/api/session-shutdowns/:id', (req, res) => {
-    const operation = shutdownOperations.get(req.params.id);
-    if (!operation) return res.status(404).json({ error: 'No such shutdown operation.' });
-    res.status(operation.state === 'failed' && operation.blockers ? 409 : 200).json(operation);
-  });
-
   app.put('/api/sessions/:name/title', async (req, res) => {
     const { name } = req.params;
     const title = String(req.body?.title ?? '').trim();
