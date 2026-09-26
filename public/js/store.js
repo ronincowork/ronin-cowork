@@ -17,6 +17,17 @@
  *   home      {t:'home', rows}
  *   sessions  {t:'sessions', list}   — reduced into S.sessions (js/events.js) before anyone hears it
  *   teams     {t:'teams', rosters}   — the shape of GET /api/team-rosters
+ *   messages  {t:'messages', list}   — the message queue
+ *   memory    {t:'memory', reading}  — the machine reading behind the memory gauge
+ *
+ * Two kinds are per board or per team, and nobody holds them until a surface asks: a
+ * subscription to `wipeboard:<board>` or `jikan:<team>` sends the server a `want` on the
+ * socket, and the server answers this connection with the message it broadcasts on every
+ * write. Snapshot and changes come down the one ordered channel; each open says the wants
+ * of every live subscription again.
+ *
+ *   wipeboard:<board>  {t:'wipeboard', board, posts, more}  — held as { posts, more }
+ *   jikan:<team>       {t:'jikan', team, jobs}               — held as the jobs
  */
 
 const RECONNECT_MS = 3000;
@@ -26,6 +37,14 @@ const RECONNECT_MS = 3000;
 // same rule the server's `homeSignature` (src/ws/events.ts) applies before it pushes.
 export const painted = (list) => JSON.stringify(list.map(({ activity: _activity, at: _at, ...rest }) => rest));
 const SIGNATURES = { home: painted, sessions: painted };
+
+// `wipeboard:ops` wants { resource: 'wipeboard', board: 'ops' }; a plain key wants nothing.
+const WANTED = { wipeboard: 'board', jikan: 'team' };
+const wantFor = (key) => {
+  const at = key.indexOf(':');
+  const resource = at > 0 ? key.slice(0, at) : '';
+  return WANTED[resource] ? { t: 'want', resource, [WANTED[resource]]: key.slice(at + 1) } : null;
+};
 
 export function createStore({
   open = () => new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/events`),
@@ -64,6 +83,8 @@ export function createStore({
     const heard = subscribers.get(key);
     heard.add(fn);
     if (values.has(key)) fn(values.get(key));
+    const want = wantFor(key);
+    if (want) send(want);
     return () => { heard.delete(fn); };
   }
 
@@ -75,6 +96,10 @@ export function createStore({
     if (message.t === 'home' && Array.isArray(message.rows)) set('home', message.rows);
     else if (message.t === 'sessions' && Array.isArray(message.list)) set('sessions', message.list);
     else if (message.t === 'teams' && Array.isArray(message.rosters)) set('teams', message.rosters);
+    else if (message.t === 'messages' && Array.isArray(message.list)) set('messages', message.list);
+    else if (message.t === 'memory' && message.reading && typeof message.reading === 'object') set('memory', message.reading);
+    else if (message.t === 'wipeboard' && message.board && Array.isArray(message.posts)) set(`wipeboard:${message.board}`, { posts: message.posts, more: Boolean(message.more) });
+    else if (message.t === 'jikan' && message.team && Array.isArray(message.jobs)) set(`jikan:${message.team}`, message.jobs);
     for (const fn of listeners.get(message.t) || []) fn(message);
   }
 
@@ -84,7 +109,13 @@ export function createStore({
     retry = null;
     const ws = open();
     socket = ws;
-    ws.onopen = () => { for (const fn of openers) fn(); };
+    ws.onopen = () => {
+      for (const fn of openers) fn();
+      for (const [key, heard] of subscribers) {
+        const want = heard.size ? wantFor(key) : null;
+        if (want) send(want);
+      }
+    };
     ws.onmessage = (event) => {
       let message;
       try { message = JSON.parse(event.data); } catch { return; }

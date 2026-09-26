@@ -195,9 +195,9 @@ export function createCoworkView(options = {}) {
         { id: 'roster', label: t('workspace.tab_roster', 'Roster'), panel: service(roster) },
         { id: 'docs', label: t('workspace.tab_docs', 'Docs'), panel: docsService },
         { id: 'wipeboard', label: t('workspace.tab_wipeboard', 'Wipeboard'), panel: wipeboard },
-        // The queue polls while the Commons is on screen, not only while its own tab is —
-        // its count is how you learn something is waiting. That is what `watch` is for;
-        // the panel itself has no hooks, so nothing stops the poll on a tab change.
+        // The queue listens while the Commons is on screen, not only while its own tab is —
+        // its count is how you learn something is waiting. That is what `watch` is for:
+        // it subscribes when the Commons shows and unsubscribes when it goes.
         { id: 'agent-message-queue', label: messageLabel, panel: messages, watch: () => { messageQueue.enter(); return messageQueue.leave; } },
         { id: 'cron-jobs', label: t('workspace.tab_cron_jobs', 'Cron jobs'), panel: jikan },
         { id: 'team-configuration', label: t('workspace.tab_team_configuration', 'Configuration'), panel: service(config) },
