@@ -294,7 +294,6 @@ export function createCoworkView(options = {}) {
       : team ? [{ key: team, label: t('team_chart.title', 'Team Chart') }] : [],
     teamChart: (id, detail = {}) => createTeamChartSurface({
       team: () => detail.key || team,
-      onSelect: (member) => bench.place(WB_TYPES.agentComposition, oppositeSeat(id), { key: member.name }),
       onOpen: (member) => openAgentWorkbench(member.name),
       onAddLead: (name) => bench.place(WB_TYPES.newAgent, oppositeSeat(id), { team: name, teamLead: true }),
     }),

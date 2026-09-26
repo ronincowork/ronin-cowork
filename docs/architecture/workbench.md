@@ -209,7 +209,7 @@ independent and must not hold the frame.
 | Surface | Required data and owner |
 |---|---|
 | Team roster / Team profile | Team records and live session-derived membership |
-| Team Chart | Selected Team membership and lead designation; Phalanx owns collection and selection geometry while Team Chart owns Agent and lead actions |
+| Team Chart | Selected Team membership and lead designation; Phalanx owns collection and selection geometry, and its in-place detail embeds the canonical Agent composition reader plus the secondary Launch action |
 | Agent terminal | selected session plus terminal transport; other sessions are not mounted for it |
 | Commons | only the selected tab enters: Roster, Docs, Wipeboard, Messages, Configuration, or another registered room |
 | Task Manager | Desk scope aggregates the canonical per-Team Project readings; Team scope reads the selected Team; status and Project drill-downs are independently placeable surfaces carrying the same tenant |

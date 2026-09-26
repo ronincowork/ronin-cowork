@@ -61,7 +61,7 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.match(members, /let density = 'compact', selected/);
   assert.doesNotMatch(members, /orgButton|org_reading/, 'Roster does not privately retain the chart reading');
   assert.match(members, /options\.onSelect\?\.\(member\)/);
-  assert.match(view, /onSelect: \(member\) => bench\.place\(WB_TYPES\.agentComposition, oppositeSeat\(id\), \{ key: member\.name \}\)/, 'selection drives the adjacent Agent composition surface');
+  assert.doesNotMatch(chart, /onSelect|Agent details/, 'Team Chart selection stays inside its Phalanx detail');
   assert.match(catalog, /agentComposition: AGENT_COMPOSITION_TYPE/);
   assert.match(catalog, /WORKBENCH_PROFILES\.team[^\n]*WORKBENCH_TYPES\.agentComposition/);
   assert.match(composition, /\/api\/sessions\/\$\{encodeURIComponent\(agent\)\}\/composition/);
@@ -76,6 +76,9 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.doesNotMatch(coworkRoster, /org_reading|buildTeamMembers/);
   assert.match(chart, /export const TEAM_CHART_TYPE = 'team\.chart'/);
   assert.match(chart, /createPhalanx\(/);
+  assert.match(chart, /createAgentCompositionReader\(member\.name/);
+  assert.match(chart, /host\.append\(profile\.el\)/);
+  assert.match(chart, /return profile\.destroy/);
   assert.match(chart, /group: t\('league\.team_lead', 'Team Lead'\)/);
   assert.match(chart, /group: t\('league\.agents', 'Agents'\)/);
   assert.match(chart, /onAddLead\?\.\(teamName\(\)\)/);
