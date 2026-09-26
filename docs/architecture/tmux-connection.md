@@ -39,8 +39,8 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   replies and server-wide notifications only. The roster and the recorder's sweep skip
   `grid_*` names.
 - `tmux.on(kind, handler)` delivers notifications. `src/ws/events.ts` pushes the session
-  list to browsers on `%sessions-changed`, renames and window changes, with the 2 s clock
-  kept as a heartbeat; one `refresh-client -B` subscription carries every session's
+  list, the home rows and the desks to browsers on `%sessions-changed`, renames and window
+  changes, with the 2 s clock kept as a heartbeat; one `refresh-client -B` subscription carries every session's
   `#{window_activity}` for the roster.
 
 **The rule:** no `execFile('tmux', …)` or `spawn('tmux', …)` in `src/` outside the client
@@ -62,7 +62,11 @@ server, the restart in `src/host-guard.ts`, stays direct on purpose.
 ## The roster, computed once and on change
 
 `/api/home` is computed once per two-second window and shared by every browser that asks
-in it (`createWindowedLoader` in `src/routes/launch.ts`). A session's screen is captured
+in it (`createWindowedLoader` in `src/routes/launch.ts`). The same loader feeds the push:
+while a browser is connected, the sessions triggers recompute it and `src/ws/events.ts`
+broadcasts `{t:'home', rows}` only when the painted fields moved (`homeSignature` leaves
+out a row's `activity` and stance `at`); a fresh connection receives the rows once. The
+route remains the snapshot a tab reads at boot and on reconnect. A session's screen is captured
 and classified only when its `#{window_activity}` stamp moved since the last
 classification (`createActivityCache` in `src/status.ts`); an unchanged session keeps its
 last status, ctx and model.
