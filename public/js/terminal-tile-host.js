@@ -55,6 +55,7 @@ export function createTerminalTileHost(options = {}) {
   const destroy = () => {
     if (!tile) return;
     tile.unsubscribeHome?.();
+    tile.docView?.dispose();
     tile.wire?.close();
     tile.transcriptView?.dispose();
     tile.ro?.disconnect();

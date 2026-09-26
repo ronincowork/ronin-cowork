@@ -263,7 +263,7 @@ export async function buildPhone() {
     const team = route.team;
     teamBar(team);
     const pane = el('div', 'home-docs ph-docs');
-    const docs = buildDocs(null, pane, () => pane.isConnected,
+    const docs = buildDocs(null, pane,
       (name) => membersOfTeam(team).some((member) => member.name === name),
       () => teamByName(team)?.repos || []);
     docsView = docs;
@@ -273,7 +273,7 @@ export async function buildPhone() {
   const leaveDocs = () => {
     if (!docsView) return true;
     const left = docsView.leave(); // false while unsaved typing stands and the owner keeps it
-    if (left) docsView = null;
+    if (left) { docsView.close(); docsView = null; }
     return left;
   };
 

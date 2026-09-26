@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 
 // Just enough browser for tile.js and its imports to evaluate; no Tile is constructed here.
 const noop = () => {};
@@ -10,12 +9,15 @@ globalThis.document = { addEventListener: noop, createElement: inert, querySelec
 globalThis.localStorage = { getItem: () => null, setItem: noop, removeItem: noop };
 globalThis.location = { hash: '', protocol: 'http:', host: 'test', search: '' };
 const asked = [];
-globalThis.fetch = async (url) => { asked.push(String(url)); return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }); };
+let answer = {};
+globalThis.fetch = async (url) => { asked.push(String(url)); return new Response(JSON.stringify(answer), { status: 200, headers: { 'content-type': 'application/json' } }); };
 
 const { store } = await import('../public/js/store.js');
 const { Tile } = await import('../public/js/tile.js');
+const { desksOf } = await import('../public/js/desks.js');
+const { buildDocs } = await import('../public/js/docs.js');
 
-const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /** A Tile's own methods over the parts they paint, standing in for the DOM it would build. */
 function fakeTile(session) {
@@ -57,17 +59,41 @@ test('a tile paints its gauge and work record from the pushed home row, and asks
   store.receive({ t: 'home', rows: [{ name: 'alpha', ctx: 90, model: 'opus' }] });
   assert.equal(painted.gauge.length, heard);
 
-  assert.deepEqual(asked.filter((url) => /\/api\/sessions\/[^/]+\/(ctx|tegami)\b/.test(url)), []);
+  assert.deepEqual(asked, [], 'no request: not /ctx, not /tegami, nothing');
 });
 
-test('the browser keeps no clock for the gauge, the work record, or the docs list', async () => {
-  const [tile, layout, phone, docs, host] = await Promise.all([
-    read('public/js/tile.js'), read('public/js/layout.js'), read('public/js/phone.js'),
-    read('public/js/docs.js'), read('public/js/terminal-tile-host.js'),
-  ]);
-  assert.doesNotMatch(tile, /\/ctx'|\/tegami'/, 'tile.js asks neither route');
-  assert.doesNotMatch(layout, /refreshCtx|refreshTegami/);
-  assert.doesNotMatch(phone, /refreshTegami/);
-  assert.doesNotMatch(docs, /setInterval/);
-  assert.match(host, /tile\.unsubscribeHome\?\.\(\)/, 'destroying the tile closes its subscription');
+test('opening the ladder is the one read of the desks; a push asks nothing', async () => {
+  const { tile } = fakeTile('alpha');
+  Object.assign(tile, { drawLadder() { this.drawn = desksOf(this.session); } });
+  tile.subscribeHome();
+  asked.length = 0;
+
+  store.receive({ t: 'home', rows: [{ name: 'alpha', ctx: 12, model: 'opus', tegami: { docs: [] } }] });
+  store.receive({ t: 'home', rows: [{ name: 'alpha', ctx: 13, model: 'opus', tegami: { docs: [] } }] });
+  assert.deepEqual(asked, [], 'a pushed row costs the tile no request at all');
+
+  answer = { alpha: { desks: [{ repo: 'ronin_cowork', branch: 'team/front-2/front2_tile' }] } };
+  tile.toggleLadder();
+  await settle();
+  assert.deepEqual(asked, ['/api/desks'], 'the ladder reads the desks when it opens, once');
+  assert.equal(tile.ladderOpen, true);
+  assert.deepEqual(tile.drawn, answer.alpha);
+  tile.unsubscribeHome();
+});
+
+test('the docs list hears the rows from enter to close, and nothing after', () => {
+  const heard = [];
+  const docs = buildDocs(null, inert(), (name) => { heard.push(name); return false; });
+  store.receive({ t: 'home', rows: [{ name: 'gamma', tegami: { docs: ['A.md'] } }] });
+  assert.deepEqual(heard, [], 'built but not entered: not listening');
+
+  docs.enter();
+  assert.ok(heard.includes('gamma'), 'enter draws the snapshot');
+  store.receive({ t: 'home', rows: [{ name: 'delta', tegami: { docs: ['B.md'] } }] });
+  assert.ok(heard.includes('delta'), 'a push while open redraws');
+
+  docs.close();
+  store.receive({ t: 'home', rows: [{ name: 'epsilon', tegami: { docs: ['C.md'] } }] });
+  assert.ok(!heard.includes('epsilon'), 'closed: the push is not heard');
+  assert.deepEqual(asked.filter((url) => url !== '/api/desks'), [], 'the tracked shelf asks no route');
 });

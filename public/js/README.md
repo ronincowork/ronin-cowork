@@ -78,7 +78,6 @@ below describes implementation ownership; use the surface index above to find a 
 | `provider-surface.js` | THE ONE MODEL PROVIDERS SURFACE, seated by Ronin Setup and Ronin Settings — per provider, Yours (the steps and the sign-in tile) then The catalog |
 | `provider-setup-session.js` | the native sign-in tile's one mount, handed to both workbench environments |
 | `garden-canvas-model.js` / `garden-canvas.js` | versioned four-region catalog normalization and the dumb Setup Workspace 1 canvas painter; Setup owns lookup, transitions, and action/media handling |
-| `roster.js` | the ⌂ Roster room — the session list, the session max, the stale line |
 | `archives.js` | the Archived room — stopped, resumable sessions backed by manifests |
 | `projectroots.js` | `buildProjectRoots` — the ▣ Roots pane |
 | `hotwords.js` | `buildHotwords` — the ▥ Hotwords pane, the dictation glossary |

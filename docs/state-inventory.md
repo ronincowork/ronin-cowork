@@ -39,8 +39,8 @@ lead fields in roster writes. Archive manifests preserve a restoration snapshot;
 not compete with the current live session.
 
 The browser holds no durable copy of server truth. Per tab, [store.js](../public/js/store.js)
-holds what [events.ts](../src/ws/events.ts) pushes — the home rows, the session list, desks —
-and the Team rosters it re-reads on a `teams` nudge; it is lost on reload and filled again
+holds what [events.ts](../src/ws/events.ts) pushes — the home rows and the session list —
+the Team rosters it re-reads on a `teams` nudge, and the desks it reads when a Work Record opens; it is lost on reload and filled again
 on connect.
 
 Live runtime identity also includes the session key resolved by

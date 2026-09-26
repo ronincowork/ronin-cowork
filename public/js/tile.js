@@ -21,7 +21,7 @@ import { isCoarse } from './tiledrop.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
 import { desksOf } from './desks.js';
 import { homeData } from './home.js';
-import { get, subscribe } from './store.js';
+import { get, snapshot, subscribe } from './store.js';
 import { t } from './lexicon.js';
 import { makeTileTranscript } from './tile-transcript.js';
 import { createSurfaceHost, TILE_SURFACES } from './surface-host.js';
@@ -240,10 +240,14 @@ export class Tile {
 
   toggleLadder() {
     if (this.ladderOpen) this.closeLadder();
-    else {
-      this.ladderOpen = true;
-      this.drawLadder();
-    }
+    else void this.openLadder();
+  }
+
+  /** The desks are read when the ladder opens — the store's one read of `/api/desks`, fresh at open. */
+  async openLadder() {
+    await snapshot('desks');
+    this.ladderOpen = true;
+    this.drawLadder();
   }
 
   closeLadder() {
@@ -366,7 +370,7 @@ export class Tile {
 
   /**
    * The roster answered. Its row already carries what this Agent is doing, so the reading
-   * takes its end-of-conversation indicator from there — no second poll, and no opinion of
+   * takes its end-of-conversation indicator from there — no read of its own, and no opinion of
    * its own (owner, 2026-09-23: the backend sends it, the front renders it).
    */
   renderHome() {
