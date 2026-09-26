@@ -276,18 +276,19 @@ leave a socket, poll or focus target behind.
 
 The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`); the
 server's resources have one holder, `store.js`, which owns the `/events` socket: the home
-rows and the session list arrive only by push, Team rosters are read when the server nudges,
-and desks are read when a surface opens. The catalogs have one owner (`home.js`). The store
-hands a subscriber a resource when it subscribes and again only when a field a surface paints
-changed, so no surface keeps a clock for a resource or checks whether to repaint. Every timer below is written next to a predicate that stops it costing anything
-while its surface is hidden.
+rows, the session list and the Team rosters arrive only by push, on connect and on change,
+and the store reads nothing over REST. Desks are read when a surface opens and are not held.
+The catalogs have one owner (`home.js`). The store hands a subscriber a resource when it
+subscribes and again only when a field a surface paints changed, so no surface keeps a clock
+for a resource, re-reads one after a write, or checks whether to repaint. Every timer below is
+written next to a predicate that stops it costing anything while its surface is hidden.
 
 | Fact | Written by | Arrives via |
 |---|---|---|
-| session set (`S.sessions`) | `reconcileSessions` (`api.js`) — the only writer | boot fetch (`main.js`) · `{t:'sessions', list}` on the store's socket, pushed on connect and on change, reduced by `events.js` (which also owns births/deaths/chips); a push that moved only `activity` stamps is no change · visibilitychange + bfcache `pageshow` (`layout.js`) · post-mutation `fetchSessions()` calls |
+| session set (`S.sessions`) | `reconcileSessions` (`api.js`) — the only writer, fed only by the store's reducer in `events.js` | `{t:'sessions', list}` only: pushed whole to every new connection and again when a painted field changed (not `activity`); `events.js` owns births, deaths and chips, and the page's first list raises no chip · visibilitychange + bfcache `pageshow` renew the store (`layout.js`, `phone.js`) · a write (title, membership, lead, launch, retire) is answered by the push, never re-read |
 | roster/status data (`homeData`) | the store's `home` resource; `home.js` reads it into `homeData` | `{t:'home', rows}` only: the server sends it whole to every new connection, a reconnect included, and again when a painted field changed (not `activity` or the stance's `at`) · the browser never asks `GET /api/home`; that route is the tools' · visibility resume (`renew`, `layout.js`) reconnects a socket that went |
 | desk readings | read at open, not held: `readDesks` in `desks.js` | not pushed · the Work Record ladder asks `GET /api/desks?session=<name>` when it opens and paints the answer (`openLadder`, `tile.js`) |
-| Team rosters | the store's `teams` resource, projected by `team-controller.js`, which hears the store's `teams` and `sessions` and publishes only when the rosters or the session list changed | `{t:'teams'}` nudge after a successful write under `/api/team-rosters` or `/api/team` → one `GET /api/team-rosters` · `refreshTeams()` on Team entry and after a mutation |
+| Team rosters | the store's `teams` resource, projected by `team-controller.js`, which hears the store's `teams` and `sessions` and publishes once per change of either | `{t:'teams', rosters}` only, in the shape of `GET /api/team-rosters`: pushed whole on connect and after a successful write under `/api/team-rosters` or `/api/team` · Team surfaces paint from the projection on entry and on each publish |
 | catalogs (projects) | `loadProjects` in `home.js` | boot, and the panes that edit them re-load after a write |
 | per-tile readings (gauge, work record) | the tile's `refreshCtx` / `refreshTegami`, reading its session's home row (`ctx`, `model`, `tegami`) | the tile subscribes to the store's `home` when it is made and unsubscribes when its host destroys it (`terminal-tile-host.js`) · connect repaints from the row the store holds · the browser never calls `/ctx` or `/tegami`; those routes are the tools' |
 | docs list (tracked shelf) | `docs.js`, reading `homeData` | `enter` subscribes to the store's `home` and draws the snapshot; each push redraws; `close` unsubscribes, called by the seat that leaves it (tile docs view, phone docs screen, Team and Agent workbench tabs, the document seat) · the Plans and Docs shelves read `GET /api/docs` on demand |
