@@ -65,14 +65,6 @@ export function build() {
       renew();
     }
   });
-  // Gauge cadence: the number only moves when a turn completes, so a gentle 30s poll
-  // (one cheap capture-pane per tile-with-session), paused while the tab is hidden.
-  setInterval(() => {
-    if (document.visibilityState !== 'visible') return;
-    tiles.forEach((t) => {
-      if (t.session && t.el.style.display !== 'none') { t.refreshCtx(); t.refreshTegami(); }
-    });
-  }, 30000);
   window.addEventListener('pageshow', (e) => {
     if (e.persisted) fetchSessions(); // restored from bfcache
   });

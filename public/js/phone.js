@@ -377,9 +377,6 @@ export async function buildPhone() {
     void fetchSessions();
     void refreshTeams();
   });
-  // The tile refreshes its own work record on connect; keep it breathing here, since the
-  // desktop's 30s clock (layout.js) never runs in this document.
-  window.setInterval(() => { if (route.screen === 'terminal' && stageTile) stageTile.refreshTegami(); }, 30000);
 
   // Ask the operator which optional surfaces are plugged in BEFORE a tile is born, the
   // way main.js does: `stream:false` means the 🔓 views are off and every tile is 🔒.
