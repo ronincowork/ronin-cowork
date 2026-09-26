@@ -34,6 +34,7 @@ import { sessionKey } from '../session-dir.js';
 import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';
 import { count } from '../counts.js';
+import { broadcastEvent } from '../ws/events.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { writeMandate, writeTeams } from '../tegami.js';
 import { conditionalBehaviourPath, resolveBehaviourBooks } from '../behaviours.js';
@@ -298,6 +299,11 @@ export function registerSessions(app: express.Express): void {
     };
     shutdownOperations.set(id, operation);
     res.status(202).json(operation); // acknowledge before desk or git inspection begins
+    // Each phase, and the end, is pushed whole as {t:'shutdown', ...operation}.
+    const progressed = (value: Partial<ShutdownOperation>) => {
+      Object.assign(operation, value);
+      broadcastEvent({ t: 'shutdown', ...operation });
+    };
     setImmediate(() => void (async () => {
       const controller = new AbortController();
       const serverTimeoutMs = mode === 'hard_delete' ? 120_000 : 30_000;
@@ -306,11 +312,11 @@ export function registerSessions(app: express.Express): void {
         await Promise.race([
           (async () => {
             if (mode === 'hard_delete') {
-              const destructive = await performAgentHardDelete(name, (value) => Object.assign(operation, value), controller.signal);
+              const destructive = await performAgentHardDelete(name, progressed, controller.signal);
               operation.destructive = destructive;
               operation.closed = [...destructive.closed, ...destructive.quarantined.map((row) => row.desk)];
             } else {
-              operation.closed = await performAgentShutdown(name, (value) => Object.assign(operation, value));
+              operation.closed = await performAgentShutdown(name, progressed);
             }
           })(),
           new Promise<never>((_resolve, reject) => {
@@ -331,6 +337,7 @@ export function registerSessions(app: express.Express): void {
         controller.abort();
         if (deadline) clearTimeout(deadline);
       }
+      broadcastEvent({ t: 'shutdown', ...operation });
       shutdownSlots.terminal(name, id); // terminal: a retry always gets a fresh operation
       setTimeout(() => {
         shutdownOperations.delete(id);

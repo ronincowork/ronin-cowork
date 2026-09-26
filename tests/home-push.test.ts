@@ -285,3 +285,16 @@ test('a store folder change names the file that changed', async (t) => {
   for (let i = 0; i < 50 && !seen.some((f) => f.startsWith('front-2/posts')); i++) await new Promise((r) => setTimeout(r, 20));
   assert.ok(seen.some((f) => f.split('/')[0] === 'front-2'), `saw ${seen.join(', ')}`);
 });
+
+test('while Mika is starting the server looks again and pushes each change, then stops', async (t) => {
+  feedEvents({ list: async () => [session('a')] });
+  const b = open(t);
+  await settle();
+  const { watchMika } = await import('../src/routes/launch.js');
+  const answers = ['starting', 'starting', 'action_required'];
+  let looks = 0;
+  await watchMika(async () => ({ ok: false, state: answers[looks++] ?? 'ready', code: 'provider_confirmation_required' }), { state: 'starting' }, 1);
+  assert.equal(looks, 3, 'it stops at the first answer that is not starting');
+  assert.deepEqual(b.got('mika'), [{ t: 'mika', ok: false, state: 'action_required', code: 'provider_confirmation_required' }], 'an unchanged answer sends nothing');
+  assert.equal(watchMika(async () => ({ state: 'ready' }), { state: 'ready' }), null, 'a ready answer starts no watch');
+});
