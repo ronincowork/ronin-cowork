@@ -31,7 +31,7 @@ dynamic_help() {
   runtime=$(mktemp /tmp/session_create-runtime.XXXXXX) || { rm -f "$catalog"; exit 2; }
   seed=$(mktemp /tmp/session_create-seed.XXXXXX) || { rm -f "$catalog" "$runtime"; exit 2; }
   trap "rm -f '$catalog' '$runtime' '$seed'" EXIT
-  catalog_read /api/launch-models "$catalog"
+  catalog_read /api/provider-catalog "$catalog"
   catalog_read /api/setup/runtime "$runtime"
   catalog_read /api/launch-seed "$seed"
   cat <<'EOF'
@@ -68,11 +68,11 @@ for provider in catalog.get("providers", []):
     elif not observed.get("installed"): availability = "not on this machine"
     elif not observed.get("activated"): availability = "not activated"
     else: availability = "available"
-    print(f"  {provider_id} ({provider.get('label') or provider_id}) — {availability}")
+    print(f"  {provider_id} ({provider.get('provider_label') or provider.get('label') or provider_id}) — {availability}")
     for row in provider.get("models", []):
         if isinstance(row, dict) and row.get("model"):
             model_id = str(row["model"])
-            label = str(row.get("display_name") or "")
+            label = str(row.get("name") or row.get("display_name") or "")
             named = f" ({label})" if label and label != model_id else ""
             tier = f" · {row.get('tier')}" if row.get("tier") else ""
             print(f"    {model_id}{named}{tier} — {availability}")
