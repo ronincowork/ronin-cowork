@@ -289,8 +289,9 @@ while its surface is hidden.
 | desk readings (`desksOf`) | the store's `desks` resource, read by `desks.js` | `{t:'desks', list}` pushed on connect and on change · `refreshDesks()` reads `GET /api/desks` only before this connection's first push |
 | Team rosters | the store's `teams` resource, projected by `team-controller.js`, which publishes only when the rosters or the session list changed | `{t:'teams'}` nudge after a successful write under `/api/team-rosters` or `/api/team` → one `GET /api/team-rosters` · `refreshTeams()` on Team entry and after a mutation |
 | catalogs (projects, presets, saved launches) | their `load*` in `home.js` | boot, and the panes that edit them re-load after a write |
-| per-tile readings (ctx, tegami, control) | the tile's own `refresh*` | 30s poll for visible connected tiles (`layout.js`) · connect · post-write re-read |
-| pane data (wipeboard, docs list, roots, koshi, stats) | the pane module | its own gated poll (2s/2s/15s) or `enter()` — each owner is the file the surface lives in |
+| per-tile readings (gauge, work record) | the tile's `refreshCtx` / `refreshTegami`, reading its session's home row (`ctx`, `model`, `tegami`) | the tile subscribes to the store's `home` when it is made and unsubscribes when its host destroys it (`terminal-tile-host.js`) · connect repaints from the row the store holds · the browser never calls `/ctx` or `/tegami`; those routes are the tools' |
+| docs list (tracked shelf) | `docs.js`, reading `homeData` | subscribes to the store's `home` when the list is shown (`enter`, back from the editor); the first push after it leaves the screen unsubscribes · the Plans and Docs shelves read `GET /api/docs` on demand |
+| pane data (wipeboard, message queue, roots, koshi, stats) | the pane module | its own gated poll or `enter()` — each owner is the file the surface lives in |
 | tile bytes | `TileWire` (`tilewire.js`) | the socket; reconnect/backoff lives there and nowhere else |
 
 ### Transcript reading transport

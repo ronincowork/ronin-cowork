@@ -14,7 +14,7 @@ export const agentTitle = (session) => session.title || String(session.name || '
 const agentName = (session) => String(session.identity?.cli || session.agent || session.session_type || 'Agent')
   .split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 
-// "flashing the team configuration on and off"). Every five-second row read and every
+// "flashing the team configuration on and off"). Every pushed home row and every
 // refreshTeams() publish land in the panel renderers; redrawing unconditionally flashed
 // the form's loading line, refetched three catalogs, and wiped a half-typed edit. The
 // renderers compare this string — the durable roster, each member line, the add-select's

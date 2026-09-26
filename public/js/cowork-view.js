@@ -736,8 +736,8 @@ export function createCoworkView(options = {}) {
   // team configuration on and off"). Every tick and publish lands here; the panel is
   // torn down only when configSignature says something it draws actually moved.
   // Two signatures, because the two panels move for different reasons: the member rows
-  // follow the live readings (status, ⛽, model — a five-second tick), the Configuration
-  // tab follows the saved record alone. Repainting the tab on a tick threw away the owner's
+  // follow the live readings (status, ⛽, model — the pushed home rows), the Configuration
+  // tab follows the saved record alone. Repainting the tab on a push threw away the owner's
   // edit in progress (owner, 2026-09-13).
   let seenConfig = '';
   let seenRecord = '';
