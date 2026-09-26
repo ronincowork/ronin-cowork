@@ -25,7 +25,7 @@ import { scanContext, scanModel } from '../ctx.js';
 import { count } from '../counts.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
+import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate, type SessionWithAxes } from '../tegami.js';
 import { collectBirthLines, collectRowFields } from '../sockets.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
@@ -239,9 +239,9 @@ const loadPaneStatus = createActivityCache(async (name: string) => {
   };
 });
 
-// The home rows: what GET /api/home answers, and what /events pushes as {t:'home', rows}.
-export const loadHome = createWindowedLoader(async () => {
-  const list = await withAxes(await listSessions());
+// The home rows for one session listing: what /events pushes as {t:'home', rows}, from the
+// listing its tick already took.
+export function homeRows(list: SessionWithAxes[]) {
   return Promise.all(
     list.map(async (s) => {
       const [pane, contributed, tegami] = await Promise.all([
@@ -262,7 +262,10 @@ export const loadHome = createWindowedLoader(async () => {
       };
     }),
   );
-}, 2_000);
+}
+
+// What GET /api/home answers: the same rows, for a tab that asks.
+export const loadHome = createWindowedLoader(async () => homeRows(await withAxes(await listSessions())), 2_000);
 
 export function registerLaunch(app: express.Express): LaunchControl {
   type MikaReady = Awaited<ReturnType<LaunchControl['ensureMika']>>;
