@@ -223,7 +223,8 @@ export class Tile {
   /**
    * Read the session's letter off its row. A mechanical read and nothing else: no check, no
    * proof, no disagreement with what the agent wrote. Null = no ladder up, chip hides.
-   * The ⑂ reading beside it is the store's `desks`, pushed on its own (js/desks.js).
+   * The desks beside it in the ladder are not on the row: `openLadder` reads this session's
+   * once, when the ladder opens, and paints what that read answers (js/desks.js).
    */
   refreshTegami() {
     this.tegami = this.homeRow()?.tegami || null;
