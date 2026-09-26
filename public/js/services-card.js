@@ -10,6 +10,7 @@
  * identifies and cannot authorize.
  */
 import { request } from './request.js';
+import { store } from './store.js';
 import { button, field, status } from './ui.js';
 import { t } from './lexicon.js';
 
@@ -36,7 +37,6 @@ export function servicesCard(container, onChange) {
   container.appendChild(wrap);
 
   const line = status('st-status');
-  let installTimer = null;
   function render(state) {
     if (!state) {
       // SAY IT WHERE IT CAN BE SEEN. `line.el` is only mounted on the success path
@@ -45,7 +45,6 @@ export function servicesCard(container, onChange) {
       wrap.replaceChildren(line.el);
       return;
     }
-    if (installTimer) clearTimeout(installTimer);
     wrap.replaceChildren();
 
     const SAY = stageWords();
@@ -156,10 +155,6 @@ export function servicesCard(container, onChange) {
     if (state.egress?.length) wrap.appendChild(egressBox(state.egress));
 
     onChange?.(state);
-    document.dispatchEvent(new CustomEvent('ronin:services-state', { detail: state }));
-    // Installing is local work, so a short local read can replace the spinner with its
-    // real outcome without creating another Shiwake poll.
-    if (state.stage === 'installing') installTimer = setTimeout(() => void load(), 3000);
   }
 
   function nodeOf(b) { return b.el ?? b; }
@@ -197,7 +192,10 @@ export function servicesCard(container, onChange) {
     where.say(t('services.working', 'working…'), 'busy');
     const r = await request(route, { method: method || 'POST', ...(json ? { json } : {}) });
     if (!r.ok) { where.say(r.message || t('services.failed', 'that did not work'), 'bad'); return; }
-    await load();
+    where.say('');
+    // Check status and Install answer with the services object; the registration presses'
+    // new activation arrives as {t:'services-setup'}.
+    if (r.data?.activation) render(r.data.activation);
   }
 
   async function changeAddress() {
@@ -216,6 +214,10 @@ export function servicesCard(container, onChange) {
     render(r.ok ? r.data : null);
   }
 
+  // OPEN reads the activation and listens: each step, an install's end and a confirmation
+  // arrive by push, and a reopened socket (Ronin back from a restart) reads again. `stop` is CLOSE.
+  const unlisten = store.listen('services-setup', (m) => render(m.services?.activation ?? null));
+  const unopen = store.onOpen(() => { void load(); });
   void load();
-  return { reload: load, stop() { if (installTimer) clearTimeout(installTimer); } };
+  return { stop() { unlisten(); unopen(); } };
 }
