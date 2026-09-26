@@ -164,12 +164,12 @@ export function createCoworkView(options = {}) {
         t('workspace.tab_cron_count', '{scheduled} scheduled, {paused} paused', { scheduled, paused })),
     });
     const docsPane = el('div', 'home-docs tw-docs');
-    const docs = buildDocs(null, docsPane, () => entered && docsPane.isConnected,
+    const docs = buildDocs(null, docsPane,
       (name) => membersOfTeam(team).some((m) => m.name === name), () => teamByName(team)?.repos || []);
     const docsService = {
       el: docsPane, mount: () => {},
       enter: () => { docs.enter(); },
-      leave: () => {}, destroy: () => {},
+      leave: () => { docs.close(); }, destroy: () => { docs.close(); },
     };
     const roster = el('div', 'tw-config tw-roster');
     const config = el('div', 'tw-config');
