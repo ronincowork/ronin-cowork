@@ -1,5 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { fetchSessions, setSessionTitle } from './api.js';
+import { setSessionTitle } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
@@ -19,9 +19,9 @@ import { buildKeysRow } from './keysrow.js';
 import { buildTileDocView } from './tile-doc-view.js';
 import { isCoarse } from './tiledrop.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
-import { desksOf } from './desks.js';
+import { readDesks } from './desks.js';
 import { homeData } from './home.js';
-import { get, snapshot, subscribe } from './store.js';
+import { get, subscribe } from './store.js';
 import { t } from './lexicon.js';
 import { makeTileTranscript } from './tile-transcript.js';
 import { createSurfaceHost, TILE_SURFACES } from './surface-host.js';
@@ -197,9 +197,8 @@ export class Tile {
     const wanted = window.prompt(t('head.rename_prompt', 'Edit Agent title\n\nAgent ID: {id}', { id: session }), current);
     if (wanted == null || wanted.trim() === current) return;
     try {
+      // The new title arrives with the pushed session list, which repaints this tile's name.
       await setSessionTitle(session, wanted.trim());
-      await fetchSessions();
-      this.refreshSessionName();
     } catch (e) {
       toast(t('head.rename_failed', 'Could not rename session: {reason}', { reason: e.message }), false);
     }
@@ -243,11 +242,11 @@ export class Tile {
     else void this.openLadder();
   }
 
-  /** The desks are read when the ladder opens — the store's one read of `/api/desks`, fresh at open. */
+  /** This session's desks are read when the ladder opens — one read of `/api/desks?session=`, fresh at open. */
   async openLadder() {
-    await snapshot('desks');
+    const desks = await readDesks(this.session);
     this.ladderOpen = true;
-    this.drawLadder();
+    this.drawLadder(desks);
   }
 
   closeLadder() {
@@ -280,9 +279,9 @@ export class Tile {
   }
 
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */
-  drawLadder() {
+  drawLadder(desks) {
     this.el.querySelector('.shingo-ladder')?.remove();
-    const box = buildLadder(this.tegami, desksOf(this.session));
+    const box = buildLadder(this.tegami, desks);
     this.el.querySelector('.tile-head').after(box);
     this.workRecordBtn.classList.add('open');
     this.workRecordBtn.setAttribute('aria-expanded', 'true');
@@ -696,10 +695,7 @@ export class Tile {
     // a repeat already queued can still reach xterm first. Dismissal removes the node
     // (session-retire.js), so finding one means this tile's sheet is up — never a stack.
     if (document.getElementById(`endsession-${this.retirementId}`)) return;
-    retireSession(name, this.retirementId, async () => {
-      this.detach();
-      await fetchSessions();
-    });
+    retireSession(name, this.retirementId, () => this.detach());
   }
 
   connect(session) {
